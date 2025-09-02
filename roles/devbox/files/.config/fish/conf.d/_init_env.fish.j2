@@ -1,0 +1,9 @@
+set -gx EDITOR vim
+set -gx GOPATH $HOME/{{ devbox_paths.programming_deps_dir }}/go
+set -gx GOROOT /usr/local/go
+set -gx FLUTTER_PATH $HOME/{{ devbox_paths.programming_deps_dir }}/flutter
+set -gx GEM_HOME $HOME/{{ devbox_paths.programming_deps_dir }}/ruby/gems
+
+if test -d /opt/homebrew
+  /opt/homebrew/bin/brew shellenv | source
+end

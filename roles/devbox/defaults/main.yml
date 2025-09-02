@@ -1,3 +1,7 @@
 devbox_user:
   login: kabrosimov
   ssh_pass_phrase: "{{ vault_devbox_user.vault_ssh_pass_phrase }}"
+devbox_paths:
+  dotfiles_root_dir: "~/tmp"
+  programming_deps_dir: ".programming"
+

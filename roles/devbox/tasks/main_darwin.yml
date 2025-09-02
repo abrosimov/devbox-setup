@@ -7,5 +7,5 @@
   ansible.builtin.include_tasks: prepare_user.yml
 - name: "Install secondary homebrew packages"
   ansible.builtin.include_tasks: darwin/install_from_brew_secondary.yml
-- name: "Install Mac AppStore packages"
-  ansible.builtin.include_tasks: darwin/install_from_appstore.yml
+#- name: "Install Mac AppStore packages"
+#  ansible.builtin.include_tasks: darwin/install_from_appstore.yml

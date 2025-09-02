@@ -1,34 +1,28 @@
 ---
-- name: Create programming dir
+- name: Collect files and directories from tree
+  ansible.builtin.set_fact:
+    filetree_items: "{{ lookup('community.general.filetree', 'files/', wantlist=True) }}"
+
+- name: Create layout of home directory
   ansible.builtin.file:
-    path: "~/tmp/.programming"
+    path: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
     state: directory
-    mode: "0755"
-- name: Install .gemrc
+    mode: "{{ item.mode }}"
+  loop: "{{ filetree_items }}"
+  when: item.state == 'directory'
+
+- name: Copy configuration files to appropriate paths.
   ansible.builtin.copy:
-    src: "files/.gemrc"
-    dest: "~/tmp/"
-    owner: "{{ user }}"
-    mode: "0644"
-- name: Install .npmrc
-  ansible.builtin.copy:
-    src: "files/.npmrc"
-    dest: "~/tmp/"
-    owner: "{{ user }}"
-    mode: "0644"
-- name: Install kitty configs
-  ansible.builtin.copy:
-    src: "files/kitty"
-    dest: "~/tmp/"
-    owner: "{{ user }}"
-    mode: "0644"
-- name: Install fish configs
-  ansible.builtin.copy:
-    src: "files/fish"
-    dest: "~/tmp/"
-    mode: "0644"
-- name: Install Claude configs
-  ansible.builtin.copy:
-    src: "files/.claude"
-    dest: "~/tmp/"
-    mode: "0644"
+    src: "files/{{ item.path }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ filetree_items }}"
+  when: item.state == 'file' and not item.path.endswith('.j2')
+
+- name: Render config templates to appropriate paths
+  ansible.builtin.template:
+    src: "files/{{ item.path }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path | regex_replace('\\.j2$', '') }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ filetree_items }}"
+  when: item.state == 'file' and item.path.endswith('.j2')

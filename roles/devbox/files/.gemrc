@@ -1,0 +1,3 @@
+install: --user-install --install-dir ~/.programming/ruby/gems
+update: --user-install --install-dir ~/.programming/ruby/gems
+gemhome: ~/.programming/ruby/gems

@@ -1,0 +1,26 @@
+---
+- name: "Install Homebrew apps"
+  community.general.homebrew:
+    name:
+      - kitty
+      - fish
+      - fisher
+      - bat
+      - podman
+      - mas
+      - wget
+      - curl
+      - font-fira-code
+      - htop
+      - nvim
+    state: present
+
+- name: "Install Homebrew casks"
+  community.general.homebrew_cask:
+    name:
+      - ghostty
+      - font-ia-writer-duo
+      - font-ia-writer-mono
+      - font-ia-writer-quattro
+      - docker
+    state: present

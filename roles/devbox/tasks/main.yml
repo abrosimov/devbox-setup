@@ -1,0 +1,15 @@
+---
+- name: Debug something
+  ansible.builtin.debug:
+    msg:
+      - "==========================="
+      - "List of instances id"
+      - "==========================="
+      - "{{ lookup('ansible.builtin.env', 'HOME') }}"
+      - "{{ ansible_facts }}"
+- name: "Install necessary homebrew packages for MacOS"
+  ansible.builtin.include_tasks: main_darwin.yml
+  when: ansible_facts['os_family'] == "Darwin"
+- name: "Install necessary homebrew packages for Linux"
+  ansible.builtin.include_tasks: main_linux.yml
+  when: ansible_facts['os_family'] == "Linux"

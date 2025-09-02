@@ -1,0 +1,34 @@
+---
+- name: Create programming dir
+  ansible.builtin.file:
+    path: "~/tmp/.programming"
+    state: directory
+    mode: "0755"
+- name: Install .gemrc
+  ansible.builtin.copy:
+    src: "files/.gemrc"
+    dest: "~/tmp/"
+    owner: "{{ user }}"
+    mode: "0644"
+- name: Install .npmrc
+  ansible.builtin.copy:
+    src: "files/.npmrc"
+    dest: "~/tmp/"
+    owner: "{{ user }}"
+    mode: "0644"
+- name: Install kitty configs
+  ansible.builtin.copy:
+    src: "files/kitty"
+    dest: "~/tmp/"
+    owner: "{{ user }}"
+    mode: "0644"
+- name: Install fish configs
+  ansible.builtin.copy:
+    src: "files/fish"
+    dest: "~/tmp/"
+    mode: "0644"
+- name: Install Claude configs
+  ansible.builtin.copy:
+    src: "files/.claude"
+    dest: "~/tmp/"
+    mode: "0644"

@@ -1,0 +1,9 @@
+- name: Default playbook for basic system setup
+  hosts: 127.0.0.1
+  connection: local
+
+  vars_files:
+    - "../vault/devbox_ssh_config.yml"
+
+  roles:
+    - devbox

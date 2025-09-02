@@ -1,0 +1,35 @@
+---
+- name: "Install Homebrew apps"
+  community.general.homebrew:
+    name:
+      - obsidian
+      - opam
+      - erlang
+      - rustup
+      - flutter
+      - go
+      - go-task
+      - uv
+    state: present
+
+- name: "Install Homebrew casks"
+  community.general.homebrew_cask:
+    name:
+      - goland
+      - webstorm
+      - intellij-idea
+      - pycharm
+      - ghostty
+      - mactex
+    state: present
+
+- name: "Init OCaml"
+  ansible.builtin.command:
+    cmd: opam init -y
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam"
+
+- name: "Install necessary OCaml packages"
+  ansible.builtin.command:
+    cmd: opam install -y ocaml-lsp-server odoc ocamlformat utop
+    # Using last binary to ensure that all expected packages are installed.
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam/default/bin/utop"

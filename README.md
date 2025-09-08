@@ -6,3 +6,5 @@
 - [ ] Then ensure .gitconfig, etc.
 - [ ] Write tests
 - [ ] Write CI for GH Actions.
+- [ ] Install `sudo softwareupdate --install-rosetta`
+- 

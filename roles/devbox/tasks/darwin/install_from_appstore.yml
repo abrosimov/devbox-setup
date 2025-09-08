@@ -2,8 +2,8 @@
 - name: "Install AppStore apps"
   community.general.mas:
     id:
-      - 1481535767 # SingularityApp
-      - 497799835 # Xcode
+      #- 1481535767 # SingularityApp
+      #- 497799835 # Xcode
       # DaVinci Resolve shouldn't be installed from AppStore because it's different.
       # it's better to download it from BlackMagicDesign site.
     state: present

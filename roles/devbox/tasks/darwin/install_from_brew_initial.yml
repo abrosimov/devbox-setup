@@ -22,5 +22,14 @@
       - font-ia-writer-duo
       - font-ia-writer-mono
       - font-ia-writer-quattro
-      - docker
+      - font-meslo-for-powerlevel10k
+      - font-meslo-for-powerline
+      - font-meslo-lg
+      - font-meslo-lg-dz
+      - font-meslo-lg-nerd-font
+      #- docker
     state: present
+
+- name: "Regen fonts config"
+  ansible.builtin.command:
+    cmd: fc-cache -fv

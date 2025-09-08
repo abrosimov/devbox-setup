@@ -13,3 +13,6 @@
 - name: "Install necessary homebrew packages for Linux"
   ansible.builtin.include_tasks: main_linux.yml
   when: ansible_facts['os_family'] == "Linux"
+- name: "Job is done"
+  ansible.builtin.debug:
+    - msg: "Now please reboot your system to make changes applied properly"

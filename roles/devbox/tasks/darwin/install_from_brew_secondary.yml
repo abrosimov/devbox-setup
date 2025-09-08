@@ -10,6 +10,7 @@
       - go
       - go-task
       - uv
+      - kubectl
     state: present
 
 - name: "Install Homebrew casks"
@@ -21,6 +22,7 @@
       - pycharm
       - ghostty
       - mactex
+      - freelens
     state: present
 
 - name: "Init OCaml"

@@ -27,7 +27,6 @@
       - font-meslo-lg
       - font-meslo-lg-dz
       - font-meslo-lg-nerd-font
-      #- docker
     state: present
 
 - name: "Regen fonts config"

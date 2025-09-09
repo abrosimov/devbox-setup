@@ -13,6 +13,7 @@
       - kubectl
       - helm
       - orbstack
+      - k9s
     state: present
 
 - name: "Install Homebrew casks"

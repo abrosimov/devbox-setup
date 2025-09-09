@@ -11,6 +11,8 @@
       - go-task
       - uv
       - kubectl
+      - helm
+      - orbstack
     state: present
 
 - name: "Install Homebrew casks"

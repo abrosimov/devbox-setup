@@ -2,6 +2,7 @@ abbr -a co git checkout
 abbr -a st git status
 abbr -a gd git diff
 abbr -a am git commit --amend
+abbr -a br git branch
 
 abbr -a cob git checkout -b
 abbr -a add git add

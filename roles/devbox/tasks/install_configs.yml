@@ -2,6 +2,8 @@
 - name: Collect files and directories from tree
   ansible.builtin.set_fact:
     filetree_items: "{{ lookup('community.general.filetree', 'files/', wantlist=True) }}"
+    files_that_should_not_be_overwritten:
+      - files/.config/fish/conf.d/_init_env_confidential.fish
 
 - name: Create layout of home directory
   ansible.builtin.file:
@@ -16,6 +18,7 @@
     src: "files/{{ item.path }}"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
     mode: "{{ item.mode | default('0644') }}"
+    force: "{{ item.path not in files_that_should_not_be_overwritten }}"
   loop: "{{ filetree_items }}"
   when: item.state == 'file' and not item.path.endswith('.j2')
 

@@ -1,2 +1,11 @@
----
-# TODO: implement me.
+- name: "Install necessary apt packages (Ubuntu)"
+  ansible.builtin.include_tasks: linux/install_from_apt_initial.yml
+
+- name: "Install configs"
+  ansible.builtin.include_tasks: install_configs.yml
+
+- name: "Finish user polishing"
+  ansible.builtin.include_tasks: prepare_user.yml
+
+- name: "Install secondary apt packages (Ubuntu)"
+  ansible.builtin.include_tasks: linux/install_from_apt_secondary.yml

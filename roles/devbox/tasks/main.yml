@@ -1,12 +1,11 @@
 ---
-- name: Debug something
-  ansible.builtin.debug:
-    msg:
-      - "==========================="
-      - "List of instances id"
-      - "==========================="
-      - "{{ lookup('ansible.builtin.env', 'HOME') }}"
-      - "{{ ansible_facts }}"
+- name: Override dotfiles_root_dir if dev_mode is enabled
+  ansible.builtin.set_fact:
+    devbox_paths: "{{ devbox_paths | combine({'dotfiles_root_dir': dev_dotfiles_path_override}) }}"
+  when: dev_mode | default(false) | bool
+  vars:
+    dev_dotfiles_path_override: "../debug/dotfiles"
+
 - name: "Install necessary homebrew packages for MacOS"
   ansible.builtin.include_tasks: main_darwin.yml
   when: ansible_facts['os_family'] == "Darwin"

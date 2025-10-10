@@ -15,6 +15,9 @@
       - orbstack
       - k9s
       - fzf
+      - tmux
+      - "node@18"
+      - golangci-lint
     state: present
 
 - name: "Install Homebrew casks"

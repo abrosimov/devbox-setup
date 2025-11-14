@@ -18,6 +18,7 @@
       - tmux
       - "node@18"
       - golangci-lint
+      - luarocks # Needed by lazy.nvim
     state: present
 
 - name: "Install Homebrew casks"

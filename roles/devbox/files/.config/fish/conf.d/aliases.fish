@@ -11,6 +11,9 @@ abbr -a gdc git diff --cached
 abbr -a pull git pull origin 
 abbr -a push git push origin
 
+abbr -a vi nvim
+abbr -a vim nvim
+
 abbr -a stash git stash # TODO: In the video on YT there was a nice hack for git stash.
 
 abbr -a --set-cursor gg "git grep -n '%'"

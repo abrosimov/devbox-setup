@@ -19,6 +19,8 @@
       - "node@18"
       - golangci-lint
       - luarocks # Needed by lazy.nvim
+      - go-jsonnet
+      - jsonnet-bundler
     state: present
 
 - name: "Install Homebrew casks"

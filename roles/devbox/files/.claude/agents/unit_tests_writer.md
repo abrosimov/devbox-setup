@@ -64,3 +64,5 @@ If tests already exist, add new tests to the existing file following its style.
 - Be pragmatic — test what matters, not everything.
 - No obvious comments. Do comment tricky workarounds with brief context.
 - Never implement without user-approved plan.
+- NEVER copy-paste logic from source code into tests. Tests must verify behavior independently — duplicated logic may contain the same bugs as the source.
+- Prefer explicit solutions over implicit ones, unless the implicit approach is a common best practice.

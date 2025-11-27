@@ -54,9 +54,10 @@ If tests already exist, add new tests to the existing file following its style.
 
 ## Phase 3: Validation
 
-1. Run the test suite: `pytest`, `go test ./...`, `npm test`, etc.
-2. Ensure all new tests pass.
-3. Review for simplicity and readability; propose improvements if needed.
+1. Run tests for modified files only — ensure new tests pass.
+2. Run tests for the entire module/package to catch regressions in neighboring code.
+3. If any existing tests fail, analyze and fix them (implementation may have affected neighbors).
+4. Review for simplicity and readability; propose improvements if needed.
 
 ## Behaviour
 

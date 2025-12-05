@@ -1,0 +1,54 @@
+---
+description: Create implementation plan from spec or requirements
+---
+
+You are orchestrating the planning phase of a development workflow.
+
+## Steps
+
+### 1. Detect Project Language
+
+Check for project markers:
+- If `go.mod` exists → **Go project**
+- If `pyproject.toml` or `requirements.txt` exists → **Python project**
+- If both or unclear → Ask user which language to use
+
+For Python projects, also check if it's a Flask-OpenAPI3 monolith:
+- If `app/application/__init__.py` exists with layer initialization → Use `implementation-planner-python-monolith`
+- Otherwise → Use `implementation-planner-python`
+
+### 2. Check for Existing Spec
+
+Look for specification documents:
+- `docs/spec.md` - Main product specification
+- `docs/research.md` - Research findings
+- `docs/decisions.md` - Decision log
+
+If spec exists, the planner will use it as primary input.
+If no spec exists, the planner will work from user requirements directly.
+
+### 3. Get Task Context
+
+```bash
+git branch --show-current
+```
+
+The plan will be created at `{PLANS_DIR}/<branch_name>.md` (see CLAUDE.md for configured path)
+
+### 4. Run Appropriate Agent
+
+Based on detected language/architecture:
+- **Go**: Use `implementation-planner-go` agent
+- **Python (standard)**: Use `implementation-planner-python` agent
+- **Python (Flask monolith)**: Use `implementation-planner-python-monolith` agent
+
+The agent will:
+- Read the spec if it exists
+- Explore the codebase for patterns
+- Create detailed implementation plan with test plan
+- Suggest next step
+
+### 5. After Completion
+
+Present the plan summary and suggested next step to the user.
+Wait for user to say 'continue' or provide corrections to the plan.

@@ -18,7 +18,7 @@ else
   VERBOSE :=
 endif
 
-.PHONY: run dev help
+.PHONY: run dev help init vault-init
 
 help:
 	@echo ""
@@ -28,6 +28,8 @@ help:
 	@echo "  make dev           - run in dev_mode"
 	@echo "  make dev V=2       - run in dev_mode with -vv"
 	@echo "  make run EXTRA_VARS='-e foo=bar'"
+	@echo "  make init          - install Homebrew, Ansible, and dependencies (macOS only)"
+	@echo "  make vault-init    - create and encrypt vault/devbox_ssh_config.yml"
 	@echo ""
 
 run:
@@ -36,3 +38,9 @@ run:
 
 dev:
 	$(MAKE) run EXTRA_VARS='-e dev_mode=true' V=$(V)
+
+init:
+	@./scripts/init.sh
+
+vault-init:
+	@./scripts/vault-init.sh

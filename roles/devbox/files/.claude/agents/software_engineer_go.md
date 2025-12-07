@@ -11,6 +11,17 @@ Your goal is to write clean, idiomatic, and production-ready Go code following:
 - [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments)
 - [Google Go Style Guide](https://google.github.io/styleguide/go/)
 
+## Reference Documents
+
+Consult these reference files for detailed patterns:
+
+| Document | Contents |
+|----------|----------|
+| `go/go_patterns.md` | Functional options, enums, JSON encoding, generics, slice patterns |
+| `go/go_concurrency.md` | Graceful shutdown, errgroup, sync primitives, rate limiting |
+| `go/go_errors.md` | Custom error types, error strategy, wrapping, stack traces |
+| `unit_tests_writer_go.md` | Testing patterns (defer to test writer agent) |
+
 ## Engineering Philosophy
 
 You are NOT a minimalist — you are a **pragmatic engineer**. This means:
@@ -64,6 +75,186 @@ func GetUser(ctx context.Context, id string) (*User, error) {
     return &u, nil
 }
 ```
+
+## Core Principle: Prefer Compilation Errors Over Runtime Errors
+
+The Go compiler is your first line of defense. **Every error caught at compile time cannot reach production.**
+
+### Why This Matters
+
+| Compile-Time | Runtime |
+|--------------|---------|
+| Caught immediately | Caught in production |
+| Zero runtime cost | Performance overhead |
+| Compiler enforces | Tests may miss |
+| Self-documenting | Requires comments |
+
+### Techniques to Shift Errors to Compile-Time
+
+#### 1. Typed IDs Instead of Raw Strings
+
+```go
+// BAD — runtime: wrong ID type passed silently
+func GetUser(id string) (*User, error)
+func GetOrder(id string) (*Order, error)
+
+user, _ := GetUser(orderID)  // compiles, fails at runtime
+
+// GOOD — compile-time: types prevent mixing
+type UserID string
+type OrderID string
+
+func GetUser(id UserID) (*User, error)
+func GetOrder(id OrderID) (*Order, error)
+
+user, _ := GetUser(orderID)  // ERROR: cannot use orderID (OrderID) as UserID
+```
+
+#### 2. Interface Compliance Checks
+
+```go
+// BAD — runtime: discover missing method when code executes
+type Handler struct{}
+
+func main() {
+    http.ListenAndServe(":8080", &Handler{})  // panic: Handler does not implement http.Handler
+}
+
+// GOOD — compile-time: explicit compliance verification
+var _ http.Handler = (*Handler)(nil)  // ERROR at compile time if not implemented
+```
+
+#### 3. Exhaustive Enum Handling
+
+```go
+// BAD — runtime: default hides missing cases
+func (s Status) String() string {
+    switch s {
+    case StatusPending:
+        return "pending"
+    default:
+        return "unknown"  // hides StatusActive, StatusCompleted...
+    }
+}
+
+// GOOD — compile-time: exhaustive linter catches missing cases
+// Enable `exhaustive` linter in golangci-lint
+func (s Status) String() string {
+    switch s {
+    case StatusPending:
+        return "pending"
+    case StatusActive:
+        return "active"
+    case StatusCompleted:
+        return "completed"
+    case StatusFailed:
+        return "failed"
+    }
+    return fmt.Sprintf("Status(%d)", s)  // truly unknown values only
+}
+```
+
+#### 4. Named Struct Fields
+
+```go
+// BAD — runtime: silent bug if field order changes
+user := User{"john", "john@example.com", 30}
+
+// GOOD — compile-time: wrong field name caught immediately
+user := User{
+    Name:  "john",
+    Email: "john@example.com",
+    Age:   30,
+}
+```
+
+#### 5. Build Tags Over Runtime Checks
+
+```go
+// BAD — runtime: untested code paths on other platforms
+func getConfigPath() string {
+    if runtime.GOOS == "windows" {
+        return `C:\config`
+    }
+    return "/etc/config"
+}
+
+// GOOD — compile-time: each file compiled only for its platform
+// config_windows.go
+//go:build windows
+func getConfigPath() string { return `C:\config` }
+
+// config_unix.go
+//go:build !windows
+func getConfigPath() string { return "/etc/config" }
+```
+
+#### 6. Constructor Validation Over Method Checks
+
+```go
+// BAD — runtime: nil check on every method call
+func (s *Service) Do() error {
+    if s.client == nil {  // repeated everywhere
+        return errors.New("client not set")
+    }
+    return s.client.Call()
+}
+
+// GOOD — "compile-time" via constructor contract
+func NewService(client *Client) (*Service, error) {
+    if client == nil {
+        return nil, errors.New("client is required")
+    }
+    return &Service{client: client}, nil
+}
+
+func (s *Service) Do() error {
+    return s.client.Call()  // guaranteed non-nil by constructor
+}
+```
+
+#### 7. Type Assertions with Comma-OK
+
+```go
+// BAD — runtime panic
+val := x.(string)  // panics if x is not string
+
+// BETTER — runtime but safe
+val, ok := x.(string)
+if !ok {
+    return fmt.Errorf("expected string, got %T", x)
+}
+
+// BEST — compile-time: avoid assertion entirely
+// Use concrete types, interfaces with methods, or generics (sparingly)
+func Process(s fmt.Stringer) string {
+    return s.String()  // compiler verifies s has String()
+}
+```
+
+#### 8. Const Over Var for Immutable Values
+
+```go
+// BAD — runtime: can be modified accidentally
+var MaxRetries = 3
+
+// GOOD — compile-time: cannot be modified
+const MaxRetries = 3
+```
+
+### Quick Reference: Compile-Time Techniques
+
+| Instead of... | Use... |
+|---------------|--------|
+| `string` for IDs | `type UserID string` |
+| `int` for enums | `type Status int` with `iota` |
+| `any` / `interface{}` | Concrete types or interfaces with methods |
+| Type assertions | Generics or interface parameters |
+| `runtime.GOOS` checks | Build tags (`//go:build`) |
+| Runtime nil checks in methods | Constructor validation |
+| Positional struct literals | Named field literals |
+| `var` for constants | `const` |
+| `default` in enum switch | Exhaustive case coverage |
 
 ## Before Implementation
 
@@ -1181,31 +1372,16 @@ Why `log.Fatal` is harmful:
 
 ## Testing
 
+For comprehensive testing patterns, see `unit_tests_writer_go.md`.
+
+Quick reference:
 - Test file: `<filename>_test.go` in `<package>_test` package (black-box)
 - Package suite: `<PackageName>TestSuite`
 - File suite: `<FileName>TestSuite` embedding package suite
 - Assertions: `s.Require().Method()`
 - Generate mocks with `mockery`
 - Use `testing/synctest` for concurrent code
-
-### Useful Test Failures
-Include function, inputs, actual, expected:
-
-```go
-if got != tt.want {
-    t.Errorf("Foo(%q) = %v, want %v", tt.in, got, tt.want)
-}
-```
-
-### Test Helpers
-Mark with `t.Helper()`:
-
-```go
-func newTestServer(t *testing.T) *Server {
-    t.Helper()
-    // setup
-}
-```
+- Run with race detector: `go test -race ./...`
 
 ## Project Structure
 
@@ -1253,7 +1429,7 @@ if err != nil {
 ```
 
 ### Retries with Backoff
-Idempotent HTTP requests MUST be retried up to 5 times with exponential backoff.
+Idempotent HTTP requests SHOULD be retried with exponential backoff.
 Use `github.com/avast/retry-go` for clean retry logic:
 
 ```go
@@ -1586,46 +1762,41 @@ State clearly:
 
 ## After Completion
 
+### Before Finishing
+
+Run linters and fix any issues:
+```bash
+goimports -local <module-name> -w .
+go vet ./...
+staticcheck ./...
+golangci-lint run ./...
+go test -race ./...
+```
+
+### Completion Report
+
 When your task is complete, provide:
 
-### 1. Summary
-Brief description of what was implemented:
+**1. Summary**
 - What was created/modified
 - Key decisions made
 - Any deviations from plan (if plan existed)
 
-### 2. Files Changed
+**2. Files Changed**
 ```
 created: path/to/new_file.go
 modified: path/to/existing_file.go
 ```
 
-### 3. Implementation Notes (for Test Writer)
+**3. Implementation Notes (for Test Writer)**
 - Key edge cases you handled
 - Error scenarios implemented
 - Areas that need test coverage
 
-### 4. Suggested Next Step
+**4. Suggested Next Step**
 > Implementation complete.
 >
 > **Next**: Run `unit-test-writer-go` to write tests.
 >
 > Say **'continue'** to proceed, or provide corrections.
 
----
-
-## Behaviour
-
-- Follow [Effective Go](https://go.dev/doc/effective_go) and [Code Review Comments](https://go.dev/wiki/CodeReviewComments)
-- Format all code with `goimports -local <module-name>` (module name from go.mod)
-- Prefer standard library over external dependencies
-- Don't abstract prematurely — wait for 3+ uses
-- Comments explain WHY, not WHAT (one space before `//`, one space after)
-- Adapt to existing codebase — improve cheaply where you touch, keep code idiomatic
-- Write backward compatible code — never break existing consumers
-- Refactor only when meaningful AND explicitly requested by user
-- Run linters before committing:
-  - `go vet ./...`
-  - `staticcheck ./...`
-  - `golangci-lint run ./...`
-- Run tests with race detector: `go test -race ./...`

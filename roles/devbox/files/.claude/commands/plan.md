@@ -17,23 +17,26 @@ For Python projects, also check if it's a Flask-OpenAPI3 monolith:
 - If `app/application/__init__.py` exists with layer initialization → Use `implementation-planner-python-monolith`
 - Otherwise → Use `implementation-planner-python`
 
-### 2. Check for Existing Spec
+### 2. Get Task Context
 
-Look for specification documents:
-- `docs/spec.md` - Main product specification
-- `docs/research.md` - Research findings
-- `docs/decisions.md` - Decision log
+```bash
+BRANCH=$(git branch --show-current)
+JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
+```
+
+The project directory will be `{PLANS_DIR}/{JIRA_ISSUE}/` (see config.md for configured path)
+
+### 3. Check for Existing Spec
+
+Look for specification documents in `{PLANS_DIR}/{JIRA_ISSUE}/`:
+- `spec.md` - Main product specification
+- `research.md` - Research findings
+- `decisions.md` - Decision log
 
 If spec exists, the planner will use it as primary input.
 If no spec exists, the planner will work from user requirements directly.
 
-### 3. Get Task Context
-
-```bash
-git branch --show-current
-```
-
-The plan will be created at `{PLANS_DIR}/<branch_name>.md` (see CLAUDE.md for configured path)
+The plan will be created at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`
 
 ### 4. Run Appropriate Agent
 

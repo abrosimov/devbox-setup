@@ -110,6 +110,44 @@ func GetOrder(id OrderID) (*Order, error)
 user, _ := GetUser(orderID)  // ERROR: cannot use orderID (OrderID) as UserID
 ```
 
+##### Working with Defined Types and Literals
+
+Go's untyped constants (literals) are implicitly assignable to compatible defined types. **Avoid redundant conversions** when passing literals:
+
+```go
+type ResourceName string
+
+// BAD — redundant conversion, literal is already assignable
+doSomething(ResourceName("my-resource"))
+client.Get(ctx, ResourceName("test"))
+
+// GOOD — Go handles implicit assignment
+doSomething("my-resource")
+client.Get(ctx, "test")
+```
+
+**When explicit conversion IS required:**
+
+| Scenario | Example | Why |
+|----------|---------|-----|
+| Typed variable | `ResourceName(stringVar)` | Variable has concrete type `string` |
+| Expression with typed operand | `ResourceName("prefix-" + stringVar)` | Result inherits type from typed operand |
+| Function return value | `ResourceName(getName())` | Functions return typed values |
+| Between defined types | `TargetName(string(sourceName))` | Must go through underlying type |
+
+```go
+var name string = "test"
+process(ResourceName(name))             // Required: typed variable
+process(ResourceName("prefix-" + name)) // Required: typed operand in expression
+process(ResourceName(getDefault()))     // Required: function return
+
+// But NOT required for pure literals:
+process("my-resource")                  // OK: untyped constant
+process("prefix-" + "suffix")           // OK: both operands untyped
+```
+
+This applies to all primitive-based defined types: `type Name string`, `type Count int`, `type Ratio float64`.
+
 #### 2. Interface Compliance Checks
 
 ```go
@@ -267,7 +305,9 @@ Before writing any code, check if a plan exists:
    git branch --show-current
    ```
 
-2. Look for plan at `{PLANS_DIR}/<branch_name>.md` (see CLAUDE.md for configured path)
+2. Extract Jira issue from branch: `git branch --show-current | cut -d'_' -f1`
+
+3. Look for plan at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md` (see config.md for configured path)
 
 ### Step 2: If Plan Exists
 

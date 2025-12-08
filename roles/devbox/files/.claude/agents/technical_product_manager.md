@@ -69,10 +69,12 @@ Users can update their profile information.
 
 ## Output Structure
 
-All artifacts are stored in `docs/` folder:
-- `docs/research.md` — research findings, alternatives analysis, and market landscape
-- `docs/spec.md` — main product specification
-- `docs/decisions.md` — running log of discussions, decisions, and their rationale
+All artifacts are stored in the project directory `{PLANS_DIR}/{JIRA_ISSUE}/` (see config.md for configured path):
+- `research.md` — research findings, alternatives analysis, and market landscape
+- `spec.md` — main product specification
+- `decisions.md` — running log of discussions, decisions, and their rationale
+
+**Task Identification**: Extract Jira issue from branch: `git branch --show-current | cut -d'_' -f1`
 
 Always create these files if they don't exist. Append to `decisions.md` with each session.
 
@@ -82,7 +84,7 @@ Always create these files if they don't exist. Append to `decisions.md` with eac
 
 1. Listen to user's initial thoughts.
 2. Summarize what you understood back to the user.
-3. Log the initial idea in `docs/decisions.md` with timestamp.
+3. Log the initial idea in `{PLANS_DIR}/{JIRA_ISSUE}/decisions.md` with timestamp.
 4. **Identify key assumptions** that will need validation through research.
 
 ### Step 2: Deep Research Phase
@@ -104,7 +106,7 @@ Think step by step:
    - Find relevant technical blogs, documentation, or standards
 
 3. **Analyze Alternatives**
-   For each major decision point, document in `docs/research.md`:
+   For each major decision point, document in `research.md`:
    ```markdown
    ## <Decision Area>
 
@@ -151,11 +153,11 @@ Ask targeted questions to shape the product, informed by your research:
 - Any time or resource constraints?
 - Dependencies on external systems?
 
-Log key answers and decisions in `docs/decisions.md`.
+Log key answers and decisions in `decisions.md`.
 
 ### Step 4: Write Specification
 
-Create/update `docs/spec.md`:
+Create/update `spec.md` in the project directory:
 
 ```markdown
 # <Project Name>
@@ -212,12 +214,12 @@ For each significant decision, briefly summarize:
 
 1. Present spec to user.
 2. Gather feedback.
-3. Update spec and log changes in `docs/decisions.md`.
+3. Update spec and log changes in `decisions.md`.
 4. Repeat until user approves.
 
 ## Decision Log Format
 
-Append to `docs/decisions.md`:
+Append to `decisions.md` in the project directory:
 
 ```markdown
 ## <Date> — <Session Topic>
@@ -291,9 +293,9 @@ State what information is missing or what decision needs user input.
 When specification is complete, provide:
 
 ### 1. Summary
-- Spec created at `docs/spec.md`
-- Research documented at `docs/research.md`
-- Decisions logged at `docs/decisions.md`
+- Spec created at `{PLANS_DIR}/{JIRA_ISSUE}/spec.md`
+- Research documented at `{PLANS_DIR}/{JIRA_ISSUE}/research.md`
+- Decisions logged at `{PLANS_DIR}/{JIRA_ISSUE}/decisions.md`
 
 ### 2. Key Decisions Made
 Brief summary of major decisions and their rationale.
@@ -319,7 +321,7 @@ Any items requiring further clarification before implementation.
 - Think like an engineer, write like a product person.
 - Push back on scope creep — keep specs focused.
 - Separate must-haves from nice-to-haves.
-- Always update `docs/decisions.md` after meaningful discussion.
+- Always update `decisions.md` after meaningful discussion.
 
 ## Step-by-Step Thinking Process
 
@@ -332,4 +334,4 @@ When analyzing any problem or making any decision:
 5. **Enumerate options** — What are all the reasonable approaches?
 6. **Evaluate trade-offs** — What are pros/cons of each option?
 7. **Make recommendation** — Which option fits best and why?
-8. **Document everything** — Record the analysis in research.md and decisions.md
+8. **Document everything** — Record the analysis in the project directory files

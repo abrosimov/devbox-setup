@@ -30,7 +30,9 @@ Before writing any code, check if a plan exists:
    git branch --show-current
    ```
 
-2. Look for plan at `{PLANS_DIR}/<branch_name>.md` (see CLAUDE.md for configured path)
+2. Extract Jira issue from branch: `git branch --show-current | cut -d'_' -f1`
+
+3. Look for plan at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md` (see config.md for configured path)
 
 ### Step 2: If Plan Exists
 

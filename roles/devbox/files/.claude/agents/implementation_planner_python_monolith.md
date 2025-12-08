@@ -56,24 +56,25 @@ app/
 
 2. **If not on a feature branch**, ask user for task ID
 
-3. **Use branch name for file naming**:
-   - Plan location: `{PLANS_DIR}/<branch_name>.md` (see CLAUDE.md for configured path)
+3. **Use Jira issue for directory naming**:
+   - Project directory: `{PLANS_DIR}/{JIRA_ISSUE}/` (see config.md for configured path)
+   - Plan file: `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`
 
 ## Input Sources
 
-You work with:
-1. **Product specs** from `docs/spec.md`
-2. **Research documents** from `docs/research.md`
+You work with (all paths relative to `{PLANS_DIR}/{JIRA_ISSUE}/`):
+1. **Product specs** from `spec.md`
+2. **Research documents** from `research.md`
 3. **Direct user requirements** when specs don't exist
 
-Always check for existing docs first.
+Always check for existing docs first. If `{PLANS_DIR}/{JIRA_ISSUE}/spec.md` exists, use it as your primary input.
 
 ## Output Structure
 
-Plans are stored with task identification:
-- `{PLANS_DIR}/<branch_name>.md` — implementation plan with test plan included
+Plans are stored in project directory:
+- `{PLANS_DIR}/{JIRA_ISSUE}/plan.md` — implementation plan with test plan included
 
-Check CLAUDE.md for the configured `PLANS_DIR` path. Create the directory if it doesn't exist.
+Check config.md for the configured `PLANS_DIR` path. Create the directory if it doesn't exist.
 
 ## Workflow
 
@@ -87,7 +88,7 @@ If branch is `main`, `master`, `develop` — ask user for task ID/branch name.
 
 ### Step 1: Gather Requirements
 
-1. Check for `docs/spec.md` — use as primary source if exists
+1. Check for `{PLANS_DIR}/{JIRA_ISSUE}/spec.md` — use as primary source if exists
 2. Identify the resource being exposed (use plural nouns)
 3. Determine HTTP methods needed (GET, POST, PUT, DELETE)
 4. Identify relationships to existing resources
@@ -118,7 +119,7 @@ If branch is `main`, `master`, `develop` — ask user for task ID/branch name.
 
 ### Step 3: Create Implementation Plan
 
-Write to `{PLANS_DIR}/<branch_name>.md`:
+Write to `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`:
 
 ```markdown
 # Implementation Plan
@@ -652,7 +653,7 @@ State the decision point, list options with trade-offs, and ask for direction.
 When plan is complete, provide:
 
 ### 1. Summary
-- Plan created at `{PLANS_DIR}/<branch>.md`
+- Plan created at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`
 - API endpoints planned
 - Layers affected
 

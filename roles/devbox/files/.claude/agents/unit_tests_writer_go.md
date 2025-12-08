@@ -147,6 +147,7 @@ Each package has a **package-level suite** that file suites embed:
 package auth_test
 
 import (
+    "github.com/rs/zerolog"
     "github.com/stretchr/testify/suite"
 )
 
@@ -154,6 +155,12 @@ import (
 type AuthTestSuite struct {
     suite.Suite
     // shared setup for all auth tests
+}
+
+// getLogger returns a no-op logger for tests.
+// Override in file suite if log capture is needed.
+func (s *AuthTestSuite) getLogger() zerolog.Logger {
+    return zerolog.Nop()
 }
 
 func (s *AuthTestSuite) SetupSuite() {
@@ -318,6 +325,24 @@ s.Require().ErrorIs(err, targetErr)
 s.Require().ErrorContains(err, "substring")
 ```
 
+##### Comparing Defined Types with Literals
+
+Use `EqualValues` when comparing defined types with expected literals (performs type conversion before comparison):
+
+```go
+type ResourceName string
+
+// VERBOSE — explicit conversion in test
+s.Require().Equal(ResourceName("expected"), result.Name)
+
+// CLEAN — EqualValues handles conversion
+s.Require().EqualValues("expected", result.Name)
+```
+
+**When to use `Equal` vs `EqualValues`:**
+- `Equal` — when type match is part of what you're testing
+- `EqualValues` — when you only care about the underlying value
+
 ### Using mockery-generated mocks
 
 ```go
@@ -327,6 +352,7 @@ import (
     "context"
     "testing"
 
+    "github.com/rs/zerolog"
     "github.com/stretchr/testify/suite"
     "myproject/pkg/service"
     "myproject/pkg/storage/mocks"
@@ -335,6 +361,10 @@ import (
 // ServiceTestSuite is the package-level suite
 type ServiceTestSuite struct {
     suite.Suite
+}
+
+func (s *ServiceTestSuite) getLogger() zerolog.Logger {
+    return zerolog.Nop()
 }
 
 // UserServiceTestSuite is the file-level suite for user_service.go
@@ -350,7 +380,7 @@ func TestUserServiceTestSuite(t *testing.T) {
 
 func (s *UserServiceTestSuite) SetupTest() {
     s.mockStore = mocks.NewStore(s.T())
-    s.svc = service.NewUserService(s.mockStore)
+    s.svc = service.NewUserService(s.mockStore, s.getLogger())
 }
 
 func (s *UserServiceTestSuite) TestGetItem() {

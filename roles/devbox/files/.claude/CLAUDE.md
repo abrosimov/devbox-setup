@@ -11,6 +11,7 @@ This is a Claude Code configuration directory containing specialized agent promp
 ```
 .claude/
 ├── settings.json          # Claude Code permissions and settings
+├── config.md              # Configurable paths (single source of truth)
 ├── agents/                # Specialized agent definitions
 │   ├── software_engineer_*.md
 │   ├── unit_tests_writer_*.md
@@ -55,31 +56,28 @@ Each command:
 
 Agents follow a typical development pipeline:
 
-1. **technical_product_manager** - Transforms ideas into product specifications (writes to `docs/spec.md`, `docs/research.md`, `docs/decisions.md`)
-2. **implementation_planner_*** - Creates detailed implementation plans from specs (writes to `docs/implementation_plans/<branch_name>.md`)
+1. **technical_product_manager** - Transforms ideas into product specifications (writes to `{PLANS_DIR}/{JIRA_ISSUE}/spec.md`, `research.md`, `decisions.md`)
+2. **implementation_planner_*** - Creates detailed implementation plans from specs (writes to `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`)
 3. **software_engineer_*** - Writes production code following language-specific standards (reads plan if exists)
 4. **unit_tests_writer_*** - Writes tests with a bug-hunting mindset
 5. **code_reviewer_*** - Validates implementation against requirements, provides structured feedback
 
 ## Configuration
 
-### Paths (Single Source of Truth)
+See **[config.md](config.md)** for configurable paths (single source of truth).
 
-| Path | Default | Purpose |
-|------|---------|---------|
-| `PLANS_DIR` | `docs/implementation_plans` | Implementation plans location |
-| `SPEC_FILE` | `docs/spec.md` | Product specification |
-| `RESEARCH_FILE` | `docs/research.md` | Research findings |
-| `DECISIONS_FILE` | `docs/decisions.md` | Decision log |
-
-All agents should use these configured paths rather than hardcoding.
+All project documentation is organized by Jira issue under `{PLANS_DIR}/{JIRA_ISSUE}/`:
+- `plan.md` - Implementation plan
+- `spec.md` - Product specification
+- `research.md` - Research findings
+- `decisions.md` - Decision log
 
 ## Key Conventions
 
 ### Task Identification
 All planners and reviewers expect branch naming convention: `JIRAPRJ-123_name_of_the_branch`
-- Task ID extracted from branch: `git branch --show-current | cut -d'_' -f1`
-- Plans stored in: `{PLANS_DIR}/<branch_name>.md`
+- Jira issue extracted from branch: `git branch --show-current | cut -d'_' -f1`
+- Project directory: `{PLANS_DIR}/{JIRA_ISSUE}/`
 
 ### Common Principles Across Agents
 - **No new dependencies** - Use stdlib and existing project dependencies only

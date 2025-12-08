@@ -16,14 +16,15 @@ Check for project markers:
 ### 2. Gather Context
 
 ```bash
-# Get branch and potential Jira ticket
-git branch --show-current
+# Get branch and Jira issue
+BRANCH=$(git branch --show-current)
+JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
 
 # Get changes for review
 git diff main...HEAD
 ```
 
-Check if implementation plan exists at `{PLANS_DIR}/<branch>.md` (see CLAUDE.md for configured path)
+Check if implementation plan exists at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md` (see config.md for configured path)
 
 ### 3. Run Appropriate Agent
 

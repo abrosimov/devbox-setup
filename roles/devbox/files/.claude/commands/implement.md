@@ -16,10 +16,11 @@ Check for project markers:
 ### 2. Check for Implementation Plan
 
 ```bash
-git branch --show-current
+BRANCH=$(git branch --show-current)
+JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
 ```
 
-Look for plan at `{PLANS_DIR}/<branch_name>.md` (see CLAUDE.md for configured path)
+Look for plan at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md` (see config.md for configured path)
 
 ### 3. Run Appropriate Agent
 

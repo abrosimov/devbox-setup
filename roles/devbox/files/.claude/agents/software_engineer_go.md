@@ -55,12 +55,12 @@ type RetryingUserFetcher struct { /* ... */ }
 func GetUser(ctx context.Context, id string) (*User, error) {
     req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL+id, nil)
     if err != nil {
-        return nil, fmt.Errorf("creating request: %w", err)
+        return nil, fmt.Errorf("failed to create request: %w", err)
     }
 
     resp, err := httpClient.Do(req)
     if err != nil {
-        return nil, fmt.Errorf("fetching user %s: %w", id, err)
+        return nil, fmt.Errorf("failed to fetch user %s: %w", id, err)
     }
     defer resp.Body.Close() // safe: per http.Client.Do docs, Body is nil or already closed on error
 
@@ -70,7 +70,7 @@ func GetUser(ctx context.Context, id string) (*User, error) {
 
     var u User
     if err := json.NewDecoder(resp.Body).Decode(&u); err != nil {
-        return nil, fmt.Errorf("decoding user %s: %w", id, err)
+        return nil, fmt.Errorf("failed to decode user %s: %w", id, err)
     }
     return &u, nil
 }
@@ -110,40 +110,120 @@ func GetOrder(id OrderID) (*Order, error)
 user, _ := GetUser(orderID)  // ERROR: cannot use orderID (OrderID) as UserID
 ```
 
-##### Working with Defined Types and Literals
+##### The Conversion Rule
 
-Go's untyped constants (literals) are implicitly assignable to compatible defined types. **Avoid redundant conversions** when passing literals:
+**Same-type operations NEVER need conversion.** Only convert when crossing type boundaries.
 
+| When | Convert? | Example |
+|------|----------|---------|
+| Same types | ❌ Never | `userID == otherUserID` |
+| Literal to defined type | ❌ Implicit | `GetUser("test-id")` |
+| Typed var to same type | ❌ Never | `ids = append(ids, existingID)` |
+| Underlying type required | ✅ Yes | `strings.Contains(string(name), "-")` |
+| Cross defined types | ✅ Yes | `TargetType(string(source))` |
+
+##### Anti-Patterns by Context
+
+**Comparisons:**
 ```go
-type ResourceName string
+// BAD — casting away type safety
+cond.Type == string(clusterv1alpha1.ClusterConditionReady)
+userID == UserID(otherID)  // if otherID is already UserID
 
-// BAD — redundant conversion, literal is already assignable
-doSomething(ResourceName("my-resource"))
-client.Get(ctx, ResourceName("test"))
-
-// GOOD — Go handles implicit assignment
-doSomething("my-resource")
-client.Get(ctx, "test")
+// GOOD — direct comparison
+cond.Type == clusterv1alpha1.ClusterConditionReady
+userID == otherID
 ```
 
-**When explicit conversion IS required:**
+**Switch statements (critical — affects exhaustiveness):**
+```go
+// BAD — defeats exhaustive linter, uses raw strings
+switch string(status) {
+case "active":   // not type-checked
+case "pending":
+}
+
+// GOOD — exhaustive linter catches missing cases
+switch status {
+case StatusActive:
+case StatusPending:
+// linter error if StatusFailed not handled
+}
+```
+
+**Map operations:**
+```go
+// BAD — unnecessary conversion
+users[UserID(id)]
+delete(users, UserID(id))
+
+// GOOD
+users[id]
+delete(users, id)
+```
+
+**Slice operations:**
+```go
+// BAD
+slices.Contains(ids, UserID(target))
+ids = append(ids, UserID(newID))
+
+// GOOD
+slices.Contains(ids, target)
+ids = append(ids, newID)
+```
+
+**Struct initialization:**
+```go
+// BAD — redundant if id is already UserID
+user := User{ID: UserID(id)}
+
+// GOOD
+user := User{ID: id}
+```
+
+**Format strings:**
+```go
+// UNNECESSARY — fmt verbs work with defined types
+fmt.Errorf("user %s not found", string(userID))
+
+// GOOD — Go handles this
+fmt.Errorf("user %s not found", userID)
+
+// BUT: methods requiring underlying type DO need conversion
+log.Info().Str("userID", string(userID))  // Str(key, val string) — conversion required
+strings.HasPrefix(string(name), "test-")  // HasPrefix(s, prefix string) — conversion required
+```
+
+**Constants — always use typed:**
+```go
+// BAD — untyped constant defeats type system
+const DefaultStatus = "active"
+
+// GOOD — typed constant
+const DefaultStatus Status = "active"
+```
+
+##### When Conversion IS Required
 
 | Scenario | Example | Why |
 |----------|---------|-----|
-| Typed variable | `ResourceName(stringVar)` | Variable has concrete type `string` |
-| Expression with typed operand | `ResourceName("prefix-" + stringVar)` | Result inherits type from typed operand |
-| Function return value | `ResourceName(getName())` | Functions return typed values |
-| Between defined types | `TargetName(string(sourceName))` | Must go through underlying type |
+| Typed variable to same defined type | Never needed | Same type |
+| String variable → defined type | `UserID(stringVar)` | Crossing type boundary |
+| Function return → defined type | `UserID(getName())` | Function returns typed value |
+| Between defined types | `Target(string(source))` | Must go through underlying |
+| API requires underlying type | `strings.Cut(string(name), "-")` | stdlib expects string |
+| Logging with typed methods | `Str("id", string(userID))` | Method signature |
 
 ```go
-var name string = "test"
-process(ResourceName(name))             // Required: typed variable
-process(ResourceName("prefix-" + name)) // Required: typed operand in expression
-process(ResourceName(getDefault()))     // Required: function return
+var rawID string = "123"
+process(UserID(rawID))             // Required: string → UserID
+process(UserID(getID()))           // Required: func returns string
+process(UserID(string(orderID)))   // Required: OrderID → string → UserID
 
-// But NOT required for pure literals:
-process("my-resource")                  // OK: untyped constant
-process("prefix-" + "suffix")           // OK: both operands untyped
+// But NOT required:
+process(existingUserID)            // Already UserID
+process("literal-id")              // Untyped literal
 ```
 
 This applies to all primitive-based defined types: `type Name string`, `type Count int`, `type Ratio float64`.
@@ -510,6 +590,134 @@ func NewOrderService(repo OrderRepository, cfg OrderServiceConfig, logger zerolo
 - Avoids copying potentially large structs
 - Makes dependency relationship explicit
 
+### Function Arguments — Pointer vs Value
+
+**Use a pragmatic approach: analyze the trade-offs, not dogma.**
+
+#### Decision Framework
+
+| Factor | Use Value | Use Pointer |
+|--------|-----------|-------------|
+| **Mutability** | Read-only access | Must modify the struct |
+| **Size** | Small structs (≤3-4 fields, no slices/maps) | Large structs, contains slices/maps |
+| **Nil semantics** | Zero value is valid | Must distinguish nil from empty |
+| **Copy safety** | Plain data | Contains sync.Mutex, channels, pointers |
+| **Frequency** | Hot path, high-frequency calls | Infrequent calls |
+
+#### Small Model Structs — Pass by Value
+
+For small, plain-data models, **prefer passing by value**:
+
+```go
+// GOOD — small model, pass by value
+type Coordinates struct {
+    Lat  float64
+    Long float64
+}
+
+func Distance(from, to Coordinates) float64 {
+    // from and to are copies — safe, no nil checks needed
+    return haversine(from.Lat, from.Long, to.Lat, to.Long)
+}
+
+// GOOD — small identifier/result types by value
+type UserID struct {
+    TenantID string
+    ID       string
+}
+
+func GetUser(ctx context.Context, id UserID) (*User, error) {
+    // id cannot be nil, zero value is obvious
+}
+
+// BAD — unnecessary pointer for small read-only struct
+func Distance(from, to *Coordinates) float64 {
+    if from == nil || to == nil {  // now you need nil checks
+        return 0
+    }
+    return haversine(from.Lat, from.Long, to.Lat, to.Long)
+}
+```
+
+**Benefits of value for small structs:**
+- No nil checks required — eliminates a class of bugs
+- Clear ownership — caller's data cannot be modified
+- Often faster — small structs fit in registers, no heap allocation
+- Simpler reasoning — no aliasing concerns
+
+#### When Pointers ARE Required
+
+```go
+// 1. MUTABILITY — function must modify the struct
+func (u *User) SetEmail(email string) {
+    u.Email = email  // modifies receiver
+}
+
+// 2. NIL SEMANTICS — must distinguish "not provided" from "empty"
+func UpdateUser(ctx context.Context, id UserID, patch *UserPatch) error {
+    if patch == nil {
+        return nil  // nothing to update
+    }
+    // patch.Name == nil means "don't change", patch.Name == "" means "set to empty"
+}
+
+// 3. LARGE STRUCTS — avoid expensive copies
+type Report struct {
+    Header   Header
+    Sections []Section  // slice = pointer internally, but struct is large
+    Metadata map[string]string
+    RawData  []byte
+}
+
+func Process(r *Report) error {
+    // Report is large, copying would be wasteful
+}
+
+// 4. COPY-UNSAFE — contains fields that must not be copied
+type Worker struct {
+    mu      sync.Mutex  // MUST NOT be copied
+    results chan Result
+}
+
+func (w *Worker) Run() { }  // pointer receiver required
+```
+
+#### Risk/Effort Analysis
+
+When choosing, ask:
+
+| Question | If Yes → |
+|----------|----------|
+| Do I need to modify it? | Pointer |
+| Is nil a valid/meaningful state? | Pointer |
+| Does it contain sync primitives or channels? | Pointer |
+| Is it large (>64 bytes or contains slices/maps)? | Pointer |
+| Is it small, plain data, read-only? | **Value** |
+
+**Default for models:**
+- Small models (ID types, coordinates, money, timestamps) → **value**
+- Domain entities with many fields → **pointer**
+- DTOs in hot paths → measure, but often value is fine
+
+#### Return Values — Same Principles
+
+```go
+// GOOD — small result type by value
+func ParseCoordinates(s string) (Coordinates, error) {
+    // caller gets a copy, no allocation
+}
+
+// GOOD — larger entity by pointer (common pattern)
+func GetUser(ctx context.Context, id UserID) (*User, error) {
+    // User is larger, may be cached, pointer is idiomatic
+}
+
+// GOOD — nil means "not found" (pointer required for semantics)
+func FindUser(ctx context.Context, id UserID) (*User, error) {
+    // returns (nil, nil) for not found
+}
+```
+
 ### Variable Names
 Length correlates with scope distance — short names for short scopes:
 
@@ -725,6 +933,47 @@ var t []string
 t := []string{}
 ```
 
+### Building Slices — Append Over Index Assignment
+When building a slice from iteration, prefer `make([]T, 0, cap)` + `append` over `make([]T, len)` + index assignment:
+
+```go
+// GOOD — safe, idiomatic, works with filters/breaks
+docs := make([]any, 0, len(entities))
+for _, entity := range entities {
+    docs = append(docs, entity)
+}
+
+// AVOID — unless you specifically need index-based access
+docs := make([]any, len(entities))
+for i, entity := range entities {
+    docs[i] = entity
+}
+```
+
+**Why append is the default:**
+- **Safe**: If loop has `continue`, `break`, or filter conditions, no zero-value gaps
+- **Flexible**: Adding filters later doesn't break the code
+- **Self-documenting**: Clearly shows "building up a collection"
+
+**When index assignment IS appropriate:**
+- Parallel processing where each goroutine writes to its own index
+- Out-of-order filling based on calculated indices
+- Strict 1:1 mapping where position matters (e.g., `results[i]` corresponds to `inputs[i]`)
+
+```go
+// GOOD use of index assignment — parallel processing
+results := make([]Result, len(items))
+var wg sync.WaitGroup
+for i, item := range items {
+    wg.Add(1)
+    go func(idx int, it Item) {
+        defer wg.Done()
+        results[idx] = process(it)  // each goroutine owns its index
+    }(i, item)
+}
+wg.Wait()
+```
+
 ### Maps
 Use comma-ok idiom to distinguish missing from zero:
 
@@ -901,26 +1150,64 @@ result, _ := doSomething()
 // GOOD
 result, err := doSomething()
 if err != nil {
-    return fmt.Errorf("doing something: %w", err)
+    return fmt.Errorf("failed to do something: %w", err)
 }
 ```
 
 ### Error String Format
-Lowercase, no punctuation, no prefix redundancy:
+
+Use "failed to [verb]" prefix for wrapped errors. Lowercase, no trailing punctuation:
 
 ```go
-// GOOD
+// GOOD — explicit failure, lowercase
+return fmt.Errorf("failed to open file: %w", err)
+return fmt.Errorf("failed to fetch user %s: %w", userID, err)
+
+// BAD — gerund without context (unclear if success or failure)
 return fmt.Errorf("opening file: %w", err)
 
 // BAD — capitals, punctuation
-return fmt.Errorf("Opening file failed: %w.", err)
+return fmt.Errorf("Failed to open file: %w.", err)
+```
+
+**Error message patterns:**
+
+| Error Type | Pattern | Example |
+|------------|---------|---------|
+| Wrapped error | `failed to [verb]: %w` | `failed to connect: %w` |
+| Direct error | State the problem | `client is required` |
+| Sentinel error | Short noun phrase | `not found` |
+| Unexpected state | `unexpected [noun]` | `unexpected status 404` |
+
+```go
+// Wrapped errors — "failed to [verb]"
+return fmt.Errorf("failed to create request: %w", err)
+return fmt.Errorf("failed to decode response: %w", err)
+
+// Direct errors — state the problem
+return errors.New("client is required")
+return errors.New("port must be between 1 and 65535")
+
+// Sentinel errors — short, used with errors.Is()
+var ErrNotFound = errors.New("not found")
+var ErrTimeout = errors.New("timeout")
+
+// Unexpected state — "unexpected [noun]"
+return fmt.Errorf("unexpected status %d for user %s", code, userID)
+return fmt.Errorf("unexpected response type: %T", resp)
 ```
 
 ### Wrap with %w
+
 Place `%w` at end for consistent chain printing:
 
 ```go
-return fmt.Errorf("fetching user %s: %w", userID, err)
+return fmt.Errorf("failed to fetch user %s: %w", userID, err)
+```
+
+Error chains read naturally:
+```
+failed to process order: failed to charge payment: failed to connect to gateway: timeout
 ```
 
 Use `%v` at system boundaries (RPC, storage) to transform errors.
@@ -1301,7 +1588,7 @@ import (
 func readConfig(path string) (Config, error) {
     data, err := os.ReadFile(path)
     if err != nil {
-        return Config{}, errors.Wrap(err, "reading config file")  // captures stack
+        return Config{}, errors.Wrap(err, "failed to read config file")  // captures stack
     }
     // ...
 }
@@ -1310,7 +1597,7 @@ func readConfig(path string) (Config, error) {
 func initApp(configPath string) error {
     cfg, err := readConfig(configPath)
     if err != nil {
-        return fmt.Errorf("initializing app: %w", err)  // preserves stack from origin
+        return fmt.Errorf("failed to initialize app: %w", err)  // preserves stack from origin
     }
     // ...
 }
@@ -1354,15 +1641,15 @@ func ProcessOrder(ctx context.Context, order Order) error {
 func ProcessOrder(ctx context.Context, order Order) error {
     if err := validateOrder(order); err != nil {
         s.logger.Error().Err(err).Str("orderID", order.ID).Msg("order validation failed")
-        return fmt.Errorf("validating order: %w", err)
+        return fmt.Errorf("failed to validate order: %w", err)
     }
     if err := chargePayment(ctx, order); err != nil {
         s.logger.Error().Err(err).Str("orderID", order.ID).Msg("payment charge failed")
-        return fmt.Errorf("charging payment: %w", err)
+        return fmt.Errorf("failed to charge payment: %w", err)
     }
     if err := sendConfirmation(ctx, order); err != nil {
         s.logger.Error().Err(err).Str("orderID", order.ID).Msg("confirmation email failed")
-        return fmt.Errorf("sending confirmation: %w", err)
+        return fmt.Errorf("failed to send confirmation: %w", err)
     }
     return nil
 }
@@ -1379,7 +1666,7 @@ logger.Fatal().Err(err).Msg("database connection failed")
 func connectDB(ctx context.Context) (*DB, error) {
     db, err := sql.Open("postgres", connStr)
     if err != nil {
-        return nil, fmt.Errorf("opening database: %w", err)
+        return nil, fmt.Errorf("failed to open database: %w", err)
     }
     return db, nil
 }
@@ -1397,7 +1684,7 @@ func main() {
 func run(logger zerolog.Logger) error {
     db, err := connectDB(ctx)
     if err != nil {
-        return fmt.Errorf("connecting to database: %w", err)
+        return fmt.Errorf("failed to connect to database: %w", err)
     }
     defer db.Close()
     // ...
@@ -1439,6 +1726,217 @@ project/
 └── go.sum
 ```
 
+## Layer Separation — No Leaky Abstractions
+
+**Public APIs must be scoped and small. Implementation details must never leak across layer boundaries.**
+
+### The Three Entity Layers
+
+Every application has three distinct entity types that MUST remain separate:
+
+| Layer | Entities | Purpose | Location |
+|-------|----------|---------|----------|
+| **API** | DTOs, Request/Response structs | External contract, serialization | `internal/handler/`, `internal/api/` |
+| **Domain** | Business logic entities | Core business rules, validation | `internal/domain/`, `internal/service/` |
+| **DBAL** | Repository models, DB structs | Persistence concerns, queries | `internal/repository/`, `internal/store/` |
+
+### Conversion Flow — Always Through Domain
+
+```
+Inbound:   API → Domain → DBAL
+Outbound:  DBAL → Domain → API
+```
+
+**Direct conversion between API and DBAL is FORBIDDEN.**
+
+```go
+// BAD — API entity directly used in database layer
+func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+    var req CreateUserRequest
+    json.NewDecoder(r.Body).Decode(&req)
+
+    h.repo.Insert(req)  // WRONG: API struct passed to repository
+}
+
+// BAD — DBAL entity directly returned in API response
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
+    dbUser := h.repo.FindByID(id)
+
+    json.NewEncoder(w).Encode(dbUser)  // WRONG: DB struct in API response
+}
+
+// GOOD — proper layer separation with domain as intermediary
+func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+    var req CreateUserRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        respondError(w, http.StatusBadRequest, err)
+        return
+    }
+
+    // API → Domain
+    user := req.ToDomain()
+
+    // Domain handles business logic
+    createdUser, err := h.service.CreateUser(r.Context(), user)
+    if err != nil {
+        respondError(w, http.StatusInternalServerError, err)
+        return
+    }
+
+    // Domain → API
+    json.NewEncoder(w).Encode(UserResponse{}.FromDomain(createdUser))
+}
+
+// In service layer
+func (s *UserService) CreateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
+    // Business validation
+    if err := user.Validate(); err != nil {
+        return nil, fmt.Errorf("invalid user: %w", err)
+    }
+
+    // Domain → DBAL
+    dbUser := repository.UserModel{}.FromDomain(user)
+
+    if err := s.repo.Insert(ctx, dbUser); err != nil {
+        return nil, fmt.Errorf("failed to insert user: %w", err)
+    }
+
+    // DBAL → Domain
+    return dbUser.ToDomain(), nil
+}
+```
+
+### Entity Definition by Layer
+
+```go
+// internal/handler/user_dto.go — API layer
+type CreateUserRequest struct {
+    Email    string `json:"email"`
+    Name     string `json:"name"`
+    Password string `json:"password"`  // accepted but never stored
+}
+
+func (r CreateUserRequest) ToDomain() *domain.User {
+    return &domain.User{
+        Email: domain.Email(r.Email),
+        Name:  r.Name,
+    }
+}
+
+type UserResponse struct {
+    ID    string `json:"id"`
+    Email string `json:"email"`
+    Name  string `json:"name"`
+}
+
+func (UserResponse) FromDomain(u *domain.User) UserResponse {
+    return UserResponse{
+        ID:    string(u.ID),
+        Email: string(u.Email),
+        Name:  u.Name,
+    }
+}
+
+// internal/domain/user.go — Domain layer
+type UserID string
+type Email string
+
+type User struct {
+    ID           UserID
+    Email        Email
+    Name         string
+    PasswordHash []byte  // internal, never in API
+    CreatedAt    time.Time
+    UpdatedAt    time.Time
+}
+
+func (u *User) Validate() error {
+    if u.Email == "" {
+        return errors.New("email is required")
+    }
+    // ... business validation rules
+    return nil
+}
+
+// internal/repository/user_model.go — DBAL layer
+type UserModel struct {
+    ID           string    `db:"id"`
+    Email        string    `db:"email"`
+    Name         string    `db:"name"`
+    PasswordHash []byte    `db:"password_hash"`
+    CreatedAt    time.Time `db:"created_at"`
+    UpdatedAt    time.Time `db:"updated_at"`
+    DeletedAt    *time.Time `db:"deleted_at"`  // soft delete, not in domain
+}
+
+func (UserModel) FromDomain(u *domain.User) UserModel {
+    return UserModel{
+        ID:           string(u.ID),
+        Email:        string(u.Email),
+        Name:         u.Name,
+        PasswordHash: u.PasswordHash,
+        CreatedAt:    u.CreatedAt,
+        UpdatedAt:    u.UpdatedAt,
+    }
+}
+
+func (m UserModel) ToDomain() *domain.User {
+    return &domain.User{
+        ID:           domain.UserID(m.ID),
+        Email:        domain.Email(m.Email),
+        Name:         m.Name,
+        PasswordHash: m.PasswordHash,
+        CreatedAt:    m.CreatedAt,
+        UpdatedAt:    m.UpdatedAt,
+    }
+}
+```
+
+### Why Layer Separation Matters
+
+| Problem | Consequence |
+|---------|-------------|
+| API struct in DB layer | DB schema changes break API contract |
+| DB struct in API response | Internal fields leak (deleted_at, password_hash) |
+| No domain layer | Business logic scattered across handlers and repos |
+| Direct API↔DBAL conversion | Tight coupling, impossible to test layers independently |
+
+**Benefits of proper separation:**
+- **Independent evolution** — Change DB schema without touching API
+- **Security** — Internal fields never accidentally exposed
+- **Testability** — Mock at layer boundaries with clear contracts
+- **Business logic isolation** — Domain rules in one place, not scattered
+
+### Conversion Method Placement
+
+| Conversion | Method Location | Receiver |
+|------------|-----------------|----------|
+| API → Domain | API struct | `func (r Request) ToDomain() *domain.Entity` |
+| Domain → API | API struct | `func (Response) FromDomain(e *domain.Entity) Response` |
+| Domain → DBAL | DBAL struct | `func (Model) FromDomain(e *domain.Entity) Model` |
+| DBAL → Domain | DBAL struct | `func (m Model) ToDomain() *domain.Entity` |
+
+**Rationale:** The outer layer (API, DBAL) knows about the inner layer (Domain), but Domain never imports API or DBAL packages. This maintains proper dependency direction.
+
+### Interface Boundaries
+
+Keep interfaces minimal at layer boundaries:
+
+```go
+// internal/service/user_service.go — defines what it needs from repository
+type UserRepository interface {
+    Insert(ctx context.Context, user UserModel) error
+    FindByID(ctx context.Context, id string) (*UserModel, error)
+    FindByEmail(ctx context.Context, email string) (*UserModel, error)
+}
+
+// internal/handler/user_handler.go — defines what it needs from service
+type UserService interface {
+    CreateUser(ctx context.Context, user *domain.User) (*domain.User, error)
+    GetUser(ctx context.Context, id domain.UserID) (*domain.User, error)
+}
+```
+
 ## Working with Remote Systems
 
 A pragmatic engineer anticipates standard failures in distributed systems.
@@ -1456,7 +1954,7 @@ defer cancel()
 
 req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 if err != nil {
-    return fmt.Errorf("creating request: %w", err)
+    return fmt.Errorf("failed to create request: %w", err)
 }
 
 resp, err := client.Do(req)
@@ -1464,7 +1962,7 @@ if err != nil {
     if errors.Is(err, context.DeadlineExceeded) {
         return fmt.Errorf("request timed out: %w", err)
     }
-    return fmt.Errorf("request failed: %w", err)
+    return fmt.Errorf("failed to execute request: %w", err)
 }
 ```
 
@@ -1537,7 +2035,7 @@ func CreateOrder(ctx context.Context, userID string, items []Item) error {
     // Fetch external data BEFORE transaction
     user, err := userService.Get(ctx, userID)
     if err != nil {
-        return fmt.Errorf("fetching user: %w", err)
+        return fmt.Errorf("failed to fetch user: %w", err)
     }
     if !user.CanOrder() {
         return ErrUserCannotOrder
@@ -1545,7 +2043,7 @@ func CreateOrder(ctx context.Context, userID string, items []Item) error {
 
     inventory, err := inventoryService.Check(ctx, items)
     if err != nil {
-        return fmt.Errorf("checking inventory: %w", err)
+        return fmt.Errorf("failed to check inventory: %w", err)
     }
 
     // NOW start transaction with all data ready

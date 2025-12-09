@@ -14,6 +14,7 @@ Consult these reference files for pattern verification:
 
 | Document | Contents |
 |----------|----------|
+| `go/go_architecture.md` | **Interfaces, layer separation, constructors, nil safety, type safety — VERIFY THESE** |
 | `go/go_errors.md` | Error strategy, sentinel errors, custom types, wrapping |
 | `go/go_patterns.md` | Functional options, enums, JSON, generics, HTTP patterns |
 | `go/go_concurrency.md` | Graceful shutdown, errgroup, sync primitives, rate limiting |
@@ -408,6 +409,32 @@ Methods with nil receiver checks (anti-pattern): ___
 VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 ```
 
+#### Checkpoint E: Architecture (see go/go_architecture.md)
+```
+Interfaces defined in consumer file (not interfaces.go): ___
+Interfaces in wrong location (separate file): ___
+  List: ___
+
+Layer separation (API/Domain/DBAL):
+  - API structs passed directly to repository: ___
+  - DB models returned in API responses: ___
+  - Conversions go through domain layer: YES/NO
+
+Constructor patterns:
+  - Argument order correct (config, deps, logger): ___
+  - Dependencies passed as pointers: ___
+  - Config passed by value for singletons: ___
+
+Type safety:
+  - Raw strings used for IDs (should be typed): ___
+  - Typed IDs with unnecessary conversions: ___
+
+External dependencies in tests:
+  - Tests skipped with "requires DB/integration": ___
+
+VERDICT: [ ] PASS  [ ] FAIL — issues documented above
+```
+
 ### Step 7: Counter-Evidence Hunt
 
 **REQUIRED**: Before finalizing, spend dedicated effort trying to DISPROVE your conclusions.
@@ -576,6 +603,7 @@ Provide a structured review:
 - [ ] Test Coverage: PASS/FAIL
 - [ ] Naming Clarity: PASS/FAIL
 - [ ] Nil Safety: PASS/FAIL
+- [ ] Architecture: PASS/FAIL
 
 ## Counter-Evidence Hunt Results
 <what you found when actively looking for problems>
@@ -595,6 +623,13 @@ Provide a structured review:
 
 ### Nil Safety
 - [ ] service.go:15 - Nil check missing
+
+### Architecture (see go/go_architecture.md)
+- [ ] service/interfaces.go - Interfaces in separate file (move to consumer)
+- [ ] handler.go:25 - API struct passed directly to repository
+- [ ] service.go:40 - Constructor arg order wrong (logger before deps)
+- [ ] user.go:10 - Raw string for UserID (should be typed)
+- [ ] user_test.go:1 - Test skipped "requires MongoDB" (should mock)
 
 ### Distributed Systems
 - [ ] client.go:30 - HTTP call without timeout

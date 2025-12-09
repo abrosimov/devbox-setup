@@ -28,11 +28,36 @@ You are **antagonistic** to the code under test:
 
 Write tests for files containing business logic: functions, methods with behavior, algorithms, validations, transformations.
 
+**IMPORTANT: Mock external dependencies, don't skip testing.**
+
+Code that interacts with databases (PostgreSQL, MongoDB, Redis), message queues, HTTP clients, or other external systems MUST be tested by mocking those dependencies. Never skip testing such code with comments like "requires integration tests" or "requires database".
+
+```python
+# BAD — skipping tests for code with external dependencies
+# "Not tested (requires PostgreSQL): Repository, Connection, Transaction"
+
+# GOOD — mock the database and test the business logic
+class TestUserService:
+    def test_get_user_not_found(self, mocker):
+        mock_repo = mocker.Mock()
+        mock_repo.find_by_id.return_value = None
+
+        service = UserService(repository=mock_repo)
+
+        with pytest.raises(UserNotFoundError):
+            service.get_user("unknown-id")
+
+        mock_repo.find_by_id.assert_called_once_with("unknown-id")
+```
+
+**Unit tests verify business logic with mocked dependencies. Integration tests verify the actual database/network calls — that's a separate concern.**
+
 Skip tests for:
 - Dataclasses / Pydantic models without methods
 - Constants and configuration
 - Type definitions / TypedDicts / Protocols (without implementation)
 - `__init__.py` that only re-exports
+- Thin wrappers that only delegate to external SDKs with no business logic (but DO test the code that USES those wrappers)
 
 ## Bug-Hunting Scenarios
 
@@ -210,6 +235,143 @@ async def test_async_fetch():
 - Use `tmp_path` fixture for temporary files
 - Use `capsys` fixture to capture stdout/stderr
 
+## Testing Code with External Dependencies (Databases, APIs)
+
+**Always mock external dependencies.** The goal of unit tests is to verify YOUR code's logic, not the database driver or HTTP client.
+
+### Mocking Database Operations
+
+```python
+from unittest.mock import Mock, AsyncMock
+import pytest
+
+class TestOrderService:
+    """Test OrderService with mocked repository."""
+
+    def test_create_order_success(self, mocker):
+        # Setup mock repository
+        mock_repo = mocker.Mock()
+        mock_repo.insert.return_value = None
+
+        service = OrderService(repository=mock_repo)
+
+        # Execute
+        order = Order(items=[Item(id="item-1", qty=2)])
+        service.create_order(order)
+
+        # Verify repository was called correctly
+        mock_repo.insert.assert_called_once()
+        saved_order = mock_repo.insert.call_args[0][0]
+        assert saved_order.status == OrderStatus.PENDING
+        assert len(saved_order.items) == 1
+
+    def test_create_order_empty_items(self, mocker):
+        mock_repo = mocker.Mock()
+        service = OrderService(repository=mock_repo)
+
+        with pytest.raises(ValidationError, match="at least one item required"):
+            service.create_order(Order(items=[]))
+
+        # Repository should NOT be called — validation fails first
+        mock_repo.insert.assert_not_called()
+
+    def test_create_order_db_error(self, mocker):
+        mock_repo = mocker.Mock()
+        mock_repo.insert.side_effect = DatabaseError("connection refused")
+
+        service = OrderService(repository=mock_repo)
+
+        with pytest.raises(ServiceError, match="failed to create order"):
+            service.create_order(Order(items=[Item(id="item-1", qty=2)]))
+
+
+class TestUserRepository:
+    """Test repository implementation with mocked database session."""
+
+    def test_find_by_id_success(self, mocker):
+        # Mock the database session
+        mock_session = mocker.Mock()
+        expected_user = User(id="user-123", name="John")
+        mock_session.query.return_value.filter.return_value.first.return_value = expected_user
+
+        repo = UserRepository(session=mock_session)
+        result = repo.find_by_id("user-123")
+
+        assert result == expected_user
+        mock_session.query.assert_called_once_with(UserModel)
+
+    def test_find_by_id_not_found(self, mocker):
+        mock_session = mocker.Mock()
+        mock_session.query.return_value.filter.return_value.first.return_value = None
+
+        repo = UserRepository(session=mock_session)
+
+        with pytest.raises(NotFoundError):
+            repo.find_by_id("unknown")
+
+
+# Async database operations
+class TestAsyncOrderService:
+    @pytest.mark.asyncio
+    async def test_get_order_success(self, mocker):
+        mock_repo = mocker.AsyncMock()
+        expected_order = Order(id="order-123")
+        mock_repo.find_by_id.return_value = expected_order
+
+        service = OrderService(repository=mock_repo)
+        result = await service.get_order("order-123")
+
+        assert result == expected_order
+        mock_repo.find_by_id.assert_awaited_once_with("order-123")
+```
+
+### Mocking MongoDB-style Operations
+
+```python
+class TestMongoRepository:
+    def test_find_one_success(self, mocker):
+        mock_collection = mocker.Mock()
+        mock_collection.find_one.return_value = {"_id": "user-123", "name": "John"}
+
+        repo = UserRepository(collection=mock_collection)
+        result = repo.find_by_id("user-123")
+
+        assert result.id == "user-123"
+        assert result.name == "John"
+        mock_collection.find_one.assert_called_once_with({"_id": "user-123"})
+
+    def test_find_one_not_found(self, mocker):
+        mock_collection = mocker.Mock()
+        mock_collection.find_one.return_value = None
+
+        repo = UserRepository(collection=mock_collection)
+
+        with pytest.raises(NotFoundError):
+            repo.find_by_id("unknown")
+
+    def test_insert_one_success(self, mocker):
+        mock_collection = mocker.Mock()
+        mock_collection.insert_one.return_value = mocker.Mock(inserted_id="new-id")
+
+        repo = UserRepository(collection=mock_collection)
+        repo.insert(User(name="Jane", email="jane@example.com"))
+
+        mock_collection.insert_one.assert_called_once()
+        doc = mock_collection.insert_one.call_args[0][0]
+        assert doc["name"] == "Jane"
+        assert doc["email"] == "jane@example.com"
+```
+
+### What to Test vs What to Skip
+
+| Component | Test? | How |
+|-----------|-------|-----|
+| Service using repository | ✅ Yes | Mock repository interface |
+| Repository implementation | ✅ Yes | Mock database session/collection |
+| Thin driver wrapper | ❌ Skip | No business logic, just delegation |
+| Business logic with DB calls | ✅ Yes | Mock the DB interface at the boundary |
+| Transaction coordination | ✅ Yes | Mock session, verify commit/rollback |
+
 ## Testing HTTP/Retry Behavior
 
 ```python
@@ -348,6 +510,7 @@ pytest tests/ -v
 
 - **Hunt for bugs** — test edge cases, error paths, and boundary conditions
 - Be pragmatic — test what matters, but assume bugs exist until proven otherwise
+- **Mock external dependencies** — NEVER skip testing code that uses databases, HTTP clients, or queues
 - **Verify backward compatibility** — ensure deprecated functions still work
 - Format changed lines with `black`
 - Comments explain WHY, not WHAT (two spaces before `#`, one after)
@@ -355,3 +518,12 @@ pytest tests/ -v
 - NEVER copy-paste logic from source code into tests — tests verify behavior independently
 - Keep tests independent — no shared mutable state between tests
 - Prefer explicit assertions over implicit ones
+
+## Final Checklist
+
+Before completing, verify:
+- [ ] Never copy-paste logic from source — tests verify behavior independently
+- [ ] All code with external dependencies (DB, HTTP, queues) has mocked tests — NEVER skip with "requires integration tests"
+- [ ] Repository/storage layer code is tested with mocked session/collection
+- [ ] Run tests: `pytest tests/ -v`
+- [ ] Check coverage: `pytest --cov=src --cov-report=term-missing`

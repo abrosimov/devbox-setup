@@ -14,6 +14,7 @@ Consult these reference files for patterns when writing tests:
 
 | Document | Contents |
 |----------|----------|
+| `go/go_architecture.md` | **Interfaces, constructors, nil safety, layer separation — verify these in tests** |
 | `go/go_errors.md` | Error types, sentinel errors, error wrapping patterns |
 | `go/go_patterns.md` | Enums, JSON encoding, slice patterns, HTTP patterns |
 | `go/go_concurrency.md` | Graceful shutdown, errgroup, sync primitives |
@@ -38,12 +39,42 @@ You are **antagonistic** to the code under test:
 
 Write tests for files containing business logic: functions, methods with behavior, algorithms, validations, transformations.
 
+**IMPORTANT: Mock external dependencies, don't skip testing.**
+
+Code that interacts with databases (MongoDB, PostgreSQL, Redis), message queues, HTTP clients, or other external systems MUST be tested by mocking those dependencies. Never skip testing such code with comments like "requires integration tests" or "requires MongoDB".
+
+```go
+// BAD — skipping tests for code with external dependencies
+// "Not tested (requires MongoDB): Client, Collection, Bulk, Transaction"
+
+// GOOD — mock the database interface and test the business logic
+type UserRepository interface {
+    FindByID(ctx context.Context, id UserID) (*User, error)
+    Insert(ctx context.Context, user *User) error
+}
+
+// In tests, use mockery-generated mock:
+func (s *UserServiceTestSuite) TestGetUser_NotFound() {
+    s.mockRepo.EXPECT().
+        FindByID(mock.Anything, UserID("unknown")).
+        Return(nil, repository.ErrNotFound)
+
+    user, err := s.svc.GetUser(ctx, "unknown")
+
+    s.Require().ErrorIs(err, ErrUserNotFound)
+    s.Require().Nil(user)
+}
+```
+
+**Unit tests verify business logic with mocked dependencies. Integration tests verify the actual database/network calls — that's a separate concern.**
+
 Skip tests for:
 - Structs without methods (pure data containers)
 - Constants and configuration
 - Interface definitions
 - Generated code (protobuf, mocks, etc.)
 - Scenarios the compiler prevents (typed IDs prevent wrong-type passing, exhaustive enums, etc.)
+- Thin wrappers that only delegate to external SDKs with no business logic (but DO test the code that USES those wrappers)
 
 ## Bug-Hunting Scenarios
 
@@ -134,16 +165,141 @@ func (s *ServiceTestSuite) TestNewService_Success() {
 
 ## Test file conventions
 
-- Test file: `<filename>_test.go` in **separate package** `<package>_test` (black-box testing)
-- Use `github.com/stretchr/testify/suite` for test suites
-- Use `github.com/stretchr/testify/require` via suite methods: `s.Require()`
-- Use `mockery` to generate mocks for interfaces
+**MANDATORY: Always use testify suites. Never use stdlib `testing` alone.**
+
+| Rule | Requirement |
+|------|-------------|
+| Test framework | `github.com/stretchr/testify/suite` — **ALWAYS** |
+| Assertions | `s.Require()` — **NEVER** use `s.Assert()` or standalone `assert`/`require` |
+| Package | Separate package `<package>_test` (black-box testing) |
+| Mocks | `mockery` to generate mocks for interfaces |
+
+### FORBIDDEN patterns
+
+```go
+// FORBIDDEN — stdlib testing without suite
+func TestSomething(t *testing.T) {
+    result := DoSomething()
+    if result != expected {
+        t.Errorf("got %v, want %v", result, expected)
+    }
+}
+
+// FORBIDDEN — Assert (continues on failure, hides root cause)
+func (s *MySuite) TestSomething() {
+    s.Assert().NoError(err)  // BAD: test continues after failure
+    s.Assert().Equal(expected, actual)  // BAD: may panic on nil
+}
+
+// FORBIDDEN — standalone require/assert
+func (s *MySuite) TestSomething() {
+    require.NoError(s.T(), err)  // BAD: use s.Require().NoError(err)
+    assert.Equal(s.T(), expected, actual)  // BAD
+}
+
+// FORBIDDEN — section divider comments (meaningless noise)
+// --- GetUser Tests ---
+// =====================
+// ### Create Tests ###
+
+// FORBIDDEN — separate test methods for each case (use table-driven)
+func (s *UserTestSuite) TestGetUser_Success() { ... }
+func (s *UserTestSuite) TestGetUser_NotFound() { ... }
+func (s *UserTestSuite) TestGetUser_InvalidID() { ... }
+```
+
+**No section comments.** Suite structure is self-documenting.
+
+**Prefer table-driven tests.** One `TestGetUser` method with test cases, not multiple `TestGetUser_*` methods.
+
+### REQUIRED pattern
+
+```go
+// REQUIRED — table-driven test with s.Require()
+func (s *UserServiceTestSuite) TestGetUser() {
+    tests := []struct {
+        name      string
+        userID    string
+        mockSetup func()
+        want      *User
+        wantErr   error
+    }{
+        {
+            name:   "success",
+            userID: "user-123",
+            mockSetup: func() {
+                s.mockRepo.EXPECT().
+                    FindByID(mock.Anything, "user-123").
+                    Return(&User{ID: "user-123", Name: "John"}, nil)
+            },
+            want: &User{ID: "user-123", Name: "John"},
+        },
+        {
+            name:   "not found",
+            userID: "unknown",
+            mockSetup: func() {
+                s.mockRepo.EXPECT().
+                    FindByID(mock.Anything, "unknown").
+                    Return(nil, repository.ErrNotFound)
+            },
+            wantErr: ErrUserNotFound,
+        },
+        {
+            name:   "empty id",
+            userID: "",
+            // no mock setup — validation fails before repo call
+            wantErr: ErrInvalidID,
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            if tt.mockSetup != nil {
+                tt.mockSetup()
+            }
+
+            got, err := s.service.GetUser(context.Background(), tt.userID)
+
+            if tt.wantErr != nil {
+                s.Require().ErrorIs(err, tt.wantErr)
+                s.Require().Nil(got)
+                return
+            }
+
+            s.Require().NoError(err)
+            s.Require().Equal(tt.want, got)
+        })
+    }
+}
+```
+
+**When to use separate test methods** (exceptions):
+- Complex setup that differs significantly between cases
+- Testing concurrent behavior
+- Tests that need different `SetupTest`/`TearDownTest`
 
 ### Suite hierarchy
 
-Each package has a **package-level suite** that file suites embed:
+**Structure:**
+| File | Contains | Purpose |
+|------|----------|---------|
+| `suite_test.go` | `<PackageName>TestSuite` | Shared setup, helpers — **NO tests** |
+| `<filename>_test.go` | `<ObjectName>TestSuite` | Embeds package suite + **all tests for that object** |
+
+**File structure example:**
+```
+pkg/auth/
+├── validator.go           # Contains Validator struct
+├── token_service.go       # Contains TokenService struct
+├── suite_test.go          # AuthTestSuite (shared setup, NO tests)
+├── validator_test.go      # ValidatorTestSuite → tests for Validator
+└── token_service_test.go  # TokenServiceTestSuite → tests for TokenService
+```
+
+**Step 1: Create `suite_test.go`** with package-level suite (shared setup, NO tests):
 
 ```go
+// File: pkg/auth/suite_test.go
 package auth_test
 
 import (
@@ -151,30 +307,24 @@ import (
     "github.com/stretchr/testify/suite"
 )
 
-// AuthTestSuite is the package-level suite for auth package
+// AuthTestSuite is the package-level suite.
+// Contains shared setup and helpers — NO test methods here.
 type AuthTestSuite struct {
     suite.Suite
-    // shared setup for all auth tests
 }
 
 // getLogger returns a no-op logger for tests.
-// Override in file suite if log capture is needed.
 func (s *AuthTestSuite) getLogger() zerolog.Logger {
     return zerolog.Nop()
 }
 
-func (s *AuthTestSuite) SetupSuite() {
-    // one-time package setup
-}
-
-func (s *AuthTestSuite) TearDownSuite() {
-    // one-time package cleanup
-}
+// Add other shared helpers here
 ```
 
-Each file has its own suite that **embeds the package suite**:
+**Step 2: Create `<filename>_test.go`** for each source file with business logic:
 
 ```go
+// File: pkg/auth/validator_test.go
 package auth_test
 
 import (
@@ -184,10 +334,10 @@ import (
     "myproject/pkg/auth"
 )
 
-// ValidatorTestSuite is the file-level suite for validator.go
+// ValidatorTestSuite tests the Validator struct.
 type ValidatorTestSuite struct {
     AuthTestSuite  // embed package suite
-    // file-specific fields
+    validator *auth.Validator
 }
 
 func TestValidatorTestSuite(t *testing.T) {
@@ -195,7 +345,133 @@ func TestValidatorTestSuite(t *testing.T) {
 }
 
 func (s *ValidatorTestSuite) SetupTest() {
-    // per-test setup for validator tests
+    s.validator = auth.NewValidator()
+}
+
+// Table-driven test for ValidateEmail
+func (s *ValidatorTestSuite) TestValidateEmail() {
+    tests := []struct {
+        name    string
+        email   string
+        wantErr bool
+        errMsg  string
+    }{
+        {
+            name:  "valid email",
+            email: "user@example.com",
+        },
+        {
+            name:    "invalid format",
+            email:   "invalid",
+            wantErr: true,
+        },
+        {
+            name:    "empty email",
+            email:   "",
+            wantErr: true,
+            errMsg:  "required",
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            err := s.validator.ValidateEmail(tt.email)
+
+            if tt.wantErr {
+                s.Require().Error(err)
+                if tt.errMsg != "" {
+                    s.Require().Contains(err.Error(), tt.errMsg)
+                }
+                return
+            }
+            s.Require().NoError(err)
+        })
+    }
+}
+```
+
+```go
+// File: pkg/auth/token_service_test.go
+package auth_test
+
+import (
+    "context"
+    "errors"
+    "testing"
+
+    "github.com/stretchr/testify/mock"
+    "github.com/stretchr/testify/suite"
+    "myproject/pkg/auth"
+    "myproject/pkg/auth/mocks"
+)
+
+// TokenServiceTestSuite tests the TokenService struct.
+type TokenServiceTestSuite struct {
+    AuthTestSuite  // embed package suite
+    mockStore *mocks.TokenStore
+    service   *auth.TokenService
+}
+
+func TestTokenServiceTestSuite(t *testing.T) {
+    suite.Run(t, new(TokenServiceTestSuite))
+}
+
+func (s *TokenServiceTestSuite) SetupTest() {
+    s.mockStore = mocks.NewTokenStore(s.T())
+    s.service = auth.NewTokenService(s.mockStore, s.getLogger())
+}
+
+// Table-driven test for CreateToken
+func (s *TokenServiceTestSuite) TestCreateToken() {
+    tests := []struct {
+        name      string
+        userID    string
+        mockSetup func()
+        wantErr   bool
+    }{
+        {
+            name:   "success",
+            userID: "user-123",
+            mockSetup: func() {
+                s.mockStore.EXPECT().
+                    Save(mock.Anything, mock.AnythingOfType("*auth.Token")).
+                    Return(nil)
+            },
+        },
+        {
+            name:   "store error",
+            userID: "user-123",
+            mockSetup: func() {
+                s.mockStore.EXPECT().
+                    Save(mock.Anything, mock.Anything).
+                    Return(errors.New("db error"))
+            },
+            wantErr: true,
+        },
+        {
+            name:    "empty user id",
+            userID:  "",
+            wantErr: true,
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            if tt.mockSetup != nil {
+                tt.mockSetup()
+            }
+
+            token, err := s.service.CreateToken(context.Background(), tt.userID)
+
+            if tt.wantErr {
+                s.Require().Error(err)
+                s.Require().Nil(token)
+                return
+            }
+            s.Require().NoError(err)
+            s.Require().NotEmpty(token.Value)
+        })
+    }
 }
 ```
 
@@ -578,6 +854,142 @@ func (s *ClientTestSuite) TestRespectsContextTimeout() {
 }
 ```
 
+### Testing Code with External Dependencies (Databases, APIs)
+
+**Always mock external dependencies.** The goal of unit tests is to verify YOUR code's logic, not the database driver or HTTP client.
+
+#### Mocking Database Operations
+
+```go
+// Code under test — service that uses a repository
+type OrderService struct {
+    repo   OrderRepository
+    logger zerolog.Logger
+}
+
+type OrderRepository interface {
+    FindByID(ctx context.Context, id OrderID) (*Order, error)
+    Insert(ctx context.Context, order *Order) error
+    Update(ctx context.Context, order *Order) error
+}
+
+// Tests — mock the repository, test the service logic
+type OrderServiceTestSuite struct {
+    ServiceTestSuite
+    mockRepo *mocks.OrderRepository
+    svc      *OrderService
+}
+
+func (s *OrderServiceTestSuite) SetupTest() {
+    s.mockRepo = mocks.NewOrderRepository(s.T())
+    s.svc = NewOrderService(s.mockRepo, s.getLogger())
+}
+
+func (s *OrderServiceTestSuite) TestCreateOrder_Success() {
+    ctx := context.Background()
+    order := &Order{Items: []Item{{ID: "item-1", Qty: 2}}}
+
+    s.mockRepo.EXPECT().
+        Insert(ctx, mock.MatchedBy(func(o *Order) bool {
+            return len(o.Items) == 1 && o.Status == StatusPending
+        })).
+        Return(nil)
+
+    err := s.svc.CreateOrder(ctx, order)
+
+    s.Require().NoError(err)
+}
+
+func (s *OrderServiceTestSuite) TestCreateOrder_EmptyItems() {
+    ctx := context.Background()
+    order := &Order{Items: []Item{}}
+
+    // Repository should NOT be called — validation fails first
+    err := s.svc.CreateOrder(ctx, order)
+
+    s.Require().Error(err)
+    s.Require().Contains(err.Error(), "at least one item required")
+    s.mockRepo.AssertNotCalled(s.T(), "Insert")
+}
+
+func (s *OrderServiceTestSuite) TestCreateOrder_DBError() {
+    ctx := context.Background()
+    order := &Order{Items: []Item{{ID: "item-1", Qty: 2}}}
+
+    s.mockRepo.EXPECT().
+        Insert(ctx, mock.Anything).
+        Return(errors.New("connection refused"))
+
+    err := s.svc.CreateOrder(ctx, order)
+
+    s.Require().Error(err)
+    s.Require().Contains(err.Error(), "failed to create order")
+}
+```
+
+#### Mocking MongoDB-style Operations
+
+```go
+// Interface for MongoDB collection operations
+type MongoCollection interface {
+    FindOne(ctx context.Context, filter any) SingleResult
+    InsertOne(ctx context.Context, document any) (*InsertOneResult, error)
+    UpdateOne(ctx context.Context, filter, update any) (*UpdateResult, error)
+}
+
+type SingleResult interface {
+    Decode(v any) error
+    Err() error
+}
+
+// Test with mocked collection
+func (s *UserRepoTestSuite) TestFindByID_Success() {
+    ctx := context.Background()
+    expectedUser := &User{ID: "user-123", Name: "John"}
+
+    mockResult := mocks.NewSingleResult(s.T())
+    mockResult.EXPECT().Err().Return(nil)
+    mockResult.EXPECT().Decode(mock.Anything).Run(func(v any) {
+        *v.(*User) = *expectedUser
+    }).Return(nil)
+
+    s.mockCollection.EXPECT().
+        FindOne(ctx, bson.M{"_id": "user-123"}).
+        Return(mockResult)
+
+    user, err := s.repo.FindByID(ctx, "user-123")
+
+    s.Require().NoError(err)
+    s.Require().Equal(expectedUser, user)
+}
+
+func (s *UserRepoTestSuite) TestFindByID_NotFound() {
+    ctx := context.Background()
+
+    mockResult := mocks.NewSingleResult(s.T())
+    mockResult.EXPECT().Err().Return(mongo.ErrNoDocuments)
+
+    s.mockCollection.EXPECT().
+        FindOne(ctx, bson.M{"_id": "unknown"}).
+        Return(mockResult)
+
+    user, err := s.repo.FindByID(ctx, "unknown")
+
+    s.Require().ErrorIs(err, ErrNotFound)
+    s.Require().Nil(user)
+}
+```
+
+#### What to Test vs What to Skip
+
+| Component | Test? | How |
+|-----------|-------|-----|
+| Service using repository | ✅ Yes | Mock repository interface |
+| Repository implementation | ✅ Yes | Mock database driver/collection interface |
+| Thin driver wrapper | ❌ Skip | No business logic, just delegation |
+| Business logic with DB calls | ✅ Yes | Mock the DB interface at the boundary |
+| Transaction coordination | ✅ Yes | Mock transaction interface, verify commit/rollback |
+
 ### Testing Transaction Patterns
 
 #### Pattern 1: Fetch Before Transaction
@@ -701,6 +1113,23 @@ go test -race ./path/to/package/...
 ## Final Checklist
 
 Before completing, verify:
+
+**Suite structure:**
+- [ ] Package suite `<PackageName>TestSuite` exists in `suite_test.go` (NO tests in this file)
+- [ ] Each object has `<ObjectName>TestSuite` in `<filename>_test.go` embedding package suite
+- [ ] All tests use testify suites — NO stdlib `testing` alone
+- [ ] All assertions use `s.Require()` — NO `s.Assert()`, NO standalone `require`/`assert`
+
+**Test style:**
+- [ ] Table-driven tests used — `TestGetUser` with cases, NOT `TestGetUser_Success`, `TestGetUser_Error`
+- [ ] No section divider comments (`// --- Tests ---`, `// ====`, etc.)
+- [ ] Test names match method being tested: `TestMethodName` (not `TestMethodName_Scenario`)
+
+**Test coverage:**
 - [ ] Never copy-paste logic from source — tests verify behavior independently
+- [ ] All code with external dependencies (DB, HTTP, queues) has mocked tests — NEVER skip with "requires integration tests"
+- [ ] Repository/storage layer code is tested with mocked driver interfaces
+
+**Execution:**
 - [ ] Run linters: `go vet ./...`, `staticcheck ./...`, `golangci-lint run ./...`
 - [ ] Run tests with race detector: `go test -race ./...`

@@ -17,6 +17,7 @@ Consult these reference files for detailed patterns:
 
 | Document | Contents |
 |----------|----------|
+| `go/go_architecture.md` | **Interfaces, layer separation, constructors, nil safety, type safety, distributed systems** |
 | `go/go_patterns.md` | Functional options, enums, JSON encoding, generics, slice patterns |
 | `go/go_concurrency.md` | Graceful shutdown, errgroup, sync primitives, rate limiting |
 | `go/go_errors.md` | Custom error types, error strategy, wrapping, stack traces |
@@ -1054,6 +1055,50 @@ func NewHandler(users UserGetter) *Handler {
 // In implementation package — returns concrete type
 func NewUserStore() *UserStore { ... }
 ```
+
+### Interface File Placement — Same File as Consumer
+
+**NEVER create separate `interfaces.go` files.** Define interfaces in the same file where they are used:
+
+```go
+// BAD — separate interfaces.go file
+// internal/service/interfaces.go
+type UserRepository interface { ... }
+type OrderRepository interface { ... }
+type PaymentGateway interface { ... }
+
+// GOOD — interface defined in the file that uses it
+// internal/service/user_service.go
+type UserRepository interface {
+    FindByID(ctx context.Context, id UserID) (*User, error)
+    Insert(ctx context.Context, user *User) error
+}
+
+type UserService struct {
+    repo   UserRepository
+    logger zerolog.Logger
+}
+
+func NewUserService(repo UserRepository, logger zerolog.Logger) (*UserService, error) {
+    // ...
+}
+```
+
+**Why same-file placement:**
+- **Locality** — Interface is visible where it's needed, no hunting across files
+- **Minimal scope** — Interface only exists where it's consumed
+- **Easy refactoring** — Change interface and consumer together
+- **Discourages over-abstraction** — You define only what you need
+
+**Anti-patterns to avoid:**
+| Anti-pattern | Problem |
+|--------------|---------|
+| `interfaces.go` file | Interfaces divorced from usage, encourages bloat |
+| `types.go` with interfaces | Same problem — interfaces should live with consumers |
+| Interface in implementation package | Tight coupling, defeats dependency inversion |
+| Shared interface package | Creates unnecessary coupling between consumers |
+
+**Exception:** Interfaces that are part of your public API (exported for external packages) may live in a dedicated file if they define a contract that multiple external consumers implement.
 
 ### Return Concrete Types
 Return structs, accept interfaces. Allows adding methods without breaking consumers.

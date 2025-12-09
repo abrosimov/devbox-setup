@@ -1,6 +1,6 @@
 ---
 - name: "Install necessary homebrew packages"
-  ansible.builtin.include_tasks: darwin/install_from_brew_initial.yml
+  ansible.builtin.include_tasks: darwin/install_from_brew_primary.yml
 - name: "Install configs"
   ansible.builtin.include_tasks: install_configs.yml
 - name: "Finish user polishing"

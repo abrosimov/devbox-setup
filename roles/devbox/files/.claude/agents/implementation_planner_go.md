@@ -2,7 +2,7 @@
 name: implementation-planner-go
 description: Implementation planner for Go - creates detailed implementation plans from specs or user requirements for software engineers.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
-model: opus
+model: sonnet
 ---
 
 You are a **functional analyst** creating implementation plans for Go projects.

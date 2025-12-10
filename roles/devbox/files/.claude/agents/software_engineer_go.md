@@ -413,6 +413,119 @@ Proceed with user's direct requirements:
 2. **Share by communicating** — Don't communicate by sharing memory; share memory by communicating.
 3. **Errors are values** — Program with errors using Go's full capabilities.
 4. **Accept interfaces, return structs** — Define interfaces in consumers, return concrete types.
+5. **Minimal API surface** — Export only what external packages genuinely need.
+
+## API Surface — Minimal Public Exposure
+
+**Default to unexported.** Only export what external packages genuinely need. A compact API is easier to maintain, document, and evolve without breaking changes.
+
+### The Export Question
+
+Before making ANYTHING exported (uppercase), ask:
+1. "Will code **outside this package** call/use this?"
+2. "Is this part of the **intended public contract** or an implementation detail?"
+
+If you answer "no" or "unsure" to either → **keep it unexported (lowercase)**.
+
+### What to Export vs Keep Internal
+
+| Element | Export? | Reasoning |
+|---------|---------|-----------|
+| Constructor `NewFoo` | ✅ Yes | External packages need to create instances |
+| Main types callers work with | ✅ Yes | Core API contract |
+| Methods callers invoke | ✅ Yes | Public behavior |
+| Helper functions | ❌ No | Implementation detail |
+| Internal/intermediate types | ❌ No | Support main types, not needed externally |
+| Struct fields (usually) | ❌ No | Encapsulation; expose via methods if needed |
+| Constants for internal use | ❌ No | Only export if callers genuinely need them |
+| Interfaces used only within package | ❌ No | Consumer-side interfaces stay with consumer |
+
+### Examples
+
+```go
+// BAD — over-exposed API surface
+type UserService struct {
+    Repo     UserRepository  // EXPOSED: callers can modify/replace
+    Cache    *Cache          // EXPOSED: implementation detail leaked
+    Logger   zerolog.Logger  // EXPOSED: implementation detail leaked
+}
+
+func (s *UserService) ValidateUser(u *User) error { ... }     // internal helper exported
+func (s *UserService) BuildCacheKey(id string) string { ... } // internal helper exported
+func (s *UserService) FetchFromDB(id string) (*User, error)   // implementation detail
+func (s *UserService) GetUser(id string) (*User, error) { ... }
+func (s *UserService) CreateUser(u *User) error { ... }
+
+// GOOD — minimal, intentional API surface
+type UserService struct {
+    repo   userRepository  // unexported: encapsulated
+    cache  *cache          // unexported: implementation detail
+    logger zerolog.Logger  // unexported: implementation detail
+}
+
+// Only public methods are the intended API
+func (s *UserService) GetUser(ctx context.Context, id UserID) (*User, error) { ... }
+func (s *UserService) CreateUser(ctx context.Context, u *User) error { ... }
+
+// Internal helpers stay internal
+func (s *UserService) validateUser(u *User) error { ... }
+func (s *UserService) buildCacheKey(id UserID) string { ... }
+func (s *UserService) fetchFromDB(ctx context.Context, id UserID) (*User, error) { ... }
+```
+
+### Struct Fields — Encapsulate by Default
+
+```go
+// BAD — exposed fields allow uncontrolled mutation
+type Client struct {
+    BaseURL    string        // callers can change after construction
+    HTTPClient *http.Client  // callers can replace
+    Retries    int           // callers can set invalid values
+}
+
+// GOOD — controlled through constructor, getters if needed
+type Client struct {
+    baseURL    string
+    httpClient *http.Client
+    retries    int
+}
+
+func NewClient(baseURL string, opts ...Option) (*Client, error) {
+    // Validate, set defaults, return controlled instance
+}
+
+// Only expose what callers legitimately need to read
+func (c *Client) BaseURL() string { return c.baseURL }
+```
+
+### Interfaces — Unexported Unless Public Contract
+
+```go
+// GOOD — interface used only within this package stays unexported
+type userRepository interface {
+    FindByID(ctx context.Context, id UserID) (*User, error)
+    Insert(ctx context.Context, user *User) error
+}
+
+type UserService struct {
+    repo userRepository  // consumers pass concrete type, we define our needs
+}
+
+// Export interfaces ONLY when:
+// - They're part of your public API contract
+// - External packages need to implement them
+// - They're intentionally provided for caller-side dependency injection
+```
+
+### Benefits of Minimal API
+
+| Benefit | Why It Matters |
+|---------|----------------|
+| Fewer breaking changes | Can refactor internals without affecting consumers |
+| Clearer intent | Exported = "I designed this for you to use" |
+| Better encapsulation | Internal invariants protected |
+| Smaller godoc | Only intentional API documented |
+| Prevents misuse | Callers can't depend on implementation details |
 
 ## Formatting
 

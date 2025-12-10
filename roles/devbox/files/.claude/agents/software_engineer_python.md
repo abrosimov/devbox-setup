@@ -263,6 +263,134 @@ project/
 └── README.md
 ```
 
+## New Project Setup (uv)
+
+When creating new Python projects, use `uv` for project initialization and dependency management.
+
+### Project Naming Convention
+
+All new projects MUST use the `oiai-` prefix:
+```bash
+uv init oiai-my-project --lib
+```
+
+### Project Initialization
+
+**For libraries** (reusable packages):
+```bash
+uv init oiai-my-library --lib
+cd oiai-my-library
+```
+
+**For applications** (services, CLIs):
+```bash
+uv init oiai-my-service --package
+cd oiai-my-service
+```
+
+Both create a `src/` layout:
+```
+oiai-my-project/
+├── src/
+│   └── oiai_my_project/
+│       └── __init__.py
+├── pyproject.toml
+├── .python-version
+└── README.md
+```
+
+### Adding Dependencies
+
+**Runtime dependencies:**
+```bash
+uv add requests pydantic
+```
+
+**Dev dependencies** (testing, linting):
+```bash
+uv add --dev pytest pytest-mock pytest-cov
+uv add --group lint ruff pylint mypy
+```
+
+### pyproject.toml Template
+
+```toml
+[project]
+name = "oiai-my-project"
+version = "0.1.0"
+description = "Brief description"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+    "pytest-cov>=4.1",
+]
+lint = [
+    "ruff>=0.8",
+    "pylint>=3.0",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# --- Tool Configuration ---
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP", "C4", "SIM"]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pylint.main]
+source-roots = ["src"]
+ignore-patterns = ["test_.*\\.py"]
+
+[tool.pylint.messages_control]
+disable = ["C0114", "C0115", "C0116"]  # missing docstrings
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --strict-markers"
+```
+
+### Running Tools
+
+```bash
+# Run tests
+uv run pytest
+
+# Run linters
+uv run --group lint ruff check src/
+uv run --group lint pylint src/
+uv run --group lint mypy src/
+
+# Format code
+uv run --group lint ruff format src/
+```
+
 ## Testing
 
 - Test file: `tests/<path>/test_<filename>.py`

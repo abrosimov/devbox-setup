@@ -75,6 +75,70 @@ Skip tests for:
 - Generated code (protobuf, mocks, etc.)
 - Scenarios the compiler prevents (typed IDs prevent wrong-type passing, exhaustive enums, etc.)
 - Thin wrappers that only delegate to external SDKs with no business logic (but DO test the code that USES those wrappers)
+- Unexported functions directly — test them through the public API
+
+### Testing Public API Only — Do NOT Export for Testing
+
+**Black-box testing (`_test` package) is mandatory.** This naturally limits you to testing the exported API — this is correct and intentional.
+
+```go
+// CORRECT — test package can only see exported API
+package mypackage_test
+
+import "myproject/pkg/mypackage"
+
+func (s *MySuite) TestPublicMethod() {
+    svc := mypackage.NewService(deps)
+    result, err := svc.DoSomething(input)  // public method
+    // ...
+}
+```
+
+**DO NOT export things just to make testing easier.** If you need to test internal behavior:
+
+1. **First ask: Am I testing implementation or behavior?**
+   - Implementation detail → test through public API instead
+   - Behavior that happens to be internal → reconsider if it should be part of public contract
+
+2. **If internal logic is complex, it's often a sign it should be extracted:**
+   ```go
+   // Instead of exporting validateInput for testing...
+   // Extract to a separate, tested package if truly complex
+
+   // Or test it indirectly through the public method that uses it
+   func (s *ServiceTestSuite) TestCreateUser_InvalidEmail() {
+       err := s.svc.CreateUser(ctx, &User{Email: "invalid"})
+       s.Require().ErrorContains(err, "invalid email")  // tests validateInput indirectly
+   }
+   ```
+
+3. **Only as last resort**, use `export_test.go` pattern (rare):
+   ```go
+   // file: export_test.go (in main package, NOT _test)
+   package mypackage
+
+   // Export internal for testing — document why this is necessary
+   var ValidateInput = validateInput
+   ```
+
+**Anti-patterns to avoid:**
+```go
+// BAD — exporting just for tests
+func ValidateInput(input string) error { ... }  // was validateInput, exported for tests
+
+// BAD — public test helpers that expose internals
+func (s *Service) TestHelper_GetInternalState() map[string]any { ... }
+
+// BAD — making fields public for test assertions
+type Service struct {
+    Cache map[string]any  // was cache, exported for test assertions
+}
+```
+
+**The rule:** If you can't test it through the public API, either:
+- The public API is missing functionality (add it)
+- You're testing implementation details (don't)
+- The internal logic should be a separate tested package (extract it)
 
 ## Bug-Hunting Scenarios
 
@@ -619,6 +683,73 @@ s.Require().EqualValues("expected", result.Name)
 - `Equal` — when type match is part of what you're testing
 - `EqualValues` — when you only care about the underlying value
 
+### Error Assertions — Use ErrorIs, Not String Comparison
+
+**Always use `ErrorIs` or `ErrorAs` for error checking.** Never compare error messages as strings.
+
+```go
+// BAD — fragile, breaks if message changes, doesn't handle wrapped errors
+s.Require().Error(err)
+s.Require().Contains(err.Error(), "not found")
+s.Require().Equal("user not found", err.Error())
+s.Require().True(strings.Contains(err.Error(), "failed"))
+
+// GOOD — robust, handles wrapped errors, type-safe
+s.Require().ErrorIs(err, ErrNotFound)
+s.Require().ErrorIs(err, context.DeadlineExceeded)
+s.Require().ErrorIs(err, sql.ErrNoRows)
+```
+
+**Why string comparison is wrong:**
+| Problem | Consequence |
+|---------|-------------|
+| Message changes break tests | Refactoring error messages causes false failures |
+| Doesn't handle wrapping | `fmt.Errorf("failed: %w", ErrNotFound)` won't match string |
+| Not type-safe | Typos in expected string silently pass |
+| Tests implementation, not behavior | Error type is the contract, message is detail |
+
+**Error assertion decision tree:**
+
+| Scenario | Use |
+|----------|-----|
+| Checking for specific sentinel error | `s.Require().ErrorIs(err, ErrNotFound)` |
+| Checking error type (custom error struct) | `s.Require().ErrorAs(err, &targetErr)` |
+| Checking error occurred (don't care which) | `s.Require().Error(err)` |
+| Checking NO error occurred | `s.Require().NoError(err)` |
+| Checking error from stdlib/external pkg | `s.Require().ErrorIs(err, sql.ErrNoRows)` |
+
+**When `ErrorContains` is acceptable** (rare cases only):
+```go
+// ACCEPTABLE — when error comes from external code you don't control
+// and there's no sentinel error to check against
+s.Require().ErrorContains(err, "connection refused")
+
+// ACCEPTABLE — validation errors with dynamic content
+s.Require().ErrorContains(err, "field 'email'")  // if no typed validation error exists
+```
+
+**Best practice — define sentinel errors for testability:**
+```go
+// In production code
+var (
+    ErrNotFound     = errors.New("not found")
+    ErrInvalidInput = errors.New("invalid input")
+    ErrUnauthorized = errors.New("unauthorized")
+)
+
+func GetUser(id string) (*User, error) {
+    if id == "" {
+        return nil, fmt.Errorf("user id required: %w", ErrInvalidInput)
+    }
+    // ...
+    return nil, fmt.Errorf("user %s: %w", id, ErrNotFound)
+}
+
+// In tests — clean, robust assertions
+s.Require().ErrorIs(err, ErrNotFound)
+s.Require().ErrorIs(err, ErrInvalidInput)
+```
+
 ### Using mockery-generated mocks
 
 ```go
@@ -907,8 +1038,7 @@ func (s *OrderServiceTestSuite) TestCreateOrder_EmptyItems() {
     // Repository should NOT be called — validation fails first
     err := s.svc.CreateOrder(ctx, order)
 
-    s.Require().Error(err)
-    s.Require().Contains(err.Error(), "at least one item required")
+    s.Require().ErrorIs(err, ErrInvalidOrder)  // use sentinel error, not string match
     s.mockRepo.AssertNotCalled(s.T(), "Insert")
 }
 
@@ -918,12 +1048,11 @@ func (s *OrderServiceTestSuite) TestCreateOrder_DBError() {
 
     s.mockRepo.EXPECT().
         Insert(ctx, mock.Anything).
-        Return(errors.New("connection refused"))
+        Return(repository.ErrConnectionFailed)
 
     err := s.svc.CreateOrder(ctx, order)
 
-    s.Require().Error(err)
-    s.Require().Contains(err.Error(), "failed to create order")
+    s.Require().ErrorIs(err, repository.ErrConnectionFailed)  // check wrapped error
 }
 ```
 
@@ -1013,12 +1142,11 @@ func (s *OrderTestSuite) TestFetchesUserBeforeTransaction() {
 func (s *OrderTestSuite) TestFailsIfUserCheckFails() {
     s.mockUserService.EXPECT().
         Get(mock.Anything, "user-123").
-        Return(nil, errors.New("user service down"))
+        Return(nil, userservice.ErrServiceUnavailable)
 
     err := s.svc.CreateOrder(context.Background(), "user-123", []Item{})
 
-    s.Require().Error(err)
-    s.Require().Contains(err.Error(), "fetching user")
+    s.Require().ErrorIs(err, userservice.ErrServiceUnavailable)
     // DB should never be touched
 }
 ```
@@ -1129,6 +1257,11 @@ Before completing, verify:
 - [ ] Never copy-paste logic from source — tests verify behavior independently
 - [ ] All code with external dependencies (DB, HTTP, queues) has mocked tests — NEVER skip with "requires integration tests"
 - [ ] Repository/storage layer code is tested with mocked driver interfaces
+
+**Error assertions:**
+- [ ] All error checks use `ErrorIs` or `ErrorAs` — NO string comparison (`Contains(err.Error(), ...)`)
+- [ ] Sentinel errors defined in production code for testability
+- [ ] `ErrorContains` used only for external errors without sentinel types
 
 **Execution:**
 - [ ] Run linters: `go vet ./...`, `staticcheck ./...`, `golangci-lint run ./...`

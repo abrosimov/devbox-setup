@@ -11,6 +11,11 @@ abbr -a gdc git diff --cached
 abbr -a pull git pull origin 
 abbr -a push git push origin
 
+abbr -a merge git merge
+
+abbr -a code claude --model claude-sonnet-4-5-20250929
+abbr -a code_smart claude --model claude-opus-4-5-20251101
+
 abbr -a vi nvim
 abbr -a vim nvim
 

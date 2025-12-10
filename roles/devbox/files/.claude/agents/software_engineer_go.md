@@ -2095,6 +2095,177 @@ type UserService interface {
 }
 ```
 
+## DTOs and Mutable Fields
+
+DTOs often contain exported fields with reference types (slices, maps) for JSON serialization. Handle these idiomatically following Go stdlib patterns.
+
+### The stdlib Pattern: Trust Caller, Add Clone() Only When Needed
+
+Go standard library (`net/http.Request`, `net/http.Header`) follows this pattern:
+
+1. **Constructors do NOT defensively copy** — trust the caller
+2. **Add Clone() method ONLY when needed** — when DTO is stored/cached
+3. **Most DTOs don't need Clone()** — transient DTOs (API responses) are created and immediately serialized
+
+### Reference Types
+
+| Type | Mutation Risk |
+|------|---------------|
+| `[]T` (slice) | ✅ Shares underlying array, modifications visible to all references |
+| `map[K]V` | ✅ Reference type, mutations affect all references |
+| `*T` where T is mutable | ✅ Allows modification of target |
+| `string`, primitives | ❌ Copied by value |
+
+### Pattern: Constructor Trusts Caller
+
+```go
+// API layer DTO - transient, no Clone() needed
+type UserResponseDTO struct {
+    ID    string   `json:"id"`
+    Name  string   `json:"name"`
+    Roles []string `json:"roles"`
+}
+
+func (UserResponseDTO) FromDomain(u *domain.User) UserResponseDTO {
+    return UserResponseDTO{
+        ID:    string(u.ID),
+        Name:  u.Name,
+        Roles: u.Roles,  // No copy - follows stdlib pattern
+    }
+}
+
+// No Clone() method - not needed for transient API responses
+```
+
+### Add Clone() ONLY When Storing/Caching
+
+**Don't add Clone() by default.** Only add when you discover the DTO is being stored:
+
+```go
+// Cache layer DTO - NOW we need Clone()
+type CachedUserDTO struct {
+    ID    string
+    Name  string
+    Roles []string
+}
+
+// Clone added because this DTO is stored in cache
+func (u CachedUserDTO) Clone() CachedUserDTO {
+    roles := make([]string, len(u.Roles))
+    copy(roles, u.Roles)
+    return CachedUserDTO{
+        ID:    u.ID,
+        Name:  u.Name,
+        Roles: roles,
+    }
+}
+
+// Service layer - clone when storing/retrieving
+func (s *UserService) CacheUser(dto UserResponseDTO) {
+    cached := CachedUserDTO{
+        ID:    dto.ID,
+        Name:  dto.Name,
+        Roles: dto.Roles,
+    }
+    s.cache[cached.ID] = cached.Clone()  // Explicit clone at storage boundary
+}
+
+func (s *UserService) GetCachedUser(id string) (CachedUserDTO, bool) {
+    cached, ok := s.cache[id]
+    if !ok {
+        return CachedUserDTO{}, false
+    }
+    return cached.Clone(), true  // Explicit clone when returning stored data
+}
+```
+
+### When to Add Clone() Method
+
+Add `Clone()` to a DTO ONLY when:
+
+1. **DTO is stored long-term** (cache, queue, internal state)
+2. **DTO is passed across goroutine boundaries** where both may mutate
+3. **Multiple parts of codebase share the same DTO instance**
+
+**Do NOT add Clone() preemptively.** Add it when you discover one of the above needs.
+
+### Decision Tree
+
+```
+Is the DTO stored/cached/queued?
+├─ NO → Don't add Clone() (transient DTO, most common)
+└─ YES → Add Clone() method
+    └─ Call Clone() at storage boundaries (in/out)
+```
+
+### When Clone() is NOT Needed
+
+Most DTOs are **transient** — created and immediately serialized:
+
+```go
+func HandleGetUser(w http.ResponseWriter, r *http.Request) {
+    user := service.GetUser(r.Context(), userID)
+    dto := UserResponseDTO{
+        ID:    user.ID,
+        Name:  user.Name,
+        Roles: user.Roles,  // OK: dto lifetime ends after encoding
+    }
+    json.NewEncoder(w).Encode(dto)  // Immediately serialized
+}
+```
+
+No Clone() needed — DTO is discarded after serialization.
+
+### Protecting Internal Service State
+
+When returning slices/maps from service's internal state, **always copy**:
+
+```go
+// BAD - exposes internal state
+type OrderService struct {
+    activeOrders []Order
+}
+
+func (s *OrderService) GetActiveOrders() []Order {
+    return s.activeOrders  // ← Caller can modify service internals
+}
+
+// GOOD - copy protects internal state
+func (s *OrderService) GetActiveOrders() []Order {
+    orders := make([]Order, len(s.activeOrders))
+    copy(orders, s.activeOrders)
+    return orders
+}
+```
+
+This applies to **any method returning internal mutable state**, not just DTOs.
+
+### Thread Safety Note
+
+**Clone() does NOT make concurrent access safe.**
+
+```go
+dto := service.GetUser(id)
+
+// This is a DATA RACE, even if GetUser clones internally:
+go func() { dto.Roles[0] = "x" }()  // ← RACE
+go func() { dto.Roles[0] = "y" }()  // ← RACE
+```
+
+Clone() prevents **shared state mutation** (caller vs callee), not **concurrent access** to the same instance.
+
+For concurrent access: treat DTOs as immutable after creation, or use `sync.RWMutex`.
+
+Typical DTO usage is **request-scoped** (single goroutine) with no concurrent access.
+
+### Summary
+
+- [ ] Constructor does NOT defensively copy (trust caller)
+- [ ] **Do NOT add Clone() by default**
+- [ ] Add `Clone()` ONLY if DTO is stored/cached/shared
+- [ ] Call `Clone()` explicitly at storage boundaries (in/out)
+- [ ] Don't confuse Clone() with thread safety
+
 ## Working with Remote Systems
 
 A pragmatic engineer anticipates standard failures in distributed systems.

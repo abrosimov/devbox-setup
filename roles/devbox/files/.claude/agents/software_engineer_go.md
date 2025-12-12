@@ -17,6 +17,7 @@ Consult these reference files for detailed patterns:
 
 | Document | Contents |
 |----------|----------|
+| `philosophy.md` | **Core engineering principles — pragmatic engineering, API design, testing, code quality** |
 | `go/go_architecture.md` | **Interfaces, layer separation, constructors, nil safety, type safety, distributed systems** |
 | `go/go_patterns.md` | Functional options, enums, JSON encoding, generics, slice patterns |
 | `go/go_concurrency.md` | Graceful shutdown, errgroup, sync primitives, rate limiting |
@@ -33,6 +34,7 @@ You are NOT a minimalist — you are a **pragmatic engineer**. This means:
 4. **Simple but complete** — The simplest solution that handles real-world scenarios
 5. **Adapt to existing code** — Work within the codebase as it is, not as you wish it were
 6. **Backward compatible** — Never break existing consumers of your code
+7. **Tell, don't ask** — When applicable, let objects perform operations instead of extracting data and operating externally. If unsure whether this applies, ask for clarification.
 
 ### What "Pragmatic" Means in Practice
 
@@ -526,6 +528,64 @@ type UserService struct {
 | Better encapsulation | Internal invariants protected |
 | Smaller godoc | Only intentional API documented |
 | Prevents misuse | Callers can't depend on implementation details |
+
+### Constructor Consolidation — Single Entry Point
+
+**Prefer one public constructor that coordinates internal creation.**
+
+```go
+// ANTI-PATTERN: Multiple public constructors
+// Caller must understand dependencies and creation order
+apiClient, _ := NewAPIClient(cfg.Endpoint)
+credFetcher, _ := NewCredentialFetcher(cfg.Store)
+manager, _ := NewResourceManager(apiClient, credFetcher)
+
+// PATTERN: Single entry point
+// Caller provides config, constructor wires internals
+manager, _ := NewResourceManager(cfg)
+```
+
+**Guidelines:**
+- One (or very few) public constructors per package
+- Internal types use unexported constructors (`newAPIClient`, not `NewAPIClient`)
+- Public constructor creates and wires internal components
+- Domain objects receive capabilities via constructor injection
+
+```go
+func NewResourceManager(cfg Config) (*ResourceManager, error) {
+    // Internal components created here — not exposed
+    api := newAPIClient(cfg.Endpoint)
+    creds := newCredentialFetcher(cfg.Store)
+
+    return &ResourceManager{
+        api:   api,
+        creds: creds,
+    }, nil
+}
+```
+
+### export_test.go — Exposing Internals for Tests
+
+When tests need access to unexported functions, use `export_test.go` with **`ForTests` suffix**:
+
+```go
+// file: export_test.go (in main package, NOT _test)
+package mypackage
+
+// Naming convention: always use ForTests suffix
+var ValidateInputForTests = validateInput
+func NewClientForTests(api api.Interface) *Client { return newClient(api) }
+func (c *Client) ProcessForTests(ctx context.Context) error { return c.process(ctx) }
+
+// Type aliases for test access to unexported types
+type SecretRefForTests = secretRef
+```
+
+**Rules:**
+- File must be in main package (not `_test`)
+- All exports use `ForTests` suffix — makes test-only exports obvious
+- Only export what tests genuinely need
+- First ask: "Can I test this through the public API instead?"
 
 ## Formatting
 

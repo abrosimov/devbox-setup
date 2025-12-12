@@ -16,8 +16,13 @@ abbr -a merge git merge
 abbr -a code claude --model claude-sonnet-4-5-20250929
 abbr -a code_smart claude --model claude-opus-4-5-20251101
 
+abbr -a code_continue claude --model claude-sonnet-4-5-20250929
+abbr -a code_smart_continue claude --model claude-opus-4-5-20251101
+
 abbr -a vi nvim
 abbr -a vim nvim
+abbr -a vimdiff nvim -d
+abbr -a vd nvim -d
 
 abbr -a stash git stash # TODO: In the video on YT there was a nice hack for git stash.
 

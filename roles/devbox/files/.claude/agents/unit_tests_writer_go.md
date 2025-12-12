@@ -14,6 +14,7 @@ Consult these reference files for patterns when writing tests:
 
 | Document | Contents |
 |----------|----------|
+| `philosophy.md` | **Core principles — test data realism, tests as specifications, code quality** |
 | `go/go_architecture.md` | **Interfaces, constructors, nil safety, layer separation — verify these in tests** |
 | `go/go_errors.md` | Error types, sentinel errors, error wrapping patterns |
 | `go/go_patterns.md` | Enums, JSON encoding, slice patterns, HTTP patterns |
@@ -275,6 +276,38 @@ func (s *UserTestSuite) TestGetUser_InvalidID() { ... }
 **No section comments.** Suite structure is self-documenting.
 
 **Prefer table-driven tests.** One `TestGetUser` method with test cases, not multiple `TestGetUser_*` methods.
+
+### FORBIDDEN: Split Test Files
+
+**Never create `*_internal_test.go` files.** One test file per source file.
+
+```
+# FORBIDDEN — arbitrary split
+user_test.go              # "public" tests
+user_internal_test.go     # "internal" tests via export_test.go
+
+# REQUIRED — single file
+user_test.go              # ALL tests for user.go
+```
+
+**Why this is wrong:**
+- Both files use `package foo_test` (black-box) — the split is arbitrary
+- Creates confusion about where tests belong
+- If you need to test unexported functions, do it in ONE file via `export_test.go`
+
+### ForTests Suffix Convention
+
+When using `export_test.go` to expose internals, use the **`ForTests` suffix**:
+
+```go
+// file: export_test.go (in main package)
+package mypackage
+
+// Always use ForTests suffix
+var ValidateInputForTests = validateInput
+func NewServiceForTests(dep Dependency) *Service { return newService(dep) }
+type InternalTypeForTests = internalType
+```
 
 ### REQUIRED pattern
 
@@ -579,6 +612,125 @@ packages:
       TokenValidator:
 ```
 
+### Test Data Realism
+
+Use realistic test data when code **validates or parses** that data. Mock data is acceptable otherwise, but if tests break due to mocked data later — fix immediately.
+
+| Data Type | When to Use Realistic Data |
+|-----------|---------------------------|
+| Certificates, tokens | When code parses/validates them |
+| URLs, emails | When code validates format |
+| JSON payloads | When code deserializes and validates fields |
+| IDs, names | Mock is usually fine — code rarely validates format |
+
+```go
+// ACCEPTABLE — code doesn't parse the certificate
+secret.Data = map[string][]byte{
+    "token": []byte("test-token"),
+    "ca":    []byte("mock-ca-data"),  // OK if code just passes it through
+}
+
+// REQUIRED — code parses the certificate
+// Use valid AND invalid test cases
+func (s *CertTestSuite) TestParseCertificate() {
+    tests := []struct {
+        name    string
+        certPEM string
+        wantErr bool
+    }{
+        {
+            name: "valid certificate",
+            certPEM: `-----BEGIN CERTIFICATE-----
+MIIDDzCCAfegAwIBAgIUQjpO7iuwiDbUjyjPMGLDShBVMukwDQYJ...
+-----END CERTIFICATE-----`,
+        },
+        {
+            name:    "invalid PEM",
+            certPEM: "not-a-certificate",
+            wantErr: true,
+        },
+        {
+            name:    "empty",
+            certPEM: "",
+            wantErr: true,
+        },
+    }
+    // ...
+}
+```
+
+**Rule**: If tests pass with mock data but fail with real data, the tests were wrong. Fix them.
+
+### Table-Driven Tests with Helper Methods
+
+Combine table-driven tests with helper methods for complex object construction:
+
+```go
+// suite_test.go — helper methods for complex objects
+type ResourceTestSuite struct {
+    suite.Suite
+}
+
+func (s *ResourceTestSuite) createValidResource(name string) *Resource {
+    s.T().Helper()
+    return &Resource{
+        Name:     name,
+        Endpoint: "https://api.example.com",
+        Status:   StatusReady,
+        // ... other required fields
+    }
+}
+
+func (s *ResourceTestSuite) createResourceWithStatus(name string, status Status) *Resource {
+    s.T().Helper()
+    r := s.createValidResource(name)
+    r.Status = status
+    return r
+}
+
+// resource_test.go — table-driven test using helpers
+func (s *ResourceServiceTestSuite) TestProcessResource() {
+    tests := []struct {
+        name      string
+        resource  *Resource  // use helper to create
+        mockSetup func()
+        wantErr   error
+    }{
+        {
+            name:     "ready resource succeeds",
+            resource: s.createValidResource("res-1"),
+            mockSetup: func() {
+                s.mockClient.EXPECT().Process(mock.Anything).Return(nil)
+            },
+        },
+        {
+            name:     "not ready resource fails",
+            resource: s.createResourceWithStatus("res-2", StatusPending),
+            wantErr:  ErrNotReady,
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            if tt.mockSetup != nil {
+                tt.mockSetup()
+            }
+            err := s.service.Process(context.Background(), tt.resource)
+            if tt.wantErr != nil {
+                s.Require().ErrorIs(err, tt.wantErr)
+                return
+            }
+            s.Require().NoError(err)
+        })
+    }
+}
+```
+
+**Benefits:**
+- Table-driven tests show all cases clearly
+- Helper methods hide verbose object construction
+- Test intent is immediately visible
+
 ### Complete example with suite hierarchy
 
 ```go
@@ -882,7 +1034,7 @@ func (s *UserServiceTestSuite) newTestServer() *httptest.Server {
 2. Run all package tests: `go test ./path/to/package`
 3. Check coverage: `go test -cover ./path/to/package`
 4. For concurrent code, also run: `go test -race ./path/to/package`
-5. If any existing tests fail, analyze and fix them.
+5. **ALL tests MUST pass before completion** — If ANY test fails (new or existing), you MUST fix it immediately. NEVER leave failed tests with notes like "can be fixed later" or "invalid test data". Test failures indicate bugs that must be resolved now.
 
 ## Go-specific guidelines
 
@@ -1247,11 +1399,18 @@ Before completing, verify:
 - [ ] Each object has `<ObjectName>TestSuite` in `<filename>_test.go` embedding package suite
 - [ ] All tests use testify suites — NO stdlib `testing` alone
 - [ ] All assertions use `s.Require()` — NO `s.Assert()`, NO standalone `require`/`assert`
+- [ ] NO `*_internal_test.go` files — one test file per source file
 
 **Test style:**
 - [ ] Table-driven tests used — `TestGetUser` with cases, NOT `TestGetUser_Success`, `TestGetUser_Error`
+- [ ] Helper methods used for complex object construction in table-driven tests
 - [ ] No section divider comments (`// --- Tests ---`, `// ====`, etc.)
 - [ ] Test names match method being tested: `TestMethodName` (not `TestMethodName_Scenario`)
+- [ ] `ForTests` suffix used for all exports in `export_test.go`
+
+**Test data:**
+- [ ] Realistic data used when code validates/parses (certificates, URLs, JSON)
+- [ ] Valid AND invalid test cases for parsing/validation code
 
 **Test coverage:**
 - [ ] Never copy-paste logic from source — tests verify behavior independently
@@ -1266,3 +1425,4 @@ Before completing, verify:
 **Execution:**
 - [ ] Run linters: `go vet ./...`, `staticcheck ./...`, `golangci-lint run ./...`
 - [ ] Run tests with race detector: `go test -race ./...`
+- [ ] **ALL tests pass** — Zero failures, zero skipped tests marked TODO, all assertions valid

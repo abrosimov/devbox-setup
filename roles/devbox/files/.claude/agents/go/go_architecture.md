@@ -166,6 +166,154 @@ func (UserModel) FromDomain(u *domain.User) UserModel { ... }
 
 ---
 
+## DTO vs Domain Object
+
+### The Distinction
+
+| Aspect | DTO (Data Transfer Object) | Domain Object |
+|--------|---------------------------|---------------|
+| **Fields** | Exported (for serialization) | Unexported + getters |
+| **Methods** | Pure only: `ToDomain()`, `Validate()` | Any, including stateful operations |
+| **Invariants** | None — just carries data | Has invariants that must be protected |
+| **Example** | `CreateUserRequest`, `UserResponse` | `User`, `Order`, `Connection` |
+
+### The Decision Rule
+
+**Does the struct have methods with invariants?**
+
+- **NO invariants** (pure transformations, validation) → DTO with exported fields OK
+- **HAS invariants** (methods depend on fields being valid/consistent) → Domain object, unexport fields
+
+### What Are Invariants?
+
+An invariant is a condition that must remain true for the object to behave correctly. If external code can mutate fields and break method behavior, you have invariants.
+
+```go
+// DTO — no invariants, pure methods only
+type CreateOrderRequest struct {
+    CustomerID string   `json:"customer_id"`
+    Items      []Item   `json:"items"`
+}
+
+func (r CreateOrderRequest) ToDomain() *domain.Order { ... }  // pure transformation
+func (r CreateOrderRequest) Validate() error { ... }          // pure validation
+
+// Domain Object — HAS invariants
+type Connection struct {
+    endpoint    Endpoint           // Connect() depends on this being valid
+    credentials *Credentials       // Connect() needs matching credentials
+    connector   *Connector         // injected capability
+}
+
+func (c *Connection) Endpoint() Endpoint { return c.endpoint }
+func (c *Connection) Connect(ctx context.Context) (*Client, error) {
+    // This method has INVARIANTS:
+    // - endpoint must be valid
+    // - credentials must match endpoint
+    // External mutation of these fields would break Connect()
+    return c.connector.dial(ctx, c.endpoint, c.credentials)
+}
+```
+
+### Why Unexport Fields for Domain Objects?
+
+```go
+// If fields are exported, caller can break invariants:
+conn := GetConnection()
+conn.Endpoint = "garbage"           // mutates state
+client, err := conn.Connect(ctx)    // behavior broken — uses corrupted endpoint
+
+// With unexported fields, invariants are protected:
+conn := GetConnection()
+// conn.endpoint not accessible — can only use Connect()
+client, err := conn.Connect(ctx)    // always uses valid state from construction
+```
+
+### Quick Reference
+
+| Struct Type | Exported Fields? | Allowed Methods |
+|-------------|------------------|-----------------|
+| API DTO | ✅ Yes | `ToDomain()`, `Validate()`, getters |
+| Config struct | ✅ Yes | `Validate()`, getters |
+| Domain object | ❌ No (use getters) | Any — including stateful operations |
+| Service/Client | ❌ No | Any — typically has dependencies |
+
+---
+
+## Composition — When to Split Types
+
+### The Problem: Mixed Responsibilities
+
+When a type handles multiple distinct concerns, it creates coupling problems:
+
+```go
+// PROBLEMATIC — mixed responsibilities
+type ResourceClient struct {
+    apiClient    api.Interface       // talks to external API
+    credStore    credentials.Store   // fetches credentials
+    restConfig   *rest.Config        // connection config
+}
+
+// Every consumer needs the full client, even if they only need one capability
+// Testing requires mocking all three concerns
+// Changes to credential logic affect API logic
+```
+
+### When to Split
+
+Split when responsibilities have **different semantics or lifecycles**:
+
+| Signal | Meaning |
+|--------|---------|
+| Different external systems | API client vs credential store vs cache |
+| Different change reasons | Auth logic changes ≠ API logic changes |
+| Different test requirements | One needs network mocks, other needs DB mocks |
+| Awkward dependencies | Unrelated code needs pointer to this type |
+
+### The Pattern: Focused Types + Coordinator
+
+```go
+// BETTER — separated by semantic boundary
+type APIClient struct {
+    client api.Interface  // ONLY external API operations
+}
+
+type CredentialFetcher struct {
+    store credentials.Store  // ONLY credential operations
+}
+
+// Coordinator composes focused types
+type ResourceManager struct {
+    api   *APIClient
+    creds *CredentialFetcher
+}
+
+func NewResourceManager(cfg Config) (*ResourceManager, error) {
+    // Single entry point creates and wires internal components
+    api := newAPIClient(cfg.APIEndpoint)
+    creds := newCredentialFetcher(cfg.CredStore)
+    return &ResourceManager{api: api, creds: creds}, nil
+}
+```
+
+### Benefits
+
+| Benefit | Explanation |
+|---------|-------------|
+| Independent testing | Test API logic without credential mocking |
+| Clear ownership | Each type is expert on one thing |
+| Flexible evolution | Change credential logic without touching API code |
+| Reduced coupling | Consumers depend only on what they need |
+
+### When NOT to Split
+
+Don't split if:
+- Responsibilities **always go together** and have same lifecycle
+- Split would just add indirection without benefit
+- The "two responsibilities" are actually one cohesive concept
+
+---
+
 ## Constructor Patterns
 
 ### Return Signatures
@@ -452,3 +600,6 @@ Unit tests are required. Integration tests are a separate concern (often separat
 | Config pointer for singleton | Use value |
 | Dependency passed by value | Use pointer |
 | Logger not last in constructor | Reorder arguments |
+| Exported fields on type with invariant methods | Unexport fields, add getters |
+| Monolithic type mixing semantic concerns | Split into focused types + coordinator |
+| Many public constructors | Single entry point constructor |

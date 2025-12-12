@@ -9,5 +9,5 @@
       "Bash(curl:*)"
     ]
   },
-  "alwaysThinkingEnabled": true
+  "alwaysThinkingEnabled": false
 }

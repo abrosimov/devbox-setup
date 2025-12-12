@@ -55,6 +55,7 @@ Consult these reference files for pattern verification:
 
 | Document | Contents |
 |----------|----------|
+| `philosophy.md` | **Core principles — pragmatic engineering, API design, DTO vs domain object, testing** |
 | `go/go_architecture.md` | **Interfaces, layer separation, constructors, nil safety, type safety — VERIFY THESE** |
 | `go/go_errors.md` | Error strategy, sentinel errors, custom types, wrapping |
 | `go/go_patterns.md` | Functional options, enums, JSON, generics, HTTP patterns |
@@ -465,10 +466,21 @@ Constructor patterns:
   - Argument order correct (config, deps, logger): ___
   - Dependencies passed as pointers: ___
   - Config passed by value for singletons: ___
+  - Multiple public constructors (should be single entry point): ___
+    List: ___
 
 Type safety:
   - Raw strings used for IDs (should be typed): ___
   - Typed IDs with unnecessary conversions: ___
+
+DTO vs Domain Object (see go/go_architecture.md):
+  - Structs with exported fields AND methods with invariants: ___
+    List: ___  (should unexport fields, add getters)
+  - Domain objects correctly using unexported fields + getters: ___
+
+Composition (semantic separation):
+  - Types mixing semantically different responsibilities: ___
+    List: ___  (should split into focused types)
 
 External dependencies in tests:
   - Tests skipped with "requires DB/integration": ___
@@ -591,11 +603,17 @@ git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "T
 export_test.go files found: ___
   - Justified (documented reason): ___
   - Unjustified (should test via public API): ___
+  - Using ForTests suffix (required): YES/NO
+    Missing ForTests suffix: ___
 
 Suspicious exports for testing:
   - Functions with "Test" or "ForTest" in name: ___
   - Comments suggesting export for testing: ___
   - Public fields that seem test-only: ___
+
+Split test files (FORBIDDEN):
+  - Files named *_internal_test.go: ___
+    List: ___
 
 VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 ```
@@ -622,6 +640,111 @@ var InternalFunc = internalFunc  // ask: why not test via public API?
 - Complex internal algorithm that genuinely needs direct testing
 - Performance-critical internal function with specific edge cases
 - Must document WHY public API testing is insufficient
+
+#### Checkpoint I: Security
+
+**Search for security-sensitive patterns:**
+```bash
+# Find SQL query construction
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "fmt.Sprintf.*SELECT\|fmt.Sprintf.*INSERT\|fmt.Sprintf.*UPDATE\|fmt.Sprintf.*DELETE\|Query(.*+\|Exec(.*+"
+
+# Find command execution
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "exec.Command\|os.StartProcess"
+
+# Find file path construction
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "filepath.Join.*\+\|os.Open.*\+\|ioutil.ReadFile.*\+"
+
+# Find HTTP redirect handling
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "http.Redirect\|w.Header().Set.*Location"
+
+# Find sensitive data logging
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "log.*password\|log.*token\|log.*secret\|log.*key\|log.*credential"
+
+# Find hardcoded secrets
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "password.*=.*\"\|token.*=.*\"\|secret.*=.*\"\|apikey.*=.*\""
+```
+
+```
+Security issues found: ___
+
+SQL Injection risks:
+  - String concatenation in SQL queries: ___
+    List with line numbers: ___
+  - Using fmt.Sprintf for SQL: ___
+    List: ___
+  - Queries using parameterized queries correctly: ___
+
+Command Injection risks:
+  - User input in exec.Command: ___
+    List: ___
+  - Shell=true or bash -c patterns: ___
+    List: ___
+
+Path Traversal risks:
+  - User input in file paths without validation: ___
+    List: ___
+  - filepath.Clean used before file operations: YES/NO
+
+SSRF risks:
+  - User-controlled URLs in HTTP clients: ___
+    List: ___
+  - URL allowlist validation: YES/NO
+
+Information Disclosure:
+  - Sensitive data in logs: ___
+    List: ___
+  - Error messages exposing internals: ___
+    List: ___
+  - Hardcoded secrets: ___
+    List: ___
+
+Authentication/Authorization:
+  - Auth checks before sensitive operations: ___
+  - Missing auth middleware on routes: ___
+    List: ___
+
+VERDICT: [ ] PASS  [ ] FAIL — issues documented above
+```
+
+**Security Rules:**
+
+```go
+// BAD: SQL injection via string concatenation
+query := "SELECT * FROM users WHERE id = '" + userID + "'"
+db.Query(query)
+
+// GOOD: Parameterized query
+db.Query("SELECT * FROM users WHERE id = $1", userID)
+
+// BAD: Command injection
+cmd := exec.Command("sh", "-c", "echo " + userInput)
+
+// GOOD: Pass arguments separately
+cmd := exec.Command("echo", userInput)
+
+// BAD: Path traversal
+filePath := filepath.Join(baseDir, userInput)  // "../../../etc/passwd" bypasses
+
+// GOOD: Validate after join
+filePath := filepath.Join(baseDir, userInput)
+if !strings.HasPrefix(filepath.Clean(filePath), filepath.Clean(baseDir)) {
+    return errors.New("invalid path")
+}
+
+// BAD: Logging sensitive data
+log.Info().Str("password", password).Msg("user login")
+
+// GOOD: Redact sensitive fields
+log.Info().Str("password", "[REDACTED]").Msg("user login")
+
+// BAD: SSRF - user controls URL
+resp, _ := http.Get(userProvidedURL)
+
+// GOOD: Validate URL against allowlist
+if !isAllowedHost(userProvidedURL) {
+    return errors.New("URL not allowed")
+}
+```
 
 ### Step 7: Counter-Evidence Hunt
 
@@ -798,6 +921,7 @@ Provide a structured review:
 - [ ] API Surface: PASS/FAIL
 - [ ] Test Error Assertions: PASS/FAIL
 - [ ] Export-for-Testing: PASS/FAIL
+- [ ] Security: PASS/FAIL
 
 ## Counter-Evidence Hunt Results
 <what you found when actively looking for problems>
@@ -838,6 +962,13 @@ Provide a structured review:
 ### Export-for-Testing
 - [ ] export_test.go - Unjustified export (test via public API instead)
 - [ ] service.go:20 - Field exported for test assertions (Cache should be cache)
+
+### Security
+- [ ] handler.go:45 - SQL injection: string concatenation in query
+- [ ] service.go:78 - Path traversal: user input in filepath without validation
+- [ ] client.go:23 - SSRF: user-controlled URL without allowlist
+- [ ] auth.go:56 - Sensitive data logged (password field)
+- [ ] config.go:12 - Hardcoded secret (API key in source)
 
 ### Distributed Systems
 - [ ] client.go:30 - HTTP call without timeout
@@ -898,6 +1029,12 @@ Keep exports minimal — unexport by default:
 - Internal/intermediate types exported (implementation details)
 - Interfaces exported but only used within the package
 - Code exported just to make testing easier (anti-pattern)
+- Multiple public constructors (should be single entry point)
+
+**High-Priority (Object Design)**
+- Exported fields on types with invariant-dependent methods (should unexport fields)
+- Types mixing semantically different responsibilities (should split)
+- Domain objects without behavior (should have methods, not external functions operating on data)
 
 **High-Priority (Go-Specific)**
 - Unchecked errors
@@ -917,6 +1054,15 @@ Keep exports minimal — unexport by default:
 - Unbounded response body reads (must use `io.LimitReader`)
 - Missing idempotency keys for non-idempotent operations
 
+**High-Priority (Security)**
+- SQL injection: string concatenation or fmt.Sprintf in queries (use parameterized queries)
+- Command injection: user input in exec.Command arguments (pass args separately, avoid shell)
+- Path traversal: user input in file paths without validation (use filepath.Clean + prefix check)
+- SSRF: user-controlled URLs without allowlist validation
+- Sensitive data in logs: passwords, tokens, secrets, API keys
+- Hardcoded secrets in source code (use environment variables or secret manager)
+- Missing authentication/authorization checks on sensitive endpoints
+
 **High-Priority (Logic Errors)**
 - Inverted boolean conditions
 - Wrong comparison operators
@@ -933,6 +1079,12 @@ Keep exports minimal — unexport by default:
 - Missing `ErrorIs`/`ErrorAs` usage for error checking
 - Missing sentinel errors in production code (inline `errors.New` that should be package-level)
 - `ErrorContains` used when sentinel error should exist
+
+**High-Priority (Test Infrastructure)**
+- Split test files (`*_internal_test.go` pattern — forbidden)
+- Missing `ForTests` suffix on exports in `export_test.go`
+- Mock data used where code validates/parses (certificates, URLs, JSON need realistic data)
+- Missing helper methods for complex test object construction
 
 **High-Priority (Backward Compatibility)**
 - Function signature changes without wrapper migration
@@ -1036,3 +1188,4 @@ Before completing review, verify:
 - [ ] Checkpoint F: API Surface — minimal exports, no over-exposed internals
 - [ ] Checkpoint G: Test Error Assertions — `ErrorIs`/`ErrorAs` used, no string comparison
 - [ ] Checkpoint H: Export-for-Testing — no unjustified exports for tests
+- [ ] Checkpoint I: Security — no injection, SSRF, path traversal, or leaked secrets

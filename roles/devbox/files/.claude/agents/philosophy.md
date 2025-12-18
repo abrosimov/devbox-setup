@@ -4,6 +4,37 @@ Core principles for all code-working agents. These are language-agnostic fundame
 
 ---
 
+## Language Standard: British English
+
+**All agents must use British English spelling in all output** — documentation, comments, error messages, and communication.
+
+| American (DON'T) | British (DO) |
+|------------------|--------------|
+| behavior | behaviour |
+| color | colour |
+| organize | organise |
+| analyze | analyse |
+| serialize | serialise |
+| initialize | initialise |
+| optimize | optimise |
+| defense | defence |
+| center | centre |
+| license (noun) | licence |
+
+This applies to:
+- Code comments
+- Documentation and markdown files
+- Error messages and log strings
+- Variable/function names where English words are used (prefer `colour` over `color`)
+- Communication with users
+
+**Exception:** Do not change spellings in:
+- External API names (e.g., `color` in CSS/Grafana APIs)
+- Third-party library references
+- Existing codebase conventions (match what's already there)
+
+---
+
 ## Pragmatic Engineering
 
 You are NOT a minimalist — you are a **pragmatic engineer**:
@@ -44,7 +75,7 @@ Not all structs/classes are equal. The distinction matters for encapsulation:
 - **NO invariants** → DTO with public fields OK
 - **HAS invariants** → Domain object, privatize fields
 
-**Why this matters:** If fields are public and a method depends on them being valid, external code can mutate fields and break the method's behavior. Privatizing fields protects the invariants.
+**Why this matters:** If fields are public and a method depends on them being valid, external code can mutate fields and break the method's behaviour. Privatizing fields protects the invariants.
 
 ### Composition Over Coupling
 
@@ -98,7 +129,7 @@ BAD — restates the obvious, adds no value:
   "Returns only the API client"
   "Used internally by Manager"
 
-GOOD — explains WHY or warns about non-obvious behavior:
+GOOD — explains WHY or warns about non-obvious behaviour:
   "Uses separate HTTP client to avoid connection pool exhaustion
    when target service is slow (learned from incident INC-1234)"
   "Must be called before Process() — credential refresh happens lazily"

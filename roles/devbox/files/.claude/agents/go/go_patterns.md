@@ -241,12 +241,12 @@ type User struct {
     Age       int       `json:"age,omitempty"`       // omit if zero
     CreatedAt time.Time `json:"created_at"`
     UpdatedAt time.Time `json:"updated_at,omitempty"`
-    Password  string    `json:"-"`                   // never serialize
-    Internal  string    `json:"-"`                   // never serialize
+    Password  string    `json:"-"`                   // never serialise
+    Internal  string    `json:"-"`                   // never serialise
 }
 ```
 
-### omitempty Behavior
+### omitempty Behaviour
 
 | Type | Zero Value | omitempty Omits? |
 |------|------------|------------------|
@@ -401,7 +401,7 @@ Before writing generic code, ask:
 | Priority | Type | Use When |
 |----------|------|----------|
 | 1st | Concrete type | Always the default choice |
-| 2nd | Interface with methods | Need behavior abstraction |
+| 2nd | Interface with methods | Need behaviour abstraction |
 | 3rd | Generics | Type safety across multiple types (library code) |
 | 4th | `any` | Last resort: serialization/reflection boundaries only |
 
@@ -620,7 +620,7 @@ var _ io.Writer = (*LoggingWriter)(nil)
 ### Extending Types
 
 ```go
-// GOOD — extend with additional behavior
+// GOOD — extend with additional behaviour
 type CountingReader struct {
     io.Reader
     count int64
@@ -677,7 +677,7 @@ type Client struct {
 c := &Client{}  // http.Client is nil
 c.Do(req)       // PANIC: nil pointer dereference
 
-// SAFE — initialize in constructor
+// SAFE — initialise in constructor
 func NewClient() *Client {
     return &Client{
         Client: &http.Client{Timeout: 30 * time.Second},

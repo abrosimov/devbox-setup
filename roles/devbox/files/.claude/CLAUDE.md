@@ -17,8 +17,10 @@ This is a Claude Code configuration directory containing specialized agent promp
 │   ├── unit_tests_writer_*.md
 │   ├── code_reviewer_*.md
 │   ├── implementation_planner_*.md
+│   ├── domain_expert.md
 │   └── technical_product_manager.md
 ├── commands/              # Workflow slash commands
+│   ├── domain-analysis.md # /domain-analysis - validate requirements
 │   ├── plan.md            # /plan - create implementation plan
 │   ├── implement.md       # /implement - run SE agent
 │   ├── test.md            # /test - run test writer agent
@@ -33,6 +35,7 @@ Use slash commands to run the development workflow:
 
 | Command | Description | When to Use |
 |---------|-------------|-------------|
+| `/domain-analysis` | Validate requirements, challenge assumptions | After spec, before planning |
 | `/plan` | Create implementation plan from spec | Before implementation (complex tasks) |
 | `/implement` | Run SE agent for current task | Start implementation |
 | `/test` | Run test writer agent | After implementation |
@@ -57,18 +60,38 @@ Each command:
 Agents follow a typical development pipeline:
 
 1. **technical_product_manager** - Transforms ideas into product specifications (writes to `{PLANS_DIR}/{JIRA_ISSUE}/spec.md`, `research.md`, `decisions.md`)
-2. **implementation_planner_*** - Creates detailed implementation plans from specs (writes to `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`)
-3. **software_engineer_*** - Writes production code following language-specific standards (reads plan if exists)
-4. **unit_tests_writer_*** - Writes tests with a bug-hunting mindset
-5. **code_reviewer_*** - Validates implementation against requirements, provides structured feedback
+2. **domain_expert** - Challenges assumptions, validates requirements against reality, creates domain models (writes to `{PLANS_DIR}/{JIRA_ISSUE}/domain_analysis.md`)
+3. **implementation_planner_*** - Creates detailed implementation plans from validated specs (writes to `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`)
+4. **software_engineer_*** - Writes production code following language-specific standards (reads plan if exists)
+5. **unit_tests_writer_*** - Writes tests with a bug-hunting mindset
+6. **code_reviewer_*** - Validates implementation against requirements, provides structured feedback
+
+## Code Writing Policy
+
+**NEVER write production code directly.** Always delegate to specialized agents:
+
+| Task | Agent | Command |
+|------|-------|---------|
+| Python code | `software-engineer-python` | `/implement` |
+| Go code | `software-engineer-go` | `/implement` |
+| Python tests | `unit-test-writer-python` | `/test` |
+| Go tests | `unit-test-writer-go` | `/test` |
+
+**Even for "simple" or "small" changes** — agents enforce standards, patterns, and checks that are easy to forget when writing code directly.
+
+**The only exceptions:**
+- Fixing typos in comments/strings
+- Updating configuration values
+- Changes explicitly requested to be done "inline" by user
 
 ## Configuration
 
 See **[config.md](config.md)** for configurable paths (single source of truth).
 
 All project documentation is organized by Jira issue under `{PLANS_DIR}/{JIRA_ISSUE}/`:
-- `plan.md` - Implementation plan
 - `spec.md` - Product specification
+- `domain_analysis.md` - Domain analysis (validated assumptions, constraints, domain model)
+- `plan.md` - Implementation plan
 - `research.md` - Research findings
 - `decisions.md` - Decision log
 

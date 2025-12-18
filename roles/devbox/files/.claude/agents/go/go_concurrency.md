@@ -57,7 +57,7 @@ func run(ctx context.Context) error {
 
 ```go
 func run(ctx context.Context) error {
-    // Initialize components
+    // Initialise components
     db, err := sql.Open("postgres", connStr)
     if err != nil {
         return fmt.Errorf("opening database: %w", err)

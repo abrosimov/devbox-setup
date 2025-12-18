@@ -532,6 +532,6 @@ prometheus_engine_query_duration_seconds{quantile="0.99"} > 10
 
 - [ ] Test queries in isolation before adding to dashboards
 - [ ] Monitor query performance over time
-- [ ] Review and optimize slow queries regularly
+- [ ] Review and optimise slow queries regularly
 - [ ] Document complex queries with comments
 - [ ] Use recording rules for dashboard queries with many viewers

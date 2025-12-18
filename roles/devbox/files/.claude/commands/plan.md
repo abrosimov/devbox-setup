@@ -6,7 +6,16 @@ You are orchestrating the planning phase of a development workflow.
 
 ## Steps
 
-### 1. Detect Project Language
+### 1. Compute Task Context (once)
+
+```bash
+BRANCH=`git branch --show-current`; JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+```
+
+Store these values — pass to agent, do not re-compute.
+Project directory: `{PLANS_DIR}/{JIRA_ISSUE}/` (see config.md)
+
+### 2. Detect Project Language
 
 Check for project markers:
 - If `go.mod` exists → **Go project**
@@ -16,15 +25,6 @@ Check for project markers:
 For Python projects, also check if it's a Flask-OpenAPI3 monolith:
 - If `app/application/__init__.py` exists with layer initialization → Use `implementation-planner-python-monolith`
 - Otherwise → Use `implementation-planner-python`
-
-### 2. Get Task Context
-
-```bash
-BRANCH=$(git branch --show-current)
-JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
-```
-
-The project directory will be `{PLANS_DIR}/{JIRA_ISSUE}/` (see config.md for configured path)
 
 ### 3. Check for Existing Spec
 
@@ -44,6 +44,8 @@ Based on detected language/architecture:
 - **Go**: Use `implementation-planner-go` agent
 - **Python (standard)**: Use `implementation-planner-python` agent
 - **Python (Flask monolith)**: Use `implementation-planner-python-monolith` agent
+
+**Include in agent prompt**: `Context: BRANCH={value}, JIRA_ISSUE={value}`
 
 The agent will:
 - Read the spec if it exists

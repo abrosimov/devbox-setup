@@ -186,7 +186,7 @@ func (UserModel) FromDomain(u *domain.User) UserModel { ... }
 
 ### What Are Invariants?
 
-An invariant is a condition that must remain true for the object to behave correctly. If external code can mutate fields and break method behavior, you have invariants.
+An invariant is a condition that must remain true for the object to behave correctly. If external code can mutate fields and break method behaviour, you have invariants.
 
 ```go
 // DTO — no invariants, pure methods only
@@ -221,7 +221,7 @@ func (c *Connection) Connect(ctx context.Context) (*Client, error) {
 // If fields are exported, caller can break invariants:
 conn := GetConnection()
 conn.Endpoint = "garbage"           // mutates state
-client, err := conn.Connect(ctx)    // behavior broken — uses corrupted endpoint
+client, err := conn.Connect(ctx)    // behaviour broken — uses corrupted endpoint
 
 // With unexported fields, invariants are protected:
 conn := GetConnection()
@@ -393,7 +393,7 @@ All dependencies passed to constructors must be pointers:
 // BAD — nil check inside method
 func (s *Service) Process() error {
     if s == nil || s.client == nil {
-        return errors.New("not initialized")
+        return errors.New("not initialised")
     }
     return s.client.Call()
 }

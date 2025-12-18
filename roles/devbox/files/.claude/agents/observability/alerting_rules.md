@@ -16,7 +16,7 @@ metadata:
     # Required for Prometheus Operator to discover this rule
     release: prometheus
     app: prometheus
-    # Custom labels for organization
+    # Custom labels for organisation
     team: platform
     service: <service>
 spec:

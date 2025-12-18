@@ -506,11 +506,16 @@ if ew.err != nil {
 }
 ```
 
-### Must Pattern (Init Only)
+### Must Pattern (Init-Time Only)
+
+**CRITICAL SCOPE RESTRICTION**: `Must*` functions are acceptable ONLY at initialization time:
+- Package-level `var` declarations
+- `init()` functions
+
+**FORBIDDEN in runtime code** — any function called after program starts.
 
 ```go
 // Must wraps function that returns (T, error), panics on error.
-// Use ONLY for initialization that must succeed.
 func Must[T any](v T, err error) T {
     if err != nil {
         panic(err)
@@ -518,14 +523,42 @@ func Must[T any](v T, err error) T {
     return v
 }
 
-// Usage — only in init/main for truly fatal conditions
+// ACCEPTABLE — package-level vars, fails at startup
 var (
     templates = Must(template.ParseGlob("templates/*.html"))
     config    = Must(LoadConfig("config.yaml"))
 )
 
-// NEVER use Must in request handling or business logic
+// ACCEPTABLE — init(), fails at startup
+func init() {
+    db = Must(sql.Open("postgres", connStr))
+}
+
+// FORBIDDEN — runtime code, unpredictable failure
+func (s *Service) ProcessRequest(ctx context.Context, req Request) error {
+    cfg := Must(parseConfig(req.Data))  // WRONG: panics at runtime
+    // ...
+}
+
+// REQUIRED — runtime code returns errors
+func (s *Service) ProcessRequest(ctx context.Context, req Request) error {
+    cfg, err := parseConfig(req.Data)
+    if err != nil {
+        return fmt.Errorf("parsing config: %w", err)
+    }
+    // ...
+}
 ```
+
+**Why init-time is acceptable:**
+- Program fails immediately, before any real work
+- Caught on first test run or deployment
+- No user requests affected
+
+**Why runtime is forbidden:**
+- Unpredictable failure point
+- Caller cannot recover or retry
+- Violates Go's error handling contract
 
 ---
 

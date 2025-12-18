@@ -29,7 +29,7 @@ local loki = g.query.loki;
 ### Vendor Dependencies
 
 ```bash
-# Initialize jsonnet-bundler
+# Initialise jsonnet-bundler
 jb init
 
 # Install Grafonnet
@@ -217,7 +217,7 @@ local podsTable =
     + prometheus.withInstant(true),
   ])
   + table.queryOptions.withTransformations([
-    table.transformation.withId('organize')
+    table.transformation.withId('organise')
     + table.transformation.withOptions({
       excludeByName: {
         Time: true,
@@ -290,7 +290,7 @@ local logsPanel =
 
 ## Layout Patterns
 
-### Row Organization
+### Row Organisation
 
 ```jsonnet
 local row = g.panel.row;

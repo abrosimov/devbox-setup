@@ -178,23 +178,179 @@ ls requirements.txt requirements-dev.txt 2>/dev/null
 ## Formatting
 
 - Format changed lines with `black` (not the whole file in legacy codebases)
-- Inline comments: **two spaces** before `#`, **one space** after (PEP 8)
-- Comments explain **WHY**, not **WHAT**
-- Don't comment obvious code — it adds noise without value
+- Follow PEP 8 style guidelines
+
+## Documentation Policy
+
+### When Docstrings ARE Required
+
+Add docstrings ONLY for:
+
+| Element | Requires Docstring | Example |
+|---------|-------------------|---------|
+| **Public modules** | ✅ Yes | Top-level `"""Module description."""` |
+| **Public classes** | ✅ Yes | Classes used by external code |
+| **Public functions** | ✅ Yes | Functions in public API |
+| **Complex algorithms** | ✅ Yes | Non-obvious logic that needs explanation |
+| **Type-specific returns** | ✅ Yes | When return type isn't obvious from signature |
+
+### When Docstrings Are NOT Required
+
+Skip docstrings for:
+
+| Element | Skip Docstring | Reasoning |
+|---------|---------------|-----------|
+| **Private helpers** | ❌ No | Function names starting with `_` — internal use |
+| **Self-explanatory code** | ❌ No | `def get_user_by_id(user_id: str) -> User` is clear |
+| **Property getters** | ❌ No | `@property def name(self) -> str: return self._name` |
+| **Obvious implementations** | ❌ No | Simple CRUD operations, straightforward logic |
+| **Test functions** | ❌ No | Test names should be descriptive enough |
+
+### Docstring Patterns
+
+**For public functions:**
+```python
+def fetch_user(user_id: str, include_deleted: bool = False) -> User | None:
+    """Fetch user by ID from the database.
+
+    Args:
+        user_id: Unique user identifier.
+        include_deleted: If True, include soft-deleted users.
+
+    Returns:
+        User object if found, None otherwise.
+
+    Raises:
+        DatabaseError: If database connection fails.
+    """
+```
+
+**For classes:**
+```python
+class UserService:
+    """Handles user-related business logic.
+
+    This service coordinates between the user repository,
+    email client, and audit logger.
+    """
+```
+
+**Don't document the obvious:**
+```python
+# BAD — docstring adds no value
+def get_name(self) -> str:
+    """Get the name.
+
+    Returns:
+        The name string.
+    """
+    return self._name
+
+# GOOD — type hint is sufficient
+def get_name(self) -> str:
+    return self._name
+
+# BAD — obvious from function name and types
+def calculate_total(items: list[Item]) -> Decimal:
+    """Calculate total price of items.
+
+    Args:
+        items: List of items.
+
+    Returns:
+        Total price.
+    """
+    return sum(item.price for item in items)
+
+# GOOD — name + types tell the full story
+def calculate_total(items: list[Item]) -> Decimal:
+    return sum(item.price for item in items)
+```
+
+### The Export Boundary (Python Doesn't Have One)
+
+Unlike Go, Python doesn't have compiler-enforced public/private. Use these conventions:
+
+| Convention | Visibility | Documentation |
+|------------|-----------|---------------|
+| `public_function()` | Public API | ✅ Requires docstring |
+| `_private_helper()` | Internal use | ❌ No docstring needed |
+| `__init__.py` exports | Explicit public API | ✅ Document all exports |
+
+**Rule of thumb:** If it's in `__all__` or imported by external code → document it.
+
+### Inline Comments
+
+- Two spaces before `#`, one after (PEP 8)
+- Explain **WHY**, not **WHAT**
+- Most code should need NO comments — use better names instead
 
 ```python
-# BAD — wrong spacing
-code# comment
-code #comment
-
-# BAD — explains what (obvious)
+# BAD — describes what code does (obvious from reading)
 i += 1  # increment i
 users = []  # create empty list
+if status == "active":  # check if status is active
+users.sort()  # sort users
 
-# GOOD — explains why
+# BAD — "why" is already obvious from naming/context
 i += 1  # skip header row
-users = []  # empty list serialises to [] in JSON, None would be null
+cache[key] = value  # store in cache
+user_count += 1  # include guest user
+
+# GOOD — explains WHY we deviate from the obvious approach
+response = requests.get(url, timeout=(5, 30))
+if response.status_code == 200:
+    return response.json()
+return None  # API returns 404 for missing users instead of empty list
+
+# GOOD — explains external constraints/requirements
+time.sleep(0.1)  # API rate limit: 10 requests/sec maximum
+
+# GOOD — explains non-obvious workaround
+data = json.loads(text.replace("'", '"'))  # legacy API uses single quotes, not valid JSON
+
+# GOOD — explains business rule not encoded in code structure
+if retries > 3:
+    notify_ops_team()  # SLA requires manual intervention after 3 failures
 ```
+
+**Better approach — eliminate most comments:**
+
+Instead of commenting, improve the code:
+
+```python
+# BAD — comment explains bad code
+i = 0
+for row in rows:
+    if i == 0:  # skip header
+        i += 1
+        continue
+    process(row)
+    i += 1
+
+# GOOD — self-documenting
+for row in rows[1:]:  # or: next(reader) before loop
+    process(row)
+
+# BAD — comment explains unclear logic
+if status == "active":  # only active users count toward license
+    license_count += 1
+
+# GOOD — extract to named function
+if should_count_toward_license(user):
+    license_count += 1
+
+# BAD — comment explains magic number
+if file_size > 10485760:  # 10MB in bytes
+    use_streaming()
+
+# GOOD — named constant
+MAX_IN_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+if file_size > MAX_IN_MEMORY_SIZE:
+    use_streaming()
+```
+
+**The 90% rule:** If you're writing a comment, first ask: "Can I change the code so the comment isn't needed?"
 
 ## Code Style
 
@@ -829,7 +985,7 @@ modified: path/to/existing_file.py
 - Format changed lines with `black` (not the whole file in legacy codebases)
 - Prefer composition over inheritance
 - Don't abstract prematurely — wait until you have 3+ uses
-- Comments explain WHY, not WHAT (two spaces before `#`, one after)
+- Follow Documentation Policy above — docstrings only for public API, inline comments rare
 - Adapt to existing codebase — improve cheaply where you touch, keep idiomatic
 - Write backward compatible code — never break existing consumers
 - Refactor only when meaningful AND explicitly requested by user

@@ -57,11 +57,12 @@ type UserService struct {
 | Anti-pattern | Problem |
 |--------------|---------|
 | `interfaces.go` file | Interfaces divorced from usage |
-| `types.go` with interfaces | Same problem |
+| `types.go` file | Types divorced from behaviour, god file |
+| `errors.go` file | Errors lose context, unclear which function returns what |
 | Interface in implementation package | Tight coupling |
 | Shared interface package | Unnecessary coupling |
 
-**Exception:** Public API interfaces for external packages may live in dedicated files.
+**Exception:** API/DTO packages where types ARE the product (generated clients, protobuf) may use collection files.
 
 ### Small Interfaces
 
@@ -422,20 +423,50 @@ func (s *Service) Process() error {
 
 ## Type Safety: Compile-Time over Runtime
 
-### Typed IDs
+### Typed Identifiers — When They Add Value
+
+Typed wrappers provide compile-time safety, but **not every string needs a type**.
+
+**The Confusion Test:** "Is there a realistic scenario where this type could be confused with another?"
+
+| Confusion Risk | Example | Typed Wrapper? |
+|----------------|---------|----------------|
+| **High** — Multiple similar IDs | `UserID` vs `OrderID` in payment | ✅ Yes |
+| **High** — Similar concepts | `NodeName` vs `HostName` | ✅ Yes |
+| **Low** — Single-purpose | `APIEndpoint` (only one exists) | ❌ No |
+| **Low** — Internal/unexported | `secretName` in one file | ❌ No |
 
 ```go
-// BAD — wrong ID type passed silently
-func GetUser(id string) (*User, error)
-func GetOrder(id string) (*Order, error)
-user, _ := GetUser(orderID)  // compiles, fails at runtime
-
-// GOOD — compiler catches type mismatch
+// GOOD — confusion risk exists
 type UserID string
 type OrderID string
-func GetUser(id UserID) (*User, error)
-func GetOrder(id OrderID) (*Order, error)
-user, _ := GetUser(orderID)  // ERROR: cannot use OrderID as UserID
+func ProcessPayment(userID UserID, orderID OrderID) error
+
+// BAD — overengineering, nothing to confuse with
+type APIEndpoint string   // What else would be an endpoint?
+type secretName string    // Internal, limited scope
+```
+
+### When NOT to Use Typed Wrappers
+
+| Skip Typed Wrapper When | Reason |
+|-------------------------|--------|
+| Single-purpose type | Nothing to confuse with |
+| Unexported, local scope | Limited exposure, low risk |
+| Pass-through data | No type comparison happening |
+| No similar concepts | Wrapper adds no safety |
+
+### String() Method
+
+Defined types work with `%s`/`%v` without `String()`. Add `String()` only when:
+
+- Type used with `fmt.Stringer` interfaces
+- Part of public API
+- Other domain types implement it (consistency)
+
+```go
+// If you add String(), verify compliance:
+var _ fmt.Stringer = UserID("")
 ```
 
 ### Type Conversion Rules
@@ -591,10 +622,13 @@ Unit tests are required. Integration tests are a separate concern (often separat
 | Violation | Fix |
 |-----------|-----|
 | `interfaces.go` file | Move interface to consumer file |
+| `types.go` file | Move types to files with related logic |
+| `errors.go` file | Move errors to files with functions returning them |
 | API struct passed to repository | Convert through domain |
 | DB struct in API response | Convert through domain |
 | Nil check inside method | Move to constructor |
-| `string` for ID | Define `type XxxID string` |
+| `string` for ID with confusion risk | Define `type XxxID string` |
+| Typed wrapper for single-purpose string | Use plain `string` (no confusion risk) |
 | HTTP call inside transaction | Move before/after transaction |
 | Test skipped "requires database" | Mock the database interface |
 | Config pointer for singleton | Use value |

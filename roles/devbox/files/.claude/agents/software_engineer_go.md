@@ -176,23 +176,92 @@ The Go compiler is your first line of defence. **Every error caught at compile t
 
 ### Techniques to Shift Errors to Compile-Time
 
-#### 1. Typed IDs Instead of Raw Strings
+#### 1. Typed Identifiers — When They Add Value
+
+Typed wrappers (e.g., `type UserID string`) provide compile-time safety, but **not every string needs a type**.
+
+##### The Confusion Test
+
+**Before creating a typed wrapper, ask:** "Is there a realistic scenario where this type could be confused with another similar-looking type?"
+
+| Confusion Risk | Example | Typed Wrapper? |
+|----------------|---------|----------------|
+| **High** — Multiple ID types in same context | `UserID` vs `OrderID` in payment processing | ✅ Yes |
+| **High** — Similar concepts, different meanings | `NodeName` vs `HostName` vs `ClusterName` in multi-cluster code | ✅ Yes |
+| **Low** — Single-purpose, obvious from context | `APIEndpoint` (only one endpoint concept exists) | ❌ No |
+| **Low** — Internal/unexported, limited scope | `secretName` used in one file | ❌ No |
+| **Low** — Generic string, no semantic difference | `LabelSelector` (it's just a selector string) | ❌ No |
+
+##### Decision Framework
+
+```
+1. Are there multiple similar-looking types in this context?
+   NO → Plain string is fine
+   YES ↓
+
+2. Could passing the wrong type compile but fail at runtime?
+   NO → Plain string is fine
+   YES ↓
+
+3. Is this a public API boundary or internal implementation?
+   INTERNAL (unexported) → Consider: is scope small enough that confusion is unlikely?
+   PUBLIC → Lean toward typed wrapper
+
+4. Would the wrapper capture meaningful domain semantics?
+   NO → Plain string
+   YES → Create typed wrapper
+```
+
+##### Good Examples
 
 ```go
-// BAD — runtime: wrong ID type passed silently
-func GetUser(id string) (*User, error)
-func GetOrder(id string) (*Order, error)
+// GOOD — Multiple ID types that could be confused
+type UserID string   // These exist in the same functions,
+type OrderID string  // confusion is a real risk
 
-user, _ := GetUser(orderID)  // compiles, fails at runtime
+func ProcessPayment(userID UserID, orderID OrderID) error
 
-// GOOD — compile-time: types prevent mixing
-type UserID string
-type OrderID string
+// GOOD — Domain concept with specific meaning (Kubernetes pattern)
+type NodeName string  // Captures intent: not hostname, not cloud ID
 
-func GetUser(id UserID) (*User, error)
-func GetOrder(id OrderID) (*Order, error)
+// GOOD — Enum-like values where exhaustive switch matters
+type ClusterStatus string
+const (
+    ClusterStatusReady   ClusterStatus = "Ready"
+    ClusterStatusFailed  ClusterStatus = "Failed"
+)
+```
 
-user, _ := GetUser(orderID)  // ERROR: cannot use orderID (OrderID) as UserID
+##### Bad Examples (Overengineering)
+
+```go
+// BAD — Single-purpose, nothing to confuse with
+type APIEndpoint string   // What else would be an endpoint here?
+type LabelSelector string // Just a selector string
+
+// BAD — Internal detail with limited scope
+type secretNamespace string  // unexported, used in one place
+type secretName string       // no confusion risk
+```
+
+##### String() Method: Context-Dependent
+
+Defined types (`type UserID string`) work with `%s`/`%v` without `String()`.
+However, `String()` provides `fmt.Stringer` compliance.
+
+| Add String() When | Skip String() When |
+|-------------------|-------------------|
+| Type used with `fmt.Stringer` interfaces | Unexported, limited scope |
+| Part of public API | Never passed to Stringer-accepting code |
+| Other domain types implement it (consistency) | Isolated internal detail |
+| Want compile-time interface check | |
+
+```go
+// If you add String(), verify compliance:
+var _ fmt.Stringer = UserID("")
+
+// DON'T add String() just because — it's not always needed
+// Go's %s/%v work automatically with defined types
 ```
 
 ##### The Conversion Rule
@@ -258,7 +327,7 @@ slices.Contains(ids, target)
 ids = append(ids, newID)
 ```
 
-**Struct initialization:**
+**Struct initialisation:**
 ```go
 // BAD — redundant if id is already UserID
 user := User{ID: UserID(id)}
@@ -1311,24 +1380,59 @@ func NewHandler(users UserGetter) *Handler {
 func NewUserStore() *UserStore { ... }
 ```
 
-### Interface File Placement — Same File as Consumer
+### File Organisation — Locality Over Collection
 
-**NEVER create separate `interfaces.go` files.** Define interfaces in the same file where they are used:
+**NEVER create `types.go`, `errors.go`, or `interfaces.go` files.** Define types, errors, and interfaces in the same file as their primary use.
+
+##### Why Locality Matters
+
+```
+net/http/                          # Go stdlib pattern
+├── client.go      ← Client struct here
+├── request.go     ← Request struct here
+├── response.go    ← Response struct here
+├── server.go      ← Server struct + ErrServerClosed here
+└── transport.go   ← Transport struct here
+
+# NO types.go collecting all structs
+# NO errors.go collecting all errors
+```
+
+##### Anti-Patterns to Avoid
+
+| Anti-pattern | Problem |
+|--------------|---------|
+| `types.go` file | God file, hidden coupling, types divorced from behaviour |
+| `errors.go` file | Errors lose context, unclear which function returns what |
+| `interfaces.go` file | Interfaces divorced from consumers, encourages bloat |
+| Interface in implementation package | Tight coupling, defeats dependency inversion |
+
+##### Where Things Should Live
+
+| Element | Location | Example |
+|---------|----------|---------|
+| Domain entity | File named after entity | `User` in `user.go` |
+| Service struct | File named after service | `UserService` in `user_service.go` |
+| Request/Response DTO | Same file as handler using it | `CreateUserRequest` in `user_handler.go` |
+| Repository model | Same file as repository | `UserModel` in `user_repository.go` |
+| Interface | Same file as consumer | `UserRepository` interface in `user_service.go` |
+| Sentinel error | Same file as function returning it | `ErrUserNotFound` in `user_repository.go` |
+
+##### Good Example — Locality
 
 ```go
-// BAD — separate interfaces.go file
-// internal/service/interfaces.go
-type UserRepository interface { ... }
-type OrderRepository interface { ... }
-type PaymentGateway interface { ... }
+// internal/service/user_service.go — everything user-related together
 
-// GOOD — interface defined in the file that uses it
-// internal/service/user_service.go
+// Interface defined where it's consumed
 type UserRepository interface {
     FindByID(ctx context.Context, id UserID) (*User, error)
     Insert(ctx context.Context, user *User) error
 }
 
+// Error defined where it's returned
+var ErrUserNotFound = errors.New("user not found")
+
+// Service struct
 type UserService struct {
     repo   UserRepository
     logger zerolog.Logger
@@ -1337,23 +1441,50 @@ type UserService struct {
 func NewUserService(repo UserRepository, logger zerolog.Logger) (*UserService, error) {
     // ...
 }
+
+func (s *UserService) GetUser(ctx context.Context, id UserID) (*User, error) {
+    user, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return nil, ErrUserNotFound  // Clear: this function returns this error
+        }
+        return nil, fmt.Errorf("failed to find user: %w", err)
+    }
+    return user, nil
+}
 ```
 
-**Why same-file placement:**
-- **Locality** — Interface is visible where it's needed, no hunting across files
-- **Minimal scope** — Interface only exists where it's consumed
-- **Easy refactoring** — Change interface and consumer together
-- **Discourages over-abstraction** — You define only what you need
+##### Bad Example — Collection Files
 
-**Anti-patterns to avoid:**
-| Anti-pattern | Problem |
-|--------------|---------|
-| `interfaces.go` file | Interfaces divorced from usage, encourages bloat |
-| `types.go` with interfaces | Same problem — interfaces should live with consumers |
-| Interface in implementation package | Tight coupling, defeats dependency inversion |
-| Shared interface package | Creates unnecessary coupling between consumers |
+```go
+// BAD — types.go becomes a dumping ground
+// internal/service/types.go
+type User struct { ... }
+type Order struct { ... }
+type Product struct { ... }
+type CreateUserRequest struct { ... }
+type UpdateUserRequest struct { ... }
+// ... 30 more unrelated types
 
-**Exception:** Interfaces that are part of your public API (exported for external packages) may live in a dedicated file if they define a contract that multiple external consumers implement.
+// BAD — errors.go divorces errors from context
+// internal/service/errors.go
+var (
+    ErrNotFound     = errors.New("not found")      // Which function returns this?
+    ErrUnauthorized = errors.New("unauthorized")   // What operation?
+    ErrInvalidInput = errors.New("invalid input")  // For what?
+)
+```
+
+##### The Locality Test
+
+Can a developer understand a function without jumping to another file to see type/error definitions?
+
+- **YES** → Good organisation
+- **NO** → Consider moving types/errors closer to usage
+
+##### Exception
+
+API/DTO packages where types ARE the product (e.g., generated API clients, protobuf outputs) may use collection files — but regular application code should not.
 
 ### Return Concrete Types
 Return structs, accept interfaces. Allows adding methods without breaking consumers.

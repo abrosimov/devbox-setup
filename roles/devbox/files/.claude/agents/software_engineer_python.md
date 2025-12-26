@@ -182,102 +182,170 @@ ls requirements.txt requirements-dev.txt 2>/dev/null
 
 ## Documentation Policy
 
-### When Docstrings ARE Required
+**Default: NO docstrings.** Type hints and clear names are your primary documentation.
 
-Add docstrings ONLY for:
+### The Information Test
 
-| Element | Requires Docstring | Example |
-|---------|-------------------|---------|
-| **Public modules** | ✅ Yes | Top-level `"""Module description."""` |
-| **Public classes** | ✅ Yes | Classes used by external code |
-| **Public functions** | ✅ Yes | Functions in public API |
-| **Complex algorithms** | ✅ Yes | Non-obvious logic that needs explanation |
-| **Type-specific returns** | ✅ Yes | When return type isn't obvious from signature |
+Before writing a docstring, ask: **"Does this add information beyond the signature?"**
 
-### When Docstrings Are NOT Required
-
-Skip docstrings for:
-
-| Element | Skip Docstring | Reasoning |
-|---------|---------------|-----------|
-| **Private helpers** | ❌ No | Function names starting with `_` — internal use |
-| **Self-explanatory code** | ❌ No | `def get_user_by_id(user_id: str) -> User` is clear |
-| **Property getters** | ❌ No | `@property def name(self) -> str: return self._name` |
-| **Obvious implementations** | ❌ No | Simple CRUD operations, straightforward logic |
-| **Test functions** | ❌ No | Test names should be descriptive enough |
-
-### Docstring Patterns
-
-**For public functions:**
 ```python
-def fetch_user(user_id: str, include_deleted: bool = False) -> User | None:
-    """Fetch user by ID from the database.
+# ❌ FAILS test — signature already says everything
+def get_user_by_id(user_id: str) -> User | None:
+    """Get user by ID."""  # ← DELETE THIS
 
-    Args:
-        user_id: Unique user identifier.
-        include_deleted: If True, include soft-deleted users.
+# ✅ PASSES test — explains algorithm choice
+def sort_users(users: list[User]) -> list[User]:
+    """Stable sort by (last_name, first_name) using Timsort."""
+```
 
-    Returns:
-        User object if found, None otherwise.
+### When Docstrings ARE Allowed
 
-    Raises:
-        DatabaseError: If database connection fails.
+#### 1. Complex Algorithms
+
+When the implementation uses non-obvious algorithms or logic:
+
+```python
+def find_shortest_path(graph: Graph, start: str, end: str) -> list[str]:
+    """Dijkstra's algorithm with priority queue optimization.
+
+    Returns empty list if no path exists.
     """
 ```
 
-**For classes:**
+**What to document:**
+- Algorithm name/approach
+- Key implementation details
+- Edge case behavior
+
+#### 2. Non-obvious Return Semantics
+
+When type hints don't express the full meaning:
+
 ```python
+def fetch_cached(key: str) -> Data | None:
+    """Returns None on cache miss, NOT if data is invalid.
+
+    Invalid data raises ValueError. Use get() for validation.
+    """
+```
+
+**What to document:**
+- WHY None is returned (vs other reasons)
+- WHEN to use this vs alternative functions
+- Special cases type hints can't express
+
+### When Docstrings Are FORBIDDEN
+
+Docstrings that repeat the signature must be deleted:
+
+```python
+# ❌ FORBIDDEN — redundant
+def create_user(name: str, email: str) -> User:
+    """Create a user with name and email."""
+
+# ✅ CORRECT — signature is sufficient
+def create_user(name: str, email: str) -> User:
+    return User(name=name, email=email)
+
+# ❌ FORBIDDEN — obvious from name
 class UserService:
-    """Handles user-related business logic.
+    """Service for user operations."""
 
-    This service coordinates between the user repository,
-    email client, and audit logger.
-    """
-```
+# ✅ CORRECT — name is self-documenting
+class UserService:
+    def __init__(self, repo: UserRepository) -> None:
+        self.repo = repo
 
-**Don't document the obvious:**
-```python
-# BAD — docstring adds no value
-def get_name(self) -> str:
-    """Get the name.
-
-    Returns:
-        The name string.
-    """
-    return self._name
-
-# GOOD — type hint is sufficient
-def get_name(self) -> str:
-    return self._name
-
-# BAD — obvious from function name and types
-def calculate_total(items: list[Item]) -> Decimal:
-    """Calculate total price of items.
+# ❌ FORBIDDEN — restates types
+def set_email(self, email: str) -> None:
+    """Set the user's email address.
 
     Args:
-        items: List of items.
-
-    Returns:
-        Total price.
+        email: The new email address.
     """
-    return sum(item.price for item in items)
 
-# GOOD — name + types tell the full story
-def calculate_total(items: list[Item]) -> Decimal:
-    return sum(item.price for item in items)
+# ✅ CORRECT — no docstring needed
+def set_email(self, email: str) -> None:
+    self.email = email
 ```
 
-### The Export Boundary (Python Doesn't Have One)
+### Examples: Pass vs Fail
 
-Unlike Go, Python doesn't have compiler-enforced public/private. Use these conventions:
+```python
+# ❌ FAIL — docstring adds nothing
+def get_active_users(self) -> list[User]:
+    """Get all active users.
 
-| Convention | Visibility | Documentation |
-|------------|-----------|---------------|
-| `public_function()` | Public API | ✅ Requires docstring |
-| `_private_helper()` | Internal use | ❌ No docstring needed |
-| `__init__.py` exports | Explicit public API | ✅ Document all exports |
+    Returns:
+        List of active users.
+    """
 
-**Rule of thumb:** If it's in `__all__` or imported by external code → document it.
+# ✅ PASS — no docstring needed
+def get_active_users(self) -> list[User]:
+    return [u for u in self.users if u.active]
+
+# ✅ PASS — documents algorithm choice
+def hash_password(password: str, salt: bytes) -> bytes:
+    """PBKDF2-HMAC-SHA256 with 100k iterations (NIST recommendation)."""
+    return pbkdf2_hmac('sha256', password.encode(), salt, 100_000)
+
+# ✅ PASS — documents non-obvious semantics
+def parse_date(date_str: str) -> datetime | None:
+    """Returns None for invalid format (doesn't raise exception).
+
+    Accepts ISO 8601 only. Use parse_date_loose() for multiple formats.
+    """
+```
+
+### Module-Level Documentation
+
+**Skip module docstrings** for internal modules. File naming should be self-evident:
+
+```python
+# ❌ FORBIDDEN — redundant
+"""User service module.
+
+Contains UserService class for user operations.
+"""
+
+# ✅ CORRECT — file name user_service.py is clear
+from .repository import UserRepository
+
+class UserService:
+    ...
+
+# ✅ ALLOWED — public API entry point with usage patterns
+"""Authentication client for external services.
+
+Usage:
+    client = AuthClient(api_key="...")
+    token = client.get_token(scope="read")
+
+Thread-safe. Handles token refresh automatically.
+"""
+```
+
+### Rule Summary
+
+| Element | Docstring? | Reasoning |
+|---------|-----------|-----------|
+| **Simple functions** | ❌ No | Signature + types tell everything |
+| **Public classes** | ❌ No | Name + `__init__` are self-documenting |
+| **Internal modules** | ❌ No | File structure is self-documenting |
+| **Public API modules** | Rarely | Only for usage patterns, thread-safety notes |
+| **Complex algorithms** | ✅ Yes | Algorithm choice not obvious from code |
+| **Non-obvious semantics** | ✅ Yes | Type hints can't express all meanings |
+| **Private helpers** | ❌ No | Internal implementation details |
+| **Test functions** | ❌ No | Test name should be descriptive |
+
+### The Default Rule
+
+**Most functions need NO docstring.** If you're writing many docstrings, your code probably needs:
+- Better names
+- Simpler logic
+- More specific types
+
+**When in doubt: Skip the docstring.**
 
 ### Inline Comments
 
@@ -476,6 +544,127 @@ def managed_resource():
         yield resource
     finally:
         resource.release()
+```
+
+### Optional Fields - None vs Defaults
+
+**Default to non-None types with meaningful defaults.** Use `Optional[T]` (or `T | None`) only when `None` carries specific semantic meaning beyond "not set".
+
+#### Decision Framework
+
+```
+Does None mean "not set" and is there a sensible default?
+├─ YES → Use default value
+└─ NO  → Does None mean something semantically different from zero/empty?
+         ├─ YES → Use Optional[T]
+         └─ NO  → Use default value
+```
+
+#### Why Defaults Are Preferred
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Safety** | No `AttributeError` from None access |
+| **Simplicity** | No None checks required |
+| **Clarity** | Explicit default behavior |
+| **Type safety** | Fewer union types (`T` vs `T | None`) |
+
+#### Correct Patterns
+
+```python
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, Field
+
+# ✅ GOOD - defaults instead of Optional when appropriate
+class Entity(BaseModel):
+    id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    deleted_at: datetime | None = None  # None has special meaning: not deleted
+    active: bool = True  # Not Optional - always has value
+
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
+
+# ❌ BAD - Optional when default would work
+class Entity(BaseModel):
+    active: Optional[bool] = None  # What does None mean? Just use True/False
+    created_at: Optional[datetime] = None  # Should always be set!
+
+# ✅ GOOD - Optional when None means something specific
+class PaginationConfig(BaseModel):
+    limit: int | None = None  # None = use default (50), 0 = return all (unlimited)
+    offset: int = 0  # Always has value, 0 is valid start
+
+    def get_effective_limit(self) -> int:
+        if self.limit is None:
+            return 50  # system default
+        return self.limit  # could be 0 = unlimited
+
+# ✅ GOOD - Optional for truly optional complex types
+class UserProfile(BaseModel):
+    bio: str = ""  # Empty string, not Optional
+    avatar_url: str | None = None  # None = no avatar uploaded
+    settings: dict[str, Any] = Field(default_factory=dict)  # Empty dict, not Optional
+
+# ❌ BAD - Optional for simple strings/collections
+class UserProfile(BaseModel):
+    bio: Optional[str] = None  # Should be "" by default
+    settings: Optional[dict] = None  # Should be {} by default
+```
+
+#### Dataclasses Pattern
+
+```python
+from dataclasses import dataclass, field
+from datetime import datetime
+
+# ✅ GOOD - field with default_factory
+@dataclass
+class Entity:
+    id: str
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    deleted_at: datetime | None = None  # None = not deleted
+    tags: list[str] = field(default_factory=list)  # Empty list, not Optional
+
+# ❌ BAD - Optional when default works
+@dataclass
+class Entity:
+    tags: list[str] | None = None  # Should use default_factory=list
+```
+
+#### Quick Reference
+
+| Field Type | Default Choice | Use Optional When |
+|------------|---------------|-------------------|
+| `datetime` | Factory or fixed default | None means "not set" with semantic difference |
+| `str` | `""` or meaningful default | Empty string is valid AND distinct from "not provided" |
+| `int` | `0` or meaningful default | 0 is valid AND distinct from "not set" |
+| `bool` | `True` or `False` | Rarely needed (3-state logic) |
+| `list[T]` | `field(default_factory=list)` | Never (empty list is the "not set" state) |
+| `dict[K, V]` | `field(default_factory=dict)` | Never (empty dict is the "not set" state) |
+
+#### Common Mistakes
+
+```python
+# ❌ ANTI-PATTERN: Optional list/dict
+class Config(BaseModel):
+    tags: Optional[list[str]] = None
+    metadata: Optional[dict] = None
+
+# ✅ CORRECT: Default factory
+class Config(BaseModel):
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+# ❌ ANTI-PATTERN: Optional string when empty is fine
+class User(BaseModel):
+    middle_name: Optional[str] = None
+
+# ✅ CORRECT: Empty string default
+class User(BaseModel):
+    middle_name: str = ""
 ```
 
 ## Async Code

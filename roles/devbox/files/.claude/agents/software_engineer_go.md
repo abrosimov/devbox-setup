@@ -1043,6 +1043,173 @@ func FindUser(ctx context.Context, id UserID) (*User, error) {
 }
 ```
 
+### Struct Fields — Pointer vs Value
+
+**Default to value types.** Use pointers only when there's a compelling reason.
+
+#### Core Principle
+
+> If the zero value of a type can represent "not set", use a value. Go's designers gave `time.Time` the `IsZero()` method specifically for this pattern.
+
+#### Decision Tree
+
+```
+1. Does zero value represent "not set" correctly?
+   ├─ time.Time? → ✅ VALUE (use .IsZero())
+   ├─ string?    → ✅ VALUE (use == "")
+   ├─ int?       → ✅ VALUE if 0 means "not set"
+   │              → ❌ POINTER if 0 is valid and distinct from "not set"
+   ├─ bool?      → ✅ VALUE (with default value, rarely Optional)
+   └─ struct?    → ✅ VALUE if small (< 64 bytes)
+                  → ❌ POINTER if large or contains sync primitives
+
+2. Is it a large struct (> 64 bytes)?
+   └─ ❌ POINTER (avoid copy overhead)
+
+3. Contains copy-unsafe fields (sync.Mutex, channels)?
+   └─ ❌ POINTER (REQUIRED - copying is undefined behavior)
+
+4. Need shared mutability across goroutines?
+   └─ ❌ POINTER
+
+5. DEFAULT:
+   └─ ✅ VALUE
+```
+
+#### Why Value Types Are Preferred
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Safety** | No nil pointer panics |
+| **Performance** | No heap allocation, better cache locality |
+| **Simplicity** | No nil checks required |
+| **Idiom** | Go provides zero value semantics (`.IsZero()`, empty string, etc.) |
+| **Clarity** | Fewer indirections, easier to reason about |
+
+#### Correct Patterns
+
+```go
+// ✅ GOOD - soft delete with value types
+type Entity struct {
+    ID        string    `bson:"_id" json:"id"`
+    CreatedAt time.Time `bson:"created_at" json:"created_at"`
+    UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
+    DeletedAt time.Time `bson:"deleted_at,omitempty" json:"deleted_at,omitempty"`  // zero = not deleted
+    DeletedID string    `bson:"deleted_id,omitempty" json:"deleted_id,omitempty"`  // empty = not deleted
+}
+
+func (e *Entity) IsDeleted() bool {
+    return !e.DeletedAt.IsZero()  // Clean, safe
+}
+
+func (e *Entity) MarkDeleted() {
+    e.DeletedAt = time.Now().UTC()
+    e.DeletedID = uuid.New().String()
+}
+
+// ✅ GOOD - pointer when zero value has different meaning
+type PaginationConfig struct {
+    Limit  *int  // nil = use default (50), 0 = return all (unlimited)
+    Offset int   // 0 is valid starting point
+}
+
+func (p *PaginationConfig) GetLimit() int {
+    if p.Limit == nil {
+        return 50  // default page size
+    }
+    if *p.Limit == 0 {
+        return -1  // unlimited
+    }
+    return *p.Limit
+}
+
+// ✅ GOOD - pointer required for copy-unsafe types
+type Worker struct {
+    mu    sync.Mutex  // MUST NOT be copied
+    tasks chan Task
+}
+
+func (w *Worker) Process() {  // Pointer receiver REQUIRED
+    w.mu.Lock()
+    defer w.mu.Unlock()
+    // ...
+}
+
+// ❌ BAD - pointer when value would work
+type Entity struct {
+    DeletedAt *time.Time  // Unnecessary complexity
+}
+
+// Usage is verbose and error-prone:
+if e.DeletedAt != nil && !e.DeletedAt.IsZero() {  // Double check needed!
+    // deleted
+}
+
+// ❌ BAD - value when pointer is required
+type Config struct {
+    MaxRetries int  // Can't distinguish "not set" from 0
+}
+// If caller omits MaxRetries, you get 0. Was that intentional or default?
+```
+
+#### MongoDB/BSON Considerations
+
+Both patterns work with `omitempty`:
+
+```go
+// With value type
+type Entity struct {
+    DeletedAt time.Time `bson:"deleted_at,omitempty"`  // Zero time omitted from BSON
+}
+
+// With pointer type
+type Entity struct {
+    DeletedAt *time.Time `bson:"deleted_at,omitempty"`  // nil omitted from BSON
+}
+```
+
+**Prefer value types** for simplicity - `omitempty` works correctly with zero values.
+
+#### Quick Reference Table
+
+| Field Type | Default Choice | Use Pointer When |
+|------------|---------------|------------------|
+| `time.Time` | ✅ Value (`.IsZero()`) | Never (value is always better) |
+| `string` | ✅ Value (`== ""`) | Never (unless empty string is valid) |
+| `int/int64` | ✅ Value (`== 0`) | 0 is valid AND distinct from "not set" |
+| `float64` | ✅ Value (`== 0.0`) | 0.0 is valid AND distinct from "not set" |
+| `bool` | ✅ Value (with default) | Rarely needed |
+| `error` | ✅ Value | Never (already interface) |
+| Interface types | ✅ Value | Never (already reference types) |
+| Small struct | ✅ Value | nil has special meaning |
+| Large struct (> 64 bytes) | ❌ Pointer | Always |
+| Contains `sync.Mutex` | ❌ Pointer | Always (REQUIRED) |
+| Slices, maps | ✅ Value | Never (already reference types) |
+
+#### Common Mistakes
+
+```go
+// ❌ ANTI-PATTERN: Pointer to slice
+type Config struct {
+    AllowedIPs *[]string  // WRONG: slice is already a reference type
+}
+
+// ✅ CORRECT: Slice without pointer
+type Config struct {
+    AllowedIPs []string  // nil slice = no IPs allowed
+}
+
+// ❌ ANTI-PATTERN: Pointer for simple optional string
+type User struct {
+    MiddleName *string  // Unnecessary
+}
+
+// ✅ CORRECT: Empty string for optional
+type User struct {
+    MiddleName string  // "" = no middle name
+}
+```
+
 ### Variable Names
 Length correlates with scope distance — short names for short scopes:
 

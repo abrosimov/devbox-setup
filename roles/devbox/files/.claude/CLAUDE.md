@@ -66,23 +66,51 @@ Agents follow a typical development pipeline:
 5. **unit_tests_writer_*** - Writes tests with a bug-hunting mindset
 6. **code_reviewer_*** - Validates implementation against requirements, provides structured feedback
 
-## Code Writing Policy
+## Code Writing & Language Discussion Policy
 
-**NEVER write production code directly.** Always delegate to specialized agents:
+**Core Principle:** Specialized agents are the authoritative source for their languages.
+
+### When to Use Language-Specific Agents
+
+Use the appropriate software engineer agent for ANY language-specific topic:
+
+| Situation | Examples | Agent |
+|-----------|----------|-------|
+| **Writing code** | Any code changes, even small fixes | `software-engineer-{lang}` |
+| **Design discussions** | "When to use pointers vs values?", "How should I structure this?" | `software-engineer-{lang}` |
+| **Idiom questions** | "What's the Go way to do X?", "Is this Pythonic?" | `software-engineer-{lang}` |
+| **Architecture decisions** | "Where should this logic live?", "How to organize packages?" | `software-engineer-{lang}` |
+| **Pattern selection** | "Which pattern fits?", "How to implement X idiomatically?" | `software-engineer-{lang}` |
+| **Best practices** | "Should I use X or Y?", "What's the preferred approach?" | `software-engineer-{lang}` |
+
+### Quick Reference
 
 | Task | Agent | Command |
 |------|-------|---------|
-| Python code | `software-engineer-python` | `/implement` |
-| Go code | `software-engineer-go` | `/implement` |
-| Python tests | `unit-test-writer-python` | `/test` |
+| **Any Go topic** (code, design, idioms) | `software-engineer-go` | `/implement` or direct call |
+| **Any Python topic** (code, design, idioms) | `software-engineer-python` | `/implement` or direct call |
 | Go tests | `unit-test-writer-go` | `/test` |
+| Python tests | `unit-test-writer-python` | `/test` |
 
-**Even for "simple" or "small" changes** — agents enforce standards, patterns, and checks that are easy to forget when writing code directly.
+**Even for "quick questions"** — agents enforce standards and provide authoritative answers grounded in official style guides (Effective Go, PEP 8, etc.).
 
-**The only exceptions:**
-- Fixing typos in comments/strings
-- Updating configuration values
-- Changes explicitly requested to be done "inline" by user
+### Exceptions
+
+Answer directly (don't use agent) ONLY for:
+- **General programming concepts** (not language-specific)
+- **Claude Code usage** (features, settings, configuration)
+- **Clarifying user requirements** (understanding what they want)
+- **Trivial typo fixes** in comments/strings
+- **Configuration files** (YAML, JSON, TOML — not code)
+
+### Why This Policy Matters
+
+| Without Policy | With Policy |
+|----------------|-------------|
+| Inconsistent advice | Authoritative, style-guide-backed answers |
+| General knowledge | Language-specific expertise |
+| Potential suboptimal patterns | Enforced best practices |
+| Ad-hoc responses | Systematic, comprehensive guidance |
 
 ## Configuration
 

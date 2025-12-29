@@ -270,38 +270,109 @@ func (s *Service) ProcessOrder(ctx context.Context, orderID string) error {
 }
 ```
 
-### When to Use `%w` vs `%v`
+### ALWAYS Use `%w` When Wrapping
 
-| Situation | Use | Why |
-|-----------|-----|-----|
-| Internal error propagation | `%w` | Preserve error chain for `errors.Is`/`As` |
-| System boundary (API response) | `%v` | Hide internal details, break chain |
-| Logging then returning | `%w` | Preserve for caller |
+**When calling `fmt.Errorf()`, ALWAYS use `%w` to preserve error chains.**
 
 ```go
-// Internal — preserve chain
-func (r *repo) Get(ctx context.Context, id string) (*User, error) {
-    row := r.db.QueryRow(ctx, query, id)
-    if err := row.Scan(&user); err != nil {
-        return nil, fmt.Errorf("scanning user: %w", err)  // %w — internal
-    }
-    return &user, nil
-}
+// ✅ ALWAYS correct when wrapping
+return fmt.Errorf("fetching user: %w", err)
 
-// API boundary — hide internals
-func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
-    user, err := h.service.Get(r.Context(), userID)
+// ❌ NEVER do this
+return fmt.Errorf("fetching user: %v", err)  // Breaks error chain
+```
+
+**Why always `%w`:**
+- Preserves error chain for `errors.Is()` / `errors.As()`
+- Critical for debugging - root cause preserved through entire stack
+- Enables observability - logs capture full context
+- No downside - chain preserved internally, control what users see separately
+
+**Exception:** Only use `%v` when you explicitly want to discard error context (rare, usually wrong).
+
+### Observability: Logging vs User Responses
+
+**Separating internal observability from external communication.**
+
+At API boundaries, errors typically:
+1. Arrive already wrapped (with `%w` through the stack)
+2. Get logged with full context
+3. Get translated to user-safe messages
+
+```go
+func (h *Handler) ProcessOrder(w http.ResponseWriter, r *http.Request) {
+    order, err := h.service.CreateOrder(r.Context(), req)
     if err != nil {
-        if errors.Is(err, storage.ErrNotFound) {
-            http.Error(w, "user not found", http.StatusNotFound)
+        // Classify error type
+        if errors.Is(err, ErrInvalidInput) {
+            // User error - safe to expose
+            respondJSON(w, 400, ErrorResponse{
+                Code:    "INVALID_INPUT",
+                Message: "Invalid order data",
+            })
             return
         }
-        // Log full error, return generic message
-        h.logger.Error().Err(err).Msg("getting user")
-        http.Error(w, "internal error", http.StatusInternalServerError)  // no %w
+
+        // System error - hide internals
+        h.logger.Error().
+            Err(err).  // Full error chain from %w wrapping
+            Str("order_id", req.OrderID).
+            Msg("order creation failed")
+
+        respondJSON(w, 500, ErrorResponse{
+            Code:    "INTERNAL_ERROR",
+            Message: "Unable to process order",
+        })
         return
     }
     // ...
+}
+```
+
+**Key insight:** Error already wrapped with `%w` throughout stack. At boundary:
+- **Log:** Full error object (chain preserved)
+- **Return:** Structured response (safe message)
+
+No `fmt.Errorf()` needed at boundary - you're consuming the error, not propagating it.
+
+### Error Classification Pattern
+
+When propagating to outer layers, always use `%w`:
+
+```go
+// Internal service layer
+func (s *Service) CreateOrder(ctx context.Context, req Request) (*Order, error) {
+    if err := req.Validate(); err != nil {
+        // Classify as user error, preserve chain
+        return nil, fmt.Errorf("invalid request: %w", err)
+    }
+
+    if err := s.repo.Save(ctx, order); err != nil {
+        // Classify as system error, preserve chain
+        return nil, fmt.Errorf("saving order: %w", err)
+    }
+    return order, nil
+}
+
+// Handler layer consumes and translates
+func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+    order, err := h.service.CreateOrder(r.Context(), req)
+    if err != nil {
+        h.translateAndRespond(w, err)
+        return
+    }
+    // ...
+}
+
+func (h *Handler) translateAndRespond(w http.ResponseWriter, err error) {
+    // Works because %w preserved chain in service layer
+    if errors.Is(err, ErrInvalidInput) {
+        respondJSON(w, 400, ErrorResponse{Code: "INVALID_INPUT", Message: "..."})
+        return
+    }
+
+    h.logger.Error().Err(err).Msg("request failed")
+    respondJSON(w, 500, ErrorResponse{Code: "INTERNAL_ERROR", Message: "..."})
 }
 ```
 
@@ -508,11 +579,19 @@ if ew.err != nil {
 
 ### Must Pattern (Init-Time Only)
 
-**CRITICAL SCOPE RESTRICTION**: `Must*` functions are acceptable ONLY at initialization time:
+**CRITICAL SCOPE RESTRICTION — Stricter than typical Go code.**
+
+**Our rule:** `Must*` acceptable ONLY at initialization:
 - Package-level `var` declarations
 - `init()` functions
 
 **FORBIDDEN in runtime code** — any function called after program starts.
+
+**Why stricter than common Go practice?**
+
+You'll see `Must*` used in runtime code in many Go projects. We forbid this because of the **Error Hierarchy Principle**:
+- **Startup panic** (init) — Caught on first test run → ACCEPTABLE
+- **Runtime panic** (handler) — Crashes production service → UNACCEPTABLE
 
 ```go
 // Must wraps function that returns (T, error), panics on error.
@@ -550,15 +629,16 @@ func (s *Service) ProcessRequest(ctx context.Context, req Request) error {
 }
 ```
 
-**Why init-time is acceptable:**
-- Program fails immediately, before any real work
-- Caught on first test run or deployment
-- No user requests affected
+**Detection timeline:**
 
-**Why runtime is forbidden:**
-- Unpredictable failure point
-- Caller cannot recover or retry
-- Violates Go's error handling contract
+| Pattern | Failure Detected | Impact |
+|---------|------------------|--------|
+| `Must()` in `var` | First test run / CI | Zero user impact |
+| `Must()` in `init()` | Process start / deploy | Zero user impact |
+| `Must()` in handler | Production runtime | Service crash, user impact |
+| Error return | Production runtime | Graceful degradation, logging |
+
+**This is a production service standard.** Scripts and CLI tools have different trade-offs.
 
 ---
 
@@ -585,6 +665,58 @@ if strings.Contains(err.Error(), "not found") { }
 
 // GOOD — use sentinel or type
 if errors.Is(err, ErrNotFound) { }
+```
+
+### Breaking Error Chains
+
+```go
+// ❌ BAD — throwing away error context
+if err != nil {
+    return errors.New("operation failed")  // Lost all context!
+}
+
+// ❌ BAD — using %v breaks chain
+if err != nil {
+    return fmt.Errorf("operation failed: %v", err)  // errors.Is() won't work
+}
+
+// ✅ GOOD — preserve chain
+if err != nil {
+    return fmt.Errorf("operation failed: %w", err)
+}
+```
+
+**Only discard errors if you're explicitly choosing not to propagate:**
+
+```go
+// Acceptable — intentionally ignoring non-critical error
+if err := cache.Set(key, val); err != nil {
+    logger.Warn().Err(err).Msg("cache set failed, continuing")  // Log it
+    // Don't return — cache failure not critical
+}
+```
+
+### Mixing Error Handling with User Responses
+
+```go
+// ❌ WORST OF BOTH WORLDS — leaks internals AND uses %v
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
+    user, err := h.service.Get(r.Context(), userID)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("error: %v", err), 500)  // Leaks internal errors!
+        return
+    }
+}
+
+// ✅ GOOD — separate concerns
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
+    user, err := h.service.Get(r.Context(), userID)
+    if err != nil {
+        h.logger.Error().Err(err).Msg("getting user")  // Full context in logs
+        http.Error(w, "internal server error", 500)     // Generic to user
+        return
+    }
+}
 ```
 
 ### Returning err AND value

@@ -56,7 +56,7 @@ Consult these reference files for pattern verification:
 | Document | Contents |
 |----------|----------|
 | `philosophy.md` | **Core principles — pragmatic engineering, API design, DTO vs domain object, testing** |
-| `go/go_architecture.md` | **Interfaces, layer separation, constructors, nil safety, type safety — VERIFY THESE** |
+| `go/go_architecture.md` | **Interfaces, struct separation, constructors, nil safety, type safety, project structure — VERIFY THESE** |
 | `go/go_errors.md` | Error strategy, sentinel errors, custom types, wrapping |
 | `go/go_patterns.md` | Functional options, enums, JSON, generics, HTTP patterns |
 | `go/go_concurrency.md` | Graceful shutdown, errgroup, sync primitives, rate limiting |
@@ -479,10 +479,22 @@ Interfaces defined in consumer file (not interfaces.go): ___
 Interfaces in wrong location (separate file): ___
   List: ___
 
-Layer separation (API/Domain/DBAL):
-  - API structs passed directly to repository: ___
-  - DB models returned in API responses: ___
-  - Conversions go through domain layer: YES/NO
+Project structure:
+  - Follows existing codebase patterns: YES/NO
+  - Imposes new architectural pattern unnecessarily: ___
+    List violations: ___
+
+Struct naming:
+  - Uses layer-suffix naming when codebase uses direct names: ___
+    Examples (UserService should be User, UserRepository should be Store): ___
+  - Uses direct names when codebase uses layer suffixes: ___
+    Examples (should follow existing *Service/*Repository pattern): ___
+
+Struct separation:
+  - Unnecessary separation (same fields, no technical reason): ___
+    List: ___ (should use one struct with tags)
+  - Missing separation when needed (DB types differ, security fields): ___
+    List: ___
 
 Constructor patterns:
   - Argument order correct (config, deps, logger): ___
@@ -492,7 +504,8 @@ Constructor patterns:
     List: ___
 
 Type safety:
-  - Raw strings used for IDs (should be typed): ___
+  - Raw strings for IDs with confusion risk (should be typed): ___
+  - Typed wrappers for single-purpose strings (unnecessary): ___
   - Typed IDs with unnecessary conversions: ___
 
 DTO vs Domain Object (see go/go_architecture.md):
@@ -1194,9 +1207,12 @@ Provide a structured review:
 
 ### Architecture (see go/go_architecture.md)
 - [ ] service/interfaces.go - Interfaces in separate file (move to consumer)
-- [ ] handler.go:25 - API struct passed directly to repository
+- [ ] internal/service/user.go - Imposes layer-based structure on feature-based codebase
+- [ ] internal/user/user_service.go - Uses layer suffix when codebase uses direct names
+- [ ] user.go:25 - Unnecessary struct separation (UserDTO has same fields as User, use one struct with tags)
 - [ ] service.go:40 - Constructor arg order wrong (logger before deps)
-- [ ] user.go:10 - Raw string for UserID (should be typed)
+- [ ] user.go:10 - Raw string for UserID with confusion risk (multiple ID types, should be typed)
+- [ ] config.go:5 - Typed wrapper for single-purpose string (unnecessary, no confusion risk)
 - [ ] user_test.go:1 - Test skipped "requires MongoDB" (should mock)
 
 ### API Surface (Over-exported)

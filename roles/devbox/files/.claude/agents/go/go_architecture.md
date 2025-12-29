@@ -85,85 +85,279 @@ Return structs, accept interfaces. Allows adding methods without breaking consum
 
 ---
 
-## Layer Separation
+## Project Structure — Package by Feature
 
-### The Three Entity Layers
-
-Every application has three distinct entity types that MUST remain separate:
-
-| Layer | Entities | Purpose | Location |
-|-------|----------|---------|----------|
-| **API** | DTOs, Request/Response | External contract, serialization | `internal/handler/`, `internal/api/` |
-| **Domain** | Business entities | Core business rules, validation | `internal/domain/`, `internal/service/` |
-| **DBAL** | Repository models | Persistence concerns, queries | `internal/repository/`, `internal/store/` |
-
-### Conversion Flow
+Organize code by what it does, not by architectural layer:
 
 ```
-Inbound:   API → Domain → DBAL
-Outbound:  DBAL → Domain → API
+project/
+├── cmd/
+│   └── appname/
+│       └── main.go
+├── internal/
+│   ├── user/           # Everything user-related together
+│   │   ├── user.go         # User struct, validation, core logic
+│   │   └── store.go        # Database operations
+│   ├── order/          # Everything order-related together
+│   │   ├── order.go
+│   │   └── store.go
+│   ├── auth/           # Authentication
+│   │   └── auth.go
+│   └── server/         # HTTP server, routes
+│       └── server.go
+├── pkg/                # Only if meant to be imported by external projects
+├── go.mod
+└── go.sum
 ```
 
-**Direct conversion between API and DBAL is FORBIDDEN.**
+**Benefits:**
+- High cohesion — related code lives together
+- Low coupling — packages are self-contained
+- Easy navigation — find user code in `user/` package
+- Matches Kubernetes, Docker, and major Go projects
 
-### Entity Definition by Layer
+### Adapt to Existing Codebase
+
+**DO NOT impose architectural patterns.** Follow what the codebase already uses:
+
+| If codebase uses... | Follow it |
+|---------------------|-----------|
+| Layer packages (`/service/`, `/repository/`) | Add to existing layers |
+| Feature packages (`/user/`, `/order/`) | Add to feature packages |
+| Flat structure | Keep it flat |
+| `*Service`/`*Repository` naming | Use that naming |
+| Direct struct names | Use direct names |
+
+**Your job is to write code that fits, not to refactor toward a different architecture.**
+
+---
+
+## Struct Naming — Be Direct
+
+Name structs after what they ARE, not what layer they belong to:
 
 ```go
-// API layer — internal/handler/user_dto.go
-type CreateUserRequest struct {
-    Email    string `json:"email"`
-    Name     string `json:"name"`
-    Password string `json:"password"`  // accepted but never stored directly
-}
+// GOOD — direct, Go-stdlib style
+type User struct { ... }           // The thing itself
+type Client struct { ... }         // Like http.Client
+type Store struct { ... }          // Like blob.Store — holds/retrieves things
+type Cache struct { ... }          // Like sync.Map — caches things
+type Writer struct { ... }         // Like io.Writer — writes things
 
-func (r CreateUserRequest) ToDomain() *domain.User {
-    return &domain.User{
-        Email: domain.Email(r.Email),
-        Name:  r.Name,
-    }
-}
-
-// Domain layer — internal/domain/user.go
-type UserID string
-type Email string
-
-type User struct {
-    ID           UserID
-    Email        Email
-    Name         string
-    PasswordHash []byte  // internal, never in API
-    CreatedAt    time.Time
-}
-
-// DBAL layer — internal/repository/user_model.go
-type UserModel struct {
-    ID           string     `db:"id"`
-    Email        string     `db:"email"`
-    PasswordHash []byte     `db:"password_hash"`
-    DeletedAt    *time.Time `db:"deleted_at"`  // soft delete, not in domain
-}
-
-func (m UserModel) ToDomain() *domain.User { ... }
-func (UserModel) FromDomain(u *domain.User) UserModel { ... }
+// AVOID — implies architectural layers (use only if codebase already uses these)
+type UserService struct { ... }    // "Service" is a layer concept
+type UserRepository struct { ... } // "Repository" is DDD terminology
+type UserEntity struct { ... }     // "Entity" is DDD terminology
+type UserDTO struct { ... }        // "DTO" implies transfer between layers
+type UserModel struct { ... }      // "Model" implies MVC/DDD separation
 ```
 
-### Why Layer Separation Matters
+---
 
-| Problem | Consequence |
-|---------|-------------|
-| API struct in DB layer | DB schema changes break API |
-| DB struct in API response | Internal fields leak |
-| No domain layer | Business logic scattered |
-| Direct API↔DBAL | Tight coupling, untestable |
+## Struct Separation — Only When Necessary
 
-### Conversion Method Placement
+**Default: One struct with multiple tags** — simplest, least bug-prone.
 
-| Conversion | Method Location |
-|------------|-----------------|
-| API → Domain | API struct: `func (r Request) ToDomain()` |
-| Domain → API | API struct: `func (Response) FromDomain(e)` |
-| Domain → DBAL | DBAL struct: `func (Model) FromDomain(e)` |
-| DBAL → Domain | DBAL struct: `func (m Model) ToDomain()` |
+**Separate structs only when there's actual technical reason.**
+
+> **See also:** `philosophy.md` "DTO vs Domain Object" for when to use public vs private fields based on invariants.
+
+### When ONE Struct is Sufficient
+
+Use a single struct when:
+- DB columns map directly to Go types (string↔string, int↔int)
+- No security-sensitive fields to hide
+- You control the API contract (not generated)
+- Same fields needed everywhere
+
+```go
+// Simple case — one struct, multiple tags
+type Order struct {
+    ID        string    `json:"id" db:"id"`
+    UserID    string    `json:"user_id" db:"user_id"`
+    Amount    int       `json:"amount" db:"amount"`
+    Status    string    `json:"status" db:"status"`
+    CreatedAt time.Time `json:"created_at" db:"created_at"`
+}
+
+// Used in store
+func (s *Store) ByID(ctx context.Context, id string) (*Order, error)
+
+// Used in HTTP response — same struct
+json.NewEncoder(w).Encode(order)
+```
+
+### Case 1: Database Types Differ (Object-Relational Impedance)
+
+When DB uses types that don't directly map to your application types:
+
+```go
+// Database row — uses DB-specific types
+type UserRow struct {
+    ID          pgtype.UUID    `db:"id"`
+    Email       sql.NullString `db:"email"`
+    Preferences []byte         `db:"preferences"`  // JSON blob
+    DeletedAt   sql.NullTime   `db:"deleted_at"`
+    Version     int            `db:"version"`      // optimistic locking
+}
+
+// Application — clean Go types
+type User struct {
+    ID          string
+    Email       string
+    Preferences Preferences  // typed struct
+}
+
+// Conversion at store boundary
+func (r UserRow) ToUser() (*User, error) {
+    var prefs Preferences
+    if err := json.Unmarshal(r.Preferences, &prefs); err != nil {
+        return nil, err
+    }
+    return &User{
+        ID:          r.ID.String(),
+        Email:       r.Email.String,
+        Preferences: prefs,
+    }, nil
+}
+```
+
+**If using sqlx with direct mapping (same types), one struct is fine:**
+```go
+// Direct mapping works — one struct
+type User struct {
+    ID    string `json:"id" db:"id"`
+    Email string `json:"email" db:"email"`
+    Name  string `json:"name" db:"name"`
+}
+```
+
+### Case 2: Security-Sensitive Fields
+
+When some fields must never appear in API responses:
+
+```go
+// Full struct — used internally and for DB
+type User struct {
+    ID           string    `json:"id" db:"id"`
+    Email        string    `json:"email" db:"email"`
+    PasswordHash []byte    `json:"-" db:"password_hash"`  // json:"-" hides it
+    IsAdmin      bool      `json:"-" db:"is_admin"`       // internal flag
+}
+
+// Option A: Use json:"-" tag (simplest)
+// Works if you always use json.Marshal
+
+// Option B: Separate public struct (when you need explicit control)
+type UserPublic struct {
+    ID    string `json:"id"`
+    Email string `json:"email"`
+}
+
+func (u *User) Public() UserPublic {
+    return UserPublic{ID: u.ID, Email: u.Email}
+}
+```
+
+### Case 3: Generated/External Contracts
+
+When API types are generated or externally controlled:
+
+```go
+// Generated by protoc — cannot modify
+type pb.UserResponse struct {
+    UserId string `protobuf:"bytes,1,opt,name=user_id"`
+    Email  string `protobuf:"bytes,2,opt,name=email"`
+}
+
+// Your application type
+type User struct {
+    ID    string
+    Email string
+}
+
+// Conversion at RPC boundary
+func UserToProto(u *User) *pb.UserResponse {
+    return &pb.UserResponse{
+        UserId: u.ID,
+        Email:  u.Email,
+    }
+}
+```
+
+### Case 4: Versioned APIs
+
+When you support multiple API versions with different shapes:
+
+```go
+// v1 response
+type UserV1 struct {
+    ID   string `json:"id"`
+    Name string `json:"name"`
+}
+
+// v2 response — different structure
+type UserV2 struct {
+    ID        string `json:"id"`
+    FirstName string `json:"first_name"`
+    LastName  string `json:"last_name"`
+}
+```
+
+### Decision Framework
+
+| Reason to Separate | Separate? | Example |
+|--------------------|-----------|---------|
+| DB uses `sql.Null*`, `pgtype.*` | ✅ Yes | `UserRow` ↔ `User` |
+| JSON blob in DB, typed struct in app | ✅ Yes | `[]byte` ↔ `Preferences` |
+| Hide sensitive fields from API | ✅ Yes | `User` with `json:"-"` or `UserPublic` |
+| Protobuf/OpenAPI generated types | ✅ Yes | `pb.User` ↔ `User` |
+| Versioned public APIs | ✅ Yes | `UserV1` ↔ `UserV2` |
+| Direct type mapping (string↔string) | ❌ No | One struct with tags |
+| Same fields everywhere | ❌ No | One struct |
+| Internal service, you control API | ❌ No | One struct |
+
+### Conversion Functions Are Bug Magnets
+
+Every conversion point is where bugs hide:
+
+```go
+// BUG WAITING TO HAPPEN
+func toPublic(u UserRow) UserPublic {
+    return UserPublic{
+        ID:    u.ID,
+        Email: u.Email,
+        // Name: u.Name,  // OOPS — forgot this, silent data loss
+    }
+}
+```
+
+**One struct = compiler catches all field references.** Multiple structs with conversion = manual field mapping that can drift.
+
+### Anti-Patterns
+
+```go
+// BAD — same data, three structs, three packages (no technical reason)
+internal/
+├── domain/
+│   └── user.go          // type User struct { ID, Email, Name }
+├── repository/
+│   └── user.go          // type UserModel struct { ID, Email, Name } — same!
+└── handler/
+    └── user.go          // type UserDTO struct { ID, Email, Name } — same again!
+
+// Problems:
+// - 3x maintenance burden
+// - Conversion functions everywhere
+// - Easy to forget fields during conversion
+// - Compiler can't catch missing fields across packages
+
+// GOOD — one package, one struct (when fields are identical)
+internal/
+└── user/
+    ├── user.go   // type User struct { ID, Email, Name }
+    └── store.go  // func (s *Store) ByID(...) (*User, error)
+```
 
 ---
 
@@ -317,22 +511,37 @@ Don't split if:
 
 ## Constructor Patterns
 
-### Return Signatures
+### Return Signatures — "Can It Fail?" Rule
 
-| Constructor Type | Return Signature |
-|-----------------|------------------|
-| No arguments | `func NewCache() *Cache` |
-| Args, no validation needed | `func NewLogger(cfg LoggerConfig) *Logger` |
-| Args, validation needed | `func NewServer(cfg ServerConfig) (*Server, error)` |
-| Dependencies (always validate) | `func NewService(repo Repository) (*Service, error)` |
+**The decision is not about arguments — it's about failure modes.**
+
+| Can construction fail? | Return signature |
+|------------------------|------------------|
+| **No failure possible** | `func NewCache() *Cache` |
+| **Validation can fail** | `func NewServer(cfg Config) (*Server, error)` |
+| **Environment can fail** | `func NewFromEnv() (*Client, error)` |
 
 ```go
-// No args — no error
+// ✅ GOOD — no args, no error
 func NewCache() *Cache {
     return &Cache{items: make(map[string]item)}
 }
 
-// Config needs validation — return error
+// ✅ GOOD — no args, but reads env (can fail)
+func NewFromEnv() (*Client, error) {
+    apiKey := os.Getenv("API_KEY")
+    if apiKey == "" {
+        return nil, errors.New("API_KEY not set")
+    }
+    return &Client{apiKey: apiKey}, nil
+}
+
+// ✅ GOOD — has args, no validation needed
+func NewLogger(w io.Writer) *Logger {
+    return &Logger{w: w}  // io.Writer guaranteed non-nil by type system
+}
+
+// ✅ GOOD — config validation needed
 func NewServer(cfg ServerConfig) (*Server, error) {
     if cfg.Port < 1 || cfg.Port > 65535 {
         return nil, errors.New("invalid port")
@@ -340,7 +549,7 @@ func NewServer(cfg ServerConfig) (*Server, error) {
     return &Server{cfg: cfg}, nil
 }
 
-// Dependency needs validation — return error
+// ✅ GOOD — dependency validation needed
 func NewService(repo Repository) (*Service, error) {
     if repo == nil {
         return nil, errors.New("repo is required")
@@ -349,19 +558,42 @@ func NewService(repo Repository) (*Service, error) {
 }
 ```
 
+**Error Hierarchy Principle:**
+- **Startup failure** (constructor error) > **Runtime failure** (method error)
+- Validate configuration at construction, not on every method call
+
 ### Argument Order
 
 **Config → Dependencies (pointers) → Logger**
 
-```go
-// GOOD — correct order
-func NewOrderService(
-    cfg OrderServiceConfig,      // 1. Config first
-    repo *OrderRepository,       // 2. Dependencies as pointers
-    cache *Cache,
-    logger zerolog.Logger,       // 3. Logger last
-) (*OrderService, error)
+**This is our convention** (not stdlib, but enforced for consistency).
 
+```go
+func NewOrderService(
+    cfg OrderServiceConfig,      // 1. WHAT (defines behaviour)
+    repo *OrderRepository,       // 2. CAPABILITIES (external dependencies)
+    cache *Cache,
+    logger zerolog.Logger,       // 3. OBSERVABILITY (cross-cutting)
+) (*OrderService, error)
+```
+
+**Rationale:**
+
+1. **Config first** — Validates "what" before acquiring "how"
+   - Fail fast on invalid config before expensive dependency checks
+   - Aligns with Error Hierarchy: startup validation before runtime
+
+2. **Dependencies middle** — External capabilities grouped together
+   - Easy to see what external systems this depends on
+   - Pointer types enable nil validation
+
+3. **Logger last** — Cross-cutting concern, often optional
+   - Consistent position makes it easy to add/remove
+   - Can use `zerolog.Nop()` as default
+
+**Benefit:** Every constructor in codebase has same pattern — reduce cognitive load.
+
+```go
 // BAD — wrong order
 func NewService(repo *Repository, cfg Config, logger zerolog.Logger)  // config not first
 func NewService(cfg Config, logger zerolog.Logger, repo *Repository)  // logger not last
@@ -423,38 +655,59 @@ func (s *Service) Process() error {
 
 ## Type Safety: Compile-Time over Runtime
 
-### Typed Identifiers — When They Add Value
+### Typed Identifiers — Decision Tree
+
+**Philosophy: Catch confusion at compile-time.**
 
 Typed wrappers provide compile-time safety, but **not every string needs a type**.
 
-**The Confusion Test:** "Is there a realistic scenario where this type could be confused with another?"
+#### Step 1: Will This Type Be Confused With Another?
 
-| Confusion Risk | Example | Typed Wrapper? |
-|----------------|---------|----------------|
-| **High** — Multiple similar IDs | `UserID` vs `OrderID` in payment | ✅ Yes |
-| **High** — Similar concepts | `NodeName` vs `HostName` | ✅ Yes |
-| **Low** — Single-purpose | `APIEndpoint` (only one exists) | ❌ No |
-| **Low** — Internal/unexported | `secretName` in one file | ❌ No |
-
-```go
-// GOOD — confusion risk exists
-type UserID string
-type OrderID string
-func ProcessPayment(userID UserID, orderID OrderID) error
-
-// BAD — overengineering, nothing to confuse with
-type APIEndpoint string   // What else would be an endpoint?
-type secretName string    // Internal, limited scope
+```
+Do I have multiple similar types that could be swapped?
+│
+├─ YES → Step 2
+└─ NO → Use plain type (string, int, etc.)
 ```
 
-### When NOT to Use Typed Wrappers
+#### Step 2: Is the Confusion Risk Real or Theoretical?
 
-| Skip Typed Wrapper When | Reason |
-|-------------------------|--------|
-| Single-purpose type | Nothing to confuse with |
-| Unexported, local scope | Limited exposure, low risk |
-| Pass-through data | No type comparison happening |
-| No similar concepts | Wrapper adds no safety |
+| Scenario | Risk | Typed? |
+|----------|------|--------|
+| `Transfer(fromAccount, toAccount string)` | HIGH — easy to swap | ✅ `type AccountID string` |
+| `Payment(userID, orderID, merchantID string)` | HIGH — 3 similar params | ✅ Type all three |
+| `GetUser(id string)` in user package | LOW — obvious context | ❌ Plain `string` |
+| Internal helper with one ID type | LOW — limited scope | ❌ Plain `string` |
+
+#### Examples:
+
+```go
+// ✅ HIGH RISK — multiple similar IDs
+type UserID string
+type OrderID string
+type AccountID string
+
+func ProcessPayment(user UserID, order OrderID, account AccountID) error
+// Compiler catches: ProcessPayment(orderID, userID, accountID)  // ← Won't compile!
+
+// ❌ LOW RISK — single ID type in package
+package user
+
+func Get(id string) (*User, error)  // Only user IDs exist here, no confusion
+
+// ❌ OVER-ENGINEERING — no confusion possible
+type APIEndpoint string  // What else would an endpoint be?
+type DatabaseName string  // Only one database referenced
+```
+
+#### The Trade-Off:
+
+| Typed Wrapper | Benefit | Cost |
+|---------------|---------|------|
+| Adds type safety | Catch swapped params at compile-time | Conversions needed (`string(userID)`) |
+| Documents intent | Code self-documents ID types | More types to maintain |
+
+**When in doubt:** Start without wrapper, add if you make a swap mistake.
 
 ### String() Method
 
@@ -624,8 +877,9 @@ Unit tests are required. Integration tests are a separate concern (often separat
 | `interfaces.go` file | Move interface to consumer file |
 | `types.go` file | Move types to files with related logic |
 | `errors.go` file | Move errors to files with functions returning them |
-| API struct passed to repository | Convert through domain |
-| DB struct in API response | Convert through domain |
+| Unnecessary struct separation (same fields) | Use one struct with tags (`json`, `db`) |
+| Struct naming with layer suffix (`UserService`, `UserRepository`) | Use direct name (`User`, `Store`) unless codebase already uses suffixes |
+| Imposing architectural pattern on existing code | Follow codebase's existing structure |
 | Nil check inside method | Move to constructor |
 | `string` for ID with confusion risk | Define `type XxxID string` |
 | Typed wrapper for single-purpose string | Use plain `string` (no confusion risk) |

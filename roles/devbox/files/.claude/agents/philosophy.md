@@ -35,6 +35,70 @@ This applies to:
 
 ---
 
+## Error Detection Hierarchy — Fail Fast
+
+**Catch issues as early as possible in the development/deployment lifecycle.**
+
+Push errors left: compile-time > startup-time > runtime.
+
+| When | How | Example |
+|------|-----|---------|
+| **Compile-time** (BEST) | Type system, linter | `type UserID string` prevents passing `OrderID` |
+| **Startup-time** (GOOD) | Constructor validation, init panic | `NewServer()` returns error if config invalid |
+| **Runtime** (ACCEPTABLE) | Return error, caller handles | `Process()` returns error if external API fails |
+| **Runtime panic** (NEVER) | Crash | `Must()` in request handler — FORBIDDEN |
+
+**Why this matters:**
+- Compile-time errors caught in IDE, before commit
+- Startup errors caught in first test run, before deploy
+- Runtime errors require production monitoring to detect
+- Runtime panics crash services, affect users
+
+**Design principle:** If we can make an error happen during compile-time, we do it. If we can make it happen during startup-time, we do it. Everyone makes mistakes, so known issues must be caught ASAP.
+
+### Examples
+
+**Compile-time over runtime:**
+```
+// ❌ BAD — confusion detected at runtime
+func Transfer(from string, to string, amount int)
+
+// ✅ GOOD — confusion caught at compile-time
+type AccountID string
+func Transfer(from AccountID, to AccountID, amount int)
+```
+
+**Startup over runtime:**
+```
+// ❌ BAD — every request validates config
+func (s *Service) Handle(req Request) error {
+    if s.timeout < 0 {
+        return errors.New("invalid timeout")
+    }
+}
+
+// ✅ GOOD — validation at construction
+func NewService(timeout time.Duration) (*Service, error) {
+    if timeout < 0 {
+        return nil, errors.New("invalid timeout")
+    }
+    return &Service{timeout: timeout}, nil
+}
+```
+
+**Error wrapping — always preserve chain:**
+```
+// ❌ NEVER — breaks error chain
+return fmt.Errorf("operation failed: %v", err)
+
+// ✅ ALWAYS — preserves chain for errors.Is()/As()
+return fmt.Errorf("operation failed: %w", err)
+```
+
+> **Go-specific patterns:** See `go/go_errors.md` for sentinel errors, custom error types, wrapping patterns, and error classification at boundaries.
+
+---
+
 ## Pragmatic Engineering
 
 You are NOT a minimalist — you are a **pragmatic engineer**:
@@ -77,6 +141,8 @@ Not all structs/classes are equal. The distinction matters for encapsulation:
 
 **Why this matters:** If fields are public and a method depends on them being valid, external code can mutate fields and break the method's behaviour. Privatizing fields protects the invariants.
 
+> **Go-specific patterns:** See `go/go_architecture.md` "Struct Separation" for when to separate structs based on technical concerns (DB types, security, generated APIs).
+
 ### Composition Over Coupling
 
 Split types when responsibilities have **different semantics or lifecycles**:
@@ -87,6 +153,57 @@ Split types when responsibilities have **different semantics or lifecycles**:
 | Different change reasons | Split (auth logic vs business logic) |
 | Different test requirements | Split (one needs mocks, other doesn't) |
 | Responsibilities always together | Keep together |
+
+---
+
+## Interface Design — When and Where
+
+### Don't Create Interfaces Prematurely
+
+**Go proverb:** "The bigger the interface, the weaker the abstraction."
+
+**Our addition:** "Don't create the interface until you need it."
+
+#### When to Create an Interface:
+
+| Situation | Create Interface? |
+|-----------|-------------------|
+| Have 2+ implementations | ✅ Yes |
+| Need to mock for testing | ✅ Yes |
+| External contract (plugin system) | ✅ Yes |
+| "Might need multiple implementations later" | ❌ No — YAGNI |
+| "Interfaces are best practice" | ❌ No — Cargo cult |
+
+```
+// ❌ PREMATURE — no second implementation exists
+type UserRepository interface {
+    Get(id string) (*User, error)
+}
+
+type PostgresUserRepository struct { ... }  // Only implementation
+
+// ✅ START WITH CONCRETE TYPE
+type UserRepository struct { db *sql.DB }
+
+func (r *UserRepository) Get(id string) (*User, error) { ... }
+
+// ✅ ADD INTERFACE WHEN TESTING
+// In service_test.go (when you need a mock):
+type userRepository interface {
+    Get(id string) (*User, error)
+}
+
+type mockUserRepository struct { ... }
+```
+
+**Error Hierarchy Connection:**
+- Concrete types → Compile-time checking of all method calls
+- Interfaces → Runtime checking (method must exist)
+- Fewer interfaces → More compile-time safety
+
+**When you add a second implementation, THEN extract interface.**
+
+> **Go-specific patterns:** See `go/go_architecture.md` "Interface Design" for consumer-side definition, same-file placement, and small interface principles.
 
 ---
 

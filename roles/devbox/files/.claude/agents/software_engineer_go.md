@@ -2341,7 +2341,9 @@ Quick reference:
 - Use `testing/synctest` for concurrent code
 - Run with race detector: `go test -race ./...`
 
-## Project Structure
+## Project Structure — Package by Feature
+
+Organize code by what it does, not by architectural layer:
 
 ```
 project/
@@ -2349,228 +2351,442 @@ project/
 │   └── appname/
 │       └── main.go
 ├── internal/
-│   ├── handler/
-│   ├── service/
-│   └── repository/
-├── pkg/           # only if meant to be imported
+│   ├── user/           # Everything user-related together
+│   │   ├── user.go         # User struct, validation, core logic
+│   │   └── store.go        # Database operations
+│   ├── order/          # Everything order-related together
+│   │   ├── order.go
+│   │   └── store.go
+│   ├── auth/           # Authentication
+│   │   └── auth.go
+│   └── server/         # HTTP server, routes
+│       └── server.go
+├── pkg/                # Only if meant to be imported by external projects
 ├── go.mod
 └── go.sum
 ```
 
-## Layer Separation — No Leaky Abstractions
+**Benefits:**
+- High cohesion — related code lives together
+- Low coupling — packages are self-contained
+- Easy navigation — find user code in `user/` package
+- Matches Kubernetes, Docker, and major Go projects
 
-**Public APIs must be scoped and small. Implementation details must never leak across layer boundaries.**
+### Adapt to Existing Codebase
 
-### The Three Entity Layers
+**DO NOT impose architectural patterns.** Follow what the codebase already uses:
 
-Every application has three distinct entity types that MUST remain separate:
+| If codebase uses... | Follow it |
+|---------------------|-----------|
+| Layer packages (`/service/`, `/repository/`) | Add to existing layers |
+| Feature packages (`/user/`, `/order/`) | Add to feature packages |
+| Flat structure | Keep it flat |
+| `*Service`/`*Repository` naming | Use that naming |
+| Direct struct names | Use direct names |
 
-| Layer | Entities | Purpose | Location |
-|-------|----------|---------|----------|
-| **API** | DTOs, Request/Response structs | External contract, serialization | `internal/handler/`, `internal/api/` |
-| **Domain** | Business logic entities | Core business rules, validation | `internal/domain/`, `internal/service/` |
-| **DBAL** | Repository models, DB structs | Persistence concerns, queries | `internal/repository/`, `internal/store/` |
+**Your job is to write code that fits, not to refactor toward a different architecture.**
 
-### Conversion Flow — Always Through Domain
+## Code Organization — Follow Existing Patterns
 
-```
-Inbound:   API → Domain → DBAL
-Outbound:  DBAL → Domain → API
-```
+**CRITICAL: Follow the codebase's existing patterns.** Do not impose architectural paradigms.
 
-**Direct conversion between API and DBAL is FORBIDDEN.**
+### Struct Naming — Be Direct
 
-```go
-// BAD — API entity directly used in database layer
-func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
-    var req CreateUserRequest
-    json.NewDecoder(r.Body).Decode(&req)
-
-    h.repo.Insert(req)  // WRONG: API struct passed to repository
-}
-
-// BAD — DBAL entity directly returned in API response
-func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
-    dbUser := h.repo.FindByID(id)
-
-    json.NewEncoder(w).Encode(dbUser)  // WRONG: DB struct in API response
-}
-
-// GOOD — proper layer separation with domain as intermediary
-func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
-    var req CreateUserRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        respondError(w, http.StatusBadRequest, err)
-        return
-    }
-
-    // API → Domain
-    user := req.ToDomain()
-
-    // Domain handles business logic
-    createdUser, err := h.service.CreateUser(r.Context(), user)
-    if err != nil {
-        respondError(w, http.StatusInternalServerError, err)
-        return
-    }
-
-    // Domain → API
-    json.NewEncoder(w).Encode(UserResponse{}.FromDomain(createdUser))
-}
-
-// In service layer
-func (s *UserService) CreateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
-    // Business validation
-    if err := user.Validate(); err != nil {
-        return nil, fmt.Errorf("invalid user: %w", err)
-    }
-
-    // Domain → DBAL
-    dbUser := repository.UserModel{}.FromDomain(user)
-
-    if err := s.repo.Insert(ctx, dbUser); err != nil {
-        return nil, fmt.Errorf("failed to insert user: %w", err)
-    }
-
-    // DBAL → Domain
-    return dbUser.ToDomain(), nil
-}
-```
-
-### Entity Definition by Layer
+Name structs after what they ARE, not what layer they belong to:
 
 ```go
-// internal/handler/user_dto.go — API layer
-type CreateUserRequest struct {
-    Email    string `json:"email"`
-    Name     string `json:"name"`
-    Password string `json:"password"`  // accepted but never stored
+// GOOD — direct, Go-stdlib style
+type User struct { ... }           // The thing itself
+type Client struct { ... }         // Like http.Client
+type Store struct { ... }          // Like blob.Store — holds/retrieves things
+type Cache struct { ... }          // Like sync.Map — caches things
+type Writer struct { ... }         // Like io.Writer — writes things
+
+// AVOID — implies architectural layers (use only if codebase already uses these)
+type UserService struct { ... }    // "Service" is a layer concept
+type UserRepository struct { ... } // "Repository" is DDD terminology
+type UserEntity struct { ... }     // "Entity" is DDD terminology
+type UserDTO struct { ... }        // "DTO" implies transfer between layers
+type UserModel struct { ... }      // "Model" implies MVC/DDD separation
+```
+
+### Struct Separation — Only When Necessary
+
+**Default: One struct with multiple tags** — simplest, least bug-prone.
+
+**Separate structs only when there's actual technical reason.**
+
+#### When ONE Struct is Sufficient
+
+Use a single struct when:
+- DB columns map directly to Go types (string↔string, int↔int)
+- No security-sensitive fields to hide
+- You control the API contract (not generated)
+- Same fields needed everywhere
+
+```go
+// Simple case — one struct, multiple tags
+type Order struct {
+    ID        string    `json:"id" db:"id"`
+    UserID    string    `json:"user_id" db:"user_id"`
+    Amount    int       `json:"amount" db:"amount"`
+    Status    string    `json:"status" db:"status"`
+    CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
-func (r CreateUserRequest) ToDomain() *domain.User {
-    return &domain.User{
-        Email: domain.Email(r.Email),
-        Name:  r.Name,
+// Used in store
+func (s *Store) ByID(ctx context.Context, id string) (*Order, error)
+
+// Used in HTTP response — same struct
+json.NewEncoder(w).Encode(order)
+```
+
+#### Case 1: Database Types Differ (Object-Relational Impedance)
+
+When DB uses types that don't directly map to your application types:
+
+```go
+// Database row — uses DB-specific types
+type UserRow struct {
+    ID          pgtype.UUID    `db:"id"`
+    Email       sql.NullString `db:"email"`
+    Preferences []byte         `db:"preferences"`  // JSON blob
+    DeletedAt   sql.NullTime   `db:"deleted_at"`
+    Version     int            `db:"version"`      // optimistic locking
+}
+
+// Application — clean Go types
+type User struct {
+    ID          string
+    Email       string
+    Preferences Preferences  // typed struct
+}
+
+// Conversion at store boundary
+func (r UserRow) ToUser() (*User, error) {
+    var prefs Preferences
+    if err := json.Unmarshal(r.Preferences, &prefs); err != nil {
+        return nil, err
     }
+    return &User{
+        ID:          r.ID.String(),
+        Email:       r.Email.String,
+        Preferences: prefs,
+    }, nil
+}
+```
+
+**If using sqlx with direct mapping (same types), one struct is fine:**
+```go
+// Direct mapping works — one struct
+type User struct {
+    ID    string `json:"id" db:"id"`
+    Email string `json:"email" db:"email"`
+    Name  string `json:"name" db:"name"`
+}
+```
+
+#### Case 2: Security-Sensitive Fields
+
+When some fields must never appear in API responses:
+
+```go
+// Full struct — used internally and for DB
+type User struct {
+    ID           string    `json:"id" db:"id"`
+    Email        string    `json:"email" db:"email"`
+    PasswordHash []byte    `json:"-" db:"password_hash"`  // json:"-" hides it
+    IsAdmin      bool      `json:"-" db:"is_admin"`       // internal flag
 }
 
-type UserResponse struct {
+// Option A: Use json:"-" tag (simplest)
+// Works if you always use json.Marshal
+
+// Option B: Separate public struct (when you need explicit control)
+type UserPublic struct {
     ID    string `json:"id"`
     Email string `json:"email"`
-    Name  string `json:"name"`
 }
 
-func (UserResponse) FromDomain(u *domain.User) UserResponse {
-    return UserResponse{
-        ID:    string(u.ID),
-        Email: string(u.Email),
-        Name:  u.Name,
-    }
-}
-
-// internal/domain/user.go — Domain layer
-type UserID string
-type Email string
-
-type User struct {
-    ID           UserID
-    Email        Email
-    Name         string
-    PasswordHash []byte  // internal, never in API
-    CreatedAt    time.Time
-    UpdatedAt    time.Time
-}
-
-func (u *User) Validate() error {
-    if u.Email == "" {
-        return errors.New("email is required")
-    }
-    // ... business validation rules
-    return nil
-}
-
-// internal/repository/user_model.go — DBAL layer
-type UserModel struct {
-    ID           string    `db:"id"`
-    Email        string    `db:"email"`
-    Name         string    `db:"name"`
-    PasswordHash []byte    `db:"password_hash"`
-    CreatedAt    time.Time `db:"created_at"`
-    UpdatedAt    time.Time `db:"updated_at"`
-    DeletedAt    *time.Time `db:"deleted_at"`  // soft delete, not in domain
-}
-
-func (UserModel) FromDomain(u *domain.User) UserModel {
-    return UserModel{
-        ID:           string(u.ID),
-        Email:        string(u.Email),
-        Name:         u.Name,
-        PasswordHash: u.PasswordHash,
-        CreatedAt:    u.CreatedAt,
-        UpdatedAt:    u.UpdatedAt,
-    }
-}
-
-func (m UserModel) ToDomain() *domain.User {
-    return &domain.User{
-        ID:           domain.UserID(m.ID),
-        Email:        domain.Email(m.Email),
-        Name:         m.Name,
-        PasswordHash: m.PasswordHash,
-        CreatedAt:    m.CreatedAt,
-        UpdatedAt:    m.UpdatedAt,
-    }
+func (u *User) Public() UserPublic {
+    return UserPublic{ID: u.ID, Email: u.Email}
 }
 ```
 
-### Why Layer Separation Matters
+#### Case 3: Generated/External Contracts
 
-| Problem | Consequence |
-|---------|-------------|
-| API struct in DB layer | DB schema changes break API contract |
-| DB struct in API response | Internal fields leak (deleted_at, password_hash) |
-| No domain layer | Business logic scattered across handlers and repos |
-| Direct API↔DBAL conversion | Tight coupling, impossible to test layers independently |
-
-**Benefits of proper separation:**
-- **Independent evolution** — Change DB schema without touching API
-- **Security** — Internal fields never accidentally exposed
-- **Testability** — Mock at layer boundaries with clear contracts
-- **Business logic isolation** — Domain rules in one place, not scattered
-
-### Conversion Method Placement
-
-| Conversion | Method Location | Receiver |
-|------------|-----------------|----------|
-| API → Domain | API struct | `func (r Request) ToDomain() *domain.Entity` |
-| Domain → API | API struct | `func (Response) FromDomain(e *domain.Entity) Response` |
-| Domain → DBAL | DBAL struct | `func (Model) FromDomain(e *domain.Entity) Model` |
-| DBAL → Domain | DBAL struct | `func (m Model) ToDomain() *domain.Entity` |
-
-**Rationale:** The outer layer (API, DBAL) knows about the inner layer (Domain), but Domain never imports API or DBAL packages. This maintains proper dependency direction.
-
-### Interface Boundaries
-
-Keep interfaces minimal at layer boundaries:
+When API types are generated or externally controlled:
 
 ```go
-// internal/service/user_service.go — defines what it needs from repository
-type UserRepository interface {
-    Insert(ctx context.Context, user UserModel) error
-    FindByID(ctx context.Context, id string) (*UserModel, error)
-    FindByEmail(ctx context.Context, email string) (*UserModel, error)
+// Generated by protoc — cannot modify
+type pb.UserResponse struct {
+    UserId string `protobuf:"bytes,1,opt,name=user_id"`
+    Email  string `protobuf:"bytes,2,opt,name=email"`
 }
 
-// internal/handler/user_handler.go — defines what it needs from service
-type UserService interface {
-    CreateUser(ctx context.Context, user *domain.User) (*domain.User, error)
-    GetUser(ctx context.Context, id domain.UserID) (*domain.User, error)
+// Your application type
+type User struct {
+    ID    string
+    Email string
+}
+
+// Conversion at RPC boundary
+func UserToProto(u *User) *pb.UserResponse {
+    return &pb.UserResponse{
+        UserId: u.ID,
+        Email:  u.Email,
+    }
 }
 ```
 
-## DTOs and Mutable Fields
+#### Case 4: Versioned APIs
 
-DTOs often contain exported fields with reference types (slices, maps) for JSON serialization. Handle these idiomatically following Go stdlib patterns.
+When you support multiple API versions with different shapes:
+
+```go
+// v1 response
+type UserV1 struct {
+    ID   string `json:"id"`
+    Name string `json:"name"`
+}
+
+// v2 response — different structure
+type UserV2 struct {
+    ID        string `json:"id"`
+    FirstName string `json:"first_name"`
+    LastName  string `json:"last_name"`
+}
+```
+
+### Decision Framework
+
+| Reason to Separate | Separate? | Example |
+|--------------------|-----------|---------|
+| DB uses `sql.Null*`, `pgtype.*` | ✅ Yes | `UserRow` ↔ `User` |
+| JSON blob in DB, typed struct in app | ✅ Yes | `[]byte` ↔ `Preferences` |
+| Hide sensitive fields from API | ✅ Yes | `User` with `json:"-"` or `UserPublic` |
+| Protobuf/OpenAPI generated types | ✅ Yes | `pb.User` ↔ `User` |
+| Versioned public APIs | ✅ Yes | `UserV1` ↔ `UserV2` |
+| Direct type mapping (string↔string) | ❌ No | One struct with tags |
+| Same fields everywhere | ❌ No | One struct |
+| Internal service, you control API | ❌ No | One struct |
+
+### Conversion Functions Are Bug Magnets
+
+Every conversion point is where bugs hide:
+
+```go
+// BUG WAITING TO HAPPEN
+func toPublic(u UserRow) UserPublic {
+    return UserPublic{
+        ID:    u.ID,
+        Email: u.Email,
+        // Name: u.Name,  // OOPS — forgot this, silent data loss
+    }
+}
+```
+
+**One struct = compiler catches all field references.** Multiple structs with conversion = manual field mapping that can drift.
+
+### Anti-Patterns
+
+```go
+// BAD — same data, three structs, three packages (no technical reason)
+internal/
+├── domain/
+│   └── user.go          // type User struct { ID, Email, Name }
+├── repository/
+│   └── user.go          // type UserModel struct { ID, Email, Name } — same!
+└── handler/
+    └── user.go          // type UserDTO struct { ID, Email, Name } — same again!
+
+// Problems:
+// - 3x maintenance burden
+// - Conversion functions everywhere
+// - Easy to forget fields during conversion
+// - Compiler can't catch missing fields across packages
+
+// GOOD — one package, one struct (when fields are identical)
+internal/
+└── user/
+    ├── user.go   // type User struct { ID, Email, Name }
+    └── store.go  // func (s *Store) ByID(...) (*User, error)
+```
+
+## Dependency Wiring — Constructor Injection
+
+Wire internal dependencies explicitly via constructors:
+
+```go
+// internal/user/store.go
+func NewStore(db *sql.DB) *Store {
+    return &Store{db: db}
+}
+
+// internal/order/order.go
+type Orders struct {
+    db    *sql.DB
+    users *user.Store
+}
+
+func New(db *sql.DB, users *user.Store) *Orders {
+    return &Orders{db: db, users: users}
+}
+
+// cmd/server/main.go
+func main() {
+    db := connectDB()
+
+    userStore := user.NewStore(db)
+    orders := order.New(db, userStore)
+
+    srv := server.New(userStore, orders)
+    srv.Run()
+}
+```
+
+## External Service Clients — go-provider
+
+Use `github.com/abrosimov/go-provider` as a **service locator for external service clients** — HTTP clients for third-party APIs, cloud service connections, and similar external dependencies.
+
+**go-provider is NOT for internal component wiring.** Use constructor injection for that.
+
+### What to Put in go-provider
+
+| Put in go-provider | Wire via constructor |
+|--------------------|---------------------|
+| Stripe API client | `user.Store` |
+| GitHub API client | `order.Orders` |
+| AWS S3 client | Internal cache |
+| External payment gateway | Business logic components |
+| Third-party notification service | Anything in `internal/` |
+
+### Registration — External Clients Only
+
+```go
+import provider "github.com/abrosimov/go-provider"
+
+func registerExternalClients(cfg Config) {
+    // Stripe client
+    provider.Provide(func() (*stripe.Client, error) {
+        return stripe.NewClient(cfg.StripeAPIKey), nil
+    })
+
+    // Multiple HTTP clients for different external APIs
+    provider.ProvideMultiValue(
+        provider.NewDefaultValueCreator("github", func() (*http.Client, error) {
+            return &http.Client{
+                Timeout:   10 * time.Second,
+                Transport: githubTransport(cfg.GitHubToken),
+            }, nil
+        }),
+        provider.NewDefaultValueCreator("slack", func() (*http.Client, error) {
+            return &http.Client{
+                Timeout: 5 * time.Second,
+            }, nil
+        }),
+    )
+
+    // AWS S3
+    provider.Provide(func() (*s3.Client, error) {
+        return s3.NewFromConfig(cfg.AWSConfig), nil
+    })
+}
+```
+
+### Usage — Fetch External Clients Where Needed
+
+```go
+func (p *Payments) Charge(ctx context.Context, amount int) error {
+    // Fetch external client from provider
+    stripeClient, err := provider.ValueOf[stripe.Client]()
+    if err != nil {
+        return fmt.Errorf("stripe client not available: %w", err)
+    }
+
+    return stripeClient.Charge(ctx, amount)
+}
+
+func (n *Notifier) SendAlert(ctx context.Context, msg string) error {
+    // Fetch named HTTP client
+    client, err := provider.MultiValueOf[http.Client]("slack")
+    if err != nil {
+        return fmt.Errorf("slack client not available: %w", err)
+    }
+
+    // use client...
+}
+```
+
+### Combining Constructor Injection and go-provider
+
+```go
+// Internal components wired via constructors
+type Payments struct {
+    users  *user.Store      // injected via constructor
+    orders *order.Orders    // injected via constructor
+    logger zerolog.Logger   // injected via constructor
+}
+
+func NewPayments(users *user.Store, orders *order.Orders, logger zerolog.Logger) *Payments {
+    return &Payments{users: users, orders: orders, logger: logger}
+}
+
+// External clients fetched via go-provider INSIDE methods
+func (p *Payments) Process(ctx context.Context, orderID string) error {
+    ord, err := p.orders.ByID(ctx, orderID)  // internal — injected
+    if err != nil {
+        return err
+    }
+
+    stripe, err := provider.ValueOf[stripe.Client]()  // external — from provider
+    if err != nil {
+        return fmt.Errorf("stripe unavailable: %w", err)
+    }
+
+    return stripe.Charge(ctx, ord.Amount)
+}
+```
+
+### Why This Separation?
+
+| Internal (Constructor) | External (go-provider) |
+|------------------------|------------------------|
+| Dependencies visible in signature | Centralized external client config |
+| Easy to test — pass mocks directly | Lazy initialization for expensive clients |
+| Compile-time verification | Named instances for multi-region/multi-tenant |
+| No global state for app logic | Change notifications for config updates |
+
+### go-provider Rules
+
+- `Init()` must be called before any goroutines
+- Interfaces cannot be provided (use concrete types)
+- Use `ResetRegistry()` in tests for isolation
+- Use `MultiValueOf` for named instances (per-region S3, per-service HTTP clients)
+- Use `ChangesNotifier` for clients that support hot-reload config
+
+### Anti-Patterns
+
+```go
+// BAD — internal component in go-provider
+provider.Provide(func() (*user.Store, error) {
+    return user.NewStore(db), nil  // user.Store is internal!
+})
+
+// BAD — fetching internal dependencies from provider
+func (p *Payments) Run() error {
+    users, _ := provider.ValueOf[user.Store]()  // Wrong! Should be injected
+}
+
+// GOOD — only external services in provider
+provider.Provide(func() (*stripe.Client, error) {
+    return stripe.NewClient(apiKey), nil
+})
+```
+
+## Structs with Reference Fields
+
+Structs often contain exported fields with reference types (slices, maps) for JSON serialization. Handle these idiomatically following Go stdlib patterns.
 
 ### The stdlib Pattern: Trust Caller, Add Clone() Only When Needed
 

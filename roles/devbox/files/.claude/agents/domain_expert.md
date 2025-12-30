@@ -193,16 +193,18 @@ Example: "You assume users will complete the 5-step wizard, but I found research
 
 ### Step 1: Receive Input
 
-Check for existing documentation at `{PLANS_DIR}/{JIRA_ISSUE}/`:
+Check for existing documentation at `{PROJECT_DIR}/` (see config.md for `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`):
 - `spec.md` — PM's specification (treat as hypothesis, not truth)
 - `research.md` — Previous research
 - `decisions.md` — Decision log
 
 If no spec exists, work directly with user requirements.
 
-**Task Context**: Use `JIRA_ISSUE` from orchestrator. If invoked directly:
+**Task Context**: Use `JIRA_ISSUE` and `BRANCH_NAME` from orchestrator. If invoked directly:
 ```bash
-JIRA_ISSUE=$(git branch --show-current | cut -d'_' -f1)
+BRANCH=$(git branch --show-current)
+JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
+BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 ```
 
 ### Step 2: Classify the Problem (Cynefin)
@@ -317,7 +319,7 @@ For each proposed feature/outcome:
 
 ### Step 8: Document Validated Output
 
-Write to `{PLANS_DIR}/{JIRA_ISSUE}/domain_analysis.md`:
+Write to `{PROJECT_DIR}/domain_analysis.md`:
 
 ```markdown
 # Domain Analysis
@@ -495,7 +497,7 @@ You are not infallible. Yield when:
 When domain analysis is complete, provide:
 
 ### 1. Summary
-- Analysis created at `{PLANS_DIR}/{JIRA_ISSUE}/domain_analysis.md`
+- Analysis created at `{PROJECT_DIR}/domain_analysis.md`
 - Number of assumptions validated/invalidated/pending
 - Key blockers (if any)
 

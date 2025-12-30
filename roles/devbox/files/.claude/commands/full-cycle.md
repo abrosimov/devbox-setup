@@ -23,7 +23,9 @@ You are orchestrating a complete development cycle with human checkpoints.
 
 **Compute Task Context (once)**:
 ```bash
-BRANCH=`git branch --show-current`; JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH=`git branch --show-current`
+JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
 ```
 
 Store these values — pass to all agents throughout the cycle.
@@ -35,7 +37,7 @@ Store these values — pass to all agents throughout the cycle.
 
 ### Phase 1: Implementation
 
-1. Run `software-engineer-{lang}` agent with `Context: BRANCH={value}, JIRA_ISSUE={value}`
+1. Run `software-engineer-{lang}` agent with `Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}`
 2. Present summary of changes made
 3. **PAUSE**: Ask user to confirm or correct
 
@@ -46,7 +48,7 @@ User options:
 
 ### Phase 2: Testing
 
-1. Run `unit-test-writer-{lang}` agent with `Context: BRANCH={value}, JIRA_ISSUE={value}`
+1. Run `unit-test-writer-{lang}` agent with `Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}`
 2. Present summary of tests created
 3. Run tests to verify they pass
 4. **PAUSE**: Ask user to confirm or correct
@@ -59,7 +61,7 @@ User options:
 
 ### Phase 3: Review
 
-1. Run `code-reviewer-{lang}` agent with `Context: BRANCH={value}, JIRA_ISSUE={value}`
+1. Run `code-reviewer-{lang}` agent with `Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}`
 2. Present structured feedback with severity levels
 3. **PAUSE**: Present options based on results
 

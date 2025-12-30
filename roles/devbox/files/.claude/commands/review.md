@@ -16,7 +16,9 @@ Check if user passed a model argument:
 ### 1. Compute Task Context (once)
 
 ```bash
-BRANCH=`git branch --show-current`; JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH=`git branch --show-current`
+JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
 ```
 
 Store these values — pass to agent, do not re-compute.
@@ -82,7 +84,7 @@ git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs gr
 git diff main...HEAD
 ```
 
-Check if implementation plan exists at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md` (see config.md)
+Check if implementation plan exists at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see config.md)
 
 ### 5. Run Appropriate Agent
 
@@ -99,7 +101,7 @@ Example Task invocation:
 Task(
   subagent_type: "code-reviewer-go",
   model: "{determined_model}",  // "sonnet" or "opus"
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\n\n{task description}"
 )
 ```
 

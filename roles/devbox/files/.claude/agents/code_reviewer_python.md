@@ -3,6 +3,7 @@ name: code-reviewer-python
 description: Code reviewer for Python - validates implementation against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, mcp__atlassian
 model: sonnet
+skills: python-engineer, python-style, python-patterns, python-tooling, shared-utils
 ---
 
 You are a meticulous Python code reviewer — the **last line of defence** before code reaches production.
@@ -110,11 +111,13 @@ You are **antagonistic** to BOTH the implementation AND the tests:
 
 ## Task Context
 
-Use context provided by orchestrator: `BRANCH`, `JIRA_ISSUE`.
+Use context provided by orchestrator: `BRANCH`, `JIRA_ISSUE`, `BRANCH_NAME`.
 
 If invoked directly (no context), compute once:
 ```bash
-JIRA_ISSUE=$(git branch --show-current | cut -d'_' -f1)
+BRANCH=$(git branch --show-current)
+JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
+BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 ```
 
 ## Workflow
@@ -608,7 +611,7 @@ if not is_allowed_host(user_provided_url):
 
 ```bash
 # Check if spec and plan exist for this task
-ls {PLANS_DIR}/{JIRA_ISSUE}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/plan.md 2>/dev/null
+ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null
 ```
 
 **Plan vs Spec (if both exist):**

@@ -25,7 +25,9 @@ Check if user passed a model argument:
 ### 1. Compute Task Context (once)
 
 ```bash
-BRANCH=`git branch --show-current`; JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH=`git branch --show-current`
+JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
 ```
 
 Store these values — pass to agent, do not re-compute.
@@ -102,7 +104,7 @@ Example Task invocation:
 Task(
   subagent_type: "unit-test-writer-go",
   model: "{determined_model}",  // "sonnet" or "opus"
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\n\n{task description}"
 )
 ```
 

@@ -59,9 +59,9 @@ Each command:
 
 Agents follow a typical development pipeline:
 
-1. **technical_product_manager** - Transforms ideas into product specifications (writes to `{PLANS_DIR}/{JIRA_ISSUE}/spec.md`, `research.md`, `decisions.md`)
-2. **domain_expert** - Challenges assumptions, validates requirements against reality, creates domain models (writes to `{PLANS_DIR}/{JIRA_ISSUE}/domain_analysis.md`)
-3. **implementation_planner_*** - Creates detailed implementation plans from validated specs (writes to `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`)
+1. **technical_product_manager** - Transforms ideas into product specifications (writes to `{PROJECT_DIR}/spec.md`, `research.md`, `decisions.md`)
+2. **domain_expert** - Challenges assumptions, validates requirements against reality, creates domain models (writes to `{PROJECT_DIR}/domain_analysis.md`)
+3. **implementation_planner_*** - Creates detailed implementation plans from validated specs (writes to `{PROJECT_DIR}/plan.md`)
 4. **software_engineer_*** - Writes production code following language-specific standards (reads plan if exists)
 5. **unit_tests_writer_*** - Writes tests with a bug-hunting mindset
 6. **code_reviewer_*** - Validates implementation against requirements, provides structured feedback
@@ -116,19 +116,22 @@ Answer directly (don't use agent) ONLY for:
 
 See **[config.md](config.md)** for configurable paths (single source of truth).
 
-All project documentation is organized by Jira issue under `{PLANS_DIR}/{JIRA_ISSUE}/`:
+All project documentation is organized by Jira issue and branch name under `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/`:
 - `spec.md` - Product specification
 - `domain_analysis.md` - Domain analysis (validated assumptions, constraints, domain model)
 - `plan.md` - Implementation plan
 - `research.md` - Research findings
 - `decisions.md` - Decision log
 
+This allows multiple branches per Jira issue (e.g., `PROJ-123_feature_v1` and `PROJ-123_feature_v2` each get their own subdirectory).
+
 ## Key Conventions
 
 ### Task Identification
 All planners and reviewers expect branch naming convention: `JIRAPRJ-123_name_of_the_branch`
-- Jira issue extracted from branch: `git branch --show-current | cut -d'_' -f1`
-- Project directory: `{PLANS_DIR}/{JIRA_ISSUE}/`
+- `JIRA_ISSUE` extracted from branch: `git branch --show-current | cut -d'_' -f1` → `JIRAPRJ-123`
+- `BRANCH_NAME` extracted from branch: `git branch --show-current | cut -d'_' -f2-` → `name_of_the_branch`
+- Project directory: `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/`
 
 ### Common Principles Across Agents
 - **No new dependencies** - Use stdlib and existing project dependencies only

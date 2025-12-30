@@ -25,7 +25,9 @@ Check if user passed a model argument:
 ### 1. Compute Task Context (once)
 
 ```bash
-BRANCH=`git branch --show-current`; JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH=`git branch --show-current`
+JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
 ```
 
 Store these values — pass to agent, do not re-compute.
@@ -46,7 +48,7 @@ Run complexity assessment:
 **For Go projects:**
 ```bash
 # Count lines in plan (if exists)
-wc -l {PLANS_DIR}/{JIRA_ISSUE}/plan.md 2>/dev/null | awk '{print $1}'
+wc -l {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null | awk '{print $1}'
 
 # Count changed files (excluding tests)
 git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | wc -l
@@ -58,7 +60,7 @@ git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xarg
 **For Python projects:**
 ```bash
 # Count lines in plan (if exists)
-wc -l {PLANS_DIR}/{JIRA_ISSUE}/plan.md 2>/dev/null | awk '{print $1}'
+wc -l {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null | awk '{print $1}'
 
 # Count changed files (excluding tests)
 git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test_ | grep -v _test.py | wc -l
@@ -80,7 +82,7 @@ git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs gr
 
 ### 4. Check for Implementation Plan
 
-Look for plan at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md` (see config.md for configured path)
+Look for plan at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see config.md for configured path)
 
 ### 5. Run Appropriate Agent
 
@@ -97,7 +99,7 @@ Example Task invocation:
 Task(
   subagent_type: "software-engineer-go",
   model: "{determined_model}",  // "sonnet" or "opus"
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\n\n{task description}"
 )
 ```
 

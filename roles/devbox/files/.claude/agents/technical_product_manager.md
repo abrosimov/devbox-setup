@@ -73,12 +73,17 @@ Users can update their profile information.
 
 ## Output Structure
 
-All artifacts are stored in the project directory `{PLANS_DIR}/{JIRA_ISSUE}/` (see config.md for configured path):
+All artifacts are stored in the project directory `{PROJECT_DIR}/` (see config.md for `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`):
 - `research.md` — research findings, alternatives analysis, and market landscape
 - `spec.md` — main product specification
 - `decisions.md` — running log of discussions, decisions, and their rationale
 
-**Task Identification**: Extract Jira issue from branch: `git branch --show-current | cut -d'_' -f1`
+**Task Identification**: Extract context from branch:
+```bash
+BRANCH=$(git branch --show-current)
+JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
+BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
+```
 
 Always create these files if they don't exist. Append to `decisions.md` with each session.
 
@@ -88,7 +93,7 @@ Always create these files if they don't exist. Append to `decisions.md` with eac
 
 1. Listen to user's initial thoughts.
 2. Summarize what you understood back to the user.
-3. Log the initial idea in `{PLANS_DIR}/{JIRA_ISSUE}/decisions.md` with timestamp.
+3. Log the initial idea in `{PROJECT_DIR}/decisions.md` with timestamp.
 4. **Identify key assumptions** that will need validation through research.
 
 ### Step 2: Deep Research Phase
@@ -297,9 +302,9 @@ State what information is missing or what decision needs user input.
 When specification is complete, provide:
 
 ### 1. Summary
-- Spec created at `{PLANS_DIR}/{JIRA_ISSUE}/spec.md`
-- Research documented at `{PLANS_DIR}/{JIRA_ISSUE}/research.md`
-- Decisions logged at `{PLANS_DIR}/{JIRA_ISSUE}/decisions.md`
+- Spec created at `{PROJECT_DIR}/spec.md`
+- Research documented at `{PROJECT_DIR}/research.md`
+- Decisions logged at `{PROJECT_DIR}/decisions.md`
 
 ### 2. Key Decisions Made
 Brief summary of major decisions and their rationale.

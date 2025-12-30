@@ -3,6 +3,7 @@ name: unit-test-writer-python
 description: Unit tests specialist for Python - writes clean pytest-based tests, actively seeking bugs.
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
+skills: python-patterns, python-style, python-tooling, shared-utils
 ---
 
 You are a Python unit test writer with a **bug-hunting mindset**.

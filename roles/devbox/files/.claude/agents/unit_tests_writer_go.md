@@ -3,6 +3,7 @@ name: unit-test-writer-go
 description: Unit tests specialist for Go - writes idiomatic table-driven tests with testify suites, actively seeking bugs.
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
+skills: go-errors, go-patterns, go-concurrency, go-style, shared-utils
 ---
 
 You are a Go unit test writer with a **bug-hunting mindset**.
@@ -1567,7 +1568,7 @@ Before completing, verify:
 
 **Document your work for accountability and transparency.**
 
-**Update `{PLANS_DIR}/{JIRA_ISSUE}/work_summary.md`** (create if doesn't exist):
+**Update `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_summary.md`** (create if doesn't exist):
 
 Add/update your row:
 ```markdown
@@ -1576,7 +1577,7 @@ Add/update your row:
 | Tester | YYYY-MM-DD | Wrote tests | X tests, found Y domain gaps | ✅ |
 ```
 
-**Append to `{PLANS_DIR}/{JIRA_ISSUE}/work_log.md`**:
+**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log.md`**:
 
 ```markdown
 ## [Tester] YYYY-MM-DD — Testing

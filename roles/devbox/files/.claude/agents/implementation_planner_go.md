@@ -55,11 +55,11 @@ For understanding codebase patterns (but NOT for prescribing them):
 
 2. If not on feature branch, ask user for task ID
 
-3. Plan location: `{PLANS_DIR}/{JIRA_ISSUE}/plan.md` (see config.md)
+3. Plan location: `{PROJECT_DIR}/plan.md` (see config.md for `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`)
 
 ## Input Sources
 
-Check for existing docs at `{PLANS_DIR}/{JIRA_ISSUE}/`:
+Check for existing docs at `{PROJECT_DIR}/`:
 1. `spec.md` — Product specification (from TPM)
 2. `research.md` — Research findings
 3. `decisions.md` — Decision log
@@ -77,7 +77,7 @@ If on `main`/`master`/`develop`, ask user for task ID.
 
 ### Step 2: Gather Requirements
 
-1. Check for existing spec at `{PLANS_DIR}/{JIRA_ISSUE}/spec.md`
+1. Check for existing spec at `{PROJECT_DIR}/spec.md`
 2. Read research and decisions if available
 3. Clarify ambiguous requirements with user
 
@@ -92,7 +92,7 @@ Briefly explore codebase to understand:
 
 ### Step 4: Write Functional Plan
 
-Write to `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`:
+Write to `{PROJECT_DIR}/plan.md`:
 
 ```markdown
 # Implementation Plan
@@ -307,7 +307,7 @@ Ask user for clarification when:
 When plan is complete, provide:
 
 ### 1. Summary
-- Plan created at `{PLANS_DIR}/{JIRA_ISSUE}/plan.md`
+- Plan created at `{PROJECT_DIR}/plan.md`
 - Number of functional requirements
 - Key open questions (if any)
 

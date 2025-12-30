@@ -3,6 +3,7 @@ name: code-reviewer-go
 description: Code reviewer for Go - validates implementation against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, mcp__atlassian
 model: sonnet
+skills: go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, shared-utils
 ---
 
 You are a meticulous Go code reviewer — the **last line of defence** before code reaches production.
@@ -114,11 +115,13 @@ You are **antagonistic** to BOTH the implementation AND the tests:
 
 ## Task Context
 
-Use context provided by orchestrator: `BRANCH`, `JIRA_ISSUE`.
+Use context provided by orchestrator: `BRANCH`, `JIRA_ISSUE`, `BRANCH_NAME`.
 
 If invoked directly (no context), compute once:
 ```bash
-JIRA_ISSUE=$(git branch --show-current | cut -d'_' -f1)
+BRANCH=$(git branch --show-current)
+JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
+BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 ```
 
 ## Workflow
@@ -852,7 +855,7 @@ func (s *Service) Handle(req Request) error {
 
 ```bash
 # Check if spec and plan exist for this task
-ls {PLANS_DIR}/{JIRA_ISSUE}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/plan.md 2>/dev/null
+ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null
 ```
 
 **Plan vs Spec (if both exist):**
@@ -905,7 +908,7 @@ VERDICT: [ ] PASS  [ ] FAIL — scope violations documented above
 
 ```bash
 # Find ACs in the plan
-grep -n "AC-\|acceptance\|must.*panic\|must.*recover\|resilient" {PLANS_DIR}/{JIRA_ISSUE}/plan.md {PLANS_DIR}/{JIRA_ISSUE}/spec.md 2>/dev/null
+grep -n "AC-\|acceptance\|must.*panic\|must.*recover\|resilient" {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md 2>/dev/null
 ```
 
 For each AC that claims a failure mode exists:
@@ -1482,7 +1485,7 @@ Before completing review, verify:
 
 **Document your work for accountability and transparency.**
 
-**Update `{PLANS_DIR}/{JIRA_ISSUE}/work_summary.md`** (create if doesn't exist):
+**Update `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_summary.md`** (create if doesn't exist):
 
 Add/update your row:
 ```markdown
@@ -1491,7 +1494,7 @@ Add/update your row:
 | Reviewer | YYYY-MM-DD | Reviewed code | X blocking, Y important, traced Z ACs | ✅/⚠️ |
 ```
 
-**Append to `{PLANS_DIR}/{JIRA_ISSUE}/work_log.md`**:
+**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log.md`**:
 
 ```markdown
 ## [Reviewer] YYYY-MM-DD — Review

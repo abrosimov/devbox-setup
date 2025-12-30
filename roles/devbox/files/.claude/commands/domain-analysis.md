@@ -9,15 +9,17 @@ You are orchestrating the domain analysis phase of a development workflow.
 ### 1. Compute Task Context (once)
 
 ```bash
-BRANCH=`git branch --show-current`; JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH=`git branch --show-current`
+JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
+BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
 ```
 
 Store these values — pass to agent, do not re-compute.
-Project directory: `{PLANS_DIR}/{JIRA_ISSUE}/` (see config.md)
+Project directory: `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/` (see config.md)
 
 ### 2. Check for Existing Spec
 
-Look for specification documents in `{PLANS_DIR}/{JIRA_ISSUE}/`:
+Look for specification documents in `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/`:
 - `spec.md` - Main product specification (primary input)
 - `research.md` - Research findings
 - `decisions.md` - Decision log
@@ -29,7 +31,7 @@ If no spec exists, the domain expert will work from user requirements directly.
 
 Use the `domain-expert` agent.
 
-**Include in agent prompt**: `Context: BRANCH={value}, JIRA_ISSUE={value}`
+**Include in agent prompt**: `Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}`
 
 The agent will:
 - Classify the problem using Cynefin framework
@@ -38,7 +40,7 @@ The agent will:
 - Conduct deep research to validate claims
 - Build a verified domain model
 - Define quality metrics (what matters, not what's easy to measure)
-- Create `{PLANS_DIR}/{JIRA_ISSUE}/domain_analysis.md`
+- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/domain_analysis.md`
 
 **Important**: The domain expert is intentionally skeptical and will push back on unvalidated assumptions. This is by design - the goal is to catch issues before implementation.
 

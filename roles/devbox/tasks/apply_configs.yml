@@ -1,0 +1,14 @@
+---
+- name: Find fish shell path
+  ansible.builtin.command: "command -v fish"
+  register: fish_shell_path
+  changed_when: false
+  failed_when: fish_shell_path.rc != 0
+
+- name: Install fisher plugins
+  ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher update'"
+  args:
+    executable: /bin/bash
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  changed_when: false

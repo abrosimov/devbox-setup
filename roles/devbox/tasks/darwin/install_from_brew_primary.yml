@@ -10,7 +10,6 @@
       - mas
       - wget
       - curl
-      - font-fira-code
       - htop
       - nvim
       - telnet
@@ -20,6 +19,7 @@
   community.general.homebrew_cask:
     name:
       - ghostty
+      - font-fira-code
       - font-ia-writer-duo
       - font-ia-writer-mono
       - font-ia-writer-quattro

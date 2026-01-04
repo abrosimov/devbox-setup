@@ -84,39 +84,383 @@ settings = Settings()
 
 ---
 
-## Exception Handling
+## Exception Handling: Philosophy and Patterns
 
-### Be Specific
+Based on **[PEP 20 (Zen of Python)](https://peps.python.org/pep-0020/)**, **[Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)**, and Python's **[EAFP principle](https://realpython.com/python-lbyl-vs-eafp/)**.
+
+---
+
+### Core Principles (from PEP 20)
+
+> **"Errors should never pass silently."**
+> **"Unless explicitly silenced."**
+> **"Explicit is better than implicit."**
+
+These principles mean: catch specific exceptions explicitly, or let them crash.
+
+---
+
+### Python's Exception Philosophy: EAFP
+
+**EAFP: "Easier to Ask for Forgiveness than Permission"**
+
+Python's official philosophy (from Python glossary) prefers try/except over pre-checks.
 
 ```python
-# BAD
-try:
-    do_something()
-except Exception:
-    pass
+# ❌ LBYL (Look Before You Leap) — not Pythonic
+if key in data:
+    value = data[key]
+else:
+    value = None
 
-# GOOD
+# ✅ EAFP (Easier to Ask for Forgiveness) — Pythonic
 try:
-    do_something()
-except SpecificError as e:
-    logger.warning("Expected failure: %s", e)
-except UnexpectedError as e:
-    raise ProcessingError(f"Failed to process {item}") from e
+    value = data[key]
+except KeyError:
+    value = None
+
+# ✅ EVEN BETTER — use built-in method
+value = data.get(key)  # Returns None if missing
 ```
+
+**Why EAFP?**
+1. **Avoids race conditions** — between check and use
+2. **More performant** — when success is common
+3. **More Pythonic** — idiomatic Python style
+4. **Clearer intent** — happy path first
+
+**When LBYL is appropriate:**
+- Pre-validating user input at API boundaries
+- Checking configuration before expensive operations
+- Preventing operations with side effects
+
+---
+
+### Anti-Pattern: Broad Exception Catching
+
+**From [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html):**
+
+> Never use catch-all `except:` statements, or catch `Exception` or `StandardError`, unless you are creating an isolation point in the program where exceptions are not propagated but are recorded and suppressed instead.
+
+```python
+# ❌ ANTI-PATTERN — violates "Errors should never pass silently"
+try:
+    histogram.labels(**labels, status="error").observe(duration)
+except Exception:  # 🚨 WRONG — swallows bugs
+    logger.error("Failed to record metric", exc_info=True)
+```
+
+**Why this is dangerous:**
+1. **Masks programming errors** — `TypeError`, `AttributeError`, `NameError` indicate bugs
+2. **Violates PEP 20** — "Errors should never pass silently"
+3. **Hides root cause** — error happens far from source
+4. **False sense of safety** — looks robust but fragile
+5. **Catches too much** — even `KeyboardInterrupt`, `SystemExit`
+
+**What gets caught by `except Exception:`**
+- `TypeError` — programming error, should crash
+- `AttributeError` — programming error, should crash
+- `ValueError` — might be expected, might be a bug
+- `KeyError` — might be expected, might be a bug
+- `RuntimeError` — usually unexpected
+- And ~50+ other exception types
+
+---
+
+### The Right Approach: Be Specific
+
+**From Google Python Style Guide:** Minimize the amount of code in a try/except block.
+
+```python
+# ✅ OPTION 1: Let it crash (best for internal infrastructure)
+# If there's a bug in metrics code, we want to know immediately in development
+histogram.labels(**labels, status="error").observe(duration)
+
+# ✅ OPTION 2: Catch only expected exceptions
+try:
+    histogram.labels(**labels, status="error").observe(duration)
+except ValueError as e:  # Only if invalid label values are genuinely expected
+    logger.warning("Invalid metric labels", extra={"labels": labels})
+    raise MetricsConfigError(f"Invalid labels: {labels}") from e
+except KeyError as e:  # Only if missing required label is expected
+    logger.error("Missing required metric label", extra={"labels": labels})
+    raise MetricsConfigError(f"Missing label: {e}") from e
+# Programming errors (TypeError, AttributeError) crash immediately
+```
+
+---
+
+### Exception Handling by Layer
+
+**Principle:** Catch at boundaries, let crash internally.
+
+#### 1. Presentation Layer (API Endpoints, CLI)
+
+**DO catch exceptions here** — convert to user-facing responses:
+
+```python
+@app.post("/items")
+def create_item(data: ItemCreate) -> ItemResponse:
+    try:
+        item = item_service.create(data)
+        return ItemResponse.from_domain(item)
+    except ItemAlreadyExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    # Let unexpected exceptions propagate to global error handler
+```
+
+**Global error handler** (isolation point) can catch `Exception`:
+
+```python
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception", extra={"path": request.url.path})
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error"},
+    )
+```
+
+#### 2. Service Layer (Business Logic)
+
+**DON'T catch exceptions** unless you can handle them meaningfully:
+
+```python
+# ❌ BAD — pointless catch and re-raise
+class ItemService:
+    def create(self, data: ItemCreate) -> Item:
+        try:
+            return self.repo.save(Item(**data.model_dump()))
+        except Exception as e:
+            logger.error("Failed to create item")
+            raise  # Why catch if you're just re-raising?
+
+# ✅ GOOD — no try/catch, let exceptions propagate
+class ItemService:
+    def create(self, data: ItemCreate) -> Item:
+        if self.repo.exists_by_name(data.name):
+            raise ItemAlreadyExistsError(data.name)
+        return self.repo.save(Item(**data.model_dump()))
+```
+
+**When to catch in service layer:**
+- Transform infrastructure exceptions to domain exceptions
+- Implement retry logic for transient failures
+- Clean up resources (use context managers instead)
+
+#### 3. Repository Layer (Data Access)
+
+**Transform infrastructure exceptions to domain exceptions:**
+
+```python
+class PostgresItemRepository:
+    def save(self, item: Item) -> Item:
+        try:
+            self.db.execute(INSERT_ITEM_SQL, item.model_dump())
+            return item
+        except psycopg2.IntegrityError as e:
+            # Transform infrastructure exception to domain exception
+            if "unique_name" in str(e):
+                raise ItemAlreadyExistsError(item.name) from e
+            raise DatabaseError("Failed to save item") from e
+        except psycopg2.OperationalError as e:
+            # Infrastructure failure
+            raise DatabaseError("Database connection failed") from e
+        # Let other exceptions (programming errors) crash
+```
+
+**Note:** Always use `raise ... from e` to preserve exception chain.
+
+---
+
+### Exception Handling Decision Tree
+
+```
+Can you handle this exception meaningfully?
+├─ YES → Catch specific exception, handle, maybe re-raise
+└─ NO
+    ├─ Is this a boundary (API endpoint, job handler, global handler)?
+    │   ├─ YES → Catch, log, return error state
+    │   └─ NO → Don't catch, let it propagate
+    └─ Is this an expected domain error?
+        ├─ YES → Catch, transform to domain exception with `from e`
+        └─ NO → Don't catch, let it crash
+```
+
+---
 
 ### Custom Exceptions
 
-Create custom exceptions for domain errors:
+**From Google Python Style Guide:** Exception names should end in `Error` and inherit from existing exception class.
 
 ```python
+# ✅ GOOD — domain exceptions
 class DomainError(Exception):
-    """Base for domain errors."""
+    """Base class for domain errors."""
 
-class UserNotFoundError(DomainError):
-    def __init__(self, user_id: str):
-        self.user_id = user_id
-        super().__init__(f"User not found: {user_id}")
+class ItemNotFoundError(DomainError):
+    def __init__(self, item_id: str):
+        self.item_id = item_id
+        super().__init__(f"Item not found: {item_id}")
+
+class ItemAlreadyExistsError(DomainError):
+    def __init__(self, item_name: str):
+        self.item_name = item_name
+        super().__init__(f"Item already exists: {item_name}")
+
+class InvalidItemStateError(DomainError):
+    def __init__(self, item_id: str, current_state: str, required_state: str):
+        self.item_id = item_id
+        self.current_state = current_state
+        self.required_state = required_state
+        super().__init__(
+            f"Item {item_id} is in {current_state} state, "
+            f"but {required_state} required"
+        )
 ```
+
+**When to use custom exceptions:**
+- Domain errors that callers need to handle differently
+- Need to attach context (IDs, states) for debugging
+- Transform infrastructure exceptions to domain language
+
+**When to use built-in exceptions:**
+- `ValueError` — invalid argument value (e.g., negative count)
+- `TypeError` — wrong argument type
+- `RuntimeError` — generic runtime error
+- `NotImplementedError` — abstract method not implemented
+
+---
+
+### Exception Context: Always Use `from`
+
+**From PEP 20:** *"Explicit is better than implicit."*
+
+Always preserve exception chain with `raise ... from e`:
+
+```python
+# ❌ BAD — loses original exception
+try:
+    result = self.api.fetch(item_id)
+except requests.RequestException as e:
+    raise APIError("Failed to fetch item")  # Original error lost!
+
+# ✅ GOOD — preserves exception chain
+try:
+    result = self.api.fetch(item_id)
+except requests.RequestException as e:
+    raise APIError(f"Failed to fetch item {item_id}") from e
+```
+
+**Benefits:**
+- Preserves full traceback
+- Shows root cause in logs
+- Helps debugging in production
+- Follows PEP 20's "Explicit is better than implicit"
+
+---
+
+### EAFP vs LBYL Examples
+
+```python
+# Example 1: Dictionary access
+# ❌ LBYL
+if "key" in data:
+    value = data["key"]
+else:
+    value = default
+
+# ✅ EAFP
+try:
+    value = data["key"]
+except KeyError:
+    value = default
+
+# ✅ BEST — built-in method
+value = data.get("key", default)
+
+
+# Example 2: File operations
+# ❌ LBYL — race condition between check and open
+if os.path.exists(path):
+    with open(path) as f:
+        content = f.read()
+else:
+    content = None
+
+# ✅ EAFP — no race condition
+try:
+    with open(path) as f:
+        content = f.read()
+except FileNotFoundError:
+    content = None
+
+
+# Example 3: Attribute access
+# ❌ LBYL
+if hasattr(obj, "method"):
+    result = obj.method()
+else:
+    result = None
+
+# ✅ EAFP
+try:
+    result = obj.method()
+except AttributeError:
+    result = None
+```
+
+---
+
+### When NOT to Use EAFP
+
+LBYL is appropriate for:
+
+1. **Validating user input at API boundaries**
+```python
+# ✅ LBYL for validation (explicit, clear error messages)
+def create_item(data: dict[str, Any]) -> Item:
+    if "name" not in data:
+        raise ValueError("Missing required field: name")
+    if not isinstance(data["name"], str):
+        raise TypeError("Field 'name' must be string")
+    # ... proceed with valid data
+```
+
+2. **Preventing side effects**
+```python
+# ✅ LBYL when operation has side effects
+if not self.is_ready():
+    raise NotReadyError("System not initialized")
+# Proceed only if ready
+self.execute_operation()
+```
+
+3. **Clear error messages for users**
+```python
+# ✅ LBYL for user-facing validation
+if amount <= 0:
+    raise ValueError("Amount must be positive")
+if amount > account.balance:
+    raise InsufficientFundsError(f"Insufficient funds: {account.balance}")
+```
+
+---
+
+### Quick Reference: Exception Anti-Patterns
+
+| Anti-Pattern | Fix | PEP 20 Principle |
+|--------------|-----|------------------|
+| `except Exception:` in business logic | Catch specific exceptions only | "Errors should never pass silently" |
+| Catch and log without re-raising | Let it propagate OR re-raise with context | "Explicit > implicit" |
+| Empty except block | Never — at minimum log and re-raise | "Errors should never pass silently" |
+| Catching to return `None` | Use explicit error handling or EAFP | "Explicit > implicit" |
+| `raise NewError()` without `from e` | Use `raise NewError() from e` | "Explicit > implicit" |
+| LBYL for common operations | Use EAFP (try/except) | Python idiom |
+| Broad try block | Minimize code in try | Google Style Guide |
+| Defensive catching in utilities | Remove — let caller handle | Fail fast |
 
 ---
 
@@ -396,11 +740,13 @@ def get_user(user_id: str) -> User:
 
 | Violation | Fix |
 |-----------|-----|
+| `except Exception:` in business logic | Catch specific exceptions or let crash |
+| Missing `from e` in exception chaining | Add `raise NewError(...) from e` |
+| LBYL for common operations | Use EAFP (try/except) |
+| Broad try block | Minimize code in try/except |
 | No timeout on HTTP request | Add `timeout=(5, 30)` |
 | No retry for HTTP calls | Use HTTPAdapter with Retry or tenacity |
 | Blocking call in async function | Use aiohttp or asyncio equivalent |
 | Hidden dependency in constructor | Inject dependency as parameter |
-| Bare `except Exception` | Catch specific exceptions |
-| Missing `from e` in exception chaining | Add `raise NewError(...) from e` |
 | Resource without context manager | Use `with` statement |
 | Breaking existing API | Add new function or optional parameter |

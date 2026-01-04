@@ -9,5 +9,19 @@
       "Bash(curl:*)"
     ]
   },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/require-agent-approval.sh",
+            "statusMessage": "Checking if implementation agent needs approval..."
+          }
+        ]
+      }
+    ]
+  },
   "alwaysThinkingEnabled": false
 }

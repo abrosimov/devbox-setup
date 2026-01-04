@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with this Ansible devbox setup project.
 
 ## Project Overview
 
-This is an Ansible-based developer workstation setup tool that automates installation and configuration of development tools, dotfiles, and system preferences. It supports macOS (Darwin) and Ubuntu Linux.
+Ansible-based developer workstation setup tool that automates installation and configuration of development tools, dotfiles, and system preferences. Supports macOS (Darwin) and Ubuntu Linux.
+
+**Key distinction**: `roles/devbox/files/.claude/` contains files deployed to `~/.claude/` (user's global Claude Code config). The `CLAUDE.md` there is the **global authority protocol**, not specific to this Ansible project.
 
 ## Commands
 
@@ -39,7 +41,8 @@ make dev TAGS="configs"
 - `playbooks/main.yml` - Main playbook entry point, runs locally against 127.0.0.1
 - `roles/devbox/` - Single role containing all setup logic
 - `roles/devbox/tasks/` - Task files split by OS and phase
-- `roles/devbox/files/` - Dotfiles and configs to be deployed to home directory
+- `roles/devbox/files/` - Dotfiles and configs deployed to home directory
+- `roles/devbox/files/.claude/` - **Claude Code global config** (deployed to `~/.claude/`)
 - `roles/devbox/defaults/main.yml` - Default variables (`devbox_user`, `devbox_paths`)
 - `vault/` - Encrypted secrets (SSH passphrase)
 
@@ -58,6 +61,16 @@ The `install_configs.yml` task uses `community.general.filetree` to mirror the e
 - `devbox_paths.dotfiles_root_dir` - Target for dotfile deployment (overridden in dev_mode)
 - `devbox_user.login` - Username for user configuration
 - `dev_mode` - When true, deploys to debug directory instead of home
+
+## Claude Config Files (in roles/devbox/files/.claude/)
+
+| File | Purpose | Deployed To |
+|------|---------|-------------|
+| `CLAUDE.md` | User Authority Protocol (approval rules) | `~/.claude/CLAUDE.md` |
+| `agents/*.md` | Agent definitions (SE, tests, review) | `~/.claude/agents/` |
+| `commands/*.md` | Slash commands (/implement, /test, etc.) | `~/.claude/commands/` |
+| `skills/` | Reusable knowledge modules | `~/.claude/skills/` |
+| `docs/workflow-reference.md` | Agent pipeline documentation | `~/.claude/docs/` |
 
 ## Dependencies
 

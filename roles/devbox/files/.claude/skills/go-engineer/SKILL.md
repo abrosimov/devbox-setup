@@ -86,6 +86,62 @@ Add **production necessities** even if not in the plan:
 4. **Minimal API surface** — Export only what external packages need
 5. **Fail fast** — Compile-time > startup-time > runtime errors
 
+---
+
+## CRITICAL: No Unnecessary Comments (ZERO TOLERANCE)
+
+### Inline Comments
+
+**NEVER write comments that describe what code does.** Code is self-documenting.
+
+```go
+// ❌ FORBIDDEN — narration
+// Check if doomed AFTER decrementing
+// If we're the last reference, abort and end session
+// Verify transaction is stored in context
+// Get the user from database
+
+// ✅ ONLY acceptable — explains WHY
+// MongoDB doesn't support nested tx, use refcount
+// nil map panics on write, must initialize
+```
+
+### Doc Comments — Library vs Business Logic
+
+| Code Type | Doc Comment? |
+|-----------|--------------|
+| **Library exports** (clients, `pkg/`) | Contract only — no implementation details |
+| **Unexported** (lowercase) | **NEVER** |
+| **Business logic** (services, handlers) | **NEVER** — names are documentation |
+
+```go
+// ❌ FORBIDDEN — doc on unexported
+// getClient returns the MongoDB client for internal use.
+func (c *Client) getClient(ctx context.Context) (*mongo.Client, error) {
+
+// ❌ FORBIDDEN — doc on business logic
+// ProcessOrder processes an order by validating items.
+func (s *OrderService) ProcessOrder(ctx context.Context, order *Order) error {
+
+// ❌ FORBIDDEN — implementation details in library doc
+// Commit commits. If refCount > 1, waits for outer. If refCount == 0, commits.
+func (h *TxHandle) Commit(ctx context.Context) error {
+
+// ✅ CORRECT — contract only on library export
+// Commit commits the transaction. Returns ErrTransactionDoomed if doomed.
+func (h *TxHandle) Commit(ctx context.Context) error {
+
+// ✅ CORRECT — no doc on unexported
+func (c *Client) getClient(ctx context.Context) (*mongo.Client, error) {
+
+// ✅ CORRECT — no doc on business logic
+func (s *OrderService) ProcessOrder(ctx context.Context, order *Order) error {
+```
+
+**Delete test**: If you can remove the comment and code remains clear → delete it.
+
+---
+
 ## Essential Patterns
 
 ### Formatting
@@ -104,10 +160,44 @@ Where `<module-name>` is from `go.mod` (e.g., `github.com/org/repo`).
 - Removes unused imports
 - Includes all `gofmt` formatting
 
+### Critical Rules (Zero Tolerance)
+
+**1. Nil Pointer Returns → MUST Return Error**
+
+```go
+// ❌ FORBIDDEN
+func Parse(data []byte) *Config {
+    if len(data) == 0 {
+        return nil  // Silent nil - caller can't handle
+    }
+    // ...
+}
+
+// ✅ REQUIRED
+func Parse(data []byte) (*Config, error) {
+    if len(data) == 0 {
+        return nil, errors.New("empty data")
+    }
+    // ...
+}
+```
+
+**2. Receiver Consistency → One Pointer = All Pointers**
+
+```go
+// ❌ FORBIDDEN - mixed receivers
+func (c *Cache) Set(k, v any) { }      // pointer
+func (c Cache) Get(k string) any { }   // value - WRONG!
+
+// ✅ REQUIRED - consistent receivers
+func (c *Cache) Set(k, v any) { }      // pointer
+func (c *Cache) Get(k string) any { }  // pointer - consistent!
+```
+
 ### Error Handling
 
 ```go
-// ALWAYS wrap with context
+// ALWAYS wrap with context using %w
 if err != nil {
     return fmt.Errorf("failed to fetch user %s: %w", userID, err)
 }

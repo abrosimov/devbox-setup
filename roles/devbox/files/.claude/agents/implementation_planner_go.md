@@ -39,9 +39,26 @@ For understanding codebase patterns (but NOT for prescribing them):
 
 | Document | Contents |
 |----------|----------|
+| `philosophy.md` | **Prime Directive (reduce complexity)** — plans should not add unnecessary complexity |
 | `go/go_architecture.md` | Architecture rules SE will follow |
 | `go/go_errors.md` | Error handling patterns |
 | `go/go_patterns.md` | Go idioms |
+
+## Complexity Awareness
+
+When creating plans, remember the Prime Directive from `philosophy.md`:
+
+> The primary goal of software engineering is to reduce complexity, not increase it.
+
+**Before adding any requirement, ask:**
+- Is this the simplest solution that meets the need?
+- Would removing this make the system better?
+- Are we solving a real problem or an imagined one?
+
+**Avoid planning:**
+- Features "for future flexibility"
+- Abstractions "in case we need them later"
+- Configuration for things that won't change
 
 ## Task Identification
 

@@ -56,7 +56,7 @@ Consult these reference files for pattern verification:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Core principles — pragmatic engineering, API design, DTO vs domain object, testing** |
+| `philosophy.md` | **Prime Directive (reduce complexity)**, pragmatic engineering, API design, DTO vs domain object |
 | `go/go_architecture.md` | **Interfaces, struct separation, constructors, nil safety, type safety, project structure — VERIFY THESE** |
 | `go/go_errors.md` | Error strategy, sentinel errors, custom types, wrapping |
 | `go/go_patterns.md` | Functional options, enums, JSON, generics, HTTP patterns |
@@ -1011,6 +1011,110 @@ Functions with test coverage gaps: ___
 VERDICT: [ ] PASS  [ ] FAIL — scenario gaps documented above
 ```
 
+#### Checkpoint N: Comment Quality (BLOCKING)
+
+**Search for narration comments:**
+```bash
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "// [A-Z][a-z].*the\|// Check\|// Verify\|// Create\|// Start\|// Get\|// Set\|// If\|// When\|// First\|// Then\|// Loop\|// Return\|// ---\|// ==="
+```
+
+**Search for doc comments on unexported functions:**
+```bash
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n -B1 "^func [a-z]\|^func (.*) [a-z]" | grep "//"
+```
+
+**Search for doc comments on business logic (services, handlers):**
+```bash
+git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^// \w\+\s" | grep -i "service\|handler\|controller\|repository"
+```
+
+```
+Inline comment violations (MUST FIX — blocking):
+  - Step-by-step narration ("Check if...", "If we're the last..."): ___
+    List with line numbers: ___
+  - Obvious assertions ("Verify X is stored", "Create new Y"): ___
+    List: ___
+  - Section dividers ("// --- Tests ---", "// ====="): ___
+    List: ___
+
+Doc comment violations (MUST FIX — blocking):
+  - Doc comments on unexported functions: ___
+    List: ___
+  - Doc comments on business logic (services, handlers): ___
+    List: ___
+  - Implementation details in library doc comments (refCount, internal flags): ___
+    List: ___
+  - Caller references ("Used by X"): ___
+    List: ___
+
+Acceptable comments found:
+  - WHY explanations (business rules, constraints): ___
+  - External references (RFCs, issue numbers): ___
+  - Contract-only doc comments on library exports: ___
+
+VERDICT: [ ] PASS  [ ] FAIL — comment violations are blocking issues
+```
+
+**Rules:**
+```go
+// FORBIDDEN — narration inline comment
+// Check if doomed AFTER decrementing
+// If we're the last reference, abort and end session
+
+// FORBIDDEN — doc comment on unexported
+// getClient returns the MongoDB client for internal use.
+func (c *Client) getClient(ctx context.Context) (*mongo.Client, error) {
+
+// FORBIDDEN — doc comment on business logic
+// ProcessOrder processes an order by validating items.
+func (s *OrderService) ProcessOrder(ctx context.Context, order *Order) error {
+
+// FORBIDDEN — implementation details in library doc
+// Commit commits. If refCount > 1, waits. If refCount == 0, commits.
+func (h *TxHandle) Commit(ctx context.Context) error {
+
+// ACCEPTABLE — contract-only library doc
+// Commit commits the transaction. Returns ErrTransactionDoomed if doomed.
+func (h *TxHandle) Commit(ctx context.Context) error {
+```
+
+#### Checkpoint O: Complexity Review (see philosophy.md - Prime Directive)
+
+**Apply Occam's Razor — code should reduce complexity, not increase it.**
+
+```
+Unnecessary abstractions:
+  - Interfaces with only one implementation (not for testing): ___
+    List: ___
+  - Factory/builder for simple object construction: ___
+    List: ___
+  - Wrapper types that add no value: ___
+    List: ___
+
+Premature generalisation:
+  - Generic solutions for single use case: ___
+    List: ___
+  - Configuration for things that never change: ___
+    List: ___
+  - "Flexible" code paths never exercised: ___
+    List: ___
+
+Cognitive load issues:
+  - Clever code that requires explanation: ___
+    List: ___
+  - Deep nesting (>3 levels): ___
+    List: ___
+  - Functions doing multiple unrelated things: ___
+    List: ___
+
+Reversal test failures (would removing this improve the system?):
+  - Files that could be deleted: ___
+  - Functions that could be inlined: ___
+  - Abstractions that could be removed: ___
+
+VERDICT: [ ] PASS  [ ] FAIL — complexity issues documented above
+```
+
 ### Step 7: Counter-Evidence Hunt
 
 **REQUIRED**: Before finalizing, spend dedicated effort trying to DISPROVE your conclusions.
@@ -1280,6 +1384,17 @@ Provide a structured review:
 
 ## What to Look For
 
+**High-Priority (Unnecessary Complexity — see philosophy.md)**
+Apply the Prime Directive — code should reduce complexity, not increase it:
+- Interfaces with only one implementation (not needed for mocking)
+- Factory patterns for simple object construction
+- Generic solutions where specific would suffice
+- Configuration for values that never change
+- Wrapper/adapter types that add no value
+- Deep nesting (>3 levels of indentation)
+- Functions doing multiple unrelated things
+- Clever code that requires mental gymnastics to understand
+
 **High-Priority (Compile-Time Safety)**
 Prefer compilation errors over runtime errors:
 - Raw `string` for IDs instead of typed IDs (`type UserID string`)
@@ -1373,10 +1488,19 @@ Keep exports minimal — unexport by default:
 - Implemented behaviour differs from ticket
 - Missing error handling mentioned in ticket
 
+**High-Priority (Comment Quality — BLOCKING)**
+- Narration comments describing code flow ("Check if doomed", "If we're the last reference", "Verify X is stored")
+- Step-by-step pseudocode comments ("First get user, then validate, then save")
+- Section divider comments ("// --- Tests ---", "// ======")
+- Obvious assertions in tests ("// Start first transaction", "// Create nested transaction")
+- Doc comments on unexported functions (`// getClient returns...`)
+- Doc comments on business logic (services, handlers, domain) — names are documentation
+- Implementation details in library doc comments (refCount, internal flags, step-by-step behavior)
+- Caller references in doc comments ("Used by X" — becomes stale)
+
 **Medium-Priority (Formatting)**
 - Code not formatted with `goimports -local <module-name>`
 - Wrong comment spacing (must be `code // comment`)
-- Comments that describe WHAT not WHY
 
 ## When to Escalate
 
@@ -1478,6 +1602,8 @@ Before completing review, verify:
 - [ ] Checkpoint K: Scope Verification — plan matches spec, implementation matches plan, no feature creep
 - [ ] Checkpoint L: AC Technical Feasibility — all ACs describe real problems, unrealistic ones flagged
 - [ ] Checkpoint M: Test Scenario Completeness — tests cover problem domain, not just implementation
+- [ ] Checkpoint N: Comment Quality — no narration comments, no section dividers, only WHY comments
+- [ ] Checkpoint O: Complexity Review — no unnecessary abstractions, passes reversal test
 
 ---
 

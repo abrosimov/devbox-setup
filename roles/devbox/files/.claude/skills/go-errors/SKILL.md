@@ -589,6 +589,26 @@ func (s *Service) ProcessRequest(ctx context.Context, req Request) error {
 
 ## Common Mistakes
 
+### Returning Nil Pointer Without Error
+
+```go
+// ❌ BAD — nil pointer without error (silent failure)
+func Parse(data []byte) *Config {
+    if len(data) == 0 {
+        return nil  // Caller can't handle this properly
+    }
+    // ...
+}
+
+// ✅ GOOD — nil with error (explicit failure)
+func Parse(data []byte) (*Config, error) {
+    if len(data) == 0 {
+        return nil, errors.New("empty data")
+    }
+    // ...
+}
+```
+
 ### Ignoring Errors
 
 ```go
@@ -664,5 +684,180 @@ if err != nil {
 // GOOD — single wrap with full context
 if err != nil {
     return fmt.Errorf("getting user for operation: %w", err)
+}
+```
+
+---
+
+## Nil Pointer Returns
+
+**STRICT RULE: Any function that can return a nil pointer MUST return error.**
+
+**Rationale:** Caller needs to distinguish between success and failure. Even if nil is "expected" for certain inputs, it's still a condition the caller must handle explicitly.
+
+### The Problem
+
+```go
+// ❌ FORBIDDEN — nil pointer without error
+func ParseData(input []byte) *Result {
+    if len(input) == 0 {
+        return nil  // Silent failure - caller can't handle properly
+    }
+    // ...
+}
+
+func ConvertRecord(source *SourceRecord) *TargetRecord {
+    if source == nil {
+        return nil  // Caller loses context about WHY it's nil
+    }
+    return &TargetRecord{...}
+}
+
+// ✅ REQUIRED — nil with error (always)
+func ParseData(input []byte) (*Result, error) {
+    if len(input) == 0 {
+        return nil, errors.New("empty input")
+    }
+    // ...
+    return result, nil
+}
+
+func ConvertRecord(source *SourceRecord) (*TargetRecord, error) {
+    if source == nil {
+        return nil, errors.New("source record is nil")
+    }
+    return &TargetRecord{...}, nil
+}
+```
+
+### Why Error Return Is Mandatory
+
+```go
+// WITHOUT error — caller has no context
+result := ParseData(data)
+if result == nil {
+    // Is this a bug? Empty input? Invalid data?
+    // Can't log properly, can't return meaningful error upstream
+    return nil, errors.New("parse failed")  // Lost context!
+}
+
+// WITH error — caller can handle appropriately
+result, err := ParseData(data)
+if err != nil {
+    // Clear failure path with context
+    log.Warn().Err(err).Msg("skipping invalid data")
+    return nil, fmt.Errorf("parsing data: %w", err)
+}
+
+// Caller might choose different handling:
+if errors.Is(err, ErrEmptyInput) {
+    return defaultResult, nil  // Use default for empty
+}
+if errors.Is(err, ErrInvalidFormat) {
+    return nil, err  // Hard failure for invalid
+}
+```
+
+### Decision Tree (No Exceptions)
+
+| Scenario | Return signature | Example |
+|----------|------------------|---------|
+| Function can return nil | `(*T, error)` — ALWAYS | `Parse([]byte) (*Config, error)` |
+| Function never returns nil, can't fail | `*T` | `NewCache() *Cache` |
+| Function never returns nil, can fail | `(*T, error)` | `NewClient(addr string) (*Client, error)` |
+
+### Common Cases
+
+```go
+// ✅ Parsing/conversion — can return nil = return error
+func ParseConfig(data []byte) (*Config, error)
+func DecodeMessage(raw string) (*Message, error)
+func TransformRecord(input *InputRecord) (*OutputRecord, error)
+
+// ✅ Database/storage — nil = not found
+func FindByID(ctx context.Context, id string) (*User, error) {
+    // Returns (nil, ErrNotFound) when not found
+}
+
+func LoadDocument(path string) (*Document, error) {
+    // Returns (nil, os.ErrNotExist) when file doesn't exist
+}
+
+// ✅ Factory/constructor — validates and can fail
+func NewConnection(cfg Config) (*Connection, error) {
+    if err := cfg.Validate(); err != nil {
+        return nil, err
+    }
+    return &Connection{...}, nil
+}
+
+// ✅ Never returns nil — constructor with defaults
+func NewCache() *Cache {
+    return &Cache{items: make(map[string]any)}
+}
+
+func NewBuffer() *Buffer {
+    return &Buffer{data: make([]byte, 0, 1024)}
+}
+```
+
+### Anti-Pattern to Avoid
+
+```go
+// ❌ NEVER DO THIS - defeats the purpose
+func TransformItem(item *Item) *ProcessedItem {
+    if item == nil {
+        return nil  // "nil is expected behavior"
+    }
+    return &ProcessedItem{...}
+}
+
+// Later in code:
+for _, item := range items {
+    processed := TransformItem(item)
+    if processed == nil {
+        continue  // Silently skipping - why? Bug? Expected?
+    }
+    // ...
+}
+
+// ✅ CORRECT - explicit error handling
+func TransformItem(item *Item) (*ProcessedItem, error) {
+    if item == nil {
+        return nil, errors.New("item is nil")
+    }
+    return &ProcessedItem{...}, nil
+}
+
+// Later in code - clear intent:
+for _, item := range items {
+    processed, err := TransformItem(item)
+    if err != nil {
+        log.Warn().Err(err).Msg("skipping invalid item")
+        continue  // Explicit choice to skip
+    }
+    // ...
+}
+```
+
+### Edge Case: Getter Methods
+
+```go
+// Getter methods returning internal state can return nil without error
+type Container struct {
+    current *Item
+}
+
+// OK — getter returning internal field (nil is valid state)
+func (c *Container) Current() *Item {
+    return c.current  // nil means "no current item"
+}
+
+// But if there's ANY logic/transformation → return error
+func (c *Container) CurrentProcessed() (*ProcessedItem, error) {
+    if c.current == nil {
+        return nil, errors.New("no current item")
+    }
+    return c.current.Process()
 }
 ```

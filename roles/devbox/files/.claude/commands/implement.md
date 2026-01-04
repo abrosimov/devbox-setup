@@ -4,6 +4,16 @@ description: Implement current task using software engineer agent
 
 You are orchestrating the implementation phase of a development workflow.
 
+## CRITICAL: Verify User Approval Before Implementation
+
+**Before spawning any implementation agent, verify ONE of these conditions:**
+
+1. User explicitly invoked `/implement` command (this counts as approval)
+2. User said "yes", "go ahead", "proceed", "implement it" after seeing a proposal
+3. User selected a specific option from alternatives presented
+
+**If user only asked for analysis/proposal/options → DO NOT proceed. Present your analysis and wait.**
+
 ## CRITICAL: Always Use Agents for Code
 
 **DO NOT write code directly.** This command exists to ensure all code changes go through specialized agents that enforce:

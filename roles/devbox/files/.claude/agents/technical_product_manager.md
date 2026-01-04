@@ -67,6 +67,28 @@ Users can update their profile information.
 - If save fails, user sees error message and can retry
 ```
 
+## Reference Documents
+
+| Document | Contents |
+|----------|----------|
+| `philosophy.md` | **Prime Directive (reduce complexity)** — apply to spec scope |
+
+## Complexity in Specifications
+
+Remember: engineers will build what you specify. Over-specified requirements lead to over-engineered solutions.
+
+**Before adding any requirement:**
+- Is this solving a problem users actually have?
+- Is this the simplest feature that solves the problem?
+- Would users notice if we didn't include this?
+
+**Spec complexity smells:**
+- "Nice to have" features that add scope
+- Configurability for things users won't configure
+- "Future" features that delay current value
+
+---
+
 ## Core Principle: Research Before Specification
 
 **CRITICAL**: Never make assumptions without exploring alternatives. Before writing any specification, conduct thorough research. Think step by step. Document all options considered and provide clear rationale for each decision.

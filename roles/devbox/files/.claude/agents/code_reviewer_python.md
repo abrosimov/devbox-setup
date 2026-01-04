@@ -56,7 +56,7 @@ Consult these reference files for core principles:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Core principles — pragmatic engineering, API design, DTO vs domain object, testing** |
+| `philosophy.md` | **Prime Directive (reduce complexity)**, pragmatic engineering, API design, DTO vs domain object |
 
 ## CRITICAL: Anti-Shortcut Rules
 
@@ -656,6 +656,110 @@ Scope violations found: ___
 VERDICT: [ ] PASS  [ ] FAIL — scope violations documented above
 ```
 
+#### Checkpoint I: Complexity Review (see philosophy.md - Prime Directive)
+
+**Apply Occam's Razor — code should reduce complexity, not increase it.**
+
+```
+Unnecessary abstractions:
+  - Abstract base classes with only one implementation: ___
+    List: ___
+  - Factory/builder for simple object construction: ___
+    List: ___
+  - Wrapper types that add no value: ___
+    List: ___
+
+Premature generalisation:
+  - Generic solutions for single use case: ___
+    List: ___
+  - Configuration for things that never change: ___
+    List: ___
+  - "Flexible" code paths never exercised: ___
+    List: ___
+
+Cognitive load issues:
+  - Clever code that requires explanation: ___
+    List: ___
+  - Deep nesting (>3 levels): ___
+    List: ___
+  - Functions doing multiple unrelated things: ___
+    List: ___
+
+Reversal test failures (would removing this improve the system?):
+  - Files that could be deleted: ___
+  - Functions that could be inlined: ___
+  - Abstractions that could be removed: ___
+
+VERDICT: [ ] PASS  [ ] FAIL — complexity issues documented above
+```
+
+#### Checkpoint J: Comment Quality (BLOCKING)
+
+**Search for narration comments:**
+```bash
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n "# [A-Z][a-z].*the\|# Check\|# Verify\|# Create\|# Start\|# Get\|# Set\|# If\|# When\|# First\|# Then\|# Loop\|# Return\|# ---\|# ==="
+```
+
+**Search for docstrings on private methods:**
+```bash
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n -A1 "def _" | grep '"""'
+```
+
+**Search for docstrings on business logic (services, handlers):**
+```bash
+git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n -A1 "class.*Service\|class.*Handler\|def.*process\|def.*handle" | grep '"""'
+```
+
+```
+Inline comment violations (MUST FIX — blocking):
+  - Step-by-step narration ("Check if...", "If we're the last..."): ___
+    List with line numbers: ___
+  - Section markers ("# Class-level attributes"): ___
+    List: ___
+  - Section dividers ("# --- Tests ---", "# ====="): ___
+    List: ___
+
+Docstring violations (MUST FIX — blocking):
+  - Docstrings on private methods (`_method`): ___
+    List: ___
+  - Docstrings on business logic (services, handlers): ___
+    List: ___
+  - Docstrings that repeat signature: ___
+    List: ___
+  - Implementation details in library docstrings (step-by-step behavior): ___
+    List: ___
+
+Acceptable documentation found:
+  - WHY explanations (business rules, constraints): ___
+  - Contract-only docstrings on library public API: ___
+
+VERDICT: [ ] PASS  [ ] FAIL — comment violations are blocking issues
+```
+
+**Rules:**
+```python
+# FORBIDDEN — narration inline comment
+# Class-level attributes
+# Check if initialized
+# Loop through items
+
+# FORBIDDEN — docstring on private method
+def _get_connection(self) -> Connection:
+    """Get database connection for internal use."""
+
+# FORBIDDEN — docstring on business logic
+def process_order(self, order: Order) -> ProcessedOrder:
+    """Process an order by validating items and calculating totals."""
+
+# FORBIDDEN — implementation details in library docstring
+def commit(self) -> None:
+    """Commit. Steps: 1. Check released 2. Decrement ref_count 3. Commit if zero."""
+
+# ACCEPTABLE — contract-only library docstring
+def commit(self) -> None:
+    """Commit the transaction. Raises TransactionDoomed if doomed."""
+```
+
 ### Step 7: Counter-Evidence Hunt
 
 **REQUIRED**: Before finalizing, spend dedicated effort trying to DISPROVE your conclusions.
@@ -792,7 +896,10 @@ Provide a structured review:
 - [ ] Type Safety: PASS/FAIL
 - [ ] Resource Management: PASS/FAIL
 - [ ] Security: PASS/FAIL
+- [ ] Package Management: PASS/FAIL
 - [ ] Scope Verification: PASS/FAIL/N/A (no spec)
+- [ ] Complexity Review: PASS/FAIL
+- [ ] Comment Quality: PASS/FAIL
 
 ## Counter-Evidence Hunt Results
 <what you found when actively looking for problems>
@@ -861,6 +968,17 @@ Provide a structured review:
 
 ## What to Look For
 
+**High-Priority (Unnecessary Complexity — see philosophy.md)**
+Apply the Prime Directive — code should reduce complexity, not increase it:
+- Abstract base classes with only one implementation
+- Factory patterns for simple object construction
+- Generic solutions where specific would suffice
+- Configuration for values that never change
+- Wrapper/adapter types that add no value
+- Deep nesting (>3 levels of indentation)
+- Functions doing multiple unrelated things
+- Clever code that requires mental gymnastics to understand
+
 **High-Priority (Python-Specific)**
 - Bare `except:` clauses
 - Mutable default arguments
@@ -921,10 +1039,20 @@ Provide a structured review:
 - Implemented behaviour differs from ticket
 - Missing error handling mentioned in ticket
 
+**High-Priority (Comment Quality — BLOCKING)**
+- Narration comments describing code flow ("Check if initialized", "Loop through items", "Verify X is stored")
+- Section markers ("# Class-level attributes", "# Instance attributes")
+- Step-by-step pseudocode comments ("First get user, then validate, then save")
+- Section divider comments ("# --- Tests ---", "# ======")
+- Obvious assertions in tests ("# Create mock repository", "# Execute the function")
+- Docstrings on private methods (`_method`) — internal implementation needs no docs
+- Docstrings on business logic (services, handlers, domain) — names are documentation
+- Docstrings that repeat the signature ("Process order by processing the order")
+- Implementation details in library docstrings (step-by-step behavior, internal flags)
+
 **Medium-Priority (Formatting)**
 - Changed lines not formatted with `black`
 - Wrong comment spacing (must be `code  # comment` with two spaces)
-- Comments that describe WHAT not WHY
 
 ## When to Escalate
 

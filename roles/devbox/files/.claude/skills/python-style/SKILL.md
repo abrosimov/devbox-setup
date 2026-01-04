@@ -17,6 +17,23 @@ Style guide for documentation, comments, type hints, and naming.
 
 **Default: NO docstrings.** Type hints and clear names are your primary documentation.
 
+### Library vs Business Logic
+
+**Library/Infrastructure code** (shared clients, SDK wrappers, `lib/`, reusable packages):
+- Public API: Docstrings allowed for non-obvious semantics only
+- Private (`_method`): Never
+
+**Business logic** (services, handlers, domain models, application code):
+- Public or private: **Never** — type hints and names ARE the documentation
+- If you need a docstring to explain what a function does, rename the function
+
+| Indicator | Library | Business Logic |
+|-----------|---------|----------------|
+| Could be extracted to separate package | Yes | No |
+| Has external consumers | Yes | No |
+| Changes with product requirements | Rarely | Frequently |
+| Examples | `MongoClient`, `KubeClient` | `OrderService`, `UserHandler` |
+
 ### The Information Test
 
 Before writing a docstring, ask: **"Does this add information beyond the signature?"**

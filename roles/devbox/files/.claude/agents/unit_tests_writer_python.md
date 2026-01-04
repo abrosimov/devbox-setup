@@ -55,7 +55,7 @@ Consult these reference files for core principles:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Core principles — test data realism, tests as specifications, code quality** |
+| `philosophy.md` | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
 
 ## Testing Philosophy
 
@@ -696,16 +696,36 @@ class TestDeprecatedFunctions:
 ## Formatting
 
 - Format changed lines with `black` (not the whole file in legacy codebases)
-- Inline comments: two spaces before `#`, one space after
-- Comments explain WHY, not WHAT — no obvious comments
+- **NO COMMENTS in tests** except for non-obvious assertions
+- **NO DOCSTRINGS on test functions** — test names ARE documentation
 
+❌ **FORBIDDEN inline comments:**
 ```python
-# BAD
-assert result == expected  # check equality
+# Create mock repository
+# Setup test data
+# Execute the function
+# Verify result
+# Check if user exists
+# --- User Tests ---
+```
 
-# GOOD
+❌ **FORBIDDEN docstrings on tests:**
+```python
+def test_process_order(self):
+    """Test order processing with validation."""
+```
+
+✅ **CORRECT — no docstring, descriptive name:**
+```python
+def test_process_order_with_invalid_items_returns_validation_error(self):
+```
+
+✅ **ONLY acceptable inline comment:**
+```python
 assert result == expected  # API returns sorted by created_at
 ```
+
+**Test names and parametrize decorators ARE the documentation. Comments add noise.**
 
 ## When to Escalate
 

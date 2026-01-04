@@ -55,7 +55,7 @@ Consult these reference files for patterns when writing tests:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Core principles — test data realism, tests as specifications, code quality** |
+| `philosophy.md` | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
 | `go/go_architecture.md` | **Interfaces, constructors, nil safety, layer separation — verify these in tests** |
 | `go/go_errors.md` | Error types, sentinel errors, error wrapping patterns |
 | `go/go_patterns.md` | Enums, JSON encoding, slice patterns, HTTP patterns |
@@ -1179,16 +1179,37 @@ func (s *UserServiceTestSuite) newTestServer() *httptest.Server {
 ## Formatting
 
 - Format all code with `goimports -local <module-name>` (module name from go.mod)
-- Inline comments: one space before `//`, one space after
-- Comments explain WHY, not WHAT — no obvious comments
+- **NO COMMENTS in tests** except for non-obvious assertions
+- **NO DOC COMMENTS on test functions** — test names ARE documentation
 
+❌ **FORBIDDEN inline comments:**
 ```go
-// BAD
-s.Require().Equal(expected, actual) // check equality
-
-// GOOD
-s.Require().Equal(expected, actual) // API returns sorted results
+// Start first transaction
+// Create nested transaction
+// Verify transaction is stored in context
+// Inner commits (decrements refCount to 1)
+// Check if doomed AFTER decrementing
+// --- GetUser Tests ---
+// =====================
 ```
+
+❌ **FORBIDDEN doc comments on tests:**
+```go
+// TestProcessOrder tests the order processing flow including validation.
+func (s *OrderSuite) TestProcessOrder() {
+```
+
+✅ **CORRECT — no doc comment, descriptive name:**
+```go
+func (s *OrderSuite) TestProcessOrder_WithInvalidItems_ReturnsValidationError() {
+```
+
+✅ **ONLY acceptable inline comment:**
+```go
+s.Require().Equal(expected, actual)  // API returns sorted by created_at
+```
+
+**Test names and structure ARE the documentation. Comments add noise.**
 
 ## Backward Compatibility Testing
 

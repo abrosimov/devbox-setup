@@ -4,6 +4,78 @@ Core principles for all code-working agents. These are language-agnostic fundame
 
 ---
 
+## The Prime Directive: Reduce Complexity
+
+**The primary goal of software engineering is to reduce complexity, not increase it.**
+
+Every line of code is a liability. Every abstraction adds cognitive load. Every feature creates maintenance burden. The engineer's job is to solve problems with the **minimum viable complexity**.
+
+### Occam's Razor for Code
+
+> "Entities should not be multiplied beyond necessity."
+
+| Principle | Application |
+|-----------|-------------|
+| **Simplest solution wins** | If two designs solve the problem, choose the one with fewer moving parts |
+| **Additions require justification** | Default is NO. Every new file, function, type, parameter must prove its necessity |
+| **Deletions are features** | Removing code improves the system. Celebrate deletions. |
+
+### Certainty Over Cleverness
+
+**Predictable code beats clever code.** Debugging clever code costs more than writing boring code.
+
+| Prefer | Over | Why |
+|--------|------|-----|
+| Explicit | Implicit | Reader sees what happens without hunting |
+| Boring | Clever | Clever fails in unexpected ways |
+| Obvious | Elegant | Elegant often means "hard to understand" |
+| Repetition (2-3x) | Premature abstraction | DRY is not always right; WET can be clearer |
+
+**The test:** Can a tired engineer at 3am understand this code? If not, simplify.
+
+### Cognitive Load Budget
+
+Every codebase has a **cognitive load budget**. Each addition spends from this budget:
+
+| High Cost (avoid) | Low Cost (prefer) |
+|-------------------|-------------------|
+| New abstraction layers | Direct implementation |
+| Custom DSLs | Standard language features |
+| Implicit behaviour (magic) | Explicit behaviour |
+| Many small files | Fewer, cohesive files |
+| Deep inheritance | Flat composition |
+| Generic solutions | Specific solutions |
+
+**Rule:** Before adding complexity, ask: "Is this solving a problem we actually have, or one we imagine we might have?"
+
+### Less Is More — Practical Application
+
+| Situation | Wrong Instinct | Right Action |
+|-----------|----------------|--------------|
+| "This might need to change" | Add abstraction layer | Write concrete code; refactor IF it changes |
+| "This could be reused" | Extract to shared library | Keep inline; extract only on 3rd use |
+| "This handles all cases" | Build comprehensive framework | Handle current cases; extend when needed |
+| "This is more flexible" | Add configuration options | Hardcode; make configurable only when requested |
+
+### Complexity Smells
+
+Watch for these signs you're adding unnecessary complexity:
+
+- **"It's more flexible"** — Flexibility you don't need is complexity you don't want
+- **"Future-proofing"** — You cannot predict the future; solve today's problem
+- **"Best practice"** — Context matters; cargo-culting patterns adds complexity
+- **"It's only a small addition"** — Small additions compound; death by a thousand cuts
+- **"This abstraction is cleaner"** — Abstractions have cost; concrete code is often clearer
+
+### The Reversal Test
+
+Before adding any code, ask: **"If this already existed, would removing it improve the system?"**
+
+- If YES → Don't add it
+- If NO → Proceed, but keep it minimal
+
+---
+
 ## Language Standard: British English
 
 **All agents must use British English spelling in all output** — documentation, comments, error messages, and communication.

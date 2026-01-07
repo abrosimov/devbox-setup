@@ -1,0 +1,169 @@
+#!/bin/bash
+# safe-curl: A secure curl wrapper with whitelist validation
+# Only allows specific HTTP methods to whitelisted domains
+
+set -euo pipefail
+
+# Configuration: Whitelisted domains and methods
+ALLOWED_DOMAINS=(
+    "localhost"
+    "127.0.0.1"
+    "::1"
+    "*.localhost"
+    "docs.astral.sh"
+    "api.github.com"
+    "github.com"
+)
+
+ALLOWED_METHODS=(
+    "GET"
+    "HEAD"
+    "OPTIONS"
+)
+
+ALLOWED_METHODS_LOCALHOST=(
+    "GET"
+    "HEAD"
+    "OPTIONS"
+    "POST"
+    "PUT"
+    "PATCH"
+    "DELETE"
+)
+
+# Parse arguments to extract method and URL
+METHOD="GET"  # Default method
+URL=""
+CURL_ARGS=()
+
+# Parse curl arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -X|--request)
+            METHOD=$(echo "$2" | tr '[:lower:]' '[:upper:]')
+            CURL_ARGS+=("$1" "$2")
+            shift 2
+            ;;
+        -X*)
+            METHOD="${1#-X}"
+            METHOD=$(echo "$METHOD" | tr '[:lower:]' '[:upper:]')
+            CURL_ARGS+=("$1")
+            shift
+            ;;
+        --request=*)
+            METHOD="${1#*=}"
+            METHOD=$(echo "$METHOD" | tr '[:lower:]' '[:upper:]')
+            CURL_ARGS+=("$1")
+            shift
+            ;;
+        -d|--data|--data-raw|--data-binary|--data-urlencode|--data-ascii)
+            # If data is provided without explicit method, it's POST
+            if [[ "$METHOD" == "GET" ]]; then
+                METHOD="POST"
+            fi
+            CURL_ARGS+=("$1" "$2")
+            shift 2
+            ;;
+        -d*)
+            if [[ "$METHOD" == "GET" ]]; then
+                METHOD="POST"
+            fi
+            CURL_ARGS+=("$1")
+            shift
+            ;;
+        http://*|https://*)
+            URL="$1"
+            CURL_ARGS+=("$1")
+            shift
+            ;;
+        *)
+            CURL_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Validate URL is provided
+if [[ -z "$URL" ]]; then
+    echo "Error: No URL provided" >&2
+    exit 1
+fi
+
+# Extract domain from URL
+if [[ "$URL" =~ ^https?://([^/:]+) ]]; then
+    DOMAIN="${BASH_REMATCH[1]}"
+else
+    echo "Error: Invalid URL format: $URL" >&2
+    exit 1
+fi
+
+# Check if domain is localhost-like
+is_localhost() {
+    local domain="$1"
+    [[ "$domain" == "localhost" ]] || \
+    [[ "$domain" == "127.0.0.1" ]] || \
+    [[ "$domain" == "::1" ]] || \
+    [[ "$domain" =~ \.localhost$ ]] || \
+    [[ "$domain" =~ ^127\. ]] || \
+    [[ "$domain" =~ ^192\.168\. ]] || \
+    [[ "$domain" =~ ^10\. ]] || \
+    [[ "$domain" =~ ^172\.(1[6-9]|2[0-9]|3[0-1])\. ]]
+}
+
+# Check if domain matches whitelist pattern
+domain_allowed() {
+    local domain="$1"
+    for pattern in "${ALLOWED_DOMAINS[@]}"; do
+        if [[ "$pattern" == *"*"* ]]; then
+            # Wildcard pattern matching
+            pattern="${pattern//\*/.*}"
+            if [[ "$domain" =~ ^${pattern}$ ]]; then
+                return 0
+            fi
+        else
+            # Exact match
+            if [[ "$domain" == "$pattern" ]]; then
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+# Determine which method list to use
+if is_localhost "$DOMAIN"; then
+    METHODS_TO_CHECK=("${ALLOWED_METHODS_LOCALHOST[@]}")
+else
+    METHODS_TO_CHECK=("${ALLOWED_METHODS[@]}")
+fi
+
+# Validate domain
+if ! domain_allowed "$DOMAIN"; then
+    echo "Error: Domain '$DOMAIN' is not in the whitelist" >&2
+    echo "Allowed domains: ${ALLOWED_DOMAINS[*]}" >&2
+    exit 1
+fi
+
+# Validate method
+METHOD_ALLOWED=false
+for allowed_method in "${METHODS_TO_CHECK[@]}"; do
+    if [[ "$METHOD" == "$allowed_method" ]]; then
+        METHOD_ALLOWED=true
+        break
+    fi
+done
+
+if [[ "$METHOD_ALLOWED" == "false" ]]; then
+    if is_localhost "$DOMAIN"; then
+        echo "Error: Method '$METHOD' not allowed for localhost" >&2
+        echo "Allowed methods for localhost: ${ALLOWED_METHODS_LOCALHOST[*]}" >&2
+    else
+        echo "Error: Method '$METHOD' not allowed for external domain '$DOMAIN'" >&2
+        echo "Allowed methods for external domains: ${ALLOWED_METHODS[*]}" >&2
+        echo "Tip: Only localhost allows POST/PUT/PATCH/DELETE" >&2
+    fi
+    exit 1
+fi
+
+# All validations passed, execute curl
+exec curl "${CURL_ARGS[@]}"

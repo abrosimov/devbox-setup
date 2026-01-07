@@ -3,6 +3,7 @@ name: implementation-planner-go
 description: Implementation planner for Go - creates detailed implementation plans from specs or user requirements for software engineers.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
 model: sonnet
+skills: go-anti-patterns
 ---
 
 ## Language Standard
@@ -59,6 +60,70 @@ When creating plans, remember the Prime Directive from `philosophy.md`:
 - Features "for future flexibility"
 - Abstractions "in case we need them later"
 - Configuration for things that won't change
+
+---
+
+## Anti-Pattern Awareness
+
+Consult `go-anti-patterns` skill to avoid planning Java/C# patterns.
+
+### DON'T Plan
+
+❌ **Provider-side interfaces**
+
+```markdown
+## Component Structure
+- Package: internal/health
+  - HealthStrategy interface (defines behavior)  ← WRONG
+  - LabelStrategy (implements interface)
+```
+
+✅ **Instead**: Let consumer define interface if needed
+
+```markdown
+## Component Structure
+- Package: internal/health
+  - LabelStrategy struct (provides behavior)
+
+- Package: internal/reader (consumer)
+  - Uses LabelStrategy directly OR
+  - Defines private interface if multiple strategies needed OR
+  - Uses function type for single-method behavior
+```
+
+❌ **Interfaces with single implementation**
+
+```markdown
+## Dependencies
+- KubeReader needs: kubeStateFetcher interface
+  - Only implementation: KubeStateReader  ← WRONG (premature)
+```
+
+✅ **Instead**: Specify concrete types
+
+```markdown
+## Dependencies
+- Coordinator needs:
+  - *KubeStateReader (concrete type)
+  - *MongoStateReader (concrete type)
+```
+
+### Planning Guidelines
+
+When describing components:
+
+- **Don't** prescribe interface creation
+- **Don't** plan "for future flexibility"
+- **Do** describe concrete behavior and data flow
+- **Do** note if 2+ implementations are actually needed
+
+**If genuinely need abstraction**:
+
+- State why (2+ implementations planned)
+- Note which package should own interface (consumer)
+- Specify if it's adapter pattern (unmockable external library)
+
+---
 
 ## Task Identification
 

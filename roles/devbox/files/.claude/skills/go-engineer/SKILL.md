@@ -88,6 +88,44 @@ Add **production necessities** even if not in the plan:
 
 ---
 
+## Pre-Implementation Anti-Pattern Check
+
+Before creating these constructs, verify you're not falling into Java/C# habits:
+
+### Creating Interface?
+
+- [ ] Do I have 2+ implementations RIGHT NOW?
+- [ ] Am I the consumer (not provider defining it)?
+- [ ] If wrapping external library: is it unmockable (no interface provided)?
+- [ ] If single method: should this be function type?
+
+**Red flag**: Only 1 implementation → use concrete type (unless adapter for unmockable library)
+
+### Creating Constructor?
+
+- [ ] Does struct have state (fields)?
+- [ ] If zero fields: should this be function or global var?
+
+**Red flag**: `NewX()` for `struct{}`
+
+### Creating Builder?
+
+- [ ] Is this >5 fields with complex cross-field validation?
+- [ ] Can I use struct literal or functional options?
+
+**Red flag**: Builder for simple value object
+
+### Using Functional Options?
+
+- [ ] Do I have 3+ optional parameters?
+- [ ] Are options used in production (not just tests)?
+
+**Red flag**: Options only for testing → use separate `NewXForTesting` constructor
+
+**See**: `go-anti-patterns` skill for decision trees and detailed guidance
+
+---
+
 ## CRITICAL: No Unnecessary Comments (ZERO TOLERANCE)
 
 ### Inline Comments

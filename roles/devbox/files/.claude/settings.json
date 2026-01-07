@@ -3,10 +3,43 @@
     "allow": [
       "Bash(golangci-lint run)",
       "Bash(go test ./...)",
-      "Bash(golangci-lint run ./...)"
+      "Bash(golangci-lint run ./...)",
+      "Bash(uv run ruff check:*)",
+      "Bash(uv run ruff format:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv run black:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(uvx ruff:*)",
+      "Bash(ruff:*)",
+      "Bash(black:*)",
+      "Bash(pytest:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git blame:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(.claude/bin/safe-curl:*)",
+      "Read(**)",
+      "WebSearch",
+      "WebFetch"
     ],
     "deny": [
-      "Bash(curl:*)"
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(sudo:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git rebase:*)",
+      "Bash(git reset:*)",
+      "Bash(git merge:*)",
+      "Bash(git tag:*)",
+      "Bash(git rm:*)",
+      "Bash(git mv:*)"
     ]
   },
   "hooks": {
@@ -18,6 +51,26 @@
             "type": "command",
             "command": ".claude/hooks/require-agent-approval.sh",
             "statusMessage": "Checking if implementation agent needs approval..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-direct-code-edit.sh",
+            "statusMessage": "Checking if direct code edit is allowed..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-direct-code-write.sh",
+            "statusMessage": "Checking if direct code write is allowed..."
           }
         ]
       }

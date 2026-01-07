@@ -92,6 +92,63 @@ func NewServer(opts ...OptionError) (*Server, error) {
 }
 ```
 
+### ⚠️ When NOT to Use Functional Options
+
+| Situation | Use Instead | Reason |
+|-----------|-------------|--------|
+| 1-2 optional parameters | Pointer parameters (nil = default) | Simpler, less indirection |
+| All parameters required | Config struct | No optionality needed |
+| Options only used in tests | Separate `NewXForTesting` constructor | Don't let test concerns drive production API |
+
+**Anti-Pattern**: Functional options for test-only configuration
+
+```go
+// ❌ WRONG - options only for testing
+type ClientOption func(*Client)
+
+func WithSessionFactory(f func() Session) ClientOption {
+    return func(c *Client) { c.sessionFactory = f }
+}
+
+func NewClient(cfg Config, client *mongo.Client, opts ...ClientOption) *Client {
+    c := &Client{config: cfg, client: client}
+    c.sessionFactory = func() Session { return client.StartSession() }  // Default
+
+    for _, opt := range opts {  // Only used in tests!
+        opt(c)
+    }
+    return c
+}
+
+// Production: passes zero options
+client := NewClient(cfg, mongoClient)
+
+// Tests: only place options are used
+client := NewClient(cfg, fakeClient, WithSessionFactory(mockFactory))
+
+// ✅ RIGHT - separate test constructor
+func NewClient(cfg Config, client *mongo.Client) *Client {
+    return &Client{
+        config:         cfg,
+        client:         client,
+        sessionFactory: func() Session { return client.StartSession() },
+    }
+}
+
+func NewClientForTesting(cfg Config, client *mongo.Client, sessionFactory func() Session) *Client {
+    c := NewClient(cfg, client)
+    if sessionFactory != nil {
+        c.sessionFactory = sessionFactory
+    }
+    return c
+}
+```
+
+**Why separate constructor is better**:
+- Production API stays simple
+- No performance overhead (option iteration, variadic allocation)
+- Clear separation: `New*` for production, `New*ForTesting` for tests
+
 ---
 
 ## Enums with iota
@@ -370,6 +427,80 @@ func filterActive(users []User) []User {
     return result
 }
 ```
+
+---
+
+## Builder Pattern - Usually Over-Engineering
+
+**Java/C# habit**: Use Builder pattern for complex object construction
+
+Go's struct literals and functional options handle most cases better.
+
+### ❌ When Builder is Unnecessary
+
+```go
+// WRONG - builder for simple filter/query objects
+type FilterBuilder struct {
+    filter Filter
+}
+
+func NewFilterBuilder() *FilterBuilder {
+    return &FilterBuilder{filter: Filter{conditions: make([]filterCondition, 0)}}
+}
+
+func (b *FilterBuilder) Eq(field string, value any) *FilterBuilder {
+    b.filter.conditions = append(b.filter.conditions, filterCondition{
+        field: field, op: opEq, value: value,
+    })
+    return b
+}
+
+func (b *FilterBuilder) Gt(field string, value any) *FilterBuilder {
+    b.filter.conditions = append(b.filter.conditions, filterCondition{
+        field: field, op: opGt, value: value,
+    })
+    return b
+}
+
+// ... 6 more methods
+
+func (b *FilterBuilder) Build() Filter {
+    return b.filter
+}
+
+// Usage - verbose
+filter := NewFilterBuilder().Eq("status", "active").Gt("age", 18).Build()
+
+// ✅ RIGHT - direct construction
+filter := Filter{
+    conditions: []filterCondition{
+        {field: "status", op: opEq, value: "active"},
+        {field: "age", op: opGt, value: 18},
+    },
+}
+
+// Or simple helper functions
+func Eq(field string, value any) filterCondition {
+    return filterCondition{field: field, op: opEq, value: value}
+}
+
+// Usage - clearer
+filter := Filter{conditions: []filterCondition{Eq("status", "active"), Gt("age", 18)}}
+```
+
+### When Builder IS Justified
+
+| Situation | Builder Justified? |
+|-----------|-------------------|
+| Enforce creation constraints (prevent invalid intermediate states) | Maybe ✅ |
+| Complex cross-field validation during construction | Maybe ✅ |
+| Object has 10+ required fields with specific ordering | Maybe ✅ |
+| **Simple value object with 2-5 fields** | **NO** ❌ |
+| **Easily constructed with struct literal** | **NO** ❌ |
+| **No cross-field validation** | **NO** ❌ |
+| **Query/filter/update objects** | **NO** ❌ |
+
+**Rule**: Don't create builders for simple value objects. Use struct literals and helper functions.
 
 ---
 

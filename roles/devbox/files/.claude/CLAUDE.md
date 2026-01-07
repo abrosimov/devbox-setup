@@ -45,10 +45,21 @@ After presenting options/analysis, always end with:
 
 ## Code Changes Policy
 
-For implementation work, prefer using `/implement` skill which enforces:
+**MANDATORY: All code changes MUST go through agents.**
+
+For ANY modification to `.go` or `.py` files, you MUST:
+1. Use `/implement` command to spawn the appropriate software-engineer agent
+2. NEVER use Edit/Write tools directly on code files
+
+This is NOT a preference. This is a HARD CONSTRAINT enforced by hooks.
+
+**If you attempt direct Edit/Write on code files, the operation will be BLOCKED.**
+
+Agents enforce:
 - Proper approval flow
-- Language-specific standards
-- Consistent workflow
+- Language-specific standards (Effective Go, PEP8, type hints)
+- Production necessities (error handling, logging, timeouts)
+- Consistent patterns from the codebase
 
 ---
 

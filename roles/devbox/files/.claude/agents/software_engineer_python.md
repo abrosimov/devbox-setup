@@ -3,6 +3,7 @@ name: software-engineer-python
 description: Python software engineer - writes clean, typed, robust, production-ready Python code. Use this agent for ANY Python code changes, no matter how small. Even simple changes benefit from enforced standards.
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
+permissionMode: acceptEdits
 skills: python-engineer, python-style, python-patterns, python-refactoring, python-tooling, shared-utils
 ---
 

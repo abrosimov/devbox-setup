@@ -594,3 +594,88 @@ analytics.Track(ctx, "order.created", order.ID)  // After commit (best effort)
 | Exported fields on type with invariant methods | Unexport fields, add getters |
 | Monolithic type mixing semantic concerns | Split into focused types + coordinator |
 | Many public constructors | Single entry point constructor |
+
+---
+
+## Java/C# Anti-Patterns to Avoid
+
+These patterns work in Java/C# but are over-engineering in Go.
+
+### Provider-Side Interface Definition
+
+**Problem**: Interface defined alongside implementation, violating "accept interfaces, return concrete types"
+
+```go
+// ❌ WRONG - provider-side interface
+// File: internal/health/strategy.go
+package health
+
+type HealthStrategy interface {  // Provider defines interface
+    DetermineStatus(node kube.Node) Status
+}
+
+type LabelStrategy struct{}
+func (s *LabelStrategy) DetermineStatus(node kube.Node) Status { ... }
+
+// Consumer must import both interface and implementation
+import "internal/health"
+type Reader struct { strategy health.HealthStrategy }
+
+// ✅ RIGHT - consumer-side interface
+// File: internal/reader/reader.go
+type healthStrategy interface {  // Consumer defines what it needs
+    DetermineStatus(node kube.Node) health.Status
+}
+
+type Reader struct { strategy healthStrategy }
+
+// File: internal/health/strategy.go
+type LabelStrategy struct{}  // Just return concrete type
+func (s *LabelStrategy) DetermineStatus(node kube.Node) Status { ... }
+```
+
+**Go idiom**: "Interfaces defined by consumer, not provider"
+
+### Premature Interface Abstraction
+
+**Problem**: Creating interface with only 1 implementation when no immediate need for #2
+
+```go
+// ❌ QUESTIONABLE - correct placement, but only 1 implementation
+type kubeStateFetcher interface {
+    FetchState(ctx context.Context) ([]ClusterNodeSnapshot, error)
+}
+
+type Coordinator struct {
+    kubeReader kubeStateFetcher  // Only *KubeStateReader implements this
+}
+
+// ✅ RIGHT - use concrete type
+type Coordinator struct {
+    kubeReader *kube_reader.KubeStateReader
+}
+```
+
+**When consumer-side interface with 1 impl IS justified**:
+- Testing genuinely needs mocking AND concrete type is hard to test
+- Actively working on implementation #2
+- Breaking a dependency cycle
+
+**Rule**: Wait until you add implementation #2, even for consumer-side interfaces
+
+### Valid: Adapter Interface for Unmockable Library
+
+```go
+// ✅ CORRECT - adapter for unmockable external library
+type mongoCollection interface {
+    FindOne(ctx context.Context, filter any, ...) *mongo.SingleResult
+    Find(ctx context.Context, filter any, ...) (*mongo.Cursor, error)
+    // ... methods needed from *mongo.Collection
+}
+
+var _ mongoCollection = (*mongo.Collection)(nil)
+```
+
+**Why valid**: MongoDB provides no interface, you need it for testing
+
+**See**: `go-anti-patterns` skill for comprehensive anti-patterns reference

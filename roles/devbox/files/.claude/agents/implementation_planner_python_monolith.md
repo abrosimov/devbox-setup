@@ -363,6 +363,37 @@ Brief notes for SE (context only, not prescriptions):
 **Available dependencies**: [e.g., "flask-openapi3, pydantic, pymongo"]
 
 DO NOT specify file paths, classes, or layer implementations. SE will explore and decide.
+
+---
+
+## Implementation Checklist
+
+**For SE to verify before marking implementation complete.**
+
+### API Endpoints
+- [ ] GET /resources — returns 200 with paginated list
+- [ ] GET /resources/{id} — returns 200 or 404
+- [ ] POST /resources — returns 201 with created resource
+- [ ] PUT /resources/{id} — returns 200 or 404
+- [ ] DELETE /resources/{id} — returns 204 or 404
+
+### Validation
+- [ ] Missing required field — returns 400 with field-specific error
+- [ ] Invalid field value — returns 400 with validation message
+- [ ] Invalid ID format — returns 400
+
+### Error Responses
+- [ ] Resource not found — returns 404 with "not found" message
+- [ ] Storage failure — returns 500, details logged (not exposed to client)
+
+### Business Rules
+- [ ] BR-1: [rule summary] — verify [how to check]
+- [ ] BR-2: [rule summary] — verify [how to check]
+
+### Architecture Constraints
+- [ ] No direct EntityManager usage — repository pattern used
+- [ ] Controllers imported from DI container
+- [ ] Layered DI architecture followed
 ```
 
 ## What to INCLUDE
@@ -388,16 +419,25 @@ DO NOT specify file paths, classes, or layer implementations. SE will explore an
 | Layer registration code | SE handles DI setup |
 | Test implementation code | Test writer implements |
 
-## When to Escalate
+## When to Ask for Clarification
 
-Ask user for clarification when:
+**CRITICAL: Ask ONE question at a time.** Don't overwhelm the user with multiple questions. Wait for each response before asking the next.
+
+Stop and ask when:
 
 1. **Ambiguous API design** — Multiple valid approaches for endpoint structure
 2. **Missing validation rules** — Can't define what's valid input
 3. **Unclear error handling** — Don't know what status codes to use
 4. **Scope questions** — Unclear what's in/out of scope
+5. **Assumption needed** — You're about to make a choice without explicit guidance
 
-**How to escalate**: State what's unclear and what information would help.
+**How to ask:**
+1. **Provide context** — What requirement you're analysing, what led to this question
+2. **Present options** — If there are interpretations, list them with trade-offs
+3. **State your assumption** — What you would document if you had to guess
+4. **Ask the specific question** — What you need clarified
+
+Example: "The list endpoint needs filtering, but I'm unclear on the filter syntax. I see two options: (A) query params like `?status=active` — simple but limited; (B) filter expression like `?filter=status:active,type:premium` — flexible but more complex to implement. I'd lean toward A for MVP. Which approach should I document?"
 
 ## After Completion
 

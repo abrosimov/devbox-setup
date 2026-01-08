@@ -83,7 +83,7 @@ if errors.Is(err, storage.ErrNotFound) {
     return nil, nil  // or return default, etc.
 }
 if err != nil {
-    return nil, fmt.Errorf("getting user: %w", err)
+    return nil, fmt.Errorf("get user: %w", err)
 }
 ```
 
@@ -159,7 +159,7 @@ if err != nil {
         return nil, err
     }
     // Unknown error
-    return nil, fmt.Errorf("validating user: %w", err)
+    return nil, fmt.Errorf("validate user: %w", err)
 }
 ```
 
@@ -264,15 +264,15 @@ Adding context as errors propagate up the stack.
 func (s *Service) ProcessOrder(ctx context.Context, orderID string) error {
     order, err := s.repo.Get(ctx, orderID)
     if err != nil {
-        return fmt.Errorf("getting order %s: %w", orderID, err)
+        return fmt.Errorf("get order %s: %w", orderID, err)
     }
 
     if err := s.validate(order); err != nil {
-        return fmt.Errorf("validating order: %w", err)
+        return fmt.Errorf("validate order: %w", err)
     }
 
     if err := s.chargePayment(ctx, order); err != nil {
-        return fmt.Errorf("charging payment: %w", err)
+        return fmt.Errorf("charge payment: %w", err)
     }
 
     return nil
@@ -285,10 +285,10 @@ func (s *Service) ProcessOrder(ctx context.Context, orderID string) error {
 
 ```go
 // ✅ ALWAYS correct when wrapping
-return fmt.Errorf("fetching user: %w", err)
+return fmt.Errorf("fetch user: %w", err)
 
 // ❌ NEVER do this
-return fmt.Errorf("fetching user: %v", err)  // Breaks error chain
+return fmt.Errorf("fetch user: %v", err)  // Breaks error chain
 ```
 
 **Why always `%w`:**
@@ -326,7 +326,7 @@ func (h *Handler) ProcessOrder(w http.ResponseWriter, r *http.Request) {
         h.logger.Error().
             Err(err).  // Full error chain from %w wrapping
             Str("order_id", req.OrderID).
-            Msg("order creation failed")
+            Msg("create order failed")
 
         respondJSON(w, 500, ErrorResponse{
             Code:    "INTERNAL_ERROR",
@@ -338,7 +338,36 @@ func (h *Handler) ProcessOrder(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+## Error Message Format (Go Convention)
+
+Per [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments#error-strings):
+
+> Error strings should not be capitalized (unless beginning with proper nouns) or end with punctuation, since they are usually printed following other context.
+
+### Format Rules
+
+| Rule | Example |
+|------|---------|
+| Lowercase start | `"open file"` not `"Open file"` |
+| Action noun form | `"open file"` not `"failed to open file"` |
+| No trailing punctuation | `"connect to server"` not `"connect to server."` |
+| Action + identifier | `"open config file %s"` |
+| Use verb noun form | `"parse JSON"`, `"connect to database"` |
+
+### Why No "failed to"?
+
+Errors are often wrapped/chained. "failed to" creates verbose chains:
+```go
+// ❌ With "failed to"
+"failed to process order: failed to charge payment: failed to connect: dial tcp: connection refused"
+
+// ✅ Without "failed to" (idiomatic)
+"process order: charge payment: connect: dial tcp: connection refused"
+```
+
 ### Context Guidelines
+
+### Examples
 
 ```go
 // BAD — no context
@@ -347,28 +376,36 @@ return err
 // BAD — redundant context
 return fmt.Errorf("error getting user: %w", err)  // "error" is noise
 
-// BAD — too much context
-return fmt.Errorf("failed to get user from database in GetUser function: %w", err)
+// BAD — "failed to" prefix (un-idiomatic)
+return fmt.Errorf("failed to get user: %w", err)
 
-// GOOD — concise, specific
-return fmt.Errorf("getting user %s: %w", userID, err)
+// BAD — capitalized
+return fmt.Errorf("Get user: %w", err)
+
+// BAD — too much context
+return fmt.Errorf("get user from database in GetUser function: %w", err)
+
+// GOOD — concise, specific, idiomatic
+return fmt.Errorf("get user %s: %w", userID, err)
 
 // GOOD — action + identifier
-return fmt.Errorf("parsing config file %s: %w", path, err)
-return fmt.Errorf("connecting to %s:%d: %w", host, port, err)
+return fmt.Errorf("parse config file %s: %w", path, err)
+return fmt.Errorf("connect to %s:%d: %w", host, port, err)
+return fmt.Errorf("open file: %w", err)
+return fmt.Errorf("decode JSON response: %w", err)
 ```
 
 ### Error Chain Example
 
 ```go
 // Full chain when error reaches top:
-// "processing order abc123: charging payment: creating transaction: connecting to payment gateway: dial tcp: connection refused"
+// "process order abc123: charge payment: create transaction: connect to payment gateway: dial tcp: connection refused"
 
 // Each layer adds just its context:
-// repo:    "connecting to payment gateway: %w"
-// service: "creating transaction: %w"
-// handler: "charging payment: %w"
-// caller:  "processing order abc123: %w"
+// repo:    "connect to payment gateway: %w"
+// service: "create transaction: %w"
+// handler: "charge payment: %w"
+// caller:  "process order abc123: %w"
 ```
 
 ---
@@ -403,7 +440,7 @@ import "github.com/pkg/errors"
 func readConfig(path string) (Config, error) {
     data, err := os.ReadFile(path)
     if err != nil {
-        return Config{}, errors.Wrap(err, "reading config")  // captures stack
+        return Config{}, errors.Wrap(err, "read config")  // captures stack
     }
     // ...
 }
@@ -412,7 +449,7 @@ func readConfig(path string) (Config, error) {
 func initApp(configPath string) error {
     cfg, err := readConfig(configPath)
     if err != nil {
-        return fmt.Errorf("initializing: %w", err)  // preserves original stack
+        return fmt.Errorf("initialize app: %w", err)  // preserves original stack
     }
     // ...
 }
@@ -426,7 +463,7 @@ if err != nil {
         Stack().  // includes stack if error has one
         Err(err).
         Str("orderID", orderID).
-        Msg("processing failed")
+        Msg("process order failed")
 }
 ```
 
@@ -453,7 +490,7 @@ func validateAll(items []Item) error {
 
     for i, item := range items {
         if err := validate(item); err != nil {
-            errs = append(errs, fmt.Errorf("item %d: %w", i, err))
+            errs = append(errs, fmt.Errorf("validate item %d: %w", i, err))
         }
     }
 
@@ -501,12 +538,12 @@ func process(data []byte) (*Result, error) {
 
     parsed, err := parse(data)
     if err != nil {
-        return nil, fmt.Errorf("parsing: %w", err)
+        return nil, fmt.Errorf("parse data: %w", err)
     }
 
     validated, err := validate(parsed)
     if err != nil {
-        return nil, fmt.Errorf("validating: %w", err)
+        return nil, fmt.Errorf("validate data: %w", err)
     }
 
     return transform(validated), nil
@@ -535,7 +572,7 @@ ew.write(header)
 ew.write(body)
 ew.write(footer)
 if ew.err != nil {
-    return fmt.Errorf("writing response: %w", ew.err)
+    return fmt.Errorf("write response: %w", ew.err)
 }
 ```
 
@@ -579,7 +616,7 @@ func (s *Service) ProcessRequest(ctx context.Context, req Request) error {
 func (s *Service) ProcessRequest(ctx context.Context, req Request) error {
     cfg, err := parseConfig(req.Data)
     if err != nil {
-        return fmt.Errorf("parsing config: %w", err)
+        return fmt.Errorf("parse config: %w", err)
     }
     // ...
 }
@@ -618,7 +655,7 @@ result, _ := doSomething()
 // GOOD — explicit handling
 result, err := doSomething()
 if err != nil {
-    return fmt.Errorf("doing something: %w", err)
+    return fmt.Errorf("do something: %w", err)
 }
 ```
 
@@ -658,7 +695,7 @@ if err != nil {
 func Get(id string) (*User, error) {
     user, err := fetch(id)
     if err != nil {
-        return user, err  // returning partial user?
+        return user, fmt.Errorf("fetch user: %w", err)  // returning partial user?
     }
     return user, nil
 }
@@ -667,7 +704,7 @@ func Get(id string) (*User, error) {
 func Get(id string) (*User, error) {
     user, err := fetch(id)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("fetch user: %w", err)
     }
     return user, nil
 }
@@ -678,12 +715,12 @@ func Get(id string) (*User, error) {
 ```go
 // BAD — wrapped twice at same level
 if err != nil {
-    return fmt.Errorf("operation failed: %w", fmt.Errorf("getting user: %w", err))
+    return fmt.Errorf("operation failed: %w", fmt.Errorf("get user: %w", err))
 }
 
 // GOOD — single wrap with full context
 if err != nil {
-    return fmt.Errorf("getting user for operation: %w", err)
+    return fmt.Errorf("get user for operation: %w", err)
 }
 ```
 
@@ -746,7 +783,7 @@ result, err := ParseData(data)
 if err != nil {
     // Clear failure path with context
     log.Warn().Err(err).Msg("skipping invalid data")
-    return nil, fmt.Errorf("parsing data: %w", err)
+    return nil, fmt.Errorf("parse data: %w", err)
 }
 
 // Caller might choose different handling:

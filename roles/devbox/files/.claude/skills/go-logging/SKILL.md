@@ -74,7 +74,7 @@ logger.Fatal().Err(err).Msg("database connection failed")
 func connectDB(ctx context.Context) (*DB, error) {
     db, err := sql.Open("postgres", connStr)
     if err != nil {
-        return nil, fmt.Errorf("failed to open database: %w", err)
+        return nil, fmt.Errorf("open database: %w", err)
     }
     return db, nil
 }
@@ -92,7 +92,7 @@ func main() {
 func run(logger zerolog.Logger) error {
     db, err := connectDB(ctx)
     if err != nil {
-        return fmt.Errorf("failed to connect to database: %w", err)
+        return fmt.Errorf("connect to database: %w", err)
     }
     defer db.Close()
     // ...
@@ -148,7 +148,7 @@ import (
 func readConfig(path string) (Config, error) {
     data, err := os.ReadFile(path)
     if err != nil {
-        return Config{}, errors.Wrap(err, "failed to read config file")  // captures stack
+        return Config{}, errors.Wrap(err, "read config file")  // captures stack
     }
     // ...
 }
@@ -157,7 +157,7 @@ func readConfig(path string) (Config, error) {
 func initApp(configPath string) error {
     cfg, err := readConfig(configPath)
     if err != nil {
-        return fmt.Errorf("failed to initialise app: %w", err)  // preserves stack from origin
+        return fmt.Errorf("initialize app: %w", err)  // preserves stack from origin
     }
     // ...
 }
@@ -177,6 +177,68 @@ if err != nil {
 ```
 
 **Rule:** Use `errors.Wrap` at the point where error originates or crosses system boundaries. Use `fmt.Errorf` with `%w` for propagation within your code.
+
+---
+
+## Log Message Context Framework
+
+Every log message must provide context answering these questions:
+
+| Question | Field Type | Example |
+|----------|------------|---------|
+| WHAT happened? | `.Msg()` | `"payment charge failed"` |
+| WHERE did it happen? | `.Str("component", ...)` | `"payment_gateway"` |
+| WHY did it fail? | `.Err()` + context | error object |
+| WHICH entity? | `.Str("<entity>_id", ...)` | `order_id`, `user_id`, `request_id` |
+
+### Anti-pattern: Vague Messages
+
+```go
+// ❌ BAD — No context (What? Where? Which?)
+logger.Error().Msg("HTTP exception occurred")
+
+// ❌ BAD — Missing entity identifiers
+logger.Error().Err(err).Msg("payment failed")
+
+// ❌ BAD — Generic message
+logger.Error().Err(err).Msg("operation failed")
+logger.Error().Err(err).Msg("error occurred")
+```
+
+### Correct Pattern: Full Context
+
+```go
+// ✅ GOOD — Answers WHAT, WHERE, WHY, WHICH
+logger.Error().
+    Err(err).
+    Str("component", "payment_gateway").
+    Str("order_id", orderID).
+    Str("user_id", userID).
+    Int("retry_count", 3).
+    Msg("payment charge failed after max retries")
+
+// ✅ GOOD — Info with entity context
+logger.Info().
+    Str("order_id", orderID).
+    Str("status", "processing").
+    Msg("order processing started")
+
+// ✅ GOOD — Warning with actionable context
+logger.Warn().
+    Str("order_id", orderID).
+    Int("retry_count", retryCount).
+    Int("max_retries", maxRetries).
+    Msg("payment retry scheduled")
+```
+
+### Message Content Guidelines
+
+| Rule | Good | Bad |
+|------|------|-----|
+| Be specific | `"k8s manifest build failed"` | `"build failed"` |
+| Include action | `"order validation failed"` | `"invalid order"` |
+| Lowercase start | `"processing order"` | `"Processing order"` |
+| No trailing punctuation | `"task completed"` | `"task completed."` |
 
 ---
 
@@ -206,15 +268,15 @@ func ProcessOrder(ctx context.Context, order Order) error {
 func ProcessOrder(ctx context.Context, order Order) error {
     if err := validateOrder(order); err != nil {
         s.logger.Error().Err(err).Str("orderID", order.ID).Msg("order validation failed")
-        return fmt.Errorf("failed to validate order: %w", err)
+        return fmt.Errorf("validate order: %w", err)
     }
     if err := chargePayment(ctx, order); err != nil {
         s.logger.Error().Err(err).Str("orderID", order.ID).Msg("payment charge failed")
-        return fmt.Errorf("failed to charge payment: %w", err)
+        return fmt.Errorf("charge payment: %w", err)
     }
     if err := sendConfirmation(ctx, order); err != nil {
         s.logger.Error().Err(err).Str("orderID", order.ID).Msg("confirmation email failed")
-        return fmt.Errorf("failed to send confirmation: %w", err)
+        return fmt.Errorf("send confirmation: %w", err)
     }
     return nil
 }

@@ -142,6 +142,58 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
 5. **Implement**: Follow plan or explore codebase for patterns
 6. **Format**: Use `black` for formatting
 
+## When to Ask for Clarification
+
+**CRITICAL: Ask ONE question at a time.** Don't overwhelm the user with multiple questions.
+
+Stop and ask when:
+
+1. **Ambiguous requirement** — Multiple valid interpretations exist
+2. **Assumption needed** — You're about to make a choice without explicit guidance
+3. **Risk of rework** — Getting this wrong means significant rework
+4. **Missing context** — You need information not in plan/spec
+5. **Architectural decision** — Choice affects multiple components
+
+**How to ask:**
+1. **Provide context** — What you're working on, what led to this question
+2. **Present options** — If there are interpretations, list them with trade-offs
+3. **State your assumption** — What you would do if you had to guess
+4. **Ask the specific question** — What you need clarified
+
+Example: "The plan says 'validate input' but doesn't specify rules. I see two approaches: (A) simple length check — fast but permissive; (B) regex validation — stricter but slower. I'd lean toward A for MVP. Should I proceed with simple validation, or do you need stricter rules?"
+
+---
+
+## Pre-Handoff Self-Review
+
+**Before saying "implementation complete", verify:**
+
+### From Plan (Feature-Specific)
+- [ ] All items in plan's "Implementation Checklist" verified
+- [ ] Each acceptance criterion manually tested
+- [ ] All error cases from plan handled
+
+### Code Quality
+- [ ] Exception chaining with `raise ... from err`
+- [ ] No narration comments (code is self-documenting)
+- [ ] Log messages have entity IDs in `extra={}` and specific messages
+- [ ] `black` run on all changed files
+- [ ] Type hints on all public functions
+
+### Production Necessities
+- [ ] Timeouts on external calls (HTTP, DB, etc.)
+- [ ] Retries on idempotent operations
+- [ ] Validation at boundaries (public API inputs)
+- [ ] Context managers for resources (`with` statements)
+
+### Anti-Patterns Avoided
+- [ ] No premature ABCs (2+ implementations exist?)
+- [ ] No mutable default arguments
+- [ ] No bare `except:` clauses
+- [ ] Simplest solution that works (Prime Directive)
+
+---
+
 ## After Completion
 
 > Implementation complete. Created/modified X files.

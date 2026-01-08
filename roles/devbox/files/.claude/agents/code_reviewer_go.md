@@ -1332,6 +1332,88 @@ Reversal test failures (would removing this improve the system?):
 VERDICT: [ ] PASS  [ ] FAIL — complexity issues documented above
 ```
 
+#### Checkpoint P: Log Message Quality
+
+**Search for log statements:**
+```bash
+git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "\.Info()\|\.Error()\|\.Warn()\|\.Debug()\|\.Trace()"
+```
+
+For EACH log statement, verify:
+
+```
+| Line | File | Has Entity ID? | Has .Err()? | Message Specific? | Verified |
+|------|------|----------------|-------------|-------------------|----------|
+| 45   | service.go | YES (order_id) | YES | YES | ✓ |
+| 67   | handler.go | NO | N/A | NO ("error occurred") | ✗ |
+```
+
+**Checklist:**
+- [ ] Error logs include `.Err(err)` before `.Msg()`?
+- [ ] Logs include relevant entity IDs via `.Str("<entity>_id", ...)`?
+- [ ] Message is specific (not "operation failed", "error occurred", "HTTP exception")?
+- [ ] Message uses lowercase start (Go convention)?
+- [ ] No duplicate messages in same function?
+- [ ] Stack trace included for errors? `.Stack().Err(err)`
+
+**Common Violations:**
+
+```go
+// ❌ Missing .Err()
+logger.Error().Msg("operation failed")  // No error object!
+
+// ❌ Missing entity ID
+logger.Error().Err(err).Msg("payment failed")  // Which payment?
+
+// ❌ Vague message
+logger.Error().Err(err).Msg("HTTP exception occurred")  // What? Where?
+
+// ❌ Missing context
+logger.Info().Msg("task started")  // Which task?
+
+// ❌ Capitalized message (Go convention: lowercase)
+logger.Info().Msg("Processing order")  // Should be "processing order"
+```
+
+```
+Error logs without .Err(): ___
+  List: ___
+Logs missing entity IDs: ___
+  List: ___
+Vague/generic messages: ___
+  List: ___
+Duplicate messages in same function: ___
+  List: ___
+
+VERDICT: [ ] PASS  [ ] FAIL — logging issues documented above
+```
+
+#### Checkpoint Q: SE Self-Review Verification
+
+**Check if SE completed pre-handoff self-review items:**
+
+```
+SE Self-Review items SE should have verified:
+- [ ] Plan's Implementation Checklist completed?
+- [ ] Error context wrapping verified?
+- [ ] Formatting tools run (goimports)?
+- [ ] Log messages have entity IDs?
+- [ ] No narration comments?
+- [ ] Production necessities (timeouts, retries, validation)?
+
+Items SE should have caught themselves (from their checklist):
+  - [ ] ___
+  - [ ] ___
+
+SE missed items from their checklist: ___
+```
+
+**Note**: If SE consistently misses self-review items, flag this pattern. The goal is to shift verification left — catch issues during implementation, not review.
+
+```
+VERDICT: [ ] PASS  [ ] FAIL — SE should have caught these in self-review
+```
+
 ### Step 7: Counter-Evidence Hunt
 
 **REQUIRED**: Before finalizing, spend dedicated effort trying to DISPROVE your conclusions.
@@ -1612,6 +1694,14 @@ Apply the Prime Directive — code should reduce complexity, not increase it:
 - Functions doing multiple unrelated things
 - Clever code that requires mental gymnastics to understand
 
+**High-Priority (Logging Quality)**
+- Error logs without `.Err(err)` (missing error object)
+- Logs without entity identifiers (order_id, user_id, etc.)
+- Vague messages: "error occurred", "operation failed", "HTTP exception"
+- Duplicate messages in same function (can't identify which branch failed)
+- Capitalized messages (Go convention: lowercase start)
+- Missing `.Stack()` on error logs
+
 **High-Priority (Compile-Time Safety)**
 Prefer compilation errors over runtime errors:
 - Raw `string` for IDs instead of typed IDs (`type UserID string`)
@@ -1823,6 +1913,8 @@ Before completing review, verify:
 - [ ] Checkpoint M: Test Scenario Completeness — tests cover problem domain, not just implementation
 - [ ] Checkpoint N: Comment Quality — no narration comments, no section dividers, only WHY comments
 - [ ] Checkpoint O: Complexity Review — no unnecessary abstractions, passes reversal test
+- [ ] Checkpoint P: Log Message Quality — all logs have context, entity IDs, specific messages
+- [ ] Checkpoint Q: SE Self-Review Verification — SE completed their pre-handoff checklist
 
 ---
 

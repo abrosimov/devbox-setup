@@ -736,6 +736,173 @@ def get_user(user_id: str) -> User:
 
 ---
 
+## Exception Message Format
+
+Exception messages should be clear, specific, and include context for debugging.
+
+### Structure
+
+```python
+raise ExceptionType(f"<action> <entity>: <reason> (actual={actual}, expected={expected})")
+```
+
+### Examples
+
+```python
+# ❌ BAD — No context
+raise ValueError("invalid value")
+
+# ❌ BAD — No actual/expected values
+raise ValueError("temperature out of range")
+
+# ❌ BAD — Missing entity identifier
+raise OrderNotFoundError("order not found")
+
+# ✅ GOOD — Clear context with values
+raise ValueError(f"temperature {temp} below absolute zero (min=-273.15)")
+
+# ✅ GOOD — Domain exception with identifiers
+raise OrderNotFoundError(f"order '{order_id}' not found in workspace '{workspace_id}'")
+
+# ✅ GOOD — Chained with context
+raise ProcessingError(
+    f"validate order '{order_id}' failed: {validation_errors}"
+) from e
+```
+
+### Guidelines
+
+| Aspect | Rule |
+|--------|------|
+| Include actual value | Yes, when not sensitive |
+| Include expected constraint | Yes, when applicable |
+| Include entity identifier | Always (order_id, user_id, etc.) |
+| Use `from e` for chaining | Always when re-raising |
+| Sentence case | Lowercase start (for consistency) |
+
+---
+
+## Structured Logging (Standard Library)
+
+Use Python's standard `logging` module with JSON formatter and context injection.
+
+### Log Message Context Framework
+
+Every log message must answer:
+
+| Question | How to Provide | Example |
+|----------|----------------|---------|
+| WHAT happened? | Message string | `"deployment build failed"` |
+| WHERE? | Auto-injected + `extra=` | `request_id`, component context |
+| WHY? | `exc_info=` + message detail | `exc_info=e`, reason in message |
+| WHICH entity? | `extra={}` dict | `deployment_id`, `workspace_id` |
+
+### Anti-patterns
+
+```python
+# ❌ BAD — No context (What? Which deployment?)
+logger.error("Deployment failed")
+
+# ❌ BAD — Missing entity identifier
+logger.error("Error building deployment", exc_info=e)
+
+# ❌ BAD — Vague message
+logger.error("HTTP exception occurred")
+
+# ❌ BAD — Missing exc_info for exceptions
+except Exception as e:
+    logger.error(f"Failed: {e}")  # No stack trace!
+```
+
+### Correct Patterns
+
+```python
+# ✅ GOOD — Full context with entity IDs
+logger.error(
+    f"deployment build failed: {error_reason}",
+    exc_info=e,
+    extra={
+        "deployment_id": deployment_id,
+        "workspace_id": workspace_id,
+    }
+)
+
+# ✅ GOOD — Info with relevant identifiers
+logger.info(
+    f"starting deployment task for deployment '{deployment_id}'",
+    extra={"deployment_id": deployment_id}
+)
+
+# ✅ GOOD — Warning with actionable context
+logger.warning(
+    f"retry scheduled for payment processing",
+    extra={
+        "order_id": order_id,
+        "retry_count": retry_count,
+        "max_retries": max_retries,
+    }
+)
+```
+
+### Exception Logging Rules
+
+| Scenario | Pattern |
+|----------|---------|
+| Caught exception, re-raising | `logger.error("msg", exc_info=e, extra={...})` then `raise` |
+| Caught exception, handling | `logger.warning("msg", exc_info=True, extra={...})` |
+| Expected condition (not error) | `logger.info("msg", exc_info=True, extra={...})` |
+
+```python
+# Re-raising with full context
+except requests.RequestException as e:
+    logger.error(
+        f"HuggingFace API request failed for repo '{repo_id}'",
+        exc_info=e,
+        extra={"repo_id": repo_id, "endpoint": endpoint}
+    )
+    raise HuggingFaceClientError(f"API request failed for repo '{repo_id}'") from e
+
+# Handling expected condition
+except DuplicateKeyError:
+    logger.info(
+        f"experiment '{name}' already exists, returning existing",
+        exc_info=True,
+        extra={"experiment_name": name}
+    )
+    return self.get_by_name(name)
+```
+
+### Message Formatting Guidelines
+
+| Rule | Example |
+|------|---------|
+| Lowercase start | `"starting deployment..."` not `"Starting deployment..."` |
+| Include entity in message | `"deployment '{id}' failed"` not just `"deployment failed"` |
+| Be specific about action | `"k8s manifest build failed"` not `"build failed"` |
+| No trailing punctuation | `"operation completed"` not `"operation completed."` |
+
+### Logger Instantiation
+
+```python
+# Preferred — module-level with __name__
+logger = logging.getLogger(__name__)
+
+# Alternative — centralized logger name
+logger = logging.getLogger("general_logger")
+```
+
+### Context Auto-Injection
+
+These fields are automatically injected by `ContextLoggerFilter`:
+- `request_id` — correlation ID for request tracing
+- `user_id` — authenticated user
+- `tenant_id` — multi-tenant workspace identifier
+
+**Always add domain-specific IDs via `extra=`:**
+- `deployment_id`, `workspace_id`, `model_id`, `experiment_id`, etc.
+
+---
+
 ## Quick Reference: Pattern Violations
 
 | Violation | Fix |
@@ -750,3 +917,6 @@ def get_user(user_id: str) -> User:
 | Hidden dependency in constructor | Inject dependency as parameter |
 | Resource without context manager | Use `with` statement |
 | Breaking existing API | Add new function or optional parameter |
+| Log without entity context | Add `extra={"entity_id": id}` |
+| Log exception without `exc_info=` | Add `exc_info=e` or `exc_info=True` |
+| Vague log message | Be specific: action + entity + reason |

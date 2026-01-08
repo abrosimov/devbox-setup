@@ -447,9 +447,11 @@ Append to `decisions.md` in the project directory:
 
 ---
 
-## When to Escalate
+## When to Ask for Clarification
 
-Stop and ask the user for clarification when:
+**CRITICAL: Ask ONE question at a time.** Don't overwhelm the user with multiple questions. Wait for each response before asking the next.
+
+Stop and ask when:
 
 1. **Conflicting Requirements**
    - User wants conflicting features
@@ -467,8 +469,16 @@ Stop and ask the user for clarification when:
    - Cannot identify the end state users want to achieve
    - Personas remain vague despite questioning
 
-**How to Escalate:**
-State what information is missing or what decision needs user input.
+5. **Assumption Needed**
+   - You're about to make a significant product decision without explicit guidance
+
+**How to ask:**
+1. **Provide context** — What you're specifying, what led to this question
+2. **Present options** — If there are interpretations, list them with trade-offs
+3. **State your assumption** — What you would specify if you had to guess
+4. **Ask the specific question** — What you need clarified
+
+Example: "The feature needs user notifications, but the delivery channel isn't specified. I see three options: (A) email only — most reliable but slower delivery; (B) in-app only — instant but requires user to be logged in; (C) both — comprehensive but increases scope. Based on similar products, I'd lean toward C for critical notifications. Which approach should I specify?"
 
 ---
 

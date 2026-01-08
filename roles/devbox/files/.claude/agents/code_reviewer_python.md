@@ -760,6 +760,90 @@ def commit(self) -> None:
     """Commit the transaction. Raises TransactionDoomed if doomed."""
 ```
 
+#### Checkpoint K: Log Message Quality
+
+**Search for log statements:**
+```bash
+git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "logger\.\|logging\." | grep -E "\.(info|error|warning|debug|exception)\("
+```
+
+For EACH log statement, verify:
+
+```
+| Line | File | Has Entity ID? | Has exc_info? | Message Specific? | Verified |
+|------|------|----------------|---------------|-------------------|----------|
+| 45   | service.py | YES (deployment_id) | YES | YES | ✓ |
+| 67   | handler.py | NO | N/A | NO ("error occurred") | ✗ |
+```
+
+**Checklist:**
+- [ ] Error/exception logs include `exc_info=e` or `exc_info=True`?
+- [ ] Logs include relevant entity IDs in `extra={}` dict?
+- [ ] Message is specific (not "operation failed", "error occurred")?
+- [ ] Message includes entity identifier in text for readability?
+- [ ] No duplicate messages in same function?
+- [ ] Message uses lowercase start (for consistency with Go)?
+
+**Common Violations:**
+
+```python
+# ❌ Missing exc_info
+except Exception as e:
+    logger.error(f"Failed: {e}")  # No stack trace!
+
+# ❌ Missing entity ID in extra
+logger.error("Deployment failed", exc_info=e)  # Which deployment?
+
+# ❌ Vague message
+logger.error("HTTP exception occurred")  # What? Where? Why?
+
+# ❌ Missing extra context
+logger.info("Task started")  # Which task? What parameters?
+
+# ❌ Entity ID in message but not in extra (not queryable)
+logger.info(f"Processing order {order_id}")  # Add extra={"order_id": order_id}
+```
+
+```
+Error logs without exc_info: ___
+  List: ___
+Logs missing entity IDs in extra: ___
+  List: ___
+Vague/generic messages: ___
+  List: ___
+Duplicate messages in same function: ___
+  List: ___
+
+VERDICT: [ ] PASS  [ ] FAIL — logging issues documented above
+```
+
+#### Checkpoint L: SE Self-Review Verification
+
+**Check if SE completed pre-handoff self-review items:**
+
+```
+SE Self-Review items SE should have verified:
+- [ ] Plan's Implementation Checklist completed?
+- [ ] Exception chaining (raise ... from err)?
+- [ ] Formatting tools run (black)?
+- [ ] Log messages have entity IDs in extra={}?
+- [ ] No narration comments?
+- [ ] Production necessities (timeouts, retries, validation)?
+- [ ] Type hints on public functions?
+
+Items SE should have caught themselves (from their checklist):
+  - [ ] ___
+  - [ ] ___
+
+SE missed items from their checklist: ___
+```
+
+**Note**: If SE consistently misses self-review items, flag this pattern. The goal is to shift verification left — catch issues during implementation, not review.
+
+```
+VERDICT: [ ] PASS  [ ] FAIL — SE should have caught these in self-review
+```
+
 ### Step 7: Counter-Evidence Hunt
 
 **REQUIRED**: Before finalizing, spend dedicated effort trying to DISPROVE your conclusions.
@@ -900,6 +984,8 @@ Provide a structured review:
 - [ ] Scope Verification: PASS/FAIL/N/A (no spec)
 - [ ] Complexity Review: PASS/FAIL
 - [ ] Comment Quality: PASS/FAIL
+- [ ] Log Message Quality: PASS/FAIL
+- [ ] SE Self-Review Verification: PASS/FAIL
 
 ## Counter-Evidence Hunt Results
 <what you found when actively looking for problems>
@@ -967,6 +1053,13 @@ Provide a structured review:
 ```
 
 ## What to Look For
+
+**High-Priority (Logging Quality)**
+- Error logs without `exc_info=e` or `exc_info=True` (missing stack trace)
+- Logs without entity identifiers in `extra={}` (deployment_id, workspace_id, etc.)
+- Vague messages: "error occurred", "operation failed", "HTTP exception"
+- Duplicate messages in same function (can't identify which branch failed)
+- Entity IDs in message string but not in `extra={}` (not queryable in log aggregators)
 
 **High-Priority (Unnecessary Complexity — see philosophy.md)**
 Apply the Prime Directive — code should reduce complexity, not increase it:

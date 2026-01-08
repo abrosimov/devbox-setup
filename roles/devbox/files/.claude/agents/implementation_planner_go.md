@@ -346,6 +346,29 @@ Brief notes for SE (context only, not prescriptions):
 **External services**: [e.g., "Email service client exists at internal/email"]
 
 DO NOT specify file paths, interfaces, or patterns. SE will explore and decide.
+
+---
+
+## Implementation Checklist
+
+**For SE to verify before marking implementation complete.**
+
+### Functional Requirements
+- [ ] FR-1: [requirement summary] — verify [key observable behaviour]
+- [ ] FR-2: [requirement summary] — verify [key observable behaviour]
+
+### Error Cases
+- [ ] [Error condition 1] — returns [expected error/behaviour]
+- [ ] [Error condition 2] — returns [expected error/behaviour]
+- [ ] Storage/external failure — returns internal error, details logged (not exposed)
+
+### Business Rules
+- [ ] BR-1: [rule summary] — verify [how to check]
+- [ ] BR-2: [rule summary] — verify [how to check]
+
+### Integration Points
+- [ ] [Dependency 1] — [what to verify, e.g., "called with correct parameters"]
+- [ ] [External call 1] — [failure handling, e.g., "best effort, log on failure"]
 ```
 
 ## What to INCLUDE
@@ -373,16 +396,25 @@ DO NOT specify file paths, interfaces, or patterns. SE will explore and decide.
 | Test implementations | Test writer implements |
 | Technical architecture | SE proposes, human approves |
 
-## When to Escalate
+## When to Ask for Clarification
 
-Ask user for clarification when:
+**CRITICAL: Ask ONE question at a time.** Don't overwhelm the user with multiple questions. Wait for each response before asking the next.
+
+Stop and ask when:
 
 1. **Ambiguous requirements** — Multiple interpretations possible
 2. **Missing acceptance criteria** — Can't define "done"
 3. **Unclear error handling** — Don't know what should happen on failure
 4. **Scope questions** — Unclear what's in/out of scope
+5. **Assumption needed** — You're about to make a choice without explicit guidance
 
-**How to escalate**: State what's unclear and what information would help.
+**How to ask:**
+1. **Provide context** — What requirement you're analysing, what led to this question
+2. **Present options** — If there are interpretations, list them with trade-offs
+3. **State your assumption** — What you would document if you had to guess
+4. **Ask the specific question** — What you need clarified
+
+Example: "FR-2 says 'notify user on failure' but doesn't specify the channel. I see three options: (A) email — reliable but slow; (B) in-app notification — immediate but requires user to be online; (C) both — comprehensive but more complex. I'd lean toward B for MVP. Which notification method should I document?"
 
 ## After Completion
 

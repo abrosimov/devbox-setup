@@ -438,38 +438,86 @@ All dependencies passed to constructors must be pointers:
 
 ## Nil Safety
 
-### Validate at Boundaries, Trust Internally
+### Two-Tier Validation Philosophy
 
-**NEVER add nil receiver checks inside methods.** Validate at construction:
+| Object Type | Lifecycle | Input Source | Nil Handling |
+|-------------|-----------|--------------|--------------|
+| Service/Client/Singleton | Program lifetime | Programmer wiring | Trust caller, panic on nil |
+| Request/DTO/Short-lived | Per-request | User/runtime data | Validate, return error |
+
+### Tier 1: Startup Singletons — Trust Caller
+
+For objects wired once at startup by programmer code:
 
 ```go
-// BAD — nil check inside method
-func (s *Service) Process() error {
-    if s == nil || s.client == nil {
-        return errors.New("not initialised")
-    }
-    return s.client.Call()
+// Constructor trusts caller — no validation for pointer deps
+func NewUserService(repo *UserRepository, cache *Cache, logger zerolog.Logger) *UserService {
+    return &UserService{repo: repo, cache: cache, logger: logger}
 }
 
-// GOOD — constructor validates, methods trust
-func NewService(client Client) (*Service, error) {
-    if client == nil {
-        return nil, errors.New("client is required")
+// Usage in main.go — programmer responsibility
+func main() {
+    repo := postgres.NewUserRepository(db)
+    cache := redis.NewCache(client)
+    svc := NewUserService(repo, cache, logger)  // nil here = programming error
+}
+```
+
+**Rationale:**
+- Dependencies wired by programmer, not user input
+- Nil = programming error (bug in wiring code)
+- Panic at startup = fail fast, caught by CI/CD and tests
+- Follows `regexp.MustCompile` philosophy from stdlib
+
+### Tier 2: Per-Request Objects — Validate
+
+For objects constructed from user/external input:
+
+```go
+// Constructor validates — returns error
+func NewPaymentRequest(userID, amount string) (*PaymentRequest, error) {
+    if userID == "" {
+        return nil, errors.New("user_id required")
     }
-    return &Service{client: client}, nil
+    amt, err := strconv.ParseInt(amount, 10, 64)
+    if err != nil {
+        return nil, fmt.Errorf("invalid amount: %w", err)
+    }
+    return &PaymentRequest{UserID: userID, Amount: amt}, nil
+}
+```
+
+**Rationale:**
+- Input from users/external systems
+- Invalid input is expected, not exceptional
+- Caller needs to handle gracefully (4xx, retry, etc.)
+
+### Methods Always Trust Invariants
+
+Regardless of tier, methods never check nil:
+
+```go
+// NEVER do this — methods trust constructor/caller
+func (s *Service) Process() error {
+    if s == nil || s.repo == nil {  // ❌ FORBIDDEN
+        return errors.New("not initialized")
+    }
+    return s.repo.Call()
 }
 
+// ALWAYS do this — trust invariants
 func (s *Service) Process() error {
-    return s.client.Call()  // guaranteed non-nil by constructor
+    return s.repo.Call()  // ✅ Trust caller/constructor
 }
 ```
 
 ### Nil Safety Rules
 
-1. **Constructors validate** all dependencies, return error if nil
-2. **Constructors never return** `nil, nil` — always `nil, err` or `val, nil`
-3. **Methods trust invariants** established by constructor
-4. **No redundant checks** inside methods for what constructor guarantees
+1. **Startup singletons**: Caller guarantees valid pointers
+2. **Per-request objects**: Constructor validates user input
+3. **Methods always trust** that struct is properly initialized
+4. **Nil dereference in singleton = panic** — caught in tests
+5. **Nil/invalid in per-request = error** — caller handles gracefully
 
 ---
 

@@ -309,41 +309,68 @@ if err != nil {
 }
 ```
 
-#### Nil Receivers — Design, Not Checks
+#### Nil Safety — Two-Tier Approach
 
-- **NEVER** add nil receiver checks inside methods
-- Verify that nil receivers are excluded BY DESIGN (constructors, factory functions)
-- Check that constructors always return non-nil or error
-- Verify slices/maps are initialised before use
-- Check nil for PARAMETERS at boundaries, not for receivers
+**Tier 1: Startup singletons** — Trust caller, no validation
 
 ```go
-// BAD: nil receiver check inside method (anti-pattern)
+// GOOD: Singleton constructor — trust caller
+func NewOrderService(repo *OrderRepository, cache *Cache, logger zerolog.Logger) *OrderService {
+    return &OrderService{repo: repo, cache: cache, logger: logger}
+}
+
+// BAD: Unnecessary nil validation for singleton
+func NewOrderService(repo *OrderRepository, cache *Cache, logger zerolog.Logger) (*OrderService, error) {
+    if repo == nil {
+        return nil, errors.New("repo required")  // ❌ Over-engineering
+    }
+    // ...
+}
+```
+
+**Tier 2: Per-request objects** — Validate user input
+
+```go
+// GOOD: Per-request constructor — validate
+func NewOrderFromRequest(r *http.Request) (*Order, error) {
+    userID := r.FormValue("user_id")
+    if userID == "" {
+        return nil, errors.New("user_id required")
+    }
+    return &Order{UserID: userID}, nil
+}
+```
+
+**NEVER add nil receiver checks inside methods:**
+
+```go
+// BAD: nil receiver check (always wrong)
 func (s *Service) Process() error {
     if s == nil || s.client == nil {
-        return errors.New("service not initialised")
+        return errors.New("not initialised")
     }
     return s.client.Call()
 }
 
-// GOOD: constructor guarantees non-nil, validate dependencies there
-func NewService(client Client) (*Service, error) {
-    if client == nil {
-        return nil, errors.New("client is required")
-    }
-    return &Service{client: client}, nil
-}
-
+// GOOD: trust invariants
 func (s *Service) Process() error {
-    return s.client.Call()  // s and s.client guaranteed non-nil by constructor
+    return s.client.Call()
 }
 ```
 
 **Review checklist for nil safety:**
-- [ ] Does constructor validate all dependencies and return error if any are nil?
-- [ ] Does constructor always return non-nil pointer when err is nil?
-- [ ] Are there NO nil receiver checks inside methods?
-- [ ] Do methods trust the invariants established by constructor?
+- [ ] Singleton constructors: NO nil validation for pointer deps?
+- [ ] Per-request constructors: YES validation for user-derived inputs?
+- [ ] NO nil receiver checks inside methods?
+- [ ] Singleton returns single value `*T` (not `(*T, error)`) when no semantic validation?
+
+**Classification guide:**
+
+| Constructor Type | Returns | Nil Handling |
+|------------------|---------|--------------|
+| `NewUserService(repo *Repo, ...)` | `*UserService` | Trust caller |
+| `NewOrderFromRequest(r *Request)` | `(*Order, error)` | Validate input |
+| `NewConfigFromEnv()` | `(*Config, error)` | Validate env vars |
 
 #### Constructor Return Signatures
 

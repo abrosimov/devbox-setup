@@ -62,7 +62,7 @@ Add **production necessities** even if not in the plan:
 | Logging | Structured logs with zerolog |
 | Timeouts | Context timeouts, HTTP client timeouts |
 | Retries | Retry logic for idempotent operations |
-| Input validation | Nil checks, bounds validation |
+| Input validation | User input validation, bounds checks (NOT nil checks for singleton deps) |
 | Resource cleanup | defer, context cancellation |
 
 ## What This Agent Does NOT Do
@@ -244,22 +244,52 @@ if err != nil {
 result, _ := doSomething()  // FORBIDDEN
 ```
 
-### Constructor Pattern
+### Constructor Pattern — Two-Tier Approach
+
+**Tier 1: Startup singletons (services, clients, long-lived objects)**
+
+Trust caller for pointer dependencies. No validation needed.
 
 ```go
-// Validate at construction, trust internally
-func NewService(client Client) (*Service, error) {
-    if client == nil {
-        return nil, errors.New("client is required")
-    }
-    return &Service{client: client}, nil
+// Startup singleton — trust caller, no validation
+func NewOrderService(repo *OrderRepository, cache *Cache, logger zerolog.Logger) *OrderService {
+    return &OrderService{repo: repo, cache: cache, logger: logger}
+    // Nil = programming error, caught in tests, fail fast at startup
 }
 
-// Methods trust the invariant — NO nil checks inside
-func (s *Service) Process() error {
-    return s.client.Call()  // guaranteed non-nil
+// Methods trust invariants — NO nil checks
+func (s *OrderService) Process(ctx context.Context, id string) error {
+    return s.repo.FindByID(ctx, id)  // guaranteed non-nil by caller
 }
 ```
+
+**Tier 2: Per-request objects (DTOs, requests, short-lived)**
+
+Validate parameters from user/external input. Return errors.
+
+```go
+// Per-request object — validate user input
+func NewOrderFromRequest(r *http.Request) (*Order, error) {
+    userID := r.FormValue("user_id")
+    if userID == "" {
+        return nil, errors.New("user_id required")
+    }
+    amount, err := strconv.ParseInt(r.FormValue("amount"), 10, 64)
+    if err != nil {
+        return nil, fmt.Errorf("invalid amount: %w", err)
+    }
+    return &Order{UserID: userID, Amount: amount}, nil
+}
+```
+
+**Decision guide:**
+
+| Object Type | Lifetime | Input Source | Nil Handling |
+|-------------|----------|--------------|--------------|
+| Service/Client | Program | Programmer wiring | Trust caller (panic) |
+| Handler/Controller | Program | Programmer wiring | Trust caller (panic) |
+| Request/DTO | Per-request | User/external | Validate (error) |
+| Config from env | Startup | Environment | Validate (error or panic) |
 
 ### Context Usage
 

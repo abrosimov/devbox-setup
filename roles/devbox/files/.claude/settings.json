@@ -1,6 +1,8 @@
 {
   "permissions": {
     "allow": [
+      "Glob",
+      "Grep",
       "Bash(golangci-lint run)",
       "Bash(go test ./...)",
       "Bash(golangci-lint run ./...)",
@@ -24,6 +26,9 @@
       "Bash(git rev-parse:*)",
       "Bash(.claude/bin/safe-curl:*)",
       "Read(**)",
+      "Read(~/.claude/**)",
+      "Edit(**)",
+      "Write(**)",
       "WebSearch",
       "WebFetch"
     ],
@@ -49,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/require-agent-approval.sh",
+            "command": "$HOME/.claude/hooks/require-agent-approval.sh",
             "statusMessage": "Checking if implementation agent needs approval..."
           }
         ]
@@ -59,8 +64,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-direct-code-edit.sh",
-            "statusMessage": "Checking if direct code edit is allowed..."
+            "command": "$HOME/.claude/hooks/enforce-agent-code-edit.sh",
+            "statusMessage": "Enforcing agent-based code editing..."
           }
         ]
       },
@@ -69,8 +74,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-direct-code-write.sh",
-            "statusMessage": "Checking if direct code write is allowed..."
+            "command": "$HOME/.claude/hooks/enforce-agent-code-write.sh",
+            "statusMessage": "Enforcing agent-based code creation..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/enforce-agent-code-bash.sh",
+            "statusMessage": "Checking bash command for code file writes..."
           }
         ]
       }

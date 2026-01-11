@@ -54,41 +54,79 @@ Log the approval and proceed:
 Proceeding with implementation...
 ```
 
-## CRITICAL: Docstrings — Library vs Business Logic
+## CRITICAL: Docstrings — Almost Never
 
-**Library/Infrastructure code** (shared clients like `MongoClient`, SDK wrappers, reusable packages):
-- Public API: Docstrings allowed for non-obvious semantics only
-- Private (`_method`): Never
+**Default: NO docstrings on classes, methods, or functions.**
 
-**Business logic** (services, handlers, domain models):
-- Public or private: **NEVER** — type hints and names ARE the documentation
+Names, types, and API design ARE the documentation. If you need a docstring to explain what something does, the name is wrong.
 
-❌ **FORBIDDEN — docstring on business logic:**
+### The Deletion Test
+
+Before writing a docstring, ask: "If I remove this, would a competent developer misuse this code?"
+- **NO** → Don't write it
+- **YES** → Write ONLY the non-obvious part
+
+### Rare Exceptions (Require Justification)
+
+Docstrings are justified ONLY when expressing something that **cannot be captured in names/types**:
+
+| Exception | Example |
+|-----------|---------|
+| Import/init order | "Import before route definitions — Prometheus must initialize first" |
+| Non-obvious side effects | "Starts background health-check thread on first call" |
+| Thread safety | "Not thread-safe. Create one instance per request." |
+| Complex protocol | "Must call `begin()` before `execute()`, then `commit()` or `rollback()`" |
+| External library public API | Users rely on `help()`, can't easily read source |
+
+### Forbidden Patterns
+
+❌ **Describing what the name already says:**
+```python
+class UserRepository:
+    """Repository for managing users in the database."""
+```
+
+❌ **Describing what the method does:**
 ```python
 def process_order(self, order: Order) -> ProcessedOrder:
-    """Process an order by validating items and calculating totals."""
+    """Process an order by validating and calculating totals."""
 ```
 
-✅ **CORRECT — no docstring on business logic:**
+❌ **Describing exception purpose:**
 ```python
-def process_order(self, order: Order) -> ProcessedOrder:
+class ReadOnlyRepositoryError(Exception):
+    """Raised when attempting write operations on a read-only repository."""
 ```
 
-❌ **FORBIDDEN — docstring on private method:**
-```python
-def _get_connection(self) -> Connection:
-    """Get database connection for internal use."""
-```
-
-❌ **FORBIDDEN — implementation details in library docstring:**
+❌ **Implementation details:**
 ```python
 def commit(self) -> None:
-    """Commit the transaction.
+    """Commit by decrementing ref_count and flushing if zero."""
+```
 
-    Steps:
-    1. Check if released
-    2. Decrement ref_count
-    3. If ref_count == 0, actually commit
+### Correct Patterns
+
+✅ **No docstring — name is sufficient:**
+```python
+class UserRepository:
+    def find_by_email(self, email: str) -> User | None:
+```
+
+✅ **Docstring justified — import order matters:**
+```python
+class PrometheusMetrics:
+    """
+    Import this module BEFORE Flask route definitions.
+    Prometheus instrumentation must initialize before routes are registered.
+    """
+```
+
+✅ **Docstring justified — non-obvious thread safety:**
+```python
+class ConnectionPool:
+    """
+    Thread-safe. Share one instance across the application.
+    Individual connections are NOT thread-safe — acquire per-request.
     """
 ```
 

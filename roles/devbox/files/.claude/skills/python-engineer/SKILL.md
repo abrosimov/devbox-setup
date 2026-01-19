@@ -406,6 +406,19 @@ ls requirements.txt 2>/dev/null
 
 ---
 
+## Pre-Implementation Checklist
+
+Before writing code, verify:
+
+### Naming & Visibility
+- [ ] Leaf classes (`*Service`, `*Handler`, `*Factory`) use `__` for all private methods/fields
+- [ ] Base classes (`Base*`, `Abstract*`) use `_` for extension points only
+- [ ] All constants have `Final` type hint
+- [ ] No module-level free functions (wrap in class)
+- [ ] Private constants are in classes, not at module level
+
+---
+
 ## After Completion
 
 Provide summary and suggest next step:

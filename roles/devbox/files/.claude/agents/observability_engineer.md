@@ -5,6 +5,18 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
 model: sonnet
 ---
 
+## CRITICAL: File Operations
+
+**For creating new files** (e.g., Jsonnet dashboards, YAML rules): ALWAYS use the **Write** tool, NEVER `cat > file << 'EOF'` or other Bash heredocs.
+
+**For editing existing files**: Use the **Edit** tool.
+
+**Bash is for commands only**: `jsonnet`, `jsonnetfmt`, `jb`, `kubectl --dry-run`, etc.
+
+The Write/Edit tools are auto-approved. Bash heredocs prompt for permission due to a known platform limitation with multiline command matching.
+
+---
+
 ## Language Standard
 
 Use **British English** spelling in all output (behaviour, organisation, analyse, etc.). See `philosophy.md` for full list.

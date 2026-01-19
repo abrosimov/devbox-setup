@@ -152,6 +152,145 @@ Thread-safe. Handles token refresh automatically.
 
 ---
 
+## Visibility Rules
+
+### Default: Private (`__`)
+
+For **leaf classes** (not designed for inheritance), use private for ALL internals:
+
+```python
+class UserService:  # Leaf class — no subclassing expected
+    __CACHE_TTL: Final = 300
+
+    def __init__(self, repo: UserRepository) -> None:
+        self.__repo = repo
+        self.__cache: dict[str, User] = {}
+
+    def get_user(self, user_id: str) -> User:
+        return self.__get_cached(user_id) or self.__fetch_and_cache(user_id)
+
+    def __get_cached(self, user_id: str) -> User | None:
+        return self.__cache.get(user_id)
+```
+
+### When to Use Protected (`_`)
+
+Use protected ONLY when the class is **designed for inheritance**:
+
+| Scenario | Use `_` For |
+|----------|-------------|
+| **Template Method** | Hook methods subclasses override |
+| **Abstract Base Class** | Methods subclasses must implement |
+| **Mixin** | Shared functionality across hierarchy |
+| **Framework extension** | User-overrideable behavior |
+| **Testing seam** | Methods tests may need to override |
+
+```python
+class BaseHandler(ABC):  # Designed for inheritance
+    def handle(self, request: Request) -> Response:
+        self.__log_request(request)      # Private: invariant, not overrideable
+        self._validate(request)          # Protected: subclass may override
+        response = self._process(request) # Protected: subclass implements
+        return response
+
+    def __log_request(self, request: Request) -> None:
+        """Private — subclasses must not skip logging."""
+        logger.info(f"handling {request.path}")
+
+    def _validate(self, request: Request) -> None:
+        """Protected — subclasses may add validation."""
+        pass
+
+    @abstractmethod
+    def _process(self, request: Request) -> Response:
+        """Protected — subclasses must implement."""
+        ...
+```
+
+### Decision Checklist
+
+Before choosing visibility, ask:
+
+1. **Is this class designed for inheritance?**
+   - NO → Use `__` for all internals
+   - YES → Continue to question 2
+
+2. **Should subclasses be able to override this?**
+   - NO → Use `__` (protect invariants)
+   - YES → Use `_` (extension point)
+
+3. **Is this a testing seam?**
+   - YES → Consider `_` to allow test overrides
+
+### Common Patterns
+
+| Class Type | Internals | Reason |
+|------------|-----------|--------|
+| `*Service` (leaf) | `__` private | Not for inheritance |
+| `*Handler` (leaf) | `__` private | Not for inheritance |
+| `Base*`, `Abstract*` | Mixed `_`/`__` | Extension points + invariants |
+| `*Mixin` | `_` protected | Shared with inheritors |
+| `*Factory` (leaf) | `__` private | Not for inheritance |
+
+---
+
+## Constants — Always Use `Final`
+
+ALL constants MUST use the `Final` type hint from `typing`.
+
+```python
+from typing import Final
+
+class Config:
+    # With explicit type (preferred for complex types)
+    __TIMEOUT: Final[tuple[float, float]] = (5.0, 30.0)
+    __RETRY_CODES: Final[frozenset[int]] = frozenset({429, 500, 502, 503})
+
+    # Type inference OK for simple types
+    __MAX_RETRIES: Final = 5
+    __DEFAULT_NAME: Final = "unnamed"
+```
+
+❌ **FORBIDDEN:**
+```python
+MAX_RETRIES = 5  # No Final, no type safety
+_TIMEOUT = 30.0  # Single underscore, no Final
+```
+
+---
+
+## Module-Level: Constants Only, No Functions
+
+Module level may contain:
+- ✅ Imports
+- ✅ Type definitions (`TypeAlias`, `TypeVar`, `Protocol`)
+- ✅ Public constants with `Final` (if truly module-wide)
+- ✅ Class definitions
+- ❌ Free functions — wrap in class
+- ❌ Private constants — put in relevant class
+
+```python
+# ✅ ALLOWED at module level
+from typing import Final, TypeAlias
+
+UserID: TypeAlias = str
+DEFAULT_ENCODING: Final = "utf-8"  # Public, module-wide
+
+class FileHandler:
+    __BUFFER_SIZE: Final = 8192  # Private constant belongs in class
+
+    def read(self, path: str) -> bytes:
+        ...
+
+# ❌ FORBIDDEN at module level
+def read_file(path: str) -> bytes:  # Free function
+    ...
+
+_INTERNAL_BUFFER = 4096  # Private constant outside class
+```
+
+---
+
 ## Inline Comments
 
 - Two spaces before `#`, one after (PEP 8)

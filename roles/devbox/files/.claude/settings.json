@@ -1,20 +1,30 @@
 {
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
+      "Task",
       "Glob",
       "Grep",
-      "Bash(golangci-lint run)",
-      "Bash(go test ./...)",
-      "Bash(golangci-lint run ./...)",
-      "Bash(uv run ruff check:*)",
-      "Bash(uv run ruff format:*)",
-      "Bash(uv run pytest:*)",
-      "Bash(uv run black:*)",
-      "Bash(uv run mypy:*)",
-      "Bash(uvx ruff:*)",
+      "Bash(go test:*)",
+      "Bash(go build:*)",
+      "Bash(go run:*)",
+      "Bash(go mod:*)",
+      "Bash(go vet:*)",
+      "Bash(go fmt:*)",
+      "Bash(goimports:*)",
+      "Bash(golangci-lint:*)",
+      "Bash(mockery:*)",
+      "Bash(uv run:*)",
+      "Bash(uv sync:*)",
+      "Bash(uvx:*)",
+      "Bash(poetry run:*)",
+      "Bash(pytest:*)",
       "Bash(ruff:*)",
       "Bash(black:*)",
-      "Bash(pytest:*)",
+      "Bash(mypy:*)",
+      "Bash(jsonnet:*)",
+      "Bash(jsonnetfmt:*)",
+      "Bash(jb:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -25,10 +35,14 @@
       "Bash(git ls-tree:*)",
       "Bash(git rev-parse:*)",
       "Bash(.claude/bin/safe-curl:*)",
+      "Bash(.claude/bin/detect-project-type:*)",
+      "Bash(ls:*)",
+      "Bash(test:*)",
+      "Bash([ -f:*)",
+      "Bash([ -d:*)",
+      "Bash(mkdir:*)",
       "Read(**)",
       "Read(~/.claude/**)",
-      "Edit(**)",
-      "Write(**)",
       "WebSearch",
       "WebFetch"
     ],
@@ -44,51 +58,23 @@
       "Bash(git merge:*)",
       "Bash(git tag:*)",
       "Bash(git rm:*)",
-      "Bash(git mv:*)"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/require-agent-approval.sh",
-            "statusMessage": "Checking if implementation agent needs approval..."
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/enforce-agent-code-edit.sh",
-            "statusMessage": "Enforcing agent-based code editing..."
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/enforce-agent-code-write.sh",
-            "statusMessage": "Enforcing agent-based code creation..."
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/enforce-agent-code-bash.sh",
-            "statusMessage": "Checking bash command for code file writes..."
-          }
-        ]
-      }
+      "Bash(git mv:*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/secrets/**)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.key)",
+      "Edit(**/credentials*)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Write(**/.env)",
+      "Write(**/.env.*)",
+      "Write(**/secrets/**)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)",
+      "Write(**/credentials*)"
     ]
   },
   "alwaysThinkingEnabled": false

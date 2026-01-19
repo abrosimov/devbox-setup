@@ -315,6 +315,23 @@ const MaxLength = 256      // exported
 
 ---
 
+## CRITICAL: This is SERVICE Code — No Doc Comments
+
+**This codebase is a SERVICE, not a library.** Services have no external consumers needing godoc.
+
+**NEVER add doc comments to:**
+- Services, handlers, controllers, domain models
+- Any function where the name is self-explanatory
+- Unexported functions (lowercase)
+
+**Only exception:** Library wrappers in `pkg/` or infrastructure clients (rare).
+
+**Before writing ANY comment, ask:** *"If I delete this, does the code become unclear?"*
+- If NO → don't write it
+- If YES → rename the function instead
+
+---
+
 ## CRITICAL: Comments (ZERO TOLERANCE)
 
 ### Inline Comments

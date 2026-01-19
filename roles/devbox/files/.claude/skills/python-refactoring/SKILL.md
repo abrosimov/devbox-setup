@@ -60,20 +60,20 @@ def process(self) -> None:
 ```python
 # ✅ GOOD — self-documenting through method names
 def process(self) -> None:
-    config = self._load_and_validate_config()
-    data = self._transform_data(config.data)
-    self._save_results(data)
+    config = self.__load_and_validate_config()
+    data = self.__transform_data(config.data)
+    self.__save_results(data)
 
-def _load_and_validate_config(self) -> Config:
+def __load_and_validate_config(self) -> Config:
     config = self.loader.load_config()
     if not config:
         raise ValueError("Invalid config")
     return config
 
-def _transform_data(self, data: Data) -> ProcessedData:
+def __transform_data(self, data: Data) -> ProcessedData:
     return self.transformer.transform(data)
 
-def _save_results(self, data: ProcessedData) -> None:
+def __save_results(self, data: ProcessedData) -> None:
     self.storage.save(data)
 ```
 
@@ -121,27 +121,27 @@ def execute_workflow(self, request_id: str) -> None:
 
 # ✅ GOOD — single abstraction level (high-level orchestration)
 def execute_workflow(self, request_id: str) -> None:
-    request = self._load_request(request_id)
-    self._validate_request(request)
-    result = self._process_request(request)
-    self._save_result(result)
+    request = self.__load_request(request_id)
+    self.__validate_request(request)
+    result = self.__process_request(request)
+    self.__save_result(result)
 
-def _load_request(self, request_id: str) -> Request:
+def __load_request(self, request_id: str) -> Request:
     request = self.repo.get(request_id)
     if not request:
         raise ValueError(f"Request not found: {request_id}")
     return request
 
-def _validate_request(self, request: Request) -> None:
+def __validate_request(self, request: Request) -> None:
     if not request.data.get("email"):
         raise ValueError("Email required")
     if "@" not in request.data["email"]:
         raise ValueError("Invalid email")
 
-def _process_request(self, request: Request) -> Result:
+def __process_request(self, request: Request) -> Result:
     return self.processor.process(request)
 
-def _save_result(self, result: Result) -> None:
+def __save_result(self, result: Result) -> None:
     self.repo.save_result(result)
 ```
 
@@ -174,8 +174,8 @@ Break into methods with single, obvious purposes:
 ```python
 # ✅ GOOD — each method has one obvious purpose
 def process_data(self, data: dict[str, Any]) -> ProcessedData:
-    validated = self._validate_input(data)
-    return self._transform_to_domain(validated)
+    validated = self.__validate_input(data)
+    return self.__transform_to_domain(validated)
 
 def sync_to_storage(self, processed: ProcessedData) -> SyncResult:
     return self.storage.save(processed)
@@ -220,7 +220,7 @@ def sync_records(self, records: list[Record]) -> SyncResult:
     errors = []
 
     for record in records:
-        result = self._sync_single_record(record)
+        result = self.__sync_single_record(record)
         if result.success:
             synced.append(record.id)
         else:
@@ -228,23 +228,23 @@ def sync_records(self, records: list[Record]) -> SyncResult:
 
     return SyncResult(synced=synced, errors=errors)
 
-def _sync_single_record(self, record: Record) -> SyncRecordResult:
+def __sync_single_record(self, record: Record) -> SyncRecordResult:
     if not record.is_valid():
         return SyncRecordResult.failure("Invalid record")
 
     try:
-        prepared = self._prepare_record(record)
-        self._save_record(prepared)
+        prepared = self.__prepare_record(record)
+        self.__save_record(prepared)
         return SyncRecordResult.success()
     except StorageError as e:
         return SyncRecordResult.failure(str(e))
 
-def _prepare_record(self, record: Record) -> Record:
+def __prepare_record(self, record: Record) -> Record:
     if record.needs_transformation():
-        return self._transform(record)
+        return self.__transform(record)
     return record
 
-def _save_record(self, record: Record) -> None:
+def __save_record(self, record: Record) -> None:
     if self.storage.exists(record.id):
         self.storage.update(record)
     else:
@@ -284,21 +284,21 @@ Follows **PEP 8** guidance that functions should be small and focused.
 # ✅ GOOD — high-level orchestration (reads like a story)
 class Processor:
     def execute(self, request_id: str) -> ProcessResult:
-        request = self._load_request(request_id)
-        self._validate_request(request)
-        data = self._extract_data(request)
-        result = self._process_data(data)
-        self._persist_result(result)
+        request = self.__load_request(request_id)
+        self.__validate_request(request)
+        data = self.__extract_data(request)
+        result = self.__process_data(data)
+        self.__persist_result(result)
         return ProcessResult(request_id=request_id, result=result)
 
     # Each method is 5-15 lines of focused logic
-    def _load_request(self, request_id: str) -> Request:
+    def __load_request(self, request_id: str) -> Request:
         request = self.repo.get(request_id)
         if not request:
             raise RequestNotFoundError(request_id)
         return request
 
-    def _validate_request(self, request: Request) -> None:
+    def __validate_request(self, request: Request) -> None:
         if not request.payload:
             raise InvalidRequestError("Empty payload")
         if request.status != Status.PENDING:

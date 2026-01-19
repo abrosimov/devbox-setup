@@ -1,0 +1,16 @@
+#!/bin/bash
+# Detects project type based on marker files in current directory
+
+if [ -f "go.mod" ]; then
+    echo "go"
+elif [ -f "pyproject.toml" ] || [ -f "poetry.lock" ] || [ -f "uv.lock" ]; then
+    echo "python"
+elif [ -f "requirements.txt" ]; then
+    echo "python"
+elif [ -f "package.json" ]; then
+    echo "node"
+elif [ -f "Cargo.toml" ]; then
+    echo "rust"
+else
+    echo "unknown"
+fi

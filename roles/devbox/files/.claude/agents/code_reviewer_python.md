@@ -844,6 +844,82 @@ SE missed items from their checklist: ___
 VERDICT: [ ] PASS  [ ] FAIL — SE should have caught these in self-review
 ```
 
+#### Checkpoint M: Visibility Rules (BLOCKING)
+
+**Search for visibility violations:**
+
+```bash
+# Find single underscore private methods in leaf classes (Services, Handlers, Factories)
+git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "class.*Service\|class.*Handler\|class.*Factory" -A 50 | grep "def _[^_]"
+
+# Find constants without Final
+git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "^[A-Z_]* = \|^    [A-Z_]* = " | grep -v Final
+
+# Find module-level free functions
+git diff main...HEAD --name-only -- '*.py' | grep -v test_ | grep -v __init__.py | xargs grep -n "^def [^_]"
+
+# Find private constants at module level
+git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "^_[A-Z_]* = "
+```
+
+```
+Visibility violations (MUST FIX — blocking):
+
+Leaf classes using `_` instead of `__`:
+  - Class: ___
+    Methods with `_` that should be `__`: ___
+    List: ___
+
+Base/Abstract classes using `__` for extension points:
+  - Class: ___
+    Methods with `__` that should be `_`: ___
+    List: ___
+
+Constants without Final:
+  - List with line numbers: ___
+
+Module-level free functions:
+  - List: ___
+
+Private constants at module level (not in class):
+  - List: ___
+
+VERDICT: [ ] PASS  [ ] FAIL — visibility violations are blocking issues
+```
+
+**Classification guide:**
+
+| Class Pattern | Expected Visibility | Reason |
+|---------------|---------------------|--------|
+| `*Service` | `__` for internals | Leaf class, not for inheritance |
+| `*Handler` | `__` for internals | Leaf class, not for inheritance |
+| `*Factory` | `__` for internals | Leaf class, not for inheritance |
+| `*Repository` | `__` for internals | Leaf class, not for inheritance |
+| `Base*` | `_` for hooks/extension | Designed for inheritance |
+| `Abstract*` | `_` for abstract methods | Designed for inheritance |
+| `*Mixin` | `_` for shared methods | Designed for inheritance |
+
+**Rules:**
+```python
+# FORBIDDEN — leaf class with single underscore
+class UserService:
+    def _validate(self, user: User) -> None:  # Should be __validate
+
+# FORBIDDEN — base class with double underscore for extension point
+class BaseHandler(ABC):
+    def __process(self, req: Request) -> Response:  # Should be _process (subclasses override)
+
+# FORBIDDEN — constant without Final
+class Config:
+    TIMEOUT = 30  # Should be: TIMEOUT: Final = 30
+
+# FORBIDDEN — module-level free function
+def create_user(name: str) -> User:  # Should be in class
+
+# FORBIDDEN — private constant at module level
+_BUFFER_SIZE = 4096  # Should be inside relevant class
+```
+
 ### Step 7: Counter-Evidence Hunt
 
 **REQUIRED**: Before finalizing, spend dedicated effort trying to DISPROVE your conclusions.
@@ -986,6 +1062,7 @@ Provide a structured review:
 - [ ] Comment Quality: PASS/FAIL
 - [ ] Log Message Quality: PASS/FAIL
 - [ ] SE Self-Review Verification: PASS/FAIL
+- [ ] Visibility Rules: PASS/FAIL
 
 ## Counter-Evidence Hunt Results
 <what you found when actively looking for problems>

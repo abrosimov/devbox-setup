@@ -561,31 +561,42 @@ ALWAYS use timeouts and retries for HTTP requests.
 
 ```python
 import requests
+from typing import Final
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-def create_http_client(
-    retries: int = 5,
-    backoff_factor: float = 0.5,
-    timeout: tuple[float, float] = (5.0, 30.0),
-) -> requests.Session:
-    """Create configured HTTP client with retries and timeouts."""
-    retry_strategy = Retry(
-        total=retries,
-        backoff_factor=backoff_factor,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["HEAD", "GET", "OPTIONS", "POST", "PUT", "DELETE"],
-        raise_on_status=False,
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session = requests.Session()
-    session.mount("https://", adapter)
-    session.mount("http://", adapter)
-    return session
+class HTTPClientFactory:
+    """Factory for creating configured HTTP clients with retries and timeouts."""
+
+    __DEFAULT_RETRIES: Final = 5
+    __DEFAULT_BACKOFF: Final = 0.5
+    __DEFAULT_TIMEOUT: Final[tuple[float, float]] = (5.0, 30.0)
+    __RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({429, 500, 502, 503, 504})
+
+    @classmethod
+    def create(
+        cls,
+        retries: int = __DEFAULT_RETRIES,
+        backoff_factor: float = __DEFAULT_BACKOFF,
+        timeout: tuple[float, float] = __DEFAULT_TIMEOUT,
+    ) -> requests.Session:
+        """Create configured HTTP client with retries and timeouts."""
+        retry_strategy = Retry(
+            total=retries,
+            backoff_factor=backoff_factor,
+            status_forcelist=list(cls.__RETRY_STATUS_CODES),
+            allowed_methods=["HEAD", "GET", "OPTIONS", "POST", "PUT", "DELETE"],
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session = requests.Session()
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        return session
 
 
 # Usage — ALWAYS pass timeout
-client = create_http_client()
+client = HTTPClientFactory.create()
 response = client.get(url, timeout=(5, 30))
 response.raise_for_status()
 ```

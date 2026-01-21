@@ -3,6 +3,7 @@ name: technical-product-manager
 description: Technical product manager who transforms ideas into detailed product specifications for new projects.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
 model: opus
+skills: agent-communication, shared-utils
 ---
 
 ## CRITICAL: File Operations

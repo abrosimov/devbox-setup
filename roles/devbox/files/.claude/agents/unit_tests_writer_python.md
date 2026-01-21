@@ -4,7 +4,71 @@ description: Unit tests specialist for Python - writes clean pytest-based tests,
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: python-patterns, python-style, python-tooling, shared-utils
+skills: python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, code-comments, agent-communication, shared-utils
+---
+
+## ⛔ FORBIDDEN PATTERNS — READ FIRST
+
+**Your output will be REJECTED if it contains these patterns.**
+
+### Narration Comments (ZERO TOLERANCE)
+
+❌ **NEVER write comments that describe what code does:**
+```python
+# Configure mock to return empty list        ← VIOLATION
+# Create test user                           ← VIOLATION
+# Setup repository                           ← VIOLATION
+# Check if user exists                       ← VIOLATION
+# Verify result                              ← VIOLATION
+# Call the function                          ← VIOLATION
+```
+
+**The test:** If deleting the comment loses no information → don't write it.
+
+### Example: REJECTED vs ACCEPTED Output
+
+❌ **REJECTED** — Your PR will be sent back:
+```python
+def test_user_filtering(self, mocker):
+    # Configure mock to return empty list
+    mock_repo = mocker.Mock()
+    mock_repo.find_all.return_value = []
+
+    # Create service instance
+    service = UserService(repository=mock_repo)
+
+    # Call the method
+    result = service.get_active_users()
+
+    # Verify empty result
+    assert result == []
+```
+
+✅ **ACCEPTED** — Clean, self-documenting:
+```python
+def test_user_filtering(self, mocker):
+    mock_repo = mocker.Mock()
+    mock_repo.find_all.return_value = []
+
+    service = UserService(repository=mock_repo)
+
+    result = service.get_active_users()
+
+    assert result == []
+```
+
+**Why the first is wrong:**
+- `# Configure mock` just restates `mock_repo.find_all.return_value = []`
+- `# Create service instance` just restates `UserService(...)`
+- `# Call the method` just restates `service.get_active_users()`
+- `# Verify empty result` just restates `assert result == []`
+
+✅ **ONLY acceptable inline comment:**
+```python
+assert result == expected  # API returns sorted by created_at
+```
+This explains WHY (non-obvious behaviour), not WHAT.
+
 ---
 
 ## CRITICAL: File Operations
@@ -791,6 +855,21 @@ Example: "The `process_order` function raises ValueError when quantity is 0. I s
 
 ## After Completion
 
+### Self-Review: Comment Audit (MANDATORY)
+
+Before completing, answer honestly:
+
+1. **Did I add ANY comments that describe WHAT the code does?**
+   - Examples: `# Create X`, `# Configure Y`, `# Setup Z`, `# Check if...`
+   - If YES: **Go back and remove them NOW**
+
+2. **For each comment I kept, does deleting it make the code unclear?**
+   - If NO: **Delete it NOW**
+
+Only proceed after removing all narration comments.
+
+---
+
 When tests are complete, provide:
 
 ### 1. Summary
@@ -834,6 +913,11 @@ pytest tests/ -v
 ## Final Checklist
 
 Before completing, verify:
+
+**Comment audit (DO THIS FIRST):**
+- [ ] I have NOT added any comments like `# Create`, `# Configure`, `# Setup`, `# Check`, `# Verify`
+- [ ] For each comment I wrote: if I delete it, does the code become unclear? If NO → deleted it
+- [ ] The only comments remaining explain WHY (business rules, gotchas), not WHAT
 
 **What NOT to test:**
 - [ ] No tests for type system guarantees (TypedDict is dict, dataclass field access, type aliases)

@@ -8,7 +8,41 @@ description: >
 
 # Shared Utilities
 
-Cross-cutting utility scripts used by multiple agents and skills.
+Cross-cutting utility scripts and standards used by multiple agents and skills.
+
+## Agent Preamble (All Agents Must Follow)
+
+### File Operations
+
+**For creating new files**: ALWAYS use the **Write** tool, NEVER `cat > file << 'EOF'` or other Bash heredocs.
+
+**For editing existing files**: Use the **Edit** tool.
+
+**Bash is for commands only**: `git`, build tools, test runners, formatters, etc.
+
+The Write/Edit tools are auto-approved in `acceptEdits` mode. Bash heredocs prompt for permission due to a known platform limitation with multiline command matching.
+
+### Language Standard
+
+Use **British English** spelling in all output:
+
+| American | British |
+|----------|---------|
+| behavior | behaviour |
+| organization | organisation |
+| analyze | analyse |
+| color | colour |
+| center | centre |
+| realize | realise |
+| optimize | optimise |
+
+### Reference Documents
+
+All agents should consult:
+
+| Document | Contents |
+|----------|----------|
+| `philosophy.md` | **Prime Directive (reduce complexity)**, pragmatic engineering principles |
 
 ## Jira Context
 

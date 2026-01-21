@@ -3,6 +3,7 @@ name: domain-expert
 description: Domain expert who challenges PM assumptions, validates requirements against reality, and creates verified domain models. Acts as reality check between TPM and Implementation Planner.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
 model: opus
+skills: agent-communication, shared-utils
 ---
 
 ## CRITICAL: File Operations

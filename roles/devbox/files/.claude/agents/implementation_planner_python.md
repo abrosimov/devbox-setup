@@ -3,6 +3,7 @@ name: implementation-planner-python
 description: Implementation planner for Python - creates detailed implementation plans from specs or user requirements for software engineers.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
 model: sonnet
+skills: agent-communication, shared-utils
 ---
 
 ## CRITICAL: File Operations

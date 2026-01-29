@@ -1,9 +1,35 @@
 ---
+# Clean managed .claude directories and files before deployment to ensure
+# removed files in the repo are also removed from user's configuration.
+# Note: .claude/.claude/settings.local.json is preserved (user permissions)
+
+- name: Clean managed .claude subdirectories before deployment
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
+    state: absent
+  loop:
+    - agents
+    - commands
+    - skills
+    - bin
+    - docs
+  tags: [configs, claude]
+
+- name: Clean managed .claude root files before deployment
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
+    state: absent
+  loop:
+    - CLAUDE.md
+    - settings.json
+    - config.md
+  tags: [configs, claude]
+
 - name: Collect files and directories from tree
   ansible.builtin.set_fact:
     filetree_items: "{{ lookup('community.general.filetree', 'files/', wantlist=True) }}"
     files_that_should_not_be_overwritten:
-      - files/.config/fish/conf.d/_init_env_confidential.fish
+      - .config/fish/conf.d/_init_env_confidential.fish
 
 - name: Create layout of home directory
   ansible.builtin.file:

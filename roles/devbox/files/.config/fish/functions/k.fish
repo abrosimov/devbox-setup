@@ -21,6 +21,8 @@ function k --description "kubectl helper; expects KUBECONFIG to be set by wrappe
         echo "  k pf pod <ns> <pod> <port|local:remote> — port-forward to pod"
         echo "  k pf svc <ns> <svc> <port|local:remote> — port-forward to service"
         echo "  k debug <ns> <pod> [--target container] [--image nicolaka/netshoot]"
+        echo "  k nodes [--top]                        — list nodes (wide output) or show resource usage"
+        echo "  k node <name> [--pods|--resources]     — describe node, list pods, or show resources"
         echo "  k raw <any kubectl args...>            — passthrough to kubectl"
         return 2
     end
@@ -336,6 +338,67 @@ function k --description "kubectl helper; expects KUBECONFIG to be set by wrappe
                 env KUBECONFIG=$KUBECONFIG kubectl -n $ns debug -it pod/$pod --image=$image --target=$target -- sh
             else
                 env KUBECONFIG=$KUBECONFIG kubectl -n $ns debug -it pod/$pod --image=$image -- sh
+            end
+
+        case nodes
+            set -l show_top false
+
+            set -l i 1
+            while test $i -le (count $argv)
+                set -l a $argv[$i]
+                switch $a
+                    case --top
+                        set show_top true
+                        set i (math $i + 1)
+                        continue
+                    case '*'
+                        echo "k nodes [--top]"
+                        return 2
+                end
+            end
+
+            if test $show_top = true
+                env KUBECONFIG=$KUBECONFIG kubectl top nodes
+            else
+                env KUBECONFIG=$KUBECONFIG kubectl get nodes -o wide
+            end
+
+        case node
+            if test (count $argv) -lt 1
+                echo "k node <name> [--pods|--resources]"
+                return 2
+            end
+
+            set -l node_name $argv[1]
+            set -e argv[1]
+
+            set -l show_pods false
+            set -l show_resources false
+
+            set -l i 1
+            while test $i -le (count $argv)
+                set -l a $argv[$i]
+                switch $a
+                    case --pods
+                        set show_pods true
+                        set i (math $i + 1)
+                        continue
+                    case --resources
+                        set show_resources true
+                        set i (math $i + 1)
+                        continue
+                    case '*'
+                        echo "k node <name> [--pods|--resources]"
+                        return 2
+                end
+            end
+
+            if test $show_pods = true
+                env KUBECONFIG=$KUBECONFIG kubectl get pods --all-namespaces --field-selector spec.nodeName=$node_name -o wide
+            else if test $show_resources = true
+                env KUBECONFIG=$KUBECONFIG kubectl get node $node_name -o jsonpath='{"\nCapacity:\n  CPU: "}{.status.capacity.cpu}{"\n  Memory: "}{.status.capacity.memory}{"\n\nAllocatable:\n  CPU: "}{.status.allocatable.cpu}{"\n  Memory: "}{.status.allocatable.memory}{"\n"}'
+            else
+                env KUBECONFIG=$KUBECONFIG kubectl describe node $node_name
             end
 
         case raw

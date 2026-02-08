@@ -173,9 +173,9 @@ Consult these reference files for detailed patterns:
 | Document | Contents |
 |----------|----------|
 | ``philosophy` skill` | **Prime Directive (reduce complexity)** — apply to dashboards and alerts |
-| `observability/grafonnet_patterns.md` | Dashboard construction, panel types, variables, reusable components |
-| `observability/alerting_rules.md` | PrometheusRule CRD, severity levels, thresholds, rule templates |
-| `observability/query_optimization.md` | PromQL/LogQL optimization, cardinality, recording rules |
+| `docs/observability/grafonnet_patterns.md` | Dashboard construction, panel types, variables, reusable components |
+| `docs/observability/alerting_rules.md` | PrometheusRule CRD, severity levels, thresholds, rule templates |
+| `docs/observability/query_optimization.md` | PromQL/LogQL optimization, cardinality, recording rules |
 
 ## Observability Simplicity
 

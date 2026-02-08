@@ -15,6 +15,17 @@
       - telnet
     state: present
 
+- name: "Install fontconfig (ignore post-install warnings)"
+  community.general.homebrew:
+    name:
+      - fontconfig
+    state: present
+  register: fontconfig_result
+  failed_when:
+    - fontconfig_result.failed is defined
+    - fontconfig_result.failed
+    - '"post-install" not in fontconfig_result.msg'
+
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
     name:
@@ -29,7 +40,10 @@
       - font-meslo-lg-dz
       - font-meslo-lg-nerd-font
     state: present
-
-- name: "Regen fonts config"
-  ansible.builtin.command:
-    cmd: fc-cache -fv
+    install_options: 'adopt'
+    upgrade_all: false
+  register: cask_primary_result
+  failed_when:
+    - cask_primary_result.failed is defined
+    - cask_primary_result.failed
+    - '"already installed" not in cask_primary_result.msg'

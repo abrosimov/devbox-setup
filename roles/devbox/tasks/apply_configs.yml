@@ -5,6 +5,20 @@
   changed_when: false
   failed_when: fish_shell_path.rc != 0
 
+- name: Find fc-cache path
+  ansible.builtin.command: "command -v fc-cache"
+  register: fc_cache_path
+  changed_when: false
+  failed_when: false
+
+- name: Regenerate font cache for user directories
+  ansible.builtin.command: "{{ fc_cache_path.stdout }} -f {{ ansible_facts['env']['HOME'] }}/Library/Fonts {{ ansible_facts['env']['HOME'] }}/.local/share/fonts"
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  when: fc_cache_path.rc == 0
+  changed_when: false
+  failed_when: false
+
 - name: Install fisher plugins
   ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher update'"
   args:

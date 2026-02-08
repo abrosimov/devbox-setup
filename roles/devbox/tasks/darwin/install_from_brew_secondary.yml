@@ -2,7 +2,6 @@
 - name: "Install Homebrew apps"
   community.general.homebrew:
     name:
-      - obsidian
       - opam
       - erlang
       - rustup
@@ -26,15 +25,23 @@
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
     name:
+      - obsidian
       - goland
       - webstorm
       - intellij-idea
       - pycharm
       - ghostty
-      - mactex
+
       - freelens
       - zen
     state: present
+    install_options: 'adopt'
+    upgrade_all: false
+  register: cask_secondary_result
+  failed_when:
+    - cask_secondary_result.failed is defined
+    - cask_secondary_result.failed
+    - '"already installed" not in cask_secondary_result.msg'
 
 - name: "Init OCaml"
   ansible.builtin.command:

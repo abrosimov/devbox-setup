@@ -84,7 +84,7 @@ git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs gr
 git diff main...HEAD
 ```
 
-Check if implementation plan exists at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see config.md)
+Check if implementation plan exists at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see `config` skill)
 
 ### 5. Run Appropriate Agent
 

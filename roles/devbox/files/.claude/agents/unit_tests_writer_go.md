@@ -4,7 +4,7 @@ description: Unit tests specialist for Go - writes idiomatic table-driven tests 
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, go-architecture, go-anti-patterns, code-comments, agent-communication, shared-utils
+skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, go-architecture, go-anti-patterns, code-comments, agent-communication, shared-utils
 ---
 
 ## ⛔ FORBIDDEN PATTERNS — READ FIRST
@@ -199,7 +199,7 @@ Consult these reference files for patterns when writing tests:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
+| `philosophy` skill | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
 | `go/go_architecture.md` | **Interfaces, constructors, nil safety, layer separation — verify these in tests** |
 | `go/go_errors.md` | Error types, sentinel errors, error wrapping patterns |
 | `go/go_patterns.md` | Enums, JSON encoding, slice patterns, HTTP patterns |

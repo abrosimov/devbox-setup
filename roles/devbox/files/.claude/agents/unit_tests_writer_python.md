@@ -4,7 +4,7 @@ description: Unit tests specialist for Python - writes clean pytest-based tests,
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, code-comments, agent-communication, shared-utils
+skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, code-comments, agent-communication, shared-utils
 ---
 
 ## ⛔ FORBIDDEN PATTERNS — READ FIRST
@@ -132,7 +132,7 @@ Consult these reference files for core principles:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
+| `philosophy` skill | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
 
 ## Testing Philosophy
 

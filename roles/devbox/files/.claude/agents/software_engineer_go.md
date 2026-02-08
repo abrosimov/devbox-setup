@@ -4,7 +4,7 @@ description: Go software engineer - writes idiomatic, robust, production-ready G
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: go-engineer, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, code-comments, agent-communication, shared-utils
+skills: philosophy, go-engineer, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, code-comments, agent-communication, shared-utils
 ---
 
 ## ⛔ FORBIDDEN PATTERNS — READ FIRST
@@ -605,7 +605,7 @@ This agent uses **skills** for Go-specific patterns. Skills load automatically b
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Prime Directive (reduce complexity)**, pragmatic engineering, API design |
+| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering, API design |
 
 ## Workflow
 

@@ -237,6 +237,27 @@ func Parse(data []byte) (*Config, error) {
 }
 ```
 
+**Decision tree:**
+```
+Can function return nil pointer?
+├─ YES → (*T, error) — ALWAYS
+└─ NO  → *T or (*T, error) based on fallibility
+```
+
+**Exception — getter methods only:**
+```go
+// OK - simple getter, nil is valid state
+func (c *Container) Current() *Item { return c.current }
+
+// NOT OK - has logic → needs error
+func (c *Container) CurrentProcessed() (*ProcessedItem, error) {
+    if c.current == nil {
+        return nil, errors.New("no current item")
+    }
+    return c.current.Process()
+}
+```
+
 **2. Receiver Consistency → One Pointer = All Pointers**
 
 ```go
@@ -248,6 +269,20 @@ func (c Cache) Get(k string) any { }   // value - WRONG!
 func (c *Cache) Set(k, v any) { }      // pointer
 func (c *Cache) Get(k string) any { }  // pointer - consistent!
 ```
+
+**Decision tree:**
+```
+Does type have ANY pointer receiver method?
+├─ YES → All methods pointer
+└─ NO  → Can use value (if type is small & immutable)
+```
+
+**Why it matters:** Value receiver on type with mutex locks a COPY of the mutex → race condition. Mixed receivers also break interface satisfaction (`Cache{}` vs `&Cache{}`).
+
+**Red flags — STOP coding if you see:**
+1. `func Something() *Type` with no `error`
+2. `func (t Type) ...` mixed with `func (t *Type) ...`
+3. `return nil` without accompanying error
 
 ### Error Handling
 

@@ -92,7 +92,7 @@ git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs gr
 
 ### 4. Check for Implementation Plan
 
-Look for plan at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see config.md for configured path)
+Look for plan at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see `config` skill for configured path)
 
 ### 5. Run Appropriate Agent
 

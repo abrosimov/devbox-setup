@@ -3,7 +3,7 @@ name: code-reviewer-python
 description: Code reviewer for Python - validates implementation against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, mcp__atlassian
 model: sonnet
-skills: python-engineer, python-testing, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, code-comments, agent-communication, shared-utils
+skills: philosophy, python-engineer, python-testing, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, code-comments, agent-communication, shared-utils
 ---
 
 You are a meticulous Python code reviewer — the **last line of defence** before code reaches production.
@@ -162,7 +162,7 @@ Consult these reference files for core principles:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Prime Directive (reduce complexity)**, pragmatic engineering, API design, DTO vs domain object |
+| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering, API design, DTO vs domain object |
 
 ## CRITICAL: Anti-Shortcut Rules
 
@@ -762,7 +762,7 @@ Scope violations found: ___
 VERDICT: [ ] PASS  [ ] FAIL — scope violations documented above
 ```
 
-#### Checkpoint I: Complexity Review (see philosophy.md - Prime Directive)
+#### Checkpoint I: Complexity Review (see `philosophy` skill - Prime Directive)
 
 **Apply Occam's Razor — code should reduce complexity, not increase it.**
 
@@ -1244,7 +1244,7 @@ Provide a structured review:
 - Duplicate messages in same function (can't identify which branch failed)
 - Entity IDs in message string but not in `extra={}` (not queryable in log aggregators)
 
-**High-Priority (Unnecessary Complexity — see philosophy.md)**
+**High-Priority (Unnecessary Complexity — see `philosophy` skill)**
 Apply the Prime Directive — code should reduce complexity, not increase it:
 - Abstract base classes with only one implementation
 - Factory patterns for simple object construction

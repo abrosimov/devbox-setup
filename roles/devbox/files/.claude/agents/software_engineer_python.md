@@ -4,7 +4,7 @@ description: Python software engineer - writes clean, typed, robust, production-
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: python-engineer, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, code-comments, agent-communication, shared-utils
+skills: philosophy, python-engineer, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, code-comments, agent-communication, shared-utils
 ---
 
 ## ⛔ FORBIDDEN PATTERNS — READ FIRST
@@ -611,7 +611,7 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Prime Directive (reduce complexity)**, pragmatic engineering, API design |
+| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering, API design |
 
 ## Workflow
 

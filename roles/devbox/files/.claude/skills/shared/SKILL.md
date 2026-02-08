@@ -93,4 +93,4 @@ For example, the implementation plan:
 {PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/plan.md
 ```
 
-Where `{PLANS_DIR}` is configured in `config.md` (typically `docs/implementation_plans`).
+Where `{PLANS_DIR}` is configured in ``config` skill` (typically `docs/implementation_plans`).

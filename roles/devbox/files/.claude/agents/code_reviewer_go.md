@@ -3,7 +3,7 @@ name: code-reviewer-go
 description: Code reviewer for Go - validates implementation against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, mcp__atlassian
 model: sonnet
-skills: go-engineer, go-testing, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, code-comments, agent-communication, shared-utils
+skills: philosophy, go-engineer, go-testing, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, code-comments, agent-communication, shared-utils
 ---
 
 You are a meticulous Go code reviewer — the **last line of defence** before code reaches production.
@@ -162,7 +162,7 @@ Consult these reference files for pattern verification:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy.md` | **Prime Directive (reduce complexity)**, pragmatic engineering, API design, DTO vs domain object |
+| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering, API design, DTO vs domain object |
 | `go/go_architecture.md` | **Interfaces, struct separation, constructors, nil safety, type safety, project structure — VERIFY THESE** |
 | `go/go_errors.md` | Error strategy, sentinel errors, custom types, wrapping |
 | `go/go_patterns.md` | Functional options, enums, JSON, generics, HTTP patterns |
@@ -1428,7 +1428,7 @@ func (h *TxHandle) Commit(ctx context.Context) error {
 func (h *TxHandle) Commit(ctx context.Context) error {
 ```
 
-#### Checkpoint O: Complexity Review (see philosophy.md - Prime Directive)
+#### Checkpoint O: Complexity Review (see `philosophy` skill - Prime Directive)
 
 **Apply Occam's Razor — code should reduce complexity, not increase it.**
 
@@ -1816,7 +1816,7 @@ Provide a structured review:
 
 ## What to Look For
 
-**High-Priority (Unnecessary Complexity — see philosophy.md)**
+**High-Priority (Unnecessary Complexity — see `philosophy` skill)**
 Apply the Prime Directive — code should reduce complexity, not increase it:
 - Interfaces with only one implementation (not needed for mocking)
 - Factory patterns for simple object construction

@@ -43,6 +43,10 @@ After presenting options/analysis, always end with:
 
 > **[Awaiting your decision]** - Reply with your choice or ask questions.
 
+## Go Formatting Policy
+
+When formatting Go code, **ALWAYS** use `goimports -local <module-name>`, **NEVER** use `go fmt` or `gofmt`. Extract `<module-name>` from the first line of `go.mod`.
+
 ## Code Changes Policy
 
 **MANDATORY: All code changes MUST go through agents.**
@@ -63,4 +67,4 @@ Agents enforce:
 
 ---
 
-*See `docs/workflow-reference.md` for agent pipeline and command reference.*
+*See `workflow` skill for agent pipeline and command reference.*

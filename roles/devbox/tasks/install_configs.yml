@@ -22,6 +22,7 @@
   loop:
     - CLAUDE.md
     - settings.json
+    - hooks.json
     - config.md
   tags: [configs, claude]
 

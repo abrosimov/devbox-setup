@@ -26,6 +26,9 @@ Every agent must define its position in the pipeline:
 | Pipeline | Flow |
 |----------|------|
 | Full cycle | TPM → Domain Expert → Planner → SE → Test Writer → Reviewer |
+| Full with design | TPM → Domain Expert → Planner → API Designer → Designer → SE → Test Writer → Reviewer |
+| API design only | User → API Designer → SE |
+| UI design only | User → Designer → FE (future) |
 | Quick fix | User → SE → Test Writer → Reviewer |
 | Test only | User → Test Writer → Reviewer |
 | Review only | User → Reviewer |
@@ -58,6 +61,24 @@ When an agent completes its work, use this format:
 > Tests complete. X test cases covering Y scenarios.
 >
 > **Next**: Run `/review` to review implementation and tests.
+>
+> Say **'continue'** to proceed, or provide corrections.
+```
+
+**API Designer:**
+```markdown
+> API design complete. 4 resources, 12 endpoints defined.
+>
+> **Next**: Run `/implement` to begin backend implementation, or `/design` for UI/UX design.
+>
+> Say **'continue'** to proceed, or provide corrections.
+```
+
+**Designer (UI/UX):**
+```markdown
+> Design specification complete. 8 components specified, 42 tokens defined.
+>
+> **Next**: Frontend Engineer (when available) to implement from this spec.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```

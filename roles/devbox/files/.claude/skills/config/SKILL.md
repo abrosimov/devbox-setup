@@ -68,6 +68,10 @@ All project documentation is organized by Jira issue and branch name:
 │   │   ├── research.md      # Research findings
 │   │   ├── decisions.md     # Decision log
 │   │   ├── domain_analysis.md  # Domain analysis
+│   │   ├── api_design.md     # API design rationale and decisions
+│   │   ├── api_spec.yaml     # OpenAPI specification (when REST)
+│   │   ├── design.md         # UI/UX design specification
+│   │   ├── design_system.tokens.json  # W3C Design Tokens
 │   │   ├── work_summary.md  # Agent work summary (quick overview)
 │   │   └── work_log.md      # Agent work log (detailed reasoning)
 │   └── add_user_auth_v2/    # Branch: PROJ-123_add_user_auth_v2
@@ -86,6 +90,10 @@ All project documentation is organized by Jira issue and branch name:
 | Research findings | `{PROJECT_DIR}/research.md` |
 | Decision log | `{PROJECT_DIR}/decisions.md` |
 | Domain analysis | `{PROJECT_DIR}/domain_analysis.md` |
+| API design rationale | `{PROJECT_DIR}/api_design.md` |
+| OpenAPI specification | `{PROJECT_DIR}/api_spec.yaml` |
+| UI/UX design specification | `{PROJECT_DIR}/design.md` |
+| W3C Design Tokens | `{PROJECT_DIR}/design_system.tokens.json` |
 | Work summary | `{PROJECT_DIR}/work_summary.md` |
 | Work log | `{PROJECT_DIR}/work_log.md` |
 

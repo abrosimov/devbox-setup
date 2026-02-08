@@ -23,11 +23,15 @@ This document describes the agent pipeline and workflow commands for projects us
 │   ├── unit_tests_writer_*.md
 │   ├── code_reviewer_*.md
 │   ├── implementation_planner_*.md
+│   ├── api_designer.md
+│   ├── designer.md
 │   ├── domain_expert.md
 │   └── technical_product_manager.md
 ├── commands/              # Workflow slash commands
 │   ├── domain-analysis.md
 │   ├── plan.md
+│   ├── api-design.md
+│   ├── design.md
 │   ├── implement.md
 │   ├── test.md
 │   ├── review.md
@@ -42,6 +46,8 @@ This document describes the agent pipeline and workflow commands for projects us
 |---------|-------------|-------------|
 | `/domain-analysis` | Validate requirements, challenge assumptions | After spec, before planning |
 | `/plan` | Create implementation plan from spec | Before implementation (complex tasks) |
+| `/api-design` | Design API contracts (REST/OpenAPI or Protobuf/gRPC) | After planning, before backend implementation |
+| `/design` | Create UI/UX design spec and design tokens | After planning, before frontend implementation |
 | `/implement` | Run SE agent for current task | Start implementation |
 | `/test` | Run test writer agent | After implementation |
 | `/review` | Run code reviewer agent | After tests |
@@ -65,15 +71,23 @@ Each command:
 ```
 technical_product_manager → domain_expert → implementation_planner
                                                     ↓
+                                    ┌───────────────┼───────────────┐
+                                    ↓               ↓               ↓
+                              api_designer    designer (UI/UX)      │
+                                    ↓               ↓               │
+                                    └───────┬───────┘               │
+                                            ↓                       ↓
                             code_reviewer ← unit_tests_writer ← software_engineer
 ```
 
 1. **technical_product_manager** - Transforms ideas into product specifications
 2. **domain_expert** - Challenges assumptions, validates requirements
 3. **implementation_planner_*** - Creates detailed implementation plans
-4. **software_engineer_*** - Writes production code
-5. **unit_tests_writer_*** - Writes tests with bug-hunting mindset
-6. **code_reviewer_*** - Validates implementation against requirements
+4. **api_designer** - Designs API contracts (REST/OpenAPI or Protobuf/gRPC)
+5. **designer** - Creates UI/UX design specs, design tokens, component specifications
+6. **software_engineer_*** - Writes production code
+7. **unit_tests_writer_*** - Writes tests with bug-hunting mindset
+8. **code_reviewer_*** - Validates implementation against requirements
 
 ## Code Writing & Language Discussion Policy
 
@@ -117,6 +131,10 @@ Documentation is organized by Jira issue and branch:
 - `spec.md` - Product specification
 - `domain_analysis.md` - Domain analysis
 - `plan.md` - Implementation plan
+- `api_design.md` - API design rationale and decisions
+- `api_spec.yaml` - OpenAPI specification (REST mode)
+- `design.md` - UI/UX design specification
+- `design_system.tokens.json` - W3C Design Tokens
 - `research.md` - Research findings
 - `decisions.md` - Decision log
 

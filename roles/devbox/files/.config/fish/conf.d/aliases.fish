@@ -13,11 +13,11 @@ abbr -a push git push origin
 
 abbr -a merge git merge
 
-abbr -a code claude --model claude-sonnet-4-5
-abbr -a code_smart claude --model claude-opus-4-5
+abbr -a code claude --model claude-opus-4-5
+abbr -a code_smart claude --model claude-opus-4-6
 
-abbr -a code_continue claude --model claude-sonnet-4-5
-abbr -a code_smart_continue claude --model claude-opus-4-5
+abbr -a code_continue claude --model claude-opus-4-5
+abbr -a code_smart_continue claude --model claude-opus-4-6
 
 abbr -a vi nvim
 abbr -a vim nvim

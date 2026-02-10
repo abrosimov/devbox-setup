@@ -1,0 +1,29 @@
+#!/bin/bash
+# memory-downstream: Start Memory MCP server with project-level review knowledge
+#
+# Uses a project-root path (.claude/memory/downstream.jsonl) that is
+# gitignored. Reviewer knowledge is cross-ticket and local per developer.
+#
+# Unlike upstream (per-ticket, VCS-tracked), downstream memory accumulates
+# across all tickets in the project and stays local.
+
+set -euo pipefail
+
+# Resolve git root
+GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+if [[ -z "$GIT_ROOT" ]]; then
+    echo "ERROR: Not in a git repository" >&2
+    exit 1
+fi
+
+MEMORY_DIR="${GIT_ROOT}/.claude/memory"
+
+# Ensure directory and file exist
+mkdir -p "$MEMORY_DIR"
+touch "$MEMORY_DIR/downstream.jsonl"
+
+exec docker run --rm -i \
+    --network=none \
+    -v "${MEMORY_DIR}:/memory" \
+    -e MEMORY_FILE_PATH=/memory/downstream.jsonl \
+    mcp/memory

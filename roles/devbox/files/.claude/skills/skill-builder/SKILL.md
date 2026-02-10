@@ -23,6 +23,18 @@ Quick reference for creating and validating skill modules. Covers structure, des
 
 ---
 
+## Grounding References
+
+Cached Anthropic documentation for authoritative guidance:
+
+| Reference | Contents | When to Read |
+|-----------|----------|--------------|
+| `references/anthropic-skill-authoring.md` | Official SKILL.md format, frontmatter schema, invocation control, dynamic context injection, progressive disclosure | Before creating or validating any skill |
+
+Read this reference at the START of any build/validate/refine workflow to ground your work in Anthropic's actual specifications.
+
+---
+
 ## Frontmatter Schema
 
 ```yaml

@@ -1,8 +1,8 @@
 ---
-description: Create or validate an agent definition using the Agent Builder agent
+description: Create or validate an agent definition using the Agent Builder agent, with adversarial meta-review
 ---
 
-You are orchestrating the Agent Builder to create, validate, or refine an agent definition.
+You are orchestrating a **2-gate pipeline** for agent definition creation, validation, or refinement.
 
 ## Parse Arguments
 
@@ -14,26 +14,53 @@ Check what the user requested:
 - `/build-agent self-improve` → Agent Builder analyses and improves itself
 - `/build-agent` (no args) → Ask user what they want to build
 
+## Pipeline Overview
+
+<pipeline>
+
+### Create / Refine Mode (2-gate)
+
+1. **Builder** → produces agent definition + self-validation + XML artifact block
+2. **GATE 1** → user reviews builder output
+3. **Meta-Reviewer** → adversarial challenge against grounded docs
+4. **GATE 2** → user approves final artifact
+
+### Validate Mode (single pass)
+
+1. **Builder** → runs validation protocol, reports findings
+2. Present findings to user (no meta-review needed for validation-only)
+
+### Self-Improve Mode (single pass)
+
+1. **Builder** → analyses own definition, proposes improvements
+2. Present proposals to user (meta-review after user approves changes)
+
+</pipeline>
+
 ## Steps
 
 ### 1. Determine Mode
 
 From the arguments, determine the mode:
-- **Create**: User wants a new agent
-- **Validate**: User wants to check existing agent(s)
-- **Refine**: User wants to improve an existing agent
-- **Self-improve**: Agent Builder improves its own definition
+- **Create**: User wants a new agent → 2-gate pipeline
+- **Validate**: User wants to check existing agent(s) → single pass
+- **Refine**: User wants to improve an existing agent → 2-gate pipeline
+- **Self-improve**: Agent Builder improves its own definition → single pass
 
-### 2. Run Agent Builder
-
-Invoke the `agent-builder` agent with the appropriate prompt:
+### 2. Run Agent Builder (Gate 1)
 
 **For Create mode:**
 ```
 Task(
   subagent_type: "agent-builder",
   model: "opus",
-  prompt: "Create a new agent definition for: <name>. User context: <any additional details from conversation>. Read existing agents of the same archetype for pattern reference before drafting."
+  prompt: "Create a new agent definition for: <name>. User context: <any additional details from conversation>.
+
+Phase 0: Read grounding references first:
+- skills/agent-builder/references/anthropic-agent-authoring.md
+- skills/agent-builder/references/anthropic-prompt-engineering.md
+
+Then: Read existing agents of the same archetype for pattern reference before drafting. Auto-fix Tier 1 issues. Emit the XML artifact block in your output for meta-review handoff."
 )
 ```
 
@@ -42,7 +69,13 @@ Task(
 Task(
   subagent_type: "agent-builder",
   model: "opus",
-  prompt: "Validate the agent definition at .claude/agents/<name>.md. Run the full validation protocol and report findings."
+  prompt: "Validate the agent definition at .claude/agents/<name>.md.
+
+Phase 0: Read grounding references first:
+- skills/agent-builder/references/anthropic-agent-authoring.md
+- skills/agent-builder/references/anthropic-prompt-engineering.md
+
+Run the full validation protocol and report findings."
 )
 ```
 
@@ -51,7 +84,7 @@ Task(
 Task(
   subagent_type: "agent-builder",
   model: "opus",
-  prompt: "Validate ALL agent definitions under .claude/agents/. Run the full validation protocol for each and produce a consolidated report."
+  prompt: "Validate ALL agent definitions under .claude/agents/. Phase 0: Read grounding references first. Run the full validation protocol for each and produce a consolidated report."
 )
 ```
 
@@ -60,7 +93,13 @@ Task(
 Task(
   subagent_type: "agent-builder",
   model: "opus",
-  prompt: "Refine the agent definition at .claude/agents/<name>.md. Read the current definition, identify improvements, apply changes with rationale."
+  prompt: "Refine the agent definition at .claude/agents/<name>.md. User context: <any feedback>.
+
+Phase 0: Read grounding references first:
+- skills/agent-builder/references/anthropic-agent-authoring.md
+- skills/agent-builder/references/anthropic-prompt-engineering.md
+
+Read the current definition, identify improvements, apply changes with rationale. Auto-fix Tier 1 issues. Emit the XML artifact block for meta-review handoff."
 )
 ```
 
@@ -69,31 +108,77 @@ Task(
 Task(
   subagent_type: "agent-builder",
   model: "opus",
-  prompt: "Self-improvement mode. Read your own definition at .claude/agents/agent_builder.md and your skill at .claude/skills/agent-builder/SKILL.md. Evaluate against current best practices (use WebSearch for latest Anthropic guidance). Propose improvements — present as options, do not modify without approval."
+  prompt: "Self-improvement mode. Read your own definition at .claude/agents/agent_builder.md and your skill at .claude/skills/agent-builder/SKILL.md. Read grounding references to check for drift. Propose improvements — present as options, do not modify without approval."
 )
 ```
 
-### 3. Handle Skill Gaps
+### 3. Gate 1: User Review
+
+For create/refine modes, present the builder's output to the user:
+
+```markdown
+**Gate 1: Builder Output**
+
+[Builder's summary and XML artifact block]
+
+**[Awaiting your decision]** — Say **'continue'** to run meta-review, **'fix <instruction>'** to adjust, or **'skip-review'** to accept without meta-review.
+```
+
+If user says 'skip-review', skip to step 5.
+If user says 'fix', re-run builder with feedback.
+If user says 'continue', proceed to step 4.
+
+### 4. Run Meta-Reviewer (Gate 2)
+
+```
+Task(
+  subagent_type: "meta-reviewer",
+  model: "opus",
+  prompt: "Review the agent definition at .claude/agents/<name>.md.
+
+This artifact was produced by the Agent Builder. Run the full adversarial review protocol:
+1. Ground yourself: Read skills/agent-builder/references/anthropic-agent-authoring.md and skills/agent-builder/references/anthropic-prompt-engineering.md
+2. Structural challenge: Check frontmatter against Anthropic spec
+3. Discoverability challenge: Simulate positive/negative/confusion triggers
+4. Contradiction check: Cross-reference with existing agents and skills
+5. Boundary stress test: Test stop conditions and scope
+6. Prompt quality assessment: Evaluate body as system prompt
+
+Builder's self-assessment:
+<builder-context>
+[Paste the XML artifact block from the builder's output]
+</builder-context>
+
+Emit your full XML meta-review report."
+)
+```
+
+Present the meta-reviewer's findings:
+
+```markdown
+**Gate 2: Meta-Review**
+
+[Meta-reviewer's summary and verdict]
+
+**[Awaiting your decision]** — Say **'approve'** to accept, **'fix'** to send back to builder, or provide specific instructions.
+```
+
+### 5. Handle Skill Gaps
 
 If the Agent Builder reports new skills are needed:
 
-1. Present the list to the user:
-   ```
-   The new agent needs these skills that don't exist yet:
-   - `<skill-1>`: <description>
-   - `<skill-2>`: <description>
+```markdown
+The new agent needs these skills that don't exist yet:
+- `<skill-1>`: <description>
+- `<skill-2>`: <description>
 
-   Run `/build-skill <name>` for each, or say 'skip' to proceed without them.
-   ```
-
-2. Wait for user decision before proceeding.
-
-### 4. After Completion
-
-Present the Agent Builder's output to the user. If a new agent was created, suggest:
-
+Run `/build-skill <name>` for each, or say 'skip' to proceed without them.
 ```
-Agent created. Recommended next steps:
+
+### 6. After Completion
+
+```markdown
+Agent pipeline complete. Recommended next steps:
 1. Review the definition at .claude/agents/<name>.md
 2. Create any missing skills with `/build-skill`
 3. Run `/validate-config` to verify system integrity

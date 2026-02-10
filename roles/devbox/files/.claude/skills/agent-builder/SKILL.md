@@ -22,6 +22,19 @@ Quick reference for creating and validating agent definitions. See individual ar
 
 ---
 
+## Grounding References
+
+Cached Anthropic documentation for authoritative guidance:
+
+| Reference | Contents | When to Read |
+|-----------|----------|--------------|
+| `references/anthropic-agent-authoring.md` | Official frontmatter schema, scopes, tool patterns, memory, context isolation | Before creating or validating any agent |
+| `references/anthropic-prompt-engineering.md` | XML tags, CoT, system prompts, multishot, clear/direct prompting | Before writing agent body (system prompt) |
+
+Read these references at the START of any build/validate/refine workflow to ground your work in Anthropic's actual specifications.
+
+---
+
 ## Frontmatter Schema
 
 ```yaml

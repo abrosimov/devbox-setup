@@ -31,7 +31,8 @@ This document describes the agent pipeline and workflow commands for projects us
 │   ├── observability_engineer.md
 │   ├── technical_product_manager.md
 │   ├── agent_builder.md
-│   └── skill_builder.md
+│   ├── skill_builder.md
+│   └── meta_reviewer.md
 ├── commands/              # Workflow slash commands
 │   ├── domain-analysis.md
 │   ├── plan.md
@@ -62,8 +63,8 @@ This document describes the agent pipeline and workflow commands for projects us
 | `/test` | Run test writer agent | After implementation |
 | `/review` | Run code reviewer agent | After tests |
 | `/full-cycle` | Run complete pipeline with 4 milestone gates | Standard development |
-| `/build-agent` | Create, validate, or refine agent definitions | When adding/modifying agents |
-| `/build-skill` | Create, validate, audit, or refine skill modules | When adding/modifying skills |
+| `/build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
+| `/build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
 | `/validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
 
 Each command:
@@ -150,6 +151,25 @@ Each command:
 **Infrastructure agents** (outside the development pipeline):
 - **agent_builder** — Creates, validates, and refines agent definitions
 - **skill_builder** — Creates, validates, and refines skill modules
+- **meta_reviewer** — Adversarial reviewer that challenges builder output against grounded Anthropic docs
+
+### Meta-Pipeline (Infrastructure)
+
+`/build-agent` and `/build-skill` use a 2-gate pipeline for create/refine modes:
+
+```
+Builder → GATE 1 (user review) → Meta-Reviewer → GATE 2 (user approve)
+```
+
+- Gate 1: Builder produces artifact + self-validation + XML artifact block
+- Gate 2: Meta-reviewer adversarially challenges against grounded Anthropic docs
+- User can `skip-review` at Gate 1 to bypass meta-review
+- Validate/audit modes are single-pass (no meta-review needed)
+
+Grounding references (cached Anthropic docs) are read at the start of every builder operation:
+- `skills/agent-builder/references/anthropic-agent-authoring.md`
+- `skills/agent-builder/references/anthropic-prompt-engineering.md`
+- `skills/skill-builder/references/anthropic-skill-authoring.md`
 
 ## Code Writing & Language Discussion Policy
 

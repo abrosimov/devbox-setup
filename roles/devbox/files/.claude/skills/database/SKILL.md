@@ -156,13 +156,51 @@ async def get_user(session: AsyncSession, user_id: uuid.UUID) -> User | None:
 | Tool | Language | Notes |
 |------|----------|-------|
 | **goose** | Go | SQL or Go migrations, up/down support |
+| **golang-migrate** | Go | SQL migrations, multiple database drivers |
 | **alembic** | Python | SQLAlchemy integration, auto-generation |
 | **Django migrations** | Python | Built-in, model-driven |
+| **dbmate** | Any | Language-agnostic, SQL-only |
 
 **Rules:**
 - Every schema change gets a migration (never modify DB manually)
-- Migrations must be backward-compatible (deploy new code, then migrate)
+- Migrations must be backward-compatible (expand before code, contract after)
 - Always test migrations against production-like data volume
+- No stored procedures, no triggers — all logic in application code
+
+### Migration Naming Convention
+
+Migrations follow the expand-and-contract pattern with a standard naming scheme:
+
+```
+{global_seq}_{scope}_{phase}_{description}.sql
+```
+
+| Component | Description | Example |
+|-----------|-------------|---------|
+| `global_seq` | 3-digit auto-incrementing across ALL migrations | `001`, `002` |
+| `scope` | Jira ticket or short feature name | `PROJ-123`, `user_auth` |
+| `phase` | Migration phase | `expand`, `backfill`, `validate`, `contract` |
+| `description` | snake_case action | `add_currency_column` |
+
+### Migration Phases
+
+| Phase | What It Does | Safe to Run | Rollback |
+|-------|-------------|-------------|----------|
+| **expand** | ADD column, CREATE table, CREATE index CONCURRENTLY | Before code deploy | DROP column/table |
+| **backfill** | Populate new columns from existing data | Before code deploy | Idempotent re-run |
+| **validate** | Add NOT NULL, constraints, verify data | Before code deploy | DROP constraint |
+| **contract** | DROP old column, DROP old table, rename | **After code deploy** | Restore from backup |
+
+**Deploy gate**: There is always a code deployment between `validate` and `contract` phases.
+
+### Working with schema_design.md
+
+When a `schema_design.md` exists in the project directory (`{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/`):
+
+1. **Read it first** — It contains the database designer's approved schema, migration phases, and deploy ordering
+2. **Follow the deploy gates** — Never run contract migrations before the application code is deployed
+3. **Match migration filenames** — Use the naming convention from the schema design
+4. **Respect the phase ordering** — expand → backfill → validate → [CODE DEPLOY] → contract
 
 ---
 

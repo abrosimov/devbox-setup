@@ -14,16 +14,35 @@ Persistent knowledge graph using the Memory MCP server.
 
 ---
 
-## Architecture: Two Memory Scopes
+## Architecture: Per-Ticket Upstream, Project-Root Downstream
 
-The system uses **two separate memory instances** to isolate strategic knowledge from tactical knowledge:
+The system uses **two memory instances** with different scoping and persistence models:
 
-| Instance | MCP Tool Prefix | Agents | Purpose |
-|----------|----------------|--------|---------|
-| **upstream** | `mcp__memory-upstream__*` | TPM, Domain Expert, Planners | Domain knowledge, decisions, validated assumptions, architectural choices |
-| **downstream** | `mcp__memory-downstream__*` | Code Reviewers | Recurring issues, codebase pain points, review patterns |
+| Instance | Scope | VCS | Path | Agents |
+|----------|-------|-----|------|--------|
+| **upstream** | Per Jira ticket | **Tracked** | `{PROJECT_DIR}/memory/upstream.jsonl` | TPM, Domain Expert, Planners |
+| **downstream** | Whole project | **Gitignored** | `.claude/memory/downstream.jsonl` | Code Reviewers |
 
-Agents can only access their assigned memory instance. This prevents cross-contamination between strategic planning knowledge and tactical code quality knowledge.
+### Why this split?
+
+**Upstream** stores domain knowledge, decisions, and validated assumptions for a specific feature. This lives alongside `spec.md`, `plan.md`, and other pipeline artefacts in the ticket directory. It's VCS-tracked because:
+- Each ticket lives on its own branch → no merge conflicts
+- Team members picking up a ticket inherit accumulated knowledge
+- PRs show what the AI "learned" — auditable
+- Knowledge has a natural lifecycle tied to the ticket
+
+**Downstream** stores cross-ticket review findings (recurring bugs, module pain points). This is gitignored because:
+- Reviewers learn patterns across many tickets — not scoped to one
+- Review findings are per-developer working state
+- Important patterns get captured in code review comments and PR history
+
+### How it works
+
+Wrapper scripts in `~/.claude/bin/` handle dynamic path resolution:
+- `memory-upstream` reads the git branch, computes `PROJECT_DIR`, and mounts `{PROJECT_DIR}/memory/` into the Docker container
+- `memory-downstream` always mounts `{GIT_ROOT}/.claude/memory/` into the container
+- Both create directories and files if they don't exist
+- On non-feature branches (main, develop), upstream falls back to `.claude/memory/`
 
 ---
 
@@ -51,25 +70,25 @@ Replace `{scope}` with `memory-upstream` or `memory-downstream` depending on you
 **Store:**
 - Validated domain concepts and their relationships
 - Architectural decisions with rationale (especially rejected approaches)
-- User personas and their goals (reusable across features)
+- User personas and their goals (reusable across sessions on the same ticket)
 - Recurring constraints and technical limitations
-- Research findings that apply beyond the current feature
+- Research findings that inform this feature
 
 **Retrieve:**
-- Before starting a new spec/analysis — search for relevant prior knowledge
-- When encountering a familiar domain — check for existing domain models
-- Before proposing an approach — check if it was previously rejected
+- At session start — search for prior knowledge from earlier sessions on this ticket
+- When encountering a familiar concept — check for existing domain models
+- Before proposing an approach — check if it was previously rejected in this ticket
 
 ### Downstream Agents (Code Reviewers)
 
 **Store:**
-- Recurring code review findings (patterns of bugs)
+- Recurring code review findings (patterns of bugs seen 2+ times)
 - Codebase pain points that appear across PRs
-- Team-level anti-patterns observed over time
+- Module-level anti-patterns observed over time
 
 **Retrieve:**
-- At the start of each review — search for known issues in the affected module
-- When encountering a suspicious pattern — check if it's a known anti-pattern for this codebase
+- At review start — search for known issues in the affected module
+- When encountering a suspicious pattern — check if it's a known codebase anti-pattern
 
 ---
 
@@ -164,7 +183,7 @@ When a review reveals a recurring pattern:
 
 ## Graceful Degradation
 
-If `mcp__memory-upstream` or `mcp__memory-downstream` is not available (connection error or not configured):
+If `mcp__memory-upstream` or `mcp__memory-downstream` is not available (connection error, Docker not running, or not configured):
 - **Skip** memory retrieval and storage
 - **Proceed** with session-only context
 - **Do not** block on MCP availability

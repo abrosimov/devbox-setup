@@ -1,0 +1,42 @@
+#!/bin/bash
+# memory-upstream: Start Memory MCP server with per-ticket knowledge graph
+#
+# Resolves PROJECT_DIR from current git branch and mounts
+# {PROJECT_DIR}/memory/upstream.jsonl into the container.
+# The JSONL file is VCS-tracked — team-shared domain knowledge.
+#
+# Falls back to .claude/memory/upstream.jsonl if not on a feature branch.
+
+set -euo pipefail
+
+PLANS_DIR="docs/implementation_plans"
+
+# Resolve git root
+GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+if [[ -z "$GIT_ROOT" ]]; then
+    echo "ERROR: Not in a git repository" >&2
+    exit 1
+fi
+
+# Get current branch
+BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+
+# Compute PROJECT_DIR if on a feature branch
+if [[ -n "$BRANCH" ]] && [[ "$BRANCH" =~ ^[A-Z]+-[0-9]+_ ]]; then
+    JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
+    BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
+    MEMORY_DIR="${GIT_ROOT}/${PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/memory"
+else
+    # Fallback: project-root memory for non-feature branches
+    MEMORY_DIR="${GIT_ROOT}/.claude/memory"
+fi
+
+# Ensure directory and file exist
+mkdir -p "$MEMORY_DIR"
+touch "$MEMORY_DIR/upstream.jsonl"
+
+exec docker run --rm -i \
+    --network=none \
+    -v "${MEMORY_DIR}:/memory" \
+    -e MEMORY_FILE_PATH=/memory/upstream.jsonl \
+    mcp/memory

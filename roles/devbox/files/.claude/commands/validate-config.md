@@ -92,6 +92,34 @@ For each skill, verify:
 - [ ] `name` field matches directory name (flag mismatches as warnings)
 - [ ] Has `description` field
 
+### 6b. Grounding References Validation
+
+Check that builder skills have their grounding references:
+
+```bash
+# Agent builder grounding
+for ref in anthropic-agent-authoring.md anthropic-prompt-engineering.md; do
+  if [ ! -f ".claude/skills/agent-builder/references/$ref" ]; then
+    echo "MISSING GROUNDING: agent-builder/references/$ref"
+  fi
+done
+
+# Skill builder grounding
+for ref in anthropic-skill-authoring.md; do
+  if [ ! -f ".claude/skills/skill-builder/references/$ref" ]; then
+    echo "MISSING GROUNDING: skill-builder/references/$ref"
+  fi
+done
+```
+
+### 6c. Meta-Pipeline Integrity
+
+Verify the meta-pipeline components exist:
+
+- [ ] Meta-reviewer agent exists at `.claude/agents/meta_reviewer.md`
+- [ ] Meta-reviewer references `agent-builder` and `skill-builder` skills
+- [ ] Build commands reference meta-reviewer agent
+
 ### 7. Command Frontmatter Validation
 
 For each command, verify:

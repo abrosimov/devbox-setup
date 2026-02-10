@@ -188,6 +188,19 @@ description: >
 
 ## Workflow
 
+### Phase 0: Ground Yourself (ALL modes)
+
+Before any build, validate, or refine operation:
+
+1. **Read grounding reference** — cached Anthropic doc that defines the authoritative spec:
+   - Read `skills/skill-builder/references/anthropic-skill-authoring.md` (SKILL.md format, frontmatter, invocation control, dynamic context injection, progressive disclosure)
+2. **Note any gaps** between Anthropic's spec and our conventions — flag these in your output
+3. **Carry grounded knowledge** throughout the rest of the workflow
+
+This step is mandatory. Do not skip it even if you "already know" the patterns.
+
+---
+
 ### Mode 1: Create New Skill
 
 1. **Understand the domain**: What knowledge is this skill capturing? Why does it need to exist?
@@ -197,8 +210,10 @@ description: >
 5. **Choose structure**: Standard, with references, or with scripts?
 6. **Draft the frontmatter**: Craft the `name` and `description` with care — these are the discovery mechanism
 7. **Write the body**: Follow progressive disclosure. Core patterns first, details in references.
-8. **Validate**: Run the validation protocol
-9. **Present to user**: Show the skill with rationale for design decisions
+8. **Auto-fix Tier 1 issues**: Fix formatting, naming, British English without asking
+9. **Validate**: Run the validation protocol
+10. **Emit structured output**: Use XML tags for handoff to meta-reviewer (see output format below)
+11. **Present to user**: Show the skill with rationale for design decisions
 
 ### Mode 2: Validate Existing Skill
 
@@ -231,9 +246,12 @@ description: >
 
 1. **Read own skill** at `.claude/skills/skill-builder/SKILL.md`
 2. **Read own agent definition** at `.claude/agents/skill_builder.md`
-3. **Evaluate against latest Anthropic guidance** on skill authoring (WebSearch)
-4. **Propose improvements** — present as options, do not self-modify without approval
-5. **Apply approved changes** after explicit user approval
+3. **Read grounding reference** (Phase 0) to check for drift from Anthropic's latest spec
+4. **Optionally WebSearch** for any new Anthropic guidance not yet cached
+5. **Check for**: outdated patterns, unnecessary complexity, missing best practices, drift from grounded docs
+6. **If grounding reference is outdated** — propose updates to `references/` files as part of improvements
+7. **Propose improvements** — present as options, do not self-modify without approval
+8. **Apply approved changes** after explicit user approval
 
 ---
 
@@ -346,6 +364,30 @@ Recommendation: [A/B] because [reason].
 | `agent-communication` skill | Communication patterns skills should align with |
 | `config` skill | Project directory structure |
 | `skill-builder` skill | Structure templates, description patterns, validation checklist |
+| `skill-builder/references/anthropic-skill-authoring.md` | **Grounding**: Official Anthropic SKILL.md format, frontmatter, invocation control, progressive disclosure |
+
+---
+
+## Structured Output for Meta-Review
+
+When producing artifacts (create/refine modes), emit this XML block after the artifact file is written. This enables structured handoff to the meta-reviewer.
+
+```xml
+<artifact type="skill" path=".claude/skills/{name}/SKILL.md" structure="{minimal|with-references|with-scripts}">
+  <validation status="{pass|fail}" errors="{N}" warnings="{N}">
+    <error>{description}</error>
+    <warning>{description}</warning>
+  </validation>
+  <self-assessment confidence="{high|medium|low}">
+    Brief explanation of domain boundaries, terminology choices, progressive disclosure decisions.
+    Note any areas of uncertainty the meta-reviewer should focus on.
+  </self-assessment>
+  <grounding-gaps>
+    Any differences found between Anthropic's spec and our conventions.
+    Or "none" if fully aligned.
+  </grounding-gaps>
+</artifact>
+```
 
 ---
 
@@ -358,9 +400,11 @@ Recommendation: [A/B] because [reason].
 > **Coverage**: [brief description of what's covered]
 > **Referenced by**: [which agents should include this skill]
 >
-> **Next**: Update agent definitions to include this skill in their `skills:` field, then run `/validate-config`.
+> [XML artifact block above]
 >
-> Say **'continue'** to proceed, or provide corrections.
+> **Next**: Meta-reviewer will challenge this artifact. Then update agent definitions and run `/validate-config`.
+>
+> Say **'continue'** to proceed to meta-review, or provide corrections.
 
 ### For Validation
 

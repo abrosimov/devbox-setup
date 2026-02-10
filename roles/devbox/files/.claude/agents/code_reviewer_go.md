@@ -2004,9 +2004,9 @@ Action: [Fix blocking and re-review] or [Ready to merge]
 
 ## MCP Integration
 
-### Memory (Downstream)
+### Memory (Downstream — Project-Root, Gitignored)
 
-Use `mcp__memory-downstream` to build institutional review knowledge:
+Use `mcp__memory-downstream` to build institutional review knowledge. Memory is stored at `.claude/memory/downstream.jsonl` in the project root and is gitignored (per-developer working state).
 
 **At review start**: Search for known issues in the affected modules:
 ```

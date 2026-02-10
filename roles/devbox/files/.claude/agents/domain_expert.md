@@ -579,20 +579,19 @@ Use `mcp__sequentialthinking` for structured reasoning during:
 
 See `mcp-sequential-thinking` skill for tool parameters and usage patterns. If unavailable, proceed with inline reasoning.
 
-### Memory (Upstream)
+### Memory (Upstream — Per-Ticket, VCS-Tracked)
 
-Use `mcp__memory-upstream` to persist and recall domain knowledge:
+Use `mcp__memory-upstream` to persist and recall domain knowledge. Memory is stored at `{PROJECT_DIR}/memory/upstream.jsonl` alongside other plan artefacts and is committed to git.
 
-**At session start**: Search for prior knowledge about the domain:
+**At session start**: Search for prior knowledge from earlier sessions on this ticket:
 ```
 search_nodes("keywords from current domain/feature")
 ```
 
-**During work**: Store validated domain insights:
+**During work**: Store validated domain insights for this ticket:
 - Domain concepts and their relationships
 - Validated and invalidated assumptions (with evidence)
 - Constraints discovered during analysis
-- Recurring patterns across domain analyses
 
 **Do not store**: Session-specific context, entire analysis contents, PM opinions. See `mcp-memory` skill for entity naming conventions. If unavailable, proceed without persistent memory.
 

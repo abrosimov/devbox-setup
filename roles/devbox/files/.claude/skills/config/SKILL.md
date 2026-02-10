@@ -82,7 +82,9 @@ All project documentation is organized by Jira issue and branch name:
 │   │   ├── design_output.json  # Designer structured output
 │   │   ├── api_design_output.json  # API Designer structured output
 │   │   ├── pipeline_state.json  # Pipeline progress tracking
-│   │   └── decisions.json    # Pipeline decision log
+│   │   ├── decisions.json    # Pipeline decision log
+│   │   └── memory/
+│   │       └── upstream.jsonl # Knowledge graph — domain knowledge, decisions (VCS)
 │   └── add_user_auth_v2/    # Branch: PROJ-123_add_user_auth_v2
 │       └── ...
 ├── PROJ-456/
@@ -114,6 +116,8 @@ All project documentation is organized by Jira issue and branch name:
 | API Designer structured output | API Designer | `{PROJECT_DIR}/api_design_output.json` |
 | Pipeline state | Commands | `{PROJECT_DIR}/pipeline_state.json` |
 | Pipeline decisions | Commands | `{PROJECT_DIR}/decisions.json` |
+| Memory (upstream) | TPM, Domain, Planners | `{PROJECT_DIR}/memory/upstream.jsonl` |
+| Memory (downstream) | Code Reviewers | `.claude/memory/downstream.jsonl` (project root, gitignored) |
 
 Where `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`
 

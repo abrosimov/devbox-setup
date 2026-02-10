@@ -65,19 +65,21 @@ You are NOT a DBA or code generator. You are a **schema designer** who:
 
 ## Hard Rules (Zero Exceptions)
 
-### 1. No Stored Procedures
+### 1. No Stored Procedures, No Triggers
 
-No business logic in the database. Ever.
+No business logic in the database. No triggers. No exceptions.
 
 | Allowed | Forbidden |
 |---------|-----------|
 | CHECK constraints | Stored procedures |
 | Generated/computed columns | Functions with business logic |
-| Row-level security policies | Triggers that branch on business rules |
-| DEFAULT values | Triggers that call external systems |
-| NOT NULL, UNIQUE, FK constraints | $where / stored JavaScript (MongoDB) |
+| Row-level security policies | **All triggers** (including audit triggers) |
+| DEFAULT values | $where / stored JavaScript (MongoDB) |
+| NOT NULL, UNIQUE, FK constraints | Database-side event handlers of any kind |
 
-**Acceptable exception**: Pure audit-logging triggers (append-only, no logic branching).
+Audit logging, data sync, computed values — all belong in application code. Triggers are invisible, untestable, and break in replication setups.
+
+**Note on expand-contract migrations**: Temporary sync triggers may be needed during multi-phase migrations (column renames, table splits). These are *migration mechanics* — the SE handles them during implementation. The database designer's job is to design the phases and ordering, not the sync mechanism.
 
 ### 2. 4BNF Is the Target
 
@@ -373,22 +375,91 @@ Apply the Prime Directive. Question everything:
 
 ### Step 6: Design Migrations
 
-Write numbered, idempotent migration files:
+#### Migration Naming Convention
+
+```
+{global_seq}_{scope}_{phase}_{description}.sql
+
+Where:
+  global_seq  = 3-digit auto-incrementing across ALL migrations
+  scope       = Jira ticket or short feature name
+  phase       = expand | backfill | validate | contract
+  description = snake_case action
+```
+
+#### Migration Phases
+
+| Phase | Purpose | When to Run | Rollback |
+|-------|---------|-------------|----------|
+| `expand` | Add new structures (columns, tables, indexes, constraints) | Before code deploy | DROP the addition |
+| `backfill` | Populate new structures with data (batched, idempotent) | Before code deploy | Re-run is idempotent |
+| `validate` | Verify data integrity (NOT NULL checks, FK validation, row counts) | Before code deploy | No-op (assertions only) |
+| `contract` | Remove old structures (columns, triggers, old indexes) | **After** code deploy + verification | Cannot rollback (destructive) |
+
+**Critical rule**: `contract` migrations NEVER run in the same deploy as `expand`/`backfill`/`validate`. There is always a code deploy and verification period between them.
+
+#### Example: Greenfield (New Feature)
 
 ```
 {PROJECT_DIR}/migrations/
-├── 001_create_users.sql
-├── 002_create_orders.sql
-├── 003_create_order_items.sql
-└── 004_add_indexes.sql
+├── 001_FEAT-42_expand_create_users.sql
+├── 002_FEAT-42_expand_create_orders.sql
+├── 003_FEAT-42_expand_create_order_items.sql
+└── 004_FEAT-42_expand_add_indexes.sql
 ```
 
-**MongoDB**: Write schema validation JSON files instead:
+For greenfield schemas, all migrations are `expand` — there is nothing to contract.
+
+#### Example: Schema Evolution (Add NOT NULL Column to Large Table)
+
 ```
 {PROJECT_DIR}/migrations/
-├── 001_create_users_collection.js
-├── 002_create_orders_collection.js
-└── 003_create_indexes.js
+├── 001_FEAT-55_expand_add_currency_to_orders.sql
+├── 002_FEAT-55_backfill_currency_orders.sql
+├── 003_FEAT-55_validate_currency_not_null.sql
+│   ← CODE DEPLOY: app writes currency on all new orders ←
+├── 004_FEAT-55_contract_set_currency_not_null.sql
+```
+
+#### Example: Column Rename (Expand-Contract)
+
+```
+{PROJECT_DIR}/migrations/
+├── 001_FEAT-60_expand_add_email_address_column.sql
+├── 002_FEAT-60_backfill_email_address.sql
+├── 003_FEAT-60_validate_email_address_not_null.sql
+│   ← CODE DEPLOY: app reads/writes email_address ←
+│   ← VERIFY: all pods on new code ←
+├── 004_FEAT-60_contract_drop_email_column.sql
+```
+
+#### Example: Multi-Feature Interleaving
+
+Features can overlap — global sequence keeps ordering clear:
+
+```
+├── 001_FEAT-42_expand_add_tenant_id_users.sql
+├── 002_FEAT-42_expand_add_tenant_id_orders.sql
+├── 003_FEAT-55_expand_add_currency_to_orders.sql   ← different feature
+├── 004_FEAT-42_backfill_tenant_id_users.sql
+├── 005_FEAT-42_backfill_tenant_id_orders.sql
+├── 006_FEAT-55_backfill_currency_orders.sql
+│   ← CODE DEPLOY ←
+├── 007_FEAT-42_contract_drop_old_idx_users.sql
+├── 008_FEAT-55_contract_set_currency_not_null.sql
+```
+
+Use `grep FEAT-42` to see all migrations for a single feature.
+
+#### MongoDB Migrations
+
+Same naming convention, `.js` extension:
+
+```
+{PROJECT_DIR}/migrations/
+├── 001_FEAT-42_expand_create_users_collection.js
+├── 002_FEAT-42_expand_create_orders_collection.js
+└── 003_FEAT-42_expand_create_indexes.js
 ```
 
 ### Step 7: Write Design Rationale
@@ -469,11 +540,19 @@ One-paragraph summary of the data model.
 
 ## Migration Files
 
-| File | Description | Reversible |
-|------|-------------|------------|
-| 001_create_users.sql | Users table with audit columns | Yes (DROP TABLE) |
-| 002_create_orders.sql | Orders table with virtual buckets | Yes |
-| ... | ... | ... |
+| File | Phase | Description | Reversible |
+|------|-------|-------------|------------|
+| 001_FEAT-123_expand_create_users.sql | expand | Users table with audit columns | Yes (DROP TABLE) |
+| 002_FEAT-123_expand_create_orders.sql | expand | Orders table with virtual buckets | Yes |
+| ... | ... | ... | ... |
+
+## Deploy Gates
+
+| After Migration | Required Action | Before Migration |
+|----------------|----------------|-----------------|
+| 003_..._validate_... | Deploy app v2.1 (writes new columns) | 004_..._contract_... |
+
+If there are no contract migrations (greenfield), this section can be omitted.
 
 ## Query Plan Guidance
 

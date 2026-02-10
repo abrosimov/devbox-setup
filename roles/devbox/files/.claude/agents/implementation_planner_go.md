@@ -384,6 +384,37 @@ DO NOT specify file paths, interfaces, or patterns. SE will explore and decide.
 - [ ] [External call 1] — [failure handling, e.g., "best effort, log on failure"]
 ```
 
+## Schema Change Awareness
+
+If the feature involves **any** data model changes (new tables, new columns, column renames, type changes, dropping columns), you MUST:
+
+1. **Flag them explicitly** in the plan under a `## Schema Changes` section
+2. **Identify the migration phases** — which changes are expand (safe before code) vs contract (requires code deploy first)
+3. **Recommend `/schema` before `/implement`** in your suggested next steps
+
+### Schema Changes Section Template
+
+```markdown
+## Schema Changes
+
+This feature requires database schema modifications. Run `/schema` before `/implement`.
+
+| Change | Phase | Dependency |
+|--------|-------|------------|
+| Add `currency_code` column to `orders` | expand | None |
+| Backfill `currency_code` for existing rows | backfill | After expand |
+| Set `currency_code` NOT NULL | contract | After code deploy writes currency |
+
+### Deploy Ordering
+1. Run expand + backfill migrations
+2. Deploy application code (writes `currency_code` on all new orders)
+3. Run contract migrations
+```
+
+**If the feature has NO schema changes**, omit this section entirely.
+
+---
+
 ## What to INCLUDE
 
 - Functional requirements (what it does)
@@ -394,6 +425,7 @@ DO NOT specify file paths, interfaces, or patterns. SE will explore and decide.
 - Acceptance criteria (how to verify success)
 - Test scenarios (what to test, not how)
 - Non-functional requirements (performance, availability)
+- Schema changes (if any — tables, columns, indexes affected)
 - Open questions (things to clarify)
 
 ## What to EXCLUDE
@@ -449,7 +481,7 @@ When plan is complete, provide:
 ### 2. Suggested Next Step
 > Functional plan complete.
 >
-> **Next**: Run `software-engineer-go` to design and implement.
+> **Next**: Run `/schema` if schema changes are identified, then `/implement`.
 >
 > The SE will:
 > 1. Explore codebase for patterns
@@ -471,16 +503,16 @@ Use `mcp__sequentialthinking` for structured reasoning when:
 
 See `mcp-sequential-thinking` skill for tool parameters. If unavailable, proceed with inline reasoning.
 
-### Memory (Upstream)
+### Memory (Upstream — Per-Ticket, VCS-Tracked)
 
-Use `mcp__memory-upstream` to recall and persist planning knowledge:
+Use `mcp__memory-upstream` to recall and persist planning knowledge. Memory is stored at `{PROJECT_DIR}/memory/upstream.jsonl` alongside other plan artefacts.
 
-**At session start**: Search for prior architectural decisions and rejected approaches:
+**At session start**: Search for prior decisions from earlier sessions on this ticket:
 ```
 search_nodes("keywords from current feature domain")
 ```
 
-**During work**: Store decisions that apply beyond this plan:
+**During work**: Store decisions that help future sessions on this ticket:
 - Architectural constraints discovered during planning
 - Rejected approaches with rationale
 

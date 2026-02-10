@@ -236,6 +236,20 @@ Additional skills by archetype:
 
 ## Workflow
 
+### Phase 0: Ground Yourself (ALL modes)
+
+Before any build, validate, or refine operation:
+
+1. **Read grounding references** — these are cached Anthropic docs that define the authoritative spec:
+   - Read `skills/agent-builder/references/anthropic-agent-authoring.md` (frontmatter schema, scopes, tool patterns)
+   - Read `skills/agent-builder/references/anthropic-prompt-engineering.md` (XML tags, CoT, system prompts, clear/direct)
+2. **Note any gaps** between Anthropic's spec and our conventions — flag these in your output
+3. **Carry grounded knowledge** throughout the rest of the workflow
+
+This step is mandatory. Do not skip it even if you "already know" the patterns.
+
+---
+
 ### Mode 1: Create New Agent
 
 1. **Understand the need**: What role is missing from the pipeline? What problem does this agent solve?
@@ -244,8 +258,10 @@ Additional skills by archetype:
 4. **Identify skills**: List existing skills that apply. Flag gaps where new skills are needed.
 5. **Determine pipeline position**: Where does this agent sit? Who hands off to it? Who does it hand off to?
 6. **Draft the definition**: Follow the archetype template structure
-7. **Validate**: Run the validation protocol (see below)
-8. **Present to user**: Show the complete definition with a summary of design decisions
+7. **Auto-fix Tier 1 issues**: Fix formatting, missing fields, British English, section ordering without asking
+8. **Validate**: Run the validation protocol (see below)
+9. **Emit structured output**: Use XML tags for handoff to meta-reviewer (see output format below)
+10. **Present to user**: Show the complete definition with a summary of design decisions
 
 ### Mode 2: Validate Existing Agent
 
@@ -268,10 +284,12 @@ Additional skills by archetype:
 ### Mode 4: Self-Improvement
 
 1. **Read own definition** at `.claude/agents/agent_builder.md`
-2. **Evaluate against latest Anthropic guidance** (use WebSearch if needed)
-3. **Check for**: outdated patterns, unnecessary complexity, missing best practices
-4. **Propose improvements** — present as options, do not self-modify without approval
-5. **Apply approved changes** after explicit user approval
+2. **Read grounding references** (Phase 0) to check for drift from Anthropic's latest spec
+3. **Optionally WebSearch** for any new Anthropic guidance not yet cached
+4. **Check for**: outdated patterns, unnecessary complexity, missing best practices, drift from grounded docs
+5. **Propose improvements** — present as options, do not self-modify without approval
+6. **If grounding references are outdated** — propose updates to `references/` files as part of improvements
+7. **Apply approved changes** after explicit user approval
 
 ---
 
@@ -367,6 +385,31 @@ Recommendation: [A/B] because [reason].
 | `agent-communication` skill | Handoff protocols, completion formats, escalation |
 | `config` skill | Project directory structure, file paths |
 | `agent-builder` skill | Archetype templates, frontmatter schema, validation checklist |
+| `agent-builder/references/anthropic-agent-authoring.md` | **Grounding**: Official Anthropic frontmatter schema, scopes, memory, context isolation |
+| `agent-builder/references/anthropic-prompt-engineering.md` | **Grounding**: XML tags, CoT, system prompts, multishot, clear/direct prompting |
+
+---
+
+## Structured Output for Meta-Review
+
+When producing artifacts (create/refine modes), emit this XML block after the artifact file is written. This enables structured handoff to the meta-reviewer.
+
+```xml
+<artifact type="agent" path=".claude/agents/{name}.md" archetype="{archetype}">
+  <validation status="{pass|fail}" errors="{N}" warnings="{N}">
+    <error>{description}</error>
+    <warning>{description}</warning>
+  </validation>
+  <self-assessment confidence="{high|medium|low}">
+    Brief explanation of design decisions, archetype choice, skill selection.
+    Note any areas of uncertainty the meta-reviewer should focus on.
+  </self-assessment>
+  <grounding-gaps>
+    Any differences found between Anthropic's spec and our conventions.
+    Or "none" if fully aligned.
+  </grounding-gaps>
+</artifact>
+```
 
 ---
 
@@ -380,9 +423,11 @@ When agent creation/validation/refinement is complete:
 >
 > **Skills needed**: [list existing skills attached] | **New skills needed**: [list or "none"]
 >
-> **Next**: Run `/build-skill` for each new skill needed, then `/validate-config` to verify integration.
+> [XML artifact block above]
 >
-> Say **'continue'** to proceed, or provide corrections.
+> **Next**: Meta-reviewer will challenge this artifact. Then `/validate-config` to verify integration.
+>
+> Say **'continue'** to proceed to meta-review, or provide corrections.
 
 ### For Validation
 

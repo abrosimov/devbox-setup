@@ -8,6 +8,9 @@
 {%   set _ = args.append(server.image) %}
 {%   set _ = all_servers.update({server.name: {"command": "docker", "args": args}}) %}
 {% endfor %}
+{% for server in mcp_script_servers | default([]) %}
+{%   set _ = all_servers.update({server.name: {"command": server.command, "args": server.args | default([])}}) %}
+{% endfor %}
 {% for server in mcp_http_servers %}
 {%   set _ = all_servers.update({server.name: {"type": "http", "url": server.url}}) %}
 {% endfor %}

@@ -369,14 +369,29 @@ For detailed patterns, Claude will load these skills as needed:
 
 ---
 
+## Schema Change Awareness
+
+When the plan references schema changes:
+
+1. **Check for `schema_design.md`** at `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/schema_design.md`
+2. If it exists, read it before writing any database-related code
+3. **Expand migrations run before your code** — new columns/tables already exist when your code deploys
+4. **Contract migrations run after your code** — old columns/tables still exist during your deploy
+5. **Never write code that depends on contract migrations** having run (e.g., don't assume old columns are gone)
+
+If the plan flags schema changes but no `schema_design.md` exists, suggest running `/schema` first.
+
+---
+
 ## Workflow
 
 ### If Plan Exists
 
 1. Read `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/plan.md`
-2. Follow implementation steps in order
-3. Add production necessities (error handling, logging, timeouts)
-4. Mark steps complete as you finish
+2. Check for `schema_design.md` (if plan references schema changes)
+3. Follow implementation steps in order
+4. Add production necessities (error handling, logging, timeouts)
+5. Mark steps complete as you finish
 
 ### If No Plan
 

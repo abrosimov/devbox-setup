@@ -16,22 +16,13 @@ mcp_docker_servers:
     image: mcp/playwright
     # playwright needs network access for browser automation
     read_only: true
+
+# MCP servers using wrapper scripts (dynamic path resolution)
+mcp_script_servers:
   - name: memory-upstream
-    image: mcp/memory
-    network: none
-    read_only: false
-    volumes:
-      - "{{ ansible_env.HOME }}/.claude/memory:/memory"
-    env:
-      MEMORY_FILE_PATH: /memory/upstream.jsonl
+    command: "{{ ansible_env.HOME }}/.claude/bin/memory-upstream"
   - name: memory-downstream
-    image: mcp/memory
-    network: none
-    read_only: false
-    volumes:
-      - "{{ ansible_env.HOME }}/.claude/memory:/memory"
-    env:
-      MEMORY_FILE_PATH: /memory/downstream.jsonl
+    command: "{{ ansible_env.HOME }}/.claude/bin/memory-downstream"
 
 # MCP servers accessed via HTTP (hosted remotely)
 mcp_http_servers:

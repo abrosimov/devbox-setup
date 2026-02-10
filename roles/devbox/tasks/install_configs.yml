@@ -56,3 +56,41 @@
     mode: "{{ item.mode | default('0644') }}"
   loop: "{{ filetree_items }}"
   when: item.state == 'file' and item.path.endswith('.j2')
+
+# Local overlay: laptop-only files not tracked in VCS (from local/ directory).
+# Mirrors the same structure as files/ and deploys on top, so local-only
+# configs (e.g. fish functions with private paths) stay out of the repo.
+
+- name: Check if local overlay directory exists
+  ansible.builtin.stat:
+    path: "{{ role_path }}/local"
+  register: local_overlay_dir
+
+- name: Collect files from local overlay
+  ansible.builtin.set_fact:
+    local_filetree_items: "{{ lookup('community.general.filetree', 'local/', wantlist=True) }}"
+  when: local_overlay_dir.stat.exists
+
+- name: Create directories from local overlay
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  loop: "{{ local_filetree_items }}"
+  when: local_overlay_dir.stat.exists and item.state == 'directory'
+
+- name: Copy local overlay files
+  ansible.builtin.copy:
+    src: "local/{{ item.path }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ local_filetree_items }}"
+  when: local_overlay_dir.stat.exists and item.state == 'file' and not item.path.endswith('.j2')
+
+- name: Render local overlay templates
+  ansible.builtin.template:
+    src: "local/{{ item.path }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path | regex_replace('\\.j2$', '') }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ local_filetree_items }}"
+  when: local_overlay_dir.stat.exists and item.state == 'file' and item.path.endswith('.j2')

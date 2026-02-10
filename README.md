@@ -36,3 +36,13 @@
 - `make dev-user` - user phase in dev_mode
 - `make run TAGS="packages,configs"` - custom set of tags
 - `make dev TAGS="configs"` - run only configs in dev_mode
+
+## Local overlay
+
+Laptop-only files that should not be committed to the repository go into `roles/devbox/local/`. This directory is gitignored and mirrors the same structure as `roles/devbox/files/`. Files placed there are deployed **after** the main `files/` pass, so they can add new files or override repo-managed ones.
+
+Example: a fish function with a private path
+```
+roles/devbox/local/.config/fish/functions/kstg.fish
+```
+gets deployed to `~/.config/fish/functions/kstg.fish` without ever appearing in git.

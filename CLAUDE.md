@@ -41,7 +41,8 @@ make dev TAGS="configs"
 - `playbooks/main.yml` - Main playbook entry point, runs locally against 127.0.0.1
 - `roles/devbox/` - Single role containing all setup logic
 - `roles/devbox/tasks/` - Task files split by OS and phase
-- `roles/devbox/files/` - Dotfiles and configs deployed to home directory
+- `roles/devbox/files/` - Dotfiles and configs deployed to home directory (VCS-tracked)
+- `roles/devbox/local/` - **Local overlay** (gitignored) — laptop-only files not in VCS, same structure as `files/`, deployed on top
 - `roles/devbox/files/.claude/` - **Claude Code global config** (deployed to `~/.claude/`)
 - `roles/devbox/defaults/main.yml` - Default variables (`devbox_user`, `devbox_paths`)
 - `vault/` - Encrypted secrets (SSH passphrase)
@@ -56,6 +57,8 @@ The `install_configs.yml` task uses `community.general.filetree` to mirror the e
 - Regular files are copied directly
 - Files ending in `.j2` are rendered as Jinja2 templates (with `.j2` suffix stripped)
 - Target directory is `~` in normal mode or `../debug/dotfiles` in dev_mode
+
+After the main deployment, a **local overlay** pass runs from `roles/devbox/local/` (if it exists). It uses the same structure and logic as `files/` but is gitignored, so laptop-only configs (e.g. fish functions with private paths, cluster-specific wrappers) stay out of the repo. Local files are deployed on top, overriding repo files at the same path when both exist.
 
 ### Key Variables
 - `devbox_paths.dotfiles_root_dir` - Target for dotfile deployment (overridden in dev_mode)

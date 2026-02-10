@@ -1,0 +1,14 @@
+{% set all_servers = {} %}
+{% for server in mcp_docker_servers %}
+{%   set args = ["run", "--rm", "-i"] %}
+{%   if server.network is defined %}{% set _ = args.append("--network=" ~ server.network) %}{% endif %}
+{%   if server.read_only | default(false) %}{% set _ = args.append("--read-only") %}{% endif %}
+{%   for vol in server.volumes | default([]) %}{% set _ = args.extend(["-v", vol]) %}{% endfor %}
+{%   for key, val in (server.env | default({})).items() %}{% set _ = args.extend(["-e", key ~ "=" ~ val]) %}{% endfor %}
+{%   set _ = args.append(server.image) %}
+{%   set _ = all_servers.update({server.name: {"command": "docker", "args": args}}) %}
+{% endfor %}
+{% for server in mcp_http_servers %}
+{%   set _ = all_servers.update({server.name: {"type": "http", "url": server.url}}) %}
+{% endfor %}
+{{ {"mcpServers": all_servers} | to_nice_json }}

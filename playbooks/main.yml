@@ -3,7 +3,7 @@
   connection: local
 
   vars_files:
-    - "../vault/devbox_ssh_config.yml"
+    - "{{ vault_file | default('../vault/devbox_ssh_config.yml') }}"
 
   roles:
     - devbox

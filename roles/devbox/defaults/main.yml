@@ -5,3 +5,36 @@ devbox_paths:
   dotfiles_root_dir: "~"
   programming_deps_dir: ".programming"
 
+# MCP servers running as Docker containers (works with Docker, OrbStack, Podman)
+# See: https://hub.docker.com/u/mcp
+mcp_docker_servers:
+  - name: sequentialthinking
+    image: mcp/sequentialthinking
+    network: none
+    read_only: true
+  - name: playwright
+    image: mcp/playwright
+    # playwright needs network access for browser automation
+    read_only: true
+  - name: memory-upstream
+    image: mcp/memory
+    network: none
+    read_only: false
+    volumes:
+      - "{{ ansible_env.HOME }}/.claude/memory:/memory"
+    env:
+      MEMORY_FILE_PATH: /memory/upstream.jsonl
+  - name: memory-downstream
+    image: mcp/memory
+    network: none
+    read_only: false
+    volumes:
+      - "{{ ansible_env.HOME }}/.claude/memory:/memory"
+    env:
+      MEMORY_FILE_PATH: /memory/downstream.jsonl
+
+# MCP servers accessed via HTTP (hosted remotely)
+mcp_http_servers:
+  - name: figma
+    url: "https://mcp.figma.com/mcp"
+

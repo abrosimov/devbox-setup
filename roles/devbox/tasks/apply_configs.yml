@@ -26,3 +26,57 @@
   become: true
   become_user: "{{ devbox_user.login }}"
   changed_when: false
+
+# --- MCP servers data directories ---
+
+- name: Create MCP memory data directory
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/memory"
+    state: directory
+    mode: "0755"
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  tags: [configs, mcp]
+
+# --- Claude Code MCP servers ---
+
+- name: Find Claude Code CLI path
+  ansible.builtin.command: "command -v claude"
+  register: claude_cli_path
+  changed_when: false
+  failed_when: false
+  tags: [configs, claude]
+
+- name: Register Claude Code MCP servers - Docker (user scope)
+  ansible.builtin.command: >
+    {{ claude_cli_path.stdout }} mcp add
+    --transport stdio
+    --scope user
+    {{ item.name }}
+    -- docker run --rm -i
+    {% if item.network is defined %}--network={{ item.network }}{% endif %}
+    {% if item.read_only | default(false) %}--read-only{% endif %}
+    {% for vol in item.volumes | default([]) %}-v {{ vol }} {% endfor %}
+    {{ item.image }}
+  loop: "{{ mcp_docker_servers }}"
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  when: claude_cli_path.rc == 0
+  changed_when: false
+  failed_when: false
+  tags: [configs, claude]
+
+- name: Register Claude Code MCP servers - HTTP (user scope)
+  ansible.builtin.command: >
+    {{ claude_cli_path.stdout }} mcp add
+    --transport http
+    --scope user
+    {{ item.name }}
+    {{ item.url }}
+  loop: "{{ mcp_http_servers }}"
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  when: claude_cli_path.rc == 0
+  changed_when: false
+  failed_when: false
+  tags: [configs, claude]

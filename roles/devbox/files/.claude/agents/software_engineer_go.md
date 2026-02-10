@@ -4,7 +4,8 @@ description: Go software engineer - writes idiomatic, robust, production-ready G
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, go-engineer, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, code-comments, agent-communication, shared-utils
+skills: philosophy, go-engineer, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, agent-communication, shared-utils
+updated: 2026-02-10
 ---
 
 ## ⛔ FORBIDDEN PATTERNS — READ FIRST
@@ -382,11 +383,21 @@ Trade-offs:
 | Logging at boundaries (request in/out, errors) | Circuit breakers |
 | Context propagation | Caching |
 | Resource cleanup (`defer`) | Rate limiting |
-| Input validation at API boundary | Metrics/instrumentation |
-| | Feature flags |
-| | New interfaces/abstractions |
+| Input validation at API boundary | Feature flags |
+| OTel instrumentation (see conditional rule below) | New interfaces/abstractions |
 | | Configuration options |
 | | "Defensive" code for impossible cases |
+
+### Conditional: OTel Instrumentation
+
+**If the codebase has OTel SDK initialised** (TracerProvider/MeterProvider in `main` or startup), then adding spans and metrics to new code **is a production necessity** — do not ask for approval. Specifically:
+
+- **Spans**: Add spans to public service methods and significant internal operations
+- **Metrics**: Add counters/histograms following existing patterns in the codebase
+- **Attributes**: Use semantic conventions from `otel-go` skill
+- **MUST**: Follow the metric registration pattern (see `otel-go` skill — "Metric Registration" section)
+
+**If the codebase does NOT have OTel set up**: Adding instrumentation requires explicit approval (Tier 3 decision — new infrastructure pattern).
 
 **The test:** If you're unsure whether something is a production necessity → **it is NOT**. Ask.
 

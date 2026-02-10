@@ -4,7 +4,8 @@ description: Python software engineer - writes clean, typed, robust, production-
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, python-engineer, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, code-comments, agent-communication, shared-utils
+skills: philosophy, python-engineer, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, otel-python, code-comments, agent-communication, shared-utils
+updated: 2026-02-10
 ---
 
 ## ⛔ FORBIDDEN PATTERNS — READ FIRST
@@ -370,11 +371,21 @@ Trade-offs:
 | Logging at boundaries (request in/out, errors) | Circuit breakers |
 | Context managers for resources | Caching |
 | Type hints on public functions | Rate limiting |
-| Input validation at API boundary | Metrics/instrumentation |
-| | Feature flags |
-| | New ABCs/abstractions |
+| Input validation at API boundary | Feature flags |
+| OTel instrumentation (see conditional rule below) | New ABCs/abstractions |
 | | Configuration options |
 | | "Defensive" code for impossible cases |
+
+### Conditional: OTel Instrumentation
+
+**If the codebase has OTel SDK initialised** (TracerProvider/MeterProvider in startup or lifespan), then adding spans and metrics to new code **is a production necessity** — do not ask for approval. Specifically:
+
+- **Spans**: Add spans to public service methods and significant internal operations
+- **Metrics**: Add counters/histograms following existing patterns in the codebase
+- **Attributes**: Use semantic conventions from `otel-python` skill
+- **MUST**: Follow the metric registration pattern (see `otel-python` skill — "Metric Registration" section)
+
+**If the codebase does NOT have OTel set up**: Adding instrumentation requires explicit approval (Tier 3 decision — new infrastructure pattern).
 
 **The test:** If you're unsure whether something is a production necessity → **it is NOT**. Ask.
 

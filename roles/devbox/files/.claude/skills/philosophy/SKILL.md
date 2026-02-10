@@ -1,5 +1,6 @@
 ---
 name: philosophy
+alwaysApply: true
 description: >
   Engineering philosophy and core principles for all agents. Covers the Prime Directive
   (reduce complexity), pragmatic engineering, API design, interface design, testing principles,

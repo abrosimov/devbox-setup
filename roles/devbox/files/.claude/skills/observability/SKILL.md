@@ -1,8 +1,11 @@
 ---
 name: observability
 description: >
-  Observability patterns for logging, metrics, and tracing in both Go and Python.
-  Triggers on: logging, metrics, tracing, observability, zerolog, prometheus, opentelemetry.
+  Observability patterns for logging, metrics, tracing, and OpenTelemetry architecture
+  in both Go and Python. Covers semantic conventions, cardinality management, Collector
+  patterns, distributed tracing, and RED/USE metrics. Triggers on: logging, metrics,
+  tracing, observability, zerolog, prometheus, opentelemetry, semantic conventions,
+  cardinality, collector, distributed tracing, RED metrics, USE metrics.
 ---
 
 # Observability Patterns
@@ -518,8 +521,237 @@ def readiness():
 - [ ] Request ID propagated through calls
 - [ ] Spans for significant operations
 - [ ] Errors recorded on spans
+- [ ] Semantic conventions used for attributes
+- [ ] Trace-log correlation configured
 
 ### Health Checks
 - [ ] Liveness endpoint (process alive)
 - [ ] Readiness endpoint (dependencies available)
 - [ ] No health check logging (too noisy)
+
+---
+
+## Semantic Conventions
+
+OpenTelemetry defines standard attribute names. **Always use semconv** — custom names fragment queries.
+
+### Stable Conventions
+
+| Domain | Key Attributes | Status |
+|--------|---------------|--------|
+| HTTP | `http.request.method`, `http.response.status_code`, `url.scheme`, `url.path` | Stable |
+| Database | `db.system`, `db.namespace`, `db.operation.name`, `db.query.text` | Stable |
+| RPC/gRPC | `rpc.system`, `rpc.service`, `rpc.method`, `rpc.grpc.status_code` | Stable |
+| Messaging | `messaging.system`, `messaging.operation.type`, `messaging.destination.name` | Development |
+
+### Resource Attributes
+
+Every service **must** set:
+
+```
+service.name        = "order-service"
+service.version     = "1.2.0"
+deployment.environment.name = "production"
+```
+
+### Naming Rules
+
+| Rule | Good | Bad |
+|------|------|-----|
+| Use semconv names | `http.request.method` | `method`, `http_method` |
+| Lowercase dotted namespace | `order.type` | `OrderType`, `order_type` |
+| Use standard units | `s` (seconds), `By` (bytes) | `ms`, `milliseconds` |
+
+---
+
+## Cardinality Management
+
+High cardinality attributes cause metric explosion. Default limit: **2000 time series per metric**.
+
+### Bounded vs Unbounded
+
+| Bounded (SAFE) | Unbounded (DANGER) |
+|----------------|--------------------|
+| HTTP method (GET, POST, ...) | User ID |
+| Status code class (2xx, 4xx, 5xx) | Request path with IDs |
+| Region (us-east-1, eu-west-1) | Email address |
+| Order type (standard, express) | Session ID |
+| Error category | Full error message |
+
+### Strategies
+
+1. **Attribute allowlists** (OTel Views): Drop attributes you don't need
+2. **Bucket status codes**: `2xx`, `3xx`, `4xx`, `5xx` instead of individual codes
+3. **Parameterise paths**: `/api/v1/users/{id}` not `/api/v1/users/abc123`
+4. **Move high-cardinality to spans**: User IDs belong in trace attributes, not metric labels
+
+### OTel Views for Cardinality
+
+See `otel-go` and `otel-python` skills for language-specific View configuration.
+
+---
+
+## Span Status Rules
+
+| HTTP Status | Span Status (Server) | Span Status (Client) |
+|-------------|---------------------|---------------------|
+| 1xx, 2xx, 3xx | `UNSET` | `UNSET` |
+| 4xx | `UNSET` (not a server error) | `ERROR` |
+| 5xx | `ERROR` | `ERROR` |
+
+**Key rule**: A 400 Bad Request is the **client's** fault, not the server's. Server spans should NOT be marked ERROR for 4xx.
+
+```go
+// GOOD
+if resp.StatusCode >= 500 {
+    span.SetStatus(codes.Error, "server error")
+}
+// Leave 4xx as UNSET on server side
+```
+
+```python
+# GOOD
+if response.status_code >= 500:
+    span.set_status(trace.Status(trace.StatusCode.ERROR, "server error"))
+# Leave 4xx as UNSET on server side
+```
+
+---
+
+## Distributed Tracing Patterns
+
+### Context Propagation
+
+All services must propagate W3C `traceparent` header. OTel middleware handles this automatically for HTTP/gRPC.
+
+For **async messaging** (queues, events), inject/extract manually:
+
+```
+Producer → inject(headers) → Message Queue → extract(headers) → Consumer
+```
+
+### Span Links vs Parent-Child
+
+| Relationship | When |
+|-------------|------|
+| **Parent-child** | Synchronous call chain (HTTP, gRPC) |
+| **Span link** | Async processing, batch jobs, fan-out |
+
+Use span links when:
+- A message consumer processes a message from a queue
+- A batch job processes items from multiple requests
+- A cron job triggered by an external event
+
+### Trace Boundaries
+
+| Boundary | Action |
+|----------|--------|
+| HTTP/gRPC ingress | Auto-instrumentation creates root span |
+| HTTP/gRPC egress | Auto-instrumentation propagates context |
+| Queue publish | Inject trace context into message headers |
+| Queue consume | Extract trace context, create linked span |
+| Cron/background job | New trace with link to trigger (if any) |
+
+---
+
+## RED and USE Metrics
+
+### RED (Request-oriented)
+
+For request-driven services (APIs, web servers):
+
+| Metric | What | OTel Instrument |
+|--------|------|-----------------|
+| **R**ate | Requests per second | `Counter` (http.server.request.count) |
+| **E**rrors | Failed requests per second | `Counter` with error attribute |
+| **D**uration | Latency distribution | `Histogram` (http.server.request.duration) |
+
+### USE (Resource-oriented)
+
+For infrastructure and resource monitoring:
+
+| Metric | What | OTel Instrument |
+|--------|------|-----------------|
+| **U**tilisation | % of resource capacity used | `ObservableGauge` |
+| **S**aturation | Amount of queued/waiting work | `ObservableGauge` or `UpDownCounter` |
+| **E**rrors | Resource error count | `Counter` |
+
+### Recommended Instruments per Service
+
+| What to Measure | Instrument | Name Pattern |
+|-----------------|-----------|--------------|
+| Request count | Counter | `{service}.requests` |
+| Request duration | Histogram | `{service}.request.duration` |
+| Error count | Counter | `{service}.errors` |
+| Active connections | UpDownCounter | `{service}.connections.active` |
+| Queue depth | ObservableGauge | `{service}.queue.depth` |
+| Pool utilisation | ObservableGauge | `{service}.pool.utilisation` |
+
+---
+
+## OTel Collector Architecture
+
+### Agent-Gateway Pattern (Recommended)
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────────┐
+│ App + OTel   │────▶│  Collector   │────▶│    Collector      │
+│   SDK        │     │  (Agent)     │     │    (Gateway)      │
+│              │     │  per host    │     │    centralised    │
+└──────────────┘     └──────────────┘     └──────────────────┘
+                                                    │
+                                          ┌─────────┼─────────┐
+                                          ▼         ▼         ▼
+                                       Jaeger   Prometheus   Loki
+```
+
+- **Agent**: Sidecar or DaemonSet, handles batching/retry/auth
+- **Gateway**: Centralised, handles tail sampling, routing, enrichment
+- **SDK exports to agent** on localhost (fast, reliable)
+
+### Collector Pipeline
+
+```yaml
+# Collector config structure
+receivers:    # How data enters (otlp, prometheus, filelog)
+processors:   # Transform, filter, batch, enrich
+exporters:    # Where data goes (otlp, prometheus, loki)
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, tail_sampling]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheusremotewrite]
+```
+
+### Key Processors
+
+| Processor | Purpose |
+|-----------|---------|
+| `batch` | Batch telemetry for efficient export |
+| `memory_limiter` | Prevent OOM on collector |
+| `attributes` | Add/remove/rename attributes |
+| `filter` | Drop unwanted telemetry |
+| `tail_sampling` | Sample based on full trace (gateway only) |
+| `resource` | Enrich resource attributes |
+
+---
+
+## OTel vs Prometheus Direct
+
+| Aspect | OTel Metrics API | Prometheus Client |
+|--------|-----------------|-------------------|
+| Vendor lock-in | None (OTLP export) | Prometheus format |
+| Auto-instrumentation | Yes (library hooks) | Manual only |
+| Trace correlation | Built-in exemplars | Limited |
+| Push vs Pull | Push (OTLP) | Pull (scrape) |
+| Multi-signal | Traces + Metrics + Logs | Metrics only |
+
+**Recommendation**: Use OTel Metrics API for new services. Use Prometheus client only when integrating with existing Prometheus-only infrastructure.
+
+See `otel-go` and `otel-python` skills for language-specific implementation patterns.

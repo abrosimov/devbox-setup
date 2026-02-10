@@ -31,6 +31,7 @@
       - intellij-idea
       - pycharm
       - ghostty
+      - claude
 
       - freelens
       - zen
@@ -42,6 +43,12 @@
     - cask_secondary_result.failed is defined
     - cask_secondary_result.failed
     - '"already installed" not in cask_secondary_result.msg'
+
+- name: "Install Claude Code CLI"
+  community.general.npm:
+    name: "@anthropic-ai/claude-code"
+    global: true
+    state: present
 
 - name: "Init OCaml"
   ansible.builtin.command:

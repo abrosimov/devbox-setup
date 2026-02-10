@@ -66,14 +66,23 @@ All project documentation is organized by Jira issue and branch name:
 │   │   ├── plan.md          # Implementation plan
 │   │   ├── spec.md          # Product specification
 │   │   ├── research.md      # Research findings
-│   │   ├── decisions.md     # Decision log
+│   │   ├── decisions.md     # Decision log (TPM)
 │   │   ├── domain_analysis.md  # Domain analysis
 │   │   ├── api_design.md     # API design rationale and decisions
 │   │   ├── api_spec.yaml     # OpenAPI specification (when REST)
 │   │   ├── design.md         # UI/UX design specification
 │   │   ├── design_system.tokens.json  # W3C Design Tokens
+│   │   ├── schema_design.md  # Database schema design rationale
+│   │   ├── migrations/       # Database migration files
 │   │   ├── work_summary.md  # Agent work summary (quick overview)
-│   │   └── work_log.md      # Agent work log (detailed reasoning)
+│   │   ├── work_log.md      # Agent work log (detailed reasoning)
+│   │   ├── spec_output.json  # TPM structured output
+│   │   ├── domain_output.json  # Domain Expert structured output
+│   │   ├── plan_output.json  # Planner structured output
+│   │   ├── design_output.json  # Designer structured output
+│   │   ├── api_design_output.json  # API Designer structured output
+│   │   ├── pipeline_state.json  # Pipeline progress tracking
+│   │   └── decisions.json    # Pipeline decision log
 │   └── add_user_auth_v2/    # Branch: PROJ-123_add_user_auth_v2
 │       └── ...
 ├── PROJ-456/
@@ -83,19 +92,28 @@ All project documentation is organized by Jira issue and branch name:
 
 ### File Paths
 
-| File | Path |
-|------|------|
-| Implementation plan | `{PROJECT_DIR}/plan.md` |
-| Product specification | `{PROJECT_DIR}/spec.md` |
-| Research findings | `{PROJECT_DIR}/research.md` |
-| Decision log | `{PROJECT_DIR}/decisions.md` |
-| Domain analysis | `{PROJECT_DIR}/domain_analysis.md` |
-| API design rationale | `{PROJECT_DIR}/api_design.md` |
-| OpenAPI specification | `{PROJECT_DIR}/api_spec.yaml` |
-| UI/UX design specification | `{PROJECT_DIR}/design.md` |
-| W3C Design Tokens | `{PROJECT_DIR}/design_system.tokens.json` |
-| Work summary | `{PROJECT_DIR}/work_summary.md` |
-| Work log | `{PROJECT_DIR}/work_log.md` |
+| File | Created By | Path |
+|------|-----------|------|
+| Implementation plan | Impl Planner | `{PROJECT_DIR}/plan.md` |
+| Product specification | TPM | `{PROJECT_DIR}/spec.md` |
+| Research findings | TPM | `{PROJECT_DIR}/research.md` |
+| Decision log | TPM | `{PROJECT_DIR}/decisions.md` |
+| Domain analysis | Domain Expert | `{PROJECT_DIR}/domain_analysis.md` |
+| API design rationale | API Designer | `{PROJECT_DIR}/api_design.md` |
+| OpenAPI specification | API Designer | `{PROJECT_DIR}/api_spec.yaml` |
+| UI/UX design specification | Designer | `{PROJECT_DIR}/design.md` |
+| W3C Design Tokens | Designer | `{PROJECT_DIR}/design_system.tokens.json` |
+| Schema design rationale | SE | `{PROJECT_DIR}/schema_design.md` |
+| Database migrations | SE | `{PROJECT_DIR}/migrations/` |
+| Work summary | SE | `{PROJECT_DIR}/work_summary.md` |
+| Work log | SE | `{PROJECT_DIR}/work_log.md` |
+| TPM structured output | TPM | `{PROJECT_DIR}/spec_output.json` |
+| Domain structured output | Domain Expert | `{PROJECT_DIR}/domain_output.json` |
+| Planner structured output | Impl Planner | `{PROJECT_DIR}/plan_output.json` |
+| Designer structured output | Designer | `{PROJECT_DIR}/design_output.json` |
+| API Designer structured output | API Designer | `{PROJECT_DIR}/api_design_output.json` |
+| Pipeline state | Commands | `{PROJECT_DIR}/pipeline_state.json` |
+| Pipeline decisions | Commands | `{PROJECT_DIR}/decisions.json` |
 
 Where `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`
 

@@ -15,18 +15,23 @@ Standardised patterns for agent-to-agent handoffs, user communication, and escal
 Every agent must define its position in the pipeline:
 
 ```markdown
-**Receives from**: <upstream agent or "User">
+**Receives from**: <upstream agent or "User"> (`document.md` + optionally `{stage}_output.json`)
 **Produces for**: <downstream agent or "User">
-**Deliverable**: <specific artifact — file, report, code>
+**Deliverables**:
+  - `document.md` — primary (human-readable reasoning and rationale)
+  - `{stage}_output.json` — supplementary (structured contract for downstream agents, see `structured-output` skill)
 **Completion criteria**: <what must be true before handoff>
 ```
+
+When reading upstream output, check for `{stage}_output.json` first (faster, typed). Fall back to the markdown file if JSON is not available.
 
 ### Common Pipelines
 
 | Pipeline | Flow |
 |----------|------|
-| Full cycle | TPM → Domain Expert → Planner → SE → Test Writer → Reviewer |
-| Full with design | TPM → Domain Expert → Planner → API Designer → Designer → SE → Test Writer → Reviewer |
+| Full cycle (backend) | TPM → Domain Expert → G1 → Planner → API Designer → G3 → SE → Tests → Review → G4 |
+| Full cycle (UI) | TPM → Domain Expert → G1 → [Designer ‖ Planner] → G2 → API Designer → G3 → SE → Tests → Review → G4 |
+| Full cycle (fullstack) | TPM → Domain Expert → G1 → [Designer ‖ Planner] → G2 → API Designer → G3 → SE → Tests → Review → G4 |
 | API design only | User → API Designer → SE |
 | UI design only | User → Designer → FE (future) |
 | Quick fix | User → SE → Test Writer → Reviewer |
@@ -227,6 +232,28 @@ Every agent has boundaries. When you catch yourself crossing them, STOP.
 - Modifying production code when job is testing → STOP, test as-is
 - Adding features not in plan → STOP, ask about scope
 - Implementing without approval → STOP, request approval
+
+## Pipeline Gates
+
+When using `/full-cycle`, the pipeline pauses at 4 strategic gates instead of after every agent. Agents run autonomously between gates.
+
+| Gate | After | User Decides | Why |
+|------|-------|-------------|-----|
+| G1 | TPM + Domain Expert | "Is this the right problem?" | Wrong problem = wasted pipeline |
+| G2 | Designer options | "Which design direction?" | UX is subjective |
+| G3 | Design + API + Plan all ready | "Ready to implement?" | Last cheap exit |
+| G4 | Code Review complete | "Ship it?" | Final quality check |
+
+### Autonomous Execution Rules
+
+- **Between G1 and G2**: Impl Planner + Designer run without pausing (parallel for UI features)
+- **Between G2 and G3**: API Designer runs without pausing
+- **Between G3 and G4**: SE + Tests + Review run as current `/full-cycle`
+- **Schema validation**: Runs automatically after every agent (no human gate)
+
+### Backward Compatibility
+
+Individual commands (`/implement`, `/test`, `/review`, etc.) keep their existing per-step approval behaviour. Gates **only** apply when using `/full-cycle`.
 
 ## Feedback Format
 

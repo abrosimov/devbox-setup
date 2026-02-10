@@ -4,7 +4,8 @@ description: Unit tests specialist for Python - writes clean pytest-based tests,
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, code-comments, agent-communication, shared-utils
+skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, otel-python, code-comments, agent-communication, shared-utils
+updated: 2026-02-10
 ---
 
 ## ⛔ FORBIDDEN PATTERNS — READ FIRST

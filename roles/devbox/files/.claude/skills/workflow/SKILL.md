@@ -21,21 +21,30 @@ This document describes the agent pipeline and workflow commands for projects us
 ├── agents/                # Specialized agent definitions
 │   ├── software_engineer_*.md
 │   ├── unit_tests_writer_*.md
+│   ├── integration_tests_writer_*.md
 │   ├── code_reviewer_*.md
 │   ├── implementation_planner_*.md
 │   ├── api_designer.md
+│   ├── database_designer.md
 │   ├── designer.md
 │   ├── domain_expert.md
-│   └── technical_product_manager.md
+│   ├── observability_engineer.md
+│   ├── technical_product_manager.md
+│   ├── agent_builder.md
+│   └── skill_builder.md
 ├── commands/              # Workflow slash commands
 │   ├── domain-analysis.md
 │   ├── plan.md
 │   ├── api-design.md
 │   ├── design.md
+│   ├── schema.md
 │   ├── implement.md
 │   ├── test.md
 │   ├── review.md
-│   └── full-cycle.md
+│   ├── full-cycle.md
+│   ├── build-agent.md
+│   ├── build-skill.md
+│   └── validate-config.md
 ├── skills/                # Reusable knowledge modules
 └── docs/                  # Historical reference documentation
 ```
@@ -47,47 +56,100 @@ This document describes the agent pipeline and workflow commands for projects us
 | `/domain-analysis` | Validate requirements, challenge assumptions | After spec, before planning |
 | `/plan` | Create implementation plan from spec | Before implementation (complex tasks) |
 | `/api-design` | Design API contracts (REST/OpenAPI or Protobuf/gRPC) | After planning, before backend implementation |
-| `/design` | Create UI/UX design spec and design tokens | After planning, before frontend implementation |
+| `/schema` | Design database schema with migrations | After planning, before/alongside backend implementation |
+| `/design` | Create UI/UX design spec and design tokens | After spec/domain analysis, before frontend implementation |
 | `/implement` | Run SE agent for current task | Start implementation |
 | `/test` | Run test writer agent | After implementation |
 | `/review` | Run code reviewer agent | After tests |
-| `/full-cycle` | Run complete pipeline with pauses | Standard development |
+| `/full-cycle` | Run complete pipeline with 4 milestone gates | Standard development |
+| `/build-agent` | Create, validate, or refine agent definitions | When adding/modifying agents |
+| `/build-skill` | Create, validate, audit, or refine skill modules | When adding/modifying skills |
+| `/validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
 
 Each command:
-- Auto-detects project language (Go/Python)
+- Auto-detects project language (Go/Python/Frontend)
 - Pauses for user confirmation between steps
 - Suggests next step after completion
 
-## Workflow Modes
+## Pipeline Modes
 
-| Mode | How | Control Level |
-|------|-----|---------------|
-| **Guided** | Agent suggests next step, you confirm | Full control |
-| **Pausable** | `/full-cycle` runs pipeline, pauses between agents | At checkpoints |
+| Mode | Trigger | Approval Model |
+|------|---------|---------------|
+| **Per-step** | Individual commands (`/implement`, `/test`, `/review`) | Approve after each agent |
+| **Gated** | `/full-cycle` | 4 milestone gates, autonomous between |
 | **Manual** | Call agents directly by name | Maximum control |
+
+### Gated Mode — 4 Milestone Gates
+
+| Gate | After | User Decides |
+|------|-------|-------------|
+| G1 | TPM + Domain Expert | "Is this the right problem?" |
+| G2 | Designer options | "Which design direction?" (skipped for backend) |
+| G3 | Design + API + Plan all ready | "Ready to implement?" |
+| G4 | Code Review complete | "Ship it?" |
 
 ## Agent Pipeline
 
-```
-technical_product_manager → domain_expert → implementation_planner
-                                                    ↓
-                                    ┌───────────────┼───────────────┐
-                                    ↓               ↓               ↓
-                              api_designer    designer (UI/UX)      │
-                                    ↓               ↓               │
-                                    └───────┬───────┘               │
-                                            ↓                       ↓
-                            code_reviewer ← unit_tests_writer ← software_engineer
-```
+<pipeline>
 
-1. **technical_product_manager** - Transforms ideas into product specifications
-2. **domain_expert** - Challenges assumptions, validates requirements
-3. **implementation_planner_*** - Creates detailed implementation plans
-4. **api_designer** - Designs API contracts (REST/OpenAPI or Protobuf/gRPC)
-5. **designer** - Creates UI/UX design specs, design tokens, component specifications
-6. **software_engineer_*** - Writes production code
-7. **unit_tests_writer_*** - Writes tests with bug-hunting mindset
-8. **code_reviewer_*** - Validates implementation against requirements
+### Step 1: Requirements
+- **technical_product_manager** — Transforms ideas into product specifications
+  Produces: `spec.md`, `spec_output.json`
+
+### Step 2: Domain Validation
+- **domain_expert** — Challenges assumptions, validates requirements
+  Depends on: Step 1
+  Produces: `domain_analysis.md`, `domain_output.json`
+
+### Step 3: Planning + Design (parallel for UI features)
+- **implementation_planner_*** — Creates detailed implementation plans
+  Depends on: Step 2
+  Produces: `plan.md`, `plan_output.json`
+- **designer** — Creates UI/UX design specs, design tokens, component specifications
+  Depends on: Step 2 (runs parallel with planner for UI features)
+  Produces: `design.md`, `design_output.json`
+  Skipped when: feature_type = backend
+
+### Step 4: Contracts
+- **api_designer** — Designs API contracts (REST/OpenAPI or Protobuf/gRPC)
+  Depends on: Step 3
+  Produces: `api_design.md`, `api_design_output.json`
+- **database_designer** — Designs database schemas with migrations (PostgreSQL, MySQL, MongoDB, CockroachDB)
+  Depends on: Step 3
+  Produces: `schema_design.md`, migrations
+
+### Step 5: Implementation
+- **software_engineer_*** — Writes production code (Go, Python, or Frontend)
+  Depends on: Step 4
+
+### Step 6: Testing
+- **unit_tests_writer_*** — Writes unit tests with bug-hunting mindset
+  Depends on: Step 5
+- **integration_tests_writer_*** — Writes integration tests with real dependencies
+  Depends on: Step 5
+
+### Step 7: Review
+- **code_reviewer_*** — Validates implementation against requirements
+  Depends on: Step 6
+  If blocking issues found → return to Step 5 with feedback
+
+### Independent
+- **observability_engineer** — Designs dashboards, alerts, and recording rules (can run any time after Step 3)
+
+</pipeline>
+
+<transitions>
+- After Step 2 completes → **Gate 1** (user approval: "right problem?")
+- Steps 3a (Planner) and 3b (Designer) run in parallel for UI/fullstack features
+- After Step 3 completes (Designer presents options) → **Gate 2** (user picks design direction; skipped for backend)
+- After Step 4 completes → **Gate 3** (user approval: "ready to implement?")
+- Steps 5 → 6 → 7 run autonomously with fix loop
+- After Step 7 completes (no blocking issues) → **Gate 4** (user approval: "ship it?")
+</transitions>
+
+**Infrastructure agents** (outside the development pipeline):
+- **agent_builder** — Creates, validates, and refines agent definitions
+- **skill_builder** — Creates, validates, and refines skill modules
 
 ## Code Writing & Language Discussion Policy
 
@@ -110,6 +172,7 @@ technical_product_manager → domain_expert → implementation_planner
 |------|-------|---------|
 | **Any Go topic** | `software-engineer-go` | `/implement` |
 | **Any Python topic** | `software-engineer-python` | `/implement` |
+| **Any Frontend topic** (React, TypeScript, Next.js) | `software-engineer-frontend` | `/implement` |
 | Go tests | `unit-test-writer-go` | `/test` |
 | Python tests | `unit-test-writer-python` | `/test` |
 
@@ -133,6 +196,8 @@ Documentation is organized by Jira issue and branch:
 - `plan.md` - Implementation plan
 - `api_design.md` - API design rationale and decisions
 - `api_spec.yaml` - OpenAPI specification (REST mode)
+- `schema_design.md` - Database schema design rationale
+- `migrations/` - Database migration files
 - `design.md` - UI/UX design specification
 - `design_system.tokens.json` - W3C Design Tokens
 - `research.md` - Research findings
@@ -144,6 +209,26 @@ Branch naming convention: `JIRAPRJ-123_name_of_the_branch`
 
 - `JIRA_ISSUE`: `git branch --show-current | cut -d'_' -f1`
 - `BRANCH_NAME`: `git branch --show-current | cut -d'_' -f2-`
+
+## Model Selection Precedence
+
+When invoking agents via commands, the model is determined by this precedence (highest wins):
+
+| Priority | Source | Example |
+|----------|--------|---------|
+| 1 (highest) | User explicit argument | `/implement opus` |
+| 2 | Complexity check at command level | Plan >200 lines → opus |
+| 3 | Agent frontmatter default | `model: sonnet` |
+
+**How it works:**
+- Commands (`/implement`, `/test`, `/review`) pass the `model` parameter to the `Task` tool
+- The `Task` tool's `model` parameter **overrides** the agent frontmatter `model` field
+- If no model is specified by command or user, the agent frontmatter default applies
+- Agents invoked directly (not via commands) always use their frontmatter model
+
+**Agents with complexity awareness:**
+- `software-engineer-go` / `software-engineer-python` / `software-engineer-frontend` — via `/implement` command
+- `observability-engineer` — self-assessed complexity check
 
 ## Key Conventions
 
@@ -169,3 +254,16 @@ Branch naming convention: `JIRAPRJ-123_name_of_the_branch`
 - Use `zerolog` for logging (injected, never global)
 - Nil safety: Validate at constructor boundaries
 - Use testify suites with `s.Require()` assertions
+
+### Frontend Standards (TypeScript + React + Next.js)
+
+- TypeScript strict mode — no `any`, no `as` assertions
+- Server Components by default — `'use client'` only for interactivity
+- Named exports always (except Next.js page/layout conventions)
+- Function declarations for components (not arrow functions)
+- Semantic HTML — `<button>`, `<nav>`, `<main>`, never `<div onClick>`
+- Accessibility: WCAG 2.1 AA, `aria-label` on icon buttons, `alt` on images
+- Format with Prettier, lint with ESLint
+- State: URL params > Server Components > React Query > useState > Context
+- No `useEffect` for derived state or data fetching
+- Feature-based project organisation, kebab-case directories

@@ -76,6 +76,25 @@ Add **production necessities** even if not in the plan:
 - **Product feature** = new user-facing functionality → NOT your job
 - **Production necessity** = making the feature robust → IS your job
 
+## Testability by Design
+
+You don't write tests, but you write code that is **easy to test**:
+
+| Pattern | Why It Helps Testing |
+|---------|---------------------|
+| Accept interfaces in constructors | Callers (and tests) can inject mocks |
+| Return concrete types | Tests get full type information |
+| Constructor validation | Invalid states caught once, not in every test |
+| Small, focused functions | Fewer test cases needed per function |
+| No global state | Tests run in parallel without interference |
+| Context-based cancellation | Tests can timeout gracefully |
+
+**Anti-patterns that hurt testability:**
+- `init()` functions with side effects — untestable setup
+- Package-level variables — shared mutable state across tests
+- Hardcoded external URLs/paths — can't redirect in tests
+- `time.Now()` called directly — can't control time in tests (inject `func() time.Time`)
+
 ---
 
 ## Core Principles

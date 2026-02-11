@@ -1,10 +1,10 @@
 ---
 name: software-engineer-frontend
 description: Frontend software engineer - writes clean, typed, production-ready TypeScript/React/Next.js code. Use this agent for ANY frontend code changes, no matter how small. Even simple changes benefit from enforced standards.
-tools: Read, Edit, Grep, Glob, Bash, mcp__playwright
+tools: Read, Edit, Grep, Glob, Bash, mcp__playwright, mcp__figma, mcp__storybook
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, frontend-engineer, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-performance, frontend-tooling, security-patterns, code-comments, agent-communication, shared-utils, mcp-playwright
+skills: philosophy, frontend-engineer, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-performance, frontend-tooling, security-patterns, ui-design, code-comments, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook
 ---
 
 ## ⛔ FORBIDDEN PATTERNS — READ FIRST
@@ -543,7 +543,11 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 | `frontend-accessibility` | WCAG, ARIA, keyboard navigation, focus management |
 | `frontend-performance` | Code splitting, lazy loading, Core Web Vitals |
 | `frontend-testing` | React Testing Library, MSW, test patterns |
-| `frontend-tooling` | Next.js, Vite, pnpm, ESLint, TypeScript config |
+| `frontend-tooling` | Next.js, Vite, pnpm, ESLint, TypeScript config, Storybook |
+| `security-patterns` | XSS, CSRF, CORS, JWT, CSP, frontend + backend security |
+| `ui-design` | W3C design tokens, component specs, responsive layout, Figma/Storybook MCP |
+| `mcp-figma` | Figma MCP tool usage — token extraction, component reading, design verification |
+| `mcp-storybook` | Storybook MCP tool usage — component inventory, prop discovery, pattern matching |
 | `shared-utils` | Jira context extraction from branch |
 
 ## Core References

@@ -43,10 +43,12 @@ BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
 
 Store these values — pass to all agents throughout the cycle.
 
-**Detect project language**:
-- If `go.mod` exists → **Go project**
-- If `pyproject.toml` or `requirements.txt` exists → **Python project**
-- If both or unclear → Ask user
+**Detect project stack**:
+- If `go.mod` exists → **Go backend**
+- If `pyproject.toml` or `requirements.txt` exists → **Python backend**
+- If `package.json` or `tsconfig.json` or `next.config.*` exists → **Frontend**
+- If backend + frontend markers → **Fullstack**
+- If unclear → Ask user
 
 **Initialise pipeline state**:
 
@@ -61,10 +63,13 @@ Check for existing `{PROJECT_DIR}/pipeline_state.json`. If found, resume from cu
     "domain_expert": { "status": "pending", "output": "domain_analysis.md", "approved_at": null },
     "designer": { "status": "pending", "output": "design.md", "selected_option": null, "approved_at": null },
     "impl_planner": { "status": "pending", "output": "plan.md", "approved_at": null },
+    "database_designer": { "status": "pending", "output": "schema_design.md", "approved_at": null },
     "api_designer": { "status": "pending", "output": "api_design.md", "approved_at": null },
-    "software_engineer": { "status": "pending", "approved_at": null },
+    "software_engineer_backend": { "status": "pending", "approved_at": null },
+    "software_engineer_frontend": { "status": "pending", "approved_at": null },
     "test_writer": { "status": "pending", "approved_at": null },
-    "code_reviewer": { "status": "pending", "approved_at": null }
+    "code_reviewer": { "status": "pending", "approved_at": null },
+    "observability_engineer": { "status": "pending", "approved_at": null }
   },
   "current_gate": "none",
   "decisions": []
@@ -105,7 +110,7 @@ Record decision in `decisions.json`. On approval, update `current_gate = "none"`
 **Feature Type Detection** (after G1):
 
 1. Check `spec.md` / `spec_output.json` for UI-related requirements
-2. Check if project has frontend code (`*.tsx`, `*.vue`, `*.svelte`, `*.jsx`)
+2. Check if project has frontend markers (`package.json`, `tsconfig.json`, `next.config.*`, `*.tsx`, `*.vue`, `*.svelte`, `*.jsx`)
 3. If unclear, ask user:
 
 ```markdown
@@ -148,10 +153,15 @@ On approval, Designer develops full spec for selected option autonomously.
 2. Update pipeline state: `impl_planner.status = "completed"`
 3. Skip G2 entirely, proceed to API Designer
 
-### Phase 3: API Design + Final Check (autonomous → Gate 3)
+### Phase 3: Contracts + Final Check (autonomous → Gate 3)
 
-1. Run `api-designer` agent → produces `api_design.md` + spec files
-2. Update pipeline state: `api_designer.status = "completed"`
+**Check plan for work streams**: Read `plan_output.json` for `work_streams`. If a schema stream exists, run database designer first.
+
+1. **If plan has schema work stream**: Run `database-designer` agent → produces `schema_design.md` + migrations
+   - Update pipeline state: `database_designer.status = "completed"`
+   - Otherwise: set `database_designer.status = "skipped"`
+2. Run `api-designer` agent → produces `api_design.md` + spec files
+   - Update pipeline state: `api_designer.status = "completed"`
 
 **GATE 3** — "Ready to implement?"
 
@@ -162,9 +172,13 @@ Present summary of all planning artifacts. Update `current_gate = "G3"`.
 > All planning artifacts complete:
 > - Spec: `spec.md` [summary]
 > - Domain: `domain_analysis.md` [summary]
-> - Plan: `plan.md` [N functional requirements]
+> - Plan: `plan.md` [N functional requirements, M work streams]
 > - Design: `design.md` [N components, M tokens] (if applicable)
+> - Schema: `schema_design.md` [N tables, M migrations] (if applicable)
 > - API: `api_design.md` [N resources, M endpoints]
+>
+> Work stream execution order:
+> [List streams from plan_output.json with parallelism notes]
 >
 > **[Awaiting your decision]** — Approve to start implementation, or provide corrections.
 
@@ -172,16 +186,44 @@ Record decision in `decisions.json`. On approval, update `current_gate = "none"`
 
 ### Phase 4: Implementation Cycle (autonomous → Gate 4)
 
-1. Run `software-engineer-{lang}` agent → implements feature
-2. Update pipeline state: `software_engineer.status = "completed"`
-3. Run `unit-test-writer-{lang}` agent → writes tests
-4. Run tests to verify they pass
-5. Update pipeline state: `test_writer.status = "completed"`
-6. Run `code-reviewer-{lang}` agent → reviews implementation
-7. Update pipeline state: `code_reviewer.status = "completed"`
+**Work-stream-driven execution**: Read `plan_output.json` for `work_streams` and `parallelism_groups`.
+
+**If work streams exist** — follow the dependency graph:
+1. Execute streams in parallelism group order (lower group numbers first)
+2. Within a group, streams can run in parallel (use concurrent Task invocations)
+3. After all implementation streams complete, run tests and review
+
+**If no work streams** (backward compatible) — use default sequential:
+1. Run backend SE → frontend SE (if fullstack)
+
+**Detailed execution:**
+
+1. **Backend implementation** (if applicable):
+   - Run `software-engineer-{lang}` agent → implements backend
+   - Update pipeline state: `software_engineer_backend.status = "completed"`
+
+2. **Frontend implementation** (if applicable, can run in parallel with backend when API contract exists):
+   - Run `software-engineer-frontend` agent → implements frontend
+   - Update pipeline state: `software_engineer_frontend.status = "completed"`
+   - For `backend`-only features: set `software_engineer_frontend.status = "skipped"`
+
+3. **Observability** (if work stream exists, can run in parallel with implementation):
+   - Run `observability-engineer` agent → dashboards and alerts
+   - Update pipeline state: `observability_engineer.status = "completed"`
+   - If no observability stream: set `observability_engineer.status = "skipped"`
+
+4. **Testing**:
+   - Run `unit-test-writer-{lang}` agent → writes backend tests
+   - Run `unit-test-writer-frontend` agent → writes frontend tests (if frontend exists)
+   - Run all tests to verify they pass
+   - Update pipeline state: `test_writer.status = "completed"`
+
+5. **Review**:
+   - Run `code-reviewer-{lang}` agent → reviews implementation
+   - Update pipeline state: `code_reviewer.status = "completed"`
 
 **If reviewer finds blocking issues:**
-- Run SE agent with review feedback (fix loop)
+- Run appropriate SE agent(s) with review feedback (fix loop)
 - Re-run tests
 - Re-run review
 - Repeat until clean

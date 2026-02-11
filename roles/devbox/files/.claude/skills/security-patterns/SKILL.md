@@ -1,8 +1,12 @@
 ---
 name: security-patterns
 description: >
-  Security patterns for input validation, secrets handling, and common vulnerability prevention.
-  Triggers on: security, injection, SQL, XSS, CSRF, secrets, validation, sanitize, authentication.
+  Security patterns for input validation, secrets handling, and common vulnerability prevention
+  in both backend (Python/Go) and frontend (React/Next.js). Covers SQL injection, command injection,
+  XSS, CSRF, CORS, JWT, CSP, cookie security, and authentication.
+  Triggers on: security, injection, SQL, XSS, CSRF, CORS, JWT, CSP, secrets, validation, sanitize,
+  authentication, Content-Security-Policy, SameSite, dangerouslySetInnerHTML, postMessage,
+  clickjacking, open redirect, cookie security.
 ---
 
 # Security Patterns
@@ -481,3 +485,434 @@ SECURE_HSTS_SECONDS = 31536000
 - [ ] No pickle.load on untrusted data
 - [ ] yaml.safe_load used, not yaml.load
 - [ ] JSON preferred for untrusted input
+
+---
+
+## Frontend Security Patterns
+
+Security patterns specific to React, Next.js, and browser-based applications.
+
+---
+
+## XSS Prevention
+
+### React's Built-in Protection
+
+React escapes JSX expressions by default — string content is safe:
+
+```typescript
+// ✅ SAFE — React auto-escapes
+function UserGreeting({ name }: { name: string }) {
+  return <p>Hello, {name}</p>
+}
+// Even if name = "<script>alert('xss')</script>", it renders as text
+```
+
+### dangerouslySetInnerHTML
+
+```typescript
+// ❌ VULNERABLE — user input rendered as HTML
+function UserBio({ bio }: { bio: string }) {
+  return <div dangerouslySetInnerHTML={{ __html: bio }} />
+}
+
+// ✅ SAFE — sanitise with DOMPurify
+import DOMPurify from 'dompurify'
+
+function UserBio({ bio }: { bio: string }) {
+  return <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(bio) }} />
+}
+
+// ✅ SAFE — use a markdown renderer (e.g., react-markdown) instead of raw HTML
+import ReactMarkdown from 'react-markdown'
+
+function UserBio({ bio }: { bio: string }) {
+  return <ReactMarkdown>{bio}</ReactMarkdown>
+}
+```
+
+### URL Injection
+
+```typescript
+// ❌ VULNERABLE — javascript: protocol in href
+function UserLink({ url }: { url: string }) {
+  return <a href={url}>Visit</a>
+}
+// Attacker sets url = "javascript:alert('xss')"
+
+// ✅ SAFE — validate protocol
+function UserLink({ url }: { url: string }) {
+  const safeUrl = /^https?:\/\//i.test(url) ? url : '#'
+  return <a href={safeUrl}>Visit</a>
+}
+
+// ✅ SAFE — use URL constructor for validation
+function isValidUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return ['http:', 'https:'].includes(parsed.protocol)
+  } catch {
+    return false
+  }
+}
+```
+
+### Content-Security-Policy (CSP)
+
+```typescript
+// next.config.ts — CSP headers
+const cspHeader = `
+  default-src 'self';
+  script-src 'self' 'nonce-{nonce}';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' blob: data:;
+  font-src 'self';
+  connect-src 'self' https://api.example.com;
+  frame-ancestors 'self';
+  form-action 'self';
+  base-uri 'self';
+`
+
+// In middleware.ts for Next.js
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+export function middleware(request: NextRequest) {
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+  const response = NextResponse.next()
+
+  response.headers.set(
+    'Content-Security-Policy',
+    cspHeader.replace(/{nonce}/g, nonce).replace(/\n/g, '')
+  )
+
+  return response
+}
+```
+
+| CSP Directive | Purpose | Recommended Value |
+|---------------|---------|-------------------|
+| `default-src` | Fallback for all resource types | `'self'` |
+| `script-src` | JavaScript sources | `'self' 'nonce-{nonce}'` |
+| `style-src` | CSS sources | `'self' 'unsafe-inline'` (Tailwind needs inline) |
+| `img-src` | Image sources | `'self' blob: data:` |
+| `connect-src` | Fetch/XHR/WebSocket destinations | `'self' https://api.example.com` |
+| `frame-ancestors` | Who can embed this page | `'self'` (prevents clickjacking) |
+| `form-action` | Form submission destinations | `'self'` |
+
+---
+
+## CSRF Prevention
+
+### SameSite Cookies
+
+```typescript
+// ✅ RECOMMENDED — SameSite=Lax (default in modern browsers)
+// Cookies sent on top-level navigations but NOT on cross-site subrequests
+Set-Cookie: session=abc123; SameSite=Lax; Secure; HttpOnly
+
+// ✅ STRICT — cookies never sent on cross-site requests
+// Use for sensitive operations (banking, admin)
+Set-Cookie: session=abc123; SameSite=Strict; Secure; HttpOnly
+
+// ❌ AVOID — SameSite=None requires Secure and sends on all cross-site requests
+Set-Cookie: session=abc123; SameSite=None; Secure; HttpOnly
+```
+
+| `SameSite` Value | Cross-Site Subrequests | Top-Level Navigation | When to Use |
+|------------------|----------------------|---------------------|-------------|
+| `Strict` | ❌ Not sent | ❌ Not sent | Sensitive operations (banking) |
+| `Lax` | ❌ Not sent | ✅ Sent (GET only) | Default for most apps |
+| `None` | ✅ Sent | ✅ Sent | Third-party integrations (requires `Secure`) |
+
+### Anti-CSRF Tokens
+
+```typescript
+// Next.js Server Actions — CSRF protection is built in
+// Server Actions automatically validate the Origin header
+
+// For custom API routes — use the double-submit cookie pattern:
+
+// ❌ VULNERABLE — no CSRF protection on state-changing endpoint
+export async function POST(request: Request) {
+  const data = await request.json()
+  await updateUser(data)
+}
+
+// ✅ SAFE — verify Origin header
+export async function POST(request: Request) {
+  const origin = request.headers.get('origin')
+  if (origin !== process.env.ALLOWED_ORIGIN) {
+    return new Response('Forbidden', { status: 403 })
+  }
+  const data = await request.json()
+  await updateUser(data)
+}
+
+// ✅ SAFE — custom header check (non-simple requests trigger preflight)
+// Client sends:
+fetch('/api/users', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',  // Cannot be set by forms
+  },
+  body: JSON.stringify(data),
+})
+
+// Server verifies:
+if (!request.headers.get('x-requested-with')) {
+  return new Response('Forbidden', { status: 403 })
+}
+```
+
+---
+
+## CORS
+
+### Same-Origin Policy
+
+Browsers block cross-origin requests by default. CORS headers explicitly allow them.
+
+```typescript
+// ❌ VULNERABLE — wildcard with credentials
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+// Browsers reject this combination, but misconfigured servers may reflect Origin
+
+// ❌ VULNERABLE — reflecting Origin header without validation
+const origin = request.headers.get('origin')
+response.headers.set('Access-Control-Allow-Origin', origin!)  // Trusts any origin
+
+// ✅ SAFE — allowlist validation
+const ALLOWED_ORIGINS = ['https://app.example.com', 'https://admin.example.com']
+const origin = request.headers.get('origin')
+
+if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  response.headers.set('Access-Control-Allow-Origin', origin)
+  response.headers.set('Access-Control-Allow-Credentials', 'true')
+}
+```
+
+### Next.js CORS Configuration
+
+```typescript
+// next.config.ts
+const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: 'https://app.example.com' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
+      },
+    ]
+  },
+}
+```
+
+---
+
+## Authentication in SPAs
+
+### Token Storage
+
+```typescript
+// ❌ VULNERABLE — JWT in localStorage (accessible to XSS)
+localStorage.setItem('token', jwt)
+fetch('/api/data', {
+  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+})
+
+// ❌ VULNERABLE — JWT in sessionStorage (still accessible to XSS)
+sessionStorage.setItem('token', jwt)
+
+// ✅ SAFE — httpOnly cookie (not accessible to JavaScript)
+// Server sets:
+Set-Cookie: token=jwt; HttpOnly; Secure; SameSite=Lax; Path=/
+
+// Client sends automatically (no JS needed):
+fetch('/api/data', { credentials: 'include' })
+```
+
+| Storage | XSS Risk | CSRF Risk | Recommendation |
+|---------|----------|-----------|----------------|
+| `localStorage` | ❌ Vulnerable | ✅ Safe | **Avoid** |
+| `sessionStorage` | ❌ Vulnerable | ✅ Safe | **Avoid** |
+| `httpOnly` cookie | ✅ Safe | ⚠️ Needs SameSite | **Preferred** |
+
+### Environment Variables
+
+```typescript
+// ❌ VULNERABLE — secret in client-visible env var
+// .env
+NEXT_PUBLIC_API_SECRET=sk-1234567890
+// This is bundled into client JavaScript!
+
+// ✅ SAFE — secret in server-only env var
+// .env
+API_SECRET=sk-1234567890
+
+// ✅ SAFE — only public values use NEXT_PUBLIC_ prefix
+NEXT_PUBLIC_API_URL=https://api.example.com
+```
+
+**Rule:** `NEXT_PUBLIC_` env vars are embedded in the client bundle. Never put secrets there.
+
+### Auth State and SSR
+
+```typescript
+// ❌ RISKY — client-only auth check (flashy, bypassable)
+function ProtectedPage() {
+  const { user, isLoading } = useAuth()
+  if (isLoading) return <Spinner />
+  if (!user) redirect('/login')
+  return <Dashboard />
+}
+
+// ✅ PREFERRED — server-side auth check (Next.js middleware)
+// middleware.ts
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get('session')
+  if (!token && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+}
+```
+
+---
+
+## Iframe Security
+
+### Clickjacking Prevention
+
+```typescript
+// Prevent your page from being embedded in malicious iframes
+
+// HTTP header approach
+X-Frame-Options: DENY
+// Or:
+X-Frame-Options: SAMEORIGIN
+
+// CSP approach (preferred — more flexible)
+Content-Security-Policy: frame-ancestors 'self'
+// Or allow specific origins:
+Content-Security-Policy: frame-ancestors 'self' https://trusted.example.com
+```
+
+### Embedding Untrusted Content
+
+```typescript
+// ❌ VULNERABLE — no sandbox on untrusted iframe
+<iframe src={userProvidedUrl} />
+
+// ✅ SAFE — sandbox restricts iframe capabilities
+<iframe
+  src={userProvidedUrl}
+  sandbox="allow-scripts allow-same-origin"
+  referrerPolicy="no-referrer"
+/>
+```
+
+| Sandbox Token | Allows |
+|---------------|--------|
+| (none — empty sandbox) | Nothing — fully restricted |
+| `allow-scripts` | JavaScript execution |
+| `allow-same-origin` | Access to origin's storage/cookies |
+| `allow-forms` | Form submission |
+| `allow-popups` | Opening new windows |
+
+### postMessage Security
+
+```typescript
+// ❌ VULNERABLE — no origin check
+window.addEventListener('message', (event) => {
+  processData(event.data)  // Trusts any sender
+})
+
+// ✅ SAFE — validate origin
+window.addEventListener('message', (event) => {
+  if (event.origin !== 'https://trusted.example.com') return
+  processData(event.data)
+})
+
+// ✅ SAFE — when sending, specify target origin
+iframe.contentWindow?.postMessage(data, 'https://trusted.example.com')
+// Never use '*' as target origin with sensitive data
+```
+
+---
+
+## Open Redirect Prevention
+
+```typescript
+// ❌ VULNERABLE — redirect to user-controlled URL
+function handleLogin(returnTo: string) {
+  router.push(returnTo)  // Attacker sets returnTo = "https://evil.com"
+}
+
+// ❌ VULNERABLE — URL validation bypass
+const url = new URL(returnTo)
+if (url.hostname.endsWith('example.com')) {  // evil-example.com matches!
+  router.push(returnTo)
+}
+
+// ✅ SAFE — allowlist of paths (not full URLs)
+const SAFE_PATHS = ['/dashboard', '/settings', '/profile']
+
+function handleLogin(returnTo: string) {
+  const safePath = SAFE_PATHS.includes(returnTo) ? returnTo : '/dashboard'
+  router.push(safePath)
+}
+
+// ✅ SAFE — validate against own origin only
+function handleLogin(returnTo: string) {
+  try {
+    const url = new URL(returnTo, window.location.origin)
+    if (url.origin !== window.location.origin) {
+      router.push('/dashboard')
+      return
+    }
+    router.push(url.pathname)
+  } catch {
+    router.push('/dashboard')
+  }
+}
+```
+
+---
+
+## Frontend Security Checklist
+
+### XSS
+- [ ] No `dangerouslySetInnerHTML` with unsanitised user input
+- [ ] DOMPurify used when rendering user-provided HTML
+- [ ] URLs validated against `javascript:` protocol
+- [ ] CSP headers configured (`script-src`, `default-src`)
+
+### CSRF
+- [ ] `SameSite` attribute set on cookies (`Lax` or `Strict`)
+- [ ] State-changing API routes verify Origin header or custom header
+- [ ] Forms use Server Actions (built-in CSRF protection) where possible
+
+### Authentication
+- [ ] JWT/session tokens in `httpOnly` cookies, not `localStorage`
+- [ ] No secrets in `NEXT_PUBLIC_` environment variables
+- [ ] Cookie attributes: `Secure`, `HttpOnly`, `SameSite`
+- [ ] Server-side auth checks (middleware), not client-only
+
+### Iframe / Embedding
+- [ ] `frame-ancestors` CSP directive or `X-Frame-Options` set
+- [ ] Untrusted iframes use `sandbox` attribute
+- [ ] `postMessage` handlers validate `event.origin`
+
+### Redirects
+- [ ] Redirect URLs validated against allowlist or own origin
+- [ ] No user-controlled full URLs passed to `router.push`
+
+### CORS
+- [ ] `Access-Control-Allow-Origin` uses allowlist, not `*` with credentials
+- [ ] Origin header not blindly reflected

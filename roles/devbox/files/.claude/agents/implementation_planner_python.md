@@ -141,6 +141,8 @@ One paragraph max.
 
 ### FR-1: [Requirement Name]
 
+**Agent hint**: `backend` | `frontend` | `fullstack` | `database` | `api` | `observability`
+
 **Description**: What the system should do (user-facing behaviour).
 
 **Inputs**:
@@ -237,16 +239,28 @@ Overall criteria for feature completion:
 
 ---
 
-## Implementation Order
+## Work Streams
 
-Suggested order based on **functional dependencies** (not file structure):
+Organise implementation into **agent-aware work streams** with explicit dependencies and parallelism.
+Each stream maps to a downstream agent and command. Streams with no dependency between them can run in parallel.
 
-1. **Storage capability** — Create and retrieve must work first
-2. **Create functionality** — Core feature
-3. **Get by ID** — Needed to verify create works
-4. **List with pagination** — Builds on storage
-5. **Delete (soft)** — Independent of list
-6. **Notifications** — Can be done in parallel with 4-5
+### Example
+
+| Stream | Agent | Command | Requirements | Depends On | Parallel With |
+|--------|-------|---------|--------------|------------|---------------|
+| WS-1: Data Layer | database-designer | `/schema` | FR-1 (storage) | — | — |
+| WS-2: API Contract | api-designer | `/api-design` | FR-2, FR-3 | WS-1 | — |
+| WS-3: Backend Logic | software-engineer-python | `/implement` | FR-1–FR-5 | WS-1, WS-2 | WS-4, WS-5 |
+| WS-4: Frontend UI | software-engineer-frontend | `/implement` | FR-6, FR-7 | WS-2 | WS-3, WS-5 |
+| WS-5: Observability | observability-engineer | — | NFR-1, NFR-2 | WS-2 | WS-3, WS-4 |
+
+### Rules
+
+1. **Every FR gets exactly one stream** — if an FR spans both frontend and backend, split it into sub-requirements (e.g., FR-3a backend, FR-3b frontend)
+2. **Streams without mutual dependencies can run in parallel** — mark them explicitly
+3. **API contract is the handshake point** — frontend depends on API contract, not on backend implementation
+4. **Schema before backend** — if schema changes exist, WS for schema blocks backend WS
+5. **Omit streams that don't apply** — backend-only features have no frontend stream; features without schema changes have no schema stream
 
 ---
 
@@ -348,7 +362,7 @@ This feature requires database schema modifications. Run `/schema` before `/impl
 
 ## What to INCLUDE
 
-- Functional requirements (what it does)
+- Functional requirements with agent hints (what it does, who implements it)
 - Business rules (constraints and logic)
 - Inputs and outputs (data, not types)
 - Error cases (conditions and expected behaviour)
@@ -357,6 +371,7 @@ This feature requires database schema modifications. Run `/schema` before `/impl
 - Test scenarios (what to test, not how)
 - Non-functional requirements (performance, availability)
 - Schema changes (if any — tables, columns, indexes affected)
+- Work streams (agent-aware execution plan with dependencies and parallelism)
 - Open questions (things to clarify)
 
 ## What to EXCLUDE
@@ -410,14 +425,18 @@ When plan is complete, provide:
 - Key open questions (if any)
 
 ### 2. Suggested Next Step
-> Functional plan complete.
+
+Based on the work streams defined in the plan, suggest the execution order:
+
+> Functional plan complete. Work streams defined:
 >
-> **Next**: Run `/schema` if schema changes are identified, then `/implement`.
+> | Order | Stream | Agent | Command |
+> |-------|--------|-------|---------|
+> | 1 | [first stream] | [agent] | [command] |
+> | 2 | [next stream(s) — note if parallel] | [agent(s)] | [command(s)] |
+> | ... | ... | ... | ... |
 >
-> The SE will:
-> 1. Explore codebase for patterns
-> 2. Propose technical approach (for human review)
-> 3. Implement the feature
+> **Next**: Run the first stream's command (e.g., `/schema` if schema changes, `/api-design` if API-first, or `/implement` if straight to code).
 >
 > Say **'continue'** to proceed, or provide corrections to the plan.
 

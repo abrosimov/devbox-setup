@@ -29,14 +29,26 @@ When reading upstream output, check for `{stage}_output.json` first (faster, typ
 
 | Pipeline | Flow |
 |----------|------|
-| Full cycle (backend) | TPM → Domain Expert → G1 → Planner → API Designer → G3 → SE → Tests → Review → G4 |
-| Full cycle (UI) | TPM → Domain Expert → G1 → [Designer ‖ Planner] → G2 → API Designer → G3 → SE → Tests → Review → G4 |
-| Full cycle (fullstack) | TPM → Domain Expert → G1 → [Designer ‖ Planner] → G2 → API Designer → G3 → SE → Tests → Review → G4 |
+| Full cycle (backend) | TPM → Domain Expert → G1 → Planner → [Schema Designer ‖ API Designer] → G3 → SE-backend → Tests → Review → G4 |
+| Full cycle (UI) | TPM → Domain Expert → G1 → [Designer ‖ Planner] → G2 → API Designer → G3 → SE-frontend → Tests → Review → G4 |
+| Full cycle (fullstack) | TPM → Domain Expert → G1 → [Designer ‖ Planner] → G2 → [Schema Designer ‖ API Designer] → G3 → [SE-backend ‖ SE-frontend] → Tests → Review → G4 |
 | API design only | User → API Designer → SE |
-| UI design only | User → Designer → FE (future) |
-| Quick fix | User → SE → Test Writer → Reviewer |
+| UI design only | User → Designer → SE-frontend |
+| Quick fix (backend) | User → SE-backend → Test Writer → Reviewer |
+| Quick fix (frontend) | User → SE-frontend → Test Writer → Reviewer |
+| Quick fix (fullstack) | User → [SE-backend ‖ SE-frontend] → Test Writer → Reviewer |
 | Test only | User → Test Writer → Reviewer |
 | Review only | User → Reviewer |
+
+### Work Stream Handoffs
+
+When the planner produces work streams, downstream agents consume them via `plan_output.json`:
+
+1. **Orchestrator reads** `plan_output.json` → extracts `work_streams` and `parallelism_groups`
+2. **For each parallelism group** (in order): launch all streams in the group concurrently
+3. **Each stream's agent** receives its assigned `requirements` list as scope
+4. **API contract is the handshake** — frontend streams depend on API contract completion, not backend implementation
+5. **Schema before backend** — if a schema stream exists, it must complete before backend implementation begins
 
 ## Completion Output Format
 
@@ -83,7 +95,7 @@ When an agent completes its work, use this format:
 ```markdown
 > Design specification complete. 8 components specified, 42 tokens defined.
 >
-> **Next**: Frontend Engineer (when available) to implement from this spec.
+> **Next**: Run `/implement` to have `software-engineer-frontend` implement from this spec.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```
@@ -247,8 +259,8 @@ When using `/full-cycle`, the pipeline pauses at 4 strategic gates instead of af
 ### Autonomous Execution Rules
 
 - **Between G1 and G2**: Impl Planner + Designer run without pausing (parallel for UI features)
-- **Between G2 and G3**: API Designer runs without pausing
-- **Between G3 and G4**: SE + Tests + Review run as current `/full-cycle`
+- **Between G2 and G3**: [Schema Designer ‖ API Designer] run without pausing (schema first if both needed)
+- **Between G3 and G4**: Work-stream-driven execution — [SE-backend ‖ SE-frontend ‖ Observability] run based on parallelism groups from `plan_output.json`, then Tests + Review
 - **Schema validation**: Runs automatically after every agent (no human gate)
 
 ### Backward Compatibility

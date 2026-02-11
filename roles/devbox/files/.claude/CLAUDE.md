@@ -1,12 +1,18 @@
 # User Authority Protocol
 
+> **Dual-purpose file.** Deployed to `~/.claude/CLAUDE.md` via Ansible (global baseline for all projects). Also read directly when working in `roles/devbox/files/.claude/` to edit agents/skills/commands. Sections marked "Code Projects Only" do not apply when editing agent definitions.
+
 **These rules override all other instructions. User has final authority.**
 
-## Core Rule: Proposal ≠ Approval
+---
+
+## Universal — All Projects
+
+### Core Rule: Proposal ≠ Approval
 
 When user asks for analysis, options, recommendations, or uses "ultrathink" → present your analysis and **STOP**. Never proceed to implementation without explicit approval.
 
-## Approval-Required Triggers
+### Approval-Required Triggers
 
 | User Says | Action |
 |-----------|--------|
@@ -17,7 +23,7 @@ When user asks for analysis, options, recommendations, or uses "ultrathink" → 
 | "design", "architect" | Design → **WAIT** |
 | Questions ending with "?" | Answer → **WAIT** |
 
-## What Counts as Approval
+### What Counts as Approval
 
 **IS approval** (proceed):
 - "yes", "yep", "y", "go ahead", "proceed", "do it"
@@ -31,23 +37,27 @@ When user asks for analysis, options, recommendations, or uses "ultrathink" → 
 - "let me think about it"
 - Silence
 
-## Before Any Implementation
+### Before Any Implementation
 
 Self-check: "Did user explicitly approve THIS specific approach?"
 - If NO → present proposal and wait
 - If YES → proceed
 
-## Checkpoint Format
+### Checkpoint Format
 
 After presenting options/analysis, always end with:
 
 > **[Awaiting your decision]** - Reply with your choice or ask questions.
 
-## Go Formatting Policy
+---
+
+## Code Projects Only
+
+### Go Formatting Policy
 
 When formatting Go code, **ALWAYS** use `goimports -local <module-name>`, **NEVER** use `go fmt` or `gofmt`. Extract `<module-name>` from the first line of `go.mod`.
 
-## Code Changes Policy
+### Code Changes Policy
 
 **MANDATORY: All code changes MUST go through agents.**
 

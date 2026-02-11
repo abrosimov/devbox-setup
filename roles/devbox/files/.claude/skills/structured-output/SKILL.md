@@ -102,11 +102,12 @@ All agent outputs include this metadata block:
 
 ```json
 {
-  "metadata": { "agent": "implementation-planner-*", "version": "1.0", "..." : "..." },
+  "metadata": { "agent": "implementation-planner-*", "version": "1.1", "..." : "..." },
   "requirements": [
     {
       "id": "FR-001",
       "description": "string",
+      "agent_hint": "enum: backend | frontend | fullstack | database | api | observability | null",
       "acceptance_criteria": ["string"],
       "error_cases": [
         { "condition": "string", "expected_behaviour": "string" }
@@ -119,7 +120,25 @@ All agent outputs include this metadata block:
   "integration_points": [
     { "system": "string", "purpose": "string", "notes": "string" }
   ],
-  "implementation_order": ["string (FR IDs in suggested order)"],
+  "implementation_order": ["string (FR IDs in suggested order — kept for backward compatibility)"],
+  "work_streams": [
+    {
+      "id": "WS-1",
+      "name": "string (e.g., Data Layer, API Contract, Backend Logic, Frontend UI)",
+      "agent": "string (e.g., database-designer, api-designer, software-engineer-go, software-engineer-frontend)",
+      "command": "string (e.g., /schema, /api-design, /implement)",
+      "requirements": ["string (FR/NFR IDs assigned to this stream)"],
+      "depends_on": ["string (WS IDs that must complete before this stream starts)"],
+      "blocks": ["string (WS IDs that cannot start until this stream completes)"]
+    }
+  ],
+  "parallelism_groups": [
+    {
+      "group": "number (execution order — lower runs first)",
+      "streams": ["string (WS IDs that can run concurrently within this group)"],
+      "gate_after": "string (pipeline gate ID after this group, e.g., G3) | null"
+    }
+  ],
   "test_scenarios": [
     { "area": "string", "scenario": "string", "inputs": "string", "expected_outcome": "string" }
   ]
@@ -199,10 +218,13 @@ Tracks pipeline progress across the full development cycle.
     "domain_expert": { "status": "...", "output": "domain_analysis.md", "approved_at": null },
     "designer": { "status": "...", "output": "design.md", "selected_option": "string | null", "approved_at": null },
     "impl_planner": { "status": "...", "output": "plan.md", "approved_at": null },
+    "database_designer": { "status": "...", "output": "schema_design.md", "approved_at": null },
     "api_designer": { "status": "...", "output": "api_design.md", "approved_at": null },
-    "software_engineer": { "status": "...", "approved_at": null },
+    "software_engineer_backend": { "status": "...", "approved_at": null },
+    "software_engineer_frontend": { "status": "...", "approved_at": null },
     "test_writer": { "status": "...", "approved_at": null },
-    "code_reviewer": { "status": "...", "approved_at": null }
+    "code_reviewer": { "status": "...", "approved_at": null },
+    "observability_engineer": { "status": "...", "approved_at": null }
   },
   "current_gate": "G1 | G2 | G3 | G4 | none",
   "decisions": []

@@ -105,8 +105,8 @@ All project documentation is organized by Jira issue and branch name:
 | OpenAPI specification | API Designer | `{PROJECT_DIR}/api_spec.yaml` |
 | UI/UX design specification | Designer | `{PROJECT_DIR}/design.md` |
 | W3C Design Tokens | Designer | `{PROJECT_DIR}/design_system.tokens.json` |
-| Schema design rationale | SE | `{PROJECT_DIR}/schema_design.md` |
-| Database migrations | SE | `{PROJECT_DIR}/migrations/` |
+| Schema design rationale | Database Designer | `{PROJECT_DIR}/schema_design.md` |
+| Database migrations | Database Designer | `{PROJECT_DIR}/migrations/` |
 | Work summary | SE | `{PROJECT_DIR}/work_summary.md` |
 | Work log | SE | `{PROJECT_DIR}/work_log.md` |
 | TPM structured output | TPM | `{PROJECT_DIR}/spec_output.json` |

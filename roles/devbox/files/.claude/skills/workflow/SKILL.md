@@ -68,9 +68,10 @@ This document describes the agent pipeline and workflow commands for projects us
 | `/validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
 
 Each command:
-- Auto-detects project language (Go/Python/Frontend)
+- Auto-detects project stack (Go/Python/Frontend/Fullstack)
 - Pauses for user confirmation between steps
 - Suggests next step after completion
+- For fullstack projects, routes to appropriate agent(s) based on work streams
 
 ## Pipeline Modes
 
@@ -103,48 +104,53 @@ Each command:
   Produces: `domain_analysis.md`, `domain_output.json`
 
 ### Step 3: Planning + Design (parallel for UI features)
-- **implementation_planner_*** — Creates detailed implementation plans
+- **implementation_planner_*** — Creates detailed implementation plans with work streams
   Depends on: Step 2
-  Produces: `plan.md`, `plan_output.json`
+  Produces: `plan.md`, `plan_output.json` (includes `work_streams` and `parallelism_groups`)
 - **designer** — Creates UI/UX design specs, design tokens, component specifications
   Depends on: Step 2 (runs parallel with planner for UI features)
   Produces: `design.md`, `design_output.json`
   Skipped when: feature_type = backend
 
-### Step 4: Contracts
-- **api_designer** — Designs API contracts (REST/OpenAPI or Protobuf/gRPC)
-  Depends on: Step 3
-  Produces: `api_design.md`, `api_design_output.json`
+### Step 4: Contracts (driven by work streams)
 - **database_designer** — Designs database schemas with migrations (PostgreSQL, MySQL, MongoDB, CockroachDB)
   Depends on: Step 3
   Produces: `schema_design.md`, migrations
+  Skipped when: plan has no schema work stream
+- **api_designer** — Designs API contracts (REST/OpenAPI or Protobuf/gRPC)
+  Depends on: Step 3 (and Step 4a if schema changes exist)
+  Produces: `api_design.md`, `api_design_output.json`
 
-### Step 5: Implementation
-- **software_engineer_*** — Writes production code (Go, Python, or Frontend)
+### Step 5: Implementation (work-stream-driven, parallel where possible)
+- **software_engineer_{go|python}** — Writes backend code
   Depends on: Step 4
+- **software_engineer_frontend** — Writes frontend code (TypeScript/React/Next.js)
+  Depends on: API contract from Step 4 (NOT on backend implementation — can run in parallel)
+  Skipped when: feature_type = backend
+- **observability_engineer** — Designs dashboards, alerts, and recording rules
+  Depends on: API contract from Step 4 (can run in parallel with SE agents)
+  Skipped when: plan has no observability work stream
 
 ### Step 6: Testing
-- **unit_tests_writer_*** — Writes unit tests with bug-hunting mindset
+- **unit_tests_writer_*** — Writes unit tests with bug-hunting mindset (per language/stack)
   Depends on: Step 5
 - **integration_tests_writer_*** — Writes integration tests with real dependencies
   Depends on: Step 5
 
 ### Step 7: Review
-- **code_reviewer_*** — Validates implementation against requirements
+- **code_reviewer_*** — Validates implementation against requirements (per language/stack)
   Depends on: Step 6
   If blocking issues found → return to Step 5 with feedback
-
-### Independent
-- **observability_engineer** — Designs dashboards, alerts, and recording rules (can run any time after Step 3)
 
 </pipeline>
 
 <transitions>
 - After Step 2 completes → **Gate 1** (user approval: "right problem?")
 - Steps 3a (Planner) and 3b (Designer) run in parallel for UI/fullstack features
+- Planner produces work streams that drive Steps 4-5 execution order and parallelism
 - After Step 3 completes (Designer presents options) → **Gate 2** (user picks design direction; skipped for backend)
-- After Step 4 completes → **Gate 3** (user approval: "ready to implement?")
-- Steps 5 → 6 → 7 run autonomously with fix loop
+- After Step 4 completes (contracts ready) → **Gate 3** (user approval: "ready to implement?")
+- Steps 5 → 6 → 7 run autonomously with fix loop; within Step 5, agents run in parallel per work stream groups
 - After Step 7 completes (no blocking issues) → **Gate 4** (user approval: "ship it?")
 </transitions>
 
@@ -193,8 +199,10 @@ Grounding references (cached Anthropic docs) are read at the start of every buil
 | **Any Go topic** | `software-engineer-go` | `/implement` |
 | **Any Python topic** | `software-engineer-python` | `/implement` |
 | **Any Frontend topic** (React, TypeScript, Next.js) | `software-engineer-frontend` | `/implement` |
+| **Fullstack feature** | Backend SE + Frontend SE (sequential or parallel) | `/implement` |
 | Go tests | `unit-test-writer-go` | `/test` |
 | Python tests | `unit-test-writer-python` | `/test` |
+| Frontend tests | `unit-test-writer-frontend` | `/test` |
 
 ### Exceptions (Answer Directly)
 

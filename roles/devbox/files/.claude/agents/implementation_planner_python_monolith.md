@@ -175,6 +175,8 @@ One paragraph max.
 
 ### FR-1: List Resources
 
+**Agent hint**: `backend`
+
 **Description**: Retrieve paginated list of resources.
 
 **Behaviour**:
@@ -356,6 +358,30 @@ One paragraph max.
 
 ---
 
+## Work Streams
+
+Organise implementation into **agent-aware work streams** with explicit dependencies and parallelism.
+Each stream maps to a downstream agent and command. Streams with no dependency between them can run in parallel.
+
+### Example
+
+| Stream | Agent | Command | Requirements | Depends On | Parallel With |
+|--------|-------|---------|--------------|------------|---------------|
+| WS-1: Data Layer | database-designer | `/schema` | FR-1 (storage) | — | — |
+| WS-2: API Contract | api-designer | `/api-design` | FR-1–FR-5 | WS-1 | — |
+| WS-3: Backend Logic | software-engineer-python | `/implement` | FR-1–FR-5 | WS-1, WS-2 | WS-4 |
+| WS-4: Frontend UI | software-engineer-frontend | `/implement` | FR-6 (if applicable) | WS-2 | WS-3 |
+
+### Rules
+
+1. **Every FR gets exactly one stream** — if an FR spans both frontend and backend, split it into sub-requirements (e.g., FR-3a backend, FR-3b frontend)
+2. **Streams without mutual dependencies can run in parallel** — mark them explicitly
+3. **API contract is the handshake point** — frontend depends on API contract, not on backend implementation
+4. **Schema before backend** — if schema changes exist, WS for schema blocks backend WS
+5. **Omit streams that don't apply** — backend-only features have no frontend stream; features without schema changes have no schema stream
+
+---
+
 ## Open Questions
 
 - [ ] Should deleted resources return 404 or a specific "deleted" status?
@@ -444,7 +470,7 @@ This feature requires database schema modifications. Run `/schema` before `/impl
 ## What to INCLUDE
 
 - API contract (endpoints, status codes, request/response shapes)
-- Functional requirements (what each endpoint does)
+- Functional requirements with agent hints (what each endpoint does, who implements it)
 - Business rules (constraints and logic)
 - Error cases (conditions and expected responses)
 - Integration points (what systems interact)
@@ -452,6 +478,7 @@ This feature requires database schema modifications. Run `/schema` before `/impl
 - Test scenarios (what to test, not how)
 - Architecture constraints (rules SE must follow)
 - Schema changes (if any — tables, columns, indexes affected)
+- Work streams (agent-aware execution plan with dependencies and parallelism)
 
 ## What to EXCLUDE
 
@@ -503,14 +530,18 @@ When plan is complete, provide:
 - Key open questions (if any)
 
 ### 2. Suggested Next Step
-> Functional plan complete.
+
+Based on the work streams defined in the plan, suggest the execution order:
+
+> Functional plan complete. Work streams defined:
 >
-> **Next**: Run `/schema` if schema changes are identified, then `/implement`.
+> | Order | Stream | Agent | Command |
+> |-------|--------|-------|---------|
+> | 1 | [first stream] | [agent] | [command] |
+> | 2 | [next stream(s) — note if parallel] | [agent(s)] | [command(s)] |
+> | ... | ... | ... | ... |
 >
-> The SE will:
-> 1. Explore codebase for existing patterns
-> 2. Propose layer structure (for human review)
-> 3. Implement the feature following architecture constraints
+> **Next**: Run the first stream's command (e.g., `/schema` if schema changes, `/api-design` if API-first, or `/implement` if straight to code).
 >
 > Say **'continue'** to proceed, or provide corrections to the plan.
 

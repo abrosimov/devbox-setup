@@ -1,20 +1,23 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with this Ansible devbox setup project.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
 Ansible-based developer workstation setup tool that automates installation and configuration of development tools, dotfiles, and system preferences. Supports macOS (Darwin) and Ubuntu Linux.
 
-**Key distinction**: `roles/devbox/files/.claude/` contains files deployed to `~/.claude/` (user's global Claude Code config). The `CLAUDE.md` there is the **global authority protocol**, not specific to this Ansible project.
+**Key distinction**: `roles/devbox/files/.claude/` contains files deployed to `~/.claude/` (user's global Claude Code config). The `CLAUDE.md` there is the **global authority protocol**, not this project's instructions.
 
 ## Commands
 
 ```bash
+# Bootstrap (macOS only — installs Homebrew, Ansible, collections)
+make init
+
 # Full setup run (prompts for vault password and sudo)
 make run
 
-# Development mode - uses debug/dotfiles as target instead of ~
+# Development mode — deploys to ../debug/dotfiles instead of ~
 make dev
 
 # Increase verbosity (V=1 through V=4)
@@ -33,51 +36,73 @@ make dev-user
 # Custom tag combinations
 make run TAGS="packages,configs"
 make dev TAGS="configs"
+
+# Linting and dry-run
+make lint            # syntax-check + ansible-lint
+make check           # dry-run (check mode, prompts for vault+sudo)
+make check-dev       # dry-run in dev_mode (uses test vault, no sudo)
+
+# Vault management
+make vault-init      # create and encrypt vault/devbox_ssh_config.yml
 ```
 
 ## Architecture
 
-### Directory Structure
-- `playbooks/main.yml` - Main playbook entry point, runs locally against 127.0.0.1
-- `roles/devbox/` - Single role containing all setup logic
-- `roles/devbox/tasks/` - Task files split by OS and phase
-- `roles/devbox/files/` - Dotfiles and configs deployed to home directory (VCS-tracked)
-- `roles/devbox/local/` - **Local overlay** (gitignored) — laptop-only files not in VCS, same structure as `files/`, deployed on top
-- `roles/devbox/files/.claude/` - **Claude Code global config** (deployed to `~/.claude/`)
-- `roles/devbox/defaults/main.yml` - Default variables (`devbox_user`, `devbox_paths`)
-- `vault/` - Encrypted secrets (SSH passphrase)
+### Single role: `roles/devbox/`
+
+Everything lives in one role. No multi-role orchestration.
 
 ### Task Flow
-1. `main.yml` loads OS-specific tasks (`main_darwin.yml` or `main_linux.yml`)
-2. Darwin flow: `install_from_brew_initial` → `install_configs` → `prepare_user` → `install_from_brew_secondary`
-3. Linux flow: `install_from_apt_initial` → `install_configs` → `prepare_user` → `install_from_apt_secondary`
 
-### Configuration Deployment
-The `install_configs.yml` task uses `community.general.filetree` to mirror the entire `roles/devbox/files/` structure to the target dotfiles directory:
-- Regular files are copied directly
-- Files ending in `.j2` are rendered as Jinja2 templates (with `.j2` suffix stripped)
-- Target directory is `~` in normal mode or `../debug/dotfiles` in dev_mode
+`main.yml` dispatches by OS. The Darwin flow (Linux is similar):
 
-After the main deployment, a **local overlay** pass runs from `roles/devbox/local/` (if it exists). It uses the same structure and logic as `files/` but is gitignored, so laptop-only configs (e.g. fish functions with private paths, cluster-specific wrappers) stay out of the repo. Local files are deployed on top, overriding repo files at the same path when both exist.
+1. `darwin/install_from_brew_primary.yml` — core packages
+2. `darwin/install_from_brew_secondary.yml` — packages that depend on core
+3. `install_configs.yml` — deploy dotfiles (see below)
+4. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
+5. `prepare_user.yml` — shell, user-level setup
 
-### Key Variables
-- `devbox_paths.dotfiles_root_dir` - Target for dotfile deployment (overridden in dev_mode)
-- `devbox_user.login` - Username for user configuration
-- `dev_mode` - When true, deploys to debug directory instead of home
+### Configuration Deployment (`install_configs.yml`)
 
-## Claude Config Files (in roles/devbox/files/.claude/)
+**Clean-before-deploy**: Before deploying, managed `.claude/` subdirectories (`agents`, `commands`, `skills`, `bin`, `docs`) and root files (`CLAUDE.md`, `settings.json`, `hooks.json`) are deleted. This ensures files removed from the repo are also removed from the user's config. `settings.local.json` is preserved (user permissions).
 
-| File | Purpose | Deployed To |
+**Filetree mirroring**: Uses `community.general.filetree` to mirror `roles/devbox/files/` to the target directory:
+- Regular files → copied directly
+- `.j2` files → rendered as Jinja2 templates (suffix stripped)
+- Protected files (listed in `files_that_should_not_be_overwritten`) are not overwritten if they already exist
+
+**Local overlay**: After the main pass, `roles/devbox/local/` (gitignored) is deployed on top with identical logic. Laptop-only configs go here to stay out of VCS.
+
+### MCP Server Registration (`apply_configs.yml`)
+
+Three transport types configured in `defaults/main.yml`:
+- **Docker** (`mcp_docker_servers`) — containers via `docker run --rm -i` (sequentialthinking, playwright)
+- **Script** (`mcp_script_servers`) — wrapper scripts in `~/.claude/bin/` (memory-upstream, memory-downstream)
+- **HTTP** (`mcp_http_servers`) — remote endpoints (figma)
+
+Registered via `claude mcp add` with user scope.
+
+### Key Variables (`defaults/main.yml`)
+
+- `devbox_paths.dotfiles_root_dir` — target for deployment (`~` normally, `../debug/dotfiles` in dev_mode)
+- `devbox_user.login` — username for user configuration
+- `dev_mode` — when true, deploys to debug directory
+
+### Claude Code Config (in `roles/devbox/files/.claude/`)
+
+| Path | Purpose | Deployed To |
 |------|---------|-------------|
-| `CLAUDE.md` | User Authority Protocol (approval rules) | `~/.claude/CLAUDE.md` |
-| `agents/*.md` | Agent definitions (SE, tests, review) | `~/.claude/agents/` |
+| `CLAUDE.md` | User Authority Protocol | `~/.claude/CLAUDE.md` |
+| `settings.json` | Default permissions (allow/deny) | `~/.claude/settings.json` |
+| `agents/*.md` | Agent definitions | `~/.claude/agents/` |
 | `commands/*.md` | Slash commands (/implement, /test, etc.) | `~/.claude/commands/` |
-| `skills/` | Reusable knowledge modules | `~/.claude/skills/` |
-| `docs/workflow-reference.md` | Agent pipeline documentation | `~/.claude/docs/` |
+| `skills/*/SKILL.md` | Reusable knowledge modules | `~/.claude/skills/` |
+| `bin/*` | Helper scripts (MCP wrappers, etc.) | `~/.claude/bin/` |
+| `docs/` | Reference documentation | `~/.claude/docs/` |
 
 ## Dependencies
 
-Requires Ansible with `community.general` collection (>=10.1.0). Install with:
+Requires Ansible with `community.general` collection (>=10.1.0):
 ```bash
 ansible-galaxy collection install -r requirements.yml
 ```

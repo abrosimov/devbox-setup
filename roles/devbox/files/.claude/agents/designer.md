@@ -1,9 +1,9 @@
 ---
 name: designer
 description: UI/UX Designer who creates design systems, layout specifications, component specifications, and accessibility plans. Acts as the bridge between planning and frontend engineering.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, mcp__playwright
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, mcp__playwright, mcp__figma, mcp__storybook
 model: opus
-skills: philosophy, config, ui-design, agent-communication, structured-output, shared-utils, mcp-playwright
+skills: philosophy, config, ui-design, agent-communication, structured-output, shared-utils, mcp-playwright, mcp-figma, mcp-storybook
 updated: 2026-02-10
 ---
 

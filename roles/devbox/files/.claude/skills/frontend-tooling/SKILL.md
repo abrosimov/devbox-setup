@@ -368,6 +368,168 @@ export const Disabled: Story = {
 }
 ```
 
+### CSF3 Format Details
+
+The `satisfies Meta<typeof Component>` pattern provides full type safety:
+
+```typescript
+// satisfies ensures type checking WITHOUT widening the type
+const meta = {
+  title: 'UI/Button',
+  component: Button,
+  tags: ['autodocs'],
+  argTypes: {
+    variant: {
+      control: 'select',
+      options: ['primary', 'secondary', 'ghost'],
+      description: 'Visual style variant',
+    },
+    size: {
+      control: 'radio',
+      options: ['sm', 'md', 'lg'],
+    },
+  },
+} satisfies Meta<typeof Button>
+```
+
+| Approach | When to Use |
+|----------|------------|
+| `args` only | Simple prop-driven rendering (most stories) |
+| `render` function | Custom rendering logic, composition, multiple components |
+| `args` + `render` | Custom layout with controllable props |
+
+```typescript
+// args — simple, most common
+export const Primary: Story = {
+  args: { variant: 'primary', children: 'Click me' },
+}
+
+// render — custom rendering needed
+export const WithIcon: Story = {
+  render: (args) => (
+    <Button {...args}>
+      <Icon name="plus" />
+      Add item
+    </Button>
+  ),
+}
+```
+
+### Play Functions (Interaction Tests)
+
+Play functions run after a story renders — use them for interaction testing in Storybook.
+
+```typescript
+import { expect, within, userEvent, fn } from '@storybook/test'
+
+const meta = {
+  title: 'Forms/LoginForm',
+  component: LoginForm,
+  args: {
+    onSubmit: fn(),
+  },
+} satisfies Meta<typeof LoginForm>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const FilledAndSubmitted: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.type(canvas.getByLabelText(/email/i), 'alice@example.com')
+    await userEvent.type(canvas.getByLabelText(/password/i), 'securePass123')
+    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
+
+    await expect(args.onSubmit).toHaveBeenCalledWith({
+      email: 'alice@example.com',
+      password: 'securePass123',
+    })
+  },
+}
+```
+
+**Key utilities from `@storybook/test`:**
+
+| Utility | Purpose |
+|---------|---------|
+| `within(canvasElement)` | Scoped queries within the story canvas |
+| `userEvent` | Same API as `@testing-library/user-event` |
+| `expect` | Same API as Vitest/Jest `expect` |
+| `fn()` | Spy function (replaces `vi.fn()` in story context) |
+
+### Decorators
+
+Wrap stories in providers, layouts, or context:
+
+```typescript
+// Component-level decorator — in the story file
+const meta = {
+  title: 'Features/UserProfile',
+  component: UserProfile,
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={new QueryClient()}>
+        <Story />
+      </QueryClientProvider>
+    ),
+  ],
+} satisfies Meta<typeof UserProfile>
+```
+
+```typescript
+// Global decorators — .storybook/preview.ts
+import type { Preview } from '@storybook/react'
+
+const preview: Preview = {
+  decorators: [
+    (Story) => (
+      <ThemeProvider>
+        <Story />
+      </ThemeProvider>
+    ),
+  ],
+}
+
+export default preview
+```
+
+### Addons
+
+| Addon | Purpose | Install |
+|-------|---------|---------|
+| `@storybook/addon-a11y` | Accessibility auditing with axe-core | `pnpm add -D @storybook/addon-a11y` |
+| `@storybook/addon-viewport` | Responsive testing at breakpoints | Built-in (configure viewports) |
+| `@storybook/addon-interactions` | Debug play functions step by step | `pnpm add -D @storybook/addon-interactions` |
+| `@storybook/addon-themes` | Theme switching (dark/light) | `pnpm add -D @storybook/addon-themes` |
+
+Configure in `.storybook/main.ts`:
+
+```typescript
+const config: StorybookConfig = {
+  addons: [
+    '@storybook/addon-essentials',
+    '@storybook/addon-a11y',
+    '@storybook/addon-interactions',
+  ],
+}
+```
+
+### Story Co-location
+
+Stories live next to their components:
+
+```
+components/ui/
+├── button.tsx
+├── button.stories.tsx          ← Co-located
+├── button.test.tsx             ← Tests also co-located
+├── dialog.tsx
+└── dialog.stories.tsx
+```
+
+**Naming:** `{component-name}.stories.tsx` — matches the component file name.
+
 ---
 
 ## Pre-Flight Verification Commands

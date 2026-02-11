@@ -980,6 +980,41 @@ For EVERY component, systematically consider these categories:
 | **Numbers** | 0, negative, very large, decimal, NaN |
 | **Auth** | Logged in, logged out, expired session, insufficient permissions |
 
+### Security (if code handles user input, URLs, or sensitive data)
+
+> Reference: `security-patterns` skill for frontend-specific patterns.
+
+| Pattern | What to Test |
+|---------|-------------|
+| XSS via `dangerouslySetInnerHTML` | Pass `<script>alert('xss')</script>` in data, verify DOMPurify sanitises it |
+| URL injection | Pass `javascript:alert(1)` as URL, verify rejection before navigation |
+| `eval()` / `new Function()` | Verify never called with user input |
+| localStorage tokens | Verify auth tokens NOT stored in localStorage (httpOnly cookies instead) |
+| Exposed secrets | Verify no API keys or secrets in rendered output |
+| Open redirect | Pass `https://evil.com` as redirect URL, verify validated against allowlist |
+| postMessage | Verify `event.origin` checked before processing messages |
+| CSRF tokens | Verify API calls include CSRF token where required |
+| Console.log | Verify no sensitive data in console output (check with `vi.spyOn(console, 'log')`) |
+
+**How to test (examples):**
+```typescript
+// XSS — verify sanitisation
+it('sanitises HTML content before rendering', () => {
+  render(<RichContent html='<img onerror="alert(1)" src="x">' />)
+  const img = document.querySelector('img[onerror]')
+  expect(img).not.toBeInTheDocument()
+})
+
+// URL injection — verify rejection
+it('rejects javascript: URLs', async () => {
+  const user = userEvent.setup()
+  render(<LinkInput onSubmit={vi.fn()} />)
+  await user.type(screen.getByLabelText(/url/i), 'javascript:alert(1)')
+  await user.click(screen.getByRole('button', { name: /save/i }))
+  expect(await screen.findByRole('alert')).toHaveTextContent(/invalid url/i)
+})
+```
+
 ### Async Edge Cases
 
 | Scenario | What to Test |

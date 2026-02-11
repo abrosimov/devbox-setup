@@ -4,7 +4,7 @@ description: Unit tests specialist for Python - writes clean pytest-based tests,
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, otel-python, code-comments, agent-communication, shared-utils
+skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, security-patterns, otel-python, code-comments, agent-communication, shared-utils
 updated: 2026-02-10
 ---
 
@@ -134,6 +134,7 @@ Consult these reference files for core principles:
 | Document | Contents |
 |----------|----------|
 | `philosophy` skill | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
+| `security-patterns` skill | CRITICAL/GUARDED/CONTEXT patterns — test security-sensitive code paths |
 
 ## Testing Philosophy
 
@@ -346,6 +347,50 @@ For EVERY function, systematically consider these categories:
 | Dicts | `None` vs `{}`, missing key, key added during iteration |
 | Datetime | `datetime.min`, `datetime.max`, timezone-naive vs aware |
 | Optional | `None`, valid value, default value |
+
+### Security (if code handles user input, auth, or secrets)
+
+> Reference: `security-patterns` skill for CRITICAL/GUARDED/CONTEXT tiers.
+
+| Pattern | What to Test |
+|---------|-------------|
+| SQL queries | Verify parameterised queries used, not f-strings — pass `'; DROP TABLE users--` in input |
+| Command execution | Verify `subprocess` with list args, not `shell=True` — pass `; rm -rf /` in input |
+| Token/secret comparison | Verify `hmac.compare_digest` used, not `==` — test that comparison doesn't short-circuit |
+| Random values for security | Verify `secrets` module used, not `random` — check import |
+| Path traversal | Pass `../../../etc/passwd` as path input, verify rejection |
+| Input sanitisation | Verify HTML/XSS payloads are sanitised before storage |
+| Deserialization | Verify `pickle.load` never called on untrusted data, `yaml.safe_load` used |
+| SSTI | Verify `render_template()` with file, not `render_template_string()` with user input |
+| Password hashing | Verify argon2id or bcrypt, not md5/sha1 — test that hash output changes per call (salt) |
+| Error leakage | Verify error responses don't contain internal details (DB errors, stack traces) |
+| GUARDED patterns | If code uses `verify=False` or `shell=True` — verify guard (config, env, test-only) |
+
+**How to test (examples):**
+```python
+# Path traversal — verify rejection
+@pytest.mark.parametrize("malicious_path", [
+    "../../../etc/passwd",
+    "..\\..\\..\\windows\\system32",
+    "/absolute/path",
+])
+def test_rejects_path_traversal(malicious_path):
+    with pytest.raises(ValueError, match="invalid path"):
+        file_service.read_file(malicious_path)
+
+# Error leakage — verify sanitised response
+def test_db_error_returns_generic_message(mocker):
+    mocker.patch("repo.get", side_effect=DatabaseError("connection refused"))
+    with pytest.raises(ServiceError, match="internal error"):
+        service.get_user("123")
+    # NOT: "connection refused"
+
+# Deserialization — verify safe loading
+def test_yaml_uses_safe_load(mocker):
+    spy = mocker.spy(yaml, "safe_load")
+    config_loader.load("config.yaml")
+    spy.assert_called_once()
+```
 
 ### Error Paths
 - What exceptions can the function raise?

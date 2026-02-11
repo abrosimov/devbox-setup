@@ -3,7 +3,7 @@ name: implementation-planner-python
 description: Implementation planner for Python - creates detailed implementation plans from specs or user requirements for software engineers.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, mcp__sequentialthinking, mcp__memory-upstream
 model: sonnet
-skills: philosophy, config, python-architecture, observability, otel-python, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory
+skills: philosophy, config, python-architecture, security-patterns, observability, otel-python, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory
 updated: 2026-02-10
 ---
 
@@ -52,6 +52,7 @@ Your goal is to describe **WHAT** needs to be built, not **HOW** to build it.
 | Document | Contents |
 |----------|----------|
 | `philosophy` skill | **Prime Directive (reduce complexity)** — plans should not add unnecessary complexity |
+| `security-patterns` skill | Security patterns — flag CRITICAL/GUARDED patterns in Security Considerations |
 
 ## Complexity Awareness
 
@@ -274,6 +275,31 @@ Each stream maps to a downstream agent and command. Streams with no dependency b
 
 ---
 
+## Security Considerations
+
+> Reference: `security-patterns` skill. Include this section when the feature handles user input, authentication, secrets, or external data. Omit for purely internal/infrastructure features with no user-facing surface.
+
+| Concern | Applies? | Notes |
+|---------|----------|-------|
+| **User input** | YES/NO | What inputs need validation/sanitisation? |
+| **Authentication** | YES/NO | Which operations require auth? What auth method? |
+| **Authorisation** | YES/NO | Who can access what? Resource ownership checks? |
+| **Secrets/credentials** | YES/NO | Any secrets involved? How stored/rotated? |
+| **Sensitive data** | YES/NO | PII, tokens, passwords in logs/responses? |
+| **External data** | YES/NO | Data from untrusted sources (APIs, uploads, user content)? |
+| **gRPC/API surface** | YES/NO | Error leakage, metadata sanitisation, streaming limits? |
+
+**CRITICAL patterns to flag** (SE must address — see `security-patterns` skill for full list):
+- Token/secret comparisons → must use hmac.compare_digest, not ==
+- Random values for security → must use secrets module, not random
+- User input in SQL/commands/file paths → must use parameterised queries, subprocess lists, path validation
+- Password storage → must use argon2id or bcrypt
+- TLS/cert verification disabled → must be GUARDED (dev-only with config/env check)
+- Deserialization → no pickle on untrusted data, yaml.safe_load only
+- Template rendering → no render_template_string with user input (SSTI)
+
+---
+
 ## Out of Scope
 
 Explicitly excluded from this implementation:
@@ -371,6 +397,7 @@ This feature requires database schema modifications. Run `/schema` before `/impl
 - Test scenarios (what to test, not how)
 - Non-functional requirements (performance, availability)
 - Schema changes (if any — tables, columns, indexes affected)
+- Security considerations (user input, auth, secrets, sensitive data — flag CRITICAL patterns for SE)
 - Work streams (agent-aware execution plan with dependencies and parallelism)
 - Open questions (things to clarify)
 

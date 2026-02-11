@@ -773,7 +773,34 @@ git diff --name-only
 
 **If files changed after formatting → you forgot to format. Commit the formatted files.**
 
-### Step 5: Smoke Test (If Applicable)
+### Step 5: Security Scan (MANDATORY)
+
+Scan changed files for CRITICAL security patterns (see `security-patterns` skill). These are **never acceptable** in any context.
+
+```bash
+# Get list of changed Go files
+CHANGED=$(git diff --name-only HEAD -- '*.go' | tr '\n' ' ')
+# If no HEAD yet (first commit), use all staged:
+# CHANGED=$(git diff --cached --name-only -- '*.go' | tr '\n' ' ')
+
+# CRITICAL: Timing-unsafe token/secret comparison (use crypto/subtle.ConstantTimeCompare)
+echo "$CHANGED" | xargs grep -n '== .*[Tt]oken\|== .*[Ss]ecret\|== .*[Kk]ey\|== .*[Hh]ash\|== .*[Pp]assword\|!= .*[Tt]oken\|!= .*[Ss]ecret' 2>/dev/null || true
+
+# CRITICAL: math/rand for security-sensitive values (use crypto/rand)
+echo "$CHANGED" | xargs grep -n '"math/rand"' 2>/dev/null || true
+
+# CRITICAL: SQL string concatenation (use parameterised queries)
+echo "$CHANGED" | xargs grep -n 'fmt.Sprintf.*SELECT\|fmt.Sprintf.*INSERT\|fmt.Sprintf.*UPDATE\|fmt.Sprintf.*DELETE\|Sprintf.*WHERE' 2>/dev/null || true
+
+# CRITICAL: Command injection via shell (use exec.Command with argument list)
+echo "$CHANGED" | xargs grep -n 'exec.Command("sh"\|exec.Command("bash"\|exec.Command("/bin/sh"\|exec.Command("/bin/bash"' 2>/dev/null || true
+```
+
+**If any pattern matches → review each match.** Not every match is a true positive (e.g., `== token` in a test comparison). But every match MUST be reviewed and either:
+- **Fixed** — replace with the safe alternative
+- **Justified** — explain why this specific usage is safe (e.g., non-security context)
+
+### Step 6: Smoke Test (If Applicable)
 
 If there's a simple way to verify the feature works:
 - Run the CLI command
@@ -798,6 +825,7 @@ Before completing, output this summary:
 | `go test ./...` | ✅ PASS / ❌ FAIL | X tests, Y passed |
 | `golangci-lint run` | ✅ PASS / ⚠️ WARN / ❌ FAIL | |
 | `goimports` | ✅ PASS | |
+| Security scan | ✅ CLEAR / ⚠️ REVIEW | [findings if any] |
 | Smoke test | ✅ PASS / ⏭️ N/A | [what was tested] |
 
 **Result**: READY / BLOCKED
@@ -832,6 +860,15 @@ Before completing, output this summary:
 - [ ] No zero-field struct constructors
 - [ ] No builders for simple objects
 - [ ] Simplest solution that works (Prime Directive)
+
+### Security (CRITICAL Patterns — see `security-patterns` skill)
+- [ ] No `==` / `!=` for token/secret/key comparison (use `crypto/subtle.ConstantTimeCompare`)
+- [ ] No `math/rand` for security-sensitive values (use `crypto/rand`)
+- [ ] No SQL string concatenation (use parameterised queries)
+- [ ] No `exec.Command("sh", "-c", ...)` with user input (use argument list)
+- [ ] All user input validated before use
+- [ ] HTTP clients have explicit timeouts
+- [ ] No internal error details leaked in API/gRPC responses
 
 ### Scope Check (Anti-Helpfulness)
 - [ ] I did NOT add features not in the plan

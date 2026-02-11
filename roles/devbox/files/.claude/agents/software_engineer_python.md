@@ -741,7 +741,38 @@ git diff --name-only
 
 **If files changed after formatting → you forgot to format. Commit the formatted files.**
 
-### Step 6: Smoke Test (If Applicable)
+### Step 6: Security Scan (MANDATORY)
+
+Scan changed files for CRITICAL security patterns (see `security-patterns` skill). These are **never acceptable** in any context.
+
+```bash
+# Get list of changed Python files
+CHANGED=$(git diff --name-only HEAD -- '*.py' | tr '\n' ' ')
+
+# CRITICAL: Timing-unsafe token/secret comparison (use hmac.compare_digest)
+echo "$CHANGED" | xargs grep -n '== .*token\|== .*secret\|== .*key\|== .*hash\|== .*password\|!= .*token\|!= .*secret' 2>/dev/null || true
+
+# CRITICAL: random module for security-sensitive values (use secrets)
+echo "$CHANGED" | xargs grep -n 'import random\|from random import' 2>/dev/null || true
+
+# CRITICAL: SQL string concatenation (use parameterised queries)
+echo "$CHANGED" | xargs grep -n 'f".*SELECT\|f".*INSERT\|f".*UPDATE\|f".*DELETE\|".*SELECT.*%.format\|".*INSERT.*%.format' 2>/dev/null || true
+
+# CRITICAL: Command injection (use subprocess with argument list)
+echo "$CHANGED" | xargs grep -n 'shell=True\|os.system(' 2>/dev/null || true
+
+# CRITICAL: Unsafe deserialization (use yaml.safe_load, avoid pickle on untrusted data)
+echo "$CHANGED" | xargs grep -n 'pickle.load\|pickle.loads\|yaml.load(' 2>/dev/null || true
+
+# CRITICAL: SSTI (use render_template with file, not render_template_string)
+echo "$CHANGED" | xargs grep -n 'render_template_string\|jinja2.Template(' 2>/dev/null || true
+```
+
+**If any pattern matches → review each match.** Not every match is a true positive (e.g., `import random` for non-security use like shuffling UI elements). But every match MUST be reviewed and either:
+- **Fixed** — replace with the safe alternative
+- **Justified** — explain why this specific usage is safe (e.g., non-security context)
+
+### Step 7: Smoke Test (If Applicable)
 
 If there's a simple way to verify the feature works:
 - Run the CLI command
@@ -766,6 +797,7 @@ Before completing, output this summary:
 | `pytest` | ✅ PASS / ❌ FAIL | X tests, Y passed |
 | `ruff check` | ✅ PASS / ⚠️ WARN / ❌ FAIL | |
 | `black` | ✅ PASS | |
+| Security scan | ✅ CLEAR / ⚠️ REVIEW | [findings if any] |
 | Smoke test | ✅ PASS / ⏭️ N/A | [what was tested] |
 
 **Result**: READY / BLOCKED
@@ -806,6 +838,17 @@ Before completing, output this summary:
 - [ ] No mutable default arguments
 - [ ] No bare `except:` clauses
 - [ ] Simplest solution that works (Prime Directive)
+
+### Security (CRITICAL Patterns — see `security-patterns` skill)
+- [ ] No `==` / `!=` for token/secret/key comparison (use `hmac.compare_digest`)
+- [ ] No `random` module for security-sensitive values (use `secrets`)
+- [ ] No SQL string concatenation (use parameterised queries)
+- [ ] No `shell=True` / `os.system()` with user input (use `subprocess` with argument list)
+- [ ] No `pickle.load` / `pickle.loads` on untrusted data
+- [ ] No `render_template_string` with user input (SSTI)
+- [ ] No `yaml.load()` without `Loader=SafeLoader` (use `yaml.safe_load`)
+- [ ] `requests` / `httpx` calls have explicit `timeout=`
+- [ ] No internal error details leaked in API/gRPC responses
 
 ### Scope Check (Anti-Helpfulness)
 - [ ] I did NOT add features not in the plan

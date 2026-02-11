@@ -4,7 +4,7 @@ description: Unit tests specialist for Go - writes idiomatic table-driven tests 
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, go-architecture, go-anti-patterns, otel-go, code-comments, agent-communication, shared-utils
+skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, go-architecture, go-anti-patterns, security-patterns, otel-go, code-comments, agent-communication, shared-utils
 updated: 2026-02-10
 ---
 
@@ -205,6 +205,7 @@ Consult these reference files for patterns when writing tests:
 | `go-errors` skill | Error types, sentinel errors, error wrapping patterns |
 | `go-patterns` skill | Enums, JSON encoding, slice patterns, HTTP patterns |
 | `go-concurrency` skill | Graceful shutdown, errgroup, sync primitives |
+| `security-patterns` skill | CRITICAL/GUARDED/CONTEXT patterns — test security-sensitive code paths |
 
 ## Testing Philosophy
 
@@ -465,6 +466,46 @@ func (s *ServiceTestSuite) TestNewService_Success() {
     s.Require().NoError(err)
     s.Require().NotNil(svc)  // guarantees receiver is never nil
 }
+```
+
+### Security (if code handles user input, auth, or secrets)
+
+> Reference: `security-patterns` skill for CRITICAL/GUARDED/CONTEXT tiers.
+
+| Pattern | What to Test |
+|---------|-------------|
+| SQL queries | Verify parameterised queries used, not string concat — pass `'; DROP TABLE users--` in input |
+| Command execution | Verify arguments passed as list, not shell string — pass `; rm -rf /` in input |
+| Token/secret comparison | Verify `crypto/subtle.ConstantTimeCompare` used, not `==` — test that comparison is constant-time (timing oracle) |
+| Random values for security | Verify `crypto/rand` used, not `math/rand` — check import |
+| Path traversal | Pass `../../../etc/passwd` as path input, verify rejection |
+| Input sanitisation | Verify HTML/XSS payloads are sanitised before storage |
+| Password hashing | Verify argon2id or bcrypt, not md5/sha1 — test that hash output changes per call (salt) |
+| Error leakage | Verify error responses don't contain internal details (DB errors, stack traces, file paths) |
+| GUARDED patterns | If code uses `InsecureSkipVerify`, `grpc.WithInsecure`, `reflection.Register` — verify guard (build tag, config, env) |
+
+**How to test (examples):**
+```go
+// Path traversal — verify rejection
+{
+    name:    "path traversal rejected",
+    input:   "../../../etc/passwd",
+    wantErr: ErrInvalidPath,
+},
+
+// Error leakage — verify sanitised response
+{
+    name:      "db error returns generic message",
+    mockSetup: func() { s.mockDB.EXPECT().Get(mock.Anything).Return(nil, errors.New("pq: connection refused")) },
+    wantErr:   ErrInternal,  // NOT the raw DB error
+},
+
+// Token comparison — verify constant-time
+{
+    name:    "rejects invalid token",
+    token:   "wrong-token",
+    wantErr: ErrUnauthorized,
+},
 ```
 
 ### Concurrency (if applicable)

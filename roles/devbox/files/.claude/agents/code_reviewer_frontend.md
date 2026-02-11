@@ -612,17 +612,70 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 ```
 
 #### Checkpoint I: Security
+
+> Uses three-tier severity model: **CRITICAL** (never acceptable), **GUARDED** (dev OK), **CONTEXT** (needs judgment). See `security-patterns` skill for full reference. XSS uses three-layer defence: sanitise on input (backend) → encode on output (API) → encode on render (frontend — this layer).
+
+**Search for security-sensitive patterns:**
+```bash
+# CRITICAL: XSS — bypassing React's auto-escaping
+git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "dangerouslySetInnerHTML\|innerHTML\|outerHTML\|document.write\|insertAdjacentHTML"
+
+# CRITICAL: eval / Function constructor
+git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "eval(\|new Function(\|setTimeout.*string\|setInterval.*string"
+
+# CRITICAL: Exposed secrets
+git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "apiKey\|api_key\|apiSecret\|PRIVATE_KEY\|SECRET_KEY"
+
+# CRITICAL: Sensitive data in storage
+git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "localStorage.*token\|localStorage.*secret\|localStorage.*password\|sessionStorage.*token"
+
+# CRITICAL: Sensitive data in console
+git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "console.log\|console.info\|console.debug"
+
+# CONTEXT: URL injection / open redirect
+git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "window.open\|window.location.*=\|href.*=.*user\|router.push.*user"
+
+# CONTEXT: postMessage without origin check
+git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "postMessage\|addEventListener.*message"
+
+# CONTEXT: Non-NEXT_PUBLIC_ env vars in client code
+git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "process.env\." | grep -v "NEXT_PUBLIC_"
 ```
-XSS risks (dangerouslySetInnerHTML, innerHTML): ___
-  List: ___
-URL injection risks: ___
-  List: ___
-Exposed secrets/API keys: ___
-  List: ___
-Non-NEXT_PUBLIC_ env vars in client code: ___
-  List: ___
-Sensitive data in console.log: ___
-  List: ___
+
+```
+Security issues found: ___
+
+CRITICAL — automatic FAIL:
+  XSS bypass (dangerouslySetInnerHTML / innerHTML):
+    List with line numbers: ___
+    If dangerouslySetInnerHTML used:
+      DOMPurify.sanitize() wrapping present: YES/NO
+      Content from user input: YES/NO → FAIL if yes without DOMPurify
+  eval() / new Function():
+    List: ___
+  Exposed secrets/API keys in client code:
+    List: ___
+    FIX: move to server-side, use NEXT_PUBLIC_ only for non-sensitive values
+  Tokens/secrets in localStorage:
+    List: ___
+    FIX: use httpOnly cookies for auth tokens
+  console.log with sensitive data:
+    List: ___
+
+CONTEXT — needs judgment:
+  URL injection / open redirect:
+    List: ___
+    URL validated before navigation: YES/NO
+  postMessage without origin check:
+    List: ___
+    event.origin validated: YES/NO
+  Non-NEXT_PUBLIC_ env vars in client code:
+    List: ___
+
+CSRF/CORS/Cookies:
+  - API calls include CSRF token where needed: YES/NO/NA
+  - Cookies set with Secure + SameSite: YES/NO/NA
+  - CORS config reviewed (not wildcard in prod): YES/NO/NA
 
 VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 ```

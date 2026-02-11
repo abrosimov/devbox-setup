@@ -2,8 +2,11 @@
 name: api-design-proto
 description: >
   Protobuf and gRPC API design knowledge. Covers proto3 syntax, Google style guide, gRPC service
-  patterns, buf linting and breaking change detection, well-known types, and gRPC-gateway annotations.
-  Triggers on: protobuf, proto, gRPC, buf, proto3, service definition, streaming, breaking change.
+  patterns, buf linting and breaking change detection, well-known types, gRPC-gateway annotations,
+  and gRPC security design (transport, auth, metadata, streaming limits, error leakage, reflection,
+  interceptor ordering, proto validation).
+  Triggers on: protobuf, proto, gRPC, buf, proto3, service definition, streaming, breaking change,
+  gRPC security, interceptor, mTLS, reflection, protovalidate, metadata security.
 ---
 
 # Protobuf / gRPC Design Knowledge
@@ -403,3 +406,197 @@ proto/
 | Many shared types | Extract `common.proto` |
 | Large message count (>20) | Split by domain concept |
 | Events/notifications | Separate `events.proto` |
+
+---
+
+## gRPC Security
+
+> Cross-reference: `security-patterns` skill for implementation details (code examples, severity tiers). This section covers what the **API Designer** must specify in the contract.
+
+### Transport Security (TLS/mTLS)
+
+**Design decision:** Every service definition must declare its transport security requirement.
+
+| Environment | Transport | Severity |
+|-------------|-----------|----------|
+| Production | mTLS (mutual TLS) | Mandatory |
+| Staging | TLS (server-only) | Mandatory |
+| Dev/local | Insecure (`grpc.WithInsecure()`) | **GUARDED** — must be behind build tag or env check |
+
+**What to specify in the API contract:**
+- Whether the service requires mTLS (client certs) or server-TLS only
+- Certificate rotation expectations (grace period for overlapping certs)
+- Minimum TLS version (1.2+, prefer 1.3)
+
+### Authentication Design
+
+**Auth interceptors must be specified at the service level, not per-RPC.** Individual RPCs may opt out (e.g., health checks), but the default must be "authenticated."
+
+```protobuf
+service OrderService {
+  // Public — no auth required
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+
+  // All other RPCs require auth (enforced by interceptor, not proto)
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc GetOrder(GetOrderRequest) returns (Order);
+}
+```
+
+**What to specify:**
+- Auth method: JWT in metadata, mTLS client identity, or API key
+- Which RPCs are public (health, reflection in dev)
+- Token propagation: which metadata keys carry identity downstream
+
+### Metadata Security
+
+gRPC metadata is the equivalent of HTTP headers — it can carry sensitive data and must be treated accordingly.
+
+**Design rules:**
+- Define an explicit allowlist of metadata keys the service reads
+- Sanitise metadata before logging (tokens, credentials, PII)
+- Sanitise metadata before forwarding to downstream services
+- Never trust client-supplied metadata for authorisation decisions without validation
+
+**Metadata keys to define in the contract:**
+```
+authorization     — Bearer token or API key
+x-request-id      — Trace correlation (propagate, don't trust for auth)
+x-forwarded-for   — Client IP (validate against trusted proxies only)
+```
+
+### Streaming Security
+
+**Every streaming RPC must specify limits in the API contract:**
+
+| Limit | Purpose | Recommended Default |
+|-------|---------|-------------------|
+| `MaxRecvMsgSize` | Prevent memory exhaustion from oversized messages | 4 MB (unary), 1 MB (streaming) |
+| Message count limit | Prevent infinite streams / resource exhaustion | Service-specific, must be documented |
+| Deadline / timeout | Prevent hung connections | Required on all RPCs |
+| Keepalive | Detect dead connections | `Time: 30s, Timeout: 10s` |
+
+```protobuf
+// API contract should document streaming constraints in comments:
+service ImportService {
+  // Client streaming — batch import
+  // Max messages: 10,000 per stream
+  // Max message size: 1 MB
+  // Deadline: 5 minutes
+  rpc ImportOrders(stream ImportOrderRequest) returns (ImportOrdersResponse);
+}
+```
+
+### Error Information Leakage
+
+**Design rule:** gRPC status messages returned to clients must not contain internal details.
+
+| Severity | Pattern | Fix |
+|----------|---------|-----|
+| **CONTEXT** | `fmt.Errorf("query failed: %v", err)` returned as status | Use `status.Error(codes.Internal, "operation failed")` |
+| **CONTEXT** | Stack traces in error details | Strip internal details; log server-side, return sanitised message |
+| **CRITICAL** | Database errors forwarded to client | Map to appropriate gRPC code, generic message |
+
+**What to specify in the contract:**
+- Error detail types used (e.g., `google.rpc.BadRequest` for validation)
+- Which fields in error details are client-safe
+- Standard error messages for each failure mode
+
+### Reflection Service
+
+| Severity | Context |
+|----------|---------|
+| **GUARDED** | gRPC reflection (`reflection.Register`) exposes your entire API schema |
+
+**Design rule:** Reflection must be dev-only. Specify in the API contract:
+- Reflection: enabled in dev/test, disabled in production
+- Guard mechanism: build tag (`//go:build dev`) or env check
+
+### Interceptor Ordering
+
+The API contract should specify the expected interceptor chain. Order matters for security:
+
+```
+Recovery → Auth → Rate Limit → Logging → Tracing → [Handler]
+```
+
+| Position | Interceptor | Why This Order |
+|----------|-------------|----------------|
+| 1st | Recovery (panic handler) | Prevents panics from bypassing other interceptors |
+| 2nd | Auth | Reject unauthenticated requests before any processing |
+| 3rd | Rate limiting | Prevent authenticated but abusive clients |
+| 4th | Logging | Log only authenticated, non-rate-limited requests |
+| 5th | Tracing | Trace meaningful requests |
+
+**What to specify:** Whether interceptors are unary-only, stream-only, or both. Stream interceptors have different signatures and must be specified separately.
+
+### Proto Validation
+
+> Cross-reference: `security-patterns` skill for implementation. Also see `validation` skill for input validation patterns.
+
+**Design rule:** Proto type constraints alone are NOT sufficient for validation. A `string` field accepts any string, an `int32` field accepts any int32 — proto provides no built-in range/format/length validation.
+
+**Use `protovalidate` (buf) or `protoc-gen-validate` for field constraints:**
+
+```protobuf
+import "buf/validate/validate.proto";
+
+message CreateOrderRequest {
+  string customer_id = 1 [(buf.validate.field).string = {
+    min_len: 1,
+    max_len: 64,
+    pattern: "^[a-zA-Z0-9_-]+$"
+  }];
+
+  int32 quantity = 2 [(buf.validate.field).int32 = {
+    gt: 0,
+    lte: 10000
+  }];
+
+  string email = 3 [(buf.validate.field).string.email = true];
+}
+```
+
+**What to specify in the contract:**
+- Validation library: `protovalidate` (recommended) or `protoc-gen-validate`
+- Which fields have constraints (all user-facing input fields)
+- Where validation runs: interceptor (recommended) or handler
+- Custom validation rules that go beyond field-level (cross-field, business logic)
+
+### Security Checklist for API Contracts
+
+When reviewing a proto/gRPC API design, verify:
+
+```
+Transport:
+  [ ] TLS/mTLS requirement specified per environment
+  [ ] Minimum TLS version documented
+
+Authentication:
+  [ ] Auth method specified (JWT / mTLS / API key)
+  [ ] Public RPCs explicitly marked
+  [ ] Metadata key allowlist defined
+
+Authorisation:
+  [ ] Resource ownership checks specified (who can access what)
+  [ ] Admin-only RPCs identified
+
+Streaming:
+  [ ] MaxRecvMsgSize specified
+  [ ] Message count limits documented
+  [ ] Deadlines required on all RPCs
+
+Validation:
+  [ ] protovalidate/PGV constraints on input fields
+  [ ] Custom validation rules documented
+  [ ] Validation interceptor specified
+
+Errors:
+  [ ] Error detail types defined per failure mode
+  [ ] No internal details leak to clients
+
+Infrastructure:
+  [ ] Reflection: dev-only with guard
+  [ ] Interceptor ordering specified
+  [ ] Rate limiting specified (per-client or per-RPC)
+```

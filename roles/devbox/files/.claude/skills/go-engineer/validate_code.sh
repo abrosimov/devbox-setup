@@ -52,6 +52,45 @@ if git diff --cached --name-only | grep '\.go$' | xargs grep -n 'return nil$' 2>
     echo ""
 fi
 
+# --- CRITICAL Security Patterns (never acceptable) ---
+
+GO_FILES=$(git diff --cached --name-only | grep '\.go$' || true)
+
+if [ -n "$GO_FILES" ]; then
+    echo ""
+    echo "🔒 Checking for CRITICAL security patterns..."
+    echo ""
+
+    # CRITICAL: Timing-unsafe token/secret comparison
+    echo "Checking for timing-unsafe comparisons on secrets..."
+    if echo "$GO_FILES" | xargs grep -n '== .*[Tt]oken\|== .*[Ss]ecret\|== .*[Kk]ey\|== .*[Hh]ash\|== .*[Pp]assword\|!= .*[Tt]oken\|!= .*[Ss]ecret' 2>/dev/null; then
+        echo -e "${YELLOW}⚠️  Possible timing-unsafe comparison on secret — use crypto/subtle.ConstantTimeCompare${NC}"
+        echo ""
+    fi
+
+    # CRITICAL: math/rand for security
+    echo "Checking for math/rand usage..."
+    if echo "$GO_FILES" | xargs grep -n '"math/rand"' 2>/dev/null; then
+        echo -e "${YELLOW}⚠️  math/rand imported — if used for tokens/keys/security, use crypto/rand instead${NC}"
+        echo ""
+    fi
+
+    # CRITICAL: SQL string concatenation
+    echo "Checking for SQL string concatenation..."
+    if echo "$GO_FILES" | xargs grep -n 'fmt.Sprintf.*SELECT\|fmt.Sprintf.*INSERT\|fmt.Sprintf.*UPDATE\|fmt.Sprintf.*DELETE\|Sprintf.*WHERE' 2>/dev/null; then
+        echo -e "${RED}❌ SQL string concatenation detected — use parameterised queries${NC}"
+        echo ""
+        violations=$((violations + 1))
+    fi
+
+    # CRITICAL: Command injection via shell
+    echo "Checking for shell command injection..."
+    if echo "$GO_FILES" | xargs grep -n 'exec.Command("sh"\|exec.Command("bash"\|exec.Command("/bin/sh"\|exec.Command("/bin/bash"' 2>/dev/null; then
+        echo -e "${YELLOW}⚠️  exec.Command with shell — if args include user input, use argument list instead${NC}"
+        echo ""
+    fi
+fi
+
 # Summary
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [ $violations -eq 0 ]; then

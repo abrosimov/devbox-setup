@@ -1034,64 +1034,107 @@ var InternalFunc = internalFunc  // ask: why not test via public API?
 
 #### Checkpoint I: Security
 
+> Uses three-tier severity model: **CRITICAL** (never acceptable), **GUARDED** (dev OK with guards), **CONTEXT** (needs judgment). See `security-patterns` skill for full reference.
+
 **Search for security-sensitive patterns:**
 ```bash
-# Find SQL query construction
+# CRITICAL: SQL injection
 git diff main...HEAD --name-only -- '*.go' | xargs grep -n "fmt.Sprintf.*SELECT\|fmt.Sprintf.*INSERT\|fmt.Sprintf.*UPDATE\|fmt.Sprintf.*DELETE\|Query(.*+\|Exec(.*+"
 
-# Find command execution
+# CRITICAL: Command injection
 git diff main...HEAD --name-only -- '*.go' | xargs grep -n "exec.Command\|os.StartProcess"
 
-# Find file path construction
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "filepath.Join.*\+\|os.Open.*\+\|ioutil.ReadFile.*\+"
+# CRITICAL: Timing-unsafe comparisons on secrets
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n '== .*token\|== .*secret\|== .*key\|== .*hash\|== .*password\|!= .*token'
 
-# Find HTTP redirect handling
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "http.Redirect\|w.Header().Set.*Location"
+# CRITICAL: math/rand in security context
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n '"math/rand"'
 
-# Find sensitive data logging
+# CRITICAL: Sensitive data in logs
 git diff main...HEAD --name-only -- '*.go' | xargs grep -n "log.*password\|log.*token\|log.*secret\|log.*key\|log.*credential"
 
-# Find hardcoded secrets
+# CRITICAL: Hardcoded secrets
 git diff main...HEAD --name-only -- '*.go' | xargs grep -n "password.*=.*\"\|token.*=.*\"\|secret.*=.*\"\|apikey.*=.*\""
+
+# CRITICAL: Weak hashing for security purposes
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n '"crypto/md5"\|"crypto/sha1"\|md5.New\|sha1.New'
+
+# GUARDED: TLS skip / insecure transport
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "InsecureSkipVerify\|WithInsecure\|grpc.WithTransportCredentials(insecure"
+
+# GUARDED: gRPC reflection (dev-only)
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "reflection.Register"
+
+# GUARDED: text/template (no auto-escaping)
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n '"text/template"'
+
+# CONTEXT: File path construction
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "filepath.Join.*\+\|os.Open.*\+\|ioutil.ReadFile.*\+"
+
+# CONTEXT: HTTP redirect handling
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n "http.Redirect\|w.Header().Set.*Location"
+
+# CONTEXT: gRPC error leakage
+git diff main...HEAD --name-only -- '*.go' | xargs grep -n 'fmt.Errorf.*grpc\|status.Errorf.*%v\|status.Errorf.*%s'
 ```
 
 ```
 Security issues found: ___
 
-SQL Injection risks:
-  - String concatenation in SQL queries: ___
+CRITICAL — automatic FAIL if found in any context:
+  SQL Injection (string concat in queries):
     List with line numbers: ___
-  - Using fmt.Sprintf for SQL: ___
+  Command Injection (user input in exec.Command / bash -c):
     List: ___
-  - Queries using parameterized queries correctly: ___
+  Timing-unsafe comparison (== on token/secret/hash):
+    List: ___
+    FIX: use crypto/subtle.ConstantTimeCompare
+  math/rand in security context:
+    List: ___
+    FIX: use crypto/rand
+  Sensitive data in logs:
+    List: ___
+  Hardcoded secrets:
+    List: ___
+  Weak hashing for passwords/tokens (md5/sha1):
+    List: ___
+    FIX: use argon2id or bcrypt for passwords, sha256+ for integrity
 
-Command Injection risks:
-  - User input in exec.Command: ___
+GUARDED — FAIL unless dev-only with proper guard:
+  InsecureSkipVerify / grpc.WithInsecure():
     List: ___
-  - Shell=true or bash -c patterns: ___
+    Guard check: [ ] build tag  [ ] config flag  [ ] env check
+  gRPC reflection.Register:
     List: ___
+    Guard check: [ ] build tag  [ ] config flag  [ ] env check
+  text/template (no XSS auto-escaping):
+    List: ___
+    FIX: use html/template for user-facing output
 
-Path Traversal risks:
-  - User input in file paths without validation: ___
-    List: ___
-  - filepath.Clean used before file operations: YES/NO
+  GUARDED check procedure:
+    For each GUARDED finding:
+    1. Is it in a _test.go file? → OK
+    2. Is it behind a build tag (//go:build dev)? → OK
+    3. Is it behind a config/env check? → OK if env is validated
+    4. None of the above? → FLAG as unguarded, recommend isolation
 
-SSRF risks:
-  - User-controlled URLs in HTTP clients: ___
+CONTEXT — needs judgment:
+  Path traversal (user input in file paths):
     List: ___
-  - URL allowlist validation: YES/NO
-
-Information Disclosure:
-  - Sensitive data in logs: ___
+    filepath.Clean + HasPrefix validation present: YES/NO
+  HTTP redirect (open redirect risk):
     List: ___
-  - Error messages exposing internals: ___
+    URL validated against allowlist: YES/NO
+  SSRF (user-controlled URLs):
     List: ___
-  - Hardcoded secrets: ___
+    Host allowlist present: YES/NO
+  gRPC error leakage (internal details in status):
     List: ___
+    FIX: use status.Error() not fmt.Errorf; sanitise before returning
 
 Authentication/Authorization:
   - Auth checks before sensitive operations: ___
-  - Missing auth middleware on routes: ___
+  - Missing auth middleware/interceptor: ___
     List: ___
 
 VERDICT: [ ] PASS  [ ] FAIL — issues documented above
@@ -1100,40 +1143,49 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 **Security Rules:**
 
 ```go
-// BAD: SQL injection via string concatenation
-query := "SELECT * FROM users WHERE id = '" + userID + "'"
-db.Query(query)
+// CRITICAL: SQL injection via string concatenation
+query := "SELECT * FROM users WHERE id = '" + userID + "'"  // BAD
+db.Query("SELECT * FROM users WHERE id = $1", userID)       // GOOD
 
-// GOOD: Parameterized query
-db.Query("SELECT * FROM users WHERE id = $1", userID)
+// CRITICAL: Command injection
+cmd := exec.Command("sh", "-c", "echo " + userInput)  // BAD
+cmd := exec.Command("echo", userInput)                 // GOOD
 
-// BAD: Command injection
-cmd := exec.Command("sh", "-c", "echo " + userInput)
+// CRITICAL: Timing-unsafe comparison
+if token == expectedToken {  // BAD — timing side-channel
+if subtle.ConstantTimeCompare([]byte(token), []byte(expectedToken)) == 1 {  // GOOD
 
-// GOOD: Pass arguments separately
-cmd := exec.Command("echo", userInput)
+// CRITICAL: Insecure random
+import "math/rand"     // BAD for tokens/keys
+import "crypto/rand"   // GOOD
 
-// BAD: Path traversal
-filePath := filepath.Join(baseDir, userInput)  // "../../../etc/passwd" bypasses
-
-// GOOD: Validate after join
+// CONTEXT: Path traversal
+filePath := filepath.Join(baseDir, userInput)  // BAD without validation
 filePath := filepath.Join(baseDir, userInput)
 if !strings.HasPrefix(filepath.Clean(filePath), filepath.Clean(baseDir)) {
-    return errors.New("invalid path")
+    return errors.New("invalid path")  // GOOD
 }
 
-// BAD: Logging sensitive data
-log.Info().Str("password", password).Msg("user login")
+// CRITICAL: Logging sensitive data
+log.Info().Str("password", password).Msg("user login")       // BAD
+log.Info().Str("password", "[REDACTED]").Msg("user login")   // GOOD
 
-// GOOD: Redact sensitive fields
-log.Info().Str("password", "[REDACTED]").Msg("user login")
-
-// BAD: SSRF - user controls URL
-resp, _ := http.Get(userProvidedURL)
-
-// GOOD: Validate URL against allowlist
-if !isAllowedHost(userProvidedURL) {
+// CONTEXT: SSRF
+resp, _ := http.Get(userProvidedURL)         // BAD without allowlist
+if !isAllowedHost(userProvidedURL) {         // GOOD
     return errors.New("URL not allowed")
+}
+
+// CONTEXT: gRPC error leakage
+return fmt.Errorf("query failed: %v", err)                   // BAD — leaks internals
+return status.Error(codes.Internal, "operation failed")       // GOOD
+
+// GUARDED: InsecureSkipVerify — dev-only with guard
+// BAD: no guard
+tlsConfig := &tls.Config{InsecureSkipVerify: true}
+// GOOD: guarded by config
+if cfg.DevMode {
+    tlsConfig = &tls.Config{InsecureSkipVerify: true}
 }
 ```
 

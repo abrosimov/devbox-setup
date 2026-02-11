@@ -2,8 +2,10 @@
 name: python-errors
 description: >
   Python error handling patterns and best practices. Use when discussing exception handling,
-  custom exceptions, error chaining, error hierarchy, or error classification.
-  Triggers on: exception, error handling, raise, try except, error chain, custom exception.
+  custom exceptions, error chaining, error hierarchy, error classification, or gRPC error
+  handling and status codes.
+  Triggers on: exception, error handling, raise, try except, error chain, custom exception,
+  gRPC error, status code, context.abort, error leakage, grpc.StatusCode.
 ---
 
 # Python Errors Reference
@@ -594,6 +596,124 @@ def handle_api_error(response: requests.Response) -> None:
             message=response.text,
             status_code=response.status_code,
         )
+```
+
+---
+
+## gRPC Error Handling
+
+> Cross-reference: `security-patterns` skill for severity tiers. `api-design-proto` skill for error design in API contracts.
+
+### Status Codes — Use the Right One
+
+```python
+import grpc
+
+def map_error(err: Exception) -> grpc.StatusCode:
+    """Map domain exceptions to gRPC status codes."""
+    error_map = {
+        UserNotFoundError: (grpc.StatusCode.NOT_FOUND, "resource not found"),
+        AlreadyExistsError: (grpc.StatusCode.ALREADY_EXISTS, "resource already exists"),
+        ValidationError: (grpc.StatusCode.INVALID_ARGUMENT, "invalid input"),
+        AuthenticationError: (grpc.StatusCode.UNAUTHENTICATED, "authentication required"),
+        AuthorisationError: (grpc.StatusCode.PERMISSION_DENIED, "insufficient permissions"),
+    }
+    for exc_type, (code, message) in error_map.items():
+        if isinstance(err, exc_type):
+            return code, message
+    return grpc.StatusCode.INTERNAL, "internal error"
+```
+
+### Error Information Leakage (CONTEXT Severity)
+
+**Never expose internal details in gRPC status messages.** Internal errors (DB queries, stack traces, file paths) must be logged server-side and replaced with generic messages for clients.
+
+```python
+# BAD — leaks internal details to client
+class OrderService(order_pb2_grpc.OrderServiceServicer):
+    def GetOrder(self, request, context):
+        try:
+            order = self.repo.get(request.id)
+        except DatabaseError as err:
+            context.abort(grpc.StatusCode.INTERNAL, f"database query failed: {err}")
+            # Client sees: "database query failed: connection refused to postgres:5432"
+
+# GOOD — log internally, return sanitised status
+class OrderService(order_pb2_grpc.OrderServiceServicer):
+    def GetOrder(self, request, context):
+        try:
+            order = self.repo.get(request.id)
+        except NotFoundError:
+            context.abort(grpc.StatusCode.NOT_FOUND, "order not found")
+        except Exception as err:
+            logger.error("get order failed", exc_info=err, extra={"order_id": request.id})
+            context.abort(grpc.StatusCode.INTERNAL, "internal error")
+```
+
+### Rich Error Details
+
+For validation errors, use `google.rpc.BadRequest` detail messages:
+
+```python
+from google.rpc import error_details_pb2, status_pb2
+from grpc_status import rpc_status
+
+def validation_error(context: grpc.ServicerContext, violations: dict[str, str]) -> None:
+    """Abort with structured validation error details."""
+    detail = error_details_pb2.BadRequest(
+        field_violations=[
+            error_details_pb2.BadRequest.FieldViolation(field=f, description=d)
+            for f, d in violations.items()
+        ]
+    )
+    status = status_pb2.Status(
+        code=grpc.StatusCode.INVALID_ARGUMENT.value[0],
+        message="validation failed",
+    )
+    status.details.add().Pack(detail)
+    context.abort_with_status(rpc_status.to_status(status))
+```
+
+### Interceptor Error Handling
+
+Errors from interceptors (auth, rate limiting) should use proper status codes:
+
+```python
+# BAD — interceptor raising generic exception
+def auth_interceptor(continuation, handler_call_details):
+    if not validate_token(handler_call_details.invocation_metadata):
+        raise Exception("authentication failed")  # Client gets UNKNOWN code
+
+# GOOD — interceptor aborting with proper status
+class AuthInterceptor(grpc.ServerInterceptor):
+    def intercept_service(self, continuation, handler_call_details):
+        metadata = dict(handler_call_details.invocation_metadata)
+        token = metadata.get("authorization", "")
+        if not validate_token(token):
+            return grpc.unary_unary_rpc_method_handler(
+                lambda req, ctx: ctx.abort(
+                    grpc.StatusCode.UNAUTHENTICATED, "invalid or expired token"
+                )
+            )
+        return continuation(handler_call_details)
+```
+
+### Streaming Error Handling
+
+```python
+class OrderService(order_pb2_grpc.OrderServiceServicer):
+    def WatchOrders(self, request, context):
+        """Server streaming — handle client disconnection gracefully."""
+        try:
+            for event in self.event_source.subscribe(request.filter):
+                if context.is_active():
+                    yield event
+                else:
+                    # Client disconnected
+                    break
+        except Exception as err:
+            logger.error("watch orders stream failed", exc_info=err)
+            context.abort(grpc.StatusCode.INTERNAL, "stream error")
 ```
 
 ---

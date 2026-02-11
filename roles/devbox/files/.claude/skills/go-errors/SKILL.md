@@ -2,9 +2,11 @@
 name: go-errors
 description: >
   Go error handling patterns and best practices. Use when discussing error handling,
-  sentinel errors, custom error types, error wrapping, stack traces, or error
-  classification. Triggers on: error handling, sentinel error, wrap error, errors.Is,
-  errors.As, error chain, stack trace, ErrNotFound, custom error type.
+  sentinel errors, custom error types, error wrapping, stack traces, error
+  classification, or gRPC error handling and status codes.
+  Triggers on: error handling, sentinel error, wrap error, errors.Is,
+  errors.As, error chain, stack trace, ErrNotFound, custom error type,
+  gRPC error, status code, error leakage, status.Error, codes.Internal.
 ---
 
 # Go Errors Reference
@@ -874,6 +876,147 @@ for _, item := range items {
         continue  // Explicit choice to skip
     }
     // ...
+}
+```
+
+---
+
+## gRPC Error Handling
+
+> Cross-reference: `security-patterns` skill for severity tiers. `api-design-proto` skill for error design in API contracts.
+
+### Status Codes — Use the Right One
+
+```go
+import (
+    "google.golang.org/grpc/codes"
+    "google.golang.org/grpc/status"
+)
+
+// Map domain errors to gRPC status codes
+func mapError(err error) error {
+    switch {
+    case errors.Is(err, storage.ErrNotFound):
+        return status.Error(codes.NotFound, "resource not found")
+    case errors.Is(err, storage.ErrAlreadyExists):
+        return status.Error(codes.AlreadyExists, "resource already exists")
+    case errors.Is(err, ErrValidation):
+        return status.Error(codes.InvalidArgument, "invalid input")
+    case errors.Is(err, ErrUnauthorized):
+        return status.Error(codes.Unauthenticated, "authentication required")
+    case errors.Is(err, ErrForbidden):
+        return status.Error(codes.PermissionDenied, "insufficient permissions")
+    default:
+        return status.Error(codes.Internal, "internal error")
+    }
+}
+```
+
+### Error Information Leakage (CONTEXT Severity)
+
+**Never expose internal details in gRPC status messages.** Internal errors (DB queries, stack traces, file paths) must be logged server-side and replaced with generic messages for clients.
+
+```go
+// BAD — leaks internal details to client
+func (s *Server) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (*pb.Order, error) {
+    order, err := s.repo.Get(ctx, req.Id)
+    if err != nil {
+        return nil, fmt.Errorf("query failed: %v", err)  // Client sees DB details
+    }
+    return order, nil
+}
+
+// BAD — status.Errorf with internal error
+func (s *Server) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (*pb.Order, error) {
+    order, err := s.repo.Get(ctx, req.Id)
+    if err != nil {
+        return nil, status.Errorf(codes.Internal, "database query failed: %v", err)
+    }
+    return order, nil
+}
+
+// GOOD — log internally, return sanitised status
+func (s *Server) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (*pb.Order, error) {
+    order, err := s.repo.Get(ctx, req.Id)
+    if err != nil {
+        if errors.Is(err, storage.ErrNotFound) {
+            return nil, status.Error(codes.NotFound, "order not found")
+        }
+        s.logger.Error().Err(err).Str("order_id", req.Id).Msg("get order")
+        return nil, status.Error(codes.Internal, "internal error")
+    }
+    return order, nil
+}
+```
+
+### Rich Error Details
+
+For validation errors, use `google.rpc.BadRequest` detail messages:
+
+```go
+import (
+    "google.golang.org/genproto/googleapis/rpc/errdetails"
+    "google.golang.org/grpc/status"
+)
+
+func validationError(violations map[string]string) error {
+    st := status.New(codes.InvalidArgument, "validation failed")
+    br := &errdetails.BadRequest{}
+    for field, desc := range violations {
+        br.FieldViolations = append(br.FieldViolations, &errdetails.BadRequest_FieldViolation{
+            Field:       field,
+            Description: desc,
+        })
+    }
+    st, _ = st.WithDetails(br)
+    return st.Err()
+}
+```
+
+### Interceptor Error Wrapping
+
+Errors from interceptors (auth, rate limiting) should use proper status codes, not fmt.Errorf:
+
+```go
+// BAD — auth interceptor returning plain error
+func authInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+    if err := authenticate(ctx); err != nil {
+        return nil, fmt.Errorf("authentication failed: %w", err)  // Client gets UNKNOWN code
+    }
+    return handler(ctx, req)
+}
+
+// GOOD — auth interceptor with proper status
+func authInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+    if err := authenticate(ctx); err != nil {
+        return nil, status.Error(codes.Unauthenticated, "invalid or expired token")
+    }
+    return handler(ctx, req)
+}
+```
+
+### Stream Error Handling
+
+Stream errors need careful handling — the stream may be half-open:
+
+```go
+func (s *Server) WatchOrders(req *pb.WatchRequest, stream pb.OrderService_WatchOrdersServer) error {
+    for {
+        select {
+        case <-stream.Context().Done():
+            // Client disconnected — not an error
+            return nil
+        case event, ok := <-events:
+            if !ok {
+                return nil // Channel closed, stream complete
+            }
+            if err := stream.Send(event); err != nil {
+                // Client may have disconnected mid-send
+                s.logger.Warn().Err(err).Msg("send to stream")
+                return status.Error(codes.Internal, "stream send failed")
+            }
+        }
+    }
 }
 ```
 

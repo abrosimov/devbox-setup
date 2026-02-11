@@ -574,68 +574,105 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 
 #### Checkpoint F: Security
 
+> Uses three-tier severity model: **CRITICAL** (never acceptable), **GUARDED** (dev OK with guards), **CONTEXT** (needs judgment). See `security-patterns` skill for full reference.
+
 **Search for security-sensitive patterns:**
 ```bash
-# Find SQL query construction
+# CRITICAL: SQL injection
 git diff main...HEAD --name-only -- '*.py' | xargs grep -n "execute.*%\|execute.*format\|execute.*f\"\|cursor.*+\|\.format.*SELECT\|\.format.*INSERT"
 
-# Find command execution
+# CRITICAL: Command injection / code execution
 git diff main...HEAD --name-only -- '*.py' | xargs grep -n "subprocess\|os.system\|os.popen\|eval(\|exec("
 
-# Find file path construction
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "open(.*+\|open(.*format\|open(.*f\"\|Path(.*+"
+# CRITICAL: Unsafe deserialization
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n "pickle.load\|pickle.loads\|yaml.load\|yaml.unsafe_load"
 
-# Find pickle/yaml deserialization
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "pickle.load\|yaml.load\|yaml.unsafe_load"
+# CRITICAL: Timing-unsafe comparisons on secrets
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n '== .*token\|== .*secret\|== .*key\|== .*hash\|== .*password\|!= .*token'
 
-# Find sensitive data logging
+# CRITICAL: random module in security context
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n "import random\|from random import\|random.randint\|random.choice"
+
+# CRITICAL: Sensitive data in logs
 git diff main...HEAD --name-only -- '*.py' | xargs grep -n "log.*password\|log.*token\|log.*secret\|log.*key\|print.*password"
 
-# Find hardcoded secrets
+# CRITICAL: Hardcoded secrets
 git diff main...HEAD --name-only -- '*.py' | xargs grep -n "password.*=.*[\"']\|token.*=.*[\"']\|secret.*=.*[\"']\|api_key.*=.*[\"']"
+
+# CRITICAL: Weak hashing for security purposes
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n "hashlib.md5\|hashlib.sha1\|md5(\|sha1("
+
+# CRITICAL: SSTI (server-side template injection)
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n "Template(\|render_template_string\|jinja2.Template("
+
+# GUARDED: TLS verification disabled
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n "verify=False\|CERT_NONE\|check_hostname.*False"
+
+# CONTEXT: File path construction
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n "open(.*+\|open(.*format\|open(.*f\"\|Path(.*+"
+
+# CONTEXT: shell=True in subprocess
+git diff main...HEAD --name-only -- '*.py' | xargs grep -n "shell=True"
 ```
 
 ```
 Security issues found: ___
 
-SQL Injection risks:
-  - String formatting in SQL queries: ___
+CRITICAL — automatic FAIL if found in any context:
+  SQL Injection (f-strings/.format in queries):
     List with line numbers: ___
-  - f-strings or .format() in queries: ___
+  Command Injection (user input in subprocess/os.system):
     List: ___
-  - Using parameterized queries correctly: ___
+  eval()/exec() with user input:
+    List: ___
+  Unsafe deserialization (pickle on untrusted data):
+    List: ___
+    FIX: use json, or msgpack for binary
+  yaml.load without SafeLoader:
+    List: ___
+    FIX: use yaml.safe_load()
+  Timing-unsafe comparison (== on token/secret/hash):
+    List: ___
+    FIX: use hmac.compare_digest()
+  random module in security context:
+    List: ___
+    FIX: use secrets module (secrets.token_urlsafe, secrets.token_hex)
+  Sensitive data in logs/print:
+    List: ___
+  Hardcoded secrets:
+    List: ___
+  Weak hashing for passwords/tokens (md5/sha1):
+    List: ___
+    FIX: use argon2id or bcrypt for passwords, sha256+ for integrity
+  SSTI (Template() / render_template_string with user input):
+    List: ___
+    FIX: use render_template() with file-based templates
 
-Command Injection risks:
-  - User input in subprocess/os.system: ___
+GUARDED — FAIL unless dev-only with proper guard:
+  verify=False / CERT_NONE:
     List: ___
-  - shell=True patterns: ___
+    Guard check: [ ] config flag  [ ] env check  [ ] test-only
+  shell=True in subprocess:
     List: ___
-  - eval()/exec() with user input: ___
-    List: ___
+    Guard check: [ ] no user input  [ ] input validated  [ ] test-only
 
-Path Traversal risks:
-  - User input in file paths without validation: ___
-    List: ___
-  - os.path.join without path validation: ___
+  GUARDED check procedure:
+    For each GUARDED finding:
+    1. Is it in a test file? → OK
+    2. Is it behind a config/env check (e.g., if settings.DEBUG)? → OK
+    3. Is the input fully controlled (no user data)? → OK for shell=True
+    4. None of the above? → FLAG as unguarded
 
-Deserialization risks:
-  - pickle.load on untrusted data: ___
+CONTEXT — needs judgment:
+  Path traversal (user input in file paths):
     List: ___
-  - yaml.load without SafeLoader: ___
+    os.path.realpath + startswith validation present: YES/NO
+  SSRF (user-controlled URLs):
     List: ___
-
-SSRF risks:
-  - User-controlled URLs in HTTP clients: ___
+    Host allowlist present: YES/NO
+  gRPC error leakage (internal details in responses):
     List: ___
-  - URL allowlist validation: YES/NO
-
-Information Disclosure:
-  - Sensitive data in logs: ___
-    List: ___
-  - Error messages exposing internals: ___
-    List: ___
-  - Hardcoded secrets: ___
-    List: ___
+    FIX: use grpc.StatusCode, sanitise before returning
 
 Authentication/Authorization:
   - Auth checks before sensitive operations: ___
@@ -671,47 +708,50 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 **Security Rules:**
 
 ```python
-# BAD: SQL injection via string formatting
-query = f"SELECT * FROM users WHERE id = '{user_id}'"
-cursor.execute(query)
+# CRITICAL: SQL injection via string formatting
+query = f"SELECT * FROM users WHERE id = '{user_id}'"  # BAD
+cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))  # GOOD
 
-# GOOD: Parameterized query
-cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+# CRITICAL: Command injection
+subprocess.run(f"echo {user_input}", shell=True)       # BAD
+subprocess.run(["echo", user_input], shell=False)       # GOOD
 
-# BAD: Command injection
-subprocess.run(f"echo {user_input}", shell=True)
+# CRITICAL: Timing-unsafe comparison
+if token == expected_token:                              # BAD — timing side-channel
+if hmac.compare_digest(token, expected_token):           # GOOD
 
-# GOOD: Pass arguments as list, no shell
-subprocess.run(["echo", user_input], shell=False)
+# CRITICAL: Insecure random
+import random; token = random.randint(0, 999999)         # BAD
+import secrets; token = secrets.token_urlsafe(32)        # GOOD
 
-# BAD: Path traversal
-file_path = os.path.join(base_dir, user_input)  # "../../../etc/passwd" bypasses
+# CRITICAL: Unsafe deserialization
+data = pickle.load(untrusted_file)                       # BAD — RCE
+data = yaml.load(untrusted_string)                       # BAD — RCE
+data = yaml.safe_load(untrusted_string)                  # GOOD
 
-# GOOD: Validate path after join
+# CRITICAL: SSTI
+output = render_template_string(user_input)              # BAD — RCE
+output = render_template("template.html", data=data)     # GOOD
+
+# CONTEXT: Path traversal
+file_path = os.path.join(base_dir, user_input)           # BAD without validation
 file_path = os.path.join(base_dir, user_input)
 if not os.path.realpath(file_path).startswith(os.path.realpath(base_dir)):
-    raise ValueError("Invalid path")
+    raise ValueError("Invalid path")                     # GOOD
 
-# BAD: Unsafe deserialization
-data = pickle.load(untrusted_file)  # Remote code execution!
-data = yaml.load(untrusted_string)  # Can execute arbitrary code
+# CRITICAL: Logging sensitive data
+logger.info(f"User login: {username}, password: {password}")   # BAD
+logger.info(f"User login: {username}, password: [REDACTED]")   # GOOD
 
-# GOOD: Safe alternatives
-data = yaml.safe_load(untrusted_string)
-# Avoid pickle for untrusted data; use JSON instead
-
-# BAD: Logging sensitive data
-logger.info(f"User login: {username}, password: {password}")
-
-# GOOD: Redact sensitive fields
-logger.info(f"User login: {username}, password: [REDACTED]")
-
-# BAD: SSRF - user controls URL
-response = requests.get(user_provided_url)
-
-# GOOD: Validate URL against allowlist
-if not is_allowed_host(user_provided_url):
+# CONTEXT: SSRF
+response = requests.get(user_provided_url)               # BAD without allowlist
+if not is_allowed_host(user_provided_url):               # GOOD
     raise ValueError("URL not allowed")
+
+# GUARDED: verify=False — dev-only with guard
+requests.get(url, verify=False)                          # BAD — no guard
+if settings.DEBUG:
+    requests.get(url, verify=False)                      # OK — guarded
 ```
 
 #### Checkpoint H: Scope Verification (Spec vs Plan vs Implementation)

@@ -715,7 +715,32 @@ npm run build
 
 **Catches SSR errors, import issues, and type errors that `tsc` might miss.**
 
-### Step 7: Smoke Test (If Applicable)
+### Step 7: Security Scan (MANDATORY)
+
+Scan changed files for CRITICAL security patterns (see `security-patterns` skill). These are **never acceptable** in any context.
+
+```bash
+# Get list of changed frontend files
+CHANGED=$(git diff --name-only HEAD -- '*.ts' '*.tsx' '*.jsx' '*.js' | tr '\n' ' ')
+
+# CRITICAL: XSS — bypassing React auto-escaping (use DOMPurify if needed)
+echo "$CHANGED" | xargs grep -n 'dangerouslySetInnerHTML\|\.innerHTML\|\.outerHTML\|document\.write\|insertAdjacentHTML' 2>/dev/null || true
+
+# CRITICAL: eval / Function constructor (never use with dynamic input)
+echo "$CHANGED" | xargs grep -n 'eval(\|new Function(' 2>/dev/null || true
+
+# CRITICAL: Secrets in client-side env vars (use server-only env vars)
+echo "$CHANGED" | xargs grep -n 'NEXT_PUBLIC.*SECRET\|NEXT_PUBLIC.*KEY\|NEXT_PUBLIC.*PASSWORD\|NEXT_PUBLIC.*TOKEN' 2>/dev/null || true
+
+# CRITICAL: Tokens/passwords in localStorage (use httpOnly cookies)
+echo "$CHANGED" | xargs grep -n 'localStorage.*token\|localStorage.*secret\|localStorage.*password\|sessionStorage.*token' 2>/dev/null || true
+```
+
+**If any pattern matches → review each match.** Not every match is a true positive (e.g., `NEXT_PUBLIC_API_KEY` for a public API). But every match MUST be reviewed and either:
+- **Fixed** — replace with the safe alternative
+- **Justified** — explain why this specific usage is safe (e.g., public API key, not a secret)
+
+### Step 8: Smoke Test (If Applicable)
 
 If there's a simple way to verify the feature works:
 - Open the page in browser
@@ -759,6 +784,7 @@ Before completing, output this summary:
 | Tests | ✅ PASS / ❌ FAIL | X tests, Y passed |
 | `prettier` | ✅ PASS | |
 | `next build` | ✅ PASS / ❌ FAIL / ⏭️ N/A | |
+| Security scan | ✅ CLEAR / ⚠️ REVIEW | [findings if any] |
 | Smoke test | ✅ PASS / ⏭️ N/A | [what was tested] |
 
 **Result**: READY / BLOCKED
@@ -802,6 +828,14 @@ Before completing, output this summary:
 - [ ] No `<div onClick>` (use `<button>`)
 - [ ] No barrel files (direct imports)
 - [ ] Simplest solution that works (Prime Directive)
+
+### Security (CRITICAL Patterns — see `security-patterns` skill)
+- [ ] No `dangerouslySetInnerHTML` without DOMPurify sanitisation
+- [ ] No `eval()` / `new Function()` with dynamic input
+- [ ] No secrets in `NEXT_PUBLIC_*` environment variables
+- [ ] No tokens/passwords stored in `localStorage` (use httpOnly cookies)
+- [ ] All user-generated URLs validated (reject `javascript:` protocol)
+- [ ] No `postMessage` without origin validation on receiver
 
 ### Scope Check (Anti-Helpfulness)
 - [ ] I did NOT add features not in the plan

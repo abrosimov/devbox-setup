@@ -39,6 +39,9 @@
       "Bash(gh pr merge *)",
       "Bash(gh issue close *)",
 
+      "Bash(find / *)",
+      "Bash(find ~ *)",
+
       "Edit(.env)",
       "Edit(.env.*)",
       "Edit(**/.env)",
@@ -58,18 +61,18 @@
     ],
     "allow": [
       "Task",
+      "Glob",
+      "Grep",
       "Read",
-      "Read(**)",
       "Edit",
-      "Edit(**)",
       "Write",
-      "Write(**)",
       "NotebookEdit",
       "WebSearch",
       "WebFetch",
       "mcp__*",
 
       "Bash(go test *)",
+      "Bash(go test)",
       "Bash(go build *)",
       "Bash(go run *)",
       "Bash(go mod *)",
@@ -91,6 +94,7 @@
       "Bash(uv lock *)",
       "Bash(uvx *)",
       "Bash(pytest *)",
+      "Bash(pytest)",
       "Bash(ruff *)",
       "Bash(mypy *)",
       "Bash(pylint *)",
@@ -114,6 +118,7 @@
       "Bash(jb *)",
 
       "Bash(make *)",
+      "Bash(make)",
 
       "Bash(docker build *)",
       "Bash(docker run *)",
@@ -121,7 +126,9 @@
       "Bash(docker exec *)",
       "Bash(docker inspect *)",
       "Bash(docker ps *)",
+      "Bash(docker ps)",
       "Bash(docker images *)",
+      "Bash(docker images)",
       "Bash(docker logs *)",
 
       "Bash(gh pr view *)",
@@ -162,12 +169,23 @@
 
       "Bash(.claude/bin/*)",
 
+      "Bash(find . *)",
+      "Bash(find .)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(rg *)",
       "Bash(ls *)",
       "Bash(ls)",
       "Bash(test *)",
       "Bash([ -f *)",
       "Bash([ -d *)",
       "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(touch *)",
+      "Bash(chmod *)",
+      "Bash(realpath *)",
+      "Bash(readlink *)",
       "Bash(wc *)",
       "Bash(stat *)",
       "Bash(file *)",
@@ -187,7 +205,12 @@
       "Bash(env *)",
       "Bash(date *)",
       "Bash(basename *)",
-      "Bash(dirname *)"
+      "Bash(dirname *)",
+
+      "Bash(mise *)",
+      "Bash(claude *)",
+      "Bash(ansible *)",
+      "Bash(ansible-playbook *)"
     ]
   }
 }

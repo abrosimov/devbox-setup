@@ -149,7 +149,21 @@ All agent outputs include this metadata block:
 
 ```json
 {
-  "metadata": { "agent": "designer", "version": "1.0", "..." : "..." },
+  "metadata": { "agent": "designer", "version": "1.1", "..." : "..." },
+  "figma_source": {
+    "url": "string (full Figma URL provided by user, null if none)",
+    "file_key": "string (extracted from URL, null if none)",
+    "node_id": "string (extracted from URL, null if none)"
+  },
+  "figma_artifacts": {
+    "user_flow_url": "string (FigJam user flow diagram URL, null if not created)",
+    "state_diagrams": [
+      { "component": "string (component name)", "url": "string (FigJam URL)" }
+    ],
+    "sequence_diagrams": [
+      { "interaction": "string (interaction name)", "url": "string (FigJam URL)" }
+    ]
+  },
   "options": [
     {
       "name": "string",
@@ -178,6 +192,8 @@ All agent outputs include this metadata block:
   }
 }
 ```
+
+> **Downstream usage**: Frontend Engineer and Code Reviewer agents read `figma_source` to access the Figma file directly via `get_design_context` and `get_screenshot` for implementation verification.
 
 ### API Designer — `api_design_output.json`
 
@@ -216,7 +232,7 @@ Tracks pipeline progress across the full development cycle.
   "stages": {
     "tpm": { "status": "completed | in_progress | pending | skipped", "output": "spec.md", "approved_at": "ISO 8601 | null" },
     "domain_expert": { "status": "...", "output": "domain_analysis.md", "approved_at": null },
-    "designer": { "status": "...", "output": "design.md", "selected_option": "string | null", "approved_at": null },
+    "designer": { "status": "...", "output": "design.md", "selected_option": "string | null", "figma_source": { "url": "string | null", "file_key": "string | null" }, "figma_artifacts": { "user_flow_url": "string | null", "state_diagram_count": "number" }, "approved_at": null },
     "impl_planner": { "status": "...", "output": "plan.md", "approved_at": null },
     "database_designer": { "status": "...", "output": "schema_design.md", "approved_at": null },
     "api_designer": { "status": "...", "output": "api_design.md", "approved_at": null },

@@ -22,12 +22,26 @@ Check if user passed a model argument:
 
 ## Steps
 
+### 0. Read Workflow Config
+
+```bash
+cat .claude/workflow.json 2>/dev/null || echo '{}'
+```
+
+Parse the JSON. Extract flags (default to `true` if key is missing):
+
+| Flag | Default | Effect |
+|------|---------|--------|
+| `auto_commit` | `true` | If `false`, skip commit step |
+| `complexity_escalation` | `true` | If `false`, skip complexity check (use agent's default model) |
+
 ### 1. Compute Task Context (once)
 
 ```bash
 BRANCH=`git branch --show-current`
 JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
 BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
+DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
 
 Store these values — pass to agent, do not re-compute.
@@ -50,32 +64,32 @@ Or if there's an implementation summary from SE, use that for context.
 
 ### 4. Pre-flight Complexity Check (if no model specified)
 
-**Skip this step if user explicitly specified a model.**
+**Skip this step if user explicitly specified a model OR `complexity_escalation` is `false`.**
 
 Run complexity assessment:
 
 **For Go projects:**
 ```bash
 # Count public functions needing tests
-git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -c "^func [A-Z]" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -c "^func [A-Z]" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
 
 # Count error handling sites (complexity indicator)
-git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -c "if err != nil\|return.*err" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -c "if err != nil\|return.*err" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
 
 # Check for concurrency patterns
-git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -l "go func\|chan \|sync\." 2>/dev/null | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -l "go func\|chan \|sync\." 2>/dev/null | wc -l
 ```
 
 **For Python projects:**
 ```bash
 # Count public functions needing tests
-git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -c "^def [^_]\|^async def [^_]" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -c "^def [^_]\|^async def [^_]" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
 
 # Count exception handling sites
-git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -c "except\|raise\|try:" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -c "except\|raise\|try:" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
 
 # Check for async patterns
-git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -l "async def\|await\|asyncio" 2>/dev/null | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -l "async def\|await\|asyncio" 2>/dev/null | wc -l
 ```
 
 **Escalation thresholds:**
@@ -104,7 +118,7 @@ Example Task invocation:
 Task(
   subagent_type: "unit-test-writer-go",
   model: "{determined_model}",  // "sonnet" or "opus"
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\n{task description}"
 )
 ```
 
@@ -113,7 +127,30 @@ The agent will:
 - Write comprehensive tests
 - Provide summary and suggest next step
 
-### 6. After Completion
+### 6. Commit Tests
+
+**If `auto_commit` is `false`, skip this step.** Show changed files and tell the user:
+
+> Tests ready on branch `$BRANCH`. Commit when you're ready.
+
+**If `auto_commit` is `true` (default):**
+
+After the agent completes and tests pass:
+
+```bash
+.claude/bin/git-safe-commit -m "test($JIRA_ISSUE): add tests for $BRANCH_NAME"
+```
+
+### 7. After Completion
 
 Present the agent's summary and suggested next step to the user.
-Wait for user to say 'continue' or provide corrections.
+
+**If auto_commit was on:**
+> Tests committed on branch `$BRANCH`.
+
+**If auto_commit was off:**
+> Tests complete on branch `$BRANCH` (not committed).
+
+> **Next**: Run `/review` to review all changes.
+>
+> Say **'continue'** to proceed, or provide corrections.

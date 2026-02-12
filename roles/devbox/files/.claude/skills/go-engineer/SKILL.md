@@ -398,6 +398,8 @@ For detailed patterns, Claude will load these skills as needed:
 | `go-patterns` | HTTP clients, JSON, functional options, generics |
 | `go-concurrency` | Goroutines, channels, graceful shutdown, errgroup |
 | `go-logging` | zerolog patterns, stack traces, log levels |
+| `go-cli` | CLI tools, Kong grammar, subcommands, flags |
+| `go-toolbox` | Recommended libraries: go-provider, sqlc, env, go-devtools |
 
 ---
 

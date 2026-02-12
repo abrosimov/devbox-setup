@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# git-default-branch — detect the project's default branch.
+#
+# Priority order:
+#   1. claude.defaultBranch git config (explicit per-repo override)
+#   2. Remote HEAD (what the remote considers default)
+#   3. Git global init.defaultBranch setting
+#   4. Fallback: "main"
+#
+# Usage:
+#   .claude/bin/git-default-branch
+#   DEFAULT=$(.claude/bin/git-default-branch)
+
+git config --get claude.defaultBranch 2>/dev/null \
+  || git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' \
+  || git config --get init.defaultBranch 2>/dev/null \
+  || echo "main"

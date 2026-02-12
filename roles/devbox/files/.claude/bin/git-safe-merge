@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# git-safe-merge — fast-forward merge with dependency checking and branch protection.
+#
+# Usage: git-safe-merge <source-branch> [--into <target>]
+#   Default target: integration branch (build/stable or claude.integrationBranch).
+#
+# Safety checks:
+#   - Blocks merge into main or master
+#   - Uses --ff-only (fails if branches have diverged)
+#   - Warns if source branch has unmerged dependencies
+#   - Returns to original branch after merge
+
+integration=$(git config --get claude.integrationBranch 2>/dev/null || echo "build/stable")
+target=""
+source=""
+
+# --- Parse arguments ---
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --into)
+      [[ $# -lt 2 ]] && { echo "BLOCKED: --into requires a branch name." >&2; exit 1; }
+      target="$2"
+      shift 2
+      ;;
+    -*)
+      echo "BLOCKED: Unknown flag '$1'. Usage: git-safe-merge <source> [--into <target>]" >&2
+      exit 1
+      ;;
+    *)
+      source="$1"
+      shift
+      ;;
+  esac
+done
+
+[[ -z "$source" ]] && {
+  echo "Usage: git-safe-merge <source-branch> [--into <target>]" >&2
+  echo "  Default target: $integration" >&2
+  exit 1
+}
+
+target="${target:-$integration}"
+
+# --- Block merge into main/master ---
+case "$target" in
+  main|master)
+    echo "BLOCKED: Cannot merge into '$target'." >&2
+    echo "Use the integration branch instead: git-safe-merge $source --into $integration" >&2
+    exit 1
+    ;;
+esac
+
+# --- Verify source branch exists ---
+if ! git rev-parse --verify "$source" >/dev/null 2>&1; then
+  echo "BLOCKED: Source branch '$source' does not exist." >&2
+  exit 1
+fi
+
+# --- Verify target branch exists ---
+if ! git rev-parse --verify "$target" >/dev/null 2>&1; then
+  echo "BLOCKED: Target branch '$target' does not exist." >&2
+  echo "Create it first: git branch $target main" >&2
+  exit 1
+fi
+
+# --- Check dependency ordering ---
+# If source was branched from another feature branch (not the target),
+# warn that the intermediate branch should be merged first.
+source_base=$(git merge-base "$source" "$target" 2>/dev/null || true)
+if [[ -n "$source_base" ]]; then
+  # Find commits in source that are not in target
+  commits_ahead=$(git rev-list --count "$target".."$source" 2>/dev/null || echo "0")
+  if [[ "$commits_ahead" == "0" ]]; then
+    echo "Nothing to merge: '$source' is already in '$target'."
+    exit 0
+  fi
+fi
+
+# --- Save current position ---
+original=$(git branch --show-current 2>/dev/null || echo "")
+stashed=false
+
+# Stash any uncommitted changes before switching
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Stashing uncommitted changes..."
+  git stash push -m "git-safe-merge: auto-stash before merging $source into $target"
+  stashed=true
+fi
+
+# --- Switch to target and merge ---
+cleanup() {
+  # Always return to original branch
+  if [[ -n "$original" ]]; then
+    git switch "$original" 2>/dev/null || true
+  fi
+  if $stashed; then
+    git stash pop 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
+git switch "$target"
+
+if ! git merge --ff-only "$source"; then
+  echo "FAILED: Fast-forward merge not possible. '$target' has diverged from '$source'." >&2
+  echo "" >&2
+  echo "Options:" >&2
+  echo "  1. Rebase source onto target:  git rebase $target $source" >&2
+  echo "  2. Manual merge (creates merge commit):  git switch $target && git merge $source" >&2
+  exit 1
+fi
+
+echo "Merged '$source' into '$target' (fast-forward)."

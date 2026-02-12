@@ -37,18 +37,23 @@ Use the `designer` agent.
 **Include in agent prompt**: `Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}`
 
 The agent will:
+- **Ask for a Figma URL** (if user has one) and save it to project metadata for downstream agents
 - Read existing documentation (spec, domain analysis, and optionally plan, API design)
-- Check for existing design context (Figma MCP, Storybook MCP, existing tokens)
-- Define design tokens in W3C format
+- Read existing design context from Figma (via MCP), Storybook (via MCP), and existing tokens
+- **Create user flow diagrams in FigJam** (flowcharts for key user journeys)
+- **Create component state diagrams in FigJam** (state machines for interactive components)
+- Define design tokens in W3C format (from Figma variables if available)
 - Design layout and responsive behaviour
 - Specify components (props, variants, states, interactions, accessibility)
 - **Present 3-5 design options** for user to choose from before developing full spec
 - Develop the selected option into full design specification
+- Generate design system rules and set up Code Connect (if Figma file provided)
 - Iterate with user on feedback
 - Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design_system.tokens.json`
-- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md`
+- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md` (includes FigJam diagram URLs)
+- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design_output.json` (includes `figma_source` for downstream agents)
 
-**Important**: The designer is intentionally opinionated about minimal component sets and will challenge unnecessary complexity. This is by design.
+**Important**: The designer is intentionally opinionated about minimal component sets and will challenge unnecessary complexity. This is by design. The Figma URL (if provided) is persisted in `design_output.json` so that Frontend Engineer and Code Reviewer agents can access the design file directly.
 
 ### 4. After Completion
 

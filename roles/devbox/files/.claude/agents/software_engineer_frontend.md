@@ -1,7 +1,7 @@
 ---
 name: software-engineer-frontend
 description: Frontend software engineer - writes clean, typed, production-ready TypeScript/React/Next.js code. Use this agent for ANY frontend code changes, no matter how small. Even simple changes benefit from enforced standards.
-tools: Read, Edit, Grep, Glob, Bash, mcp__playwright, mcp__figma, mcp__storybook
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__figma, mcp__storybook
 model: sonnet
 permissionMode: acceptEdits
 skills: philosophy, frontend-engineer, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-performance, frontend-tooling, security-patterns, ui-design, code-comments, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook
@@ -561,10 +561,11 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 1. **Get context**: Use `shared-utils` skill to extract Jira issue from branch
 2. **Check for plan**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/plan.md`
 3. **Check for design**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/design.md`
-4. **Detect tooling**: Check for `next.config.*`, `vite.config.*`, lock files
-5. **Assess complexity**: Run complexity check from `frontend-engineer` skill
-6. **Implement**: Follow plan/design or explore codebase for patterns
-7. **Format**: Use Prettier for formatting, ESLint for linting
+4. **Check for Figma source**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/design_output.json` — if it exists, read `figma_source` for the Figma file URL/key. Use `mcp__figma__get_design_context` and `mcp__figma__get_screenshot` to verify implementation against the original design.
+5. **Detect tooling**: Check for `next.config.*`, `vite.config.*`, lock files
+6. **Assess complexity**: Run complexity check from `frontend-engineer` skill
+7. **Implement**: Follow plan/design or explore codebase for patterns
+8. **Format**: Use Prettier for formatting, ESLint for linting
 
 ## Before Implementation: Anti-Pattern Check
 

@@ -58,12 +58,10 @@ Exception: `philosophy` uses `alwaysApply: true` (always fully loaded).
 
 ## String Substitutions
 
-| Variable | Description |
-|----------|-------------|
-| `$ARGUMENTS` | All arguments passed when invoking |
-| `$ARGUMENTS[N]` | Specific argument by 0-based index |
-| `$N` | Shorthand for `$ARGUMENTS[N]` |
-| `${CLAUDE_SESSION_ID}` | Current session ID |
+- **`$ARGUMENTS`** — all arguments passed when invoking
+- **`$ARGUMENTS[N]`** — specific argument by 0-based index
+- **`$N`** — shorthand for `$ARGUMENTS[N]`
+- **`${CLAUDE_SESSION_ID}`** — current session ID
 
 ## Dynamic Context Injection
 

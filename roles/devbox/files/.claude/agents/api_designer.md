@@ -1,7 +1,7 @@
 ---
 name: api-designer
 description: API designer who creates contracts (REST/OpenAPI or Protobuf/gRPC) consumed by both frontend and backend. Acts as the bridge between implementation planning and engineering.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, mcp__sequentialthinking
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
 skills: philosophy, config, api-design-rest, api-design-proto, security-patterns, agent-communication, structured-output, shared-utils, mcp-sequential-thinking
 updated: 2026-02-10

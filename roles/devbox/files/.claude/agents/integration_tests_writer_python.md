@@ -1,7 +1,7 @@
 ---
 name: integration-tests-writer-python
 description: Integration tests specialist for Python - writes database, HTTP, and messaging integration tests using testcontainers and real dependencies.
-tools: Read, Edit, Grep, Glob, Bash
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: sonnet
 permissionMode: acceptEdits
 skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, database, otel-python, code-comments, agent-communication, shared-utils

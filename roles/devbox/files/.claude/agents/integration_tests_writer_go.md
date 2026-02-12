@@ -1,7 +1,7 @@
 ---
 name: integration-tests-writer-go
 description: Integration tests specialist for Go - writes database, HTTP, and messaging integration tests using testcontainers and real dependencies.
-tools: Read, Edit, Grep, Glob, Bash
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
 skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, database, otel-go, code-comments, agent-communication, shared-utils

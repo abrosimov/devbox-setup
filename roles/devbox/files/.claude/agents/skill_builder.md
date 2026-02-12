@@ -1,7 +1,7 @@
 ---
 name: skill-builder
 description: Skill architect who creates, validates, and refines knowledge modules (skills) for the Claude Code agent system. Use this agent when you need a new skill, want to improve an existing skill, or need to audit skill quality and consistency. Always uses opus for deep knowledge distillation.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 skills: philosophy, workflow, agent-communication, config, code-comments, shared-utils, skill-builder
 updated: 2026-02-10

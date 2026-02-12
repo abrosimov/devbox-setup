@@ -34,6 +34,39 @@ You are orchestrating a complete development cycle with 4 strategic milestone ga
 
 ### Phase 0: Setup (Gate 0)
 
+**Read Workflow Config**:
+
+```bash
+cat .claude/workflow.json 2>/dev/null || echo '{}'
+```
+
+Parse the JSON. Extract flags (default to `true` if key is missing):
+
+| Flag | Default | Effect in Full-Cycle |
+|------|---------|---------------------|
+| `auto_commit` | `true` | If `false`, skip all auto-commit steps; show changes and let user commit |
+| `complexity_escalation` | `true` | If `false`, always use agent's default model (no auto-escalation to Opus) |
+
+Note: `agent_pipeline` is not checked here — `/full-cycle` always uses agents by definition.
+
+**Git Setup**:
+
+```bash
+DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
+CURRENT=$(git branch --show-current)
+```
+
+| Current Branch | Action |
+|---------------|--------|
+| `main` / `master` / `$DEFAULT_BRANCH` | Create feature branch from it |
+| Feature branch (anything else) | Use as-is |
+
+If creating a feature branch, ask user for name (convention: `PROJ-123_short_description`):
+```bash
+# Create and switch to feature branch
+git checkout -b <branch-name> "$DEFAULT_BRANCH"
+```
+
 **Compute Task Context (once)**:
 ```bash
 BRANCH=`git branch --show-current`
@@ -41,7 +74,7 @@ JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
 BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
 ```
 
-Store these values — pass to all agents throughout the cycle.
+Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to all agents throughout the cycle.
 
 **Detect project stack**:
 - If `go.mod` exists → **Go backend**
@@ -212,11 +245,22 @@ Record decision in `decisions.json`. On approval, update `current_gate = "none"`
    - Update pipeline state: `observability_engineer.status = "completed"`
    - If no observability stream: set `observability_engineer.status = "skipped"`
 
+**Commit after implementation** (before testing) — **if `auto_commit` is `true`**:
+```bash
+.claude/bin/git-safe-commit -m "feat($JIRA_ISSUE): implement $BRANCH_NAME"
+```
+If `auto_commit` is `false`, skip — changes stay unstaged/uncommitted until user commits.
+
 4. **Testing**:
    - Run `unit-test-writer-{lang}` agent → writes backend tests
    - Run `unit-test-writer-frontend` agent → writes frontend tests (if frontend exists)
    - Run all tests to verify they pass
    - Update pipeline state: `test_writer.status = "completed"`
+
+**Commit after tests** — **if `auto_commit` is `true`**:
+```bash
+.claude/bin/git-safe-commit -m "test($JIRA_ISSUE): add tests for $BRANCH_NAME"
+```
 
 5. **Review**:
    - Run `code-reviewer-{lang}` agent → reviews implementation
@@ -226,6 +270,7 @@ Record decision in `decisions.json`. On approval, update `current_gate = "none"`
 - Run appropriate SE agent(s) with review feedback (fix loop)
 - Re-run tests
 - Re-run review
+- If `auto_commit` is `true`: commit fixes via `.claude/bin/git-safe-commit -m "fix($JIRA_ISSUE): address review feedback"`
 - Repeat until clean
 
 **GATE 4** — "Ship it?"
@@ -237,10 +282,50 @@ Update `current_gate = "G4"`.
 > Implementation complete. Review passed with no blocking issues.
 > - [Summary of changes: N files modified, M tests written]
 > - [Review result: X blocking (fixed) | Y important | Z suggestions]
+> - Branch: `$BRANCH` (N commits ahead of `$DEFAULT_BRANCH`)
 >
-> **[Awaiting your decision]** — Say **'commit'** to create commit, **'done'** to finish without commit, or provide corrections.
+> **[Awaiting your decision]**:
+> - **'pr'** — push branch and create pull request
+> - **'done'** — finish without pushing (changes stay on feature branch)
+> - Or provide corrections.
 
 Record decision in `decisions.json`.
+
+### Phase 5: Push + PR (if requested)
+
+When user says **'pr'**:
+
+```bash
+# Ensure everything is committed
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  # If auto_commit is false, warn about uncommitted changes and ask user to commit first
+  # If auto_commit is true (default):
+  .claude/bin/git-safe-commit -m "chore($JIRA_ISSUE): final cleanup"
+fi
+
+# Push and create PR
+git push -u origin $BRANCH
+gh pr create --title "feat($JIRA_ISSUE): $BRANCH_NAME" --body "$(cat <<'EOF'
+## Summary
+[Summary of changes from implementation]
+
+## Test plan
+- [ ] Unit tests pass
+- [ ] Integration tests pass (if applicable)
+- [ ] Manual verification
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+If push/PR succeeds:
+> PR created for `$BRANCH` against `$DEFAULT_BRANCH`.
+>
+> Next steps:
+> - Review the PR in GitHub
+> - Delete feature branch after merge: `git branch -d $BRANCH`
+> - Clean up worktree: `claude-wt rm $BRANCH` (if using worktrees)
 
 ## User Commands (Available at Any Gate)
 
@@ -252,8 +337,26 @@ Record decision in `decisions.json`.
 | `skip` | Skip current phase, move to next gate |
 | `stop` | End workflow entirely |
 | `back` | Return to previous gate |
-| `commit` | Create commit (Gate 4) |
-| `done` | Finish without commit (Gate 4) |
+| `pr` | Push branch and create PR (Gate 4) |
+| `done` | Finish without pushing (Gate 4) |
+
+## Git Workflow
+
+- **Branch creation**: Phase 0 creates a feature branch from the default branch if needed
+- **Auto-commits**: Implementation and test phases auto-commit via `git-safe-commit` (when `auto_commit: true` in `workflow.json`)
+- **Manual commits**: When `auto_commit: false`, the pipeline shows changes but lets the user commit
+- **Push + PR**: Gate 4 offers to push and create a pull request
+- **Safety**: All git operations go through `.claude/bin/git-safe-*` scripts
+- **Protected branches**: Commits blocked on `main`, `master` via hooks
+- **Push requires approval**: The pipeline never pushes without user confirmation
+
+### Commit Convention
+
+```
+<type>(<JIRA_ISSUE>): <description>
+```
+
+Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 
 ## Notes
 
@@ -263,3 +366,4 @@ Record decision in `decisions.json`.
 - Pipeline state persists in `pipeline_state.json` — resume with `/full-cycle` if interrupted
 - Decisions are logged in `decisions.json` for audit trail
 - Use `stop` at any time to exit
+- One Jira ticket can span multiple worktrees (e.g., `PROJ-123_backend`, `PROJ-123_frontend`)

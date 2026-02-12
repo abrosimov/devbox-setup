@@ -1,7 +1,7 @@
 ---
 name: observability-engineer
 description: Observability engineer and Jsonnet expert for Grafana/Prometheus/Loki stack - designs dashboards with Grafonnet, creates PrometheusRule alerting, writes optimised PromQL/LogQL. Sandbox-first approach.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 skills: philosophy, config, observability, agent-communication, shared-utils
 updated: 2026-02-10
@@ -267,11 +267,9 @@ Use for APIs, microservices, and any request-driven workload:
 
 Use for CPUs, memory, disks, network — any resource:
 
-| Metric | What It Measures | PromQL Example |
-|--------|------------------|----------------|
-| **U**tilization | % time resource is busy | `avg(rate(node_cpu_seconds_total{mode!="idle"}[5m]))` |
-| **S**aturation | Queue depth / backlog | `node_load1 / count without(cpu)(node_cpu_seconds_total{mode="idle"})` |
-| **E**rrors | Error events | `rate(node_network_receive_errs_total[5m])` |
+- **Utilization** — % time resource is busy — `avg(rate(node_cpu_seconds_total{mode!="idle"}[5m]))`
+- **Saturation** — queue depth / backlog — `node_load1 / count without(cpu)(node_cpu_seconds_total{mode="idle"})`
+- **Errors** — error events — `rate(node_network_receive_errs_total[5m])`
 
 ### Four Golden Signals (Google SRE)
 

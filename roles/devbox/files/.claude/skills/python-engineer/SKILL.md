@@ -21,7 +21,7 @@ Assess complexity before starting:
 wc -l {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null | awk '{print $1}'
 
 # Count files to create/modify
-git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | wc -l
 
 # Check for async patterns in plan
 grep -l "async\|asyncio\|await\|concurrent" {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null | wc -l
@@ -283,14 +283,14 @@ def set_email(self, email: str) -> None:
 
 ### Formatting
 
-Format code with `black`:
+Format code with `ruff format`:
 
 ```bash
-# Format changed files only in legacy codebases
-black --diff path/to/changed_file.py
+# Format changed files
+uv run ruff format path/to/changed_file.py
 
-# Or use uv
-uv run black path/to/file.py
+# Format entire project
+uv run ruff format .
 ```
 
 ### Type Hints
@@ -401,23 +401,11 @@ If the plan flags schema changes but no `schema_design.md` exists, suggest runni
 
 ### Detect Project Tooling
 
-```bash
-# Check for uv
-ls uv.lock pyproject.toml 2>/dev/null
+See `python-tooling` skill for full detection logic and scaffold sequence.
 
-# Check for poetry
-ls poetry.lock 2>/dev/null
+Quick reference: check for `uv.lock` → uv, `poetry.lock` → poetry, `requirements.txt` only → pip, nothing → **new project, use uv**.
 
-# Check for pip
-ls requirements.txt 2>/dev/null
-```
-
-| Files Found | Project Uses | Your Commands |
-|-------------|--------------|---------------|
-| `uv.lock` | uv | `uv add`, `uv run`, `uv sync` |
-| `poetry.lock` | poetry | `poetry add`, `poetry run` |
-| `requirements.txt` only | pip | `pip install`, `python` |
-| Nothing (new project) | **uv** | `uv init`, `uv add`, `uv run` |
+For new projects, follow the **Scaffold Sequence** in `python-tooling` step by step.
 
 ---
 

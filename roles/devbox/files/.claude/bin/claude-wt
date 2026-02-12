@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# claude-wt — manage Claude Code worktrees for parallel development.
+#
+# Island Branches model: each worktree gets an independent feature branch
+# off the project's default branch. No local merge — integration via PR.
+#
+# Usage:
+#   claude-wt new <branch> [--from <base>]  Create worktree + branch
+#   claude-wt list [--ticket PROJ-123]      List worktrees, optionally filtered
+#   claude-wt status                        Show worktrees with PR status
+#   claude-wt rm <branch>                   Remove worktree + delete merged branch
+#   claude-wt clean                         Remove all fully-merged worktrees
+#
+# Default base: project's default branch (detected via git-default-branch).
+# Override with --from for stacking branches.
+#
+# Directory layout:
+#   ../project-wt/branch-name/   (sibling directory to main worktree)
+#
+# On creation:
+#   - Copies .claude/settings.local.json (gitignored, wouldn't exist otherwise)
+#   - Symlinks .claude/memory/ for shared downstream knowledge
+
+cmd="${1:-help}"
+shift || true
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+get_default_branch() {
+  "$SCRIPT_DIR/git-default-branch"
+}
+
+get_integration() {
+  git config --get claude.integrationBranch 2>/dev/null || echo ""
+}
+
+case "$cmd" in
+  new)
+    name=""
+    base=""
+
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --from)
+          [[ $# -lt 2 ]] && { echo "Error: --from requires a branch name." >&2; exit 1; }
+          base="$2"
+          shift 2
+          ;;
+        -*)
+          echo "Unknown flag: $1" >&2
+          echo "Usage: claude-wt new <branch> [--from <base>]" >&2
+          exit 1
+          ;;
+        *)
+          name="$1"
+          shift
+          ;;
+      esac
+    done
+
+    [[ -z "$name" ]] && {
+      echo "Usage: claude-wt new <branch> [--from <base>]" >&2
+      echo "  Default base: $(get_default_branch)" >&2
+      exit 1
+    }
+
+    base="${base:-$(get_default_branch)}"
+
+    project=$(basename "$PWD")
+    wt_parent="../${project}-wt"
+    wt_dir="${wt_parent}/${name}"
+
+    # Verify base branch exists
+    if ! git rev-parse --verify "$base" >/dev/null 2>&1; then
+      echo "Error: Base branch '$base' does not exist." >&2
+      exit 1
+    fi
+
+    # Create worktree
+    mkdir -p "$wt_parent"
+    git worktree add "$wt_dir" -b "$name" "$base"
+
+    # Propagate settings.local.json (gitignored — won't be in worktree checkout)
+    if [[ -f .claude/settings.local.json ]]; then
+      mkdir -p "$wt_dir/.claude"
+      cp .claude/settings.local.json "$wt_dir/.claude/"
+      echo "Copied .claude/settings.local.json"
+    fi
+
+    # Symlink downstream memory for shared cross-ticket knowledge
+    if [[ -d .claude/memory ]]; then
+      mkdir -p "$wt_dir/.claude"
+      memory_target=$(cd .claude/memory && pwd)
+      ln -sf "$memory_target" "$wt_dir/.claude/memory"
+      echo "Linked downstream memory"
+    fi
+
+    wt_abs=$(cd "$wt_dir" && pwd)
+    echo ""
+    echo "Worktree ready:"
+    echo "  path:   $wt_abs"
+    echo "  branch: $name"
+    echo "  base:   $base"
+    echo ""
+    echo "Launch Claude Code:"
+    echo "  claude --cwd $wt_abs"
+    ;;
+
+  list)
+    ticket=""
+
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --ticket)
+          [[ $# -lt 2 ]] && { echo "Error: --ticket requires a value." >&2; exit 1; }
+          ticket="$2"
+          shift 2
+          ;;
+        *)
+          shift
+          ;;
+      esac
+    done
+
+    if [[ -n "$ticket" ]]; then
+      result=$(git worktree list | grep "$ticket" || true)
+      if [[ -z "$result" ]]; then
+        echo "No worktrees found for ticket: $ticket"
+      else
+        echo "$result"
+      fi
+    else
+      git worktree list
+    fi
+    ;;
+
+  rm)
+    name="${1:?Usage: claude-wt rm <branch>}"
+    project=$(basename "$PWD")
+    wt_dir="../${project}-wt/${name}"
+
+    if [[ ! -d "$wt_dir" ]]; then
+      echo "Worktree not found: $wt_dir" >&2
+      exit 1
+    fi
+
+    git worktree remove "$wt_dir"
+
+    if git branch -d "$name" 2>/dev/null; then
+      echo "Removed worktree and branch: $name"
+    else
+      echo "Worktree removed. Branch '$name' kept (not fully merged — use git branch -D to force)."
+    fi
+    ;;
+
+  clean)
+    echo "Cleaning merged worktrees..."
+    main_wt=$(git rev-parse --show-toplevel)
+    removed=0
+
+    while IFS= read -r line; do
+      wt=$(echo "$line" | awk '{print $1}')
+      [[ "$wt" == "$main_wt" ]] && continue
+
+      br=$(git -C "$wt" branch --show-current 2>/dev/null || true)
+      [[ -z "$br" ]] && continue
+
+      if git branch --merged 2>/dev/null | grep -q "^[[:space:]]*${br}$"; then
+        echo "  Removing: $wt ($br)"
+        git worktree remove "$wt" 2>/dev/null || true
+        git branch -d "$br" 2>/dev/null || true
+        ((removed++)) || true
+      fi
+    done < <(git worktree list | tail -n +2)
+
+    git worktree prune
+    echo "Done. Removed $removed worktree(s)."
+    ;;
+
+  status)
+    default_branch=$(get_default_branch)
+    main_wt=$(git rev-parse --show-toplevel)
+
+    printf "%-50s %-30s %s\n" "WORKTREE" "BRANCH" "STATUS"
+    printf "%-50s %-30s %s\n" "--------" "------" "------"
+
+    while IFS= read -r line; do
+      wt=$(echo "$line" | awk '{print $1}')
+      br=$(git -C "$wt" branch --show-current 2>/dev/null || echo "(detached)")
+
+      if [[ "$wt" == "$main_wt" ]]; then
+        label="(main worktree)"
+      else
+        ahead=$(git rev-list --count "$default_branch".."$br" 2>/dev/null || echo "?")
+        pr_state=$(gh pr view "$br" --json state --jq .state 2>/dev/null || echo "no PR")
+        label="+${ahead} commits | PR: ${pr_state}"
+      fi
+
+      printf "%-50s %-30s %s\n" "$wt" "$br" "$label"
+    done < <(git worktree list)
+    ;;
+
+  help|--help|-h|*)
+    echo "claude-wt — manage Claude Code worktrees for parallel development"
+    echo ""
+    echo "Usage:"
+    echo "  claude-wt new <branch> [--from <base>]  Create worktree + branch"
+    echo "  claude-wt list [--ticket PROJ-123]      List worktrees, optionally filtered"
+    echo "  claude-wt status                        Show worktrees with PR status"
+    echo "  claude-wt rm <branch>                   Remove worktree + delete merged branch"
+    echo "  claude-wt clean                         Remove all fully-merged worktrees"
+    echo ""
+    echo "Default base: project's default branch (main/master/develop)."
+    echo "Override with --from <branch> for stacking."
+    echo "Directory layout: ../<project>-wt/<branch-name>/"
+    echo ""
+    echo "Examples:"
+    echo "  claude-wt new PROJ-123_backend          # branch from default branch"
+    echo "  claude-wt new PROJ-123_frontend --from PROJ-123_backend  # chain"
+    echo "  claude-wt list --ticket PROJ-123        # filter by ticket"
+    echo "  claude-wt status                        # show all with PR status"
+    echo "  claude-wt rm PROJ-123_backend           # remove after merge"
+    echo "  claude-wt clean                         # prune all merged"
+    ;;
+esac

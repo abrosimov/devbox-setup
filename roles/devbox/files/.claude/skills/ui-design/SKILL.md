@@ -51,16 +51,16 @@ Design tokens are stored in JSON following the W3C Design Tokens specification.
 
 ### Token Types
 
-| Type | `$type` Value | `$value` Format | Example |
-|------|--------------|-----------------|---------|
-| Colour | `color` | Hex, RGB, HSL | `"#1a73e8"` |
-| Dimension | `dimension` | Number + unit | `"16px"`, `"1.5rem"` |
-| Font family | `fontFamily` | String or array | `["Inter", "sans-serif"]` |
-| Font weight | `fontWeight` | Number or name | `400`, `"bold"` |
-| Duration | `duration` | Number + unit | `"200ms"` |
-| Cubic bezier | `cubicBezier` | Array of 4 numbers | `[0.4, 0, 0.2, 1]` |
-| Number | `number` | Plain number | `1.5` |
-| Shadow | `shadow` | Object | See below |
+W3C Design Token `$type` values and their `$value` formats:
+
+- **Colour** — type: `color`, value: Hex/RGB/HSL — `"#1a73e8"`
+- **Dimension** — type: `dimension`, value: Number + unit — `"16px"`, `"1.5rem"`
+- **Font family** — type: `fontFamily`, value: String or array — `["Inter", "sans-serif"]`
+- **Font weight** — type: `fontWeight`, value: Number or name — `400`, `"bold"`
+- **Duration** — type: `duration`, value: Number + unit — `"200ms"`
+- **Cubic bezier** — type: `cubicBezier`, value: Array of 4 numbers — `[0.4, 0, 0.2, 1]`
+- **Number** — type: `number`, value: Plain number — `1.5`
+- **Shadow** — type: `shadow`, value: Object — see below
 | Border | `border` | Object | See below |
 | Gradient | `gradient` | Array | See below |
 | Typography | `typography` | Object | See below |
@@ -356,22 +356,33 @@ Base styles (mobile) → sm: adjustments → md: adjustments → lg: adjustments
 
 ## Figma MCP Integration
 
-When Figma MCP server is available, use it to:
+See `mcp-figma` skill for the full tool reference and usage patterns.
 
 ### Reading Designs
 
-- **Get file structure**: Understand page hierarchy, frame layout
-- **Extract design tokens**: Read colour styles, text styles, effect styles
-- **Access components**: Read component properties, variants, instances
-- **Get measurements**: Spacing, sizing, positioning from frames
+When a Figma URL is available:
+- `mcp__figma__get_metadata(fileKey, nodeId)` — structural overview (node IDs, types, positions, sizes)
+- `mcp__figma__get_design_context(fileKey, nodeId)` — detailed context for specific nodes (primary read tool)
+- `mcp__figma__get_variable_defs(fileKey, nodeId)` — extract design tokens/variables with resolved values
+- `mcp__figma__get_screenshot(fileKey, nodeId)` — visual capture for reference
+
+> **Tip**: Use `get_metadata` first for large files to identify key nodes, then `get_design_context` on specific nodes.
+
+### Creating Visual Documentation (FigJam)
+
+- `mcp__figma__generate_diagram(name, mermaidSyntax)` — create user flow diagrams, component state machines, sequence diagrams in FigJam
+- Supported types: `flowchart`, `stateDiagram-v2`, `sequenceDiagram`, `gantt`
+- **MUST** present returned URLs to user as markdown links
 
 ### Workflow with Figma
 
-1. Check if Figma MCP is available in the current environment
-2. If available: read existing designs as input to specifications
-3. Extract existing tokens → use as baseline for `design_system.tokens.json`
-4. Map Figma components to specification format
-5. Note discrepancies between Figma and spec (report to user)
+1. Ask user for Figma URL (designer agent handles this in Step 1)
+2. Read existing designs via `get_metadata` → `get_design_context`
+3. Extract tokens via `get_variable_defs` → use as baseline for `design_system.tokens.json`
+4. Create user flow diagrams in FigJam via `generate_diagram`
+5. Create component state diagrams in FigJam via `generate_diagram`
+6. Set up Code Connect mappings for existing components
+7. Note discrepancies between Figma and spec (report to user)
 
 ### Without Figma
 
@@ -379,6 +390,7 @@ If Figma MCP is not available, work from:
 - User descriptions and requirements
 - Existing CSS/theme files in the codebase
 - Industry-standard patterns (Material, etc.)
+- Describe user flows in text within `design.md` instead of FigJam diagrams
 
 ---
 
@@ -416,14 +428,12 @@ Design tokens in W3C format can be transformed to platform-specific formats usin
 
 ### Common Transformations
 
-| Target | Format |
-|--------|--------|
-| CSS Custom Properties | `--colour-primary: #1a73e8;` |
-| Tailwind 4 `@theme` | Integrated via CSS custom properties |
-| SCSS Variables | `$colour-primary: #1a73e8;` |
-| iOS (Swift) | `UIColor` extensions |
-| Android (Kotlin) | Colour resource XML |
-| JSON (flat) | Flat key-value pairs |
+- **CSS Custom Properties** — `--colour-primary: #1a73e8;`
+- **Tailwind 4 `@theme`** — integrated via CSS custom properties
+- **SCSS Variables** — `$colour-primary: #1a73e8;`
+- **iOS (Swift)** — `UIColor` extensions
+- **Android (Kotlin)** — colour resource XML
+- **JSON (flat)** — flat key-value pairs
 
 ### Tailwind 4 Integration
 

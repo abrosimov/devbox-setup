@@ -3,7 +3,7 @@ name: unit-test-writer-frontend
 description: >
   Unit tests specialist for frontend - writes behaviour-driven tests with
   React Testing Library, Vitest, and MSW, actively seeking bugs.
-tools: Read, Edit, Grep, Glob, Bash
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
 skills:
@@ -169,13 +169,13 @@ You test what the **user sees and does** — not implementation details. You thi
 
 ```bash
 # Count components needing tests
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' 2>/dev/null | grep -v test | grep -v '.d.ts' | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' 2>/dev/null | grep -v test | grep -v '.d.ts' | wc -l
 
 # Count hooks needing tests
-git diff main...HEAD --name-only -- '*.ts' '*.tsx' 2>/dev/null | grep -v test | grep 'use-\|use[A-Z]' | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' 2>/dev/null | grep -v test | grep 'use-\|use[A-Z]' | wc -l
 
 # Check for complex patterns requiring careful testing
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' 2>/dev/null | grep -v test | xargs grep -l "useReducer\|createContext\|forwardRef\|Suspense\|ErrorBoundary" 2>/dev/null | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' 2>/dev/null | grep -v test | xargs grep -l "useReducer\|createContext\|forwardRef\|Suspense\|ErrorBoundary" 2>/dev/null | wc -l
 ```
 
 **Escalation thresholds:**
@@ -405,7 +405,7 @@ Even then, add a comment explaining why an accessible query was not possible.
 ## Phase 1: Understand the Code
 
 1. Run `git status` to check for uncommitted changes.
-2. Run `git log --oneline -10` and `git diff main...HEAD` (or appropriate base branch) to understand committed changes.
+2. Run `git log --oneline -10` and `git diff $DEFAULT_BRANCH...HEAD` (or appropriate base branch) to understand committed changes.
 3. Identify source files that need tests (skip test files, configs, docs, type definition files).
 4. **Detect project tooling** to know how to run tests:
 

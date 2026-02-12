@@ -1,0 +1,255 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# claude-fix-perms — inject default permissions into .claude/settings.local.json.
+#
+# Usage: claude-fix-perms [--with-git]
+#   --with-git  Add git write permissions (commit, merge, branch) to allow list
+#
+# Requires: jq
+#
+# This script is idempotent. If permissions are already configured, it reports
+# the current state and exits without changes.
+
+file=".claude/settings.local.json"
+with_git=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-git) with_git=true; shift ;;
+    -h|--help)
+      echo "Usage: claude-fix-perms [--with-git]"
+      echo "  Inject default permissions into $file"
+      echo "  --with-git  Add git write permissions (commit, merge, branch)"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Usage: claude-fix-perms [--with-git]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# --- Check prerequisites ---
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq is required but not installed." >&2
+  exit 1
+fi
+
+if [[ ! -f "$file" ]]; then
+  echo "No $file found — nothing to fix."
+  echo "Create the file first (e.g., echo '{}' > $file), then re-run."
+  exit 0
+fi
+
+# --- Check if already configured ---
+if jq -e '.permissions.allow' "$file" >/dev/null 2>&1; then
+  mode=$(jq -r '.permissions.defaultMode // "not set"' "$file")
+  allow_count=$(jq '.permissions.allow | length' "$file")
+  deny_count=$(jq '.permissions.deny | length' "$file")
+  echo "Permissions already configured in $file"
+  echo "  defaultMode: $mode"
+  echo "  allow rules: $allow_count"
+  echo "  deny rules:  $deny_count"
+  # Check for git write rules
+  if jq -e '.permissions.allow[] | select(test("git commit"))' "$file" >/dev/null 2>&1; then
+    echo "  git write: ENABLED"
+  else
+    echo "  git write: disabled (re-run with --with-git to enable)"
+  fi
+  exit 0
+fi
+
+# --- Base permissions (mirrors settings.json) ---
+read -r -d '' base_perms << 'PERMS_EOF' || true
+{
+  "defaultMode": "acceptEdits",
+  "deny": [
+    "Bash(rm *)",
+    "Bash(rm -*)",
+    "Bash(curl *)",
+    "Bash(wget *)",
+    "Bash(sudo *)",
+    "Bash(git push *)",
+    "Bash(git push --force *)",
+    "Bash(git push -f *)",
+    "Bash(git rebase *)",
+    "Bash(git reset *)",
+    "Bash(git reset --hard *)",
+    "Bash(git commit --amend *)",
+    "Bash(git tag *)",
+    "Bash(git rm *)",
+    "Bash(git mv *)",
+    "Bash(git clean *)",
+    "Bash(git checkout -- *)",
+    "Bash(cat *>*)",
+    "Bash(echo *>*)",
+    "Bash(kill *)",
+    "Bash(killall *)",
+    "Bash(docker rm *)",
+    "Bash(docker rmi *)",
+    "Bash(pip uninstall *)",
+    "Bash(gh pr close *)",
+    "Bash(gh pr merge *)",
+    "Bash(gh issue close *)",
+    "Edit(.env)",
+    "Edit(.env.*)",
+    "Edit(**/.env)",
+    "Edit(**/.env.*)",
+    "Edit(**/secrets/**)",
+    "Edit(**/*.pem)",
+    "Edit(**/*.key)",
+    "Edit(**/credentials*)",
+    "Write(.env)",
+    "Write(.env.*)",
+    "Write(**/.env)",
+    "Write(**/.env.*)",
+    "Write(**/secrets/**)",
+    "Write(**/*.pem)",
+    "Write(**/*.key)",
+    "Write(**/credentials*)"
+  ],
+  "allow": [
+    "Task",
+    "Read",
+    "Read(**)",
+    "Edit",
+    "Edit(**)",
+    "Write",
+    "Write(**)",
+    "NotebookEdit",
+    "WebSearch",
+    "WebFetch",
+    "mcp__*",
+    "Bash(go test *)",
+    "Bash(go build *)",
+    "Bash(go run *)",
+    "Bash(go mod *)",
+    "Bash(go vet *)",
+    "Bash(goimports *)",
+    "Bash(golangci-lint *)",
+    "Bash(mockery *)",
+    "Bash(uv run *)",
+    "Bash(uv sync *)",
+    "Bash(uvx *)",
+    "Bash(poetry run *)",
+    "Bash(pytest *)",
+    "Bash(ruff *)",
+    "Bash(mypy *)",
+    "Bash(python *)",
+    "Bash(python3 *)",
+    "Bash(pip install *)",
+    "Bash(pip list *)",
+    "Bash(pnpm *)",
+    "Bash(npx *)",
+    "Bash(node *)",
+    "Bash(jsonnet *)",
+    "Bash(jsonnetfmt *)",
+    "Bash(jb *)",
+    "Bash(buf *)",
+    "Bash(make *)",
+    "Bash(docker build *)",
+    "Bash(docker run *)",
+    "Bash(docker compose *)",
+    "Bash(docker ps *)",
+    "Bash(docker images *)",
+    "Bash(docker logs *)",
+    "Bash(gh pr view *)",
+    "Bash(gh pr list *)",
+    "Bash(gh pr diff *)",
+    "Bash(gh pr checks *)",
+    "Bash(gh issue view *)",
+    "Bash(gh issue list *)",
+    "Bash(gh api *)",
+    "Bash(gh run *)",
+    "Bash(git add *)",
+    "Bash(git add .)",
+    "Bash(git status *)",
+    "Bash(git status)",
+    "Bash(git diff *)",
+    "Bash(git diff)",
+    "Bash(git log *)",
+    "Bash(git show *)",
+    "Bash(git branch *)",
+    "Bash(git branch)",
+    "Bash(git blame *)",
+    "Bash(git ls-files *)",
+    "Bash(git ls-files)",
+    "Bash(git ls-tree *)",
+    "Bash(git rev-parse *)",
+    "Bash(git stash *)",
+    "Bash(git checkout -b *)",
+    "Bash(git switch *)",
+    "Bash(git remote *)",
+    "Bash(git fetch *)",
+    "Bash(git config --get *)",
+    "Bash(git worktree list *)",
+    "Bash(git worktree list)",
+    "Bash(.claude/bin/*)",
+    "Bash(ls *)",
+    "Bash(ls)",
+    "Bash(test *)",
+    "Bash([ -f *)",
+    "Bash([ -d *)",
+    "Bash(mkdir *)",
+    "Bash(wc *)",
+    "Bash(stat *)",
+    "Bash(file *)",
+    "Bash(jq *)",
+    "Bash(which *)",
+    "Bash(pwd)",
+    "Bash(head *)",
+    "Bash(tail *)",
+    "Bash(diff *)",
+    "Bash(sort *)",
+    "Bash(uniq *)",
+    "Bash(cut *)",
+    "Bash(tr *)",
+    "Bash(awk *)",
+    "Bash(sed *)",
+    "Bash(xargs *)",
+    "Bash(tee *)",
+    "Bash(env *)",
+    "Bash(date *)",
+    "Bash(basename *)",
+    "Bash(dirname *)"
+  ]
+}
+PERMS_EOF
+
+# --- Add git write rules if requested ---
+if $with_git; then
+  perms=$(echo "$base_perms" | jq '
+    .allow += [
+      "Bash(git commit -m *)",
+      "Bash(git merge --ff-only *)",
+      "Bash(git merge --no-edit *)",
+      "Bash(git switch -c *)",
+      "Bash(git branch -d *)"
+    ] |
+    .deny += [
+      "Bash(git merge main *)",
+      "Bash(git merge master *)"
+    ]
+  ')
+else
+  perms="$base_perms"
+fi
+
+# --- Inject permissions ---
+jq --argjson perms "$perms" '.permissions = $perms' "$file" > "$file.tmp" \
+  && mv "$file.tmp" "$file"
+
+allow_count=$(jq '.permissions.allow | length' "$file")
+deny_count=$(jq '.permissions.deny | length' "$file")
+
+echo "Injected default permissions into $file"
+echo "  defaultMode: acceptEdits"
+echo "  allow rules: $allow_count"
+echo "  deny rules:  $deny_count"
+if $with_git; then
+  echo "  git write: ENABLED"
+else
+  echo "  git write: disabled (use --with-git to enable)"
+fi

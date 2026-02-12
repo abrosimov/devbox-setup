@@ -57,23 +57,39 @@ After presenting options/analysis, always end with:
 
 When formatting Go code, **ALWAYS** use `goimports -local <module-name>`, **NEVER** use `go fmt` or `gofmt`. Extract `<module-name>` from the first line of `go.mod`.
 
-### Code Changes Policy
+### Agent Workflow (Opt-In Per Project)
 
-**MANDATORY: All code changes MUST go through agents.**
+The agent workflow is controlled by a per-project `.claude/workflow.json` file.
 
-For ANY modification to `.go` or `.py` files, you MUST:
+**Detection:** When a user asks you to write or modify code (`.go`, `.py`, `.ts`, `.tsx` files) and no `.claude/workflow.json` exists in the project root, ask:
+
+> This project doesn't have the agent workflow configured. Would you like to enable it?
+>
+> **A) Full workflow** — agents required for code changes, auto-commit after each phase, auto-escalate to Opus for complex tasks
+> **B) Lightweight** — agents required for code changes, you commit manually, no auto-escalation
+> **C) Skip** — work without the agent pipeline this session
+
+- **A** → run `/init-workflow full`
+- **B** → run `/init-workflow light`
+- **C** → proceed normally; do not ask again this session
+
+**Only ask once per session.** If the user chose C, remember it for the rest of the conversation.
+
+**When `workflow.json` exists with `"agent_pipeline": true`:**
+
+All code changes MUST go through agents. For ANY modification to `.go`, `.py`, `.ts`, `.tsx` files:
 1. Use `/implement` command to spawn the appropriate software-engineer agent
 2. NEVER use Edit/Write tools directly on code files
-
-This is NOT a preference. This is a HARD CONSTRAINT enforced by hooks.
-
-**If you attempt direct Edit/Write on code files, the operation will be BLOCKED.**
 
 Agents enforce:
 - Proper approval flow
 - Language-specific standards (Effective Go, PEP8, type hints)
 - Production necessities (error handling, logging, timeouts)
 - Consistent patterns from the codebase
+
+**When `workflow.json` is absent or `"agent_pipeline": false`:**
+
+Agents are available via `/implement`, `/test`, `/review` but not mandatory. Direct code edits are allowed.
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: implementation-planner-python
 description: Implementation planner for Python - creates detailed implementation plans from specs or user requirements for software engineers.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, mcp__sequentialthinking, mcp__memory-upstream
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, mcp__memory-upstream
 model: sonnet
 skills: philosophy, config, python-architecture, security-patterns, observability, otel-python, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory
 updated: 2026-02-10
@@ -114,6 +114,7 @@ Briefly explore codebase to understand:
 - What similar features exist (for SE to reference)
 - What external systems are involved
 - What dependencies are available in `pyproject.toml` / `requirements.txt`
+- Whether dev environment setup exists and covers this feature's needs (see Dev Environment Awareness below)
 
 **Do NOT prescribe patterns or structure.** Just note what exists.
 
@@ -257,11 +258,12 @@ Each stream maps to a downstream agent and command. Streams with no dependency b
 
 ### Rules
 
-1. **Every FR gets exactly one stream** — if an FR spans both frontend and backend, split it into sub-requirements (e.g., FR-3a backend, FR-3b frontend)
-2. **Streams without mutual dependencies can run in parallel** — mark them explicitly
-3. **API contract is the handshake point** — frontend depends on API contract, not on backend implementation
-4. **Schema before backend** — if schema changes exist, WS for schema blocks backend WS
-5. **Omit streams that don't apply** — backend-only features have no frontend stream; features without schema changes have no schema stream
+1. **Dev environment first** — if dev env changes are needed, WS-0 blocks everything else
+2. **Every FR gets exactly one stream** — if an FR spans both frontend and backend, split it into sub-requirements (e.g., FR-3a backend, FR-3b frontend)
+3. **Streams without mutual dependencies can run in parallel** — mark them explicitly
+4. **API contract is the handshake point** — frontend depends on API contract, not on backend implementation
+5. **Schema before backend** — if schema changes exist, WS for schema blocks backend WS
+6. **Omit streams that don't apply** — backend-only features have no frontend stream; features without schema changes have no schema stream; projects with working dev env have no WS-0
 
 ---
 
@@ -354,6 +356,39 @@ DO NOT specify file paths, classes, or patterns. SE will explore and decide.
 - [ ] [Dependency 1] — [what to verify, e.g., "called with correct parameters"]
 - [ ] [External call 1] — [failure handling, e.g., "best effort, log on failure"]
 ```
+
+## Dev Environment Awareness
+
+During Step 3 (Understand Context), check whether the project has a working dev environment that covers this feature's infrastructure needs:
+
+**What to check:**
+- `docker-compose.yml` / `docker-compose.*.yml` — does it exist? Does it cover all services this feature needs?
+- `Makefile` / `Taskfile.yml` — are there dev/setup targets?
+- `.env.example` / `.env.template` — does it list all required env variables?
+- New infrastructure dependencies — does this feature introduce services not yet provisioned locally (e.g., Redis, Kafka, Elasticsearch)?
+
+**If dev environment needs changes**, add a `## Dev Environment` section to the plan:
+
+```markdown
+## Dev Environment
+
+This feature requires dev environment changes. Address before other work streams.
+
+| Need | Current State | What's Missing |
+|------|---------------|----------------|
+| Redis | Not in docker-compose | Feature uses Redis for caching |
+| STRIPE_API_KEY | Not in .env.example | Needed for payment processing |
+| docker-compose.yml | Does not exist | Project has no local dev setup |
+
+### Work Stream Impact
+Dev environment setup becomes WS-0, blocking all downstream streams.
+```
+
+**If dev environment already exists and covers this feature's needs**, omit the section entirely.
+
+**In Work Streams**, dev environment setup is always **WS-0** when present — it blocks schema, API, backend, and all other streams.
+
+---
 
 ## Schema Change Awareness
 

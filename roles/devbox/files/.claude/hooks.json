@@ -7,6 +7,26 @@
           {
             "type": "command",
             "command": "case \"$CC_BASH_COMMAND\" in *'go fmt'*|*'gofmt'*) echo 'BLOCKED: Use goimports -local <module-name>, not go fmt/gofmt. Extract module name from go.mod.' >&2; exit 2;; esac"
+          },
+          {
+            "type": "command",
+            "command": "case \"$CC_BASH_COMMAND\" in *'<<'*) echo 'BLOCKED: Use the Write tool to create files or Edit to modify them. Do not use Bash heredocs (<<). Write/Edit are auto-approved in acceptEdits mode and produce cleaner diffs.' >&2; exit 2;; esac"
+          },
+          {
+            "type": "command",
+            "command": "case \"$CC_BASH_COMMAND\" in 'git commit'*) branch=$(git branch --show-current 2>/dev/null); case \"$branch\" in main|master) echo 'BLOCKED: Cannot commit on '\"$branch\"'. Create a feature branch first.' >&2; exit 2;; esac;; esac"
+          },
+          {
+            "type": "command",
+            "command": "case \"$CC_BASH_COMMAND\" in 'git merge'*) branch=$(git branch --show-current 2>/dev/null); case \"$branch\" in main|master) echo 'BLOCKED: Cannot merge into '\"$branch\"'. Use a feature branch instead.' >&2; exit 2;; esac;; esac"
+          },
+          {
+            "type": "command",
+            "command": "case \"$CC_BASH_COMMAND\" in 'git push'*'--force'*|'git push'*' -f '*|'git push -f'*) echo 'BLOCKED: Force push is not allowed. Push normally or ask the user.' >&2; exit 2;; esac"
+          },
+          {
+            "type": "command",
+            "command": "case \"$CC_BASH_COMMAND\" in 'git commit --amend'*|'git commit'*'--amend'*) echo 'BLOCKED: Amending commits is not allowed. Create a new commit instead.' >&2; exit 2;; esac"
           }
         ]
       }

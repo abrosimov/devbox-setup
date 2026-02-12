@@ -1,7 +1,6 @@
-set -gx EDITOR vim
-set -gx GOPATH $HOME/{{ devbox_paths.programming_deps_dir }}/go
-set -gx FLUTTER_PATH $HOME/{{ devbox_paths.programming_deps_dir }}/flutter
-set -gx GEM_HOME $HOME/{{ devbox_paths.programming_deps_dir }}/ruby/gems
+{% for entry in devbox_shell.env %}
+set -gx {{ entry.name }} {{ entry.value }}
+{% endfor %}
 
 if test -d /opt/homebrew
   /opt/homebrew/bin/brew shellenv | source

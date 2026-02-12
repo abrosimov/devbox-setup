@@ -448,15 +448,13 @@ spectral lint openapi.yaml --ruleset .spectral.yaml
 
 ### Common Rules
 
-| Rule | What It Checks |
-|------|---------------|
-| `oas3-api-servers` | At least one server defined |
-| `operation-operationId` | Every operation has operationId |
-| `operation-description` | Every operation has description |
-| `operation-tags` | Every operation has at least one tag |
-| `path-params` | Path parameters are defined and used |
-| `no-$ref-siblings` | No sibling properties alongside $ref |
-| `oas3-valid-schema-example` | Examples match schema |
+- **`oas3-api-servers`** — at least one server defined
+- **`operation-operationId`** — every operation has operationId
+- **`operation-description`** — every operation has description
+- **`operation-tags`** — every operation has at least one tag
+- **`path-params`** — path parameters are defined and used
+- **`no-$ref-siblings`** — no sibling properties alongside `$ref`
+- **`oas3-valid-schema-example`** — examples match schema
 
 ### Interpreting Results
 

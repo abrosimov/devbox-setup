@@ -3,7 +3,7 @@ name: code-reviewer-frontend
 description: >
   Code reviewer for frontend - validates TypeScript/React/Next.js implementation
   against requirements and catches issues missed by engineer and test writer.
-tools: Read, Edit, Grep, Glob, Bash, mcp__memory-downstream, mcp__playwright, mcp__figma, mcp__storybook
+tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__memory-downstream, mcp__playwright, mcp__figma, mcp__storybook
 model: sonnet
 skills:
   - philosophy
@@ -38,13 +38,13 @@ Your goal is to catch what the engineer AND test writer missed.
 
 ```bash
 # Count changed lines (excluding tests)
-git diff main...HEAD --stat -- '*.ts' '*.tsx' ':!*.test.*' ':!*.spec.*' | tail -1
+git diff $DEFAULT_BRANCH...HEAD --stat -- '*.ts' '*.tsx' ':!*.test.*' ':!*.spec.*' | tail -1
 
 # Count changed files (excluding tests)
-git diff main...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | grep -v spec | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | grep -v spec | wc -l
 
 # Check for complex patterns
-git diff main...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | xargs grep -l "useReducer\|createContext\|forwardRef\|Suspense\|ErrorBoundary\|getServerSideProps\|generateMetadata" 2>/dev/null | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | xargs grep -l "useReducer\|createContext\|forwardRef\|Suspense\|ErrorBoundary\|getServerSideProps\|generateMetadata" 2>/dev/null | wc -l
 ```
 
 **Escalation thresholds:**
@@ -261,8 +261,8 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 
 1. Get changes in the branch:
    ```bash
-   git diff main...HEAD
-   git log --oneline main..HEAD
+   git diff $DEFAULT_BRANCH...HEAD
+   git log --oneline $DEFAULT_BRANCH..HEAD
    ```
 
 2. Identify the base branch:
@@ -272,8 +272,9 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 
 3. Read spec/plan/design documents if they exist:
    ```bash
-   ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md 2>/dev/null
+   ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design_output.json 2>/dev/null
    ```
+   If `design_output.json` exists, read `figma_source` — use `mcp__figma__get_screenshot` to capture current Figma designs for visual comparison against the implementation.
 
 ### Step 2: Requirements Analysis
 
@@ -293,10 +294,10 @@ Present this summary to the user for confirmation.
 Run this search and record EVERY match:
 ```bash
 # Find all `any` types in changed files
-git diff main...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | xargs grep -n "\bany\b" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | xargs grep -n "\bany\b" 2>/dev/null
 
 # Find all type assertions
-git diff main...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | xargs grep -n "\bas \b\|as any\|@ts-ignore\|@ts-expect-error" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | xargs grep -n "\bas \b\|as any\|@ts-ignore\|@ts-expect-error" 2>/dev/null
 ```
 
 Create an inventory table:
@@ -315,16 +316,16 @@ Total type safety issues found: ___
 List ALL interactive elements and their accessibility:
 ```bash
 # Find div/span with onClick (should be button)
-git diff main...HEAD --name-only -- '*.tsx' | xargs grep -n "<div.*onClick\|<span.*onClick" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' | xargs grep -n "<div.*onClick\|<span.*onClick" 2>/dev/null
 
 # Find images without alt
-git diff main...HEAD --name-only -- '*.tsx' | xargs grep -n "<img" 2>/dev/null | grep -v "alt="
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' | xargs grep -n "<img" 2>/dev/null | grep -v "alt="
 
 # Find form inputs without labels
-git diff main...HEAD --name-only -- '*.tsx' | xargs grep -n "<input\|<select\|<textarea" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' | xargs grep -n "<input\|<select\|<textarea" 2>/dev/null
 
 # Find icon buttons without aria-label
-git diff main...HEAD --name-only -- '*.tsx' | xargs grep -n "IconButton\|icon.*button\|Button.*icon" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' | xargs grep -n "IconButton\|icon.*button\|Button.*icon" 2>/dev/null
 ```
 
 ```
@@ -342,7 +343,7 @@ Total accessibility issues found: ___
 List ALL hook usages in changed files:
 ```bash
 # Find all useEffect calls
-git diff main...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | xargs grep -n "useEffect\|useMemo\|useCallback\|useState\|useRef\|useReducer\|useContext" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' | grep -v test | xargs grep -n "useEffect\|useMemo\|useCallback\|useState\|useRef\|useReducer\|useContext" 2>/dev/null
 ```
 
 ```
@@ -360,10 +361,10 @@ Total hook usages: ___
 List ALL components in changed files:
 ```bash
 # Find component definitions
-git diff main...HEAD --name-only -- '*.tsx' | grep -v test | xargs grep -n "^export \|^function \|^const .*= (" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' | grep -v test | xargs grep -n "^export \|^function \|^const .*= (" 2>/dev/null
 
 # Count lines per file
-git diff main...HEAD --name-only -- '*.tsx' | grep -v test | xargs wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' | grep -v test | xargs wc -l
 ```
 
 ```
@@ -618,28 +619,28 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 **Search for security-sensitive patterns:**
 ```bash
 # CRITICAL: XSS — bypassing React's auto-escaping
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "dangerouslySetInnerHTML\|innerHTML\|outerHTML\|document.write\|insertAdjacentHTML"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "dangerouslySetInnerHTML\|innerHTML\|outerHTML\|document.write\|insertAdjacentHTML"
 
 # CRITICAL: eval / Function constructor
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "eval(\|new Function(\|setTimeout.*string\|setInterval.*string"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "eval(\|new Function(\|setTimeout.*string\|setInterval.*string"
 
 # CRITICAL: Exposed secrets
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "apiKey\|api_key\|apiSecret\|PRIVATE_KEY\|SECRET_KEY"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "apiKey\|api_key\|apiSecret\|PRIVATE_KEY\|SECRET_KEY"
 
 # CRITICAL: Sensitive data in storage
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "localStorage.*token\|localStorage.*secret\|localStorage.*password\|sessionStorage.*token"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "localStorage.*token\|localStorage.*secret\|localStorage.*password\|sessionStorage.*token"
 
 # CRITICAL: Sensitive data in console
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "console.log\|console.info\|console.debug"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "console.log\|console.info\|console.debug"
 
 # CONTEXT: URL injection / open redirect
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "window.open\|window.location.*=\|href.*=.*user\|router.push.*user"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "window.open\|window.location.*=\|href.*=.*user\|router.push.*user"
 
 # CONTEXT: postMessage without origin check
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "postMessage\|addEventListener.*message"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "postMessage\|addEventListener.*message"
 
 # CONTEXT: Non-NEXT_PUBLIC_ env vars in client code
-git diff main...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "process.env\." | grep -v "NEXT_PUBLIC_"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' '*.jsx' | xargs grep -n "process.env\." | grep -v "NEXT_PUBLIC_"
 ```
 
 ```
@@ -714,7 +715,7 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 
 **Search for narration comments:**
 ```bash
-git diff main...HEAD --name-only -- '*.ts' '*.tsx' | xargs grep -n "// [A-Z][a-z].*the\|// Check\|// Verify\|// Create\|// Start\|// Get\|// Set\|// If\|// When\|// First\|// Then\|// Loop\|// Return\|// Render\|// Handle\|// Map\|// Filter\|// ---\|// ===" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' | xargs grep -n "// [A-Z][a-z].*the\|// Check\|// Verify\|// Create\|// Start\|// Get\|// Set\|// If\|// When\|// First\|// Then\|// Loop\|// Return\|// Render\|// Handle\|// Map\|// Filter\|// ---\|// ===" 2>/dev/null
 ```
 
 ```
@@ -777,8 +778,10 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 **If spec.md, plan.md, or design.md exist**, verify the pipeline maintained fidelity:
 
 ```bash
-ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md 2>/dev/null
+ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design_output.json 2>/dev/null
 ```
+
+**If design_output.json has `figma_source`**: Use `mcp__figma__get_screenshot(fileKey, nodeId)` to capture the original design and compare visually against the Playwright screenshot of the implementation. Note significant deviations.
 
 **Plan vs Spec (if both exist):**
 ```
@@ -821,7 +824,7 @@ VERDICT: [ ] PASS  [ ] FAIL  [ ] N/A (no spec) — scope violations documented a
 
 **Search for implementation-detail testing:**
 ```bash
-git diff main...HEAD --name-only -- '*.test.*' '*.spec.*' | xargs grep -n "getByTestId\|container\.querySelector\|wrapper\.instance\|\.state()\|\.props()" 2>/dev/null
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.test.*' '*.spec.*' | xargs grep -n "getByTestId\|container\.querySelector\|wrapper\.instance\|\.state()\|\.props()" 2>/dev/null
 ```
 
 ```

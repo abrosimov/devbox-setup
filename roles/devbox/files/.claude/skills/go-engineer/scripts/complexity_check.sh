@@ -33,13 +33,13 @@ else
 fi
 
 # Metric 2: Changed Go files (excluding tests)
-CHANGED_FILES=$(git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | wc -l | tr -d ' ' || echo 0)
+CHANGED_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | wc -l | tr -d ' ' || echo 0)
 echo "Changed Go files (non-test): ${CHANGED_FILES}"
 
 # Metric 3: Concurrency patterns in changed files
 CONCURRENCY_FILES=0
 if [[ "$CHANGED_FILES" -gt 0 ]]; then
-    CONCURRENCY_FILES=$(git diff main...HEAD --name-only -- '*.go' 2>/dev/null | \
+    CONCURRENCY_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | \
         grep -v _test.go | \
         xargs grep -l "go func\|chan \|sync\.\|select {" 2>/dev/null | \
         wc -l | tr -d ' ' || echo 0)
@@ -49,7 +49,7 @@ echo "Files with concurrency: ${CONCURRENCY_FILES}"
 # Metric 4: Error handling sites
 ERROR_SITES=0
 if [[ "$CHANGED_FILES" -gt 0 ]]; then
-    ERROR_SITES=$(git diff main...HEAD --name-only -- '*.go' 2>/dev/null | \
+    ERROR_SITES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | \
         grep -v _test.go | \
         xargs grep -c "if err != nil\|return.*err" 2>/dev/null | \
         awk -F: '{sum+=$2} END {print sum}' || echo 0)

@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# git-safe-commit — commit with branch protection and secret detection.
+#
+# Usage: git-safe-commit -m "message" [file1 file2 ...]
+#   If no files specified, stages all tracked modified files (git add -u).
+#
+# Safety checks:
+#   - Blocks commits on main, master, and the integration branch
+#   - Rejects staged files that look like secrets (.env, *.pem, *.key, etc.)
+#   - Requires an explicit -m "message" (no interactive or amend)
+
+branch=$(git branch --show-current 2>/dev/null || echo "")
+integration=$(git config --get claude.integrationBranch 2>/dev/null || echo "build/stable")
+
+# --- Block protected branches ---
+case "$branch" in
+  main|master|"$integration")
+    echo "BLOCKED: Cannot commit on protected branch '$branch'." >&2
+    echo "Create a feature branch first:" >&2
+    echo "  git checkout -b PROJ-123_feature $integration" >&2
+    exit 1
+    ;;
+  "")
+    echo "BLOCKED: Not on any branch (detached HEAD)." >&2
+    exit 1
+    ;;
+esac
+
+# --- Parse arguments ---
+message=""
+files=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -m)
+      [[ $# -lt 2 ]] && { echo "BLOCKED: -m requires a message argument." >&2; exit 1; }
+      message="$2"
+      shift 2
+      ;;
+    --)
+      shift
+      files+=("$@")
+      break
+      ;;
+    -*)
+      echo "BLOCKED: Unknown flag '$1'. Only -m \"message\" is supported." >&2
+      exit 1
+      ;;
+    *)
+      files+=("$1")
+      shift
+      ;;
+  esac
+done
+
+[[ -z "$message" ]] && { echo "BLOCKED: Commit message required. Use: git-safe-commit -m \"message\" [files...]" >&2; exit 1; }
+
+# --- Stage files ---
+if [[ ${#files[@]} -gt 0 ]]; then
+  git add -- "${files[@]}"
+else
+  git add -u
+fi
+
+# --- Reject staged secrets ---
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  case "$f" in
+    .env|.env.*|*/.env|*/.env.*)
+      echo "BLOCKED: Refusing to commit environment file: $f" >&2
+      git reset HEAD -- "$f" >/dev/null 2>&1 || true
+      exit 1
+      ;;
+    */secrets/*|secrets/*)
+      echo "BLOCKED: Refusing to commit secrets directory file: $f" >&2
+      git reset HEAD -- "$f" >/dev/null 2>&1 || true
+      exit 1
+      ;;
+    *.pem|*.key|*credentials*|*.p12|*.pfx|*.jks)
+      echo "BLOCKED: Refusing to commit sensitive file: $f" >&2
+      git reset HEAD -- "$f" >/dev/null 2>&1 || true
+      exit 1
+      ;;
+  esac
+done < <(git diff --cached --name-only)
+
+# --- Check there is something to commit ---
+if git diff --cached --quiet; then
+  echo "Nothing to commit (no staged changes)."
+  exit 0
+fi
+
+# --- Commit ---
+git commit -m "$message"

@@ -5,6 +5,33 @@ devbox_paths:
   dotfiles_root_dir: "~"
   programming_deps_dir: ".programming"
 
+# Shell environment and PATH — single source of truth for both fish and bash.
+# Templates in conf.d/_init_env.fish.j2, conf.d/_init_path.fish.j2, and .bashrc.j2
+# all iterate over these lists, so adding a path here updates both shells.
+devbox_shell:
+  env:
+    - { name: EDITOR, value: vim }
+    - { name: GOPATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/go" }
+    - { name: FLUTTER_PATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/flutter" }
+    - { name: GEM_HOME, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/ruby/gems" }
+    - { name: NPM_PACKAGES, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/js/npm-packages" }
+
+  path_prepend:
+    - /opt/homebrew/bin
+
+  path_append:
+    - "$GOPATH/bin"
+    - "$FLUTTER_PATH/bin"
+    - "$HOME/.local/bin"
+    - "$HOME/bin"
+    - "$HOME/.claude/bin"
+    - "$GEM_HOME/bin"
+    - "$NPM_PACKAGES/bin"
+    - "/opt/homebrew/opt/node@18/bin"
+
+  path_conditional:
+    - { check: "$HOME/.cargo", add: "$HOME/.cargo/bin" }
+
 # MCP servers running as Docker containers (works with Docker, OrbStack, Podman)
 # See: https://hub.docker.com/u/mcp
 mcp_docker_servers:

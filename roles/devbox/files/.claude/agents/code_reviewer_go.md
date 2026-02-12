@@ -1,7 +1,7 @@
 ---
 name: code-reviewer-go
 description: Code reviewer for Go - validates implementation against requirements and catches issues missed by engineer and test writer.
-tools: Read, Edit, Grep, Glob, Bash, mcp__atlassian, mcp__memory-downstream
+tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__atlassian, mcp__memory-downstream
 model: sonnet
 skills: philosophy, go-engineer, go-testing, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, agent-communication, shared-utils, mcp-memory
 updated: 2026-02-10
@@ -16,13 +16,13 @@ Your goal is to catch what the engineer AND test writer missed.
 
 ```bash
 # Count changed lines (excluding tests)
-git diff main...HEAD --stat -- '*.go' ':!*_test.go' | tail -1
+git diff $DEFAULT_BRANCH...HEAD --stat -- '*.go' ':!*_test.go' | tail -1
 
 # Count error handling sites
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -c "return.*err\|if err != nil" | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -c "return.*err\|if err != nil" | awk -F: '{sum+=$2} END {print sum}'
 
 # Count changed files
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | wc -l
 ```
 
 **Escalation thresholds:**
@@ -305,8 +305,8 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 
 2. Get changes in the branch:
    ```bash
-   git diff main...HEAD
-   git log --oneline main..HEAD
+   git diff $DEFAULT_BRANCH...HEAD
+   git log --oneline $DEFAULT_BRANCH..HEAD
    ```
 
 ### Step 2: Requirements Analysis
@@ -327,7 +327,7 @@ Present this summary to the user for confirmation.
 Run this search and record EVERY match:
 ```bash
 # Find all error handling sites in changed files
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "return.*err\|if err != nil\|errors\.\|fmt\.Errorf"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "return.*err\|if err != nil\|errors\.\|fmt\.Errorf"
 ```
 
 Create an inventory table:
@@ -359,7 +359,7 @@ Total new identifiers: ___
 List ALL public functions in changed files and their test coverage:
 ```bash
 # Find public functions in changed files
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^func [A-Z]\|^func (.*) [A-Z]"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^func [A-Z]\|^func (.*) [A-Z]"
 ```
 
 ```
@@ -734,10 +734,10 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 **Search for all method receivers in changed files:**
 ```bash
 # Find all method definitions
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^func (.*) [A-Z]"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^func (.*) [A-Z]"
 
 # Group by type to verify consistency
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep "^func (" | awk -F'[()]' '{print $2}' | sort | uniq -c
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep "^func (" | awk -F'[()]' '{print $2}' | sort | uniq -c
 ```
 
 **For EACH type with methods, verify receiver consistency:**
@@ -884,7 +884,7 @@ func (c *Cache) Get(key string) (any, bool) {  // Change to pointer
 **Run this search to find all exported identifiers in changed files:**
 ```bash
 # Find exported types, functions, methods, constants, variables
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^type [A-Z]\|^func [A-Z]\|^func (.*) [A-Z]\|^const [A-Z]\|^var [A-Z]"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^type [A-Z]\|^func [A-Z]\|^func (.*) [A-Z]\|^const [A-Z]\|^var [A-Z]"
 ```
 
 For EACH exported identifier, ask:
@@ -931,7 +931,7 @@ type ValidationResult struct { ... }  // if only used within package, unexport
 
 **Search for error string comparisons in tests:**
 ```bash
-git diff main...HEAD --name-only -- '*_test.go' | xargs grep -n "err\.Error()\|Contains.*err\|Equal.*err.*Error\|strings\.Contains.*err"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*_test.go' | xargs grep -n "err\.Error()\|Contains.*err\|Equal.*err.*Error\|strings\.Contains.*err"
 ```
 
 ```
@@ -984,10 +984,10 @@ s.Require().ErrorContains(err, "connection refused")  // external library error
 **Search for testing-related exports:**
 ```bash
 # Find export_test.go files
-git diff main...HEAD --name-only | grep "export_test.go"
+git diff $DEFAULT_BRANCH...HEAD --name-only | grep "export_test.go"
 
 # Find suspicious test helpers in production code
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "TestHelper\|ForTest\|// exported for test\|// export for test"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "TestHelper\|ForTest\|// exported for test\|// export for test"
 ```
 
 ```
@@ -1039,43 +1039,43 @@ var InternalFunc = internalFunc  // ask: why not test via public API?
 **Search for security-sensitive patterns:**
 ```bash
 # CRITICAL: SQL injection
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "fmt.Sprintf.*SELECT\|fmt.Sprintf.*INSERT\|fmt.Sprintf.*UPDATE\|fmt.Sprintf.*DELETE\|Query(.*+\|Exec(.*+"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "fmt.Sprintf.*SELECT\|fmt.Sprintf.*INSERT\|fmt.Sprintf.*UPDATE\|fmt.Sprintf.*DELETE\|Query(.*+\|Exec(.*+"
 
 # CRITICAL: Command injection
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "exec.Command\|os.StartProcess"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "exec.Command\|os.StartProcess"
 
 # CRITICAL: Timing-unsafe comparisons on secrets
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n '== .*token\|== .*secret\|== .*key\|== .*hash\|== .*password\|!= .*token'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n '== .*token\|== .*secret\|== .*key\|== .*hash\|== .*password\|!= .*token'
 
 # CRITICAL: math/rand in security context
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n '"math/rand"'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n '"math/rand"'
 
 # CRITICAL: Sensitive data in logs
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "log.*password\|log.*token\|log.*secret\|log.*key\|log.*credential"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "log.*password\|log.*token\|log.*secret\|log.*key\|log.*credential"
 
 # CRITICAL: Hardcoded secrets
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "password.*=.*\"\|token.*=.*\"\|secret.*=.*\"\|apikey.*=.*\""
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "password.*=.*\"\|token.*=.*\"\|secret.*=.*\"\|apikey.*=.*\""
 
 # CRITICAL: Weak hashing for security purposes
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n '"crypto/md5"\|"crypto/sha1"\|md5.New\|sha1.New'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n '"crypto/md5"\|"crypto/sha1"\|md5.New\|sha1.New'
 
 # GUARDED: TLS skip / insecure transport
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "InsecureSkipVerify\|WithInsecure\|grpc.WithTransportCredentials(insecure"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "InsecureSkipVerify\|WithInsecure\|grpc.WithTransportCredentials(insecure"
 
 # GUARDED: gRPC reflection (dev-only)
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "reflection.Register"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "reflection.Register"
 
 # GUARDED: text/template (no auto-escaping)
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n '"text/template"'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n '"text/template"'
 
 # CONTEXT: File path construction
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "filepath.Join.*\+\|os.Open.*\+\|ioutil.ReadFile.*\+"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "filepath.Join.*\+\|os.Open.*\+\|ioutil.ReadFile.*\+"
 
 # CONTEXT: HTTP redirect handling
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "http.Redirect\|w.Header().Set.*Location"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "http.Redirect\|w.Header().Set.*Location"
 
 # CONTEXT: gRPC error leakage
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n 'fmt.Errorf.*grpc\|status.Errorf.*%v\|status.Errorf.*%s'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n 'fmt.Errorf.*grpc\|status.Errorf.*%v\|status.Errorf.*%s'
 ```
 
 ```
@@ -1194,13 +1194,13 @@ if cfg.DevMode {
 **Search for panic usage in runtime code:**
 ```bash
 # Find panic calls
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "panic("
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "panic("
 
 # Find Must* function calls
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "Must[A-Z]\|must("
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "Must[A-Z]\|must("
 
 # Find direct type assertions (without comma-ok)
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "\.\([A-Za-z]*\)$"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "\.\([A-Za-z]*\)$"
 ```
 
 ```
@@ -1420,17 +1420,17 @@ VERDICT: [ ] PASS  [ ] FAIL — scenario gaps documented above
 
 **Search for narration comments:**
 ```bash
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n "// [A-Z][a-z].*the\|// Check\|// Verify\|// Create\|// Start\|// Get\|// Set\|// If\|// When\|// First\|// Then\|// Loop\|// Return\|// ---\|// ==="
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n "// [A-Z][a-z].*the\|// Check\|// Verify\|// Create\|// Start\|// Get\|// Set\|// If\|// When\|// First\|// Then\|// Loop\|// Return\|// ---\|// ==="
 ```
 
 **Search for doc comments on unexported functions:**
 ```bash
-git diff main...HEAD --name-only -- '*.go' | xargs grep -n -B1 "^func [a-z]\|^func (.*) [a-z]" | grep "//"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | xargs grep -n -B1 "^func [a-z]\|^func (.*) [a-z]" | grep "//"
 ```
 
 **Search for doc comments on business logic (services, handlers):**
 ```bash
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^// \w\+\s" | grep -i "service\|handler\|controller\|repository"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "^// \w\+\s" | grep -i "service\|handler\|controller\|repository"
 ```
 
 ```
@@ -1524,7 +1524,7 @@ VERDICT: [ ] PASS  [ ] FAIL — complexity issues documented above
 
 **Search for log statements:**
 ```bash
-git diff main...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "\.Info()\|\.Error()\|\.Warn()\|\.Debug()\|\.Trace()"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' | grep -v _test.go | xargs grep -n "\.Info()\|\.Error()\|\.Warn()\|\.Debug()\|\.Trace()"
 ```
 
 For EACH log statement, verify:

@@ -1,7 +1,7 @@
 ---
 name: meta-reviewer
 description: Adversarial reviewer for agent and skill definitions. Challenges builder output against grounded Anthropic documentation, checks for contradictions with existing system components, verifies discoverability, and tests boundary conditions. Use this agent after an agent-builder or skill-builder produces an artifact.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 skills: philosophy, workflow, agent-communication, config, agent-builder, skill-builder, shared-utils
 updated: 2026-02-10

@@ -232,11 +232,9 @@ Use `validationLevel: "moderate"` during migration periods (validates only inser
 
 ## Anti-Patterns
 
-| Pattern | Problem | Fix |
-|---------|---------|-----|
-| `$where` / stored JavaScript | No index usage, full scan, security risk | Aggregation pipeline expressions |
-| Unbounded arrays | Document grows past 16MB, slow updates | Reference pattern |
-| No `$match` in aggregation | Full collection scan | Always filter first |
-| Random shard key | Scatter-gather on every query | Compound key with query isolation |
-| `w: 0` for important data | Data loss on failure | `w: "majority"` |
-| Embedding frequently-updated data | Rewrites entire document on each update | Reference pattern |
+- **`$where` / stored JavaScript** — no index usage, full scan, security risk. Use aggregation pipeline expressions
+- **Unbounded arrays** — document grows past 16MB, slow updates. Use reference pattern
+- **No `$match` in aggregation** — full collection scan. Always filter first
+- **Random shard key** — scatter-gather on every query. Use compound key with query isolation
+- **`w: 0` for important data** — data loss on failure. Use `w: "majority"`
+- **Embedding frequently-updated data** — rewrites entire document on each update. Use reference pattern

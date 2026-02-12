@@ -11,6 +11,46 @@ description: >
 
 This document describes the agent pipeline and workflow commands for projects using the Claude Code agent system.
 
+## Opt-In Model
+
+The agent workflow is **opt-in per project** via `.claude/workflow.json`. Agents, commands, and skills are deployed globally to `~/.claude/` and always available, but **enforcement** (mandatory agent usage, auto-commit, complexity escalation) is controlled per-project.
+
+### Workflow Config
+
+Per-project `.claude/workflow.json`:
+
+```json
+{
+  "agent_pipeline": true,
+  "auto_commit": true,
+  "complexity_escalation": true
+}
+```
+
+| Flag | `true` | `false` | Default |
+|------|--------|---------|---------|
+| `agent_pipeline` | Code changes MUST go through agents | Direct Edit/Write allowed | `true` |
+| `auto_commit` | Commands auto-commit after each phase | User commits manually | `true` |
+| `complexity_escalation` | Auto-upgrade to Opus for complex tasks | Always use agent's default model | `true` |
+
+### Project Initialization
+
+When Claude detects a code project without `.claude/workflow.json`, it asks the user whether to enable the workflow. See `CLAUDE.md` for the detection logic.
+
+Use `/init-workflow` to explicitly set up the workflow config:
+
+```bash
+/init-workflow full    # all flags true
+/init-workflow light   # agent_pipeline: true, auto_commit: false, complexity_escalation: false
+/init-workflow         # interactive — choose preset or custom
+```
+
+### Without workflow.json
+
+- All commands (`/implement`, `/test`, `/review`, `/full-cycle`) still work — they use agents regardless
+- Direct code edits via Edit/Write are allowed (no enforcement)
+- Commands default all flags to `true` for backward compatibility
+
 ## Directory Structure
 
 ```
@@ -43,6 +83,7 @@ This document describes the agent pipeline and workflow commands for projects us
 │   ├── test.md
 │   ├── review.md
 │   ├── full-cycle.md
+│   ├── init-workflow.md
 │   ├── build-agent.md
 │   ├── build-skill.md
 │   └── validate-config.md
@@ -63,6 +104,7 @@ This document describes the agent pipeline and workflow commands for projects us
 | `/test` | Run test writer agent | After implementation |
 | `/review` | Run code reviewer agent | After tests |
 | `/full-cycle` | Run complete pipeline with 4 milestone gates | Standard development |
+| `/init-workflow` | Initialise agent workflow for current project | First time in a project |
 | `/build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
 | `/build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
 | `/validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
@@ -212,6 +254,96 @@ Grounding references (cached Anthropic docs) are read at the start of every buil
 - Trivial typo fixes in comments/strings
 - Configuration files (YAML, JSON, TOML)
 
+## Git Workflow
+
+### Branching Model — Island Branches
+
+```
+main/master/develop            (default branch — agents never touch)
+  ├── PROJ-123_backend         (feature branch — worktree A)
+  ├── PROJ-123_frontend        (feature branch — worktree B)
+  └── PROJ-456_dashboard       (feature branch — worktree C)
+```
+
+Each feature branch is independent. No local merge — integration happens via PR/CI.
+
+**Default branch**: auto-detected by `.claude/bin/git-default-branch`. Override per-repo: `git config --local claude.defaultBranch develop`.
+
+### Branch Lifecycle
+
+1. Command creates feature branch from default branch (or uses current)
+2. SE agent implements on feature branch (agent never touches git)
+3. Command auto-commits after each agent phase via `git-safe-commit` (when `auto_commit: true` in `workflow.json`)
+4. After review, user pushes and creates PR
+5. Merge happens in GitHub/GitLab (not locally)
+
+### Multi-Branch Per Ticket
+
+One Jira ticket can span multiple branches/worktrees:
+
+| Pattern | Example | Base Branch |
+|---------|---------|-------------|
+| **Independent** | backend + frontend (parallel worktrees) | Default branch |
+| **Chained** | db → backend → api → frontend | Previous branch via `--from` |
+| **Mixed** | backend from default, frontend from backend | Varies |
+
+### Git Safety Scripts
+
+| Script | Purpose | Called By |
+|--------|---------|----------|
+| `.claude/bin/git-default-branch` | Detect project's default branch | Commands, `claude-wt` |
+| `.claude/bin/git-safe-commit` | Commit with branch protection + secret detection | Commands |
+| `.claude/bin/git-safe-merge` | ff-only merge with dependency check (opt-in integration branch) | User (manual) |
+
+### Separation of Concerns
+
+| Actor | Git Operations |
+|-------|---------------|
+| **Commands** | Branch creation, stage, commit |
+| **SE Agents** | None (code only) |
+| **Review Agents** | Read-only (diff, log) |
+| **User** | Push, PR creation, merge (via GitHub) |
+
+### Commit Convention
+
+```
+<type>(<JIRA_ISSUE>): <description>
+```
+
+Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
+
+## Worktree Parallelism
+
+For working on multiple tasks simultaneously, use git worktrees via `claude-wt`:
+
+```bash
+claude-wt new PROJ-123_backend                       # branch from default branch
+claude-wt new PROJ-123_frontend --from PROJ-123_backend  # chain from another branch
+claude-wt list --ticket PROJ-123                     # see all worktrees for a ticket
+claude-wt status                                     # show all with PR status
+claude-wt rm PROJ-123_backend                        # remove after merge
+claude-wt clean                                      # prune all merged worktrees
+```
+
+Directory layout: `../<project>-wt/<branch-name>/`
+
+Each worktree gets its own Claude Code session. `claude-wt` automatically:
+- Copies `settings.local.json` to the worktree
+- Symlinks downstream memory for shared knowledge
+- Creates the branch from the default branch (or specified base via `--from`)
+
+### Parallel Workflow Example
+
+```
+Terminal 1:                          Terminal 2:
+claude-wt new PROJ-123_backend       claude-wt new PROJ-123_frontend
+claude --cwd ../project-wt/...       claude --cwd ../project-wt/...
+> /implement backend API              > /implement frontend dashboard
+> /test                               > /test
+> /review → 'pr'                      > /review → 'pr'
+claude-wt rm PROJ-123_backend         claude-wt rm PROJ-123_frontend
+```
+
 ## Configuration
 
 See `config` skill for configurable paths.
@@ -245,7 +377,7 @@ When invoking agents via commands, the model is determined by this precedence (h
 | Priority | Source | Example |
 |----------|--------|---------|
 | 1 (highest) | User explicit argument | `/implement opus` |
-| 2 | Complexity check at command level | Plan >200 lines → opus |
+| 2 | Complexity check at command level | Plan >200 lines → opus (requires `complexity_escalation: true` in `workflow.json`) |
 | 3 | Agent frontmatter default | `model: sonnet` |
 
 **How it works:**
@@ -269,7 +401,7 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 ### Python Standards
 
-- Type hints everywhere with `black` formatting
+- Type hints everywhere with `ruff format` formatting
 - Pydantic for validation, dataclasses for simple data
 - HTTP clients: Always use timeouts and retry logic
 - Exceptions: Specific types, context preserved with `raise from`

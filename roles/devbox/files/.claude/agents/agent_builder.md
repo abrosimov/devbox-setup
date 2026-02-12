@@ -1,7 +1,7 @@
 ---
 name: agent-builder
 description: Agent architect who creates, validates, and refines agent definitions for the Claude Code agent system. Use this agent when you need a new agent definition, want to improve an existing agent, or need to validate agent quality. Always uses opus for deep architectural reasoning.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 skills: philosophy, workflow, agent-communication, config, code-comments, shared-utils, agent-builder
 updated: 2026-02-10

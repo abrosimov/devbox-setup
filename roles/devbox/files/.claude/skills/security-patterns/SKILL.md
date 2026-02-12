@@ -62,15 +62,13 @@ Every security pattern is classified into one of three tiers:
 
 ### GUARDED Examples
 
-| Pattern | Language | Safe With |
-|---------|----------|-----------|
-| `grpc.WithInsecure()` | Go | Build tags (`//go:build !prod`) |
-| `InsecureSkipVerify: true` | Go | Build tags |
-| `verify=False` | Python | Config-driven (`if settings.DEBUG`) |
-| `reflection.Register()` | Go | Env check (`if os.Getenv("ENV") != "production"`) |
-| `CORS: *` | All | Dev-only config |
-| Verbose error details in responses | All | Config-driven |
-| No rate limiting | All | Dev/test environments only |
+- **`grpc.WithInsecure()`** (Go) — safe with build tags (`//go:build` for non-prod)
+- **`InsecureSkipVerify: true`** (Go) — safe with build tags
+- **`verify=False`** (Python) — safe when config-driven (`if settings.DEBUG`)
+- **`reflection.Register()`** (Go) — safe with env check (non-production guard)
+- **`CORS: *`** (All) — safe in dev-only config
+- **Verbose error details in responses** (All) — safe when config-driven
+- **No rate limiting** (All) — safe in dev/test environments only
 
 ### CONTEXT Examples
 

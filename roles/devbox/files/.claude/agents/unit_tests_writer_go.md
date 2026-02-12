@@ -1,7 +1,7 @@
 ---
 name: unit-test-writer-go
 description: Unit tests specialist for Go - writes idiomatic table-driven tests with testify suites, actively seeking bugs.
-tools: Read, Edit, Grep, Glob, Bash
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
 skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, go-architecture, go-anti-patterns, security-patterns, otel-go, code-comments, agent-communication, shared-utils
@@ -91,13 +91,13 @@ Your goal is NOT just to write tests that pass — your goal is to **find bugs**
 
 ```bash
 # Count public functions needing tests
-git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -c "^func [A-Z]" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -c "^func [A-Z]" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
 
 # Count error handling sites (each needs test coverage)
-git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -c "if err != nil\|return.*err" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -c "if err != nil\|return.*err" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
 
 # Check for concurrency patterns requiring special testing
-git diff main...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -l "go func\|chan \|sync\.\|select {" 2>/dev/null | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -l "go func\|chan \|sync\.\|select {" 2>/dev/null | wc -l
 ```
 
 **Escalation thresholds:**
@@ -307,7 +307,7 @@ For filesystem operations, ALWAYS test:
 ## Approaching the task
 
 1. Run `git status` to check for uncommitted changes.
-2. Run `git log --oneline -10` and `git diff main...HEAD` (or appropriate base branch) to understand committed changes.
+2. Run `git log --oneline -10` and `git diff $DEFAULT_BRANCH...HEAD` (or appropriate base branch) to understand committed changes.
 3. Identify source files that need tests (skip `_test.go` files, configs, docs).
 
 ## What to test

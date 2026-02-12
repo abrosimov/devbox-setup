@@ -1,7 +1,7 @@
 ---
 name: code-reviewer-python
 description: Code reviewer for Python - validates implementation against requirements and catches issues missed by engineer and test writer.
-tools: Read, Edit, Grep, Glob, Bash, mcp__atlassian, mcp__memory-downstream
+tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__atlassian, mcp__memory-downstream
 model: sonnet
 skills: philosophy, python-engineer, python-testing, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, otel-python, code-comments, agent-communication, shared-utils, mcp-memory
 updated: 2026-02-10
@@ -16,13 +16,13 @@ Your goal is to catch what the engineer AND test writer missed.
 
 ```bash
 # Count changed lines (excluding tests)
-git diff main...HEAD --stat -- '*.py' ':!test_*.py' ':!*_test.py' | tail -1
+git diff $DEFAULT_BRANCH...HEAD --stat -- '*.py' ':!test_*.py' ':!*_test.py' | tail -1
 
 # Count exception handling sites
-git diff main...HEAD --name-only -- '*.py' | grep -v test | xargs grep -c "except\|raise\|try:" | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test | xargs grep -c "except\|raise\|try:" | awk -F: '{sum+=$2} END {print sum}'
 
 # Count changed files
-git diff main...HEAD --name-only -- '*.py' | grep -v test | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test | wc -l
 ```
 
 **Escalation thresholds:**
@@ -241,8 +241,8 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 
 2. Get changes in the branch:
    ```bash
-   git diff main...HEAD
-   git log --oneline main..HEAD
+   git diff $DEFAULT_BRANCH...HEAD
+   git log --oneline $DEFAULT_BRANCH..HEAD
    ```
 
 ### Step 2: Requirements Analysis
@@ -263,7 +263,7 @@ Present this summary to the user for confirmation.
 Run this search and record EVERY match:
 ```bash
 # Find all exception handling sites in changed files
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "except\|raise\|try:"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "except\|raise\|try:"
 ```
 
 Create an inventory table:
@@ -296,7 +296,7 @@ Total new identifiers: ___
 List ALL public functions in changed files and their test coverage:
 ```bash
 # Find public functions in changed files (not starting with _)
-git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "^def [^_]\|^async def [^_]"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "^def [^_]\|^async def [^_]"
 ```
 
 ```
@@ -326,7 +326,7 @@ List: ___
 
 List ALL functions with type hints and verify consistency:
 ```bash
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "def.*->.*:\|: Optional\|: Union\|: List\|: Dict"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "def.*->.*:\|: Optional\|: Union\|: List\|: Dict"
 ```
 
 ```
@@ -579,40 +579,40 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 **Search for security-sensitive patterns:**
 ```bash
 # CRITICAL: SQL injection
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "execute.*%\|execute.*format\|execute.*f\"\|cursor.*+\|\.format.*SELECT\|\.format.*INSERT"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "execute.*%\|execute.*format\|execute.*f\"\|cursor.*+\|\.format.*SELECT\|\.format.*INSERT"
 
 # CRITICAL: Command injection / code execution
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "subprocess\|os.system\|os.popen\|eval(\|exec("
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "subprocess\|os.system\|os.popen\|eval(\|exec("
 
 # CRITICAL: Unsafe deserialization
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "pickle.load\|pickle.loads\|yaml.load\|yaml.unsafe_load"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "pickle.load\|pickle.loads\|yaml.load\|yaml.unsafe_load"
 
 # CRITICAL: Timing-unsafe comparisons on secrets
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n '== .*token\|== .*secret\|== .*key\|== .*hash\|== .*password\|!= .*token'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n '== .*token\|== .*secret\|== .*key\|== .*hash\|== .*password\|!= .*token'
 
 # CRITICAL: random module in security context
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "import random\|from random import\|random.randint\|random.choice"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "import random\|from random import\|random.randint\|random.choice"
 
 # CRITICAL: Sensitive data in logs
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "log.*password\|log.*token\|log.*secret\|log.*key\|print.*password"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "log.*password\|log.*token\|log.*secret\|log.*key\|print.*password"
 
 # CRITICAL: Hardcoded secrets
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "password.*=.*[\"']\|token.*=.*[\"']\|secret.*=.*[\"']\|api_key.*=.*[\"']"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "password.*=.*[\"']\|token.*=.*[\"']\|secret.*=.*[\"']\|api_key.*=.*[\"']"
 
 # CRITICAL: Weak hashing for security purposes
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "hashlib.md5\|hashlib.sha1\|md5(\|sha1("
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "hashlib.md5\|hashlib.sha1\|md5(\|sha1("
 
 # CRITICAL: SSTI (server-side template injection)
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "Template(\|render_template_string\|jinja2.Template("
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "Template(\|render_template_string\|jinja2.Template("
 
 # GUARDED: TLS verification disabled
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "verify=False\|CERT_NONE\|check_hostname.*False"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "verify=False\|CERT_NONE\|check_hostname.*False"
 
 # CONTEXT: File path construction
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "open(.*+\|open(.*format\|open(.*f\"\|Path(.*+"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "open(.*+\|open(.*format\|open(.*f\"\|Path(.*+"
 
 # CONTEXT: shell=True in subprocess
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "shell=True"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "shell=True"
 ```
 
 ```
@@ -846,17 +846,17 @@ VERDICT: [ ] PASS  [ ] FAIL — complexity issues documented above
 
 **Search for narration comments:**
 ```bash
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n "# [A-Z][a-z].*the\|# Check\|# Verify\|# Create\|# Start\|# Get\|# Set\|# If\|# When\|# First\|# Then\|# Loop\|# Return\|# ---\|# ==="
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n "# [A-Z][a-z].*the\|# Check\|# Verify\|# Create\|# Start\|# Get\|# Set\|# If\|# When\|# First\|# Then\|# Loop\|# Return\|# ---\|# ==="
 ```
 
 **Search for docstrings on private methods:**
 ```bash
-git diff main...HEAD --name-only -- '*.py' | xargs grep -n -A1 "def _" | grep '"""'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | xargs grep -n -A1 "def _" | grep '"""'
 ```
 
 **Search for docstrings on business logic (services, handlers):**
 ```bash
-git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n -A1 "class.*Service\|class.*Handler\|def.*process\|def.*handle" | grep '"""'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n -A1 "class.*Service\|class.*Handler\|def.*process\|def.*handle" | grep '"""'
 ```
 
 ```
@@ -913,7 +913,7 @@ def commit(self) -> None:
 
 **Search for log statements:**
 ```bash
-git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "logger\.\|logging\." | grep -E "\.(info|error|warning|debug|exception)\("
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "logger\.\|logging\." | grep -E "\.(info|error|warning|debug|exception)\("
 ```
 
 For EACH log statement, verify:
@@ -999,16 +999,16 @@ VERDICT: [ ] PASS  [ ] FAIL — SE should have caught these in self-review
 
 ```bash
 # Find single underscore private methods in leaf classes (Services, Handlers, Factories)
-git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "class.*Service\|class.*Handler\|class.*Factory" -A 50 | grep "def _[^_]"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "class.*Service\|class.*Handler\|class.*Factory" -A 50 | grep "def _[^_]"
 
 # Find constants without Final
-git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "^[A-Z_]* = \|^    [A-Z_]* = " | grep -v Final
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "^[A-Z_]* = \|^    [A-Z_]* = " | grep -v Final
 
 # Find module-level free functions
-git diff main...HEAD --name-only -- '*.py' | grep -v test_ | grep -v __init__.py | xargs grep -n "^def [^_]"
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test_ | grep -v __init__.py | xargs grep -n "^def [^_]"
 
 # Find private constants at module level
-git diff main...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "^_[A-Z_]* = "
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' | grep -v test_ | xargs grep -n "^_[A-Z_]* = "
 ```
 
 ```

@@ -16,6 +16,45 @@ This file contains configurable paths and settings for agents and commands.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PLANS_DIR` | `docs/implementation_plans` | Base directory for all project documentation |
+| `DEFAULT_BRANCH` | auto-detected | Project's default branch (main/master/develop) |
+| `INTEGRATION_BRANCH` | *(none — opt-in)* | Optional local integration branch for pre-PR testing |
+
+## Workflow Config (Per-Project)
+
+The agent workflow is opt-in per project. Config file: `.claude/workflow.json` in the project root.
+
+```json
+{
+  "agent_pipeline": true,
+  "auto_commit": true,
+  "complexity_escalation": true
+}
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `agent_pipeline` | `true` | When `true`, code changes MUST go through agents. When `false`, direct edits allowed |
+| `auto_commit` | `true` | When `true`, commands auto-commit via `git-safe-commit`. When `false`, user commits manually |
+| `complexity_escalation` | `true` | When `true`, commands auto-escalate to Opus for complex tasks. When `false`, agent default model used |
+
+**Commands read this file at Step 0** and adjust behavior accordingly. If the file is missing, commands default all flags to `true` (backward compatible).
+
+Create with `/init-workflow` or manually.
+
+The default branch is detected automatically by `.claude/bin/git-default-branch`:
+```bash
+DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
+```
+
+Detection priority: `claude.defaultBranch` git config > remote HEAD > `init.defaultBranch` > `"main"`.
+
+To override per-repo: `git config --local claude.defaultBranch develop`
+
+**Optional integration branch** (opt-in for local merge testing):
+```bash
+git config --local claude.integrationBranch build/stable
+```
+When set, commands offer local merge as an additional option alongside push+PR.
 
 ## Task Context
 
@@ -23,12 +62,11 @@ This file contains configurable paths and settings for agents and commands.
 
 ### Context Variables
 
-| Variable | Derivation | Example |
-|----------|------------|---------|
-| `BRANCH` | `` `git branch --show-current` `` | `PROJ-123_add_user_auth` |
-| `JIRA_ISSUE` | `` `echo "$BRANCH" \| cut -d'_' -f1` `` | `PROJ-123` |
-| `BRANCH_NAME` | `` `echo "$BRANCH" \| cut -d'_' -f2-` `` | `add_user_auth` |
-| `PROJECT_DIR` | `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}` | `docs/implementation_plans/PROJ-123/add_user_auth` |
+- **`BRANCH`** — `git branch --show-current` — e.g. `PROJ-123_add_user_auth`
+- **`JIRA_ISSUE`** — first segment before `_` — e.g. `PROJ-123`
+- **`BRANCH_NAME`** — remaining segments after first `_` — e.g. `add_user_auth`
+- **`DEFAULT_BRANCH`** — `.claude/bin/git-default-branch` — e.g. `main`
+- **`PROJECT_DIR`** — `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}` — e.g. `docs/implementation_plans/PROJ-123/add_user_auth`
 
 ### For Commands (Orchestrators)
 
@@ -37,11 +75,12 @@ Compute once at the start:
 BRANCH=`git branch --show-current`
 JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
 BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
+DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
 
 When invoking agents via Task tool, include in prompt:
 ```
-Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, PROJECT_DIR={PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}
+Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}
 ```
 
 ### For Agents
@@ -132,3 +171,55 @@ Where `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`
 ## Customizing Paths
 
 To override defaults for your project, update the `PLANS_DIR` value in the table above. All agents and commands will read from this file.
+
+## Settings Hierarchy
+
+Claude Code merges settings from multiple scopes. **More specific scopes override broader ones.**
+
+| Priority | File | Scope | Tracked? |
+|----------|------|-------|----------|
+| 1 (highest) | `.claude/settings.local.json` | Per-project, per-developer | gitignored |
+| 2 | `.claude/settings.json` | Per-project, shared | committed |
+| 3 (lowest) | `~/.claude/settings.json` | Global baseline | Ansible-deployed |
+
+**Merge rules:**
+- `defaultMode`: overridden by more specific scope
+- `allow` / `deny` arrays: **additive** (concatenated across all scopes)
+- Evaluation order: deny (checked first) > allow (checked last)
+
+### Global `~/.claude/settings.json`
+
+Deployed by Ansible. Contains:
+- **deny**: Security floor (destructive ops, secrets, force push, publishing) — projects can't weaken these
+- **allow**: All language tooling (Go, Python, Frontend, Docker, Observability), git safe ops, system utils
+
+### Project `.claude/settings.json`
+
+Optional. Use when a project needs additional permissions beyond the global baseline, or wants to restrict certain operations. Created automatically by `/init-workflow` if requested.
+
+### `settings.local.json` — Personal Overrides
+
+For per-developer customization. Common use cases:
+
+| Use Case | What to Add |
+|----------|-------------|
+| **Push without prompting** | `"allow": ["Bash(git push *)"]` |
+| **Database CLIs** | `"allow": ["Bash(psql *)", "Bash(mongosh *)", "Bash(redis-cli *)"]` |
+| **API testing** | `"allow": ["Bash(curl *)", "Bash(http *)"]` |
+| **Ansible (devbox project)** | `"allow": ["Bash(ansible *)", "Bash(ansible-playbook *)", "Bash(ansible-lint *)", "Bash(ansible-galaxy *)"]` |
+| **Stricter mode** | `"defaultMode": "plan"` |
+
+Example `.claude/settings.local.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push *)",
+      "Bash(psql *)"
+    ]
+  }
+}
+```
+
+**Note:** `settings.local.json` is gitignored and preserved across Ansible deploys. Each developer maintains their own.

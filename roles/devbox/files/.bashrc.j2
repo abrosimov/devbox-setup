@@ -1,0 +1,22 @@
+# Homebrew
+eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null)"
+
+# Environment
+{% for entry in devbox_shell.env %}
+export {{ entry.name }}="{{ entry.value }}"
+{% endfor %}
+
+# PATH — prepend (high priority)
+{% for p in devbox_shell.path_prepend %}
+export PATH="{{ p }}:$PATH"
+{% endfor %}
+
+# PATH — append
+{% for p in devbox_shell.path_append %}
+export PATH="{{ p }}:$PATH"
+{% endfor %}
+
+# PATH — conditional
+{% for item in devbox_shell.path_conditional %}
+[ -d "{{ item.check }}" ] && export PATH="{{ item.add }}:$PATH"
+{% endfor %}

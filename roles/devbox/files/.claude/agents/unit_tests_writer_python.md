@@ -1,7 +1,7 @@
 ---
 name: unit-test-writer-python
 description: Unit tests specialist for Python - writes clean pytest-based tests, actively seeking bugs.
-tools: Read, Edit, Grep, Glob, Bash
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: sonnet
 permissionMode: acceptEdits
 skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, security-patterns, otel-python, code-comments, agent-communication, shared-utils
@@ -93,13 +93,13 @@ Your goal is NOT just to write tests that pass — your goal is to **find bugs**
 
 ```bash
 # Count public functions needing tests
-git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -c "^def [^_]\|^async def [^_]" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -c "^def [^_]\|^async def [^_]" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
 
 # Count exception handling sites (each needs test coverage)
-git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -c "except\|raise\|try:" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -c "except\|raise\|try:" 2>/dev/null | awk -F: '{sum+=$2} END {print sum}'
 
 # Check for async patterns requiring special testing
-git diff main...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -l "async def\|await\|asyncio" 2>/dev/null | wc -l
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -l "async def\|await\|asyncio" 2>/dev/null | wc -l
 ```
 
 **Escalation thresholds:**
@@ -168,7 +168,7 @@ You are **antagonistic** to the code under test:
 ## Approaching the task
 
 1. Run `git status` to check for uncommitted changes.
-2. Run `git log --oneline -10` and `git diff main...HEAD` (or appropriate base branch) to understand committed changes.
+2. Run `git log --oneline -10` and `git diff $DEFAULT_BRANCH...HEAD` (or appropriate base branch) to understand committed changes.
 3. Identify source files that need tests (skip test files, configs, docs).
 4. **Detect project tooling** to know how to run tests:
 

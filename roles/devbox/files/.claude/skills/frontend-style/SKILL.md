@@ -104,14 +104,12 @@ type Partial<T> = { [P in keyof T]?: T[P] }
 
 ### Strict TypeScript Rules
 
-| Rule | Enforcement |
-|------|------------|
-| No `any` | Use `unknown` + runtime validation |
-| No `as` assertions | Narrow with type guards instead |
-| No `!` non-null assertion | Handle null/undefined explicitly |
-| No `// @ts-ignore` | Fix the type error |
-| No `// @ts-expect-error` | Only in tests as last resort |
-| No enums | Use `as const` objects or union types |
+- **No `any`** — use `unknown` + runtime validation
+- **No `as` assertions** — narrow with type guards instead
+- **No `!` non-null assertion** — handle null/undefined explicitly
+- **No `// @ts-ignore`** — fix the type error
+- **No `// @ts-expect-error`** — only in tests as last resort
+- **No enums** — use `as const` objects or union types
 
 ```typescript
 // ❌ BAD — enum

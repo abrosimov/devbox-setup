@@ -302,13 +302,42 @@ One paragraph max.
 
 ## Acceptance Criteria
 
-- [ ] All CRUD endpoints implemented and returning correct status codes
-- [ ] Pagination working with configurable page size
-- [ ] Validation errors return 400 with clear messages
-- [ ] Not found errors return 404
-- [ ] Request/response models match API contract
-- [ ] Unit tests cover service layer
-- [ ] No direct EntityManager usage
+Structured, testable criteria traceable to FRs. Use Given/When/Then format.
+
+### AC-1: Resource creation — happy path (FR-1)
+**Given** valid request body with all required fields
+**When** POST /resources is called
+**Then** the system returns 201 with the created resource including a generated ID
+
+### AC-2: Resource creation — validation failure (FR-1)
+**Given** request body with missing required field
+**When** POST /resources is called
+**Then** the system returns 400 with field-specific validation error
+
+### AC-3: Resource retrieval — exists (FR-2)
+**Given** a resource exists with known ID
+**When** GET /resources/{id} is called
+**Then** the system returns 200 with the resource data
+
+### AC-4: Resource retrieval — not found (FR-2)
+**Given** no resource exists with the requested ID
+**When** GET /resources/{id} is called
+**Then** the system returns 404 with "not found" message
+
+### AC-5: Resource list with pagination (FR-3)
+**Given** multiple resources exist
+**When** GET /resources?page=1&per_page=10 is called
+**Then** the system returns 200 with paginated list and total count
+
+### AC-6: Resource update — exists (FR-4)
+**Given** a resource exists with known ID and valid update body
+**When** PUT /resources/{id} is called
+**Then** the system returns 200 with the updated resource
+
+### AC-7: Resource deletion (FR-5)
+**Given** a resource exists with known ID
+**When** DELETE /resources/{id} is called
+**Then** the system returns 204, and subsequent GET returns 404
 
 ---
 
@@ -392,6 +421,20 @@ Each stream maps to a downstream agent and command. Streams with no dependency b
 
 ---
 
+## Assumption Register
+
+Surfaces implicit decisions. Flag anything not explicitly confirmed in spec.
+
+| # | Assumption | Impact if Wrong | Resolved? |
+|---|-----------|-----------------|-----------|
+| A-1 | Soft-deleted resources return 404, not "deleted" status | Client behaviour changes | Ask stakeholder |
+| A-2 | No per-page maximum limit | Memory/performance risk with large pages | Needs decision |
+| A-3 | No field-level authorisation | Sensitive fields exposed to all users | Ask stakeholder |
+
+**Rule:** If "Resolved?" is not "Confirmed" or "Yes", the SE MUST flag it to the user before implementing that requirement.
+
+---
+
 ## Codebase Notes
 
 Brief notes for SE (context only, not prescriptions):
@@ -408,34 +451,54 @@ DO NOT specify file paths, classes, or layer implementations. SE will explore an
 
 ---
 
-## Implementation Checklist
+## SE Verification Contract
 
-**For SE to verify before marking implementation complete.**
+**The SE MUST verify each row before marking implementation complete.** Each row maps an FR to an AC with observable behaviour.
 
-### API Endpoints
-- [ ] GET /resources — returns 200 with paginated list
-- [ ] GET /resources/{id} — returns 200 or 404
-- [ ] POST /resources — returns 201 with created resource
-- [ ] PUT /resources/{id} — returns 200 or 404
-- [ ] DELETE /resources/{id} — returns 204 or 404
+| FR | AC | Observable Behaviour | Verified? |
+|----|-----|---------------------|-----------|
+| FR-1 | AC-1 | POST /resources returns 201 with generated ID | [ ] |
+| FR-1 | AC-2 | POST /resources with missing field returns 400 with field error | [ ] |
+| FR-2 | AC-3 | GET /resources/{id} returns 200 with resource data | [ ] |
+| FR-2 | AC-4 | GET /resources/{id} for unknown ID returns 404 | [ ] |
+| FR-3 | AC-5 | GET /resources?page=1&per_page=10 returns paginated list | [ ] |
+| FR-4 | AC-6 | PUT /resources/{id} returns 200 with updated resource | [ ] |
+| FR-5 | AC-7 | DELETE /resources/{id} returns 204, subsequent GET returns 404 | [ ] |
 
-### Validation
-- [ ] Missing required field — returns 400 with field-specific error
-- [ ] Invalid field value — returns 400 with validation message
-- [ ] Invalid ID format — returns 400
+---
 
-### Error Responses
-- [ ] Resource not found — returns 404 with "not found" message
-- [ ] Storage failure — returns 500, details logged (not exposed to client)
+## Test Mandate
 
-### Business Rules
-- [ ] BR-1: [rule summary] — verify [how to check]
-- [ ] BR-2: [rule summary] — verify [how to check]
+**The test writer MUST cover these scenarios.** Each maps to an AC. Additional tests beyond this are encouraged but these are the minimum.
 
-### Architecture Constraints
-- [ ] No direct EntityManager usage — repository pattern used
-- [ ] Controllers imported from DI container
-- [ ] Layered DI architecture followed
+| AC | Test Type | Scenario | Expected |
+|----|-----------|----------|----------|
+| AC-1 | Unit | Valid creation with all fields | Returns 201 with generated ID |
+| AC-2 | Unit | Creation with missing required field | Returns 400 with field error |
+| AC-2 | Unit | Creation with invalid field value | Returns 400 with validation message |
+| AC-3 | Unit | Retrieve existing resource | Returns 200 with data |
+| AC-4 | Unit | Retrieve non-existent resource | Returns 404 |
+| AC-5 | Unit | List with pagination | Returns correct page with total count |
+| AC-5 | Unit | List with invalid page number | Returns 400 |
+| AC-6 | Unit | Update existing resource | Returns 200 with updated data |
+| AC-7 | Unit | Delete existing resource | Returns 204; subsequent GET returns 404 |
+| — | Unit | Storage failure | Returns 500, details logged |
+
+---
+
+## Review Contract
+
+**The reviewer MUST verify each row during Checkpoint K.** This replaces loose text matching with structured verification.
+
+| FR | AC | What to Check | Pass Criteria |
+|----|-----|---------------|---------------|
+| FR-1 | AC-1 | Create endpoint exists, accepts valid input | Returns 201 with generated ID |
+| FR-1 | AC-2 | Validation rejects missing/invalid fields | Returns 400 with field-specific message |
+| FR-2 | AC-3 | Get endpoint returns resource by ID | Returns 200 with correct data |
+| FR-2 | AC-4 | Get endpoint handles missing resource | Returns 404, no information leak |
+| FR-3 | AC-5 | List endpoint supports pagination | Returns correct page, total count present |
+| FR-4 | AC-6 | Update endpoint modifies resource | Returns 200 with updated data |
+| FR-5 | AC-7 | Delete endpoint removes resource | Returns 204; GET returns 404 after |
 ```
 
 ## Dev Environment Awareness
@@ -510,11 +573,15 @@ This feature requires database schema modifications. Run `/schema` before `/impl
 - Business rules (constraints and logic)
 - Error cases (conditions and expected responses)
 - Integration points (what systems interact)
-- Acceptance criteria (how to verify success)
+- Acceptance criteria — **Given/When/Then format**, traceable to FRs
 - Test scenarios (what to test, not how)
 - Architecture constraints (rules SE must follow)
 - Schema changes (if any — tables, columns, indexes affected)
 - Work streams (agent-aware execution plan with dependencies and parallelism)
+- **Assumption Register** — every implicit decision, with impact and resolution status
+- **SE Verification Contract** — FR→AC→observable behaviour table for the SE
+- **Test Mandate** — mandatory test scenarios the test writer MUST cover
+- **Review Contract** — FR→AC→pass criteria table for the reviewer
 
 ## What to EXCLUDE
 

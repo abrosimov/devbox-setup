@@ -4,3 +4,5 @@ debug/
 vault/*.yml
 tests/generated
 local/
+
+tmp/

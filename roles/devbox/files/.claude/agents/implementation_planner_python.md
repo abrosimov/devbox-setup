@@ -208,15 +208,42 @@ One paragraph max.
 
 ## Acceptance Criteria
 
-Overall criteria for feature completion:
+Structured, testable criteria traceable to FRs. Use Given/When/Then format.
 
-- [ ] User can create widget via API
-- [ ] User can retrieve widget by ID
-- [ ] User can list widgets with pagination
-- [ ] User can delete widget (soft delete)
-- [ ] Notification sent on creation
-- [ ] All error cases return appropriate error responses
-- [ ] Feature is covered by unit tests
+### AC-1: Widget creation — happy path (FR-1)
+**Given** an authenticated user with valid input (name="Test", desc="A widget")
+**When** they submit a create-widget request
+**Then** the system returns 201 with the created widget including a generated ID
+
+### AC-2: Widget creation — validation failure (FR-1)
+**Given** an authenticated user with empty name field
+**When** they submit a create-widget request
+**Then** the system returns 400 with error message "name is required"
+
+### AC-3: Widget retrieval — exists (FR-2)
+**Given** a widget exists with known ID
+**When** an authenticated user requests it by ID
+**Then** the system returns 200 with the widget data
+
+### AC-4: Widget retrieval — not found (FR-2)
+**Given** no widget exists with the requested ID
+**When** an authenticated user requests it
+**Then** the system returns 404 with error "widget not found"
+
+### AC-5: Widget list with pagination (FR-3)
+**Given** multiple widgets exist
+**When** an authenticated user requests the list with page=1, size=10
+**Then** the system returns 200 with at most 10 widgets and pagination metadata
+
+### AC-6: Widget deletion — soft delete (FR-4)
+**Given** a widget exists with known ID
+**When** an authenticated user deletes it
+**Then** the system returns 204, and subsequent retrieval returns 404
+
+### AC-7: Creation notification (FR-5)
+**Given** a widget is successfully created
+**When** the creation completes
+**Then** a notification is sent (best effort — failure logged, not surfaced to user)
 
 ---
 
@@ -323,6 +350,20 @@ Questions requiring user/stakeholder input:
 
 ---
 
+## Assumption Register
+
+Surfaces implicit decisions. Flag anything not explicitly confirmed in spec.
+
+| # | Assumption | Impact if Wrong | Resolved? |
+|---|-----------|-----------------|-----------|
+| A-1 | Widget names don't need uniqueness | Data quality — duplicates possible | Ask stakeholder |
+| A-2 | Soft delete retention is 30 days | Storage costs, compliance | Confirmed in spec |
+| A-3 | Notifications are best-effort | Users may miss creation events | Confirmed in spec |
+
+**Rule:** If "Resolved?" is not "Confirmed" or "Yes", the SE MUST flag it to the user before implementing that requirement.
+
+---
+
 ## Codebase Notes
 
 Brief notes for SE (context only, not prescriptions):
@@ -335,26 +376,53 @@ DO NOT specify file paths, classes, or patterns. SE will explore and decide.
 
 ---
 
-## Implementation Checklist
+## SE Verification Contract
 
-**For SE to verify before marking implementation complete.**
+**The SE MUST verify each row before marking implementation complete.** Each row maps an FR to an AC with observable behaviour.
 
-### Functional Requirements
-- [ ] FR-1: [requirement summary] — verify [key observable behaviour]
-- [ ] FR-2: [requirement summary] — verify [key observable behaviour]
+| FR | AC | Observable Behaviour | Verified? |
+|----|-----|---------------------|-----------|
+| FR-1 | AC-1 | POST /widgets returns 201 with generated ID | [ ] |
+| FR-1 | AC-2 | POST /widgets with empty name returns 400 "name is required" | [ ] |
+| FR-2 | AC-3 | GET /widgets/:id returns 200 with widget data | [ ] |
+| FR-2 | AC-4 | GET /widgets/:id for unknown ID returns 404 | [ ] |
+| FR-3 | AC-5 | GET /widgets?page=1&size=10 returns paginated list | [ ] |
+| FR-4 | AC-6 | DELETE /widgets/:id returns 204, subsequent GET returns 404 | [ ] |
+| FR-5 | AC-7 | Notification sent on creation (log entry on failure) | [ ] |
 
-### Error Cases
-- [ ] [Error condition 1] — raises [expected exception/behaviour]
-- [ ] [Error condition 2] — raises [expected exception/behaviour]
-- [ ] Storage/external failure — raises appropriate exception, details logged (not exposed)
+---
 
-### Business Rules
-- [ ] BR-1: [rule summary] — verify [how to check]
-- [ ] BR-2: [rule summary] — verify [how to check]
+## Test Mandate
 
-### Integration Points
-- [ ] [Dependency 1] — [what to verify, e.g., "called with correct parameters"]
-- [ ] [External call 1] — [failure handling, e.g., "best effort, log on failure"]
+**The test writer MUST cover these scenarios.** Each maps to an AC. Additional tests beyond this are encouraged but these are the minimum.
+
+| AC | Test Type | Scenario | Expected |
+|----|-----------|----------|----------|
+| AC-1 | Unit | Valid creation with all fields | Returns entity with generated ID |
+| AC-2 | Unit | Creation with empty required field | Raises validation error |
+| AC-2 | Unit | Creation with field exceeding max length | Raises validation error |
+| AC-3 | Unit | Retrieve existing entity | Returns entity data |
+| AC-4 | Unit | Retrieve non-existent entity | Raises not-found error |
+| AC-5 | Unit | List with pagination parameters | Returns correct page with metadata |
+| AC-6 | Unit | Delete existing entity | Succeeds; subsequent retrieve raises not-found |
+| AC-7 | Unit | Creation triggers notification | Notification called (or failure logged) |
+| — | Unit | Storage failure during creation | Raises appropriate exception, details logged |
+
+---
+
+## Review Contract
+
+**The reviewer MUST verify each row during Checkpoint K.** This replaces loose text matching with structured verification.
+
+| FR | AC | What to Check | Pass Criteria |
+|----|-----|---------------|---------------|
+| FR-1 | AC-1 | Create endpoint exists, accepts valid input | Returns 201 with generated ID |
+| FR-1 | AC-2 | Validation rejects empty name | Returns 400 with clear message |
+| FR-2 | AC-3 | Get endpoint returns entity by ID | Returns 200 with correct data |
+| FR-2 | AC-4 | Get endpoint handles missing entity | Returns 404, no information leak |
+| FR-3 | AC-5 | List endpoint supports pagination | Returns correct page, metadata present |
+| FR-4 | AC-6 | Delete removes entity | Returns 204; GET returns 404 after |
+| FR-5 | AC-7 | Notification on creation | Called on success; failure logged, not surfaced |
 ```
 
 ## Dev Environment Awareness
@@ -428,13 +496,17 @@ This feature requires database schema modifications. Run `/schema` before `/impl
 - Inputs and outputs (data, not types)
 - Error cases (conditions and expected behaviour)
 - Integration points (what systems interact)
-- Acceptance criteria (how to verify success)
+- Acceptance criteria — **Given/When/Then format**, traceable to FRs
 - Test scenarios (what to test, not how)
 - Non-functional requirements (performance, availability)
 - Schema changes (if any — tables, columns, indexes affected)
 - Security considerations (user input, auth, secrets, sensitive data — flag CRITICAL patterns for SE)
 - Work streams (agent-aware execution plan with dependencies and parallelism)
 - Open questions (things to clarify)
+- **Assumption Register** — every implicit decision, with impact and resolution status
+- **SE Verification Contract** — FR→AC→observable behaviour table for the SE
+- **Test Mandate** — mandatory test scenarios the test writer MUST cover
+- **Review Contract** — FR→AC→pass criteria table for the reviewer
 
 ## What to EXCLUDE
 

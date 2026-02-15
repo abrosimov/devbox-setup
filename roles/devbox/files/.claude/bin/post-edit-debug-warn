@@ -1,0 +1,134 @@
+#!/usr/bin/env node
+
+// post-edit-debug-warn — PostToolUse hook that warns about debug statements
+// left in code after edits.
+//
+// Detects by language:
+//   Go:     fmt.Println, fmt.Printf (bare), log.Print, log.Println
+//   Python: print(, breakpoint(, pdb.set_trace, import pdb
+//   TS/JS:  console.log, console.debug, debugger
+//
+// Excludes: test files, config files, scripts/
+//
+// Event: PostToolUse (matcher: Edit, Write)
+// Runs async. Reports via additionalContext.
+
+require("./env-setup");
+const fs = require("fs");
+const path = require("path");
+
+const PATTERNS = {
+  go: [
+    /\bfmt\.Println\b/,
+    /\bfmt\.Printf\b/,
+    /\blog\.Print\b/,
+    /\blog\.Println\b/,
+    /\blog\.Printf\b/,
+  ],
+  python: [
+    /\bprint\s*\(/,
+    /\bbreakpoint\s*\(/,
+    /\bpdb\.set_trace\b/,
+    /\bimport\s+pdb\b/,
+    /\bic\s*\(/,
+  ],
+  typescript: [
+    /\bconsole\.log\b/,
+    /\bconsole\.debug\b/,
+    /\bdebugger\b/,
+  ],
+};
+
+const EXCLUDE_PATTERNS = [
+  /[._]test\./,
+  /[._]spec\./,
+  /test_/,
+  /__tests__/,
+  /__mocks__/,
+  /\.config\./,
+  /scripts\//,
+  /fixtures?\//,
+];
+
+function getLanguage(ext) {
+  switch (ext) {
+    case ".go":
+      return "go";
+    case ".py":
+      return "python";
+    case ".ts":
+    case ".tsx":
+    case ".js":
+    case ".jsx":
+      return "typescript";
+    default:
+      return null;
+  }
+}
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(0);
+  }
+
+  const toolInput = data.tool_input || {};
+  const filePath = toolInput.file_path || toolInput.notebook_path;
+  if (!filePath || !fs.existsSync(filePath)) {
+    process.exit(0);
+  }
+
+  // Skip excluded files
+  if (EXCLUDE_PATTERNS.some((p) => p.test(filePath))) {
+    process.exit(0);
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+  const lang = getLanguage(ext);
+  if (!lang) {
+    process.exit(0);
+  }
+
+  const patterns = PATTERNS[lang];
+  const content = fs.readFileSync(filePath, "utf8");
+  const lines = content.split("\n");
+  const hits = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Skip comments
+    const trimmed = line.trim();
+    if (trimmed.startsWith("//") || trimmed.startsWith("#") || trimmed.startsWith("*")) {
+      continue;
+    }
+    for (const pattern of patterns) {
+      if (pattern.test(line)) {
+        hits.push({ line: i + 1, text: trimmed.slice(0, 80) });
+        break;
+      }
+    }
+  }
+
+  if (hits.length === 0) {
+    process.exit(0);
+  }
+
+  const shown = hits.slice(0, 5);
+  const basename = path.basename(filePath);
+  const details = shown.map((h) => `  L${h.line}: ${h.text}`).join("\n");
+
+  const output = {
+    additionalContext: `[debug-warn] ${hits.length} debug statement(s) in ${basename}:\n${details}${hits.length > 5 ? `\n  ... and ${hits.length - 5} more` : ""}\nRemember to remove debug statements before committing.`,
+  };
+  process.stdout.write(JSON.stringify(output));
+  process.exit(0);
+}
+
+main();

@@ -402,6 +402,26 @@ Even then, add a comment explaining why an accessible query was not possible.
 
 ---
 
+## Plan Integration
+
+Before writing tests, check for a plan with test mandates:
+
+1. Use `shared-utils` skill to extract Jira issue from branch
+2. Check for plan at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md`
+3. If plan exists, read the **Test Mandate** section
+4. Every row in the Test Mandate MUST have a corresponding test — these are mandatory, not suggestions
+5. Additional tests beyond the mandate are encouraged (especially bug-hunting scenarios)
+6. After writing tests, output a coverage matrix:
+   ```
+   ## Test Mandate Coverage
+   | AC | Mandate Scenario | Test Function | Status |
+   |----|-----------------|---------------|--------|
+   ```
+
+If no plan exists, proceed with normal test discovery from git diff.
+
+---
+
 ## Phase 1: Understand the Code
 
 1. Run `git status` to check for uncommitted changes.

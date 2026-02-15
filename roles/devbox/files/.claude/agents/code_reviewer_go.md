@@ -1254,55 +1254,78 @@ func (s *Service) Handle(req Request) error {
 
 **VERDICT: [ ] PASS  [ ] FAIL — runtime panics found**
 
-#### Checkpoint K: Scope Verification (Spec vs Plan vs Implementation)
+#### Checkpoint K: Scope Verification (Plan Contracts)
 
-**If spec.md and plan.md exist**, verify the pipeline maintained fidelity:
+**If plan.md exists**, verify using structured contracts:
 
 ```bash
-# Check if spec and plan exist for this task
-ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null
+# Check if plan exists for this task
+ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null
 ```
 
-**Plan vs Spec (if both exist):**
-```
-Features in plan NOT traceable to spec: ___
-  List with plan line numbers: ___
-Features in spec MISSING from plan: ___
-  List: ___
+**Step 1: Review Contract Verification**
 
-Planner scope issues:
-  - "Nice to have" additions: ___
-  - Inferred requirements without asking user: ___
-  - Default NFRs not in spec: ___
+Read the **Review Contract** section in plan.md. For EACH row, verify the implementation satisfies the pass criteria:
+
+```
+## Review Contract Compliance
+| FR | AC | Implementation Evidence | PASS/FAIL |
+|----|-----|----------------------|-----------|
+| (fill from each Review Contract row) |
 ```
 
-**Implementation vs Plan:**
+**Step 2: SE Verification Contract Check**
+
+Read the **SE Verification Contract** section. Confirm the SE marked all rows as verified:
+
+```
+SE Verification Contract:
+  - Rows marked verified: ___/___
+  - Unverified rows: ___ (list)
+  - Verdict: [ ] COMPLETE  [ ] INCOMPLETE
+```
+
+**Step 3: Assumption Register Check**
+
+Read the **Assumption Register**. Flag any unresolved assumptions:
+
+```
+Unresolved assumptions:
+  - A-__: ___ (Impact: ___)
+  Verdict: [ ] ALL RESOLVED  [ ] UNRESOLVED — flag to user
+```
+
+**Step 4: Test Mandate Coverage**
+
+Read the **Test Mandate** section. Confirm each mandatory scenario has a corresponding test:
+
+```
+Test Mandate Coverage:
+  - Mandatory scenarios: ___
+  - Tests found: ___
+  - Missing: ___ (list)
+  Verdict: [ ] COVERED  [ ] GAPS — flag to test writer
+```
+
+**Step 5: Scope Check (Plan vs Spec vs Implementation)**
+
 ```
 Features implemented NOT in plan: ___
-  List with code locations: ___
-Features in plan NOT implemented: ___
-  List: ___
+  SE additions — classify each:
+  | Addition | Category | Verdict |
+  |----------|----------|---------|
+  | Error wrapping | Production necessity | OK |
+  | New endpoint | Product feature | FLAG |
 
-SE additions — classify each:
-| Addition | Category | Verdict |
-|----------|----------|---------|
-| Error wrapping | Production necessity | OK |
-| Logging | Production necessity | OK |
-| Retry logic | Production necessity | OK |
-| New endpoint | Product feature | FLAG |
-| Extra field in response | Product feature | FLAG |
+Features in plan NOT implemented: ___
 ```
 
 **Classification guide:**
 - **Production necessity** (OK): Error handling, logging, timeouts, retries, input validation, resource cleanup
-- **Product feature** (FLAG): New endpoints, new fields, new business logic, UI changes, new user-facing functionality
+- **Product feature** (FLAG): New endpoints, new fields, new business logic, UI changes
 
 ```
-Scope violations found: ___
-  - Plan added features not in spec: ___
-  - SE added product features not in plan: ___
-
-VERDICT: [ ] PASS  [ ] FAIL — scope violations documented above
+VERDICT: [ ] PASS  [ ] FAIL — contract compliance documented above
 ```
 
 #### Checkpoint L: AC Technical Feasibility

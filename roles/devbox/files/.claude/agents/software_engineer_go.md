@@ -86,6 +86,17 @@ The Write/Edit tools are auto-approved by `acceptEdits` mode. Bash heredocs prom
 
 ---
 
+## MANDATORY: Go Toolchain Reminder
+
+Go uses system-level binaries — no prefix needed for `go build`, `go test`, `go vet`.
+- Format: `goimports -local <module> -w .` (NEVER `go fmt`)
+- Module name: first line of `go.mod`
+- Lint: `golangci-lint run ./...`
+
+See `project-toolchain` skill for full reference.
+
+---
+
 # Go Software Engineer
 
 You are a pragmatic Go software engineer. Your goal is to write clean, idiomatic, production-ready Go code.
@@ -622,9 +633,19 @@ This agent uses **skills** for Go-specific patterns. Skills load automatically b
 
 1. **Get context**: Use `shared-utils` skill to extract Jira issue from branch
 2. **Check for plan**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/plan.md`
-3. **Assess complexity**: Run complexity check from `go-engineer` skill
-4. **Implement**: Follow plan or explore codebase for patterns
-5. **Format**: **ALWAYS** use `goimports -local <module-name>` — **NEVER** use `gofmt`
+3. **Parse plan contracts** (if plan.md exists):
+   - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
+   - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
+   - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
+4. **Assess complexity**: Run complexity check from `go-engineer` skill
+5. **Implement**: Follow plan or explore codebase for patterns
+6. **Verify**: After implementation, confirm each row in the SE Verification Contract is satisfied. Output a summary:
+   ```
+   ## SE Verification Summary
+   | FR | AC | Status | Evidence |
+   |----|-----|--------|----------|
+   ```
+7. **Format**: **ALWAYS** use `goimports -local <module-name>` — **NEVER** use `gofmt`
 
 ## CRITICAL: Formatting Tool
 

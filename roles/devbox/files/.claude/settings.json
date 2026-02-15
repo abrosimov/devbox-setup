@@ -1,4 +1,8 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "echo \"$(git branch --show-current 2>/dev/null || echo 'no-branch') | tools:$TOOL_COUNT\""
+  },
   "permissions": {
     "defaultMode": "acceptEdits",
     "deny": [
@@ -84,6 +88,9 @@
       "Bash(golangci-lint *)",
       "Bash(mockery *)",
       "Bash(sqlc *)",
+
+      "Bash(go vet)",
+      "Bash(go clean -cache)",
 
       "Bash(uv run *)",
       "Bash(uv sync *)",
@@ -207,9 +214,39 @@
       "Bash(basename *)",
       "Bash(dirname *)",
 
+      "Bash(kubectl *)",
+      "Bash(kubectl)",
+      "Bash(helm *)",
+      "Bash(k9s *)",
+      "Bash(podman *)",
+      "Bash(podman)",
+
+      "Bash(cargo *)",
+      "Bash(rustc *)",
+      "Bash(rustup *)",
+
+      "Bash(task *)",
+      "Bash(task)",
+
+      "Bash(opam *)",
+
+      "Bash(bat *)",
+      "Bash(fd *)",
+      "Bash(tree *)",
+      "Bash(tree)",
+      "Bash(fzf *)",
+      "Bash(cloc *)",
+      "Bash(yq *)",
+
+      "Bash(env)",
+      "Bash(date)",
+      "Bash(true)",
+      "Bash(false)",
+
       "Bash(mise *)",
       "Bash(claude *)",
       "Bash(ansible *)",
+      "Bash(ansible-lint *)",
       "Bash(ansible-playbook *)"
     ]
   }

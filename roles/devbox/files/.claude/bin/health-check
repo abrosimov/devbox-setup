@@ -1,0 +1,100 @@
+#!/usr/bin/env node
+
+// health-check — Validates that all tools Claude Code depends on are
+// available on PATH. Run after `make run` or as a diagnostic.
+//
+// Usage: ~/.claude/bin/health-check
+// Exit: 0 if all critical tools found, 1 if any critical tool missing.
+
+require("./env-setup");
+
+const { execSync } = require("child_process");
+
+function which(cmd) {
+  try {
+    return execSync(`command -v ${cmd} 2>/dev/null`, {
+      encoding: "utf8",
+      timeout: 5000,
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+const TOOLS = [
+  // Critical — hooks and core workflow depend on these
+  { name: "node", level: "critical", install: "brew install node@18" },
+  { name: "git", level: "critical", install: "brew install git" },
+  { name: "gh", level: "critical", install: "brew install gh" },
+  { name: "goimports", level: "critical", install: "go install golang.org/x/tools/cmd/goimports@latest" },
+  { name: "ruff", level: "critical", install: "uv tool install ruff" },
+  { name: "jq", level: "critical", install: "brew install jq" },
+
+  // Important — agents and permissions reference these
+  { name: "go", level: "important", install: "brew install go" },
+  { name: "uv", level: "important", install: "brew install uv" },
+  { name: "golangci-lint", level: "important", install: "brew install golangci-lint" },
+  { name: "mypy", level: "important", install: "uv tool install mypy" },
+  { name: "docker", level: "important", install: "brew install orbstack (or Docker Desktop)" },
+  { name: "kubectl", level: "important", install: "brew install kubectl" },
+  { name: "helm", level: "important", install: "brew install helm" },
+  { name: "mockery", level: "important", install: "go install github.com/vektra/mockery/v2@latest" },
+  { name: "sqlc", level: "important", install: "go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest" },
+
+  // Nice to have — installed but not essential for agent workflow
+  { name: "rg", level: "optional", install: "brew install ripgrep" },
+  { name: "fd", level: "optional", install: "brew install fd" },
+  { name: "tree", level: "optional", install: "brew install tree" },
+  { name: "bat", level: "optional", install: "brew install bat" },
+  { name: "fzf", level: "optional", install: "brew install fzf" },
+  { name: "ansible-lint", level: "optional", install: "uv tool install ansible-lint" },
+  { name: "cargo", level: "optional", install: "brew install rustup && rustup-init" },
+  { name: "task", level: "optional", install: "brew install go-task" },
+];
+
+const LEVEL_ICONS = {
+  critical: "\x1b[31m[CRITICAL]\x1b[0m",
+  important: "\x1b[33m[IMPORTANT]\x1b[0m",
+  optional: "\x1b[36m[OPTIONAL]\x1b[0m",
+};
+
+let hasCriticalMissing = false;
+const missing = [];
+const found = [];
+
+for (const tool of TOOLS) {
+  const loc = which(tool.name);
+  if (loc) {
+    found.push({ ...tool, location: loc });
+  } else {
+    missing.push(tool);
+    if (tool.level === "critical") hasCriticalMissing = true;
+  }
+}
+
+// Report
+console.log(`\n  Claude Code Toolchain Health Check`);
+console.log(`  ${"=".repeat(38)}\n`);
+
+if (found.length > 0) {
+  console.log(`  \x1b[32m${found.length} tools found\x1b[0m\n`);
+}
+
+if (missing.length === 0) {
+  console.log(`  \x1b[32mAll ${TOOLS.length} tools available. No issues.\x1b[0m\n`);
+  process.exit(0);
+}
+
+console.log(`  \x1b[31m${missing.length} tools missing:\x1b[0m\n`);
+
+for (const tool of missing) {
+  console.log(`  ${LEVEL_ICONS[tool.level]} ${tool.name}`);
+  console.log(`    Install: ${tool.install}\n`);
+}
+
+if (hasCriticalMissing) {
+  console.log(`  \x1b[31mCritical tools missing — hooks will fail silently.\x1b[0m\n`);
+  process.exit(1);
+}
+
+process.exit(0);

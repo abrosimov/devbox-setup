@@ -1,0 +1,104 @@
+#!/usr/bin/env node
+
+// post-edit-typecheck — PostToolUse hook that runs TypeScript type checking
+// after .ts/.tsx file edits, filtered to show only errors in the edited file.
+//
+// Event: PostToolUse (matcher: Edit, Write)
+// Runs async. Reports errors via additionalContext.
+
+require("./env-setup");
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+function findTsConfig(filePath) {
+  let dir = path.dirname(filePath);
+  for (let i = 0; i < 20; i++) {
+    const tsconfig = path.join(dir, "tsconfig.json");
+    if (fs.existsSync(tsconfig)) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(0);
+  }
+
+  const toolInput = data.tool_input || {};
+  const filePath = toolInput.file_path;
+  if (!filePath) {
+    process.exit(0);
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext !== ".ts" && ext !== ".tsx") {
+    process.exit(0);
+  }
+
+  if (!fs.existsSync(filePath)) {
+    process.exit(0);
+  }
+
+  const tsconfigDir = findTsConfig(filePath);
+  if (!tsconfigDir) {
+    process.exit(0);
+  }
+
+  let tscOutput;
+  try {
+    execSync("npx tsc --noEmit 2>&1", {
+      encoding: "utf8",
+      timeout: 30000,
+      cwd: tsconfigDir,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    // No errors — clean exit
+    process.exit(0);
+  } catch (e) {
+    tscOutput = (e.stdout || "") + (e.stderr || "");
+  }
+
+  if (!tscOutput || !tscOutput.trim()) {
+    process.exit(0);
+  }
+
+  // Filter errors to only those in the edited file
+  const basename = path.basename(filePath);
+  const relPath = path.relative(tsconfigDir, filePath);
+
+  const candidates = [basename, relPath, filePath];
+  const lines = tscOutput.split("\n");
+  const relevant = [];
+
+  for (const line of lines) {
+    if (candidates.some((c) => line.includes(c))) {
+      relevant.push(line.trim());
+    }
+  }
+
+  if (relevant.length === 0) {
+    process.exit(0);
+  }
+
+  // Report max 10 relevant errors
+  const shown = relevant.slice(0, 10);
+  const output = {
+    additionalContext: `[typecheck] TypeScript errors in ${basename}:\n${shown.join("\n")}${relevant.length > 10 ? `\n... and ${relevant.length - 10} more` : ""}`,
+  };
+  process.stdout.write(JSON.stringify(output));
+  process.exit(0);
+}
+
+main();

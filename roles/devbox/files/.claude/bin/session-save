@@ -1,0 +1,150 @@
+#!/usr/bin/env node
+
+// session-save — Hook script for PreCompact and SessionEnd events.
+//
+// Reads git state and updates MEMORY.md "Working State" section
+// as a safety net for context survival. The /checkpoint command
+// provides richer, AI-powered snapshots; this hook is the automatic fallback.
+//
+// Events: PreCompact, SessionEnd
+// Input: JSON on stdin with session_id, transcript_path, cwd, hook_event_name
+// Output: JSON on stdout (for PreCompact additionalContext)
+
+require("./env-setup");
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+function run(cmd, opts = {}) {
+  try {
+    return execSync(cmd, { encoding: "utf8", timeout: 5000, ...opts }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function findMemoryDir(cwd) {
+  // Auto-memory lives at ~/.claude/projects/{hash}/memory/
+  // We find it by scanning for directories with MEMORY.md
+  const claudeDir = path.join(
+    process.env.HOME || process.env.USERPROFILE,
+    ".claude",
+    "projects"
+  );
+  if (!fs.existsSync(claudeDir)) return null;
+
+  // Each project gets a hash-named directory. We match by checking
+  // if the cwd is referenced in the directory name (path hash).
+  const entries = fs.readdirSync(claudeDir);
+  for (const entry of entries) {
+    const memDir = path.join(claudeDir, entry, "memory");
+    const memFile = path.join(memDir, "MEMORY.md");
+    if (fs.existsSync(memFile)) {
+      // Check if this project hash matches our cwd by looking for
+      // the cwd path encoded in the directory name
+      const normalised = cwd.replace(/\//g, "-").replace(/^-/, "-");
+      if (entry.includes(normalised) || entry === normalised) {
+        return memDir;
+      }
+    }
+  }
+
+  // Fallback: find the most recently modified MEMORY.md
+  let latest = null;
+  let latestTime = 0;
+  for (const entry of entries) {
+    const memFile = path.join(claudeDir, entry, "memory", "MEMORY.md");
+    if (fs.existsSync(memFile)) {
+      const stat = fs.statSync(memFile);
+      if (stat.mtimeMs > latestTime) {
+        latestTime = stat.mtimeMs;
+        latest = path.join(claudeDir, entry, "memory");
+      }
+    }
+  }
+  return latest;
+}
+
+function updateWorkingState(memoryDir, event) {
+  const memFile = path.join(memoryDir, "MEMORY.md");
+  if (!fs.existsSync(memFile)) return;
+
+  const branch = run("git branch --show-current");
+  if (!branch) return; // Not in a git repo
+
+  const modifiedFiles = run("git diff --name-only HEAD 2>/dev/null")
+    .split("\n")
+    .filter(Boolean)
+    .slice(0, 5);
+  const stagedFiles = run("git diff --cached --name-only 2>/dev/null")
+    .split("\n")
+    .filter(Boolean)
+    .slice(0, 5);
+  const sha = run("git rev-parse --short HEAD");
+  const now = new Date().toISOString().replace("T", " ").slice(0, 16);
+
+  const allFiles = [...new Set([...modifiedFiles, ...stagedFiles])];
+  const filesLine =
+    allFiles.length > 0 ? allFiles.join(", ") : "no uncommitted changes";
+
+  const eventLabel =
+    event === "PreCompact" ? "context compacted" : "session ended";
+
+  const workingState = [
+    "## Working State",
+    `- **Branch**: ${branch}`,
+    `- **SHA**: ${sha}`,
+    `- **Modified**: ${filesLine}`,
+    `- **Last event**: ${eventLabel} at ${now}`,
+    `- **Note**: Run \`/checkpoint resume\` to reconstruct full context`,
+  ].join("\n");
+
+  let content = fs.readFileSync(memFile, "utf8");
+
+  // Replace existing Working State section or prepend it
+  const wsRegex = /## Working State\n[\s\S]*?(?=\n## |\n$|$)/;
+  if (wsRegex.test(content)) {
+    content = content.replace(wsRegex, workingState);
+  } else {
+    content = workingState + "\n\n" + content;
+  }
+
+  fs.writeFileSync(memFile, content, "utf8");
+}
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(1);
+  }
+
+  const cwd = data.cwd || process.cwd();
+  process.chdir(cwd);
+
+  const event = data.hook_event_name || "SessionEnd";
+  const memoryDir = findMemoryDir(cwd);
+
+  if (memoryDir) {
+    updateWorkingState(memoryDir, event);
+  }
+
+  // For PreCompact: provide additional context that Claude will see
+  if (event === "PreCompact") {
+    const output = {
+      additionalContext:
+        "Working state saved to MEMORY.md. After compaction, check MEMORY.md Working State section for context.",
+    };
+    process.stdout.write(JSON.stringify(output));
+  }
+
+  process.exit(0);
+}
+
+main();

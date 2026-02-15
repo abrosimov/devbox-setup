@@ -1,0 +1,98 @@
+#!/usr/bin/env node
+
+// suggest-checkpoint — PostToolUse hook that counts tool calls
+// and suggests running /checkpoint at logical intervals.
+//
+// Event: PostToolUse
+// Thresholds: ~40 calls (first suggestion), then every ~25 calls
+// State: stored in /tmp/claude-checkpoint-{session_id}
+//
+// Input: JSON on stdin with session_id, tool_name, hook_event_name
+// Output: JSON on stdout with additionalContext (suggestion for Claude)
+
+require("./env-setup");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(0);
+  }
+
+  const sessionId = data.session_id || "unknown";
+  const toolName = data.tool_name || "";
+
+  // Don't count reads/globs/greps — only count "work" tools
+  const workTools = new Set([
+    "Edit",
+    "Write",
+    "Bash",
+    "Task",
+    "NotebookEdit",
+  ]);
+  if (!workTools.has(toolName)) {
+    process.exit(0);
+  }
+
+  const stateFile = path.join(
+    os.tmpdir(),
+    `claude-checkpoint-${sessionId}`
+  );
+
+  // Read current count
+  let count = 0;
+  let lastSuggestion = 0;
+  try {
+    const state = JSON.parse(fs.readFileSync(stateFile, "utf8"));
+    count = state.count || 0;
+    lastSuggestion = state.lastSuggestion || 0;
+  } catch {
+    // First call — no state file yet
+  }
+
+  count++;
+
+  // Check if a checkpoint was recently created (reset suggestion timer)
+  // We detect this by checking if count was reset externally
+  const FIRST_THRESHOLD = 40;
+  const REPEAT_INTERVAL = 25;
+
+  let shouldSuggest = false;
+  if (count >= FIRST_THRESHOLD && lastSuggestion === 0) {
+    shouldSuggest = true;
+    lastSuggestion = count;
+  } else if (
+    lastSuggestion > 0 &&
+    count - lastSuggestion >= REPEAT_INTERVAL
+  ) {
+    shouldSuggest = true;
+    lastSuggestion = count;
+  }
+
+  // Save state
+  fs.writeFileSync(
+    stateFile,
+    JSON.stringify({ count, lastSuggestion }),
+    "utf8"
+  );
+
+  if (shouldSuggest) {
+    const output = {
+      additionalContext: `[Context survival] You've made ${count} tool calls this session. Consider running /checkpoint to save your working state before context compaction occurs. This preserves task progress, decisions, and next steps across compaction or session exit.`,
+    };
+    process.stdout.write(JSON.stringify(output));
+  }
+
+  process.exit(0);
+}
+
+main();

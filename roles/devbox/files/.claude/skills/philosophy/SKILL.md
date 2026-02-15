@@ -181,6 +181,32 @@ return fmt.Errorf("operation failed: %w", err)
 
 ---
 
+## Data Transformation — Prefer Immutability
+
+**Prefer creating new data over mutating existing data.** Think of data processing as a pipeline: each step takes input and produces new output, leaving the original untouched.
+
+| Pattern | Instead Of |
+|---------|-----------|
+| Return new struct with changes | Modify struct fields in place |
+| Map/filter to new collection | Modify collection in place |
+| Builder that produces new instance | Setter methods that mutate |
+| Pipeline: input → transform → new output | input → mutate → return same |
+
+**Why:**
+- No hidden side effects — callers keep their original data
+- Safe for concurrency — no shared mutable state
+- Easier debugging — data doesn't change under you
+- Enables pipeline composition
+
+**Language-specific:**
+- **Go**: Return new structs from transform functions; functional options for construction. Pointer receivers are fine for methods — the point is about data flow, not receiver types
+- **Python**: Frozen dataclasses, `dataclasses.replace()`, tuples; prefer `map`/`filter` over in-place mutation
+- **TypeScript**: Spread operator, `Array.map/filter`, `Object.freeze`; prefer `const` + new objects
+
+**Exception:** Performance-critical hot paths where allocation cost is measured and proven to be a bottleneck. Document with a WHY comment.
+
+---
+
 ## Pragmatic Engineering
 
 You are NOT a minimalist — you are a **pragmatic engineer**:

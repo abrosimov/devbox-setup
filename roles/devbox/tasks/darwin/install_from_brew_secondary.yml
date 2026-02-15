@@ -20,6 +20,13 @@
       - luarocks # Needed by lazy.nvim
       - go-jsonnet
       - jsonnet-bundler
+      - gh # GitHub CLI — needed by Claude Code PR workflow
+      - jq # JSON processor — used by scripts and agents
+      - ripgrep # Fast grep — fallback for Claude Code Grep tool
+      - fd # Fast find — used by Claude Code Glob tool
+      - tree # Directory tree — used by agents for codebase exploration
+      - cloc # Count lines of code by language
+      - yq # YAML/JSON/XML processor (like jq for YAML)
     state: present
 
 - name: "Install Homebrew casks"
@@ -49,6 +56,25 @@
     name: "@anthropic-ai/claude-code"
     global: true
     state: present
+
+- name: "Install Go toolchain tools"
+  ansible.builtin.shell: |
+    export GOPATH="{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go"
+    export PATH="/opt/homebrew/bin:$GOPATH/bin:$PATH"
+    go install golang.org/x/tools/cmd/goimports@latest
+    go install github.com/vektra/mockery/v2@latest
+    go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+  args:
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go/bin/goimports"
+
+- name: "Install Python global tools via uv"
+  ansible.builtin.shell: |
+    export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+    uv tool install ruff
+    uv tool install mypy
+    uv tool install ansible-lint
+  args:
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin/ruff"
 
 - name: "Init OCaml"
   ansible.builtin.command:

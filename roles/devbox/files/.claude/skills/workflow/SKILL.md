@@ -86,7 +86,10 @@ Use `/init-workflow` to explicitly set up the workflow config:
 │   ├── init-workflow.md
 │   ├── build-agent.md
 │   ├── build-skill.md
-│   └── validate-config.md
+│   ├── validate-config.md
+│   ├── checkpoint.md
+│   ├── verify.md
+│   └── learn.md
 ├── skills/                # Reusable knowledge modules
 └── docs/                  # Historical reference documentation
 ```
@@ -108,6 +111,9 @@ Use `/init-workflow` to explicitly set up the workflow config:
 | `/build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
 | `/build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
 | `/validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
+| `/checkpoint` | Save or restore context across sessions/compaction | At logical boundaries, after milestones |
+| `/verify` | Run pre-PR quality gate (build, typecheck, lint, test, debug scan) | Before `/review` or PR creation |
+| `/learn` | Extract a reusable pattern from current session | After solving non-trivial problems |
 
 Each command:
 - Auto-detects project stack (Go/Python/Frontend/Fullstack)

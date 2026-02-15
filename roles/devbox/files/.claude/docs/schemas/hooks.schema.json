@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Claude Code Hooks Configuration",
+  "description": "Schema for validating ~/.claude/hooks.json configuration",
+  "type": "object",
+  "required": ["hooks"],
+  "additionalProperties": false,
+  "properties": {
+    "hooks": {
+      "type": "object",
+      "description": "Hook event type to hook definitions mapping",
+      "propertyNames": {
+        "enum": [
+          "PreToolUse",
+          "PostToolUse",
+          "PostToolUseFailure",
+          "Notification",
+          "UserPromptSubmit",
+          "SessionStart",
+          "SessionEnd",
+          "Stop",
+          "SubagentStart",
+          "SubagentStop",
+          "PreCompact",
+          "PermissionRequest",
+          "Setup",
+          "TeammateIdle",
+          "TaskCompleted"
+        ]
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/hookGroup"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hookGroup": {
+      "type": "object",
+      "required": ["hooks"],
+      "additionalProperties": false,
+      "properties": {
+        "matcher": {
+          "type": "string",
+          "description": "Tool name pattern to match (e.g., 'Bash', 'Edit', 'Write'). If omitted, matches all tools."
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hook"
+          }
+        }
+      }
+    },
+    "hook": {
+      "oneOf": [
+        { "$ref": "#/$defs/commandHook" },
+        { "$ref": "#/$defs/promptHook" },
+        { "$ref": "#/$defs/agentHook" }
+      ]
+    },
+    "commandHook": {
+      "type": "object",
+      "required": ["type", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "command" },
+        "command": {
+          "type": "string",
+          "description": "Shell command to execute. PreToolUse hooks: exit 0 = allow, exit 2 = block."
+        },
+        "timeout": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Timeout in seconds"
+        },
+        "statusMessage": {
+          "type": "string",
+          "description": "Custom spinner message while hook runs"
+        },
+        "once": {
+          "type": "boolean",
+          "description": "If true, hook runs once then is removed"
+        },
+        "async": {
+          "type": "boolean",
+          "description": "If true, hook runs in background without blocking"
+        }
+      }
+    },
+    "promptHook": {
+      "type": "object",
+      "required": ["type", "prompt"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "prompt" },
+        "prompt": {
+          "type": "string",
+          "description": "Prompt to evaluate with LLM. Use $ARGUMENTS for hook input."
+        },
+        "timeout": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "model": {
+          "type": "string",
+          "description": "Model ID for prompt evaluation"
+        },
+        "statusMessage": { "type": "string" },
+        "once": { "type": "boolean" }
+      }
+    },
+    "agentHook": {
+      "type": "object",
+      "required": ["type", "prompt"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "agent" },
+        "prompt": {
+          "type": "string",
+          "description": "Prompt describing what to verify"
+        },
+        "timeout": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Timeout in seconds (default 60)"
+        },
+        "model": { "type": "string" },
+        "statusMessage": { "type": "string" },
+        "once": { "type": "boolean" }
+      }
+    }
+  }
+}

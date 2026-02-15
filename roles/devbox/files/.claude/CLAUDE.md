@@ -91,6 +91,16 @@ Agents enforce:
 
 Agents are available via `/implement`, `/test`, `/review` but not mandatory. Direct code edits are allowed.
 
+### Cross-Cutting Rules (Always Active)
+
+These are enforced by `alwaysApply: true` skills. Brief reminders:
+
+- **Immutability**: Prefer data transformation pipelines over mutation — return new instances, don't modify in place (see `philosophy` skill)
+- **Comments**: Only WHY/WARNING/TODO — never narrate what code does (see `code-comments` skill)
+- **Security at boundaries**: Validate all external input; never trust user data internally (see `security-patterns` skill)
+- **Model selection**: Haiku for search/grep tasks, Sonnet for implementation, Opus for architecture/review of complex PRs
+- **Agent delegation**: Use specialised agents for code changes when workflow is enabled (see `workflow` skill)
+
 ---
 
 *See `workflow` skill for agent pipeline and command reference.*

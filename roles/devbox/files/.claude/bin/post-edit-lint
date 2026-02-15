@@ -1,0 +1,144 @@
+#!/usr/bin/env node
+
+// post-edit-lint — PostToolUse hook that runs language-specific linter on edited files.
+//
+// Language detection by file extension:
+//   .go          → golangci-lint run (on the file's package)
+//   .py          → ruff check (on the file)
+//   .ts/.tsx     → eslint (on the file)
+//   .js/.jsx     → eslint (on the file)
+//
+// Event: PostToolUse (matcher: Edit, Write)
+// Runs async. Reports lint issues to stderr. Inspection-only.
+
+require("./env-setup");
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+function run(cmd, opts = {}) {
+  try {
+    return {
+      stdout: execSync(cmd, {
+        encoding: "utf8",
+        timeout: 30000,
+        stdio: ["pipe", "pipe", "pipe"],
+        ...opts,
+      }).trim(),
+      success: true,
+    };
+  } catch (e) {
+    return {
+      stdout: (e.stdout || "").trim(),
+      stderr: (e.stderr || "").trim(),
+      success: false,
+    };
+  }
+}
+
+function findProjectRoot(filePath, markerFiles) {
+  let dir = path.dirname(filePath);
+  for (let i = 0; i < 20; i++) {
+    for (const marker of markerFiles) {
+      if (fs.existsSync(path.join(dir, marker))) {
+        return dir;
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(0);
+  }
+
+  const toolInput = data.tool_input || {};
+  const filePath = toolInput.file_path || toolInput.notebook_path;
+  if (!filePath || !fs.existsSync(filePath)) {
+    process.exit(0);
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+  const fileDir = path.dirname(filePath);
+  const fileName = path.basename(filePath);
+
+  switch (ext) {
+    case ".go": {
+      const projRoot = findProjectRoot(filePath, ["go.mod"]);
+      if (projRoot) {
+        // Lint the package containing the edited file
+        const relDir = path.relative(projRoot, fileDir) || ".";
+        const result = run(`golangci-lint run --fast "./${relDir}/..."`, {
+          cwd: projRoot,
+        });
+        if (!result.success && result.stdout) {
+          // Filter to only lines mentioning the edited file
+          const lines = result.stdout
+            .split("\n")
+            .filter((l) => l.includes(fileName));
+          if (lines.length > 0) {
+            process.stderr.write(
+              `[lint] golangci-lint issues in ${fileName}:\n${lines.join("\n")}\n`
+            );
+          }
+        }
+      }
+      break;
+    }
+    case ".py": {
+      const result = run(`ruff check "${filePath}" 2>&1`);
+      if (!result.success && result.stdout) {
+        const lines = result.stdout.split("\n").filter((l) => l.trim());
+        if (lines.length > 0) {
+          process.stderr.write(
+            `[lint] ruff issues in ${fileName}:\n${lines.join("\n")}\n`
+          );
+        }
+      }
+      break;
+    }
+    case ".ts":
+    case ".tsx":
+    case ".js":
+    case ".jsx": {
+      const projRoot = findProjectRoot(filePath, [
+        ".eslintrc",
+        ".eslintrc.json",
+        ".eslintrc.js",
+        "eslint.config.js",
+        "eslint.config.mjs",
+        "eslint.config.ts",
+      ]);
+      if (projRoot) {
+        const result = run(`npx eslint --no-error-on-unmatched-pattern "${filePath}" 2>&1`, {
+          cwd: projRoot,
+        });
+        if (!result.success && result.stdout) {
+          const lines = result.stdout.split("\n").filter((l) => l.trim());
+          if (lines.length > 0) {
+            process.stderr.write(
+              `[lint] eslint issues in ${fileName}:\n${lines.join("\n")}\n`
+            );
+          }
+        }
+      }
+      break;
+    }
+  }
+
+  process.exit(0);
+}
+
+main();

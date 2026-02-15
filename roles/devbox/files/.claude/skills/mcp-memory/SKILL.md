@@ -113,6 +113,15 @@ Replace `{scope}` with `memory-upstream` or `memory-downstream` depending on you
 | `recurring-issue` | `issue:{description}` | `issue:missing-error-wrapping-in-handlers` |
 | `anti-pattern` | `antipattern:{description}` | `antipattern:bare-string-errors` |
 
+### Context Survival Entities (Upstream)
+
+Used by the `/checkpoint` command and resume protocol (see `context-survival` skill):
+
+| Entity Type | Naming Pattern | Example |
+|-------------|---------------|---------|
+| `checkpoint` | `checkpoint:{label}` | `checkpoint:auth-middleware` |
+| `blocker` | `blocker:{description}` | `blocker:rate-limit-library-choice` |
+
 ### Relations
 
 Use **active voice**, present tense:
@@ -123,6 +132,8 @@ Use **active voice**, present tense:
 | `was-rejected-for` | `rejected:auth:session-cookies` → `was-rejected-for` → `decision:auth:jwt` |
 | `affects` | `constraint:api-rate-limit` → `affects` → `module:internal/sync` |
 | `has-recurring-issue` | `module:internal/handlers` → `has-recurring-issue` → `issue:missing-error-wrapping` |
+| `blocks` | `blocker:rate-limit-library` → `blocks` → `checkpoint:auth-middleware` |
+| `resolved-by` | `blocker:rate-limit-library` → `resolved-by` → `decision:rate-limit:tollbooth` |
 
 ---
 
@@ -165,6 +176,43 @@ When a review reveals a recurring pattern:
 1. search_nodes("error wrapping handlers")
 2. If entity exists → add_observations with new instance
 3. If new → create_entities + create_relations to affected module
+```
+
+### Pattern 4: Checkpoint Storage (Upstream)
+
+When `/checkpoint` saves a snapshot, it optionally stores a summary entity:
+
+```
+1. create_entities([{
+     name: "checkpoint:auth-middleware",
+     entityType: "checkpoint",
+     observations: [
+       "Created: 2026-02-13T14:30:00",
+       "Branch: PROJ-123_add-auth, SHA: a1b2c3d",
+       "Task: Implement JWT authentication middleware",
+       "Phase: implementation, 3/5 endpoints done",
+       "Next: refresh token endpoint, integration tests"
+     ]
+   }])
+2. If blockers exist:
+   create_entities([{
+     name: "blocker:rate-limit-library-choice",
+     entityType: "blocker",
+     observations: ["Need to pick rate limiting library for auth endpoints"]
+   }])
+   create_relations([{
+     from: "blocker:rate-limit-library-choice",
+     to: "checkpoint:auth-middleware",
+     relationType: "blocks"
+   }])
+```
+
+At resume time, query for recent checkpoints and unresolved blockers:
+
+```
+1. search_nodes("checkpoint:")
+2. search_nodes("blocker:")
+3. Factor into session context
 ```
 
 ---

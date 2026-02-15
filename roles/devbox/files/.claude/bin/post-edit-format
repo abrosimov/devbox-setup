@@ -1,0 +1,127 @@
+#!/usr/bin/env node
+
+// post-edit-format — PostToolUse hook that auto-formats edited files.
+//
+// Language detection by file extension:
+//   .go          → goimports -local <module> (reads go.mod for module name)
+//   .py          → ruff format + ruff check --fix
+//   .ts/.tsx     → prettier --write
+//   .js/.jsx     → prettier --write
+//
+// Event: PostToolUse (matcher: Edit, Write)
+// Runs async. Fails silently. Inspection-only.
+
+require("./env-setup");
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+function run(cmd, opts = {}) {
+  try {
+    return execSync(cmd, {
+      encoding: "utf8",
+      timeout: 15000,
+      stdio: ["pipe", "pipe", "pipe"],
+      ...opts,
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function findGoModule(filePath) {
+  let dir = path.dirname(filePath);
+  for (let i = 0; i < 20; i++) {
+    const gomod = path.join(dir, "go.mod");
+    if (fs.existsSync(gomod)) {
+      const content = fs.readFileSync(gomod, "utf8");
+      const match = content.match(/^module\s+(\S+)/m);
+      return match ? match[1] : null;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+function findPrettierConfig(filePath) {
+  let dir = path.dirname(filePath);
+  for (let i = 0; i < 20; i++) {
+    if (
+      fs.existsSync(path.join(dir, ".prettierrc")) ||
+      fs.existsSync(path.join(dir, ".prettierrc.json")) ||
+      fs.existsSync(path.join(dir, ".prettierrc.js")) ||
+      fs.existsSync(path.join(dir, "prettier.config.js")) ||
+      fs.existsSync(path.join(dir, "package.json"))
+    ) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(0);
+  }
+
+  const toolInput = data.tool_input || {};
+  const filePath = toolInput.file_path || toolInput.notebook_path;
+  if (!filePath || !fs.existsSync(filePath)) {
+    process.exit(0);
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+
+  switch (ext) {
+    case ".go": {
+      const mod = findGoModule(filePath);
+      if (mod) {
+        const gopath = run("go env GOPATH");
+        const goimportsBin = gopath ? `${gopath}/bin/goimports` : "goimports";
+        const result = run(`${goimportsBin} -local "${mod}" -w "${filePath}"`);
+        if (result !== null) {
+          process.stderr.write(`[format] goimports applied to ${path.basename(filePath)}\n`);
+        }
+      }
+      break;
+    }
+    case ".py": {
+      const ruffCheck = run(`ruff check --fix --quiet "${filePath}" 2>&1`);
+      const ruffFmt = run(`ruff format --quiet "${filePath}" 2>&1`);
+      if (ruffCheck !== null || ruffFmt !== null) {
+        process.stderr.write(`[format] ruff applied to ${path.basename(filePath)}\n`);
+      }
+      break;
+    }
+    case ".ts":
+    case ".tsx":
+    case ".js":
+    case ".jsx": {
+      const projDir = findPrettierConfig(filePath);
+      if (projDir) {
+        const result = run(`npx prettier --write "${filePath}" 2>&1`, { cwd: projDir });
+        if (result !== null) {
+          process.stderr.write(`[format] prettier applied to ${path.basename(filePath)}\n`);
+        }
+      }
+      break;
+    }
+  }
+
+  process.exit(0);
+}
+
+main();

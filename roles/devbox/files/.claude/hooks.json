@@ -6,7 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "case \"$CC_BASH_COMMAND\" in *'go fmt'*|*'gofmt'*) echo 'BLOCKED: Use goimports -local <module-name>, not go fmt/gofmt. Extract module name from go.mod.' >&2; exit 2;; esac"
+            "command": "~/.claude/bin/pre-bash-toolchain-guard"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-tmpdir-guard"
           },
           {
             "type": "command",
@@ -27,6 +31,111 @@
           {
             "type": "command",
             "command": "case \"$CC_BASH_COMMAND\" in 'git commit --amend'*|'git commit'*'--amend'*) echo 'BLOCKED: Amending commits is not allowed. Create a new commit instead.' >&2; exit 2;; esac"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-tmpdir-guard"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/suggest-checkpoint",
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-format",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-lint",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-typecheck",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-debug-warn",
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-format",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-lint",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-typecheck",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-debug-warn",
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-format",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-debug-warn",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/session-save"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/session-save"
           }
         ]
       }

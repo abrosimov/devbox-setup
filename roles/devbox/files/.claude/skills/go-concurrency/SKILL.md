@@ -603,3 +603,5 @@ func waitForResult(ctx context.Context, resultCh <-chan Result) (Result, error) 
     }
 }
 ```
+
+> **See also:** `reliability-patterns` for timeout composition, backpressure with bounded channels, circuit breakers, and retry with exponential backoff. `transaction-safety` for connection pool management.

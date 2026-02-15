@@ -741,3 +741,5 @@ class OrderService(order_pb2_grpc.OrderServiceServicer):
 - [ ] Include relevant identifiers
 - [ ] Lowercase start (unless proper noun)
 - [ ] No redundant "error:" or "failed to" prefixes
+
+> **See also:** `reliability-patterns` for classifying exceptions as transient vs permanent (retry decisions), circuit breaker error handling, and DLQ routing. `distributed-transactions` for idempotent error recovery.

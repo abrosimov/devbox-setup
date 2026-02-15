@@ -400,3 +400,5 @@ async function UserPage({ params }: { params: { id: string } }) {
 | API call failure | React Query error state + retry |
 | Network failure | Global error handler + offline detection |
 | Async in event handler | try-catch, show toast/notification |
+
+> **See also:** `frontend-reliability` for optimistic updates with rollback, double-submit prevention, offline-first patterns, and graceful degradation in the UI.

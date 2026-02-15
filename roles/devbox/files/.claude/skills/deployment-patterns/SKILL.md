@@ -468,3 +468,5 @@ else:
 
 **Pros**: Low risk, gradual rollout, real production data.
 **Cons**: Complex routing, requires metrics monitoring.
+
+> **See also:** `reliability-patterns` for health check best practices (never check external deps in liveness), circuit breakers, and graceful degradation with feature flags. `durable-execution` for workflow-based deployment orchestration.

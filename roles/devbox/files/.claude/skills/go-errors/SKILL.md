@@ -1041,3 +1041,5 @@ func (c *Container) CurrentProcessed() (*ProcessedItem, error) {
     return c.current.Process()
 }
 ```
+
+> **See also:** `reliability-patterns` for classifying errors as transient vs permanent (retry decisions), circuit breaker error handling, and DLQ routing. `distributed-transactions` for idempotent error recovery.

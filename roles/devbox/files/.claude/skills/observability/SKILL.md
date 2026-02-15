@@ -755,3 +755,5 @@ service:
 **Recommendation**: Use OTel Metrics API for new services. Use Prometheus client only when integrating with existing Prometheus-only infrastructure.
 
 See `otel-go` and `otel-python` skills for language-specific implementation patterns.
+
+> **See also:** `reliability-patterns` for health check probes (liveness/readiness/startup), circuit breaker state monitoring, and resilience metrics. `deployment-patterns` for probe configuration in Kubernetes.

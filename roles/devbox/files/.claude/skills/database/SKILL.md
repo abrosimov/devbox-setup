@@ -252,3 +252,5 @@ def db_session(engine):
 | Long transactions | Lock contention | Minimise transaction scope |
 | String concatenation for SQL | SQL injection | Parameterised queries always |
 | ORM for bulk operations | Slow, memory-heavy | Raw SQL for bulk insert/update |
+
+> **See also:** `transaction-safety` for isolation levels, savepoints, optimistic locking, and the cardinal rule of no network calls inside transactions. `distributed-transactions` for outbox pattern, idempotent consumers, and saga patterns.

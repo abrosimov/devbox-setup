@@ -931,3 +931,5 @@ These fields are automatically injected by `ContextLoggerFilter`:
 | Log without entity context | Add `extra={"entity_id": id}` |
 | Log exception without `exc_info=` | Add `exc_info=e` or `exc_info=True` |
 | Vague log message | Be specific: action + entity + reason |
+
+> **See also:** `reliability-patterns` for tenacity retry patterns, circuit breakers (pybreaker), and timeout composition in Python. `distributed-transactions` for idempotency and outbox pattern.

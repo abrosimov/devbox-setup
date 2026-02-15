@@ -731,3 +731,5 @@ var shutdownSignals = []os.Signal{os.Interrupt}
 //go:build !windows                 // NOT
 //go:build linux && (amd64 || arm64) && !cgo  // Complex
 ```
+
+> **See also:** `reliability-patterns` for retry with backoff, circuit breakers, bulkheads, and timeout composition in Go. `distributed-transactions` for idempotency keys and outbox pattern.

@@ -317,3 +317,5 @@ def transfer(from_acct, to_acct, amount):
             from_acct.balance -= amount
             to_acct.balance += amount
 ```
+
+> **See also:** `reliability-patterns` for asyncio.timeout layering, semaphore-based backpressure, and circuit breaker patterns in Python. `transaction-safety` for SQLAlchemy connection pool management.

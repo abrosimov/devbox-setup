@@ -378,3 +378,5 @@ function Modal({ children, isOpen }: { children: React.ReactNode; isOpen: boolea
 | Render outside component tree | Portal |
 | Conditional rendering with data | Controlled component |
 | Form values on submit only | Uncontrolled + FormData |
+
+> **See also:** `frontend-reliability` for optimistic update rollback patterns, idempotency keys from the client, offline-first with IndexedDB, and AbortController deduplication.

@@ -14,7 +14,6 @@ devbox_shell:
     - { name: GOPATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/go" }
     - { name: FLUTTER_PATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/flutter" }
     - { name: GEM_HOME, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/ruby/gems" }
-    - { name: NPM_PACKAGES, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/js/npm-packages" }
 
   path_prepend:
     - /opt/homebrew/bin
@@ -26,8 +25,6 @@ devbox_shell:
     - "$HOME/bin"
     - "$HOME/.claude/bin"
     - "$GEM_HOME/bin"
-    - "$NPM_PACKAGES/bin"
-    - "/opt/homebrew/opt/node@18/bin"
 
   path_conditional:
     - { check: "$HOME/.cargo", add: "$HOME/.cargo/bin" }

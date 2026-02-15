@@ -23,7 +23,8 @@ function which(cmd) {
 
 const TOOLS = [
   // Critical — hooks and core workflow depend on these
-  { name: "node", level: "critical", install: "brew install node@18" },
+  { name: "mise", level: "critical", install: "brew install mise" },
+  { name: "node", level: "critical", install: "mise use --global node@lts" },
   { name: "git", level: "critical", install: "brew install git" },
   { name: "gh", level: "critical", install: "brew install gh" },
   { name: "goimports", level: "critical", install: "go install golang.org/x/tools/cmd/goimports@latest" },

@@ -1,6 +1,9 @@
 # Homebrew
 eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null)"
 
+# mise — runtime version manager
+command -v mise >/dev/null 2>&1 && eval "$(mise activate bash)"
+
 # Environment
 {% for entry in devbox_shell.env %}
 export {{ entry.name }}="{{ entry.value }}"
@@ -11,9 +14,9 @@ export {{ entry.name }}="{{ entry.value }}"
 export PATH="{{ p }}:$PATH"
 {% endfor %}
 
-# PATH — append
+# PATH — append (low priority)
 {% for p in devbox_shell.path_append %}
-export PATH="{{ p }}:$PATH"
+export PATH="$PATH:{{ p }}"
 {% endfor %}
 
 # PATH — conditional

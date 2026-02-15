@@ -8,6 +8,7 @@
       - flutter
       - go
       - go-task
+      - node
       - uv
       - kubectl
       - helm
@@ -15,7 +16,7 @@
       - k9s
       - fzf
       - tmux
-      - "node@18"
+      - mise
       - golangci-lint
       - luarocks # Needed by lazy.nvim
       - go-jsonnet
@@ -56,6 +57,8 @@
     name: "@anthropic-ai/claude-code"
     global: true
     state: present
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_env.PATH }}"
 
 - name: "Install Go toolchain tools"
   ansible.builtin.shell: |

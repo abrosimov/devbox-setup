@@ -5,3 +5,7 @@ set -gx {{ entry.name }} {{ entry.value }}
 if test -d /opt/homebrew
   /opt/homebrew/bin/brew shellenv | source
 end
+
+if type -q mise
+  mise activate fish | source
+end

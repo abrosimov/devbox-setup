@@ -21,8 +21,6 @@ const EXTRA_PATHS = [
   path.join(HOME, ".cargo", "bin"),
   path.join(HOME, ".claude", "bin"),
   path.join(HOME, "bin"),
-  "/opt/homebrew/opt/node@18/bin",
-  path.join(HOME, ".programming", "js", "npm-packages", "bin"),
   path.join(HOME, ".programming", "ruby", "gems", "bin"),
 ];
 

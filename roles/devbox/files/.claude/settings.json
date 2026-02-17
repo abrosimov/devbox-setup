@@ -3,6 +3,33 @@
     "type": "command",
     "command": "echo \"$(git branch --show-current 2>/dev/null || echo 'no-branch') | tools:$TOOL_COUNT\""
   },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": ["docker", "docker-compose", "podman"],
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.github.com",
+        "*.githubusercontent.com",
+        "*.npmjs.org",
+        "registry.npmjs.org",
+        "registry.yarnpkg.com",
+        "pypi.org",
+        "*.pypi.org",
+        "files.pythonhosted.org",
+        "proxy.golang.org",
+        "sum.golang.org",
+        "*.pkg.dev",
+        "crates.io",
+        "*.crates.io",
+        "dl.google.com",
+        "storage.googleapis.com"
+      ],
+      "allowLocalBinding": true
+    }
+  },
   "permissions": {
     "defaultMode": "acceptEdits",
     "deny": [
@@ -63,7 +90,18 @@
       "Write(**/secrets/**)",
       "Write(**/*.pem)",
       "Write(**/*.key)",
-      "Write(**/credentials*)"
+      "Write(**/credentials*)",
+
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/credentials*)"
     ],
     "allow": [
       "Task",

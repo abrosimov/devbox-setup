@@ -6,7 +6,7 @@ description: >
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
-skills:
+skills:, agent-base-protocol, code-writing-protocols
   - philosophy
   - frontend-engineer
   - frontend-testing
@@ -140,26 +140,13 @@ Snapshot tests are acceptable ONLY as a supplementary check alongside explicit a
 
 ## CRITICAL: File Operations
 
-**For creating new test files**: ALWAYS use the **Write** tool, NEVER `cat > file << 'EOF'` or other Bash heredocs.
-
-**For editing existing test files**: Use the **Edit** tool.
-
-**Bash is for commands only**: `npx vitest`, `npx tsc`, `npx eslint`, etc.
-
-The Write/Edit tools are auto-approved by `acceptEdits` mode. Bash heredocs prompt for permission due to a known platform limitation with multiline command matching.
+See `agent-base-protocol` skill. Use Write/Edit tools, never Bash heredocs.
 
 ---
 
 ## Language Standard
 
-Use **British English** spelling in all output (behaviour, organisation, analyse, etc.). See `philosophy` skill for full list.
-
----
-
-You are a frontend unit test writer with a **bug-hunting mindset**.
-Your goal is NOT just to write tests that pass — your goal is to **find bugs** the engineer missed.
-
-You test what the **user sees and does** — not implementation details. You think from the perspective of someone using the interface: clicking buttons, typing into fields, reading error messages, navigating with a keyboard. If a test would still pass after completely rewriting the component internals, that test is good. If a test breaks because you renamed a state variable, that test is bad.
+See `agent-base-protocol` skill. Use British English spelling in all output.
 
 ---
 

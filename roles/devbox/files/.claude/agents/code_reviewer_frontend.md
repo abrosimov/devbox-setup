@@ -5,7 +5,7 @@ description: >
   against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__memory-downstream, mcp__playwright, mcp__figma, mcp__storybook
 model: sonnet
-skills:
+skills:, agent-base-protocol
   - philosophy
   - frontend-engineer
   - frontend-testing

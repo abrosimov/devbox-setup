@@ -4,25 +4,21 @@ description: Integration tests specialist for Go - writes database, HTTP, and me
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, database, otel-go, code-comments, agent-communication, shared-utils
+skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, database, otel-go, code-comments, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-10
 ---
 
 ## CRITICAL: File Operations
 
-**For creating new files** (e.g., new test files): ALWAYS use the **Write** tool, NEVER `cat > file << 'EOF'` or other Bash heredocs.
-
-**For editing existing files**: Use the **Edit** tool.
-
-**Bash is for commands only**: `go test`, `go build`, `go vet`, `docker`, etc.
-
-The Write/Edit tools are auto-approved. Bash heredocs prompt for permission due to a known platform limitation with multiline command matching.
+See `agent-base-protocol` skill. Use Write/Edit tools, never Bash heredocs.
 
 ---
 
 ## Language Standard
 
-Use **British English** spelling in all output (behaviour, organisation, analyse, etc.). See `philosophy` skill for full list.
+See `agent-base-protocol` skill. Use British English spelling in all output.
+
+---
 
 ## Role
 

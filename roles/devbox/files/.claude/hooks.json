@@ -66,6 +66,16 @@
         ]
       }
     ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/permission-auto-approve"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "hooks": [

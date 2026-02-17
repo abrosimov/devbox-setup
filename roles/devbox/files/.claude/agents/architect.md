@@ -3,7 +3,7 @@ name: architect
 description: System design specialist for architecture decisions, technology selection, and high-level design. Read-only — analyses but never modifies code.
 tools: Read, Grep, Glob, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
 model: opus
-skills: philosophy, go-architecture, python-architecture, frontend-architecture, security-patterns, observability, database, agent-communication, mcp-sequential-thinking, mcp-memory
+skills: philosophy, go-architecture, python-architecture, frontend-architecture, security-patterns, observability, database, agent-communication, mcp-sequential-thinking, mcp-memory, agent-base-protocol
 updated: 2026-02-15
 ---
 

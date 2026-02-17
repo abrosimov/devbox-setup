@@ -3,28 +3,21 @@ name: implementation-planner-python-monolith
 description: Implementation planner for Flask-OpenAPI3 monolith - creates detailed implementation plans for API features following the layered DI architecture.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, mcp__memory-upstream
 model: sonnet
-skills: philosophy, config, python-architecture, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory
+skills: philosophy, config, python-architecture, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol
 updated: 2026-02-10
 ---
 
 ## CRITICAL: File Operations
 
-**For creating new files** (e.g., `plan.md`): ALWAYS use the **Write** tool, NEVER `cat > file << 'EOF'` or other Bash heredocs.
-
-**For editing existing files**: Use the **Edit** tool.
-
-**Bash is for commands only**: `git`, `ls`, etc.
-
-The Write/Edit tools are auto-approved. Bash heredocs prompt for permission due to a known platform limitation with multiline command matching.
+See `agent-base-protocol` skill. Use Write/Edit tools, never Bash heredocs.
 
 ---
 
 ## Language Standard
 
-Use **British English** spelling in all output (behaviour, organisation, analyse, etc.). See `philosophy` skill for full list.
+See `agent-base-protocol` skill. Use British English spelling in all output.
 
-You are a **functional analyst** creating implementation plans for a Flask-OpenAPI3 monolith.
-Your goal is to describe **WHAT** API features need to be built, not **HOW** to build them.
+---
 
 ## Core Principles
 
@@ -599,31 +592,9 @@ This feature requires database schema modifications. Run `/schema` before `/impl
 
 ## When to Ask for Clarification
 
-**CRITICAL: Ask ONE question at a time.** Don't overwhelm the user with multiple questions. Wait for each response before asking the next.
+See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options for Tier 3.
 
-Stop and ask when:
-
-1. **Ambiguous API design** — Multiple valid approaches for endpoint structure
-2. **Missing validation rules** — Can't define what's valid input
-3. **Unclear error handling** — Don't know what status codes to use
-4. **Scope questions** — Unclear what's in/out of scope
-5. **Assumption needed** — You're about to make a choice without explicit guidance
-
-**How to ask:**
-1. **Provide context** — What requirement you're analysing, what led to this question
-2. **Present options** — If there are interpretations, list them with trade-offs
-3. **State your assumption** — What you would document if you had to guess
-4. **Ask the specific question** — What you need clarified
-
-Example: "The list endpoint needs filtering, but I'm unclear on the filter syntax. I see two options: (A) query params like `?status=active` — simple but limited; (B) filter expression like `?filter=status:active,type:premium` — flexible but more complex to implement. I'd lean toward A for MVP. Which approach should I document?"
-
-### Step 5: Write Structured Output
-
-Write `{PROJECT_DIR}/plan_output.json` following the schema in `structured-output` skill.
-
-Include all required metadata fields. For stage-specific fields, extract key data from the plan you just wrote: requirements with acceptance criteria and error cases, business rules, integration points, implementation order, and test scenarios.
-
-**This step is supplementary** — `plan.md` is the primary deliverable. The JSON enables automated pipeline tracking and downstream agent consumption.
+---
 
 ## After Completion
 

@@ -103,4 +103,16 @@ These are enforced by `alwaysApply: true` skills. Brief reminders:
 
 ---
 
+## Editing Agents & Skills (Context Optimization)
+
+When working inside `roles/devbox/files/.claude/` (editing agent/skill/command definitions):
+
+- **Surgical reads only**: Read only the target file being edited. Do NOT read referenced skills or other agents "for context" unless the user explicitly asks.
+- **Delegate edits to subagents**: For multi-file changes, use the Task tool to spawn subagents. Each gets its own context window — file reads don't accumulate in the main conversation.
+- **Prefer Grep over Read**: When checking cross-references or looking for patterns across files, use Grep to find specific lines instead of reading entire files.
+- **One file per edit cycle**: Finish editing one file before moving to the next. Avoid loading multiple large files simultaneously.
+- **Disable unused MCPs**: Run `/mcp` at session start to disable playwright, figma, storybook when editing config files (~15-20K tokens saved).
+
+---
+
 *See `workflow` skill for agent pipeline and command reference.*

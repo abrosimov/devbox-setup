@@ -3,7 +3,7 @@ name: code-reviewer-go
 description: Code reviewer for Go - validates implementation against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__atlassian, mcp__memory-downstream
 model: sonnet
-skills: philosophy, go-engineer, go-testing, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory
+skills: philosophy, go-engineer, go-testing, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, agent-base-protocol
 updated: 2026-02-10
 ---
 

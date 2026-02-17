@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+# validate-library — Validates Claude Code agent/skill library integrity.
+#
+# Checks:
+#   1. All skill references in agent frontmatter resolve to existing skills
+#   2. Reports line count statistics and identifies large files
+#   3. Detects sections duplicated across agents (potential extraction targets)
+#
+# Usage: ~/.claude/bin/validate-library [--stats-only]
+# Exit:  0 if all checks pass, 1 if broken references found
+
+set -euo pipefail
+
+CLAUDE_DIR="${HOME}/.claude"
+AGENTS_DIR="${CLAUDE_DIR}/agents"
+SKILLS_DIR="${CLAUDE_DIR}/skills"
+COMMANDS_DIR="${CLAUDE_DIR}/commands"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+stats_only=false
+errors=0
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --stats-only) stats_only=true; shift ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+# --- Helpers ---
+
+get_frontmatter_field() {
+  local file="$1" field="$2"
+  sed -n '/^---$/,/^---$/p' "$file" | grep "^${field}:" | sed "s/^${field}:[[:space:]]*//"
+}
+
+skill_exists() {
+  # Check if a skill directory with SKILL.md exists
+  [[ -f "${SKILLS_DIR}/$1/SKILL.md" ]]
+}
+
+# --- 1. Validate agent skill references ---
+
+if ! $stats_only; then
+  echo -e "\n${BOLD}  Skill Reference Validation${NC}"
+  echo "  =========================="
+  echo ""
+
+  broken_count=0
+
+  for agent_file in "$AGENTS_DIR"/*.md; do
+    [[ -f "$agent_file" ]] || continue
+    agent_name=$(basename "$agent_file" .md)
+
+    skills_line=$(get_frontmatter_field "$agent_file" "skills")
+    [[ -z "$skills_line" ]] && continue
+
+    IFS=',' read -ra skill_list <<< "$skills_line"
+    for skill in "${skill_list[@]}"; do
+      skill=$(echo "$skill" | xargs)
+      [[ -z "$skill" ]] && continue
+
+      if ! skill_exists "$skill"; then
+        echo -e "  ${RED}[BROKEN]${NC} ${agent_name} → skill '${skill}' not found"
+        broken_count=$((broken_count + 1))
+        errors=$((errors + 1))
+      fi
+    done
+  done
+
+  if [[ $broken_count -eq 0 ]]; then
+    echo -e "  ${GREEN}All skill references valid.${NC}"
+  else
+    echo ""
+    echo -e "  ${RED}${broken_count} broken reference(s) found.${NC}"
+  fi
+  echo ""
+fi
+
+# --- 2. Library statistics ---
+
+echo -e "${BOLD}  Library Statistics${NC}"
+echo "  =================="
+echo ""
+
+agent_count=0
+agent_lines=0
+if [[ -d "$AGENTS_DIR" ]]; then
+  agent_count=$(find "$AGENTS_DIR" -name '*.md' -type f | wc -l | xargs)
+  agent_lines=$(find "$AGENTS_DIR" -name '*.md' -type f -exec cat {} + | wc -l | xargs)
+fi
+
+skill_count=0
+skill_lines=0
+if [[ -d "$SKILLS_DIR" ]]; then
+  skill_count=$(find "$SKILLS_DIR" -name 'SKILL.md' -type f | wc -l | xargs)
+  skill_lines=$(find "$SKILLS_DIR" -name 'SKILL.md' -type f -exec cat {} + | wc -l | xargs)
+fi
+
+command_count=0
+command_lines=0
+if [[ -d "$COMMANDS_DIR" ]]; then
+  command_count=$(find "$COMMANDS_DIR" -name '*.md' -type f | wc -l | xargs)
+  command_lines=$(find "$COMMANDS_DIR" -name '*.md' -type f -exec cat {} + | wc -l | xargs)
+fi
+
+total_lines=$((agent_lines + skill_lines + command_lines))
+est_tokens=$((total_lines * 4))
+
+printf "  %-12s %4s files  %6s lines\n" "Agents:" "$agent_count" "$agent_lines"
+printf "  %-12s %4s files  %6s lines\n" "Skills:" "$skill_count" "$skill_lines"
+printf "  %-12s %4s files  %6s lines\n" "Commands:" "$command_count" "$command_lines"
+echo "  ─────────────────────────────────"
+printf "  %-12s %4s files  %6s lines  (~%sk tokens)\n" "Total:" "$((agent_count + skill_count + command_count))" "$total_lines" "$((est_tokens / 1000))"
+echo ""
+
+# --- 3. Largest files ---
+
+echo -e "${BOLD}  Largest Files (top 10)${NC}"
+echo "  ======================"
+echo ""
+
+find "$AGENTS_DIR" "$SKILLS_DIR" "$COMMANDS_DIR" -name '*.md' -type f 2>/dev/null \
+  | while read -r f; do
+      lines=$(wc -l < "$f" | xargs)
+      rel_path="${f#$CLAUDE_DIR/}"
+      echo "$lines $rel_path"
+    done \
+  | sort -rn \
+  | head -10 \
+  | while read -r lines path; do
+      if [[ $lines -gt 500 ]]; then
+        printf "  ${YELLOW}%5s${NC}  %s\n" "$lines" "$path"
+      else
+        printf "  %5s  %s\n" "$lines" "$path"
+      fi
+    done
+
+echo ""
+
+# --- 4. Duplication detection ---
+
+if ! $stats_only; then
+  echo -e "${BOLD}  Potential Duplication (## headings in 3+ agents)${NC}"
+  echo "  ================================================="
+  echo ""
+
+  grep -h '^## ' "$AGENTS_DIR"/*.md 2>/dev/null \
+    | sort \
+    | uniq -c \
+    | sort -rn \
+    | while read -r count heading; do
+        if [[ $count -ge 3 ]]; then
+          printf "  %3sx  %s\n" "$count" "$heading"
+        fi
+      done
+
+  echo ""
+fi
+
+# --- Summary ---
+
+if [[ $errors -gt 0 ]]; then
+  echo -e "  ${RED}${BOLD}FAIL${NC} — $errors error(s) found"
+  exit 1
+else
+  echo -e "  ${GREEN}${BOLD}PASS${NC} — library valid"
+fi

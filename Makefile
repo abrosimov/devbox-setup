@@ -19,7 +19,7 @@ else
   VERBOSE :=
 endif
 
-.PHONY: run dev help init vault-init lint check check-dev
+.PHONY: run dev help init vault-init lint check check-dev validate-claude
 
 help:
 	@echo ""
@@ -34,6 +34,7 @@ help:
 	@echo "  make check-dev     - dry-run in dev_mode"
 	@echo "  make init          - install Homebrew, Ansible, and dependencies (macOS only)"
 	@echo "  make vault-init    - create and encrypt vault/devbox_ssh_config.yml"
+	@echo "  make validate-claude - validate Claude Code agent/skill library"
 	@echo ""
 
 run:
@@ -60,3 +61,6 @@ init:
 
 vault-init:
 	@./scripts/vault-init.sh
+
+validate-claude:
+	@roles/devbox/files/.claude/bin/validate-library

@@ -4,7 +4,7 @@ description: Unit tests specialist for Go - writes idiomatic table-driven tests 
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, go-architecture, go-anti-patterns, security-patterns, otel-go, code-comments, agent-communication, shared-utils
+skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, go-architecture, go-anti-patterns, security-patterns, otel-go, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
 updated: 2026-02-10
 ---
 
@@ -72,18 +72,9 @@ This explains WHY (non-obvious behaviour), not WHAT.
 
 ## CRITICAL: File Operations
 
-**For creating new test files**: ALWAYS use the **Write** tool, NEVER `cat > file << 'EOF'` or other Bash heredocs.
-
-**For editing existing test files**: Use the **Edit** tool.
-
-**Bash is for commands only**: `go test`, `goimports`, `mockery`, etc.
-
-The Write/Edit tools are auto-approved by `acceptEdits` mode. Bash heredocs prompt for permission due to a known platform limitation with multiline command matching.
+See `agent-base-protocol` skill. Use Write/Edit tools, never Bash heredocs.
 
 ---
-
-You are a Go unit test writer with a **bug-hunting mindset**.
-Your goal is NOT just to write tests that pass — your goal is to **find bugs** the engineer missed.
 
 ## Complexity Check — Escalate to Opus When Needed
 

@@ -3,7 +3,7 @@ name: tdd-guide
 description: TDD coach that guides RED-GREEN-REFACTOR cycle. Ensures tests are written before implementation code.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
-skills: philosophy, go-testing, python-testing, frontend-testing, go-errors, python-errors, agent-communication
+skills: philosophy, go-testing, python-testing, frontend-testing, go-errors, python-errors, agent-communication, agent-base-protocol
 updated: 2026-02-15
 ---
 

@@ -928,16 +928,7 @@ Example: "The `process_order` function raises ValueError when quantity is 0. I s
 
 ### Self-Review: Comment Audit (MANDATORY)
 
-Before completing, answer honestly:
-
-1. **Did I add ANY comments that describe WHAT the code does?**
-   - Examples: `# Create X`, `# Configure Y`, `# Setup Z`, `# Check if...`
-   - If YES: **Go back and remove them NOW**
-
-2. **For each comment I kept, does deleting it make the code unclear?**
-   - If NO: **Delete it NOW**
-
-Only proceed after removing all narration comments.
+See `code-writing-protocols` skill. Remove ALL narration comments before completing.
 
 ---
 
@@ -959,22 +950,9 @@ modified: tests/test_existing.py
 pytest tests/ -v
 ```
 
-### 4. Suggested Next Step (Interactive Mode)
-> Tests complete. X test cases covering Y scenarios.
->
-> **Next**: Run `code-reviewer-python` to review implementation and tests.
->
-> Say **'continue'** to proceed, or provide corrections.
+### Completion Format
 
-### Pipeline Mode
-
-If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'continue'"):
-
-> Tests complete. X test cases covering Y scenarios.
->
-> **Output**: Test files written.
-> **Status**: complete | partial | blocked
-> **Blocking issues**: [none | list of issues requiring human input]
+See `agent-communication` skill — Completion Output Format. Interactive mode: summarise tests and suggest `/review` as next step. Pipeline mode: return structured result with status.
 
 ---
 

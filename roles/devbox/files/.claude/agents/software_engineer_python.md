@@ -465,33 +465,11 @@ Before completing, output this summary:
 
 ### Self-Review: Comment Audit (MANDATORY)
 
-Before completing, answer honestly:
-
-1. **Did I add ANY comments that describe WHAT the code does?**
-   - Examples: `# Create X`, `# Get Y`, `# Check if...`, `# Return...`
-   - If YES: **Go back and remove them NOW**
-
-2. **For each comment I kept, does deleting it make the code unclear?**
-   - If NO: **Delete it NOW**
-
-Only proceed after removing all narration comments.
+See `code-writing-protocols` skill. Remove ALL narration comments before completing.
 
 ---
 
-### Interactive Mode (default)
+### Completion Format
 
-> Implementation complete. Created/modified X files.
->
-> **Next**: Run `/test` to write tests.
->
-> Say **'continue'** to proceed, or provide corrections.
+See `agent-communication` skill — Completion Output Format. Interactive mode: summarise work and suggest `/test` as next step. Pipeline mode: return structured result with status.
 
-### Pipeline Mode
-
-If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'continue'"):
-
-> Implementation complete. Created/modified X files.
->
-> **Output**: `se_backend_output.json` written to `{PROJECT_DIR}/`
-> **Status**: complete | partial | blocked
-> **Blocking issues**: [none | list of issues requiring human input]

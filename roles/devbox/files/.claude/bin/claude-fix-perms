@@ -44,7 +44,8 @@ if [[ ! -f "$file" ]]; then
 fi
 
 # --- Check if already configured ---
-if jq -e '.permissions.allow' "$file" >/dev/null 2>&1; then
+if jq -e '.permissions.allow' "$file" >/dev/null 2>&1 \
+   && jq -e '.permissions.defaultMode' "$file" >/dev/null 2>&1; then
   mode=$(jq -r '.permissions.defaultMode // "not set"' "$file")
   allow_count=$(jq '.permissions.allow | length' "$file")
   deny_count=$(jq '.permissions.deny | length' "$file")

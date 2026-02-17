@@ -1302,74 +1302,13 @@ Action: [Fix blocking and re-review] or [Ready to merge]
 
 ## MCP Integration
 
-### Memory (Downstream — Project-Root, Gitignored)
-
-Use `mcp__memory-downstream` to build institutional review knowledge. Memory is stored at `.claude/memory/downstream.jsonl` in the project root and is gitignored (per-developer working state).
-
-**At review start**: Search for known issues in the affected modules:
-```
-search_nodes("module name or area being reviewed")
-```
-
-Factor known recurring issues into your review — check if the same patterns reappear.
-
-**After review**: If you discover a recurring issue (seen 2+ times across PRs), store it:
-- Create entity for the recurring issue pattern
-- Link to affected module(s)
-- Add observations with frequency and severity
-
-**Do not store**: One-off findings, session-specific context, entire review reports. See `mcp-memory` skill for entity naming conventions. If unavailable, proceed without persistent memory.
-
-### Playwright (Optional Smoke Testing)
-
-Use `mcp__playwright` for smoke testing after review if a dev server is running:
-
-1. Navigate to the affected page (`browser_navigate`)
-2. Take accessibility snapshot (`browser_snapshot`) — verify expected elements and ARIA roles
-3. Check console for errors (`browser_console_messages`)
-4. Interact with key elements — click buttons, fill forms
-5. Screenshot for visual verification
-
-This makes smoke testing a real check instead of aspirational. If unavailable (Docker not running, no dev server), skip and note in output. See `mcp-playwright` skill for tool parameters.
-
----
+See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
 ## After Completion
 
-### Suggested Next Step
+### Completion Format
 
-**If blocking issues found:**
-> Review complete. Found X blocking, Y important, Z optional issues.
-> See **Feedback for Software Engineer** section above.
->
-> **Next**: Address blocking issues with `software-engineer-frontend`, then re-run `code-reviewer-frontend`.
->
-> Say **'fix'** to have SE address issues, or provide specific instructions.
-
-**If no blocking issues:**
-> Review complete. No blocking issues found.
->
-> **Next**: Ready to commit and create PR.
->
-> Say **'commit'** to proceed, or provide corrections.
-
-### Pipeline Mode
-
-If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'fix'" or "Say 'commit'"):
-
-**If blocking issues found:**
-> Review complete. Found X blocking, Y important, Z optional issues.
->
-> **Output**: Review feedback written inline above.
-> **Status**: blocked
-> **Blocking issues**: [list of blocking issues for SE fix loop]
-
-**If no blocking issues:**
-> Review complete. No blocking issues found.
->
-> **Output**: Review report written inline above.
-> **Status**: complete
-> **Blocking issues**: none
+See `agent-communication` skill — Completion Output Format. Interactive mode: report issues and suggest next action (fix or commit). Pipeline mode: return structured result with blocking/approved status.
 
 ---
 

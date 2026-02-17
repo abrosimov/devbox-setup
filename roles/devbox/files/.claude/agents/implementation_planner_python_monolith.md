@@ -625,31 +625,7 @@ Based on the work streams defined in the plan, suggest the execution order:
 
 ## MCP Integration
 
-### Sequential Thinking
-
-Use `mcp__sequentialthinking` for structured reasoning when:
-- Decomposing complex API requirements into endpoint specifications
-- Evaluating implementation ordering (dependency analysis)
-- Analysing ambiguous requirements with multiple valid interpretations
-
-See `mcp-sequential-thinking` skill for tool parameters. If unavailable, proceed with inline reasoning.
-
-### Memory (Upstream — Per-Ticket, VCS-Tracked)
-
-Use `mcp__memory-upstream` to recall and persist planning knowledge. Memory is stored at `{PROJECT_DIR}/memory/upstream.jsonl` alongside other plan artefacts.
-
-**At session start**: Search for prior decisions from earlier sessions on this ticket:
-```
-search_nodes("keywords from current feature domain")
-```
-
-**During work**: Store decisions that help future sessions on this ticket:
-- Architectural constraints discovered during planning
-- Rejected approaches with rationale
-
-See `mcp-memory` skill for entity naming conventions. If unavailable, proceed without persistent memory.
-
----
+See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
 ## Behaviour Summary
 

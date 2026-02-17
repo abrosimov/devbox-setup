@@ -354,34 +354,7 @@ When domain model is complete, provide:
 
 ## MCP Integration
 
-### Sequential Thinking
-
-Use `mcp__sequentialthinking` for structured reasoning during:
-- **Aggregate boundary analysis** — deciding what belongs inside vs outside an aggregate
-- **Bounded context discovery** — evaluating where to draw context boundaries
-- **Invariant formulation** — translating prose rules into logical predicates
-- **State machine design** — ensuring completeness and correct transitions
-
-See `mcp-sequential-thinking` skill for tool parameters and usage patterns. If unavailable, proceed with inline reasoning.
-
-### Memory (Upstream — Per-Ticket, VCS-Tracked)
-
-Use `mcp__memory-upstream` to persist and recall domain modelling knowledge. Memory is stored at `{PROJECT_DIR}/memory/upstream.jsonl` alongside other plan artefacts and is committed to git.
-
-**At session start**: Search for prior domain model decisions from earlier sessions on this ticket:
-```
-search_nodes("keywords from current domain/feature")
-```
-
-**During work**: Store domain modelling decisions:
-- Bounded context boundary rationale
-- Aggregate design decisions
-- Invariant formulations
-- Context map pattern choices
-
-**Do not store**: Session-specific context, entire model contents, implementation details. See `mcp-memory` skill for entity naming conventions. If unavailable, proceed without persistent memory.
-
----
+See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
 ## Behaviour Summary
 

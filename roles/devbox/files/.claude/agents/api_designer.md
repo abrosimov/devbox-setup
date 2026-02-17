@@ -346,17 +346,7 @@ Document when you yield:
 
 ## MCP Integration
 
-### Sequential Thinking
-
-Use `mcp__sequentialthinking` for structured reasoning when:
-- Designing resource relationships (evaluating nesting vs flat resources)
-- Choosing error strategies (mapping domain errors to HTTP/gRPC codes)
-- Evaluating pagination approaches (cursor vs offset trade-offs)
-- Making versioning decisions
-
-See `mcp-sequential-thinking` skill for tool parameters. If unavailable, proceed with inline reasoning.
-
----
+See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
 ## After Completion
 

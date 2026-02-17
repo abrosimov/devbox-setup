@@ -369,25 +369,8 @@ Smoke test: [action] → [observed result]
 
 ## MCP Integration
 
-### Playwright
+See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
-Use `mcp__playwright` for smoke testing after implementation:
-
-1. **Navigate** to the page you changed (`browser_navigate`)
-2. **Snapshot** the accessibility tree (`browser_snapshot`) — verify expected elements
-3. **Check console** for errors (`browser_console_messages`)
-4. **Interact** with key elements — click buttons, fill forms
-5. **Screenshot** the result for visual verification
-
-This makes the "Smoke test" row in your Pre-Flight Verification table a real check instead of aspirational.
-
-See `mcp-playwright` skill for tool parameters and usage patterns. If unavailable (Docker not running, no dev server), mark smoke test as "N/A" and proceed.
-
----
-
-Before completing, output this summary:
-
-```
 ## Pre-Flight Verification
 
 | Check | Status | Notes |
@@ -461,33 +444,11 @@ Before completing, output this summary:
 
 ### Self-Review: Comment Audit (MANDATORY)
 
-Before completing, answer honestly:
-
-1. **Did I add ANY comments that describe WHAT the code does?**
-   - Examples: `// Render X`, `// Handle Y`, `// Map...`, `// Set...`
-   - If YES: **Go back and remove them NOW**
-
-2. **For each comment I kept, does deleting it make the code unclear?**
-   - If NO: **Delete it NOW**
-
-Only proceed after removing all narration comments.
+See `code-writing-protocols` skill. Remove ALL narration comments before completing.
 
 ---
 
-### Interactive Mode (default)
+### Completion Format
 
-> Implementation complete. Created/modified X files.
->
-> **Next**: Run `/test` to write tests.
->
-> Say **'continue'** to proceed, or provide corrections.
+See `agent-communication` skill — Completion Output Format. Interactive mode: summarise work and suggest `/test` as next step. Pipeline mode: return structured result with status.
 
-### Pipeline Mode
-
-If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'continue'"):
-
-> Implementation complete. Created/modified X files.
->
-> **Output**: `se_frontend_output.json` written to `{PROJECT_DIR}/`
-> **Status**: complete | partial | blocked
-> **Blocking issues**: [none | list of issues requiring human input]

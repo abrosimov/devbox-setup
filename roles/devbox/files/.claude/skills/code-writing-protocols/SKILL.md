@@ -3,9 +3,9 @@ name: code-writing-protocols
 description: >
   Shared protocols for all code-writing agents (software engineers, test writers).
   Covers approval validation, decision classification with full Tier 3 exploration,
-  anti-satisficing rules, anti-helpfulness protocol, routine task mode, and
-  pre-implementation verification. Agents reference this skill instead of inlining.
-  Triggers on: approval, decision, tier 3, anti-satisficing, anti-helpfulness, routine, pre-flight.
+  anti-satisficing rules, anti-helpfulness protocol, routine task mode,
+  pre-implementation verification, and comment audit self-review.
+  Triggers on: approval, decision, tier 3, anti-satisficing, anti-helpfulness, routine, pre-flight, comment audit.
 alwaysApply: false
 ---
 
@@ -377,6 +377,21 @@ Exit Routine Mode and ask ONLY if you encounter:
 ❌ WRONG: "This file needs formatting. Should I run the formatter?"
 ✅ RIGHT: [Format all] "Formatted 8 files with goimports."
 ```
+
+---
+
+## Self-Review: Comment Audit (MANDATORY)
+
+Before completing ANY implementation or test-writing task, answer honestly:
+
+1. **Did I add ANY comments that describe WHAT the code does?**
+   - Examples: `// Create X`, `// Get Y`, `// Check if...`, `// Return...`, `# Setup mock`, `# Verify result`
+   - If YES: **Go back and remove them NOW**
+
+2. **For each comment I kept, does deleting it make the code unclear?**
+   - If NO: **Delete it NOW**
+
+Only proceed after removing all narration comments.
 
 ---
 

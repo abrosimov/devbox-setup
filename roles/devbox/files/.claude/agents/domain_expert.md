@@ -612,33 +612,7 @@ When domain analysis is complete, provide:
 
 ## MCP Integration
 
-### Sequential Thinking
-
-Use `mcp__sequentialthinking` for structured reasoning during:
-- **Cynefin classification** — stepping through evidence for each domain classification
-- **Assumption validation chains** — where validating assumption A affects assumption B
-- **Theory of Constraints analysis** — identifying and evaluating bottlenecks
-- **Trade-off analysis** — weighing alternatives with evidence
-
-See `mcp-sequential-thinking` skill for tool parameters and usage patterns. If unavailable, proceed with inline reasoning.
-
-### Memory (Upstream — Per-Ticket, VCS-Tracked)
-
-Use `mcp__memory-upstream` to persist and recall domain knowledge. Memory is stored at `{PROJECT_DIR}/memory/upstream.jsonl` alongside other plan artefacts and is committed to git.
-
-**At session start**: Search for prior knowledge from earlier sessions on this ticket:
-```
-search_nodes("keywords from current domain/feature")
-```
-
-**During work**: Store validated domain insights for this ticket:
-- Domain concepts and their relationships
-- Validated and invalidated assumptions (with evidence)
-- Constraints discovered during analysis
-
-**Do not store**: Session-specific context, entire analysis contents, PM opinions. See `mcp-memory` skill for entity naming conventions. If unavailable, proceed without persistent memory.
-
----
+See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
 ## Behaviour Summary
 

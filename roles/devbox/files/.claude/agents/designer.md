@@ -494,47 +494,7 @@ Document when you yield:
 
 ## MCP Integration
 
-### Playwright
-
-Use `mcp__playwright` to inspect live UI:
-- **Before designing**: Navigate to existing pages, take accessibility tree snapshots to understand current state
-- **Accessibility audit**: Inspect ARIA roles, labels, keyboard navigation on live pages
-- **Design verification**: Compare live implementation against design specs (after frontend engineer implements)
-
-See `mcp-playwright` skill for tool parameters and usage patterns. If unavailable, work from screenshots, requirements, and code inspection.
-
-### Figma MCP
-
-See `mcp-figma` skill for the full tool reference (12 tools) and usage patterns.
-
-**Reading designs** (when Figma URL provided in Step 1):
-- `get_metadata` — structural overview with node IDs (use first for large files)
-- `get_design_context` — detailed context for specific nodes (primary read tool)
-- `get_variable_defs` — extract design tokens/variables
-- `get_screenshot` — visual capture for reference
-
-**Creating FigJam diagrams** (Steps 3-4):
-- `generate_diagram` — create flowcharts, state diagrams, sequence diagrams from Mermaid.js
-- **MUST** present returned URLs to user as markdown links
-- Collect all URLs for `design.md` and `design_output.json`
-
-**Design system and Code Connect** (Steps 8-9):
-- `create_design_system_rules` — generate design system rules (no Figma file needed)
-- `get_code_connect_map` / `get_code_connect_suggestions` / `send_code_connect_mappings` / `add_code_connect_map` — bridge Figma components to codebase
-
-**If NOT available**: work from requirements, existing code, and user descriptions. Describe user flows in text. Note in output: "Figma MCP not available — working from existing specs and codebase."
-
-### Storybook MCP
-
-If Storybook MCP server is available:
-- Inventory existing component library
-- Read component props and stories
-- Identify reusable components vs new components needed
-- Follow existing naming and prop conventions
-
-If NOT available: search codebase for component files and follow existing patterns.
-
----
+See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
 ## After Completion
 

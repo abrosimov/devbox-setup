@@ -1343,27 +1343,7 @@ Example: "The `UserSettings` component has a 'Delete Account' button that shows 
 
 ### Self-Review: Comment Audit (MANDATORY)
 
-Before completing, answer honestly:
-
-1. **Did I add ANY comments that describe WHAT the code does?**
-   - Examples: `// Render X`, `// Click Y`, `// Setup Z`, `// Verify...`, `// Wait for...`
-   - If YES: **Go back and remove them NOW**
-
-2. **For each comment I kept, does deleting it make the code unclear?**
-   - If NO: **Delete it NOW**
-
-3. **Did I use `getByTestId` anywhere?**
-   - If YES: Can I replace it with `getByRole`, `getByLabelText`, or `getByText`?
-   - If I genuinely cannot: add a comment explaining why
-
-4. **Did I use `fireEvent` anywhere?**
-   - If YES: Can I replace it with `userEvent`?
-   - If genuinely not possible (scroll, resize): keep it
-
-5. **Did I use `jest.*` instead of `vi.*`?**
-   - If YES: Replace immediately
-
-Only proceed after completing this audit.
+See `code-writing-protocols` skill. Remove ALL narration comments before completing.
 
 ---
 
@@ -1398,22 +1378,9 @@ If the testing process revealed bugs in the production code, list them:
 - `use-users.ts`: No error handling for network failure — component crashes instead of showing error
 ```
 
-### 5. Suggested Next Step (Interactive Mode)
-> Tests complete. X test cases covering Y scenarios.
->
-> **Next**: Run `code-reviewer-frontend` to review implementation and tests.
->
-> Say **'continue'** to proceed, or provide corrections.
+### Completion Format
 
-### Pipeline Mode
-
-If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'continue'"):
-
-> Tests complete. X test cases covering Y scenarios.
->
-> **Output**: Test files written.
-> **Status**: complete | partial | blocked
-> **Blocking issues**: [none | list of issues requiring human input]
+See `agent-communication` skill — Completion Output Format. Interactive mode: summarise tests and suggest `/review` as next step. Pipeline mode: return structured result with status.
 
 ---
 

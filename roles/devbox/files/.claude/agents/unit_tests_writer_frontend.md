@@ -420,6 +420,19 @@ Before writing tests, check for a plan with test mandates:
 
 If no plan exists, proceed with normal test discovery from git diff.
 
+## SE Output Integration
+
+After checking the plan, read SE structured output for targeted testing:
+
+1. Check for `se_frontend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+   - `requirements_implemented` + `verification_summary` — identify any `fail` or `skip` entries as priority test targets
+   - `domain_compliance.terms_mapped` — use domain terms from the model in test names and assertions
+2. Check for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If found, extract:
+   - **Ubiquitous language** — verify component names and props use domain terms in test descriptions
+   - **Domain events** — test that callbacks emit the correct domain events
+   - **State machine transitions** — test UI state transitions match the model
+3. If SE output or domain model is absent, proceed with normal test discovery — these are optional enhancements
+
 ---
 
 ## Phase 1: Understand the Code
@@ -1398,12 +1411,22 @@ If the testing process revealed bugs in the production code, list them:
 - `use-users.ts`: No error handling for network failure — component crashes instead of showing error
 ```
 
-### 5. Suggested Next Step
+### 5. Suggested Next Step (Interactive Mode)
 > Tests complete. X test cases covering Y scenarios.
 >
 > **Next**: Run `code-reviewer-frontend` to review implementation and tests.
 >
 > Say **'continue'** to proceed, or provide corrections.
+
+### Pipeline Mode
+
+If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'continue'"):
+
+> Tests complete. X test cases covering Y scenarios.
+>
+> **Output**: Test files written.
+> **Status**: complete | partial | blocked
+> **Blocking issues**: [none | list of issues requiring human input]
 
 ---
 

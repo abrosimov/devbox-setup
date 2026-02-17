@@ -38,9 +38,11 @@ The agent will:
 - Challenge all assumptions (especially "I assume..." statements)
 - Identify constraints using Theory of Constraints
 - Conduct deep research to validate claims
-- Build a verified domain model
+- Build a discovery model (entities, relationships, invariants)
+- Discover domain events (past tense), commands (imperative), and actors
 - Define quality metrics (what matters, not what's easy to measure)
 - Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/domain_analysis.md`
+- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/domain_output.json`
 
 **Important**: The domain expert is intentionally skeptical and will push back on unvalidated assumptions. This is by design - the goal is to catch issues before implementation.
 
@@ -56,10 +58,19 @@ This is an interactive process. Engage with the challenges - they improve the fi
 
 ### 5. After Completion
 
-When domain analysis is complete (all challenges resolved), present the summary.
+When domain analysis is complete (all challenges resolved), check `domain_output.json` for complexity:
+- **Cynefin = `clear` AND < 5 entities** → skip Domain Modeller, go to `/plan`
+- **Otherwise** → recommend Domain Modeller for formal DDD
 
-**Next step suggestion**:
-> Domain analysis complete.
+**Next step suggestion (complex domain)**:
+> Domain analysis complete. Discovery model has N entities, M events, K commands.
+>
+> **Next**: Run `domain-modeller` agent to formalise bounded contexts, aggregates, and context map.
+>
+> Say **'continue'** to run Domain Modeller, **'skip model'** to go straight to `/plan`, or address remaining challenges.
+
+**Next step suggestion (simple domain)**:
+> Domain analysis complete. Simple domain (Cynefin: Clear, N entities) — formal DDD modelling skipped.
 >
 > **Next**: Run `/plan` to create implementation plan from validated requirements.
 >

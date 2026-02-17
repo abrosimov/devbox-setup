@@ -283,9 +283,10 @@ pool_size = (CPU_cores * 2) + effective_spindle_count
 ### Step 1: Receive Input
 
 Check for existing documentation at `{PROJECT_DIR}/` (see `config` skill for `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`):
-- `plan.md` — Implementation plan (primary input)
+- `plan.md` / `plan_output.json` — Implementation plan (primary input)
 - `spec.md` — Product specification
 - `domain_analysis.md` — Domain analysis
+- `domain_model.md` / `domain_model.json` — Formal DDD model (from Domain Modeller, if exists). Read `bounded_contexts[].aggregates`, `invariants`, `state_machine`, and `system_constraints` to inform table design and constraints.
 - `api_design.md` — API design (if available)
 
 If no documents exist, work directly with user requirements.

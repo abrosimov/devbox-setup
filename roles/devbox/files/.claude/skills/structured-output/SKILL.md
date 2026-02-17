@@ -75,11 +75,11 @@ All agent outputs include this metadata block:
 
 ```json
 {
-  "metadata": { "agent": "domain-expert", "version": "1.0", "..." : "..." },
+  "metadata": { "agent": "domain-expert", "version": "1.1", "..." : "..." },
   "assumptions": [
     { "id": "A1", "claim": "string", "status": "validated | invalidated | needs_validation", "evidence": "string", "risk_if_wrong": "string" }
   ],
-  "domain_model": {
+  "discovery_model": {
     "entities": [
       { "name": "string", "description": "string", "key_attributes": ["string"], "constraints": ["string"] }
     ],
@@ -88,6 +88,15 @@ All agent outputs include this metadata block:
     ],
     "invariants": ["string"]
   },
+  "discovery_events": [
+    { "name": "string (past tense)", "description": "string", "trigger": "string" }
+  ],
+  "discovery_commands": [
+    { "name": "string (imperative)", "actor": "string", "triggers_event": "string" }
+  ],
+  "discovery_actors": [
+    { "name": "string", "type": "human | system", "description": "string" }
+  ],
   "constraints": [
     { "name": "string", "type": "technical | organisational | external", "impact": "string", "addressed_by_spec": "boolean" }
   ],
@@ -95,6 +104,64 @@ All agent outputs include this metadata block:
     { "description": "string", "likelihood": "high | medium | low", "impact": "high | medium | low", "mitigation": "string" }
   ],
   "cynefin_classification": "clear | complicated | complex | chaotic | confused"
+}
+```
+
+### Domain Modeller — `domain_model.json`
+
+See `ddd-modeling` skill for the full schema. Summary of top-level fields:
+
+```json
+{
+  "metadata": { "agent": "domain-modeller", "version": "1.0", "..." : "..." },
+  "ubiquitous_language": [
+    { "term": "string", "definition": "string", "bounded_context": "string", "aliases": ["string"] }
+  ],
+  "bounded_contexts": [
+    {
+      "name": "string",
+      "subdomain_type": "core | supporting | generic",
+      "domain_vision": "string",
+      "aggregates": [
+        {
+          "name": "string",
+          "root": { "name": "string", "type": "entity", "identity_field": "string", "fields": [] },
+          "entities": [],
+          "value_objects": [],
+          "invariants": [{ "id": "INV-N", "predicate": "string", "description": "string", "severity": "critical | warning" }],
+          "commands": [{ "name": "string", "actor": "string", "preconditions": [], "postconditions": [], "emits": [] }],
+          "domain_events": [{ "name": "string", "fields": [], "triggered_by": "string" }],
+          "state_machine": { "states": [], "initial": "string", "terminal": [], "transitions": [] }
+        }
+      ]
+    }
+  ],
+  "context_map": {
+    "relationships": [
+      { "upstream": "string", "downstream": "string", "pattern": "string", "implementation": "string" }
+    ]
+  },
+  "system_constraints": [
+    { "name": "string", "type": "technical | organisational | external | regulatory", "description": "string", "impact": "string", "affected_contexts": ["string"], "mitigation": "string | null" }
+  ],
+  "risks": [
+    { "description": "string", "likelihood": "high | medium | low", "impact": "high | medium | low", "mitigation": "string", "affected_contexts": ["string"] }
+  ],
+  "system_design_bridge": {
+    "service_mapping": [
+      { "bounded_context": "string", "suggested_service": "string", "communication": [], "data_store_hint": "string" }
+    ]
+  },
+  "verification": {
+    "aggregate_roots_exist": "boolean",
+    "value_objects_immutable": "boolean",
+    "events_past_tense": "boolean",
+    "commands_have_preconditions": "boolean",
+    "invariants_have_predicates": "boolean",
+    "context_map_symmetric": "boolean",
+    "glossary_complete": "boolean",
+    "state_machines_complete": "boolean"
+  }
 }
 ```
 
@@ -219,6 +286,53 @@ All agent outputs include this metadata block:
 }
 ```
 
+### Software Engineer — `se_{role}_output.json`
+
+Where `{role}` is `backend`, `frontend`, or the specific language variant. Each SE agent writes its own output file to avoid conflicts during parallel execution.
+
+```json
+{
+  "metadata": { "agent": "software-engineer-go", "version": "1.0", "..." : "..." },
+  "files_changed": [
+    { "path": "string (relative to project root)", "action": "created | modified | deleted", "purpose": "string" }
+  ],
+  "requirements_implemented": [
+    {
+      "id": "FR-001",
+      "status": "implemented | partial | skipped",
+      "files": ["string"],
+      "acceptance_criteria_met": [
+        { "criterion": "string", "met": "boolean", "evidence": "file:line" }
+      ],
+      "error_cases_handled": [
+        { "condition": "string", "handling": "string" }
+      ]
+    }
+  ],
+  "domain_compliance": {
+    "ubiquitous_language_used": "boolean",
+    "terms_mapped": [
+      { "domain_term": "string", "code_symbol": "string", "file": "string" }
+    ],
+    "invariants_implemented": [
+      { "id": "INV-N", "location": "file:line", "implementation": "string" }
+    ],
+    "aggregate_boundaries_respected": "boolean"
+  },
+  "patterns_used": [
+    { "pattern": "string", "where": "string", "rationale": "string" }
+  ],
+  "autonomous_decisions": [
+    { "tier": 2, "question": "string", "decision": "string", "rationale": "string" }
+  ],
+  "verification_summary": [
+    { "fr_id": "string", "ac_id": "string", "status": "pass | fail | skip", "evidence": "string" }
+  ]
+}
+```
+
+> **Downstream usage**: Test Writer reads `requirements_implemented` + `verification_summary` to target untested areas. Code Reviewer reads `domain_compliance` + `autonomous_decisions` to audit DDD adherence and Tier 2 choices.
+
 ---
 
 ## Pipeline State Schema — `pipeline_state.json`
@@ -232,6 +346,7 @@ Tracks pipeline progress across the full development cycle.
   "stages": {
     "tpm": { "status": "completed | in_progress | pending | skipped", "output": "spec.md", "approved_at": "ISO 8601 | null" },
     "domain_expert": { "status": "...", "output": "domain_analysis.md", "approved_at": null },
+    "domain_modeller": { "status": "...", "output": "domain_model.md", "approved_at": null },
     "designer": { "status": "...", "output": "design.md", "selected_option": "string | null", "figma_source": { "url": "string | null", "file_key": "string | null" }, "figma_artifacts": { "user_flow_url": "string | null", "state_diagram_count": "number" }, "approved_at": null },
     "impl_planner": { "status": "...", "output": "plan.md", "approved_at": null },
     "database_designer": { "status": "...", "output": "schema_design.md", "approved_at": null },

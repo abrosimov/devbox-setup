@@ -107,19 +107,23 @@ All project documentation is organized by Jira issue and branch name:
 │   │   ├── research.md      # Research findings
 │   │   ├── decisions.md     # Decision log (TPM)
 │   │   ├── domain_analysis.md  # Domain analysis
+│   │   ├── domain_model.md    # DDD domain model (bounded contexts, aggregates)
 │   │   ├── api_design.md     # API design rationale and decisions
 │   │   ├── api_spec.yaml     # OpenAPI specification (when REST)
 │   │   ├── design.md         # UI/UX design specification
 │   │   ├── design_system.tokens.json  # W3C Design Tokens
 │   │   ├── schema_design.md  # Database schema design rationale
 │   │   ├── migrations/       # Database migration files
-│   │   ├── work_summary.md  # Agent work summary (quick overview)
-│   │   ├── work_log.md      # Agent work log (detailed reasoning)
+│   │   ├── work_log_backend.md   # Backend SE work log (detailed reasoning)
+│   │   ├── work_log_frontend.md  # Frontend SE work log (detailed reasoning)
 │   │   ├── spec_output.json  # TPM structured output
 │   │   ├── domain_output.json  # Domain Expert structured output
+│   │   ├── domain_model.json  # Domain Modeller structured output
 │   │   ├── plan_output.json  # Planner structured output
 │   │   ├── design_output.json  # Designer structured output
 │   │   ├── api_design_output.json  # API Designer structured output
+│   │   ├── se_backend_output.json  # Backend SE structured output
+│   │   ├── se_frontend_output.json # Frontend SE structured output
 │   │   ├── pipeline_state.json  # Pipeline progress tracking
 │   │   ├── decisions.json    # Pipeline decision log
 │   │   └── memory/
@@ -140,16 +144,20 @@ All project documentation is organized by Jira issue and branch name:
 | Research findings | TPM | `{PROJECT_DIR}/research.md` |
 | Decision log | TPM | `{PROJECT_DIR}/decisions.md` |
 | Domain analysis | Domain Expert | `{PROJECT_DIR}/domain_analysis.md` |
+| Domain model | Domain Modeller | `{PROJECT_DIR}/domain_model.md` |
 | API design rationale | API Designer | `{PROJECT_DIR}/api_design.md` |
 | OpenAPI specification | API Designer | `{PROJECT_DIR}/api_spec.yaml` |
 | UI/UX design specification | Designer | `{PROJECT_DIR}/design.md` |
 | W3C Design Tokens | Designer | `{PROJECT_DIR}/design_system.tokens.json` |
 | Schema design rationale | Database Designer | `{PROJECT_DIR}/schema_design.md` |
 | Database migrations | Database Designer | `{PROJECT_DIR}/migrations/` |
-| Work summary | SE | `{PROJECT_DIR}/work_summary.md` |
-| Work log | SE | `{PROJECT_DIR}/work_log.md` |
+| Backend work log | SE (backend) | `{PROJECT_DIR}/work_log_backend.md` |
+| Frontend work log | SE (frontend) | `{PROJECT_DIR}/work_log_frontend.md` |
+| Backend SE structured output | SE (backend) | `{PROJECT_DIR}/se_backend_output.json` |
+| Frontend SE structured output | SE (frontend) | `{PROJECT_DIR}/se_frontend_output.json` |
 | TPM structured output | TPM | `{PROJECT_DIR}/spec_output.json` |
 | Domain structured output | Domain Expert | `{PROJECT_DIR}/domain_output.json` |
+| Domain model structured output | Domain Modeller | `{PROJECT_DIR}/domain_model.json` |
 | Planner structured output | Impl Planner | `{PROJECT_DIR}/plan_output.json` |
 | Designer structured output | Designer | `{PROJECT_DIR}/design_output.json` |
 | API Designer structured output | API Designer | `{PROJECT_DIR}/api_design_output.json` |

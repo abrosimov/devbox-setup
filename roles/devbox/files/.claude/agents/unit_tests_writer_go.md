@@ -322,6 +322,20 @@ Before writing tests, check for a plan with test mandates:
 
 If no plan exists, proceed with normal test discovery from git diff.
 
+## SE Output Integration
+
+After checking the plan, read SE structured output for targeted testing:
+
+1. Check for `se_backend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+   - `requirements_implemented` + `verification_summary` — identify any `fail` or `skip` entries as priority test targets
+   - `domain_compliance.invariants_implemented` — each invariant needs at least one test verifying it is enforced
+   - `domain_compliance.terms_mapped` — use domain terms from the model in test names and assertions
+2. Check for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If found, extract:
+   - **Invariants** — each invariant is a test scenario (verify it rejects invalid state and accepts valid state)
+   - **State machine transitions** — test valid transitions succeed and invalid transitions are rejected
+   - **Aggregate boundaries** — test that operations respect aggregate boundaries
+3. If SE output or domain model is absent, proceed with normal test discovery — these are optional enhancements
+
 ---
 
 ## Approaching the task
@@ -1769,12 +1783,22 @@ modified: path/to/existing_test.go
 go test -race ./path/to/package/...
 ```
 
-### 4. Suggested Next Step
+### 4. Suggested Next Step (Interactive Mode)
 > Tests complete. X test cases covering Y scenarios.
 >
 > **Next**: Run `code-reviewer-go` to review implementation and tests.
 >
 > Say **'continue'** to proceed, or provide corrections.
+
+### Pipeline Mode
+
+If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'continue'"):
+
+> Tests complete. X test cases covering Y scenarios.
+>
+> **Output**: Test files written.
+> **Status**: complete | partial | blocked
+> **Blocking issues**: [none | list of issues requiring human input]
 
 ---
 

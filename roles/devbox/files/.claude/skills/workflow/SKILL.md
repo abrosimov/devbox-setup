@@ -68,11 +68,15 @@ Use `/init-workflow` to explicitly set up the workflow config:
 │   ├── database_designer.md
 │   ├── designer.md
 │   ├── domain_expert.md
+│   ├── domain_modeller.md
 │   ├── observability_engineer.md
 │   ├── technical_product_manager.md
 │   ├── agent_builder.md
 │   ├── skill_builder.md
-│   └── meta_reviewer.md
+│   ├── meta_reviewer.md
+│   ├── content_reviewer.md
+│   ├── freshness_auditor.md
+│   └── consistency_checker.md
 ├── commands/              # Workflow slash commands
 │   ├── domain-analysis.md
 │   ├── plan.md
@@ -87,6 +91,7 @@ Use `/init-workflow` to explicitly set up the workflow config:
 │   ├── build-agent.md
 │   ├── build-skill.md
 │   ├── validate-config.md
+│   ├── audit.md
 │   ├── checkpoint.md
 │   ├── verify.md
 │   └── learn.md
@@ -110,6 +115,7 @@ Use `/init-workflow` to explicitly set up the workflow config:
 | `/init-workflow` | Initialise agent workflow for current project | First time in a project |
 | `/build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
 | `/build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
+| `/audit` | Run library-wide freshness and/or consistency audit | After adding agents/skills, periodic maintenance |
 | `/validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
 | `/checkpoint` | Save or restore context across sessions/compaction | At logical boundaries, after milestones |
 | `/verify` | Run pre-PR quality gate (build, typecheck, lint, test, debug scan) | Before `/review` or PR creation |
@@ -133,7 +139,7 @@ Each command:
 
 | Gate | After | User Decides |
 |------|-------|-------------|
-| G1 | TPM + Domain Expert | "Is this the right problem?" |
+| G1 | TPM + Domain Expert + Domain Modeller | "Is this the right problem and domain model?" |
 | G2 | Designer options | "Which design direction?" (skipped for backend) |
 | G3 | Design + API + Plan all ready | "Ready to implement?" |
 | G4 | Code Review complete | "Ship it?" |
@@ -147,9 +153,15 @@ Each command:
   Produces: `spec.md`, `spec_output.json`
 
 ### Step 2: Domain Validation
-- **domain_expert** — Challenges assumptions, validates requirements
+- **domain_expert** — Challenges assumptions, validates requirements, discovers events/commands
   Depends on: Step 1
   Produces: `domain_analysis.md`, `domain_output.json`
+
+### Step 2b: Domain Modelling
+- **domain_modeller** — Formalises domain analysis into DDD model with bounded contexts, aggregates, events, and system design bridge
+  Depends on: Step 2
+  Produces: `domain_model.md`, `domain_model.json`
+  Skipped when: Simple domain (Cynefin = Clear, <5 entities) or user says 'skip model'
 
 ### Step 3: Planning + Design (parallel for UI features)
 - **implementation_planner_*** — Creates detailed implementation plans with work streams
@@ -193,7 +205,8 @@ Each command:
 </pipeline>
 
 <transitions>
-- After Step 2 completes → **Gate 1** (user approval: "right problem?")
+- After Step 2 completes → Step 2b (Domain Modeller) runs if domain is complex
+- After Step 2b completes (or is skipped) → **Gate 1** (user approval: "right problem + right model?")
 - Steps 3a (Planner) and 3b (Designer) run in parallel for UI/fullstack features
 - Planner produces work streams that drive Steps 4-5 execution order and parallelism
 - After Step 3 completes (Designer presents options) → **Gate 2** (user picks design direction; skipped for backend)
@@ -206,24 +219,45 @@ Each command:
 - **agent_builder** — Creates, validates, and refines agent definitions
 - **skill_builder** — Creates, validates, and refines skill modules
 - **meta_reviewer** — Adversarial reviewer that challenges builder output against grounded Anthropic docs
+- **content_reviewer** — Content substance reviewer that verifies code examples, versions, security, and redundancy
+- **freshness_auditor** — Library-wide scanner for outdated versions, deprecated APIs, and best practice drift
+- **consistency_checker** — Library-wide scanner for terminology conflicts, broken handoffs, and coverage gaps
 
 ### Meta-Pipeline (Infrastructure)
 
-`/build-agent` and `/build-skill` use a 2-gate pipeline for create/refine modes:
+`/build-agent` and `/build-skill` use a 3-gate pipeline for create/refine modes:
 
 ```
-Builder → GATE 1 (user review) → Meta-Reviewer → GATE 2 (user approve)
+Builder → GATE 1 (user review) → Meta-Reviewer → GATE 2 (user approve) → Content Reviewer → GATE 3 (user approve)
 ```
 
 - Gate 1: Builder produces artifact + self-validation + XML artifact block
-- Gate 2: Meta-reviewer adversarially challenges against grounded Anthropic docs
-- User can `skip-review` at Gate 1 to bypass meta-review
-- Validate/audit modes are single-pass (no meta-review needed)
+- Gate 2: Meta-reviewer adversarially challenges against grounded Anthropic docs (structural + discoverability)
+- Gate 3: Content reviewer audits substance (code examples, versions, security, redundancy)
+- User can `skip-review` at Gate 1 to bypass both meta-review and content review
+- User can `skip-content` at Gate 2 to bypass content review only
+- Validate/audit modes are single-pass (no meta-review or content review needed)
 
 Grounding references (cached Anthropic docs) are read at the start of every builder operation:
 - `skills/agent-builder/references/anthropic-agent-authoring.md`
 - `skills/agent-builder/references/anthropic-prompt-engineering.md`
 - `skills/skill-builder/references/anthropic-skill-authoring.md`
+
+### Audit Pipeline
+
+`/audit` runs library-wide checks across all agents and skills:
+
+```
+/audit           → [Freshness Auditor ‖ Consistency Checker] → merged report
+/audit freshness → Freshness Auditor only
+/audit consistency → Consistency Checker only
+/audit fix       → [Freshness Auditor ‖ Consistency Checker] → route findings to builders
+```
+
+- Freshness Auditor (Sonnet): external staleness — versions, deprecated APIs, best practice drift
+- Consistency Checker (Sonnet): internal coherence — terminology, handoffs, coverage gaps, duplication
+- Fix mode: batches findings per artifact, routes to agent-builder or skill-builder for remediation
+- User approves each builder fix before proceeding to the next artifact
 
 ## Code Writing & Language Discussion Policy
 
@@ -359,6 +393,8 @@ Documentation is organized by Jira issue and branch:
 
 - `spec.md` - Product specification
 - `domain_analysis.md` - Domain analysis
+- `domain_model.md` - DDD domain model (bounded contexts, aggregates, invariants)
+- `domain_model.json` - Structured domain model (see `ddd-modeling` skill)
 - `plan.md` - Implementation plan
 - `api_design.md` - API design rationale and decisions
 - `api_spec.yaml` - OpenAPI specification (REST mode)
@@ -366,6 +402,8 @@ Documentation is organized by Jira issue and branch:
 - `migrations/` - Database migration files
 - `design.md` - UI/UX design specification
 - `design_system.tokens.json` - W3C Design Tokens
+- `work_log_backend.md` - Backend SE work log
+- `work_log_frontend.md` - Frontend SE work log
 - `research.md` - Research findings
 - `decisions.md` - Decision log
 

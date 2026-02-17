@@ -407,23 +407,16 @@ Run verification loop:
 |-------|--------------|--------|
 | Build | Syntax error | Fix immediately (blocks everything) |
 | Type Check | Type mismatch | Fix immediately (blocks runtime safety) |
-| Lint | Style violation | Fix or suppress (with justification) |
+| Lint | Style violation | Fix the code (suppression requires user approval — see `lint-discipline` skill) |
 | Test | Test failure | Fix or update test (if behaviour intentional) |
 | Security | Secret detected | Remove secret, rotate credentials |
 | Diff Review | Unintended change | Revert or split into separate commit |
 
-### Suppression
+### Lint Discipline
 
-**Lint suppression** (use sparingly):
-```go
-// nolint:errcheck
-result, _ := someFunction()  // Error intentionally ignored
-```
+**Do NOT suppress lint warnings to make them pass.** See `lint-discipline` skill for the full policy.
 
-```python
-# ruff: noqa: F401
-import unused_module  # Imported for side effects
-```
+Fix hierarchy: fix the code → refactor around it → ask the user → suppress (only with user approval).
 
 **Test skip** (document reason):
 ```python
@@ -438,6 +431,6 @@ def test_flaky():
 2. **Automate**: Use hooks for format/lint/typecheck after edits
 3. **Fast feedback**: Run phases locally before pushing (CI is backup)
 4. **Fix immediately**: Don't accumulate lint/test failures
-5. **Document suppressions**: Explain why rule is disabled
+5. **Never suppress to pass**: Fix lint issues in code, not with directives (see `lint-discipline` skill)
 6. **Track coverage**: Ensure coverage doesn't decrease over time
 7. **Review diffs**: Always review changes before committing (catch unintended edits)

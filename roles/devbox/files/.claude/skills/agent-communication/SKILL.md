@@ -29,9 +29,9 @@ When reading upstream output, check for `{stage}_output.json` first (faster, typ
 
 | Pipeline | Flow |
 |----------|------|
-| Full cycle (backend) | TPM → Domain Expert → G1 → Planner → [Schema Designer ‖ API Designer] → G3 → SE-backend → Tests → Review → G4 |
-| Full cycle (UI) | TPM → Domain Expert → G1 → [Designer ‖ Planner] → G2 → API Designer → G3 → SE-frontend → Tests → Review → G4 |
-| Full cycle (fullstack) | TPM → Domain Expert → G1 → [Designer ‖ Planner] → G2 → [Schema Designer ‖ API Designer] → G3 → [SE-backend ‖ SE-frontend] → Tests → Review → G4 |
+| Full cycle (backend) | TPM → Domain Expert → Domain Modeller → G1 → Planner → [Schema Designer ‖ API Designer] → G3 → SE-backend → Tests → Review → G4 |
+| Full cycle (UI) | TPM → Domain Expert → Domain Modeller → G1 → [Designer ‖ Planner] → G2 → API Designer → G3 → SE-frontend → Tests → Review → G4 |
+| Full cycle (fullstack) | TPM → Domain Expert → Domain Modeller → G1 → [Designer ‖ Planner] → G2 → [Schema Designer ‖ API Designer] → G3 → [SE-backend ‖ SE-frontend] → Tests → Review → G4 |
 | API design only | User → API Designer → SE |
 | UI design only | User → Designer → SE-frontend |
 | Quick fix (backend) | User → SE-backend → Test Writer → Reviewer |
@@ -39,6 +39,39 @@ When reading upstream output, check for `{stage}_output.json` first (faster, typ
 | Quick fix (fullstack) | User → [SE-backend ‖ SE-frontend] → Test Writer → Reviewer |
 | Test only | User → Test Writer → Reviewer |
 | Review only | User → Reviewer |
+| Build (3-gate) | User → Builder → G1 → Meta-Reviewer → G2 → Content Reviewer → G3 |
+| Audit (full) | User → [Freshness Auditor ‖ Consistency Checker] → merged report |
+| Audit (fix) | User → [Freshness Auditor ‖ Consistency Checker] → Builder(s) per artifact |
+
+### Artifact Registry (Single Source of Truth)
+
+Every file in the pipeline is listed here. Agents reference this table in their Step 1 to know what to read.
+
+All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/`).
+
+| Agent | Reads | Writes |
+|-------|-------|--------|
+| **TPM** | *(user input)* | `spec.md`, `research.md`, `decisions.md`, `spec_output.json` |
+| **Domain Expert** | `spec.md`, `spec_output.json` | `domain_analysis.md`, `domain_output.json` |
+| **Domain Modeller** | `domain_analysis.md`, `domain_output.json`, `spec.md` | `domain_model.md`, `domain_model.json` |
+| **Designer** | `spec.md`, `domain_analysis.md`, `plan.md`?, `api_design.md`? | `design.md`, `design_system.tokens.json`, `design_output.json` |
+| **Impl Planner** | `spec.md`, `spec_output.json`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `plan.md`, `plan_output.json` |
+| **Database Designer** | `plan.md`, `plan_output.json`, `spec.md`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `schema_design.md`, `migrations/` |
+| **API Designer** | `plan.md`, `plan_output.json`, `spec.md`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `api_design.md`, `api_spec.yaml`, `api_design_output.json` |
+| **SE (backend)** | `plan.md`, `plan_output.json`, `api_spec.yaml`, `schema_design.md`, `domain_model.md`?, `domain_model.json`? | *(source code)*, `work_log_backend.md`, `se_backend_output.json` |
+| **SE (frontend)** | `plan.md`, `plan_output.json`, `design.md`, `design_output.json`, `api_spec.yaml`, `domain_model.md`?, `domain_model.json`? | *(source code)*, `work_log_frontend.md`, `se_frontend_output.json` |
+| **Observability** | `plan.md`, `plan_output.json` | *(dashboards, alerts)* |
+| **Test Writer** | `plan.md`, `spec.md`, `domain_model.json`?, `domain_model.md`?, `se_backend_output.json`?, `se_frontend_output.json`? | *(test files)* |
+| **Code Reviewer** | `plan.md`, `spec.md`, `domain_model.json`?, `domain_model.md`?, `design.md`?, `design_output.json`?, `se_backend_output.json`?, `se_frontend_output.json`? | *(review report — inline)* |
+| **Content Reviewer** | agent/skill artifact, 2-3 referenced skills | `<audit-findings>` XML (inline) |
+| **Freshness Auditor** | all `agents/*.md`, all `skills/*/SKILL.md` | `<audit-findings scope="library">` XML (inline) |
+| **Consistency Checker** | all `agents/*.md`, all `skills/*/SKILL.md`, all `commands/*.md` | `<audit-findings scope="library">` XML (inline) |
+
+`?` = optional, read if available.
+
+**Rule**: When an agent's Step 1 lists files to check, it MUST match this table. If you add a new agent or artifact, update this table first.
+
+**Fallback**: If a JSON file doesn't exist, fall back to the corresponding markdown file. Never fail because a JSON file is missing (see `structured-output` skill — Graceful Degradation Rule).
 
 ### Work Stream Handoffs
 
@@ -50,9 +83,77 @@ When the planner produces work streams, downstream agents consume them via `plan
 4. **API contract is the handshake** — frontend streams depend on API contract completion, not backend implementation
 5. **Schema before backend** — if a schema stream exists, it must complete before backend implementation begins
 
+## Pipeline Mode
+
+Agents operate in two modes depending on who invoked them:
+
+| Mode | Invoked By | Flag | Behaviour |
+|------|-----------|------|-----------|
+| **Interactive** (default) | `/implement`, `/test`, `/review`, or direct user | `PIPELINE_MODE` absent | Talk to user, ask for confirmation |
+| **Pipeline** | `/full-cycle` orchestrator via Task tool | `PIPELINE_MODE=true` in prompt | Return result to orchestrator, no prompts |
+
+**Detection**: Check your invocation prompt for `PIPELINE_MODE=true`. If absent, default to interactive mode.
+
+### Behaviour Differences
+
+| Behaviour | Interactive | Pipeline |
+|-----------|------------|----------|
+| **Completion** | "Say 'continue'" → wait for user | Return structured result → done |
+| **Tier 1 decisions** | Just do it | Just do it |
+| **Tier 2 decisions** | Quick ask, then proceed | Decide autonomously, log in `autonomous_decisions` |
+| **Tier 3 decisions** | Present options, wait for user | **Still escalates** — genuine blocker |
+| **Model escalation** | "Re-run with Opus?" | Use the model assigned by orchestrator |
+| **Structured output** | Optional | **Required** |
+| **Approval validation** | Verify explicit user approval | Skip — orchestrator already has gate approval |
+
+### Pipeline Completion Format
+
+In pipeline mode, agents return a structured summary instead of asking the user:
+
+```markdown
+> <One-line summary of what was done>
+>
+> **Output**: `{stage}_output.json` written to `{PROJECT_DIR}/`
+> **Status**: complete | partial | blocked
+> **Blocking issues**: [none | list of issues requiring human input]
+```
+
+Only `blocked` status pauses the pipeline. `complete` and `partial` hand off to the next agent.
+
+### Autonomous Decision Logging
+
+In pipeline mode, Tier 2 decisions are logged in the agent's structured output under `autonomous_decisions`:
+
+```json
+{
+  "autonomous_decisions": [
+    {
+      "tier": 2,
+      "question": "Whether to use repository pattern or direct DB access",
+      "decision": "Repository pattern",
+      "rationale": "Codebase already uses repositories for other entities"
+    }
+  ]
+}
+```
+
+The Code Reviewer audits these decisions. Wrong calls get caught in the review → fix loop, all within the autonomous G3→G4 phase.
+
+### Why This Is Safe
+
+In pipeline mode, the safety net is the **review cycle**, not human micro-approvals:
+- SE makes Tier 2 decisions autonomously → Code Reviewer catches mistakes → fix loop corrects them
+- All decisions are logged and auditable
+- Tier 3 decisions (architecture, pattern selection, new abstractions) still escalate to the user
+- The 4 strategic gates remain the human checkpoints
+
+---
+
 ## Completion Output Format
 
-When an agent completes its work, use this format:
+### Interactive Mode (default)
+
+When an agent completes its work and `PIPELINE_MODE` is NOT set:
 
 ```markdown
 > <One-line summary of what was done>
@@ -62,7 +163,7 @@ When an agent completes its work, use this format:
 > Say **'continue'** to proceed, or provide corrections.
 ```
 
-### Examples
+#### Examples
 
 **Software Engineer:**
 ```markdown
@@ -118,9 +219,17 @@ When an agent completes its work, use this format:
 > Say **'commit'** to proceed, or provide corrections.
 ```
 
+### Pipeline Mode
+
+When `PIPELINE_MODE=true`, use the pipeline completion format (see above). Do NOT ask "Say 'continue'" — return your result and terminate.
+
+---
+
 ## Escalation Rules
 
 ### Model Escalation (Sonnet → Opus)
+
+**Interactive mode only.** In pipeline mode, use the model assigned by the orchestrator.
 
 Use complexity metrics to determine when Opus is needed:
 
@@ -138,7 +247,7 @@ Use complexity metrics to determine when Opus is needed:
 
 ### User Escalation
 
-Stop and ask the user when:
+Stop and ask the user when (**in pipeline mode, only Tier 3**):
 
 1. **Ambiguous requirements** — Multiple valid interpretations
 2. **Trade-off decisions** — Significant impact either way
@@ -251,13 +360,14 @@ When using `/full-cycle`, the pipeline pauses at 4 strategic gates instead of af
 
 | Gate | After | User Decides | Why |
 |------|-------|-------------|-----|
-| G1 | TPM + Domain Expert | "Is this the right problem?" | Wrong problem = wasted pipeline |
+| G1 | TPM + Domain Expert + Domain Modeller | "Is this the right problem and domain model?" | Wrong problem or model = wasted pipeline |
 | G2 | Designer options | "Which design direction?" | UX is subjective |
 | G3 | Design + API + Plan all ready | "Ready to implement?" | Last cheap exit |
 | G4 | Code Review complete | "Ship it?" | Final quality check |
 
 ### Autonomous Execution Rules
 
+- **Before G1**: Domain Expert + Domain Modeller run autonomously (sequential: expert then modeller)
 - **Between G1 and G2**: Impl Planner + Designer run without pausing (parallel for UI features)
 - **Between G2 and G3**: [Schema Designer ‖ API Designer] run without pausing (schema first if both needed)
 - **Between G3 and G4**: Work-stream-driven execution — [SE-backend ‖ SE-frontend ‖ Observability] run based on parallelism groups from `plan_output.json`, then Tests + Review

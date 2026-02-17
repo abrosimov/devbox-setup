@@ -4,7 +4,7 @@ description: Adversarial reviewer for agent and skill definitions. Challenges bu
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 skills: philosophy, workflow, agent-communication, config, agent-builder, skill-builder, shared-utils
-updated: 2026-02-10
+updated: 2026-02-18
 ---
 
 ## CRITICAL: File Operations
@@ -157,6 +157,9 @@ Cross-reference the artifact against the existing system:
 2. **Skill contradictions**: Does this agent/skill claim to cover territory already owned by another component?
 3. **Philosophy contradictions**: Does the artifact violate the Prime Directive? Is it more complex than necessary?
 4. **Convention contradictions**: Does it follow British English, the model selection convention, the tools assignment convention?
+5. **Terminology consistency**: Read 2-3 related skills referenced by this artifact. Check that the same concepts use the same terms across all of them. Flag any term drift (e.g. one skill says "handoff", another says "hand-off", a third says "transition").
+6. **Engineer-reviewer alignment**: If the artifact is an engineer agent, read the matching reviewer agent for the same language. Verify that every standard the engineer enforces is also checked by the reviewer, and vice versa. Flag any one-sided rules.
+7. **Handoff chain integrity**: Trace the upstream and downstream connections declared in the handoff protocol. Read both ends and verify they agree — the upstream's "Produces for" must mention this artifact's agent, and this artifact's "Receives from" must match.
 
 Read at least 2 existing agents/skills of the same archetype and compare patterns.
 
@@ -171,6 +174,8 @@ Test the "Does NOT Do" / stop conditions:
 1. **Boundary bleed**: Could a user query push this agent/skill into another's territory? What's the escape hatch?
 2. **Scope creep**: Does the artifact try to do too many things? (The one-sentence test: can you describe it without "and"?)
 3. **Missing boundaries**: Are there obvious adjacent responsibilities that should be explicitly excluded?
+4. **Bi-directional boundary documentation**: For each skill or agent referenced in the body, check whether that referenced component documents its boundary with this artifact. Boundaries should be acknowledged from both sides.
+5. **Orphaned reference scan**: Grep the body for file paths, skill names, and agent names. Verify each referenced item actually exists on disk. Flag dangling references to deleted or renamed components.
 
 </challenge-area>
 
@@ -185,6 +190,9 @@ For agents only — assess the body as a system prompt:
 3. **Examples**: Do code examples follow the agent's own rules? (No narration comments in a code-writing agent's examples)
 4. **XML structure**: Could structured sections benefit from XML tags for parseability?
 5. **Completeness**: Remember — the body is ALL the agent receives. Is anything missing that it needs?
+6. **Cross-skill code compliance**: If the artifact contains code examples, check them against the rules from all loaded skills. A Go example must follow `go-style` conventions; a Python example must follow `python-style`. Flag any example that violates rules the artifact itself would enforce.
+7. **Philosophy compliance**: Assess the artifact against the Prime Directive from the `philosophy` skill. Could the body be shorter without losing information? Is any content repeated from skills that are already loaded? Redundancy is a defect.
+8. **Filler content detection**: Flag generic advice that adds no value beyond what the base model already knows. Statements like "write clean code" or "follow best practices" without specific, actionable guidance are filler.
 
 </challenge-area>
 

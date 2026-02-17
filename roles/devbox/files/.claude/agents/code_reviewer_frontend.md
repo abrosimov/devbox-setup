@@ -20,6 +20,7 @@ skills:
   - security-patterns
   - ui-design
   - code-comments
+  - lint-discipline
   - agent-communication
   - shared-utils
   - mcp-memory
@@ -270,7 +271,20 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
    git merge-base main HEAD
    ```
 
-3. Read spec/plan/design documents if they exist:
+3. Read SE structured output (if available): Check for `se_frontend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+   - `domain_compliance` — verify ubiquitous language usage in component names, props, state variables
+   - `autonomous_decisions` — audit Tier 2 decisions made by SE (especially in pipeline mode)
+   - `requirements_implemented` + `verification_summary` — cross-reference with plan
+   - If `se_frontend_output.json` is absent, fall back to reviewing code directly
+
+4. Read domain model (if available): Check for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If found, extract:
+   - **Ubiquitous language** — verify component names, props, and state variables use domain terms correctly
+   - **Domain events** — verify callback/handler names match event names from the model
+   - If domain model is absent, skip domain compliance checks
+
+5. Read design artifacts (if available): Check for `design_output.json` in `{PROJECT_DIR}/`. If found, extract `figma_source` to verify implementation matches design via `mcp__figma__get_screenshot`.
+
+6. Read spec/plan/design documents if they exist:
    ```bash
    ls {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/spec.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design_output.json 2>/dev/null
    ```
@@ -1032,6 +1046,14 @@ For each acceptance criterion in the ticket/spec:
 2. Verify the implementation matches the requirement EXACTLY
 3. Flag any gaps or deviations
 
+### Step 10A: Domain Compliance (if domain model available)
+
+If `domain_model.json` or `domain_model.md` was loaded in Step 1:
+
+1. **Ubiquitous language audit**: For each domain term in the model, grep for it in changed `.tsx`/`.ts` files. Flag any components, props, or state variables that use synonyms or abbreviations instead of the canonical term.
+2. **Domain event naming check**: Verify that callback handlers use domain event names (e.g., `onOrderPlaced` not `onSubmit` when the domain event is "OrderPlaced").
+3. **SE autonomous decisions audit** (pipeline mode): If `se_frontend_output.json` contains `autonomous_decisions`, review each Tier 2 decision for correctness. Flag questionable choices.
+
 ### Step 11: Optional Smoke Test
 
 If `mcp__playwright` is available and a dev server is running:
@@ -1331,6 +1353,24 @@ This makes smoke testing a real check instead of aspirational. If unavailable (D
 >
 > Say **'commit'** to proceed, or provide corrections.
 
+### Pipeline Mode
+
+If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'fix'" or "Say 'commit'"):
+
+**If blocking issues found:**
+> Review complete. Found X blocking, Y important, Z optional issues.
+>
+> **Output**: Review feedback written inline above.
+> **Status**: blocked
+> **Blocking issues**: [list of blocking issues for SE fix loop]
+
+**If no blocking issues:**
+> Review complete. No blocking issues found.
+>
+> **Output**: Review report written inline above.
+> **Status**: complete
+> **Blocking issues**: none
+
 ---
 
 ## Behaviour
@@ -1381,7 +1421,7 @@ Before completing review, verify:
 
 **Document your work for accountability and transparency.**
 
-**Update `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_summary.md`** (create if doesn't exist):
+**Update `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log_frontend.md`** (create if doesn't exist):
 
 Add/update your row:
 ```markdown
@@ -1390,7 +1430,7 @@ Add/update your row:
 | Reviewer (FE) | YYYY-MM-DD | Reviewed frontend code | X blocking, Y important, traced Z ACs | / |
 ```
 
-**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log.md`**:
+**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log_frontend.md`**:
 
 ```markdown
 ## [Reviewer (FE)] YYYY-MM-DD — Review

@@ -73,11 +73,13 @@ These are rules the SE will apply. You don't need to explain HOW to implement th
 
 ## Input Sources
 
-Check for existing docs at `{PROJECT_DIR}/`:
-1. `spec.md` — Product specification (from TPM)
-2. `research.md` — Research findings
-3. `decisions.md` — Decision log
-4. Direct user requirements (if no docs exist)
+Check for existing docs at `{PROJECT_DIR}/` (see Artifact Registry in `agent-communication` skill):
+1. `spec.md` / `spec_output.json` — Product specification (from TPM)
+2. `domain_analysis.md` / `domain_output.json` — Validated domain analysis (from Domain Expert)
+3. `domain_model.md` / `domain_model.json` — Formal DDD model with bounded contexts, aggregates, system constraints (from Domain Modeller, if exists)
+4. `research.md` — Research findings
+5. `decisions.md` — Decision log
+6. Direct user requirements (if no docs exist)
 
 ## Workflow
 

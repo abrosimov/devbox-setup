@@ -107,9 +107,10 @@ Recommendation: A for web-facing APIs, B for internal services.
 ### Step 1: Receive Input
 
 Check for existing documentation at `{PROJECT_DIR}/` (see `config` skill for `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`):
-- `plan.md` — Implementation plan (primary input)
+- `plan.md` / `plan_output.json` — Implementation plan (primary input)
 - `spec.md` — Product specification
 - `domain_analysis.md` — Domain analysis
+- `domain_model.md` / `domain_model.json` — Formal DDD model (from Domain Modeller, if exists). Read `bounded_contexts`, `aggregates[].commands`, `domain_events`, `context_map`, and `system_constraints` to inform API boundaries and endpoints.
 - `research.md` — Research findings
 
 If no documents exist, work directly with user requirements.

@@ -2,7 +2,7 @@
 description: Create or validate an agent definition using the Agent Builder agent, with adversarial meta-review
 ---
 
-You are orchestrating a **2-gate pipeline** for agent definition creation, validation, or refinement.
+You are orchestrating a **3-gate pipeline** for agent definition creation, validation, or refinement.
 
 ## Parse Arguments
 
@@ -18,12 +18,14 @@ Check what the user requested:
 
 <pipeline>
 
-### Create / Refine Mode (2-gate)
+### Create / Refine Mode (3-gate)
 
 1. **Builder** → produces agent definition + self-validation + XML artifact block
 2. **GATE 1** → user reviews builder output
 3. **Meta-Reviewer** → adversarial challenge against grounded docs
-4. **GATE 2** → user approves final artifact
+4. **GATE 2** → user approves structural review (say `skip-content` to bypass Gate 3)
+5. **Content Reviewer** → substance audit (code examples, versions, security, redundancy)
+6. **GATE 3** → user approves final artifact
 
 ### Validate Mode (single pass)
 
@@ -160,10 +162,49 @@ Present the meta-reviewer's findings:
 
 [Meta-reviewer's summary and verdict]
 
+**[Awaiting your decision]** — Say **'continue'** to run content review, **'fix'** to send back to builder, **'skip-content'** to accept without content review, or provide specific instructions.
+```
+
+If user says 'skip-content', skip to step 6.
+If user says 'fix', re-run builder with feedback.
+If user says 'continue', proceed to step 5.
+
+### 5. Run Content Reviewer (Gate 3)
+
+```
+Task(
+  subagent_type: "content-reviewer",
+  model: "opus",
+  prompt: "Review the content substance of the agent definition at .claude/agents/<name>.md.
+
+This artifact has passed structural meta-review. Now audit its content:
+1. Collect context: Read the artifact and 2-3 referenced skills
+2. Code example review: Verify syntax, API correctness, cross-skill compliance
+3. External freshness check: WebSearch versions, deprecated APIs
+4. Security and injection audit: Check examples for insecure patterns
+5. Redundancy assessment: Check for duplication with neighbours and base-model filler
+6. Completeness check: Verify happy/error/edge paths are covered
+
+Meta-reviewer context:
+<meta-review-context>
+[Paste key findings from the meta-reviewer's output]
+</meta-review-context>
+
+Emit your full XML <audit-findings> report."
+)
+```
+
+Present the content reviewer's findings:
+
+```markdown
+**Gate 3: Content Review**
+
+[Content reviewer's summary and verdict]
+
 **[Awaiting your decision]** — Say **'approve'** to accept, **'fix'** to send back to builder, or provide specific instructions.
 ```
 
-### 5. Handle Skill Gaps
+### 6. Handle Skill Gaps
 
 If the Agent Builder reports new skills are needed:
 
@@ -175,11 +216,12 @@ The new agent needs these skills that don't exist yet:
 Run `/build-skill <name>` for each, or say 'skip' to proceed without them.
 ```
 
-### 6. After Completion
+### 7. After Completion
 
 ```markdown
 Agent pipeline complete. Recommended next steps:
 1. Review the definition at .claude/agents/<name>.md
 2. Create any missing skills with `/build-skill`
 3. Run `/validate-config` to verify system integrity
+4. Run `/audit` for library-wide freshness and consistency checks
 ```

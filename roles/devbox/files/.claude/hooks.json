@@ -31,6 +31,10 @@
           {
             "type": "command",
             "command": "case \"$CC_BASH_COMMAND\" in 'git commit --amend'*|'git commit'*'--amend'*) echo 'BLOCKED: Amending commits is not allowed. Create a new commit instead.' >&2; exit 2;; esac"
+          },
+          {
+            "type": "command",
+            "command": "case \"$CC_BASH_COMMAND\" in 'git commit'*'--no-verify'*|'git commit --no-verify'*) echo 'BLOCKED: --no-verify is not allowed. Fix the pre-commit hook issues instead of bypassing them.' >&2; exit 2;; esac"
           }
         ]
       },
@@ -40,6 +44,24 @@
           {
             "type": "command",
             "command": "~/.claude/bin/pre-tmpdir-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-edit-lint-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-edit-lint-guard"
           }
         ]
       }

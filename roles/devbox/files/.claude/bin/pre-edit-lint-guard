@@ -1,0 +1,100 @@
+#!/usr/bin/env node
+
+// pre-edit-lint-guard — PreToolUse hook that detects lint suppression directives
+// being added via Edit or Write tools.
+//
+// Scans new_string (Edit) or content (Write) for suppression patterns:
+//   Go:         //nolint, // nolint
+//   Python:     # noqa, # type: ignore
+//   TypeScript: @ts-ignore, @ts-expect-error, eslint-disable
+//
+// Emits a warning to stderr (does NOT block). The agent sees the warning
+// and should reconsider whether suppression is justified.
+//
+// Event: PreToolUse (matcher: Edit, Write)
+
+const SUPPRESSION_PATTERNS = [
+  // Go
+  { regex: /\/\/\s*nolint/i, lang: "Go", directive: "//nolint" },
+  // Python
+  { regex: /# noqa/i, lang: "Python", directive: "# noqa" },
+  { regex: /# type:\s*ignore/i, lang: "Python", directive: "# type: ignore" },
+  // TypeScript / JavaScript
+  { regex: /@ts-ignore/i, lang: "TypeScript", directive: "@ts-ignore" },
+  { regex: /@ts-expect-error/i, lang: "TypeScript", directive: "@ts-expect-error" },
+  {
+    regex: /eslint-disable/i,
+    lang: "TypeScript",
+    directive: "eslint-disable",
+  },
+  // Java / Kotlin
+  {
+    regex: /@SuppressWarnings/i,
+    lang: "Java",
+    directive: "@SuppressWarnings",
+  },
+];
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(0);
+  }
+
+  const toolInput = data.tool_input || {};
+
+  // For Edit: check new_string (the content being inserted)
+  // For Write: check content (the full file being written)
+  // We only care about NEW suppression directives, so for Edit we check new_string
+  // but skip if old_string already contains the same directive (not a new addition).
+  const toolName = data.tool_name || "";
+  let textToCheck = "";
+  let oldText = "";
+
+  if (toolName === "Edit") {
+    textToCheck = toolInput.new_string || "";
+    oldText = toolInput.old_string || "";
+  } else if (toolName === "Write") {
+    textToCheck = toolInput.content || "";
+    // For Write, we can't diff against old content, but we still warn.
+    // The warning is softer for Write since we can't tell if it's new.
+  } else {
+    process.exit(0);
+  }
+
+  if (!textToCheck) {
+    process.exit(0);
+  }
+
+  const findings = [];
+
+  for (const pattern of SUPPRESSION_PATTERNS) {
+    if (pattern.regex.test(textToCheck)) {
+      // For Edit: skip if old_string already had this directive (not a new addition)
+      if (toolName === "Edit" && pattern.regex.test(oldText)) {
+        continue;
+      }
+      findings.push(pattern);
+    }
+  }
+
+  if (findings.length > 0) {
+    const directives = findings.map((f) => `${f.directive} (${f.lang})`).join(", ");
+    process.stderr.write(
+      `[lint-discipline] Suppression directive detected: ${directives}. ` +
+        `Prefer fixing the lint issue. If suppression is necessary, ensure the user has approved it. ` +
+        `See lint-discipline skill for the fix hierarchy: fix code → refactor → ask user → suppress (with approval).\n`
+    );
+  }
+
+  process.exit(0);
+}
+
+main();

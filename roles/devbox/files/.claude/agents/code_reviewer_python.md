@@ -3,7 +3,7 @@ name: code-reviewer-python
 description: Code reviewer for Python - validates implementation against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__atlassian, mcp__memory-downstream
 model: sonnet
-skills: philosophy, python-engineer, python-testing, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, otel-python, code-comments, agent-communication, shared-utils, mcp-memory
+skills: philosophy, python-engineer, python-testing, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, otel-python, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory
 updated: 2026-02-10
 ---
 
@@ -245,6 +245,18 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
    git log --oneline $DEFAULT_BRANCH..HEAD
    ```
 
+3. Read SE structured output (if available): Check for `se_backend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+   - `domain_compliance` — verify ubiquitous language usage, invariant implementations, aggregate boundary adherence
+   - `autonomous_decisions` — audit Tier 2 decisions made by SE (especially in pipeline mode)
+   - `requirements_implemented` + `verification_summary` — cross-reference with plan
+   - If `se_backend_output.json` is absent, fall back to reviewing code directly
+
+4. Read domain model (if available): Check for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If found, extract:
+   - **Ubiquitous language** — verify code uses domain terms correctly (class names, method names, variables)
+   - **Aggregates + invariants** — verify invariants are implemented as validation logic and aggregate boundaries are respected
+   - **Domain events** — verify event names match the model
+   - If domain model is absent, skip domain compliance checks
+
 ### Step 2: Requirements Analysis
 
 Before looking at code, summarize:
@@ -257,6 +269,22 @@ Present this summary to the user for confirmation.
 ### Step 3: Exhaustive Enumeration (NO EVALUATION YET)
 
 **This phase is about LISTING, not JUDGING. Do not skip items. Do not optimise.**
+
+#### 3-Pre: Lint Suppression Audit
+
+**Before any other enumeration**, scan for newly added suppression directives:
+```bash
+# Find all new suppression directives in the diff
+git diff $DEFAULT_BRANCH...HEAD -U0 -- '*.py' | grep -n '^\+.*noqa\|^\+.*type: ignore'
+```
+
+**Every new suppression is a finding.** For each one:
+- Does it have a specific error code? (`# noqa: F401` not `# noqa`)
+- Does it have a justification comment?
+- Was the user asked before adding it? (Check PR comments/commit messages)
+- Can the underlying issue be fixed instead?
+
+Flag unjustified suppressions as **HIGH severity** — they indicate the engineer took a shortcut instead of fixing the code.
 
 #### 3A: Exception Handling Inventory
 
@@ -997,7 +1025,7 @@ VERDICT: [ ] PASS  [ ] FAIL — logging issues documented above
 SE Self-Review items SE should have verified:
 - [ ] Plan's Implementation Checklist completed?
 - [ ] Exception chaining (raise ... from err)?
-- [ ] Formatting tools run (black)?
+- [ ] Formatting tools run (ruff format)?
 - [ ] Log messages have entity IDs in extra={}?
 - [ ] No narration comments?
 - [ ] Production necessities (timeouts, retries, validation)?
@@ -1206,6 +1234,15 @@ For each acceptance criterion in the ticket:
 2. Verify the implementation matches the requirement EXACTLY
 3. Flag any gaps or deviations
 
+### Step 10.5: Domain Compliance (if domain model available)
+
+If `domain_model.json` or `domain_model.md` was loaded in Step 1:
+
+1. **Ubiquitous language audit**: For each domain term in the model, grep for it in changed files. Flag any code that uses synonyms or abbreviations instead of the canonical term.
+2. **Invariant implementation check**: For each invariant in the model, verify it is enforced in code. Flag missing invariant checks.
+3. **Aggregate boundary check**: Verify that no code reaches across aggregate boundaries (e.g., directly modifying entities that belong to a different aggregate root).
+4. **SE autonomous decisions audit** (pipeline mode): If `se_backend_output.json` contains `autonomous_decisions`, review each Tier 2 decision for correctness. Flag questionable choices.
+
 ### Step 11: Report
 
 Provide a structured review:
@@ -1234,6 +1271,7 @@ Provide a structured review:
 - [ ] Comment Quality: PASS/FAIL
 - [ ] Log Message Quality: PASS/FAIL
 - [ ] SE Self-Review Verification: PASS/FAIL
+- [ ] Lint Discipline: PASS/FAIL
 - [ ] Visibility Rules: PASS/FAIL
 
 ## Counter-Evidence Hunt Results
@@ -1293,7 +1331,7 @@ Provide a structured review:
 - [ ] Branch 3 (remove code): ✅/❌
 
 ## Formatting Issues
-- [ ] file.py - Changed lines not formatted with black
+- [ ] file.py - Changed lines not formatted with ruff format
 - [ ] file.py:23 - Wrong comment spacing (need two spaces before #)
 
 ## Questions for Developer
@@ -1393,7 +1431,7 @@ Apply the Prime Directive — code should reduce complexity, not increase it:
 - Implementation details in library docstrings (step-by-step behavior, internal flags)
 
 **Medium-Priority (Formatting)**
-- Changed lines not formatted with `black`
+- Changed lines not formatted with `ruff format`
 - Wrong comment spacing (must be `code  # comment` with two spaces)
 
 ## When to Escalate
@@ -1493,6 +1531,24 @@ Factor known recurring issues into your review — check if the same patterns re
 >
 > Say **'commit'** to proceed, or provide corrections.
 
+### Pipeline Mode
+
+If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'fix'" or "Say 'commit'"):
+
+**If blocking issues found:**
+> Review complete. Found X blocking, Y important, Z optional issues.
+>
+> **Output**: Review feedback written inline above.
+> **Status**: blocked
+> **Blocking issues**: [list of blocking issues for SE fix loop]
+
+**If no blocking issues:**
+> Review complete. No blocking issues found.
+>
+> **Output**: Review report written inline above.
+> **Status**: complete
+> **Blocking issues**: none
+
 ---
 
 ## Behaviour
@@ -1506,4 +1562,4 @@ Factor known recurring issues into your review — check if the same patterns re
 - **Verify backward compatibility** — flag any breaking changes
 - **Enforce deprecation process** — 3 separate branches, no shortcuts
 - If ticket is ambiguous, flag it and ask for clarification
-- Verify changed lines are formatted with `black`
+- Verify changed lines are formatted with `ruff format`

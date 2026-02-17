@@ -1,5 +1,5 @@
 ---
-description: Run complete development cycle with 4 milestone gates (TPM → Domain → Design → Plan → API → Implement → Test → Review)
+description: Run complete development cycle with 4 milestone gates (TPM → Domain → Model → Design → Plan → API → Implement → Test → Review)
 ---
 
 You are orchestrating a complete development cycle with 4 strategic milestone gates. Agents run autonomously between gates.
@@ -11,22 +11,24 @@ You are orchestrating a complete development cycle with 4 strategic milestone ga
 1. **Setup** — detect feature type, init pipeline state
 2. **TPM** → produces `spec.md` (autonomous)
 3. **Domain Expert** → produces `domain_analysis.md` (autonomous)
-4. **GATE 1** — user approves: "Is this the right problem?"
-5. **Designer** ‖ **Impl Planner** → run in parallel for UI features (autonomous)
-6. **GATE 2** — user picks design direction (skipped for backend-only)
-7. **API Designer** → produces `api_design.md` (autonomous)
-8. **GATE 3** — user approves: "Ready to implement?"
-9. **SE → Tests → Review** → implementation cycle with fix loop (autonomous)
-10. **GATE 4** — user approves: "Ship it?" → Commit/PR
+4. **Domain Modeller** → produces `domain_model.md` (autonomous, skippable for simple domains)
+5. **GATE 1** — user approves: "Is this the right problem and domain model?"
+6. **Designer** ‖ **Impl Planner** → run in parallel for UI features (autonomous)
+7. **GATE 2** — user picks design direction (skipped for backend-only)
+8. **API Designer** → produces `api_design.md` (autonomous)
+9. **GATE 3** — user approves: "Ready to implement?"
+10. **SE → Tests → Review** → implementation cycle with fix loop (autonomous)
+11. **GATE 4** — user approves: "Ship it?" → Commit/PR
 
 </pipeline>
 
 <transitions>
-- Steps 2-3 run autonomously, then pause at Gate 1
-- Steps 5 run in parallel (Designer + Planner) for UI/fullstack; planner-only for backend
+- Steps 2-4 run autonomously (TPM → Domain Expert → Domain Modeller), then pause at Gate 1
+- Domain Modeller is skipped when: Cynefin = Clear AND <5 entities in discovery model
+- Steps 6 run in parallel (Designer + Planner) for UI/fullstack; planner-only for backend
 - Gate 2 is skipped when feature_type = backend
-- Steps 7 runs autonomously, then pause at Gate 3
-- Step 9 runs the full SE → test → review cycle autonomously (with internal fix loop)
+- Steps 8 runs autonomously, then pause at Gate 3
+- Step 10 runs the full SE → test → review cycle autonomously (with internal fix loop)
 - Gate 4 is the final ship/no-ship decision
 </transitions>
 
@@ -94,6 +96,7 @@ Check for existing `{PROJECT_DIR}/pipeline_state.json`. If found, resume from cu
   "stages": {
     "tpm": { "status": "pending", "output": "spec.md", "approved_at": null },
     "domain_expert": { "status": "pending", "output": "domain_analysis.md", "approved_at": null },
+    "domain_modeller": { "status": "pending", "output": "domain_model.md", "approved_at": null },
     "designer": { "status": "pending", "output": "design.md", "selected_option": null, "approved_at": null },
     "impl_planner": { "status": "pending", "output": "plan.md", "approved_at": null },
     "database_designer": { "status": "pending", "output": "schema_design.md", "approved_at": null },
@@ -116,22 +119,29 @@ Also initialise `{PROJECT_DIR}/decisions.json` if it doesn't exist:
 
 **Update pipeline state** at each phase transition — set stage status to `in_progress` before running agent, `completed` after agent finishes, record `approved_at` when user approves at a gate.
 
-### Phase 1: Problem Definition (autonomous → Gate 1)
+### Phase 1: Problem Definition + Domain Modelling (autonomous → Gate 1)
 
-1. Run `technical-product-manager` agent → produces `spec.md`
+All agents in this phase run with `PIPELINE_MODE=true`.
+
+1. Run `technical-product-manager` agent with `PIPELINE_MODE=true` → produces `spec.md`
 2. Update pipeline state: `tpm.status = "completed"`
-3. Run `domain-expert` agent → produces `domain_analysis.md`
+3. Run `domain-expert` agent with `PIPELINE_MODE=true` → produces `domain_analysis.md`
 4. Update pipeline state: `domain_expert.status = "completed"`
+5. **Domain Modeller decision**: Check `domain_output.json` for `cynefin_classification` and count entities in `discovery_model.entities`:
+   - If Cynefin = `clear` AND entity count < 5 → set `domain_modeller.status = "skipped"`
+   - Otherwise → Run `domain-modeller` agent with `PIPELINE_MODE=true` → produces `domain_model.md`
+6. Update pipeline state: `domain_modeller.status = "completed"` (or `"skipped"`)
 
-**GATE 1** — "Is this the right problem?"
+**GATE 1** — "Is this the right problem and domain model?"
 
-Present summary of spec and domain analysis. Update `current_gate = "G1"`.
+Present summary of spec, domain analysis, and domain model (if produced). Update `current_gate = "G1"`.
 
-> **Gate 1: Problem Validation**
+> **Gate 1: Problem & Domain Validation**
 >
-> Spec and domain analysis complete. Key findings:
+> Spec, domain analysis, and domain model complete. Key findings:
 > - [Summary of personas/goals from spec]
 > - [Summary of validated/invalidated assumptions from domain analysis]
+> - [Summary of bounded contexts and aggregates from domain model, or "Domain model skipped (simple domain)"]
 > - [Any blockers or risks]
 >
 > **[Awaiting your decision]** — Approve to proceed, or provide corrections.
@@ -166,7 +176,7 @@ Update `pipeline_state.json` with `feature_type`.
 | `fullstack` | [Designer ‖ Planner] → G2 → API Designer → G3 | Design options presented |
 
 **For UI / fullstack features:**
-1. Run `designer` agent AND `implementation-planner-{lang}` agent (parallel)
+1. Run `designer` agent AND `implementation-planner-{lang}` agent (parallel, both with `PIPELINE_MODE=true`)
 2. Designer presents 3-5 design options
 3. Update pipeline state: `designer.status = "completed"`, `impl_planner.status = "completed"`
 
@@ -182,7 +192,7 @@ Record chosen option in `decisions.json` and `pipeline_state.json` (`designer.se
 On approval, Designer develops full spec for selected option autonomously.
 
 **For backend features:**
-1. Run `implementation-planner-{lang}` agent
+1. Run `implementation-planner-{lang}` agent with `PIPELINE_MODE=true`
 2. Update pipeline state: `impl_planner.status = "completed"`
 3. Skip G2 entirely, proceed to API Designer
 
@@ -190,10 +200,11 @@ On approval, Designer develops full spec for selected option autonomously.
 
 **Check plan for work streams**: Read `plan_output.json` for `work_streams`. If a schema stream exists, run database designer first.
 
-1. **If plan has schema work stream**: Run `database-designer` agent → produces `schema_design.md` + migrations
+1. **If plan has schema work stream**: Run `database-designer` agent with `PIPELINE_MODE=true` → produces `schema_design.md` + migrations
+   - Pass domain model context: include `domain_model.json` / `domain_model.md` path so database designer can align table/column names with ubiquitous language and respect aggregate boundaries
    - Update pipeline state: `database_designer.status = "completed"`
    - Otherwise: set `database_designer.status = "skipped"`
-2. Run `api-designer` agent → produces `api_design.md` + spec files
+2. Run `api-designer` agent with `PIPELINE_MODE=true` → produces `api_design.md` + spec files
    - Update pipeline state: `api_designer.status = "completed"`
 
 **GATE 3** — "Ready to implement?"
@@ -229,19 +240,26 @@ Record decision in `decisions.json`. On approval, update `current_gate = "none"`
 **If no work streams** (backward compatible) — use default sequential:
 1. Run backend SE → frontend SE (if fullstack)
 
+**PIPELINE_MODE**: All agents in Phase 4 run with `PIPELINE_MODE=true` in their prompt. This means:
+- Agents make Tier 2 decisions autonomously (logged in `autonomous_decisions` in structured output)
+- Agents return structured results instead of asking "Say 'continue'"
+- Only Tier 3 decisions escalate to user (genuine blockers)
+
+See `agent-communication` skill — Pipeline Mode section for full behavior differences.
+
 **Detailed execution:**
 
 1. **Backend implementation** (if applicable):
-   - Run `software-engineer-{lang}` agent → implements backend
+   - Run `software-engineer-{lang}` agent with `PIPELINE_MODE=true` → implements backend, writes `se_backend_output.json`
    - Update pipeline state: `software_engineer_backend.status = "completed"`
 
 2. **Frontend implementation** (if applicable, can run in parallel with backend when API contract exists):
-   - Run `software-engineer-frontend` agent → implements frontend
+   - Run `software-engineer-frontend` agent with `PIPELINE_MODE=true` → implements frontend, writes `se_frontend_output.json`
    - Update pipeline state: `software_engineer_frontend.status = "completed"`
    - For `backend`-only features: set `software_engineer_frontend.status = "skipped"`
 
 3. **Observability** (if work stream exists, can run in parallel with implementation):
-   - Run `observability-engineer` agent → dashboards and alerts
+   - Run `observability-engineer` agent with `PIPELINE_MODE=true` → dashboards and alerts
    - Update pipeline state: `observability_engineer.status = "completed"`
    - If no observability stream: set `observability_engineer.status = "skipped"`
 
@@ -252,8 +270,9 @@ Record decision in `decisions.json`. On approval, update `current_gate = "none"`
 If `auto_commit` is `false`, skip — changes stay unstaged/uncommitted until user commits.
 
 4. **Testing**:
-   - Run `unit-test-writer-{lang}` agent → writes backend tests
-   - Run `unit-test-writer-frontend` agent → writes frontend tests (if frontend exists)
+   - Run `unit-test-writer-{lang}` agent with `PIPELINE_MODE=true` → writes backend tests
+   - Run `unit-test-writer-frontend` agent with `PIPELINE_MODE=true` → writes frontend tests (if frontend exists)
+   - Test writers read `se_backend_output.json` / `se_frontend_output.json` to target untested areas
    - Run all tests to verify they pass
    - Update pipeline state: `test_writer.status = "completed"`
 
@@ -263,7 +282,8 @@ If `auto_commit` is `false`, skip — changes stay unstaged/uncommitted until us
 ```
 
 5. **Review**:
-   - Run `code-reviewer-{lang}` agent → reviews implementation
+   - Run `code-reviewer-{lang}` agent with `PIPELINE_MODE=true` → reviews implementation
+   - Code reviewer reads `se_backend_output.json` / `se_frontend_output.json` to audit `domain_compliance` and `autonomous_decisions`
    - Update pipeline state: `code_reviewer.status = "completed"`
 
 **If reviewer finds blocking issues:**
@@ -361,8 +381,9 @@ Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 ## Notes
 
 - The pipeline pauses only at 4 strategic gates, not after every agent
-- Agents run autonomously between gates
-- Individual commands (`/implement`, `/test`, `/review`) still use per-step approval
+- Agents run autonomously between gates with `PIPELINE_MODE=true` — they make Tier 2 decisions autonomously, log them in structured output, and return results without prompting
+- Individual commands (`/implement`, `/test`, `/review`) still use per-step approval (interactive mode)
+- SE agents write per-role output files (`se_backend_output.json`, `se_frontend_output.json`) to avoid conflicts during parallel execution
 - Pipeline state persists in `pipeline_state.json` — resume with `/full-cycle` if interrupted
 - Decisions are logged in `decisions.json` for audit trail
 - Use `stop` at any time to exit

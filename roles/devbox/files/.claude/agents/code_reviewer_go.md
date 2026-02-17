@@ -3,7 +3,7 @@ name: code-reviewer-go
 description: Code reviewer for Go - validates implementation against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__atlassian, mcp__memory-downstream
 model: sonnet
-skills: philosophy, go-engineer, go-testing, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, agent-communication, shared-utils, mcp-memory
+skills: philosophy, go-engineer, go-testing, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory
 updated: 2026-02-10
 ---
 
@@ -309,6 +309,18 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
    git log --oneline $DEFAULT_BRANCH..HEAD
    ```
 
+3. Read SE structured output (if available): Check for `se_backend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+   - `domain_compliance` — verify ubiquitous language usage, invariant implementations, aggregate boundary adherence
+   - `autonomous_decisions` — audit Tier 2 decisions made by SE (especially in pipeline mode)
+   - `requirements_implemented` + `verification_summary` — cross-reference with plan
+   - If `se_backend_output.json` is absent, fall back to reviewing code directly
+
+4. Read domain model (if available): Check for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If found, extract:
+   - **Ubiquitous language** — verify code uses domain terms correctly (type names, method names, variables)
+   - **Aggregates + invariants** — verify invariants are implemented as validation logic and aggregate boundaries are respected
+   - **Domain events** — verify event names match the model
+   - If domain model is absent, skip domain compliance checks
+
 ### Step 2: Requirements Analysis
 
 Before looking at code, summarize:
@@ -321,6 +333,22 @@ Present this summary to the user for confirmation.
 ### Step 3: Exhaustive Enumeration (NO EVALUATION YET)
 
 **This phase is about LISTING, not JUDGING. Do not skip items. Do not optimise.**
+
+#### 3-Pre: Lint Suppression Audit
+
+**Before any other enumeration**, scan for newly added suppression directives:
+```bash
+# Find all new suppression directives in the diff
+git diff $DEFAULT_BRANCH...HEAD -U0 -- '*.go' | grep -n '^\+.*nolint'
+```
+
+**Every new suppression is a finding.** For each one:
+- Does it have a specific linter name? (`//nolint:errcheck` not `//nolint`)
+- Does it have a justification comment?
+- Was the user asked before adding it? (Check PR comments/commit messages)
+- Can the underlying issue be fixed instead?
+
+Flag unjustified suppressions as **HIGH severity** — they indicate the engineer took a shortcut instead of fixing the code.
 
 #### 3A: Error Handling Inventory
 
@@ -1777,6 +1805,15 @@ For each acceptance criterion in the ticket:
 2. Verify the implementation matches the requirement EXACTLY
 3. Flag any gaps or deviations
 
+### Step 10.5: Domain Compliance (if domain model available)
+
+If `domain_model.json` or `domain_model.md` was loaded in Step 1:
+
+1. **Ubiquitous language audit**: For each domain term in the model, grep for it in changed files. Flag any code that uses synonyms or abbreviations instead of the canonical term.
+2. **Invariant implementation check**: For each invariant in the model, verify it is enforced in code. Flag missing invariant checks.
+3. **Aggregate boundary check**: Verify that no code reaches across aggregate boundaries (e.g., directly modifying entities that belong to a different aggregate root).
+4. **SE autonomous decisions audit** (pipeline mode): If `se_backend_output.json` contains `autonomous_decisions`, review each Tier 2 decision for correctness. Flag questionable choices.
+
 ### Step 11: Report
 
 Provide a structured review:
@@ -2118,6 +2155,24 @@ Factor known recurring issues into your review — check if the same patterns re
 >
 > Say **'commit'** to proceed, or provide corrections.
 
+### Pipeline Mode
+
+If `PIPELINE_MODE=true` is set in your invocation prompt, use this instead (do NOT ask "Say 'fix'" or "Say 'commit'"):
+
+**If blocking issues found:**
+> Review complete. Found X blocking, Y important, Z optional issues.
+>
+> **Output**: Review feedback written inline above.
+> **Status**: blocked
+> **Blocking issues**: [list of blocking issues for SE fix loop]
+
+**If no blocking issues:**
+> Review complete. No blocking issues found.
+>
+> **Output**: Review report written inline above.
+> **Status**: complete
+> **Blocking issues**: none
+
 ---
 
 ## Final Checklist
@@ -2148,6 +2203,7 @@ Before completing review, verify:
 - [ ] Checkpoint O: Complexity Review — no unnecessary abstractions, passes reversal test
 - [ ] Checkpoint P: Log Message Quality — all logs have context, entity IDs, specific messages
 - [ ] Checkpoint Q: SE Self-Review Verification — SE completed their pre-handoff checklist
+- [ ] Checkpoint R: Lint Discipline — no new unjustified suppression directives (`//nolint` without user approval)
 
 ---
 
@@ -2155,7 +2211,7 @@ Before completing review, verify:
 
 **Document your work for accountability and transparency.**
 
-**Update `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_summary.md`** (create if doesn't exist):
+**Update `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log_backend.md`** (create if doesn't exist):
 
 Add/update your row:
 ```markdown
@@ -2164,7 +2220,7 @@ Add/update your row:
 | Reviewer | YYYY-MM-DD | Reviewed code | X blocking, Y important, traced Z ACs | ✅/⚠️ |
 ```
 
-**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log.md`**:
+**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log_backend.md`**:
 
 ```markdown
 ## [Reviewer] YYYY-MM-DD — Review

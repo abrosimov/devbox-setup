@@ -44,6 +44,9 @@ make check-dev       # dry-run in dev_mode (uses test vault, no sudo)
 
 # Vault management
 make vault-init      # create and encrypt vault/devbox_ssh_config.yml
+
+# Claude Code config validation
+make validate-claude # validate agent/skill library cross-references
 ```
 
 ## Architecture
@@ -64,7 +67,7 @@ Everything lives in one role. No multi-role orchestration.
 
 ### Configuration Deployment (`install_configs.yml`)
 
-**Clean-before-deploy**: Before deploying, managed `.claude/` subdirectories (`agents`, `commands`, `skills`, `bin`, `docs`) and root files (`CLAUDE.md`, `settings.json`, `hooks.json`) are deleted. This ensures files removed from the repo are also removed from the user's config. `settings.local.json` is preserved (user permissions).
+**Clean-before-deploy**: Before deploying, managed `.claude/` subdirectories (`agents`, `commands`, `skills`, `bin`, `docs`, `templates`) and root files (`CLAUDE.md`, `settings.json`, `hooks.json`, `config.md`) are deleted. This ensures files removed from the repo are also removed from the user's config. `settings.local.json` is preserved (user permissions).
 
 **Filetree mirroring**: Uses `community.general.filetree` to mirror `roles/devbox/files/` to the target directory:
 - Regular files → copied directly
@@ -87,6 +90,7 @@ Registered via `claude mcp add` with user scope.
 - `devbox_paths.dotfiles_root_dir` — target for deployment (`~` normally, `../debug/dotfiles` in dev_mode)
 - `devbox_user.login` — username for user configuration
 - `dev_mode` — when true, deploys to debug directory
+- `devbox_shell.env` / `path_prepend` / `path_append` / `path_conditional` — single source of truth for shell environment. Templates for fish (`_init_env.fish.j2`, `_init_path.fish.j2`) and bash (`.bashrc.j2`) iterate these lists, so adding a path here updates both shells.
 
 ### Claude Code Config (in `roles/devbox/files/.claude/`)
 
@@ -94,11 +98,35 @@ Registered via `claude mcp add` with user scope.
 |------|---------|-------------|
 | `CLAUDE.md` | User Authority Protocol | `~/.claude/CLAUDE.md` |
 | `settings.json` | Default permissions (allow/deny) | `~/.claude/settings.json` |
-| `agents/*.md` | Agent definitions | `~/.claude/agents/` |
-| `commands/*.md` | Slash commands (/implement, /test, etc.) | `~/.claude/commands/` |
-| `skills/*/SKILL.md` | Reusable knowledge modules | `~/.claude/skills/` |
-| `bin/*` | Helper scripts (MCP wrappers, etc.) | `~/.claude/bin/` |
+| `hooks.json` | Pre/post tool-call hooks | `~/.claude/hooks.json` |
+| `agents/*.md` | Agent definitions (33 agents) | `~/.claude/agents/` |
+| `commands/*.md` | Slash commands — 19 (/implement, /test, /guide, etc.) | `~/.claude/commands/` |
+| `skills/*/SKILL.md` | Reusable knowledge modules (79 skills) | `~/.claude/skills/` |
+| `bin/*` | Helper scripts (MCP wrappers, hooks, etc.) | `~/.claude/bin/` |
+| `templates/` | Reusable project templates (devcontainer) | `~/.claude/templates/` |
 | `docs/` | Reference documentation | `~/.claude/docs/` |
+
+### Devcontainer Template (`templates/devcontainer/`)
+
+A reusable Docker sandbox for Claude Code with network-level isolation:
+
+- `domains.conf` — domain allowlist for the egress firewall (aligned with `settings.json` sandbox domains)
+- `init-firewall.sh` — iptables + ipset default-deny firewall, runs as `postStartCommand`
+- `Dockerfile` — `node:20-bookworm` base with conditional language install via `INSTALL_GO`, `INSTALL_PYTHON`, `INSTALL_RUST`, `INSTALL_OCAML` build args
+- `devcontainer.json` — `NET_ADMIN`/`NET_RAW` caps, host `settings.json` bind-mounted read-only, named volume for shell history
+
+Use via `/devcontainer init` (Claude Code command) or `claude-devcontainer init` (CLI).
+
+## Editing Claude Code Config
+
+When working in `roles/devbox/files/.claude/` you are editing files that get deployed to `~/.claude/`. This is a distinct activity from editing the Ansible playbook itself:
+
+- **Agent/skill/command changes** don't need `make run` — test by copying files directly to `~/.claude/` or symlinking
+- **`settings.json` changes** affect sandbox permissions, network allowlists, and tool approvals globally
+- **`hooks.json` changes** define pre/post hooks for tool calls (scripts in `bin/`)
+- **`templates/` changes** affect devcontainer scaffolding for new projects
+- Run `make validate-claude` to check cross-references between agents, skills, and commands
+- The `CLAUDE.md` in `roles/devbox/files/.claude/` is the **User Authority Protocol** — it governs all Claude Code sessions globally, not just this project
 
 ## Dependencies
 

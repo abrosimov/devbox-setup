@@ -61,6 +61,16 @@ Based on detected stack/architecture:
 - **Python (Flask monolith)**: Use `implementation-planner-python-monolith` agent
 - **Frontend-only** (no backend markers): Use `implementation-planner-go` or `-python` as generic planner — include frontend context
 
+**IMPORTANT**: When invoking the Task tool, always pass the `model` parameter explicitly. The Task tool inherits the parent's model by default — without an explicit `model` parameter, the agent runs on the parent's model, ignoring the agent frontmatter.
+
+```
+Task(
+  subagent_type: "implementation-planner-{go|python|python-monolith}",
+  model: "sonnet",
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\nStack: {backend|frontend|fullstack}\nFrontend stack: {Next.js|Vite|etc.}\n\n{task description}"
+)
+```
+
 **Include in agent prompt**:
 ```
 Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}

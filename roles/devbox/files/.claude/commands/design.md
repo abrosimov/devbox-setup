@@ -34,6 +34,16 @@ If no documents exist, the designer will work from user requirements directly.
 
 Use the `designer` agent.
 
+**IMPORTANT**: When invoking the Task tool, always pass `model: "opus"` explicitly. The Task tool inherits the parent's model by default — without an explicit `model` parameter, the agent runs on the parent's model (often Sonnet), ignoring the agent frontmatter.
+
+```
+Task(
+  subagent_type: "designer",
+  model: "opus",
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\n\n{task description}"
+)
+```
+
 **Include in agent prompt**: `Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}`
 
 The agent will:

@@ -273,6 +273,7 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 
 3. Read SE structured output (if available): Check for `se_frontend_output.json` in `{PROJECT_DIR}/`. If found, extract:
    - `domain_compliance` — verify ubiquitous language usage in component names, props, state variables
+   - `design_compliance` — verify SE's self-reported design compliance (props match, states match, tokens used, a11y match)
    - `autonomous_decisions` — audit Tier 2 decisions made by SE (especially in pipeline mode)
    - `requirements_implemented` + `verification_summary` — cross-reference with plan
    - If `se_frontend_output.json` is absent, fall back to reviewing code directly
@@ -282,7 +283,10 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
    - **Domain events** — verify callback/handler names match event names from the model
    - If domain model is absent, skip domain compliance checks
 
-5. Read design artifacts (if available): Check for `design_output.json` in `{PROJECT_DIR}/`. If found, extract `figma_source` to verify implementation matches design via `mcp__figma__get_screenshot`.
+5. Read design artifacts (if available): Check `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/` for:
+   - `design.md` — extract component specs (props, variants, states), accessibility plan, responsive behaviour tables, existing component reuse table
+   - `design_system.tokens.json` — W3C design tokens; use to verify implementation uses tokens not hardcoded values
+   - `design_output.json` — extract `figma_source` to verify implementation matches design via `mcp__figma__get_screenshot`
 
 6. Read spec/plan/design documents if they exist:
    ```bash
@@ -803,6 +807,45 @@ Features in plan NOT traceable to spec: ___
   List with plan line numbers: ___
 Features in spec MISSING from plan: ___
   List: ___
+```
+
+**Implementation vs Design (if design.md exists):**
+```
+Component spec compliance:
+  Components in design spec: ___
+  Components implemented with matching props: ___
+  Components with missing/extra props: ___
+    List: ___
+  Components with missing states (hover, focus, disabled, loading, error): ___
+    List: ___
+
+Design token compliance:
+  Hardcoded colours found (should use tokens): ___
+    List with line numbers: ___
+  Hardcoded spacing found (should use tokens): ___
+    List: ___
+  Hardcoded typography found (should use tokens): ___
+    List: ___
+
+Accessibility plan compliance:
+  A11y items in design spec: ___
+  A11y items implemented: ___
+  A11y items missing: ___
+    List: ___
+
+Responsive behaviour compliance:
+  Breakpoints in design spec: ___
+  Breakpoints implemented: ___
+  Breakpoints missing/wrong: ___
+    List: ___
+
+Component reuse compliance:
+  Components designer said to reuse: ___
+  Actually reused: ___
+  New components created that could have been reused: ___
+    List: ___
+
+VERDICT: [ ] PASS  [ ] FAIL  [ ] N/A (no design.md)
 ```
 
 **Implementation vs Plan:**

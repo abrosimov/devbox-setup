@@ -422,16 +422,31 @@ When invoking agents via commands, the model is determined by this precedence (h
 |----------|--------|---------|
 | 1 (highest) | User explicit argument | `/implement opus` |
 | 2 | Complexity check at command level | Plan >200 lines → opus (requires `complexity_escalation: true` in `workflow.json`) |
-| 3 | Agent frontmatter default | `model: sonnet` |
+| 3 | Agent frontmatter default | `model: sonnet` or `model: opus` |
+
+**CRITICAL — `model` must be passed explicitly:**
+- The Task tool **inherits the parent conversation's model** when no `model` parameter is given
+- Agent frontmatter `model` field defines the agent's **intended** model but does NOT override inheritance
+- Therefore, every command MUST pass `model` explicitly in the Task invocation
+- Without explicit `model`, an agent with `model: opus` in frontmatter will run on the parent's model (typically Sonnet)
 
 **How it works:**
-- Commands (`/implement`, `/test`, `/review`) pass the `model` parameter to the `Task` tool
-- The `Task` tool's `model` parameter **overrides** the agent frontmatter `model` field
-- If no model is specified by command or user, the agent frontmatter default applies
-- Agents invoked directly (not via commands) always use their frontmatter model
+- Commands pass the `model` parameter to the `Task` tool — this is the **only reliable** way to set the agent's model
+- If user specified model → use that (Priority 1)
+- If complexity check determined model → use that (Priority 2)
+- Otherwise → use the agent's frontmatter `model` value (Priority 3) — but you must still pass it explicitly
 
-**Agents with complexity awareness:**
+**Reference — agent frontmatter models:**
+
+| Model | Agents |
+|-------|--------|
+| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer |
+| `sonnet` | All software-engineer-*, implementation-planner-*, unit-test-writer-*, code-reviewer-*, observability-engineer, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
+
+**Agents with complexity awareness** (sonnet default, escalate to opus via complexity check):
 - `software-engineer-go` / `software-engineer-python` / `software-engineer-frontend` — via `/implement` command
+- `unit-test-writer-*` — via `/test` command
+- `code-reviewer-*` — via `/review` command
 - `observability-engineer` — self-assessed complexity check
 
 ## Key Conventions

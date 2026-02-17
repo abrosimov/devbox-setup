@@ -1,0 +1,38 @@
+{
+  "name": "Claude Code Sandbox",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "INSTALL_GO": "false",
+      "INSTALL_PYTHON": "false",
+      "INSTALL_RUST": "false",
+      "INSTALL_OCAML": "false"
+    }
+  },
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW",
+    "--hostname=claude-sandbox"
+  ],
+  "remoteUser": "node",
+  "containerUser": "node",
+  "mounts": [
+    "source=${localEnv:HOME}/.claude/settings.json,target=/home/node/.claude/settings.json,type=bind,readonly",
+    "source=claude-shell-history,target=/home/node/.shell_history,type=volume"
+  ],
+  "containerEnv": {
+    "GOPATH": "/home/node/go",
+    "CARGO_HOME": "/home/node/.cargo",
+    "UV_CACHE_DIR": "/home/node/.cache/uv",
+    "HISTFILE": "/home/node/.shell_history/.zsh_history",
+    "SHELL": "/usr/bin/zsh"
+  },
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      }
+    }
+  }
+}

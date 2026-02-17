@@ -199,8 +199,20 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
    - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
-4. **Check for design**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/design.md`
-5. **Check for Figma source**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/design_output.json` — if it exists, read `figma_source` for the Figma file URL/key. Use `mcp__figma__get_design_context` and `mcp__figma__get_screenshot` to verify implementation against the original design.
+4. **Consume design artifacts** (if available): Look for design files in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If none exist, proceed without — design is optional.
+   - **`design.md`** — Primary design spec. Extract and follow:
+     - **Component specs** (Props, Variants, States, Interactions) — implement each component exactly as specified; do not invent props or skip variants
+     - **Accessibility plan** (keyboard nav, screen reader, ARIA, contrast) — these are requirements, not suggestions
+     - **Responsive behaviour tables** — implement breakpoint changes as documented
+     - **Existing Component Reuse table** — reuse listed components before creating new ones
+     - **FigJam diagram URLs** (user flows, state machines) — reference for interaction behaviour and state transitions
+   - **`design_system.tokens.json`** — W3C Design Tokens. Map to implementation:
+     - If project uses CSS custom properties → map tokens to `--token-name` variables
+     - If project uses a theme object (e.g., Tailwind, Stitches, vanilla-extract) → map tokens to theme config
+     - If project has no token system yet → create one from this file; do not hardcode raw values
+     - Colour, spacing, typography, shadow, radius, breakpoint, and z-index tokens MUST come from this file — never invent values
+   - **`design_output.json`** — Structured output. Read `figma_source` for the Figma file URL/key and `figma_artifacts` for diagram URLs
+5. **Verify against Figma source** (if `design_output.json` has `figma_source`): Use `mcp__figma__get_design_context` and `mcp__figma__get_screenshot` to compare implementation against the original design. Flag visual discrepancies before completing.
 6. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. Extract:
    - **Ubiquitous language** — use these exact terms in component names, props, state variables
    - **Domain events** — use event names from model when naming callbacks and handlers
@@ -215,7 +227,17 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
     | FR | AC | Status | Evidence |
     |----|-----|--------|----------|
     ```
-11. **Write structured output**: Write `se_frontend_output.json` to `{PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
+    If `design.md` exists, also verify design compliance:
+    ```
+    ## Design Compliance Summary
+    | Component | Props Match | States Match | A11y Match | Tokens Used | Notes |
+    |-----------|-------------|--------------|------------|-------------|-------|
+    ```
+    - **Props Match**: All props from design spec are implemented with correct types
+    - **States Match**: All states (default, hover, active, focus, disabled, loading, error) are handled
+    - **A11y Match**: Accessibility plan items (ARIA, keyboard, screen reader) are implemented
+    - **Tokens Used**: Component uses design tokens, not hardcoded values
+11. **Write structured output**: Write `se_frontend_output.json` to `{PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `design_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
 12. **Write work log**: Write `work_log_frontend.md` to `{PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
 13. **Format**: Use Prettier for formatting, ESLint for linting
 
@@ -398,6 +420,15 @@ See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-m
 - [ ] All items in plan's "Implementation Checklist" verified
 - [ ] Each acceptance criterion manually tested
 - [ ] All error cases from plan handled
+
+### From Design (if design.md exists)
+- [ ] Every component in design spec is implemented with matching props and variants
+- [ ] All component states (hover, focus, disabled, loading, error) handled per spec
+- [ ] Responsive breakpoint behaviour matches design tables
+- [ ] Design tokens used throughout — no hardcoded colours, spacing, typography, shadows
+- [ ] Accessibility plan implemented: ARIA roles, keyboard navigation, screen reader announcements
+- [ ] Existing components reused per "Existing Component Reuse" table before creating new ones
+- [ ] User flow behaviour matches FigJam diagrams (if provided)
 
 ### Comment Audit (DO THIS FIRST)
 - [ ] I have NOT added any comments like `// Render`, `// Handle`, `// Map`, `// Set`, `// Check`

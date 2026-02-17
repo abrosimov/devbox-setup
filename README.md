@@ -1,48 +1,84 @@
 # devbox-setup
-- [x] change paths to j2 and use variables there.
-- [x] Then test it on local laptop
-- [ ] Set `devbox_paths.dotfiles_root_dir` to valid path, e.g. `~`.
-- [ ] Linux should be supported too.
-- [x] Dev-mode with `devbox_paths.dotfiles_root_dir` set to some dir, useful in local development and tests
-- [ ] Partially applying tasks. We don't need to rune all operations if dotfiles have changed, or new software for brew, etc.
-- [ ] Write Makefile for creating and encrypting vault file with ssh password.
-- [ ] Move `prepare_user` and `install_configs` tasks to common directory.
-- [ ] Then ensure .gitconfig, etc.
-- [ ] Write tests
-- [ ] Write CI for GH Actions.
-- [ ] Install `sudo softwareupdate --install-rosetta`
 
-# Additional packages
-- jq
-- yq
-- perf
-- pprof
+Ansible-based developer workstation setup. Automates installation of packages, dotfiles, shell config, and Claude Code agent infrastructure.
 
-# Supported OS
-- macOS (Darwin)
-- Ubuntu (Linux) — current Linux support is Ubuntu-only.
+## Supported OS
 
-## Quick start
-- `make run` - full run
-- `make dev` - run in dev_mode (useful for local testing with overridden dotfiles path)
-- `make run V=2` - increase verbosity (use V=1..4)
+- macOS (Darwin) — primary target
+- Ubuntu (Linux) — Ubuntu-only
 
-## Partial runs via tags (Makefile)
-- `make packages` - run only package installation phases
-- `make configs` - apply configuration files only
-- `make user` - user setup and shell polishing only
-- `make dev-packages` - packages phase in dev_mode
-- `make dev-configs` - configs phase in dev_mode
-- `make dev-user` - user phase in dev_mode
-- `make run TAGS="packages,configs"` - custom set of tags
-- `make dev TAGS="configs"` - run only configs in dev_mode
+## Quick Start
 
-## Local overlay
+```bash
+# Bootstrap (macOS only — installs Homebrew, Ansible, collections)
+make init
 
-Laptop-only files that should not be committed to the repository go into `roles/devbox/local/`. This directory is gitignored and mirrors the same structure as `roles/devbox/files/`. Files placed there are deployed **after** the main `files/` pass, so they can add new files or override repo-managed ones.
+# Full run (prompts for vault password and sudo)
+make run
 
-Example: a fish function with a private path
+# Development mode — deploys to ../debug/dotfiles instead of ~
+make dev
+
+# Increase verbosity (V=1 through V=4)
+make run V=2
+```
+
+## Partial Runs via Tags
+
+```bash
+make packages                  # package installation only
+make configs                   # configuration files only
+make user                      # user setup and shell config only
+
+make dev-packages              # packages phase in dev_mode
+make dev-configs               # configs phase in dev_mode
+make dev-user                  # user phase in dev_mode
+
+make run TAGS="packages,configs"  # custom tag combination
+make dev TAGS="configs"           # custom tags in dev_mode
+```
+
+## Linting and Dry-Run
+
+```bash
+make lint       # syntax-check + ansible-lint
+make check      # dry-run (check mode, prompts for vault+sudo)
+make check-dev  # dry-run in dev_mode (uses test vault, no sudo)
+```
+
+## Vault
+
+```bash
+make vault-init  # create and encrypt vault/devbox_ssh_config.yml
+```
+
+## Local Overlay
+
+Laptop-only files that should not be committed go into `roles/devbox/local/`. This directory is gitignored and mirrors the structure of `roles/devbox/files/`. Files are deployed **after** the main pass, so they can add new files or override repo-managed ones.
+
 ```
 roles/devbox/local/.config/fish/functions/kstg.fish
+→ deployed to ~/.config/fish/functions/kstg.fish
 ```
-gets deployed to `~/.config/fish/functions/kstg.fish` without ever appearing in git.
+
+## Claude Code Config
+
+This repo also manages the global Claude Code configuration deployed to `~/.claude/`:
+
+- **33 agents** — specialised subagents (software engineers, reviewers, planners, etc.)
+- **79 skills** — reusable knowledge modules (Go, Python, frontend, DDD, security, etc.)
+- **19 commands** — slash commands (`/implement`, `/test`, `/review`, `/devcontainer`, `/guide`, etc.)
+- **Hooks** — pre/post tool-call guards (sandbox, formatting, linting)
+- **MCP servers** — sequential thinking, playwright, memory graph, figma
+- **Devcontainer template** — Docker sandbox with iptables egress firewall for isolated agent runs
+
+```bash
+make validate-claude  # validate agent/skill library cross-references
+```
+
+## TODO
+
+- [ ] Move `prepare_user` and `install_configs` tasks to common directory
+- [ ] Write tests
+- [ ] Write CI for GitHub Actions
+- [ ] Install Rosetta automatically (`sudo softwareupdate --install-rosetta`)

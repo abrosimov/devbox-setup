@@ -123,13 +123,24 @@ Also initialise `{PROJECT_DIR}/decisions.json` if it doesn't exist:
 
 All agents in this phase run with `PIPELINE_MODE=true`.
 
+**CRITICAL — Model Selection**: The Task tool inherits the parent's model by default. You MUST pass `model` explicitly on every Task invocation, otherwise opus agents silently run on the parent's model (often Sonnet). Use the model values shown below.
+
 1. Run `technical-product-manager` agent with `PIPELINE_MODE=true` → produces `spec.md`
+   ```
+   Task(subagent_type: "technical-product-manager", model: "opus", prompt: "PIPELINE_MODE=true\nContext: BRANCH=..., JIRA_ISSUE=..., BRANCH_NAME=...\n\n...")
+   ```
 2. Update pipeline state: `tpm.status = "completed"`
 3. Run `domain-expert` agent with `PIPELINE_MODE=true` → produces `domain_analysis.md`
+   ```
+   Task(subagent_type: "domain-expert", model: "opus", prompt: "PIPELINE_MODE=true\nContext: BRANCH=..., JIRA_ISSUE=..., BRANCH_NAME=...\n\n...")
+   ```
 4. Update pipeline state: `domain_expert.status = "completed"`
 5. **Domain Modeller decision**: Check `domain_output.json` for `cynefin_classification` and count entities in `discovery_model.entities`:
    - If Cynefin = `clear` AND entity count < 5 → set `domain_modeller.status = "skipped"`
-   - Otherwise → Run `domain-modeller` agent with `PIPELINE_MODE=true` → produces `domain_model.md`
+   - Otherwise → Run `domain-modeller` agent:
+     ```
+     Task(subagent_type: "domain-modeller", model: "opus", prompt: "PIPELINE_MODE=true\nContext: BRANCH=..., JIRA_ISSUE=..., BRANCH_NAME=...\n\n...")
+     ```
 6. Update pipeline state: `domain_modeller.status = "completed"` (or `"skipped"`)
 
 **GATE 1** — "Is this the right problem and domain model?"
@@ -176,7 +187,11 @@ Update `pipeline_state.json` with `feature_type`.
 | `fullstack` | [Designer ‖ Planner] → G2 → API Designer → G3 | Design options presented |
 
 **For UI / fullstack features:**
-1. Run `designer` agent AND `implementation-planner-{lang}` agent (parallel, both with `PIPELINE_MODE=true`)
+1. Run `designer` agent AND `implementation-planner-{lang}` agent in parallel (both with `PIPELINE_MODE=true`):
+   ```
+   Task(subagent_type: "designer", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   Task(subagent_type: "implementation-planner-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   ```
 2. Designer presents 3-5 design options
 3. Update pipeline state: `designer.status = "completed"`, `impl_planner.status = "completed"`
 
@@ -192,7 +207,10 @@ Record chosen option in `decisions.json` and `pipeline_state.json` (`designer.se
 On approval, Designer develops full spec for selected option autonomously.
 
 **For backend features:**
-1. Run `implementation-planner-{lang}` agent with `PIPELINE_MODE=true`
+1. Run `implementation-planner-{lang}` agent:
+   ```
+   Task(subagent_type: "implementation-planner-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   ```
 2. Update pipeline state: `impl_planner.status = "completed"`
 3. Skip G2 entirely, proceed to API Designer
 
@@ -200,11 +218,17 @@ On approval, Designer develops full spec for selected option autonomously.
 
 **Check plan for work streams**: Read `plan_output.json` for `work_streams`. If a schema stream exists, run database designer first.
 
-1. **If plan has schema work stream**: Run `database-designer` agent with `PIPELINE_MODE=true` → produces `schema_design.md` + migrations
+1. **If plan has schema work stream**: Run `database-designer` agent → produces `schema_design.md` + migrations
+   ```
+   Task(subagent_type: "database-designer", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\nDomain model: {path to domain_model.json}\n\n...")
+   ```
    - Pass domain model context: include `domain_model.json` / `domain_model.md` path so database designer can align table/column names with ubiquitous language and respect aggregate boundaries
    - Update pipeline state: `database_designer.status = "completed"`
    - Otherwise: set `database_designer.status = "skipped"`
-2. Run `api-designer` agent with `PIPELINE_MODE=true` → produces `api_design.md` + spec files
+2. Run `api-designer` agent → produces `api_design.md` + spec files
+   ```
+   Task(subagent_type: "api-designer", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   ```
    - Update pipeline state: `api_designer.status = "completed"`
 
 **GATE 3** — "Ready to implement?"
@@ -247,19 +271,30 @@ Record decision in `decisions.json`. On approval, update `current_gate = "none"`
 
 See `agent-communication` skill — Pipeline Mode section for full behavior differences.
 
+**Model selection for Phase 4**: SE, test writer, and reviewer agents default to `sonnet`. If `complexity_escalation` is `true` in `workflow.json`, check plan complexity (>200 lines or >10 FRs → escalate to `opus`). Otherwise use `sonnet`.
+
 **Detailed execution:**
 
 1. **Backend implementation** (if applicable):
-   - Run `software-engineer-{lang}` agent with `PIPELINE_MODE=true` → implements backend, writes `se_backend_output.json`
+   ```
+   Task(subagent_type: "software-engineer-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   ```
+   - Implements backend, writes `se_backend_output.json`
    - Update pipeline state: `software_engineer_backend.status = "completed"`
 
 2. **Frontend implementation** (if applicable, can run in parallel with backend when API contract exists):
-   - Run `software-engineer-frontend` agent with `PIPELINE_MODE=true` → implements frontend, writes `se_frontend_output.json`
+   ```
+   Task(subagent_type: "software-engineer-frontend", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   ```
+   - Implements frontend, writes `se_frontend_output.json`
    - Update pipeline state: `software_engineer_frontend.status = "completed"`
    - For `backend`-only features: set `software_engineer_frontend.status = "skipped"`
 
 3. **Observability** (if work stream exists, can run in parallel with implementation):
-   - Run `observability-engineer` agent with `PIPELINE_MODE=true` → dashboards and alerts
+   ```
+   Task(subagent_type: "observability-engineer", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   ```
+   - Dashboards and alerts
    - Update pipeline state: `observability_engineer.status = "completed"`
    - If no observability stream: set `observability_engineer.status = "skipped"`
 
@@ -270,8 +305,13 @@ See `agent-communication` skill — Pipeline Mode section for full behavior diff
 If `auto_commit` is `false`, skip — changes stay unstaged/uncommitted until user commits.
 
 4. **Testing**:
-   - Run `unit-test-writer-{lang}` agent with `PIPELINE_MODE=true` → writes backend tests
-   - Run `unit-test-writer-frontend` agent with `PIPELINE_MODE=true` → writes frontend tests (if frontend exists)
+   ```
+   Task(subagent_type: "unit-test-writer-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   ```
+   - If frontend exists:
+     ```
+     Task(subagent_type: "unit-test-writer-frontend", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+     ```
    - Test writers read `se_backend_output.json` / `se_frontend_output.json` to target untested areas
    - Run all tests to verify they pass
    - Update pipeline state: `test_writer.status = "completed"`
@@ -282,7 +322,9 @@ If `auto_commit` is `false`, skip — changes stay unstaged/uncommitted until us
 ```
 
 5. **Review**:
-   - Run `code-reviewer-{lang}` agent with `PIPELINE_MODE=true` → reviews implementation
+   ```
+   Task(subagent_type: "code-reviewer-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   ```
    - Code reviewer reads `se_backend_output.json` / `se_frontend_output.json` to audit `domain_compliance` and `autonomous_decisions`
    - Update pipeline state: `code_reviewer.status = "completed"`
 

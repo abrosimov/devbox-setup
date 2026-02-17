@@ -13,6 +13,7 @@
     - skills
     - bin
     - docs
+    - templates
   tags: [configs, claude]
 
 - name: Clean managed .claude root files before deployment

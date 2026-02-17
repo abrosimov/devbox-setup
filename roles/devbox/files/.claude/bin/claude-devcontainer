@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+# claude-devcontainer — CLI for building and running Claude Code devcontainers.
+# Usage:
+#   claude-devcontainer init [--minimal]
+#   claude-devcontainer build
+#   claude-devcontainer run [--bypass] [--shell]
+set -euo pipefail
+
+TEMPLATE_DIR="${HOME}/.claude/templates/devcontainer"
+TARGET_DIR=".devcontainer"
+IMAGE_NAME="claude-sandbox"
+
+usage() {
+    cat <<'EOF'
+Usage: claude-devcontainer <command> [options]
+
+Commands:
+  init [--minimal]   Copy devcontainer template to current project
+  build              Build the devcontainer image
+  run [options]      Run Claude Code in the container
+
+Run options:
+  --bypass           Add --dangerously-skip-permissions to Claude Code
+  --shell            Drop into zsh instead of launching Claude Code
+
+EOF
+    exit 1
+}
+
+cmd_init() {
+    local minimal=false
+    [[ "${1:-}" == "--minimal" ]] && minimal=true
+
+    if [[ ! -d "$TEMPLATE_DIR" ]]; then
+        echo "ERROR: Template not found at $TEMPLATE_DIR" >&2
+        echo "Run your devbox Ansible playbook to deploy templates." >&2
+        exit 1
+    fi
+
+    if [[ -d "$TARGET_DIR" ]]; then
+        echo "WARNING: $TARGET_DIR already exists. Overwriting."
+    fi
+
+    cp -r "$TEMPLATE_DIR" "$TARGET_DIR"
+
+    if [[ "$minimal" == "true" ]]; then
+        # Disable all optional languages for minimal setup
+        echo "Minimal mode: all optional languages disabled."
+    else
+        # Auto-detect project type and enable languages
+        local detected=()
+        if [[ -f go.mod ]]; then
+            set_build_arg "INSTALL_GO" "true"
+            detected+=("Go")
+        fi
+        if [[ -f pyproject.toml ]] || [[ -f setup.py ]] || [[ -f requirements.txt ]]; then
+            set_build_arg "INSTALL_PYTHON" "true"
+            detected+=("Python")
+        fi
+        if [[ -f Cargo.toml ]]; then
+            set_build_arg "INSTALL_RUST" "true"
+            detected+=("Rust")
+        fi
+        if [[ -f dune-project ]] || compgen -G "*.opam" > /dev/null 2>&1; then
+            set_build_arg "INSTALL_OCAML" "true"
+            detected+=("OCaml")
+        fi
+
+        if [[ ${#detected[@]} -gt 0 ]]; then
+            echo "Detected: ${detected[*]}"
+        else
+            echo "No language-specific files detected. Node.js available by default."
+        fi
+    fi
+
+    echo "Devcontainer template copied to $TARGET_DIR"
+    echo ""
+    echo "Next steps:"
+    echo "  claude-devcontainer build"
+    echo "  claude-devcontainer run"
+}
+
+set_build_arg() {
+    local key="$1" value="$2"
+    local json_file="${TARGET_DIR}/devcontainer.json"
+    if command -v jq &>/dev/null; then
+        local tmp
+        tmp=$(jq --arg k "$key" --arg v "$value" '.build.args[$k] = $v' "$json_file")
+        echo "$tmp" > "$json_file"
+    else
+        # Fallback: sed replacement
+        sed -i.bak "s/\"${key}\": \"[^\"]*\"/\"${key}\": \"${value}\"/" "$json_file"
+        rm -f "${json_file}.bak"
+    fi
+}
+
+cmd_build() {
+    if [[ ! -f "${TARGET_DIR}/Dockerfile" ]]; then
+        echo "ERROR: No Dockerfile found in $TARGET_DIR. Run 'claude-devcontainer init' first." >&2
+        exit 1
+    fi
+
+    echo "Building image: $IMAGE_NAME"
+
+    # Extract build args from devcontainer.json
+    local build_args=()
+    if command -v jq &>/dev/null && [[ -f "${TARGET_DIR}/devcontainer.json" ]]; then
+        while IFS='=' read -r key value; do
+            build_args+=("--build-arg" "${key}=${value}")
+        done < <(jq -r '.build.args // {} | to_entries[] | "\(.key)=\(.value)"' "${TARGET_DIR}/devcontainer.json")
+    fi
+
+    docker build "${build_args[@]}" -t "$IMAGE_NAME" "$TARGET_DIR"
+    echo "Image built: $IMAGE_NAME"
+}
+
+cmd_run() {
+    local bypass=false
+    local shell_mode=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --bypass) bypass=true; shift ;;
+            --shell)  shell_mode=true; shift ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+
+    if ! docker image inspect "$IMAGE_NAME" &>/dev/null; then
+        echo "ERROR: Image $IMAGE_NAME not found. Run 'claude-devcontainer build' first." >&2
+        exit 1
+    fi
+
+    local run_args=(
+        --rm -it
+        --cap-add NET_ADMIN
+        --cap-add NET_RAW
+        --hostname claude-sandbox
+        -v "${PWD}:/home/node/workspace"
+        -v "${HOME}/.claude/settings.json:/home/node/.claude/settings.json:ro"
+        -v "claude-shell-history:/home/node/.shell_history"
+        -w /home/node/workspace
+    )
+
+    # Pass through ANTHROPIC_API_KEY if set
+    if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+        run_args+=(-e "ANTHROPIC_API_KEY")
+    fi
+
+    if [[ "$shell_mode" == "true" ]]; then
+        echo "Dropping into zsh..."
+        docker run "${run_args[@]}" "$IMAGE_NAME" zsh
+    else
+        local claude_args=()
+        if [[ "$bypass" == "true" ]]; then
+            echo "WARNING: Running with --dangerously-skip-permissions"
+            claude_args+=("--dangerously-skip-permissions")
+        fi
+        docker run "${run_args[@]}" "$IMAGE_NAME" claude "${claude_args[@]}"
+    fi
+}
+
+# --- Main dispatch ---
+
+case "${1:-}" in
+    init)  shift; cmd_init "$@" ;;
+    build) shift; cmd_build "$@" ;;
+    run)   shift; cmd_run "$@" ;;
+    -h|--help|help) usage ;;
+    "") usage ;;
+    *) echo "Unknown command: $1" >&2; usage ;;
+esac

@@ -522,6 +522,17 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 ---
 
+## Handoff Protocol
+
+**Receives from**: TPM (`spec.md`, `spec_output.json`), Domain Expert/Modeller (`domain_analysis.md`, `domain_model.md`, `domain_model.json`)
+**Produces for**: Software Engineer Python, API Designer, Database Designer
+**Deliverables**:
+  - `plan.md` — primary (implementation plan with work streams, requirements, technical decisions)
+  - `plan_output.json` — supplementary (structured contract for downstream agents)
+**Completion criteria**: All functional requirements mapped to work streams, dependencies identified, parallelism groups defined; user approval obtained
+
+---
+
 ## After Completion
 
 When plan is complete, provide:

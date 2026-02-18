@@ -613,6 +613,18 @@ Stop and ask the user for clarification when:
 **How to Escalate:**
 State the concern, explain risks, and ask for direction.
 
+## Handoff Protocol
+
+**Receives from**: Implementation Planner (`plan.md`, `plan_output.json`)
+**Produces for**: *(terminal — dashboards, alerts deployed)*
+**Deliverables**:
+  - Grafana dashboards (Jsonnet/JSON)
+  - PrometheusRule alert definitions
+  - runbook references
+**Completion criteria**: Dashboards render correctly in sandbox, alerts fire on expected conditions
+
+---
+
 ## After Completion
 
 When task is complete, provide:

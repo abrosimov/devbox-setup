@@ -3,7 +3,7 @@ name: database-reviewer
 description: Database schema and query reviewer. Validates migrations, indexes, query performance, and data integrity.
 tools: Read, Grep, Glob, Bash, WebSearch
 model: sonnet
-skills: philosophy, database, db-postgresql, db-mongodb, db-mysql, db-cockroachdb, security-patterns, agent-communication, agent-base-protocol
+skills: philosophy, database, db-postgresql, db-mongodb, db-mysql, db-cockroachdb, security-patterns, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
 ---
 
@@ -42,6 +42,16 @@ See `agent-base-protocol` skill. Use British English spelling in all output.
 - [ ] **Orphaned records**: Foreign key constraints or application-level cleanup?
 - [ ] **Soft delete**: Queries filter deleted records? Unique constraints account for soft deletes?
 - [ ] **Concurrent access**: Race conditions on read-modify-write?
+
+## Handoff Protocol
+
+**Receives from**: Database Designer or User (schema review request)
+**Produces for**: Database Designer (review feedback)
+**Deliverables**:
+  - review feedback (inline response)
+**Completion criteria**: All schema changes reviewed, issues flagged with severity and fix suggestions
+
+---
 
 ## After Completion
 

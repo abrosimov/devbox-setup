@@ -6,22 +6,8 @@ description: >
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
-skills:, agent-base-protocol, code-writing-protocols
-  - philosophy
-  - frontend-engineer
-  - frontend-testing
-  - frontend-architecture
-  - frontend-errors
-  - frontend-patterns
-  - frontend-anti-patterns
-  - frontend-style
-  - frontend-accessibility
-  - frontend-tooling
-  - security-patterns
-  - code-comments
-  - agent-communication
-  - shared-utils
-updated: 2026-02-11
+skills: philosophy, frontend-engineer, frontend-testing, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-tooling, security-patterns, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
+updated: 2026-02-18
 ---
 
 ## FORBIDDEN PATTERNS — READ FIRST
@@ -343,8 +329,8 @@ Now compare to implementation:
 
 ## Handoff Protocol
 
-**Receives from**: Software Engineer (frontend implementation) or direct user request
-**Produces for**: Code Reviewer
+**Receives from**: Software Engineer Frontend (implementation) or direct user request
+**Produces for**: Code Reviewer Frontend (test files for review)
 **Deliverable**: Test files (`*.test.tsx` / `*.test.ts`) with comprehensive coverage
 **Completion criteria**: All components tested for behaviour, error paths covered, accessibility checked, tests pass
 

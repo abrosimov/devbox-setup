@@ -471,6 +471,18 @@ See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-m
 
 ---
 
+## Handoff Protocol
+
+**Receives from**: Implementation Planner (`plan.md`, `plan_output.json`), Designer (`design.md`, `design_output.json`), API Designer (`api_spec.yaml`)
+**Produces for**: Unit Test Writer Frontend
+**Deliverables**:
+  - source code (direct edits)
+  - `work_log_frontend.md` — implementation log
+  - `se_frontend_output.json` — structured completion contract
+**Completion criteria**: All assigned requirements implemented, type checks pass, linter passes
+
+---
+
 ## After Completion
 
 ### Self-Review: Comment Audit (MANDATORY)

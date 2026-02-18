@@ -3,7 +3,7 @@ name: architect
 description: System design specialist for architecture decisions, technology selection, and high-level design. Read-only — analyses but never modifies code.
 tools: Read, Grep, Glob, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
 model: opus
-skills: philosophy, go-architecture, python-architecture, frontend-architecture, security-patterns, observability, database, agent-communication, mcp-sequential-thinking, mcp-memory, agent-base-protocol
+skills: philosophy, go-architecture, python-architecture, frontend-architecture, security-patterns, observability, database, agent-communication, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol
 updated: 2026-02-15
 ---
 
@@ -59,6 +59,16 @@ Reference `philosophy` skill — Prime Directive applies to architecture too:
 - No speculative components
 - Concrete types over abstract patterns
 - Prefer boring technology over cutting-edge
+
+## Handoff Protocol
+
+**Receives from**: User or Implementation Planner (architecture analysis request)
+**Produces for**: Implementation Planner (architecture decisions, constraints)
+**Deliverables**:
+  - architecture analysis (inline response)
+**Completion criteria**: Architecture decision made with clear rationale, trade-offs documented
+
+---
 
 ## After Completion
 

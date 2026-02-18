@@ -145,7 +145,7 @@ Cross-reference the artifact against the existing system:
 2. **Skill contradictions**: Does this agent/skill claim to cover territory already owned by another component?
 3. **Philosophy contradictions**: Does the artifact violate the Prime Directive? Is it more complex than necessary?
 4. **Convention contradictions**: Does it follow British English, the model selection convention, the tools assignment convention?
-5. **Terminology consistency**: Read 2-3 related skills referenced by this artifact. Check that the same concepts use the same terms across all of them. Flag any term drift (e.g. one skill says "handoff", another says "hand-off", a third says "transition").
+5. **Terminology consistency**: Read 2-3 related skills referenced by this artifact. Check that the same concepts use the same terms across all of them. Flag any term drift (e.g. one skill says "handoff", another says "handoff", a third says "transition").
 6. **Engineer-reviewer alignment**: If the artifact is an engineer agent, read the matching reviewer agent for the same language. Verify that every standard the engineer enforces is also checked by the reviewer, and vice versa. Flag any one-sided rules.
 7. **Handoff chain integrity**: Trace the upstream and downstream connections declared in the handoff protocol. Read both ends and verify they agree — the upstream's "Produces for" must mention this artifact's agent, and this artifact's "Receives from" must match.
 

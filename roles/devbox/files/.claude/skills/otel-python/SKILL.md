@@ -12,7 +12,9 @@ description: >
 
 Instrumentation patterns for Python services using OpenTelemetry SDK.
 
-**Stable versions**: opentelemetry-api v1.39+, opentelemetry-sdk v1.39+, Logs SDK stable.
+**Stable versions** (Dec 2025): opentelemetry-api 1.39.1, opentelemetry-sdk 1.39.1, opentelemetry-semantic-conventions 0.50b1 (semconv spec 1.39.0). Logs SDK stable.
+
+**Semconv import migration**: `opentelemetry.semconv.resource.ResourceAttributes` is deprecated since v1.25.0. Use the generated modules under `opentelemetry.semconv.attributes` (stable) and `opentelemetry.semconv._incubating.attributes` (incubating) instead.
 
 ---
 
@@ -26,13 +28,19 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.semconv.resource import ResourceAttributes
+from opentelemetry.semconv.attributes.service_attributes import (
+    SERVICE_NAME,
+    SERVICE_VERSION,
+)
+from opentelemetry.semconv._incubating.attributes.deployment_attributes import (
+    DEPLOYMENT_ENVIRONMENT_NAME,
+)
 
 def init_tracer() -> TracerProvider:
     resource = Resource.create({
-        ResourceAttributes.SERVICE_NAME: "my-service",
-        ResourceAttributes.SERVICE_VERSION: "1.0.0",
-        ResourceAttributes.DEPLOYMENT_ENVIRONMENT_NAME: "production",
+        SERVICE_NAME: "my-service",
+        SERVICE_VERSION: "1.0.0",
+        DEPLOYMENT_ENVIRONMENT_NAME: "production",
     })
 
     provider = TracerProvider(resource=resource)

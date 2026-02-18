@@ -1,5 +1,6 @@
 ---
 name: lint-discipline
+description: Lint discipline rules — agents must fix lint issues, never suppress them with directives like noqa, nolint, or eslint-disable.
 version: 1
 triggers:
   - lint

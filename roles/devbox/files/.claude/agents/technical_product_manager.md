@@ -465,6 +465,19 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 ---
 
+## Handoff Protocol
+
+**Receives from**: User (direct requirements, Jira tickets, feature requests)
+**Produces for**: Domain Expert (`domain-expert`)
+**Deliverables**:
+  - `spec.md` — primary (product specification in pitch format)
+  - `spec_output.json` — supplementary (structured contract for downstream agents)
+  - `research.md` — research findings and alternatives analysis
+  - `decisions.md` — running log of discussions and decisions
+**Completion criteria**: Specification complete with personas, goals, functional requirements, examples, appetite, and no-gos defined; user approval obtained
+
+---
+
 ## After Completion
 
 When specification is complete, provide:

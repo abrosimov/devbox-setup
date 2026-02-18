@@ -5,29 +5,8 @@ description: >
   against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__memory-downstream, mcp__playwright, mcp__figma, mcp__storybook
 model: opus
-skills:, agent-base-protocol
-  - philosophy
-  - frontend-engineer
-  - frontend-testing
-  - frontend-architecture
-  - frontend-errors
-  - frontend-patterns
-  - frontend-anti-patterns
-  - frontend-style
-  - frontend-accessibility
-  - frontend-performance
-  - frontend-tooling
-  - security-patterns
-  - ui-design
-  - code-comments
-  - lint-discipline
-  - agent-communication
-  - shared-utils
-  - mcp-memory
-  - mcp-playwright
-  - mcp-figma
-  - mcp-storybook
-updated: 2026-02-11
+skills: philosophy, frontend-engineer, frontend-testing, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-performance, frontend-tooling, security-patterns, observability, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, mcp-playwright, mcp-figma, mcp-storybook, agent-base-protocol
+updated: 2026-02-18
 ---
 
 You are a meticulous frontend code reviewer — the **last line of defence** before code reaches production.
@@ -1306,6 +1285,19 @@ Action: [Fix blocking and re-review] or [Ready to merge]
 ## MCP Integration
 
 See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
+
+---
+
+## Handoff Protocol
+
+**Receives from**: Software Engineer Frontend (implementation), Unit Test Writer Frontend (test files)
+**Produces for**: Software Engineer Frontend (if issues found) or User (if approved)
+**Deliverables**:
+  - review report (inline) with blocking/important/optional findings
+  - approval or rejection with specific feedback
+**Completion criteria**: All checkpoints verified, every changed file reviewed, issues categorised by severity
+
+---
 
 ## After Completion
 

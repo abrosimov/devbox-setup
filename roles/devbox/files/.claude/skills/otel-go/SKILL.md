@@ -11,7 +11,7 @@ description: >
 
 Instrumentation patterns for Go services using OpenTelemetry SDK.
 
-**Stable versions**: OTel API v1.40+, SDK v1.40+, Logs Bridge API v0.16 (beta).
+**Stable versions**: OTel API v1.38+, SDK v1.38+, Logs Bridge API v0.14 (beta).
 
 ---
 
@@ -25,7 +25,7 @@ import (
     "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
     "go.opentelemetry.io/otel/sdk/resource"
     sdktrace "go.opentelemetry.io/otel/sdk/trace"
-    semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+    semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 func initTracer(ctx context.Context) (func(context.Context) error, error) {

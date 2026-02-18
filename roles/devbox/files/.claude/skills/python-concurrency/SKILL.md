@@ -45,7 +45,7 @@ with ProcessPoolExecutor(max_workers=4) as pool:
 
 ## asyncio
 
-### TaskGroup (Python 3.11+, Preferred)
+### TaskGroup (Python 3.11+, current stable: 3.13)
 
 `TaskGroup` provides structured concurrency: all tasks complete (or are cancelled) before the group exits.
 
@@ -65,7 +65,7 @@ async def fetch_all(urls: list[str]) -> list[dict]:
 | Error handling | `return_exceptions=True` to collect | Raises `ExceptionGroup` |
 | Cancellation | Manual | Automatic — cancels remaining on first failure |
 | Structured concurrency | No | Yes |
-| Python version | 3.4+ | 3.11+ |
+| Python version | 3.4+ | 3.11+ (current stable: 3.13) |
 
 **Handling ExceptionGroup:**
 

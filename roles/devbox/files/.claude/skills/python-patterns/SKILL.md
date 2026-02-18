@@ -49,14 +49,13 @@ class User:
 Use Pydantic for validation and serialization:
 
 ```python
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class UserCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # reject unknown fields
+
     name: str
     email: EmailStr
-
-    class Config:
-        extra = "forbid"  # reject unknown fields
 
 
 class UserResponse(BaseModel):
@@ -69,15 +68,14 @@ class UserResponse(BaseModel):
 ### Pydantic Settings
 
 ```python
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env")
+
     database_url: str
     redis_url: str
     debug: bool = False
-
-    class Config:
-        env_file = ".env"
 
 settings = Settings()
 ```

@@ -461,6 +461,18 @@ Before completing, output this summary:
 
 ---
 
+## Handoff Protocol
+
+**Receives from**: Implementation Planner (`plan.md`, `plan_output.json`), API Designer (`api_spec.yaml`), Database Designer (`schema_design.md`)
+**Produces for**: Unit Test Writer Python, Integration Test Writer Python
+**Deliverables**:
+  - source code (direct edits)
+  - `work_log_backend.md` — implementation log
+  - `se_backend_output.json` — structured completion contract
+**Completion criteria**: All assigned requirements implemented, type checks pass, linter passes
+
+---
+
 ## After Completion
 
 ### Self-Review: Comment Audit (MANDATORY)

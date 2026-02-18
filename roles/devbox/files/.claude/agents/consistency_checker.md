@@ -102,7 +102,7 @@ For each domain cluster (Go, Python, Frontend, Infrastructure):
 1. Identify all agents and skills in the cluster
 2. Extract key terms from each (grep for domain-specific vocabulary)
 3. Flag cases where the same concept uses different terms:
-   - e.g. "handoff" vs "hand-off" vs "transition"
+   - e.g. "handoff" vs "transition"
    - e.g. "middleware" vs "interceptor" vs "hook" (when meaning the same thing)
    - e.g. "error wrapping" vs "error context" vs "error annotation"
 4. For each conflict, identify which term is most common and suggest standardising on it

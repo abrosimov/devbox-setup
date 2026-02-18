@@ -3,7 +3,7 @@ name: build-resolver-go
 description: Go build error specialist. Resolves compilation failures, module issues, import cycles, and CGO problems.
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
-skills: philosophy, go-engineer, go-errors, go-patterns, go-architecture, go-anti-patterns, go-toolbox, agent-communication, agent-base-protocol
+skills: philosophy, go-engineer, go-errors, go-patterns, go-architecture, go-anti-patterns, go-toolbox, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
 ---
 
@@ -65,6 +65,16 @@ After fixing, **ALWAYS** format with `goimports`:
 goimports -local <module-name> -w .
 ```
 Extract module name from `go.mod`.
+
+## Handoff Protocol
+
+**Receives from**: User or SE agent (build errors, compilation failures)
+**Produces for**: *(terminal — code fixes applied)*
+**Deliverables**:
+  - code fixes (direct edits)
+**Completion criteria**: Build succeeds, all compilation errors resolved
+
+---
 
 ## After Completion
 

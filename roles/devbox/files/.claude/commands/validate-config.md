@@ -2,152 +2,42 @@
 description: Validate Claude Code configuration - check cross-references, skill existence, and frontmatter integrity
 ---
 
-You are a configuration validator for the Claude Code agent system. Run all checks and report findings.
+Run the configuration validator and present findings.
 
 ## Steps
 
-### 1. Inventory All Components
-
-Scan the `.claude/` directory structure:
+1. Run the validator script against the Claude Code config root:
 
 ```bash
-# List all agents
-ls .claude/agents/*.md 2>/dev/null | grep -v _archived
-
-# List all skill directories
-ls -d .claude/skills/*/
-
-# List all commands
-ls .claude/commands/*.md
-
-# List all docs
-find .claude/docs -name '*.md' 2>/dev/null
+python3 ~/.claude/bin/validate-config.py --root .
 ```
 
-### 2. Validate Agent Frontmatter
+If the working directory is not the `.claude/` root, adjust `--root` accordingly (e.g. `--root ~/.claude` or `--root roles/devbox/files/.claude`).
 
-For each agent file, verify:
+2. If the script reports **errors**, investigate each one:
+   - `[SKILL_REF]` — agent references a skill that doesn't exist; check for typos or missing skill directories
+   - `[AGENT_FIELD]` / `[SKILL_FIELD]` / `[CMD_FIELD]` — missing required frontmatter field
+   - `[AGENT_MODEL]` — invalid model value (must be sonnet/opus/haiku)
+   - `[JSON_INVALID]` — malformed JSON file
+   - `[DOC_REF]` — broken markdown link in an agent file
+   - `[GROUNDING]` — builder skill missing grounding reference file
+   - `[META_PIPELINE]` — meta-reviewer or builder skill wiring issue
+   - `[SKILL_FRONTMATTER]` / `[AGENT_FRONTMATTER]` / `[CMD_FRONTMATTER]` — missing or malformed `---` block
 
-- [ ] Has valid `---` delimited frontmatter
-- [ ] Has `name` field
-- [ ] Has `description` field
-- [ ] Has `tools` field
-- [ ] Has `model` field (sonnet or opus)
-- [ ] Has `skills` field
-- [ ] If code-writing agent: has `permissionMode: acceptEdits`
+3. If the script reports **warnings**, note them:
+   - `[SKILL_NAME_MISMATCH]` — skill `name` field doesn't match directory name
+   - `[STALE]` — old-style doc reference pattern detected
 
-### 3. Cross-Reference Check: Skills
+4. Present the full report to the user. If errors exist, suggest specific fixes.
 
-For each agent's `skills:` list, verify every referenced skill exists as a directory under `.claude/skills/` with a valid `SKILL.md`:
+## Advanced Usage
 
 ```bash
-# Extract skill names from agent frontmatter and check each exists
-for agent in .claude/agents/*.md; do
-  grep '^skills:' "$agent" | sed 's/skills: //' | tr ',' '\n' | tr -d ' ' | while read skill; do
-    # Check by directory name first
-    if [ ! -f ".claude/skills/$skill/SKILL.md" ]; then
-      # Check by SKILL.md name field
-      found=$(grep -rl "^name: $skill$" .claude/skills/*/SKILL.md 2>/dev/null)
-      if [ -z "$found" ]; then
-        echo "BROKEN: $agent references skill '$skill' — not found"
-      fi
-    fi
-  done
-done
+# Run only specific checks
+python3 ~/.claude/bin/validate-config.py --root . --check agents,skills
+
+# Machine-readable output
+python3 ~/.claude/bin/validate-config.py --root . --json
 ```
 
-### 4. Cross-Reference Check: Doc Paths
-
-Search for doc references in agent bodies that point to non-existent files:
-
-```bash
-# Find references to docs/ paths
-grep -rn 'docs/' .claude/agents/*.md | grep -v '_archived' | while read line; do
-  path=$(echo "$line" | grep -oP 'docs/[a-zA-Z0-9_/.-]+\.md')
-  if [ -n "$path" ] && [ ! -f ".claude/$path" ]; then
-    echo "BROKEN DOC REF: $line"
-  fi
-done
-```
-
-### 5. Cross-Reference Check: Stale Patterns
-
-Search for known stale reference patterns:
-
-```bash
-# Old-style doc references (pre-skill migration)
-grep -rn 'go/go_' .claude/agents/*.md | grep -v _archived
-grep -rn 'python/python_' .claude/agents/*.md | grep -v _archived
-
-# Double-backtick formatting issues
-grep -rn '``' .claude/agents/*.md | grep -v _archived
-```
-
-### 6. Skill Frontmatter Validation
-
-For each skill, verify:
-
-- [ ] Has valid `---` delimited frontmatter
-- [ ] Has `name` field
-- [ ] `name` field matches directory name (flag mismatches as warnings)
-- [ ] Has `description` field
-
-### 6b. Grounding References Validation
-
-Check that builder skills have their grounding references:
-
-```bash
-# Agent builder grounding
-for ref in anthropic-agent-authoring.md anthropic-prompt-engineering.md; do
-  if [ ! -f ".claude/skills/agent-builder/references/$ref" ]; then
-    echo "MISSING GROUNDING: agent-builder/references/$ref"
-  fi
-done
-
-# Skill builder grounding
-for ref in anthropic-skill-authoring.md; do
-  if [ ! -f ".claude/skills/skill-builder/references/$ref" ]; then
-    echo "MISSING GROUNDING: skill-builder/references/$ref"
-  fi
-done
-```
-
-### 6c. Meta-Pipeline Integrity
-
-Verify the meta-pipeline components exist:
-
-- [ ] Meta-reviewer agent exists at `.claude/agents/meta_reviewer.md`
-- [ ] Meta-reviewer references `agent-builder` and `skill-builder` skills
-- [ ] Build commands reference meta-reviewer agent
-
-### 7. Command Frontmatter Validation
-
-For each command, verify:
-
-- [ ] Has valid `---` delimited frontmatter
-- [ ] Has `description` field
-
-### 8. Report
-
-Present findings in this format:
-
-```
-## Configuration Validation Report
-
-### Errors (must fix)
-- [ ] [BROKEN SKILL REF] agent.md references 'skill-name' — skill not found
-- [ ] [BROKEN DOC REF] agent.md:42 references 'docs/path.md' — file not found
-- [ ] [MISSING FRONTMATTER] agent.md missing required field 'name'
-
-### Warnings (should fix)
-- [ ] [NAME MISMATCH] skills/shared/ has name: shared-utils (directory ≠ name)
-- [ ] [STALE PATTERN] agent.md:55 uses old-style doc reference
-- [ ] [FORMATTING] agent.md:23 has double-backtick issue
-
-### Summary
-- Agents checked: N
-- Skills checked: N
-- Commands checked: N
-- Errors: N
-- Warnings: N
-```
+Available checks: `agents`, `skills`, `commands`, `json`, `references`, `stale`, `grounding`, `meta-pipeline`.

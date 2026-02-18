@@ -11,6 +11,7 @@
     - agents
     - commands
     - skills
+    - schemas
     - bin
     - docs
     - templates

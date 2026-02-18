@@ -35,7 +35,7 @@ The agent workflow is opt-in per project. Config file: `.claude/workflow.json` i
 |------|---------|-------------|
 | `agent_pipeline` | `true` | When `true`, code changes MUST go through agents. When `false`, direct edits allowed |
 | `auto_commit` | `true` | When `true`, commands auto-commit via `git-safe-commit`. When `false`, user commits manually |
-| `complexity_escalation` | `true` | When `true`, commands auto-escalate to Opus for complex tasks. When `false`, agent default model used |
+| `complexity_escalation` | `true` | When `true`, `/implement` auto-downgrades SE agents to Sonnet for simple tasks. When `false`, always use agent default model (opus) |
 
 **Commands read this file at Step 0** and adjust behavior accordingly. If the file is missing, commands default all flags to `true` (backward compatible).
 

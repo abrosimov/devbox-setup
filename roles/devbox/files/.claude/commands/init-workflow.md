@@ -23,7 +23,7 @@ You are setting up the agent workflow for the current project by creating `.clau
 |------|--------|---------|
 | `agent_pipeline` | Code changes MUST go through agents (`/implement`) | Direct Edit/Write on code files allowed |
 | `auto_commit` | Commands auto-commit via `git-safe-commit` after each phase | User commits manually |
-| `complexity_escalation` | Auto-upgrade to Opus when complexity thresholds exceeded | Always use agent's default model |
+| `complexity_escalation` | Auto-downgrade SE agents to Sonnet for simple tasks | Always use agent's default model (opus) |
 
 ## Steps
 
@@ -47,8 +47,8 @@ If no argument was passed, ask:
 
 > Which workflow preset?
 >
-> **A) Full** — agents required, auto-commit, complexity escalation
-> **B) Lightweight** — agents required, manual commits, no auto-escalation
+> **A) Full** — agents required, auto-commit, auto-downgrade for simple SE tasks
+> **B) Lightweight** — agents required, manual commits, always opus (no downgrade)
 > **C) Custom** — pick individual settings
 
 For **Custom**, ask about each flag individually.

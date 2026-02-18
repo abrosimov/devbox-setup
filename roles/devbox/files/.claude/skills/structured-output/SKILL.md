@@ -26,6 +26,44 @@ Structured output is **OPTIONAL**. If `{stage}_output.json` doesn't exist, downs
 
 Agents that produce structured output should self-validate required fields before writing. If a required field can't be populated, set it to `null` with a comment in the markdown explaining why.
 
+## Schema Files (Authoritative Source)
+
+Machine-readable JSON Schema files live in `schemas/`:
+
+| Schema | File | Used By |
+|--------|------|---------|
+| Stream Completion | `schemas/stream_completion.schema.json` | Stream executors (Phase 4 DAG) |
+| Execution DAG | `schemas/execution_dag.schema.json` | Full-cycle orchestrator |
+| Pipeline State | `schemas/pipeline_state.schema.json` | Full-cycle orchestrator |
+
+These files are the **authoritative** schema definitions. The inline JSON examples below are derived from them. When in doubt, the schema file wins.
+
+## Programmatic Validation
+
+Agent output is verified by `bin/validate-pipeline-output` — a deterministic script, not LLM self-assessment:
+
+```bash
+# Validate stream completion output
+bin/validate-pipeline-output --schema stream_completion --file backend_completion.json
+
+# Full validation: schema + reality check + build + tests
+bin/validate-pipeline-output --full --file backend_completion.json --lang go
+
+# Validate DAG integrity (cycles, dangling edges, required fields)
+bin/validate-pipeline-output --dag-check --file execution_dag.json
+```
+
+Exit codes map to specific failure types:
+
+| Code | Meaning | Orchestrator Action |
+|------|---------|-------------------|
+| 0 | Passed | Advance pipeline |
+| 1 | Schema violation | Retry: "Output JSON malformed" |
+| 2 | Reality mismatch | Retry: "Claimed files don't exist" |
+| 3 | Build failure | Retry: "Code doesn't compile: {error}" |
+| 4 | Test failure | Retry: "Tests fail: {error}" |
+| 5 | DAG integrity | Rebuild DAG |
+
 ---
 
 ## Common Metadata Schema
@@ -332,6 +370,42 @@ Where `{role}` is `backend`, `frontend`, or the specific language variant. Each 
 ```
 
 > **Downstream usage**: Test Writer reads `requirements_implemented` + `verification_summary` to target untested areas. Code Reviewer reads `domain_compliance` + `autonomous_decisions` to audit DDD adherence and Tier 2 choices.
+
+### Stream Completion — `{stream}_completion.json`
+
+Written by stream executors at the end of Phase 4 DAG execution. Validated by `bin/validate-pipeline-output --full`. See `schemas/stream_completion.schema.json` for authoritative definition.
+
+```json
+{
+  "stream": "string (stream identifier, e.g., 'backend', 'frontend')",
+  "status": "enum: complete | partial | blocked | failed",
+  "steps": [
+    {
+      "name": "enum: se | commit_impl | test | commit_test",
+      "status": "enum: passed | failed | skipped",
+      "error": "string (required if status=failed)",
+      "output_file": "string (path to step output, e.g., se_backend_output.json)"
+    }
+  ],
+  "git_sha": "string (HEAD SHA after completion, pattern: ^[a-f0-9]{7,40}$)",
+  "files_modified": ["string (relative paths of modified files)"],
+  "output_files": ["string (paths to structured output JSONs)"],
+  "build_passed": "boolean (language-specific build check result)",
+  "tests_passed": "boolean",
+  "tests_total": "integer",
+  "tests_failed": "integer",
+  "attempt": "integer (1 = first try, 2+ = retry)",
+  "started_at": "string (ISO 8601)",
+  "completed_at": "string (ISO 8601)"
+}
+```
+
+**Invariants enforced by schema:**
+- If `status=complete`: no step may have `status=failed`, and `build_passed` must be `true`
+- If `status=failed`: at least one step must have `status=failed` with a non-empty `error`
+- `git_sha` must match `^[a-f0-9]{7,40}$` pattern
+
+> **Downstream usage**: Orchestrator validates with `bin/validate-pipeline-output --full`. Exit code determines whether to advance DAG, retry, or escalate.
 
 ---
 

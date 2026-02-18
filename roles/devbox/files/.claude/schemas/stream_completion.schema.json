@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stream_completion.schema.json",
+  "title": "Stream Completion",
+  "description": "Contract for stream executor output. Validated by bin/validate-pipeline-output after each stream completes.",
+  "type": "object",
+  "required": ["stream", "status", "steps", "git_sha", "files_modified", "attempt", "started_at", "completed_at"],
+  "properties": {
+    "stream": {
+      "type": "string",
+      "description": "Stream identifier matching execution_dag node.stream (e.g., 'backend', 'frontend')"
+    },
+    "status": {
+      "enum": ["complete", "partial", "blocked", "failed"],
+      "description": "Overall stream outcome. Only 'complete' advances the DAG without intervention."
+    },
+    "steps": {
+      "type": "array",
+      "description": "Ordered list of steps executed within this stream.",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": {
+            "enum": ["se", "commit_impl", "test", "commit_test"],
+            "description": "Step identifier within the stream pipeline."
+          },
+          "status": {
+            "enum": ["passed", "failed", "skipped"],
+            "description": "Step outcome."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if status is 'failed'. Empty or absent for passed/skipped."
+          },
+          "output_file": {
+            "type": "string",
+            "description": "Path to structured output file produced by this step (e.g., se_backend_output.json)."
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "git_sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{7,40}$",
+      "description": "Git HEAD SHA after stream completion. Validated against actual git state."
+    },
+    "files_modified": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Relative paths of all files created or modified. Validated against git diff."
+    },
+    "output_files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Paths to structured output JSONs produced (e.g., se_backend_output.json). Validated for existence."
+    },
+    "build_passed": {
+      "type": "boolean",
+      "description": "Whether language-specific build check passed after implementation."
+    },
+    "tests_passed": {
+      "type": "boolean",
+      "description": "Whether all tests passed after test writing step."
+    },
+    "tests_total": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of test cases run."
+    },
+    "tests_failed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of test cases that failed."
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Which attempt this is (1 = first try, 2+ = retry)."
+    },
+    "started_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp when stream execution began."
+    },
+    "completed_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp when stream execution finished."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "complete" } } },
+      "then": {
+        "properties": {
+          "steps": {
+            "items": {
+              "properties": {
+                "status": { "enum": ["passed", "skipped"] }
+              }
+            }
+          },
+          "build_passed": { "const": true }
+        },
+        "required": ["build_passed"]
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "failed" } } },
+      "then": {
+        "required": ["steps"],
+        "properties": {
+          "steps": {
+            "contains": {
+              "properties": { "status": { "const": "failed" } },
+              "required": ["error"]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

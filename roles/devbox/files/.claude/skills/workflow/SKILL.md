@@ -13,7 +13,7 @@ This document describes the agent pipeline and workflow commands for projects us
 
 ## Opt-In Model
 
-The agent workflow is **opt-in per project** via `.claude/workflow.json`. Agents, commands, and skills are deployed globally to `~/.claude/` and always available, but **enforcement** (mandatory agent usage, auto-commit, complexity escalation) is controlled per-project.
+The agent workflow is **opt-in per project** via `.claude/workflow.json`. Agents, commands, and skills are deployed globally to `~/.claude/` and always available, but **enforcement** (mandatory agent usage, auto-commit, auto-downgrade) is controlled per-project.
 
 ### Workflow Config
 
@@ -31,7 +31,7 @@ Per-project `.claude/workflow.json`:
 |------|--------|---------|---------|
 | `agent_pipeline` | Code changes MUST go through agents | Direct Edit/Write allowed | `true` |
 | `auto_commit` | Commands auto-commit after each phase | User commits manually | `true` |
-| `complexity_escalation` | Auto-upgrade to Opus for complex tasks | Always use agent's default model | `true` |
+| `complexity_escalation` | Auto-downgrade SE agents to Sonnet for simple tasks | Always use agent's default model (opus) | `true` |
 
 ### Project Initialization
 
@@ -181,15 +181,23 @@ Each command:
   Depends on: Step 3 (and Step 4a if schema changes exist)
   Produces: `api_design.md`, `api_design_output.json`
 
-### Step 5: Implementation (work-stream-driven, parallel where possible)
-- **software_engineer_{go|python}** — Writes backend code
-  Depends on: Step 4
-- **software_engineer_frontend** — Writes frontend code (TypeScript/React/Next.js)
-  Depends on: API contract from Step 4 (NOT on backend implementation — can run in parallel)
-  Skipped when: feature_type = backend
-- **observability_engineer** — Designs dashboards, alerts, and recording rules
-  Depends on: API contract from Step 4 (can run in parallel with SE agents)
-  Skipped when: plan has no observability work stream
+### Step 5: Implementation (DAG-driven, stream-independent execution)
+
+**Execution model**: Phase 4 uses a DAG (Directed Acyclic Graph) where each task node executes as soon as its dependencies resolve. Streams don't wait for each other.
+
+- **Backend SE**: Depends on Gate 3 approval only
+  Produces: source code, `se_backend_output.json`, `backend_completion.json`
+- **Frontend SE**: Depends on Gate 3 approval + API contract
+  Produces: source code, `se_frontend_output.json`, `frontend_completion.json`
+  (Can run in parallel with backend — depends on API contract, NOT backend implementation)
+- **Observability**: Depends on Gate 3 approval
+  Produces: dashboards, alerts (can run in parallel with SE agents)
+- **Test Writers**: Depend on their stream's SE completion (NOT all streams)
+  Backend tests start as soon as backend SE finishes, even if frontend SE is still running
+- **Code Reviewer**: Depends on ALL streams completing tests
+  If blocking issues found → return to affected stream(s) with feedback
+
+**Schema-driven verification**: Each stream writes `{stream}_completion.json` (schema: `schemas/stream_completion.schema.json`). The orchestrator validates via `bin/validate-pipeline-output --full` before advancing the DAG. Exit codes drive targeted retry prompts.
 
 ### Step 6: Testing
 - **unit_tests_writer_*** — Writes unit tests with bug-hunting mindset (per language/stack)
@@ -208,11 +216,11 @@ Each command:
 - After Step 2 completes → Step 2b (Domain Modeller) runs if domain is complex
 - After Step 2b completes (or is skipped) → **Gate 1** (user approval: "right problem + right model?")
 - Steps 3a (Planner) and 3b (Designer) run in parallel for UI/fullstack features
-- Planner produces work streams that drive Steps 4-5 execution order and parallelism
-- After Step 3 completes (Designer presents options) → **Gate 2** (user picks design direction; skipped for backend)
-- After Step 4 completes (contracts ready) → **Gate 3** (user approval: "ready to implement?")
-- Steps 5 → 6 → 7 run autonomously with fix loop; within Step 5, agents run in parallel per work stream groups
-- After Step 7 completes (no blocking issues) → **Gate 4** (user approval: "ship it?")
+- Planner produces work streams that drive Steps 4-5 execution order and DAG construction
+- Step 4 (contracts): Schema designer (if needed) runs before API designer; both autonomous
+- Step 5 (implementation): **DAG-based execution** — each stream (SE → test) runs independently. A stream's test writer starts immediately when its SE finishes, without waiting for other streams. Cross-stream tasks (review) start when all their specific dependencies resolve.
+- After Step 5 completes (all streams validated by `bin/validate-pipeline-output`) → Review → **Gate 4** (user approval: "ship it?")
+- Validation is deterministic (exit codes), not probabilistic (LLM self-assessment)
 </transitions>
 
 **Infrastructure agents** (outside the development pipeline):
@@ -420,34 +428,38 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 | Priority | Source | Example |
 |----------|--------|---------|
-| 1 (highest) | User explicit argument | `/implement opus` |
-| 2 | Complexity check at command level | Plan >200 lines → opus (requires `complexity_escalation: true` in `workflow.json`) |
-| 3 | Agent frontmatter default | `model: sonnet` or `model: opus` |
+| 1 (highest) | User explicit argument | `/implement sonnet`, `/implement opus` |
+| 2 | Downgrade check at command level | All criteria below thresholds → sonnet (requires `complexity_escalation: true` in `workflow.json`) |
+| 3 | Agent frontmatter default | `model: opus` (SE, reviewers, planners) or `model: sonnet` (test writers, etc.) |
 
 **CRITICAL — `model` must be passed explicitly:**
 - The Task tool **inherits the parent conversation's model** when no `model` parameter is given
 - Agent frontmatter `model` field defines the agent's **intended** model but does NOT override inheritance
 - Therefore, every command MUST pass `model` explicitly in the Task invocation
-- Without explicit `model`, an agent with `model: opus` in frontmatter will run on the parent's model (typically Sonnet)
+- Without explicit `model`, an agent with `model: opus` in frontmatter will run on the parent's model
 
 **How it works:**
 - Commands pass the `model` parameter to the `Task` tool — this is the **only reliable** way to set the agent's model
 - If user specified model → use that (Priority 1)
-- If complexity check determined model → use that (Priority 2)
+- If downgrade check triggers → use sonnet (Priority 2, `/implement` only)
 - Otherwise → use the agent's frontmatter `model` value (Priority 3) — but you must still pass it explicitly
 
 **Reference — agent frontmatter models:**
 
 | Model | Agents |
 |-------|--------|
-| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer |
-| `sonnet` | All software-engineer-*, implementation-planner-*, unit-test-writer-*, code-reviewer-*, observability-engineer, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
+| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, **all software-engineer-\***, **all implementation-planner-\***, **all code-reviewer-\*** |
+| `sonnet` | unit-test-writer-*, observability-engineer, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
 
-**Agents with complexity awareness** (sonnet default, escalate to opus via complexity check):
-- `software-engineer-go` / `software-engineer-python` / `software-engineer-frontend` — via `/implement` command
+**Agents with downgrade awareness** (opus default, may downgrade to sonnet for simple tasks):
+- `software-engineer-go` / `software-engineer-python` / `software-engineer-frontend` — via `/implement` command auto-downgrade check
+
+**Agents always on opus** (no downgrade):
+- `code-reviewer-*` — via `/review` command (always opus)
+- `implementation-planner-*` — via `/plan` command (always opus)
+
+**Agents with escalation awareness** (sonnet default, escalate to opus via complexity check):
 - `unit-test-writer-*` — via `/test` command
-- `code-reviewer-*` — via `/review` command
-- `observability-engineer` — self-assessed complexity check
 
 ## Key Conventions
 

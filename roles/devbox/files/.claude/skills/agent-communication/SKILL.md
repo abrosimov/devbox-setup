@@ -83,6 +83,90 @@ When the planner produces work streams, downstream agents consume them via `plan
 4. **API contract is the handshake** — frontend streams depend on API contract completion, not backend implementation
 5. **Schema before backend** — if a schema stream exists, it must complete before backend implementation begins
 
+### DAG Execution Protocol
+
+Phase 4 uses a Directed Acyclic Graph (DAG) instead of batch-gated phases. Each task node executes as soon as its specific dependencies are met — no waiting for unrelated streams.
+
+#### Execution Model
+
+```
+BATCH-GATED (old):
+[SE-be ‖ SE-fe] → wait ALL → [Test-be ‖ Test-fe] → wait ALL → Review
+
+DAG-BASED (current):
+Stream 1: SE-be → Test-be ──────────────────┐
+              ↓ (BE done, FE still running)  │
+         [launch cross-stream tasks]         ├──► Review → G4
+                                             │
+Stream 2: SE-fe ──────► Test-fe ─────────────┘
+```
+
+#### Schema Contracts
+
+All execution state is schema-validated JSON, not text conventions:
+
+| File | Schema | Validated By |
+|------|--------|-------------|
+| `execution_dag.json` | `schemas/execution_dag.schema.json` | `bin/validate-pipeline-output --dag-check` |
+| `{stream}_completion.json` | `schemas/stream_completion.schema.json` | `bin/validate-pipeline-output --full` |
+| `pipeline_state.json` | `schemas/pipeline_state.schema.json` | `bin/validate-pipeline-output --schema pipeline_state` |
+
+#### Stream Executors
+
+Each work stream runs as a single background Task (`general-purpose` agent) that chains agents internally:
+
+1. SE agent → implementation
+2. `git-safe-commit` → commit implementation
+3. Test writer agent → tests
+4. `git-safe-commit` → commit tests
+5. Write `{stream}_completion.json` conforming to `stream_completion.schema.json`
+
+Stream executors run in parallel. Within a stream, steps are sequential.
+
+#### Validation Gates
+
+After each stream completes, the orchestrator runs `bin/validate-pipeline-output --full`:
+
+| Exit Code | Meaning | Retry Prompt |
+|-----------|---------|-------------|
+| 0 | All checks passed | — (advance DAG) |
+| 1 | Schema validation failed | "Output JSON malformed. Required fields: ..." |
+| 2 | Reality check failed | "Claimed files don't exist / git state mismatch" |
+| 3 | Build check failed | "Code doesn't compile: {stderr}" |
+| 4 | Test check failed | "Tests fail: {stderr}" |
+
+Exit codes drive **targeted retry prompts** — the orchestrator doesn't interpret text, it branches on a number.
+
+#### Retry Protocol
+
+```
+if exit_code != 0:
+  node.attempt += 1
+  if attempt > max_attempts (default: 2):
+    ESCALATE to user with exit-code-specific error
+  else:
+    launch new agent with:
+      "RETRY {N}/{max}. Previous failure (exit {code}): {error}.
+       Check existing state. Continue from where previous agent stopped.
+       Do NOT redo correct work. If same error recurs, return status: blocked."
+```
+
+#### Liveness Detection
+
+For hung background tasks (TaskOutput never returns):
+1. Check elapsed time against `timeout_minutes` in DAG node
+2. Read output file — if content unchanged since last poll, declare hung
+3. Fall back to checking `{stream}_completion.json` existence (bypasses TaskOutput bugs)
+4. If truly hung: kill, increment attempt, retry
+
+#### Reactive Cross-Stream Dispatch
+
+When a stream completes early:
+1. Orchestrator marks node `completed` in DAG
+2. Scans all `pending` nodes: are any now unblocked (all deps completed)?
+3. Launches newly-ready nodes immediately — even if other streams still running
+4. Cross-stream tasks (integration tests, unified review) start as soon as their specific deps resolve
+
 ## Pipeline Mode
 
 Agents operate in two modes depending on who invoked them:
@@ -102,7 +186,7 @@ Agents operate in two modes depending on who invoked them:
 | **Tier 1 decisions** | Just do it | Just do it |
 | **Tier 2 decisions** | Quick ask, then proceed | Decide autonomously, log in `autonomous_decisions` |
 | **Tier 3 decisions** | Present options, wait for user | **Still escalates** — genuine blocker |
-| **Model escalation** | "Re-run with Opus?" | Use the model assigned by orchestrator |
+| **Model note** | Already on Opus (default); downgraded tasks show "say 'opus' to override" | Use the model assigned by orchestrator |
 | **Structured output** | Optional | **Required** |
 | **Approval validation** | Verify explicit user approval | Skip — orchestrator already has gate approval |
 
@@ -227,23 +311,17 @@ When `PIPELINE_MODE=true`, use the pipeline completion format (see above). Do NO
 
 ## Escalation Rules
 
-### Model Escalation (Sonnet → Opus)
+### Model Downgrade Notice (Opus → Sonnet)
 
 **Interactive mode only.** In pipeline mode, use the model assigned by the orchestrator.
 
-Use complexity metrics to determine when Opus is needed:
+SE agents default to opus. When the `/implement` command auto-downgrades to sonnet for a simple task, it shows:
 
 ```markdown
-**If ANY threshold is exceeded**, stop and tell the user:
-
-> ⚠️ **Complex task detected.** This has [specific metrics].
->
-> For thorough coverage, re-run with Opus:
-> ```
-> /<command> opus
-> ```
-> Or say **'continue'** to proceed with Sonnet (faster, may miss edge cases).
+Task looks straightforward (N files, ~M lines). Using Sonnet for speed. Say 'opus' to override.
 ```
+
+Code reviewers and implementation planners always use opus — no downgrade logic applies.
 
 ### User Escalation
 

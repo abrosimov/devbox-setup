@@ -65,8 +65,8 @@ The agent workflow is controlled by a per-project `.claude/workflow.json` file.
 
 > This project doesn't have the agent workflow configured. Would you like to enable it?
 >
-> **A) Full workflow** — agents required for code changes, auto-commit after each phase, auto-escalate to Opus for complex tasks
-> **B) Lightweight** — agents required for code changes, you commit manually, no auto-escalation
+> **A) Full workflow** — agents required for code changes, auto-commit after each phase, auto-downgrade to Sonnet for simple SE tasks
+> **B) Lightweight** — agents required for code changes, you commit manually, always Opus (no downgrade)
 > **C) Skip** — work without the agent pipeline this session
 
 - **A** → run `/init-workflow full`
@@ -98,7 +98,7 @@ These are enforced by `alwaysApply: true` skills. Brief reminders:
 - **Immutability**: Prefer data transformation pipelines over mutation — return new instances, don't modify in place (see `philosophy` skill)
 - **Comments**: Only WHY/WARNING/TODO — never narrate what code does (see `code-comments` skill)
 - **Security at boundaries**: Validate all external input; never trust user data internally (see `security-patterns` skill)
-- **Model selection**: Haiku for search/grep tasks, Sonnet for implementation, Opus for architecture/review of complex PRs
+- **Model selection**: Haiku for search/grep tasks, Opus for SE/reviewers/planners (with auto-downgrade for trivial SE tasks), Sonnet for test writers and utility agents
 - **Agent delegation**: Use specialised agents for code changes when workflow is enabled (see `workflow` skill)
 
 ---

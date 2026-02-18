@@ -2,7 +2,7 @@
 name: implementation-planner-python-monolith
 description: Implementation planner for Flask-OpenAPI3 monolith - creates detailed implementation plans for API features following the layered DI architecture.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, mcp__memory-upstream
-model: sonnet
+model: opus
 skills: philosophy, config, python-architecture, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol
 updated: 2026-02-10
 ---

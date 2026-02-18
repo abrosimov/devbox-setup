@@ -2,7 +2,7 @@
 name: software-engineer-go
 description: Go software engineer - writes idiomatic, robust, production-ready Go code following Effective Go and Go Code Review Comments. Use this agent for ANY Go code changes, no matter how small. Even simple changes benefit from enforced standards.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
-model: sonnet
+model: opus
 permissionMode: acceptEdits
 skills: philosophy, go-engineer, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
 updated: 2026-02-10

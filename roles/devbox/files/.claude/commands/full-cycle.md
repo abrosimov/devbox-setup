@@ -47,7 +47,7 @@ Parse the JSON. Extract flags (default to `true` if key is missing):
 | Flag | Default | Effect in Full-Cycle |
 |------|---------|---------------------|
 | `auto_commit` | `true` | If `false`, skip all auto-commit steps; show changes and let user commit |
-| `complexity_escalation` | `true` | If `false`, always use agent's default model (no auto-escalation to Opus) |
+| `complexity_escalation` | `true` | If `false`, always use agent's default model (no auto-downgrade of SE agents to Sonnet) |
 
 Note: `agent_pipeline` is not checked here — `/full-cycle` always uses agents by definition.
 
@@ -190,7 +190,7 @@ Update `pipeline_state.json` with `feature_type`.
 1. Run `designer` agent AND `implementation-planner-{lang}` agent in parallel (both with `PIPELINE_MODE=true`):
    ```
    Task(subagent_type: "designer", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
-   Task(subagent_type: "implementation-planner-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   Task(subagent_type: "implementation-planner-{lang}", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
    ```
 2. Designer presents 3-5 design options
 3. Update pipeline state: `designer.status = "completed"`, `impl_planner.status = "completed"`
@@ -209,7 +209,7 @@ On approval, Designer develops full spec for selected option autonomously.
 **For backend features:**
 1. Run `implementation-planner-{lang}` agent:
    ```
-   Task(subagent_type: "implementation-planner-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   Task(subagent_type: "implementation-planner-{lang}", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
    ```
 2. Update pipeline state: `impl_planner.status = "completed"`
 3. Skip G2 entirely, proceed to API Designer
@@ -252,90 +252,191 @@ Present summary of all planning artifacts. Update `current_gate = "G3"`.
 
 Record decision in `decisions.json`. On approval, update `current_gate = "none"`.
 
-### Phase 4: Implementation Cycle (autonomous → Gate 4)
+### Phase 4: Implementation Cycle (DAG execution → Gate 4)
 
-**Work-stream-driven execution**: Read `plan_output.json` for `work_streams` and `parallelism_groups`.
+**Work-stream-driven DAG execution**: Build a task graph from `plan_output.json`, execute nodes as their dependencies resolve, validate each node's output with `bin/validate-pipeline-output`.
 
-**If work streams exist** — follow the dependency graph:
-1. Execute streams in parallelism group order (lower group numbers first)
-2. Within a group, streams can run in parallel (use concurrent Task invocations)
-3. After all implementation streams complete, run tests and review
+All agents in Phase 4 run with `PIPELINE_MODE=true`.
 
-**If no work streams** (backward compatible) — use default sequential:
-1. Run backend SE → frontend SE (if fullstack)
+#### Step 1: Build Execution DAG
 
-**PIPELINE_MODE**: All agents in Phase 4 run with `PIPELINE_MODE=true` in their prompt. This means:
-- Agents make Tier 2 decisions autonomously (logged in `autonomous_decisions` in structured output)
-- Agents return structured results instead of asking "Say 'continue'"
-- Only Tier 3 decisions escalate to user (genuine blockers)
+Read `plan_output.json` for `work_streams`. Build `execution_dag.json` (schema: `schemas/execution_dag.schema.json`):
 
-See `agent-communication` skill — Pipeline Mode section for full behavior differences.
+**Default DAG templates by feature type:**
 
-**Model selection for Phase 4**: SE, test writer, and reviewer agents default to `sonnet`. If `complexity_escalation` is `true` in `workflow.json`, check plan complexity (>200 lines or >10 FRs → escalate to `opus`). Otherwise use `sonnet`.
+| Feature | Streams | Nodes per stream |
+|---------|---------|-----------------|
+| Backend-only | 1 (backend) | se → commit_impl → test → commit_test |
+| Frontend-only | 1 (frontend) | se → commit_impl → test → commit_test |
+| Fullstack | 2+ (backend, frontend, ...) | se → commit_impl → test → commit_test per stream |
 
-**Detailed execution:**
+**Cross-stream nodes** (added after all stream nodes):
+- `review`: depends on ALL stream `commit_test` nodes
+- `gate_4`: depends on `review`
 
-1. **Backend implementation** (if applicable):
-   ```
-   Task(subagent_type: "software-engineer-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
-   ```
-   - Implements backend, writes `se_backend_output.json`
-   - Update pipeline state: `software_engineer_backend.status = "completed"`
+**If plan has `work_streams`** — use them to build the DAG. Each work stream becomes a stream with nodes.
+**If no work streams** — use default template based on `feature_type`.
 
-2. **Frontend implementation** (if applicable, can run in parallel with backend when API contract exists):
-   ```
-   Task(subagent_type: "software-engineer-frontend", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
-   ```
-   - Implements frontend, writes `se_frontend_output.json`
-   - Update pipeline state: `software_engineer_frontend.status = "completed"`
-   - For `backend`-only features: set `software_engineer_frontend.status = "skipped"`
-
-3. **Observability** (if work stream exists, can run in parallel with implementation):
-   ```
-   Task(subagent_type: "observability-engineer", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
-   ```
-   - Dashboards and alerts
-   - Update pipeline state: `observability_engineer.status = "completed"`
-   - If no observability stream: set `observability_engineer.status = "skipped"`
-
-**Commit after implementation** (before testing) — **if `auto_commit` is `true`**:
+After building, validate the DAG:
 ```bash
-.claude/bin/git-safe-commit -m "feat($JIRA_ISSUE): implement $BRANCH_NAME"
-```
-If `auto_commit` is `false`, skip — changes stay unstaged/uncommitted until user commits.
-
-4. **Testing**:
-   ```
-   Task(subagent_type: "unit-test-writer-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
-   ```
-   - If frontend exists:
-     ```
-     Task(subagent_type: "unit-test-writer-frontend", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
-     ```
-   - Test writers read `se_backend_output.json` / `se_frontend_output.json` to target untested areas
-   - Run all tests to verify they pass
-   - Update pipeline state: `test_writer.status = "completed"`
-
-**Commit after tests** — **if `auto_commit` is `true`**:
-```bash
-.claude/bin/git-safe-commit -m "test($JIRA_ISSUE): add tests for $BRANCH_NAME"
+.claude/bin/validate-pipeline-output --dag-check --file execution_dag.json
 ```
 
-5. **Review**:
-   ```
-   Task(subagent_type: "code-reviewer-{lang}", model: "sonnet", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
-   ```
-   - Code reviewer reads `se_backend_output.json` / `se_frontend_output.json` to audit `domain_compliance` and `autonomous_decisions`
-   - Update pipeline state: `code_reviewer.status = "completed"`
+Update `pipeline_state.json`: set `execution_dag_file` to the DAG path.
 
-**If reviewer finds blocking issues:**
-- Run appropriate SE agent(s) with review feedback (fix loop)
-- Re-run tests
-- Re-run review
-- If `auto_commit` is `true`: commit fixes via `.claude/bin/git-safe-commit -m "fix($JIRA_ISSUE): address review feedback"`
-- Repeat until clean
+#### Step 2: Record Baseline
 
-**GATE 4** — "Ship it?"
+```bash
+PRE_EXECUTION_SHA=$(git rev-parse HEAD)
+```
+
+Store in `execution_dag.json` as `pre_execution_sha`.
+
+#### Step 3: Launch Ready Nodes
+
+For each node where status is `pending` and ALL dependencies (via `edges`) have status `completed`:
+1. Transition node to `ready`, then to `running`
+2. Record `pre_sha=$(git rev-parse HEAD)` and `started_at`
+
+**For `agent` nodes** — launch as background Task:
+
+For stream executors (SE + test chain), launch a single background Task per stream using `general-purpose` agent. The prompt instructs the agent to chain steps sequentially:
+
+```
+Task(
+  subagent_type: "general-purpose",
+  model: "opus",
+  run_in_background: true,
+  prompt: "You are a stream executor for the '{stream}' stream.
+    PIPELINE_MODE=true
+    Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}
+
+    Execute these steps SEQUENTIALLY:
+
+    1. Run software-engineer-{lang} agent via Task tool:
+       Task(subagent_type: 'software-engineer-{lang}', model: '{model}', prompt: 'PIPELINE_MODE=true\n...')
+    2. Commit implementation:
+       .claude/bin/git-safe-commit -m 'feat({JIRA_ISSUE}): implement {stream}'
+    3. Run unit-test-writer-{lang} agent via Task tool:
+       Task(subagent_type: 'unit-test-writer-{lang}', model: 'sonnet', prompt: 'PIPELINE_MODE=true\n...')
+    4. Commit tests:
+       .claude/bin/git-safe-commit -m 'test({JIRA_ISSUE}): add {stream} tests'
+
+    After ALL steps, write a completion file: {PLANS_DIR}/{stream}_completion.json
+    conforming to schemas/stream_completion.schema.json:
+    {
+      'stream': '{stream}',
+      'status': 'complete|partial|blocked|failed',
+      'steps': [{name, status, error?, output_file?}, ...],
+      'git_sha': '$(git rev-parse --short HEAD)',
+      'files_modified': [list of files],
+      'output_files': [list of JSON outputs],
+      'build_passed': true|false,
+      'tests_passed': true|false,
+      'tests_total': N,
+      'tests_failed': N,
+      'attempt': {attempt},
+      'started_at': '{started_at}',
+      'completed_at': '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+    }
+
+    Run a build check before writing completion (go build/ruff check/tsc --noEmit).
+    Set build_passed based on the result.
+    If any step fails, set status to 'failed' with the error in the step entry. Still write the completion file."
+)
+```
+
+Record the `task_id` in the DAG node. Write updated `execution_dag.json`.
+
+**For `commit` nodes** — run directly (not backgrounded):
+```bash
+.claude/bin/git-safe-commit -m "{commit message}"
+```
+
+**For `verify` nodes** — run validation script directly:
+```bash
+.claude/bin/validate-pipeline-output --full --file {completion_file} --lang {lang}
+```
+
+#### Step 4: Poll and Advance Loop
+
+Repeatedly check running nodes and advance the DAG:
+
+```
+For each node with status "running":
+
+  1. PRIMARY: Check TaskOutput(task_id=node.task_id, block=false, timeout=5000)
+  2. FALLBACK: Check if {stream}_completion.json exists (for phantom completion bug)
+
+  If completed (via either check):
+    a. Run validation gate:
+       EXIT_CODE = .claude/bin/validate-pipeline-output --full \
+         --file {stream}_completion.json --lang {lang}
+
+    b. Branch on exit code:
+       0 → node.status = "completed", node.completed_at = now
+       1 → RETRY: "Output JSON malformed. Required schema: stream_completion"
+       2 → RETRY: "Reality check failed — claimed files don't match filesystem/git"
+       3 → RETRY: "Build failed: {stderr from validation script}"
+       4 → RETRY: "Tests failed: {stderr from validation script}"
+
+    c. If RETRY:
+       node.attempt += 1
+       If attempt > max_attempts:
+         node.status = "failed"
+         ESCALATE to user:
+           "Stream '{stream}' failed validation after {N} attempts.
+            Last exit code: {code} — {error}
+            Options: A) Retry with different approach  B) Skip stream  C) Stop pipeline
+            [Awaiting your decision]"
+       Else:
+         Launch new background Task with augmented retry prompt:
+           "RETRY {attempt}/{max_attempts}
+            Previous validation failed (exit code {code}): {error}
+            Check existing state via git diff. Continue from where previous agent stopped.
+            Do NOT redo work that already exists and is correct.
+            If the same error recurs, set status: 'blocked' in completion file."
+
+  If NOT completed:
+    Check liveness — if elapsed > timeout_minutes:
+      Read output file to check for progress
+      If no new content since last poll:
+        node.status = "failed", node.error = "Timed out after {timeout} minutes"
+        Attempt retry (same as above)
+      Else:
+        Extend timeout by 5 minutes (once)
+
+  After processing all running nodes:
+    Scan for newly ready nodes (all deps completed, status still "pending")
+    Transition them to "ready" → launch immediately (Step 3 logic)
+
+  Write updated execution_dag.json after each iteration.
+
+  If all nodes are completed/skipped/failed → exit loop.
+```
+
+**IMPORTANT**: When polling, also check completion files via Glob as fallback for the known TaskOutput completion detection bug. If the file exists and validates, trust it even if TaskOutput still says "running".
+
+#### Step 5: Review (after all streams complete)
+
+After all stream nodes reach `completed`:
+
+1. Launch code reviewer:
+   ```
+   Task(subagent_type: "code-reviewer-{lang}", model: "opus",
+     prompt: "PIPELINE_MODE=true\nContext: ...\n\nReview ALL changes across streams...")
+   ```
+
+2. **If reviewer finds blocking issues:**
+   - Identify which stream(s) are affected
+   - Re-launch those stream executors with review feedback
+   - Re-run validation on the re-executed streams
+   - Re-run review
+   - Repeat until clean (max 2 review cycles)
+
+3. **If `auto_commit` is `true`**: commit any review fixes via `.claude/bin/git-safe-commit -m "fix({JIRA_ISSUE}): address review feedback"`
+
+#### Step 6: Gate 4
 
 Update `current_gate = "G4"`.
 
@@ -425,8 +526,9 @@ Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 - The pipeline pauses only at 4 strategic gates, not after every agent
 - Agents run autonomously between gates with `PIPELINE_MODE=true` — they make Tier 2 decisions autonomously, log them in structured output, and return results without prompting
 - Individual commands (`/implement`, `/test`, `/review`) still use per-step approval (interactive mode)
-- SE agents write per-role output files (`se_backend_output.json`, `se_frontend_output.json`) to avoid conflicts during parallel execution
-- Pipeline state persists in `pipeline_state.json` — resume with `/full-cycle` if interrupted
+- Phase 4 builds an `execution_dag.json` from plan work streams and executes nodes as dependencies resolve — parallel streams run concurrently, cross-stream nodes (review, gate) wait for all predecessors
+- Each stream executor writes a `{stream}_completion.json` validated by `bin/validate-pipeline-output` against `schemas/stream_completion.schema.json` — exit codes drive retry/escalation logic (0=pass, 1=malformed, 2=reality-check, 3=build-fail, 4=test-fail)
+- Pipeline state persists in `pipeline_state.json` and `execution_dag.json` — resume with `/full-cycle` if interrupted
 - Decisions are logged in `decisions.json` for audit trail
 - Use `stop` at any time to exit
 - One Jira ticket can span multiple worktrees (e.g., `PROJ-123_backend`, `PROJ-123_frontend`)

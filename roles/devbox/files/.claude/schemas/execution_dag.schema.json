@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "execution_dag.schema.json",
+  "title": "Execution DAG",
+  "description": "Directed acyclic graph of tasks for Phase 4 pipeline execution. Built by orchestrator from plan_output.json work_streams. Serves as both execution plan and live state tracker.",
+  "type": "object",
+  "required": ["pipeline_id", "lang", "nodes", "edges"],
+  "properties": {
+    "pipeline_id": {
+      "type": "string",
+      "description": "Unique pipeline identifier: {JIRA_ISSUE}_{BRANCH_NAME}"
+    },
+    "lang": {
+      "enum": ["go", "python", "node", "multi"],
+      "description": "Primary language detected. 'multi' for fullstack with different backend/frontend languages."
+    },
+    "pre_execution_sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{7,40}$",
+      "description": "Git HEAD SHA before any Phase 4 execution began. Baseline for all diffs."
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique node identifier (e.g., 'se_backend', 'test_frontend', 'commit_impl_backend')."
+          },
+          "type": {
+            "enum": ["agent", "commit", "verify", "gate"],
+            "description": "Node kind. 'agent' = Task tool invocation, 'commit' = git-safe-commit, 'verify' = validation script, 'gate' = user decision point."
+          },
+          "status": {
+            "enum": ["pending", "ready", "running", "completed", "failed", "skipped"],
+            "description": "'ready' = all dependencies met, eligible for launch. Orchestrator transitions pending→ready when deps complete."
+          },
+          "stream": {
+            "type": "string",
+            "description": "Which work stream this node belongs to (e.g., 'backend', 'frontend'). Null for cross-stream nodes."
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agent subagent_type for type=agent nodes (e.g., 'software-engineer-go')."
+          },
+          "model": {
+            "enum": ["opus", "sonnet", "haiku"],
+            "description": "Model to use for this agent invocation."
+          },
+          "task_id": {
+            "type": "string",
+            "description": "Background Task ID assigned when status transitions to 'running'. Used for TaskOutput polling."
+          },
+          "pre_sha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{7,40}$",
+            "description": "Git HEAD SHA recorded just before this node started. Used by reality check."
+          },
+          "output_file": {
+            "type": "string",
+            "description": "Path to the node's output file (e.g., 'backend_completion.json')."
+          },
+          "verify_schema": {
+            "type": "string",
+            "description": "Schema name to validate output against (e.g., 'stream_completion'). Used by verify nodes."
+          },
+          "timeout_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Max minutes before node is considered hung."
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "Current attempt number. Incremented on retry."
+          },
+          "max_attempts": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 2,
+            "description": "Maximum retry attempts before escalating to user."
+          },
+          "started_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when node execution began."
+          },
+          "completed_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when node execution finished."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error description if status is 'failed'."
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "type": { "const": "agent" } } },
+            "then": { "required": ["agent", "model", "stream", "timeout_minutes"] }
+          },
+          {
+            "if": { "properties": { "status": { "const": "running" } } },
+            "then": { "required": ["task_id", "pre_sha", "started_at"] }
+          },
+          {
+            "if": { "properties": { "status": { "const": "failed" } } },
+            "then": { "required": ["error"] }
+          }
+        ]
+      },
+      "minItems": 1
+    },
+    "edges": {
+      "type": "array",
+      "description": "Dependency edges. 'from' must complete before 'to' can transition to 'ready'.",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Source node ID (must complete first)."
+          },
+          "to": {
+            "type": "string",
+            "description": "Target node ID (blocked until source completes)."
+          }
+        }
+      }
+    }
+  }
+}

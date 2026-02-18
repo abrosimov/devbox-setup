@@ -1,0 +1,595 @@
+#!/usr/bin/env bash
+# validate-pipeline-output — Schema-guided verification for pipeline agent output.
+#
+# Deterministic validation: checks JSON structure, filesystem reality, build health.
+# Exit codes map to specific failure types for targeted retry prompts.
+#
+# Usage:
+#   validate-pipeline-output --schema <name> --file <path>
+#   validate-pipeline-output --reality-check --file <path>
+#   validate-pipeline-output --build-check --lang <go|python|node>
+#   validate-pipeline-output --test-check --lang <go|python|node> [--test-files <glob>]
+#   validate-pipeline-output --dag-check --file <path>
+#   validate-pipeline-output --full --file <path> --lang <go|python|node>
+#
+# Exit codes:
+#   0  All checks passed
+#   1  Schema validation failed (structural — missing fields, wrong types, bad enums)
+#   2  Reality check failed (claimed files don't exist, git state mismatch)
+#   3  Build check failed (code doesn't compile/lint)
+#   4  Test check failed (tests don't pass)
+#   5  DAG integrity failed (cycles, dangling edges, invalid transitions)
+#   10 Usage error (bad arguments)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCHEMAS_DIR="${SCRIPT_DIR}/../schemas"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+# --- Helpers ---
+
+die() { echo -e "${RED}ERROR${NC}: $1" >&2; exit "${2:-10}"; }
+ok()  { echo -e "${GREEN}PASS${NC}: $1"; }
+fail() { echo -e "${RED}FAIL${NC}: $1" >&2; }
+warn() { echo -e "${YELLOW}WARN${NC}: $1" >&2; }
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "$1 is required but not found on PATH" 10
+}
+
+require_file() {
+  [[ -f "$1" ]] || die "File not found: $1" 10
+}
+
+# --- Schema Validation (exit code 1) ---
+
+validate_schema() {
+  local schema_name="$1" file="$2"
+  local schema_file="${SCHEMAS_DIR}/${schema_name}.schema.json"
+
+  require_file "$schema_file"
+  require_file "$file"
+  require_cmd jq
+
+  # Phase 1: Valid JSON?
+  if ! jq empty "$file" 2>/dev/null; then
+    fail "Not valid JSON: $file"
+    return 1
+  fi
+
+  # Phase 2: Extract required fields from schema and check presence
+  local required
+  required=$(jq -r '.required[]? // empty' "$schema_file" 2>/dev/null)
+
+  local missing=()
+  for field in $required; do
+    if ! jq -e "has(\"$field\")" "$file" >/dev/null 2>&1; then
+      missing+=("$field")
+    fi
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    fail "Missing required fields in $file: ${missing[*]}"
+    return 1
+  fi
+
+  # Phase 3: Enum validation for known fields
+  case "$schema_name" in
+    stream_completion)
+      validate_enum "$file" ".status" "complete partial blocked failed" || return 1
+      # Validate each step has valid name and status
+      local step_count
+      step_count=$(jq '.steps | length' "$file" 2>/dev/null || echo 0)
+      if [[ "$step_count" -eq 0 ]]; then
+        fail "steps array is empty in $file"
+        return 1
+      fi
+      for i in $(seq 0 $((step_count - 1))); do
+        validate_enum "$file" ".steps[$i].name" "se commit_impl test commit_test" || return 1
+        validate_enum "$file" ".steps[$i].status" "passed failed skipped" || return 1
+      done
+      # If status=complete, no step can be failed
+      local status
+      status=$(jq -r '.status' "$file")
+      if [[ "$status" == "complete" ]]; then
+        local failed_steps
+        failed_steps=$(jq '[.steps[] | select(.status == "failed")] | length' "$file")
+        if [[ "$failed_steps" -gt 0 ]]; then
+          fail "status=complete but $failed_steps step(s) have status=failed"
+          return 1
+        fi
+      fi
+      # If status=failed, at least one step must have error
+      if [[ "$status" == "failed" ]]; then
+        local has_error
+        has_error=$(jq '[.steps[] | select(.status == "failed" and .error and .error != "")] | length' "$file")
+        if [[ "$has_error" -eq 0 ]]; then
+          fail "status=failed but no step has an error message"
+          return 1
+        fi
+      fi
+      # git_sha pattern
+      validate_pattern "$file" ".git_sha" '^[a-f0-9]{7,40}$' || return 1
+      ;;
+    execution_dag)
+      # Validate node types and statuses
+      local node_count
+      node_count=$(jq '.nodes | length' "$file" 2>/dev/null || echo 0)
+      if [[ "$node_count" -eq 0 ]]; then
+        fail "nodes array is empty in $file"
+        return 1
+      fi
+      for i in $(seq 0 $((node_count - 1))); do
+        validate_enum "$file" ".nodes[$i].type" "agent commit verify gate" || return 1
+        validate_enum "$file" ".nodes[$i].status" "pending ready running completed failed skipped" || return 1
+      done
+      # Validate all edge references point to existing nodes
+      local node_ids edge_from edge_to
+      node_ids=$(jq -r '[.nodes[].id] | join(" ")' "$file")
+      local edge_count
+      edge_count=$(jq '.edges | length' "$file" 2>/dev/null || echo 0)
+      for i in $(seq 0 $((edge_count - 1))); do
+        edge_from=$(jq -r ".edges[$i].from" "$file")
+        edge_to=$(jq -r ".edges[$i].to" "$file")
+        if ! echo "$node_ids" | tr ' ' '\n' | grep -qx "$edge_from"; then
+          fail "Edge references unknown node: from='$edge_from'"
+          return 1
+        fi
+        if ! echo "$node_ids" | tr ' ' '\n' | grep -qx "$edge_to"; then
+          fail "Edge references unknown node: to='$edge_to'"
+          return 1
+        fi
+      done
+      ;;
+    pipeline_state)
+      validate_enum "$file" ".feature_type" "ui backend fullstack pending_detection" || return 1
+      validate_enum "$file" ".current_gate" "none G1 G2 G3 G4" || return 1
+      ;;
+  esac
+
+  ok "Schema validation passed for $schema_name"
+  return 0
+}
+
+validate_enum() {
+  local file="$1" path="$2" allowed="$3"
+  local value
+  value=$(jq -r "$path // empty" "$file" 2>/dev/null)
+  if [[ -z "$value" ]]; then
+    fail "Field $path is missing or null in $file"
+    return 1
+  fi
+  if ! echo "$allowed" | tr ' ' '\n' | grep -qx "$value"; then
+    fail "Invalid value '$value' for $path. Allowed: $allowed"
+    return 1
+  fi
+  return 0
+}
+
+validate_pattern() {
+  local file="$1" path="$2" pattern="$3"
+  local value
+  value=$(jq -r "$path // empty" "$file" 2>/dev/null)
+  if [[ -z "$value" ]]; then
+    fail "Field $path is missing or null in $file"
+    return 1
+  fi
+  if ! echo "$value" | grep -qE "$pattern"; then
+    fail "Value '$value' for $path doesn't match pattern: $pattern"
+    return 1
+  fi
+  return 0
+}
+
+# --- Reality Check (exit code 2) ---
+
+reality_check() {
+  local file="$1"
+  require_file "$file"
+  require_cmd jq
+  require_cmd git
+
+  local errors=0
+
+  # Check 1: Claimed output files exist on disk
+  local output_files
+  output_files=$(jq -r '.output_files[]? // empty' "$file" 2>/dev/null)
+  for of in $output_files; do
+    if [[ ! -f "$of" ]]; then
+      fail "Claimed output file does not exist: $of"
+      errors=$((errors + 1))
+    fi
+  done
+
+  # Check 2: git_sha matches actual HEAD
+  local claimed_sha actual_sha
+  claimed_sha=$(jq -r '.git_sha // empty' "$file" 2>/dev/null)
+  actual_sha=$(git rev-parse --short=7 HEAD 2>/dev/null || echo "")
+  if [[ -n "$claimed_sha" && -n "$actual_sha" ]]; then
+    # Compare first 7 chars
+    if [[ "${claimed_sha:0:7}" != "${actual_sha:0:7}" ]]; then
+      warn "Claimed git_sha=${claimed_sha} but HEAD=${actual_sha} (may be OK if other streams committed)"
+    fi
+  fi
+
+  # Check 3: Claimed files_modified actually show in git diff
+  local claimed_files actual_diff
+  claimed_files=$(jq -r '.files_modified[]? // empty' "$file" 2>/dev/null)
+  if [[ -n "$claimed_files" ]]; then
+    actual_diff=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only 2>/dev/null || echo "")
+    for cf in $claimed_files; do
+      if [[ -n "$actual_diff" ]] && ! echo "$actual_diff" | grep -qF "$cf"; then
+        # File might exist but not in the most recent commit (could be in working tree)
+        if [[ ! -f "$cf" ]]; then
+          fail "Claimed modified file does not exist: $cf"
+          errors=$((errors + 1))
+        fi
+      fi
+    done
+  fi
+
+  # Check 4: If status=complete and files_modified is empty, that's suspicious
+  local status
+  status=$(jq -r '.status // empty' "$file" 2>/dev/null)
+  local file_count
+  file_count=$(jq '.files_modified | length' "$file" 2>/dev/null || echo 0)
+  if [[ "$status" == "complete" && "$file_count" -eq 0 ]]; then
+    # SE steps should always produce files. Test-only streams might not.
+    local has_se
+    has_se=$(jq '[.steps[]? | select(.name == "se" and .status == "passed")] | length' "$file" 2>/dev/null || echo 0)
+    if [[ "$has_se" -gt 0 ]]; then
+      fail "status=complete with SE step passed but files_modified is empty"
+      errors=$((errors + 1))
+    fi
+  fi
+
+  if [[ $errors -gt 0 ]]; then
+    fail "Reality check found $errors issue(s)"
+    return 2
+  fi
+
+  ok "Reality check passed"
+  return 0
+}
+
+# --- Build Check (exit code 3) ---
+
+build_check() {
+  local lang="$1"
+  local output
+
+  case "$lang" in
+    go)
+      require_cmd go
+      if ! output=$(go build ./... 2>&1); then
+        fail "Go build failed:"
+        echo "$output" >&2
+        return 3
+      fi
+      # Also run vet
+      if ! output=$(go vet ./... 2>&1); then
+        fail "Go vet failed:"
+        echo "$output" >&2
+        return 3
+      fi
+      ;;
+    python)
+      require_cmd ruff
+      if ! output=$(ruff check 2>&1); then
+        fail "Ruff check failed:"
+        echo "$output" >&2
+        return 3
+      fi
+      ;;
+    node)
+      # Try tsc first, fall back to just checking syntax
+      if command -v tsc >/dev/null 2>&1; then
+        if ! output=$(tsc --noEmit 2>&1); then
+          fail "TypeScript build failed:"
+          echo "$output" >&2
+          return 3
+        fi
+      elif command -v npx >/dev/null 2>&1; then
+        if ! output=$(npx tsc --noEmit 2>&1); then
+          fail "TypeScript build failed:"
+          echo "$output" >&2
+          return 3
+        fi
+      else
+        warn "No TypeScript compiler found, skipping build check"
+      fi
+      ;;
+    *)
+      warn "Unknown language '$lang', skipping build check"
+      return 0
+      ;;
+  esac
+
+  ok "Build check passed ($lang)"
+  return 0
+}
+
+# --- Test Check (exit code 4) ---
+
+test_check() {
+  local lang="$1" test_files="${2:-}"
+  local output
+
+  case "$lang" in
+    go)
+      if [[ -n "$test_files" ]]; then
+        if ! output=$(go test "$test_files" 2>&1); then
+          fail "Go tests failed:"
+          echo "$output" >&2
+          return 4
+        fi
+      else
+        if ! output=$(go test ./... 2>&1); then
+          fail "Go tests failed:"
+          echo "$output" >&2
+          return 4
+        fi
+      fi
+      ;;
+    python)
+      require_cmd python
+      if [[ -n "$test_files" ]]; then
+        if ! output=$(python -m pytest "$test_files" 2>&1); then
+          fail "Python tests failed:"
+          echo "$output" >&2
+          return 4
+        fi
+      else
+        if ! output=$(python -m pytest 2>&1); then
+          fail "Python tests failed:"
+          echo "$output" >&2
+          return 4
+        fi
+      fi
+      ;;
+    node)
+      if [[ -f "package.json" ]]; then
+        local test_cmd
+        test_cmd=$(jq -r '.scripts.test // empty' package.json 2>/dev/null)
+        if [[ -n "$test_cmd" ]]; then
+          if command -v pnpm >/dev/null 2>&1; then
+            if ! output=$(pnpm test 2>&1); then
+              fail "Node tests failed:"
+              echo "$output" >&2
+              return 4
+            fi
+          elif command -v npm >/dev/null 2>&1; then
+            if ! output=$(npm test 2>&1); then
+              fail "Node tests failed:"
+              echo "$output" >&2
+              return 4
+            fi
+          fi
+        else
+          warn "No test script in package.json, skipping"
+        fi
+      fi
+      ;;
+    *)
+      warn "Unknown language '$lang', skipping test check"
+      return 0
+      ;;
+  esac
+
+  ok "Test check passed ($lang)"
+  return 0
+}
+
+# --- DAG Integrity Check (exit code 5) ---
+
+dag_check() {
+  local file="$1"
+  require_file "$file"
+  require_cmd jq
+
+  local errors=0
+
+  # Check 1: No duplicate node IDs
+  local unique_count total_count
+  total_count=$(jq '.nodes | length' "$file")
+  unique_count=$(jq '[.nodes[].id] | unique | length' "$file")
+  if [[ "$total_count" -ne "$unique_count" ]]; then
+    fail "Duplicate node IDs detected ($total_count total, $unique_count unique)"
+    errors=$((errors + 1))
+  fi
+
+  # Check 2: No self-referencing edges
+  local self_edges
+  self_edges=$(jq '[.edges[] | select(.from == .to)] | length' "$file")
+  if [[ "$self_edges" -gt 0 ]]; then
+    fail "$self_edges self-referencing edge(s) detected"
+    errors=$((errors + 1))
+  fi
+
+  # Check 3: Cycle detection (topological sort attempt)
+  # Build adjacency list and do DFS-based cycle detection via jq
+  local has_cycle
+  has_cycle=$(jq '
+    def topo_sort:
+      . as $graph |
+      ($graph.nodes | map({(.id): 0}) | add) as $visited |
+      ($graph.edges | group_by(.from) | map({(.[0].from): [.[].to]}) | add // {}) as $adj |
+
+      # Simple check: if any node has more incoming edges than total nodes, something is wrong
+      ($graph.edges | map(.to) | group_by(.) | map(length) | max // 0) as $max_in |
+      if $max_in > ($graph.nodes | length) then true
+      else
+        # Check: can we reach a node from itself?
+        reduce $graph.nodes[].id as $start (false;
+          if . then .
+          else
+            # BFS from each node, check if we return to start
+            [$start] as $queue |
+            {} as $seen |
+            reduce range($graph.nodes | length) as $_ (
+              {queue: ($adj[$start] // []), found: false};
+              if .found then .
+              else
+                reduce .queue[] as $next (
+                  {queue: [], found: .found};
+                  if $next == $start then {queue: .queue, found: true}
+                  else {queue: (.queue + ($adj[$next] // [])), found: .found}
+                  end
+                )
+              end
+            ) | .found
+          end
+        )
+      end
+    ;
+    topo_sort
+  ' "$file" 2>/dev/null || echo "false")
+
+  if [[ "$has_cycle" == "true" ]]; then
+    fail "Cycle detected in DAG — execution would deadlock"
+    errors=$((errors + 1))
+  fi
+
+  # Check 4: Agent nodes must have agent and model fields
+  local bad_agents
+  bad_agents=$(jq '[.nodes[] | select(.type == "agent" and (.agent == null or .model == null))] | length' "$file")
+  if [[ "$bad_agents" -gt 0 ]]; then
+    fail "$bad_agents agent node(s) missing 'agent' or 'model' field"
+    errors=$((errors + 1))
+  fi
+
+  # Check 5: Running nodes must have task_id
+  local running_no_task
+  running_no_task=$(jq '[.nodes[] | select(.status == "running" and (.task_id == null or .task_id == ""))] | length' "$file")
+  if [[ "$running_no_task" -gt 0 ]]; then
+    fail "$running_no_task running node(s) missing 'task_id'"
+    errors=$((errors + 1))
+  fi
+
+  if [[ $errors -gt 0 ]]; then
+    fail "DAG integrity check found $errors issue(s)"
+    return 5
+  fi
+
+  ok "DAG integrity check passed"
+  return 0
+}
+
+# --- Full Validation (all checks in sequence) ---
+
+full_check() {
+  local file="$1" lang="$2"
+
+  echo "=== Pipeline Output Validation ==="
+  echo ""
+
+  # 1. Schema
+  echo "--- Schema Validation ---"
+  if ! validate_schema "stream_completion" "$file"; then
+    return 1
+  fi
+  echo ""
+
+  # 2. Reality
+  echo "--- Reality Check ---"
+  if ! reality_check "$file"; then
+    return 2
+  fi
+  echo ""
+
+  # 3. Build
+  echo "--- Build Check ---"
+  if ! build_check "$lang"; then
+    return 3
+  fi
+  echo ""
+
+  # 4. Tests (only if stream has test step that passed)
+  local has_tests
+  has_tests=$(jq '[.steps[]? | select(.name == "test" and .status == "passed")] | length' "$file" 2>/dev/null || echo 0)
+  if [[ "$has_tests" -gt 0 ]]; then
+    echo "--- Test Check ---"
+    if ! test_check "$lang"; then
+      return 4
+    fi
+    echo ""
+  fi
+
+  echo "=== All Checks Passed ==="
+  return 0
+}
+
+# --- Main ---
+
+mode=""
+schema_name=""
+file=""
+lang=""
+test_files=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --schema)       mode="schema"; schema_name="$2"; shift 2 ;;
+    --reality-check) mode="reality"; shift ;;
+    --build-check)  mode="build"; shift ;;
+    --test-check)   mode="test"; shift ;;
+    --dag-check)    mode="dag"; shift ;;
+    --full)         mode="full"; shift ;;
+    --file)         file="$2"; shift 2 ;;
+    --lang)         lang="$2"; shift 2 ;;
+    --test-files)   test_files="$2"; shift 2 ;;
+    -h|--help)
+      echo "Usage: validate-pipeline-output [mode] [options]"
+      echo ""
+      echo "Modes:"
+      echo "  --schema <name> --file <path>    Validate JSON against named schema"
+      echo "  --reality-check --file <path>    Cross-check claims vs filesystem + git"
+      echo "  --build-check --lang <lang>      Run language-specific build check"
+      echo "  --test-check --lang <lang>       Run tests"
+      echo "  --dag-check --file <path>        Validate DAG integrity"
+      echo "  --full --file <path> --lang <L>  All checks in sequence"
+      echo ""
+      echo "Exit codes: 0=pass, 1=schema, 2=reality, 3=build, 4=test, 5=dag, 10=usage"
+      exit 0
+      ;;
+    *) die "Unknown option: $1" ;;
+  esac
+done
+
+case "$mode" in
+  schema)
+    [[ -z "$schema_name" ]] && die "--schema requires a schema name"
+    [[ -z "$file" ]] && die "--schema requires --file"
+    validate_schema "$schema_name" "$file"
+    ;;
+  reality)
+    [[ -z "$file" ]] && die "--reality-check requires --file"
+    reality_check "$file"
+    ;;
+  build)
+    [[ -z "$lang" ]] && die "--build-check requires --lang"
+    build_check "$lang"
+    ;;
+  test)
+    [[ -z "$lang" ]] && die "--test-check requires --lang"
+    test_check "$lang" "$test_files"
+    ;;
+  dag)
+    [[ -z "$file" ]] && die "--dag-check requires --file"
+    # Schema validate first, then integrity
+    validate_schema "execution_dag" "$file" || exit 1
+    dag_check "$file"
+    ;;
+  full)
+    [[ -z "$file" ]] && die "--full requires --file"
+    [[ -z "$lang" ]] && die "--full requires --lang"
+    full_check "$file" "$lang"
+    ;;
+  *)
+    die "No mode specified. Use --help for usage."
+    ;;
+esac

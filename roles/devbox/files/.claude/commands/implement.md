@@ -28,7 +28,8 @@ You are orchestrating the implementation phase of a development workflow.
 Check if user passed a model argument:
 - `/implement opus` or `/implement --model opus` → use **opus**
 - `/implement sonnet` or `/implement --model sonnet` → use **sonnet**
-- `/implement` (no argument) → determine model via complexity check
+- `/implement` (no argument) → default **opus**, with auto-downgrade check
+- `/implement fast` → use **sonnet**, skip downgrade check
 
 ## Steps
 
@@ -44,7 +45,7 @@ Parse the JSON. Extract flags (default to `true` if key is missing, to preserve 
 |------|---------|--------|
 | `agent_pipeline` | `true` | If `false`, this command still works but isn't mandatory |
 | `auto_commit` | `true` | If `false`, skip commit steps (Steps 7-8 change) |
-| `complexity_escalation` | `true` | If `false`, skip Step 4 (always use agent's default model) |
+| `complexity_escalation` | `true` | If `false`, skip Step 4 (always use opus — agent's default model) |
 
 ### 1. Git Setup
 
@@ -105,58 +106,63 @@ Check for project markers (check ALL — a project may have multiple):
 3. If no work streams, ask user: "This is a fullstack project. Which part should I implement? (A) Backend, (B) Frontend, (C) Both sequentially"
 4. When running both, run backend first (it may produce API types/contracts the frontend needs), then frontend
 
-### 4. Pre-flight Complexity Check (if no model specified)
+### 4. Pre-flight Downgrade Check (if no model specified)
 
-**Skip this step if user explicitly specified a model OR `complexity_escalation` is `false`.**
+**Default model is opus.** This step checks whether the task is simple enough to downgrade to sonnet for speed.
 
-Run complexity assessment:
+**Skip this step (stay on opus) if:**
+- User explicitly specified a model (`/implement opus` or `/implement sonnet`)
+- `complexity_escalation` is `false` in `workflow.json` (always use agent's default model — opus)
 
-**For Go projects:**
+**Run downgrade assessment:**
+
 ```bash
-# Count lines in plan (if exists)
-wc -l {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null | awk '{print $1}'
+# 1. Check if implementation plan exists
+PLAN_EXISTS=false
+[ -f "{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md" ] && PLAN_EXISTS=true
 
-# Count changed files (excluding tests)
-git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | wc -l
+# 2. Count changed files (non-test) — language-specific
+# Go:
+CHANGED_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | wc -l | tr -d ' ')
+# Python:
+CHANGED_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test_ | grep -v _test.py | wc -l | tr -d ' ')
+# Frontend:
+CHANGED_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' 2>/dev/null | grep -v '.test.' | grep -v '.spec.' | grep -v '__tests__' | wc -l | tr -d ' ')
 
-# Check for concurrency patterns
-git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -l "go func\|chan \|sync\.\|select {" 2>/dev/null | wc -l
+# 3. Check for concurrency/async/complex patterns — language-specific
+# Go:
+COMPLEX=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -l "go func\|chan \|sync\.\|select {" 2>/dev/null | wc -l | tr -d ' ')
+# Python:
+COMPLEX=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -l "async def\|await\|asyncio" 2>/dev/null | wc -l | tr -d ' ')
+# Frontend:
+COMPLEX=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' 2>/dev/null | grep -v '.test.' | xargs grep -l "createContext\|useReducer\|Suspense" 2>/dev/null | wc -l | tr -d ' ')
+
+# 4. Check for new dependency changes
+DEP_CHANGES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- 'go.mod' 'go.sum' 'pyproject.toml' 'requirements*.txt' 'package.json' 'pnpm-lock.yaml' 2>/dev/null | wc -l | tr -d ' ')
+
+# 5. Total diff size
+DIFF_LINES=$(git diff $DEFAULT_BRANCH...HEAD --stat 2>/dev/null | tail -1 | grep -oE '[0-9]+ insertion|[0-9]+ deletion' | awk '{sum+=$1} END {print sum+0}')
 ```
 
-**For Python projects:**
-```bash
-# Count lines in plan (if exists)
-wc -l {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null | awk '{print $1}'
+**Downgrade to sonnet only when ALL criteria are met:**
 
-# Count changed files (excluding tests)
-git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test_ | grep -v _test.py | wc -l
+| Criterion | Check | Rationale |
+|-----------|-------|-----------|
+| No plan exists | `PLAN_EXISTS = false` | If someone wrote a plan, it's non-trivial |
+| Few files changed | `CHANGED_FILES <= 3` | Small surface area |
+| No complex patterns | `COMPLEX = 0` | Concurrency/async needs deeper reasoning |
+| No dependency changes | `DEP_CHANGES = 0` | New deps = architectural decision |
+| Small diff | `DIFF_LINES < 100` | Quick fix territory |
 
-# Check for async patterns
-git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -l "async def\|await\|asyncio" 2>/dev/null | wc -l
+**If ALL criteria met → downgrade to sonnet.** Otherwise → stay on **opus**.
+
+When downgrading, show a one-liner confirmation:
+
+```
+Task looks straightforward ({CHANGED_FILES} files, ~{DIFF_LINES} lines). Using Sonnet for speed. Say 'opus' to override.
 ```
 
-**For Frontend projects:**
-```bash
-# Count lines in plan (if exists)
-wc -l {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md 2>/dev/null | awk '{print $1}'
-
-# Count changed files (excluding tests)
-git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' 2>/dev/null | grep -v '.test.' | grep -v '.spec.' | grep -v '__tests__' | wc -l
-
-# Check for complex patterns (Server Components + Client Components interleaving, complex state)
-git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' 2>/dev/null | grep -v '.test.' | xargs grep -l "createContext\|useReducer\|Suspense" 2>/dev/null | wc -l
-```
-
-**Escalation thresholds:**
-
-| Metric | Threshold | Model |
-|--------|-----------|-------|
-| Plan lines | > 200 | opus |
-| Changed files (non-test) | > 8 | opus |
-| Concurrency/async/complex patterns | Any | opus |
-| Otherwise | - | sonnet |
-
-**If ANY threshold exceeded**, use **opus**. Otherwise use **sonnet**.
+If user says 'opus' → switch to opus and proceed.
 
 ### 5. Check for Implementation Plan
 
@@ -172,13 +178,14 @@ Based on detected stack:
 
 **IMPORTANT**: When invoking the Task tool, include the `model` parameter:
 - If user specified model → use that model
-- If complexity check determined model → use that model
+- If downgrade check triggered → use sonnet
+- Otherwise → use opus (default)
 
 **Single-stack example:**
 ```
 Task(
   subagent_type: "software-engineer-go",
-  model: "{determined_model}",  // "sonnet" or "opus"
+  model: "{determined_model}",  // "opus" (default) or "sonnet" (downgraded)
   prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\n{task description}"
 )
 ```

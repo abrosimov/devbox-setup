@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# audit-work-log — Detect lazy agent patterns in work logs and SE outputs.
+#
+# Scans agent output for excuse phrases that indicate fabricated results,
+# and verifies that required commands were actually executed per language.
+#
+# Usage: audit-work-log [--se-output <path>] [--lang <go|python|node>] [--json]
+#
+# Exit codes:
+#   0  Clean (no lazy patterns detected, all required commands present)
+#   1  Lazy patterns detected
+#   2  Missing mandatory commands
+#   3  Both lazy patterns and missing commands
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+if [[ ! -t 1 ]]; then
+  RED='' GREEN='' YELLOW='' BOLD='' NC=''
+fi
+
+# --- Excuse patterns (case-insensitive grep) ---
+EXCUSE_PATTERNS=(
+  "manual review"
+  "manually verified"
+  "verified by inspection"
+  "verified by reading"
+  "sandbox blocks"
+  "sandbox restrict"
+  "unable to run"
+  "could not execute"
+  "could not run"
+  "appears correct"
+  "looks correct"
+  "should work"
+  "tests appear"
+  "would succeed"
+  "would work outside"
+  "limited to import resolution"
+  "verified via import"
+  "visual inspection"
+  "code review only"
+  "static analysis only"
+  "reviewed the code"
+  "checked the logic"
+)
+
+# --- Required commands by language ---
+declare -A REQUIRED_COMMANDS
+REQUIRED_COMMANDS[go]="go build|go test|golangci-lint|goimports"
+REQUIRED_COMMANDS[python]="pytest|ruff check|ruff format|mypy|pyright"
+REQUIRED_COMMANDS[node]="tsc|vitest|jest|eslint|prettier"
+
+# --- Parse args ---
+se_output=""
+lang=""
+json_output=false
+
+usage() {
+  cat <<'EOF'
+Usage: audit-work-log [--se-output <path>] [--lang <go|python|node>] [--json]
+
+Options:
+  --se-output <path>   SE agent output file to scan
+  --lang <go|python|node>  Language to check required commands for
+  --json               Output machine-readable JSON
+  -h, --help           Show this help
+
+Exit codes:
+  0  Clean
+  1  Lazy patterns detected
+  2  Missing mandatory commands
+  3  Both lazy patterns and missing commands
+EOF
+  exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --se-output) se_output="$2"; shift 2 ;;
+    --lang) lang="$2"; shift 2 ;;
+    --json) json_output=true; shift ;;
+    -h|--help) usage ;;
+    *) echo "Unknown option: $1" >&2; exit 10 ;;
+  esac
+done
+
+# --- Validation ---
+if [[ -z "$se_output" ]]; then
+  echo -e "${RED}ERROR${NC}: --se-output is required" >&2
+  exit 10
+fi
+
+if [[ ! -f "$se_output" ]]; then
+  echo -e "${RED}ERROR${NC}: SE output file not found: $se_output" >&2
+  exit 10
+fi
+
+# --- Scan for excuse patterns ---
+found_excuses=()
+content=$(cat "$se_output")
+
+for pattern in "${EXCUSE_PATTERNS[@]}"; do
+  if echo "$content" | grep -qi "$pattern"; then
+    found_excuses+=("$pattern")
+  fi
+done
+
+# --- Check required commands ---
+missing_commands=()
+if [[ -n "$lang" ]] && [[ -n "${REQUIRED_COMMANDS[$lang]:-}" ]]; then
+  IFS='|' read -ra cmds <<< "${REQUIRED_COMMANDS[$lang]}"
+  for cmd in "${cmds[@]}"; do
+    if ! echo "$content" | grep -q "$cmd"; then
+      missing_commands+=("$cmd")
+    fi
+  done
+fi
+
+# --- Compute exit code ---
+has_excuses=false
+has_missing=false
+[[ ${#found_excuses[@]} -gt 0 ]] && has_excuses=true
+[[ ${#missing_commands[@]} -gt 0 ]] && has_missing=true
+
+exit_code=0
+if $has_excuses && $has_missing; then
+  exit_code=3
+elif $has_excuses; then
+  exit_code=1
+elif $has_missing; then
+  exit_code=2
+fi
+
+# --- Output ---
+if $json_output; then
+  # Build JSON arrays
+  excuses_json="["
+  for i in "${!found_excuses[@]}"; do
+    [[ $i -gt 0 ]] && excuses_json+=","
+    excuses_json+="\"${found_excuses[$i]}\""
+  done
+  excuses_json+="]"
+
+  missing_json="["
+  for i in "${!missing_commands[@]}"; do
+    [[ $i -gt 0 ]] && missing_json+=","
+    missing_json+="\"${missing_commands[$i]}\""
+  done
+  missing_json+="]"
+
+  cat <<EOF
+{
+  "status": "$(if [[ $exit_code -eq 0 ]]; then echo "clean"; else echo "flagged"; fi)",
+  "excuse_patterns_found": $excuses_json,
+  "missing_commands": $missing_json,
+  "exit_code": $exit_code
+}
+EOF
+else
+  echo -e "${BOLD}Work Log Audit${NC}"
+  echo "─────────────────────────────"
+
+  if $has_excuses; then
+    echo -e "\n${RED}Excuse patterns detected:${NC}"
+    for e in "${found_excuses[@]}"; do
+      echo -e "  ${RED}!${NC}  \"$e\""
+    done
+  else
+    echo -e "\n${GREEN}No excuse patterns found.${NC}"
+  fi
+
+  if [[ -n "$lang" ]]; then
+    if $has_missing; then
+      echo -e "\n${YELLOW}Missing required commands ($lang):${NC}"
+      for m in "${missing_commands[@]}"; do
+        echo -e "  ${YELLOW}?${NC}  $m"
+      done
+      echo -e "\n  Note: not all commands are always needed. This is advisory."
+    else
+      echo -e "\n${GREEN}All expected commands found for $lang.${NC}"
+    fi
+  fi
+
+  echo ""
+fi
+
+exit $exit_code

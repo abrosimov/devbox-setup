@@ -365,6 +365,15 @@ Where `{role}` is `backend`, `frontend`, or the specific language variant. Each 
   ],
   "verification_summary": [
     { "fr_id": "string", "ac_id": "string", "status": "pass | fail | skip", "evidence": "string" }
+  ],
+  "verification_evidence": [
+    {
+      "command": "string (exact command that was run)",
+      "exit_code": "integer",
+      "stdout_tail": "string (last 10 lines of stdout)",
+      "stderr_tail": "string (last 10 lines of stderr, if any)",
+      "executed": "boolean (true = actually ran, false = skipped)"
+    }
   ]
 }
 ```

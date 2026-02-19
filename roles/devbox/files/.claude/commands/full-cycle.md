@@ -340,6 +340,18 @@ Task(
          must surface this as a failed step in the completion file so the orchestrator can offer
          to re-invoke the SE agent with the specific errors.
 
+    2b. **Work Log Audit** (advisory — does not block):
+       ```bash
+       if [ -x ~/.claude/bin/audit-work-log ] && [ -f "{PLANS_DIR}/{stream}_se_output.json" ]; then
+         ~/.claude/bin/audit-work-log --se-output "{PLANS_DIR}/{stream}_se_output.json" --lang {lang} --json
+         AUDIT_EXIT=$?
+       else
+         AUDIT_EXIT=0
+       fi
+       ```
+       - Exit 0 → clean, continue
+       - Non-zero → log warning in pipeline state; continue (advisory only)
+
     3. Commit implementation (only if SE verification passed):
        .claude/bin/git-safe-commit -m 'feat({JIRA_ISSUE}): implement {stream}'
     4. Run unit-test-writer-{lang} agent via Task tool:

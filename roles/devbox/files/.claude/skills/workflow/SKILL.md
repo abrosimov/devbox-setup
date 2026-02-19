@@ -31,7 +31,7 @@ Per-project `.claude/workflow.json`:
 |------|--------|---------|---------|
 | `agent_pipeline` | Code changes MUST go through agents | Direct Edit/Write allowed | `true` |
 | `auto_commit` | Commands auto-commit after each phase | User commits manually | `true` |
-| `complexity_escalation` | Auto-downgrade SE agents to Sonnet for simple tasks | Always use agent's default model (opus) | `true` |
+| `complexity_escalation` | Legacy flag — ignored | Legacy flag — ignored | `true` |
 
 ### Project Initialization
 
@@ -41,7 +41,7 @@ Use `/init-workflow` to explicitly set up the workflow config:
 
 ```bash
 /init-workflow full    # all flags true
-/init-workflow light   # agent_pipeline: true, auto_commit: false, complexity_escalation: false
+/init-workflow light   # agent_pipeline: true, auto_commit: false
 /init-workflow         # interactive — choose preset or custom
 ```
 
@@ -442,8 +442,9 @@ When invoking agents via commands, the model is determined by this precedence (h
 | Priority | Source | Example |
 |----------|--------|---------|
 | 1 (highest) | User explicit argument | `/implement sonnet`, `/implement opus` |
-| 2 | Downgrade check at command level | All criteria below thresholds → sonnet (requires `complexity_escalation: true` in `workflow.json`) |
-| 3 | Agent frontmatter default | `model: opus` (SE, reviewers, planners) or `model: sonnet` (test writers, etc.) |
+| 2 | Agent frontmatter default | See table below |
+
+**Default model philosophy**: Opus is the default for SE agents. Use `/implement sonnet` for cost-sensitive tasks where quality trade-off is acceptable (Sonnet 4.6: 79.6% SWE-bench vs Opus 80.8%).
 
 **CRITICAL — `model` must be passed explicitly:**
 - The Task tool **inherits the parent conversation's model** when no `model` parameter is given
@@ -454,25 +455,23 @@ When invoking agents via commands, the model is determined by this precedence (h
 **How it works:**
 - Commands pass the `model` parameter to the `Task` tool — this is the **only reliable** way to set the agent's model
 - If user specified model → use that (Priority 1)
-- If downgrade check triggers → use sonnet (Priority 2, `/implement` only)
-- Otherwise → use the agent's frontmatter `model` value (Priority 3) — but you must still pass it explicitly
+- Otherwise → use the agent's frontmatter `model` value (Priority 2) — but you must still pass it explicitly
 
 **Reference — agent frontmatter models:**
 
 | Model | Agents |
 |-------|--------|
-| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, **all software-engineer-\***, **all implementation-planner-\***, **all code-reviewer-\*** |
+| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, **all implementation-planner-\***, **all code-reviewer-\***, **all software-engineer-\*** |
 | `sonnet` | unit-test-writer-*, observability-engineer, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
+| `haiku` | Search, grep, file discovery tasks (via `model: "haiku"` in Task tool) |
 
-**Agents with downgrade awareness** (opus default, may downgrade to sonnet for simple tasks):
-- `software-engineer-go` / `software-engineer-python` / `software-engineer-frontend` — via `/implement` command auto-downgrade check
+**Effort parameter guidance** (pass via `max_turns` or prompt hint):
 
-**Agents always on opus** (no downgrade):
-- `code-reviewer-*` — via `/review` command (always opus)
-- `implementation-planner-*` — via `/plan` command (always opus)
-
-**Agents with escalation awareness** (sonnet default, escalate to opus via complexity check):
-- `unit-test-writer-*` — via `/test` command
+| Model | Effort | Use When |
+|-------|--------|----------|
+| haiku | low | Search, grep, file discovery tasks |
+| sonnet | medium | Test writing, utility agents, cost-sensitive SE tasks |
+| opus | high | SE implementation, planners, reviewers |
 
 ## Key Conventions
 

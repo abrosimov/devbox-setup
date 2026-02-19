@@ -23,3 +23,9 @@ export PATH="$PATH:{{ p }}"
 {% for item in devbox_shell.path_conditional %}
 [ -d "{{ item.check }}" ] && export PATH="{{ item.add }}:$PATH"
 {% endfor %}
+
+# Go cache: redirect to sandbox-writable paths inside Claude Code
+if [ -n "$CLAUDECODE" ]; then
+  export GOCACHE="${TMPDIR}/go-build-cache"
+  export GOMODCACHE="${TMPDIR}/go-mod-cache"
+fi

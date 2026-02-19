@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# pre-compact-mask — PreCompact hook that outputs a structured summary
+# to help preserve critical context during conversation compaction.
+#
+# Claude Code calls PreCompact hooks before compressing conversation history.
+# This script reads the current state and outputs a structured context summary
+# that gets injected into the compacted conversation, preserving key information
+# that would otherwise be lost.
+#
+# Output format: plain text summary injected into the conversation.
+
+set -euo pipefail
+
+# Collect current working state
+BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+MODIFIED=$(git diff --name-only 2>/dev/null | head -20)
+STAGED=$(git diff --cached --name-only 2>/dev/null | head -20)
+
+# Check for pipeline state
+PIPELINE_STATE=""
+for f in docs/implementation_plans/*/pipeline_state.json .claude/pipeline_state.json; do
+  if [ -f "$f" ]; then
+    PIPELINE_STATE="$f"
+    break
+  fi
+done
+
+# Build summary
+cat <<EOF
+--- CONTEXT PRESERVED ACROSS COMPACTION ---
+
+Branch: $BRANCH
+EOF
+
+if [ -n "$MODIFIED" ]; then
+  echo "Modified files:"
+  echo "$MODIFIED" | sed 's/^/  - /'
+fi
+
+if [ -n "$STAGED" ]; then
+  echo "Staged files:"
+  echo "$STAGED" | sed 's/^/  - /'
+fi
+
+if [ -n "$PIPELINE_STATE" ]; then
+  echo "Pipeline state: $PIPELINE_STATE"
+  # Extract stage statuses if jq is available
+  if command -v jq >/dev/null 2>&1; then
+    jq -r '.stages | to_entries[] | select(.value.status != "pending") | "  \(.key): \(.value.status)"' "$PIPELINE_STATE" 2>/dev/null || true
+  fi
+fi
+
+# Check for active task context
+if [ -f ".claude/workflow.json" ]; then
+  echo "Workflow: active"
+fi
+
+echo "--- END PRESERVED CONTEXT ---"

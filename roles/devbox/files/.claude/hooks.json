@@ -167,6 +167,10 @@
           {
             "type": "command",
             "command": "~/.claude/bin/session-save"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-compact-mask"
           }
         ]
       }

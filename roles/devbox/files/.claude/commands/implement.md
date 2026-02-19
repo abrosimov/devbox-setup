@@ -27,9 +27,9 @@ You are orchestrating the implementation phase of a development workflow.
 
 Check if user passed a model argument:
 - `/implement opus` or `/implement --model opus` → use **opus**
-- `/implement sonnet` or `/implement --model sonnet` → use **sonnet**
-- `/implement` (no argument) → default **opus**, with auto-downgrade check
-- `/implement fast` → use **sonnet**, skip downgrade check
+- `/implement sonnet` or `/implement --model sonnet` → use **sonnet** (cost-saving mode)
+- `/implement` (no argument) → default **opus**
+- `/implement fast` → use **sonnet**, skip all pre-flight checks
 
 ## Steps
 
@@ -45,7 +45,7 @@ Parse the JSON. Extract flags (default to `true` if key is missing, to preserve 
 |------|---------|--------|
 | `agent_pipeline` | `true` | If `false`, this command still works but isn't mandatory |
 | `auto_commit` | `true` | If `false`, skip commit steps (Steps 7-8 change) |
-| `complexity_escalation` | `true` | If `false`, skip Step 4 (always use opus — agent's default model) |
+| `complexity_escalation` | `true` | Legacy flag — ignored (Opus is always the default for SE agents) |
 
 ### 1. Git Setup
 
@@ -111,63 +111,18 @@ Check for project markers (check ALL — a project may have multiple):
 3. If no work streams, ask user: "This is a fullstack project. Which part should I implement? (A) Backend, (B) Frontend, (C) Both sequentially"
 4. When running both, run backend first (it may produce API types/contracts the frontend needs), then frontend
 
-### 4. Pre-flight Downgrade Check (if no model specified)
+### 4. Determine Model
 
-**Default model is opus.** This step checks whether the task is simple enough to downgrade to sonnet for speed.
+**Default model is opus.** Use sonnet only when the user explicitly requests it (`/implement sonnet` or `/implement fast`).
 
-**Skip this step (stay on opus) if:**
-- User explicitly specified a model (`/implement opus` or `/implement sonnet`)
-- `complexity_escalation` is `false` in `workflow.json` (always use agent's default model — opus)
+| User Input | Model | Notes |
+|------------|-------|-------|
+| `/implement` | opus | Default — highest quality |
+| `/implement opus` | opus | Explicit |
+| `/implement sonnet` | sonnet | Cost-saving mode |
+| `/implement fast` | sonnet | Cost-saving + skip pre-flight |
 
-**Run downgrade assessment:**
-
-```bash
-# 1. Check if implementation plan exists
-PLAN_EXISTS=false
-[ -f "{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md" ] && PLAN_EXISTS=true
-
-# 2. Count changed files (non-test) — language-specific
-# Go:
-CHANGED_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | wc -l | tr -d ' ')
-# Python:
-CHANGED_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test_ | grep -v _test.py | wc -l | tr -d ' ')
-# Frontend:
-CHANGED_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' 2>/dev/null | grep -v '.test.' | grep -v '.spec.' | grep -v '__tests__' | wc -l | tr -d ' ')
-
-# 3. Check for concurrency/async/complex patterns — language-specific
-# Go:
-COMPLEX=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | xargs grep -l "go func\|chan \|sync\.\|select {" 2>/dev/null | wc -l | tr -d ' ')
-# Python:
-COMPLEX=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test | xargs grep -l "async def\|await\|asyncio" 2>/dev/null | wc -l | tr -d ' ')
-# Frontend:
-COMPLEX=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' 2>/dev/null | grep -v '.test.' | xargs grep -l "createContext\|useReducer\|Suspense" 2>/dev/null | wc -l | tr -d ' ')
-
-# 4. Check for new dependency changes
-DEP_CHANGES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- 'go.mod' 'go.sum' 'pyproject.toml' 'requirements*.txt' 'package.json' 'pnpm-lock.yaml' 2>/dev/null | wc -l | tr -d ' ')
-
-# 5. Total diff size
-DIFF_LINES=$(git diff $DEFAULT_BRANCH...HEAD --stat 2>/dev/null | tail -1 | grep -oE '[0-9]+ insertion|[0-9]+ deletion' | awk '{sum+=$1} END {print sum+0}')
-```
-
-**Downgrade to sonnet only when ALL criteria are met:**
-
-| Criterion | Check | Rationale |
-|-----------|-------|-----------|
-| No plan exists | `PLAN_EXISTS = false` | If someone wrote a plan, it's non-trivial |
-| Few files changed | `CHANGED_FILES <= 3` | Small surface area |
-| No complex patterns | `COMPLEX = 0` | Concurrency/async needs deeper reasoning |
-| No dependency changes | `DEP_CHANGES = 0` | New deps = architectural decision |
-| Small diff | `DIFF_LINES < 100` | Quick fix territory |
-
-**If ALL criteria met → downgrade to sonnet.** Otherwise → stay on **opus**.
-
-When downgrading, show a one-liner confirmation:
-
-```
-Task looks straightforward ({CHANGED_FILES} files, ~{DIFF_LINES} lines). Using Sonnet for speed. Say 'opus' to override.
-```
-
-If user says 'opus' → switch to opus and proceed.
+If user says 'sonnet' → switch to sonnet and proceed.
 
 ### 5. Check for Implementation Plan
 
@@ -183,14 +138,13 @@ Based on detected stack:
 
 **IMPORTANT**: When invoking the Task tool, include the `model` parameter:
 - If user specified model → use that model
-- If downgrade check triggered → use sonnet
 - Otherwise → use opus (default)
 
 **Single-stack example:**
 ```
 Task(
   subagent_type: "software-engineer-go",
-  model: "{determined_model}",  // "opus" (default) or "sonnet" (downgraded)
+  model: "{determined_model}",  // "opus" (default) or "sonnet" (if user requested)
   prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\n\n{task description}"
 )
 ```
@@ -271,6 +225,27 @@ VERIFY_EXIT=$?
 > Would you like me to re-invoke the agent to fix these?
 
 If the user says yes, go back to Step 6 and spawn the same agent again, passing the verification errors in the prompt context. If the user says no (or wants to proceed anyway), continue to Step 7 with a warning note.
+
+### 6b. Work Log Audit (Advisory)
+
+After verification, run the work log auditor on the agent's output to detect excuse patterns. This is advisory — it does not block completion.
+
+```bash
+AUDITOR=~/.claude/bin/audit-work-log
+if [ -x "$AUDITOR" ] && [ -n "$SE_OUTPUT_FILE" ] && [ -f "$SE_OUTPUT_FILE" ]; then
+  $AUDITOR --se-output "$SE_OUTPUT_FILE" --lang <detected-lang> --json
+  AUDIT_EXIT=$?
+fi
+```
+
+| Exit code | Meaning | Action |
+|-----------|---------|--------|
+| `0` | Clean | Continue silently |
+| `1` | Excuse patterns found | Warn user: "Work log audit flagged potential excuse patterns" |
+| `2` | Missing commands | Warn user: "Work log audit found missing expected commands" |
+| `3` | Both | Warn user with both findings |
+
+Show warnings but do not block — the independent verification (Step 6a) is the hard gate.
 
 ### 7. Commit Changes
 

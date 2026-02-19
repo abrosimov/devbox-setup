@@ -481,3 +481,47 @@ When reporting issues back to another agent or user:
 Review: X blocking | Y important | Z suggestions
 Action: [Fix blocking and re-review] or [Ready to proceed]
 ```
+
+---
+
+## Structured Handoff Protocol
+
+When handing off between agents (especially during long sessions or after compaction), use structured JSON instead of free-text to preserve critical context.
+
+### Handoff Schema
+
+```json
+{
+  "handoff": {
+    "from_agent": "string (agent name)",
+    "to_agent": "string (target agent name)",
+    "status": "complete | partial | blocked",
+    "branch": "string (current git branch)",
+    "files_modified": ["string (relative paths)"],
+    "decisions_made": [
+      { "question": "string", "decision": "string", "rationale": "string" }
+    ],
+    "blocking_issues": ["string (issues requiring resolution)"],
+    "context_keys": {
+      "jira_issue": "string",
+      "plan_path": "string",
+      "output_json": "string (path to structured output)"
+    }
+  }
+}
+```
+
+### When to Use
+
+| Situation | Use Structured Handoff? |
+|-----------|------------------------|
+| Agent-to-agent in pipeline mode | Yes — always |
+| `/implement` → `/test` → `/review` chain | Yes — pass via prompt context |
+| After context compaction | Yes — restore from `pre-compact-mask` output |
+| Single-agent interactive session | No — free-text is fine |
+
+### Compaction Survival
+
+The `pre-compact-mask` hook (in `hooks.json`) automatically captures branch, modified files, and pipeline state before compaction. After compaction, the preserved context helps agents resume work without re-reading the entire codebase.
+
+For multi-agent sessions, each agent should include `context_keys` in its completion output so the next agent can quickly locate all relevant artifacts without searching.

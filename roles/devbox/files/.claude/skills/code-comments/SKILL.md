@@ -13,7 +13,7 @@ description: >
 
 ## Zero Tolerance: Narration Comments
 
-❌ **NEVER write comments that describe what code does.**
+NEVER write comments that describe what code does.
 
 ### Forbidden Patterns
 
@@ -30,59 +30,6 @@ description: >
 - **NO** → Don't write the comment
 - **YES** → Write ONLY the non-obvious part
 
-### Rejected vs Accepted Examples
-
-**Python:**
-```python
-# ❌ REJECTED — narration comments
-def process_order(self, order: Order) -> None:
-    # Validate the order
-    self.__validator.validate(order)
-
-    # Save to database
-    self.__repo.save(order)
-
-    # Send notification
-    self.__notifier.notify(order.user_id, "Order processed")
-
-# ✅ ACCEPTED — no comments needed, code is clear
-def process_order(self, order: Order) -> None:
-    self.__validator.validate(order)
-    self.__repo.save(order)
-    self.__notifier.notify(order.user_id, "Order processed")
-```
-
-**Go:**
-```go
-// ❌ REJECTED — narration comments
-func (s *OrderService) Process(ctx context.Context, order Order) error {
-    // Validate the order
-    if err := s.validator.Validate(order); err != nil {
-        return err
-    }
-
-    // Save to database
-    if err := s.repo.Save(ctx, order); err != nil {
-        return err
-    }
-
-    return nil
-}
-
-// ✅ ACCEPTED — no comments needed, code is clear
-func (s *OrderService) Process(ctx context.Context, order Order) error {
-    if err := s.validator.Validate(order); err != nil {
-        return err
-    }
-
-    if err := s.repo.Save(ctx, order); err != nil {
-        return err
-    }
-
-    return nil
-}
-```
-
 ## Acceptable Comments
 
 Comments are justified ONLY when explaining something **non-obvious** that cannot be captured in names/types.
@@ -90,46 +37,15 @@ Comments are justified ONLY when explaining something **non-obvious** that canno
 ### WHY Explanations
 
 ```python
-# ✅ Business constraint
 self.__repo.save(order)  # Must save before notification — order ID required
-
-# ✅ External system quirk
-response = client.get(url, timeout=(5, 30))  # API rate limit: 10 req/sec max
-
-# ✅ Non-obvious dependency
-import prometheus  # Import before Flask routes — must initialize first
-```
-
-```go
-// ✅ Concurrency constraint
-s.mu.Lock()  // Lock before read — map is not thread-safe
-
-// ✅ Protocol requirement
-conn.SetDeadline(time.Now().Add(timeout))  // TCP keepalive requires periodic activity
-
-// ✅ Historical context / workaround
-// Legacy API returns single quotes instead of double — parse manually
-data := strings.ReplaceAll(raw, "'", "\"")
 ```
 
 ### Forbidden Section Markers
 
-❌ **NEVER use section dividers or markers:**
+NEVER use section dividers or markers:
 
-```python
-# ❌ FORBIDDEN
-# --- Configuration ---
-# === Tests ===
-# Class-level attributes
-# Instance attributes (set in __new__)
 ```
-
-```go
-// ❌ FORBIDDEN
-// --- Configuration ---
-// === Tests ===
-// Private methods
-// Public API
+# --- Configuration ---    // === Tests ===    // Private methods
 ```
 
 ## Docstring Policy
@@ -137,21 +53,6 @@ data := strings.ReplaceAll(raw, "'", "\"")
 ### Python Docstrings
 
 **Default: NO docstrings.** Names, types, and structure ARE the documentation.
-
-**Forbidden:**
-```python
-# ❌ Describes what name already says
-class UserRepository:
-    """Repository for managing users in the database."""
-
-# ❌ Describes what method does
-def process_order(self, order: Order) -> ProcessedOrder:
-    """Process an order by validating and calculating totals."""
-
-# ❌ Describes exception purpose
-class ReadOnlyRepositoryError(Exception):
-    """Raised when attempting write operations on a read-only repository."""
-```
 
 **Rare exceptions (require justification):**
 
@@ -163,68 +64,21 @@ class ReadOnlyRepositoryError(Exception):
 | Complex protocol | "Must call `begin()` before `execute()`, then `commit()` or `rollback()`" |
 | External library public API | Users rely on `help()`, can't easily read source |
 
-**Correct pattern — contract only, no implementation details:**
-```python
-# ✅ Contract-only for library public API
-def commit(self) -> None:
-    """Commit the transaction. Raises TransactionDoomed if doomed."""
-```
-
 ### Go Doc Comments
 
 Follow standard Go doc comment conventions — but still avoid narration.
 
-**Forbidden:**
 ```go
-// ❌ Describes what name says
-// Process processes the order.
+// ❌ Process processes the order.
 func (s *Service) Process(order Order) error {
 
-// ❌ Implementation details
-// Process validates the order, saves it, and sends notification.
+// ✅ Process is idempotent — calling twice with same order ID has no effect.
 func (s *Service) Process(order Order) error {
-```
-
-**Acceptable:**
-```go
-// ✅ Non-obvious behaviour
-// Process is idempotent — calling twice with same order ID has no effect.
-func (s *Service) Process(order Order) error {
-
-// ✅ Important constraint
-// Close must be called exactly once. Calling twice panics.
-func (c *Connection) Close() error {
 ```
 
 ## Test Comments
 
-**Tests need FEWER comments than production code.** Test names ARE documentation.
-
-**Forbidden in tests:**
-```python
-# ❌ FORBIDDEN
-# Create mock repository
-# Setup test data
-# Execute the function
-# Verify result
-```
-
-```go
-// ❌ FORBIDDEN
-// Create mock repository
-// Setup test data
-// Execute the function
-// Verify result
-```
-
-**Only acceptable test comment — explains non-obvious assertion:**
-```python
-assert result == expected  # API returns sorted by created_at
-```
-
-```go
-assert.Equal(t, expected, result)  // API returns sorted by created_at
-```
+Tests need fewer comments than production code. Only acceptable: explaining non-obvious assertions.
 
 ## Comment Formatting
 

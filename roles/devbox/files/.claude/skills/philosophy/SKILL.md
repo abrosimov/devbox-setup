@@ -58,7 +58,7 @@ Every codebase has a **cognitive load budget**. Each addition spends from this b
 
 **Rule:** Before adding complexity, ask: "Is this solving a problem we actually have, or one we imagine we might have?"
 
-### Less Is More — Practical Application
+### Less Is More -- Practical Application
 
 | Situation | Wrong Instinct | Right Action |
 |-----------|----------------|--------------|
@@ -67,28 +67,18 @@ Every codebase has a **cognitive load budget**. Each addition spends from this b
 | "This handles all cases" | Build comprehensive framework | Handle current cases; extend when needed |
 | "This is more flexible" | Add configuration options | Hardcode; make configurable only when requested |
 
-### Complexity Smells
-
-Watch for these signs you're adding unnecessary complexity:
-
-- **"It's more flexible"** — Flexibility you don't need is complexity you don't want
-- **"Future-proofing"** — You cannot predict the future; solve today's problem
-- **"Best practice"** — Context matters; cargo-culting patterns adds complexity
-- **"It's only a small addition"** — Small additions compound; death by a thousand cuts
-- **"This abstraction is cleaner"** — Abstractions have cost; concrete code is often clearer
-
 ### The Reversal Test
 
 Before adding any code, ask: **"If this already existed, would removing it improve the system?"**
 
-- If YES → Don't add it
-- If NO → Proceed, but keep it minimal
+- If YES --> Don't add it
+- If NO --> Proceed, but keep it minimal
 
 ---
 
 ## Language Standard: British English
 
-**All agents must use British English spelling in all output** — documentation, comments, error messages, and communication.
+**All agents must use British English spelling in all output** -- documentation, comments, error messages, and communication.
 
 | American (DON'T) | British (DO) |
 |------------------|--------------|
@@ -103,21 +93,9 @@ Before adding any code, ask: **"If this already existed, would removing it impro
 | center | centre |
 | license (noun) | licence |
 
-This applies to:
-- Code comments
-- Documentation and markdown files
-- Error messages and log strings
-- Variable/function names where English words are used (prefer `colour` over `color`)
-- Communication with users
-
-**Exception:** Do not change spellings in:
-- External API names (e.g., `color` in CSS/Grafana APIs)
-- Third-party library references
-- Existing codebase conventions (match what's already there)
-
 ---
 
-## Error Detection Hierarchy — Fail Fast
+## Error Detection Hierarchy -- Fail Fast
 
 **Catch issues as early as possible in the development/deployment lifecycle.**
 
@@ -128,7 +106,7 @@ Push errors left: compile-time > startup-time > runtime.
 | **Compile-time** (BEST) | Type system, linter | `type UserID string` prevents passing `OrderID` |
 | **Startup-time** (GOOD) | Constructor validation, init panic | `NewServer()` returns error if config invalid |
 | **Runtime** (ACCEPTABLE) | Return error, caller handles | `Process()` returns error if external API fails |
-| **Runtime panic** (NEVER) | Crash | `Must()` in request handler — FORBIDDEN |
+| **Runtime panic** (NEVER) | Crash | `Must()` in request handler -- FORBIDDEN |
 
 **Why this matters:**
 - Compile-time errors caught in IDE, before commit
@@ -138,50 +116,11 @@ Push errors left: compile-time > startup-time > runtime.
 
 **Design principle:** If we can make an error happen during compile-time, we do it. If we can make it happen during startup-time, we do it. Everyone makes mistakes, so known issues must be caught ASAP.
 
-### Examples
-
-**Compile-time over runtime:**
-```
-// ❌ BAD — confusion detected at runtime
-func Transfer(from string, to string, amount int)
-
-// ✅ GOOD — confusion caught at compile-time
-type AccountID string
-func Transfer(from AccountID, to AccountID, amount int)
-```
-
-**Startup over runtime:**
-```
-// ❌ BAD — every request validates config
-func (s *Service) Handle(req Request) error {
-    if s.timeout < 0 {
-        return errors.New("invalid timeout")
-    }
-}
-
-// ✅ GOOD — validation at construction
-func NewService(timeout time.Duration) (*Service, error) {
-    if timeout < 0 {
-        return nil, errors.New("invalid timeout")
-    }
-    return &Service{timeout: timeout}, nil
-}
-```
-
-**Error wrapping — always preserve chain:**
-```
-// ❌ NEVER — breaks error chain
-return fmt.Errorf("operation failed: %v", err)
-
-// ✅ ALWAYS — preserves chain for errors.Is()/As()
-return fmt.Errorf("operation failed: %w", err)
-```
-
-> **Go-specific patterns:** See `go-errors` skill for sentinel errors, custom error types, wrapping patterns, and error classification at boundaries.
+> See `go-errors` skill for language-specific examples.
 
 ---
 
-## Data Transformation — Prefer Immutability
+## Data Transformation -- Prefer Immutability
 
 **Prefer creating new data over mutating existing data.** Think of data processing as a pipeline: each step takes input and produces new output, leaving the original untouched.
 
@@ -190,18 +129,13 @@ return fmt.Errorf("operation failed: %w", err)
 | Return new struct with changes | Modify struct fields in place |
 | Map/filter to new collection | Modify collection in place |
 | Builder that produces new instance | Setter methods that mutate |
-| Pipeline: input → transform → new output | input → mutate → return same |
+| Pipeline: input --> transform --> new output | input --> mutate --> return same |
 
 **Why:**
-- No hidden side effects — callers keep their original data
-- Safe for concurrency — no shared mutable state
-- Easier debugging — data doesn't change under you
+- No hidden side effects -- callers keep their original data
+- Safe for concurrency -- no shared mutable state
+- Easier debugging -- data doesn't change under you
 - Enables pipeline composition
-
-**Language-specific:**
-- **Go**: Return new structs from transform functions; functional options for construction. Pointer receivers are fine for methods — the point is about data flow, not receiver types
-- **Python**: Frozen dataclasses, `dataclasses.replace()`, tuples; prefer `map`/`filter` over in-place mutation
-- **TypeScript**: Spread operator, `Array.map/filter`, `Object.freeze`; prefer `const` + new objects
 
 **Exception:** Performance-critical hot paths where allocation cost is measured and proven to be a bottleneck. Document with a WHY comment.
 
@@ -209,15 +143,15 @@ return fmt.Errorf("operation failed: %w", err)
 
 ## Pragmatic Engineering
 
-You are NOT a minimalist — you are a **pragmatic engineer**:
+You are NOT a minimalist -- you are a **pragmatic engineer**:
 
-1. **Write robust code** — Handle standard risks that occur in production systems
-2. **Don't over-engineer** — No speculative abstractions, no premature optimization
-3. **Don't under-engineer** — Network calls fail, databases timeout, inputs are invalid
-4. **Simple but complete** — The simplest solution that handles real-world scenarios
-5. **Adapt to existing code** — Work within the codebase as it is, not as you wish it were
-6. **Backward compatible** — Never break existing consumers of your code
-7. **Tell, don't ask** — When applicable, let objects perform operations instead of extracting data and operating externally. If unsure whether this applies, ask for clarification.
+1. **Write robust code** -- Handle standard risks that occur in production systems
+2. **Don't over-engineer** -- No speculative abstractions, no premature optimization
+3. **Don't under-engineer** -- Network calls fail, databases timeout, inputs are invalid
+4. **Simple but complete** -- The simplest solution that handles real-world scenarios
+5. **Adapt to existing code** -- Work within the codebase as it is, not as you wish it were
+6. **Backward compatible** -- Never break existing consumers of your code
+7. **Tell, don't ask** -- When applicable, let objects perform operations instead of extracting data and operating externally. If unsure whether this applies, ask for clarification.
 
 ---
 
@@ -244,27 +178,16 @@ Not all structs/classes are equal. The distinction matters for encapsulation:
 
 **The decision rule:** Does the type have methods with **invariants** (methods that depend on fields being valid/consistent)?
 
-- **NO invariants** → DTO with public fields OK
-- **HAS invariants** → Domain object, privatize fields
+- **NO invariants** --> DTO with public fields OK
+- **HAS invariants** --> Domain object, privatize fields
 
 **Why this matters:** If fields are public and a method depends on them being valid, external code can mutate fields and break the method's behaviour. Privatizing fields protects the invariants.
 
 > **Go-specific patterns:** See `go-architecture` skill "Struct Separation" for when to separate structs based on technical concerns (DB types, security, generated APIs).
 
-### Composition Over Coupling
-
-Split types when responsibilities have **different semantics or lifecycles**:
-
-| Signal | Action |
-|--------|--------|
-| Different external systems | Split (API client vs credential store) |
-| Different change reasons | Split (auth logic vs business logic) |
-| Different test requirements | Split (one needs mocks, other doesn't) |
-| Responsibilities always together | Keep together |
-
 ---
 
-## Interface Design — When and Where
+## Interface Design -- When and Where
 
 ### Don't Create Interfaces Prematurely
 
@@ -276,38 +199,11 @@ Split types when responsibilities have **different semantics or lifecycles**:
 
 | Situation | Create Interface? |
 |-----------|-------------------|
-| Have 2+ implementations | ✅ Yes |
-| Need to mock for testing | ✅ Yes |
-| External contract (plugin system) | ✅ Yes |
-| "Might need multiple implementations later" | ❌ No — YAGNI |
-| "Interfaces are best practice" | ❌ No — Cargo cult |
-
-```
-// ❌ PREMATURE — no second implementation exists
-type UserRepository interface {
-    Get(id string) (*User, error)
-}
-
-type PostgresUserRepository struct { ... }  // Only implementation
-
-// ✅ START WITH CONCRETE TYPE
-type UserRepository struct { db *sql.DB }
-
-func (r *UserRepository) Get(id string) (*User, error) { ... }
-
-// ✅ ADD INTERFACE WHEN TESTING
-// In service_test.go (when you need a mock):
-type userRepository interface {
-    Get(id string) (*User, error)
-}
-
-type mockUserRepository struct { ... }
-```
-
-**Error Hierarchy Connection:**
-- Concrete types → Compile-time checking of all method calls
-- Interfaces → Runtime checking (method must exist)
-- Fewer interfaces → More compile-time safety
+| Have 2+ implementations | Yes |
+| Need to mock for testing | Yes |
+| External contract (plugin system) | Yes |
+| "Might need multiple implementations later" | No -- YAGNI |
+| "Interfaces are best practice" | No -- Cargo cult |
 
 **When you add a second implementation, THEN extract interface.**
 
@@ -330,46 +226,4 @@ type mockUserRepository struct { ... }
 
 - Test setup should not obscure test intent
 - Use helper methods for complex object construction
-- One test file per source file — no arbitrary splits
-
----
-
-## Code Quality
-
-### Comments — Only Where They Add Value
-
-**Most code should be self-documenting. Comments are for tricky or non-obvious places only.**
-
-| Comment Type | When to Use |
-|--------------|-------------|
-| **WHY comments** | Non-obvious decisions, trade-offs, workarounds |
-| **WARNING comments** | Gotchas, edge cases, "don't change this because..." |
-| **TODO comments** | Temporary, must reference ticket |
-
-**Never write comments that restate what the code does:**
-
-```
-BAD — restates the obvious, adds no value:
-  "Creates a new client from config"
-  "Returns only the API client"
-  "Used internally by Manager"
-
-GOOD — explains WHY or warns about non-obvious behaviour:
-  "Uses separate HTTP client to avoid connection pool exhaustion
-   when target service is slow (learned from incident INC-1234)"
-  "Must be called before Process() — credential refresh happens lazily"
-```
-
-**The test:** If deleting the comment loses no information, delete it.
-
-### Type Safety
-
-- Prefer compile-time/static errors over runtime errors
-- Use typed identifiers where the language supports them
-- Validate at boundaries, trust internally
-
-### Error Handling
-
-- Never ignore errors silently
-- Add context when propagating errors
-- Define domain-specific error types for testability
+- One test file per source file -- no arbitrary splits

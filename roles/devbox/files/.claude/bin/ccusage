@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# ccusage — Claude Code usage analytics wrapper.
+# Delegates to npx ccusage@latest. Pass any arguments through.
+# See: https://github.com/ryoppippi/ccusage
+exec npx ccusage@latest "$@"

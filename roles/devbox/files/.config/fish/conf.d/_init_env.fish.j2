@@ -9,3 +9,9 @@ end
 if type -q mise
   mise activate fish | source
 end
+
+# Go cache: redirect to sandbox-writable paths inside Claude Code
+if set -q CLAUDECODE
+  set -gx GOCACHE "$TMPDIR/go-build-cache"
+  set -gx GOMODCACHE "$TMPDIR/go-mod-cache"
+end

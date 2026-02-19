@@ -72,9 +72,8 @@ When set, commands offer local merge as an additional option alongside push+PR.
 
 Compute once at the start:
 ```bash
-BRANCH=`git branch --show-current`
-JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
-BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
+CONTEXT_JSON=$(~/.claude/bin/resolve-context)  # exit 0=valid, exit 2=non-convention branch
+# Parse: JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
 DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
 
@@ -87,9 +86,8 @@ Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH
 
 Use context provided by orchestrator. If invoked directly (no context), compute once:
 ```bash
-BRANCH=`git branch --show-current`
-JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
-BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
+CONTEXT_JSON=$(~/.claude/bin/resolve-context)  # exit 0=valid, exit 2=non-convention branch
+# Parse: JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
 ```
 
 ---
@@ -133,6 +131,9 @@ All project documentation is organized by Jira issue and branch name:
 ├── PROJ-456/
 │   └── refactor_api/
 │       └── ...
+├── _adhoc/
+│   └── branch-name/           # Non-convention branches (resolve-context exit 2)
+│       └── ...
 ```
 
 ### File Paths
@@ -167,6 +168,8 @@ All project documentation is organized by Jira issue and branch name:
 | Memory (downstream) | Code Reviewers | `.claude/memory/downstream.jsonl` (project root, gitignored) |
 
 Where `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`
+
+When `resolve-context` exits 2 (non-convention branch), commands fall back to `_adhoc/{sanitised_branch}/` under the plans directory. The sanitised branch name replaces `/` with `-` (e.g. `feature/login` becomes `feature-login`).
 
 ### Examples
 

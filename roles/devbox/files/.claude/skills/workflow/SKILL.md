@@ -199,11 +199,23 @@ Each command:
 
 **Schema-driven verification**: Each stream writes `{stream}_completion.json` (schema: `schemas/stream_completion.schema.json`). The orchestrator validates via `bin/validate-pipeline-output --full` before advancing the DAG. Exit codes drive targeted retry prompts.
 
+### Step 5b: Post-Agent Verification Gate
+
+After each SE agent completes, `/implement` and `/full-cycle` run independent verification via `~/.claude/bin/verify-se-completion`:
+
+1. **Build check** — runs `go build`/`uv sync`/`pnpm build` independently
+2. **Test check** — runs `go test`/`pytest`/`pnpm test` independently
+3. **Lint check** — runs `golangci-lint`/`ruff`/`eslint` independently
+
+If any check fails, the pipeline blocks advancement and offers to re-invoke the SE agent with the specific errors.
+
+This gate prevents agents from fabricating verification results — the orchestrator independently confirms that code compiles, tests pass, and linting is clean before advancing.
+
 ### Step 6: Testing
 - **unit_tests_writer_*** — Writes unit tests with bug-hunting mindset (per language/stack)
-  Depends on: Step 5
+  Depends on: Step 5b
 - **integration_tests_writer_*** — Writes integration tests with real dependencies
-  Depends on: Step 5
+  Depends on: Step 5b
 
 ### Step 7: Review
 - **code_reviewer_*** — Validates implementation against requirements (per language/stack)
@@ -218,8 +230,9 @@ Each command:
 - Steps 3a (Planner) and 3b (Designer) run in parallel for UI/fullstack features
 - Planner produces work streams that drive Steps 4-5 execution order and DAG construction
 - Step 4 (contracts): Schema designer (if needed) runs before API designer; both autonomous
-- Step 5 (implementation): **DAG-based execution** — each stream (SE → test) runs independently. A stream's test writer starts immediately when its SE finishes, without waiting for other streams. Cross-stream tasks (review) start when all their specific dependencies resolve.
-- After Step 5 completes (all streams validated by `bin/validate-pipeline-output`) → Review → **Gate 4** (user approval: "ship it?")
+- Step 5 (implementation): **DAG-based execution** — each stream (SE → verify → test) runs independently. A stream's test writer starts immediately when its SE passes the verification gate (Step 5b), without waiting for other streams. Cross-stream tasks (review) start when all their specific dependencies resolve.
+- Step 5b (verification gate): After each SE agent completes, `bin/verify-se-completion` runs build, test, and lint checks independently. Failure blocks the stream and re-invokes the SE agent with specific errors. Success advances the stream to Step 6.
+- After Step 5b completes (all streams verified) → Step 6 (testing) → Step 7 (review) → **Gate 4** (user approval: "ship it?")
 - Validation is deterministic (exit codes), not probabilistic (LLM self-assessment)
 </transitions>
 

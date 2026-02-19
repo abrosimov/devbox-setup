@@ -1,35 +1,88 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# claude-fix-perms — inject default permissions into .claude/settings.local.json.
+# claude-fix-perms — inject/merge permissions into .claude/settings.local.json.
 #
-# Usage: claude-fix-perms [--with-git]
-#   --with-git  Add git write permissions (commit, merge, branch) to allow list
+# Usage: claude-fix-perms [--with-git] [--go] [--python] [--node] [--all] [--no-detect]
+#   --with-git   Add git write permissions (commit, merge, branch)
+#   --go         Add Go toolchain permissions (GOCACHE/GOMODCACHE variants)
+#   --python     Add Python toolchain permissions (reserved — base covers these)
+#   --node       Add Node toolchain permissions (reserved — base covers these)
+#   --all        Shortcut for --go --python --node
+#   --no-detect  Skip auto-detection, only apply base rules + explicit flags
+#
+# Auto-detection: without --no-detect, the script detects project type from
+# marker files (go.mod, pyproject.toml, package.json, .git/) and applies
+# the appropriate flags automatically. Explicit flags merge on top.
 #
 # Requires: jq
 #
-# This script is idempotent. If permissions are already configured, it reports
-# the current state and exits without changes.
+# Creates .claude/settings.local.json if it doesn't exist.
+# Merges new rules into existing permissions without overwriting.
+# Always ensures permissions.defaultMode is set.
 
 file=".claude/settings.local.json"
 with_git=false
+with_go=false
+with_python=false
+with_node=false
+no_detect=false
+
+usage() {
+  cat <<EOF
+Usage: claude-fix-perms [--with-git] [--go] [--python] [--node] [--all] [--no-detect]
+  Inject/merge permissions into $file
+
+Options:
+  --with-git   Add git write permissions (commit, merge, branch)
+  --go         Add Go toolchain permissions (GOCACHE/GOMODCACHE variants)
+  --python     Add Python toolchain permissions (reserved — base covers these)
+  --node       Add Node toolchain permissions (reserved — base covers these)
+  --all        Shortcut for --go --python --node
+  --no-detect  Skip auto-detection, only apply base rules + explicit flags
+
+Auto-detection (default): detects project type from marker files and applies
+the appropriate flags. Explicit flags merge on top of detected ones.
+EOF
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --with-git) with_git=true; shift ;;
-    -h|--help)
-      echo "Usage: claude-fix-perms [--with-git]"
-      echo "  Inject default permissions into $file"
-      echo "  --with-git  Add git write permissions (commit, merge, branch)"
-      exit 0
-      ;;
+    --go) with_go=true; shift ;;
+    --python) with_python=true; shift ;;
+    --node) with_node=true; shift ;;
+    --all) with_go=true; with_python=true; with_node=true; shift ;;
+    --no-detect) no_detect=true; shift ;;
+    -h|--help) usage; exit 0 ;;
     *)
       echo "Unknown option: $1" >&2
-      echo "Usage: claude-fix-perms [--with-git]" >&2
+      usage >&2
       exit 1
       ;;
   esac
 done
+
+# --- Auto-detect project type ---
+detected=()
+if ! $no_detect; then
+  if [[ -d ".git" ]]; then
+    with_git=true
+    detected+=(git)
+  fi
+  if [[ -f "go.mod" ]]; then
+    with_go=true
+    detected+=(go)
+  fi
+  if [[ -f "pyproject.toml" ]] || [[ -f "setup.py" ]] || [[ -f "requirements.txt" ]]; then
+    with_python=true
+    detected+=(python)
+  fi
+  if [[ -f "package.json" ]]; then
+    with_node=true
+    detected+=(node)
+  fi
+fi
 
 # --- Check prerequisites ---
 if ! command -v jq >/dev/null 2>&1; then
@@ -37,220 +90,251 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
+# --- Auto-create file if missing ---
 if [[ ! -f "$file" ]]; then
-  echo "No $file found — nothing to fix."
-  echo "Create the file first (e.g., echo '{}' > $file), then re-run."
-  exit 0
+  mkdir -p "$(dirname "$file")"
+  echo '{}' > "$file"
+  echo "Created $file"
 fi
 
-# --- Check if already configured ---
-if jq -e '.permissions.allow' "$file" >/dev/null 2>&1 \
-   && jq -e '.permissions.defaultMode' "$file" >/dev/null 2>&1; then
-  mode=$(jq -r '.permissions.defaultMode // "not set"' "$file")
-  allow_count=$(jq '.permissions.allow | length' "$file")
-  deny_count=$(jq '.permissions.deny | length' "$file")
-  echo "Permissions already configured in $file"
-  echo "  defaultMode: $mode"
-  echo "  allow rules: $allow_count"
-  echo "  deny rules:  $deny_count"
-  # Check for git write rules
-  if jq -e '.permissions.allow[] | select(test("git commit"))' "$file" >/dev/null 2>&1; then
-    echo "  git write: ENABLED"
-  else
-    echo "  git write: disabled (re-run with --with-git to enable)"
+# --- Capture before-state for reporting ---
+before_allow=$(jq '(.permissions.allow // []) | length' "$file")
+before_deny=$(jq '(.permissions.deny // []) | length' "$file")
+
+# --- Base deny rules (always ensured) ---
+read -r -d '' base_deny << 'EOF' || true
+[
+  "Bash(rm *)",
+  "Bash(rm -*)",
+  "Bash(curl *)",
+  "Bash(wget *)",
+  "Bash(sudo *)",
+  "Bash(git push *)",
+  "Bash(git push --force *)",
+  "Bash(git push -f *)",
+  "Bash(git rebase *)",
+  "Bash(git reset *)",
+  "Bash(git reset --hard *)",
+  "Bash(git commit --amend *)",
+  "Bash(git tag *)",
+  "Bash(git rm *)",
+  "Bash(git mv *)",
+  "Bash(git clean *)",
+  "Bash(git checkout -- *)",
+  "Bash(cat *>*)",
+  "Bash(echo *>*)",
+  "Bash(kill *)",
+  "Bash(killall *)",
+  "Bash(docker rm *)",
+  "Bash(docker rmi *)",
+  "Bash(pip uninstall *)",
+  "Bash(gh pr close *)",
+  "Bash(gh pr merge *)",
+  "Bash(gh issue close *)",
+  "Edit(.env)",
+  "Edit(.env.*)",
+  "Edit(**/.env)",
+  "Edit(**/.env.*)",
+  "Edit(**/secrets/**)",
+  "Edit(**/*.pem)",
+  "Edit(**/*.key)",
+  "Edit(**/credentials*)",
+  "Write(.env)",
+  "Write(.env.*)",
+  "Write(**/.env)",
+  "Write(**/.env.*)",
+  "Write(**/secrets/**)",
+  "Write(**/*.pem)",
+  "Write(**/*.key)",
+  "Write(**/credentials*)"
+]
+EOF
+
+# --- Base allow rules (always ensured) ---
+read -r -d '' base_allow << 'EOF' || true
+[
+  "Task",
+  "Read",
+  "Read(**)",
+  "Edit",
+  "Edit(**)",
+  "Write",
+  "Write(**)",
+  "NotebookEdit",
+  "WebSearch",
+  "WebFetch",
+  "mcp__*",
+  "Bash(go test *)",
+  "Bash(go build *)",
+  "Bash(go run *)",
+  "Bash(go mod *)",
+  "Bash(go vet *)",
+  "Bash(go vet)",
+  "Bash(go clean -cache)",
+  "Bash(goimports *)",
+  "Bash(golangci-lint *)",
+  "Bash(mockery *)",
+  "Bash(uv run *)",
+  "Bash(uv sync *)",
+  "Bash(uvx *)",
+  "Bash(poetry run *)",
+  "Bash(pytest *)",
+  "Bash(ruff *)",
+  "Bash(mypy *)",
+  "Bash(python *)",
+  "Bash(python3 *)",
+  "Bash(pip install *)",
+  "Bash(pip list *)",
+  "Bash(pnpm *)",
+  "Bash(npx *)",
+  "Bash(node *)",
+  "Bash(jsonnet *)",
+  "Bash(jsonnetfmt *)",
+  "Bash(jb *)",
+  "Bash(buf *)",
+  "Bash(make *)",
+  "Bash(docker build *)",
+  "Bash(docker run *)",
+  "Bash(docker compose *)",
+  "Bash(docker ps *)",
+  "Bash(docker images *)",
+  "Bash(docker logs *)",
+  "Bash(gh pr view *)",
+  "Bash(gh pr list *)",
+  "Bash(gh pr diff *)",
+  "Bash(gh pr checks *)",
+  "Bash(gh issue view *)",
+  "Bash(gh issue list *)",
+  "Bash(gh api *)",
+  "Bash(gh run *)",
+  "Bash(git add *)",
+  "Bash(git add .)",
+  "Bash(git status *)",
+  "Bash(git status)",
+  "Bash(git diff *)",
+  "Bash(git diff)",
+  "Bash(git log *)",
+  "Bash(git show *)",
+  "Bash(git branch *)",
+  "Bash(git branch)",
+  "Bash(git blame *)",
+  "Bash(git ls-files *)",
+  "Bash(git ls-files)",
+  "Bash(git ls-tree *)",
+  "Bash(git rev-parse *)",
+  "Bash(git stash *)",
+  "Bash(git checkout -b *)",
+  "Bash(git switch *)",
+  "Bash(git remote *)",
+  "Bash(git fetch *)",
+  "Bash(git config --get *)",
+  "Bash(git worktree list *)",
+  "Bash(git worktree list)",
+  "Bash(.claude/bin/*)",
+  "Bash(ls *)",
+  "Bash(ls)",
+  "Bash(test *)",
+  "Bash([ -f *)",
+  "Bash([ -d *)",
+  "Bash(mkdir *)",
+  "Bash(wc *)",
+  "Bash(stat *)",
+  "Bash(file *)",
+  "Bash(jq *)",
+  "Bash(which *)",
+  "Bash(pwd)",
+  "Bash(head *)",
+  "Bash(tail *)",
+  "Bash(diff *)",
+  "Bash(sort *)",
+  "Bash(uniq *)",
+  "Bash(cut *)",
+  "Bash(tr *)",
+  "Bash(awk *)",
+  "Bash(sed *)",
+  "Bash(xargs *)",
+  "Bash(tee *)",
+  "Bash(env *)",
+  "Bash(date *)",
+  "Bash(basename *)",
+  "Bash(dirname *)"
+]
+EOF
+
+# --- Flag-specific rules ---
+add_allow='[]'
+add_deny='[]'
+
+if $with_go; then
+  add_allow=$(echo "$add_allow" | jq '. + [
+    "Bash(GOCACHE=* go build *)",
+    "Bash(GOCACHE=* go test *)",
+    "Bash(GOCACHE=* go vet *)",
+    "Bash(GOCACHE=* go vet)",
+    "Bash(GOCACHE=* golangci-lint *)",
+    "Bash(GOCACHE=* GOMODCACHE=* go build *)",
+    "Bash(GOCACHE=* GOMODCACHE=* go test *)",
+    "Bash(GOCACHE=* GOMODCACHE=* go vet *)",
+    "Bash(GOCACHE=* GOMODCACHE=* golangci-lint *)",
+    "Bash(GOMODCACHE=* go mod *)",
+    "Bash(GOMODCACHE=* go get *)"
+  ]')
+fi
+
+if $with_git; then
+  add_allow=$(echo "$add_allow" | jq '. + [
+    "Bash(git commit -m *)",
+    "Bash(git merge --ff-only *)",
+    "Bash(git merge --no-edit *)",
+    "Bash(git switch -c *)",
+    "Bash(git branch -d *)"
+  ]')
+  add_deny=$(echo "$add_deny" | jq '. + [
+    "Bash(git merge main *)",
+    "Bash(git merge master *)"
+  ]')
+fi
+
+# Python and Node base patterns are already comprehensive.
+# These flags are reserved for future language-specific additions.
+# if $with_python; then ... fi
+# if $with_node; then ... fi
+
+# --- Merge into existing file ---
+# Ensures base rules exist, adds flag-specific rules, deduplicates.
+# Never removes existing rules. Never overwrites defaultMode if already set.
+jq --argjson base_allow "$base_allow" \
+   --argjson base_deny "$base_deny" \
+   --argjson add_allow "$add_allow" \
+   --argjson add_deny "$add_deny" '
+  .permissions //= {} |
+  .permissions.defaultMode //= "acceptEdits" |
+  .permissions.allow = ((.permissions.allow // []) + $base_allow + $add_allow | unique) |
+  .permissions.deny = ((.permissions.deny // []) + $base_deny + $add_deny | unique)
+' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+
+# --- Report ---
+after_allow=$(jq '.permissions.allow | length' "$file")
+after_deny=$(jq '.permissions.deny | length' "$file")
+mode=$(jq -r '.permissions.defaultMode' "$file")
+new_allow=$((after_allow - before_allow))
+new_deny=$((after_deny - before_deny))
+
+echo "Permissions updated in $file"
+if [[ ${#detected[@]} -gt 0 ]]; then
+  echo "  detected:    $(IFS=','; echo "${detected[*]}" | sed 's/,/, /g')"
+fi
+echo "  defaultMode: $mode"
+echo "  allow rules: $after_allow (+$new_allow new)"
+echo "  deny rules:  $after_deny (+$new_deny new)"
+
+if $with_git; then echo "  git write:   ENABLED"; fi
+if $with_go; then echo "  go sandbox:  ENABLED (GOCACHE/GOMODCACHE patterns)"; fi
+if $with_python; then echo "  python:      OK (base patterns)"; fi
+if $with_node; then echo "  node:        OK (base patterns)"; fi
+
+if ! $with_git; then
+  if ! jq -e '.permissions.allow[] | select(test("git commit"))' "$file" >/dev/null 2>&1; then
+    echo "  git write:   disabled (use --with-git to enable)"
   fi
-  exit 0
-fi
-
-# --- Base permissions (mirrors settings.json) ---
-read -r -d '' base_perms << 'PERMS_EOF' || true
-{
-  "defaultMode": "acceptEdits",
-  "deny": [
-    "Bash(rm *)",
-    "Bash(rm -*)",
-    "Bash(curl *)",
-    "Bash(wget *)",
-    "Bash(sudo *)",
-    "Bash(git push *)",
-    "Bash(git push --force *)",
-    "Bash(git push -f *)",
-    "Bash(git rebase *)",
-    "Bash(git reset *)",
-    "Bash(git reset --hard *)",
-    "Bash(git commit --amend *)",
-    "Bash(git tag *)",
-    "Bash(git rm *)",
-    "Bash(git mv *)",
-    "Bash(git clean *)",
-    "Bash(git checkout -- *)",
-    "Bash(cat *>*)",
-    "Bash(echo *>*)",
-    "Bash(kill *)",
-    "Bash(killall *)",
-    "Bash(docker rm *)",
-    "Bash(docker rmi *)",
-    "Bash(pip uninstall *)",
-    "Bash(gh pr close *)",
-    "Bash(gh pr merge *)",
-    "Bash(gh issue close *)",
-    "Edit(.env)",
-    "Edit(.env.*)",
-    "Edit(**/.env)",
-    "Edit(**/.env.*)",
-    "Edit(**/secrets/**)",
-    "Edit(**/*.pem)",
-    "Edit(**/*.key)",
-    "Edit(**/credentials*)",
-    "Write(.env)",
-    "Write(.env.*)",
-    "Write(**/.env)",
-    "Write(**/.env.*)",
-    "Write(**/secrets/**)",
-    "Write(**/*.pem)",
-    "Write(**/*.key)",
-    "Write(**/credentials*)"
-  ],
-  "allow": [
-    "Task",
-    "Read",
-    "Read(**)",
-    "Edit",
-    "Edit(**)",
-    "Write",
-    "Write(**)",
-    "NotebookEdit",
-    "WebSearch",
-    "WebFetch",
-    "mcp__*",
-    "Bash(go test *)",
-    "Bash(go build *)",
-    "Bash(go run *)",
-    "Bash(go mod *)",
-    "Bash(go vet *)",
-    "Bash(goimports *)",
-    "Bash(golangci-lint *)",
-    "Bash(mockery *)",
-    "Bash(uv run *)",
-    "Bash(uv sync *)",
-    "Bash(uvx *)",
-    "Bash(poetry run *)",
-    "Bash(pytest *)",
-    "Bash(ruff *)",
-    "Bash(mypy *)",
-    "Bash(python *)",
-    "Bash(python3 *)",
-    "Bash(pip install *)",
-    "Bash(pip list *)",
-    "Bash(pnpm *)",
-    "Bash(npx *)",
-    "Bash(node *)",
-    "Bash(jsonnet *)",
-    "Bash(jsonnetfmt *)",
-    "Bash(jb *)",
-    "Bash(buf *)",
-    "Bash(make *)",
-    "Bash(docker build *)",
-    "Bash(docker run *)",
-    "Bash(docker compose *)",
-    "Bash(docker ps *)",
-    "Bash(docker images *)",
-    "Bash(docker logs *)",
-    "Bash(gh pr view *)",
-    "Bash(gh pr list *)",
-    "Bash(gh pr diff *)",
-    "Bash(gh pr checks *)",
-    "Bash(gh issue view *)",
-    "Bash(gh issue list *)",
-    "Bash(gh api *)",
-    "Bash(gh run *)",
-    "Bash(git add *)",
-    "Bash(git add .)",
-    "Bash(git status *)",
-    "Bash(git status)",
-    "Bash(git diff *)",
-    "Bash(git diff)",
-    "Bash(git log *)",
-    "Bash(git show *)",
-    "Bash(git branch *)",
-    "Bash(git branch)",
-    "Bash(git blame *)",
-    "Bash(git ls-files *)",
-    "Bash(git ls-files)",
-    "Bash(git ls-tree *)",
-    "Bash(git rev-parse *)",
-    "Bash(git stash *)",
-    "Bash(git checkout -b *)",
-    "Bash(git switch *)",
-    "Bash(git remote *)",
-    "Bash(git fetch *)",
-    "Bash(git config --get *)",
-    "Bash(git worktree list *)",
-    "Bash(git worktree list)",
-    "Bash(.claude/bin/*)",
-    "Bash(ls *)",
-    "Bash(ls)",
-    "Bash(test *)",
-    "Bash([ -f *)",
-    "Bash([ -d *)",
-    "Bash(mkdir *)",
-    "Bash(wc *)",
-    "Bash(stat *)",
-    "Bash(file *)",
-    "Bash(jq *)",
-    "Bash(which *)",
-    "Bash(pwd)",
-    "Bash(head *)",
-    "Bash(tail *)",
-    "Bash(diff *)",
-    "Bash(sort *)",
-    "Bash(uniq *)",
-    "Bash(cut *)",
-    "Bash(tr *)",
-    "Bash(awk *)",
-    "Bash(sed *)",
-    "Bash(xargs *)",
-    "Bash(tee *)",
-    "Bash(env *)",
-    "Bash(date *)",
-    "Bash(basename *)",
-    "Bash(dirname *)"
-  ]
-}
-PERMS_EOF
-
-# --- Add git write rules if requested ---
-if $with_git; then
-  perms=$(echo "$base_perms" | jq '
-    .allow += [
-      "Bash(git commit -m *)",
-      "Bash(git merge --ff-only *)",
-      "Bash(git merge --no-edit *)",
-      "Bash(git switch -c *)",
-      "Bash(git branch -d *)"
-    ] |
-    .deny += [
-      "Bash(git merge main *)",
-      "Bash(git merge master *)"
-    ]
-  ')
-else
-  perms="$base_perms"
-fi
-
-# --- Inject permissions ---
-jq --argjson perms "$perms" '.permissions = $perms' "$file" > "$file.tmp" \
-  && mv "$file.tmp" "$file"
-
-allow_count=$(jq '.permissions.allow | length' "$file")
-deny_count=$(jq '.permissions.deny | length' "$file")
-
-echo "Injected default permissions into $file"
-echo "  defaultMode: acceptEdits"
-echo "  allow rules: $allow_count"
-echo "  deny rules:  $deny_count"
-if $with_git; then
-  echo "  git write: ENABLED"
-else
-  echo "  git write: disabled (use --with-git to enable)"
 fi

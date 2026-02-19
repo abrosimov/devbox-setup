@@ -39,9 +39,18 @@ Read the current task list if any tasks exist (use TaskList tool).
 
 Check for pipeline state:
 ```bash
-JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
-BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
-cat docs/implementation_plans/${JIRA_ISSUE}/${BRANCH_NAME}/pipeline_state.json 2>/dev/null || echo '{}'
+CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+RC=$?
+```
+
+**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
+**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
+  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
+  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
+  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
+
+```bash
+cat ${PROJECT_DIR}/pipeline_state.json 2>/dev/null || echo '{}'
 ```
 
 #### 3. Synthesise Checkpoint
@@ -185,10 +194,18 @@ search_nodes("blocker:")
 #### 5. Check Pipeline State
 
 ```bash
-BRANCH=$(git branch --show-current)
-JIRA_ISSUE=$(echo "$BRANCH" | cut -d'_' -f1)
-BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
-cat docs/implementation_plans/${JIRA_ISSUE}/${BRANCH_NAME}/pipeline_state.json 2>/dev/null
+CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+RC=$?
+```
+
+**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
+**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
+  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
+  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
+  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
+
+```bash
+cat ${PROJECT_DIR}/pipeline_state.json 2>/dev/null
 ```
 
 #### 6. Present Summary

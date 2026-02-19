@@ -386,6 +386,30 @@ defer f.Close()  // AFTER error check
 
 ---
 
+## Sandbox Cache
+
+Claude Code's sandbox blocks writes outside the project directory and `$TMPDIR`. Go's default cache paths (`~/Library/Caches/go-build/`, `~/go/pkg/mod/`) are outside the sandbox.
+
+**Always prefix Go commands with cache env vars:**
+
+```bash
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test ./...
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go vet ./...
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...
+```
+
+This redirects both caches into `$TMPDIR`, which the sandbox allows. **Never skip this prefix** — without it, Go commands fail with permission errors.
+
+### If Go Commands Fail in Sandbox
+
+1. Verify you prefixed with `GOCACHE` and `GOMODCACHE` env vars
+2. If still failing with TLS errors: report the exact error to the user
+3. If failing with import errors: this is a real code bug — fix it
+4. **Never** write "sandbox blocks" as an excuse — use the env var prefix and report real errors
+
+---
+
 ## Related Skills
 
 For detailed patterns, Claude will load these skills as needed:

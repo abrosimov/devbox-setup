@@ -50,7 +50,14 @@ Extract Jira issue from git branch name.
 
 **Convention:** Branch names follow `JIRAPRJ-123_description_of_branch`
 
-### Bash
+**Primary method**: `~/.claude/bin/resolve-context` -- outputs JSON with `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`. Exit 0 = valid, exit 2 = non-convention branch (falls back to `_adhoc/{sanitised_branch}/`).
+
+```bash
+CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+# Parse JSON for JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
+```
+
+### Legacy Scripts (deprecated -- prefer `resolve-context`)
 
 ```bash
 # Source to set variables
@@ -65,7 +72,7 @@ echo "Working on: $JIRA_ISSUE / $BRANCH_NAME"
 # BRANCH_NAME=feature_name
 ```
 
-### Fish
+### Fish (deprecated -- prefer `resolve-context`)
 
 ```fish
 # Source to set variables

@@ -193,13 +193,13 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 
 ## Workflow
 
-1. **Get context**: Use `shared-utils` skill to extract Jira issue from branch
-2. **Check for plan**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/plan.md`
+1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve-context` to compute it.
+2. **Check for plan**: Look for `${PROJECT_DIR}/plan.md`
 3. **Parse plan contracts** (if plan.md exists):
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
    - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
-4. **Consume design artifacts** (if available): Look for design files in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If none exist, proceed without — design is optional.
+4. **Consume design artifacts** (if available): Look for design files in `${PROJECT_DIR}/`. If none exist, proceed without — design is optional.
    - **`design.md`** — Primary design spec. Extract and follow:
      - **Component specs** (Props, Variants, States, Interactions) — implement each component exactly as specified; do not invent props or skip variants
      - **Accessibility plan** (keyboard nav, screen reader, ARIA, contrast) — these are requirements, not suggestions
@@ -213,7 +213,7 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
      - Colour, spacing, typography, shadow, radius, breakpoint, and z-index tokens MUST come from this file — never invent values
    - **`design_output.json`** — Structured output. Read `figma_source` for the Figma file URL/key and `figma_artifacts` for diagram URLs
 5. **Verify against Figma source** (if `design_output.json` has `figma_source`): Use `mcp__figma__get_design_context` and `mcp__figma__get_screenshot` to compare implementation against the original design. Flag visual discrepancies before completing.
-6. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. Extract:
+6. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `${PROJECT_DIR}/`. Extract:
    - **Ubiquitous language** — use these exact terms in component names, props, state variables
    - **Domain events** — use event names from model when naming callbacks and handlers
    - **System constraints** — respect performance/UX constraints
@@ -237,8 +237,8 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
     - **States Match**: All states (default, hover, active, focus, disabled, loading, error) are handled
     - **A11y Match**: Accessibility plan items (ARIA, keyboard, screen reader) are implemented
     - **Tokens Used**: Component uses design tokens, not hardcoded values
-11. **Write structured output**: Write `se_frontend_output.json` to `{PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `design_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
-12. **Write work log**: Write `work_log_frontend.md` to `{PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
+11. **Write structured output**: Write `se_frontend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `design_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
+12. **Write work log**: Write `work_log_frontend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
 13. **Format**: Use Prettier for formatting, ESLint for linting
 
 ## Before Implementation: Anti-Pattern Check
@@ -292,65 +292,21 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 ---
 
-## ⛔ Pre-Flight Verification (BLOCKING — Must Pass Before Completion)
+### Pre-Flight Verification
 
-**You are NOT done until ALL of these pass. Do not say "implementation complete" until verified.**
+Build and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion --quick` passes. You still MUST run checks manually and report results.
 
-### Step 1: Detect Project Tooling
+**Quick Reference Commands (Node/Frontend):**
 
-```bash
-# Determine framework and tools
-ls next.config.* vite.config.* 2>/dev/null
-ls pnpm-lock.yaml package-lock.json yarn.lock bun.lockb 2>/dev/null
-```
+| Check | Command |
+|-------|---------|
+| Build | `pnpm build` (or `npm run build`) |
+| Test | `pnpm test` (or `npm test`) |
+| Lint | `pnpm lint` (or `npx eslint .`) |
+| Types | `pnpm typecheck` (or `npx tsc --noEmit`) |
+| Format | `npx prettier --write .` |
 
-### Step 2: Type Check (MANDATORY)
-
-```bash
-npx tsc --noEmit
-```
-
-**If this fails → FIX before proceeding. Type errors indicate bugs.**
-
-### Step 3: Lint Check (MANDATORY)
-
-```bash
-npx eslint .
-# Or for Next.js projects:
-npx next lint
-```
-
-**If lint issues found → FIX the code.** Do NOT add suppression directives (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`). If you cannot fix an issue, explain it to the user and wait for guidance. See `lint-discipline` skill.
-
-### Step 4: Existing Tests Pass (MANDATORY)
-
-```bash
-# Detect test runner
-npx vitest run
-# Or:
-npm test -- --watchAll=false
-```
-
-**If ANY test fails → FIX before proceeding.** This includes tests you didn't write. If your changes broke existing tests, that's a bug in your implementation.
-
-### Step 5: Format Check (MANDATORY)
-
-```bash
-npx prettier --write .
-git diff --name-only
-```
-
-**If files changed after formatting → you forgot to format. Commit the formatted files.**
-
-### Step 6: Build Check (MANDATORY for Next.js)
-
-```bash
-npm run build
-```
-
-**Catches SSR errors, import issues, and type errors that `tsc` might miss.**
-
-### Step 7: Security Scan (MANDATORY)
+### Security Scan (MANDATORY)
 
 Scan changed files for CRITICAL security patterns (see `security-patterns` skill). These are **never acceptable** in any context.
 
@@ -371,44 +327,31 @@ echo "$CHANGED" | xargs grep -n 'NEXT_PUBLIC.*SECRET\|NEXT_PUBLIC.*KEY\|NEXT_PUB
 echo "$CHANGED" | xargs grep -n 'localStorage.*token\|localStorage.*secret\|localStorage.*password\|sessionStorage.*token' 2>/dev/null || true
 ```
 
-**If any pattern matches → review each match.** Not every match is a true positive (e.g., `NEXT_PUBLIC_API_KEY` for a public API). But every match MUST be reviewed and either:
-- **Fixed** — replace with the safe alternative
-- **Justified** — explain why this specific usage is safe (e.g., public API key, not a secret)
-
-### Step 8: Smoke Test (If Applicable)
-
-If there's a simple way to verify the feature works:
-- Open the page in browser
-- Check the component renders
-- Verify the interaction works
-
-**Document what you tested:**
-```
-Smoke test: [action] → [observed result]
-```
+**If any pattern matches → review each match.** Fix or justify each finding.
 
 ### Pre-Flight Report (REQUIRED OUTPUT)
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| `tsc --noEmit` | PASS / FAIL | |
+| `eslint` | PASS / WARN / FAIL | |
+| Tests | PASS / FAIL | X tests, Y passed |
+| `prettier` | PASS | |
+| `next build` | PASS / FAIL / N/A | |
+| Security scan | CLEAR / REVIEW | [findings if any] |
+| Smoke test | PASS / N/A | [what was tested] |
+
+**Result**: READY / BLOCKED — if ANY check shows FAIL, you are BLOCKED. Fix before completing.
 
 ## MCP Integration
 
 See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
-## Pre-Flight Verification
+---
 
-| Check | Status | Notes |
-|-------|--------|-------|
-| `tsc --noEmit` | ✅ PASS / ❌ FAIL | |
-| `eslint` | ✅ PASS / ⚠️ WARN / ❌ FAIL | |
-| Tests | ✅ PASS / ❌ FAIL | X tests, Y passed |
-| `prettier` | ✅ PASS | |
-| `next build` | ✅ PASS / ❌ FAIL / ⏭️ N/A | |
-| Security scan | ✅ CLEAR / ⚠️ REVIEW | [findings if any] |
-| Smoke test | ✅ PASS / ⏭️ N/A | [what was tested] |
+## FORBIDDEN: Excuse Patterns
 
-**Result**: READY / BLOCKED
-```
-
-**If ANY check shows ❌ FAIL → you are BLOCKED. Fix issues before completing.**
+See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance for fabricated results.
 
 ---
 

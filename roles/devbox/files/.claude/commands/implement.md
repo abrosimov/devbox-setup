@@ -76,10 +76,15 @@ git checkout -b <branch-name> "$DEFAULT_BRANCH"
 ### 2. Compute Task Context (once)
 
 ```bash
-BRANCH=`git branch --show-current`
-JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
-BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
+CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+RC=$?
 ```
+
+**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
+**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
+  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
+  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
+  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
 
 Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent, do not re-compute.
 
@@ -186,7 +191,7 @@ Based on detected stack:
 Task(
   subagent_type: "software-engineer-go",
   model: "{determined_model}",  // "opus" (default) or "sonnet" (downgraded)
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\n\n{task description}"
 )
 ```
 
@@ -196,14 +201,14 @@ Task(
 Task(
   subagent_type: "software-engineer-{go|python}",
   model: "{determined_model}",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\nStack: fullstack\nThis is the BACKEND portion.\n\n{backend task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the BACKEND portion.\n\n{backend task description}"
 )
 
 # Step 2: Frontend (after backend completes)
 Task(
   subagent_type: "software-engineer-frontend",
   model: "{determined_model}",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\nStack: fullstack\nThis is the FRONTEND portion. Backend implementation is complete.\n\n{frontend task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the FRONTEND portion. Backend implementation is complete.\n\n{frontend task description}"
 )
 ```
 
@@ -212,6 +217,60 @@ Each agent will:
 - Read its assigned work stream requirements (if plan has work streams)
 - Implement the required changes
 - Provide summary and suggest next step
+
+### 6a. Independent Verification
+
+After the agent Task returns, run independent verification before committing or reporting completion. This step does not trust the agent's self-reported results.
+
+**Detect language for verifier** (reuse markers from Step 3):
+- `go.mod` exists → `go`
+- `pyproject.toml` or `setup.py` exists → `python`
+- `package.json` exists → `node`
+
+**Check if verifier is available:**
+
+```bash
+VERIFIER=~/.claude/bin/verify-se-completion
+if [ ! -x "$VERIFIER" ]; then
+  echo "VERIFIER_SKIP: verify-se-completion not found"
+fi
+```
+
+If the verifier is not found or not executable, skip this step and note it in the completion report.
+
+**Run verification:**
+
+```bash
+# Base command
+CMD="$VERIFIER --lang <detected-lang> --work-dir <project-root>"
+
+# If the agent produced an output JSON, append --output-file
+if [ -n "$SE_OUTPUT_FILE" ] && [ -f "$SE_OUTPUT_FILE" ]; then
+  CMD="$CMD --output-file $SE_OUTPUT_FILE"
+fi
+
+$CMD
+VERIFY_EXIT=$?
+```
+
+**Act on the result:**
+
+| Exit code | Meaning | Action |
+|-----------|---------|--------|
+| `0` | Verification passed | Report "Implementation verified independently" and continue to Step 7 |
+| Non-zero | Verification failed | Show failure output; pause before commit; offer re-invocation |
+
+**If verification fails**, show the verifier output and prompt:
+
+> Verification found issues:
+>
+> ```
+> {verifier output}
+> ```
+>
+> Would you like me to re-invoke the agent to fix these?
+
+If the user says yes, go back to Step 6 and spawn the same agent again, passing the verification errors in the prompt context. If the user says no (or wants to proceed anyway), continue to Step 7 with a warning note.
 
 ### 7. Commit Changes
 

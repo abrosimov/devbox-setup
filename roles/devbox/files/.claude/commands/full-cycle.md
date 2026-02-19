@@ -70,11 +70,17 @@ git checkout -b <branch-name> "$DEFAULT_BRANCH"
 ```
 
 **Compute Task Context (once)**:
+
 ```bash
-BRANCH=`git branch --show-current`
-JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
-BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
+CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+RC=$?
 ```
+
+**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
+**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
+  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
+  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
+  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
 
 Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to all agents throughout the cycle.
 
@@ -315,11 +321,30 @@ Task(
 
     1. Run software-engineer-{lang} agent via Task tool:
        Task(subagent_type: 'software-engineer-{lang}', model: '{model}', prompt: 'PIPELINE_MODE=true\n...')
-    2. Commit implementation:
+
+    2. **SE Verification Gate** (independent of agent self-reported results):
+       Check if ~/.claude/bin/verify-se-completion exists before running:
+       ```bash
+       if [ -x ~/.claude/bin/verify-se-completion ]; then
+         ~/.claude/bin/verify-se-completion --lang {lang} --work-dir {project-root} \
+           [--output-file {PLANS_DIR}/{stream}_se_output.json]
+         SE_VERIFY_EXIT=$?
+       else
+         echo "WARNING: verify-se-completion not found — skipping independent verification"
+         SE_VERIFY_EXIT=0
+       fi
+       ```
+       - Exit 0 → log 'independently verified' in pipeline state for this stream's SE stage; continue
+       - Non-zero → log failure in pipeline state; record errors; DO NOT proceed to test writer or
+         code reviewer. Report errors to orchestrator (include script stderr). The stream executor
+         must surface this as a failed step in the completion file so the orchestrator can offer
+         to re-invoke the SE agent with the specific errors.
+
+    3. Commit implementation (only if SE verification passed):
        .claude/bin/git-safe-commit -m 'feat({JIRA_ISSUE}): implement {stream}'
-    3. Run unit-test-writer-{lang} agent via Task tool:
+    4. Run unit-test-writer-{lang} agent via Task tool:
        Task(subagent_type: 'unit-test-writer-{lang}', model: 'sonnet', prompt: 'PIPELINE_MODE=true\n...')
-    4. Commit tests:
+    5. Commit tests:
        .claude/bin/git-safe-commit -m 'test({JIRA_ISSUE}): add {stream} tests'
 
     After ALL steps, write a completion file: {PLANS_DIR}/{stream}_completion.json
@@ -335,10 +360,15 @@ Task(
       'tests_passed': true|false,
       'tests_total': N,
       'tests_failed': N,
+      'se_independently_verified': true|false,
       'attempt': {attempt},
       'started_at': '{started_at}',
       'completed_at': '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
     }
+
+    The 'steps' array MUST include a 'se_verification' entry immediately after the SE agent step:
+    { 'name': 'se_verification', 'status': 'passed|failed|skipped', 'error': '<stderr if failed>' }
+    Set 'se_independently_verified' to true only when se_verification.status == 'passed'.
 
     Run a build check before writing completion (go build/ruff check/tsc --noEmit).
     Set build_passed based on the result.
@@ -380,7 +410,26 @@ For each node with status "running":
        3 → RETRY: "Build failed: {stderr from validation script}"
        4 → RETRY: "Tests failed: {stderr from validation script}"
 
-    c. If RETRY:
+    c. **SE Verification failure** — check completion file for SE verification step status:
+       If `steps[].name == "se_verification" && steps[].status == "failed"`:
+         node.status = "se_verify_failed"
+         Log `software_engineer_{lang}.verification = "failed"` in pipeline state
+         ESCALATE to user (do NOT advance to test writer or code reviewer):
+           "SE verification failed for stream '{stream}' after independent build/test/lint check.
+            Errors from verify-se-completion:
+            {errors from completion file step entry}
+
+            Options:
+            A) Re-invoke SE agent with these specific errors
+            B) Skip verification and continue (not recommended)
+            C) Stop pipeline
+            [Awaiting your decision]"
+         - On A: re-launch stream executor starting from step 1 only (SE agent), passing the errors
+           as context. Increment attempt counter.
+         - On B: override node.status = "completed", log decision in decisions.json, continue.
+         - On C: stop pipeline.
+
+    d. If RETRY (from exit codes 1-4):
        node.attempt += 1
        If attempt > max_attempts:
          node.status = "failed"
@@ -528,6 +577,7 @@ Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 - Individual commands (`/implement`, `/test`, `/review`) still use per-step approval (interactive mode)
 - Phase 4 builds an `execution_dag.json` from plan work streams and executes nodes as dependencies resolve — parallel streams run concurrently, cross-stream nodes (review, gate) wait for all predecessors
 - Each stream executor writes a `{stream}_completion.json` validated by `bin/validate-pipeline-output` against `schemas/stream_completion.schema.json` — exit codes drive retry/escalation logic (0=pass, 1=malformed, 2=reality-check, 3=build-fail, 4=test-fail)
+- After each SE agent completes, `~/.claude/bin/verify-se-completion` runs as an independent gate before test writer or code reviewer stages. This is separate from the agent's self-reported Pre-Flight results. If the script is absent, the gate is skipped with a warning. A non-zero exit blocks pipeline advancement and offers to re-invoke the SE agent with the specific errors. The result is recorded as `se_independently_verified` in the completion file and as `verification` on the SE stage in pipeline state.
 - Pipeline state persists in `pipeline_state.json` and `execution_dag.json` — resume with `/full-cycle` if interrupted
 - Decisions are logged in `decisions.json` for audit trail
 - Use `stop` at any time to exit

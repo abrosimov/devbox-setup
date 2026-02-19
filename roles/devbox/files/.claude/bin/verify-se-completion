@@ -1,0 +1,519 @@
+#!/usr/bin/env bash
+# verify-se-completion — Independent verification of SE agent claims.
+#
+# Runs build/test/lint independently after an SE agent finishes.
+# Compares actual results to agent's self-reported claims.
+#
+# Usage: verify-se-completion --lang <go|python|node> [--output-file <path>] [--work-dir <path>] [--quick] [--json]
+#
+# Exit codes:
+#   0  All checks passed (or no checks applicable)
+#   1  Build failed
+#   2  Tests failed
+#   3  Lint failed
+#   4  Agent output file empty or missing
+#   5  Multiple checks failed
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Degrade gracefully when not attached to a terminal
+if [[ ! -t 1 ]]; then
+  RED='' GREEN='' YELLOW='' BOLD='' NC=''
+fi
+
+# --- Helpers ---
+
+die()  { echo -e "${RED}ERROR${NC}: $1" >&2; exit 10; }
+ok()   { echo -e "  ${GREEN}PASS${NC}  $1"; }
+fail() { echo -e "  ${RED}FAIL${NC}  $1"; }
+skip() { echo -e "  ${YELLOW}SKIP${NC}  $1"; }
+warn() { echo -e "${YELLOW}WARN${NC}: $1" >&2; }
+
+usage() {
+  cat <<'EOF'
+Usage: verify-se-completion --lang <go|python|node> [--output-file <path>] [--work-dir <path>] [--quick] [--json]
+
+Options:
+  --lang <go|python|node>   Language/runtime to verify (required)
+  --output-file <path>      SE agent output JSON to validate
+  --work-dir <path>         Project root for running checks (default: .)
+  --quick                   Skip test check (build + lint only)
+  --json                    Output machine-readable JSON instead of coloured report
+  -h, --help                Show this help
+
+Exit codes:
+  0  All checks passed (or no checks applicable)
+  1  Build failed
+  2  Tests failed
+  3  Lint failed
+  4  Agent output file empty or missing
+  5  Multiple checks failed
+EOF
+  exit 0
+}
+
+has_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+# Print first N lines of captured output, indented
+show_output() {
+  local output="$1" max_lines="${2:-10}"
+  if [[ -n "$output" ]]; then
+    echo "$output" | head -n "$max_lines" | sed 's/^/    | /'
+    local total
+    total=$(echo "$output" | wc -l | tr -d ' ')
+    if [[ "$total" -gt "$max_lines" ]]; then
+      echo "    | ... ($((total - max_lines)) more lines)"
+    fi
+  fi
+}
+
+# --- Result tracking (Bash 3.2 compatible — no associative arrays) ---
+
+# Per-check state: status (PASS/FAIL/SKIP/N_A), detail string, error output, exit code
+result_output_status="N_A"; result_output_detail=""; result_output_err=""; result_output_code=0
+result_build_status="N_A";  result_build_detail="";  result_build_err="";  result_build_code=0
+result_test_status="N_A";   result_test_detail="";   result_test_err="";   result_test_code=0
+result_lint_status="N_A";   result_lint_detail="";   result_lint_err="";   result_lint_code=0
+
+FAILURE_CODES=""  # space-separated list of exit codes for failed checks
+
+record_pass() {
+  local check="$1" detail="$2"
+  eval "result_${check}_status=PASS"
+  eval "result_${check}_detail=\$detail"
+}
+
+record_fail() {
+  local check="$1" detail="$2" err="${3:-}" code="$4"
+  eval "result_${check}_status=FAIL"
+  eval "result_${check}_detail=\$detail"
+  eval "result_${check}_err=\$err"
+  eval "result_${check}_code=$code"
+  FAILURE_CODES="${FAILURE_CODES} ${code}"
+}
+
+record_skip() {
+  local check="$1" detail="$2"
+  eval "result_${check}_status=SKIP"
+  eval "result_${check}_detail=\$detail"
+}
+
+# --- Phase 1: Agent Output Validation ---
+
+check_output_file() {
+  local file="$1"
+
+  if [[ ! -f "$file" ]]; then
+    record_fail "output" "file not found: $file" "" 4
+    return
+  fi
+
+  local size
+  size=$(wc -c < "$file" | tr -d ' ')
+  if [[ "$size" -le 10 ]]; then
+    record_fail "output" "file too small (${size} bytes)" "" 4
+    return
+  fi
+
+  if ! has_cmd jq; then
+    record_skip "output" "jq not installed, cannot validate JSON"
+    return
+  fi
+
+  local jq_output
+  if ! jq_output=$(jq empty "$file" 2>&1); then
+    record_fail "output" "invalid JSON" "$jq_output" 4
+    return
+  fi
+
+  local human_size
+  if [[ "$size" -ge 1024 ]]; then
+    human_size="$(awk "BEGIN{printf \"%.1fKB\", $size/1024}")"
+  else
+    human_size="${size}B"
+  fi
+
+  record_pass "output" "valid JSON, ${human_size}"
+}
+
+# --- Phase 2: Build Check ---
+
+check_build() {
+  local lang="$1"
+  local output="" rc=0
+
+  case "$lang" in
+    go)
+      if ! has_cmd go; then
+        record_skip "build" "go not installed"
+        return
+      fi
+      set +e
+      output=$(GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./... 2>&1)
+      rc=$?
+      set -e
+      ;;
+    python)
+      # Python has no build step; check pyproject.toml sync if available
+      if [[ -f "pyproject.toml" ]] && has_cmd uv; then
+        set +e
+        output=$(uv sync --check 2>&1)
+        rc=$?
+        set -e
+        if [[ $rc -ne 0 ]]; then
+          # uv sync --check may not exist in all versions; fall back gracefully
+          record_skip "build" "uv sync --check not supported or deps out of sync"
+          return
+        fi
+      else
+        record_skip "build" "no build step for Python"
+        return
+      fi
+      ;;
+    node)
+      if [[ ! -f "package.json" ]]; then
+        record_skip "build" "no package.json found"
+        return
+      fi
+      local build_script
+      build_script=$(jq -r '.scripts.build // empty' package.json 2>/dev/null)
+      if [[ -z "$build_script" ]]; then
+        record_skip "build" "no build script in package.json"
+        return
+      fi
+      if [[ -f "pnpm-lock.yaml" ]] && has_cmd pnpm; then
+        set +e; output=$(pnpm build 2>&1); rc=$?; set -e
+      elif has_cmd npm; then
+        set +e; output=$(npm run build 2>&1); rc=$?; set -e
+      else
+        record_skip "build" "no package manager found"
+        return
+      fi
+      ;;
+    *)
+      record_skip "build" "unknown language: $lang"
+      return
+      ;;
+  esac
+
+  if [[ $rc -eq 0 ]]; then
+    record_pass "build" "exit 0"
+  else
+    record_fail "build" "exit $rc" "$output" 1
+  fi
+}
+
+# --- Phase 3: Test Check ---
+
+check_test() {
+  local lang="$1"
+  local output="" rc=0
+
+  case "$lang" in
+    go)
+      if ! has_cmd go; then
+        record_skip "test" "go not installed"
+        return
+      fi
+      set +e
+      output=$(GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./... 2>&1)
+      rc=$?
+      set -e
+      ;;
+    python)
+      if ! has_cmd uv; then
+        record_skip "test" "uv not installed"
+        return
+      fi
+      # Check if pytest is available and tests exist
+      local has_tests=false
+      if ls test_*.py *_test.py tests/ test/ 2>/dev/null | head -1 | grep -q .; then
+        has_tests=true
+      fi
+      if [[ "$has_tests" == "false" ]]; then
+        record_skip "test" "no test files found"
+        return
+      fi
+      set +e
+      output=$(uv run pytest 2>&1)
+      rc=$?
+      set -e
+      ;;
+    node)
+      if [[ ! -f "package.json" ]]; then
+        record_skip "test" "no package.json found"
+        return
+      fi
+      local test_script
+      test_script=$(jq -r '.scripts.test // empty' package.json 2>/dev/null)
+      if [[ -z "$test_script" ]]; then
+        record_skip "test" "no test script in package.json"
+        return
+      fi
+      if [[ -f "pnpm-lock.yaml" ]] && has_cmd pnpm; then
+        set +e; output=$(pnpm test 2>&1); rc=$?; set -e
+      elif has_cmd npm; then
+        set +e; output=$(npm test 2>&1); rc=$?; set -e
+      else
+        record_skip "test" "no package manager found"
+        return
+      fi
+      ;;
+    *)
+      record_skip "test" "unknown language: $lang"
+      return
+      ;;
+  esac
+
+  if [[ $rc -eq 0 ]]; then
+    record_pass "test" "exit 0"
+  else
+    record_fail "test" "exit $rc" "$output" 2
+  fi
+}
+
+# --- Phase 4: Lint Check ---
+
+check_lint() {
+  local lang="$1"
+  local output="" rc=0
+
+  case "$lang" in
+    go)
+      if ! has_cmd golangci-lint; then
+        record_skip "lint" "golangci-lint not installed"
+        return
+      fi
+      set +e
+      output=$(GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./... 2>&1)
+      rc=$?
+      set -e
+      ;;
+    python)
+      if ! has_cmd uv; then
+        if has_cmd ruff; then
+          set +e; output=$(ruff check . 2>&1); rc=$?; set -e
+        else
+          record_skip "lint" "neither uv nor ruff installed"
+          return
+        fi
+      else
+        set +e; output=$(uv run ruff check . 2>&1); rc=$?; set -e
+      fi
+      ;;
+    node)
+      if [[ ! -f "package.json" ]]; then
+        record_skip "lint" "no package.json found"
+        return
+      fi
+      local lint_script
+      lint_script=$(jq -r '.scripts.lint // empty' package.json 2>/dev/null)
+      if [[ -n "$lint_script" ]]; then
+        if [[ -f "pnpm-lock.yaml" ]] && has_cmd pnpm; then
+          set +e; output=$(pnpm lint 2>&1); rc=$?; set -e
+        elif has_cmd npm; then
+          set +e; output=$(npm run lint 2>&1); rc=$?; set -e
+        else
+          record_skip "lint" "no package manager found"
+          return
+        fi
+      elif has_cmd npx; then
+        set +e; output=$(npx eslint . 2>&1); rc=$?; set -e
+      else
+        record_skip "lint" "no lint script or eslint available"
+        return
+      fi
+      ;;
+    *)
+      record_skip "lint" "unknown language: $lang"
+      return
+      ;;
+  esac
+
+  if [[ $rc -eq 0 ]]; then
+    record_pass "lint" "exit 0"
+  else
+    record_fail "lint" "exit $rc" "$output" 3
+  fi
+}
+
+# --- Phase 5: Report ---
+
+print_check_line() {
+  local label="$1" check="$2"
+  local status detail err_output
+  eval "status=\$result_${check}_status"
+  eval "detail=\$result_${check}_detail"
+  eval "err_output=\$result_${check}_err"
+
+  # Pad label with dots to align output
+  local pad_len=$((8 - ${#label}))
+  local pad=""
+  local i
+  for (( i=0; i<pad_len; i++ )); do pad="${pad}."; done
+
+  case "$status" in
+    PASS) ok "${label} ${pad} (${detail})" ;;
+    FAIL)
+      fail "${label} ${pad} (${detail})"
+      if [[ -n "$err_output" ]]; then
+        show_output "$err_output" 15
+      fi
+      ;;
+    SKIP) skip "${label} ${pad} (${detail})" ;;
+    N_A)  ;; # check was not run (e.g., no --output-file)
+  esac
+}
+
+print_report() {
+  local fail_count=0
+
+  echo ""
+  echo "=== verify-se-completion results ==="
+
+  print_check_line "Output" "output"
+  print_check_line "Build"  "build"
+  print_check_line "Test"   "test"
+  print_check_line "Lint"   "lint"
+
+  # Count failures
+  for check in output build test lint; do
+    local s
+    eval "s=\$result_${check}_status"
+    if [[ "$s" == "FAIL" ]]; then
+      fail_count=$((fail_count + 1))
+    fi
+  done
+
+  echo "===================================="
+
+  if [[ $fail_count -gt 0 ]]; then
+    echo -e "${BOLD}RESULT${NC}: ${RED}FAIL${NC} (${fail_count} check(s) failed)"
+  else
+    echo -e "${BOLD}RESULT${NC}: ${GREEN}PASS${NC}"
+  fi
+
+  echo ""
+}
+
+print_json_report() {
+  local fail_count=0
+  local checks=""
+
+  for check in output build test lint; do
+    local s d e
+    eval "s=\$result_${check}_status"
+    eval "d=\$result_${check}_detail"
+    eval "e=\$result_${check}_err"
+
+    if [[ "$s" == "FAIL" ]]; then
+      fail_count=$((fail_count + 1))
+    fi
+
+    # Skip checks that were not run
+    if [[ "$s" == "N_A" ]]; then
+      continue
+    fi
+
+    # Escape strings for JSON (minimal: backslash, double-quote, newlines)
+    d=$(printf '%s' "$d" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr '\n' ' ')
+    e=$(printf '%s' "$e" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr '\n' ' ' | head -c 500)
+
+    if [[ -n "$checks" ]]; then
+      checks="${checks},"
+    fi
+    checks="${checks}\"${check}\":{\"status\":\"${s}\",\"detail\":\"${d}\",\"error\":\"${e}\"}"
+  done
+
+  local result="PASS"
+  if [[ $fail_count -gt 0 ]]; then
+    result="FAIL"
+  fi
+
+  printf '{"result":"%s","checks":{%s},"failure_count":%d}\n' \
+    "$result" "$checks" "$fail_count"
+}
+
+compute_exit_code() {
+  # Collect unique failure codes
+  local codes
+  codes=$(echo "$FAILURE_CODES" | tr ' ' '\n' | sort -u | grep -v '^$' || true)
+  local count
+  count=$(echo "$codes" | grep -c '[0-9]' || true)
+
+  if [[ "$count" -eq 0 ]]; then
+    return 0
+  elif [[ "$count" -eq 1 ]]; then
+    return "$(echo "$codes" | head -1)"
+  else
+    return 5
+  fi
+}
+
+# --- Main ---
+
+lang=""
+output_file=""
+work_dir=""
+quick=false
+json_output=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --lang)        lang="$2"; shift 2 ;;
+    --output-file) output_file="$2"; shift 2 ;;
+    --work-dir)    work_dir="$2"; shift 2 ;;
+    --quick)       quick=true; shift ;;
+    --json)        json_output=true; shift ;;
+    -h|--help)     usage ;;
+    *)             die "Unknown option: $1" ;;
+  esac
+done
+
+# Suppress colours for JSON output
+if [[ "$json_output" == "true" ]]; then
+  RED='' GREEN='' YELLOW='' BOLD='' NC=''
+fi
+
+[[ -z "$lang" ]] && die "--lang is required. Use --help for usage."
+
+case "$lang" in
+  go|python|node) ;;
+  *) die "Unsupported language: $lang. Must be go, python, or node." ;;
+esac
+
+# Switch to work directory if specified
+if [[ -n "$work_dir" ]]; then
+  [[ -d "$work_dir" ]] || die "Work directory does not exist: $work_dir"
+  cd "$work_dir"
+fi
+
+echo -e "${BOLD}verify-se-completion${NC} -- lang=$lang dir=$(pwd)"
+
+# Phase 1: Output file validation (optional)
+if [[ -n "$output_file" ]]; then
+  check_output_file "$output_file"
+fi
+
+# Phase 2-4: Build, Test, Lint
+check_build "$lang"
+if [[ "$quick" != "true" ]]; then
+  check_test "$lang"
+fi
+check_lint "$lang"
+
+# Phase 5: Report
+if [[ "$json_output" == "true" ]]; then
+  print_json_report
+else
+  print_report
+fi
+
+# Exit with appropriate code
+compute_exit_code

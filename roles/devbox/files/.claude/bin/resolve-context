@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# resolve-context — Extract JIRA issue and branch context from git.
+#
+# Parses `git branch --show-current` against the PROJ-123_description convention.
+# Outputs JSON to stdout for consumption by commands and agents.
+#
+# Usage: resolve-context [--plans-dir <path>]
+#
+# Exit codes:
+#   0  Valid context resolved (JSON on stdout)
+#   1  Not a git repository
+#   2  Branch does not match PROJ-123_description convention (message on stderr)
+
+set -euo pipefail
+
+plans_dir="docs/implementation_plans"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --plans-dir) plans_dir="$2"; shift 2 ;;
+    -h|--help)
+      cat <<'EOF'
+Usage: resolve-context [--plans-dir <path>]
+
+Options:
+  --plans-dir <path>  Override plans directory (default: docs/implementation_plans)
+  -h, --help          Show this help
+
+Exit codes:
+  0  Valid context resolved (JSON on stdout)
+  1  Not a git repository
+  2  Branch does not match PROJ-123_description convention
+EOF
+      exit 0
+      ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+# Check git availability
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "ERROR: not inside a git repository" >&2
+  exit 1
+fi
+
+BRANCH=$(git branch --show-current 2>/dev/null)
+
+if [[ -z "$BRANCH" ]]; then
+  echo "ERROR: detached HEAD — no branch name available" >&2
+  exit 2
+fi
+
+# Extract JIRA issue: everything before the first underscore
+JIRA_ISSUE="${BRANCH%%_*}"
+
+# Validate against PROJ-123 pattern
+if [[ ! "$JIRA_ISSUE" =~ ^[A-Z]+-[0-9]+$ ]]; then
+  echo "Branch '$BRANCH' does not match PROJ-123_description convention." >&2
+  exit 2
+fi
+
+# Extract branch description: everything after the first underscore
+BRANCH_NAME="${BRANCH#*_}"
+
+# Construct project directory
+PROJECT_DIR="${plans_dir}/${JIRA_ISSUE}/${BRANCH_NAME}"
+
+# Output JSON (no jq dependency)
+printf '{"JIRA_ISSUE":"%s","BRANCH_NAME":"%s","BRANCH":"%s","PROJECT_DIR":"%s"}\n' \
+  "$JIRA_ISSUE" "$BRANCH_NAME" "$BRANCH" "$PROJECT_DIR"

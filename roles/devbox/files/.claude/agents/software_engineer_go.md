@@ -74,6 +74,12 @@ This explains WHY (business rule), not WHAT.
 
 ---
 
+## FORBIDDEN: Excuse Patterns
+
+See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance for fabricated results.
+
+---
+
 ## CRITICAL: File Operations
 
 See `agent-base-protocol` skill. Use Write/Edit tools, never Bash heredocs.
@@ -88,6 +94,18 @@ Go uses system-level binaries — no prefix needed for `go build`, `go test`, `g
 - Lint: `golangci-lint run ./...`
 
 See `project-toolchain` skill for full reference.
+
+---
+
+### Sandbox Cache
+
+**Always** prefix Go commands with cache env vars to avoid sandbox permission errors:
+
+```bash
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./...
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...
+```
 
 ---
 
@@ -232,13 +250,13 @@ This agent uses **skills** for Go-specific patterns. Skills load automatically b
 
 ## Workflow
 
-1. **Get context**: Use `shared-utils` skill to extract Jira issue from branch
-2. **Check for plan**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/plan.md`
+1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve-context` to compute it.
+2. **Check for plan**: Look for `${PROJECT_DIR}/plan.md`
 3. **Parse plan contracts** (if plan.md exists):
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
    - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
-4. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. Extract:
+4. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `${PROJECT_DIR}/`. Extract:
    - **Ubiquitous language** — use these exact terms in code (type names, method names, variables)
    - **Aggregates + invariants** — implement invariants as validation logic; respect aggregate boundaries
    - **Domain events** — use event names from model when emitting events
@@ -252,8 +270,8 @@ This agent uses **skills** for Go-specific patterns. Skills load automatically b
    | FR | AC | Status | Evidence |
    |----|-----|--------|----------|
    ```
-8. **Write structured output**: Write `se_backend_output.json` to `{PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
-9. **Write work log**: Write `work_log_backend.md` to `{PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
+8. **Write structured output**: Write `se_backend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
+9. **Write work log**: Write `work_log_backend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
 10. **Format**: **ALWAYS** use `goimports -local <module-name>` — **NEVER** use `gofmt`
 
 ## CRITICAL: Formatting Tool
@@ -327,102 +345,57 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 ---
 
-## ⛔ Pre-Flight Verification (BLOCKING — Must Pass Before Completion)
+### Pre-Flight Verification
 
-**You are NOT done until ALL of these pass. Do not say "implementation complete" until verified.**
+Build and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion --quick` passes. You still MUST run checks manually and report results.
 
-### Step 1: Compile Check (MANDATORY)
+**Quick Reference Commands (Go):**
 
-```bash
-go build ./...
-```
+| Check | Command |
+|-------|---------|
+| Build | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...` |
+| Test | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./...` |
+| Lint | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...` |
+| Format | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" goimports -local {module} -w .` |
 
-**If this fails → FIX before proceeding. Do not continue with broken code.**
-
-### Step 2: Existing Tests Pass (MANDATORY)
-
-```bash
-go test ./...
-```
-
-**If ANY test fails → FIX before proceeding.** This includes tests you didn't write. If your changes broke existing tests, that's a bug in your implementation.
-
-### Step 3: Lint Check (MANDATORY)
+**Security Scan (MANDATORY):**
 
 ```bash
-golangci-lint run ./...
-```
-
-**If lint issues found → FIX the code.** Do NOT add suppression directives (`//nolint`, `// nolint`). If you cannot fix an issue, explain it to the user and wait for guidance. See `lint-discipline` skill.
-
-### Step 4: Format Check (MANDATORY)
-
-```bash
-goimports -local <module-name> -w .
-git diff --name-only
-```
-
-**If files changed after formatting → you forgot to format. Commit the formatted files.**
-
-### Step 5: Security Scan (MANDATORY)
-
-Scan changed files for CRITICAL security patterns (see `security-patterns` skill). These are **never acceptable** in any context.
-
-```bash
-# Get list of changed Go files
 CHANGED=$(git diff --name-only HEAD -- '*.go' | tr '\n' ' ')
-# If no HEAD yet (first commit), use all staged:
-# CHANGED=$(git diff --cached --name-only -- '*.go' | tr '\n' ' ')
 
-# CRITICAL: Timing-unsafe token/secret comparison (use crypto/subtle.ConstantTimeCompare)
+# Timing-unsafe token/secret comparison (use crypto/subtle.ConstantTimeCompare)
 echo "$CHANGED" | xargs grep -n '== .*[Tt]oken\|== .*[Ss]ecret\|== .*[Kk]ey\|== .*[Hh]ash\|== .*[Pp]assword\|!= .*[Tt]oken\|!= .*[Ss]ecret' 2>/dev/null || true
 
-# CRITICAL: math/rand for security-sensitive values (use crypto/rand)
+# math/rand for security-sensitive values (use crypto/rand)
 echo "$CHANGED" | xargs grep -n '"math/rand"' 2>/dev/null || true
 
-# CRITICAL: SQL string concatenation (use parameterised queries)
+# SQL string concatenation (use parameterised queries)
 echo "$CHANGED" | xargs grep -n 'fmt.Sprintf.*SELECT\|fmt.Sprintf.*INSERT\|fmt.Sprintf.*UPDATE\|fmt.Sprintf.*DELETE\|Sprintf.*WHERE' 2>/dev/null || true
 
-# CRITICAL: Command injection via shell (use exec.Command with argument list)
+# Command injection via shell (use exec.Command with argument list)
 echo "$CHANGED" | xargs grep -n 'exec.Command("sh"\|exec.Command("bash"\|exec.Command("/bin/sh"\|exec.Command("/bin/bash"' 2>/dev/null || true
 ```
 
-**If any pattern matches → review each match.** Not every match is a true positive (e.g., `== token` in a test comparison). But every match MUST be reviewed and either:
-- **Fixed** — replace with the safe alternative
-- **Justified** — explain why this specific usage is safe (e.g., non-security context)
-
-### Step 6: Smoke Test (If Applicable)
-
-If there's a simple way to verify the feature works:
-- Run the CLI command
-- Hit the endpoint with curl
-- Execute the main function
-
-**Document what you tested:**
-```
-Smoke test: [command/action] → [observed result]
-```
+**If any pattern matches** — review each match and either fix or justify.
 
 ### Pre-Flight Report (REQUIRED OUTPUT)
-
-Before completing, output this summary:
 
 ```
 ## Pre-Flight Verification
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| `go build ./...` | ✅ PASS / ❌ FAIL | |
-| `go test ./...` | ✅ PASS / ❌ FAIL | X tests, Y passed |
-| `golangci-lint run` | ✅ PASS / ⚠️ WARN / ❌ FAIL | |
-| `goimports` | ✅ PASS | |
-| Security scan | ✅ CLEAR / ⚠️ REVIEW | [findings if any] |
-| Smoke test | ✅ PASS / ⏭️ N/A | [what was tested] |
+| `go build ./...` | PASS / FAIL | |
+| `go test ./...` | PASS / FAIL | X tests, Y passed |
+| `golangci-lint run` | PASS / WARN / FAIL | |
+| `goimports` | PASS | |
+| Security scan | CLEAR / REVIEW | [findings if any] |
+| Smoke test | PASS / N/A | [what was tested] |
 
 **Result**: READY / BLOCKED
 ```
 
-**If ANY check shows ❌ FAIL → you are BLOCKED. Fix issues before completing.**
+**If ANY check shows FAIL → you are BLOCKED. Fix issues before completing.**
 
 ---
 

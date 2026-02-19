@@ -4,8 +4,8 @@ description: >
   Shared protocols for all code-writing agents (software engineers, test writers).
   Covers approval validation, decision classification with full Tier 3 exploration,
   anti-satisficing rules, anti-helpfulness protocol, routine task mode,
-  pre-implementation verification, and comment audit self-review.
-  Triggers on: approval, decision, tier 3, anti-satisficing, anti-helpfulness, routine, pre-flight, comment audit.
+  pre-implementation verification, comment audit self-review, and anti-laziness protocol.
+  Triggers on: approval, decision, tier 3, anti-satisficing, anti-helpfulness, routine, pre-flight, comment audit, anti-laziness, verification.
 alwaysApply: false
 ---
 
@@ -441,3 +441,47 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 
    **[Awaiting your decision]**
    ```
+
+---
+
+## Anti-Laziness Protocol
+
+### Verification Commands Are Mandatory
+
+Every SE agent MUST actually execute build, test, and lint commands before reporting completion. Self-assessed results like "manual review passed" or "verified by inspection" are **never acceptable**.
+
+### Forbidden Excuse Patterns
+
+The following phrases in Pre-Flight reports or work logs indicate the agent skipped verification. These are grounds for immediate rejection:
+
+- "manual review passed"
+- "manually verified"
+- "verified by inspection" / "verified by reading"
+- "sandbox blocks..." / "sandbox restricts..."
+- "unable to run" / "could not execute" / "could not run"
+- "appears correct" / "looks correct" / "should work"
+- "tests appear" / "would succeed" / "would work outside"
+
+### When Commands Fail
+
+1. Report the **exact** error message — do not paraphrase or summarise
+2. Attempt to fix the root cause (wrong dependency, missing config, etc.)
+3. For sandbox-related failures: use the language-specific env var workarounds below
+4. If still failing after attempts: report to the user with full error output and ask for guidance
+5. **Never** fabricate a passing result
+
+**Sandbox Workarounds by Language:**
+
+| Language | Sandbox Workaround |
+|----------|-------------------|
+| Go | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache"` prefix |
+| Python | `uv run` prefix (uv manages own cache) |
+| Node | `npx` prefix (respects local node_modules) |
+
+### Pre-Flight Evidence Requirements
+
+Each row in the Pre-Flight verification table must include:
+- The exact command that was run (copy-paste from terminal)
+- The exit code
+- For failures: the first 5 lines of error output
+- Status must reflect the actual exit code, not the agent's opinion

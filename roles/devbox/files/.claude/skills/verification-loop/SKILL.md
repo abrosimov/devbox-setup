@@ -22,7 +22,7 @@ Compile/transpile passes without errors.
 
 ### Go
 ```bash
-go build ./...
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
 ```
 
 **Failures**: syntax errors, import cycles, missing dependencies.
@@ -70,7 +70,7 @@ disallow_untyped_defs = true
 
 ### Go
 ```bash
-go vet ./...
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go vet ./...
 ```
 
 **Checks**: unreachable code, printf format errors, mutex misuse.
@@ -83,7 +83,7 @@ Style and correctness rules.
 
 ### Go
 ```bash
-golangci-lint run
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run
 ```
 
 **Checks**: deadcode, errcheck, ineffassign, staticcheck, unused.
@@ -138,7 +138,7 @@ All tests pass with coverage.
 
 ### Go
 ```bash
-go test -v -race -coverprofile=coverage.out ./...
+GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -v -race -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
 
@@ -424,6 +424,17 @@ Fix hierarchy: fix the code → refactor around it → ask the user → suppress
 def test_flaky():
     ...
 ```
+
+## Verification Integrity
+
+Every verification step MUST run the actual command. The following are **never acceptable** as verification results:
+
+- "manual review passed" — run the command
+- "verified by inspection" — run the command
+- "sandbox blocks..." — use `GOCACHE`/`GOMODCACHE` env prefix and retry
+- "appears correct" / "should work" — run the command and show output
+
+Each verification row must include: the exact command run, its exit code, and error output if non-zero.
 
 ## Best Practises
 

@@ -1,0 +1,175 @@
+#!/usr/bin/env node
+
+// pre-write-completion-gate — PreToolUse hook that blocks writes to SE output
+// artifacts unless the project actually builds and lints cleanly.
+//
+// Intercepts Write calls targeting these filenames:
+//   se_backend_output.json, se_frontend_output.json,
+//   work_log_backend.md, work_log_frontend.md
+//
+// When matched, finds the project root and runs verify-se-completion --quick --json
+// to confirm build+lint pass before allowing the write.
+//
+// Event: PreToolUse (matcher: Write)
+// Exit 0 = allow, Exit 2 = block
+
+require("./env-setup");
+
+const { execSync } = require("child_process");
+const path = require("path");
+const fs = require("fs");
+
+const ARTIFACT_FILES = new Set([
+  "se_backend_output.json",
+  "se_frontend_output.json",
+  "work_log_backend.md",
+  "work_log_frontend.md",
+]);
+
+// Marker files → language mapping
+const LANG_MARKERS = [
+  { file: "go.mod", lang: "go" },
+  { file: "pyproject.toml", lang: "python" },
+  { file: "uv.lock", lang: "python" },
+  { file: "poetry.lock", lang: "python" },
+  { file: "package.json", lang: "node" },
+];
+
+function findProjectRoot(filePath) {
+  let dir = path.dirname(filePath);
+  for (let i = 0; i < 20; i++) {
+    for (const marker of LANG_MARKERS) {
+      if (fs.existsSync(path.join(dir, marker.file))) {
+        return { root: dir, lang: marker.lang };
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(0);
+  }
+
+  const toolInput = data.tool_input || {};
+  const filePath = toolInput.file_path || "";
+
+  if (!filePath) {
+    process.exit(0);
+  }
+
+  // Check if the target file is an SE artifact
+  const fileName = path.basename(filePath);
+  if (!ARTIFACT_FILES.has(fileName)) {
+    process.exit(0);
+  }
+
+  // Find project root and detect language
+  const project = findProjectRoot(filePath);
+  if (!project) {
+    process.stderr.write(
+      "[completion-gate] WARN: Could not detect project root. Skipping verification.\n"
+    );
+    process.exit(0);
+  }
+
+  // Check that verify-se-completion exists
+  const HOME = process.env.HOME || process.env.USERPROFILE || "/tmp";
+  const verifyScript = path.join(HOME, ".claude", "bin", "verify-se-completion");
+  if (!fs.existsSync(verifyScript)) {
+    process.stderr.write(
+      "[completion-gate] WARN: verify-se-completion not found. Skipping verification.\n"
+    );
+    process.exit(0);
+  }
+
+  // Run verification
+  try {
+    const result = execSync(
+      `"${verifyScript}" --lang ${project.lang} --work-dir "${project.root}" --quick --json`,
+      { timeout: 30000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
+    );
+
+    let parsed;
+    try {
+      parsed = JSON.parse(result.trim());
+    } catch {
+      // Could not parse JSON — allow the write with warning
+      process.stderr.write(
+        "[completion-gate] WARN: Could not parse verification output. Allowing write.\n"
+      );
+      process.exit(0);
+    }
+
+    if (parsed.result === "PASS") {
+      process.exit(0);
+    }
+
+    // Build failure details
+    const failures = [];
+    if (parsed.checks) {
+      for (const [check, info] of Object.entries(parsed.checks)) {
+        if (info.status === "FAIL") {
+          failures.push(`  ${check}: ${info.detail}${info.error ? " — " + info.error.slice(0, 200) : ""}`);
+        }
+      }
+    }
+
+    process.stderr.write(
+      `BLOCKED: Build/lint verification failed. Fix these before writing completion artifacts.\n` +
+        failures.join("\n") +
+        "\n"
+    );
+    process.exit(2);
+  } catch (err) {
+    // If the script failed with a non-zero exit, it means checks failed
+    if (err.status && err.stdout) {
+      let parsed;
+      try {
+        parsed = JSON.parse(err.stdout.trim());
+      } catch {
+        // Non-JSON output from a failure
+        process.stderr.write(
+          `BLOCKED: Build/lint verification failed.\n${(err.stderr || err.stdout || "").slice(0, 500)}\n`
+        );
+        process.exit(2);
+      }
+
+      const failures = [];
+      if (parsed && parsed.checks) {
+        for (const [check, info] of Object.entries(parsed.checks)) {
+          if (info.status === "FAIL") {
+            failures.push(`  ${check}: ${info.detail}${info.error ? " — " + info.error.slice(0, 200) : ""}`);
+          }
+        }
+      }
+
+      process.stderr.write(
+        `BLOCKED: Build/lint verification failed. Fix these before writing completion artifacts.\n` +
+          failures.join("\n") +
+          "\n"
+      );
+      process.exit(2);
+    }
+
+    // Timeout or other error — allow with warning
+    process.stderr.write(
+      `[completion-gate] WARN: Verification error (${err.message}). Allowing write.\n`
+    );
+    process.exit(0);
+  }
+}
+
+main();

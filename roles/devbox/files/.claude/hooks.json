@@ -64,6 +64,15 @@
             "command": "~/.claude/bin/pre-edit-lint-guard"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-write-completion-gate"
+          }
+        ]
       }
     ],
     "PermissionRequest": [

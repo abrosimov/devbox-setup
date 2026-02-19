@@ -38,11 +38,16 @@ Parse the JSON. Extract flags (default to `true` if key is missing):
 ### 1. Compute Task Context (once)
 
 ```bash
-BRANCH=`git branch --show-current`
-JIRA_ISSUE=`echo "$BRANCH" | cut -d'_' -f1`
-BRANCH_NAME=`echo "$BRANCH" | cut -d'_' -f2-`
+CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+RC=$?
 DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
+
+**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
+**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
+  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
+  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
+  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
 
 Store these values — pass to agent, do not re-compute.
 

@@ -238,13 +238,13 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
 
 ## Workflow
 
-1. **Get context**: Use `shared-utils` skill to extract Jira issue from branch
-2. **Check for plan**: Look for `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/plan.md`
+1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve-context` to compute it.
+2. **Check for plan**: Look for `${PROJECT_DIR}/plan.md`
 3. **Parse plan contracts** (if plan.md exists):
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
    - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
-4. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. Extract:
+4. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `${PROJECT_DIR}/`. Extract:
    - **Ubiquitous language** — use these exact terms in code (class names, method names, variables)
    - **Aggregates + invariants** — implement invariants as validation logic; respect aggregate boundaries
    - **Domain events** — use event names from model when emitting events
@@ -260,8 +260,8 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
    | FR | AC | Status | Evidence |
    |----|-----|--------|----------|
    ```
-10. **Write structured output**: Write `se_backend_output.json` to `{PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
-11. **Write work log**: Write `work_log_backend.md` to `{PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
+10. **Write structured output**: Write `se_backend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
+11. **Write work log**: Write `work_log_backend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
 12. **Format**: Use `uv run ruff format .`
 
 ## When to Ask for Clarification
@@ -272,79 +272,21 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 ## ⛔ Pre-Flight Verification (BLOCKING — Must Pass Before Completion)
 
-**You are NOT done until ALL of these pass. Do not say "implementation complete" until verified.**
+Build and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion --quick` passes. You still MUST run checks manually and report results.
 
-### Step 1: Detect Project Tooling
+**Quick Reference Commands (Python):**
 
-```bash
-# Determine which tool to use
-ls uv.lock poetry.lock requirements.txt 2>/dev/null
-```
+| Check | Command |
+|-------|---------|
+| Deps | `uv sync --check` |
+| Test | `uv run pytest` |
+| Lint | `uv run ruff check .` |
+| Format | `uv run ruff format .` |
+| Types | `uv run mypy .` or `uv run pyright .` |
 
-Use `uv run` for uv projects, `poetry run` for poetry, or direct commands for pip.
+For poetry projects, substitute `poetry run` for `uv run`.
 
-For new projects (nothing found), follow the **Scaffold Sequence** in `python-tooling` skill before proceeding.
-
-### Step 2: Verify Virtual Environment
-
-```bash
-# Ensure venv exists and dependencies are synced
-ls .venv/bin/python 2>/dev/null || uv sync
-```
-
-**If `.venv` does not exist → run `uv sync` to create it.** All subsequent `uv run` commands depend on this.
-
-### Step 3: Type Check (MANDATORY)
-
-```bash
-# For uv projects
-uv run mypy --strict <changed_files>
-
-# For poetry projects
-poetry run mypy --strict <changed_files>
-```
-
-**If this fails → FIX before proceeding.** Type errors indicate bugs.
-
-### Step 4: Existing Tests Pass (MANDATORY)
-
-```bash
-# For uv projects
-uv run pytest
-
-# For poetry projects
-poetry run pytest
-```
-
-**If ANY test fails → FIX before proceeding.** This includes tests you didn't write. If your changes broke existing tests, that's a bug in your implementation.
-
-### Step 5: Lint Check (MANDATORY)
-
-```bash
-# For uv projects
-uv run ruff check .
-
-# For poetry projects
-poetry run ruff check .
-```
-
-**If lint issues found → FIX the code.** Do NOT add suppression directives (`# noqa`, `# type: ignore`). If you cannot fix an issue, explain it to the user and wait for guidance. See `lint-discipline` skill.
-
-### Step 6: Format Check (MANDATORY)
-
-```bash
-# For uv projects
-uv run ruff format .
-git diff --name-only
-
-# For poetry projects
-poetry run ruff format .
-git diff --name-only
-```
-
-**If files changed after formatting → you forgot to format. Commit the formatted files.**
-
-### Step 7: Security Scan (MANDATORY)
+### Security Scan (MANDATORY)
 
 Scan changed files for CRITICAL security patterns (see `security-patterns` skill). These are **never acceptable** in any context.
 
@@ -375,18 +317,6 @@ echo "$CHANGED" | xargs grep -n 'render_template_string\|jinja2.Template(' 2>/de
 - **Fixed** — replace with the safe alternative
 - **Justified** — explain why this specific usage is safe (e.g., non-security context)
 
-### Step 8: Smoke Test (If Applicable)
-
-If there's a simple way to verify the feature works:
-- Run the CLI command
-- Hit the endpoint with curl/httpie
-- Execute a quick script
-
-**Document what you tested:**
-```
-Smoke test: [command/action] → [observed result]
-```
-
 ### Pre-Flight Report (REQUIRED OUTPUT)
 
 Before completing, output this summary:
@@ -396,18 +326,24 @@ Before completing, output this summary:
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| `.venv` exists | ✅ PASS / ❌ FAIL | |
-| `mypy --strict` | ✅ PASS / ❌ FAIL | |
-| `pytest` | ✅ PASS / ❌ FAIL | X tests, Y passed |
-| `ruff check` | ✅ PASS / ⚠️ WARN / ❌ FAIL | |
-| `ruff format` | ✅ PASS | |
-| Security scan | ✅ CLEAR / ⚠️ REVIEW | [findings if any] |
-| Smoke test | ✅ PASS / ⏭️ N/A | [what was tested] |
+| `.venv` exists | PASS / FAIL | |
+| `mypy --strict` | PASS / FAIL | |
+| `pytest` | PASS / FAIL | X tests, Y passed |
+| `ruff check` | PASS / WARN / FAIL | |
+| `ruff format` | PASS | |
+| Security scan | CLEAR / REVIEW | [findings if any] |
+| Smoke test | PASS / N/A | [what was tested] |
 
 **Result**: READY / BLOCKED
 ```
 
-**If ANY check shows ❌ FAIL → you are BLOCKED. Fix issues before completing.**
+**If ANY check shows FAIL → you are BLOCKED. Fix issues before completing.**
+
+---
+
+## FORBIDDEN: Excuse Patterns
+
+See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance for fabricated results.
 
 ---
 

@@ -132,6 +132,18 @@
       "Bash(go vet)",
       "Bash(go clean -cache)",
 
+      "Bash(GOCACHE=* go build *)",
+      "Bash(GOCACHE=* go test *)",
+      "Bash(GOCACHE=* go vet *)",
+      "Bash(GOCACHE=* go vet)",
+      "Bash(GOCACHE=* golangci-lint *)",
+      "Bash(GOCACHE=* GOMODCACHE=* go build *)",
+      "Bash(GOCACHE=* GOMODCACHE=* go test *)",
+      "Bash(GOCACHE=* GOMODCACHE=* go vet *)",
+      "Bash(GOCACHE=* GOMODCACHE=* golangci-lint *)",
+      "Bash(GOMODCACHE=* go mod *)",
+      "Bash(GOMODCACHE=* go get *)",
+
       "Bash(uv run *)",
       "Bash(uv sync *)",
       "Bash(uv add *)",

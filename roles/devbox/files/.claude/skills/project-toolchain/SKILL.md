@@ -48,6 +48,17 @@ In uv/poetry projects, these will FAIL (tool not on system PATH):
 - Lint: `golangci-lint run ./...`
 - Module name: first line of `go.mod`
 
+### Go Sandbox Cache
+
+When running inside Claude Code's sandbox, Go cache directories must be redirected to `$TMPDIR`:
+
+```bash
+export GOCACHE="${TMPDIR:-/tmp}/go-build-cache"
+export GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache"
+```
+
+Prefix all `go build`, `go test`, `go vet`, and `golangci-lint` commands with these variables. Without this, Go commands fail with permission errors because the default cache paths are outside the sandbox write allowlist.
+
 ## Frontend — Match the lock file
 
 | FORBIDDEN | When | Use Instead |

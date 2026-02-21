@@ -180,3 +180,117 @@ FPF-guided analysis should produce concrete artifacts, not just prose. Below are
 - Agents should use `mcp__sequentialthinking` alongside FPF for multi-step reasoning
 - When the user says "think about X" or uses `/think`, activate this skill's routing table
 - The FPF spec evolves — check `~/.claude/docs/FPF-Spec.md` freshness if patterns seem outdated
+
+---
+
+## Artifact Persistence
+
+FPF thinking produces durable artifacts, not just ephemeral reasoning. All thoughts are streamed to console for visibility, then persisted.
+
+### Routing Logic
+
+| Scope | Detection | Location |
+|-------|-----------|----------|
+| **Ticket-scoped** | Problem mentions Jira issue (e.g., "PROJ-123") or current branch follows convention | `{PROJECT_DIR}/analysis.md` |
+| **Cross-cutting decision** | Problem is project-wide, strategic, or spans tickets | `docs/decisions/NNN-<topic>.md` |
+| **Cross-cutting design** | Problem is architectural exploration | `docs/design/<topic>.md` |
+| **Memory only** | Quick exploration, no durable artifact needed | Store insights in memory-upstream only |
+
+### File Naming
+
+**Ticket-scoped**: Always `analysis.md` within `{PROJECT_DIR}` — one per ticket/branch.
+
+**Cross-cutting ADRs**: Sequential numbering with semantic slug:
+```
+docs/decisions/
+├── 001-auth-strategy.md
+├── 002-database-choice.md
+└── 003-caching-approach.md
+```
+
+To get next number: `ls docs/decisions/*.md | wc -l` + 1, zero-padded to 3 digits.
+
+**Cross-cutting design docs**: Semantic slug only:
+```
+docs/design/
+├── caching-architecture.md
+└── api-versioning.md
+```
+
+### Human-Readable Format
+
+All FPF artifacts follow this template:
+
+```markdown
+# <Title>
+
+## Context
+
+<!-- What prompted this analysis? Link to ticket if applicable. -->
+
+## Thought Process
+
+### 1. <First thought summary>
+
+<Prose explanation>
+
+### 2. <Second thought summary>
+
+<Prose explanation>
+
+### 3. [Revision] <What was reconsidered>    <!-- Mark revisions -->
+
+<Prose explanation of why previous thinking changed>
+
+### 4. [Branch] <Alternative explored>       <!-- Mark branches -->
+
+<Prose explanation of alternative path>
+
+...
+
+## Conclusion
+
+<!-- Final decision or recommendation -->
+
+## Consequences
+
+<!-- What changes? What risks remain? -->
+
+## Open Questions
+
+- [ ] <Unresolved item 1>
+- [ ] <Unresolved item 2>
+
+## Review Trigger
+
+<!-- When should this be revisited? -->
+```
+
+### Memory Integration
+
+After generating the artifact, store key insights in memory-upstream:
+
+```
+mcp__memory-upstream__create_entities([
+  {
+    name: "<Decision/Analysis name>",
+    entityType: "Decision" | "Analysis" | "DesignDoc",
+    observations: [
+      "Conclusion: <one-line summary>",
+      "Key trade-off: <main trade-off identified>",
+      "Open question: <most important unresolved item>"
+    ]
+  }
+])
+```
+
+This enables cross-session recall of past thinking.
+
+### Dialogue Mode
+
+After writing the artifact, offer refinement:
+
+> **Analysis saved to `<path>`.** Want to:
+> - **Refine** a specific section?
+> - **Extend** the analysis with more depth?
+> - **Proceed** to implementation planning?

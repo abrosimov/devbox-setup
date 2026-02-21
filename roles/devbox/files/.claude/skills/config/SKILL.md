@@ -104,6 +104,7 @@ All project documentation is organized by Jira issue and branch name:
 │   │   ├── spec.md          # Product specification
 │   │   ├── research.md      # Research findings
 │   │   ├── decisions.md     # Decision log (TPM)
+│   │   ├── analysis.md      # FPF thinking artifact (structured reasoning)
 │   │   ├── domain_analysis.md  # Domain analysis
 │   │   ├── domain_model.md    # DDD domain model (bounded contexts, aggregates)
 │   │   ├── api_design.md     # API design rationale and decisions
@@ -144,6 +145,7 @@ All project documentation is organized by Jira issue and branch name:
 | Product specification | TPM | `{PROJECT_DIR}/spec.md` |
 | Research findings | TPM | `{PROJECT_DIR}/research.md` |
 | Decision log | TPM | `{PROJECT_DIR}/decisions.md` |
+| FPF analysis | /think command | `{PROJECT_DIR}/analysis.md` |
 | Domain analysis | Domain Expert | `{PROJECT_DIR}/domain_analysis.md` |
 | Domain model | Domain Modeller | `{PROJECT_DIR}/domain_model.md` |
 | API design rationale | API Designer | `{PROJECT_DIR}/api_design.md` |
@@ -178,6 +180,35 @@ When `resolve-context` exits 2 (non-convention branch), commands fall back to `_
 | `PROJ-123_add_user_auth` | `PROJ-123` | `add_user_auth` | `docs/implementation_plans/PROJ-123/add_user_auth/` |
 | `PROJ-123_add_user_auth_v2` | `PROJ-123` | `add_user_auth_v2` | `docs/implementation_plans/PROJ-123/add_user_auth_v2/` |
 | `FEAT-42_refactor_api` | `FEAT-42` | `refactor_api` | `docs/implementation_plans/FEAT-42/refactor_api/` |
+
+### Cross-Cutting Documentation
+
+Artifacts not tied to specific tickets live at project root level:
+
+```
+docs/
+├── prd.md                      # Main PRD (current, top-level)
+├── decisions/                  # Project-wide ADRs
+│   ├── 001-auth-strategy.md
+│   └── 002-database-choice.md
+├── design/                     # Cross-cutting architecture docs
+│   └── caching-architecture.md
+├── domain/                     # Foundational domain models
+│   └── bounded-contexts.md
+│
+└── implementation_plans/       # Ticket-scoped (see above)
+    └── ...
+```
+
+| File | Created By | Path |
+|------|-----------|------|
+| Main PRD | TPM | `docs/prd.md` |
+| Project-wide ADR | /think, Architect | `docs/decisions/NNN-<topic>.md` |
+| Architecture doc | /think, Architect | `docs/design/<topic>.md` |
+| Core domain model | Domain Modeller | `docs/domain/<context>.md` |
+| FPF analysis (cross-cutting) | /think command | `docs/decisions/NNN-<topic>.md` or `docs/design/<topic>.md` |
+
+**Routing rule**: If thinking relates to a specific Jira ticket → `{PROJECT_DIR}/analysis.md`. If cross-cutting → `docs/decisions/` or `docs/design/`.
 
 ## Customizing Paths
 

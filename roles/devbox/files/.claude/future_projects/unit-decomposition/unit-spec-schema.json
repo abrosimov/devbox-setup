@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "unit_spec.schema.json",
+  "title": "Implementation Unit Specification",
+  "description": "Schema for atomic implementation units within a work stream. Each unit is independently verifiable and maps to a single SE agent invocation.",
+  "type": "object",
+  "required": ["id", "title", "layer", "requirements", "description", "verification"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^U-\\d{3}$",
+      "description": "Unique unit identifier within the work stream (e.g., U-001)"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Short descriptive title (e.g., 'Order entity types and validation')"
+    },
+    "layer": {
+      "enum": ["foundation", "logic", "vertical-slice", "integration"],
+      "description": "Layer classification determining dependency ordering and verification level"
+    },
+    "depends_on_units": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^U-\\d{3}$"
+      },
+      "default": [],
+      "description": "Unit IDs that must complete before this unit can start"
+    },
+    "requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Functional requirement IDs this unit addresses (e.g., ['FR-1'])"
+    },
+    "description": {
+      "type": "string",
+      "description": "What to implement. Specific enough that success is demonstrable."
+    },
+    "verification": {
+      "enum": ["compile", "compile+lint", "compile+test", "compile+lint+test"],
+      "description": "Verification gate that must pass before dependent units start"
+    },
+    "codebase_anchor": {
+      "type": "string",
+      "description": "Path to similar code in the existing codebase to use as exemplar pattern (e.g., 'internal/user/handler.go:CreateUser')"
+    },
+    "files_to_create": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "New files this unit is expected to create"
+    },
+    "files_to_modify": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Existing files this unit is expected to modify"
+    }
+  },
+  "additionalProperties": false
+}

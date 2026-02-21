@@ -4,7 +4,7 @@ description: Python software engineer - writes clean, typed, robust, production-
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: opus
 permissionMode: acceptEdits
-skills: philosophy, python-engineer, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, otel-python, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
+skills: philosophy, python-engineer, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, otel-python, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-10
 ---
 

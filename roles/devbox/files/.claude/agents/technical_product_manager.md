@@ -3,7 +3,7 @@ name: technical-product-manager
 description: Technical product manager who transforms ideas into detailed product specifications for new projects.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
 model: opus
-skills: philosophy, config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol
+skills: philosophy, config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking
 updated: 2026-02-10
 ---
 

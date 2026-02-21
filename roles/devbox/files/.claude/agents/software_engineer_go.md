@@ -4,7 +4,7 @@ description: Go software engineer - writes idiomatic, robust, production-ready G
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 permissionMode: acceptEdits
-skills: philosophy, go-engineer, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
+skills: philosophy, go-engineer, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-10
 ---
 

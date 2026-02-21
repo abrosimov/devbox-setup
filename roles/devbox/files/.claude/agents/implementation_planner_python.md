@@ -3,7 +3,7 @@ name: implementation-planner-python
 description: Implementation planner for Python - creates detailed implementation plans from specs or user requirements for software engineers.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, mcp__memory-upstream
 model: opus
-skills: philosophy, config, python-architecture, security-patterns, observability, otel-python, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol
+skills: philosophy, config, python-architecture, security-patterns, observability, otel-python, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, lsp-tools, agent-base-protocol
 updated: 2026-02-10
 ---
 

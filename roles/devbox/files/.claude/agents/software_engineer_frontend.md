@@ -4,7 +4,7 @@ description: Frontend software engineer - writes clean, typed, production-ready 
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__figma, mcp__storybook
 model: opus
 permissionMode: acceptEdits
-skills: philosophy, frontend-engineer, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-performance, frontend-tooling, security-patterns, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, agent-base-protocol, code-writing-protocols
+skills: philosophy, frontend-engineer, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-performance, frontend-tooling, security-patterns, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-17
 ---
 

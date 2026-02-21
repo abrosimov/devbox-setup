@@ -60,24 +60,8 @@
   environment:
     PATH: "/opt/homebrew/bin:{{ ansible_env.PATH }}"
 
-- name: "Install Go toolchain tools"
-  ansible.builtin.shell: |
-    export GOPATH="{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go"
-    export PATH="/opt/homebrew/bin:$GOPATH/bin:$PATH"
-    go install golang.org/x/tools/cmd/goimports@latest
-    go install github.com/vektra/mockery/v2@latest
-    go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-  args:
-    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go/bin/goimports"
-
-- name: "Install Python global tools via uv"
-  ansible.builtin.shell: |
-    export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
-    uv tool install ruff
-    uv tool install mypy
-    uv tool install ansible-lint
-  args:
-    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin/ruff"
+# Go tools moved to install_from_go.yml (variable-driven, per-tool idempotency)
+# Python tools moved to install_from_uv.yml (variable-driven, per-tool idempotency)
 
 - name: "Init OCaml"
   ansible.builtin.command:

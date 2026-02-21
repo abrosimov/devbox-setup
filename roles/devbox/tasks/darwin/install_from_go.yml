@@ -1,0 +1,15 @@
+---
+# Install Go tools via `go install`.
+# Package list defined in defaults/main.yml under devbox_packages.go_tools.
+# Each tool is checked individually for idempotency.
+
+- name: "Install Go tools"
+  ansible.builtin.command:
+    cmd: "go install {{ item.pkg }}"
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go/bin/{{ item.bin }}"
+  environment:
+    GOPATH: "{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go"
+    PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go/bin:{{ ansible_env.PATH }}"
+  loop: "{{ devbox_packages.go_tools }}"
+  loop_control:
+    label: "{{ item.bin }}"

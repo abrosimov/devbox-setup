@@ -3,6 +3,10 @@
   ansible.builtin.include_tasks: darwin/install_from_brew_primary.yml
 - name: "Install secondary homebrew packages"
   ansible.builtin.include_tasks: darwin/install_from_brew_secondary.yml
+- name: "Install Go tools"
+  ansible.builtin.include_tasks: darwin/install_from_go.yml
+- name: "Install Python tools via uv"
+  ansible.builtin.include_tasks: darwin/install_from_uv.yml
 - name: "Install configs"
   ansible.builtin.include_tasks: install_configs.yml
 - name: "Apply configs"

@@ -61,9 +61,11 @@ Everything lives in one role. No multi-role orchestration.
 
 1. `darwin/install_from_brew_primary.yml` — core packages
 2. `darwin/install_from_brew_secondary.yml` — packages that depend on core
-3. `install_configs.yml` — deploy dotfiles (see below)
-4. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
-5. `prepare_user.yml` — shell, user-level setup
+3. `darwin/install_from_go.yml` — Go tools via `go install` (variable-driven)
+4. `darwin/install_from_uv.yml` — Python tools via `uv tool` (variable-driven)
+5. `install_configs.yml` — deploy dotfiles (see below)
+6. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
+7. `prepare_user.yml` — shell, user-level setup
 
 ### Configuration Deployment (`install_configs.yml`)
 
@@ -91,6 +93,8 @@ Registered via `claude mcp add` with user scope.
 - `devbox_user.login` — username for user configuration
 - `dev_mode` — when true, deploys to debug directory
 - `devbox_shell.env` / `path_prepend` / `path_append` / `path_conditional` — single source of truth for shell environment. Templates for fish (`_init_env.fish.j2`, `_init_path.fish.j2`) and bash (`.bashrc.j2`) iterate these lists, so adding a path here updates both shells.
+- `devbox_packages.go_tools` — Go tools installed via `go install` (each entry has `pkg` and `bin` keys)
+- `devbox_packages.uv_tools` — Python tools installed via `uv tool install`
 
 ### Claude Code Config (in `roles/devbox/files/.claude/`)
 

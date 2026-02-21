@@ -1,0 +1,14 @@
+---
+# Install Python tools via `uv tool install`.
+# Package list defined in defaults/main.yml under devbox_packages.uv_tools.
+# Each tool is checked individually for idempotency.
+
+- name: "Install Python tools via uv"
+  ansible.builtin.command:
+    cmd: "uv tool install {{ item }}"
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin/{{ item }}"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin:{{ ansible_env.PATH }}"
+  loop: "{{ devbox_packages.uv_tools }}"
+  loop_control:
+    label: "{{ item }}"

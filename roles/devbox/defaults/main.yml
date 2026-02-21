@@ -5,6 +5,25 @@ devbox_paths:
   dotfiles_root_dir: "~"
   programming_deps_dir: ".programming"
 
+# Language-specific tools installed via their native package managers.
+# These are separate from Homebrew packages for better idempotency and clarity.
+devbox_packages:
+  # Go tools installed via `go install`. Each entry has:
+  #   pkg: full package path with version (usually @latest)
+  #   bin: binary name (for idempotency check)
+  go_tools:
+    - { pkg: "golang.org/x/tools/cmd/goimports@latest", bin: "goimports" }
+    - { pkg: "github.com/vektra/mockery/v2@latest", bin: "mockery" }
+    - { pkg: "github.com/sqlc-dev/sqlc/cmd/sqlc@latest", bin: "sqlc" }
+    - { pkg: "golang.org/x/tools/gopls@latest", bin: "gopls" }
+
+  # Python tools installed via `uv tool install`.
+  # Binary name matches tool name.
+  uv_tools:
+    - ruff
+    - mypy
+    - ansible-lint
+
 # Shell environment and PATH — single source of truth for both fish and bash.
 # Templates in conf.d/_init_env.fish.j2, conf.d/_init_path.fish.j2, and .bashrc.j2
 # all iterate over these lists, so adding a path here updates both shells.

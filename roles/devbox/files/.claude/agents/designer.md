@@ -457,6 +457,15 @@ Include all required metadata fields. For stage-specific fields, extract key dat
 
 **This step is supplementary** — `design.md` is the primary deliverable. The JSON enables automated pipeline tracking and downstream agent consumption. Downstream agents (Frontend Engineer, Code Reviewer) will read `figma_source` from this file to access the Figma file directly.
 
+### Progress Spine (Pipeline Mode Only)
+
+```bash
+# At start of work:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent designer --milestone M-design --status started --quiet || true
+# At completion:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent designer --milestone M-design --status completed --summary "Design specification complete" --quiet || true
+```
+
 ---
 
 ## Interaction Style

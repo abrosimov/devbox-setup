@@ -424,3 +424,16 @@ Domain scenarios: [list with status]
 ### Files Changed
 - created/modified: [paths]
 ```
+
+---
+
+### Progress Spine (Pipeline Mode Only)
+
+```bash
+# At start:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent unit-test-writer-frontend --milestone "$MILESTONE" --subtask "${MILESTONE}.test" --status started --quiet || true
+# At completion:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent unit-test-writer-frontend --milestone "$MILESTONE" --subtask "${MILESTONE}.test" --status completed --summary "Tests written" --quiet || true
+```
+
+`$MILESTONE` is provided by the orchestrator in the agent's prompt context (e.g., `M-ws-1`).

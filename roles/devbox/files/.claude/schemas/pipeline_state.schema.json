@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "pipeline_state.schema.json",
   "title": "Pipeline State",
-  "description": "Tracks full-cycle pipeline progress. Updated at each phase transition. Persists across session interruptions.",
+  "description": "DEPRECATED: Superseded by progress spine (progress_plan.schema.json + progress_agent.schema.json). Kept for backward compatibility and migration via bin/progress migrate. Tracks full-cycle pipeline progress. Updated at each phase transition.",
   "type": "object",
   "required": ["pipeline_id", "feature_type", "stages", "current_gate"],
   "properties": {

@@ -1,0 +1,1255 @@
+#!/usr/bin/env bash
+# progress — Serializer for the progress spine system.
+#
+# Manages milestone-based progress tracking for development pipelines.
+# Works with two JSON file types:
+#   {PROJECT_DIR}/progress/plan.json  — Milestone DAG (created by TPM, refined by Planner)
+#   {PROJECT_DIR}/progress/{agent}.json — Per-agent status files
+#
+# Usage:
+#   progress init     --project-dir <path> --pipeline-id <id> --feature-type <type> [--force]
+#   progress milestone --project-dir <path> --id <M-xxx> --title <title> --phase <phase> [...]
+#   progress subtask  --project-dir <path> --milestone <M-xxx> --id <id> --title <title> [...]
+#   progress update   --project-dir <path> --agent <name> --milestone <M-xxx> --status <s> [...]
+#   progress gate     --project-dir <path> --id <G1-G4> --status <passed|failed>
+#   progress decision --project-dir <path> --gate <G1-G4> --question <text> --chosen <text> --decided-by <who> [...]
+#   progress view     --project-dir <path> [--format tree|table|summary|json]
+#   progress migrate  --project-dir <path>
+#
+# Exit codes:
+#   0  OK
+#   1  Argument error
+#   2  Already exists (plan.json present without --force)
+#   3  JSON parse error
+#   4  Validation error (e.g., milestone not found)
+#   5  No plan found
+#
+# Requires: jq, git (for update --status completed)
+# chmod +x this file after deployment.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Degrade gracefully when not attached to a terminal
+if [[ ! -t 1 ]]; then
+  RED='' GREEN='' YELLOW='' BOLD='' NC=''
+fi
+
+# --- Helpers ---
+
+die()  { echo -e "${RED}ERROR${NC}: $1" >&2; exit "${2:-1}"; }
+ok()   { echo -e "${GREEN}OK${NC}: $1"; }
+fail() { echo -e "${RED}FAIL${NC}: $1" >&2; }
+warn() { echo -e "${YELLOW}WARN${NC}: $1" >&2; }
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "$1 is required but not found on PATH"
+}
+
+now_iso() {
+  date -u +%Y-%m-%dT%H:%M:%SZ
+}
+
+# Atomic write: write to temp file, then mv to final path.
+# Usage: atomic_write <target_path> <content>
+atomic_write() {
+  local target="$1" content="$2"
+  local tmpfile="${target}.tmp.$$"
+  printf '%s\n' "$content" > "$tmpfile"
+  mv -f "$tmpfile" "$target"
+}
+
+plan_path() {
+  echo "${1}/progress/plan.json"
+}
+
+agent_path() {
+  echo "${1}/progress/${2}.json"
+}
+
+require_plan() {
+  local p
+  p="$(plan_path "$1")"
+  if [[ ! -f "$p" ]]; then
+    die "plan.json not found at $p" 5
+  fi
+  # Validate it's parseable JSON
+  if ! jq empty "$p" 2>/dev/null; then
+    die "plan.json is not valid JSON: $p" 3
+  fi
+}
+
+# --- Subcommand: init ---
+
+cmd_init() {
+  local project_dir="" pipeline_id="" feature_type="" force=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      --pipeline-id)  pipeline_id="$2"; shift 2 ;;
+      --feature-type) feature_type="$2"; shift 2 ;;
+      --force)        force=true; shift ;;
+      *) die "init: unknown option: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]]  && die "init: --project-dir is required"
+  [[ -z "$pipeline_id" ]]  && die "init: --pipeline-id is required"
+  [[ -z "$feature_type" ]] && die "init: --feature-type is required"
+
+  case "$feature_type" in
+    backend|ui|fullstack) ;;
+    *) die "init: --feature-type must be backend, ui, or fullstack (got: $feature_type)" ;;
+  esac
+
+  local progress_dir="${project_dir}/progress"
+  local plan_file="${progress_dir}/plan.json"
+
+  if [[ -f "$plan_file" && "$force" != "true" ]]; then
+    die "plan.json already exists at $plan_file (use --force to overwrite)" 2
+  fi
+
+  mkdir -p "$progress_dir"
+
+  local ts
+  ts="$(now_iso)"
+
+  # Build milestones based on feature_type
+  local milestones
+  case "$feature_type" in
+    backend)
+      milestones='[
+        {"id":"M-spec","title":"Specification","phase":"spec","status":"pending","depends_on":[],"subtasks":[],"tags":[]},
+        {"id":"M-domain","title":"Domain Analysis","phase":"domain","status":"pending","depends_on":["M-spec"],"subtasks":[],"tags":[]},
+        {"id":"M-domain-model","title":"Domain Model","phase":"domain","status":"pending","depends_on":["M-domain"],"subtasks":[],"tags":[]},
+        {"id":"M-impl","title":"Implementation","phase":"impl","status":"pending","depends_on":["M-domain-model"],"subtasks":[],"tags":[]},
+        {"id":"G1","title":"Gate 1 — Spec Review","phase":"gate","status":"pending","depends_on":["M-spec"],"subtasks":[],"tags":["gate"]},
+        {"id":"G3","title":"Gate 3 — Code Review","phase":"gate","status":"pending","depends_on":["M-impl"],"subtasks":[],"tags":["gate"]},
+        {"id":"G4","title":"Gate 4 — Final Verification","phase":"gate","status":"pending","depends_on":["G3"],"subtasks":[],"tags":["gate"]}
+      ]'
+      ;;
+    ui)
+      milestones='[
+        {"id":"M-spec","title":"Specification","phase":"spec","status":"pending","depends_on":[],"subtasks":[],"tags":[]},
+        {"id":"M-domain","title":"Domain Analysis","phase":"domain","status":"pending","depends_on":["M-spec"],"subtasks":[],"tags":[]},
+        {"id":"M-domain-model","title":"Domain Model","phase":"domain","status":"pending","depends_on":["M-domain"],"subtasks":[],"tags":[]},
+        {"id":"M-design","title":"Design","phase":"design","status":"pending","depends_on":["M-domain-model"],"subtasks":[],"tags":[]},
+        {"id":"M-impl","title":"Implementation","phase":"impl","status":"pending","depends_on":["M-design"],"subtasks":[],"tags":[]},
+        {"id":"G1","title":"Gate 1 — Spec Review","phase":"gate","status":"pending","depends_on":["M-spec"],"subtasks":[],"tags":["gate"]},
+        {"id":"G2","title":"Gate 2 — Design Review","phase":"gate","status":"pending","depends_on":["M-design"],"subtasks":[],"tags":["gate"]},
+        {"id":"G3","title":"Gate 3 — Code Review","phase":"gate","status":"pending","depends_on":["M-impl"],"subtasks":[],"tags":["gate"]},
+        {"id":"G4","title":"Gate 4 — Final Verification","phase":"gate","status":"pending","depends_on":["G3"],"subtasks":[],"tags":["gate"]}
+      ]'
+      ;;
+    fullstack)
+      milestones='[
+        {"id":"M-spec","title":"Specification","phase":"spec","status":"pending","depends_on":[],"subtasks":[],"tags":[]},
+        {"id":"M-domain","title":"Domain Analysis","phase":"domain","status":"pending","depends_on":["M-spec"],"subtasks":[],"tags":[]},
+        {"id":"M-domain-model","title":"Domain Model","phase":"domain","status":"pending","depends_on":["M-domain"],"subtasks":[],"tags":[]},
+        {"id":"M-design","title":"Design","phase":"design","status":"pending","depends_on":["M-domain-model"],"subtasks":[],"tags":[]},
+        {"id":"M-impl","title":"Implementation","phase":"impl","status":"pending","depends_on":["M-design"],"subtasks":[],"tags":[]},
+        {"id":"G1","title":"Gate 1 — Spec Review","phase":"gate","status":"pending","depends_on":["M-spec"],"subtasks":[],"tags":["gate"]},
+        {"id":"G2","title":"Gate 2 — Design Review","phase":"gate","status":"pending","depends_on":["M-design"],"subtasks":[],"tags":["gate"]},
+        {"id":"G3","title":"Gate 3 — Code Review","phase":"gate","status":"pending","depends_on":["M-impl"],"subtasks":[],"tags":["gate"]},
+        {"id":"G4","title":"Gate 4 — Final Verification","phase":"gate","status":"pending","depends_on":["G3"],"subtasks":[],"tags":["gate"]}
+      ]'
+      ;;
+  esac
+
+  local plan_json
+  plan_json=$(jq -n \
+    --arg pid "$pipeline_id" \
+    --arg ft "$feature_type" \
+    --arg ts "$ts" \
+    --argjson milestones "$milestones" \
+    '{
+      pipeline_id: $pid,
+      feature_type: $ft,
+      milestones: $milestones,
+      decisions: [],
+      created_at: $ts,
+      updated_at: $ts
+    }')
+
+  atomic_write "$plan_file" "$plan_json"
+  ok "Initialized progress at $progress_dir (feature_type=$feature_type, $(echo "$milestones" | jq 'length') milestones)"
+}
+
+# --- Subcommand: milestone ---
+
+cmd_milestone() {
+  local project_dir="" mid="" title="" phase="" depends_on="" description=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      --id)           mid="$2"; shift 2 ;;
+      --title)        title="$2"; shift 2 ;;
+      --phase)        phase="$2"; shift 2 ;;
+      --depends-on)   depends_on="$2"; shift 2 ;;
+      --description)  description="$2"; shift 2 ;;
+      *) die "milestone: unknown option: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]] && die "milestone: --project-dir is required"
+  [[ -z "$mid" ]]         && die "milestone: --id is required"
+  [[ -z "$title" ]]       && die "milestone: --title is required"
+  [[ -z "$phase" ]]       && die "milestone: --phase is required"
+
+  require_plan "$project_dir"
+
+  local plan_file
+  plan_file="$(plan_path "$project_dir")"
+  local ts
+  ts="$(now_iso)"
+
+  # Build depends_on as a JSON array from comma-separated string
+  local deps_json="[]"
+  if [[ -n "$depends_on" ]]; then
+    deps_json=$(echo "$depends_on" | tr ',' '\n' | jq -R . | jq -s .)
+  fi
+
+  # Check if milestone already exists
+  local exists
+  exists=$(jq --arg id "$mid" '[.milestones[] | select(.id == $id)] | length' "$plan_file")
+
+  local updated_plan
+  if [[ "$exists" -gt 0 ]]; then
+    # Update existing milestone
+    updated_plan=$(jq \
+      --arg id "$mid" \
+      --arg title "$title" \
+      --arg phase "$phase" \
+      --arg desc "$description" \
+      --arg ts "$ts" \
+      --argjson deps "$deps_json" \
+      '
+        .milestones = [
+          .milestones[] |
+          if .id == $id then
+            .title = $title |
+            .phase = $phase |
+            .depends_on = $deps |
+            if $desc != "" then .description = $desc else . end
+          else .
+          end
+        ] |
+        .updated_at = $ts
+      ' "$plan_file")
+    ok "Updated milestone $mid"
+  else
+    # Append new milestone
+    updated_plan=$(jq \
+      --arg id "$mid" \
+      --arg title "$title" \
+      --arg phase "$phase" \
+      --arg desc "$description" \
+      --arg ts "$ts" \
+      --argjson deps "$deps_json" \
+      '
+        .milestones += [{
+          id: $id,
+          title: $title,
+          phase: $phase,
+          status: "pending",
+          depends_on: $deps,
+          subtasks: [],
+          tags: []
+        } | if $desc != "" then .description = $desc else . end] |
+        .updated_at = $ts
+      ' "$plan_file")
+    ok "Added milestone $mid"
+  fi
+
+  atomic_write "$plan_file" "$updated_plan"
+}
+
+# --- Subcommand: subtask ---
+
+cmd_subtask() {
+  local project_dir="" milestone="" sid="" title="" agent_hint="" fr_ids=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      --milestone)    milestone="$2"; shift 2 ;;
+      --id)           sid="$2"; shift 2 ;;
+      --title)        title="$2"; shift 2 ;;
+      --agent-hint)   agent_hint="$2"; shift 2 ;;
+      --fr-ids)       fr_ids="$2"; shift 2 ;;
+      *) die "subtask: unknown option: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]] && die "subtask: --project-dir is required"
+  [[ -z "$milestone" ]]   && die "subtask: --milestone is required"
+  [[ -z "$sid" ]]         && die "subtask: --id is required"
+  [[ -z "$title" ]]       && die "subtask: --title is required"
+
+  require_plan "$project_dir"
+
+  local plan_file
+  plan_file="$(plan_path "$project_dir")"
+  local ts
+  ts="$(now_iso)"
+
+  # Verify milestone exists
+  local exists
+  exists=$(jq --arg id "$milestone" '[.milestones[] | select(.id == $id)] | length' "$plan_file")
+  if [[ "$exists" -eq 0 ]]; then
+    die "subtask: milestone $milestone does not exist in plan.json" 4
+  fi
+
+  # Build fr_ids as JSON array
+  local fr_json="[]"
+  if [[ -n "$fr_ids" ]]; then
+    fr_json=$(echo "$fr_ids" | tr ',' '\n' | jq -R . | jq -s .)
+  fi
+
+  # Check if subtask already exists within this milestone
+  local subtask_exists
+  subtask_exists=$(jq \
+    --arg mid "$milestone" \
+    --arg sid "$sid" \
+    '[.milestones[] | select(.id == $mid) | .subtasks[]? | select(.id == $sid)] | length' \
+    "$plan_file")
+
+  local updated_plan
+  if [[ "$subtask_exists" -gt 0 ]]; then
+    # Update existing subtask
+    updated_plan=$(jq \
+      --arg mid "$milestone" \
+      --arg sid "$sid" \
+      --arg title "$title" \
+      --arg agent "$agent_hint" \
+      --arg ts "$ts" \
+      --argjson frs "$fr_json" \
+      '
+        .milestones = [
+          .milestones[] |
+          if .id == $mid then
+            .subtasks = [
+              .subtasks[] |
+              if .id == $sid then
+                .title = $title |
+                if $agent != "" then .agent_hint = $agent else . end |
+                if ($frs | length) > 0 then .fr_ids = $frs else . end
+              else .
+              end
+            ]
+          else .
+          end
+        ] |
+        .updated_at = $ts
+      ' "$plan_file")
+    ok "Updated subtask $sid in milestone $milestone"
+  else
+    # Append new subtask
+    updated_plan=$(jq \
+      --arg mid "$milestone" \
+      --arg sid "$sid" \
+      --arg title "$title" \
+      --arg agent "$agent_hint" \
+      --arg ts "$ts" \
+      --argjson frs "$fr_json" \
+      '
+        .milestones = [
+          .milestones[] |
+          if .id == $mid then
+            .subtasks += [{
+              id: $sid,
+              title: $title,
+              status: "pending"
+            }
+            | if $agent != "" then .agent_hint = $agent else . end
+            | if ($frs | length) > 0 then .fr_ids = $frs else . end
+            ]
+          else .
+          end
+        ] |
+        .updated_at = $ts
+      ' "$plan_file")
+    ok "Added subtask $sid to milestone $milestone"
+  fi
+
+  atomic_write "$plan_file" "$updated_plan"
+}
+
+# --- Subcommand: update (HOT PATH) ---
+
+cmd_update() {
+  local project_dir="" agent="" milestone="" status="" subtask="" summary="" files="" error_text="" quiet=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      --agent)        agent="$2"; shift 2 ;;
+      --milestone)    milestone="$2"; shift 2 ;;
+      --status)       status="$2"; shift 2 ;;
+      --subtask)      subtask="$2"; shift 2 ;;
+      --summary)      summary="$2"; shift 2 ;;
+      --files)        files="$2"; shift 2 ;;
+      --error)        error_text="$2"; shift 2 ;;
+      --quiet)        quiet=true; shift ;;
+      *) die "update: unknown option: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]] && die "update: --project-dir is required"
+  [[ -z "$agent" ]]       && die "update: --agent is required"
+  [[ -z "$milestone" ]]   && die "update: --milestone is required"
+  [[ -z "$status" ]]      && die "update: --status is required"
+
+  case "$status" in
+    pending|in_progress|completed|failed|blocked|skipped) ;;
+    *) die "update: invalid status '$status' (allowed: pending, in_progress, completed, failed, blocked, skipped)" ;;
+  esac
+
+  local progress_dir="${project_dir}/progress"
+  local agent_file
+  agent_file="$(agent_path "$project_dir" "$agent")"
+  local ts
+  ts="$(now_iso)"
+
+  # Warn if plan.json doesn't exist but continue (graceful degradation)
+  local plan_file
+  plan_file="$(plan_path "$project_dir")"
+  if [[ ! -f "$plan_file" ]]; then
+    warn "plan.json not found at $plan_file — proceeding without plan validation"
+  fi
+
+  mkdir -p "$progress_dir"
+
+  # Build files array from comma-separated string
+  local files_json="[]"
+  if [[ -n "$files" ]]; then
+    files_json=$(echo "$files" | tr ',' '\n' | jq -R . | jq -s .)
+  fi
+
+  # Get git sha if status is completed
+  local git_sha=""
+  if [[ "$status" == "completed" ]]; then
+    git_sha=$(git rev-parse --short=7 HEAD 2>/dev/null || echo "unknown")
+  fi
+
+  # Build the update entry
+  local entry
+  entry=$(jq -n \
+    --arg milestone "$milestone" \
+    --arg subtask "$subtask" \
+    --arg status "$status" \
+    --arg summary "$summary" \
+    --arg error "$error_text" \
+    --arg ts "$ts" \
+    --arg sha "$git_sha" \
+    --argjson files "$files_json" \
+    '{
+      milestone: $milestone,
+      status: $status,
+      timestamp: $ts
+    }
+    | if $subtask != "" then .subtask = $subtask else . end
+    | if $summary != "" then .summary = $summary else . end
+    | if ($files | length) > 0 then .files = $files else . end
+    | if $error != "" then .error = $error else . end
+    | if $sha != "" then .git_sha = $sha else . end
+    ')
+
+  local agent_json
+  if [[ -f "$agent_file" ]]; then
+    # Validate existing file
+    if ! jq empty "$agent_file" 2>/dev/null; then
+      die "Existing agent file is not valid JSON: $agent_file" 3
+    fi
+    # Append to existing updates array
+    agent_json=$(jq \
+      --arg milestone "$milestone" \
+      --arg subtask "$subtask" \
+      --arg status "$status" \
+      --arg ts "$ts" \
+      --arg sha "$git_sha" \
+      --argjson entry "$entry" \
+      '
+        .updates += [$entry] |
+        .current_milestone = $milestone |
+        .status = $status |
+        .updated_at = $ts |
+        if $subtask != "" then .current_subtask = $subtask else . end |
+        if $sha != "" then .git_sha = $sha else . end
+      ' "$agent_file")
+  else
+    # Create skeleton agent file
+    agent_json=$(jq -n \
+      --arg agent "$agent" \
+      --arg milestone "$milestone" \
+      --arg subtask "$subtask" \
+      --arg status "$status" \
+      --arg ts "$ts" \
+      --arg sha "$git_sha" \
+      --argjson entry "$entry" \
+      '{
+        agent: $agent,
+        current_milestone: $milestone,
+        status: $status,
+        updates: [$entry],
+        created_at: $ts,
+        updated_at: $ts
+      }
+      | if $subtask != "" then .current_subtask = $subtask else . end
+      | if $sha != "" then .git_sha = $sha else . end
+      ')
+  fi
+
+  atomic_write "$agent_file" "$agent_json"
+
+  if [[ "$quiet" != "true" ]]; then
+    local label="$agent → $milestone"
+    if [[ -n "$subtask" ]]; then
+      label="$agent → $milestone/$subtask"
+    fi
+    ok "$label [$status]"
+  fi
+}
+
+# --- Subcommand: gate ---
+
+cmd_gate() {
+  local project_dir="" gate_id="" status=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      --id)           gate_id="$2"; shift 2 ;;
+      --status)       status="$2"; shift 2 ;;
+      *) die "gate: unknown option: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]] && die "gate: --project-dir is required"
+  [[ -z "$gate_id" ]]     && die "gate: --id is required"
+  [[ -z "$status" ]]      && die "gate: --status is required"
+
+  case "$status" in
+    passed|failed) ;;
+    *) die "gate: --status must be passed or failed (got: $status)" ;;
+  esac
+
+  require_plan "$project_dir"
+
+  local plan_file
+  plan_file="$(plan_path "$project_dir")"
+  local ts
+  ts="$(now_iso)"
+
+  # Verify the gate exists
+  local exists
+  exists=$(jq --arg id "$gate_id" '[.milestones[] | select(.id == $id)] | length' "$plan_file")
+  if [[ "$exists" -eq 0 ]]; then
+    die "gate: $gate_id not found in plan.json" 4
+  fi
+
+  local updated_plan
+  updated_plan=$(jq \
+    --arg id "$gate_id" \
+    --arg status "$status" \
+    --arg ts "$ts" \
+    '
+      .milestones = [
+        .milestones[] |
+        if .id == $id then
+          .status = $status |
+          if $status == "passed" then .passed_at = $ts else . end
+        else .
+        end
+      ] |
+      .updated_at = $ts
+    ' "$plan_file")
+
+  atomic_write "$plan_file" "$updated_plan"
+  ok "Gate $gate_id → $status"
+}
+
+# --- Subcommand: decision ---
+
+cmd_decision() {
+  local project_dir="" gate="" question="" chosen="" decided_by="" rationale="" options=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      --gate)         gate="$2"; shift 2 ;;
+      --question)     question="$2"; shift 2 ;;
+      --chosen)       chosen="$2"; shift 2 ;;
+      --decided-by)   decided_by="$2"; shift 2 ;;
+      --rationale)    rationale="$2"; shift 2 ;;
+      --options)      options="$2"; shift 2 ;;
+      *) die "decision: unknown option: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]] && die "decision: --project-dir is required"
+  [[ -z "$gate" ]]        && die "decision: --gate is required"
+  [[ -z "$question" ]]    && die "decision: --question is required"
+  [[ -z "$chosen" ]]      && die "decision: --chosen is required"
+  [[ -z "$decided_by" ]]  && die "decision: --decided-by is required"
+
+  require_plan "$project_dir"
+
+  local plan_file
+  plan_file="$(plan_path "$project_dir")"
+  local ts
+  ts="$(now_iso)"
+
+  # Auto-generate decision ID: D{N} where N is next sequence number
+  local next_n
+  next_n=$(jq '(.decisions // []) | length + 1' "$plan_file")
+  local decision_id="D${next_n}"
+
+  # Build options array from comma-separated string
+  local options_json="[]"
+  if [[ -n "$options" ]]; then
+    options_json=$(echo "$options" | tr ',' '\n' | jq -R . | jq -s .)
+  fi
+
+  local updated_plan
+  updated_plan=$(jq \
+    --arg id "$decision_id" \
+    --arg gate "$gate" \
+    --arg question "$question" \
+    --arg chosen "$chosen" \
+    --arg decided_by "$decided_by" \
+    --arg rationale "$rationale" \
+    --arg ts "$ts" \
+    --argjson options "$options_json" \
+    '
+      .decisions = (.decisions // []) + [{
+        id: $id,
+        gate: $gate,
+        question: $question,
+        chosen: $chosen,
+        decided_by: $decided_by,
+        timestamp: $ts
+      }
+      | if $rationale != "" then .rationale = $rationale else . end
+      | if ($options | length) > 0 then .options = $options else . end
+      ] |
+      .updated_at = $ts
+    ' "$plan_file")
+
+  atomic_write "$plan_file" "$updated_plan"
+  ok "Recorded decision $decision_id at gate $gate"
+}
+
+# --- Subcommand: view ---
+
+# Status indicator characters
+status_icon() {
+  case "$1" in
+    completed) echo "✓" ;;
+    in_progress) echo "●" ;;
+    pending) echo "○" ;;
+    failed) echo "✗" ;;
+    skipped) echo "⊘" ;;
+    blocked) echo "!" ;;
+    passed) echo "✓" ;;
+    *) echo "?" ;;
+  esac
+}
+
+status_color() {
+  case "$1" in
+    completed|passed) echo "$GREEN" ;;
+    in_progress) echo "$YELLOW" ;;
+    failed) echo "$RED" ;;
+    blocked) echo "$RED" ;;
+    *) echo "$NC" ;;
+  esac
+}
+
+cmd_view() {
+  local project_dir="" format="tree"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      --format)       format="$2"; shift 2 ;;
+      *) die "view: unknown option: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]] && die "view: --project-dir is required"
+
+  require_plan "$project_dir"
+
+  local plan_file
+  plan_file="$(plan_path "$project_dir")"
+  local progress_dir="${project_dir}/progress"
+
+  # Collect agent statuses: build a merged map of milestone → latest agent status
+  local agent_statuses="{}"
+  for afile in "$progress_dir"/*.json; do
+    [[ "$afile" == */plan.json ]] && continue
+    [[ ! -f "$afile" ]] && continue
+    if jq empty "$afile" 2>/dev/null; then
+      agent_statuses=$(echo "$agent_statuses" | jq \
+        --slurpfile agent "$afile" \
+        '
+          . as $acc |
+          $agent[0] as $a |
+          reduce ($a.updates // [])[] as $u ($acc;
+            .[$u.milestone] = {
+              agent: $a.agent,
+              status: $u.status,
+              timestamp: $u.timestamp,
+              summary: ($u.summary // ""),
+              subtask: ($u.subtask // "")
+            }
+          )
+        ')
+    fi
+  done
+
+  case "$format" in
+    tree)   view_tree "$plan_file" "$agent_statuses" ;;
+    table)  view_table "$plan_file" "$agent_statuses" ;;
+    summary) view_summary "$plan_file" "$agent_statuses" ;;
+    json)   view_json "$plan_file" "$agent_statuses" ;;
+    *) die "view: unknown format '$format' (allowed: tree, table, summary, json)" ;;
+  esac
+}
+
+view_tree() {
+  local plan_file="$1" agent_statuses="$2"
+
+  local pipeline_id feature_type
+  pipeline_id=$(jq -r '.pipeline_id' "$plan_file")
+  feature_type=$(jq -r '.feature_type' "$plan_file")
+
+  echo -e "${BOLD}Pipeline${NC}: $pipeline_id ($feature_type)"
+  echo ""
+
+  local count
+  count=$(jq '.milestones | length' "$plan_file")
+
+  local i
+  for (( i=0; i<count; i++ )); do
+    local mid mstatus mtitle mphase
+    mid=$(jq -r ".milestones[$i].id" "$plan_file")
+    mstatus=$(jq -r ".milestones[$i].status" "$plan_file")
+    mtitle=$(jq -r ".milestones[$i].title" "$plan_file")
+    mphase=$(jq -r ".milestones[$i].phase" "$plan_file")
+
+    # Check if agent has overridden the status
+    local agent_status agent_name
+    agent_status=$(echo "$agent_statuses" | jq -r --arg mid "$mid" '.[$mid].status // empty')
+    agent_name=$(echo "$agent_statuses" | jq -r --arg mid "$mid" '.[$mid].agent // empty')
+    if [[ -n "$agent_status" ]]; then
+      mstatus="$agent_status"
+    fi
+
+    local icon color
+    icon=$(status_icon "$mstatus")
+    color=$(status_color "$mstatus")
+
+    local agent_label=""
+    if [[ -n "$agent_name" ]]; then
+      agent_label=" ($agent_name)"
+    fi
+
+    if [[ "$mphase" == "gate" ]]; then
+      echo -e "  ${color}${icon}${NC} ${BOLD}$mid${NC} — $mtitle [$mstatus]${agent_label}"
+    else
+      echo -e "  ${color}${icon}${NC} $mid — $mtitle [$mstatus]${agent_label}"
+    fi
+
+    # Print subtasks
+    local scount
+    scount=$(jq ".milestones[$i].subtasks | length" "$plan_file")
+    local j
+    for (( j=0; j<scount; j++ )); do
+      local sid stitle sstatus
+      sid=$(jq -r ".milestones[$i].subtasks[$j].id" "$plan_file")
+      stitle=$(jq -r ".milestones[$i].subtasks[$j].title" "$plan_file")
+      sstatus=$(jq -r ".milestones[$i].subtasks[$j].status" "$plan_file")
+
+      local sicon scolor
+      sicon=$(status_icon "$sstatus")
+      scolor=$(status_color "$sstatus")
+
+      echo -e "      ${scolor}${sicon}${NC} $sid — $stitle [$sstatus]"
+    done
+  done
+
+  # Print decisions if any
+  local dcount
+  dcount=$(jq '(.decisions // []) | length' "$plan_file")
+  if [[ "$dcount" -gt 0 ]]; then
+    echo ""
+    echo -e "${BOLD}Decisions${NC}:"
+    local d
+    for (( d=0; d<dcount; d++ )); do
+      local did dgate dchosen dby
+      did=$(jq -r ".decisions[$d].id" "$plan_file")
+      dgate=$(jq -r ".decisions[$d].gate" "$plan_file")
+      dchosen=$(jq -r ".decisions[$d].chosen" "$plan_file")
+      dby=$(jq -r ".decisions[$d].decided_by" "$plan_file")
+      echo "  $did ($dgate): $dchosen [by $dby]"
+    done
+  fi
+
+  echo ""
+}
+
+view_table() {
+  local plan_file="$1" agent_statuses="$2"
+
+  printf "%-15s %-14s %-15s %-20s\n" "Milestone" "Status" "Agent" "Updated"
+  printf "%-15s %-14s %-15s %-20s\n" "───────────────" "──────────────" "───────────────" "────────────────────"
+
+  local count
+  count=$(jq '.milestones | length' "$plan_file")
+
+  local i
+  for (( i=0; i<count; i++ )); do
+    local mid mstatus
+    mid=$(jq -r ".milestones[$i].id" "$plan_file")
+    mstatus=$(jq -r ".milestones[$i].status" "$plan_file")
+
+    local agent_name updated_at
+    agent_name=$(echo "$agent_statuses" | jq -r --arg mid "$mid" '.[$mid].agent // "-"')
+    updated_at=$(echo "$agent_statuses" | jq -r --arg mid "$mid" '.[$mid].timestamp // "-"')
+    local agent_st
+    agent_st=$(echo "$agent_statuses" | jq -r --arg mid "$mid" '.[$mid].status // empty')
+    if [[ -n "$agent_st" ]]; then
+      mstatus="$agent_st"
+    fi
+
+    printf "%-15s %-14s %-15s %-20s\n" "$mid" "$mstatus" "$agent_name" "$updated_at"
+  done
+}
+
+view_summary() {
+  local plan_file="$1" agent_statuses="$2"
+
+  local count
+  count=$(jq '.milestones | length' "$plan_file")
+
+  local completed=0 in_progress=0 pending=0 failed=0
+
+  local i
+  for (( i=0; i<count; i++ )); do
+    local mid mstatus
+    mid=$(jq -r ".milestones[$i].id" "$plan_file")
+    mstatus=$(jq -r ".milestones[$i].status" "$plan_file")
+
+    local agent_st
+    agent_st=$(echo "$agent_statuses" | jq -r --arg mid "$mid" '.[$mid].status // empty')
+    if [[ -n "$agent_st" ]]; then
+      mstatus="$agent_st"
+    fi
+
+    local icon
+    icon=$(status_icon "$mstatus")
+    local mtitle
+    mtitle=$(jq -r ".milestones[$i].title" "$plan_file")
+    echo "$icon $mid $mtitle [$mstatus]"
+
+    case "$mstatus" in
+      completed|passed) completed=$((completed + 1)) ;;
+      in_progress) in_progress=$((in_progress + 1)) ;;
+      failed) failed=$((failed + 1)) ;;
+      *) pending=$((pending + 1)) ;;
+    esac
+  done
+
+  echo ""
+  echo "Total: $count | Done: $completed | Active: $in_progress | Pending: $pending | Failed: $failed"
+}
+
+view_json() {
+  local plan_file="$1" agent_statuses="$2"
+
+  # Enrich plan.json with agent statuses
+  jq \
+    --argjson agents "$agent_statuses" \
+    '
+      .milestones = [
+        .milestones[] |
+        . as $m |
+        if $agents[$m.id] then
+          .agent_status = $agents[$m.id]
+        else .
+        end
+      ]
+    ' "$plan_file"
+}
+
+# --- Subcommand: migrate ---
+
+cmd_migrate() {
+  local project_dir=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      *) die "migrate: unknown option: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]] && die "migrate: --project-dir is required"
+
+  local legacy_state="${project_dir}/pipeline_state.json"
+  local legacy_decisions="${project_dir}/decisions.json"
+  local progress_dir="${project_dir}/progress"
+  local plan_file="${progress_dir}/plan.json"
+
+  # If progress/plan.json already exists, nothing to migrate
+  if [[ -f "$plan_file" ]]; then
+    warn "progress/plan.json already exists — skipping migration"
+    ok "Nothing to migrate"
+    return 0
+  fi
+
+  if [[ ! -f "$legacy_state" ]]; then
+    die "Neither pipeline_state.json nor progress/plan.json found in $project_dir" 5
+  fi
+
+  # Validate legacy file
+  if ! jq empty "$legacy_state" 2>/dev/null; then
+    die "pipeline_state.json is not valid JSON" 3
+  fi
+
+  mkdir -p "$progress_dir"
+
+  local ts
+  ts="$(now_iso)"
+
+  # Extract pipeline info from legacy
+  local pipeline_id feature_type
+  pipeline_id=$(jq -r '.pipeline_id // "migrated"' "$legacy_state")
+  feature_type=$(jq -r '.feature_type // "backend"' "$legacy_state")
+
+  # Convert stages to milestones
+  local milestones
+  milestones=$(jq '
+    [(.stages // [])[] | {
+      id: .id,
+      title: (.title // .id),
+      phase: (.phase // "impl"),
+      status: (.status // "pending"),
+      depends_on: (.depends_on // []),
+      subtasks: (.subtasks // []),
+      tags: (.tags // [])
+    }]
+  ' "$legacy_state")
+
+  # If no stages, create empty milestones
+  if [[ "$(echo "$milestones" | jq 'length')" -eq 0 ]]; then
+    milestones="[]"
+  fi
+
+  # Extract decisions from legacy state or separate decisions file
+  local decisions="[]"
+  local legacy_decisions_from_state
+  legacy_decisions_from_state=$(jq '(.decisions // [])' "$legacy_state")
+  if [[ "$(echo "$legacy_decisions_from_state" | jq 'length')" -gt 0 ]]; then
+    decisions="$legacy_decisions_from_state"
+  elif [[ -f "$legacy_decisions" ]]; then
+    if jq empty "$legacy_decisions" 2>/dev/null; then
+      decisions=$(jq '(.decisions // .)' "$legacy_decisions")
+      # Ensure it's an array
+      if [[ "$(echo "$decisions" | jq 'type')" != '"array"' ]]; then
+        decisions=$(echo "$decisions" | jq '[.]')
+      fi
+    fi
+  fi
+
+  # Build plan.json
+  local plan_json
+  plan_json=$(jq -n \
+    --arg pid "$pipeline_id" \
+    --arg ft "$feature_type" \
+    --arg ts "$ts" \
+    --argjson milestones "$milestones" \
+    --argjson decisions "$decisions" \
+    '{
+      pipeline_id: $pid,
+      feature_type: $ft,
+      milestones: $milestones,
+      decisions: $decisions,
+      created_at: $ts,
+      updated_at: $ts,
+      migrated_from: "pipeline_state.json"
+    }')
+
+  atomic_write "$plan_file" "$plan_json"
+
+  # Create agent files for stages that have status != pending
+  local agent_count=0
+  local stage_count
+  stage_count=$(jq '(.stages // []) | length' "$legacy_state")
+
+  local i
+  for (( i=0; i<stage_count; i++ )); do
+    local stage_status stage_id stage_agent
+    stage_status=$(jq -r ".stages[$i].status // \"pending\"" "$legacy_state")
+    stage_id=$(jq -r ".stages[$i].id" "$legacy_state")
+    stage_agent=$(jq -r ".stages[$i].agent // \"unknown\"" "$legacy_state")
+
+    if [[ "$stage_status" != "pending" ]]; then
+      local agent_file="${progress_dir}/${stage_agent}.json"
+      local agent_json
+      if [[ -f "$agent_file" ]] && jq empty "$agent_file" 2>/dev/null; then
+        # Append to existing agent file
+        agent_json=$(jq \
+          --arg mid "$stage_id" \
+          --arg status "$stage_status" \
+          --arg ts "$ts" \
+          '
+            .updates += [{
+              milestone: $mid,
+              status: $status,
+              timestamp: $ts,
+              summary: "Migrated from pipeline_state.json"
+            }] |
+            .current_milestone = $mid |
+            .status = $status |
+            .updated_at = $ts
+          ' "$agent_file")
+      else
+        agent_json=$(jq -n \
+          --arg agent "$stage_agent" \
+          --arg mid "$stage_id" \
+          --arg status "$stage_status" \
+          --arg ts "$ts" \
+          '{
+            agent: $agent,
+            current_milestone: $mid,
+            status: $status,
+            updates: [{
+              milestone: $mid,
+              status: $status,
+              timestamp: $ts,
+              summary: "Migrated from pipeline_state.json"
+            }],
+            created_at: $ts,
+            updated_at: $ts
+          }')
+      fi
+      atomic_write "$agent_file" "$agent_json"
+      agent_count=$((agent_count + 1))
+    fi
+  done
+
+  local milestone_count
+  milestone_count=$(echo "$milestones" | jq 'length')
+  local decision_count
+  decision_count=$(echo "$decisions" | jq 'length')
+
+  echo ""
+  echo -e "${BOLD}Migration Summary${NC}"
+  echo "  Milestones: $milestone_count"
+  echo "  Agent files: $agent_count"
+  echo "  Decisions:  $decision_count"
+  echo "  Source:     $legacy_state"
+  echo "  Target:     $progress_dir/"
+  echo ""
+  ok "Migration complete"
+}
+
+# --- Help ---
+
+show_help() {
+  cat <<'EOF'
+progress — Serializer for the progress spine system.
+
+Usage: progress <subcommand> [options]
+
+Subcommands:
+  init       Create progress/ directory and scaffold plan.json
+  milestone  Add or update a milestone in plan.json
+  subtask    Add or update a subtask within a milestone
+  update     Record agent progress (HOT PATH — agents call this frequently)
+  gate       Update gate status (passed/failed) in plan.json
+  decision   Record a decision at a gate
+  view       Merge plan + agent files → unified view
+  migrate    Convert legacy pipeline_state.json → progress/ structure
+
+Common options:
+  --project-dir <path>   Project root (required for all subcommands)
+  -h, --help             Show this help
+
+Exit codes:
+  0  OK
+  1  Argument error
+  2  Already exists
+  3  JSON parse error
+  4  Validation error
+  5  No plan found
+
+Examples:
+  progress init --project-dir . --pipeline-id abc123 --feature-type backend
+  progress update --project-dir . --agent se-go --milestone M-impl --status in_progress --quiet
+  progress gate --project-dir . --id G1 --status passed
+  progress view --project-dir . --format tree
+EOF
+}
+
+show_subcommand_help() {
+  case "$1" in
+    init)
+      cat <<'EOF'
+progress init — Create progress/ directory and scaffold plan.json
+
+Usage: progress init --project-dir <path> --pipeline-id <id> --feature-type <type> [--force]
+
+Options:
+  --project-dir <path>     Project root
+  --pipeline-id <id>       Pipeline identifier
+  --feature-type <type>    One of: backend, ui, fullstack
+  --force                  Overwrite existing plan.json
+EOF
+      ;;
+    milestone)
+      cat <<'EOF'
+progress milestone — Add or update a milestone in plan.json
+
+Usage: progress milestone --project-dir <path> --id <M-xxx> --title <title> --phase <phase> [options]
+
+Options:
+  --project-dir <path>     Project root
+  --id <M-xxx>             Milestone ID
+  --title <title>          Milestone title
+  --phase <phase>          Phase name (spec, domain, design, impl, gate)
+  --depends-on <ids>       Comma-separated dependency IDs
+  --description <text>     Optional description
+EOF
+      ;;
+    subtask)
+      cat <<'EOF'
+progress subtask — Add or update a subtask within a milestone
+
+Usage: progress subtask --project-dir <path> --milestone <M-xxx> --id <id> --title <title> [options]
+
+Options:
+  --project-dir <path>     Project root
+  --milestone <M-xxx>      Parent milestone ID
+  --id <id>                Subtask ID
+  --title <title>          Subtask title
+  --agent-hint <agent>     Suggested agent for this subtask
+  --fr-ids <ids>           Comma-separated functional requirement IDs
+EOF
+      ;;
+    update)
+      cat <<'EOF'
+progress update — Record agent progress (HOT PATH)
+
+Usage: progress update --project-dir <path> --agent <name> --milestone <M-xxx> --status <s> [options]
+
+Options:
+  --project-dir <path>     Project root
+  --agent <name>           Agent name (used as filename: {name}.json)
+  --milestone <M-xxx>      Current milestone
+  --status <status>        One of: pending, in_progress, completed, failed, blocked, skipped
+  --subtask <id>           Current subtask within the milestone
+  --summary <text>         Human-readable summary of what was done
+  --files <f1,f2>          Comma-separated list of files touched
+  --error <text>           Error message (for failed status)
+  --quiet                  Suppress stdout (stderr only on error)
+EOF
+      ;;
+    gate)
+      cat <<'EOF'
+progress gate — Update gate status in plan.json
+
+Usage: progress gate --project-dir <path> --id <G1-G4> --status <passed|failed>
+
+Options:
+  --project-dir <path>     Project root
+  --id <G1-G4>             Gate ID
+  --status <s>             One of: passed, failed
+EOF
+      ;;
+    decision)
+      cat <<'EOF'
+progress decision — Record a decision at a gate
+
+Usage: progress decision --project-dir <path> --gate <G1-G4> --question <text> --chosen <text> --decided-by <who> [options]
+
+Options:
+  --project-dir <path>     Project root
+  --gate <G1-G4>           Gate where decision was made
+  --question <text>        The question or decision point
+  --chosen <text>          The chosen option
+  --decided-by <who>       Who made the decision (user, orchestrator)
+  --rationale <text>       Why this option was chosen
+  --options <o1,o2>        Comma-separated list of available options
+EOF
+      ;;
+    view)
+      cat <<'EOF'
+progress view — Merge plan + agent files into unified view
+
+Usage: progress view --project-dir <path> [--format tree|table|summary|json]
+
+Options:
+  --project-dir <path>     Project root
+  --format <fmt>           Output format: tree (default), table, summary, json
+EOF
+      ;;
+    migrate)
+      cat <<'EOF'
+progress migrate — Convert legacy pipeline_state.json to progress/ structure
+
+Usage: progress migrate --project-dir <path>
+
+Options:
+  --project-dir <path>     Project root containing pipeline_state.json
+EOF
+      ;;
+    *)
+      show_help
+      ;;
+  esac
+}
+
+# --- Main ---
+
+require_cmd jq
+
+if [[ $# -eq 0 ]]; then
+  show_help
+  exit 1
+fi
+
+subcmd="$1"
+shift
+
+case "$subcmd" in
+  init)       cmd_init "$@" ;;
+  milestone)  cmd_milestone "$@" ;;
+  subtask)    cmd_subtask "$@" ;;
+  update)     cmd_update "$@" ;;
+  gate)       cmd_gate "$@" ;;
+  decision)   cmd_decision "$@" ;;
+  view)       cmd_view "$@" ;;
+  migrate)    cmd_migrate "$@" ;;
+  -h|--help)  show_help; exit 0 ;;
+  help)
+    if [[ $# -gt 0 ]]; then
+      show_subcommand_help "$1"
+    else
+      show_help
+    fi
+    exit 0
+    ;;
+  *) die "Unknown subcommand: $subcmd (use --help for usage)" ;;
+esac

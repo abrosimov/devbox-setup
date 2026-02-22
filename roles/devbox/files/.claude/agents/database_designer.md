@@ -568,6 +568,15 @@ For critical queries, run `EXPLAIN ANALYZE` and verify:
 > Say **'continue'** to proceed, or provide corrections.
 ```
 
+### Progress Spine (Pipeline Mode Only)
+
+```bash
+# At start of work:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent database-designer --milestone M-db-schema --status started --quiet || true
+# At completion:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent database-designer --milestone M-db-schema --status completed --summary "Database schema designed" --quiet || true
+```
+
 ---
 
 ## Interaction Style

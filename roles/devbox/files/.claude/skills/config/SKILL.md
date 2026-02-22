@@ -125,6 +125,9 @@ All project documentation is organized by Jira issue and branch name:
 │   │   ├── se_frontend_output.json # Frontend SE structured output
 │   │   ├── pipeline_state.json  # Pipeline progress tracking
 │   │   ├── decisions.json    # Pipeline decision log
+│   │   ├── progress/              # Progress spine tracking
+│   │   │   ├── plan.json          # Milestone DAG (TPM creates, Planner refines)
+│   │   │   └── *.json             # Per-agent status files
 │   │   └── memory/
 │   │       └── upstream.jsonl # Knowledge graph — domain knowledge, decisions (VCS)
 │   └── add_user_auth_v2/    # Branch: PROJ-123_add_user_auth_v2
@@ -166,6 +169,8 @@ All project documentation is organized by Jira issue and branch name:
 | API Designer structured output | API Designer | `{PROJECT_DIR}/api_design_output.json` |
 | Pipeline state | Commands | `{PROJECT_DIR}/pipeline_state.json` |
 | Pipeline decisions | Commands | `{PROJECT_DIR}/decisions.json` |
+| Progress plan | TPM, Impl Planner | `{PROJECT_DIR}/progress/plan.json` |
+| Agent progress | Each pipeline agent | `{PROJECT_DIR}/progress/{agent}.json` |
 | Memory (upstream) | TPM, Domain, Planners | `{PROJECT_DIR}/memory/upstream.jsonl` |
 | Memory (downstream) | Code Reviewers | `.claude/memory/downstream.jsonl` (project root, gitignored) |
 

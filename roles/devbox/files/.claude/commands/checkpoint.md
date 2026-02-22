@@ -53,6 +53,11 @@ RC=$?
 cat ${PROJECT_DIR}/pipeline_state.json 2>/dev/null || echo '{}'
 ```
 
+**Progress spine**: Include `bin/progress view --format summary` output in checkpoint data:
+```bash
+~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format summary 2>/dev/null || echo "No progress spine found"
+```
+
 #### 3. Synthesise Checkpoint
 
 Using ALL gathered information, write a checkpoint file. The file captures everything needed to resume work.
@@ -207,6 +212,15 @@ RC=$?
 ```bash
 cat ${PROJECT_DIR}/pipeline_state.json 2>/dev/null
 ```
+
+**Progress-aware resume**: When restoring, check for progress spine:
+```bash
+if [ -d "$PROJECT_DIR/progress" ]; then
+  echo "=== Progress Spine ==="
+  ~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format tree 2>/dev/null || true
+fi
+```
+This provides richer state reconstruction than pipeline_state.json alone, showing per-milestone and per-agent status.
 
 #### 6. Present Summary
 

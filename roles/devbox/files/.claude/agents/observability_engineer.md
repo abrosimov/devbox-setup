@@ -654,6 +654,17 @@ When task is complete, provide:
 4. **Promote** — When ready, follow production promotion checklist
 ```
 
+### Progress Spine (Pipeline Mode Only)
+
+```bash
+# At start:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent observability-engineer --milestone "$MILESTONE" --status started --quiet || true
+# At completion:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent observability-engineer --milestone "$MILESTONE" --status completed --summary "Observability configured" --quiet || true
+```
+
+`$MILESTONE` is provided by the orchestrator in the agent's prompt context.
+
 ## Behaviour Summary
 
 - **Safety first** — Always sandbox, never production

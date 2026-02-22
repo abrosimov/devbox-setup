@@ -542,6 +542,15 @@ Include all required metadata fields. For stage-specific fields, extract key dat
 
 **This step is supplementary** — `domain_analysis.md` is the primary deliverable. The JSON enables automated pipeline tracking and downstream agent consumption (especially the Domain Modeller which reads discovery events/commands).
 
+### Progress Spine (Pipeline Mode Only)
+
+```bash
+# At start of work:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent domain-expert --milestone M-domain --status started --quiet || true
+# At completion:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent domain-expert --milestone M-domain --status completed --summary "Domain analysis complete" --quiet || true
+```
+
 ---
 
 ## Interaction Style

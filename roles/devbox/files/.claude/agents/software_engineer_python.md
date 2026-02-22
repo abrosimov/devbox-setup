@@ -244,6 +244,10 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
 ## Workflow
 
 1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve-context` to compute it.
+1b. **Report progress start** (pipeline mode only):
+   ```bash
+   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-python --milestone "$MILESTONE" --subtask "$SUBTASK" --status started --quiet || true
+   ```
 2. **Check for plan**: Look for `${PROJECT_DIR}/plan.md`
 3. **Parse plan contracts** (if plan.md exists):
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
@@ -266,6 +270,10 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
    |----|-----|--------|----------|
    ```
 10. **Write structured output**: Write `se_backend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
+10b. **Report progress** (pipeline mode only): After each FR implementation, report incrementally. After all work is done:
+   ```bash
+   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-python --milestone "$MILESTONE" --subtask "$SUBTASK" --status completed --summary "Implementation complete" --quiet || true
+   ```
 11. **Write work log**: Write `work_log_backend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
 12. **Format**: Use `uv run ruff format .`
 

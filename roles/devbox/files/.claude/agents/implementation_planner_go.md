@@ -487,6 +487,25 @@ DO NOT specify file paths, interfaces, or patterns. SE will explore and decide.
 | FR-5 | AC-7 | Notification on creation | Called on success; failure logged, not surfaced |
 ```
 
+### Step 5: Update Progress Spine (Pipeline Mode Only)
+
+If `PIPELINE_MODE=true` and `PROJECT_DIR` is set, replace the placeholder M-impl milestone with feature-level milestones:
+
+```bash
+# Replace M-impl with work-stream milestones
+for ws in $(jq -r '.work_streams[].id' "$PROJECT_DIR/plan_output.json" 2>/dev/null); do
+  ws_lower=$(echo "$ws" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+  ws_name=$(jq -r ".work_streams[] | select(.id==\"$ws\") | .name" "$PROJECT_DIR/plan_output.json")
+  ~/.claude/bin/progress milestone --project-dir "$PROJECT_DIR" --id "M-${ws_lower}" --title "$ws_name" --phase implementation || true
+  ~/.claude/bin/progress subtask --project-dir "$PROJECT_DIR" --milestone "M-${ws_lower}" --id "M-${ws_lower}.se" --title "Implement ${ws_name}" || true
+  ~/.claude/bin/progress subtask --project-dir "$PROJECT_DIR" --milestone "M-${ws_lower}" --id "M-${ws_lower}.test" --title "Test ${ws_name}" || true
+  ~/.claude/bin/progress subtask --project-dir "$PROJECT_DIR" --milestone "M-${ws_lower}" --id "M-${ws_lower}.review" --title "Review ${ws_name}" || true
+done
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent implementation-planner --milestone M-impl --status completed --summary "Plan with work streams created" --quiet || true
+```
+
+---
+
 ## Dev Environment Awareness
 
 During Step 3 (Understand Context), check whether the project has a working dev environment that covers this feature's infrastructure needs:

@@ -88,6 +88,14 @@ RC=$?
 
 Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent, do not re-compute.
 
+### 2.5. Check for Progress Spine
+
+**Check for progress spine**: If `{PROJECT_DIR}/progress/plan.json` exists, read the agent's status file for resume context:
+```bash
+AGENT_STATUS=$(cat "$PROJECT_DIR/progress/${AGENT_TYPE}.json" 2>/dev/null || echo '{}')
+```
+If the agent has a previous `status: "blocked"` or `status: "failed"`, include the last error in the prompt context so the agent can resume from where it left off.
+
 ### 3. Detect Project Stack
 
 Check for project markers (check ALL — a project may have multiple):
@@ -171,6 +179,15 @@ Each agent will:
 - Read its assigned work stream requirements (if plan has work streams)
 - Implement the required changes
 - Provide summary and suggest next step
+
+**Update progress view**: After agent completion, read merged progress and project to task UI:
+```bash
+PROGRESS=$(~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format json 2>/dev/null || echo '{}')
+```
+For each milestone in the progress, create or update TaskCreate/TaskUpdate entries so the user sees native progress indicators. Show a brief summary:
+```bash
+~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format summary 2>/dev/null || true
+```
 
 ### 6a. Independent Verification
 

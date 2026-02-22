@@ -1459,6 +1459,17 @@ See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-m
 
 See `agent-communication` skill — Completion Output Format. Interactive mode: report issues and suggest next action (fix or commit). Pipeline mode: return structured result with blocking/approved status.
 
+### Progress Spine (Pipeline Mode Only)
+
+```bash
+# At start:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent code-reviewer-python --milestone "$MILESTONE" --subtask "${MILESTONE}.review" --status started --quiet || true
+# At completion:
+~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent code-reviewer-python --milestone "$MILESTONE" --subtask "${MILESTONE}.review" --status completed --summary "Review complete" --quiet || true
+```
+
+`$MILESTONE` is provided by the orchestrator in the agent's prompt context (e.g., `M-ws-1`).
+
 ---
 
 ## Behaviour

@@ -10,6 +10,7 @@
 #   validate-pipeline-output --build-check --lang <go|python|node>
 #   validate-pipeline-output --test-check --lang <go|python|node> [--test-files <glob>]
 #   validate-pipeline-output --dag-check --file <path>
+#   validate-pipeline-output --progress-check --project-dir <path>
 #   validate-pipeline-output --full --file <path> --lang <go|python|node>
 #
 # Exit codes:
@@ -523,6 +524,84 @@ full_check() {
   return 0
 }
 
+# --- Progress Check (exit code 1 for schema, 5 for DAG integrity) ---
+
+progress_check() {
+  local project_dir="$1"
+  local progress_dir="${project_dir}/progress"
+  local errors=0
+
+  [[ -d "$progress_dir" ]] || die "No progress directory found at: $progress_dir" 10
+
+  # Validate plan.json
+  if [[ -f "${progress_dir}/plan.json" ]]; then
+    echo "--- Plan Validation ---"
+    if ! validate_schema "progress_plan" "${progress_dir}/plan.json"; then
+      errors=$((errors + 1))
+    else
+      ok "plan.json schema valid"
+    fi
+
+    # Check DAG integrity: no circular depends_on
+    local milestone_ids
+    milestone_ids=$(jq -r '[.milestones[]?.id // empty] | join(" ")' "${progress_dir}/plan.json" 2>/dev/null)
+
+    # Check depends_on references exist
+    local deps
+    deps=$(jq -r '.milestones[]?.depends_on[]? // empty' "${progress_dir}/plan.json" 2>/dev/null)
+    for dep in $deps; do
+      if ! echo "$milestone_ids" | tr ' ' '\n' | grep -qx "$dep"; then
+        warn "Milestone depends_on references unknown milestone: $dep"
+      fi
+    done
+
+    # Check gate after_milestones references exist
+    local gate_refs
+    gate_refs=$(jq -r '.gates[]?.after_milestones[]? // empty' "${progress_dir}/plan.json" 2>/dev/null)
+    for ref in $gate_refs; do
+      if ! echo "$milestone_ids" | tr ' ' '\n' | grep -qx "$ref"; then
+        warn "Gate after_milestones references unknown milestone: $ref"
+      fi
+    done
+    echo ""
+  else
+    warn "No plan.json found in progress directory"
+  fi
+
+  # Validate agent files
+  local agent_files
+  agent_files=$(find "$progress_dir" -name '*.json' ! -name 'plan.json' 2>/dev/null)
+  if [[ -n "$agent_files" ]]; then
+    echo "--- Agent File Validation ---"
+    while IFS= read -r agent_file; do
+      local basename
+      basename=$(basename "$agent_file")
+      if ! validate_schema "progress_agent" "$agent_file"; then
+        errors=$((errors + 1))
+      else
+        # Check agent file references existing milestones
+        if [[ -f "${progress_dir}/plan.json" ]]; then
+          local agent_milestone
+          agent_milestone=$(jq -r '.current_milestone // empty' "$agent_file" 2>/dev/null)
+          if [[ -n "$agent_milestone" ]] && ! echo "$milestone_ids" | tr ' ' '\n' | grep -qx "$agent_milestone"; then
+            warn "$basename: current_milestone '$agent_milestone' not found in plan.json"
+          fi
+        fi
+        ok "$basename schema valid"
+      fi
+    done <<< "$agent_files"
+    echo ""
+  fi
+
+  if [[ $errors -gt 0 ]]; then
+    fail "Progress check found $errors schema error(s)"
+    return 1
+  fi
+
+  ok "All progress files valid"
+  return 0
+}
+
 # --- Main ---
 
 mode=""
@@ -530,6 +609,7 @@ schema_name=""
 file=""
 lang=""
 test_files=""
+project_dir=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -538,6 +618,8 @@ while [[ $# -gt 0 ]]; do
     --build-check)  mode="build"; shift ;;
     --test-check)   mode="test"; shift ;;
     --dag-check)    mode="dag"; shift ;;
+    --progress-check) mode="progress"; shift ;;
+    --project-dir)    project_dir="$2"; shift 2 ;;
     --full)         mode="full"; shift ;;
     --file)         file="$2"; shift 2 ;;
     --lang)         lang="$2"; shift 2 ;;
@@ -583,6 +665,10 @@ case "$mode" in
     # Schema validate first, then integrity
     validate_schema "execution_dag" "$file" || exit 1
     dag_check "$file"
+    ;;
+  progress)
+    [[ -z "$project_dir" ]] && die "--progress-check requires --project-dir"
+    progress_check "$project_dir"
     ;;
   full)
     [[ -z "$file" ]] && die "--full requires --file"

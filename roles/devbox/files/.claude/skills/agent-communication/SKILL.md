@@ -73,6 +73,8 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 | **Doc Updater** | *(code changes)* | *(documentation file updates)* |
 | **Database Reviewer** | `schema_design.md`, `migrations/` | *(review feedback — inline)* |
 | **Refactor Cleaner** | *(source code)* | *(refactored code — direct edits)* |
+| **All pipeline agents** | `progress/plan.json` | *(read only — TPM creates, Planner refines)* |
+| **Each pipeline agent** | *(upstream artifacts)* | `progress/{agent}.json` |
 
 `?` = optional, read if available.
 
@@ -117,6 +119,8 @@ All execution state is schema-validated JSON, not text conventions:
 | `execution_dag.json` | `schemas/execution_dag.schema.json` | `bin/validate-pipeline-output --dag-check` |
 | `{stream}_completion.json` | `schemas/stream_completion.schema.json` | `bin/validate-pipeline-output --full` |
 | `pipeline_state.json` | `schemas/pipeline_state.schema.json` | `bin/validate-pipeline-output --schema pipeline_state` |
+| `progress/plan.json` | `schemas/progress_plan.schema.json` | `bin/validate-pipeline-output --progress-check` |
+| `progress/{agent}.json` | `schemas/progress_agent.schema.json` | `bin/validate-pipeline-output --progress-check` |
 
 #### Stream Executors
 
@@ -482,6 +486,39 @@ When reporting issues back to another agent or user:
 Review: X blocking | Y important | Z suggestions
 Action: [Fix blocking and re-review] or [Ready to proceed]
 ```
+
+---
+
+## Progress Spine Protocol
+
+File-based progress tracking that survives interruptions. Each agent updates its own status file; the orchestrator reads merged state.
+
+### Architecture
+
+```
+Agent → bin/progress update → {PROJECT_DIR}/progress/{agent}.json (per-agent, no conflicts)
+                                         ↓
+Orchestrator → bin/progress view --json → merged progress
+                                         ↓
+Orchestrator → TaskCreate/TaskUpdate → user sees native task UI
+```
+
+### When to Update
+
+| Event | Call |
+|-------|------|
+| Agent starts work on a milestone | `bin/progress update --project-dir $PROJECT_DIR --agent {name} --milestone {id} --status started --quiet` |
+| Sub-deliverable completed (SE agents) | `bin/progress update --project-dir $PROJECT_DIR --agent {name} --milestone {id} --subtask {id} --status in_progress --summary "FR-001 done" --files "path/file.go" --quiet` |
+| Agent completes milestone | `bin/progress update --project-dir $PROJECT_DIR --agent {name} --milestone {id} --status completed --summary "..." --quiet` |
+| Agent blocked | `bin/progress update --project-dir $PROJECT_DIR --agent {name} --milestone {id} --status blocked --error "..." --quiet` |
+
+### Rules
+
+1. **Always use `--quiet`** — agents run in pipeline mode; stdout goes to orchestrator
+2. **Graceful degradation** — append `|| true` so progress failures never block the agent's actual work
+3. **Summaries under 100 chars** — these appear in `bin/progress view --format tree`
+4. **One file per agent** — never write to another agent's progress file
+5. **Orchestrator reads, agents write** — agents never call `bin/progress view`
 
 ---
 

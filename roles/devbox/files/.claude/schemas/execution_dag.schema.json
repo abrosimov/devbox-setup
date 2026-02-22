@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "execution_dag.schema.json",
   "title": "Execution DAG",
-  "description": "Directed acyclic graph of tasks for Phase 4 pipeline execution. Built by orchestrator from plan_output.json work_streams. Serves as both execution plan and live state tracker.",
+  "description": "DEPRECATED: Phase 4 DAG execution is being replaced by milestone-driven progress spine (progress_plan.schema.json). Kept for backward compatibility and migration via bin/progress migrate. Directed acyclic graph of tasks for Phase 4 pipeline execution.",
   "type": "object",
   "required": ["pipeline_id", "lang", "nodes", "edges"],
   "properties": {

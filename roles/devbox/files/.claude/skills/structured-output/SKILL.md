@@ -36,6 +36,8 @@ Machine-readable JSON Schema files live in `schemas/`:
 | Execution DAG | `schemas/execution_dag.schema.json` | Full-cycle orchestrator |
 | Pipeline State | `schemas/pipeline_state.schema.json` | Full-cycle orchestrator |
 | DSS Output | `schemas/dss_output.schema.json` | `/options` command, DSS protocol |
+| Progress Plan | `schemas/progress_plan.schema.json` | TPM (init), Impl Planner (refine) |
+| Progress Agent | `schemas/progress_agent.schema.json` | All pipeline agents |
 
 These files are the **authoritative** schema definitions. The inline JSON examples below are derived from them. When in doubt, the schema file wins.
 
@@ -486,6 +488,24 @@ Records user decisions at pipeline gates and key decision points.
   ]
 }
 ```
+
+---
+
+## Progress Spine (Supplementary Tracking)
+
+Progress tracking is **distinct from** structured output:
+
+| Aspect | Structured Output (`*_output.json`) | Progress (`progress/*.json`) |
+|--------|--------------------------------------|-------------------------------|
+| **Purpose** | Final deliverable contract | Live status tracking |
+| **Written** | Once, at agent completion | Incrementally during work |
+| **Schema** | Stage-specific (spec, plan, design...) | `progress_plan` + `progress_agent` |
+| **Read by** | Downstream agents | Orchestrator + `/status` command |
+| **Required?** | Yes (pipeline mode) | Optional (graceful degradation) |
+
+Agents produce BOTH: structured output (final artifact) + progress updates (live status). They serve different consumers and timelines.
+
+See `agent-communication` skill → "Progress Spine Protocol" for update patterns.
 
 ---
 

@@ -194,6 +194,10 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 ## Workflow
 
 1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve-context` to compute it.
+1b. **Report progress start** (pipeline mode only):
+   ```bash
+   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-frontend --milestone "$MILESTONE" --subtask "$SUBTASK" --status started --quiet || true
+   ```
 2. **Check for plan**: Look for `${PROJECT_DIR}/plan.md`
 3. **Parse plan contracts** (if plan.md exists):
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
@@ -238,6 +242,10 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
     - **A11y Match**: Accessibility plan items (ARIA, keyboard, screen reader) are implemented
     - **Tokens Used**: Component uses design tokens, not hardcoded values
 11. **Write structured output**: Write `se_frontend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `design_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
+11b. **Report progress** (pipeline mode only): After each FR implementation, report incrementally. After all work is done:
+   ```bash
+   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-frontend --milestone "$MILESTONE" --subtask "$SUBTASK" --status completed --summary "Implementation complete" --quiet || true
+   ```
 12. **Write work log**: Write `work_log_frontend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
 13. **Format**: Use Prettier for formatting, ESLint for linting
 

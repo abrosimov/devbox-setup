@@ -125,6 +125,22 @@ Also initialise `{PROJECT_DIR}/decisions.json` if it doesn't exist:
 
 **Update pipeline state** at each phase transition — set stage status to `in_progress` before running agent, `completed` after agent finishes, record `approved_at` when user approves at a gate.
 
+**Initialize Progress Spine**:
+
+Check for existing progress tracking and choose strategy:
+
+| Condition | Action |
+|-----------|--------|
+| `{PROJECT_DIR}/progress/plan.json` exists | Resume from progress spine (preferred) |
+| `{PROJECT_DIR}/pipeline_state.json` exists, no progress/ | Offer migration: `~/.claude/bin/progress migrate --project-dir "$PROJECT_DIR"` |
+| Neither exists | Fresh start — TPM will create progress spine in Step 6.5 |
+
+If progress/ exists, read current state:
+```bash
+PROGRESS_JSON=$(~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format json 2>/dev/null || echo '{}')
+```
+Use this to determine which milestones are completed and resume from the right point.
+
 ### Phase 1: Problem Definition + Domain Modelling (autonomous → Gate 1)
 
 All agents in this phase run with `PIPELINE_MODE=true`.
@@ -164,6 +180,11 @@ Present summary of spec, domain analysis, and domain model (if produced). Update
 > **[Awaiting your decision]** — Approve to proceed, or provide corrections.
 
 Record decision in `decisions.json`. On approval, update `current_gate = "none"`.
+
+```bash
+~/.claude/bin/progress gate --project-dir "$PROJECT_DIR" --id G1 --status passed || true
+~/.claude/bin/progress decision --project-dir "$PROJECT_DIR" --gate G1 --question "Is this the right problem and domain model?" --chosen "Approved" --decided-by user || true
+```
 
 ### Phase 2: Design + Planning (autonomous → Gate 2)
 
@@ -210,6 +231,12 @@ Update `pipeline_state.json` with `feature_type`.
 > **[Awaiting your decision]** — Pick a direction, mix elements, or ask for variations.
 
 Record chosen option in `decisions.json` and `pipeline_state.json` (`designer.selected_option`).
+
+```bash
+~/.claude/bin/progress gate --project-dir "$PROJECT_DIR" --id G2 --status passed || true
+~/.claude/bin/progress decision --project-dir "$PROJECT_DIR" --gate G2 --question "Which design direction?" --chosen "$CHOSEN_OPTION" --decided-by user || true
+```
+
 On approval, Designer develops full spec for selected option autonomously.
 
 **For backend features:**
@@ -257,6 +284,11 @@ Present summary of all planning artifacts. Update `current_gate = "G3"`.
 > **[Awaiting your decision]** — Approve to start implementation, or provide corrections.
 
 Record decision in `decisions.json`. On approval, update `current_gate = "none"`.
+
+```bash
+~/.claude/bin/progress gate --project-dir "$PROJECT_DIR" --id G3 --status passed || true
+~/.claude/bin/progress decision --project-dir "$PROJECT_DIR" --gate G3 --question "Ready to implement?" --chosen "Approved" --decided-by user || true
+```
 
 ### Phase 4: Implementation Cycle (DAG execution → Gate 4)
 
@@ -316,6 +348,7 @@ Task(
   prompt: "You are a stream executor for the '{stream}' stream.
     PIPELINE_MODE=true
     Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}
+    Progress: milestone={milestone_id}, subtask={milestone_id}.se
 
     Execute these steps SEQUENTIALLY:
 
@@ -473,6 +506,13 @@ For each node with status "running":
 
   Write updated execution_dag.json after each iteration.
 
+  **Project progress to TaskCreate**:
+  After each DAG iteration, read progress and update native task UI:
+  ```bash
+  PROGRESS=$(~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format json 2>/dev/null)
+  ```
+  For each milestone in the progress: create or update a TaskCreate/TaskUpdate entry so the user sees native progress indicators.
+
   If all nodes are completed/skipped/failed → exit loop.
 ```
 
@@ -514,6 +554,11 @@ Update `current_gate = "G4"`.
 > - Or provide corrections.
 
 Record decision in `decisions.json`.
+
+```bash
+~/.claude/bin/progress gate --project-dir "$PROJECT_DIR" --id G4 --status passed || true
+~/.claude/bin/progress decision --project-dir "$PROJECT_DIR" --gate G4 --question "Ship it?" --chosen "$SHIP_DECISION" --decided-by user || true
+```
 
 ### Phase 5: Push + PR (if requested)
 
@@ -594,3 +639,4 @@ Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 - Decisions are logged in `decisions.json` for audit trail
 - Use `stop` at any time to exit
 - One Jira ticket can span multiple worktrees (e.g., `PROJ-123_backend`, `PROJ-123_frontend`)
+- Progress spine (`progress/` directory) provides file-based milestone tracking that survives interruptions — agents write their own status files, orchestrator reads merged state via `bin/progress view --json` and projects onto TaskCreate for user visibility. Legacy `pipeline_state.json` is still written for backward compatibility; `bin/progress migrate` converts old state to new format.

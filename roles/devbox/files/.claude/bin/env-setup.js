@@ -39,3 +39,19 @@ if (missing.length > 0) {
 if (!process.env.GOPATH) {
   process.env.GOPATH = path.join(HOME, ".programming", "go");
 }
+
+// Sandbox-safe Go environment:
+// - GOTOOLCHAIN=local prevents Go from downloading a newer toolchain binary,
+//   which fails in sandbox due to filesystem/network restrictions.
+// - GOCACHE/GOMODCACHE use $TMPDIR (sandbox-writable) instead of default
+//   ~/Library/Caches or ~/.cache which may be outside the write allowlist.
+if (!process.env.GOTOOLCHAIN) {
+  process.env.GOTOOLCHAIN = "local";
+}
+const TMPDIR = process.env.TMPDIR || "/tmp";
+if (!process.env.GOCACHE) {
+  process.env.GOCACHE = path.join(TMPDIR, "go-build-cache");
+}
+if (!process.env.GOMODCACHE) {
+  process.env.GOMODCACHE = path.join(TMPDIR, "go-mod-cache");
+}

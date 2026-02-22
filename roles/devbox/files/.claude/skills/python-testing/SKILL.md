@@ -437,32 +437,32 @@ def test_create_user_validates_email(self, service):
 
 ```bash
 # Run all tests
-pytest
+uv run pytest
 
 # Run with verbose output
-pytest -v
+uv run pytest -v
 
 # Run specific file
-pytest tests/test_service.py
+uv run pytest tests/test_service.py
 
 # Run specific test
-pytest tests/test_service.py::TestUserService::test_get_user_success
+uv run pytest tests/test_service.py::TestUserService::test_get_user_success
 
 # Run with coverage
-pytest --cov=src --cov-report=term-missing
+uv run pytest --cov=src --cov-report=term-missing
 
 # Run only marked tests
-pytest -m slow
-pytest -m "not slow"
+uv run pytest -m slow
+uv run pytest -m "not slow"
 
 # Run with parallel execution
-pytest -n auto
+uv run pytest -n auto
 
 # Stop on first failure
-pytest -x
+uv run pytest -x
 
 # Show local variables in tracebacks
-pytest -l
+uv run pytest -l
 ```
 
 ## Project Tooling

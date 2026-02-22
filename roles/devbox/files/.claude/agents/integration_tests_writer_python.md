@@ -78,7 +78,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "integration: integration tests (require Docker)")
 ```
 
-Run with: `pytest -m integration`
+Run with: `uv run pytest -m integration`
 
 ### testcontainers-python
 
@@ -234,7 +234,7 @@ When integration tests are complete, provide:
 ### 2. Suggested Next Step
 > Integration tests complete.
 >
-> Run with: `pytest -m integration`
+> Run with: `uv run pytest -m integration`
 >
 > **Next**: Run `code-reviewer-python` to review both code and tests.
 >

@@ -283,7 +283,7 @@ def set_email(self, email: str) -> None:
 
 ### Formatting
 
-Format code with `ruff format`:
+Format code with `uv run ruff format`:
 
 ```bash
 # Format changed files

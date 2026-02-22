@@ -102,9 +102,9 @@ See `project-toolchain` skill for full reference.
 **Always** prefix Go commands with cache env vars to avoid sandbox permission errors:
 
 ```bash
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./...
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...
 ```
 
 ---
@@ -347,16 +347,22 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 ### Pre-Flight Verification
 
+**Preflight probe** — Before writing any code, verify the toolchain works:
+```bash
+go version && GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./... 2>&1 | head -5
+```
+If this fails, **STOP immediately** and report the environment issue to the user. Do not proceed with code changes if you cannot verify them.
+
 Build and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion --quick` passes. You still MUST run checks manually and report results.
 
 **Quick Reference Commands (Go):**
 
 | Check | Command |
 |-------|---------|
-| Build | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...` |
-| Test | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./...` |
-| Lint | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...` |
-| Format | `GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" goimports -local {module} -w .` |
+| Build | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...` |
+| Test | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./...` |
+| Lint | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...` |
+| Format | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" goimports -local {module} -w .` |
 
 **Security Scan (MANDATORY):**
 

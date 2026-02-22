@@ -80,9 +80,9 @@ async function main() {
   const project = findProjectRoot(filePath);
   if (!project) {
     process.stderr.write(
-      "[completion-gate] WARN: Could not detect project root. Skipping verification.\n"
+      "BLOCKED: Could not detect project root for SE artifact verification. Cannot write completion artifacts without a verifiable project.\n"
     );
-    process.exit(0);
+    process.exit(2);
   }
 
   // Check that verify-se-completion exists
@@ -90,9 +90,9 @@ async function main() {
   const verifyScript = path.join(HOME, ".claude", "bin", "verify-se-completion");
   if (!fs.existsSync(verifyScript)) {
     process.stderr.write(
-      "[completion-gate] WARN: verify-se-completion not found. Skipping verification.\n"
+      "BLOCKED: verify-se-completion script not found at " + verifyScript + ". Cannot write completion artifacts without verification infrastructure.\n"
     );
-    process.exit(0);
+    process.exit(2);
   }
 
   // Run verification
@@ -164,11 +164,11 @@ async function main() {
       process.exit(2);
     }
 
-    // Timeout or other error — allow with warning
+    // Timeout or other error — block to prevent unverified artifacts
     process.stderr.write(
-      `[completion-gate] WARN: Verification error (${err.message}). Allowing write.\n`
+      `BLOCKED: Verification error (${err.message}). Fix the verification infrastructure before writing completion artifacts.\n`
     );
-    process.exit(0);
+    process.exit(2);
   }
 }
 

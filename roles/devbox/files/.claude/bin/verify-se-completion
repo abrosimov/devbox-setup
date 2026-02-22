@@ -151,11 +151,11 @@ check_build() {
   case "$lang" in
     go)
       if ! has_cmd go; then
-        record_skip "build" "go not installed"
+        record_fail "build" "go not installed but go.mod exists — toolchain broken" "" 1
         return
       fi
       set +e
-      output=$(GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./... 2>&1)
+      output=$(GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./... 2>&1)
       rc=$?
       set -e
       ;;
@@ -218,11 +218,11 @@ check_test() {
   case "$lang" in
     go)
       if ! has_cmd go; then
-        record_skip "test" "go not installed"
+        record_fail "test" "go not installed but go.mod exists — toolchain broken" "" 2
         return
       fi
       set +e
-      output=$(GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./... 2>&1)
+      output=$(GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./... 2>&1)
       rc=$?
       set -e
       ;;
@@ -287,11 +287,11 @@ check_lint() {
   case "$lang" in
     go)
       if ! has_cmd golangci-lint; then
-        record_skip "lint" "golangci-lint not installed"
+        record_fail "lint" "golangci-lint not installed — required for Go projects" "" 3
         return
       fi
       set +e
-      output=$(GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./... 2>&1)
+      output=$(GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./... 2>&1)
       rc=$?
       set -e
       ;;

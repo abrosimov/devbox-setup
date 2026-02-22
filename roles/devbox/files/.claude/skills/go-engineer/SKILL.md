@@ -386,27 +386,29 @@ defer f.Close()  // AFTER error check
 
 ---
 
-## Sandbox Cache
+## Sandbox-Safe Go Commands
 
-Claude Code's sandbox blocks writes outside the project directory and `$TMPDIR`. Go's default cache paths (`~/Library/Caches/go-build/`, `~/go/pkg/mod/`) are outside the sandbox.
+Claude Code's sandbox restricts filesystem writes to the project directory and `$TMPDIR`. Two things break without configuration:
 
-**Always prefix Go commands with cache env vars:**
+1. **Toolchain downloads** — `GOTOOLCHAIN=auto` (Go default since 1.21) tries to download newer Go binaries, which fails in sandbox. Fix: `GOTOOLCHAIN=local`.
+2. **Cache writes** — Go's default cache paths (`~/Library/Caches/go-build/`, `~/go/pkg/mod/`) are outside the sandbox. Fix: redirect to `$TMPDIR`.
+
+**Always prefix Go commands with sandbox-safe env vars:**
 
 ```bash
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test ./...
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go vet ./...
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go vet ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...
 ```
-
-This redirects both caches into `$TMPDIR`, which the sandbox allows. **Never skip this prefix** — without it, Go commands fail with permission errors.
 
 ### If Go Commands Fail in Sandbox
 
-1. Verify you prefixed with `GOCACHE` and `GOMODCACHE` env vars
-2. If still failing with TLS errors: report the exact error to the user
-3. If failing with import errors: this is a real code bug — fix it
-4. **Never** write "sandbox blocks" as an excuse — use the env var prefix and report real errors
+1. Verify you prefixed with `GOTOOLCHAIN=local`, `GOCACHE`, and `GOMODCACHE` env vars
+2. If "go: toolchain required" → locally installed Go is too old for this module's `go` directive. Report the version mismatch to the user — do NOT attempt to download a toolchain.
+3. If TLS/network errors → report the exact error to the user
+4. If import/compile errors → this is a real code bug — fix it
+5. **Never** write "sandbox blocks" as an excuse — use the env var prefix and report real errors
 
 ---
 

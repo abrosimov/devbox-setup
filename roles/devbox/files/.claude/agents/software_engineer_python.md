@@ -68,14 +68,19 @@ See `agent-base-protocol` skill. Use Write/Edit tools, never Bash heredocs.
 
 ---
 
-## MANDATORY: Detect Project Toolchain (before any command)
+## MANDATORY: All Commands via `uv run`
 
-Before running ANY tool command, detect the Python package manager:
-- `uv.lock` exists → prefix ALL commands with `uv run` (e.g. `uv run pytest`, `uv run mypy`)
-- `poetry.lock` exists → prefix with `poetry run`
-- Neither → check `requirements.txt`, use `.venv/bin/python` if venv exists
+Prefix ALL Python commands with `uv run`. No exceptions.
 
-**NEVER run bare `pytest`, `mypy`, `python script.py`, or `pip install`.** See `project-toolchain` skill.
+```
+uv run pytest          # not: pytest
+uv run mypy .          # not: mypy .
+uv run ruff check .    # not: ruff check .
+uv run python script.py  # not: python script.py
+uv add <package>       # not: pip install <package>
+```
+
+**NEVER run bare `pytest`, `mypy`, `python`, `ruff`, or `pip install`.** The `pre-bash-toolchain-guard` hook will block them. If `poetry.lock` exists instead of `uv.lock`, substitute `poetry run` for `uv run`.
 
 ---
 
@@ -270,6 +275,12 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 ---
 
+**Preflight probe** — Before writing any code, verify the toolchain works:
+```bash
+uv run python --version && uv run ruff --version
+```
+If this fails, **STOP immediately** and report the environment issue to the user. Do not proceed with code changes if you cannot verify them.
+
 ## ⛔ Pre-Flight Verification (BLOCKING — Must Pass Before Completion)
 
 Build and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion --quick` passes. You still MUST run checks manually and report results.
@@ -327,10 +338,10 @@ Before completing, output this summary:
 | Check | Status | Notes |
 |-------|--------|-------|
 | `.venv` exists | PASS / FAIL | |
-| `mypy --strict` | PASS / FAIL | |
-| `pytest` | PASS / FAIL | X tests, Y passed |
-| `ruff check` | PASS / WARN / FAIL | |
-| `ruff format` | PASS | |
+| `uv run mypy --strict` | PASS / FAIL | |
+| `uv run pytest` | PASS / FAIL | X tests, Y passed |
+| `uv run ruff check` | PASS / WARN / FAIL | |
+| `uv run ruff format` | PASS | |
 | Security scan | CLEAR / REVIEW | [findings if any] |
 | Smoke test | PASS / N/A | [what was tested] |
 

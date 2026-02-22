@@ -292,6 +292,16 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 ---
 
+**Preflight probe** — Before writing any code, verify the toolchain works:
+```bash
+node --version && pnpm --version
+```
+If a build script exists in package.json:
+```bash
+pnpm exec tsc --version 2>/dev/null || npx tsc --version
+```
+If this fails, **STOP immediately** and report the environment issue to the user. Do not proceed with code changes if you cannot verify them.
+
 ### Pre-Flight Verification
 
 Build and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion --quick` passes. You still MUST run checks manually and report results.

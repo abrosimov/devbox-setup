@@ -205,7 +205,6 @@ ls uv.lock poetry.lock requirements.txt 2>/dev/null
 |-------------|----------------|
 | `uv.lock` | `uv run pytest` |
 | `poetry.lock` | `poetry run pytest` |
-| `requirements.txt` only | `pytest` (after `pip install -r requirements.txt`) |
 
 ## What to test
 
@@ -636,12 +635,11 @@ async def test_concurrent_operations():
 |--------------|-----------|-------------------|
 | uv | `uv run pytest tests/ -v` | `uv run pytest --cov=src --cov-report=term-missing` |
 | poetry | `poetry run pytest tests/ -v` | `poetry run pytest --cov=src --cov-report=term-missing` |
-| pip | `pytest tests/ -v` | `pytest --cov=src --cov-report=term-missing` |
 
-1. Run tests for modified files: `[uv run] pytest tests/path/to/test_file.py -v`
-2. Run specific test: `[uv run] pytest tests/path/to/test_file.py::test_name -v`
-3. Run all tests: `[uv run] pytest`
-4. Check coverage: `[uv run] pytest --cov=src --cov-report=term-missing`
+1. Run tests for modified files: `uv run pytest tests/path/to/test_file.py -v`
+2. Run specific test: `uv run pytest tests/path/to/test_file.py::test_name -v`
+3. Run all tests: `uv run pytest`
+4. Check coverage: `uv run pytest --cov=src --cov-report=term-missing`
 5. **ALL tests MUST pass before completion** — If ANY test fails (new or existing), you MUST fix it immediately. NEVER leave failed tests with notes like "can be fixed later" or "invalid test data". Test failures indicate bugs that must be resolved now.
 
 ## Python-specific guidelines
@@ -947,7 +945,7 @@ modified: tests/test_existing.py
 
 ### 3. Test Execution
 ```bash
-pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 ### Completion Format
@@ -994,7 +992,7 @@ Before completing, verify:
 - [ ] Repository/storage layer code is tested with mocked session/collection
 
 **Execution:**
-- [ ] Run tests using project tooling: `uv run pytest` / `poetry run pytest` / `pytest`
-- [ ] Check coverage: `[uv run] pytest --cov=src --cov-report=term-missing`
+- [ ] Run tests using project tooling: `uv run pytest` / `poetry run pytest`
+- [ ] Check coverage: `uv run pytest --cov=src --cov-report=term-missing`
 - [ ] **ALL tests pass** — Zero failures, zero skipped tests marked TODO, all assertions valid
-- [ ] Used correct command prefix for project tooling (uv/poetry/pip)
+- [ ] Used correct command prefix for project tooling (uv/poetry)

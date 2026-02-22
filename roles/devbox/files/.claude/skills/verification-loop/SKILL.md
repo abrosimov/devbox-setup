@@ -22,7 +22,7 @@ Compile/transpile passes without errors.
 
 ### Go
 ```bash
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
 ```
 
 **Failures**: syntax errors, import cycles, missing dependencies.
@@ -36,7 +36,7 @@ npm run build  # Full build (transpile + bundle)
 
 ### Python
 ```bash
-python -m py_compile src/**/*.py  # Syntax check
+uv run python -m py_compile src/**/*.py  # Syntax check
 # or
 uv build  # Build wheel/sdist
 ```
@@ -56,7 +56,7 @@ tsc --noEmit
 
 ### Python (mypy)
 ```bash
-mypy src/
+uv run mypy src/
 ```
 
 **Configuration** (`pyproject.toml`):
@@ -70,7 +70,7 @@ disallow_untyped_defs = true
 
 ### Go
 ```bash
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go vet ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go vet ./...
 ```
 
 **Checks**: unreachable code, printf format errors, mutex misuse.
@@ -83,7 +83,7 @@ Style and correctness rules.
 
 ### Go
 ```bash
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run
 ```
 
 **Checks**: deadcode, errcheck, ineffassign, staticcheck, unused.
@@ -102,7 +102,7 @@ linters:
 
 ### Python
 ```bash
-ruff check .
+uv run ruff check .
 ```
 
 **Checks**: unused imports, undefined variables, style violations (PEP 8).
@@ -138,7 +138,7 @@ All tests pass with coverage.
 
 ### Go
 ```bash
-GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -v -race -coverprofile=coverage.out ./...
+GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -v -race -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
 
@@ -149,7 +149,7 @@ go tool cover -html=coverage.out
 
 ### Python
 ```bash
-pytest --cov=src --cov-report=html
+uv run pytest --cov=src --cov-report=html
 ```
 
 **Configuration** (`pyproject.toml`):
@@ -290,7 +290,7 @@ git ls-files | grep -E '\.pyc$|node_modules|\.DS_Store|coverage|dist'
 goimports -local $(head -1 go.mod | awk '{print $2}') -w .
 
 # Python
-ruff format .
+uv run ruff format .
 
 # TypeScript
 prettier --write .

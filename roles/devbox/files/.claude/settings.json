@@ -6,7 +6,7 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
-    "excludedCommands": ["docker", "docker-compose", "podman"],
+    "excludedCommands": ["docker", "docker-compose", "podman", "git"],
     "allowUnsandboxedCommands": false,
     "network": {
       "allowedDomains": [

@@ -63,9 +63,9 @@ mcp_docker_servers:
 # MCP servers using wrapper scripts (dynamic path resolution)
 mcp_script_servers:
   - name: memory-upstream
-    command: "{{ ansible_env.HOME }}/.claude/bin/memory-upstream"
+    command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-upstream"
   - name: memory-downstream
-    command: "{{ ansible_env.HOME }}/.claude/bin/memory-downstream"
+    command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-downstream"
 
 # MCP servers accessed via HTTP (hosted remotely)
 mcp_http_servers:

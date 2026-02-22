@@ -13,6 +13,8 @@
 #   3  Lint failed
 #   4  Agent output file empty or missing
 #   5  Multiple checks failed
+#   6  Docker lint failed
+#   7  Smoke test failed
 
 set -euo pipefail
 
@@ -54,6 +56,8 @@ Exit codes:
   3  Lint failed
   4  Agent output file empty or missing
   5  Multiple checks failed
+  6  Docker lint failed
+  7  Smoke test failed
 EOF
   exit 0
 }
@@ -80,6 +84,8 @@ result_output_status="N_A"; result_output_detail=""; result_output_err=""; resul
 result_build_status="N_A";  result_build_detail="";  result_build_err="";  result_build_code=0
 result_test_status="N_A";   result_test_detail="";   result_test_err="";   result_test_code=0
 result_lint_status="N_A";   result_lint_detail="";   result_lint_err="";   result_lint_code=0
+result_dockerlint_status="N_A"; result_dockerlint_detail=""; result_dockerlint_err=""; result_dockerlint_code=0
+result_smoke_status="N_A";      result_smoke_detail="";      result_smoke_err="";      result_smoke_code=0
 
 FAILURE_CODES=""  # space-separated list of exit codes for failed checks
 
@@ -343,7 +349,106 @@ check_lint() {
   fi
 }
 
-# --- Phase 5: Report ---
+# --- Phase 5: Docker Lint ---
+
+check_dockerlint() {
+  local errors="" output="" rc=0
+
+  # Find Dockerfiles (maxdepth 3)
+  local dockerfiles
+  dockerfiles=$(find . -maxdepth 3 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.dockerfile' \) 2>/dev/null || true)
+
+  # Find compose files
+  local composefiles
+  composefiles=$(find . -maxdepth 3 \( -name 'docker-compose.yml' -o -name 'docker-compose.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \) 2>/dev/null || true)
+
+  if [[ -z "$dockerfiles" && -z "$composefiles" ]]; then
+    record_skip "dockerlint" "no Docker files found"
+    return
+  fi
+
+  # Hadolint on Dockerfiles
+  if [[ -n "$dockerfiles" ]]; then
+    if has_cmd hadolint; then
+      while IFS= read -r df; do
+        [[ -z "$df" ]] && continue
+        set +e
+        output=$(hadolint "$df" 2>&1)
+        rc=$?
+        set -e
+        if [[ $rc -ne 0 ]]; then
+          errors="${errors}${output}"$'\n'
+        fi
+      done <<< "$dockerfiles"
+    else
+      if [[ -z "$composefiles" ]]; then
+        record_skip "dockerlint" "hadolint not installed"
+        return
+      fi
+      # Continue to check compose files with dclint
+    fi
+  fi
+
+  # DCLint on compose files
+  if [[ -n "$composefiles" ]]; then
+    if has_cmd dclint; then
+      set +e
+      output=$(dclint . 2>&1)
+      rc=$?
+      set -e
+      if [[ $rc -ne 0 ]]; then
+        errors="${errors}${output}"$'\n'
+      fi
+    elif [[ -z "$dockerfiles" ]] || ! has_cmd hadolint; then
+      record_skip "dockerlint" "neither hadolint nor dclint installed"
+      return
+    fi
+  fi
+
+  if [[ -n "$errors" ]]; then
+    record_fail "dockerlint" "lint issues found" "$errors" 6
+  else
+    record_pass "dockerlint" "exit 0"
+  fi
+}
+
+# --- Phase 6: Smoke Test ---
+
+check_smoke() {
+  local output="" rc=0
+
+  # Convention 1: make smoke target
+  if make -qn smoke >/dev/null 2>&1; then
+    set +e
+    output=$(make smoke 2>&1)
+    rc=$?
+    set -e
+    if [[ $rc -eq 0 ]]; then
+      record_pass "smoke" "make smoke exit 0"
+    else
+      record_fail "smoke" "make smoke exit $rc" "$output" 7
+    fi
+    return
+  fi
+
+  # Convention 2: scripts/smoke-test.sh
+  if [[ -x "scripts/smoke-test.sh" ]]; then
+    set +e
+    output=$(./scripts/smoke-test.sh 2>&1)
+    rc=$?
+    set -e
+    if [[ $rc -eq 0 ]]; then
+      record_pass "smoke" "scripts/smoke-test.sh exit 0"
+    else
+      record_fail "smoke" "scripts/smoke-test.sh exit $rc" "$output" 7
+    fi
+    return
+  fi
+
+  record_skip "smoke" "no smoke test convention found"
+}
+
+# --- Phase 7: Report ---
 
 print_check_line() {
   local label="$1" check="$2"
@@ -381,9 +486,11 @@ print_report() {
   print_check_line "Build"  "build"
   print_check_line "Test"   "test"
   print_check_line "Lint"   "lint"
+  print_check_line "Docker" "dockerlint"
+  print_check_line "Smoke"  "smoke"
 
   # Count failures
-  for check in output build test lint; do
+  for check in output build test lint dockerlint smoke; do
     local s
     eval "s=\$result_${check}_status"
     if [[ "$s" == "FAIL" ]]; then
@@ -406,7 +513,7 @@ print_json_report() {
   local fail_count=0
   local checks=""
 
-  for check in output build test lint; do
+  for check in output build test lint dockerlint smoke; do
     local s d e
     eval "s=\$result_${check}_status"
     eval "d=\$result_${check}_detail"
@@ -508,7 +615,15 @@ if [[ "$quick" != "true" ]]; then
 fi
 check_lint "$lang"
 
-# Phase 5: Report
+# Phase 5: Docker Lint (always)
+check_dockerlint
+
+# Phase 6: Smoke Test (skip in quick mode)
+if [[ "$quick" != "true" ]]; then
+  check_smoke
+fi
+
+# Phase 7: Report
 if [[ "$json_output" == "true" ]]; then
   print_json_report
 else

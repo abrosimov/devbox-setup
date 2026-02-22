@@ -24,8 +24,12 @@ export PATH="$PATH:{{ p }}"
 [ -d "{{ item.check }}" ] && export PATH="{{ item.add }}:$PATH"
 {% endfor %}
 
-# Go cache: redirect to sandbox-writable paths inside Claude Code
+# Toolchain caches: redirect to sandbox-writable paths inside Claude Code
 if [ -n "$CLAUDECODE" ]; then
   export GOCACHE="${TMPDIR}/go-build-cache"
   export GOMODCACHE="${TMPDIR}/go-mod-cache"
+  export UV_CACHE_DIR="${TMPDIR}/uv-cache"
+  export RUFF_CACHE_DIR="${TMPDIR}/ruff-cache"
+  export MYPY_CACHE_DIR="${TMPDIR}/mypy-cache"
+  export NPM_CONFIG_CACHE="${TMPDIR}/npm-cache"
 fi

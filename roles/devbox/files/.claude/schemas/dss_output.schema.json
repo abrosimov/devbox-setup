@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dss_output.schema.json",
+  "title": "DSS Output",
+  "description": "Structured output for the Diverge-Synthesize-Select protocol. Records problem statement, complexity calibration, strategy axes, generated options, evaluation, synthesis, and user selection.",
+  "type": "object",
+  "required": ["problem_statement", "complexity", "strategy_axes", "options", "evaluation", "selected"],
+  "properties": {
+    "problem_statement": {
+      "type": "string",
+      "description": "One-sentence description of the core design problem."
+    },
+    "complexity": {
+      "type": "object",
+      "required": ["tier", "n_options", "sub_factors"],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": ["tier_3_narrow", "tier_3_wide"],
+          "description": "Tier 3 sub-classification that triggered DSS."
+        },
+        "n_options": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 10,
+          "description": "Calibrated number of options to generate (base 5, +1 per high sub-factor, capped at 10)."
+        },
+        "sub_factors": {
+          "type": "object",
+          "required": ["reversibility", "blast_radius", "novelty", "ambiguity"],
+          "properties": {
+            "reversibility": { "$ref": "#/$defs/sub_factor_level" },
+            "blast_radius": { "$ref": "#/$defs/sub_factor_level" },
+            "novelty": { "$ref": "#/$defs/sub_factor_level" },
+            "ambiguity": { "$ref": "#/$defs/sub_factor_level" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "strategy_axes": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["name", "values"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the orthogonal dimension (e.g., 'data flow', 'coupling level')."
+          },
+          "values": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "string" },
+            "description": "Possible positions along this axis."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Orthogonal dimensions identified before option generation. Each axis has 2+ possible values."
+    },
+    "options": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "axis_position", "summary"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^OPT-[0-9]+$",
+            "description": "Option identifier (e.g., OPT-1)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Short name for the option."
+          },
+          "axis_position": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Map of axis name to the value this option occupies on that axis."
+          },
+          "summary": {
+            "type": "string",
+            "description": "One-sentence summary of the approach."
+          },
+          "differentiator": {
+            "type": "string",
+            "description": "What makes this option genuinely different from others."
+          },
+          "tag": {
+            "type": "string",
+            "enum": ["boring", "unconventional", "standard"],
+            "description": "Option category tag. At least one 'boring' and one 'unconventional' required across all options."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "required": ["criteria", "top_candidates", "synthesis"],
+      "properties": {
+        "criteria": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "object",
+            "required": ["name", "weight"],
+            "properties": {
+              "name": { "type": "string" },
+              "weight": {
+                "type": "string",
+                "enum": ["high", "medium", "low"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Evaluation criteria with weights. Must include simplicity, consistency, reversibility, testability at minimum."
+        },
+        "eliminated": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["option_id", "reason"],
+            "properties": {
+              "option_id": { "type": "string" },
+              "reason": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "description": "Options eliminated and why."
+        },
+        "top_candidates": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "required": ["option_id", "scores", "strengths", "weaknesses"],
+            "properties": {
+              "option_id": { "type": "string" },
+              "scores": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": ["strong", "adequate", "weak"]
+                },
+                "description": "Map of criterion name to score."
+              },
+              "strengths": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "weaknesses": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "synthesis": {
+          "type": "object",
+          "required": ["viable", "description"],
+          "properties": {
+            "viable": {
+              "type": "boolean",
+              "description": "Whether a synthesis of top candidates is viable."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of the synthesis option, or why synthesis is not viable."
+            },
+            "source_options": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Option IDs whose strengths were combined (when viable)."
+            },
+            "conflicts": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Incompatibilities that prevented synthesis (when not viable)."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "selected": {
+      "type": "object",
+      "required": ["choice", "rationale", "decided_by"],
+      "properties": {
+        "choice": {
+          "type": "string",
+          "description": "Option ID or 'synthesis' or 'custom' or null (if awaiting decision)."
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this option was selected."
+        },
+        "decided_by": {
+          "type": "string",
+          "enum": ["user", "agent", "pending"],
+          "description": "Who made the selection."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sub_factor_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    }
+  }
+}

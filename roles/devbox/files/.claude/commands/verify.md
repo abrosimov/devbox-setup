@@ -19,7 +19,7 @@ Unlike `/review` (which spawns a code reviewer agent for deep analysis), `/verif
 Check for project markers (check ALL — a project may have multiple):
 
 ```bash
-ls go.mod pyproject.toml uv.lock poetry.lock requirements.txt package.json pnpm-lock.yaml package-lock.json yarn.lock tsconfig.json next.config.* 2>/dev/null
+ls go.mod pyproject.toml uv.lock poetry.lock requirements.txt package.json pnpm-lock.yaml package-lock.json yarn.lock tsconfig.json next.config.* Dockerfile docker-compose.yml compose.yml 2>/dev/null
 ```
 
 Classify stack AND toolchain:
@@ -129,6 +129,23 @@ pnpm run lint 2>&1
 npm run lint 2>&1
 ```
 
+#### Check 3b: Docker Lint (skip if `/verify quick` or no Docker files)
+
+Only run if Dockerfiles or compose files were detected in Step 1.
+
+**Dockerfiles (hadolint):**
+```bash
+# Find and lint all Dockerfiles (maxdepth 3)
+find . -maxdepth 3 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.dockerfile' \) -exec hadolint {} + 2>&1
+```
+
+**Compose files (dclint):**
+```bash
+dclint . 2>&1
+```
+
+Skip gracefully if hadolint or dclint are not installed.
+
 #### Check 4: Test Suite (skip if `/verify quick`)
 
 **Go:**
@@ -155,6 +172,17 @@ pnpm test 2>&1
 ```bash
 npm test -- --watchAll=false 2>&1
 ```
+
+#### Check 4b: Smoke Test (skip if `/verify quick`)
+
+Run if a smoke test convention is detected:
+
+| Convention | Detection | Command |
+|------------|-----------|---------|
+| Makefile target | `make -qn smoke` succeeds | `make smoke` |
+| Script | `scripts/smoke-test.sh` is executable | `./scripts/smoke-test.sh` |
+
+Skip if neither convention found (not an error).
 
 #### Check 5: Debug Statement Scan (skip if `/verify quick`)
 
@@ -200,7 +228,9 @@ Present a clear PASS/FAIL report:
 | Build | PASS / FAIL |
 | Types | PASS / X errors / SKIP |
 | Lint | PASS / X issues / SKIP |
+| Docker Lint | PASS / X issues / SKIP |
 | Tests | X/Y passed, Z% coverage / SKIP |
+| Smoke Test | PASS / FAIL / SKIP |
 | Debug statements | Clean / X found |
 | Secrets | Clean / X found (pre-pr only) |
 

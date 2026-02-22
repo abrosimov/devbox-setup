@@ -3,7 +3,7 @@ name: domain-expert
 description: Domain expert who challenges PM assumptions, validates requirements against reality, and creates verified domain models. Acts as reality check between TPM and Implementation Planner.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
 model: opus
-skills: philosophy, config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking
+skills: philosophy, config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-02-10
 ---
 

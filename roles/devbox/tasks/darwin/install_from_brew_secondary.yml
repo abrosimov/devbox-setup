@@ -28,6 +28,7 @@
       - tree # Directory tree — used by agents for codebase exploration
       - cloc # Count lines of code by language
       - yq # YAML/JSON/XML processor (like jq for YAML)
+      - hadolint # Dockerfile linter — used by verify-se-completion and post-edit-lint
     state: present
 
 - name: "Install Homebrew casks"
@@ -58,7 +59,15 @@
     global: true
     state: present
   environment:
-    PATH: "/opt/homebrew/bin:{{ ansible_env.PATH }}"
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+
+- name: "Install dclint (Docker Compose linter)"
+  community.general.npm:
+    name: dclint
+    global: true
+    state: present
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
 
 # Go tools moved to install_from_go.yml (variable-driven, per-tool idempotency)
 # Python tools moved to install_from_uv.yml (variable-driven, per-tool idempotency)

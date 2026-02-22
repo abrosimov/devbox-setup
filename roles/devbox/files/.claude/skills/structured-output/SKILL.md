@@ -35,6 +35,7 @@ Machine-readable JSON Schema files live in `schemas/`:
 | Stream Completion | `schemas/stream_completion.schema.json` | Stream executors (Phase 4 DAG) |
 | Execution DAG | `schemas/execution_dag.schema.json` | Full-cycle orchestrator |
 | Pipeline State | `schemas/pipeline_state.schema.json` | Full-cycle orchestrator |
+| DSS Output | `schemas/dss_output.schema.json` | `/options` command, DSS protocol |
 
 These files are the **authoritative** schema definitions. The inline JSON examples below are derived from them. When in doubt, the schema file wins.
 
@@ -299,6 +300,14 @@ See `ddd-modeling` skill for the full schema. Summary of top-level fields:
 ```
 
 > **Downstream usage**: Frontend Engineer and Code Reviewer agents read `figma_source` to access the Figma file directly via `get_design_context` and `get_screenshot` for implementation verification.
+
+### DSS — `dss_output.json`
+
+Written by the Diverge-Synthesize-Select protocol (invoked via `/options` or when agents encounter Tier 3 Wide decisions). See `schemas/dss_output.schema.json` for the authoritative definition.
+
+Top-level fields: `problem_statement`, `complexity` (tier, n_options, sub_factors), `strategy_axes` (2-5 orthogonal dimensions), `options` (N generated, each with axis position), `evaluation` (criteria, eliminated, top_candidates, synthesis), `selected` (choice, rationale, decided_by).
+
+> **Downstream usage**: Implementation Planner and SE agents read `selected.choice` to know which approach was approved. Full option analysis persists in the JSON for audit.
 
 ### API Designer — `api_design_output.json`
 

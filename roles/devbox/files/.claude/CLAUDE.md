@@ -49,6 +49,10 @@ After presenting options/analysis, always end with:
 
 > **[Awaiting your decision]** - Reply with your choice or ask questions.
 
+### Git Commits
+
+Never add `Co-Authored-By` trailers to commit messages.
+
 ---
 
 ## Code Projects Only

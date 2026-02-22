@@ -119,6 +119,7 @@ Use `/init-workflow` to explicitly set up the workflow config:
 | `/validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
 | `/checkpoint` | Save or restore context across sessions/compaction | At logical boundaries, after milestones |
 | `/verify` | Run pre-PR quality gate (build, typecheck, lint, test, debug scan) | Before `/review` or PR creation |
+| `/options` | Generate diverse solution options via DSS (Diverge-Synthesize-Select) | Before design decisions with wide scope |
 | `/learn` | Extract a reusable pattern from current session | After solving non-trivial problems |
 
 Each command:

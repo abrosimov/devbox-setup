@@ -3,7 +3,7 @@ name: designer
 description: UI/UX Designer who creates design systems, layout specifications, component specifications, and accessibility plans. Creates FigJam diagrams for user flows and component states. Acts as the bridge between planning and frontend engineering.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__figma, mcp__storybook
 model: opus
-skills: philosophy, config, ui-design, agent-communication, structured-output, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, agent-base-protocol
+skills: philosophy, config, ui-design, agent-communication, structured-output, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, agent-base-protocol, diverge-synthesize-select
 updated: 2026-02-12
 ---
 

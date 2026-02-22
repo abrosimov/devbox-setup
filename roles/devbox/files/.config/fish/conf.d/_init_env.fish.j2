@@ -10,8 +10,12 @@ if type -q mise
   mise activate fish | source
 end
 
-# Go cache: redirect to sandbox-writable paths inside Claude Code
+# Toolchain caches: redirect to sandbox-writable paths inside Claude Code
 if set -q CLAUDECODE
   set -gx GOCACHE "$TMPDIR/go-build-cache"
   set -gx GOMODCACHE "$TMPDIR/go-mod-cache"
+  set -gx UV_CACHE_DIR "$TMPDIR/uv-cache"
+  set -gx RUFF_CACHE_DIR "$TMPDIR/ruff-cache"
+  set -gx MYPY_CACHE_DIR "$TMPDIR/mypy-cache"
+  set -gx NPM_CONFIG_CACHE "$TMPDIR/npm-cache"
 end

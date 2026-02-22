@@ -1,17 +1,17 @@
 ---
 name: verification-loop
 description: >
-  6-phase continuous verification methodology. Triggers on: verify, validation loop, pre-commit checks, quality assurance.
+  8-phase continuous verification methodology. Triggers on: verify, validation loop, pre-commit checks, quality assurance.
 ---
 
 # Verification Loop
 
-## 6-Phase Methodology
+## 8-Phase Methodology
 
 Continuous verification across the development lifecycle.
 
 ```
-Build → Type Check → Lint → Test → Security → Diff Review
+Build → Type Check → Lint → Docker Lint → Test → Smoke → Security → Diff Review
 ```
 
 Each phase builds on the previous (no point linting if build fails).
@@ -130,7 +130,32 @@ eslint .
 }
 ```
 
-**When to run**: After type check passes, before tests.
+**When to run**: After type check passes, before Docker lint.
+
+## Phase 3b: Docker Lint
+
+Static linting of Docker artifacts — no daemon required.
+
+### Dockerfiles (hadolint)
+
+```bash
+hadolint Dockerfile
+hadolint Dockerfile.prod
+```
+
+**When to run**: When Dockerfiles exist in the project (any file matching `Dockerfile`, `Dockerfile.*`, or `*.dockerfile`).
+
+### Compose Files (dclint)
+
+```bash
+dclint .
+```
+
+**When to run**: When compose files exist (`docker-compose.yml`, `docker-compose.yaml`, `compose.yml`, `compose.yaml`).
+
+**Skip conditions**: Tool not installed or no Docker files found. Both degrade gracefully.
+
+**When to run**: After lint passes, before tests.
 
 ## Phase 4: Test
 
@@ -179,7 +204,34 @@ module.exports = {
 };
 ```
 
-**When to run**: After lint passes, before security check.
+**When to run**: After Docker lint passes, before smoke test.
+
+## Phase 4b: Smoke Test
+
+Runtime verification that containers start and respond correctly.
+
+### Convention Detection
+
+| Convention | Detection | Command |
+|------------|-----------|---------|
+| Makefile target | `make -qn smoke` succeeds | `make smoke` |
+| Script | `scripts/smoke-test.sh` is executable | `./scripts/smoke-test.sh` |
+
+### Build-Boot-Probe-Kill Pattern
+
+Standard smoke test structure:
+
+```bash
+docker compose build
+docker compose up -d
+trap 'docker compose down' EXIT
+sleep 5
+curl -sf http://localhost:8080/health
+```
+
+**Skip conditions**: Neither convention found (not an error). Also skipped in `--quick` mode.
+
+**When to run**: After tests pass, before security check.
 
 ## Phase 5: Security
 
@@ -408,7 +460,9 @@ Run verification loop:
 | Build | Syntax error | Fix immediately (blocks everything) |
 | Type Check | Type mismatch | Fix immediately (blocks runtime safety) |
 | Lint | Style violation | Fix the code (suppression requires user approval — see `lint-discipline` skill) |
+| Docker Lint | Dockerfile/compose issue | Fix the Docker file (pin versions, fix syntax) |
 | Test | Test failure | Fix or update test (if behaviour intentional) |
+| Smoke Test | Container fails to start/respond | Fix entrypoint, missing modules, or health check |
 | Security | Secret detected | Remove secret, rotate credentials |
 | Diff Review | Unintended change | Revert or split into separate commit |
 

@@ -41,6 +41,8 @@ const TOOLS = [
   { name: "helm", level: "important", install: "brew install helm" },
   { name: "mockery", level: "important", install: "go install github.com/vektra/mockery/v2@latest" },
   { name: "sqlc", level: "important", install: "go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest" },
+  { name: "hadolint", level: "important", install: "brew install hadolint" },
+  { name: "dclint", level: "important", install: "npm install -g dclint" },
 
   // Nice to have — installed but not essential for agent workflow
   { name: "rg", level: "optional", install: "brew install ripgrep" },

@@ -125,7 +125,7 @@ Decisions with architectural impact or significant trade-offs.
 - Interface definition
 - New struct design
 
-**Action:** MANDATORY full exploration before implementation. See "Tier 3 Exploration Protocol" below.
+**Action:** MANDATORY full exploration before implementation. See "Tier 3 Exploration Protocol" below. For **wide-scope** Tier 3 decisions (architecture, API design, multi-component patterns), use the full DSS protocol from `diverge-synthesize-select` skill instead — it adds strategy-axis diversity, explicit synthesis, and complexity-calibrated option counts.
 
 ---
 
@@ -137,6 +137,8 @@ Decisions with architectural impact or significant trade-offs.
 Write ONE sentence describing the core problem. If you cannot articulate it clearly, the problem is not understood — ask for clarification.
 
 ### Step 2: Generate 5-7 Distinct Approaches
+
+**Diversity check:** Before listing options, identify 2+ orthogonal strategy axes (dimensions along which solutions genuinely differ). If options only vary on surface details but occupy the same axis positions, collapse them and generate truly different alternatives. See `diverge-synthesize-select` skill for the full axis-based approach.
 
 **Rules:**
 - Each approach must be **genuinely different** (not variations of same idea)
@@ -485,3 +487,57 @@ Each row in the Pre-Flight verification table must include:
 - The exit code
 - For failures: the first 5 lines of error output
 - Status must reflect the actual exit code, not the agent's opinion
+
+---
+
+## TDD RED-GREEN Evidence Protocol
+
+### When This Applies
+
+**Mandatory** when writing NEW tests (unit or integration). Does not apply to fixing existing tests or non-test code changes.
+
+### Protocol
+
+When adding a new test:
+
+1. **RED phase**: Write the test FIRST. Run it. It MUST fail (proving it tests something real).
+2. **Implement**: Write the production code to make the test pass.
+3. **GREEN phase**: Run the test again. It MUST pass.
+
+### Evidence Format
+
+Each new test must include RED-GREEN evidence in the work log:
+
+```
+### Test: test_name
+**RED** (before implementation):
+  Command: <exact command>
+  Exit code: <non-zero>
+  Output (first 5 lines):
+    <output>
+
+**GREEN** (after implementation):
+  Command: <exact command>
+  Exit code: 0
+  Output (first 5 lines):
+    <output>
+```
+
+### Forbidden Shortcuts
+
+The following are NOT acceptable as RED evidence:
+
+- "test would fail because the function doesn't exist yet"
+- Showing only the GREEN result
+- RED from a compilation error (the test itself must compile — the assertion must fail)
+- "verified by inspection that test covers the requirement"
+
+### When RED Is Not Possible
+
+If a test cannot meaningfully fail first (e.g., testing existing behaviour that already works), document why:
+
+```
+### Test: test_existing_behaviour
+**RED skip reason**: Testing existing correct behaviour — no implementation change needed.
+**GREEN**: Command: ..., Exit code: 0
+```

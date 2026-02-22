@@ -8,7 +8,7 @@
     cmd: "uv tool install {{ item }}"
     creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin/{{ item }}"
   environment:
-    PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin:{{ ansible_env.PATH }}"
+    PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin:{{ ansible_facts['env']['PATH'] }}"
   loop: "{{ devbox_packages.uv_tools }}"
   loop_control:
     label: "{{ item }}"

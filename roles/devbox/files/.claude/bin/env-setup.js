@@ -40,18 +40,34 @@ if (!process.env.GOPATH) {
   process.env.GOPATH = path.join(HOME, ".programming", "go");
 }
 
-// Sandbox-safe Go environment:
-// - GOTOOLCHAIN=local prevents Go from downloading a newer toolchain binary,
-//   which fails in sandbox due to filesystem/network restrictions.
-// - GOCACHE/GOMODCACHE use $TMPDIR (sandbox-writable) instead of default
-//   ~/Library/Caches or ~/.cache which may be outside the write allowlist.
+// Sandbox-safe toolchain environment:
+// Redirect caches to $TMPDIR (sandbox-writable) instead of defaults
+// under ~/.cache or ~/Library/Caches which are outside the write allowlist.
+const TMPDIR = process.env.TMPDIR || "/tmp";
+
+// Go
 if (!process.env.GOTOOLCHAIN) {
   process.env.GOTOOLCHAIN = "local";
 }
-const TMPDIR = process.env.TMPDIR || "/tmp";
 if (!process.env.GOCACHE) {
   process.env.GOCACHE = path.join(TMPDIR, "go-build-cache");
 }
 if (!process.env.GOMODCACHE) {
   process.env.GOMODCACHE = path.join(TMPDIR, "go-mod-cache");
+}
+
+// Python (uv, ruff, mypy)
+if (!process.env.UV_CACHE_DIR) {
+  process.env.UV_CACHE_DIR = path.join(TMPDIR, "uv-cache");
+}
+if (!process.env.RUFF_CACHE_DIR) {
+  process.env.RUFF_CACHE_DIR = path.join(TMPDIR, "ruff-cache");
+}
+if (!process.env.MYPY_CACHE_DIR) {
+  process.env.MYPY_CACHE_DIR = path.join(TMPDIR, "mypy-cache");
+}
+
+// Node (npm/npx)
+if (!process.env.NPM_CONFIG_CACHE) {
+  process.env.NPM_CONFIG_CACHE = path.join(TMPDIR, "npm-cache");
 }

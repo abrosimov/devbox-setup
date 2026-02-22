@@ -49,15 +49,38 @@ GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:
 
 These env vars are also set automatically by `~/.claude/bin/env-setup.js` for hook scripts.
 
-### Python (uv)
+### Python (uv, ruff, mypy)
 
-uv manages its own cache and virtual environment. No special sandbox configuration needed — `uv run`, `uv sync`, `uv add` work out of the box.
+Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist.
+
+| Default Behaviour | Problem | Fix |
+|---|---|---|
+| `UV_CACHE_DIR=~/.cache/uv` | Outside sandbox write allowlist | `UV_CACHE_DIR="$TMPDIR/uv-cache"` |
+| `RUFF_CACHE_DIR=~/.cache/ruff` | Outside sandbox write allowlist | `RUFF_CACHE_DIR="$TMPDIR/ruff-cache"` |
+| `MYPY_CACHE_DIR=.mypy_cache` | Usually fine (CWD), but set explicitly for consistency | `MYPY_CACHE_DIR="$TMPDIR/mypy-cache"` |
+
+**Standard prefix for Python commands:**
+```bash
+UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run pytest
+UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run mypy --strict src/
+RUFF_CACHE_DIR="${TMPDIR:-/tmp}/ruff-cache" ruff check .
+```
 
 If bare `python`/`pytest`/`mypy` fail, use the `uv run` prefix (enforced by `pre-bash-toolchain-guard` hook).
 
-### Node (pnpm/npm)
+### Node (npm/pnpm)
 
-Node tools use `node_modules/` inside the project directory. No special sandbox configuration needed.
+npm caches to `~/.npm/` by default, which is outside the sandbox write allowlist. `node_modules/` is fine (inside CWD).
+
+| Default Behaviour | Problem | Fix |
+|---|---|---|
+| `NPM_CONFIG_CACHE=~/.npm` | Outside sandbox write allowlist | `NPM_CONFIG_CACHE="$TMPDIR/npm-cache"` |
+
+**Standard prefix for Node commands:**
+```bash
+NPM_CONFIG_CACHE="${TMPDIR:-/tmp}/npm-cache" npx vitest
+NPM_CONFIG_CACHE="${TMPDIR:-/tmp}/npm-cache" npm install
+```
 
 If `npx`/`pnpm exec` fail with network errors, check that `registry.npmjs.org` is in `allowedDomains`.
 

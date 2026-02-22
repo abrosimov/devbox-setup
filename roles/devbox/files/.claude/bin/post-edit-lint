@@ -74,6 +74,44 @@ async function main() {
   const fileDir = path.dirname(filePath);
   const fileName = path.basename(filePath);
 
+  // Docker file detection (before extension-based switch)
+  const baseNameLower = fileName.toLowerCase();
+
+  // Dockerfile detection: basename is "dockerfile", starts with "dockerfile.", or ends with ".dockerfile"
+  if (
+    baseNameLower === "dockerfile" ||
+    baseNameLower.startsWith("dockerfile.") ||
+    baseNameLower.endsWith(".dockerfile")
+  ) {
+    const hadolintResult = run(`hadolint "${filePath}" 2>&1`);
+    if (!hadolintResult.success && hadolintResult.stdout) {
+      const lines = hadolintResult.stdout.split("\n").filter((l) => l.trim());
+      if (lines.length > 0) {
+        process.stderr.write(
+          `[lint] hadolint issues in ${fileName}:\n${lines.join("\n")}\n`
+        );
+      }
+    }
+    process.exit(0);
+  }
+
+  // Compose file detection: basename matches /^(docker-)?compose/ AND ext is .yml/.yaml
+  if (
+    /^(docker-)?compose/i.test(baseNameLower) &&
+    (ext === ".yml" || ext === ".yaml")
+  ) {
+    const dclintResult = run(`dclint "${filePath}" 2>&1`);
+    if (!dclintResult.success && dclintResult.stdout) {
+      const lines = dclintResult.stdout.split("\n").filter((l) => l.trim());
+      if (lines.length > 0) {
+        process.stderr.write(
+          `[lint] dclint issues in ${fileName}:\n${lines.join("\n")}\n`
+        );
+      }
+    }
+    process.exit(0);
+  }
+
   switch (ext) {
     case ".go": {
       const projRoot = findProjectRoot(filePath, ["go.mod"]);

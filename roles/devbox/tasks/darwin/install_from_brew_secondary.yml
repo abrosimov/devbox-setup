@@ -10,7 +10,6 @@
       - go-task
       - node
       - uv
-      - kubectl
       - helm
       - orbstack
       - k9s

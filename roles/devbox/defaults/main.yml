@@ -17,6 +17,10 @@ devbox_packages:
     - { pkg: "github.com/sqlc-dev/sqlc/cmd/sqlc@latest", bin: "sqlc" }
     - { pkg: "golang.org/x/tools/gopls@latest", bin: "gopls" }
 
+  # kubectl — direct binary download (pinned version)
+  kubectl:
+    version: "1.32.5"
+
   # Python tools installed via `uv tool install`.
   # Binary name matches tool name.
   uv_tools:

@@ -1,0 +1,7 @@
+---
+- name: "Download kubectl v{{ devbox_packages.kubectl.version }}"
+  ansible.builtin.get_url:
+    url: "https://dl.k8s.io/release/v{{ devbox_packages.kubectl.version }}/bin/darwin/arm64/kubectl"
+    checksum: "sha256:https://dl.k8s.io/release/v{{ devbox_packages.kubectl.version }}/bin/darwin/arm64/kubectl.sha256"
+    dest: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin/kubectl"
+    mode: "0755"

@@ -1,4 +1,13 @@
 {
+  "env": {
+    "UV_CACHE_DIR": "/tmp/claude/uv-cache",
+    "RUFF_CACHE_DIR": "/tmp/claude/ruff-cache",
+    "MYPY_CACHE_DIR": "/tmp/claude/mypy-cache",
+    "GOCACHE": "/tmp/claude/go-build-cache",
+    "GOMODCACHE": "/tmp/claude/go-mod-cache",
+    "GOTOOLCHAIN": "local",
+    "NPM_CONFIG_CACHE": "/tmp/claude/npm-cache"
+  },
   "statusLine": {
     "type": "command",
     "command": "echo \"$(git branch --show-current 2>/dev/null || echo 'no-branch') | tools:$TOOL_COUNT\""
@@ -25,7 +34,30 @@
         "crates.io",
         "*.crates.io",
         "dl.google.com",
-        "storage.googleapis.com"
+        "storage.googleapis.com",
+
+        "docs.python.org",
+        "pkg.go.dev",
+        "go.dev",
+        "developer.mozilla.org",
+        "docs.rs",
+        "doc.rust-lang.org",
+        "react.dev",
+        "nextjs.org",
+        "docs.docker.com",
+        "kubernetes.io",
+        "helm.sh",
+        "docs.astral.sh",
+        "vitejs.dev",
+        "docs.claude.com",
+
+        "docker.io",
+        "*.docker.io",
+        "ghcr.io",
+        "registry.k8s.io",
+
+        "stackoverflow.com",
+        "*.stackexchange.com"
       ],
       "allowLocalBinding": true
     }

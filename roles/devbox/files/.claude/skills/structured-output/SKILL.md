@@ -32,6 +32,7 @@ Machine-readable JSON Schema files live in `schemas/`:
 
 | Schema | File | Used By |
 |--------|------|---------|
+| SE Output | `schemas/se_output.schema.json` | SE agents (Go, Python, Frontend), Test Writers, Code Reviewers |
 | Stream Completion | `schemas/stream_completion.schema.json` | Stream executors (Phase 4 DAG) |
 | Execution DAG | `schemas/execution_dag.schema.json` | Full-cycle orchestrator |
 | Pipeline State | `schemas/pipeline_state.schema.json` | Full-cycle orchestrator |
@@ -335,59 +336,17 @@ Top-level fields: `problem_statement`, `complexity` (tier, n_options, sub_factor
 }
 ```
 
-### Software Engineer — `se_{role}_output.json`
+### Software Engineer — `se_{agent_suffix}_output.json`
 
-Where `{role}` is `backend`, `frontend`, or the specific language variant. Each SE agent writes its own output file to avoid conflicts during parallel execution.
+Filename convention: `se_go_output.json`, `se_python_output.json`, `se_frontend_output.json`. Each SE agent writes its own output file — no collisions during parallel execution. See `schemas/se_output.schema.json` for the authoritative definition.
 
-```json
-{
-  "metadata": { "agent": "software-engineer-go", "version": "1.0", "..." : "..." },
-  "files_changed": [
-    { "path": "string (relative to project root)", "action": "created | modified | deleted", "purpose": "string" }
-  ],
-  "requirements_implemented": [
-    {
-      "id": "FR-001",
-      "status": "implemented | partial | skipped",
-      "files": ["string"],
-      "acceptance_criteria_met": [
-        { "criterion": "string", "met": "boolean", "evidence": "file:line" }
-      ],
-      "error_cases_handled": [
-        { "condition": "string", "handling": "string" }
-      ]
-    }
-  ],
-  "domain_compliance": {
-    "ubiquitous_language_used": "boolean",
-    "terms_mapped": [
-      { "domain_term": "string", "code_symbol": "string", "file": "string" }
-    ],
-    "invariants_implemented": [
-      { "id": "INV-N", "location": "file:line", "implementation": "string" }
-    ],
-    "aggregate_boundaries_respected": "boolean"
-  },
-  "patterns_used": [
-    { "pattern": "string", "where": "string", "rationale": "string" }
-  ],
-  "autonomous_decisions": [
-    { "tier": 2, "question": "string", "decision": "string", "rationale": "string" }
-  ],
-  "verification_summary": [
-    { "fr_id": "string", "ac_id": "string", "status": "pass | fail | skip", "evidence": "string" }
-  ],
-  "verification_evidence": [
-    {
-      "command": "string (exact command that was run)",
-      "exit_code": "integer",
-      "stdout_tail": "string (last 10 lines of stdout)",
-      "stderr_tail": "string (last 10 lines of stderr, if any)",
-      "executed": "boolean (true = actually ran, false = skipped)"
-    }
-  ]
-}
-```
+Key fields: `metadata` (agent, language, role, invocation_id), `files_changed[]`, `requirements_implemented[]`, `domain_compliance`, `patterns_used[]`, `autonomous_decisions[]`, `deviations[]`, `verification_summary[]`, `verification_evidence[]`.
+
+Required arrays (`files_changed`, `requirements_implemented`, `verification_evidence`) enforce `minItems: 1` — an agent that implements nothing or verifies nothing cannot produce valid output.
+
+The `metadata.role` field captures what was built (api, cli, library, worker, frontend-web, etc.) — domain semantics, not architectural layer.
+
+The `deviations[]` field replaces the former `work_log_*.md` narrative — structured plan deviation tracking instead of free-form prose.
 
 > **Downstream usage**: Test Writer reads `requirements_implemented` + `verification_summary` to target untested areas. Code Reviewer reads `domain_compliance` + `autonomous_decisions` to audit DDD adherence and Tier 2 choices.
 

@@ -7,7 +7,7 @@
 //   se_backend_output.json, se_frontend_output.json,
 //   work_log_backend.md, work_log_frontend.md
 //
-// When matched, finds the project root and runs verify-se-completion --quick --json
+// When matched, finds the project root and runs verify-se-completion --json
 // to confirm build+lint pass before allowing the write.
 //
 // Event: PreToolUse (matcher: Write)
@@ -98,8 +98,8 @@ async function main() {
   // Run verification
   try {
     const result = execSync(
-      `"${verifyScript}" --lang ${project.lang} --work-dir "${project.root}" --quick --json`,
-      { timeout: 30000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
+      `"${verifyScript}" --lang ${project.lang} --work-dir "${project.root}" --json`,
+      { timeout: 120000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
     );
 
     let parsed;

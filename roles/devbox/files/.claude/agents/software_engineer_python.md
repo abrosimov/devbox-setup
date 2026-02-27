@@ -301,7 +301,7 @@ If this fails, **STOP immediately** and report the environment issue to the user
 
 ## ⛔ Pre-Flight Verification (BLOCKING — Must Pass Before Completion)
 
-Build and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion --quick` passes. You still MUST run checks manually and report results.
+Build, test, and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion` passes (full: build + test + lint + docker lint + smoke). You still MUST run checks manually and report results.
 
 **Quick Reference Commands (Python):**
 

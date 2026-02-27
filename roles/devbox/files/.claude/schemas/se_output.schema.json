@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "se_output.schema.json",
+  "title": "Software Engineer Output",
+  "description": "Contract for SE agent completion artifacts. Filename convention: se_{agent_suffix}_output.json (e.g., se_go_output.json, se_python_output.json, se_frontend_output.json). Validated by bin/validate-pipeline-output and enforced by bin/pre-write-completion-gate.",
+  "type": "object",
+  "required": ["metadata", "files_changed", "requirements_implemented", "verification_evidence"],
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "files_changed": {
+      "type": "array",
+      "description": "All files created, modified, or deleted during implementation.",
+      "items": { "$ref": "#/$defs/file_change" },
+      "minItems": 1
+    },
+    "requirements_implemented": {
+      "type": "array",
+      "description": "Mapping of plan requirements to implementation. Each entry tracks a functional requirement.",
+      "items": { "$ref": "#/$defs/requirement" },
+      "minItems": 1
+    },
+    "domain_compliance": {
+      "$ref": "#/$defs/domain_compliance",
+      "description": "DDD adherence tracking. Required when project uses domain modelling; omit for simple projects."
+    },
+    "patterns_used": {
+      "type": "array",
+      "description": "Design patterns applied during implementation with rationale.",
+      "items": { "$ref": "#/$defs/pattern_entry" }
+    },
+    "autonomous_decisions": {
+      "type": "array",
+      "description": "Tier 2 decisions made without user input. Audited by code reviewer.",
+      "items": { "$ref": "#/$defs/autonomous_decision" }
+    },
+    "deviations": {
+      "type": "array",
+      "description": "Deviations from the implementation plan with justification.",
+      "items": { "$ref": "#/$defs/deviation" }
+    },
+    "verification_summary": {
+      "type": "array",
+      "description": "Per-requirement, per-acceptance-criterion verification status.",
+      "items": { "$ref": "#/$defs/verification_entry" }
+    },
+    "verification_evidence": {
+      "type": "array",
+      "description": "Actual command executions with output. Each entry represents one verification command run.",
+      "items": { "$ref": "#/$defs/evidence_entry" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "required": ["agent", "language", "version", "invocation_id"],
+      "properties": {
+        "agent": {
+          "type": "string",
+          "description": "Agent identifier (e.g., 'software-engineer-go', 'software-engineer-python', 'software-engineer-frontend')."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["go", "python", "typescript", "javascript"],
+          "description": "Primary language of the implementation."
+        },
+        "role": {
+          "type": "string",
+          "description": "What was built — captures domain, not architectural layer.",
+          "examples": ["api", "cli", "library", "worker", "frontend-web", "frontend-mobile", "data-pipeline"]
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+$",
+          "description": "Schema version. Current: 1.0."
+        },
+        "invocation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique ID for this agent invocation. Used for correlation across retries and audit trail."
+        },
+        "started_at": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when agent began work."
+        },
+        "completed_at": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when agent finished."
+        }
+      }
+    },
+    "file_change": {
+      "type": "object",
+      "required": ["path", "action"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "File path relative to project root."
+        },
+        "action": {
+          "enum": ["created", "modified", "deleted"],
+          "description": "What was done to the file."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Brief explanation of why this file was changed."
+        }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "required": ["id", "status", "files"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Requirement identifier from the plan (e.g., 'FR-001')."
+        },
+        "status": {
+          "enum": ["implemented", "partial", "skipped"],
+          "description": "Implementation status. 'partial' requires explanation in deviations."
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Files that implement this requirement."
+        },
+        "acceptance_criteria_met": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["criterion", "met"],
+            "properties": {
+              "criterion": { "type": "string" },
+              "met": { "type": "boolean" },
+              "evidence": {
+                "type": "string",
+                "description": "Location or proof (e.g., 'file:line')."
+              }
+            }
+          }
+        },
+        "error_cases_handled": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["condition", "handling"],
+            "properties": {
+              "condition": { "type": "string" },
+              "handling": { "type": "string" }
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": { "status": { "const": "partial" } }
+      },
+      "then": {
+        "description": "Partial implementations must have a corresponding entry in deviations[]."
+      }
+    },
+    "domain_compliance": {
+      "type": "object",
+      "properties": {
+        "ubiquitous_language_used": { "type": "boolean" },
+        "terms_mapped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain_term", "code_symbol", "file"],
+            "properties": {
+              "domain_term": { "type": "string" },
+              "code_symbol": { "type": "string" },
+              "file": { "type": "string" }
+            }
+          }
+        },
+        "invariants_implemented": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "location"],
+            "properties": {
+              "id": { "type": "string" },
+              "location": { "type": "string" },
+              "implementation": { "type": "string" }
+            }
+          }
+        },
+        "aggregate_boundaries_respected": { "type": "boolean" }
+      }
+    },
+    "pattern_entry": {
+      "type": "object",
+      "required": ["pattern", "where", "rationale"],
+      "properties": {
+        "pattern": { "type": "string" },
+        "where": { "type": "string" },
+        "rationale": { "type": "string" }
+      }
+    },
+    "autonomous_decision": {
+      "type": "object",
+      "required": ["tier", "question", "decision", "rationale"],
+      "properties": {
+        "tier": {
+          "type": "integer",
+          "enum": [2],
+          "description": "Only Tier 2 decisions are made autonomously. Tier 3 requires user input."
+        },
+        "question": { "type": "string" },
+        "decision": { "type": "string" },
+        "rationale": { "type": "string" }
+      }
+    },
+    "deviation": {
+      "type": "object",
+      "required": ["plan_item", "what_changed", "justification"],
+      "properties": {
+        "plan_item": {
+          "type": "string",
+          "description": "Reference to the plan item that was deviated from."
+        },
+        "what_changed": {
+          "type": "string",
+          "description": "What was done differently."
+        },
+        "justification": {
+          "type": "string",
+          "description": "Why the deviation was necessary."
+        }
+      }
+    },
+    "verification_entry": {
+      "type": "object",
+      "required": ["fr_id", "status"],
+      "properties": {
+        "fr_id": {
+          "type": "string",
+          "description": "Requirement ID being verified."
+        },
+        "ac_id": {
+          "type": "string",
+          "description": "Specific acceptance criterion ID, if applicable."
+        },
+        "status": {
+          "enum": ["pass", "fail", "skip"]
+        },
+        "evidence": {
+          "type": "string",
+          "description": "How this was verified (command output reference, file:line, etc.)."
+        }
+      }
+    },
+    "evidence_entry": {
+      "type": "object",
+      "required": ["command", "exit_code", "executed"],
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "Exact command that was run (copy-paste from terminal)."
+        },
+        "exit_code": {
+          "type": "integer",
+          "description": "Process exit code. 0 = success."
+        },
+        "stdout_tail": {
+          "type": "string",
+          "description": "Last 10 lines of stdout."
+        },
+        "stderr_tail": {
+          "type": "string",
+          "description": "Last 10 lines of stderr, if any."
+        },
+        "executed": {
+          "type": "boolean",
+          "description": "Whether command was actually executed (true) or skipped (false). NOTE: self-reported by agent — independently verified by pre-write-completion-gate and verify-se-completion."
+        }
+      }
+    }
+  }
+}

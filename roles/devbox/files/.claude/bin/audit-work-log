@@ -50,11 +50,15 @@ EXCUSE_PATTERNS=(
   "checked the logic"
 )
 
-# --- Required commands by language ---
-declare -A REQUIRED_COMMANDS
-REQUIRED_COMMANDS[go]="go build|go test|golangci-lint|goimports"
-REQUIRED_COMMANDS[python]="pytest|ruff check|ruff format|mypy|pyright"
-REQUIRED_COMMANDS[node]="tsc|vitest|jest|eslint|prettier"
+# --- Required commands by language (Bash 3.2 compatible — no associative arrays) ---
+required_commands_for() {
+  case "$1" in
+    go)     echo "go build|go test|golangci-lint|goimports" ;;
+    python) echo "pytest|ruff check|ruff format|mypy|pyright" ;;
+    node)   echo "tsc|vitest|jest|eslint|prettier" ;;
+    *)      echo "" ;;
+  esac
+}
 
 # --- Parse args ---
 se_output=""
@@ -113,13 +117,16 @@ done
 
 # --- Check required commands ---
 missing_commands=()
-if [[ -n "$lang" ]] && [[ -n "${REQUIRED_COMMANDS[$lang]:-}" ]]; then
-  IFS='|' read -ra cmds <<< "${REQUIRED_COMMANDS[$lang]}"
-  for cmd in "${cmds[@]}"; do
-    if ! echo "$content" | grep -q "$cmd"; then
-      missing_commands+=("$cmd")
-    fi
-  done
+if [[ -n "$lang" ]]; then
+  _req_cmds=$(required_commands_for "$lang")
+  if [[ -n "$_req_cmds" ]]; then
+    IFS='|' read -ra cmds <<< "$_req_cmds"
+    for cmd in "${cmds[@]}"; do
+      if ! echo "$content" | grep -q "$cmd"; then
+        missing_commands+=("$cmd")
+      fi
+    done
+  fi
 fi
 
 # --- Compute exit code ---

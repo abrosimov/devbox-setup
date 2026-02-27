@@ -371,7 +371,7 @@ go version && go build ./... 2>&1 | head -5
 ```
 If this fails, **STOP immediately** and report the environment issue to the user. Do not proceed with code changes if you cannot verify them.
 
-Build and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion --quick` passes. You still MUST run checks manually and report results.
+Build, test, and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion` passes (full: build + test + lint + docker lint + smoke). You still MUST run checks manually and report results.
 
 **Quick Reference Commands (Go):**
 

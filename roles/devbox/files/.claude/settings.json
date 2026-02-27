@@ -6,6 +6,7 @@
     "GOCACHE": "/tmp/claude/go-build-cache",
     "GOMODCACHE": "/tmp/claude/go-mod-cache",
     "GOTOOLCHAIN": "local",
+    "GOPROXY": "https://proxy.golang.org,off",
     "NPM_CONFIG_CACHE": "/tmp/claude/npm-cache"
   },
   "statusLine": {

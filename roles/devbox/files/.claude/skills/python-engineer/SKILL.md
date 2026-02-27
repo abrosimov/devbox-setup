@@ -357,24 +357,21 @@ response = client.get(url, timeout=(5, 30))
 
 ## Sandbox Cache Configuration
 
-Claude Code's sandbox restricts filesystem writes to the project directory and `$TMPDIR`. Python toolchain caches break without configuration:
+Claude Code sets cache env vars globally via `settings.json` `env` block:
+- `UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`
 
-1. **uv cache** — `~/.cache/uv/` is outside the sandbox. Fix: `UV_CACHE_DIR="$TMPDIR/uv-cache"`.
-2. **ruff cache** — `~/.cache/ruff/` is outside the sandbox. Fix: `RUFF_CACHE_DIR="$TMPDIR/ruff-cache"`.
-3. **mypy cache** — `.mypy_cache/` is usually fine (CWD), but set explicitly: `MYPY_CACHE_DIR="$TMPDIR/mypy-cache"`.
-
-**Always prefix Python commands with sandbox-safe env vars:**
+**No manual prefix needed.** Just run commands directly:
 
 ```bash
-UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run pytest
-UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run mypy --strict src/
-RUFF_CACHE_DIR="${TMPDIR:-/tmp}/ruff-cache" ruff check .
+uv run pytest
+ruff check .
+mypy src/
 ```
 
-If a command fails with "Operation not permitted" or "failed to open file ~/.cache":
-1. Verify you prefixed with the cache env vars
-2. Check that the target domain is in `settings.json` `allowedDomains` (if network-related)
-3. **Never** write "sandbox blocks" as an excuse — use the env var prefix and report real errors
+If a command fails with "Operation not permitted" or cache errors:
+1. Verify env vars are active: `env | grep -E 'UV_CACHE|RUFF_CACHE|MYPY_CACHE'`
+2. Check `settings.json` `allowedDomains` for network errors
+3. **Never** claim "sandbox blocks" -- report the actual error
 
 ---
 

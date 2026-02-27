@@ -50,15 +50,7 @@ In uv/poetry projects, these will FAIL (tool not on system PATH):
 
 ### Go Sandbox Environment
 
-When running inside Claude Code's sandbox, set these env vars to prevent toolchain download failures and cache permission errors:
-
-```bash
-export GOTOOLCHAIN=local
-export GOCACHE="${TMPDIR:-/tmp}/go-build-cache"
-export GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache"
-```
-
-Prefix all `go build`, `go test`, `go vet`, and `golangci-lint` commands with these variables. `GOTOOLCHAIN=local` prevents Go from attempting to download a newer toolchain (which fails in sandbox). The cache vars redirect writes to `$TMPDIR` (sandbox-writable).
+Claude Code sets `GOCACHE`, `GOMODCACHE`, and `GOTOOLCHAIN` globally via `settings.json` `env` block. No manual prefix needed -- just run `go build`, `go test`, `go vet`, `golangci-lint` directly. If cache errors occur, verify with `env | grep -E 'GOCACHE|GOMODCACHE'`.
 
 ## Frontend — Match the lock file
 

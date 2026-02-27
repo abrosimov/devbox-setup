@@ -476,7 +476,7 @@ The following phrases in Pre-Flight reports or work logs indicate the agent skip
 
 | Language | Sandbox Workaround |
 |----------|-------------------|
-| Go | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache"` prefix |
+| Go | `settings.json` `env` block sets `GOCACHE`/`GOMODCACHE`/`GOTOOLCHAIN` -- no prefix needed |
 | Python | `uv run` prefix (uv manages own cache) |
 | Node | `npx` prefix (respects local node_modules) |
 

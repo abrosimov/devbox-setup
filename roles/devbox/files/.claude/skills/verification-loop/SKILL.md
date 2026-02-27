@@ -22,7 +22,7 @@ Compile/transpile passes without errors.
 
 ### Go
 ```bash
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
+go build ./...
 ```
 
 **Failures**: syntax errors, import cycles, missing dependencies.
@@ -70,7 +70,7 @@ disallow_untyped_defs = true
 
 ### Go
 ```bash
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go vet ./...
+go vet ./...
 ```
 
 **Checks**: unreachable code, printf format errors, mutex misuse.
@@ -83,7 +83,7 @@ Style and correctness rules.
 
 ### Go
 ```bash
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run
+golangci-lint run
 ```
 
 **Checks**: deadcode, errcheck, ineffassign, staticcheck, unused.
@@ -163,7 +163,7 @@ All tests pass with coverage.
 
 ### Go
 ```bash
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -v -race -coverprofile=coverage.out ./...
+go test -v -race -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
 
@@ -485,7 +485,7 @@ Every verification step MUST run the actual command. The following are **never a
 
 - "manual review passed" — run the command
 - "verified by inspection" — run the command
-- "sandbox blocks..." — use `GOCACHE`/`GOMODCACHE` env prefix and retry
+- "sandbox blocks..." — verify env vars via `env | grep GOCACHE` and report actual error
 - "appears correct" / "should work" — run the command and show output
 
 Each verification row must include: the exact command run, its exit code, and error output if non-zero.

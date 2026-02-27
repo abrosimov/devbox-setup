@@ -99,12 +99,12 @@ See `project-toolchain` skill for full reference.
 
 ### Sandbox Cache
 
-**Always** prefix Go commands with cache env vars to avoid sandbox permission errors:
+`settings.json` `env` block sets `GOCACHE`, `GOMODCACHE`, and `GOTOOLCHAIN` globally -- no manual prefix needed:
 
 ```bash
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./...
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...
+go build ./...
+go test -count=1 ./...
+golangci-lint run ./...
 ```
 
 ---
@@ -367,7 +367,7 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 **Preflight probe** — Before writing any code, verify the toolchain works:
 ```bash
-go version && GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./... 2>&1 | head -5
+go version && go build ./... 2>&1 | head -5
 ```
 If this fails, **STOP immediately** and report the environment issue to the user. Do not proceed with code changes if you cannot verify them.
 
@@ -377,10 +377,10 @@ Build and lint checks are **hook-enforced** — `pre-write-completion-gate` bloc
 
 | Check | Command |
 |-------|---------|
-| Build | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...` |
-| Test | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./...` |
-| Lint | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...` |
-| Format | `GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" goimports -local {module} -w .` |
+| Build | `go build ./...` |
+| Test | `go test -count=1 ./...` |
+| Lint | `golangci-lint run ./...` |
+| Format | `goimports -local {module} -w .` |
 
 **Security Scan (MANDATORY):**
 

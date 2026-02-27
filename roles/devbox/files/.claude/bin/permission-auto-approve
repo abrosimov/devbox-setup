@@ -52,6 +52,48 @@ if [ "$TOOL_NAME" = "Bash" ]; then
       exit 0
       ;;
   esac
+
+  # --- Auto-approve: commands prefixed with `cd /path &&` ---
+  # Agents often generate: cd /path/to/project && go build ./...
+  # The bare command (go build) matches allow rules, but the cd prefix breaks glob matching.
+  # Normalize by stripping the cd prefix, then check against known-safe command families.
+
+  NORMALIZED="$CMD"
+
+  # Strip leading: cd <path> && (with optional quotes around path)
+  NORMALIZED=$(printf '%s' "$NORMALIZED" | sed -E 's/^cd[[:space:]]+[^&]+&&[[:space:]]*//')
+
+  # Strip leading env var assignments: VAR=value VAR2=value ...
+  while printf '%s' "$NORMALIZED" | grep -qE '^[A-Z_][A-Z0-9_]*='; do
+    NORMALIZED=$(printf '%s' "$NORMALIZED" | sed -E 's/^[A-Z_][A-Z0-9_]*=[^[:space:]]*[[:space:]]*//')
+  done
+
+  # Strip trailing 2>&1
+  NORMALIZED=$(printf '%s' "$NORMALIZED" | sed -E 's/[[:space:]]*2>&1[[:space:]]*$//')
+
+  # If normalization changed anything AND the core command is safe, approve it
+  if [ "$NORMALIZED" != "$CMD" ]; then
+    SAFE=0
+    case "$NORMALIZED" in
+      go\ build*|go\ test*|go\ vet*|go\ mod*|go\ get*|go\ install*|go\ generate*|go\ run*) SAFE=1 ;;
+      goimports*|golangci-lint*|mockery*|sqlc*) SAFE=1 ;;
+      uv\ *|uvx\ *|pytest*|ruff\ *|mypy\ *|python\ *|python3\ *) SAFE=1 ;;
+      npm\ *|npx\ *|pnpm\ *|node\ *) SAFE=1 ;;
+      make\ *|make) SAFE=1 ;;
+      cargo\ *|rustc\ *) SAFE=1 ;;
+    esac
+
+    if [ "$SAFE" = "1" ]; then
+      # Reject if normalized command contains shell metacharacters
+      case "$NORMALIZED" in
+        *'&&'*|*'||'*|*'|'*|*';'*|*'$('*|*'`'*) ;; # contains chaining — fall through
+        *)
+          printf '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}\n'
+          exit 0
+          ;;
+      esac
+    fi
+  fi
 fi
 
 # --- Everything else: fall through to the standard permission prompt ---

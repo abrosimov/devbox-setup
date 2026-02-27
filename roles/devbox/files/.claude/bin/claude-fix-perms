@@ -5,7 +5,7 @@ set -euo pipefail
 #
 # Usage: claude-fix-perms [--with-git] [--go] [--python] [--node] [--all] [--no-detect]
 #   --with-git   Add git write permissions (commit, merge, branch)
-#   --go         Add Go toolchain permissions (GOCACHE/GOMODCACHE variants)
+#   --go         Add Go toolchain permissions (reserved — base covers these)
 #   --python     Add Python toolchain permissions (reserved — base covers these)
 #   --node       Add Node toolchain permissions (reserved — base covers these)
 #   --all        Shortcut for --go --python --node
@@ -35,7 +35,7 @@ Usage: claude-fix-perms [--with-git] [--go] [--python] [--node] [--all] [--no-de
 
 Options:
   --with-git   Add git write permissions (commit, merge, branch)
-  --go         Add Go toolchain permissions (GOCACHE/GOMODCACHE variants)
+  --go         Add Go toolchain permissions (reserved — base covers these)
   --python     Add Python toolchain permissions (reserved — base covers these)
   --node       Add Node toolchain permissions (reserved — base covers these)
   --all        Shortcut for --go --python --node
@@ -265,21 +265,9 @@ EOF
 add_allow='[]'
 add_deny='[]'
 
-if $with_go; then
-  add_allow=$(echo "$add_allow" | jq '. + [
-    "Bash(GOCACHE=* go build *)",
-    "Bash(GOCACHE=* go test *)",
-    "Bash(GOCACHE=* go vet *)",
-    "Bash(GOCACHE=* go vet)",
-    "Bash(GOCACHE=* golangci-lint *)",
-    "Bash(GOCACHE=* GOMODCACHE=* go build *)",
-    "Bash(GOCACHE=* GOMODCACHE=* go test *)",
-    "Bash(GOCACHE=* GOMODCACHE=* go vet *)",
-    "Bash(GOCACHE=* GOMODCACHE=* golangci-lint *)",
-    "Bash(GOMODCACHE=* go mod *)",
-    "Bash(GOMODCACHE=* go get *)"
-  ]')
-fi
+# Go env-prefixed patterns removed — settings.json env block sets GOCACHE/GOMODCACHE
+# globally, so bare commands (go build, go test) match the base allow patterns.
+# if $with_go; then ... fi
 
 if $with_git; then
   add_allow=$(echo "$add_allow" | jq '. + [
@@ -329,7 +317,7 @@ echo "  allow rules: $after_allow (+$new_allow new)"
 echo "  deny rules:  $after_deny (+$new_deny new)"
 
 if $with_git; then echo "  git write:   ENABLED"; fi
-if $with_go; then echo "  go sandbox:  ENABLED (GOCACHE/GOMODCACHE patterns)"; fi
+if $with_go; then echo "  go:          OK (base patterns)"; fi
 if $with_python; then echo "  python:      OK (base patterns)"; fi
 if $with_node; then echo "  node:        OK (base patterns)"; fi
 

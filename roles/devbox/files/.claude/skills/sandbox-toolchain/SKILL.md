@@ -38,16 +38,17 @@ Go has three sandbox-breaking defaults:
 
 | Default Behaviour | Problem | Fix |
 |---|---|---|
-| `GOTOOLCHAIN=auto` | Downloads newer Go binary — fails (network/filesystem) | `GOTOOLCHAIN=local` |
-| `GOCACHE=~/Library/Caches/go-build` | Outside sandbox write allowlist | `GOCACHE="$TMPDIR/go-build-cache"` |
-| `GOMODCACHE=~/go/pkg/mod` | Outside sandbox write allowlist | `GOMODCACHE="$TMPDIR/go-mod-cache"` |
+| `GOTOOLCHAIN=auto` | Downloads newer Go binary — fails (network/filesystem) | Already configured via `settings.json` `env` block (`GOTOOLCHAIN=local`) |
+| `GOCACHE=~/Library/Caches/go-build` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
+| `GOMODCACHE=~/go/pkg/mod` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
 
-**Standard prefix for all Go commands:**
+No manual prefix needed -- just run commands directly:
 ```bash
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
+go build ./...
+go test ./...
 ```
 
-These env vars are also set automatically by `~/.claude/bin/env-setup.js` for hook scripts.
+If cache errors occur, verify env is active: `env | grep -E 'GOCACHE|GOMODCACHE'`.
 
 ### Python (uv, ruff, mypy)
 
@@ -55,16 +56,18 @@ Python toolchains cache to `~/.cache/` by default, which is outside the sandbox 
 
 | Default Behaviour | Problem | Fix |
 |---|---|---|
-| `UV_CACHE_DIR=~/.cache/uv` | Outside sandbox write allowlist | `UV_CACHE_DIR="$TMPDIR/uv-cache"` |
-| `RUFF_CACHE_DIR=~/.cache/ruff` | Outside sandbox write allowlist | `RUFF_CACHE_DIR="$TMPDIR/ruff-cache"` |
-| `MYPY_CACHE_DIR=.mypy_cache` | Usually fine (CWD), but set explicitly for consistency | `MYPY_CACHE_DIR="$TMPDIR/mypy-cache"` |
+| `UV_CACHE_DIR=~/.cache/uv` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
+| `RUFF_CACHE_DIR=~/.cache/ruff` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
+| `MYPY_CACHE_DIR=.mypy_cache` | Usually fine (CWD), but set explicitly for consistency | Already configured via `settings.json` `env` block |
 
-**Standard prefix for Python commands:**
+No manual prefix needed -- just run commands directly:
 ```bash
-UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run pytest
-UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run mypy --strict src/
-RUFF_CACHE_DIR="${TMPDIR:-/tmp}/ruff-cache" ruff check .
+uv run pytest
+ruff check .
+mypy src/
 ```
+
+If cache errors occur, verify env is active: `env | grep -E 'UV_CACHE|RUFF_CACHE|MYPY_CACHE'`.
 
 If bare `python`/`pytest`/`mypy` fail, use the `uv run` prefix (enforced by `pre-bash-toolchain-guard` hook).
 
@@ -74,13 +77,15 @@ npm caches to `~/.npm/` by default, which is outside the sandbox write allowlist
 
 | Default Behaviour | Problem | Fix |
 |---|---|---|
-| `NPM_CONFIG_CACHE=~/.npm` | Outside sandbox write allowlist | `NPM_CONFIG_CACHE="$TMPDIR/npm-cache"` |
+| `NPM_CONFIG_CACHE=~/.npm` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
 
-**Standard prefix for Node commands:**
+No manual prefix needed -- just run commands directly:
 ```bash
-NPM_CONFIG_CACHE="${TMPDIR:-/tmp}/npm-cache" npx vitest
-NPM_CONFIG_CACHE="${TMPDIR:-/tmp}/npm-cache" npm install
+npx vitest
+npm install
 ```
+
+If cache errors occur, verify env is active: `env | grep NPM_CONFIG_CACHE`.
 
 If `npx`/`pnpm exec` fail with network errors, check that `registry.npmjs.org` is in `allowedDomains`.
 

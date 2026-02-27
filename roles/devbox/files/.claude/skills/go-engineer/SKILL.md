@@ -386,29 +386,26 @@ defer f.Close()  // AFTER error check
 
 ---
 
-## Sandbox-Safe Go Commands
+## Sandbox Cache Configuration
 
-Claude Code's sandbox restricts filesystem writes to the project directory and `$TMPDIR`. Two things break without configuration:
+Claude Code sets cache env vars globally via `settings.json` `env` block:
+- `GOCACHE`, `GOMODCACHE`, `GOTOOLCHAIN`
 
-1. **Toolchain downloads** — `GOTOOLCHAIN=auto` (Go default since 1.21) tries to download newer Go binaries, which fails in sandbox. Fix: `GOTOOLCHAIN=local`.
-2. **Cache writes** — Go's default cache paths (`~/Library/Caches/go-build/`, `~/go/pkg/mod/`) are outside the sandbox. Fix: redirect to `$TMPDIR`.
-
-**Always prefix Go commands with sandbox-safe env vars:**
+**No manual prefix needed.** Just run commands directly:
 
 ```bash
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./...
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test ./...
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go vet ./...
-GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./...
+go build ./...
+go test ./...
+golangci-lint run ./...
 ```
 
 ### If Go Commands Fail in Sandbox
 
-1. Verify you prefixed with `GOTOOLCHAIN=local`, `GOCACHE`, and `GOMODCACHE` env vars
+1. Verify env vars are active: `env | grep -E 'GOCACHE|GOMODCACHE|GOTOOLCHAIN'`
 2. If "go: toolchain required" → locally installed Go is too old for this module's `go` directive. Report the version mismatch to the user — do NOT attempt to download a toolchain.
 3. If TLS/network errors → report the exact error to the user
 4. If import/compile errors → this is a real code bug — fix it
-5. **Never** write "sandbox blocks" as an excuse — use the env var prefix and report real errors
+5. **Never** claim "sandbox blocks" -- report the actual error
 
 ---
 

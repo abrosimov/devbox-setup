@@ -161,7 +161,7 @@ check_build() {
         return
       fi
       set +e
-      output=$(GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go build ./... 2>&1)
+      output=$(go build ./... 2>&1)
       rc=$?
       set -e
       ;;
@@ -228,7 +228,7 @@ check_test() {
         return
       fi
       set +e
-      output=$(GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" go test -count=1 ./... 2>&1)
+      output=$(go test -count=1 ./... 2>&1)
       rc=$?
       set -e
       ;;
@@ -297,7 +297,7 @@ check_lint() {
         return
       fi
       set +e
-      output=$(GOTOOLCHAIN=local GOCACHE="${TMPDIR:-/tmp}/go-build-cache" GOMODCACHE="${TMPDIR:-/tmp}/go-mod-cache" golangci-lint run ./... 2>&1)
+      output=$(golangci-lint run ./... 2>&1)
       rc=$?
       set -e
       ;;

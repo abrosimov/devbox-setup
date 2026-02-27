@@ -261,22 +261,21 @@ function UserCard({ user }: Props) { ... }
 
 ## Sandbox Cache Configuration
 
-Claude Code's sandbox restricts filesystem writes to the project directory and `$TMPDIR`. npm/pnpm caches break without configuration:
+Claude Code sets cache env vars globally via `settings.json` `env` block:
+- `NPM_CONFIG_CACHE`
 
-1. **npm cache** — `~/.npm/` is outside the sandbox. Fix: `NPM_CONFIG_CACHE="$TMPDIR/npm-cache"`.
-
-**Always prefix Node commands with sandbox-safe env vars:**
+**No manual prefix needed.** Just run commands directly:
 
 ```bash
-NPM_CONFIG_CACHE="${TMPDIR:-/tmp}/npm-cache" npx vitest
-NPM_CONFIG_CACHE="${TMPDIR:-/tmp}/npm-cache" npm install
-NPM_CONFIG_CACHE="${TMPDIR:-/tmp}/npm-cache" pnpm install
+npx vitest
+npm test
+npx eslint .
 ```
 
 If a command fails with "Operation not permitted" or cache errors:
-1. Verify you prefixed with `NPM_CONFIG_CACHE`
-2. Check that `registry.npmjs.org` is in `settings.json` `allowedDomains` (if network-related)
-3. **Never** write "sandbox blocks" as an excuse — use the env var prefix and report real errors
+1. Verify env vars are active: `env | grep NPM_CONFIG_CACHE`
+2. Check `settings.json` `allowedDomains` for network errors
+3. **Never** claim "sandbox blocks" -- report the actual error
 
 ---
 

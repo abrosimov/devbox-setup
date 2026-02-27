@@ -5,6 +5,8 @@ devbox_paths:
   dotfiles_root_dir: "~"
   programming_deps_dir: ".programming"
 
+devbox_projects_dir: "$HOME/Projects"
+
 # Language-specific tools installed via their native package managers.
 # These are separate from Homebrew packages for better idempotency and clarity.
 devbox_packages:
@@ -37,6 +39,7 @@ devbox_shell:
     - { name: GOPATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/go" }
     - { name: FLUTTER_PATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/flutter" }
     - { name: GEM_HOME, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/ruby/gems" }
+    - { name: PROJECTS_DIR, value: "{{ devbox_projects_dir }}" }
 
   path_prepend:
     - /opt/homebrew/bin

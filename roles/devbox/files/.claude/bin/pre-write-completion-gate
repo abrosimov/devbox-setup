@@ -106,11 +106,11 @@ async function main() {
     try {
       parsed = JSON.parse(result.trim());
     } catch {
-      // Could not parse JSON — allow the write with warning
+      // Could not parse JSON — fail closed: block the write
       process.stderr.write(
-        "[completion-gate] WARN: Could not parse verification output. Allowing write.\n"
+        "BLOCKED: Could not parse verification output. Cannot confirm build/lint status.\n"
       );
-      process.exit(0);
+      process.exit(2);
     }
 
     if (parsed.result === "PASS") {

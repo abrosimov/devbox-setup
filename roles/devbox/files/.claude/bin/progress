@@ -1082,6 +1082,7 @@ Subcommands:
   decision   Record a decision at a gate
   view       Merge plan + agent files → unified view
   migrate    Convert legacy pipeline_state.json → progress/ structure
+  reconcile  Cross-reference progress vs git for interrupted agent resume
 
 Common options:
   --project-dir <path>   Project root (required for all subcommands)
@@ -1215,10 +1216,153 @@ Options:
   --project-dir <path>     Project root containing pipeline_state.json
 EOF
       ;;
+    reconcile)
+      cat <<'EOF'
+progress reconcile — Cross-reference progress vs git state for resume
+
+Usage: progress reconcile --project-dir <path> --agent <name> [--pre-sha <sha>]
+
+Options:
+  --project-dir <path>     Project root
+  --agent <name>           Agent to reconcile
+  --pre-sha <sha>          Git SHA before agent started (for diff)
+
+Outputs JSON with:
+  frs_completed     FRs reported done in progress file
+  frs_pending       FRs not yet reported
+  git_committed_files    Files committed since pre-sha
+  git_uncommitted_files  Uncommitted changes in working tree
+  has_uncommitted_work   Whether partial work exists
+  resume_hint       Human-readable suggestion for where to resume
+EOF
+      ;;
     *)
       show_help
       ;;
   esac
+}
+
+# --- Reconcile (cross-reference progress vs git) ---
+
+cmd_reconcile() {
+  local project_dir="" agent="" pre_sha="" plan_file=""
+  local progress_dir="" agent_file=""
+
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --project-dir)  project_dir="$2"; shift 2 ;;
+      --agent)        agent="$2"; shift 2 ;;
+      --pre-sha)      pre_sha="$2"; shift 2 ;;
+      *) die "Unknown option for reconcile: $1" ;;
+    esac
+  done
+
+  [[ -z "$project_dir" ]] && die "reconcile requires --project-dir"
+  [[ -z "$agent" ]] && die "reconcile requires --agent"
+
+  progress_dir="${project_dir}/progress"
+  agent_file="${progress_dir}/${agent}.json"
+  plan_file="${progress_dir}/plan.json"
+
+  # --- Source 1: Progress file (reported state) ---
+  local reported_frs=() reported_status="unknown"
+  if [[ -f "$agent_file" ]]; then
+    reported_status=$(jq -r '.status // "unknown"' "$agent_file")
+    # Extract FR IDs from update summaries (pattern: "FR-NNN implemented" or "FR-NNN done")
+    while IFS= read -r fr; do
+      [[ -n "$fr" ]] && reported_frs+=("$fr")
+    done < <(jq -r '.updates[]? | .summary // "" | capture("(?<fr>FR-[0-9]+)") | .fr' "$agent_file" 2>/dev/null)
+  fi
+
+  # --- Source 2: Git state (ground truth) ---
+  local git_committed_files=() git_uncommitted_files=()
+
+  # Committed changes since pre_sha (or last 1 commit if no pre_sha)
+  if [[ -n "$pre_sha" ]] && git rev-parse "$pre_sha" >/dev/null 2>&1; then
+    while IFS= read -r f; do
+      [[ -n "$f" ]] && git_committed_files+=("$f")
+    done < <(git diff --name-only "$pre_sha"..HEAD 2>/dev/null)
+  fi
+
+  # Uncommitted changes (working tree + staged)
+  while IFS= read -r f; do
+    [[ -n "$f" ]] && git_uncommitted_files+=("$f")
+  done < <(git diff --name-only HEAD 2>/dev/null; git diff --cached --name-only 2>/dev/null)
+  # Deduplicate
+  if [[ ${#git_uncommitted_files[@]} -gt 0 ]]; then
+    mapfile -t git_uncommitted_files < <(printf '%s\n' "${git_uncommitted_files[@]}" | sort -u)
+  fi
+
+  # --- Source 3: Plan (what FRs are expected) ---
+  local all_frs=()
+  if [[ -f "$plan_file" ]]; then
+    while IFS= read -r fr; do
+      [[ -n "$fr" ]] && all_frs+=("$fr")
+    done < <(jq -r '.milestones[]?.subtasks[]?.fr_ids[]? // empty' "$plan_file" 2>/dev/null)
+  fi
+
+  # --- Reconcile ---
+  local completed_frs=() pending_frs=() partial_frs=()
+
+  # FRs reported as done by progress
+  for fr in "${reported_frs[@]}"; do
+    completed_frs+=("$fr")
+  done
+
+  # Check for partial work: files changed but FR not reported
+  # (This is a heuristic — uncommitted files suggest interrupted work)
+  local has_uncommitted="false"
+  if [[ ${#git_uncommitted_files[@]} -gt 0 ]]; then
+    has_uncommitted="true"
+  fi
+
+  # FRs not yet reported
+  for fr in "${all_frs[@]}"; do
+    local found="false"
+    for done_fr in "${completed_frs[@]}"; do
+      if [[ "$fr" == "$done_fr" ]]; then
+        found="true"
+        break
+      fi
+    done
+    if [[ "$found" == "false" ]]; then
+      pending_frs+=("$fr")
+    fi
+  done
+
+  # --- Output reconciled state as JSON ---
+  local completed_json pending_json committed_json uncommitted_json
+  completed_json=$(printf '%s\n' "${completed_frs[@]}" 2>/dev/null | jq -R . | jq -s . 2>/dev/null || echo '[]')
+  pending_json=$(printf '%s\n' "${pending_frs[@]}" 2>/dev/null | jq -R . | jq -s . 2>/dev/null || echo '[]')
+  committed_json=$(printf '%s\n' "${git_committed_files[@]}" 2>/dev/null | jq -R . | jq -s . 2>/dev/null || echo '[]')
+  uncommitted_json=$(printf '%s\n' "${git_uncommitted_files[@]}" 2>/dev/null | jq -R . | jq -s . 2>/dev/null || echo '[]')
+
+  jq -n \
+    --arg agent "$agent" \
+    --arg reported_status "$reported_status" \
+    --argjson completed "$completed_json" \
+    --argjson pending "$pending_json" \
+    --argjson committed_files "$committed_json" \
+    --argjson uncommitted_files "$uncommitted_json" \
+    --arg has_uncommitted "$has_uncommitted" \
+    --arg reconciled_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{
+      agent: $agent,
+      reported_status: $reported_status,
+      frs_completed: $completed,
+      frs_pending: $pending,
+      git_committed_files: $committed_files,
+      git_uncommitted_files: $uncommitted_files,
+      has_uncommitted_work: ($has_uncommitted == "true"),
+      resume_hint: (
+        if ($reported_status == "completed") then "Agent reported complete — verify output files exist"
+        elif ($completed | length) == 0 then "No FRs reported done — restart from beginning"
+        elif ($has_uncommitted == "true") then "Partial work detected — review uncommitted changes before resuming from \($pending[0] // "next FR")"
+        else "Resume from \($pending[0] // "next FR") — \($completed | length) FR(s) already done"
+        end
+      ),
+      reconciled_at: $reconciled_at
+    }'
 }
 
 # --- Main ---
@@ -1242,6 +1386,7 @@ case "$subcmd" in
   decision)   cmd_decision "$@" ;;
   view)       cmd_view "$@" ;;
   migrate)    cmd_migrate "$@" ;;
+  reconcile)  cmd_reconcile "$@" ;;
   -h|--help)  show_help; exit 0 ;;
   help)
     if [[ $# -gt 0 ]]; then

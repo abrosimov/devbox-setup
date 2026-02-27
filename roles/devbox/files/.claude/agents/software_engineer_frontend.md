@@ -242,10 +242,20 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
     - **A11y Match**: Accessibility plan items (ARIA, keyboard, screen reader) are implemented
     - **Tokens Used**: Component uses design tokens, not hardcoded values
 11. **Write structured output**: Write `se_frontend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `design_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
-11b. **Report progress** (pipeline mode only): After each FR implementation, report incrementally. After all work is done:
+11b. **Report progress heartbeats** (pipeline mode only): After implementing EACH functional requirement, report incrementally so interrupted work can be resumed:
    ```bash
-   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-frontend --milestone "$MILESTONE" --subtask "$SUBTASK" --status completed --summary "Implementation complete" --quiet || true
+   # After each FR:
+   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-frontend \
+     --milestone "$MILESTONE" --subtask "$SUBTASK" --status in_progress \
+     --summary "FR-001 implemented" --files "path/to/changed_file.tsx" --quiet || true
    ```
+   After ALL FRs are done and structured output is written:
+   ```bash
+   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-frontend \
+     --milestone "$MILESTONE" --subtask "$SUBTASK" --status completed \
+     --summary "Implementation complete" --quiet || true
+   ```
+   **Why per-FR heartbeats matter**: If interrupted mid-work, the resume agent reads the updates array to know exactly which FRs are done. Without these, all progress is lost on interruption.
 12. **Write work log**: Write `work_log_frontend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
 13. **Format**: Use Prettier for formatting, ESLint for linting
 

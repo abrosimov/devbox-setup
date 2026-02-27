@@ -270,10 +270,20 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
    |----|-----|--------|----------|
    ```
 10. **Write structured output**: Write `se_backend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
-10b. **Report progress** (pipeline mode only): After each FR implementation, report incrementally. After all work is done:
+10b. **Report progress heartbeats** (pipeline mode only): After implementing EACH functional requirement, report incrementally so interrupted work can be resumed:
    ```bash
-   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-python --milestone "$MILESTONE" --subtask "$SUBTASK" --status completed --summary "Implementation complete" --quiet || true
+   # After each FR:
+   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-python \
+     --milestone "$MILESTONE" --subtask "$SUBTASK" --status in_progress \
+     --summary "FR-001 implemented" --files "path/to/changed_file.py" --quiet || true
    ```
+   After ALL FRs are done and structured output is written:
+   ```bash
+   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-python \
+     --milestone "$MILESTONE" --subtask "$SUBTASK" --status completed \
+     --summary "Implementation complete" --quiet || true
+   ```
+   **Why per-FR heartbeats matter**: If interrupted mid-work, the resume agent reads the updates array to know exactly which FRs are done. Without these, all progress is lost on interruption.
 11. **Write work log**: Write `work_log_backend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
 12. **Format**: Use `uv run ruff format .`
 

@@ -90,11 +90,18 @@ Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent
 
 ### 2.5. Check for Progress Spine
 
-**Check for progress spine**: If `{PROJECT_DIR}/progress/plan.json` exists, read the agent's status file for resume context:
+**Check for progress spine**: If `{PROJECT_DIR}/progress/plan.json` exists, check the agent's status:
 ```bash
-AGENT_STATUS=$(cat "$PROJECT_DIR/progress/${AGENT_TYPE}.json" 2>/dev/null || echo '{}')
+AGENT_STATUS=$(jq -r '.status // "unknown"' "$PROJECT_DIR/progress/${AGENT_TYPE}.json" 2>/dev/null || echo "unknown")
 ```
-If the agent has a previous `status: "blocked"` or `status: "failed"`, include the last error in the prompt context so the agent can resume from where it left off.
+If status is `"running"` (agent was interrupted) or `"failed"` or `"blocked"`, run reconciliation:
+```bash
+if [[ "$AGENT_STATUS" == "running" || "$AGENT_STATUS" == "failed" || "$AGENT_STATUS" == "blocked" ]]; then
+  RESUME_JSON=$(~/.claude/bin/progress reconcile --project-dir "$PROJECT_DIR" --agent "$AGENT_TYPE" --pre-sha "$PRE_SHA" 2>/dev/null || echo '{}')
+  RESUME_HINT=$(echo "$RESUME_JSON" | jq -r '.resume_hint' 2>/dev/null || echo "")
+fi
+```
+Include `RESUME_CONTEXT=true` and the reconciled hint in the agent's prompt so it knows where to resume.
 
 ### 3. Detect Project Stack
 

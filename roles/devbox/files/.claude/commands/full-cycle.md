@@ -135,6 +135,11 @@ Check for existing progress tracking and choose strategy:
 | `{PROJECT_DIR}/pipeline_state.json` exists, no progress/ | Offer migration: `~/.claude/bin/progress migrate --project-dir "$PROJECT_DIR"` |
 | Neither exists | Fresh start — TPM will create progress spine in Step 6.5 |
 
+For any agent with `status: "running"` in its progress file, run reconcile before re-launching:
+```bash
+RESUME_JSON=$(~/.claude/bin/progress reconcile --project-dir "$PROJECT_DIR" --agent {agent_name} 2>/dev/null || echo '{}')
+```
+
 If progress/ exists, read current state:
 ```bash
 PROGRESS_JSON=$(~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format json 2>/dev/null || echo '{}')
@@ -484,6 +489,19 @@ For each node with status "running":
             Options: A) Retry with different approach  B) Skip stream  C) Stop pipeline
             [Awaiting your decision]"
        Else:
+         **Reconcile before retry**: Before re-launching, run reconciliation to determine what's done:
+         ```bash
+         RESUME_JSON=$(~/.claude/bin/progress reconcile --project-dir "$PROJECT_DIR" --agent {agent_name} --pre-sha "$PRE_SHA" 2>/dev/null || echo '{}')
+         COMPLETED_FRS=$(echo "$RESUME_JSON" | jq -r '.frs_completed | join(", ")' 2>/dev/null)
+         RESUME_HINT=$(echo "$RESUME_JSON" | jq -r '.resume_hint' 2>/dev/null)
+         ```
+         Include reconciled context in the retry prompt:
+         ```
+         RESUME_CONTEXT=true
+         Completed FRs: {COMPLETED_FRS} (skip these)
+         Resume hint: {RESUME_HINT}
+         ```
+
          Launch new background Task with augmented retry prompt:
            "RETRY {attempt}/{max_attempts}
             Previous validation failed (exit code {code}): {error}

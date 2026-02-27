@@ -520,6 +520,48 @@ Orchestrator → TaskCreate/TaskUpdate → user sees native task UI
 4. **One file per agent** — never write to another agent's progress file
 5. **Orchestrator reads, agents write** — agents never call `bin/progress view`
 
+### Resume Protocol (Interrupted Agent Recovery)
+
+When an agent's progress file shows `status: "running"` (never completed), the orchestrator runs reconciliation before re-launching:
+
+```bash
+RESUME_JSON=$(~/.claude/bin/progress reconcile --project-dir "$PROJECT_DIR" --agent {name} --pre-sha "$PRE_SHA")
+```
+
+The reconciled JSON provides:
+
+| Field | Resume Action |
+|-------|--------------|
+| `frs_completed: ["FR-001", "FR-002"]` | Skip these — already implemented |
+| `frs_pending: ["FR-003", "FR-004"]` | Start from first pending FR |
+| `has_uncommitted_work: true` | Review `git diff` before resuming — may contain partial FR-003 |
+| `resume_hint` | Human-readable suggestion passed to the agent |
+
+**Orchestrator passes to resumed agent:**
+
+```
+RESUME_CONTEXT=true
+Completed FRs: FR-001, FR-002 (skip these — verified via git)
+Uncommitted changes: {list of files from git diff}
+Resume from: FR-003
+Previous agent was interrupted. Check existing code before implementing.
+Do NOT redo work that already exists and is correct.
+```
+
+**Three recovery scenarios:**
+
+| Scenario | Reconcile Output | Agent Action |
+|----------|-----------------|--------------|
+| Interrupted early (no FRs done) | `frs_completed: []`, no uncommitted | Fresh start — implement all FRs |
+| Interrupted mid-work (some FRs done) | `frs_completed: [...]`, maybe uncommitted | Skip completed FRs, review uncommitted, continue |
+| Interrupted after all FRs (before output) | `frs_completed: [all]`, output file missing | Skip implementation, write output file |
+
+**Rules:**
+1. Orchestrator ALWAYS runs reconcile before re-launching an interrupted agent
+2. Agent MUST check existing code (`git diff`, file reads) before implementing — never blindly redo
+3. If `has_uncommitted_work` is true, agent reviews the diff first and decides: keep, fix, or discard
+4. Reconcile is read-only — it never modifies progress files or git state
+
 ---
 
 ## Structured Handoff Protocol

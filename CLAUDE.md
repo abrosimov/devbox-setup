@@ -104,8 +104,8 @@ Registered via `claude mcp add` with user scope.
 | `settings.json` | Default permissions (allow/deny) | `~/.claude/settings.json` |
 | `hooks.json` | Pre/post tool-call hooks | `~/.claude/hooks.json` |
 | `agents/*.md` | Agent definitions (33 agents) | `~/.claude/agents/` |
-| `commands/*.md` | Slash commands — 19 (/implement, /test, /guide, etc.) | `~/.claude/commands/` |
-| `skills/*/SKILL.md` | Reusable knowledge modules (80 skills) | `~/.claude/skills/` |
+| `commands/*.md` | Slash commands — 22 (/implement, /test, /status, /guide, etc.) | `~/.claude/commands/` |
+| `skills/*/SKILL.md` | Reusable knowledge modules (85 skills) | `~/.claude/skills/` |
 | `schemas/*.json` | JSON Schema files for pipeline validation | `~/.claude/schemas/` |
 | `bin/*` | Helper scripts (MCP wrappers, hooks, validation) | `~/.claude/bin/` |
 | `templates/` | Reusable project templates (devcontainer) | `~/.claude/templates/` |
@@ -132,7 +132,9 @@ When working in `roles/devbox/files/.claude/` you are editing files that get dep
 - **`templates/` changes** affect devcontainer scaffolding for new projects
 - Run `make validate-claude` to check cross-references between agents, skills, and commands
 - Run `bin/validate-pipeline-output --help` to test the pipeline validation script locally
-- **`schemas/` changes** define JSON Schema contracts for pipeline execution (stream completion, execution DAG, pipeline state) — validated by `bin/validate-pipeline-output`
+- Run `bin/validate-pipeline-output --progress-check --project-dir <path>` to validate progress spine files
+- **`schemas/` changes** define JSON Schema contracts for pipeline execution (stream completion, execution DAG, pipeline state, progress plan, progress agent) — validated by `bin/validate-pipeline-output`
+- **`bin/progress`** is the serializer for the progress spine system — manages milestone DAG and per-agent status files in `{PROJECT_DIR}/progress/`
 - The `CLAUDE.md` in `roles/devbox/files/.claude/` is the **User Authority Protocol** — it governs all Claude Code sessions globally, not just this project
 
 ## Dependencies

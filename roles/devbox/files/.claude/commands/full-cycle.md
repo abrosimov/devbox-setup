@@ -378,7 +378,7 @@ Task(
          must surface this as a failed step in the completion file so the orchestrator can offer
          to re-invoke the SE agent with the specific errors.
 
-    2b. **Work Log Audit** (advisory — does not block):
+    2b. **SE Output Audit**:
        ```bash
        if [ -x ~/.claude/bin/audit-work-log ] && [ -f "{PLANS_DIR}/{stream}_se_output.json" ]; then
          ~/.claude/bin/audit-work-log --se-output "{PLANS_DIR}/{stream}_se_output.json" --lang {lang} --json
@@ -388,7 +388,8 @@ Task(
        fi
        ```
        - Exit 0 → clean, continue
-       - Non-zero → log warning in pipeline state; continue (advisory only)
+       - Exit 1-3 → log warning in pipeline state; continue (advisory only)
+       - Exit 4 → **BLOCK** — log fabrication finding in pipeline state; DO NOT proceed to commit. Re-invoke SE agent with audit findings in prompt context.
 
     3. Commit implementation (only if SE verification passed):
        .claude/bin/git-safe-commit -m 'feat({JIRA_ISSUE}): implement {stream}'

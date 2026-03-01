@@ -256,8 +256,7 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
      --summary "Implementation complete" --quiet || true
    ```
    **Why per-FR heartbeats matter**: If interrupted mid-work, the resume agent reads the updates array to know exactly which FRs are done. Without these, all progress is lost on interruption.
-12. **Write work log**: Write `work_log_frontend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
-13. **Format**: Use Prettier for formatting, ESLint for linting
+12. **Format**: Use Prettier for formatting, ESLint for linting
 
 ## Before Implementation: Anti-Pattern Check
 
@@ -448,8 +447,7 @@ See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance fo
 **Produces for**: Unit Test Writer Frontend
 **Deliverables**:
   - source code (direct edits)
-  - `work_log_frontend.md` — implementation log
-  - `se_frontend_output.json` — structured completion contract
+  - `se_frontend_output.json` — structured completion contract (see `schemas/se_output.schema.json`)
 **Completion criteria**: All assigned requirements implemented, type checks pass, linter passes
 
 ---

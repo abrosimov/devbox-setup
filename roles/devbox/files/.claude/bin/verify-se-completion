@@ -15,6 +15,7 @@
 #   5  Multiple checks failed
 #   6  Docker lint failed
 #   7  Smoke test failed
+#   8  Vacuous pass (tool exited 0 but checked nothing — misconfigured)
 
 set -euo pipefail
 
@@ -108,6 +109,13 @@ record_skip() {
   local check="$1" detail="$2"
   eval "result_${check}_status=SKIP"
   eval "result_${check}_detail=\$detail"
+}
+
+record_vacuous() {
+  local check="$1" detail="$2"
+  eval "result_${check}_status=VACUOUS"
+  eval "result_${check}_detail=\$detail"
+  FAILURE_CODES="${FAILURE_CODES} 8"
 }
 
 # --- Phase 1: Agent Output Validation ---
@@ -209,7 +217,29 @@ check_build() {
   esac
 
   if [[ $rc -eq 0 ]]; then
-    record_pass "build" "exit 0"
+    # Vacuous pass detection for build
+    local vacuous=false
+    case "$lang" in
+      go)
+        # go build on a project with no .go files exits 0 silently
+        local go_files
+        go_files=$(find . -name '*.go' -not -path './vendor/*' 2>/dev/null | head -1)
+        if [[ -z "$go_files" ]]; then
+          vacuous=true
+        fi
+        ;;
+      node)
+        # Check if tsc/build actually processed files (empty output can mean no files)
+        if echo "$output" | grep -qiE "no inputs were found|no input files"; then
+          vacuous=true
+        fi
+        ;;
+    esac
+    if [[ "$vacuous" == "true" ]]; then
+      record_vacuous "build" "exit 0 but no source files were compiled — check project configuration"
+    else
+      record_pass "build" "exit 0"
+    fi
   else
     record_fail "build" "exit $rc" "$output" 1
   fi
@@ -278,7 +308,12 @@ check_test() {
   esac
 
   if [[ $rc -eq 0 ]]; then
-    record_pass "test" "exit 0"
+    # Vacuous pass detection: tool exited 0 but checked nothing
+    if echo "$output" | grep -qiE "no test files|no tests ran|collected 0 items|0 tests found|no tests found|no test suites found|no specs found"; then
+      record_vacuous "test" "exit 0 but no tests were actually run — check test configuration"
+    else
+      record_pass "test" "exit 0"
+    fi
   else
     record_fail "test" "exit $rc" "$output" 2
   fi
@@ -343,7 +378,12 @@ check_lint() {
   esac
 
   if [[ $rc -eq 0 ]]; then
-    record_pass "lint" "exit 0"
+    # Vacuous pass detection for lint
+    if echo "$output" | grep -qiE "no files found|0 files linted|no inputs were found|all checks passed.*found 0|no files to lint"; then
+      record_vacuous "lint" "exit 0 but no files were linted — check lint configuration"
+    else
+      record_pass "lint" "exit 0"
+    fi
   else
     record_fail "lint" "exit $rc" "$output" 3
   fi
@@ -471,6 +511,9 @@ print_check_line() {
         show_output "$err_output" 15
       fi
       ;;
+    VACUOUS)
+      fail "${label} ${pad} VACUOUS (${detail})"
+      ;;
     SKIP) skip "${label} ${pad} (${detail})" ;;
     N_A)  ;; # check was not run (e.g., no --output-file)
   esac
@@ -493,7 +536,7 @@ print_report() {
   for check in output build test lint dockerlint smoke; do
     local s
     eval "s=\$result_${check}_status"
-    if [[ "$s" == "FAIL" ]]; then
+    if [[ "$s" == "FAIL" || "$s" == "VACUOUS" ]]; then
       fail_count=$((fail_count + 1))
     fi
   done
@@ -519,7 +562,7 @@ print_json_report() {
     eval "d=\$result_${check}_detail"
     eval "e=\$result_${check}_err"
 
-    if [[ "$s" == "FAIL" ]]; then
+    if [[ "$s" == "FAIL" || "$s" == "VACUOUS" ]]; then
       fail_count=$((fail_count + 1))
     fi
 

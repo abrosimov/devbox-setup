@@ -204,11 +204,11 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
    git log --oneline $DEFAULT_BRANCH..HEAD
    ```
 
-3. Read SE structured output (if available): Check for `se_backend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+3. Read SE structured output (if available): Check for `se_python_output.json` in `{PROJECT_DIR}/`. If found, extract:
    - `domain_compliance` — verify ubiquitous language usage, invariant implementations, aggregate boundary adherence
    - `autonomous_decisions` — audit Tier 2 decisions made by SE (especially in pipeline mode)
    - `requirements_implemented` + `verification_summary` — cross-reference with plan
-   - If `se_backend_output.json` is absent, fall back to reviewing code directly
+   - If `se_python_output.json` is absent, fall back to reviewing code directly
 
 4. Read domain model (if available): Check for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If found, extract:
    - **Ubiquitous language** — verify code uses domain terms correctly (class names, method names, variables)
@@ -1200,7 +1200,7 @@ If `domain_model.json` or `domain_model.md` was loaded in Step 1:
 1. **Ubiquitous language audit**: For each domain term in the model, grep for it in changed files. Flag any code that uses synonyms or abbreviations instead of the canonical term.
 2. **Invariant implementation check**: For each invariant in the model, verify it is enforced in code. Flag missing invariant checks.
 3. **Aggregate boundary check**: Verify that no code reaches across aggregate boundaries (e.g., directly modifying entities that belong to a different aggregate root).
-4. **SE autonomous decisions audit** (pipeline mode): If `se_backend_output.json` contains `autonomous_decisions`, review each Tier 2 decision for correctness. Flag questionable choices.
+4. **SE autonomous decisions audit** (pipeline mode): If `se_python_output.json` contains `autonomous_decisions`, review each Tier 2 decision for correctness. Flag questionable choices.
 
 ### Step 11: Report
 

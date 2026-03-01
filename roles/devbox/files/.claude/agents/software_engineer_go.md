@@ -274,7 +274,7 @@ This agent uses **skills** for Go-specific patterns. Skills load automatically b
    | FR | AC | Status | Evidence |
    |----|-----|--------|----------|
    ```
-8. **Write structured output**: Write `se_backend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
+8. **Write structured output**: Write `se_go_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
 8b. **Report progress heartbeats** (pipeline mode only): After implementing EACH functional requirement, report incrementally so interrupted work can be resumed:
    ```bash
    # After each FR:
@@ -289,8 +289,7 @@ This agent uses **skills** for Go-specific patterns. Skills load automatically b
      --summary "Implementation complete" --quiet || true
    ```
    **Why per-FR heartbeats matter**: If interrupted mid-work, the resume agent reads the updates array to know exactly which FRs are done. Without these, all progress is lost on interruption.
-9. **Write work log**: Write `work_log_backend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
-10. **Format**: **ALWAYS** use `goimports -local <module-name>` — **NEVER** use `gofmt`
+9. **Format**: **ALWAYS** use `goimports -local <module-name>` — **NEVER** use `gofmt`
 
 ## CRITICAL: Formatting Tool
 
@@ -471,8 +470,7 @@ echo "$CHANGED" | xargs grep -n 'exec.Command("sh"\|exec.Command("bash"\|exec.Co
 **Produces for**: Unit Test Writer Go, Integration Test Writer Go
 **Deliverables**:
   - source code (direct edits)
-  - `work_log_backend.md` — implementation log
-  - `se_backend_output.json` — structured completion contract
+  - `se_go_output.json` — structured completion contract (see `schemas/se_output.schema.json`)
 **Completion criteria**: All assigned requirements implemented, code compiles, linter passes
 
 ---

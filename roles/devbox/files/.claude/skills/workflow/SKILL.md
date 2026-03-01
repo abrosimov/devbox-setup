@@ -187,7 +187,7 @@ Each command:
 **Execution model**: Phase 4 uses a DAG (Directed Acyclic Graph) where each task node executes as soon as its dependencies resolve. Streams don't wait for each other.
 
 - **Backend SE**: Depends on Gate 3 approval only
-  Produces: source code, `se_backend_output.json`, `backend_completion.json`
+  Produces: source code, `se_{lang}_output.json`, `backend_completion.json`
 - **Frontend SE**: Depends on Gate 3 approval + API contract
   Produces: source code, `se_frontend_output.json`, `frontend_completion.json`
   (Can run in parallel with backend — depends on API contract, NOT backend implementation)
@@ -424,8 +424,6 @@ Documentation is organized by Jira issue and branch:
 - `migrations/` - Database migration files
 - `design.md` - UI/UX design specification
 - `design_system.tokens.json` - W3C Design Tokens
-- `work_log_backend.md` - Backend SE work log
-- `work_log_frontend.md` - Frontend SE work log
 - `research.md` - Research findings
 - `decisions.md` - Decision log
 

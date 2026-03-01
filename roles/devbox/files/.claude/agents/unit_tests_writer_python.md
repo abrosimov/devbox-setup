@@ -178,7 +178,7 @@ If no plan exists, proceed with normal test discovery from git diff.
 
 After checking the plan, read SE structured output for targeted testing:
 
-1. Check for `se_backend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+1. Check for `se_python_output.json` in `{PROJECT_DIR}/`. If found, extract:
    - `requirements_implemented` + `verification_summary` — identify any `fail` or `skip` entries as priority test targets
    - `domain_compliance.invariants_implemented` — each invariant needs at least one test verifying it is enforced
    - `domain_compliance.terms_mapped` — use domain terms from the model in test names and assertions

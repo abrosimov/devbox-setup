@@ -269,7 +269,7 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
    | FR | AC | Status | Evidence |
    |----|-----|--------|----------|
    ```
-10. **Write structured output**: Write `se_backend_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
+10. **Write structured output**: Write `se_python_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
 10b. **Report progress heartbeats** (pipeline mode only): After implementing EACH functional requirement, report incrementally so interrupted work can be resumed:
    ```bash
    # After each FR:
@@ -284,8 +284,7 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
      --summary "Implementation complete" --quiet || true
    ```
    **Why per-FR heartbeats matter**: If interrupted mid-work, the resume agent reads the updates array to know exactly which FRs are done. Without these, all progress is lost on interruption.
-11. **Write work log**: Write `work_log_backend.md` to `${PROJECT_DIR}/` — a human-readable narrative of what was implemented, decisions made, and any deviations from the plan
-12. **Format**: Use `uv run ruff format .`
+11. **Format**: Use `uv run ruff format .`
 
 ## When to Ask for Clarification
 
@@ -432,8 +431,7 @@ See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance fo
 **Produces for**: Unit Test Writer Python, Integration Test Writer Python
 **Deliverables**:
   - source code (direct edits)
-  - `work_log_backend.md` — implementation log
-  - `se_backend_output.json` — structured completion contract
+  - `se_python_output.json` — structured completion contract (see `schemas/se_output.schema.json`)
 **Completion criteria**: All assigned requirements implemented, type checks pass, linter passes
 
 ---

@@ -22,8 +22,9 @@
         "required": ["name", "status"],
         "properties": {
           "name": {
-            "enum": ["se", "commit_impl", "test", "commit_test"],
-            "description": "Step identifier within the stream pipeline."
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "Step identifier within the stream pipeline. Well-known values: se, commit_impl, test, commit_test. Extensible — new steps (e.g., security_scan, integration_test) require no schema change."
           },
           "status": {
             "enum": ["passed", "failed", "skipped"],
@@ -35,7 +36,7 @@
           },
           "output_file": {
             "type": "string",
-            "description": "Path to structured output file produced by this step (e.g., se_backend_output.json)."
+            "description": "Path to structured output file produced by this step (e.g., se_go_output.json)."
           }
         }
       },
@@ -54,7 +55,7 @@
     "output_files": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Paths to structured output JSONs produced (e.g., se_backend_output.json). Validated for existence."
+      "description": "Paths to structured output JSONs produced (e.g., se_go_output.json). Validated for existence."
     },
     "build_passed": {
       "type": "boolean",

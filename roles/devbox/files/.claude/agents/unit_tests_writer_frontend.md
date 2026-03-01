@@ -402,29 +402,6 @@ Before completing, verify:
 | FE Tester | YYYY-MM-DD | Wrote tests | X tests, found Y bugs | done |
 ```
 
-**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log.md`**:
-
-```markdown
-## [FE Tester] YYYY-MM-DD — Frontend Testing
-
-### Problem Domain Analysis (BEFORE implementation)
-Component: [name]
-Domain scenarios: [list with status]
-
-### Gaps Found vs Implementation
-| Domain Scenario | SE Handled? | Test Added? |
-|-----------------|-------------|-------------|
-
-### Bugs Reported
-- [file]: [description]
-
-### Tests Written
-- [file] (N cases: categories)
-
-### Files Changed
-- created/modified: [paths]
-```
-
 ---
 
 ### Progress Spine (Pipeline Mode Only)

@@ -27,7 +27,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Unique node identifier (e.g., 'se_backend', 'test_frontend', 'commit_impl_backend')."
+            "description": "Unique node identifier (e.g., 'se_go', 'test_frontend', 'commit_impl_backend')."
           },
           "type": {
             "enum": ["agent", "commit", "verify", "gate"],

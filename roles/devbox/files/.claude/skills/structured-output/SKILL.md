@@ -363,7 +363,7 @@ Written by stream executors at the end of Phase 4 DAG execution. Validated by `b
       "name": "enum: se | commit_impl | test | commit_test",
       "status": "enum: passed | failed | skipped",
       "error": "string (required if status=failed)",
-      "output_file": "string (path to step output, e.g., se_backend_output.json)"
+      "output_file": "string (path to step output, e.g., se_{lang}_output.json)"
     }
   ],
   "git_sha": "string (HEAD SHA after completion, pattern: ^[a-f0-9]{7,40}$)",

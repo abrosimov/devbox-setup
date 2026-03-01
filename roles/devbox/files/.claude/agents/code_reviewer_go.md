@@ -268,11 +268,11 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
    git log --oneline $DEFAULT_BRANCH..HEAD
    ```
 
-3. Read SE structured output (if available): Check for `se_backend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+3. Read SE structured output (if available): Check for `se_go_output.json` in `{PROJECT_DIR}/`. If found, extract:
    - `domain_compliance` — verify ubiquitous language usage, invariant implementations, aggregate boundary adherence
    - `autonomous_decisions` — audit Tier 2 decisions made by SE (especially in pipeline mode)
    - `requirements_implemented` + `verification_summary` — cross-reference with plan
-   - If `se_backend_output.json` is absent, fall back to reviewing code directly
+   - If `se_go_output.json` is absent, fall back to reviewing code directly
 
 4. Read domain model (if available): Check for `domain_model.json` (preferred) or `domain_model.md` in `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/`. If found, extract:
    - **Ubiquitous language** — verify code uses domain terms correctly (type names, method names, variables)
@@ -460,7 +460,7 @@ If `domain_model.json` or `domain_model.md` was loaded in Step 1:
 1. **Ubiquitous language audit**: For each domain term in the model, grep for it in changed files. Flag any code that uses synonyms or abbreviations instead of the canonical term.
 2. **Invariant implementation check**: For each invariant in the model, verify it is enforced in code. Flag missing invariant checks.
 3. **Aggregate boundary check**: Verify that no code reaches across aggregate boundaries (e.g., directly modifying entities that belong to a different aggregate root).
-4. **SE autonomous decisions audit** (pipeline mode): If `se_backend_output.json` contains `autonomous_decisions`, review each Tier 2 decision for correctness. Flag questionable choices.
+4. **SE autonomous decisions audit** (pipeline mode): If `se_go_output.json` contains `autonomous_decisions`, review each Tier 2 decision for correctness. Flag questionable choices.
 
 ### Step 11: Report
 
@@ -617,44 +617,3 @@ Before completing review, verify:
 
 ---
 
-## Log Work (MANDATORY)
-
-**Document your work for accountability and transparency.**
-
-**Update `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log_backend.md`** (create if doesn't exist):
-
-Add/update your row:
-```markdown
-| Agent | Date | Action | Key Findings | Status |
-|-------|------|--------|--------------|--------|
-| Reviewer | YYYY-MM-DD | Reviewed code | X blocking, Y important, traced Z ACs | ✅/⚠️ |
-```
-
-**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log_backend.md`**:
-
-```markdown
-## [Reviewer] YYYY-MM-DD — Review
-
-### AC Feasibility Traces
-
-| AC | Claim | Code Trace | Verdict |
-|----|-------|------------|---------|
-| AC-47 | "Panic recovery needed" | exec.CommandContext returns error, never panics | ❌ INVALID |
-| AC-12 | "Timeout after 30s" | context.WithTimeout used correctly | ✅ Valid |
-
-### Test Scenario Completeness
-
-| Function | Domain Scenarios | Tested? | Gap? |
-|----------|------------------|---------|------|
-| PrepareOutputDir | files, dirs, symlinks, nested | files only | ❌ Missing: non-empty dirs |
-
-### Issues Found
-- 🔴 Blocking: X issues
-- 🟡 Important: Y issues
-- 🟢 Optional: Z suggestions
-
-### Assumptions Challenged
-- SE assumed: _______________
-- Tester assumed: _______________
-- Valid? _______________
-```

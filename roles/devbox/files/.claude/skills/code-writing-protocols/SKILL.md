@@ -454,7 +454,7 @@ Every SE agent MUST actually execute build, test, and lint commands before repor
 
 ### Forbidden Excuse Patterns
 
-The following phrases in Pre-Flight reports or work logs indicate the agent skipped verification. These are grounds for immediate rejection:
+The following phrases in Pre-Flight reports or SE output artifacts indicate the agent skipped verification. These are grounds for immediate rejection:
 
 - "manual review passed"
 - "manually verified"
@@ -506,7 +506,7 @@ When adding a new test:
 
 ### Evidence Format
 
-Each new test must include RED-GREEN evidence in the work log:
+Each new test must include RED-GREEN evidence in the SE output artifact:
 
 ```
 ### Test: test_name

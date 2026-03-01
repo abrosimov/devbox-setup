@@ -58,11 +58,11 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 | **Impl Planner** | `spec.md`, `spec_output.json`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `plan.md`, `plan_output.json` |
 | **Database Designer** | `plan.md`, `plan_output.json`, `spec.md`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `schema_design.md`, `migrations/` |
 | **API Designer** | `plan.md`, `plan_output.json`, `spec.md`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `api_design.md`, `api_spec.yaml`, `api_design_output.json` |
-| **SE (backend)** | `plan.md`, `plan_output.json`, `api_spec.yaml`, `schema_design.md`, `domain_model.md`?, `domain_model.json`? | *(source code)*, `work_log_backend.md`, `se_backend_output.json` |
-| **SE (frontend)** | `plan.md`, `plan_output.json`, `design.md`, `design_output.json`, `api_spec.yaml`, `domain_model.md`?, `domain_model.json`? | *(source code)*, `work_log_frontend.md`, `se_frontend_output.json` |
+| **SE (backend)** | `plan.md`, `plan_output.json`, `api_spec.yaml`, `schema_design.md`, `domain_model.md`?, `domain_model.json`? | *(source code)*, `se_{lang}_output.json` |
+| **SE (frontend)** | `plan.md`, `plan_output.json`, `design.md`, `design_output.json`, `api_spec.yaml`, `domain_model.md`?, `domain_model.json`? | *(source code)*, `se_frontend_output.json` |
 | **Observability** | `plan.md`, `plan_output.json` | *(dashboards, alerts)* |
-| **Test Writer** | `plan.md`, `spec.md`, `domain_model.json`?, `domain_model.md`?, `se_backend_output.json`?, `se_frontend_output.json`? | *(test files)* |
-| **Code Reviewer** | `plan.md`, `spec.md`, `domain_model.json`?, `domain_model.md`?, `design.md`?, `design_output.json`?, `se_backend_output.json`?, `se_frontend_output.json`? | *(review report — inline)* |
+| **Test Writer** | `plan.md`, `spec.md`, `domain_model.json`?, `domain_model.md`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(test files)* |
+| **Code Reviewer** | `plan.md`, `spec.md`, `domain_model.json`?, `domain_model.md`?, `design.md`?, `design_output.json`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(review report — inline)* |
 | **Content Reviewer** | agent/skill artifact, 2-3 referenced skills | `<audit-findings>` XML (inline) |
 | **Freshness Auditor** | all `agents/*.md`, all `skills/*/SKILL.md` | `<audit-findings scope="library">` XML (inline) |
 | **Consistency Checker** | all `agents/*.md`, all `skills/*/SKILL.md`, all `commands/*.md` | `<audit-findings scope="library">` XML (inline) |

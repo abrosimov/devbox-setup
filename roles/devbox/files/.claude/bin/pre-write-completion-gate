@@ -3,9 +3,8 @@
 // pre-write-completion-gate — PreToolUse hook that blocks writes to SE output
 // artifacts unless the project actually builds and lints cleanly.
 //
-// Intercepts Write calls targeting these filenames:
-//   se_backend_output.json, se_frontend_output.json,
-//   work_log_backend.md, work_log_frontend.md
+// Intercepts Write calls targeting filenames matching se_*_output.json
+// (e.g., se_go_output.json, se_python_output.json, se_frontend_output.json).
 //
 // When matched, finds the project root and runs verify-se-completion --json
 // to confirm build+lint pass before allowing the write.
@@ -19,29 +18,25 @@ const { execSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
-const ARTIFACT_FILES = new Set([
-  "se_backend_output.json",
-  "se_frontend_output.json",
-  "work_log_backend.md",
-  "work_log_frontend.md",
-]);
+// Pattern matches any SE output artifact: se_{suffix}_output.json
+const SE_ARTIFACT_RE = /^se_([a-z]+)_output\.json$/;
 
-// Marker files → language mapping
-const LANG_MARKERS = [
-  { file: "go.mod", lang: "go" },
-  { file: "pyproject.toml", lang: "python" },
-  { file: "uv.lock", lang: "python" },
-  { file: "poetry.lock", lang: "python" },
-  { file: "package.json", lang: "node" },
-];
+// Artifact suffix → verify-se-completion --lang value
+const SUFFIX_TO_LANG = { go: "go", python: "python", frontend: "node" };
+
+// Marker files for project root detection (language derived from filename, not markers)
+const ROOT_MARKERS = ["go.mod", "pyproject.toml", "uv.lock", "poetry.lock", "package.json", "Cargo.toml"];
+
+function langFromFilename(fileName) {
+  const m = fileName.match(SE_ARTIFACT_RE);
+  return m ? SUFFIX_TO_LANG[m[1]] || null : null;
+}
 
 function findProjectRoot(filePath) {
   let dir = path.dirname(filePath);
   for (let i = 0; i < 20; i++) {
-    for (const marker of LANG_MARKERS) {
-      if (fs.existsSync(path.join(dir, marker.file))) {
-        return { root: dir, lang: marker.lang };
-      }
+    for (const marker of ROOT_MARKERS) {
+      if (fs.existsSync(path.join(dir, marker))) return dir;
     }
     const parent = path.dirname(dir);
     if (parent === dir) break;
@@ -72,13 +67,22 @@ async function main() {
 
   // Check if the target file is an SE artifact
   const fileName = path.basename(filePath);
-  if (!ARTIFACT_FILES.has(fileName)) {
+  if (!SE_ARTIFACT_RE.test(fileName)) {
     process.exit(0);
   }
 
-  // Find project root and detect language
-  const project = findProjectRoot(filePath);
-  if (!project) {
+  // Extract language from artifact filename (se_go_output.json → go)
+  const lang = langFromFilename(fileName);
+  if (!lang) {
+    process.stderr.write(
+      `BLOCKED: Unknown language suffix in artifact "${fileName}". Known suffixes: ${Object.keys(SUFFIX_TO_LANG).join(", ")}.\n`
+    );
+    process.exit(2);
+  }
+
+  // Find project root (marker-based walk, language already known from filename)
+  const projectRoot = findProjectRoot(filePath);
+  if (!projectRoot) {
     process.stderr.write(
       "BLOCKED: Could not detect project root for SE artifact verification. Cannot write completion artifacts without a verifiable project.\n"
     );
@@ -98,7 +102,7 @@ async function main() {
   // Run verification
   try {
     const result = execSync(
-      `"${verifyScript}" --lang ${project.lang} --work-dir "${project.root}" --json`,
+      `"${verifyScript}" --lang ${lang} --work-dir "${projectRoot}" --json`,
       { timeout: 120000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
     );
 

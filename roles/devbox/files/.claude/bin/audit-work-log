@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# audit-work-log — Detect lazy agent patterns in work logs and SE outputs.
+# audit-work-log — Detect lazy agent patterns in SE output artifacts.
 #
 # Scans agent output for excuse phrases that indicate fabricated results,
 # and verifies that required commands were actually executed per language.
@@ -7,10 +7,11 @@
 # Usage: audit-work-log [--se-output <path>] [--lang <go|python|node>] [--json]
 #
 # Exit codes:
-#   0  Clean (no lazy patterns detected, all required commands present)
-#   1  Lazy patterns detected
-#   2  Missing mandatory commands
-#   3  Both lazy patterns and missing commands
+#   0  Clean (no patterns detected, all required commands present)
+#   1  Advisory patterns detected (possible false positives — warn only)
+#   2  Missing mandatory commands (advisory — not all tools always needed)
+#   3  Both advisory patterns and missing commands
+#   4  BLOCKING patterns detected (high-confidence fabrication — should block pipeline)
 
 set -euo pipefail
 
@@ -24,28 +25,32 @@ if [[ ! -t 1 ]]; then
   RED='' GREEN='' YELLOW='' BOLD='' NC=''
 fi
 
-# --- Excuse patterns (case-insensitive grep) ---
-EXCUSE_PATTERNS=(
-  "manual review"
+# --- BLOCKING patterns: high-confidence fabrication, no legitimate use in SE output ---
+BLOCKING_PATTERNS=(
   "manually verified"
   "verified by inspection"
   "verified by reading"
-  "sandbox blocks"
-  "sandbox restrict"
   "unable to run"
   "could not execute"
   "could not run"
+  "sandbox blocks"
+  "sandbox restrict"
+  "visual inspection"
+  "code review only"
+  "static analysis only"
+  "limited to import resolution"
+  "verified via import"
+)
+
+# --- ADVISORY patterns: could be false positives in context ---
+ADVISORY_PATTERNS=(
+  "manual review"
   "appears correct"
   "looks correct"
   "should work"
   "tests appear"
   "would succeed"
   "would work outside"
-  "limited to import resolution"
-  "verified via import"
-  "visual inspection"
-  "code review only"
-  "static analysis only"
   "reviewed the code"
   "checked the logic"
 )
@@ -77,9 +82,10 @@ Options:
 
 Exit codes:
   0  Clean
-  1  Lazy patterns detected
-  2  Missing mandatory commands
-  3  Both lazy patterns and missing commands
+  1  Advisory patterns detected (warn only)
+  2  Missing mandatory commands (warn only)
+  3  Both advisory patterns and missing commands
+  4  BLOCKING patterns detected (high-confidence fabrication)
 EOF
   exit 0
 }
@@ -105,13 +111,20 @@ if [[ ! -f "$se_output" ]]; then
   exit 10
 fi
 
-# --- Scan for excuse patterns ---
-found_excuses=()
+# --- Scan for patterns ---
+found_blocking=()
+found_advisory=()
 content=$(cat "$se_output")
 
-for pattern in "${EXCUSE_PATTERNS[@]}"; do
+for pattern in "${BLOCKING_PATTERNS[@]}"; do
   if echo "$content" | grep -qi "$pattern"; then
-    found_excuses+=("$pattern")
+    found_blocking+=("$pattern")
+  fi
+done
+
+for pattern in "${ADVISORY_PATTERNS[@]}"; do
+  if echo "$content" | grep -qi "$pattern"; then
+    found_advisory+=("$pattern")
   fi
 done
 
@@ -129,16 +142,20 @@ if [[ -n "$lang" ]]; then
   fi
 fi
 
-# --- Compute exit code ---
-has_excuses=false
+# --- Compute exit code (blocking > advisory > missing) ---
+has_blocking=false
+has_advisory=false
 has_missing=false
-[[ ${#found_excuses[@]} -gt 0 ]] && has_excuses=true
+[[ ${#found_blocking[@]} -gt 0 ]] && has_blocking=true
+[[ ${#found_advisory[@]} -gt 0 ]] && has_advisory=true
 [[ ${#missing_commands[@]} -gt 0 ]] && has_missing=true
 
 exit_code=0
-if $has_excuses && $has_missing; then
+if $has_blocking; then
+  exit_code=4
+elif $has_advisory && $has_missing; then
   exit_code=3
-elif $has_excuses; then
+elif $has_advisory; then
   exit_code=1
 elif $has_missing; then
   exit_code=2
@@ -147,12 +164,19 @@ fi
 # --- Output ---
 if $json_output; then
   # Build JSON arrays
-  excuses_json="["
-  for i in "${!found_excuses[@]}"; do
-    [[ $i -gt 0 ]] && excuses_json+=","
-    excuses_json+="\"${found_excuses[$i]}\""
+  blocking_json="["
+  for i in "${!found_blocking[@]}"; do
+    [[ $i -gt 0 ]] && blocking_json+=","
+    blocking_json+="\"${found_blocking[$i]}\""
   done
-  excuses_json+="]"
+  blocking_json+="]"
+
+  advisory_json="["
+  for i in "${!found_advisory[@]}"; do
+    [[ $i -gt 0 ]] && advisory_json+=","
+    advisory_json+="\"${found_advisory[$i]}\""
+  done
+  advisory_json+="]"
 
   missing_json="["
   for i in "${!missing_commands[@]}"; do
@@ -163,22 +187,32 @@ if $json_output; then
 
   cat <<EOF
 {
-  "status": "$(if [[ $exit_code -eq 0 ]]; then echo "clean"; else echo "flagged"; fi)",
-  "excuse_patterns_found": $excuses_json,
+  "status": "$(if [[ $exit_code -eq 0 ]]; then echo "clean"; elif [[ $exit_code -eq 4 ]]; then echo "blocked"; else echo "flagged"; fi)",
+  "blocking_patterns_found": $blocking_json,
+  "advisory_patterns_found": $advisory_json,
   "missing_commands": $missing_json,
   "exit_code": $exit_code
 }
 EOF
 else
-  echo -e "${BOLD}Work Log Audit${NC}"
+  echo -e "${BOLD}SE Output Audit${NC}"
   echo "─────────────────────────────"
 
-  if $has_excuses; then
-    echo -e "\n${RED}Excuse patterns detected:${NC}"
-    for e in "${found_excuses[@]}"; do
-      echo -e "  ${RED}!${NC}  \"$e\""
+  if $has_blocking; then
+    echo -e "\n${RED}BLOCKING — high-confidence fabrication patterns:${NC}"
+    for e in "${found_blocking[@]}"; do
+      echo -e "  ${RED}X${NC}  \"$e\""
     done
-  else
+  fi
+
+  if $has_advisory; then
+    echo -e "\n${YELLOW}Advisory — possible excuse patterns:${NC}"
+    for e in "${found_advisory[@]}"; do
+      echo -e "  ${YELLOW}!${NC}  \"$e\""
+    done
+  fi
+
+  if ! $has_blocking && ! $has_advisory; then
     echo -e "\n${GREEN}No excuse patterns found.${NC}"
   fi
 

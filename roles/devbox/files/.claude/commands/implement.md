@@ -250,9 +250,9 @@ VERIFY_EXIT=$?
 
 If the user says yes, go back to Step 6 and spawn the same agent again, passing the verification errors in the prompt context. If the user says no (or wants to proceed anyway), continue to Step 7 with a warning note.
 
-### 6b. Work Log Audit (Advisory)
+### 6b. SE Output Audit
 
-After verification, run the work log auditor on the agent's output to detect excuse patterns. This is advisory — it does not block completion.
+After verification, run the SE output auditor on the agent's output to detect fabrication patterns.
 
 ```bash
 AUDITOR=~/.claude/bin/audit-work-log
@@ -265,11 +265,12 @@ fi
 | Exit code | Meaning | Action |
 |-----------|---------|--------|
 | `0` | Clean | Continue silently |
-| `1` | Excuse patterns found | Warn user: "Work log audit flagged potential excuse patterns" |
-| `2` | Missing commands | Warn user: "Work log audit found missing expected commands" |
-| `3` | Both | Warn user with both findings |
+| `1` | Advisory patterns found | Warn user: "SE output audit flagged possible excuse patterns" |
+| `2` | Missing commands | Warn user: "SE output audit found missing expected commands" |
+| `3` | Both advisory | Warn user with both findings |
+| `4` | **BLOCKING patterns** | **BLOCK** — "SE output audit detected high-confidence fabrication. Agent claimed it could not run tooling." Offer to re-invoke SE agent. |
 
-Show warnings but do not block — the independent verification (Step 6a) is the hard gate.
+Exit 1-3 are advisory (warn only). Exit 4 is a hard block — do NOT proceed to commit or test until resolved.
 
 ### 7. Commit Changes
 

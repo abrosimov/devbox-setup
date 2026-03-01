@@ -172,7 +172,7 @@ If no plan exists, proceed with normal test discovery from git diff.
 
 After checking the plan, read SE structured output for targeted testing:
 
-1. Check for `se_backend_output.json` in `{PROJECT_DIR}/`. If found, extract:
+1. Check for `se_go_output.json` in `{PROJECT_DIR}/`. If found, extract:
    - `requirements_implemented` + `verification_summary` — identify `fail` or `skip` entries as priority test targets
    - `domain_compliance.invariants_implemented` — each invariant needs at least one test
    - `domain_compliance.terms_mapped` — use domain terms in test names and assertions
@@ -486,21 +486,6 @@ Before completing, verify:
 | Agent | Date | Action | Key Findings | Status |
 |-------|------|--------|--------------|--------|
 | Tester | YYYY-MM-DD | Wrote tests | X tests, found Y domain gaps | done |
-```
-
-**Append to `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_log.md`**:
-
-```markdown
-## [Tester] YYYY-MM-DD — Testing
-
-### Problem Domain Analysis (BEFORE implementation)
-[Document domain scenarios and SE coverage gaps]
-
-### Tests Written
-- TestXxx (N cases)
-
-### Files Changed
-- created: path/to/test.go
 ```
 
 ---

@@ -256,7 +256,8 @@
     },
     "evidence_entry": {
       "type": "object",
-      "required": ["command", "exit_code", "executed"],
+      "required": ["command", "exit_code"],
+      "description": "TRUST MODEL: This data is self-reported by the agent and is NOT independently verified. Outcome correctness (build/test/lint pass) is enforced architecturally by pre-write-completion-gate and verify-se-completion, which re-run all checks independently. This field exists for audit trail and downstream context, not as proof of execution.",
       "properties": {
         "command": {
           "type": "string",
@@ -273,10 +274,6 @@
         "stderr_tail": {
           "type": "string",
           "description": "Last 10 lines of stderr, if any."
-        },
-        "executed": {
-          "type": "boolean",
-          "description": "Whether command was actually executed (true) or skipped (false). NOTE: self-reported by agent — independently verified by pre-write-completion-gate and verify-se-completion."
         }
       }
     }

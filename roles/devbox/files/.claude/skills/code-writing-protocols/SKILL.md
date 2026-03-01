@@ -541,3 +541,70 @@ If a test cannot meaningfully fail first (e.g., testing existing behaviour that 
 **RED skip reason**: Testing existing correct behaviour — no implementation change needed.
 **GREEN**: Command: ..., Exit code: 0
 ```
+
+---
+
+## Pre-Flight Verification (SE Agents)
+
+Build, test, and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion` passes (build + test + lint + docker lint + smoke). You still MUST run checks manually and report results.
+
+### Pre-Flight Report (REQUIRED OUTPUT)
+
+Output a table with language-appropriate commands. Each row must include the exact command run and its exit code (see Anti-Laziness Protocol above).
+
+```
+## Pre-Flight Verification
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Build/Typecheck | PASS / FAIL | |
+| Tests | PASS / FAIL | X tests, Y passed |
+| Linter | PASS / WARN / FAIL | |
+| Formatter | PASS | |
+| Security scan | CLEAR / REVIEW | [findings if any] |
+| Smoke test | PASS / N/A | [what was tested] |
+
+**Result**: READY / BLOCKED
+```
+
+**If ANY check shows FAIL → you are BLOCKED. Fix issues before completing.**
+
+---
+
+## Pre-Handoff Self-Review (SE Agents)
+
+After Pre-Flight passes, verify these quality checks. Language-specific items are in the agent definition.
+
+### From Plan (Feature-Specific)
+- [ ] All items in plan's "Implementation Checklist" verified
+- [ ] Each acceptance criterion manually tested
+- [ ] All error cases from plan handled
+
+### Comment Audit (DO THIS FIRST)
+- [ ] I have NOT added narration comments (Create, Get, Check, Return, Initialize, Handle, Render, Map, Set)
+- [ ] For each comment I wrote: if I delete it, does the code become unclear? If NO → deleted it
+- [ ] The only comments remaining explain WHY (business rules, gotchas), not WHAT
+
+### Scope Check (Anti-Helpfulness)
+- [ ] I did NOT add features not in the plan
+- [ ] I did NOT add "nice to have" improvements
+- [ ] Every addition is either: (a) explicitly requested, or (b) narrow production necessity
+
+---
+
+## After Completion (All Code-Writing Agents)
+
+1. **Comment audit**: Remove ALL narration comments (see Self-Review above)
+2. **Completion format**: See `agent-communication` skill — Completion Output Format. Interactive mode: summarise work and suggest next step (`/test` for SE, `/review` for test writers). Pipeline mode: return structured result with status.
+
+---
+
+## Log Work (Test Writers — Pipeline Mode)
+
+Update `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/work_summary.md` (create if absent):
+
+```markdown
+| Agent | Date | Action | Key Findings | Status |
+|-------|------|--------|--------------|--------|
+| <agent> | YYYY-MM-DD | Wrote tests | X tests, found Y bugs | done |
+```

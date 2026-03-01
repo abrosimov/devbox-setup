@@ -8,95 +8,6 @@ skills: go-engineer, code-comments, lint-discipline, agent-communication, shared
 updated: 2026-02-10
 ---
 
-## ⛔ FORBIDDEN PATTERNS — READ FIRST
-
-**Your output will be REJECTED if it contains these patterns.**
-
-### Narration Comments (ZERO TOLERANCE)
-
-❌ **NEVER write comments that describe what code does:**
-```go
-// Get user from database                   ← VIOLATION
-// Create new connection                    ← VIOLATION
-// Check if valid                           ← VIOLATION
-// Return the result                        ← VIOLATION
-// Initialize the service                   ← VIOLATION
-// Loop through items                       ← VIOLATION
-```
-
-**The test:** If deleting the comment loses no information → don't write it.
-
-### Example: REJECTED vs ACCEPTED Output
-
-❌ **REJECTED** — Your PR will be sent back:
-```go
-func (s *Service) ProcessOrder(ctx context.Context, order *Order) error {
-    // Validate the order
-    if err := s.validator.Validate(order); err != nil {
-        return fmt.Errorf("validating order: %w", err)
-    }
-
-    // Save to database
-    if err := s.repo.Save(ctx, order); err != nil {
-        return fmt.Errorf("saving order: %w", err)
-    }
-
-    // Return success
-    return nil
-}
-```
-
-✅ **ACCEPTED** — Clean, self-documenting:
-```go
-func (s *Service) ProcessOrder(ctx context.Context, order *Order) error {
-    if err := s.validator.Validate(order); err != nil {
-        return fmt.Errorf("validating order: %w", err)
-    }
-
-    if err := s.repo.Save(ctx, order); err != nil {
-        return fmt.Errorf("saving order: %w", err)
-    }
-
-    return nil
-}
-```
-
-**Why the first is wrong:**
-- `// Validate the order` just restates `s.validator.Validate(order)`
-- `// Save to database` just restates `s.repo.Save(ctx, order)`
-- `// Return success` just restates `return nil`
-
-✅ **ONLY acceptable inline comment:**
-```go
-return nil  // Partial success is acceptable per SLA
-```
-This explains WHY (business rule), not WHAT.
-
----
-
-## FORBIDDEN: Excuse Patterns
-
-See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance for fabricated results.
-
----
-
-## CRITICAL: File Operations
-
-See `agent-base-protocol` skill. Use Write/Edit tools, never Bash heredocs.
-
----
-
-## MANDATORY: Go Toolchain Reminder
-
-Go uses system-level binaries — no prefix needed for `go build`, `go test`, `go vet`.
-- Format: `goimports -local <module> -w .` (NEVER `go fmt`)
-- Module name: first line of `go.mod`
-- Lint: `golangci-lint run ./...`
-
-See `project-toolchain` skill for full reference.
-
----
-
 ### Sandbox Cache
 
 `settings.json` `env` block sets `GOCACHE`, `GOMODCACHE`, and `GOTOOLCHAIN` globally -- no manual prefix needed:
@@ -149,83 +60,11 @@ See `code-writing-protocols` skill for verification checklist and workaround det
 
 ---
 
-## CRITICAL: This is SERVICE Code — No Doc Comments
+## Doc Comments Policy
 
-**This codebase is a SERVICE, not a library.** Services have no external consumers needing godoc.
+This codebase is a SERVICE, not a library. No doc comments on services, handlers, domain models, or unexported functions. Only exception: library wrappers in `pkg/` or infrastructure clients.
 
-**NEVER add doc comments to:**
-- Services, handlers, controllers, domain models
-- Any function where the name is self-explanatory
-- Unexported functions (lowercase)
-
-**Only exception:** Library wrappers in `pkg/` or infrastructure clients (rare).
-
-**Before writing ANY comment, ask:** *"If I delete this, does the code become unclear?"*
-- If NO → don't write it
-- If YES → rename the function instead
-
----
-
-## CRITICAL: No Narration Comments
-
-**NEVER write comments that describe what code does.** Code is self-documenting.
-
-❌ **FORBIDDEN inline comment patterns:**
-```go
-// Check if doomed AFTER decrementing
-// If we're the last reference, abort and end session
-// Verify transaction is stored in context
-// Create nested transaction
-// Start first transaction
-// Get the user from database
-// Return the result
-```
-
-✅ **ONLY write inline comments when:**
-- Explaining WHY (non-obvious business rule): `// MongoDB doesn't support nested tx, use refcount`
-- Warning about gotcha: `// nil map panics on write, must initialize`
-- External reference: `// Per RFC 7231 section 6.5.1`
-
-**Delete test: If you can remove the comment and code remains clear → delete it.**
-
-## CRITICAL: Doc Comments — Library vs Business Logic
-
-**Library/Infrastructure code** (reusable clients like `mongo.Client`, `kube.Client`, `pkg/`):
-- Exported API: Doc comments required — contract only, no implementation details
-- Unexported: Never
-
-**Business logic** (services, handlers, domain models):
-- Exported or not: **NEVER** — function names and signatures ARE the documentation
-
-❌ **FORBIDDEN — doc comment on business logic:**
-```go
-// ProcessOrder processes an order by validating items and calculating totals.
-func (s *OrderService) ProcessOrder(ctx context.Context, order *Order) error {
-```
-
-✅ **CORRECT — no doc comment on business logic:**
-```go
-func (s *OrderService) ProcessOrder(ctx context.Context, order *Order) error {
-```
-
-❌ **FORBIDDEN — doc comment on unexported:**
-```go
-// getClient returns the MongoDB client for internal use.
-func (c *Client) getClient(ctx context.Context) (*mongo.Client, error) {
-```
-
-❌ **FORBIDDEN — implementation details in library doc:**
-```go
-// Commit commits the transaction.
-// If refCount > 1 after decrement, returns nil. If refCount == 0, commits.
-func (h *TxHandle) Commit(ctx context.Context) error {
-```
-
-✅ **CORRECT — contract only in library doc:**
-```go
-// Commit commits the transaction. Returns ErrTransactionDoomed if doomed.
-func (h *TxHandle) Commit(ctx context.Context) error {
-```
+**Before writing ANY comment, ask:** *"If I delete this, does the code become unclear?"* If NO, don't write it. If YES, rename the function instead.
 
 ## Workflow
 
@@ -270,30 +109,6 @@ func (h *TxHandle) Commit(ctx context.Context) error {
    **Why per-FR heartbeats matter**: If interrupted mid-work, the resume agent reads the updates array to know exactly which FRs are done. Without these, all progress is lost on interruption.
 9. **Format**: **ALWAYS** use `goimports -local <module-name>` — **NEVER** use `gofmt`
 
-## CRITICAL: Formatting Tool
-
-**ALWAYS use `goimports`, NEVER use `gofmt`:**
-
-```bash
-# ✅ CORRECT
-goimports -local <module-name> -w .
-
-# ❌ FORBIDDEN
-gofmt -w .
-```
-
-**Why `goimports` not `gofmt`:**
-- Organizes imports into groups (stdlib, external, local)
-- Adds missing imports automatically
-- Removes unused imports
-- Includes all `gofmt` formatting **plus** import management
-
-**Module name**: Extract from `go.mod` first line (e.g., `module github.com/org/repo`)
-
-## When to Ask for Clarification
-
-See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options for Tier 3.
-
 ---
 
 ### Pre-Flight Verification
@@ -304,7 +119,7 @@ go version && go build ./... 2>&1 | head -5
 ```
 If this fails, **STOP immediately** and report the environment issue to the user. Do not proceed with code changes if you cannot verify them.
 
-Build, test, and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion` passes (full: build + test + lint + docker lint + smoke). You still MUST run checks manually and report results.
+See `code-writing-protocols` skill — Pre-Flight Verification for hook enforcement and report template.
 
 **Quick Reference Commands (Go):**
 
@@ -335,50 +150,16 @@ echo "$CHANGED" | xargs grep -n 'exec.Command("sh"\|exec.Command("bash"\|exec.Co
 
 **If any pattern matches** — review each match and either fix or justify.
 
-### Pre-Flight Report (REQUIRED OUTPUT)
-
-```
-## Pre-Flight Verification
-
-| Check | Status | Notes |
-|-------|--------|-------|
-| `go build ./...` | PASS / FAIL | |
-| `go test ./...` | PASS / FAIL | X tests, Y passed |
-| `golangci-lint run` | PASS / WARN / FAIL | |
-| `goimports` | PASS | |
-| Security scan | CLEAR / REVIEW | [findings if any] |
-| Smoke test | PASS / N/A | [what was tested] |
-
-**Result**: READY / BLOCKED
-```
-
-**If ANY check shows FAIL → you are BLOCKED. Fix issues before completing.**
-
 ---
 
 ## Pre-Handoff Self-Review
 
-**After Pre-Flight passes, verify these quality checks:**
+See `code-writing-protocols` skill — Pre-Handoff Self-Review (From Plan, Comment Audit, Scope Check).
 
-### From Plan (Feature-Specific)
-- [ ] All items in plan's "Implementation Checklist" verified
-- [ ] Each acceptance criterion manually tested
-- [ ] All error cases from plan handled
-
-### Comment Audit (DO THIS FIRST)
-- [ ] I have NOT added any comments like `// Create`, `// Get`, `// Check`, `// Return`, `// Initialize`
-- [ ] For each comment I wrote: if I delete it, does the code become unclear? If NO → deleted it
-- [ ] The only comments remaining explain WHY (business rules, gotchas), not WHAT
-
-### Code Quality
+**Go-Specific Code Quality:**
 - [ ] Error context wrapping on all error returns (`fmt.Errorf("doing X: %w", err)`)
 - [ ] No narration comments (code is self-documenting)
 - [ ] Log messages have entity IDs and specific messages
-
-### Scope Check (Anti-Helpfulness)
-- [ ] I did NOT add features not in the plan
-- [ ] I did NOT add "nice to have" improvements
-- [ ] Every addition is either: (a) explicitly requested, or (b) narrow production necessity
 
 ---
 
@@ -395,13 +176,5 @@ echo "$CHANGED" | xargs grep -n 'exec.Command("sh"\|exec.Command("bash"\|exec.Co
 
 ## After Completion
 
-### Self-Review: Comment Audit (MANDATORY)
-
-See `code-writing-protocols` skill. Remove ALL narration comments before completing.
-
----
-
-### Completion Format
-
-See `agent-communication` skill — Completion Output Format. Interactive mode: summarise work and suggest `/test` as next step. Pipeline mode: return structured result with status.
+See `code-writing-protocols` skill — After Completion (comment audit + completion format).
 

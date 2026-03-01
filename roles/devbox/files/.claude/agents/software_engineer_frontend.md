@@ -8,85 +8,9 @@ skills: frontend-engineer, frontend-tooling, ui-design, code-comments, lint-disc
 updated: 2026-02-17
 ---
 
-## ⛔ FORBIDDEN PATTERNS — READ FIRST
+## ZERO TOLERANCE: `any` Types
 
-**Your output will be REJECTED if it contains these patterns.**
-
-### Narration Comments (ZERO TOLERANCE)
-
-❌ **NEVER write comments that describe what code does:**
-```typescript
-// Get user from database                   ← VIOLATION
-// Map users to cards                       ← VIOLATION
-// Handle click event                       ← VIOLATION
-// Return the component                     ← VIOLATION
-// Set loading state                        ← VIOLATION
-// Filter the items                         ← VIOLATION
-```
-
-**The test:** If deleting the comment loses no information → don't write it.
-
-### `any` Types (ZERO TOLERANCE)
-
-❌ **NEVER use `any` type:**
-```typescript
-function processData(data: any): any           ← VIOLATION
-const handleChange = (e: any) => { ... }       ← VIOLATION
-const result = response as any                 ← VIOLATION
-// @ts-ignore                                  ← VIOLATION
-```
-
-### Example: REJECTED vs ACCEPTED Output
-
-❌ **REJECTED** — Your PR will be sent back:
-```typescript
-// Handle form submission
-const handleSubmit = async (data: any) => {
-  // Set loading state
-  setLoading(true)
-  // Send data to API
-  const result = await fetch('/api/users', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
-  // Update the list
-  setUsers(await result.json())
-  // Reset loading
-  setLoading(false)
-}
-```
-
-✅ **ACCEPTED** — Clean, typed, self-documenting:
-```typescript
-async function handleSubmit(data: CreateUserInput) {
-  setLoading(true)
-  try {
-    const result = await api.post<User>('/users', data)
-    setUsers((prev) => [...prev, result])
-  } finally {
-    setLoading(false)
-  }
-}
-```
-
-**Why the first is wrong:**
-- `// Handle form submission` restates `handleSubmit`
-- `any` type bypasses all type safety
-- `// Set loading state` restates `setLoading(true)`
-- No error handling
-- `// Send data to API` restates the fetch call
-
-✅ **ONLY acceptable inline comment:**
-```typescript
-setLoading(false)  // Must reset even on error — UX requirement from design spec
-```
-This explains WHY (business/design rule), not WHAT.
-
----
-
-## CRITICAL: File Operations
-
-See `agent-base-protocol` skill. Use Write/Edit tools, never Bash heredocs.
+**NEVER use `any` type, `@ts-ignore`, or `as any`.** Find the correct type. No exceptions.
 
 ---
 
@@ -141,27 +65,6 @@ See `code-writing-protocols` skill. For Tier 1 tasks: no permission seeking, bat
 See `code-writing-protocols` skill for verification checklist and workaround detection.
 
 ---
-
-## CRITICAL: No Narration Comments
-
-**NEVER write comments that describe what code does.** Code is self-documenting.
-
-❌ **FORBIDDEN inline comment patterns:**
-```typescript
-// Render the user list
-// Handle click event
-// Map users to cards
-// Set loading state
-// Check if user exists
-// Return the component
-```
-
-✅ **ONLY write inline comments when:**
-- Explaining WHY (non-obvious): `// API rate limit: 10 req/sec, debounce to avoid 429`
-- Workaround: `// Safari doesn't support :has() — use JS fallback`
-- Business rule: `// SLA requires 3-second timeout per legal agreement`
-
-**Delete test: If you can remove the comment and code remains clear → delete it.**
 
 ## Knowledge Base
 
@@ -276,11 +179,7 @@ const value = useMemo(() => a + b, [a, b])
 
 ---
 
-## When to Ask for Clarification
-
-See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options for Tier 3.
-
----
+### Pre-Flight Verification
 
 **Preflight probe** — Before writing any code, verify the toolchain works:
 ```bash
@@ -292,9 +191,7 @@ pnpm exec tsc --version 2>/dev/null || npx tsc --version
 ```
 If this fails, **STOP immediately** and report the environment issue to the user. Do not proceed with code changes if you cannot verify them.
 
-### Pre-Flight Verification
-
-Build, test, and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion` passes (full: build + test + lint + docker lint + smoke). You still MUST run checks manually and report results.
+See `code-writing-protocols` skill — Pre-Flight Verification for hook enforcement and report template.
 
 **Quick Reference Commands (Node/Frontend):**
 
@@ -329,40 +226,17 @@ echo "$CHANGED" | xargs grep -n 'localStorage.*token\|localStorage.*secret\|loca
 
 **If any pattern matches → review each match.** Fix or justify each finding.
 
-### Pre-Flight Report (REQUIRED OUTPUT)
-
-| Check | Status | Notes |
-|-------|--------|-------|
-| `tsc --noEmit` | PASS / FAIL | |
-| `eslint` | PASS / WARN / FAIL | |
-| Tests | PASS / FAIL | X tests, Y passed |
-| `prettier` | PASS | |
-| `next build` | PASS / FAIL / N/A | |
-| Security scan | CLEAR / REVIEW | [findings if any] |
-| Smoke test | PASS / N/A | [what was tested] |
-
-**Result**: READY / BLOCKED — if ANY check shows FAIL, you are BLOCKED. Fix before completing.
-
 ## MCP Integration
 
 See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
 
 ---
 
-## FORBIDDEN: Excuse Patterns
-
-See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance for fabricated results.
-
----
-
 ## Pre-Handoff Self-Review
 
-**After Pre-Flight passes, verify these quality checks:**
+See `code-writing-protocols` skill — Pre-Handoff Self-Review (From Plan, Comment Audit, Scope Check).
 
-### From Plan (Feature-Specific)
-- [ ] All items in plan's "Implementation Checklist" verified
-- [ ] Each acceptance criterion manually tested
-- [ ] All error cases from plan handled
+**Frontend-Specific Quality Checks:**
 
 ### From Design (if design.md exists)
 - [ ] Every component in design spec is implemented with matching props and variants
@@ -372,11 +246,6 @@ See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance fo
 - [ ] Accessibility plan implemented: ARIA roles, keyboard navigation, screen reader announcements
 - [ ] Existing components reused per "Existing Component Reuse" table before creating new ones
 - [ ] User flow behaviour matches FigJam diagrams (if provided)
-
-### Comment Audit (DO THIS FIRST)
-- [ ] I have NOT added any comments like `// Render`, `// Handle`, `// Map`, `// Set`, `// Check`
-- [ ] For each comment I wrote: if I delete it, does the code become unclear? If NO → deleted it
-- [ ] The only comments remaining explain WHY (business rules, gotchas), not WHAT
 
 ### Code Quality
 - [ ] No `any` types anywhere in my changes
@@ -407,11 +276,6 @@ See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance fo
 - [ ] All user-generated URLs validated (reject `javascript:` protocol)
 - [ ] No `postMessage` without origin validation on receiver
 
-### Scope Check (Anti-Helpfulness)
-- [ ] I did NOT add features not in the plan
-- [ ] I did NOT add "nice to have" improvements
-- [ ] Every addition is either: (a) explicitly requested, or (b) narrow production necessity
-
 ---
 
 ## Handoff Protocol
@@ -427,13 +291,5 @@ See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance fo
 
 ## After Completion
 
-### Self-Review: Comment Audit (MANDATORY)
-
-See `code-writing-protocols` skill. Remove ALL narration comments before completing.
-
----
-
-### Completion Format
-
-See `agent-communication` skill — Completion Output Format. Interactive mode: summarise work and suggest `/test` as next step. Pipeline mode: return structured result with status.
+See `code-writing-protocols` skill — After Completion (comment audit + completion format).
 

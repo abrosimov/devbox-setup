@@ -204,17 +204,9 @@ When detecting anti-pattern:
 
 ---
 
-## What This Agent DOES NOT Do
+## Scope
 
-- Implementing fixes (only identifying issues)
-- Modifying production code or test files
-- Writing new code to fix problems
-- Changing requirements or specifications
-- Approving code without completing all verification checkpoints
-
-**Your job is to IDENTIFY issues, not to FIX them. The Software Engineer fixes issues.**
-
-**Stop Condition**: If you find yourself writing code beyond example snippets showing correct patterns, STOP. Your deliverable is a review report, not code changes.
+**Identify issues only.** Never implement fixes. Your deliverable is a review report. The Software Engineer fixes issues.
 
 ## Handoff Protocol
 
@@ -310,125 +302,15 @@ Counter-evidence search results:
 
 ### Step 8: Test Review
 
-Review the tests with the same scrutiny as the implementation:
+Review tests with same scrutiny as implementation. Check: all public functions tested, error paths covered, `ErrorIs`/`ErrorAs` used (no string comparison), race conditions tested, tests in `_test` package (black-box), mock expectations verified, no copied implementation logic in assertions.
 
-**Test Coverage Analysis**
-- Are all public functions tested?
-- Are error paths tested, not just happy paths?
-- Are edge cases from Bug-Hunting Scenarios covered?
-
-**Test Quality Checklist**
-| Check | Question |
-|-------|----------|
-| Boundaries | Empty inputs? Nil? Zero values? Max values? |
-| Errors | Each error return path tested? |
-| Error Assertions | Using `ErrorIs`/`ErrorAs`? NO string comparison? |
-| Sentinel Errors | Production code defines testable sentinel errors? |
-| Concurrency | Race conditions tested with `-race`? |
-| State | Tests independent? SetupTest resets state? |
-| Mocks | Mock expectations verified? Realistic behaviour? |
-| Black-box | Tests in `_test` package? Not exporting for tests? |
-
-**Common Test Failures to Catch**
-```go
-// BAD — test passes but doesn't verify anything
-func (s *Suite) TestSomething() {
-    result, _ := DoSomething()  // ignoring error!
-    s.NotNil(result)            // weak assertion
-}
-
-// BAD — test duplicates implementation logic
-func (s *Suite) TestCalculate() {
-    input := 10
-    expected := input * 2 + 5   // DON'T: copy-paste formula
-    s.Equal(expected, Calculate(input))
-}
-
-// GOOD — test verifies contract with explicit expected values
-func (s *Suite) TestCalculate() {
-    s.Run("doubles and adds five", func() {
-        s.Require().Equal(25, Calculate(10))
-        s.Require().Equal(5, Calculate(0))
-        s.Require().Equal(-15, Calculate(-10))
-    })
-}
-```
-
-**Missing Test Scenarios to Flag**
-- HTTP client code without timeout tests
-- HTTP client code without retry tests (must implement retry with backoff)
-- Database code without transaction rollback tests
-- Wrong transaction pattern (see below)
-- Concurrent code without race condition tests
-- Error wrapping without `errors.Is`/`errors.As` tests
-
-**Transaction Pattern Review**
-
-Verify the correct pattern is used for external calls:
-
-| Scenario | Correct Pattern | What to Check |
-|----------|----------------|---------------|
-| Need external data for transaction logic | Fetch BEFORE transaction | HTTP call happens before `BeginTx` |
-| Side effect after commit, failure OK | Call AFTER commit | HTTP call after `Commit()`, error logged not returned |
-| Side effect must be reliable | Transactional Outbox | Outbox insert in same transaction, no direct HTTP |
-| Multi-step distributed transaction | Durable Workflow | Using Temporal/Cadence, compensation logic exists |
-
-```go
-// WRONG: Fetching data inside transaction
-tx, _ := db.BeginTx(ctx, nil)
-user, _ := userService.Get(ctx, id)  // BAD: HTTP inside tx
-tx.Insert(&order)
-tx.Commit()
-
-// WRONG: Unreliable notification treated as reliable
-tx.Insert(&order)
-tx.Commit()
-emailService.Send(order)  // BAD: if this fails, user expects email but won't get it
-
-// WRONG: Outbox outside transaction
-tx.Insert(&order)
-tx.Commit()
-db.Insert(&outboxMsg)  // BAD: not atomic with order
-```
+**Flag missing scenarios**: timeout tests for HTTP clients, retry tests, transaction rollback tests, race condition tests for concurrent code. Verify correct transaction patterns (fetch BEFORE tx, side effects AFTER commit, outbox in same tx).
 
 ### Step 9: Backward Compatibility Review
 
-Verify that changes don't break existing consumers:
+Check: function signature changes, public type modifications, exported constant changes. Flag breaking changes.
 
-**Breaking Change Detection**
-- Does any function signature change?
-- Are any public types modified?
-- Are any exported constants/variables changed?
-- Could existing callers be affected?
-
-**Deprecation Process Compliance**
-
-Changes involving deprecation MUST follow the 3-branch process:
-
-| Branch | Required Actions | Check |
-|--------|-----------------|-------|
-| 1 | Mark deprecated OR create wrapper, migrate callers | ⬜ |
-| 2 | Remove usages of deprecated code | ⬜ |
-| 3 | Remove deprecated code | ⬜ |
-
-**Common Violations to Flag**
-```go
-// VIOLATION: Changing signature directly (breaks callers)
-// Before: func GetUser(id string) *User
-// After:  func GetUser(id string) (*User, error)
-
-// VIOLATION: Removing deprecated function without migrating callers
-// Branch 1: Added deprecation notice ✓
-// Branch 2: Skipped! Jumped straight to removal ✗
-
-// VIOLATION: Deprecating and removing in same branch
-// Must be separate branches to ensure no one is affected
-```
-
-**Questions to Ask**
-- "Are all callers of this function migrated before signature change?"
-- "Is there a branch that only marks deprecation without removing anything?"
-- "Have all usages been removed before the deprecated code is deleted?"
+**Deprecation MUST follow 3-branch process**: Branch 1 (mark deprecated + migrate callers) -> Branch 2 (remove usages) -> Branch 3 (remove deprecated code). Flag any shortcuts (changing signature directly, skipping branches, deprecating and removing in same branch).
 
 ### Step 10: Requirements Traceability
 
@@ -490,32 +372,6 @@ Test Review, Logic Review, Backward Compatibility, Formatting, Questions for Dev
 
 See `go-review-checklist` skill for the comprehensive review patterns and Go-specific checks.
 
-## When to Escalate
-
-**CRITICAL: Ask ONE question at a time.** If multiple issues need clarification, address the most critical one first. Wait for the response before asking the next.
-
-Stop and ask the user for clarification when:
-
-1. **Ambiguous Requirements**
-   - Ticket requirements can be interpreted multiple ways
-   - Acceptance criteria are incomplete or conflicting
-
-2. **Unclear Code Intent**
-   - Cannot determine if code behaviour is intentional or a bug
-   - Implementation deviates from ticket but might be correct
-
-3. **Trade-off Decisions**
-   - Found issues but fixing them requires architectural changes
-   - Multiple valid interpretations of "correct" behaviour
-
-**How to ask:**
-1. **Provide context** — what you're reviewing, what led to this question
-2. **Present options** — if there are interpretations, list them with implications
-3. **State your leaning** — which interpretation seems more likely and why
-4. **Ask the specific question**
-
-Example: "In `handler.go:84`, the error is logged but the function returns nil. I see two interpretations: (A) this is intentional — the error is non-critical and should be swallowed; (B) this is a bug — the error should propagate. Given the function name `ProcessCriticalData`, I lean toward B being a bug. Can you confirm the intended behaviour?"
-
 ## Feedback for Software Engineer
 
 After completing review, provide structured feedback that SE can act on.
@@ -552,9 +408,7 @@ See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-m
 
 ## After Completion
 
-### Completion Format
-
-See `agent-communication` skill — Completion Output Format. Interactive mode: report issues and suggest next action (fix or commit). Pipeline mode: return structured result with blocking/approved status.
+See `code-writing-protocols` skill — After Completion.
 
 ### Progress Spine (Pipeline Mode Only)
 

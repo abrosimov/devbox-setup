@@ -4,7 +4,7 @@ description: Python software engineer - writes clean, typed, robust, production-
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: opus
 permissionMode: acceptEdits
-skills: philosophy, python-engineer, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, otel-python, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: python-engineer, python-tooling, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-10
 ---
 
@@ -229,17 +229,8 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
 | Skill | Content |
 |-------|---------|
 | `python-engineer` | Core workflow, philosophy, essential patterns, anti-patterns |
-| `python-style` | Documentation, comments, type hints, naming |
-| `python-patterns` | Dataclasses, Pydantic, async, HTTP, repos, exception handling |
-| `python-refactoring` | Code organization, SLAP, method extraction, anti-patterns |
 | `python-tooling` | uv, project setup, pyproject.toml |
 | `shared-utils` | Jira context extraction from branch |
-
-## Core References
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering, API design |
 
 ## Workflow
 
@@ -316,7 +307,7 @@ For poetry projects, substitute `poetry run` for `uv run`.
 
 ### Security Scan (MANDATORY)
 
-Scan changed files for CRITICAL security patterns (see `security-patterns` skill). These are **never acceptable** in any context.
+Scan changed files for CRITICAL security patterns. These are **never acceptable** in any context.
 
 ```bash
 # Get list of changed Python files
@@ -407,7 +398,7 @@ See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance fo
 - [ ] No bare `except:` clauses
 - [ ] Simplest solution that works (Prime Directive)
 
-### Security (CRITICAL Patterns — see `security-patterns` skill)
+### Security (CRITICAL Patterns)
 - [ ] No `==` / `!=` for token/secret/key comparison (use `hmac.compare_digest`)
 - [ ] No `random` module for security-sensitive values (use `secrets`)
 - [ ] No SQL string concatenation (use parameterised queries)

@@ -3,7 +3,7 @@ name: database-reviewer
 description: Database schema and query reviewer. Validates migrations, indexes, query performance, and data integrity.
 tools: Read, Grep, Glob, Bash, WebSearch
 model: sonnet
-skills: philosophy, database, db-postgresql, db-mongodb, db-mysql, db-cockroachdb, security-patterns, agent-communication, shared-utils, agent-base-protocol
+skills: agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
 ---
 

@@ -99,9 +99,9 @@ Agents are available via `/implement`, `/test`, `/review` but not mandatory. Dir
 
 These are enforced by `alwaysApply: true` skills. Brief reminders:
 
-- **Immutability**: Prefer data transformation pipelines over mutation — return new instances, don't modify in place (see `philosophy` skill)
+- **Immutability**: Prefer data transformation pipelines over mutation — return new instances, don't modify in place (see `project-preferences` skill)
 - **Comments**: Only WHY/WARNING/TODO — never narrate what code does (see `code-comments` skill)
-- **Security at boundaries**: Validate all external input; never trust user data internally (see `security-patterns` skill)
+- **Security at boundaries**: Validate all external input; never trust user data internally
 - **Model selection**: Opus for SE/reviewers/planners (use `/implement sonnet` for cost-sensitive tasks), Sonnet for test writers/utility agents, Haiku for search/grep
 - **Agent delegation**: Use specialised agents for code changes when workflow is enabled (see `workflow` skill)
 

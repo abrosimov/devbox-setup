@@ -4,7 +4,7 @@ description: Frontend software engineer - writes clean, typed, production-ready 
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__figma, mcp__storybook
 model: opus
 permissionMode: acceptEdits
-skills: philosophy, frontend-engineer, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-performance, frontend-tooling, security-patterns, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: frontend-engineer, frontend-tooling, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-17
 ---
 
@@ -170,26 +170,12 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 | Skill | Content |
 |-------|---------|
 | `frontend-engineer` | Core workflow, philosophy, essential patterns, complexity check |
-| `frontend-architecture` | Component architecture, state management, data fetching |
-| `frontend-patterns` | Custom hooks, composition, Suspense, optimistic updates |
-| `frontend-anti-patterns` | Decision trees for state, useEffect, memoisation |
-| `frontend-style` | Naming, file organisation, TypeScript conventions |
-| `frontend-errors` | Error boundaries, form validation, API errors |
-| `frontend-accessibility` | WCAG, ARIA, keyboard navigation, focus management |
-| `frontend-performance` | Code splitting, lazy loading, Core Web Vitals |
 | `frontend-testing` | React Testing Library, MSW, test patterns |
 | `frontend-tooling` | Next.js, Vite, pnpm, ESLint, TypeScript config, Storybook |
-| `security-patterns` | XSS, CSRF, CORS, JWT, CSP, frontend + backend security |
 | `ui-design` | W3C design tokens, component specs, responsive layout, Figma/Storybook MCP |
 | `mcp-figma` | Figma MCP tool usage — token extraction, component reading, design verification |
 | `mcp-storybook` | Storybook MCP tool usage — component inventory, prop discovery, pattern matching |
 | `shared-utils` | Jira context extraction from branch |
-
-## Core References
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering, API design |
 
 ## Workflow
 
@@ -260,17 +246,6 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 
 ## Before Implementation: Anti-Pattern Check
 
-Consult `frontend-anti-patterns` skill before creating:
-
-| Creating... | Check... | Skill Reference |
-|-------------|----------|-----------------|
-| **State (useState)** | Can this be derived? Is it URL state? Server state? | Decision tree |
-| **useEffect** | Is this synchronisation or derived state? | Decision tree |
-| **useMemo/useCallback** | Is there a measured performance problem? | Decision tree |
-| **Context provider** | Does state cross 4+ components? | State management |
-| **New component** | Can this be a variant of existing? | Architecture |
-| **Barrel file (index.ts)** | Use direct imports instead | Anti-patterns |
-
 ### Red Flags - STOP and Review
 
 ```typescript
@@ -298,8 +273,6 @@ function handleData(data: any) { ... }
 const value = useMemo(() => a + b, [a, b])
 // → Just compute: const value = a + b
 ```
-
-**Action**: Review `frontend-anti-patterns` skill for correct approach
 
 ---
 
@@ -335,7 +308,7 @@ Build, test, and lint checks are **hook-enforced** — `pre-write-completion-gat
 
 ### Security Scan (MANDATORY)
 
-Scan changed files for CRITICAL security patterns (see `security-patterns` skill). These are **never acceptable** in any context.
+Scan changed files for CRITICAL security patterns. These are **never acceptable** in any context.
 
 ```bash
 # Get list of changed frontend files
@@ -418,7 +391,7 @@ See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance fo
 - [ ] Error messages use `role="alert"`
 - [ ] Interactive elements are keyboard-accessible
 
-### Anti-Patterns Avoided (see `frontend-anti-patterns` skill)
+### Anti-Patterns Avoided
 - [ ] No `useEffect` for derived state
 - [ ] No `useEffect` for data fetching (use React Query / Server Components)
 - [ ] No premature memoisation
@@ -426,7 +399,7 @@ See `code-writing-protocols` skill — Anti-Laziness Protocol. Zero tolerance fo
 - [ ] No barrel files (direct imports)
 - [ ] Simplest solution that works (Prime Directive)
 
-### Security (CRITICAL Patterns — see `security-patterns` skill)
+### Security (CRITICAL Patterns)
 - [ ] No `dangerouslySetInnerHTML` without DOMPurify sanitisation
 - [ ] No `eval()` / `new Function()` with dynamic input
 - [ ] No secrets in `NEXT_PUBLIC_*` environment variables

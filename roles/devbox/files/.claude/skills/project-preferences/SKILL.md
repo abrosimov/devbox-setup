@@ -45,8 +45,9 @@ Opinionated choices that differ from community defaults. These are NOT standard 
 - **No `interfaces.go` files** — define interfaces where consumed
 - **No split test files** — no `*_internal_test.go`
 - **No doc comments on unexported** symbols
-- **No nil receiver checks in methods** — trust the constructor
+- **No nil checks on pointer arguments** — caller responsibility, not callee. Especially for long-lived objects created at init
 - **Constructor order**: config first, dependencies middle, logger last
+- **Testing: `require` only** — never `testify/assert`. First failure stops the test
 - **Constructor returns** `(*T, error)` for services
 - **Error wrapping**: always `%w` in `fmt.Errorf`
 - **No `fmt.Print*` in production** — use zerolog

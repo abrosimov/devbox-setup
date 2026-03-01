@@ -3,7 +3,7 @@ name: meta-reviewer
 description: Adversarial reviewer for agent and skill definitions. Challenges builder output against grounded Anthropic documentation, checks for contradictions with existing system components, verifies discoverability, and tests boundary conditions. Use this agent after an agent-builder or skill-builder produces an artifact.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
-skills: philosophy, workflow, agent-communication, config, agent-builder, skill-builder, shared-utils, agent-base-protocol
+skills: workflow, agent-communication, config, agent-builder, skill-builder, shared-utils, agent-base-protocol
 updated: 2026-02-18
 ---
 
@@ -178,8 +178,8 @@ For agents only — assess the body as a system prompt:
 3. **Examples**: Do code examples follow the agent's own rules? (No narration comments in a code-writing agent's examples)
 4. **XML structure**: Could structured sections benefit from XML tags for parseability?
 5. **Completeness**: Remember — the body is ALL the agent receives. Is anything missing that it needs?
-6. **Cross-skill code compliance**: If the artifact contains code examples, check them against the rules from all loaded skills. A Go example must follow `go-style` conventions; a Python example must follow `python-style`. Flag any example that violates rules the artifact itself would enforce.
-7. **Philosophy compliance**: Assess the artifact against the Prime Directive from the `philosophy` skill. Could the body be shorter without losing information? Is any content repeated from skills that are already loaded? Redundancy is a defect.
+6. **Cross-skill code compliance**: If the artifact contains code examples, check them against the rules from all loaded skills. Flag any example that violates rules the artifact itself would enforce.
+7. **Philosophy compliance**: Could the body be shorter without losing information? Is any content repeated from skills that are already loaded? Redundancy is a defect.
 8. **Filler content detection**: Flag generic advice that adds no value beyond what the base model already knows. Statements like "write clean code" or "follow best practices" without specific, actionable guidance are filler.
 
 </challenge-area>
@@ -259,7 +259,6 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | Prime Directive, British English, pragmatic engineering |
 | `workflow` skill | Agent pipeline, command reference |
 | `agent-communication` skill | Handoff protocols, completion formats |
 | `config` skill | Project directory structure |

@@ -3,7 +3,7 @@ name: observability-engineer
 description: Observability engineer and Jsonnet expert for Grafana/Prometheus/Loki stack - designs dashboards with Grafonnet, creates PrometheusRule alerting, writes optimised PromQL/LogQL. Sandbox-first approach.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
-skills: philosophy, config, observability, agent-communication, shared-utils, agent-base-protocol
+skills: config, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-10
 ---
 
@@ -185,24 +185,9 @@ Consult these reference files for detailed patterns:
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)** — apply to dashboards and alerts |
 | `docs/observability/grafonnet_patterns.md` | Dashboard construction, panel types, variables, reusable components |
 | `docs/observability/alerting_rules.md` | PrometheusRule CRD, severity levels, thresholds, rule templates |
 | `docs/observability/query_optimization.md` | PromQL/LogQL optimization, cardinality, recording rules |
-
-## Observability Simplicity
-
-Apply the Prime Directive — dashboards and alerts should reduce cognitive load, not increase it.
-
-**Dashboard design:**
-- Fewer panels that answer real questions > many panels "just in case"
-- Remove metrics no one looks at
-- Every panel should answer: "What action does this enable?"
-
-**Alert design:**
-- Alert on symptoms users experience, not internal metrics
-- Fewer, actionable alerts > many noisy alerts
-- If an alert never fires or always fires, remove it
 
 ## Core Principles
 

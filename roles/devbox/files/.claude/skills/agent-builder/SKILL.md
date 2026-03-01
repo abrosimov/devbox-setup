@@ -46,7 +46,7 @@ description: >
 tools: Read, Write, Edit, Grep, Glob, Bash    # Comma-separated tool allowlist
 model: sonnet                            # sonnet or opus
 permissionMode: acceptEdits              # Only for code-writing agents
-skills: philosophy, agent-communication, shared-utils   # Comma-separated skill list
+skills: agent-communication, shared-utils   # Comma-separated skill list
 updated: YYYY-MM-DD                      # Last modification date
 ---
 ```
@@ -60,7 +60,7 @@ updated: YYYY-MM-DD                      # Last modification date
 | `tools` | Comma-separated | Yes | Only grant tools the agent needs |
 | `model` | `sonnet` or `opus` | Yes | See model selection convention in agent definition |
 | `permissionMode` | `acceptEdits` | Code-writing only | Enables auto-approval for Write/Edit |
-| `skills` | Comma-separated | Yes | Always include: philosophy, agent-communication, shared-utils |
+| `skills` | Comma-separated | Yes | Always include: agent-communication, shared-utils |
 | `updated` | ISO date | Yes | Track when definition was last changed |
 
 ---
@@ -99,7 +99,7 @@ The Write/Edit tools are auto-approved. Bash heredocs prompt for permission due 
 ```markdown
 ## Language Standard
 
-Use **British English** spelling in all output (behaviour, organisation, analyse, etc.). See `philosophy` skill for full list.
+Use **British English** spelling in all output (behaviour, organisation, analyse, etc.). See `project-preferences` skill for full list.
 ```
 
 ### 3. Core Identity

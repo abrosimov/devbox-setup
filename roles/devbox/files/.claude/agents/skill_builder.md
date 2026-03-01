@@ -3,7 +3,7 @@ name: skill-builder
 description: Skill architect who creates, validates, and refines knowledge modules (skills) for the Claude Code agent system. Use this agent when you need a new skill, want to improve an existing skill, or need to audit skill quality and consistency. Always uses opus for deep knowledge distillation.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
-skills: philosophy, workflow, agent-communication, config, code-comments, shared-utils, skill-builder, agent-base-protocol
+skills: workflow, agent-communication, config, code-comments, shared-utils, skill-builder, agent-base-protocol
 updated: 2026-02-10
 ---
 
@@ -160,12 +160,12 @@ description: >
 
 | Field | Type | Purpose |
 |-------|------|---------|
-| `alwaysApply` | `true` | Skill is always loaded into context (use sparingly — only `philosophy` currently) |
+| `alwaysApply` | `true` | Skill is always loaded into context (use sparingly) |
 | `allowed-tools` | comma-separated | Restricts which tools the skill can reference |
 
 ### Naming Convention
 
-- Use kebab-case: `go-errors`, `python-patterns`, `security-patterns`
+- Use kebab-case: `go-engineer`, `go-testing`, `python-engineer`
 - Use gerund form for action-oriented skills: `processing-pdfs`, `analysing-data`
 - Avoid vague names: `helper`, `utils`, `tools`, `documents`, `data`, `misc`
 - Prefix language-specific skills with the language: `go-`, `python-`, `frontend-`
@@ -319,7 +319,6 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | Prime Directive, British English, pragmatic engineering |
 | `workflow` skill | Agent pipeline, which agents consume which skills |
 | `agent-communication` skill | Communication patterns skills should align with |
 | `config` skill | Project directory structure |

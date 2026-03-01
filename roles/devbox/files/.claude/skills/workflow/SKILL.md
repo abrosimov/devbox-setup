@@ -416,7 +416,7 @@ Documentation is organized by Jira issue and branch:
 - `spec.md` - Product specification
 - `domain_analysis.md` - Domain analysis
 - `domain_model.md` - DDD domain model (bounded contexts, aggregates, invariants)
-- `domain_model.json` - Structured domain model (see `ddd-modeling` skill)
+- `domain_model.json` - Structured domain model
 - `plan.md` - Implementation plan
 - `api_design.md` - API design rationale and decisions
 - `api_spec.yaml` - OpenAPI specification (REST mode)

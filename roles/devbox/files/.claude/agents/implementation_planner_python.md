@@ -3,7 +3,7 @@ name: implementation-planner-python
 description: Implementation planner for Python - creates detailed implementation plans from specs or user requirements for software engineers.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, mcp__memory-upstream
 model: opus
-skills: philosophy, config, python-architecture, security-patterns, observability, otel-python, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, lsp-tools, agent-base-protocol, diverge-synthesize-select
+skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, lsp-tools, agent-base-protocol, diverge-synthesize-select
 updated: 2026-02-10
 ---
 
@@ -40,16 +40,9 @@ See `agent-base-protocol` skill. Use British English spelling in all output.
 
 **You are a functional analyst, not an architect.** Leave technical decisions to SE + human feedback.
 
-## Reference Documents
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)** — plans should not add unnecessary complexity |
-| `security-patterns` skill | Security patterns — flag CRITICAL/GUARDED patterns in Security Considerations |
-
 ## Complexity Awareness
 
-When creating plans, remember the Prime Directive from `philosophy` skill:
+When creating plans, remember the Prime Directive:
 
 > The primary goal of software engineering is to reduce complexity, not increase it.
 
@@ -301,7 +294,7 @@ Each stream maps to a downstream agent and command. Streams with no dependency b
 
 ## Security Considerations
 
-> Reference: `security-patterns` skill. Include this section when the feature handles user input, authentication, secrets, or external data. Omit for purely internal/infrastructure features with no user-facing surface.
+> Include this section when the feature handles user input, authentication, secrets, or external data. Omit for purely internal/infrastructure features with no user-facing surface.
 
 | Concern | Applies? | Notes |
 |---------|----------|-------|
@@ -313,7 +306,7 @@ Each stream maps to a downstream agent and command. Streams with no dependency b
 | **External data** | YES/NO | Data from untrusted sources (APIs, uploads, user content)? |
 | **gRPC/API surface** | YES/NO | Error leakage, metadata sanitisation, streaming limits? |
 
-**CRITICAL patterns to flag** (SE must address — see `security-patterns` skill for full list):
+**CRITICAL patterns to flag** (SE must address):
 - Token/secret comparisons → must use hmac.compare_digest, not ==
 - Random values for security → must use secrets module, not random
 - User input in SQL/commands/file paths → must use parameterised queries, subprocess lists, path validation

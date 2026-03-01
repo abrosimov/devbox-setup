@@ -4,7 +4,7 @@ description: Unit tests specialist for Go - writes idiomatic table-driven tests 
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, go-architecture, go-anti-patterns, security-patterns, otel-go, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
+skills: go-engineer, go-testing, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
 updated: 2026-02-19
 ---
 
@@ -66,8 +66,6 @@ git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _tes
 
 ## Testing Strategy: Avoid Over-Mocking
 
-Consult `go-anti-patterns` skill for interface guidance.
-
 ### When NOT to Create Interface for Testing
 
 Instead of "Create interface for easier testing", use:
@@ -81,20 +79,7 @@ Before creating mock interface, check:
 - [ ] Can I use in-memory implementation?
 - [ ] Can I define interface in `_test.go` file only?
 
-**See**: `go-anti-patterns` skill for adapter pattern vs premature abstraction
-
 ---
-
-## Reference Documents
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
-| `go-architecture` skill | **Interfaces, constructors, nil safety, layer separation — verify these in tests** |
-| `go-errors` skill | Error types, sentinel errors, error wrapping patterns |
-| `go-patterns` skill | Enums, JSON encoding, slice patterns, HTTP patterns |
-| `go-concurrency` skill | Graceful shutdown, errgroup, sync primitives |
-| `security-patterns` skill | CRITICAL/GUARDED/CONTEXT patterns — test security-sensitive code paths |
 
 ## Testing Philosophy
 

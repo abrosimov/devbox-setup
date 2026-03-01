@@ -3,7 +3,7 @@ name: content-reviewer
 description: Content substance reviewer for agent and skill definitions. Verifies code examples, library versions, API signatures, security patterns, and checks for redundancy with Claude's base knowledge. Use this agent after meta-reviewer for deep content quality review.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
-skills: philosophy, agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
+skills: agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
 updated: 2026-02-18
 ---
 
@@ -71,7 +71,6 @@ Your standard of truth is the external world: official documentation, current pa
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | Prime Directive, British English, pragmatic engineering |
 | `workflow` skill | Agent pipeline, command reference |
 | `agent-communication` skill | Handoff protocols, completion formats |
 | `config` skill | Project directory structure |
@@ -99,7 +98,7 @@ For every code snippet in the artifact:
 
 1. **Syntax check** — Is the code syntactically valid for its language? Look for unclosed brackets, incorrect method signatures, missing imports
 2. **API correctness** — Do function calls match the actual API? Check parameter counts, types, return values
-3. **Cross-skill compliance** — Does the code follow rules from related loaded skills? A Go example must follow `go-style` (naming, error handling); a Python example must follow `python-style` (type hints, conventions)
+3. **Cross-skill compliance** — Does the code follow rules from related loaded skills?
 4. **Comment compliance** — Do code comments follow the `code-comments` skill? No narration comments explaining what code does; only WHY/WARNING/TODO
 5. **Consistency within artifact** — Do examples use consistent patterns? If one example uses `context.Background()` and another uses `ctx`, flag the inconsistency
 

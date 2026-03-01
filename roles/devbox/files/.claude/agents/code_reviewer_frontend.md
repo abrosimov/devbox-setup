@@ -5,7 +5,7 @@ description: >
   against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__memory-downstream, mcp__playwright, mcp__figma, mcp__storybook
 model: opus
-skills: philosophy, frontend-engineer, frontend-testing, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-performance, frontend-tooling, security-patterns, observability, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, mcp-playwright, mcp-figma, mcp-storybook, agent-base-protocol
+skills: frontend-engineer, frontend-testing, frontend-tooling, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, mcp-playwright, mcp-figma, mcp-storybook, agent-base-protocol
 updated: 2026-02-18
 ---
 
@@ -117,21 +117,6 @@ If Fast Review finds blocking issues:
 **Rationale**: No point doing deep analysis if basic checks fail. Fix fundamentals first.
 
 ---
-
-## Reference Documents
-
-Consult these reference files for pattern verification:
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering |
-| `frontend-architecture` skill | **Component architecture, Server vs Client boundaries, state management** |
-| `frontend-errors` skill | Error boundaries, form validation, API error handling |
-| `frontend-patterns` skill | Custom hooks, composition, Suspense, optimistic updates |
-| `frontend-anti-patterns` skill | Decision trees for state, useEffect, memoisation |
-| `frontend-accessibility` skill | WCAG 2.1 AA, semantic HTML, ARIA, keyboard navigation |
-| `frontend-performance` skill | Code splitting, images, memoisation, bundle size |
-| `frontend-style` skill | Naming, file organisation, exports, TypeScript conventions |
 
 ## CRITICAL: Anti-Shortcut Rules
 
@@ -571,7 +556,7 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 
 #### Checkpoint I: Security
 
-> Uses three-tier severity model: **CRITICAL** (never acceptable), **GUARDED** (dev OK), **CONTEXT** (needs judgment). See `security-patterns` skill for full reference. XSS uses three-layer defence: sanitise on input (backend) → encode on output (API) → encode on render (frontend — this layer).
+> Uses three-tier severity model: **CRITICAL** (never acceptable), **GUARDED** (dev OK), **CONTEXT** (needs judgment). XSS uses three-layer defence: sanitise on input (backend) → encode on output (API) → encode on render (frontend — this layer).
 
 **Search for security-sensitive patterns:**
 ```bash
@@ -703,7 +688,7 @@ VERDICT: [ ] PASS  [ ] FAIL — comment violations are blocking issues
 // SLA requires 3-second timeout per legal agreement
 ```
 
-#### Checkpoint L: Style & Naming (see `frontend-style` skill)
+#### Checkpoint L: Style & Naming
 ```
 Naming violations:
   - Non-kebab-case file names: ___
@@ -872,7 +857,7 @@ await userEvent.click(button)
 await userEvent.type(input, 'test')
 ```
 
-#### Checkpoint O: Complexity Review (see `philosophy` skill — Prime Directive)
+#### Checkpoint O: Complexity Review
 
 **Apply Occam's Razor — code should reduce complexity, not increase it.**
 

@@ -4,7 +4,7 @@ description: Unit tests specialist for Python - writes clean pytest-based tests,
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, python-tooling, security-patterns, otel-python, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
+skills: python-engineer, python-testing, python-tooling, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
 updated: 2026-02-10
 ---
 
@@ -117,15 +117,6 @@ git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test
 - Simple CRUD operations
 - No async involved
 - Straightforward mocking scenarios
-
-## Reference Documents
-
-Consult these reference files for core principles:
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, test data realism, tests as specifications |
-| `security-patterns` skill | CRITICAL/GUARDED/CONTEXT patterns — test security-sensitive code paths |
 
 ## Testing Philosophy
 
@@ -373,8 +364,6 @@ For EVERY function, systematically consider these categories:
 | Optional | `None`, valid value, default value |
 
 ### Security (if code handles user input, auth, or secrets)
-
-> Reference: `security-patterns` skill for CRITICAL/GUARDED/CONTEXT tiers.
 
 | Pattern | What to Test |
 |---------|-------------|

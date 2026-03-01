@@ -53,7 +53,7 @@ description: >
 |-------|--------|----------|-------|
 | `name` | kebab-case | Yes | Must match directory name |
 | `description` | Multi-line prose | Yes | Primary discovery mechanism — invest heavily here |
-| `alwaysApply` | `true` | Rare | Skill always loaded. Only for foundational skills (currently: `philosophy`) |
+| `alwaysApply` | `true` | Rare | Skill always loaded. Only for foundational skills (currently: `project-preferences`) |
 | `allowed-tools` | Comma-separated | Rare | Restricts which tools the skill references |
 
 ---
@@ -67,7 +67,7 @@ skill-name/
   SKILL.md              # Everything in one file (<500 lines)
 ```
 
-Best for: Focused domains with moderate content. Examples: `go-errors`, `python-style`, `security-patterns`.
+Best for: Focused domains with moderate content. Examples: `go-engineer`, `python-tooling`, `config`.
 
 ### With References (large domains)
 
@@ -175,9 +175,9 @@ SKILL.md should cover 80% of use cases. The remaining 20% goes in references. If
 
 | Pattern | Examples | When to Use |
 |---------|----------|-------------|
-| `{language}-{domain}` | `go-errors`, `python-patterns`, `frontend-architecture` | Language-specific knowledge |
-| `{domain}` | `security-patterns`, `observability`, `config` | Language-agnostic knowledge |
-| `{domain}-{subdomain}` | `api-design-rest`, `api-design-proto` | Domains with distinct sub-types |
+| `{language}-{domain}` | `go-engineer`, `go-testing`, `frontend-engineer` | Language-specific knowledge |
+| `{domain}` | `structured-output`, `agent-communication`, `config` | Language-agnostic knowledge |
+| `{domain}-{subdomain}` | `go-review-checklist`, `agent-base-protocol` | Domains with distinct sub-types |
 | `{action}-{target}` (gerund) | `agent-builder`, `skill-builder` | Action-oriented skills |
 
 ### Avoid These Names
@@ -196,11 +196,11 @@ If content exists in Skill A, Skill B should reference it, not duplicate it.
 
 ```markdown
 # In SKILL.md — GOOD (reference)
-> For error handling patterns, see `go-errors` skill.
+> For testing patterns, see `go-testing` skill.
 
 # In SKILL.md — BAD (duplication)
-## Error Handling
-[Copy of content that also exists in go-errors]
+## Testing Patterns
+[Copy of content that also exists in go-testing]
 ```
 
 ### Rule 2: References Are One Level Deep
@@ -217,8 +217,8 @@ SKILL.md → references/topic.md → references/sub-topic.md   ❌ Too deep
 When referencing another skill, use its `name` field, not its directory path:
 
 ```markdown
-✅ See `go-errors` skill for error handling patterns.
-❌ See `skills/go-errors/SKILL.md` for error handling patterns.
+✅ See `go-testing` skill for testing patterns.
+❌ See `skills/go-testing/SKILL.md` for testing patterns.
 ```
 
 ---

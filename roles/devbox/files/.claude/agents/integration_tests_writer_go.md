@@ -4,7 +4,7 @@ description: Integration tests specialist for Go - writes database, HTTP, and me
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, go-engineer, go-testing, go-errors, go-patterns, go-concurrency, go-style, database, otel-go, code-comments, agent-communication, shared-utils, agent-base-protocol
+skills: go-engineer, go-testing, code-comments, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-10
 ---
 
@@ -59,10 +59,7 @@ If no plan exists, proceed with normal test discovery from git diff.
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, test data realism |
 | `go-testing` skill | Table-driven patterns, testify suites |
-| `database` skill | Repository patterns, connection pooling, transactions |
-| `go-errors` skill | Error types, wrapping patterns |
 
 ---
 

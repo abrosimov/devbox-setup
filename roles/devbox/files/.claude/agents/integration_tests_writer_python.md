@@ -4,7 +4,7 @@ description: Integration tests specialist for Python - writes database, HTTP, an
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, python-engineer, python-testing, python-errors, python-patterns, python-style, database, otel-python, code-comments, agent-communication, shared-utils, agent-base-protocol
+skills: python-engineer, python-testing, code-comments, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-10
 ---
 
@@ -59,10 +59,7 @@ If no plan exists, proceed with normal test discovery from git diff.
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, test data realism |
 | `python-testing` skill | pytest fixtures, parametrize, assertion patterns |
-| `database` skill | Repository patterns, SQLAlchemy, transactions |
-| `python-errors` skill | Exception types, chaining patterns |
 
 ---
 

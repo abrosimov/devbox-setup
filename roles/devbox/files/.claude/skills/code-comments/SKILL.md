@@ -13,94 +13,39 @@ description: >
 
 ## Zero Tolerance: Narration Comments
 
-NEVER write comments that describe what code does.
-
-### Forbidden Patterns
-
-| Language | Forbidden Examples |
-|----------|-------------------|
-| Python | `# Get user from database`, `# Create new connection`, `# Check if valid` |
-| Go | `// Get user from database`, `// Create new connection`, `// Check if valid` |
-| Both | `# Return the result`, `// Initialize the service`, `# Loop through items` |
+NEVER write comments that describe what code does. Forbidden: `# Get user from database`, `// Create new connection`, `# Check if valid`, `// Initialize the service`.
 
 ### The Deletion Test
 
 **Before writing ANY comment, ask:** "If I delete this, would a competent developer misuse this code?"
 
-- **NO** → Don't write the comment
-- **YES** → Write ONLY the non-obvious part
+- **NO** --> Don't write the comment
+- **YES** --> Write ONLY the non-obvious part
 
 ## Acceptable Comments
 
-Comments are justified ONLY when explaining something **non-obvious** that cannot be captured in names/types.
-
-### WHY Explanations
+Comments are justified ONLY when explaining something **non-obvious**: WHY something is done, import/init ordering constraints, non-obvious side effects, thread safety caveats, complex protocols.
 
 ```python
-self.__repo.save(order)  # Must save before notification — order ID required
+self.__repo.save(order)  # Must save before notification -- order ID required
 ```
 
-### Forbidden Section Markers
-
-NEVER use section dividers or markers:
-
-```
-# --- Configuration ---    // === Tests ===    // Private methods
-```
+**NEVER** use section dividers or markers: `# --- Configuration ---`, `// === Tests ===`, `// Private methods`.
 
 ## Docstring Policy
 
-### Python Docstrings
-
 **Default: NO docstrings.** Names, types, and structure ARE the documentation.
 
-**Rare exceptions (require justification):**
+Rare exceptions requiring justification: import/init ordering, non-obvious side effects, thread safety, complex protocols, external library public APIs where users rely on `help()`.
 
-| Exception | Example |
-|-----------|---------|
-| Import/init order | "Import before route definitions — Prometheus must initialise first" |
-| Non-obvious side effects | "Starts background health-check thread on first call" |
-| Thread safety | "Not thread-safe. Create one instance per request." |
-| Complex protocol | "Must call `begin()` before `execute()`, then `commit()` or `rollback()`" |
-| External library public API | Users rely on `help()`, can't easily read source |
-
-### Go Doc Comments
-
-Follow standard Go doc comment conventions — but still avoid narration.
-
-```go
-// ❌ Process processes the order.
-func (s *Service) Process(order Order) error {
-
-// ✅ Process is idempotent — calling twice with same order ID has no effect.
-func (s *Service) Process(order Order) error {
-```
-
-## Test Comments
-
-Tests need fewer comments than production code. Only acceptable: explaining non-obvious assertions.
-
-## Comment Formatting
-
-### Python
-- Two spaces before `#`, one space after: `code  # comment`
-- Inline comments on same line as code, not above
-
-### Go
-- One space after `//`: `// comment`
-- Doc comments start with identifier name: `// Process does X`
+Go doc comments: follow standard conventions but still avoid narration.
 
 ## Self-Review Checklist
 
 Before completing any code task:
 
-1. **Did I add ANY comments that describe WHAT the code does?**
-   - If YES → Remove them NOW
-
-2. **For each comment I kept, does deleting it make the code unclear?**
-   - If NO → Delete it NOW
-
-3. **Are there any section markers or dividers?**
-   - If YES → Remove them NOW
+1. **Did I add ANY comments that describe WHAT the code does?** If YES --> Remove them NOW
+2. **For each comment I kept, does deleting it make the code unclear?** If NO --> Delete it NOW
+3. **Are there any section markers or dividers?** If YES --> Remove them NOW
 
 Only proceed after removing all narration comments.

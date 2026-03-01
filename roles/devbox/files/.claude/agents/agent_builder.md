@@ -3,7 +3,7 @@ name: agent-builder
 description: Agent architect who creates, validates, and refines agent definitions for the Claude Code agent system. Use this agent when you need a new agent definition, want to improve an existing agent, or need to validate agent quality. Always uses opus for deep architectural reasoning.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
-skills: philosophy, workflow, agent-communication, config, code-comments, shared-utils, agent-builder, agent-base-protocol
+skills: workflow, agent-communication, config, code-comments, shared-utils, agent-builder, agent-base-protocol
 updated: 2026-02-10
 ---
 
@@ -194,7 +194,6 @@ All agents get these core skills:
 
 | Skill | Reason |
 |-------|--------|
-| `philosophy` | Prime Directive, British English, pragmatic engineering |
 | `agent-communication` | Handoff protocols, completion formats, escalation rules |
 | `shared-utils` | File operations preamble, Jira context |
 
@@ -202,9 +201,9 @@ Additional skills by archetype:
 
 | Archetype | Additional Skills |
 |-----------|-------------------|
-| Code-writing | `code-comments`, language-specific skills (e.g., `go-engineer`, `go-errors`, `go-patterns`) |
+| Code-writing | `code-comments`, language-specific skills (e.g., `go-engineer`) |
 | Analysis/Design | `config` (for project directory structure) |
-| Review | `code-comments`, language-specific skills, `security-patterns` |
+| Review | `code-comments`, language-specific skills |
 | Infrastructure | `config`, `workflow` |
 
 ---
@@ -323,7 +322,7 @@ Run these checks against any agent definition:
 
 | Check | Criteria | Severity |
 |-------|----------|----------|
-| Core skills present | `philosophy`, `agent-communication`, `shared-utils` in skills list | Error |
+| Core skills present | `agent-communication`, `shared-utils` in skills list | Error |
 | Model matches archetype | Model aligns with convention table above | Warning |
 | Tools match archetype | Tools align with convention table above | Warning |
 | Completion format | Uses standardised completion output from `agent-communication` skill | Error |
@@ -340,7 +339,6 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | Prime Directive, British English, pragmatic engineering |
 | `workflow` skill | Agent pipeline, command reference, model selection |
 | `agent-communication` skill | Handoff protocols, completion formats, escalation |
 | `config` skill | Project directory structure, file paths |

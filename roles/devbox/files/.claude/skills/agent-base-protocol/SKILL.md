@@ -23,7 +23,7 @@ The Write/Edit tools are auto-approved by `acceptEdits` mode. Bash heredocs prom
 
 ## Language Standard
 
-Use **British English** spelling in all output (behaviour, organisation, analyse, colour, honour, licence [noun], practise [verb], catalogue, etc.). See `philosophy` skill for full list.
+Use **British English** spelling in all output (behaviour, organisation, analyse, colour, honour, licence [noun], practise [verb], catalogue, etc.). See `project-preferences` skill for full list.
 
 ## When to Ask for Clarification
 

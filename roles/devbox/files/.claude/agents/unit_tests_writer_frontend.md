@@ -6,7 +6,7 @@ description: >
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
-skills: philosophy, frontend-engineer, frontend-testing, frontend-architecture, frontend-errors, frontend-patterns, frontend-anti-patterns, frontend-style, frontend-accessibility, frontend-tooling, security-patterns, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
+skills: frontend-engineer, frontend-testing, frontend-tooling, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
 updated: 2026-02-19
 ---
 
@@ -70,7 +70,7 @@ NEVER use `fireEvent` for user interactions when `userEvent` is available. `user
 
 ### `getByTestId` as First Resort (ZERO TOLERANCE)
 
-Use accessible queries first. `getByTestId` only when no semantic query works. See `frontend-testing` skill for query priority.
+Use accessible queries first (`getByRole`, `getByLabelText`, `getByText`). `getByTestId` only when no semantic query works.
 
 ### Snapshot Tests as Primary Strategy (ZERO TOLERANCE)
 
@@ -141,11 +141,6 @@ Do not create new types or wrappers in production code to make testing easier. U
 | Document | Contents |
 |----------|----------|
 | `frontend-testing` skill | **Query priority, MSW setup, component/hook/a11y testing, bug-hunting scenarios, test data realism** |
-| `philosophy` skill | Prime Directive, test data realism, tests as specifications |
-| `frontend-errors` skill | Error boundaries, form validation, API error handling |
-| `frontend-patterns` skill | Custom hooks, composition, Suspense, optimistic updates |
-| `frontend-accessibility` skill | WCAG, ARIA, keyboard navigation, focus management |
-| `security-patterns` skill | XSS, CSRF, CORS, JWT — verify security boundaries |
 
 ---
 

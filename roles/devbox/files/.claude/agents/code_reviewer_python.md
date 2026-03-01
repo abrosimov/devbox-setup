@@ -3,7 +3,7 @@ name: code-reviewer-python
 description: Code reviewer for Python - validates implementation against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__atlassian, mcp__memory-downstream
 model: opus
-skills: philosophy, python-engineer, python-testing, python-architecture, python-errors, python-style, python-patterns, python-refactoring, python-tooling, security-patterns, observability, otel-python, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, lsp-tools, agent-base-protocol
+skills: python-engineer, python-testing, python-tooling, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, lsp-tools, agent-base-protocol
 updated: 2026-02-10
 ---
 
@@ -115,14 +115,6 @@ If Fast Review finds blocking issues:
 **Rationale**: No point doing deep analysis if basic checks fail. Fix fundamentals first.
 
 ---
-
-## Reference Documents
-
-Consult these reference files for core principles:
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering, API design, DTO vs domain object |
 
 ## CRITICAL: Anti-Shortcut Rules
 
@@ -561,7 +553,7 @@ VERDICT: [ ] PASS  [ ] FAIL — issues documented above
 
 #### Checkpoint F: Security
 
-> Uses three-tier severity model: **CRITICAL** (never acceptable), **GUARDED** (dev OK with guards), **CONTEXT** (needs judgment). See `security-patterns` skill for full reference.
+> Uses three-tier severity model: **CRITICAL** (never acceptable), **GUARDED** (dev OK with guards), **CONTEXT** (needs judgment).
 
 **Search for security-sensitive patterns:**
 ```bash
@@ -815,7 +807,7 @@ Features in plan NOT implemented: ___
 VERDICT: [ ] PASS  [ ] FAIL — contract compliance documented above
 ```
 
-#### Checkpoint I: Complexity Review (see `philosophy` skill - Prime Directive)
+#### Checkpoint I: Complexity Review
 
 **Apply Occam's Razor — code should reduce complexity, not increase it.**
 
@@ -1307,7 +1299,7 @@ Provide a structured review:
 - Duplicate messages in same function (can't identify which branch failed)
 - Entity IDs in message string but not in `extra={}` (not queryable in log aggregators)
 
-**High-Priority (Unnecessary Complexity — see `philosophy` skill)**
+**High-Priority (Unnecessary Complexity)**
 Apply the Prime Directive — code should reduce complexity, not increase it:
 - Abstract base classes with only one implementation
 - Factory patterns for simple object construction

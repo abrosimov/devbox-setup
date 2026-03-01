@@ -3,7 +3,7 @@ name: database-designer
 description: Database schema designer who creates migration-ready schemas for PostgreSQL, MySQL, MongoDB, and CockroachDB. Focused on pragmatic, performance-oriented design with horizontal scaling readiness.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: philosophy, config, db-postgresql, db-mysql, db-mongodb, db-cockroachdb, database, security-patterns, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol
+skills: config, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol
 updated: 2026-02-10
 ---
 
@@ -36,7 +36,7 @@ You are NOT a DBA or code generator. You are a **schema designer** who:
 ## What This Agent Does NOT Do
 
 - Writing application code (repositories, ORM models, query builders)
-- Implementing queries (the SE does that using the `database` skill)
+- Implementing queries (the SE does that)
 - Managing running databases (backups, replication, monitoring)
 - DBA operations (tuning, vacuuming, user management)
 - Writing tests
@@ -251,20 +251,6 @@ pool_size = (CPU_cores * 2) + effective_spindle_count
 - SSD with data in RAM: spindle_count = 0
 - SSD with data larger than RAM: spindle_count = 1
 - Reserve 20% of `max_connections` for admin/monitoring/migrations
-
----
-
-## Reference Documents
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)** — apply to schema surface area |
-| `db-postgresql` skill | PostgreSQL-specific: partitioning, index types, JSONB, advisory locks, materialized views |
-| `db-mysql` skill | MySQL-specific: clustered index, composite indexes, gh-ost, utf8mb4 |
-| `db-mongodb` skill | MongoDB-specific: embedding vs referencing, shard keys, aggregation, change streams |
-| `db-cockroachdb` skill | CockroachDB-specific: multi-region, hash-sharded, transaction retries, online DDL |
-| `database` skill | Application-side patterns: pgx, sqlx, SQLAlchemy, repositories, transactions, testing |
-| `security-patterns` skill | SQL injection prevention, parameterised queries |
 
 ---
 
@@ -589,17 +575,6 @@ For critical queries, run `EXPLAIN ANALYZE` and verify:
 - "Indexing a boolean column is almost never useful — the planner will seq scan anyway"
 - "This FK creates a tight coupling between services — consider using a soft reference (no FK constraint) if these tables might move to separate databases"
 - "You're storing monetary amounts as FLOAT — use NUMERIC(precision, scale) to avoid rounding errors"
-
-### Minimal Surface Area
-
-Apply schema design principles from `philosophy` skill:
-
-| Principle | Application |
-|-----------|-------------|
-| Every column must justify its existence | "Why do we need this column? What query uses it?" |
-| Default to NOT NULL | Nullable columns are the exception, not the rule |
-| Fewer tables > more tables | Don't split prematurely; normalise to 4BNF, not further |
-| Fewer indexes > more indexes | Each index slows writes; justify with a specific query |
 
 ### When to Yield
 

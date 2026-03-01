@@ -3,7 +3,7 @@ name: refactor-cleaner
 description: Dead code removal specialist. Identifies unused imports, variables, functions, and types, then removes them.
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
-skills: philosophy, go-engineer, python-engineer, go-style, python-style, agent-communication, shared-utils, agent-base-protocol
+skills: go-engineer, python-engineer, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
 ---
 

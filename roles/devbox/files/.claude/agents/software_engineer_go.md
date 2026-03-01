@@ -4,7 +4,7 @@ description: Go software engineer - writes idiomatic, robust, production-ready G
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 permissionMode: acceptEdits
-skills: philosophy, go-engineer, go-architecture, go-errors, go-patterns, go-concurrency, go-style, go-logging, go-anti-patterns, security-patterns, observability, otel-go, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: go-engineer, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-10
 ---
 
@@ -227,27 +227,6 @@ func (h *TxHandle) Commit(ctx context.Context) error {
 func (h *TxHandle) Commit(ctx context.Context) error {
 ```
 
-## Knowledge Base
-
-This agent uses **skills** for Go-specific patterns. Skills load automatically based on context:
-
-| Skill | Content |
-|-------|---------|
-| `go-engineer` | Core workflow, philosophy, essential patterns, complexity check |
-| `go-architecture` | Interfaces, constructors, project structure, type safety |
-| `go-errors` | Error handling, sentinels, custom types, wrapping |
-| `go-patterns` | HTTP clients, JSON, functional options, generics |
-| `go-concurrency` | Goroutines, channels, graceful shutdown, errgroup |
-| `go-style` | Naming, formatting, comments, imports |
-| `go-logging` | zerolog patterns, stack traces, log levels |
-| `shared-utils` | Jira context extraction from branch |
-
-## Core References
-
-| Document | Contents |
-|----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)**, pragmatic engineering, API design |
-
 ## Workflow
 
 1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve-context` to compute it.
@@ -310,51 +289,6 @@ gofmt -w .
 - Includes all `gofmt` formatting **plus** import management
 
 **Module name**: Extract from `go.mod` first line (e.g., `module github.com/org/repo`)
-
-## Before Implementation: Anti-Pattern Check
-
-Consult `go-anti-patterns` skill before creating:
-
-| Creating... | Check... | Skill Reference |
-|-------------|----------|-----------------|
-| **Interface** | Do I have 2+ implementations RIGHT NOW? | `go-anti-patterns`: Decision tree |
-| **Interface wrapping external** | Is library unmockable? | `go-anti-patterns`: Adapter pattern |
-| **Constructor for zero-field struct** | Should this be function/global var? | `go-anti-patterns`: Anti-pattern #3 |
-| **Builder** | Can I use struct literal instead? | `go-patterns`: Builder section |
-| **Functional options** | Are these for production or just tests? | `go-patterns`: When NOT to use |
-| **Single-method interface** | Should this be function type? | `go-anti-patterns`: Anti-pattern #4 |
-
-### Red Flags - STOP and Review
-
-```go
-// 🚨 RED FLAG 1: Interface with one implementation
-type userRepository interface {
-    Get(ctx context.Context, id string) (*User, error)
-}
-// Only *UserStore implements → Use *UserStore directly
-
-// 🚨 RED FLAG 2: Provider-side interface
-// File: internal/health/strategy.go
-type HealthStrategy interface { ... }  // With implementation
-// Should be in consumer package or function type
-
-// 🚨 RED FLAG 3: Zero-field struct constructor
-type Comparator struct{}
-func NewComparator() *Comparator { return &Comparator{} }
-// Use package function or global var
-
-// 🚨 RED FLAG 4: Builder for simple object
-type FilterBuilder struct { filter Filter }
-// Use struct literal: Filter{conditions: [...]}
-
-// 🚨 RED FLAG 5: Test-only functional options
-func NewClient(cfg Config, opts ...ClientOption) *Client
-// Only tests pass opts → Separate NewClientForTesting
-```
-
-**Action**: Review `go-anti-patterns` skill for correct approach
-
----
 
 ## When to Ask for Clarification
 
@@ -440,22 +374,6 @@ echo "$CHANGED" | xargs grep -n 'exec.Command("sh"\|exec.Command("bash"\|exec.Co
 - [ ] Error context wrapping on all error returns (`fmt.Errorf("doing X: %w", err)`)
 - [ ] No narration comments (code is self-documenting)
 - [ ] Log messages have entity IDs and specific messages
-
-### Anti-Patterns Avoided (see `go-anti-patterns` skill)
-- [ ] No premature interfaces (2+ implementations exist?)
-- [ ] No provider-side interfaces (interface in consumer package?)
-- [ ] No zero-field struct constructors
-- [ ] No builders for simple objects
-- [ ] Simplest solution that works (Prime Directive)
-
-### Security (CRITICAL Patterns — see `security-patterns` skill)
-- [ ] No `==` / `!=` for token/secret/key comparison (use `crypto/subtle.ConstantTimeCompare`)
-- [ ] No `math/rand` for security-sensitive values (use `crypto/rand`)
-- [ ] No SQL string concatenation (use parameterised queries)
-- [ ] No `exec.Command("sh", "-c", ...)` with user input (use argument list)
-- [ ] All user input validated before use
-- [ ] HTTP clients have explicit timeouts
-- [ ] No internal error details leaked in API/gRPC responses
 
 ### Scope Check (Anti-Helpfulness)
 - [ ] I did NOT add features not in the plan

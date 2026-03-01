@@ -151,7 +151,7 @@ All agent outputs include this metadata block:
 
 ### Domain Modeller — `domain_model.json`
 
-See `ddd-modeling` skill for the full schema. Summary of top-level fields:
+Summary of top-level fields:
 
 ```json
 {

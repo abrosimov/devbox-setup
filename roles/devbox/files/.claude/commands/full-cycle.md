@@ -9,7 +9,7 @@ You are orchestrating a complete development cycle with 4 strategic milestone ga
 <pipeline>
 
 1. **Setup** — detect feature type, init pipeline state
-2. **TPM** → produces `spec.md` (autonomous)
+2. **TPM** → produces `spec.md` (interactive — interview loop with user)
 3. **Domain Expert** → produces `domain_analysis.md` (autonomous)
 4. **Domain Modeller** → produces `domain_model.md` (autonomous, skippable for simple domains)
 5. **GATE 1** — user approves: "Is this the right problem and domain model?"
@@ -23,7 +23,7 @@ You are orchestrating a complete development cycle with 4 strategic milestone ga
 </pipeline>
 
 <transitions>
-- Steps 2-4 run autonomously (TPM → Domain Expert → Domain Modeller), then pause at Gate 1
+- Steps 2-4: TPM runs with interview loop (pauses for user input), then Domain Expert → Domain Modeller run autonomously, then pause at Gate 1
 - Domain Modeller is skipped when: Cynefin = Clear AND <5 entities in discovery model
 - Steps 6 run in parallel (Designer + Planner) for UI/fullstack; planner-only for backend
 - Gate 2 is skipped when feature_type = backend
@@ -156,6 +156,14 @@ All agents in this phase run with `PIPELINE_MODE=true`.
    ```
    Task(subagent_type: "technical-product-manager", model: "opus", prompt: "PIPELINE_MODE=true\nContext: BRANCH=..., JIRA_ISSUE=..., BRANCH_NAME=...\n\n...")
    ```
+   **Interview loop**: TPM may return an `## Interview Required` block instead of a completed spec. When this happens:
+   - Present the TPM's questions to the user using `AskUserQuestion` (or as formatted text if questions are open-ended)
+   - Collect the user's answers
+   - **Resume** the same TPM agent with: `"User answers:\n1. <answer>\n2. <answer>\n..."`
+   - Repeat until TPM returns a completed spec (no `## Interview Required` in output)
+
+   This loop typically runs 2-3 times (post-research questions → mid-draft questions → review feedback).
+
 2. Update pipeline state: `tpm.status = "completed"`
 3. Run `domain-expert` agent with `PIPELINE_MODE=true` → produces `domain_analysis.md`
    ```

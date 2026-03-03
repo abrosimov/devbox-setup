@@ -1,36 +1,44 @@
 ---
-# Clean managed .claude directories and files before deployment to ensure
-# removed files in the repo are also removed from user's configuration.
-# Note: .claude/.claude/settings.local.json is preserved (user permissions)
+# Deploy .claude managed subdirectories via rsync (--delete removes stale files).
+# This replaces the previous clean + filetree loop for .claude/, which processed
+# each of ~158 files as an individual Ansible copy task.
 
-- name: Clean managed .claude subdirectories before deployment
-  ansible.builtin.file:
-    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
-    state: absent
-  loop:
-    - agents
-    - commands
-    - skills
-    - schemas
-    - bin
-    - docs
-    - templates
+- name: Deploy managed .claude subdirectories
+  ansible.posix.synchronize:
+    src: "{{ role_path }}/files/.claude/{{ item }}/"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}/"
+    delete: true
+    recursive: true
+    checksum: true
+    rsync_opts:
+      - "--chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+  loop: "{{ devbox_claude_managed_dirs }}"
+  loop_control:
+    label: ".claude/{{ item }}"
   tags: [configs, claude]
 
-- name: Clean managed .claude root files before deployment
-  ansible.builtin.file:
-    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
-    state: absent
+- name: Deploy .claude root files
+  ansible.builtin.copy:
+    src: "files/.claude/{{ item }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
+    mode: "0644"
   loop:
     - CLAUDE.md
     - settings.json
     - hooks.json
     - config.md
+  loop_control:
+    label: ".claude/{{ item }}"
   tags: [configs, claude]
+
+# Remaining non-.claude files (~23 items, including 6 templates) via filetree.
 
 - name: Collect files and directories from tree
   ansible.builtin.set_fact:
-    filetree_items: "{{ lookup('community.general.filetree', 'files/', wantlist=True) }}"
+    filetree_items: >-
+      {{ lookup('community.general.filetree', 'files/', wantlist=True)
+         | rejectattr('path', 'match', '^\\.claude(/|$)')
+         | list }}
     files_that_should_not_be_overwritten:
       - .config/fish/conf.d/_init_env_confidential.fish
 
@@ -40,15 +48,19 @@
     state: directory
     mode: "{{ item.mode }}"
   loop: "{{ filetree_items }}"
+  loop_control:
+    label: "{{ item.path }}"
   when: item.state == 'directory'
 
-- name: Copy configuration files to appropriate paths.
+- name: Copy configuration files to appropriate paths
   ansible.builtin.copy:
     src: "files/{{ item.path }}"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
     mode: "{{ item.mode | default('0644') }}"
     force: "{{ item.path not in files_that_should_not_be_overwritten }}"
   loop: "{{ filetree_items }}"
+  loop_control:
+    label: "{{ item.path }}"
   when: item.state == 'file' and not item.path.endswith('.j2')
 
 - name: Render config templates to appropriate paths
@@ -57,6 +69,8 @@
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path | regex_replace('\\.j2$', '') }}"
     mode: "{{ item.mode | default('0644') }}"
   loop: "{{ filetree_items }}"
+  loop_control:
+    label: "{{ item.path }}"
   when: item.state == 'file' and item.path.endswith('.j2')
 
 # Local overlay: laptop-only files not tracked in VCS (from local/ directory).
@@ -79,6 +93,8 @@
     state: directory
     mode: "{{ item.mode }}"
   loop: "{{ local_filetree_items }}"
+  loop_control:
+    label: "{{ item.path }}"
   when: local_overlay_dir.stat.exists and item.state == 'directory'
 
 - name: Copy local overlay files
@@ -87,6 +103,8 @@
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
     mode: "{{ item.mode | default('0644') }}"
   loop: "{{ local_filetree_items }}"
+  loop_control:
+    label: "{{ item.path }}"
   when: local_overlay_dir.stat.exists and item.state == 'file' and not item.path.endswith('.j2')
 
 - name: Render local overlay templates
@@ -95,4 +113,6 @@
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path | regex_replace('\\.j2$', '') }}"
     mode: "{{ item.mode | default('0644') }}"
   loop: "{{ local_filetree_items }}"
+  loop_control:
+    label: "{{ item.path }}"
   when: local_overlay_dir.stat.exists and item.state == 'file' and item.path.endswith('.j2')

@@ -61,6 +61,18 @@ devbox_shell:
   path_conditional:
     - { check: "$HOME/.cargo", add: "$HOME/.cargo/bin" }
 
+# Managed .claude subdirectories deployed via rsync (--delete removes stale files).
+# Root files (CLAUDE.md, settings.json, hooks.json, config.md) are copied separately.
+devbox_claude_managed_dirs:
+  - agents
+  - commands
+  - skills
+  - schemas
+  - bin
+  - docs
+  - templates
+  - future_projects
+
 # MCP servers running as Docker containers (works with Docker, OrbStack, Podman)
 # See: https://hub.docker.com/u/mcp
 mcp_docker_servers:

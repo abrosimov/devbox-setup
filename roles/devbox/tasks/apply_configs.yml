@@ -20,6 +20,15 @@
   failed_when: false
 
 - name: Install fisher plugins
+  ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher install {{ item }}'"
+  args:
+    executable: /bin/bash
+  loop: "{{ devbox_fish_plugins }}"
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  changed_when: false
+
+- name: Update fisher plugins
   ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher update'"
   args:
     executable: /bin/bash

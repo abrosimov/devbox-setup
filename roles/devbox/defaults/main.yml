@@ -30,6 +30,12 @@ devbox_packages:
     - mypy
     - ansible-lint
 
+# Fish shell plugins installed via `fisher install`.
+# fisher itself is installed via Homebrew; these are managed by fisher.
+devbox_fish_plugins:
+  - ilancosman/tide@v6
+  - ivakyb/fish_ssh_agent
+
 # Shell environment and PATH — single source of truth for both fish and bash.
 # Templates in conf.d/_init_env.fish.j2, conf.d/_init_path.fish.j2, and .bashrc.j2
 # all iterate over these lists, so adding a path here updates both shells.

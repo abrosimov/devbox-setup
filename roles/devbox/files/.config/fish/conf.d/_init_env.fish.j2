@@ -3,7 +3,7 @@ set -gx {{ entry.name }} {{ entry.value }}
 {% endfor %}
 
 if test -d /opt/homebrew
-  /opt/homebrew/bin/brew shellenv | source
+  /opt/homebrew/bin/brew shellenv fish | source
 end
 
 if type -q mise

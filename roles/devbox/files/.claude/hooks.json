@@ -116,11 +116,6 @@
             "type": "command",
             "command": "~/.claude/bin/post-edit-typecheck",
             "async": true
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/bin/post-edit-debug-warn",
-            "async": true
           }
         ]
       },
@@ -141,11 +136,6 @@
             "type": "command",
             "command": "~/.claude/bin/post-edit-typecheck",
             "async": true
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/bin/post-edit-debug-warn",
-            "async": true
           }
         ]
       },
@@ -155,11 +145,6 @@
           {
             "type": "command",
             "command": "~/.claude/bin/post-edit-format",
-            "async": true
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/bin/post-edit-debug-warn",
             "async": true
           }
         ]

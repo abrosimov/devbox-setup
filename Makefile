@@ -22,35 +22,37 @@ else
 endif
 
 .PHONY: run dev help init vault-init lint check check-dev validate-claude \
-       work personal dev-work dev-personal
+       work personal dev-work dev-personal check-work check-personal
 
 help:
 	@echo ""
 	@echo "Usage:"
-	@echo "  make run              - run playbook normally"
-	@echo "  make run V=3          - run playbook with -vvv"
-	@echo "  make dev              - run in dev_mode"
-	@echo "  make dev V=2          - run in dev_mode with -vv"
-	@echo "  make work             - run with work profile (PROJECTS_DIR=~/Work)"
 	@echo "  make personal         - run with personal profile (PROJECTS_DIR=~/Projects)"
-	@echo "  make dev-work         - dev_mode + work profile"
+	@echo "  make work             - run with work profile (PROJECTS_DIR=~/Work)"
 	@echo "  make dev-personal     - dev_mode + personal profile"
-	@echo "  make run PROFILE=work - explicit profile selection"
-	@echo "  make run EXTRA_VARS='-e foo=bar'"
+	@echo "  make dev-work         - dev_mode + work profile"
+	@echo "  make check-personal   - dry-run with personal profile"
+	@echo "  make check-work       - dry-run with work profile"
+	@echo "  make check-dev        - dry-run in dev_mode (test vault)"
 	@echo "  make lint             - syntax check + ansible-lint"
-	@echo "  make check            - dry-run (check mode)"
-	@echo "  make check-dev        - dry-run in dev_mode"
 	@echo "  make init             - install Homebrew, Ansible, and dependencies (macOS only)"
 	@echo "  make vault-init       - create and encrypt vault/devbox_ssh_config.yml"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
 	@echo ""
+	@echo "Options:"
+	@echo "  V=1..4                - verbosity level (-v to -vvvv)"
+	@echo "  EXTRA_VARS='-e foo=bar' - pass extra variables"
+	@echo ""
 
 run:
+ifndef PROFILE
+	$(error PROFILE is required. Use: make personal, make work, make dev-personal, or make dev-work)
+endif
 	ANSIBLE_FORCE_COLOR=1 \
 	ansible-playbook $(SUDO_OPTS) $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
 
 dev:
-	$(MAKE) run EXTRA_VARS='-e dev_mode=true' V=$(V)
+	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
 
 work:
 	$(MAKE) run PROFILE=work V=$(V)
@@ -69,8 +71,17 @@ lint:
 	ansible-lint $(PLAYBOOK)
 
 check:
+ifndef PROFILE
+	$(error PROFILE is required. Use: make check-personal or make check-work)
+endif
 	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook --check $(SUDO_OPTS) $(VERBOSE) $(VAULT_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
+	ansible-playbook --check $(SUDO_OPTS) $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
+
+check-work:
+	$(MAKE) check PROFILE=work V=$(V)
+
+check-personal:
+	$(MAKE) check PROFILE=personal V=$(V)
 
 check-dev:
 	ANSIBLE_FORCE_COLOR=1 \

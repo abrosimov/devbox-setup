@@ -18,6 +18,7 @@ devbox_packages:
     - { pkg: "github.com/vektra/mockery/v2@latest", bin: "mockery" }
     - { pkg: "github.com/sqlc-dev/sqlc/cmd/sqlc@latest", bin: "sqlc" }
     - { pkg: "golang.org/x/tools/gopls@latest", bin: "gopls" }
+    - { pkg: "github.com/go-delve/delve/cmd/dlv@latest", bin: "dlv" }
 
   # kubectl — direct binary download (pinned version)
   kubectl:

@@ -9,21 +9,19 @@ function __wt_project_dir
     echo "$PROJECTS_DIR/$project"
 end
 
-function __wt_bare_dir
+function __wt_base_dir
     set -l pd (__wt_project_dir)
     or return 1
-    set -l project (basename $pd)
-    echo "$pd/$project.git"
+    echo "$pd/base"
 end
 
-# Helper: list worktree directory names (excluding the bare repo)
+# Helper: list worktree directory names (excluding base)
 function __wt_worktree_names
     set -l pd (__wt_project_dir)
     or return
-    set -l project (basename $pd)
     for d in $pd/*/
         set -l name (basename $d)
-        if test "$name" != "$project.git"
+        if test "$name" != base
             echo $name
         end
     end
@@ -31,7 +29,7 @@ end
 
 # Helper: list remote branch names
 function __wt_remote_branches
-    set -l bd (__wt_bare_dir)
+    set -l bd (__wt_base_dir)
     or return
     git -C "$bd" branch -r 2>/dev/null | string replace -r '^\s*origin/' '' | string match -rv '^HEAD '
 end

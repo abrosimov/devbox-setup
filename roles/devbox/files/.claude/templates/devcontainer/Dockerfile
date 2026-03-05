@@ -85,7 +85,7 @@ RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/local/
 RUN echo 'source /usr/local/share/powerlevel10k/powerlevel10k.zsh-theme' >> /etc/zsh/zshrc
 
 # --- Claude Code ---
-RUN npm install -g @anthropic-ai/claude-code
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # --- Firewall setup ---
 COPY init-firewall.sh /usr/local/bin/init-firewall.sh

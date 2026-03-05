@@ -1,4 +1,4 @@
-function wt --description "Git worktree management for bare-repo projects"
+function wt --description "Git worktree management for projects"
     if not set -q PROJECTS_DIR
         echo "PROJECTS_DIR is not set. Run make work / make personal to configure."
         return 2
@@ -11,10 +11,10 @@ function wt --description "Git worktree management for bare-repo projects"
         return 2
     end
     set -l project (string split '/' -- $rel)[1]
-    set -l bare_dir "$PROJECTS_DIR/$project/$project.git"
+    set -l base_dir "$PROJECTS_DIR/$project/base"
 
-    if not test -d "$bare_dir"
-        echo "Bare repo not found: $bare_dir"
+    if not test -d "$base_dir/.git"
+        echo "Base repo not found: $base_dir"
         return 2
     end
 
@@ -57,12 +57,12 @@ function wt --description "Git worktree management for bare-repo projects"
 
             # Default base: detect from origin/HEAD
             if not set -q base[1]
-                set -l head_ref (git -C "$bare_dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
+                set -l head_ref (git -C "$base_dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
                 if test -n "$head_ref"
                     set base (string replace 'refs/remotes/origin/' '' -- $head_ref)
-                else if git -C "$bare_dir" show-ref --verify --quiet refs/remotes/origin/main
+                else if git -C "$base_dir" show-ref --verify --quiet refs/remotes/origin/main
                     set base main
-                else if git -C "$bare_dir" show-ref --verify --quiet refs/remotes/origin/master
+                else if git -C "$base_dir" show-ref --verify --quiet refs/remotes/origin/master
                     set base master
                 else
                     echo "Cannot detect default branch. Use --from <base>."
@@ -80,17 +80,17 @@ function wt --description "Git worktree management for bare-repo projects"
             end
 
             # Check if branch already exists (local or remote tracking)
-            if git -C "$bare_dir" show-ref --verify --quiet "refs/heads/$branch"
-                git -C "$bare_dir" worktree add "$wt_path" "$branch"
+            if git -C "$base_dir" show-ref --verify --quiet "refs/heads/$branch"
+                git -C "$base_dir" worktree add "$wt_path" "$branch"
             else
-                git -C "$bare_dir" worktree add -b "$branch" "$wt_path" "$base"
+                git -C "$base_dir" worktree add -b "$branch" "$wt_path" "$base"
             end
 
             and echo "Ready: $wt_path"
             and cd "$wt_path"
 
         case ls
-            git -C "$bare_dir" worktree list
+            git -C "$base_dir" worktree list
 
         case rm
             if test (count $argv) -ne 1
@@ -111,7 +111,7 @@ function wt --description "Git worktree management for bare-repo projects"
                 cd "$PROJECTS_DIR/$project"
             end
 
-            git -C "$bare_dir" worktree remove "$wt_path"
+            git -C "$base_dir" worktree remove "$wt_path"
 
         case '*'
             # Bare name → cd to worktree directory

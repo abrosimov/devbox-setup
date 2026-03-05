@@ -2,7 +2,7 @@
 complete -c proj -f
 
 # Subcommands
-complete -c proj -n '__fish_use_subcommand' -a clone -d 'Bare-clone a repo'
+complete -c proj -n '__fish_use_subcommand' -a clone -d 'Clone a repo into base/'
 complete -c proj -n '__fish_use_subcommand' -a ls -d 'List projects'
 
 # Project names as cd shortcuts

@@ -52,14 +52,6 @@
     - cask_secondary_result.failed
     - '"already installed" not in cask_secondary_result.msg'
 
-- name: "Install Claude Code CLI"
-  community.general.npm:
-    name: "@anthropic-ai/claude-code"
-    global: true
-    state: present
-  environment:
-    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
-
 - name: "Install dclint (Docker Compose linter)"
   community.general.npm:
     name: dclint

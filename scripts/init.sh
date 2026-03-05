@@ -26,3 +26,8 @@ pipx install pipreqs
 
 # Install required Ansible collections
 ansible-galaxy collection install -r requirements.yml
+
+# Install Claude Code CLI (native binary → ~/.local/bin/)
+if ! command -v claude &> /dev/null; then
+    curl -fsSL https://claude.ai/install.sh | bash
+fi

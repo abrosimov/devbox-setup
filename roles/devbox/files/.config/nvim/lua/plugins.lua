@@ -80,7 +80,7 @@ return {
         },
     },
 
-    -- 2. LSP config
+    -- 2. LSP config (Neovim 0.11+ native API)
     {
         "neovim/nvim-lspconfig",
         dependencies = {
@@ -88,11 +88,8 @@ return {
             "saghen/blink.cmp",
         },
         config = function()
-            local lspconfig = require("lspconfig")
-            local capabilities = require("blink.cmp").get_lsp_capabilities()
-
-            lspconfig.gopls.setup({
-                capabilities = capabilities,
+            -- Native vim.lsp.config replaces deprecated require('lspconfig').setup()
+            vim.lsp.config("gopls", {
                 settings = {
                     gopls = {
                         analyses = {
@@ -102,6 +99,7 @@ return {
                     },
                 },
             })
+            vim.lsp.enable("gopls")
 
             vim.api.nvim_create_autocmd("LspAttach", {
                 callback = function(ev)
@@ -160,15 +158,36 @@ return {
         end,
     },
 
-    -- 5. File explorer
+    -- 5. File explorer (filesystem right, open buffers left)
     {
-        "nvim-tree/nvim-tree.lua",
-        dependencies = { "nvim-tree/nvim-web-devicons" },
+        "nvim-neo-tree/neo-tree.nvim",
+        branch = "v3.x",
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+            "MunifTanjim/nui.nvim",
+            "nvim-tree/nvim-web-devicons",
+        },
         opts = {
-            view = { width = 35 },
+            filesystem = {
+                follow_current_file = { enabled = true },
+                window = {
+                    position = "right",
+                    width = 35,
+                },
+            },
+            buffers = {
+                follow_current_file = { enabled = true },
+                group_empty_dirs = true,
+                show_unloaded = true,
+                window = {
+                    position = "left",
+                    width = 30,
+                },
+            },
         },
         keys = {
-            { "<leader>t", "<cmd>NvimTreeToggle<CR>", desc = "Toggle file explorer" },
+            { "<leader>t", "<cmd>Neotree toggle filesystem<CR>", desc = "Toggle file explorer" },
+            { "<leader>b", "<cmd>Neotree toggle buffers<CR>", desc = "Toggle open buffers" },
         },
     },
 
@@ -298,23 +317,10 @@ return {
         },
     },
 
-    -- 12. Buffer tabs
+    -- 12. Buffer navigation (Tab/S-Tab cycle buffers)
     {
-        "akinsho/bufferline.nvim",
-        version = "*",
-        dependencies = { "nvim-tree/nvim-web-devicons" },
-        opts = {
-            options = {
-                diagnostics = "nvim_lsp",
-                offsets = {
-                    { filetype = "NvimTree", text = "Explorer", highlight = "Directory", separator = true },
-                },
-            },
-        },
-        keys = {
-            { "<Tab>", "<cmd>BufferLineCycleNext<CR>", desc = "Next buffer" },
-            { "<S-Tab>", "<cmd>BufferLineCyclePrev<CR>", desc = "Prev buffer" },
-        },
+        "nvim-tree/nvim-web-devicons",
+        lazy = true,
     },
 
     -- 13. Key discovery
@@ -340,7 +346,15 @@ return {
             "nvim-telescope/telescope.nvim",
         },
         config = function()
-            require("git-worktree").setup()
+            -- v2 has no setup() — configure hooks and load telescope extension
+            local Hooks = require("git-worktree.hooks")
+            local config = require("git-worktree.config")
+
+            Hooks.register(Hooks.type.SWITCH, Hooks.builtins.update_current_buffer_on_switch)
+            Hooks.register(Hooks.type.DELETE, function()
+                vim.cmd(config.update_on_change_command)
+            end)
+
             require("telescope").load_extension("git_worktree")
 
             vim.keymap.set("n", "<leader>gw", function()

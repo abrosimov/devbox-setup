@@ -8,6 +8,11 @@ vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 vim.opt.termguicolors = true
 
+-- Ensure vim.lsp.config['*'] exists before blink.cmp loads (workaround for saghen/blink.cmp#2379)
+if vim.fn.has('nvim-0.11') == 1 and vim.lsp.config and not vim.lsp.config['*'] then
+    vim.lsp.config('*', {})
+end
+
 -- Map space to half-page down in normal mode
 vim.keymap.set('n', '<Space>', '<C-d>', { desc = 'Half page down' })
 
@@ -77,5 +82,9 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+-- Buffer cycling
+vim.keymap.set('n', '<Tab>', '<cmd>bnext<CR>', { desc = 'Next buffer' })
+vim.keymap.set('n', '<S-Tab>', '<cmd>bprevious<CR>', { desc = 'Prev buffer' })
 
 require("config.lazy")

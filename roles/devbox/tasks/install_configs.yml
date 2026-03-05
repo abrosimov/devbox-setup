@@ -24,11 +24,17 @@
     mode: "0644"
   loop:
     - CLAUDE.md
-    - settings.json
     - hooks.json
     - config.md
   loop_control:
     label: ".claude/{{ item }}"
+  tags: [configs, claude]
+
+- name: Render .claude settings.json template
+  ansible.builtin.template:
+    src: "files/.claude/settings.json.j2"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/settings.json"
+    mode: "0644"
   tags: [configs, claude]
 
 # Remaining non-.claude files (~23 items, including 6 templates) via filetree.

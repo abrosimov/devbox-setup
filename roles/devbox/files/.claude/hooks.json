@@ -35,6 +35,10 @@
           {
             "type": "command",
             "command": "case \"$CC_BASH_COMMAND\" in 'git commit'*'--no-verify'*|'git commit --no-verify'*) echo 'BLOCKED: --no-verify is not allowed. Fix the pre-commit hook issues instead of bypassing them.' >&2; exit 2;; esac"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-bash-boundary-wrap"
           }
         ]
       },

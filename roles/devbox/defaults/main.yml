@@ -73,6 +73,25 @@ devbox_claude_managed_dirs:
   - templates
   - future_projects
 
-# MCP servers are configured declaratively in settings.json.j2 (mcpServers key).
-# No separate variables needed — Ansible deploys settings.json as a template.
+# MCP servers registered via `claude mcp add` (written to ~/.claude.json).
+# Grouped by transport type for clarity.
+mcp_docker_servers:
+  - name: sequentialthinking
+    image: mcp/sequentialthinking
+    network: none
+    read_only: true
+  - name: playwright
+    image: mcr.microsoft.com/playwright/mcp
+    init: true
+
+mcp_script_servers:
+  - name: memory-upstream
+    command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-upstream"
+  - name: memory-downstream
+    command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-downstream"
+
+mcp_http_servers:
+  - name: figma
+    url: "https://mcp.figma.com/mcp"
+    transport: sse
 

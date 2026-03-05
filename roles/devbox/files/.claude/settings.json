@@ -131,26 +131,6 @@
       "allowLocalBinding": true
     }
   },
-  "mcpServers": {
-    "sequentialthinking": {
-      "command": "docker",
-      "args": ["run", "--rm", "-i", "--network=none", "--read-only", "mcp/sequentialthinking"]
-    },
-    "playwright": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "--init", "mcr.microsoft.com/playwright/mcp"]
-    },
-    "memory-upstream": {
-      "command": "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-upstream"
-    },
-    "memory-downstream": {
-      "command": "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-downstream"
-    },
-    "figma": {
-      "type": "sse",
-      "url": "https://mcp.figma.com/mcp"
-    }
-  },
   "permissions": {
     "defaultMode": "acceptEdits",
     "deny": [

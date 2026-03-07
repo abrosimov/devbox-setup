@@ -28,6 +28,8 @@
       - cloc # Count lines of code by language
       - yq # YAML/JSON/XML processor (like jq for YAML)
       - hadolint # Dockerfile linter — used by verify-se-completion and post-edit-lint
+      - swi-prolog # Prolog runtime — includes built-in LSP support
+      - swift-format # Apple's official Swift code formatter
     state: present
 
 - name: "Install Homebrew casks"
@@ -63,13 +65,31 @@
 # Go tools moved to install_from_go.yml (variable-driven, per-tool idempotency)
 # Python tools moved to install_from_uv.yml (variable-driven, per-tool idempotency)
 
-- name: "Init OCaml"
+- name: "Init Rust toolchain"
   ansible.builtin.command:
-    cmd: opam init -y
+    cmd: rustup-init -y
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.cargo/bin/rustc"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+
+- name: "Init OCaml (auto-setup writes shell hooks)"
+  ansible.builtin.command:
+    cmd: opam init -y -a
     creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
 
 - name: "Install necessary OCaml packages"
   ansible.builtin.command:
     cmd: opam install -y ocaml-lsp-server odoc ocamlformat utop
-    # Using last binary to ensure that all expected packages are installed.
     creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam/default/bin/utop"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+    OPAMSWITCH: default
+
+- name: "Install SWI-Prolog LSP server"
+  ansible.builtin.command:
+    cmd: swipl -g "pack_install(lsp_server, [interactive(false)])" -t halt
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/swi-prolog/pack/lsp_server"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"

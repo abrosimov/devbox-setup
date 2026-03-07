@@ -30,6 +30,7 @@ devbox_packages:
     - ruff
     - mypy
     - ansible-lint
+    - debugpy
 
 # Fish shell plugins installed via `fisher install`.
 # fisher itself is installed via Homebrew; these are managed by fisher.

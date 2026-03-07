@@ -21,7 +21,7 @@ return {
 	    lazy = false,
 	    build = ":TSUpdate",
             opts = {
-                ensure_installed = { 'bash', 'python', 'go', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc' },
+                ensure_installed = { 'bash', 'python', 'go', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'typescript', 'tsx', 'javascript', 'json', 'css', 'rust', 'ocaml', 'prolog', 'dart', 'swift' },
                 -- Autoinstall languages that are not installed
                 auto_install = true,
                 highlight = {
@@ -64,7 +64,7 @@ return {
     },
 
     -- =====================================================================
-    -- LSP, completion, and Go IDE plugins
+    -- LSP, completion, and IDE plugins (Go + Python + TypeScript + Rust + OCaml + Prolog)
     -- =====================================================================
 
     -- 1. Mason — LSP installer
@@ -76,7 +76,7 @@ return {
         "mason-org/mason-lspconfig.nvim",
         dependencies = { "mason-org/mason.nvim" },
         opts = {
-            ensure_installed = { "gopls" },
+            ensure_installed = { "gopls", "pyright", "ts_ls", "rust_analyzer" },
         },
     },
 
@@ -88,7 +88,7 @@ return {
             "saghen/blink.cmp",
         },
         config = function()
-            -- Native vim.lsp.config replaces deprecated require('lspconfig').setup()
+            -- Go
             vim.lsp.config("gopls", {
                 settings = {
                     gopls = {
@@ -100,6 +100,61 @@ return {
                 },
             })
             vim.lsp.enable("gopls")
+
+            -- Python — pyright for types/completion, ruff for linting/formatting
+            vim.lsp.config("pyright", {})
+            vim.lsp.enable("pyright")
+
+            vim.lsp.config("ruff", {})
+            vim.lsp.enable("ruff")
+
+            -- TypeScript/JavaScript
+            vim.lsp.config("ts_ls", {})
+            vim.lsp.enable("ts_ls")
+
+            -- Rust
+            vim.lsp.config("rust_analyzer", {
+                settings = {
+                    ["rust-analyzer"] = {
+                        checkOnSave = { command = "clippy" },
+                    },
+                },
+            })
+            vim.lsp.enable("rust_analyzer")
+
+            -- OCaml (installed via opam, not Mason)
+            vim.lsp.config("ocamllsp", {})
+            vim.lsp.enable("ocamllsp")
+
+            -- Prolog (SWI-Prolog lsp_server pack)
+            vim.lsp.config("prolog_lsp", {
+                cmd = {
+                    "swipl",
+                    "-g", "use_module(library(lsp_server)).",
+                    "-g", "lsp_server:main",
+                    "-t", "halt",
+                    "--", "stdio",
+                },
+                filetypes = { "prolog" },
+            })
+            vim.lsp.enable("prolog_lsp")
+
+            -- Swift (sourcekit-lsp ships with Xcode)
+            vim.lsp.config("sourcekit", {})
+            vim.lsp.enable("sourcekit")
+
+            -- Dart LSP is handled by flutter-tools.nvim — do NOT configure dartls here
+
+            -- Disable hover from ruff so pyright handles it
+            vim.api.nvim_create_autocmd("LspAttach", {
+                group = vim.api.nvim_create_augroup("lsp_disable_ruff_hover", { clear = true }),
+                callback = function(args)
+                    local client = vim.lsp.get_client_by_id(args.data.client_id)
+                    if client and client.name == "ruff" then
+                        client.server_capabilities.hoverProvider = false
+                    end
+                end,
+            })
 
             vim.api.nvim_create_autocmd("LspAttach", {
                 callback = function(ev)
@@ -199,6 +254,18 @@ return {
             require("conform").setup({
                 formatters_by_ft = {
                     go = { "goimports" },
+                    python = { "ruff_organize_imports", "ruff_format" },
+                    typescript = { "prettier" },
+                    typescriptreact = { "prettier" },
+                    javascript = { "prettier" },
+                    javascriptreact = { "prettier" },
+                    json = { "prettier" },
+                    css = { "prettier" },
+                    html = { "prettier" },
+                    rust = { "rustfmt" },
+                    ocaml = { "ocamlformat" },
+                    dart = { "dart_format" },
+                    swift = { "swift_format" },
                 },
                 format_on_save = {
                     timeout_ms = 3000,
@@ -240,6 +307,12 @@ return {
         "mfussenegger/nvim-dap",
         dependencies = {
             "leoluz/nvim-dap-go",
+            "mfussenegger/nvim-dap-python",
+            "mxsdev/nvim-dap-vscode-js",
+            {
+                "microsoft/vscode-js-debug",
+                build = "npm install --legacy-peer-deps && npx gulp vsDebugServerBundle && mv dist out",
+            },
             "rcarriga/nvim-dap-ui",
             "nvim-neotest/nvim-nio",
         },
@@ -248,6 +321,64 @@ return {
             local dapui = require("dapui")
 
             require("dap-go").setup()
+            require("dap-python").setup("python3")
+
+            -- Rust — codelldb
+            local codelldb_path = vim.fn.stdpath("data") .. "/mason/bin/codelldb"
+            if vim.fn.executable(codelldb_path) == 1 then
+                dap.adapters.codelldb = {
+                    type = "server",
+                    port = "${port}",
+                    executable = {
+                        command = codelldb_path,
+                        args = { "--port", "${port}" },
+                    },
+                }
+                dap.configurations.rust = {
+                    {
+                        type = "codelldb",
+                        request = "launch",
+                        name = "Launch (cargo build)",
+                        program = function()
+                            return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/target/debug/", "file")
+                        end,
+                        cwd = "${workspaceFolder}",
+                        stopOnEntry = false,
+                    },
+                }
+            end
+
+            -- TypeScript/JavaScript — vscode-js-debug
+            require("dap-vscode-js").setup({
+                debugger_path = vim.fn.stdpath("data") .. "/lazy/vscode-js-debug",
+                adapters = { "pwa-node", "pwa-chrome" },
+            })
+            for _, lang in ipairs({ "typescript", "javascript", "typescriptreact", "javascriptreact" }) do
+                dap.configurations[lang] = {
+                    {
+                        type = "pwa-node",
+                        request = "launch",
+                        name = "Launch file",
+                        program = "${file}",
+                        cwd = "${workspaceFolder}",
+                    },
+                    {
+                        type = "pwa-node",
+                        request = "attach",
+                        name = "Attach",
+                        processId = require("dap.utils").pick_process,
+                        cwd = "${workspaceFolder}",
+                    },
+                    {
+                        type = "pwa-chrome",
+                        request = "launch",
+                        name = "Launch Chrome",
+                        url = "http://localhost:3000",
+                        webRoot = "${workspaceFolder}",
+                    },
+                }
+            end
+
             dapui.setup()
 
             dap.listeners.after.event_initialized["dapui_config"] = function()
@@ -276,12 +407,18 @@ return {
             "nvim-lua/plenary.nvim",
             "nvim-treesitter/nvim-treesitter",
             "fredrikaverpil/neotest-golang",
+            "nvim-neotest/neotest-python",
+            "marilari88/neotest-vitest",
+            "rouge8/neotest-rust",
         },
         config = function()
             local neotest = require("neotest")
             neotest.setup({
                 adapters = {
                     require("neotest-golang"),
+                    require("neotest-python")({ runner = "pytest" }),
+                    require("neotest-vitest"),
+                    require("neotest-rust"),
                 },
             })
 
@@ -361,5 +498,21 @@ return {
                 require("telescope").extensions.git_worktree.git_worktree()
             end, { desc = "Switch worktree" })
         end,
+    },
+
+    -- 16. Flutter/Dart (handles LSP + DAP + hot reload + device selection)
+    {
+        "nvim-flutter/flutter-tools.nvim",
+        lazy = false,
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+            "stevearc/dressing.nvim",
+        },
+        opts = {
+            debugger = {
+                enabled = true,
+                run_via_dap = true,
+            },
+        },
     },
 }

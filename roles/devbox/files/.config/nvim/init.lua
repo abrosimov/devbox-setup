@@ -129,7 +129,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
         if not client then return end
         if not client.server_capabilities.semanticTokensProvider then
             local semantic = client.config.capabilities.textDocument.semanticTokens
-            if semantic then
+            if semantic and type(semantic) == "table" then
                 client.server_capabilities.semanticTokensProvider = {
                     full = true,
                     legend = { tokenTypes = semantic.tokenTypes, tokenModifiers = semantic.tokenModifiers },

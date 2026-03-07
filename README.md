@@ -139,11 +139,12 @@ Leader key: `.` (dot)
 | Key | Mode | Action |
 |-----|------|--------|
 | `Space` | Normal | Half page down |
+| `Esc` | Normal | Close floating windows + clear search highlight |
 | `Tab` | Normal | Next buffer |
 | `Shift+Tab` | Normal | Previous buffer |
 | `Ctrl+h/j/k/l` | Normal | Move focus between splits |
-| `]f` / `[f` | Normal | Next / previous function |
-| `]c` / `[c` | Normal | Next / previous class |
+| `]f` / `[f` | Normal, Visual, Operator | Next / previous function |
+| `]c` / `[c` | Normal, Visual, Operator | Next / previous class |
 
 **Folding**
 
@@ -237,6 +238,56 @@ Leader key: `.` (dot)
 |-----|------|--------|
 | `gcc` | Normal | Toggle line comment |
 | `gc` | Visual | Toggle comment on selection |
+
+### Fish Shell
+
+**Git Abbreviations**
+
+| Abbreviation | Expands To |
+|-------------|------------|
+| `co` | `git checkout` |
+| `cob` | `git checkout -b` |
+| `st` | `git status` |
+| `gd` | `git diff` |
+| `gdc` | `git diff --cached` |
+| `add` | `git add` |
+| `ci` | `git commit -m '...'` (cursor placed inside quotes) |
+| `am` | `git commit --amend` |
+| `br` | `git branch` |
+| `pull` | `git pull origin` |
+| `push` | `git push origin` |
+| `merge` | `git merge` |
+| `stash` | `git stash` |
+| `gg` | `git grep -n '...'` (cursor placed inside quotes) |
+
+**Editor Abbreviations**
+
+| Abbreviation | Expands To |
+|-------------|------------|
+| `vi` / `vim` | `nvim` |
+| `vimdiff` / `vd` | `nvim -d` |
+
+**Claude Code Abbreviations**
+
+| Abbreviation | Expands To |
+|-------------|------------|
+| `code` | `claude --model claude-opus-4-5` |
+| `code_smart` | `claude --model claude-opus-4-6` |
+
+**Custom Functions**
+
+| Command | Description |
+|---------|-------------|
+| `proj clone <url>` | Clone repo into `$PROJECTS_DIR/<name>/base/` |
+| `proj ls` | List projects |
+| `proj <name>` | `cd` into project directory |
+| `wt add <branch>` | Create git worktree (auto-detects base branch) |
+| `wt ls` | List worktrees |
+| `wt rm <name>` | Remove worktree |
+| `wt <name>` | `cd` to worktree directory |
+| `k <subcommand>` | kubectl helper — `k` with no args for full usage |
+
+**Fisher Plugins**: [tide](https://github.com/IlanCosman/tide) (prompt), [fish_ssh_agent](https://github.com/ivakyb/fish_ssh_agent)
 
 ## Testing Neovim Config Changes
 

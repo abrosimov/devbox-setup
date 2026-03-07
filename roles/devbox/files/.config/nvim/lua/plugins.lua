@@ -12,39 +12,44 @@ return {
 	    priority = 1000, -- make sure to load this before all the other start plugins
 	    config = function()
 	      -- load the colorscheme here
-	      vim.cmd([[colorscheme tokyonight]])
+	      vim.cmd([[colorscheme tokyonight-storm]])
 	    end,
     },
     {
 	    "nvim-treesitter/nvim-treesitter",
-	    branch = 'master',
+	    branch = 'main',
 	    lazy = false,
 	    build = ":TSUpdate",
-            opts = {
-                ensure_installed = { 'bash', 'python', 'go', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'typescript', 'tsx', 'javascript', 'json', 'css', 'rust', 'ocaml', 'prolog', 'dart', 'swift' },
-                -- Autoinstall languages that are not installed
-                auto_install = true,
-                highlight = {
-                    enable = true,
-                    -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-                    --  If you are experiencing weird indenting issues, add the language to
-                    --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-                    additional_vim_regex_highlighting = { 'ruby' },
+            dependencies = {
+                {
+                    "nvim-treesitter/nvim-treesitter-textobjects",
+                    branch = "main",
+                    config = function()
+                        require("nvim-treesitter-textobjects").setup({
+                            move = { set_jumps = true },
+                        })
+                        local move = require("nvim-treesitter-textobjects.move")
+                        vim.keymap.set({ "n", "x", "o" }, "]f", function() move.goto_next_start("@function.outer", "textobjects") end, { desc = "Next function" })
+                        vim.keymap.set({ "n", "x", "o" }, "[f", function() move.goto_previous_start("@function.outer", "textobjects") end, { desc = "Prev function" })
+                        vim.keymap.set({ "n", "x", "o" }, "]c", function() move.goto_next_start("@class.outer", "textobjects") end, { desc = "Next class" })
+                        vim.keymap.set({ "n", "x", "o" }, "[c", function() move.goto_previous_start("@class.outer", "textobjects") end, { desc = "Prev class" })
+                    end,
                 },
-                indent = { enable = true, disable = { 'ruby' } },
-	    },
-            config = function(_, opts)
-                -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-                -- Prefer git instead of curl in order to improve connectivity in some environments
-                require('nvim-treesitter.install').prefer_git = true
-                ---@diagnostic disable-next-line: missing-fields
-                require('nvim-treesitter.configs').setup(opts)
-                -- There are additional nvim-treesitter modules that you can use to interact
-                -- with nvim-treesitter. You should go explore a few and see what interests you:
-                --
-                --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-                --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-                --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+            },
+            config = function()
+                local ts = require("nvim-treesitter")
+                ts.setup()
+
+                local langs = { 'bash', 'python', 'go', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'typescript', 'tsx', 'javascript', 'json', 'css', 'rust', 'ocaml', 'prolog', 'dart', 'swift' }
+                ts.install(langs, { summary = false })
+
+                vim.api.nvim_create_autocmd("FileType", {
+                    pattern = "*",
+                    callback = function(ev)
+                        pcall(vim.treesitter.start, ev.buf)
+                        vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+                    end,
+                })
             end,
     },
     {
@@ -76,7 +81,7 @@ return {
         "mason-org/mason-lspconfig.nvim",
         dependencies = { "mason-org/mason.nvim" },
         opts = {
-            ensure_installed = { "gopls", "pyright", "ts_ls", "rust_analyzer" },
+            ensure_installed = { "gopls", "pyright", "ts_ls", "rust_analyzer", "clangd" },
         },
     },
 
@@ -92,6 +97,7 @@ return {
             vim.lsp.config("gopls", {
                 settings = {
                     gopls = {
+                        semanticTokens = true,
                         analyses = {
                             unusedparams = true,
                         },
@@ -138,6 +144,10 @@ return {
                 filetypes = { "prolog" },
             })
             vim.lsp.enable("prolog_lsp")
+
+            -- C/C++ (clangd via Mason)
+            vim.lsp.config("clangd", {})
+            vim.lsp.enable("clangd")
 
             -- Swift (sourcekit-lsp ships with Xcode)
             vim.lsp.config("sourcekit", {})
@@ -346,6 +356,21 @@ return {
                         stopOnEntry = false,
                     },
                 }
+
+                local c_cpp_config = {
+                    {
+                        type = "codelldb",
+                        request = "launch",
+                        name = "Launch executable",
+                        program = function()
+                            return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+                        end,
+                        cwd = "${workspaceFolder}",
+                        stopOnEntry = false,
+                    },
+                }
+                dap.configurations.c = c_cpp_config
+                dap.configurations.cpp = c_cpp_config
             end
 
             -- TypeScript/JavaScript — vscode-js-debug
@@ -405,6 +430,7 @@ return {
         dependencies = {
             "nvim-neotest/nvim-nio",
             "nvim-lua/plenary.nvim",
+            "antoinemadec/FixCursorHold.nvim",
             "nvim-treesitter/nvim-treesitter",
             "fredrikaverpil/neotest-golang",
             "nvim-neotest/neotest-python",
@@ -415,17 +441,19 @@ return {
             local neotest = require("neotest")
             neotest.setup({
                 adapters = {
-                    require("neotest-golang"),
+                    require("neotest-golang")({}),
                     require("neotest-python")({ runner = "pytest" }),
                     require("neotest-vitest"),
                     require("neotest-rust"),
                 },
             })
-
-            vim.keymap.set("n", "<leader>tr", function() neotest.run.run() end, { desc = "Run nearest test" })
-            vim.keymap.set("n", "<leader>tf", function() neotest.run.run(vim.fn.expand("%")) end, { desc = "Run file tests" })
-            vim.keymap.set("n", "<leader>ts", function() neotest.summary.toggle() end, { desc = "Test summary" })
         end,
+        keys = {
+            { "<leader>tr", function() require("neotest").run.run() end, desc = "Run nearest test" },
+            { "<leader>tf", function() require("neotest").run.run(vim.fn.expand("%")) end, desc = "Run file tests" },
+            { "<leader>ts", function() require("neotest").summary.toggle() end, desc = "Test summary" },
+            { "<leader>to", function() require("neotest").output_panel.toggle() end, desc = "Test output panel" },
+        },
     },
 
     -- 10. Git signs

@@ -7,3 +7,4 @@ tests/generated
 local/
 
 tmp/
+roles/devbox/files/.config/nvim/lazy-lock.json

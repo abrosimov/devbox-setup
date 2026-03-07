@@ -30,6 +30,8 @@
       - hadolint # Dockerfile linter — used by verify-se-completion and post-edit-lint
       - swi-prolog # Prolog runtime — includes built-in LSP support
       - swift-format # Apple's official Swift code formatter
+      - cmake # C/C++ build system
+      - bazelisk # Bazel version manager (installs as `bazel`)
     state: present
 
 - name: "Install Homebrew casks"

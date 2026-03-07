@@ -69,14 +69,16 @@ Everything lives in one role. No multi-role orchestration.
 
 ### Configuration Deployment (`install_configs.yml`)
 
-**Clean-before-deploy**: Before deploying, managed `.claude/` subdirectories (`agents`, `commands`, `skills`, `schemas`, `bin`, `docs`, `templates`) and root files (`CLAUDE.md`, `settings.json`, `hooks.json`, `config.md`) are deleted. This ensures files removed from the repo are also removed from the user's config. `settings.local.json` is preserved (user permissions).
+Six deployment blocks, each using the most efficient method:
 
-**Filetree mirroring**: Uses `community.general.filetree` to mirror `roles/devbox/files/` to the target directory:
-- Regular files → copied directly
-- `.j2` files → rendered as Jinja2 templates (suffix stripped)
-- Protected files (listed in `files_that_should_not_be_overwritten`) are not overwritten if they already exist
+1. **rsync `--delete`** — `.claude/` subdirs (agents, skills, etc.). Stale files removed automatically.
+2. **copy loop** — `.claude/` root files (CLAUDE.md, settings.json, hooks.json, config.md)
+3. **copy dir** — `kitty/`, `nvim/`, `fish/completions/`, `fish/functions/` as whole directories (no `--delete`, safe for local overlay)
+4. **copy loop** — individual files (fish/config.fish, conf.d/aliases.fish, README.md)
+5. **template loop** — 5 `.j2` files rendered to their destinations (`.bashrc`, `.gemrc`, `.npmrc`, 2 fish conf.d)
+6. **local overlay** — `roles/devbox/local/` (gitignored) deployed last via filetree. Laptop-only configs override repo files.
 
-**Local overlay**: After the main pass, `roles/devbox/local/` (gitignored) is deployed on top with identical logic. Laptop-only configs go here to stay out of VCS.
+Protected files: `_init_env_confidential.fish` is copied only if absent (`force: false`).
 
 ### MCP Server Registration (`apply_configs.yml`)
 

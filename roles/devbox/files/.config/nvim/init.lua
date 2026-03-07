@@ -61,12 +61,23 @@ vim.opt.guicursor = "n-v-c-i:block"
 vim.opt.cursorline = true
 vim.opt.scrolloff = 10
 
+vim.opt.foldmethod = "expr"
+vim.opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+vim.opt.foldlevelstart = 99
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
--- Set highlight on search, but clear on pressing <Esc> in normal mode
+-- Esc: close floating windows + clear search highlight
 vim.opt.hlsearch = true
-vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+vim.keymap.set("n", "<Esc>", function()
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_config(win).relative ~= "" then
+            pcall(vim.api.nvim_win_close, win, true)
+        end
+    end
+    vim.cmd("nohlsearch")
+end)
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
@@ -86,5 +97,47 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- Buffer cycling
 vim.keymap.set('n', '<Tab>', '<cmd>bnext<CR>', { desc = 'Next buffer' })
 vim.keymap.set('n', '<S-Tab>', '<cmd>bprevious<CR>', { desc = 'Prev buffer' })
+
+-- Run main in split
+vim.keymap.set("n", "<leader>rm", function()
+    local runners = {
+        go = "go run .",
+        c = "cc -o /tmp/a.out % && /tmp/a.out",
+        cpp = "c++ -o /tmp/a.out % && /tmp/a.out",
+        rust = "cargo run",
+        python = "python3 %",
+        typescript = "npx tsx %",
+        javascript = "node %",
+        dart = "dart run",
+        swift = "swift run",
+        ocaml = "dune exec .",
+    }
+    local cmd = runners[vim.bo.filetype]
+    if cmd then
+        cmd = cmd:gsub("%%", vim.fn.expand("%"))
+        vim.cmd("vsplit | terminal " .. cmd)
+    else
+        vim.notify("No runner for filetype: " .. vim.bo.filetype, vim.log.levels.WARN)
+    end
+end, { desc = "Run main in split" })
+
+-- Enable LSP semantic tokens for all servers
+vim.api.nvim_create_autocmd("LspAttach", {
+    group = vim.api.nvim_create_augroup("lsp_semantic_tokens", { clear = true }),
+    callback = function(args)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if not client then return end
+        if not client.server_capabilities.semanticTokensProvider then
+            local semantic = client.config.capabilities.textDocument.semanticTokens
+            if semantic then
+                client.server_capabilities.semanticTokensProvider = {
+                    full = true,
+                    legend = { tokenTypes = semantic.tokenTypes, tokenModifiers = semantic.tokenModifiers },
+                    range = true,
+                }
+            end
+        end
+    end,
+})
 
 require("config.lazy")

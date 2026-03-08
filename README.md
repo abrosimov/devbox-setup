@@ -38,6 +38,15 @@ make run TAGS="packages,configs"  # custom tag combination
 make dev TAGS="configs"           # custom tags in dev_mode
 ```
 
+## Upgrading
+
+```bash
+make upgrade-personal   # upgrade all managed packages (personal profile)
+make upgrade-work       # upgrade all managed packages (work profile)
+```
+
+Re-runs the full playbook with `upgrade_mode=true` — Homebrew formulae get `state: latest`, Go tools are re-installed at `@latest`, and uv tools run `uv tool upgrade`.
+
 ## Linting and Dry-Run
 
 ```bash

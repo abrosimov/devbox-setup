@@ -13,3 +13,16 @@
   loop: "{{ devbox_packages.go_tools }}"
   loop_control:
     label: "{{ item.bin }}"
+  when: not (upgrade_mode | default(false) | bool)
+
+- name: "Upgrade Go tools"
+  ansible.builtin.command:
+    cmd: "go install {{ item.pkg }}"
+  environment:
+    GOPATH: "{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go"
+    PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/{{ devbox_paths.programming_deps_dir }}/go/bin:{{ ansible_facts['env']['PATH'] }}"
+  loop: "{{ devbox_packages.go_tools }}"
+  loop_control:
+    label: "{{ item.bin }}"
+  when: upgrade_mode | default(false) | bool
+  changed_when: true

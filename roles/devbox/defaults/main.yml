@@ -1,3 +1,5 @@
+upgrade_mode: false
+
 devbox_user:
   login: kabrosimov
   ssh_pass_phrase: "{{ vault_devbox_user.vault_ssh_pass_phrase }}"

@@ -13,13 +13,13 @@
       - htop
       - nvim
       - telnet
-    state: present
+    state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
 
 - name: "Install fontconfig (ignore post-install warnings)"
   community.general.homebrew:
     name:
       - fontconfig
-    state: present
+    state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
   register: fontconfig_result
   failed_when:
     - fontconfig_result.failed is defined

@@ -23,6 +23,7 @@ endif
 
 .PHONY: run dev help init vault-init lint check check-dev validate-claude \
        work personal dev-work dev-personal check-work check-personal \
+       upgrade-work upgrade-personal \
        test test-nvim test-fish test-json test-bash
 
 help:
@@ -38,6 +39,8 @@ help:
 	@echo "  make lint             - syntax check + ansible-lint"
 	@echo "  make init             - install Homebrew, Ansible, and dependencies (macOS only)"
 	@echo "  make vault-init       - create and encrypt vault/devbox_ssh_config.yml"
+	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
+	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
 	@echo "  make test             - run all config validation tests"
 	@echo "  make test-nvim        - headless smoke test of nvim config"
@@ -88,6 +91,12 @@ check-work:
 
 check-personal:
 	$(MAKE) check PROFILE=personal V=$(V)
+
+upgrade-work:
+	$(MAKE) run PROFILE=work EXTRA_VARS='-e upgrade_mode=true' V=$(V)
+
+upgrade-personal:
+	$(MAKE) run PROFILE=personal EXTRA_VARS='-e upgrade_mode=true' V=$(V)
 
 check-dev:
 	ANSIBLE_FORCE_COLOR=1 \

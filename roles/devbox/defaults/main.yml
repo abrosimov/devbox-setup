@@ -99,3 +99,16 @@ mcp_http_servers:
     url: "https://mcp.figma.com/mcp"
     transport: sse
 
+# Claude Code plugins installed via `claude plugin` CLI.
+# Marketplaces are GitHub repos containing plugin manifests.
+# Plugins are installed from marketplaces by name.
+claude_plugin_marketplaces:
+  - repo: anthropics/skills
+    name: anthropic-agent-skills
+
+claude_plugins:
+  - name: example-skills
+    marketplace: anthropic-agent-skills
+  - name: document-skills
+    marketplace: anthropic-agent-skills
+

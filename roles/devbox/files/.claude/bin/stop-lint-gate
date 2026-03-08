@@ -1,0 +1,228 @@
+#!/usr/bin/env node
+
+// stop-lint-gate — Stop hook that verifies modified files are lint-clean
+// before allowing the agent to finish.
+//
+// On Stop event:
+//   1. If stop_hook_active → exit 0 (prevent infinite loop)
+//   2. Get git-modified files (staged + unstaged)
+//   3. Run appropriate linter per file extension
+//   4. If issues found → output additionalContext (forces agent to continue)
+//   5. If clean → exit 0 (allow completion)
+//
+// Event: Stop
+
+require("./env-setup");
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+function run(cmd, opts = {}) {
+  try {
+    return {
+      stdout: execSync(cmd, {
+        encoding: "utf8",
+        timeout: 30000,
+        stdio: ["pipe", "pipe", "pipe"],
+        ...opts,
+      }).trim(),
+      success: true,
+    };
+  } catch (e) {
+    return {
+      stdout: (e.stdout || "").trim(),
+      stderr: (e.stderr || "").trim(),
+      success: false,
+    };
+  }
+}
+
+function findProjectRoot(filePath, markerFiles) {
+  let dir = path.dirname(filePath);
+  for (let i = 0; i < 20; i++) {
+    for (const marker of markerFiles) {
+      if (fs.existsSync(path.join(dir, marker))) {
+        return dir;
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+function lintFile(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+
+  const ext = path.extname(filePath).toLowerCase();
+  const fileDir = path.dirname(filePath);
+  const fileName = path.basename(filePath);
+  const baseNameLower = fileName.toLowerCase();
+
+  // Dockerfile
+  if (
+    baseNameLower === "dockerfile" ||
+    baseNameLower.startsWith("dockerfile.") ||
+    baseNameLower.endsWith(".dockerfile")
+  ) {
+    const result = run(`hadolint "${filePath}" 2>&1`);
+    if (!result.success && result.stdout) {
+      const lines = result.stdout.split("\n").filter((l) => l.trim());
+      if (lines.length > 0) return `hadolint: ${lines.join("\n")}`;
+    }
+    return null;
+  }
+
+  // Compose files
+  if (
+    /^(docker-)?compose/i.test(baseNameLower) &&
+    (ext === ".yml" || ext === ".yaml")
+  ) {
+    const result = run(`dclint "${filePath}" 2>&1`);
+    if (!result.success && result.stdout) {
+      const lines = result.stdout.split("\n").filter((l) => l.trim());
+      if (lines.length > 0) return `dclint: ${lines.join("\n")}`;
+    }
+    return null;
+  }
+
+  switch (ext) {
+    case ".go": {
+      const projRoot = findProjectRoot(filePath, ["go.mod"]);
+      if (projRoot) {
+        const relDir = path.relative(projRoot, fileDir) || ".";
+        const result = run(`golangci-lint run --fast "./${relDir}/..."`, {
+          cwd: projRoot,
+        });
+        if (!result.success && result.stdout) {
+          const lines = result.stdout
+            .split("\n")
+            .filter((l) => l.includes(fileName));
+          if (lines.length > 0) return `golangci-lint:\n${lines.join("\n")}`;
+        }
+      }
+      break;
+    }
+    case ".py": {
+      const result = run(`ruff check "${filePath}" 2>&1`);
+      if (!result.success && result.stdout) {
+        const lines = result.stdout.split("\n").filter((l) => l.trim());
+        if (lines.length > 0) return `ruff:\n${lines.join("\n")}`;
+      }
+      break;
+    }
+    case ".ts":
+    case ".tsx":
+    case ".js":
+    case ".jsx": {
+      const projRoot = findProjectRoot(filePath, [
+        ".eslintrc",
+        ".eslintrc.json",
+        ".eslintrc.js",
+        "eslint.config.js",
+        "eslint.config.mjs",
+        "eslint.config.ts",
+      ]);
+      if (projRoot) {
+        const result = run(
+          `npx eslint --no-error-on-unmatched-pattern "${filePath}" 2>&1`,
+          { cwd: projRoot }
+        );
+        if (!result.success && result.stdout) {
+          const lines = result.stdout.split("\n").filter((l) => l.trim());
+          if (lines.length > 0) return `eslint:\n${lines.join("\n")}`;
+        }
+      }
+      break;
+    }
+  }
+
+  return null;
+}
+
+// Extensions we know how to lint
+const LINTABLE_EXTS = new Set([
+  ".go",
+  ".py",
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".yml",
+  ".yaml",
+]);
+
+function isLintable(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const base = path.basename(filePath).toLowerCase();
+  return (
+    LINTABLE_EXTS.has(ext) ||
+    base === "dockerfile" ||
+    base.startsWith("dockerfile.") ||
+    base.endsWith(".dockerfile")
+  );
+}
+
+async function main() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    process.exit(0);
+  }
+
+  // Prevent infinite loop: if this hook already triggered a continuation,
+  // allow the agent to stop on the next attempt.
+  if (data.stop_hook_active) {
+    process.exit(0);
+  }
+
+  // Get modified files (staged + unstaged) relative to HEAD
+  const gitResult = run("git diff --name-only HEAD 2>/dev/null");
+  if (!gitResult.success || !gitResult.stdout) {
+    process.exit(0);
+  }
+
+  const cwd = process.cwd();
+  const modifiedFiles = gitResult.stdout
+    .split("\n")
+    .map((f) => f.trim())
+    .filter((f) => f)
+    .map((f) => path.resolve(cwd, f))
+    .filter((f) => isLintable(f) && fs.existsSync(f));
+
+  if (modifiedFiles.length === 0) {
+    process.exit(0);
+  }
+
+  // Lint each modified file, collect issues
+  const issues = [];
+  for (const filePath of modifiedFiles) {
+    const result = lintFile(filePath);
+    if (result) {
+      issues.push(`${path.basename(filePath)}:\n${result}`);
+    }
+  }
+
+  if (issues.length === 0) {
+    process.exit(0);
+  }
+
+  // Output additionalContext to force the agent to continue and fix issues
+  const output = {
+    additionalContext:
+      `[stop-lint-gate] Cannot complete: ${issues.length} file(s) have lint issues.\n\n` +
+      issues.join("\n\n") +
+      "\n\nFix all lint issues before completing the task.",
+  };
+  process.stdout.write(JSON.stringify(output));
+  process.exit(0);
+}
+
+main();

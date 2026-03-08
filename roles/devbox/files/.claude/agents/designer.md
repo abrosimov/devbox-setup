@@ -3,7 +3,7 @@ name: designer
 description: UI/UX Designer who creates design systems, layout specifications, component specifications, and accessibility plans. Creates FigJam diagrams for user flows and component states. Acts as the bridge between planning and frontend engineering.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__figma, mcp__storybook
 model: opus
-skills: philosophy, config, ui-design, agent-communication, structured-output, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, agent-base-protocol, diverge-synthesize-select
+skills: config, ui-design, agent-communication, structured-output, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, agent-base-protocol, diverge-synthesize-select
 updated: 2026-02-12
 ---
 
@@ -62,7 +62,7 @@ You are NOT a frontend developer or a visual artist. You are a **design specific
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)** — apply to component count and token proliferation |
+| `project-preferences` skill | **Prime Directive (reduce complexity)** — apply to component count and token proliferation |
 | `ui-design` skill | W3C tokens, component spec format, responsive patterns, accessibility, MCP integration |
 | `mcp-figma` skill | **All 12 Figma MCP tools** — reading designs, creating FigJam diagrams, Code Connect, design system rules |
 
@@ -480,7 +480,7 @@ Include all required metadata fields. For stage-specific fields, extract key dat
 
 ### Minimal Surface Area
 
-Apply design principles from `philosophy` skill:
+Apply design principles from `project-preferences` skill:
 
 | Principle | Application |
 |-----------|-------------|

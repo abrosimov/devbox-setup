@@ -1,0 +1,10 @@
+[
+  {"query": "Add a nolint directive to suppress this unused variable warning", "should_trigger": true},
+  {"query": "The linter is complaining about this function, can you add noqa to silence it?", "should_trigger": true},
+  {"query": "Put an eslint-disable comment above this line to skip the check", "should_trigger": true},
+  {"query": "Add ts-ignore to suppress this TypeScript error", "should_trigger": true},
+  {"query": "How do I fix these lint errors in my Go code?", "should_trigger": true},
+  {"query": "Write a REST API endpoint in Python with FastAPI", "should_trigger": false},
+  {"query": "Create a new React component for the sidebar", "should_trigger": false},
+  {"query": "Help me set up a Docker container for my database", "should_trigger": false}
+]

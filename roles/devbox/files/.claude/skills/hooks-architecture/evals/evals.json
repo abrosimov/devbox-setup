@@ -1,0 +1,54 @@
+{
+  "skill_name": "hooks-architecture",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "How do I create a PreToolUse hook that blocks dangerous git commands?",
+      "expected_output": "Explains PreToolUse hook with exit 2 for blocking, correct hooks.json config",
+      "expectations": [
+        "Shows exit 2 for blocking",
+        "Shows correct hooks.json structure with matcher",
+        "Provides a working example script"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I want to run a linter after every file edit automatically",
+      "expected_output": "Explains PostToolUse hook with async:true for lint, additionalContext for results",
+      "expectations": [
+        "Uses PostToolUse with matcher for Edit/Write",
+        "Sets async: true for non-blocking execution",
+        "Outputs results via additionalContext (not stderr) so agent sees them"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "How can I prevent the agent from completing a task if there are lint errors?",
+      "expected_output": "Explains Stop hook with additionalContext output and stop_hook_active guard",
+      "expectations": [
+        "Uses Stop event hook",
+        "Outputs additionalContext to force continuation",
+        "Includes stop_hook_active guard to prevent infinite loops"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "What's the difference between stderr output and additionalContext in hooks?",
+      "expected_output": "Explains that stderr is only in terminal logs while additionalContext is injected into agent context",
+      "expectations": [
+        "Correctly explains stderr is invisible to agent",
+        "Correctly explains additionalContext is injected into conversation",
+        "Recommends additionalContext for anything the agent needs to act on"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write a Python web scraper that extracts product prices",
+      "expected_output": "Agent writes the scraper without triggering hooks-architecture skill",
+      "expectations": [
+        "Writes Python code normally",
+        "hooks-architecture skill does not interfere with coding tasks"
+      ]
+    }
+  ]
+}

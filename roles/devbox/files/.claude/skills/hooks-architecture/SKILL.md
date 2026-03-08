@@ -18,7 +18,7 @@ Hooks intercept Claude Code lifecycle events.
 | **SessionStart** | Session begins | No | Load project context |
 | **SessionEnd** | Session ends | No | Save session state |
 | **Notification** | Notification sent | No | Log notifications |
-| **Stop** | Agent stops | No | Cleanup |
+| **Stop** | Agent stops | Yes (additionalContext) | Verify work before completion |
 
 ### PreToolUse
 
@@ -102,6 +102,21 @@ exit 0
 
 **async**: Runs in background (doesn't block next tool call).
 
+### additionalContext Output
+
+Any hook can output JSON with `additionalContext` to inject information into the agent's next turn:
+
+```javascript
+// stdout JSON — agent sees this in its next turn
+process.stdout.write(JSON.stringify({
+  additionalContext: "[lint] ruff issues in main.py:\nmain.py:42: F401 unused import\nFix these lint issues before proceeding."
+}));
+```
+
+**Key difference from stderr**: `stderr` output is only visible in terminal logs. `additionalContext` is injected into the agent's conversation context — the agent MUST see and respond to it.
+
+**Use for**: lint results, typecheck errors, verification gates — anything the agent needs to act on.
+
 ### PreCompact
 
 Runs before context compaction (when conversation grows too large).
@@ -180,16 +195,36 @@ exit 0
 
 ### Stop
 
-Runs when agent stops.
+Runs when agent is about to finish. Can force continuation via `additionalContext` output.
 
-**Example**: Save agent state
-```bash
-#!/usr/bin/env bash
-# bin/agent-stop
+**Input JSON**: `{ "session_id": "...", "stop_hook_active": true|false }`
 
-echo "Agent stopped at $(date)" >> ~/.claude/agent.log
+- `stop_hook_active: false` — normal stop, hook can verify and force continuation
+- `stop_hook_active: true` — this stop was triggered AFTER a previous hook forced continuation. **Must exit 0** to prevent infinite loops.
 
-exit 0
+**Output**: JSON to stdout with `additionalContext` forces agent to continue (not stop).
+
+**Example**: Verify lint-clean before completion
+```javascript
+#!/usr/bin/env node
+// bin/stop-lint-gate
+
+const data = JSON.parse(input);
+
+// CRITICAL: prevent infinite loop
+if (data.stop_hook_active) {
+  process.exit(0); // allow stop
+}
+
+// ... run linters on modified files ...
+
+if (issues.length > 0) {
+  // Force agent to continue and fix issues
+  process.stdout.write(JSON.stringify({
+    additionalContext: `Lint issues found:\n${issues.join("\n")}\nFix before completing.`
+  }));
+}
+process.exit(0);
 ```
 
 ## Hook Configuration

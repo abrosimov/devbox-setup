@@ -21,10 +21,10 @@ else
   VERBOSE :=
 endif
 
-.PHONY: run dev help init vault-init lint check check-dev validate-claude \
+.PHONY: run dev help init vault-init lint check check-dev validate-claude validate-skills eval-skills improve-skills \
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
-       test test-nvim test-fish test-json test-bash
+       test test-nvim test-fish test-json test-bash test-skill-evals
 
 help:
 	@echo ""
@@ -42,6 +42,9 @@ help:
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
+	@echo "  make validate-skills  - validate skill evals (structure, schema, coverage)"
+	@echo "  make eval-skills      - run trigger evals via Anthropic's run_eval.py (slow, needs claude CLI)"
+	@echo "  make improve-skills   - optimize skill description for trigger accuracy (run_loop.py)"
 	@echo "  make test             - run all config validation tests"
 	@echo "  make test-nvim        - headless smoke test of nvim config"
 	@echo "  make test-fish        - fish shell config syntax check"
@@ -50,6 +53,8 @@ help:
 	@echo ""
 	@echo "Options:"
 	@echo "  V=1..4                - verbosity level (-v to -vvvv)"
+	@echo "  SKILL=<name>          - target a single skill (for eval-skills, improve-skills)"
+	@echo "  MODEL=<model-id>      - model for eval/improve (default: claude-opus-4-6)"
 	@echo "  EXTRA_VARS='-e foo=bar' - pass extra variables"
 	@echo ""
 
@@ -109,9 +114,76 @@ vault-init:
 	@./scripts/vault-init.sh
 
 validate-claude:
-	@roles/devbox/files/.claude/bin/validate-library
+	@python3 roles/devbox/files/.claude/bin/validate-config.py --root roles/devbox/files/.claude
 
-test: test-json test-fish test-bash test-nvim
+validate-skills:
+	@echo "Validating skill eval files..."
+	@python3 roles/devbox/files/.claude/bin/validate-skill-evals
+
+# Anthropic skill-creator scripts (installed via claude-plugins-official)
+EVAL_SCRIPTS := $(shell ls -d ~/.claude/plugins/cache/anthropic-agent-skills/example-skills/*/skills/skill-creator/scripts 2>/dev/null | head -1)
+SKILLS_DIR   := roles/devbox/files/.claude/skills
+SKILL        ?=
+MODEL        ?= claude-opus-4-6
+EVAL_WORKERS ?= 5
+
+eval-skills:
+ifndef EVAL_SCRIPTS
+	$(error Anthropic skill-creator plugin not found. Install via: claude plugins install @anthropic/skill-creator)
+endif
+	@echo "Running trigger evals via Anthropic's run_eval.py..."
+	@if [ -n "$(SKILL)" ]; then \
+		skills="$(SKILLS_DIR)/$(SKILL)"; \
+	else \
+		skills=$$(find $(SKILLS_DIR) -name trigger_evals.json -exec dirname {} \; | xargs -I{} dirname {}); \
+	fi; \
+	pass=0; fail=0; skip=0; \
+	for skill_dir in $$skills; do \
+		name=$$(basename $$skill_dir); \
+		trigger_file="$$skill_dir/evals/trigger_evals.json"; \
+		if [ ! -f "$$trigger_file" ]; then \
+			skip=$$((skip + 1)); \
+			continue; \
+		fi; \
+		echo "  Testing $$name..."; \
+		result=$$(PYTHONPATH=$(EVAL_SCRIPTS)/.. python3 -m scripts.run_eval \
+			--eval-set "$$trigger_file" \
+			--skill-path "$$skill_dir" \
+			--num-workers $(EVAL_WORKERS) \
+			--timeout 30 \
+			--model $(MODEL) \
+			--verbose 2>&1 1>/dev/null) || true; \
+		echo "$$result" | sed 's/^/    /'; \
+		if echo "$$result" | grep -q "failed: 0"; then \
+			pass=$$((pass + 1)); \
+		else \
+			fail=$$((fail + 1)); \
+		fi; \
+	done; \
+	echo ""; \
+	echo "  $$pass passed, $$fail failed, $$skip skipped (no trigger_evals.json)"; \
+	[ $$fail -eq 0 ]
+
+improve-skills:
+ifndef EVAL_SCRIPTS
+	$(error Anthropic skill-creator plugin not found. Install via: claude plugins install @anthropic/skill-creator)
+endif
+ifndef SKILL
+	$(error SKILL is required. Example: make improve-skills SKILL=lint-discipline)
+endif
+	@echo "Optimizing description for $(SKILL) via Anthropic's run_loop.py..."
+	@skill_dir="$(SKILLS_DIR)/$(SKILL)"; \
+	trigger_file="$$skill_dir/evals/trigger_evals.json"; \
+	if [ ! -f "$$trigger_file" ]; then \
+		echo "  ERROR: $$trigger_file not found"; exit 1; \
+	fi; \
+	PYTHONPATH=$(EVAL_SCRIPTS)/.. python3 -m scripts.run_loop \
+		--skill-path "$$skill_dir" \
+		--eval-set "$$trigger_file" \
+		--model $(MODEL) \
+		--verbose
+
+test: test-json test-fish test-bash test-nvim test-skill-evals
 	@echo "All tests passed."
 
 test-json:
@@ -145,3 +217,7 @@ test-nvim:
 	@XDG_CONFIG_HOME=/tmp NVIM_APPNAME=nvim-test nvim --headless +"lua vim.defer_fn(function() vim.cmd('qa') end, 5000)" 2>&1 \
 		&& echo "  OK: nvim config loaded without errors" \
 		|| (echo "  FAIL: nvim config has errors"; exit 1)
+
+test-skill-evals:
+	@echo "Validating skill eval files..."
+	@python3 roles/devbox/files/.claude/bin/validate-skill-evals

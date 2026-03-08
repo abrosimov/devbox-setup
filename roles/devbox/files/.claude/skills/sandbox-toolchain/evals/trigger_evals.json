@@ -1,0 +1,10 @@
+[
+  {"query": "Getting permission denied when running go build in the sandbox", "should_trigger": true},
+  {"query": "How do I set GOCACHE and GOMODCACHE for Claude Code's sandbox?", "should_trigger": true},
+  {"query": "My toolchain commands fail with operation not permitted in sandbox mode", "should_trigger": true},
+  {"query": "Which directories are writable inside the Claude Code sandbox?", "should_trigger": true},
+  {"query": "The sandbox blocks network access when I try to download Go modules", "should_trigger": true},
+  {"query": "Implement a REST API with pagination in Go", "should_trigger": false},
+  {"query": "Write a React component that fetches data from an API", "should_trigger": false},
+  {"query": "Create a Makefile for building the project", "should_trigger": false}
+]

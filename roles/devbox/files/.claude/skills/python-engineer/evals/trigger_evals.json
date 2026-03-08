@@ -1,0 +1,10 @@
+[
+  {"query": "Implement a Python function to process CSV uploads", "should_trigger": true},
+  {"query": "Write a Python service that connects to PostgreSQL and runs migrations", "should_trigger": true},
+  {"query": "Create a Python class for handling webhook events", "should_trigger": true},
+  {"query": "Fix this Python endpoint that returns 500 on empty input", "should_trigger": true},
+  {"query": "Add type hints to this Python data processing module", "should_trigger": true},
+  {"query": "Write a Go gRPC server for the billing service", "should_trigger": false},
+  {"query": "Create a Next.js page with server-side rendering", "should_trigger": false},
+  {"query": "Configure the CI/CD pipeline in GitHub Actions", "should_trigger": false}
+]

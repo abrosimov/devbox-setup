@@ -1,0 +1,54 @@
+{
+  "skill_name": "workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "What commands are available for the agent pipeline?",
+      "expected_output": "Lists slash commands: /implement, /test, /review, /plan, /full-cycle, etc.",
+      "expectations": [
+        "Lists available slash commands",
+        "Explains what each command does",
+        "References the agent pipeline concept"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Which agent should I use for writing Go code?",
+      "expected_output": "Recommends software-engineer-go agent via /implement command",
+      "expectations": [
+        "Recommends the Go software engineer agent",
+        "References /implement command for spawning it",
+        "Mentions Opus as default model for SE agents"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I want to run the full development cycle for this feature",
+      "expected_output": "Explains /full-cycle command with its milestone gates",
+      "expectations": [
+        "References /full-cycle command",
+        "Explains the milestone gates (TPM → Domain → Model → Implementation)",
+        "Describes the sequential workflow"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "How do I use /implement with Sonnet to save costs?",
+      "expected_output": "Explains /implement sonnet for cost-sensitive tasks",
+      "expectations": [
+        "Explains the /implement sonnet syntax",
+        "Notes that Opus is default, Sonnet is opt-in",
+        "Mentions cost savings as the reason for Sonnet option"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Fix the typo in this README.md file",
+      "expected_output": "Fixes the typo directly without workflow overhead",
+      "expectations": [
+        "Fixes typo directly (no agent pipeline needed for trivial edits)",
+        "Workflow skill does not add unnecessary overhead to simple tasks"
+      ]
+    }
+  ]
+}

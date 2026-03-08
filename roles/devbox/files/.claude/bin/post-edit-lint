@@ -9,7 +9,7 @@
 //   .js/.jsx     → eslint (on the file)
 //
 // Event: PostToolUse (matcher: Edit, Write)
-// Runs async. Reports lint issues to stderr. Inspection-only.
+// Runs async. Reports lint issues via additionalContext (visible to agent).
 
 require("./env-setup");
 const { execSync } = require("child_process");
@@ -77,6 +77,8 @@ async function main() {
   // Docker file detection (before extension-based switch)
   const baseNameLower = fileName.toLowerCase();
 
+  let lintMessage = "";
+
   // Dockerfile detection: basename is "dockerfile", starts with "dockerfile.", or ends with ".dockerfile"
   if (
     baseNameLower === "dockerfile" ||
@@ -87,16 +89,13 @@ async function main() {
     if (!hadolintResult.success && hadolintResult.stdout) {
       const lines = hadolintResult.stdout.split("\n").filter((l) => l.trim());
       if (lines.length > 0) {
-        process.stderr.write(
-          `[lint] hadolint issues in ${fileName}:\n${lines.join("\n")}\n`
-        );
+        lintMessage = `[lint] hadolint issues in ${fileName}:\n${lines.join("\n")}`;
       }
     }
-    process.exit(0);
   }
 
   // Compose file detection: basename matches /^(docker-)?compose/ AND ext is .yml/.yaml
-  if (
+  else if (
     /^(docker-)?compose/i.test(baseNameLower) &&
     (ext === ".yml" || ext === ".yaml")
   ) {
@@ -104,76 +103,74 @@ async function main() {
     if (!dclintResult.success && dclintResult.stdout) {
       const lines = dclintResult.stdout.split("\n").filter((l) => l.trim());
       if (lines.length > 0) {
-        process.stderr.write(
-          `[lint] dclint issues in ${fileName}:\n${lines.join("\n")}\n`
-        );
+        lintMessage = `[lint] dclint issues in ${fileName}:\n${lines.join("\n")}`;
       }
     }
-    process.exit(0);
   }
 
-  switch (ext) {
-    case ".go": {
-      const projRoot = findProjectRoot(filePath, ["go.mod"]);
-      if (projRoot) {
-        // Lint the package containing the edited file
-        const relDir = path.relative(projRoot, fileDir) || ".";
-        const result = run(`golangci-lint run --fast "./${relDir}/..."`, {
-          cwd: projRoot,
-        });
-        if (!result.success && result.stdout) {
-          // Filter to only lines mentioning the edited file
-          const lines = result.stdout
-            .split("\n")
-            .filter((l) => l.includes(fileName));
-          if (lines.length > 0) {
-            process.stderr.write(
-              `[lint] golangci-lint issues in ${fileName}:\n${lines.join("\n")}\n`
-            );
+  else {
+    switch (ext) {
+      case ".go": {
+        const projRoot = findProjectRoot(filePath, ["go.mod"]);
+        if (projRoot) {
+          const relDir = path.relative(projRoot, fileDir) || ".";
+          const result = run(`golangci-lint run --fast "./${relDir}/..."`, {
+            cwd: projRoot,
+          });
+          if (!result.success && result.stdout) {
+            const lines = result.stdout
+              .split("\n")
+              .filter((l) => l.includes(fileName));
+            if (lines.length > 0) {
+              lintMessage = `[lint] golangci-lint issues in ${fileName}:\n${lines.join("\n")}`;
+            }
           }
         }
+        break;
       }
-      break;
-    }
-    case ".py": {
-      const result = run(`ruff check "${filePath}" 2>&1`);
-      if (!result.success && result.stdout) {
-        const lines = result.stdout.split("\n").filter((l) => l.trim());
-        if (lines.length > 0) {
-          process.stderr.write(
-            `[lint] ruff issues in ${fileName}:\n${lines.join("\n")}\n`
-          );
-        }
-      }
-      break;
-    }
-    case ".ts":
-    case ".tsx":
-    case ".js":
-    case ".jsx": {
-      const projRoot = findProjectRoot(filePath, [
-        ".eslintrc",
-        ".eslintrc.json",
-        ".eslintrc.js",
-        "eslint.config.js",
-        "eslint.config.mjs",
-        "eslint.config.ts",
-      ]);
-      if (projRoot) {
-        const result = run(`npx eslint --no-error-on-unmatched-pattern "${filePath}" 2>&1`, {
-          cwd: projRoot,
-        });
+      case ".py": {
+        const result = run(`ruff check "${filePath}" 2>&1`);
         if (!result.success && result.stdout) {
           const lines = result.stdout.split("\n").filter((l) => l.trim());
           if (lines.length > 0) {
-            process.stderr.write(
-              `[lint] eslint issues in ${fileName}:\n${lines.join("\n")}\n`
-            );
+            lintMessage = `[lint] ruff issues in ${fileName}:\n${lines.join("\n")}`;
           }
         }
+        break;
       }
-      break;
+      case ".ts":
+      case ".tsx":
+      case ".js":
+      case ".jsx": {
+        const projRoot = findProjectRoot(filePath, [
+          ".eslintrc",
+          ".eslintrc.json",
+          ".eslintrc.js",
+          "eslint.config.js",
+          "eslint.config.mjs",
+          "eslint.config.ts",
+        ]);
+        if (projRoot) {
+          const result = run(`npx eslint --no-error-on-unmatched-pattern "${filePath}" 2>&1`, {
+            cwd: projRoot,
+          });
+          if (!result.success && result.stdout) {
+            const lines = result.stdout.split("\n").filter((l) => l.trim());
+            if (lines.length > 0) {
+              lintMessage = `[lint] eslint issues in ${fileName}:\n${lines.join("\n")}`;
+            }
+          }
+        }
+        break;
+      }
     }
+  }
+
+  if (lintMessage) {
+    const output = {
+      additionalContext: lintMessage + "\nFix these lint issues before proceeding.",
+    };
+    process.stdout.write(JSON.stringify(output));
   }
 
   process.exit(0);

@@ -1,0 +1,57 @@
+{
+  "skill_name": "go-engineer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a Go HTTP handler that accepts JSON POST requests and returns a 201 response",
+      "expected_output": "Idiomatic Go handler with proper error handling, correct status codes, and json.NewDecoder",
+      "expectations": [
+        "Uses http.HandlerFunc or implements http.Handler interface",
+        "Handles JSON decoding errors with appropriate status codes",
+        "Returns 201 Created on success",
+        "Uses json.NewDecoder(r.Body) not ioutil.ReadAll+json.Unmarshal"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create a Go function that reads a file and returns its contents, handling errors properly",
+      "expected_output": "Function with explicit error handling, no suppression, uses os.ReadFile",
+      "expectations": [
+        "Returns ([]byte, error) or (string, error)",
+        "Handles and wraps errors with fmt.Errorf or errors.New",
+        "Does not ignore errors or use _ for error values",
+        "Uses os.ReadFile (not deprecated ioutil.ReadFile)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Implement a Go interface for a repository pattern with CRUD operations",
+      "expected_output": "Clean interface definition with context.Context as first parameter",
+      "expectations": [
+        "Interface methods accept context.Context as first parameter",
+        "Methods return error as last return value",
+        "Interface is small and focused (Go proverb: accept interfaces, return structs)",
+        "Uses idiomatic naming (no Get prefix for getters)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a Python function that sorts a list of dictionaries by a key",
+      "expected_output": "Agent writes Python code, not Go — skill should not trigger",
+      "expectations": [
+        "Writes Python code (not Go)",
+        "go-engineer skill does not interfere with Python tasks"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Format this Go code",
+      "expected_output": "Uses goimports (not go fmt or gofmt) for formatting",
+      "expectations": [
+        "Uses goimports with -local flag",
+        "Does NOT use go fmt or gofmt",
+        "Extracts module name from go.mod for -local flag"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+[
+  {"query": "Create a React component for the user profile card", "should_trigger": true},
+  {"query": "Implement a custom hook for form validation in TypeScript", "should_trigger": true},
+  {"query": "Write a Next.js API route for handling file uploads", "should_trigger": true},
+  {"query": "Fix the frontend bug where the modal doesn't close on escape", "should_trigger": true},
+  {"query": "Build a responsive navigation bar with React and Tailwind", "should_trigger": true},
+  {"query": "Write a Go CLI tool for database migrations", "should_trigger": false},
+  {"query": "Create a Python script to analyze log files", "should_trigger": false},
+  {"query": "Set up Terraform for AWS infrastructure", "should_trigger": false}
+]

@@ -1,0 +1,10 @@
+[
+  {"query": "Add comments to explain what each function does in this file", "should_trigger": true},
+  {"query": "Should I add a docstring to this Python class?", "should_trigger": true},
+  {"query": "This code needs better documentation and inline comments", "should_trigger": true},
+  {"query": "Remove all the narration comments from this file", "should_trigger": true},
+  {"query": "Is this code self-documenting enough or should I add comments?", "should_trigger": true},
+  {"query": "Refactor this function to use a map instead of a slice", "should_trigger": false},
+  {"query": "Deploy this application to Kubernetes", "should_trigger": false},
+  {"query": "Write unit tests for the payment service", "should_trigger": false}
+]

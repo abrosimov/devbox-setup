@@ -8,8 +8,8 @@
 //   Python:     # noqa, # type: ignore
 //   TypeScript: @ts-ignore, @ts-expect-error, eslint-disable
 //
-// Emits a warning to stderr (does NOT block). The agent sees the warning
-// and should reconsider whether suppression is justified.
+// BLOCKS the edit (exit 2) unless the old_string already contained the
+// directive (i.e., the agent is not introducing a new suppression).
 //
 // Event: PreToolUse (matcher: Edit, Write)
 
@@ -88,10 +88,12 @@ async function main() {
   if (findings.length > 0) {
     const directives = findings.map((f) => `${f.directive} (${f.lang})`).join(", ");
     process.stderr.write(
-      `[lint-discipline] Suppression directive detected: ${directives}. ` +
-        `Prefer fixing the lint issue. If suppression is necessary, ensure the user has approved it. ` +
-        `See lint-discipline skill for the fix hierarchy: fix code → refactor → ask user → suppress (with approval).\n`
+      `BLOCKED: Lint suppression directive detected: ${directives}. ` +
+        `Fix the underlying lint issue instead of suppressing it. ` +
+        `If suppression is truly necessary, ask the user for explicit approval first. ` +
+        `Fix hierarchy: fix code → refactor → ask user → suppress (with approval only).\n`
     );
+    process.exit(2);
   }
 
   process.exit(0);

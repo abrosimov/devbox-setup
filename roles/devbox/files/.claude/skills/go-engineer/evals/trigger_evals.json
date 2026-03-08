@@ -1,0 +1,10 @@
+[
+  {"query": "Implement a new Go HTTP handler for the /users endpoint", "should_trigger": true},
+  {"query": "Write a Go function to parse and validate JWT tokens", "should_trigger": true},
+  {"query": "Create a Go service that reads from a Kafka topic", "should_trigger": true},
+  {"query": "Fix the nil pointer bug in this Go handler", "should_trigger": true},
+  {"query": "Add error handling to this Go database query code", "should_trigger": true},
+  {"query": "Create a Python Flask API for user registration", "should_trigger": false},
+  {"query": "Build a React dashboard with TypeScript", "should_trigger": false},
+  {"query": "Write an Ansible playbook to configure nginx", "should_trigger": false}
+]

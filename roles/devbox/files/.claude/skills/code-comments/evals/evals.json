@@ -1,0 +1,55 @@
+{
+  "skill_name": "code-comments",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add comments to explain what this Go function does step by step",
+      "expected_output": "Agent adds only WHY/WARNING/TODO comments, not narration comments that describe what code does",
+      "expectations": [
+        "Does NOT add narration comments (e.g., '// iterate over items')",
+        "Only adds comments for non-obvious WHY, warnings, or TODOs",
+        "Explains to user that self-documenting code is preferred over narration"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "This code is tricky — add a comment explaining WHY we use a mutex here instead of a channel",
+      "expected_output": "Agent adds a WHY comment explaining the design decision",
+      "expectations": [
+        "Adds a comment explaining the reasoning (WHY)",
+        "Comment is concise and focused on the decision rationale",
+        "Does not add unnecessary additional narration comments"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add docstrings to all functions in this Python file",
+      "expected_output": "Agent follows docstring policy — only adds docstrings where the function name/signature isn't self-explanatory",
+      "expectations": [
+        "Does not add trivial docstrings to self-explanatory functions",
+        "Adds docstrings only where the function behavior is non-obvious",
+        "Docstrings describe WHY or edge cases, not just restating the function name"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a TypeScript React component that renders a user profile card",
+      "expected_output": "Agent writes clean code without narration comments",
+      "expectations": [
+        "Code does not contain narration comments like '// render the card'",
+        "Skill does not interfere with normal coding — no unnecessary commentary about comments policy",
+        "Code is self-documenting through clear naming"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Add a TODO comment for this unfinished error handling",
+      "expected_output": "Agent adds a TODO comment since TODOs are in the acceptable category",
+      "expectations": [
+        "Adds a TODO comment (acceptable category)",
+        "TODO is specific about what needs to be done",
+        "Does not refuse — TODOs are explicitly allowed"
+      ]
+    }
+  ]
+}

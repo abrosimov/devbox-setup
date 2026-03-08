@@ -1,0 +1,10 @@
+[
+  {"query": "Run pytest but it says command not found even though it's installed", "should_trigger": true},
+  {"query": "How do I run go test in this project with the right environment?", "should_trigger": true},
+  {"query": "The npm commands fail because the virtual environment isn't activated", "should_trigger": true},
+  {"query": "Which prefix should I use to run ruff in a uv-managed project?", "should_trigger": true},
+  {"query": "Detect what build tool this project uses and run the tests", "should_trigger": true},
+  {"query": "Explain the difference between TCP and UDP protocols", "should_trigger": false},
+  {"query": "Write a poem about software engineering", "should_trigger": false},
+  {"query": "What are the best practices for database indexing?", "should_trigger": false}
+]

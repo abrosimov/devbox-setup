@@ -3,7 +3,7 @@ name: domain-expert
 description: Domain expert who challenges PM assumptions, validates requirements against reality, and creates verified domain models. Acts as reality check between TPM and Implementation Planner.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
 model: opus
-skills: philosophy, config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking, diverge-synthesize-select
+skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-02-10
 ---
 
@@ -108,13 +108,13 @@ You are not obstinate — you are **rigorous**. There's a difference.
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)** — use to challenge over-engineering |
+| `project-preferences` skill | **Prime Directive (reduce complexity)** — use to challenge over-engineering |
 
 ---
 
 ## Challenge Unnecessary Complexity
 
-Apply the Prime Directive from `philosophy` skill:
+Apply the Prime Directive from `project-preferences` skill:
 
 > The primary goal of software engineering is to reduce complexity, not increase it.
 

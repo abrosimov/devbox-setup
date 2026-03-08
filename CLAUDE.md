@@ -47,6 +47,15 @@ make vault-init      # create and encrypt vault/devbox_ssh_config.yml
 
 # Claude Code config validation
 make validate-claude # validate agent/skill library cross-references
+make validate-skills # structural validation of skill evals (fast, CI-safe)
+
+# Skill trigger evaluation (requires claude CLI, run from regular terminal)
+make eval-skills                          # all skills with trigger_evals.json
+make eval-skills SKILL=lint-discipline    # single skill
+make eval-skills MODEL=claude-sonnet-4-6  # override model (default: claude-opus-4-6)
+
+# Skill description optimization (Anthropic's run_loop.py)
+make improve-skills SKILL=lint-discipline # iterative description improvement (5 rounds)
 ```
 
 ## Architecture

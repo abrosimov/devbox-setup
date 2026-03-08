@@ -1,0 +1,55 @@
+{
+  "skill_name": "code-writing-protocols",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Implement the user authentication module based on the approved design",
+      "expected_output": "Agent validates that the design was explicitly approved before implementing",
+      "expectations": [
+        "Checks for explicit approval before implementation",
+        "Does not implement without user confirmation",
+        "References the approval validation protocol"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "This function works but the variable names could be better. Refactor it.",
+      "expected_output": "Agent classifies this as a Tier 1 routine task and proceeds without over-engineering",
+      "expectations": [
+        "Classifies as routine/mechanical task",
+        "Does not over-analyze or create unnecessary abstractions",
+        "Makes the requested changes directly"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add error handling to this function, also add logging, and while you're at it refactor the database layer",
+      "expected_output": "Agent identifies scope creep and focuses on what was actually requested",
+      "expectations": [
+        "Does not silently expand scope beyond what was requested",
+        "Asks for clarification if the request seems too broad",
+        "Follows anti-satisficing rules — doesn't do partial work on each"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a simple hello world function in Python",
+      "expected_output": "Agent writes the simple function without unnecessary protocols",
+      "expectations": [
+        "Writes simple code directly",
+        "Does not over-engineer or add unnecessary abstractions",
+        "Skill does not add friction to trivial tasks"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I need you to completely rewrite the payment processing module",
+      "expected_output": "Agent treats this as Tier 3 (full exploration) and verifies scope before proceeding",
+      "expectations": [
+        "Classifies as high-impact decision requiring full exploration",
+        "Verifies scope and approach with user before starting",
+        "Does not jump straight into rewriting without a plan"
+      ]
+    }
+  ]
+}

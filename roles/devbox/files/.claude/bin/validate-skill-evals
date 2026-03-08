@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""validate-skill-evals — Structural skill validation.
+
+Validates:
+  - SKILL.md frontmatter (name, description, format)
+  - evals/evals.json schema (content evals — required fields, cross-references)
+  - evals/trigger_evals.json schema (trigger evals — query + should_trigger)
+  - Negative test coverage check
+
+Usage:
+  validate-skill-evals [skills-dir]
+  validate-skill-evals [skills-dir] --skill <name>
+"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# SKILL.md frontmatter validation (adapted from Anthropic's quick_validate.py)
+# Extended to allow our custom keys: alwaysApply, triggers, version, allowed-tools
+# ---------------------------------------------------------------------------
+
+ALLOWED_FRONTMATTER_KEYS = {
+    # Anthropic standard
+    "name", "description", "license", "allowed-tools", "metadata", "compatibility",
+    # Our extensions
+    "alwaysApply", "triggers", "version",
+}
+
+
+def validate_skill_md(skill_dir: Path) -> list[str]:
+    """Validate SKILL.md frontmatter. Returns list of errors (empty = pass)."""
+    errors = []
+    skill_md = skill_dir / "SKILL.md"
+
+    if not skill_md.exists():
+        return [f"SKILL.md not found in {skill_dir.name}"]
+
+    content = skill_md.read_text()
+    if not content.startswith("---"):
+        return [f"no YAML frontmatter (missing opening ---)"]
+
+    match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+    if not match:
+        return [f"invalid frontmatter (missing closing ---)"]
+
+    # Parse YAML manually (avoid pyyaml dependency for CI portability)
+    fm_text = match.group(1)
+    fm_keys = set()
+    name_value = ""
+    description_value = ""
+
+    for line in fm_text.split("\n"):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        # Top-level key detection (not indented continuation)
+        if not line.startswith(" ") and not line.startswith("\t") and ":" in line:
+            key = line.split(":", 1)[0].strip()
+            value = line.split(":", 1)[1].strip() if ":" in line else ""
+            fm_keys.add(key)
+            if key == "name":
+                name_value = value.strip("'\"")
+            elif key == "description":
+                if value in (">", "|", ">-", "|-"):
+                    description_value = "<multiline>"
+                else:
+                    description_value = value.strip("'\"")
+
+    unexpected = fm_keys - ALLOWED_FRONTMATTER_KEYS
+    if unexpected:
+        errors.append(f"unexpected frontmatter key(s): {', '.join(sorted(unexpected))}")
+
+    if "name" not in fm_keys:
+        errors.append("missing 'name' in frontmatter")
+    elif name_value:
+        if not re.match(r"^[a-z0-9-]+$", name_value):
+            errors.append(f"name '{name_value}' must be kebab-case")
+        if name_value.startswith("-") or name_value.endswith("-") or "--" in name_value:
+            errors.append(f"name '{name_value}' has invalid hyphens")
+        if len(name_value) > 64:
+            errors.append(f"name too long ({len(name_value)} chars, max 64)")
+        if name_value != skill_dir.name:
+            errors.append(f"name '{name_value}' doesn't match directory '{skill_dir.name}'")
+
+    if "description" not in fm_keys:
+        errors.append("missing 'description' in frontmatter")
+
+    return errors
+
+
+# ---------------------------------------------------------------------------
+# evals.json validation (content evals — Anthropic format)
+# ---------------------------------------------------------------------------
+
+NEGATIVE_PATTERNS = [
+    "should not trigger", "does not interfere", "not trigger",
+    "skill does not", "without trigger", "without sandbox",
+    "without workflow", "without hook", "writes python code",
+    "writes go code", "answers normally", "writes the function normally",
+    "writes clean code without", "fixes the typo directly",
+]
+NEGATIVE_RE = re.compile(r"without .*(overhead|concerns|interference|triggering)")
+
+
+def is_negative_test(eval_item: dict) -> bool:
+    """Detect if an eval tests non-interference (negative test)."""
+    combined = " ".join([
+        eval_item.get("expected_output", ""),
+        " ".join(eval_item.get("expectations", [])),
+    ]).lower()
+
+    if any(p in combined for p in NEGATIVE_PATTERNS):
+        return True
+    if NEGATIVE_RE.search(combined):
+        return True
+    return False
+
+
+def validate_evals_json(skill_dir: Path) -> tuple[list[str], dict]:
+    """Validate evals.json structure. Returns (errors, stats)."""
+    errors = []
+    stats = {"evals": 0, "expectations": 0, "positive": 0, "negative": 0}
+
+    evals_path = skill_dir / "evals" / "evals.json"
+    if not evals_path.exists():
+        return errors, stats  # No evals is not an error (just uncovered)
+
+    try:
+        data = json.loads(evals_path.read_text())
+    except json.JSONDecodeError as e:
+        return [f"invalid JSON: {e}"], stats
+
+    if not isinstance(data, dict):
+        return ["evals.json must be a JSON object"], stats
+
+    if "skill_name" not in data:
+        errors.append("missing 'skill_name'")
+    elif data["skill_name"] != skill_dir.name:
+        errors.append(
+            f"skill_name '{data['skill_name']}' doesn't match directory '{skill_dir.name}'"
+        )
+
+    if "evals" not in data or not isinstance(data.get("evals"), list):
+        return errors + ["missing or invalid 'evals' array"], stats
+
+    evals = data["evals"]
+    if len(evals) < 3:
+        errors.append(f"minimum 3 evals required, found {len(evals)}")
+
+    ids = set()
+    has_negative = False
+
+    for item in evals:
+        stats["evals"] += 1
+        eid = item.get("id")
+
+        if eid is None:
+            errors.append("eval missing 'id'")
+        elif eid in ids:
+            errors.append(f"duplicate eval id: {eid}")
+        else:
+            ids.add(eid)
+
+        if not item.get("prompt") or not isinstance(item.get("prompt"), str):
+            errors.append(f"eval {eid}: missing 'prompt'")
+
+        if not item.get("expected_output") or not isinstance(item.get("expected_output"), str):
+            errors.append(f"eval {eid}: missing 'expected_output'")
+
+        expectations = item.get("expectations")
+        if not isinstance(expectations, list) or len(expectations) == 0:
+            errors.append(f"eval {eid}: missing or empty 'expectations'")
+        else:
+            stats["expectations"] += len(expectations)
+
+        if is_negative_test(item):
+            has_negative = True
+            stats["negative"] += 1
+        else:
+            stats["positive"] += 1
+
+    if not has_negative and len(evals) > 0:
+        errors.append("no negative test (non-interference check) — add at least one")
+
+    return errors, stats
+
+
+# ---------------------------------------------------------------------------
+# trigger_evals.json validation (Anthropic format — bare array)
+# ---------------------------------------------------------------------------
+
+def validate_trigger_evals_json(skill_dir: Path) -> tuple[list[str], dict]:
+    """Validate trigger_evals.json structure. Returns (errors, stats)."""
+    errors = []
+    stats = {"total": 0, "positive": 0, "negative": 0}
+
+    trigger_path = skill_dir / "evals" / "trigger_evals.json"
+    if not trigger_path.exists():
+        return errors, stats
+
+    try:
+        data = json.loads(trigger_path.read_text())
+    except json.JSONDecodeError as e:
+        return [f"trigger_evals.json invalid JSON: {e}"], stats
+
+    if not isinstance(data, list):
+        return ["trigger_evals.json must be a JSON array"], stats
+
+    if len(data) < 3:
+        errors.append(f"trigger_evals.json: minimum 3 items required, found {len(data)}")
+
+    has_positive = False
+    has_negative = False
+
+    for i, item in enumerate(data):
+        stats["total"] += 1
+
+        if not isinstance(item, dict):
+            errors.append(f"trigger_evals.json[{i}]: must be an object")
+            continue
+
+        if "query" not in item or not isinstance(item.get("query"), str):
+            errors.append(f"trigger_evals.json[{i}]: missing or invalid 'query'")
+
+        if "should_trigger" not in item or not isinstance(item.get("should_trigger"), bool):
+            errors.append(f"trigger_evals.json[{i}]: missing or invalid 'should_trigger' (must be boolean)")
+        else:
+            if item["should_trigger"]:
+                has_positive = True
+                stats["positive"] += 1
+            else:
+                has_negative = True
+                stats["negative"] += 1
+
+    if stats["total"] > 0 and not has_positive:
+        errors.append("trigger_evals.json: no positive tests (should_trigger: true)")
+    if stats["total"] > 0 and not has_negative:
+        errors.append("trigger_evals.json: no negative tests (should_trigger: false)")
+
+    return errors, stats
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Validate skill evals (structural)")
+    parser.add_argument("skills_dir", nargs="?", help="Path to skills directory")
+    parser.add_argument("--skill", default=None, help="Validate a single skill (by name)")
+    args = parser.parse_args()
+
+    # Resolve skills directory
+    if args.skills_dir:
+        skills_dir = Path(args.skills_dir)
+    else:
+        # Default: relative to script location
+        skills_dir = Path(__file__).resolve().parent.parent / "skills"
+
+    if not skills_dir.is_dir():
+        print(f"Error: {skills_dir} is not a directory", file=sys.stderr)
+        sys.exit(1)
+
+    # Discover skills
+    all_skills = sorted(
+        d for d in skills_dir.iterdir()
+        if d.is_dir() and (d / "SKILL.md").exists()
+    )
+
+    if args.skill:
+        all_skills = [d for d in all_skills if d.name == args.skill]
+        if not all_skills:
+            print(f"Error: skill '{args.skill}' not found", file=sys.stderr)
+            sys.exit(1)
+
+    skills_with_content_evals = [d for d in all_skills if (d / "evals" / "evals.json").exists()]
+    skills_with_trigger_evals = [d for d in all_skills if (d / "evals" / "trigger_evals.json").exists()]
+    skills_with_any_evals = sorted(set(skills_with_content_evals + skills_with_trigger_evals))
+    skills_without_evals = [d for d in all_skills if d not in skills_with_any_evals]
+
+    total_errors = 0
+    total_content_evals = 0
+    total_content_expectations = 0
+    total_trigger_evals = 0
+
+    # ── Structural validation ──
+
+    for skill_dir in all_skills:
+        has_content = skill_dir in skills_with_content_evals
+        has_trigger = skill_dir in skills_with_trigger_evals
+
+        # Validate SKILL.md
+        md_errors = validate_skill_md(skill_dir)
+
+        # Validate evals.json (if present)
+        content_errors, content_stats = validate_evals_json(skill_dir) if has_content else ([], {"evals": 0, "expectations": 0, "positive": 0, "negative": 0})
+
+        # Validate trigger_evals.json (if present)
+        trigger_errors, trigger_stats = validate_trigger_evals_json(skill_dir) if has_trigger else ([], {"total": 0, "positive": 0, "negative": 0})
+
+        all_errors = md_errors + content_errors + trigger_errors
+        total_content_evals += content_stats["evals"]
+        total_content_expectations += content_stats["expectations"]
+        total_trigger_evals += trigger_stats["total"]
+
+        if all_errors:
+            total_errors += len(all_errors)
+            print(f"  FAIL  {skill_dir.name}")
+            for e in all_errors:
+                print(f"        - {e}")
+        elif has_content or has_trigger:
+            parts = []
+            if has_content:
+                parts.append(
+                    f"{content_stats['evals']} content: {content_stats['positive']}+ {content_stats['negative']}-"
+                    f", {content_stats['expectations']} expectations"
+                )
+            if has_trigger:
+                parts.append(
+                    f"{trigger_stats['total']} trigger: {trigger_stats['positive']}+ {trigger_stats['negative']}-"
+                )
+            print(f"  PASS  {skill_dir.name}  ({'; '.join(parts)})")
+
+    # ── Summary ──
+
+    print()
+    print(f"  {len(skills_with_content_evals)} skill(s) with content evals, {total_content_evals} evals, {total_content_expectations} expectations")
+    print(f"  {len(skills_with_trigger_evals)} skill(s) with trigger evals, {total_trigger_evals} queries")
+    if skills_without_evals:
+        print(f"  {len(skills_without_evals)} skill(s) without evals: {', '.join(d.name for d in skills_without_evals)}")
+
+    # ── Exit code ──
+
+    if total_errors > 0:
+        print(f"\n  {total_errors} error(s) found.")
+        sys.exit(1)
+    else:
+        print("  All checks passed.")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

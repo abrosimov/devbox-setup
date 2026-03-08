@@ -1,0 +1,57 @@
+{
+  "skill_name": "frontend-engineer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a React component that displays a list of users with a search filter",
+      "expected_output": "Typed TypeScript React component with proper hooks, memoization, and accessibility",
+      "expectations": [
+        "Uses TypeScript with proper Props interface",
+        "Uses React hooks (useState, useMemo) correctly",
+        "Includes accessibility attributes (aria-label, role)",
+        "Component is a named export (not default export)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write a custom React hook for debounced input",
+      "expected_output": "Custom hook with proper TypeScript generics and cleanup",
+      "expectations": [
+        "Hook starts with 'use' prefix",
+        "Has proper TypeScript types/generics",
+        "Cleans up timeout in useEffect return",
+        "Returns typed value"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a Next.js API route that handles POST requests",
+      "expected_output": "Next.js API route with proper typing and error handling",
+      "expectations": [
+        "Uses Next.js API route conventions",
+        "Has proper TypeScript types for request/response",
+        "Handles errors with appropriate status codes",
+        "Validates request body"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a Go function that calculates fibonacci numbers",
+      "expected_output": "Agent writes Go code — frontend skill should not trigger",
+      "expectations": [
+        "Writes Go code (not TypeScript/React)",
+        "frontend-engineer skill does not interfere with Go tasks"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Fix the CSS layout issue in this React component — the sidebar overlaps the main content",
+      "expected_output": "Fixes layout with proper CSS/Tailwind, no inline styles",
+      "expectations": [
+        "Uses CSS modules, Tailwind, or styled-components (not inline styles)",
+        "Fixes the specific layout issue",
+        "Does not break responsive behavior"
+      ]
+    }
+  ]
+}

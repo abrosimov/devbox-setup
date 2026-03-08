@@ -1,0 +1,10 @@
+[
+  {"query": "Which agent should I use to implement this Go feature?", "should_trigger": true},
+  {"query": "How do I use /implement to spawn a software engineer agent?", "should_trigger": true},
+  {"query": "Run /full-cycle to plan, implement, test, and review this feature", "should_trigger": true},
+  {"query": "What is the agent pipeline and how does it work?", "should_trigger": true},
+  {"query": "What commands are available in the workflow system?", "should_trigger": true},
+  {"query": "Optimize this SQL query to reduce table scans", "should_trigger": false},
+  {"query": "Write CSS animations for a loading spinner", "should_trigger": false},
+  {"query": "How does garbage collection work in Java?", "should_trigger": false}
+]

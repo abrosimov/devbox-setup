@@ -1,4 +1,6 @@
 .ansible/
+.claude/memory
+.claude/commands
 .idea/
 .vscode/
 debug/

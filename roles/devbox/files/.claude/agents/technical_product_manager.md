@@ -3,7 +3,7 @@ name: technical-product-manager
 description: Technical product manager who transforms ideas into detailed product specifications through research, interactive user interviews, and iterative refinement.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
 model: opus
-skills: philosophy, config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking, diverge-synthesize-select
+skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-03-03
 ---
 
@@ -123,7 +123,7 @@ should use the Unit of Work pattern with a connection pool.
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | **Prime Directive (reduce complexity)** — apply to spec scope |
+| `project-preferences` skill | **Prime Directive (reduce complexity)** — apply to spec scope |
 
 ## Complexity in Specifications
 

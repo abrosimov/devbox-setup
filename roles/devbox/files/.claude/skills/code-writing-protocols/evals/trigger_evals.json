@@ -1,0 +1,10 @@
+[
+  {"query": "Check if the user approved this implementation before proceeding", "should_trigger": true},
+  {"query": "Is this a Tier 3 decision that needs full exploration?", "should_trigger": true},
+  {"query": "Run the anti-laziness check on the code I just wrote", "should_trigger": true},
+  {"query": "Do the pre-flight verification before implementing this feature", "should_trigger": true},
+  {"query": "Audit the comments in the code I just wrote for narration", "should_trigger": true},
+  {"query": "Deploy the application to the staging environment", "should_trigger": false},
+  {"query": "Create a new Git branch for the feature", "should_trigger": false},
+  {"query": "What is the capital of France?", "should_trigger": false}
+]

@@ -1,0 +1,55 @@
+{
+  "skill_name": "sandbox-toolchain",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "go build is failing with permission denied on the cache directory",
+      "expected_output": "Diagnoses as sandbox cache issue, suggests setting GOCACHE to sandbox-writable path",
+      "expectations": [
+        "Identifies this as a sandbox restriction issue",
+        "Suggests setting GOCACHE to $TMPDIR/go-build-cache or similar",
+        "References the sandbox writable directories"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "npm install is failing with EACCES permission error",
+      "expected_output": "Diagnoses as sandbox restriction, suggests NPM_CONFIG_CACHE in TMPDIR",
+      "expectations": [
+        "Identifies as sandbox cache issue",
+        "Suggests setting NPM_CONFIG_CACHE to sandbox-writable path",
+        "Does not suggest running with sudo"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "ruff check is throwing an error about cache permissions",
+      "expected_output": "Suggests setting RUFF_CACHE_DIR to sandbox-writable path",
+      "expectations": [
+        "Identifies as sandbox issue",
+        "Suggests RUFF_CACHE_DIR in TMPDIR",
+        "References the env-setup.js pattern for hooks"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a function that calculates prime numbers in Python",
+      "expected_output": "Writes the function normally without sandbox concerns",
+      "expectations": [
+        "Writes Python code normally",
+        "sandbox-toolchain skill does not trigger for normal coding",
+        "No unnecessary mentions of sandbox"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I'm getting GOTOOLCHAIN errors when running go test in Claude Code",
+      "expected_output": "Suggests setting GOTOOLCHAIN=local to avoid downloading Go versions",
+      "expectations": [
+        "Suggests GOTOOLCHAIN=local",
+        "Explains that sandbox blocks network access for Go toolchain downloads",
+        "References the sandbox decision tree for diagnosis"
+      ]
+    }
+  ]
+}

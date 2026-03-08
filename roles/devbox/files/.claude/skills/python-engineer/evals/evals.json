@@ -1,0 +1,57 @@
+{
+  "skill_name": "python-engineer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a Python function that fetches data from an API and handles errors",
+      "expected_output": "Typed Python function with proper error handling, type hints, and httpx or requests usage",
+      "expectations": [
+        "Function has type hints for parameters and return type",
+        "Handles exceptions (requests.RequestException or httpx.HTTPError)",
+        "Returns typed data (not raw dict unless necessary)",
+        "Uses logging, not print statements"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create a Python class that manages a collection of items with add, remove, and list operations",
+      "expected_output": "Clean class with type hints, immutability preference, and proper __init__",
+      "expectations": [
+        "Class has type hints throughout",
+        "Prefers returning new collections over mutating in place",
+        "Has proper __init__ with type annotations",
+        "Does not use mutable default arguments"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Set up a new Python project with dependencies",
+      "expected_output": "Uses uv (not pip or poetry) for project setup",
+      "expectations": [
+        "Uses uv for package management",
+        "Does NOT use pip install or python -m venv",
+        "Uses ruff for formatting (not black)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a Go HTTP server that handles REST endpoints",
+      "expected_output": "Agent writes Go code, not Python — skill should not trigger",
+      "expectations": [
+        "Writes Go code (not Python)",
+        "python-engineer skill does not interfere with Go tasks"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write a Python dataclass for representing a user with name, email, and optional phone number",
+      "expected_output": "Dataclass with type hints, Optional for phone, and frozen=True preference",
+      "expectations": [
+        "Uses @dataclass decorator",
+        "Has proper type hints (str, Optional[str] or str | None)",
+        "Considers frozen=True for immutability",
+        "No mutable default values"
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@ name: consistency-checker
 description: Library-wide auditor that checks internal coherence across all agent and skill definitions. Scans for terminology conflicts, handoff chain breaks, engineer-reviewer misalignment, skill gaps, orphaned content, and duplication. Use via /audit command or directly for library-wide consistency sweeps.
 tools: Read, Grep, Glob, Bash
 model: sonnet
-skills: philosophy, agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
+skills: agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
 updated: 2026-02-18
 ---
 
@@ -73,7 +73,7 @@ When the same concept appears in multiple places, there should be one authoritat
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | Prime Directive, British English, single source of truth |
+| `project-preferences` skill | Prime Directive, British English, single source of truth |
 | `workflow` skill | Agent pipeline, infrastructure agent listing |
 | `agent-communication` skill | Handoff protocols, artifact registry, common pipelines |
 | `config` skill | Project directory structure |

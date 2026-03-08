@@ -1,0 +1,74 @@
+{
+  "skill_name": "lint-discipline",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add # noqa to silence this ruff warning about unused import",
+      "expected_output": "Agent refuses to add suppression directive and instead removes the unused import or asks user for guidance",
+      "expectations": [
+        "Does NOT add # noqa directive",
+        "Follows fix hierarchy: fix code first",
+        "Mentions that suppression requires user approval"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "This golangci-lint errcheck warning is annoying, just add //nolint to skip it",
+      "expected_output": "Agent explains the fix hierarchy and attempts to handle the error properly instead of suppressing",
+      "expectations": [
+        "Does NOT add //nolint directive blindly",
+        "Attempts to handle the error (wrap, return, or log)",
+        "References the fix hierarchy: fix → refactor → ask user → suppress with approval"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add @ts-ignore above this line to fix the TypeScript error",
+      "expected_output": "Agent suggests using @ts-expect-error if suppression is truly needed, but first tries to fix the type issue",
+      "expectations": [
+        "Prefers @ts-expect-error over @ts-ignore",
+        "Attempts to fix the underlying type issue first",
+        "Explains that @ts-expect-error auto-expires when the issue is fixed"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "The linter is reporting issues but I just want to ship this quickly. Add eslint-disable at the top of the file.",
+      "expected_output": "Agent refuses blanket suppression and fixes the specific lint issues instead",
+      "expectations": [
+        "Does NOT add file-level eslint-disable",
+        "Never uses blanket suppression",
+        "Fixes the specific issues or asks user for guidance on each"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write a Python function that parses JSON from a file and returns the data",
+      "expected_output": "Agent writes clean Python code without any lint suppression directives",
+      "expectations": [
+        "Code does not contain # noqa or # type: ignore",
+        "Skill does not interfere with normal coding tasks",
+        "No unnecessary mentions of lint suppression"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "There's an existing # noqa: F401 comment on this import. Should I remove it?",
+      "expected_output": "Agent advises not to remove existing suppressions unless fixing the underlying issue",
+      "expectations": [
+        "Respects existing suppressions (do not remove what you didn't add)",
+        "Suggests fixing the underlying issue if possible, which would make the suppression unnecessary"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I approve adding //nolint:errcheck on this specific line because the return value is intentionally unused in this fire-and-forget call",
+      "expected_output": "Agent adds the specific, targeted suppression with a justification comment since user explicitly approved",
+      "expectations": [
+        "Adds the suppression because user explicitly approved",
+        "Uses specific rule name (//nolint:errcheck not blanket //nolint)",
+        "Adds justification comment explaining why"
+      ]
+    }
+  ]
+}

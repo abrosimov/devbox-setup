@@ -3,7 +3,7 @@ name: doc-updater
 description: Documentation sync specialist. Detects when code changes make docs stale and updates them.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
-skills: philosophy, code-comments, agent-communication, shared-utils, agent-base-protocol
+skills: code-comments, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
 ---
 

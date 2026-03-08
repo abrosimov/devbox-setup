@@ -84,6 +84,16 @@ Lint error reported
                                      WAIT for response.
 ```
 
+## Hook Enforcement Chain
+
+Three hooks enforce lint discipline automatically:
+
+1. **`pre-edit-lint-guard`** (PreToolUse) — **BLOCKS** edits that add suppression directives (`exit 2`). The edit is rejected before it happens.
+2. **`post-edit-lint`** (PostToolUse) — Runs linter after every edit, outputs results via `additionalContext` (visible in your next turn). You MUST address reported issues.
+3. **`stop-lint-gate`** (Stop) — Runs linters on all git-modified files before task completion. If any file has lint issues, you cannot finish — you'll be forced to continue and fix them.
+
+**You cannot bypass this chain.** Suppression directives are blocked at write time. Lint results are visible (not hidden in stderr). Task completion is gated on clean lint.
+
 ## Common Fixes (Instead of Suppressing)
 
 | Lint Rule | Lazy Way | Correct Way |

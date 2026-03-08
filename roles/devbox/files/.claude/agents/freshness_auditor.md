@@ -3,7 +3,7 @@ name: freshness-auditor
 description: Library-wide auditor that checks external freshness of all agent and skill definitions. Scans for outdated library versions, deprecated APIs, stale language version references, and best practice drift. Use via /audit command or directly for library-wide freshness sweeps.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
-skills: philosophy, agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
+skills: agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
 updated: 2026-02-18
 ---
 
@@ -71,7 +71,7 @@ Scan every agent and skill in the library. Do not skip files because they "look 
 
 | Document | Contents |
 |----------|----------|
-| `philosophy` skill | Prime Directive, British English |
+| `project-preferences` skill | Prime Directive, British English |
 | `workflow` skill | Agent pipeline, infrastructure agent listing |
 | `agent-communication` skill | Artifact registry |
 | `config` skill | Project directory structure |

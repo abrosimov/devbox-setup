@@ -150,6 +150,16 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/stop-lint-gate"
+          }
+        ]
+      }
+    ],
     "PreCompact": [
       {
         "hooks": [

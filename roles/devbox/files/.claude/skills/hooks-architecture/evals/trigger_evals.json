@@ -1,0 +1,10 @@
+[
+  {"query": "Add a preToolUse hook that blocks destructive git commands", "should_trigger": true},
+  {"query": "How do I configure a postToolUse hook in hooks.json?", "should_trigger": true},
+  {"query": "Create a hook that runs a linter after every file write", "should_trigger": true},
+  {"query": "What hook events are available in Claude Code's lifecycle?", "should_trigger": true},
+  {"query": "The pre-edit hook is blocking my file writes, how do I debug it?", "should_trigger": true},
+  {"query": "Write a Python function to calculate Fibonacci numbers", "should_trigger": false},
+  {"query": "Set up a PostgreSQL database with Docker Compose", "should_trigger": false},
+  {"query": "Explain how HTTP/2 multiplexing works", "should_trigger": false}
+]

@@ -1,0 +1,54 @@
+{
+  "skill_name": "project-toolchain",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run the Python tests for this project",
+      "expected_output": "Uses correct command prefix (uv run pytest, not bare pytest)",
+      "expectations": [
+        "Uses 'uv run pytest' or project-appropriate test runner",
+        "Does NOT use bare 'pytest' without virtual env prefix",
+        "Detects project toolchain from pyproject.toml or similar"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Install a new npm package for this project",
+      "expected_output": "Uses correct package manager (pnpm, yarn, or npm based on lockfile)",
+      "expectations": [
+        "Detects lockfile to determine package manager",
+        "Uses pnpm if pnpm-lock.yaml exists, yarn if yarn.lock, npm if package-lock.json",
+        "Does NOT blindly use npm install"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Format this Go file",
+      "expected_output": "Uses goimports (not go fmt or gofmt)",
+      "expectations": [
+        "Uses goimports -local <module>",
+        "Does NOT use go fmt or gofmt",
+        "Extracts module name from go.mod for -local flag"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Run pip install requests in this Python project",
+      "expected_output": "Redirects to uv add instead of pip install",
+      "expectations": [
+        "Does NOT run bare pip install",
+        "Uses 'uv add requests' or equivalent project-appropriate command",
+        "Explains why bare pip is wrong (not in venv, uv manages deps)"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "What is the capital of France?",
+      "expected_output": "Answers the question without triggering toolchain detection",
+      "expectations": [
+        "Answers normally (Paris)",
+        "Skill does not interfere with non-coding questions"
+      ]
+    }
+  ]
+}

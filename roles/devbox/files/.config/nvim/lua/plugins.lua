@@ -40,7 +40,7 @@ return {
                 local ts = require("nvim-treesitter")
                 ts.setup()
 
-                local langs = { 'bash', 'python', 'go', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'typescript', 'tsx', 'javascript', 'json', 'css', 'rust', 'ocaml', 'prolog', 'dart', 'swift', 'yaml', 'toml', 'dockerfile', 'fish', 'proto', 'hcl' }
+                local langs = { 'bash', 'python', 'go', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'typescript', 'tsx', 'javascript', 'json', 'css', 'rust', 'ocaml', 'prolog', 'dart', 'swift', 'yaml', 'toml', 'dockerfile', 'fish', 'proto', 'hcl', 'ini', 'nginx' }
                 ts.install(langs, { summary = false })
 
                 vim.api.nvim_create_autocmd("FileType", {
@@ -238,6 +238,15 @@ return {
                     local client = vim.lsp.get_client_by_id(args.data.client_id)
                     if client and client.name == "ruff" then
                         client.server_capabilities.hoverProvider = false
+                    end
+                end,
+            })
+
+            -- Auto-save all modified buffers after LSP rename completes
+            vim.api.nvim_create_autocmd("LspRequest", {
+                callback = function(args)
+                    if args.data.method == "textDocument/rename" and args.data.type == "complete" then
+                        vim.schedule(function() vim.cmd("wa") end)
                     end
                 end,
             })

@@ -11,6 +11,7 @@
       - node
       - uv
       - helm
+      - tree-sitter-cli
       - orbstack
       - k9s
       - fzf

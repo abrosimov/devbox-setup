@@ -33,6 +33,10 @@
       - swift-format # Apple's official Swift code formatter
       - cmake # C/C++ build system
       - bazelisk # Bazel version manager (installs as `bazel`)
+      - buf # Protobuf toolchain — LSP (buf_ls), formatter, linter
+      - stylua # Lua code formatter
+      - shfmt # Shell/Bash code formatter
+      - clang-format # C/C++ code formatter
     state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
 
 - name: "Install Homebrew casks"

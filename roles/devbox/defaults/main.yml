@@ -33,6 +33,9 @@ devbox_packages:
     - mypy
     - ansible-lint
     - debugpy
+    - keyring
+    - pyright
+    - pylint
 
 # Fish shell plugins installed via `fisher install`.
 # fisher itself is installed via Homebrew; these are managed by fisher.
@@ -45,7 +48,7 @@ devbox_fish_plugins:
 # all iterate over these lists, so adding a path here updates both shells.
 devbox_shell:
   env:
-    - { name: EDITOR, value: vim }
+    - { name: EDITOR, value: nvim }
     - { name: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, value: "1" }
     - { name: GOPATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/go" }
     - { name: FLUTTER_PATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/flutter" }

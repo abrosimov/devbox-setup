@@ -40,7 +40,7 @@ return {
                 local ts = require("nvim-treesitter")
                 ts.setup()
 
-                local langs = { 'bash', 'python', 'go', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'typescript', 'tsx', 'javascript', 'json', 'css', 'rust', 'ocaml', 'prolog', 'dart', 'swift' }
+                local langs = { 'bash', 'python', 'go', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'typescript', 'tsx', 'javascript', 'json', 'css', 'rust', 'ocaml', 'prolog', 'dart', 'swift', 'yaml', 'toml', 'dockerfile', 'fish', 'proto', 'hcl' }
                 ts.install(langs, { summary = false })
 
                 vim.api.nvim_create_autocmd("FileType", {
@@ -81,7 +81,11 @@ return {
         "mason-org/mason-lspconfig.nvim",
         dependencies = { "mason-org/mason.nvim" },
         opts = {
-            ensure_installed = { "gopls", "pyright", "ts_ls", "rust_analyzer", "clangd" },
+            ensure_installed = {
+                "gopls", "pyright", "ts_ls", "rust_analyzer", "clangd",
+                "yamlls", "jsonls", "lua_ls", "bashls", "dockerls",
+                "marksman", "taplo", "terraformls",
+            },
         },
     },
 
@@ -108,7 +112,19 @@ return {
             vim.lsp.enable("gopls")
 
             -- Python — pyright for types/completion, ruff for linting/formatting
-            vim.lsp.config("pyright", {})
+            vim.lsp.config("pyright", {
+                before_init = function(_, config)
+                    local venv_python = config.root_dir .. "/.venv/bin/python"
+                    if vim.uv.fs_stat(venv_python) then
+                        config.settings.python.pythonPath = venv_python
+                    end
+                end,
+                settings = {
+                    python = {
+                        analysis = {},
+                    },
+                },
+            })
             vim.lsp.enable("pyright")
 
             vim.lsp.config("ruff", {})
@@ -152,6 +168,66 @@ return {
             -- Swift (sourcekit-lsp ships with Xcode)
             vim.lsp.config("sourcekit", {})
             vim.lsp.enable("sourcekit")
+
+            -- YAML (Ansible, k8s, CI configs)
+            vim.lsp.config("yamlls", {
+                settings = {
+                    yaml = {
+                        validate = true,
+                        schemaStore = { enable = true },
+                    },
+                },
+            })
+            vim.lsp.enable("yamlls")
+
+            -- JSON/JSONC (package.json, tsconfig, etc.)
+            vim.lsp.config("jsonls", {
+                settings = {
+                    json = {
+                        validate = { enable = true },
+                    },
+                },
+            })
+            vim.lsp.enable("jsonls")
+
+            -- Lua (nvim config)
+            vim.lsp.config("lua_ls", {
+                settings = {
+                    Lua = {
+                        runtime = { version = "LuaJIT" },
+                        workspace = {
+                            library = { vim.env.VIMRUNTIME },
+                            checkThirdParty = false,
+                        },
+                        diagnostics = { globals = { "vim" } },
+                    },
+                },
+            })
+            vim.lsp.enable("lua_ls")
+
+            -- Bash/Shell
+            vim.lsp.config("bashls", {})
+            vim.lsp.enable("bashls")
+
+            -- Dockerfile
+            vim.lsp.config("dockerls", {})
+            vim.lsp.enable("dockerls")
+
+            -- Markdown
+            vim.lsp.config("marksman", {})
+            vim.lsp.enable("marksman")
+
+            -- TOML (pyproject.toml, Cargo.toml)
+            vim.lsp.config("taplo", {})
+            vim.lsp.enable("taplo")
+
+            -- Terraform/HCL
+            vim.lsp.config("terraformls", {})
+            vim.lsp.enable("terraformls")
+
+            -- Protobuf (buf CLI)
+            vim.lsp.config("buf_ls", {})
+            vim.lsp.enable("buf_ls")
 
             -- Dart LSP is handled by flutter-tools.nvim — do NOT configure dartls here
 
@@ -272,10 +348,21 @@ return {
                     json = { "prettier" },
                     css = { "prettier" },
                     html = { "prettier" },
+                    yaml = { "prettier" },
+                    markdown = { "prettier" },
                     rust = { "rustfmt" },
                     ocaml = { "ocamlformat" },
                     dart = { "dart_format" },
                     swift = { "swift_format" },
+                    c = { "clang_format" },
+                    cpp = { "clang_format" },
+                    lua = { "stylua" },
+                    sh = { "shfmt" },
+                    bash = { "shfmt" },
+                    fish = { "fish_indent" },
+                    proto = { "buf" },
+                    terraform = { "terraform_fmt" },
+                    toml = { "taplo" },
                 },
                 format_on_save = {
                     timeout_ms = 3000,

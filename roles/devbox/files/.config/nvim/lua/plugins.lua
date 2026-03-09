@@ -7,12 +7,27 @@ return {
             'numToStr/Comment.nvim',
     },
     {
-	    "folke/tokyonight.nvim",
-	    lazy = false, -- make sure we load this during startup if it is your main colorscheme
-	    priority = 1000, -- make sure to load this before all the other start plugins
-	    config = function()
-	      -- load the colorscheme here
-	      vim.cmd([[colorscheme tokyonight-storm]])
+	    "catppuccin/nvim",
+	    name = "catppuccin",
+	    lazy = false,
+	    priority = 1000,
+	    opts = {
+		flavour = "macchiato",
+		integrations = {
+		    blink_cmp = true,
+		    gitsigns = true,
+		    mason = true,
+		    neotest = true,
+		    neotree = true,
+		    lsp_trouble = true,
+		    telescope = { enabled = true },
+		    treesitter = true,
+		    which_key = true,
+		},
+	    },
+	    config = function(_, opts)
+		require("catppuccin").setup(opts)
+		vim.cmd.colorscheme("catppuccin")
 	    end,
     },
     {
@@ -570,7 +585,7 @@ return {
         dependencies = { "nvim-tree/nvim-web-devicons" },
         opts = {
             options = {
-                theme = "tokyonight",
+                theme = "catppuccin",
             },
             sections = {
                 lualine_b = { "branch", "diagnostics" },

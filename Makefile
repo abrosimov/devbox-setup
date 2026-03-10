@@ -24,7 +24,7 @@ endif
 .PHONY: run dev help init vault-init lint check check-dev validate-claude validate-skills eval-skills improve-skills \
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
-       fixfish \
+       fixfish list-skills list-agents \
        test test-nvim test-fish test-json test-bash test-skill-evals
 
 help:
@@ -52,6 +52,8 @@ help:
 	@echo "  make test-fish        - fish shell config syntax check"
 	@echo "  make test-json        - JSON config/schema validation"
 	@echo "  make test-bash        - bash script syntax check"
+	@echo "  make list-skills      - list all Claude Code skills"
+	@echo "  make list-agents      - list all Claude Code agents"
 	@echo ""
 	@echo "Options:"
 	@echo "  V=1..4                - verbosity level (-v to -vvvv)"
@@ -121,6 +123,12 @@ init:
 
 vault-init:
 	@./scripts/vault-init.sh
+
+list-skills:
+	@ls -1 $(SKILLS_DIR) | sort | nl -ba
+
+list-agents:
+	@ls -1 roles/devbox/files/.claude/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | sort | nl -ba
 
 validate-claude:
 	@python3 roles/devbox/files/.claude/bin/validate-config.py --root roles/devbox/files/.claude

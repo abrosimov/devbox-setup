@@ -6,28 +6,19 @@ return {
     {
             'numToStr/Comment.nvim',
     },
+    -- Alternatives to try (warm, low blue, easy on eyes):
+    --   "sainnhe/everforest" → vim.cmd.colorscheme("everforest")
+    --   "sainnhe/gruvbox-material" → vim.cmd.colorscheme("gruvbox-material")
+    --   "rebelot/kanagawa.nvim" → vim.cmd.colorscheme("kanagawa")
+    --   "catppuccin/nvim" → vim.cmd.colorscheme("catppuccin")
     {
-	    "catppuccin/nvim",
-	    name = "catppuccin",
+	    "thesimonho/kanagawa-paper.nvim",
 	    lazy = false,
 	    priority = 1000,
-	    opts = {
-		flavour = "macchiato",
-		integrations = {
-		    blink_cmp = true,
-		    gitsigns = true,
-		    mason = true,
-		    neotest = true,
-		    neotree = true,
-		    lsp_trouble = true,
-		    telescope = { enabled = true },
-		    treesitter = true,
-		    which_key = true,
-		},
-	    },
+	    opts = {},
 	    config = function(_, opts)
-		require("catppuccin").setup(opts)
-		vim.cmd.colorscheme("catppuccin")
+		require("kanagawa-paper").setup(opts)
+		vim.cmd.colorscheme("kanagawa-paper-ink")
 	    end,
     },
     {
@@ -129,6 +120,9 @@ return {
             -- Python — pyright for types/completion, ruff for linting/formatting
             vim.lsp.config("pyright", {
                 before_init = function(_, config)
+                    if not config.root_dir then
+                        return
+                    end
                     local venv_python = config.root_dir .. "/.venv/bin/python"
                     if vim.uv.fs_stat(venv_python) then
                         config.settings.python.pythonPath = venv_python
@@ -585,10 +579,51 @@ return {
         dependencies = { "nvim-tree/nvim-web-devicons" },
         opts = {
             options = {
-                theme = "catppuccin",
+                theme = "auto",
             },
             sections = {
                 lualine_b = { "branch", "diagnostics" },
+                lualine_c = {
+                    {
+                        function()
+                            local path = vim.fn.expand("%:~:.")
+                            if path == "" then
+                                return "[No Name]"
+                            end
+                            local parts = {}
+                            for part in path:gmatch("[^/]+") do
+                                parts[#parts + 1] = part
+                            end
+                            if #parts <= 2 then
+                                return path
+                            end
+                            return parts[1] .. "/.../" .. parts[#parts - 1] .. "/" .. parts[#parts]
+                        end,
+                    },
+                    { "searchcount" },
+                },
+                lualine_x = {
+                    {
+                        function()
+                            local clients = vim.lsp.get_clients({ bufnr = 0 })
+                            if #clients == 0 then
+                                return ""
+                            end
+                            local names = {}
+                            for _, c in ipairs(clients) do
+                                names[#names + 1] = c.name
+                            end
+                            return table.concat(names, ", ")
+                        end,
+                    },
+                    {
+                        "fileformat",
+                        cond = function()
+                            return vim.bo.fileformat ~= "unix"
+                        end,
+                    },
+                },
+                lualine_y = {},
             },
         },
     },

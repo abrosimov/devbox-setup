@@ -1,0 +1,34 @@
+# Copy this file to _kpf_registry.fish and fill in your values.
+#
+# Output format (single line, space-delimited):
+#   <kubeconfig-path> <namespace> <pod-name> <local-port> <remote-port>
+#
+# When called with no args, print "env service" per line (for `kpf list`).
+
+function _kpf_registry
+    if test (count $argv) -eq 0
+        # List all registered env×service combos
+        echo "env1 mongo"
+        echo "env2 mongo"
+        echo "env1 redis"
+        return 0
+    end
+
+    set -l env $argv[1]
+    set -l svc $argv[2]
+
+    switch "$env:$svc"
+        # --- mongo ---
+        # case "env1:mongo"
+        #     echo "$HOME/.kube/env1.kubeconfig mongodb mongodb-0 57017 27017"
+        # case "env2:mongo"
+        #     echo "$HOME/.kube/env2.kubeconfig mongodb mongodb-0 37017 27017"
+
+        # --- redis ---
+        # case "env1:redis"
+        #     echo "$HOME/.kube/env1.kubeconfig redis redis-master-0 56379 6379"
+
+        case '*'
+            return 1
+    end
+end

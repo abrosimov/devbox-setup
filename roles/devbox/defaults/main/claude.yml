@@ -1,0 +1,47 @@
+---
+# Managed .claude subdirectories deployed via rsync (--delete removes stale files).
+# Root files (CLAUDE.md, settings.json, hooks.json, config.md) are copied separately.
+devbox_claude_managed_dirs:
+  - agents
+  - commands
+  - skills
+  - schemas
+  - bin
+  - docs
+  - templates
+  - future_projects
+
+# MCP servers registered via `claude mcp add` (written to ~/.claude.json).
+# Grouped by transport type for clarity.
+mcp_docker_servers:
+  - name: sequentialthinking
+    image: mcp/sequentialthinking
+    network: none
+    read_only: true
+  - name: playwright
+    image: mcr.microsoft.com/playwright/mcp
+    init: true
+
+mcp_script_servers:
+  - name: memory-upstream
+    command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-upstream"
+  - name: memory-downstream
+    command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-downstream"
+
+mcp_http_servers:
+  - name: figma
+    url: "https://mcp.figma.com/mcp"
+    transport: sse
+
+# Claude Code plugins installed via `claude plugin` CLI.
+# Marketplaces are GitHub repos containing plugin manifests.
+# Plugins are installed from marketplaces by name.
+claude_plugin_marketplaces:
+  - repo: anthropics/skills
+    name: anthropic-agent-skills
+
+claude_plugins:
+  - name: example-skills
+    marketplace: anthropic-agent-skills
+  - name: document-skills
+    marketplace: anthropic-agent-skills

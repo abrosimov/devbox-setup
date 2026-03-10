@@ -3,12 +3,14 @@
   ansible.builtin.command: "command -v fish"
   register: fish_shell_path
   changed_when: false
+  check_mode: false
   failed_when: fish_shell_path.rc != 0
 
 - name: Find fc-cache path
   ansible.builtin.command: "command -v fc-cache"
   register: fc_cache_path
   changed_when: false
+  check_mode: false
   failed_when: false
 
 - name: Regenerate font cache for user directories
@@ -85,6 +87,7 @@
   ansible.builtin.command: "command -v claude"
   register: claude_cli_path
   changed_when: false
+  check_mode: false
   failed_when: false
   tags: [configs, claude]
 
@@ -155,7 +158,7 @@
     --scope user
     {{ item.name }}
     {{ item.url }}
-  loop: "{{ mcp_http_servers }}"
+  loop: "{{ mcp_http_servers + devbox_extra_mcp_http_servers }}"
   become: true
   become_user: "{{ devbox_user.login }}"
   when: claude_cli_path.rc == 0

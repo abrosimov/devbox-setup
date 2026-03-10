@@ -1,1 +1,6 @@
 devbox_projects_dir: "$HOME/Projects"
+
+# Profile-specific extras (concatenated with base lists in task files).
+# devbox_extra_brew: []
+# devbox_extra_brew_casks: []
+# devbox_extra_mcp_http_servers: []

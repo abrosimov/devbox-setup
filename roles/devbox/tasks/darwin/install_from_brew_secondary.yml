@@ -1,57 +1,12 @@
 ---
 - name: "Install Homebrew apps"
   community.general.homebrew:
-    name:
-      - opam
-      - erlang
-      - rustup
-      - flutter
-      - go
-      - go-task
-      - node
-      - uv
-      - helm
-      - tree-sitter-cli
-      - orbstack
-      - k9s
-      - fzf
-      - tmux
-      - mise
-      - golangci-lint
-      - luarocks # Needed by lazy.nvim
-      - go-jsonnet
-      - jsonnet-bundler
-      - gh # GitHub CLI — needed by Claude Code PR workflow
-      - jq # JSON processor — used by scripts and agents
-      - ripgrep # Fast grep — fallback for Claude Code Grep tool
-      - fd # Fast find — used by Claude Code Glob tool
-      - tree # Directory tree — used by agents for codebase exploration
-      - cloc # Count lines of code by language
-      - yq # YAML/JSON/XML processor (like jq for YAML)
-      - hadolint # Dockerfile linter — used by verify-se-completion and post-edit-lint
-      - swi-prolog # Prolog runtime — includes built-in LSP support
-      - swift-format # Apple's official Swift code formatter
-      - cmake # C/C++ build system
-      - bazelisk # Bazel version manager (installs as `bazel`)
-      - buf # Protobuf toolchain — LSP (buf_ls), formatter, linter
-      - stylua # Lua code formatter
-      - shfmt # Shell/Bash code formatter
-      - clang-format # C/C++ code formatter
+    name: "{{ devbox_brew_secondary + devbox_extra_brew }}"
     state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
 
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
-    name:
-      - obsidian
-      - goland
-      - webstorm
-      - intellij-idea
-      - pycharm
-      - ghostty
-      - claude
-
-      - freelens
-      - zen
+    name: "{{ devbox_brew_secondary_casks + devbox_extra_brew_casks }}"
     state: present
     install_options: 'adopt'
     upgrade_all: false
@@ -61,16 +16,14 @@
     - cask_secondary_result.failed
     - '"already installed" not in cask_secondary_result.msg'
 
-- name: "Install dclint (Docker Compose linter)"
+- name: "Install npm packages"
   community.general.npm:
-    name: dclint
+    name: "{{ item }}"
     global: true
     state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
   environment:
     PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
-
-# Go tools moved to install_from_go.yml (variable-driven, per-tool idempotency)
-# Python tools moved to install_from_uv.yml (variable-driven, per-tool idempotency)
+  loop: "{{ devbox_npm_packages }}"
 
 - name: "Init Rust toolchain"
   ansible.builtin.command:

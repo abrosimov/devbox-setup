@@ -3,6 +3,7 @@
   ansible.builtin.command: "command -v fish"
   register: shell_path
   changed_when: false
+  check_mode: false
   failed_when: shell_path.rc != 0
 
 - name: Fail early if shell not found

@@ -94,21 +94,42 @@ Protected files: `_init_env_confidential.fish` is copied only if absent (`force:
 
 ### MCP Server Registration (`apply_configs.yml`)
 
-Three transport types configured in `defaults/main.yml`:
+Three transport types configured in `defaults/main/claude.yml`:
 - **Docker** (`mcp_docker_servers`) — containers via `docker run --rm -i` (sequentialthinking, playwright)
 - **Script** (`mcp_script_servers`) — wrapper scripts in `~/.claude/bin/` (memory-upstream, memory-downstream)
-- **HTTP** (`mcp_http_servers`) — remote endpoints (figma)
+- **HTTP** (`mcp_http_servers + devbox_extra_mcp_http_servers`) — remote endpoints (figma + profile extras)
 
 Registered via `claude mcp add` with user scope.
 
-### Key Variables (`defaults/main.yml`)
+### Variables (`defaults/main/`)
 
+Defaults are split into four files under `defaults/main/`:
+
+| File | Contents |
+|------|----------|
+| `core.yml` | `devbox_user`, `devbox_paths`, `devbox_projects_dir`, `upgrade_mode`, `devbox_extra_*` extension points |
+| `packages.yml` | `devbox_brew_*` lists, `devbox_npm_packages`, `devbox_appstore_apps`, `devbox_packages` (go_tools, kubectl, uv_tools) |
+| `shell.yml` | `devbox_shell` (env, PATH), `devbox_fish_plugins`, `devbox_tide_configure_auto` |
+| `claude.yml` | `devbox_claude_managed_dirs`, `mcp_*_servers`, `claude_plugin*` |
+
+**Important**: `defaults/main.yml` (file) must NOT coexist with `defaults/main/` (directory) — Ansible loads the file and ignores the directory if both are present.
+
+Key variables:
 - `devbox_paths.dotfiles_root_dir` — target for deployment (`~` normally, `../debug/dotfiles` in dev_mode)
-- `devbox_user.login` — username for user configuration
-- `dev_mode` — when true, deploys to debug directory
-- `devbox_shell.env` / `path_prepend` / `path_append` / `path_conditional` — single source of truth for shell environment. Templates for fish (`_init_env.fish.j2`, `_init_path.fish.j2`) and bash (`.bashrc.j2`) iterate these lists, so adding a path here updates both shells.
-- `devbox_packages.go_tools` — Go tools installed via `go install` (each entry has `pkg` and `bin` keys)
-- `devbox_packages.uv_tools` — Python tools installed via `uv tool install`
+- `devbox_shell.env` / `path_prepend` / `path_append` / `path_conditional` — single source of truth for shell environment. Templates for fish and bash iterate these lists.
+- `devbox_brew_secondary` + `devbox_extra_brew` — base packages + profile-specific additions (concatenated in task files)
+- `devbox_extra_*` — extension points for profile overrides (default to `[]` in `core.yml`)
+
+### Profiles (`profiles/`)
+
+Profiles select non-sensitive per-machine configuration. Applied via `make personal` or `make work`:
+
+| Layer | Source | Purpose |
+|-------|--------|---------|
+| 1. Role defaults | `defaults/main/*.yml` | Base package lists, shell env, MCP servers |
+| 2. Profile | `profiles/{personal,work}.yml` | Machine-flavor overrides (extra packages, project dir) |
+| 3. Vault | `vault/devbox_ssh_config.yml` | Encrypted secrets (SSH passphrase) |
+| 4. Local overlay | `roles/devbox/local/` | Sensitive *files* — gitignored, for proprietary configs (k8s wrappers, internal hostnames) |
 
 ### Claude Code Config (in `roles/devbox/files/.claude/`)
 

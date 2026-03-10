@@ -1,26 +1,12 @@
 ---
 - name: "Install Homebrew apps"
   community.general.homebrew:
-    name:
-      - kitty
-      - fish
-      - fisher
-      - bat
-      - podman
-      - mas
-      - wget
-      - curl
-      - htop
-      - nvim
-      - telnet
-      - eza
-      - terminal-notifier
+    name: "{{ devbox_brew_primary }}"
     state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
 
 - name: "Install fontconfig (ignore post-install warnings)"
   community.general.homebrew:
-    name:
-      - fontconfig
+    name: "{{ devbox_brew_primary_special }}"
     state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
   register: fontconfig_result
   failed_when:
@@ -30,17 +16,7 @@
 
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
-    name:
-      - ghostty
-      - font-fira-code
-      - font-ia-writer-duo
-      - font-ia-writer-mono
-      - font-ia-writer-quattro
-      - font-meslo-for-powerlevel10k
-      - font-meslo-for-powerline
-      - font-meslo-lg
-      - font-meslo-lg-dz
-      - font-meslo-lg-nerd-font
+    name: "{{ devbox_brew_primary_casks }}"
     state: present
     install_options: 'adopt'
     upgrade_all: false

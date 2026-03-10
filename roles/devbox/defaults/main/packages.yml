@@ -1,0 +1,122 @@
+---
+# =============================================================================
+# Homebrew formulae and casks
+# =============================================================================
+
+# Primary: core packages installed first (no dependencies on secondary).
+devbox_brew_primary:
+  - kitty
+  - fish
+  - fisher
+  - bat
+  - podman
+  - mas
+  - wget
+  - curl
+  - htop
+  - nvim
+  - telnet
+  - eza
+  - terminal-notifier
+
+devbox_brew_primary_special:
+  # fontconfig needs ignore-warnings handling in the task file.
+  - fontconfig
+
+devbox_brew_primary_casks:
+  - ghostty
+  - font-fira-code
+  - font-ia-writer-duo
+  - font-ia-writer-mono
+  - font-ia-writer-quattro
+  - font-meslo-for-powerlevel10k
+  - font-meslo-for-powerline
+  - font-meslo-lg
+  - font-meslo-lg-dz
+  - font-meslo-lg-nerd-font
+
+# Secondary: packages that depend on primary (languages, dev tools, etc.).
+devbox_brew_secondary:
+  - opam
+  - erlang
+  - rustup
+  - flutter
+  - go
+  - go-task
+  - node
+  - uv
+  - helm
+  - tree-sitter-cli
+  - orbstack
+  - k9s
+  - fzf
+  - tmux
+  - mise
+  - golangci-lint
+  - luarocks       # Needed by lazy.nvim
+  - go-jsonnet
+  - jsonnet-bundler
+  - gh             # GitHub CLI — needed by Claude Code PR workflow
+  - jq             # JSON processor — used by scripts and agents
+  - ripgrep        # Fast grep — fallback for Claude Code Grep tool
+  - fd             # Fast find — used by Claude Code Glob tool
+  - tree           # Directory tree — used by agents for codebase exploration
+  - cloc           # Count lines of code by language
+  - yq             # YAML/JSON/XML processor (like jq for YAML)
+  - hadolint       # Dockerfile linter — used by verify-se-completion and post-edit-lint
+  - swi-prolog     # Prolog runtime — includes built-in LSP support
+  - swift-format   # Apple's official Swift code formatter
+  - cmake          # C/C++ build system
+  - bazelisk       # Bazel version manager (installs as `bazel`)
+  - buf            # Protobuf toolchain — LSP (buf_ls), formatter, linter
+  - stylua         # Lua code formatter
+  - shfmt          # Shell/Bash code formatter
+  - clang-format   # C/C++ code formatter
+
+devbox_brew_secondary_casks:
+  - obsidian
+  - goland
+  - webstorm
+  - intellij-idea
+  - pycharm
+  - ghostty
+  - claude
+  - freelens
+  - zen
+
+# npm packages (installed globally via node from secondary).
+devbox_npm_packages:
+  - dclint         # Docker Compose linter
+
+# Mac App Store apps (currently empty — kept for structure).
+devbox_appstore_apps: []
+
+# =============================================================================
+# Language-specific tools (installed via native package managers)
+# =============================================================================
+
+devbox_packages:
+  # Go tools installed via `go install`. Each entry has:
+  #   pkg: full package path with version (usually @latest)
+  #   bin: binary name (for idempotency check)
+  go_tools:
+    - { pkg: "golang.org/x/tools/cmd/goimports@latest", bin: "goimports" }
+    - { pkg: "github.com/vektra/mockery/v2@latest", bin: "mockery" }
+    - { pkg: "github.com/sqlc-dev/sqlc/cmd/sqlc@latest", bin: "sqlc" }
+    - { pkg: "golang.org/x/tools/gopls@latest", bin: "gopls" }
+    - { pkg: "github.com/go-delve/delve/cmd/dlv@latest", bin: "dlv" }
+
+  # kubectl — direct binary download (pinned version)
+  kubectl:
+    version: "1.32.5"
+
+  # Python tools installed via `uv tool install`.
+  # Binary name matches tool name.
+  uv_tools:
+    - ruff
+    - mypy
+    - ansible-lint
+    - debugpy
+    - keyring
+    - pyright
+    - pylint

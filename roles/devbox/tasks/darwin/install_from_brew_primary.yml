@@ -13,6 +13,8 @@
       - htop
       - nvim
       - telnet
+      - eza
+      - terminal-notifier
     state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
 
 - name: "Install fontconfig (ignore post-install warnings)"

@@ -1,5 +1,12 @@
 if status is-interactive
-    # Commands to run in interactive sessions can go here
+    set -g fish_greeting
+
+    if type -q eza
+        alias ls 'eza --group-directories-first'
+        alias ll 'eza -l --group-directories-first --git'
+        alias la 'eza -la --group-directories-first --git'
+        alias tree 'eza --tree --level=3'
+    end
 end
 
 #fish_ssh_agent

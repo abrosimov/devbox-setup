@@ -8,10 +8,13 @@ abbr -a cob git checkout -b
 abbr -a add git add
 abbr -a gdc git diff --cached
 
-abbr -a pull git pull origin 
+abbr -a pull git pull origin
 abbr -a push git push origin
 
 abbr -a merge git merge
+
+abbr -a gl git log
+abbr -a glp git log -p
 
 abbr -a code claude --model claude-opus-4-5
 abbr -a code_smart claude --model claude-opus-4-6
@@ -23,6 +26,9 @@ abbr -a vi nvim
 abbr -a vim nvim
 abbr -a vimdiff nvim -d
 abbr -a vd nvim -d
+
+abbr -a dc docker compose
+abbr -a -- - "cd -"
 
 abbr -a stash git stash # TODO: In the video on YT there was a nice hack for git stash.
 

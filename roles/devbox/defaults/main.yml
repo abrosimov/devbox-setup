@@ -42,6 +42,12 @@ devbox_packages:
 devbox_fish_plugins:
   - ilancosman/tide@v6
   - ivakyb/fish_ssh_agent
+  - jorgebucaran/autopair.fish
+  - meaningful-ooo/sponge
+  - nickeb96/puffer-fish
+  - franciscolourenco/done
+  - PatrickF1/fzf.fish
+  - jethrokuan/z
 
 # Shell environment and PATH — single source of truth for both fish and bash.
 # Templates in conf.d/_init_env.fish.j2, conf.d/_init_path.fish.j2, and .bashrc.j2

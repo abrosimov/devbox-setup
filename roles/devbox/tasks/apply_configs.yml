@@ -106,10 +106,25 @@
 
 - name: Install Claude Code plugins (user scope)
   ansible.builtin.command: >
-    {{ claude_cli_path.stdout }} plugin install {{ item.name }}@{{ item.marketplace }} --scope user
+    {{ claude_cli_path.stdout }} plugin install
+    {% if item.marketplace is defined %}{{ item.name }}@{{ item.marketplace }}{% else %}{{ item.name }}{% endif %}
+    --scope user
   loop: "{{ claude_plugins }}"
   loop_control:
-    label: "{{ item.name }}@{{ item.marketplace }}"
+    label: "{{ item.name }}"
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  when: claude_cli_path.rc == 0
+  changed_when: false
+  failed_when: false
+  tags: [configs, claude]
+
+- name: Enable Claude Code plugins (user scope)
+  ansible.builtin.command: >
+    {{ claude_cli_path.stdout }} plugin enable {{ item.name }} --scope user
+  loop: "{{ claude_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
   become: true
   become_user: "{{ devbox_user.login }}"
   when: claude_cli_path.rc == 0

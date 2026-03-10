@@ -1,7 +1,7 @@
 ---
 name: implementation-planner-go
 description: Implementation planner for Go - creates detailed implementation plans from specs or user requirements for software engineers.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream, LSP
 model: opus
 skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, lsp-tools, agent-base-protocol, diverge-synthesize-select
 updated: 2026-02-10

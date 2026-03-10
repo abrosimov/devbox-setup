@@ -45,3 +45,8 @@ claude_plugins:
     marketplace: anthropic-agent-skills
   - name: document-skills
     marketplace: anthropic-agent-skills
+  # LSP plugins — installed from official marketplace (pre-registered on macOS).
+  # Binaries must be on PATH: gopls (go install), pyright (uv tool), typescript-language-server (npm).
+  - name: gopls-lsp
+  - name: pyright-lsp
+  - name: typescript-lsp

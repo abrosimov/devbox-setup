@@ -1,7 +1,7 @@
 ---
 name: software-engineer-go
 description: Go software engineer - writes idiomatic, robust, production-ready Go code following Effective Go and Go Code Review Comments. Use this agent for ANY Go code changes, no matter how small. Even simple changes benefit from enforced standards.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, LSP
 model: opus
 permissionMode: acceptEdits
 skills: go-engineer, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
@@ -65,6 +65,16 @@ See `code-writing-protocols` skill for verification checklist and workaround det
 This codebase is a SERVICE, not a library. No doc comments on services, handlers, domain models, or unexported functions. Only exception: library wrappers in `pkg/` or infrastructure clients.
 
 **Before writing ANY comment, ask:** *"If I delete this, does the code become unclear?"* If NO, don't write it. If YES, rename the function instead.
+
+## LSP Navigation Protocol
+
+Before modifying any function, type, or interface you haven't read:
+1. `workspaceSymbol` or `documentSymbol` to locate it
+2. `goToDefinition` to understand it
+3. `findReferences` to assess blast radius (mandatory before any rename/signature change)
+4. After each edit: check LSP diagnostics — fix all errors before moving on
+
+Use Grep only for: log messages, comments, string literals, config files. Never Grep for function definitions.
 
 ## Workflow
 

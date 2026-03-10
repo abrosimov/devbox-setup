@@ -72,6 +72,7 @@ devbox_brew_secondary:
   - stylua         # Lua code formatter
   - shfmt          # Shell/Bash code formatter
   - clang-format   # C/C++ code formatter
+  - ast-grep       # Structural AST code search — used by Claude Code ast-grep skill
 
 devbox_brew_secondary_casks:
   - obsidian
@@ -87,6 +88,7 @@ devbox_brew_secondary_casks:
 # npm packages (installed globally via node from secondary).
 devbox_npm_packages:
   - dclint         # Docker Compose linter
+  - typescript-language-server  # TypeScript LSP — used by Claude Code typescript-lsp plugin
 
 # Mac App Store apps (currently empty — kept for structure).
 devbox_appstore_apps: []

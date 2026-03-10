@@ -1,7 +1,7 @@
 ---
 name: code-reviewer-go
 description: Code reviewer for Go - validates implementation against requirements and catches issues missed by engineer and test writer.
-tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__atlassian, mcp__memory-downstream
+tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__atlassian, mcp__memory-downstream, LSP
 model: opus
 skills: go-engineer, go-testing, go-review-checklist, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, lsp-tools, agent-base-protocol
 updated: 2026-02-10

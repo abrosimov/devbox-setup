@@ -19,6 +19,15 @@
   changed_when: false
   failed_when: false
 
+- name: "Migration: remove pinned tide@v6 before unpinned install"
+  ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher remove ilancosman/tide@v6'"
+  args:
+    executable: /bin/bash
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  changed_when: false
+  failed_when: false
+
 - name: Install fisher plugins
   ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher install {{ item }}'"
   args:
@@ -43,6 +52,14 @@
 
 - name: Update fisher plugins
   ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher update'"
+  args:
+    executable: /bin/bash
+  become: true
+  become_user: "{{ devbox_user.login }}"
+  changed_when: false
+
+- name: Configure tide prompt (auto mode)
+  ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c '{{ devbox_tide_configure_auto }}'"
   args:
     executable: /bin/bash
   become: true

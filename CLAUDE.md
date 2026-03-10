@@ -42,6 +42,9 @@ make lint            # syntax-check + ansible-lint
 make check           # dry-run (check mode, prompts for vault+sudo)
 make check-dev       # dry-run in dev_mode (uses test vault, no sudo)
 
+# Fish shell upgrade + tide prompt sync
+make fixfish          # upgrade fish, update plugins, apply tide config from defaults
+
 # Vault management
 make vault-init      # create and encrypt vault/devbox_ssh_config.yml
 

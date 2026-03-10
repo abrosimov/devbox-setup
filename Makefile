@@ -24,6 +24,7 @@ endif
 .PHONY: run dev help init vault-init lint check check-dev validate-claude validate-skills eval-skills improve-skills \
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
+       fixfish \
        test test-nvim test-fish test-json test-bash test-skill-evals
 
 help:
@@ -45,6 +46,7 @@ help:
 	@echo "  make validate-skills  - validate skill evals (structure, schema, coverage)"
 	@echo "  make eval-skills      - run trigger evals via Anthropic's run_eval.py (slow, needs claude CLI)"
 	@echo "  make improve-skills   - optimize skill description for trigger accuracy (run_loop.py)"
+	@echo "  make fixfish           - upgrade fish, update plugins, apply tide config"
 	@echo "  make test             - run all config validation tests"
 	@echo "  make test-nvim        - headless smoke test of nvim config"
 	@echo "  make test-fish        - fish shell config syntax check"
@@ -106,6 +108,13 @@ upgrade-personal:
 check-dev:
 	ANSIBLE_FORCE_COLOR=1 \
 	ansible-playbook --check $(VERBOSE) $(TEST_VAULT) -e dev_mode=true $(PLAYBOOK)
+
+fixfish:
+	@echo "Upgrading fish and applying tide config..."
+	brew upgrade fish
+	fish -c 'fisher remove ilancosman/tide@v6 2>/dev/null; fisher install ilancosman/tide; fisher update'
+	fish -c 'tide configure --auto --style=Rainbow --prompt_colors='"'"'True color'"'"' --show_time='"'"'24-hour format'"'"' --rainbow_prompt_separators=Angled --powerline_prompt_heads=Sharp --powerline_prompt_tails=Flat --powerline_prompt_style='"'"'One line'"'"' --prompt_spacing=Compact --icons='"'"'Many icons'"'"' --transient=No'
+	@echo "Done. Restart your shell to apply changes."
 
 init:
 	@./scripts/init.sh

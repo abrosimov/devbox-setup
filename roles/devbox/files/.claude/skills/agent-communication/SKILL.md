@@ -1,9 +1,8 @@
 ---
 name: agent-communication
 description: >
-  Shared patterns for agent handoffs, escalation rules, completion formats, and user interaction.
-  Use when agents need to communicate with each other or with users.
-  Triggers on: handoff, escalation, completion, next step, continue, approval.
+  Shared patterns for agent handoffs, escalation rules, completion formats, and user
+  interaction. Use when agents need to communicate with each other or with users.
 ---
 
 # Agent Communication Patterns

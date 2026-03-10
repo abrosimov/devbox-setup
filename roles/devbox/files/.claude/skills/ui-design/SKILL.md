@@ -2,9 +2,9 @@
 name: ui-design
 description: >
   UI/UX design knowledge for component specification, design tokens (W3C format), responsive layout,
-  accessibility, and integration with Figma MCP and Storybook MCP.
-  Triggers on: UI design, UX, design tokens, component spec, layout, accessibility, WCAG, Figma,
-  Storybook, design system, responsive, breakpoint.
+  accessibility, and integration with Figma MCP and Storybook MCP. Use when creating design
+  specifications, defining design tokens, planning responsive layouts, or ensuring accessibility
+  compliance (WCAG).
 ---
 
 # UI/UX Design Knowledge

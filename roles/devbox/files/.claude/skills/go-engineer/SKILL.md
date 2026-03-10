@@ -1,9 +1,12 @@
 ---
 name: go-engineer
 description: >
-  Write idiomatic, production-ready Go code. Use when implementing Go features,
-  creating Go functions, writing Go services, or fixing Go bugs. Triggers on:
-  implement Go, write Go, create Go function, Go service, Go handler, Go endpoint.
+  Write idiomatic, production-ready Go code following Effective Go and Go Code
+  Review Comments. Use when implementing Go features, creating Go functions,
+  writing Go services, fixing Go bugs, or refactoring Go code. Also use when
+  the user works with Go handlers, endpoints, interfaces, error handling,
+  concurrency, or middleware — even for seemingly simple Go tasks, as this skill
+  enforces project-specific conventions and quality standards.
 allowed-tools: Read, Edit, Grep, Glob, Bash
 ---
 

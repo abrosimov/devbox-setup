@@ -2,7 +2,8 @@
 name: docker-validation
 description: >
   Docker validation patterns — Dockerfile linting with hadolint, docker-compose linting with dclint,
-  and runtime smoke testing conventions. Triggers on: dockerfile, docker-compose, hadolint, dclint, smoke test, container validation.
+  and runtime smoke testing conventions. Use when validating Dockerfiles, docker-compose files,
+  or running container smoke tests.
 alwaysApply: false
 ---
 

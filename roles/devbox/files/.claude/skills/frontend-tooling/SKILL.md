@@ -3,8 +3,8 @@ name: frontend-tooling
 description: >
   Frontend project tooling with Next.js, Vite, pnpm, ESLint, Prettier, and TypeScript config.
   Use when discussing project setup, build tools, package management, linting, formatting,
-  or development tools. Triggers on: Next.js, Vite, pnpm, npm, ESLint, Prettier, TypeScript
-  config, tsconfig, Storybook, build, lint, format.
+  or development tools. Also use when working with tsconfig, Storybook configuration, or
+  build pipelines.
 ---
 
 # Frontend Tooling Reference

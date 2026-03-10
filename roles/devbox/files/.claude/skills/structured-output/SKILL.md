@@ -2,8 +2,9 @@
 name: structured-output
 description: >
   JSON schemas for structured agent output, hybrid output pattern, pipeline state tracking,
-  and decision logging. Enables automated pipeline coordination and downstream agent consumption.
-  Triggers on: structured output, JSON schema, pipeline state, decision log, output contract.
+  and decision logging. Enables automated pipeline coordination and downstream agent
+  consumption. Use when producing structured JSON output, tracking pipeline state,
+  or logging agent decisions.
 ---
 
 # Structured Output

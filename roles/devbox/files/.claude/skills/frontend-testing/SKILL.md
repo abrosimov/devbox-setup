@@ -2,8 +2,8 @@
 name: frontend-testing
 description: >
   Frontend testing patterns with React Testing Library, Vitest, user-event, and MSW.
-  Triggers on: test, testing, React Testing Library, Vitest, Jest, user-event, MSW,
-  mock, fixture, assertion, component test, hook test, integration test.
+  Use when writing or reviewing frontend tests, mocking API calls, testing React
+  components or hooks, or setting up test infrastructure for TypeScript/React projects.
 ---
 
 # Frontend Testing Reference

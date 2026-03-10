@@ -70,20 +70,23 @@ Structure knowledge so Claude loads only what it needs:
 
 ### 3. Description-Driven Discovery
 
-The `description` field is the PRIMARY mechanism for skill activation. Claude reads descriptions at startup and decides which skills to load based on them.
+The `description` field is the PRIMARY mechanism for skill activation. Claude reads descriptions at startup and decides which skills to load based on them. Claude tends to "undertrigger" — not using skills when they'd be useful. Combat this by making descriptions assertive.
 
 **Good description anatomy**:
 ```yaml
 description: >
   [What this skill covers — 1-2 sentences].
-  [When to use it — specific scenarios].
-  Triggers on: keyword1, keyword2, keyword3.
+  Use when [specific scenarios]. Also use when [broader triggers] — even
+  for [seemingly simple cases], as this skill [value justification].
 ```
 
 **Rules**:
 - Write in third person: "Processes Excel files" not "I can help you process"
-- Include both **what** and **when**
-- End with explicit `Triggers on:` keywords
+- Include both **what** and **when** ("Use when...")
+- Be assertive — include broader triggers ("Also use when...")
+- Justify activation — "as this skill enforces project conventions"
+- Include keywords users would naturally say
+- Max 1024 characters
 - Be specific — "Go error handling patterns including sentinel errors, custom types, and wrapping" beats "Error handling"
 
 ### 4. One Skill, One Domain
@@ -149,19 +152,35 @@ skill-name/
 
 ```yaml
 ---
-name: skill-name          # kebab-case, matches directory name
+name: skill-name          # kebab-case, matches directory name, max 64 chars
 description: >
-  What this skill covers. When to use it.
-  Triggers on: keyword1, keyword2, keyword3.
+  What this skill covers. Use when [specific scenarios]. Also use when
+  [broader triggers] — even for [simple cases], as this skill [value].
 ---
 ```
 
-### Optional Fields
+### Optional Fields (Official)
 
 | Field | Type | Purpose |
 |-------|------|---------|
-| `alwaysApply` | `true` | Skill is always loaded into context (use sparingly) |
-| `allowed-tools` | comma-separated | Restricts which tools the skill can reference |
+| `argument-hint` | string | Autocomplete hint, e.g. `[issue-number]` |
+| `disable-model-invocation` | `true` | Prevents Claude from auto-loading. For manual-only workflows |
+| `user-invocable` | `false` | Hides from `/` menu. For background knowledge only |
+| `allowed-tools` | comma-separated | Tools Claude can use without permission when skill is active |
+| `model` | string | Model override when skill is active |
+| `context` | `fork` | Run in a forked subagent context |
+| `agent` | string | Subagent type when `context: fork` is set |
+| `hooks` | object | Hooks scoped to this skill's lifecycle |
+
+### Custom Extensions (Project-Specific)
+
+These fields are NOT processed by Claude Code — used by our eval/validation framework only:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `alwaysApply` | `true` | Marks always-loaded skills in our system. Not an official field |
+| `triggers` | list | Used by `validate-skill-evals` for trigger testing. Not an official field |
+| `version` | number | Used by our validation scripts. Not an official field |
 
 ### Naming Convention
 
@@ -260,9 +279,11 @@ This step is mandatory. Do not skip it even if you "already know" the patterns.
 | Check | Criteria | Severity |
 |-------|----------|----------|
 | Specificity | Description is specific enough to distinguish from similar skills | Warning |
-| Trigger keywords | `Triggers on:` section present with relevant keywords | Warning |
+| Trigger conditions | Includes "Use when..." clause with relevant keywords | Warning |
+| Assertiveness | Broad enough to combat undertriggering ("Also use when...", "even for...") | Warning |
 | Third-person voice | Uses "Processes..." not "I can help..." or "You should..." | Warning |
 | What AND when | Describes both what the skill covers and when to use it | Warning |
+| Character limit | Under 1024 characters | Warning |
 
 ### Content Quality
 

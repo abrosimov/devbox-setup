@@ -4,9 +4,8 @@ description: >
   LSP code intelligence for semantic navigation, refactoring, and diagnostics.
   Teaches agents when and how to use Claude Code's built-in LSP tools instead of
   grep-based text search. Covers the coordinate bridge pattern, decision tree,
-  mandatory constraints, and workflow recipes.
-  Triggers on: refactor, rename, find references, find callers, find implementations,
-  go to definition, type info, call hierarchy, impact analysis, LSP, language server.
+  mandatory constraints, and workflow recipes. Use when refactoring, renaming symbols,
+  finding references or callers, navigating to definitions, or analysing call hierarchy.
 ---
 
 # LSP Code Intelligence

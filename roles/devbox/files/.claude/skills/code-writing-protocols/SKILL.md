@@ -5,7 +5,6 @@ description: >
   Covers approval validation, decision classification with full Tier 3 exploration,
   anti-satisficing rules, anti-helpfulness protocol, routine task mode,
   pre-implementation verification, comment audit self-review, and anti-laziness protocol.
-  Triggers on: approval, decision, tier 3, anti-satisficing, anti-helpfulness, routine, pre-flight, comment audit, anti-laziness, verification.
 alwaysApply: false
 ---
 

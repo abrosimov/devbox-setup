@@ -3,8 +3,7 @@ name: code-comments
 alwaysApply: true
 description: >
   Rules for code comments and documentation. Covers narration comments (forbidden),
-  acceptable WHY comments, docstring policies. Triggers on: comment, docstring,
-  documentation, narration, self-documenting.
+  acceptable WHY comments, and docstring policies.
 ---
 
 # Code Comments Policy

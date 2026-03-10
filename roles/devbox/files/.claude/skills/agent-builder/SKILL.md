@@ -2,9 +2,9 @@
 name: agent-builder
 description: >
   Reference templates, frontmatter schema, archetype patterns, and validation checklists
-  for building agent definitions in the Claude Code agent system.
-  Triggers on: agent builder, create agent, new agent, agent template, agent archetype,
-  agent validation, agent frontmatter.
+  for building agent definitions in the Claude Code agent system. Use when creating a new
+  agent, validating agent structure, or improving agent definitions. Also use when working
+  with agent frontmatter, archetypes, or agent pipeline integration.
 ---
 
 # Agent Builder Reference

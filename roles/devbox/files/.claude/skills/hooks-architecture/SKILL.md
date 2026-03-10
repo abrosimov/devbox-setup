@@ -1,7 +1,9 @@
 ---
 name: hooks-architecture
 description: >
-  Claude Code hooks system architecture and patterns. Triggers on: hooks, preToolUse, postToolUse, hook configuration, event lifecycle.
+  Claude Code hooks system architecture and patterns. Use when configuring hooks,
+  writing hook scripts, or debugging hook behaviour. Also use when working with
+  PreToolUse, PostToolUse, PreCompact, or Stop lifecycle events.
 ---
 
 # Hooks Architecture

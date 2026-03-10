@@ -3,9 +3,9 @@ name: mcp-storybook
 description: >
   Storybook MCP patterns for discovering existing components, reading stories and props,
   and understanding the component library before implementing or reviewing. Covers component
-  inventory, prop discovery, pattern matching, and visual reference.
-  Triggers on: Storybook MCP, component library, story, stories, existing components,
-  component inventory, component discovery, design system components.
+  inventory, prop discovery, pattern matching, and visual reference. Use when exploring
+  available components, checking existing stories or props, or understanding the component
+  library before building new UI.
 ---
 
 # Storybook MCP

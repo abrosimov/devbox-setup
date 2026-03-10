@@ -129,9 +129,11 @@ The `description` field is the PRIMARY trigger mechanism. Challenge it:
 3. **Confusion test**: Are there existing agents/skills whose descriptions overlap? Would Claude be confused about which to choose?
 
 For skills, also check:
-- Does the description include `Triggers on:` keywords?
+- Does the description include "Use when..." trigger conditions?
+- Is the description assertive enough to combat undertriggering ("Also use when...", "even for...")?
 - Are the trigger keywords specific enough to distinguish from related skills?
 - Is the description in third-person voice?
+- Is the description under 1024 characters?
 
 </challenge-area>
 

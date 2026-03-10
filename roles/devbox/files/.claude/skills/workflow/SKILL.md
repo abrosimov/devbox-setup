@@ -3,8 +3,8 @@ name: workflow
 description: >
   Agent pipeline, workflow commands, and development modes for the Claude Code agent system.
   Covers slash commands, agent roles, language discussion policy, and key conventions.
-  Triggers on: workflow, pipeline, agent, command, /implement, /test, /review, /plan,
-  /full-cycle, /domain-analysis, next step, which agent.
+  Use when determining which agent or command to use, understanding the pipeline flow,
+  or looking up workflow conventions like model selection and agent routing.
 ---
 
 # Workflow Reference

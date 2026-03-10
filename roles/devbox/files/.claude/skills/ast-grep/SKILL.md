@@ -4,9 +4,8 @@ description: >
   Structural AST code search and rewriting using ast-grep (Tree-sitter based).
   Use instead of grep when you need language-aware pattern matching — finding code
   by structure, not text. Complements LSP (which answers "where is X?") with
-  pattern queries ("find all X that lack Y").
-  Triggers on: structural search, AST pattern, find functions without, refactor pattern,
-  code audit, ast-grep, tree-sitter search.
+  pattern queries ("find all X that lack Y"). Use when performing structural search,
+  code audits, or pattern-based refactoring across a codebase.
 ---
 
 # ast-grep — Structural Code Search

@@ -2,9 +2,9 @@
 name: skill-builder
 description: >
   Reference templates, frontmatter schema, progressive disclosure patterns, and validation
-  checklists for building skill modules in the Claude Code agent system.
-  Triggers on: skill builder, create skill, new skill, skill template, skill structure,
-  skill validation, skill frontmatter, knowledge module.
+  checklists for building skill modules in the Claude Code agent system. Use when creating
+  a new skill, validating skill structure, or improving skill descriptions. Also use when
+  working with SKILL.md files, skill frontmatter, or knowledge modules.
 ---
 
 # Skill Builder Reference
@@ -42,19 +42,35 @@ Read this reference at the START of any build/validate/refine workflow to ground
 name: skill-name
 description: >
   What this skill covers — one or two sentences describing the domain.
-  When to use it — specific scenarios that trigger activation.
-  Triggers on: keyword1, keyword2, keyword3.
+  Use when [specific scenarios]. Also use when [broader triggers] — even
+  for seemingly simple tasks, as this skill enforces [value proposition].
 ---
 ```
 
-### Field Rules
+### Field Rules (Official Frontmatter)
 
 | Field | Format | Required | Notes |
 |-------|--------|----------|-------|
-| `name` | kebab-case | Yes | Must match directory name |
-| `description` | Multi-line prose | Yes | Primary discovery mechanism — invest heavily here |
-| `alwaysApply` | `true` | Rare | Skill always loaded. Only for foundational skills (currently: `project-preferences`) |
-| `allowed-tools` | Comma-separated | Rare | Restricts which tools the skill references |
+| `name` | kebab-case | Yes | Max 64 chars. Must not contain "anthropic" or "claude". Must match directory name |
+| `description` | Multi-line prose | Yes | Max 1024 chars. Primary discovery mechanism — invest heavily here |
+| `argument-hint` | String | No | Hint shown during autocomplete, e.g. `[issue-number]` |
+| `disable-model-invocation` | `true` | No | Prevents Claude from auto-loading. For manual-only workflows |
+| `user-invocable` | `false` | No | Hides from `/` menu. For background knowledge only |
+| `allowed-tools` | Comma-separated | No | Tools Claude can use without permission when skill is active |
+| `model` | String | No | Model override when skill is active |
+| `context` | `fork` | No | Run in a forked subagent context |
+| `agent` | String | No | Subagent type when `context: fork` is set |
+| `hooks` | Object | No | Hooks scoped to this skill's lifecycle |
+
+### Custom Extensions (Project-Specific)
+
+These fields are NOT processed by Claude Code — they are used by our eval/validation framework only:
+
+| Field | Format | Notes |
+|-------|--------|-------|
+| `alwaysApply` | `true` | Used by our system to mark always-loaded skills. Not an official field |
+| `triggers` | List | Used by `validate-skill-evals` for trigger evaluation. Not an official field |
+| `version` | Number | Used by our validation scripts. Not an official field |
 
 ---
 
@@ -96,24 +112,33 @@ Best for: Skills that involve executable operations (validation, setup, extracti
 
 ## Description Patterns
 
-### Good Descriptions (specific, actionable)
+Claude tends to "undertrigger" skills — not using them when they'd be useful. To combat this, make descriptions assertive and include broad trigger conditions.
+
+### Good Descriptions (specific, assertive)
 
 ```yaml
-# Pattern: [Domain] [Specifics]. [When to use]. Triggers on: [keywords].
+# Pattern: [What it does]. Use when [specific]. Also use when [broader] — [value justification].
 description: >
   Go error handling patterns including sentinel errors, custom error types,
   error wrapping with fmt.Errorf, and error classification at boundaries.
-  Use when discussing error handling, error types, or error propagation in Go.
-  Triggers on: error handling, sentinel errors, custom error types, error wrapping,
-  stack traces, error classification.
+  Use when implementing or reviewing error handling in Go. Also use when the
+  user mentions error types, error propagation, or stack traces — even for
+  simple error checks, as this skill enforces project error-handling conventions.
+```
+
+```yaml
+description: >
+  Extract text and tables from PDF files, fill forms, merge documents.
+  Use when working with PDF files or when the user mentions PDFs, forms,
+  or document extraction.
 ```
 
 ```yaml
 description: >
   REST API and OpenAPI 3.1 design knowledge. Covers resource naming, HTTP method
   semantics, error formats (RFC 9457), pagination, filtering, versioning,
-  authentication, and Spectral linting.
-  Triggers on: REST, OpenAPI, API design, endpoint, HTTP method, pagination, versioning.
+  authentication, and Spectral linting. Use when designing API endpoints, reviewing
+  API contracts, or when the user mentions REST, OpenAPI, pagination, or versioning.
 ```
 
 ### Bad Descriptions (avoid)
@@ -125,20 +150,25 @@ description: Helps with errors.
 # Wrong voice — should be third person
 description: I can help you handle errors in your Go code.
 
-# Missing triggers — Claude won't know when to activate
+# Missing "when to use" — Claude won't know when to activate
 description: Go error handling patterns and best practices.
 
 # Too broad — overlaps with multiple other skills
 description: Everything about Go programming.
+
+# Not assertive enough — Claude will skip it for simple tasks
+description: Go error handling patterns. Use for complex error scenarios.
 ```
 
 ### Description Checklist
 
 - [ ] Third-person voice ("Covers..." not "I help..." or "You should...")
 - [ ] Specific domain (not generic)
-- [ ] Includes both WHAT and WHEN
-- [ ] `Triggers on:` keyword list present
+- [ ] Includes both WHAT and WHEN ("Use when...")
+- [ ] Assertive — includes broader triggers ("Also use when...")
+- [ ] Justifies activation ("as this skill enforces..." or "to ensure...")
 - [ ] Keywords match how users naturally describe the domain
+- [ ] Under 1024 characters
 - [ ] Distinguishable from related skills' descriptions
 
 ---
@@ -253,7 +283,7 @@ Before writing a skill, define test scenarios:
 | Mistake | Problem | Fix |
 |---------|---------|-----|
 | Vague description | Skill activates at wrong times or not at all | Rewrite with specific domain, triggers, and when-to-use |
-| Missing `Triggers on:` | Claude relies on fuzzy matching instead of keywords | Add explicit keyword list |
+| No "Use when..." clause | Claude can't determine when to activate | Add assertive trigger conditions with keywords |
 | Duplicated content | Token waste + risk of contradicting versions | Keep content in ONE skill, reference from others |
 | SKILL.md too long | Wastes tokens for common use cases | Move detailed sub-topics to `references/` |
 | Name doesn't match directory | Validation warnings, discovery confusion | Align name field with directory name |

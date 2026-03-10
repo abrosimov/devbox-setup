@@ -3,9 +3,9 @@ name: context-survival
 description: >
   Tiered memory architecture for surviving context loss from exits, compaction,
   and new sessions. Covers checkpoints, ambient context (MEMORY.md Working State),
-  session-save hooks, strategic compaction, and the resume protocol.
-  Triggers on: checkpoint, resume, context loss, compaction, session, working state,
-  MEMORY.md, survive, persist, remember across sessions.
+  session-save hooks, strategic compaction, and the resume protocol. Use when saving
+  or restoring session state, handling compaction, or persisting working context
+  across sessions.
 ---
 
 # Context Survival

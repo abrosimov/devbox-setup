@@ -1,8 +1,9 @@
 ---
 name: go-testing
 description: >
-  Go testing patterns with testify suites, table-driven tests, mocking with mockery.
-  Triggers on: test, testing, testify, mock, table-driven, suite, fixture, assertion.
+  Go testing patterns with testify suites, table-driven tests, and mocking with mockery.
+  Use when writing or reviewing Go tests, creating test fixtures, setting up mocks,
+  or structuring table-driven test cases.
 ---
 
 # Go Testing Patterns

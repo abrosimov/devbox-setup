@@ -1,7 +1,9 @@
 ---
 name: eval-harness
 description: >
-  Eval-Driven Development (EDD) framework for AI features. Triggers on: evals, evaluation, test harness, llm testing, capability testing.
+  Eval-Driven Development (EDD) framework for AI features. Defines evals before
+  coding, like TDD but for AI capabilities. Use when building AI features, writing
+  evals, testing LLM outputs, or setting up evaluation harnesses.
 ---
 
 # Eval-Driven Development

@@ -3,8 +3,8 @@ name: config
 description: >
   Configurable paths, task context variables, and project directory structure for agents
   and commands. Single source of truth for PLANS_DIR, JIRA_ISSUE, BRANCH_NAME, PROJECT_DIR.
-  Triggers on: config, paths, PLANS_DIR, PROJECT_DIR, project directory, plan location,
-  branch name, Jira issue, task context.
+  Use when resolving project paths, looking up configuration variables, or understanding
+  the agent system directory structure.
 ---
 
 # Claude Code Configuration

@@ -3,8 +3,8 @@ name: mcp-playwright
 description: >
   Playwright MCP patterns for browser automation, accessibility inspection, and
   smoke testing. Covers navigation, interaction, screenshots, accessibility tree,
-  and console monitoring. Triggers on: playwright, browser automation, smoke test,
-  accessibility tree, screenshot, e2e, visual verification.
+  and console monitoring. Use when automating browser interactions, running smoke
+  tests, taking screenshots, or inspecting accessibility.
 ---
 
 # Playwright MCP

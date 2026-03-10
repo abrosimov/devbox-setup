@@ -3,8 +3,7 @@ name: python-tooling
 description: >
   Python project tooling with uv, poetry, pip. Use when discussing project setup,
   package management, pyproject.toml, virtual environments, or development tools.
-  Triggers on: uv, poetry, pip, pyproject.toml, requirements.txt, virtual environment,
-  venv, project setup, new project, package manager.
+  Also use when scaffolding new Python projects or configuring package managers.
 ---
 
 # Python Tooling Reference

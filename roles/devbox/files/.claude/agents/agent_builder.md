@@ -287,7 +287,7 @@ Run these checks against any agent definition:
 | Check | Criteria | Severity |
 |-------|----------|----------|
 | Frontmatter `name` | Present, kebab-case | Error |
-| Frontmatter `description` | Present, one sentence, includes trigger keywords | Error |
+| Frontmatter `description` | Present, one sentence, includes "Use when..." clause | Error |
 | Frontmatter `tools` | Present, comma-separated, valid tool names | Error |
 | Frontmatter `model` | Present, `sonnet` or `opus` | Error |
 | Frontmatter `skills` | Present, comma-separated | Error |
@@ -313,7 +313,7 @@ Run these checks against any agent definition:
 | Check | Criteria | Severity |
 |-------|----------|----------|
 | British English | No American spellings in agent text | Warning |
-| Description quality | Specific enough to trigger correctly (includes "Use when..." or trigger keywords) | Warning |
+| Description quality | Specific enough to trigger correctly (includes "Use when..." with assertive keywords) | Warning |
 | Line count | Under 900 lines (code-writing agents may be longer) | Warning |
 | No stale patterns | No old-style doc references, no double backticks | Warning |
 | Example quality | Code examples in agent follow the agent's own rules (e.g., no narration comments) | Error |

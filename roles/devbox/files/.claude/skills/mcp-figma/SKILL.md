@@ -4,8 +4,8 @@ description: >
   Figma MCP patterns for reading design files, extracting tokens, inspecting components,
   creating FigJam diagrams, and bridging design-to-code workflows. Covers file structure,
   variable extraction, screenshot capture, diagram generation, Code Connect, and design
-  system rules. Triggers on: Figma, design file, design tokens, Figma MCP, Figma styles,
-  Figma components, design system, design-to-code, visual design, FigJam, diagram.
+  system rules. Use when working with Figma files, extracting design tokens, inspecting
+  components, or bridging design-to-code workflows.
 ---
 
 # Figma MCP

@@ -5,8 +5,6 @@ description: >
   Solves the "don't know what I need" problem through DISPATCH/EVALUATE/REFINE/LOOP.
   Use when spawning Explore agents, when agents need to find relevant code, or when
   initial searches return too much noise or too little signal.
-  Triggers on: subagent context, explore, find relevant, search codebase, iterative,
-  retrieval, refine search, context quality.
 ---
 
 # Iterative Retrieval

@@ -3,7 +3,6 @@ name: agent-base-protocol
 description: >
   Shared foundational protocol for all agents. Covers file operations, language standard,
   and clarification rules. Referenced by all agent definitions to avoid duplication.
-  Triggers on: file operations, write tool, language, British English, clarification.
 alwaysApply: false
 ---
 

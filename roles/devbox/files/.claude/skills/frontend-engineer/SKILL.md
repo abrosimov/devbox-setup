@@ -2,9 +2,11 @@
 name: frontend-engineer
 description: >
   Write clean, typed, production-ready frontend code with TypeScript, React, and Next.js.
-  Use when implementing frontend features, creating components, writing hooks, or fixing
-  frontend bugs. Triggers on: implement frontend, write React, create component, Next.js,
-  TypeScript React, frontend service, frontend handler.
+  Use when implementing frontend features, creating React components, writing custom hooks,
+  fixing frontend bugs, or refactoring UI code. Also use when the user works with pages,
+  layouts, forms, state management, API integration, styling, or accessibility — even for
+  seemingly simple frontend tasks, as this skill enforces project-specific conventions and
+  quality standards.
 allowed-tools: Read, Edit, Grep, Glob, Bash
 ---
 

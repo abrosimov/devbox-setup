@@ -15,7 +15,7 @@ context_size=$(echo "$input" | jq -r '.context_window.context_window_size // 0')
 
 # ── Shorten path (replace $HOME with ~) ─────────────────────────────────────
 home="$HOME"
-short_cwd="${cwd/#$home/\~}"
+short_cwd="${cwd/#$home/~}"
 
 # ── Kanagawa Paper Ink palette (ANSI 256 via \e[38;2;R;G;Bm truecolor) ──────
 # Using printf with truecolor escapes. The terminal (kitty) supports this.

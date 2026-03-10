@@ -3,8 +3,8 @@ name: mcp-sequential-thinking
 description: >
   Sequential Thinking MCP patterns for structured multi-step reasoning. Covers when
   to use sequential thinking, thought management, branching, and summary generation.
-  Triggers on: sequential thinking, structured reasoning, thought chain, problem
-  decomposition, multi-step analysis, trade-off analysis.
+  Use when decomposing complex problems, performing multi-step analysis, evaluating
+  trade-offs, or needing structured thought chains with branching.
 ---
 
 # Sequential Thinking MCP

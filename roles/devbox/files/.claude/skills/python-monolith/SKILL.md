@@ -3,8 +3,8 @@ name: python-monolith
 description: >
   Flask-OpenAPI3 monolith patterns for layered DI architecture. Covers handler-service-repository
   layers, dependency injection, SQLAlchemy session management, feature module structure.
-  Triggers on: Flask, flask-openapi3, monolith, APIBlueprint, APIView, DI, dependency injection,
-  provider, container, layered architecture, Flask service layer.
+  Use when working with Flask-OpenAPI3 projects, adding API endpoints, configuring dependency
+  injection, or structuring feature modules in the monolith.
 ---
 
 # Flask-OpenAPI3 Monolith Patterns

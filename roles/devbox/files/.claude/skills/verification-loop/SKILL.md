@@ -1,7 +1,9 @@
 ---
 name: verification-loop
 description: >
-  8-phase continuous verification methodology. Triggers on: verify, validation loop, pre-commit checks, quality assurance.
+  8-phase continuous verification methodology covering build, typecheck, lint,
+  Docker lint, test, smoke, security, and diff review. Use when running pre-commit
+  checks, pre-PR quality gates, or any verification workflow.
 ---
 
 # Verification Loop

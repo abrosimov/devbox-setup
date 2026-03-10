@@ -2,8 +2,7 @@
 name: shared-utils
 description: >
   Shared utility scripts for all agents. Use when needing Jira context from branch,
-  or other cross-cutting utilities. Triggers on: Jira issue, branch name, task context,
-  get issue, extract issue.
+  extracting issue keys, or using other cross-cutting utilities.
 ---
 
 # Shared Utilities

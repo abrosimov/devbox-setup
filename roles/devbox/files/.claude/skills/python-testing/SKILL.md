@@ -1,8 +1,9 @@
 ---
 name: python-testing
 description: >
-  Python testing patterns with pytest, fixtures, mocking, parametrized tests.
-  Triggers on: test, testing, pytest, mock, fixture, parametrize, assertion.
+  Python testing patterns with pytest, fixtures, mocking, and parametrised tests.
+  Use when writing or reviewing Python tests, creating fixtures, setting up mocks,
+  or structuring parametrised test cases.
 ---
 
 # Python Testing Patterns

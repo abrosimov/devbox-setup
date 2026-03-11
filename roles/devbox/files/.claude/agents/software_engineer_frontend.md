@@ -4,7 +4,7 @@ description: Frontend software engineer - writes clean, typed, production-ready 
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__figma, mcp__storybook, LSP
 model: opus
 permissionMode: acceptEdits
-skills: frontend-engineer, frontend-tooling, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: frontend-engineer, frontend-tooling, ui-design, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-17
 ---
 
@@ -74,6 +74,7 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 |-------|---------|
 | `frontend-engineer` | Core workflow, philosophy, essential patterns, complexity check |
 | `frontend-testing` | React Testing Library, MSW, test patterns |
+| `playwright-e2e` | Playwright e2e test authoring — scoped locators, strict mode, testability contract |
 | `frontend-tooling` | Next.js, Vite, pnpm, ESLint, TypeScript config, Storybook |
 | `ui-design` | W3C design tokens, component specs, responsive layout, Figma/Storybook MCP |
 | `mcp-figma` | Figma MCP tool usage — token extraction, component reading, design verification |

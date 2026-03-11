@@ -104,6 +104,48 @@ If a command fails with "Operation not permitted" or cache errors:
 
 ---
 
+## Testability Contract
+
+Components must be authored so that both unit tests (RTL) and e2e tests (Playwright) can reliably target elements. This is a production necessity, not a test-writer concern.
+
+### Lists and Tables
+
+Every interactive element in a repeated row must be individually targetable:
+
+```tsx
+// BAD: generic label — all rows have the same accessible name
+<Button aria-label="Delete">
+
+// GOOD: include entity identity in the accessible name
+<Button aria-label={`Delete ${item.name}`}>
+```
+
+### Structural Containers
+
+Add `data-testid` to row/card containers that group related elements. Tests scope within these containers:
+
+```tsx
+<TableRow data-testid={`pipeline-row-${pipeline.id}`}>
+  <TableCell>{pipeline.name}</TableCell>
+  <TableCell>
+    <Button aria-label={`Delete pipeline ${pipeline.name}`} />
+  </TableCell>
+</TableRow>
+```
+
+### Consistent Labeling
+
+If a delete button on the list page uses `aria-label="Delete pipeline ${name}"`, the same button on the detail page should follow the same pattern — not fall back to a generic `"Delete pipeline"`.
+
+### Checklist
+
+- [ ] Interactive elements in lists have unique accessible names (include entity name)
+- [ ] Row/card containers have `data-testid` with stable identifier
+- [ ] Same element type uses consistent labeling pattern across list and detail pages
+- [ ] Panels and dialogs have identifying attributes (role, aria-label, or data-testid)
+
+---
+
 ## After Completion
 
 Provide summary and suggest next step:

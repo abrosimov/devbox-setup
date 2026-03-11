@@ -5,7 +5,7 @@ description: >
   against requirements and catches issues missed by engineer and test writer.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__memory-downstream, mcp__playwright, mcp__figma, mcp__storybook, LSP
 model: opus
-skills: frontend-engineer, frontend-testing, frontend-tooling, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, mcp-playwright, mcp-figma, mcp-storybook, lsp-tools, agent-base-protocol
+skills: frontend-engineer, frontend-testing, frontend-tooling, ui-design, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, mcp-playwright, mcp-figma, mcp-storybook, lsp-tools, agent-base-protocol
 updated: 2026-02-18
 ---
 

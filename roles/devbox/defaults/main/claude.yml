@@ -39,12 +39,16 @@ mcp_http_servers:
 claude_plugin_marketplaces:
   - repo: anthropics/skills
     name: anthropic-agent-skills
+  - repo: currents-dev/playwright-best-practices-skill
+    name: currents-dev-playwright
 
 claude_plugins:
   - name: example-skills
     marketplace: anthropic-agent-skills
   - name: document-skills
     marketplace: anthropic-agent-skills
+  - name: playwright-best-practices
+    marketplace: currents-dev-playwright
   # LSP plugins — installed from official marketplace (pre-registered on macOS).
   # Binaries must be on PATH: gopls (go install), pyright (uv tool), typescript-language-server (npm).
   - name: gopls-lsp

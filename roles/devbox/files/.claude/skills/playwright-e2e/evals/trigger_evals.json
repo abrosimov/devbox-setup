@@ -1,0 +1,10 @@
+[
+  {"query": "Write a Playwright e2e test that creates a pipeline, navigates to the pipeline list, and deletes it by clicking the delete button in the row", "should_trigger": true},
+  {"query": "Fix a Playwright test that fails with strict mode violation because getByRole resolved to 11 elements on a list page", "should_trigger": true},
+  {"query": "A Playwright test clicks a link to navigate from a list page to a detail page but the old DOM is still present when it queries", "should_trigger": true},
+  {"query": "A Playwright test clicks on the ReactFlow canvas background to close a panel but the panel stays open", "should_trigger": true},
+  {"query": "I need to add a delete button to each row in a table component — how should I label it so Playwright tests can target specific rows", "should_trigger": true},
+  {"query": "Write a React Testing Library unit test for a Button component", "should_trigger": false},
+  {"query": "Use the Playwright MCP to take a screenshot of the running app", "should_trigger": false},
+  {"query": "Set up CI pipeline for Go microservice with Docker", "should_trigger": false}
+]

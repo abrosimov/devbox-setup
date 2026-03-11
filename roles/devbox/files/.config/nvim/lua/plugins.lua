@@ -130,7 +130,12 @@ return {
                 end,
                 settings = {
                     python = {
-                        analysis = {},
+                        analysis = {
+                            autoImportCompletions = true,
+                            autoSearchPaths = true,
+                            diagnosticMode = "openFilesOnly",  -- diagnostics only for open files; use .i for imports
+                            useLibraryCodeForTypes = true,
+                        },
                     },
                 },
             })
@@ -281,7 +286,10 @@ return {
         "saghen/blink.cmp",
         version = "1.*",
         opts = {
-            keymap = { preset = "default" },
+            keymap = {
+                preset = "default",
+                ["<CR>"] = { "accept", "fallback" },
+            },
             appearance = { nerd_font_variant = "mono" },
             completion = { documentation = { auto_show = true } },
             signature = { enabled = true },
@@ -529,7 +537,15 @@ return {
         end,
     },
 
-    -- 9. Test runner — neotest
+    -- 9. Auto-import for pyright (resolves imports for undefined terms)
+    {
+        "stevanmilic/nvim-lspimport",
+        keys = {
+            { "<leader>i", function() require("lspimport").import() end, desc = "Resolve import" },
+        },
+    },
+
+    -- 10. Test runner — neotest
     {
         "nvim-neotest/neotest",
         dependencies = {

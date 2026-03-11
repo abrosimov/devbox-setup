@@ -4,312 +4,88 @@ Ansible-based developer workstation setup. Automates installation of packages, d
 
 ## Supported OS
 
-- macOS (Darwin) — primary target
-- Ubuntu (Linux) — Ubuntu-only
+- macOS (Darwin) — primary
+- Ubuntu (Linux)
 
 ## Quick Start
 
 ```bash
-# Bootstrap (macOS only — installs Homebrew, Ansible, collections)
-make init
-
-# Full run (prompts for vault password and sudo)
-make run
-
-# Development mode — deploys to ../debug/dotfiles instead of ~
-make dev
-
-# Increase verbosity (V=1 through V=4)
-make run V=2
+make init   # Bootstrap (macOS: Homebrew, Ansible, collections)
+make run    # Full run (prompts for vault password and sudo)
+make dev    # Development mode — deploys to ../debug/dotfiles
 ```
 
-## Partial Runs via Tags
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `make run` | Full setup (prompts for vault + sudo) |
+| `make dev` | Deploy to `../debug/dotfiles` instead of `~` |
+| `make packages` | Package installation only |
+| `make configs` | Configuration files only |
+| `make user` | User setup and shell config only |
+| `make run TAGS="..."` | Custom tag combination |
+| `make upgrade-personal` | Upgrade all packages (personal profile) |
+| `make upgrade-work` | Upgrade all packages (work profile) |
+| `make lint` | Syntax-check + ansible-lint |
+| `make check` | Dry-run (check mode) |
+| `make check-dev` | Dry-run in dev_mode |
+| `make validate-claude` | Validate agent/skill cross-references |
+
+Add `V=1` through `V=4` for verbosity.
+
+## Configuration
+
+### Vault
 
 ```bash
-make packages                  # package installation only
-make configs                   # configuration files only
-make user                      # user setup and shell config only
-
-make dev-packages              # packages phase in dev_mode
-make dev-configs               # configs phase in dev_mode
-make dev-user                  # user phase in dev_mode
-
-make run TAGS="packages,configs"  # custom tag combination
-make dev TAGS="configs"           # custom tags in dev_mode
+make vault-init  # Create and encrypt vault/devbox_ssh_config.yml
 ```
 
-## Upgrading
+### Profiles
+
+Profiles select per-machine configuration:
 
 ```bash
-make upgrade-personal   # upgrade all managed packages (personal profile)
-make upgrade-work       # upgrade all managed packages (work profile)
+make personal   # Personal laptop
+make work       # Work laptop
 ```
 
-Re-runs the full playbook with `upgrade_mode=true` — Homebrew formulae get `state: latest`, Go tools are re-installed at `@latest`, and uv tools run `uv tool upgrade`.
+### Local Overlay
 
-## Linting and Dry-Run
-
-```bash
-make lint       # syntax-check + ansible-lint
-make check      # dry-run (check mode, prompts for vault+sudo)
-make check-dev  # dry-run in dev_mode (uses test vault, no sudo)
-
-make test       # run all config validation tests (runs automatically before deploy)
-make test-json  # validate JSON configs and schemas
-make test-fish  # fish shell syntax check
-make test-bash  # bash script syntax check
-make test-nvim  # headless neovim config smoke test
-```
-
-## Vault
-
-```bash
-make vault-init  # create and encrypt vault/devbox_ssh_config.yml
-```
-
-## Local Overlay
-
-Laptop-only files that should not be committed go into `roles/devbox/local/`. This directory is gitignored and mirrors the structure of `roles/devbox/files/`. Files are deployed **after** the main pass, so they can add new files or override repo-managed ones.
+Laptop-only files that should not be committed go into `roles/devbox/local/`. This directory is gitignored and mirrors `roles/devbox/files/`. Files deploy **after** the main pass, so they override repo-managed ones.
 
 ```
 roles/devbox/local/.config/fish/functions/kstg.fish
 → deployed to ~/.config/fish/functions/kstg.fish
 ```
 
-## Claude Code Config
+## Tool Documentation
 
-This repo also manages the global Claude Code configuration deployed to `~/.claude/`:
+Keybindings and usage for each tool:
 
-- **33 agents** — specialised subagents (software engineers, reviewers, planners, etc.)
-- **79 skills** — reusable knowledge modules (Go, Python, frontend, DDD, security, etc.)
-- **19 commands** — slash commands (`/implement`, `/test`, `/review`, `/devcontainer`, `/guide`, etc.)
-- **Hooks** — pre/post tool-call guards (sandbox, formatting, linting)
-- **MCP servers** — sequential thinking, playwright, memory graph, figma
-- **Devcontainer template** — Docker sandbox with iptables egress firewall for isolated agent runs
+- [Neovim](roles/devbox/files/.config/nvim/README.md) — LSP, completion, navigation, testing, debugging
+- [Kitty](roles/devbox/files/.config/kitty/README.md) — splits, tabs, hints, scrollback
+- [Fish](roles/devbox/files/.config/fish/README.md) — abbreviations, functions, plugins
+- [Claude Code](roles/devbox/files/.claude/README.md) — agents, skills, commands, MCP servers
+
+## Testing
 
 ```bash
-make validate-claude  # validate agent/skill library cross-references
+make test       # Run all validation tests
+make test-json  # Validate JSON configs and schemas
+make test-fish  # Fish shell syntax check
+make test-bash  # Bash script syntax check
+make test-nvim  # Headless neovim config smoke test
 ```
 
-## Keybinding Cheatsheet
-
-### Kitty Terminal
-
-**Splits**
-
-| Key | Action |
-|-----|--------|
-| `cmd+d` | Split vertically (side by side) |
-| `cmd+shift+d` | Split horizontally (top/bottom) |
-| `cmd+opt+arrows` | Navigate between panes |
-| `cmd+shift+enter` | Toggle maximize current pane |
-
-**Tabs**
-
-| Key | Action |
-|-----|--------|
-| `cmd+t` | New tab (inherits cwd) |
-| `cmd+w` | Close pane (or tab if last pane) |
-| `cmd+1` — `cmd+9` | Jump to tab N |
-
-**Hints** (select text patterns from terminal output)
-
-| Key | Action |
-|-----|--------|
-| `ctrl+shift+e` | Select URL → open in browser |
-| `cmd+shift+p` | Select file path → insert in terminal |
-| `cmd+shift+g` | Select file:line → open in editor |
-| `cmd+shift+h` | Select git hash → copy to clipboard |
-
-**Scrollback & Shell Integration**
-
-| Key | Action |
-|-----|--------|
-| `ctrl+shift+h` | Full scrollback in bat pager |
-| `ctrl+shift+g` | Last command output in pager |
-| `ctrl+shift+z` | Jump to previous shell prompt |
-| `ctrl+shift+x` | Jump to next shell prompt |
-
-**Other**
-
-| Key | Action |
-|-----|--------|
-| `cmd+shift+o` | File picker (choose-files kitten) |
-| `cmd+equal` / `cmd+minus` | Font size up/down |
-| `cmd+0` | Reset font size |
-| `ctrl+shift+f5` | Reload config |
-
-### Neovim
-
-Leader key: `.` (dot)
-
-**Navigation**
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `Space` | Normal | Half page down |
-| `Esc` | Normal | Close floating windows + clear search highlight |
-| `Tab` | Normal | Next buffer |
-| `Shift+Tab` | Normal | Previous buffer |
-| `Ctrl+h/j/k/l` | Normal | Move focus between splits |
-| `]f` / `[f` | Normal, Visual, Operator | Next / previous function |
-| `]c` / `[c` | Normal, Visual, Operator | Next / previous class |
-
-**Folding**
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `za` | Normal | Toggle fold |
-| `zc` | Normal | Close fold |
-| `zo` | Normal | Open fold |
-| `zM` | Normal | Close all folds |
-| `zR` | Normal | Open all folds |
-
-**Editing**
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `d` / `D` | Normal, Visual | Delete (no yank — black hole register) |
-| `c` / `C` | Normal, Visual | Change (no yank — black hole register) |
-| `x` | Normal | Delete char (no yank) |
-| `.d` | Normal, Visual | Cut (delete AND yank to clipboard) |
-
-**LSP** (active when language server is attached)
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `gd` | Normal | Go to definition |
-| `gi` | Normal | Go to implementation |
-| `gr` | Normal | Go to references |
-| `K` | Normal | Hover documentation |
-| `.rn` | Normal | Rename symbol |
-| `.ca` | Normal | Code action |
-| `.ds` | Normal | Document symbols |
-| `.ws` | Normal | Workspace symbols |
-
-**Diagnostics**
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `[d` / `]d` | Normal | Previous / next diagnostic |
-| `.e` | Normal | Show diagnostic float |
-| `.q` | Normal | Diagnostic quickfix list |
-| `.xx` | Normal | Toggle Trouble diagnostics panel |
-
-**Telescope** (fuzzy finder)
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `.ff` | Normal | Find files |
-| `.fg` | Normal | Live grep |
-| `.fb` | Normal | List open buffers |
-| `.fo` | Normal | Recent files |
-
-**File Explorer** (Neo-tree)
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `.t` | Normal | Toggle file tree (right side) |
-| `.b` | Normal | Toggle buffers panel (left side) |
-
-**Run**
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `.rm` | Normal | Run main in vertical split |
-
-**Testing** (Neotest)
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `.tr` | Normal | Run nearest test |
-| `.tf` | Normal | Run all tests in file |
-| `.ts` | Normal | Toggle test summary |
-| `.to` | Normal | Toggle test output panel (bottom) |
-
-**Debugging** (DAP)
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `.db` | Normal | Toggle breakpoint |
-| `.dc` | Normal | Continue / start debug |
-| `.dt` | Normal | Debug nearest Go test |
-
-**Git**
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `.gw` | Normal | Switch git worktree |
-
-**Comments** (Comment.nvim defaults)
-
-| Key | Mode | Action |
-|-----|------|--------|
-| `gcc` | Normal | Toggle line comment |
-| `gc` | Visual | Toggle comment on selection |
-
-### Fish Shell
-
-**Git Abbreviations**
-
-| Abbreviation | Expands To |
-|-------------|------------|
-| `co` | `git checkout` |
-| `cob` | `git checkout -b` |
-| `st` | `git status` |
-| `gd` | `git diff` |
-| `gdc` | `git diff --cached` |
-| `add` | `git add` |
-| `ci` | `git commit -m '...'` (cursor placed inside quotes) |
-| `am` | `git commit --amend` |
-| `br` | `git branch` |
-| `pull` | `git pull origin` |
-| `push` | `git push origin` |
-| `merge` | `git merge` |
-| `stash` | `git stash` |
-| `gg` | `git grep -n '...'` (cursor placed inside quotes) |
-
-**Editor Abbreviations**
-
-| Abbreviation | Expands To |
-|-------------|------------|
-| `vi` / `vim` | `nvim` |
-| `vimdiff` / `vd` | `nvim -d` |
-
-**Claude Code Abbreviations**
-
-| Abbreviation | Expands To |
-|-------------|------------|
-| `code` | `claude --model claude-opus-4-5` |
-| `code_smart` | `claude --model claude-opus-4-6` |
-
-**Custom Functions**
-
-| Command | Description |
-|---------|-------------|
-| `proj clone <url>` | Clone repo into `$PROJECTS_DIR/<name>/base/` |
-| `proj ls` | List projects |
-| `proj <name>` | `cd` into project directory |
-| `wt add <branch>` | Create git worktree (auto-detects base branch) |
-| `wt ls` | List worktrees |
-| `wt rm <name>` | Remove worktree |
-| `wt <name>` | `cd` to worktree directory |
-| `k <subcommand>` | kubectl helper — `k` with no args for full usage |
-
-**Fisher Plugins**: [tide](https://github.com/IlanCosman/tide) (prompt), [fish_ssh_agent](https://github.com/ivakyb/fish_ssh_agent)
-
-## Testing Neovim Config Changes
+### Interactive Neovim Testing
 
 ```bash
-# Headless smoke test — validates config loads without errors
-make test-nvim
-
-# Interactive testing — symlinks repo config to /tmp, launches isolated nvim
+# Symlink repo config to /tmp, launch isolated nvim
 ln -sfn ~/Projects/devbox-setup/roles/devbox/files/.config/nvim /tmp/nvim-test
 XDG_CONFIG_HOME=/tmp NVIM_APPNAME=nvim-test nvim
 ```
-
-`NVIM_APPNAME` + `XDG_CONFIG_HOME=/tmp` makes nvim use `/tmp/nvim-test/` for config and `/tmp/nvim-test-data/` for data — fully isolated from your live setup. Plugins install fresh on first launch.
 
 ## TODO
 

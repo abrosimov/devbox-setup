@@ -64,7 +64,7 @@ function k --description "kubectl helper; expects KUBECONFIG to be set by wrappe
         echo "  k ns                                   — list all namespaces"
         echo ""
         echo "Resource Listing:"
-        echo "  k pods <ns> [label-selector]           — list pods"
+        echo "  k pods <ns> [filter]                   — list pods (grep filter)"
         echo "  k deploy <ns>                          — list deployments"
         echo "  k sts <ns>                             — list statefulsets"
         echo "  k svc <ns>                             — list services"
@@ -183,16 +183,20 @@ function k --description "kubectl helper; expects KUBECONFIG to be set by wrappe
 
         case pods
             if test (count $argv) -lt 1
-                echo "k pods <ns> [label-selector]"
+                echo "k pods <ns> [filter]"
                 return 2
             end
             set -l ns $argv[1]
-            set -e argv[1]
-            if test (count $argv) -ge 1
-                set -l sel $argv[1]
-                env KUBECONFIG=$KUBECONFIG kubectl -n $ns get pods -o wide -l $sel
+            set -l filter ""
+            test (count $argv) -ge 2; and set filter $argv[2]
+
+            set -l output (env KUBECONFIG=$KUBECONFIG kubectl -n $ns get pods -o wide 2>/dev/null)
+            if test -z "$filter"
+                printf '%s\n' $output
             else
-                env KUBECONFIG=$KUBECONFIG kubectl -n $ns get pods -o wide
+                # Print header + filtered rows
+                printf '%s\n' $output | head -1
+                printf '%s\n' $output | tail -n +2 | grep -i "$filter"
             end
 
         case containers

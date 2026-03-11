@@ -120,5 +120,5 @@ devbox_packages:
     - ansible-lint
     - debugpy
     - keyring
-    - pyright
+    - basedpyright
     - pylint

@@ -1,52 +1,17 @@
-# Completions for wt function
-
-# Helper: detect current project from PWD
-function __wt_project_dir
-    set -q PROJECTS_DIR; or return 1
-    set -l rel (string replace "$PROJECTS_DIR/" '' -- $PWD)
-    test "$rel" = "$PWD"; and return 1
-    set -l project (string split '/' -- $rel)[1]
-    echo "$PROJECTS_DIR/$project"
-end
-
-function __wt_base_dir
-    set -l pd (__wt_project_dir)
-    or return 1
-    echo "$pd/base"
-end
-
-# Helper: list worktree directory names (excluding base)
-function __wt_worktree_names
-    set -l pd (__wt_project_dir)
-    or return
-    for d in $pd/*/
-        set -l name (basename $d)
-        if test "$name" != base
-            echo $name
-        end
-    end
-end
-
-# Helper: list remote branch names
-function __wt_remote_branches
-    set -l bd (__wt_base_dir)
-    or return
-    git -C "$bd" branch -r 2>/dev/null | string replace -r '^\s*origin/' '' | string match -rv '^HEAD '
-end
-
+# Completions for wt (alias for proj wt)
 complete -c wt -f
 
-# Subcommands
+# Reuse helpers from proj completions
 complete -c wt -n '__fish_use_subcommand' -a add -d 'Create worktree'
 complete -c wt -n '__fish_use_subcommand' -a ls -d 'List worktrees'
 complete -c wt -n '__fish_use_subcommand' -a rm -d 'Remove worktree'
 
 # Worktree names as cd shortcuts
-complete -c wt -n '__fish_use_subcommand' -a '(__wt_worktree_names)'
+complete -c wt -n '__fish_use_subcommand' -a '(__proj_worktree_names)'
 
 # wt add: complete with remote branches
-complete -c wt -n '__fish_seen_subcommand_from add' -a '(__wt_remote_branches)'
+complete -c wt -n '__fish_seen_subcommand_from add' -a '(__proj_remote_branches)'
 complete -c wt -n '__fish_seen_subcommand_from add' -l from -d 'Base branch'
 
-# wt rm: complete with worktree directory names
-complete -c wt -n '__fish_seen_subcommand_from rm' -a '(__wt_worktree_names)'
+# wt rm: complete with worktree names
+complete -c wt -n '__fish_seen_subcommand_from rm' -a '(__proj_worktree_names)'

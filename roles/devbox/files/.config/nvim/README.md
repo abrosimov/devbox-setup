@@ -2,6 +2,26 @@
 
 Leader key: `.` (dot)
 
+## Key Discovery (which-key)
+
+Press `.` and wait 200ms to see all available keybindings organized by group:
+
+| Group | Prefix | Contents |
+|-------|--------|----------|
+| Find | `.f` | Telescope pickers (files, grep, buffers, keymaps) |
+| Debug | `.d` | DAP breakpoints, continue, test debug |
+| Test/Tree | `.t` | Neotest + Neo-tree toggle |
+| Git | `.g` | Worktree switching |
+| Diagnostics | `.x` | Trouble panel |
+| Refactor/Run | `.r` | Rename, run main |
+| Workspace | `.w` | Workspace symbols |
+| Code | `.c` | Code actions |
+| Prev | `[` | Previous diagnostic/function/class |
+| Next | `]` | Next diagnostic/function/class |
+| Go to | `g` | Definition, implementation, references |
+
+**Fuzzy search all keymaps**: `.fk` opens Telescope keymap picker
+
 ## Navigation
 
 | Key | Action |
@@ -22,7 +42,7 @@ Leader key: `.` (dot)
 |-----|--------|
 | `.rn` | Rename symbol |
 | `.ca` | Code actions |
-| `.i` | Resolve import (nvim-lspimport) |
+| `.i` | Resolve import (LSP code action) |
 | `Ctrl+Space` | Trigger completion |
 | `Ctrl+y` | Accept completion |
 | `Enter` | Accept completion (or newline if no popup) |
@@ -36,6 +56,7 @@ Leader key: `.` (dot)
 | `.fg` | Live grep (ripgrep) |
 | `.fb` | List buffers |
 | `.fo` | Recent files |
+| `.fk` | Search all keymaps |
 
 ## File Explorer (Neo-tree)
 

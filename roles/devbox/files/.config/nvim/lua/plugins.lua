@@ -88,7 +88,7 @@ return {
         dependencies = { "mason-org/mason.nvim" },
         opts = {
             ensure_installed = {
-                "gopls", "pyright", "ts_ls", "rust_analyzer", "clangd",
+                "gopls", "basedpyright", "ts_ls", "rust_analyzer", "clangd",
                 "yamlls", "jsonls", "lua_ls", "bashls", "dockerls",
                 "marksman", "taplo", "terraformls",
             },
@@ -117,8 +117,8 @@ return {
             })
             vim.lsp.enable("gopls")
 
-            -- Python — pyright for types/completion, ruff for linting/formatting
-            vim.lsp.config("pyright", {
+            -- Python — basedpyright for types/completion/import code actions, ruff for linting/formatting
+            vim.lsp.config("basedpyright", {
                 before_init = function(_, config)
                     if not config.root_dir then
                         return
@@ -130,16 +130,19 @@ return {
                 end,
                 settings = {
                     python = {
+                        pythonPath = "",
+                    },
+                    basedpyright = {
                         analysis = {
                             autoImportCompletions = true,
                             autoSearchPaths = true,
-                            diagnosticMode = "openFilesOnly",  -- diagnostics only for open files; use .i for imports
+                            diagnosticMode = "openFilesOnly",
                             useLibraryCodeForTypes = true,
                         },
                     },
                 },
             })
-            vim.lsp.enable("pyright")
+            vim.lsp.enable("basedpyright")
 
             vim.lsp.config("ruff", {})
             vim.lsp.enable("ruff")
@@ -245,7 +248,7 @@ return {
 
             -- Dart LSP is handled by flutter-tools.nvim — do NOT configure dartls here
 
-            -- Disable hover from ruff so pyright handles it
+            -- Disable hover from ruff so basedpyright handles it
             vim.api.nvim_create_autocmd("LspAttach", {
                 group = vim.api.nvim_create_augroup("lsp_disable_ruff_hover", { clear = true }),
                 callback = function(args)
@@ -322,6 +325,7 @@ return {
             vim.keymap.set("n", "<leader>fg", builtin.live_grep, { desc = "Live grep" })
             vim.keymap.set("n", "<leader>fb", builtin.buffers, { desc = "List buffers" })
             vim.keymap.set("n", "<leader>fo", builtin.oldfiles, { desc = "Recent files" })
+            vim.keymap.set("n", "<leader>fk", builtin.keymaps, { desc = "Search keymaps" })
         end,
     },
 
@@ -537,11 +541,22 @@ return {
         end,
     },
 
-    -- 9. Auto-import for pyright (resolves imports for undefined terms)
+    -- 9. Auto-import via LSP code actions (basedpyright provides "Add import" actions)
     {
-        "stevanmilic/nvim-lspimport",
+        "neovim/nvim-lspconfig",
         keys = {
-            { "<leader>i", function() require("lspimport").import() end, desc = "Resolve import" },
+            {
+                "<leader>i",
+                function()
+                    vim.lsp.buf.code_action({
+                        filter = function(action)
+                            return action.title and action.title:match("[Ii]mport")
+                        end,
+                        apply = true,
+                    })
+                end,
+                desc = "Resolve import",
+            },
         },
     },
 
@@ -654,7 +669,27 @@ return {
     {
         "folke/which-key.nvim",
         event = "VeryLazy",
-        opts = {},
+        opts = {
+            preset = "modern",
+            delay = 200,
+        },
+        config = function(_, opts)
+            local wk = require("which-key")
+            wk.setup(opts)
+            wk.add({
+                { "<leader>f", group = "Find" },
+                { "<leader>d", group = "Debug", icon = "" },
+                { "<leader>t", group = "Test/Tree" },
+                { "<leader>g", group = "Git" },
+                { "<leader>x", group = "Diagnostics" },
+                { "<leader>r", group = "Refactor/Run" },
+                { "<leader>w", group = "Workspace" },
+                { "<leader>c", group = "Code" },
+                { "[", group = "Prev" },
+                { "]", group = "Next" },
+                { "g", group = "Go to" },
+            })
+        end,
     },
 
     -- 14. Auto-close brackets

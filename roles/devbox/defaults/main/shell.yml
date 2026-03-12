@@ -10,6 +10,7 @@ devbox_fish_plugins:
   - franciscolourenco/done
   - PatrickF1/fzf.fish
   - jethrokuan/z
+  - aohorodnyk/fish-autovenv  # Auto-activate .venv on cd (works with uv)
 
 # Shell environment and PATH — single source of truth for both fish and bash.
 # Templates in conf.d/_init_env.fish.j2, conf.d/_init_path.fish.j2, and .bashrc.j2

@@ -67,6 +67,7 @@
     - .config/fish/config.fish
     - .config/fish/conf.d/aliases.fish
     - .config/fish/conf.d/tide_items.fish
+    - .config/fish/conf.d/fnm.fish
     - README.md
   loop_control:
     label: "{{ item }}"

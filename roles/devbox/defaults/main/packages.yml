@@ -52,6 +52,7 @@ devbox_brew_secondary:
   - fzf
   - tmux
   - mise
+  - fnm             # Fast Node Manager — auto-switches Node version on cd
   - golangci-lint
   - luarocks       # Needed by lazy.nvim
   - go-jsonnet

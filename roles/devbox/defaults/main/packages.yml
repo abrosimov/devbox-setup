@@ -57,6 +57,7 @@ devbox_brew_secondary:
   - go-jsonnet
   - jsonnet-bundler
   - gh             # GitHub CLI — needed by Claude Code PR workflow
+  - glab           # GitLab CLI — mirrors gh for GitLab workflows
   - jq             # JSON processor — used by scripts and agents
   - ripgrep        # Fast grep — fallback for Claude Code Grep tool
   - fd             # Fast find — used by Claude Code Glob tool

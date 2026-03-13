@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+commit_msg_file="$1"
+message=$(cat "$commit_msg_file")
+
+# Get branch name
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+
+# Extract Jira-style key: ABC-123, PROJ-4567 (anywhere in branch name)
+key=$(echo "$branch" | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || echo "")
+
+# Skip if: no branch, no valid key, or key already present
+if [ -z "$key" ] || [[ "$message" == *"[$key]"* ]] || [[ "$message" == *"$key"* ]]; then
+    exit 0
+fi
+
+# Append Jira key
+echo "$message [$key]" > "$commit_msg_file"

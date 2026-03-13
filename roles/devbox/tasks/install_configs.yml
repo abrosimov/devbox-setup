@@ -55,6 +55,18 @@
   tags: [configs]
 
 # =============================================================================
+# Block 3b: proj hooks directory — executable scripts
+# =============================================================================
+
+- name: Deploy proj hooks (executable)
+  ansible.builtin.copy:
+    src: "files/.local/share/proj/hooks/"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.local/share/proj/hooks/"
+    mode: "0755"
+    directory_mode: "0755"
+  tags: [configs]
+
+# =============================================================================
 # Block 4: individual plain files that don't fit a directory copy
 # =============================================================================
 

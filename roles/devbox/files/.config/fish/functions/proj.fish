@@ -1,3 +1,20 @@
+# Helper: install git hooks to a repository
+function __proj_install_hooks --argument-names repo_dir
+    set -l hooks_src "$HOME/.local/share/proj/hooks"
+    set -l hooks_dst "$repo_dir/.git/hooks"
+
+    if not test -d "$hooks_src"
+        return 0
+    end
+
+    for hook in $hooks_src/*
+        set -l hook_name (basename $hook)
+        cp "$hook" "$hooks_dst/$hook_name"
+        chmod +x "$hooks_dst/$hook_name"
+    end
+    echo "Installed git hooks"
+end
+
 function proj --description "Project management: clone repos, cd into projects"
     if not set -q PROJECTS_DIR
         echo "PROJECTS_DIR is not set. Run make work / make personal to configure."
@@ -9,10 +26,13 @@ function proj --description "Project management: clone repos, cd into projects"
         echo "  proj clone <url>   — clone repo into base/ directory"
         echo "  proj new <name>    — create empty project with git init"
         echo "  proj convert <name>— convert old-style layout to base/ structure"
+        echo "  proj hooks         — install git hooks to current project"
         echo "  proj ls            — list projects"
         echo "  proj <name>        — cd into project directory"
         echo ""
         echo "  proj wt add <branch> [--from base] — create worktree"
+        echo "  proj wt sync                       — merge upstream into current worktree"
+        echo "  proj wt push                       — push current branch to origin"
         echo "  proj wt ls                         — list worktrees"
         echo "  proj wt rm <name>                  — remove worktree"
         echo "  proj wt <name>                     — cd to worktree"
@@ -56,6 +76,9 @@ function proj --description "Project management: clone repos, cd into projects"
                 return 1
             end
 
+            # Install git hooks
+            __proj_install_hooks "$base_dir"
+
             echo "Ready: $base_dir"
             cd "$base_dir"
 
@@ -84,6 +107,10 @@ function proj --description "Project management: clone repos, cd into projects"
 
             mkdir -p "$base_dir"
             git init "$base_dir"
+
+            # Install git hooks
+            __proj_install_hooks "$base_dir"
+
             echo "Created: $base_dir"
             cd "$base_dir"
 
@@ -152,6 +179,24 @@ function proj --description "Project management: clone repos, cd into projects"
             end
             cd "$project_dir/base"
 
+        case hooks
+            # Install hooks to current project — detect from PWD
+            set -l rel (string replace "$PROJECTS_DIR/" '' -- $PWD)
+            if test "$rel" = "$PWD"
+                echo "Not inside PROJECTS_DIR ($PROJECTS_DIR)"
+                return 2
+            end
+            set -l project (string split '/' -- $rel)[1]
+            set -l project_dir "$PROJECTS_DIR/$project"
+            set -l base_dir "$project_dir/base"
+
+            if not test -d "$base_dir/.git"
+                echo "Base repo not found: $base_dir"
+                return 2
+            end
+
+            __proj_install_hooks "$base_dir"
+
         case wt
             # Worktree management — detect project from PWD
             set -l rel (string replace "$PROJECTS_DIR/" '' -- $PWD)
@@ -171,7 +216,9 @@ function proj --description "Project management: clone repos, cd into projects"
 
             if test (count $argv) -lt 1
                 echo "Usage:"
-                echo "  proj wt add <branch> [--from base] — create worktree"
+                echo "  proj wt add <branch> [--from base] — create worktree (tracks remote if exists)"
+                echo "  proj wt sync                       — merge upstream into current worktree"
+                echo "  proj wt push                       — push current branch to origin"
                 echo "  proj wt ls                         — list worktrees"
                 echo "  proj wt rm <name>                  — remove worktree"
                 echo "  proj wt <name>                     — cd to worktree"
@@ -230,15 +277,64 @@ function proj --description "Project management: clone repos, cd into projects"
                         return 1
                     end
 
-                    # Check if branch already exists (local or remote tracking)
+                    # Check if branch already exists (local, remote, or create new)
                     if git -C "$base_dir" show-ref --verify --quiet "refs/heads/$branch"
+                        # Local branch exists
                         git -C "$base_dir" worktree add "$wt_path" "$branch"
+                    else if git -C "$base_dir" show-ref --verify --quiet "refs/remotes/origin/$branch"
+                        # Remote branch exists — create tracking branch
+                        git -C "$base_dir" fetch origin "$branch"
+                        git -C "$base_dir" worktree add --track -b "$branch" "$wt_path" "origin/$branch"
                     else
+                        # Neither exists — create new branch from base
                         git -C "$base_dir" worktree add -b "$branch" "$wt_path" "$base_branch"
                     end
 
                     and echo "Ready: $wt_path"
                     and cd "$wt_path"
+
+                case sync
+                    # Must be inside a worktree (not base/)
+                    set -l current_rel (string replace "$project_dir/" '' -- $PWD)
+                    if test "$current_rel" = "base" -o "$current_rel" = "$PWD"
+                        echo "Run this from inside a worktree, not base/"
+                        return 2
+                    end
+
+                    # Detect upstream from base's current branch
+                    set -l upstream (git -C "$base_dir" branch --show-current)
+                    if test -z "$upstream"
+                        echo "Cannot detect upstream branch (base/ is in detached HEAD?)"
+                        return 1
+                    end
+
+                    # Fetch and merge
+                    echo "Fetching origin/$upstream..."
+                    if not git -C "$base_dir" fetch origin "$upstream"
+                        echo "Fetch failed"
+                        return 1
+                    end
+
+                    echo "Merging origin/$upstream into current branch..."
+                    git merge "origin/$upstream" --no-edit
+                    # Let git merge report success/conflict
+
+                case push
+                    # Must be inside a worktree (not base/)
+                    set -l current_rel (string replace "$project_dir/" '' -- $PWD)
+                    if test "$current_rel" = "base" -o "$current_rel" = "$PWD"
+                        echo "Run this from inside a worktree, not base/"
+                        return 2
+                    end
+
+                    set -l current_branch (git branch --show-current)
+                    if test -z "$current_branch"
+                        echo "Not on a branch (detached HEAD?)"
+                        return 1
+                    end
+
+                    echo "Pushing $current_branch to origin..."
+                    git push -u origin "$current_branch"
 
                 case ls
                     git -C "$base_dir" worktree list

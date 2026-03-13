@@ -41,16 +41,17 @@ function __proj_seen_wt
     test (count $cmd) -ge 2; and test "$cmd[2]" = wt
 end
 
-# Helper: check if we're completing after "proj wt add/rm/ls"
+# Helper: check if we're completing after "proj wt add/rm/ls/sync/push"
 function __proj_seen_wt_subcommand
     set -l cmd (commandline -opc)
-    test (count $cmd) -ge 3; and test "$cmd[2]" = wt; and contains -- "$cmd[3]" add rm ls
+    test (count $cmd) -ge 3; and test "$cmd[2]" = wt; and contains -- "$cmd[3]" add rm ls sync push
 end
 
 # Subcommands
 complete -c proj -n '__fish_use_subcommand' -a clone -d 'Clone a repo into base/'
 complete -c proj -n '__fish_use_subcommand' -a new -d 'Create empty project with git init'
 complete -c proj -n '__fish_use_subcommand' -a convert -d 'Convert old-style to base/ layout'
+complete -c proj -n '__fish_use_subcommand' -a hooks -d 'Install git hooks to current project'
 complete -c proj -n '__fish_use_subcommand' -a ls -d 'List projects'
 complete -c proj -n '__fish_use_subcommand' -a wt -d 'Worktree management'
 
@@ -58,7 +59,9 @@ complete -c proj -n '__fish_use_subcommand' -a wt -d 'Worktree management'
 complete -c proj -n '__fish_use_subcommand' -a '(set -q PROJECTS_DIR; and test -d "$PROJECTS_DIR"; and for d in $PROJECTS_DIR/*/; basename $d; end)'
 
 # proj wt subcommands
-complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a add -d 'Create worktree'
+complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a add -d 'Create worktree (tracks remote if exists)'
+complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a sync -d 'Merge upstream into current worktree'
+complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a push -d 'Push current branch to origin'
 complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a ls -d 'List worktrees'
 complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a rm -d 'Remove worktree'
 

@@ -86,13 +86,43 @@ Lint error reported
 
 ## Hook Enforcement Chain
 
-Three hooks enforce lint discipline automatically:
+Five hooks enforce lint and type discipline automatically:
 
-1. **`pre-edit-lint-guard`** (PreToolUse) — **BLOCKS** edits that add suppression directives (`exit 2`). The edit is rejected before it happens.
-2. **`post-edit-lint`** (PostToolUse) — Runs linter after every edit, outputs results via `additionalContext` (visible in your next turn). You MUST address reported issues.
-3. **`stop-lint-gate`** (Stop) — Runs linters on all git-modified files before task completion. If any file has lint issues, you cannot finish — you'll be forced to continue and fix them.
+1. **`pre-edit-lint-guard`** (PreToolUse) — **BLOCKS** edits that add suppression directives OR lazy typing patterns (`Any`, `any`, `interface{}`). The edit is rejected before it happens.
+2. **`pre-bash-suppression-guard`** (PreToolUse:Bash) — **BLOCKS** Bash commands that write suppression directives to files via sed/echo/perl/etc.
+3. **`post-edit-lint`** (PostToolUse, **synchronous**) — Runs linter after every edit, outputs results via `additionalContext`. You MUST address reported issues before proceeding.
+4. **`post-edit-typecheck`** (PostToolUse, async) — Runs type checker (tsc for TS, mypy for Python) after edits.
+5. **`stop-lint-gate`** (Stop) — Runs linters AND type checkers on all git-modified files before task completion. If any file has lint or type issues, you cannot finish.
 
-**You cannot bypass this chain.** Suppression directives are blocked at write time. Lint results are visible (not hidden in stderr). Task completion is gated on clean lint.
+**You cannot bypass this chain.** Suppression directives and lazy types are blocked at write time. Bash bypass is guarded. Lint results are synchronous (not hidden). Task completion is gated on clean lint AND clean types.
+
+## Lazy Typing — Blocked Patterns
+
+The `pre-edit-lint-guard` hook blocks lazy typing patterns at write time. These are treated the same as suppression directives — you must use proper types.
+
+### Python — Never Use `Any`
+
+| Blocked | Use Instead |
+|---------|-------------|
+| `from typing import Any` | Import specific types |
+| `: Any` | `: str`, `: int`, `: dict[str, X]`, `: Protocol` |
+| `-> Any` | `-> SpecificType`, overloads for multiple returns |
+
+If you genuinely need dynamic typing (e.g., third-party API returning untyped data), ask the user for approval. Prefer `object` or a `Protocol` over `Any`.
+
+### TypeScript — Never Use `any`
+
+| Blocked | Use Instead |
+|---------|-------------|
+| `: any` | `: unknown` + type guard, or specific type/interface |
+| `as any` | `as SpecificType`, fix the type mismatch |
+| `<any>` | `<SpecificType>` generic parameter |
+
+### Go — Never Use `interface{}`
+
+| Blocked | Use Instead |
+|---------|-------------|
+| `interface{}` | `any` (Go 1.18+) for genuine dynamic, or a concrete type/interface |
 
 ## Common Fixes (Instead of Suppressing)
 
@@ -105,3 +135,48 @@ Three hooks enforce lint discipline automatically:
 | too many arguments | suppress complexity lint | Extract a config/options struct |
 | line too long | `# noqa: E501` | Break the line, extract variables |
 | missing return type | suppress | Add the return type annotation |
+
+## Recommended Project-Level Linter Config
+
+Configure your project linters to catch lazy patterns at the tool level:
+
+### Python (`pyproject.toml`)
+
+```toml
+[tool.ruff.lint]
+extend-select = ["ANN"]  # flake8-annotations
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = false
+suppress-none-returning = true
+
+[tool.mypy]
+strict = true
+disallow_any_explicit = true
+disallow_any_generics = true
+```
+
+### TypeScript (`eslint.config.js` / `.eslintrc`)
+
+```json
+{
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-return": "error"
+  }
+}
+```
+
+### Go (`.golangci.yml`)
+
+```yaml
+linters-settings:
+  govet:
+    check-shadowing: true
+  revive:
+    rules:
+      - name: empty-block
+```
+
+These rules make the linter catch what the hooks also catch — defense in depth.

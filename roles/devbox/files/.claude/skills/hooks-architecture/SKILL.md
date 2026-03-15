@@ -279,7 +279,7 @@ Multiple hooks can run for one event (executed in order).
       "hooks": [
         {"command": "post-edit-format", "async": true},
         {"command": "post-edit-typecheck", "async": true},
-        {"command": "post-edit-lint", "async": true}
+        {"command": "post-edit-lint"}
       ]
     }
   ]

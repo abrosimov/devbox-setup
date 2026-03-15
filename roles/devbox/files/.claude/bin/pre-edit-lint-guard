@@ -1,15 +1,20 @@
 #!/usr/bin/env node
 
 // pre-edit-lint-guard — PreToolUse hook that detects lint suppression directives
-// being added via Edit or Write tools.
+// and lazy typing patterns being added via Edit or Write tools.
 //
-// Scans new_string (Edit) or content (Write) for suppression patterns:
+// Layer 1 — Suppression directives (all languages):
 //   Go:         //nolint, // nolint
 //   Python:     # noqa, # type: ignore
 //   TypeScript: @ts-ignore, @ts-expect-error, eslint-disable
 //
+// Layer 2 — Lazy typing patterns (language-aware via file extension):
+//   Python:     from typing import Any, : Any, -> Any
+//   TypeScript: : any, as any, <any>
+//   Go:         interface{}
+//
 // BLOCKS the edit (exit 2) unless the old_string already contained the
-// directive (i.e., the agent is not introducing a new suppression).
+// pattern (i.e., the agent is not introducing a new one).
 //
 // Event: PreToolUse (matcher: Edit, Write)
 
@@ -73,20 +78,26 @@ async function main() {
     process.exit(0);
   }
 
-  const findings = [];
+  // Determine file extension for language-aware checks
+  const filePath = toolInput.file_path || "";
+  const ext = filePath ? filePath.split(".").pop().toLowerCase() : "";
+
+  // --- Layer 1: Suppression directives (all files) ---
+  const suppressionFindings = [];
 
   for (const pattern of SUPPRESSION_PATTERNS) {
     if (pattern.regex.test(textToCheck)) {
-      // For Edit: skip if old_string already had this directive (not a new addition)
       if (toolName === "Edit" && pattern.regex.test(oldText)) {
         continue;
       }
-      findings.push(pattern);
+      suppressionFindings.push(pattern);
     }
   }
 
-  if (findings.length > 0) {
-    const directives = findings.map((f) => `${f.directive} (${f.lang})`).join(", ");
+  if (suppressionFindings.length > 0) {
+    const directives = suppressionFindings
+      .map((f) => `${f.directive} (${f.lang})`)
+      .join(", ");
     process.stderr.write(
       `BLOCKED: Lint suppression directive detected: ${directives}. ` +
         `Fix the underlying lint issue instead of suppressing it. ` +
@@ -94,6 +105,83 @@ async function main() {
         `Fix hierarchy: fix code → refactor → ask user → suppress (with approval only).\n`
     );
     process.exit(2);
+  }
+
+  // --- Layer 2: Lazy typing patterns (language-aware) ---
+  const LAZY_TYPE_PATTERNS = {
+    py: [
+      {
+        regex: /from\s+typing\s+import\s+(?:[^#\n]*,\s*)?Any(?:\s*,|\s*$|\s*\))/m,
+        directive: "from typing import Any",
+        fix: "Import and use specific types (str, int, dict[str, X], Protocol, etc.)",
+      },
+      {
+        regex: /:\s*Any\b/,
+        directive: ": Any",
+        fix: "Use a specific type annotation. If truly dynamic, use object or a Protocol.",
+      },
+      {
+        regex: /->\s*Any\b/,
+        directive: "-> Any",
+        fix: "Specify the actual return type. Use overloads for multiple return types.",
+      },
+    ],
+    ts: [
+      {
+        regex: /:\s*any\b(?!\s*\[)/,
+        directive: ": any",
+        fix: "Use unknown + type guard, or a specific type/interface.",
+      },
+      {
+        regex: /\bas\s+any\b/,
+        directive: "as any",
+        fix: "Use a proper type assertion (as SpecificType) or fix the type mismatch.",
+      },
+      {
+        regex: /<any\s*>/,
+        directive: "<any>",
+        fix: "Use a specific generic type parameter.",
+      },
+    ],
+    tsx: "ts", // same rules as .ts
+    go: [
+      {
+        regex: /interface\s*\{\s*\}/,
+        directive: "interface{}",
+        fix: "Use the 'any' builtin (Go 1.18+) or preferably a concrete type/interface.",
+      },
+    ],
+  };
+
+  // Resolve alias (tsx -> ts)
+  let langPatterns = LAZY_TYPE_PATTERNS[ext];
+  if (typeof langPatterns === "string") {
+    langPatterns = LAZY_TYPE_PATTERNS[langPatterns];
+  }
+
+  if (langPatterns) {
+    const typeFindings = [];
+
+    for (const pattern of langPatterns) {
+      if (pattern.regex.test(textToCheck)) {
+        if (toolName === "Edit" && pattern.regex.test(oldText)) {
+          continue;
+        }
+        typeFindings.push(pattern);
+      }
+    }
+
+    if (typeFindings.length > 0) {
+      const details = typeFindings
+        .map((f) => `  • ${f.directive} → ${f.fix}`)
+        .join("\n");
+      process.stderr.write(
+        `BLOCKED: Lazy typing pattern detected:\n${details}\n` +
+          `Use proper types instead of Any/any. ` +
+          `If this is genuinely needed for interop or dynamic data, ask the user for approval.\n`
+      );
+      process.exit(2);
+    }
   }
 
   process.exit(0);

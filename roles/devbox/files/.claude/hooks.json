@@ -38,6 +38,10 @@
           },
           {
             "type": "command",
+            "command": "case \"$CC_BASH_COMMAND\" in *noqa*|*nolint*|*ts-ignore*|*ts-expect-error*|*eslint-disable*|*type:\\ ignore*|*SuppressWarnings*) case \"$CC_BASH_COMMAND\" in *sed*|*echo*|*printf*|*cat*|*tee*|*perl*|*python*|*ruby*|*awk*) echo 'BLOCKED: Detected Bash command that writes lint suppression directives to files. Use Edit tool instead, and fix the underlying issue rather than suppressing it.' >&2; exit 2;; esac;; esac"
+          },
+          {
+            "type": "command",
             "command": "~/.claude/bin/pre-bash-boundary-wrap"
           }
         ]
@@ -109,8 +113,7 @@
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-lint",
-            "async": true
+            "command": "~/.claude/bin/post-edit-lint"
           },
           {
             "type": "command",
@@ -129,8 +132,7 @@
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-lint",
-            "async": true
+            "command": "~/.claude/bin/post-edit-lint"
           },
           {
             "type": "command",

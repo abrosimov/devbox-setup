@@ -141,6 +141,48 @@ function lintFile(filePath) {
   return null;
 }
 
+function typecheckFile(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+
+  const ext = path.extname(filePath).toLowerCase();
+  const fileName = path.basename(filePath);
+
+  if (ext === ".py") {
+    const projRoot = findProjectRoot(filePath, [
+      "pyproject.toml",
+      "mypy.ini",
+      ".mypy.ini",
+      "setup.cfg",
+    ]);
+    if (!projRoot) return null;
+
+    const useUv = fs.existsSync(path.join(projRoot, "uv.lock"));
+    const mypyCmd = useUv ? "uv run mypy" : "mypy";
+    const result = run(`${mypyCmd} "${filePath}" 2>&1`, { cwd: projRoot });
+    if (!result.success && result.stdout) {
+      const lines = result.stdout
+        .split("\n")
+        .filter((l) => l.includes(": error:"));
+      if (lines.length > 0) return `mypy:\n${lines.join("\n")}`;
+    }
+  }
+
+  if (ext === ".ts" || ext === ".tsx") {
+    const projRoot = findProjectRoot(filePath, ["tsconfig.json"]);
+    if (!projRoot) return null;
+
+    const result = run("npx tsc --noEmit 2>&1", { cwd: projRoot });
+    if (!result.success && result.stdout) {
+      const lines = result.stdout
+        .split("\n")
+        .filter((l) => l.includes(fileName) && l.includes("error"));
+      if (lines.length > 0) return `tsc:\n${lines.join("\n")}`;
+    }
+  }
+
+  return null;
+}
+
 // Extensions we know how to lint
 const LINTABLE_EXTS = new Set([
   ".go",
@@ -207,6 +249,10 @@ async function main() {
     const result = lintFile(filePath);
     if (result) {
       issues.push(`${path.basename(filePath)}:\n${result}`);
+    }
+    const typeResult = typecheckFile(filePath);
+    if (typeResult) {
+      issues.push(`${path.basename(filePath)}:\n${typeResult}`);
     }
   }
 

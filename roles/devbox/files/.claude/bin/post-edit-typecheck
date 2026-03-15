@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
-// post-edit-typecheck — PostToolUse hook that runs TypeScript type checking
-// after .ts/.tsx file edits, filtered to show only errors in the edited file.
+// post-edit-typecheck — PostToolUse hook that runs type checking after edits.
+//
+// Language detection by file extension:
+//   .ts/.tsx  → tsc --noEmit (filtered to edited file)
+//   .py       → mypy (via uv run mypy in uv projects)
 //
 // Event: PostToolUse (matcher: Edit, Write)
 // Runs async. Reports errors via additionalContext.
@@ -10,6 +13,21 @@ require("./env-setup");
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+
+function findProjectRoot(filePath, markerFiles) {
+  let dir = path.dirname(filePath);
+  for (let i = 0; i < 20; i++) {
+    for (const marker of markerFiles) {
+      if (fs.existsSync(path.join(dir, marker))) {
+        return dir;
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
 
 function findTsConfig(filePath) {
   let dir = path.dirname(filePath);
@@ -42,62 +60,98 @@ async function main() {
     process.exit(0);
   }
 
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext !== ".ts" && ext !== ".tsx") {
-    process.exit(0);
-  }
-
   if (!fs.existsSync(filePath)) {
     process.exit(0);
   }
 
-  const tsconfigDir = findTsConfig(filePath);
-  if (!tsconfigDir) {
-    process.exit(0);
-  }
-
-  let tscOutput;
-  try {
-    execSync("npx tsc --noEmit 2>&1", {
-      encoding: "utf8",
-      timeout: 30000,
-      cwd: tsconfigDir,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    // No errors — clean exit
-    process.exit(0);
-  } catch (e) {
-    tscOutput = (e.stdout || "") + (e.stderr || "");
-  }
-
-  if (!tscOutput || !tscOutput.trim()) {
-    process.exit(0);
-  }
-
-  // Filter errors to only those in the edited file
+  const ext = path.extname(filePath).toLowerCase();
   const basename = path.basename(filePath);
-  const relPath = path.relative(tsconfigDir, filePath);
 
-  const candidates = [basename, relPath, filePath];
-  const lines = tscOutput.split("\n");
-  const relevant = [];
-
-  for (const line of lines) {
-    if (candidates.some((c) => line.includes(c))) {
-      relevant.push(line.trim());
+  // --- TypeScript ---
+  if (ext === ".ts" || ext === ".tsx") {
+    const tsconfigDir = findTsConfig(filePath);
+    if (!tsconfigDir) {
+      process.exit(0);
     }
-  }
 
-  if (relevant.length === 0) {
+    let tscOutput;
+    try {
+      execSync("npx tsc --noEmit 2>&1", {
+        encoding: "utf8",
+        timeout: 30000,
+        cwd: tsconfigDir,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      process.exit(0);
+    } catch (e) {
+      tscOutput = (e.stdout || "") + (e.stderr || "");
+    }
+
+    if (!tscOutput || !tscOutput.trim()) {
+      process.exit(0);
+    }
+
+    const relPath = path.relative(tsconfigDir, filePath);
+    const candidates = [basename, relPath, filePath];
+    const lines = tscOutput.split("\n");
+    const relevant = [];
+
+    for (const line of lines) {
+      if (candidates.some((c) => line.includes(c))) {
+        relevant.push(line.trim());
+      }
+    }
+
+    if (relevant.length > 0) {
+      const shown = relevant.slice(0, 10);
+      const output = {
+        additionalContext: `[typecheck] TypeScript errors in ${basename}:\n${shown.join("\n")}${relevant.length > 10 ? `\n... and ${relevant.length - 10} more` : ""}`,
+      };
+      process.stdout.write(JSON.stringify(output));
+    }
     process.exit(0);
   }
 
-  // Report max 10 relevant errors
-  const shown = relevant.slice(0, 10);
-  const output = {
-    additionalContext: `[typecheck] TypeScript errors in ${basename}:\n${shown.join("\n")}${relevant.length > 10 ? `\n... and ${relevant.length - 10} more` : ""}`,
-  };
-  process.stdout.write(JSON.stringify(output));
+  // --- Python ---
+  if (ext === ".py") {
+    const projRoot = findProjectRoot(filePath, ["pyproject.toml", "mypy.ini", ".mypy.ini", "setup.cfg"]);
+    if (!projRoot) {
+      process.exit(0);
+    }
+
+    // Determine if this is a uv project (use uv run mypy) or bare mypy
+    const useUv = fs.existsSync(path.join(projRoot, "uv.lock"));
+    const mypyCmd = useUv ? "uv run mypy" : "mypy";
+
+    let mypyOutput;
+    try {
+      execSync(`${mypyCmd} "${filePath}" 2>&1`, {
+        encoding: "utf8",
+        timeout: 30000,
+        cwd: projRoot,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      process.exit(0);
+    } catch (e) {
+      mypyOutput = (e.stdout || "") + (e.stderr || "");
+    }
+
+    if (!mypyOutput || !mypyOutput.trim()) {
+      process.exit(0);
+    }
+
+    // Filter to errors (not notes/hints)
+    const lines = mypyOutput.split("\n").filter((l) => l.includes(": error:"));
+    if (lines.length > 0) {
+      const shown = lines.slice(0, 10);
+      const output = {
+        additionalContext: `[typecheck] mypy errors in ${basename}:\n${shown.join("\n")}${lines.length > 10 ? `\n... and ${lines.length - 10} more` : ""}\nFix type errors — use proper types instead of Any.`,
+      };
+      process.stdout.write(JSON.stringify(output));
+    }
+    process.exit(0);
+  }
+
   process.exit(0);
 }
 

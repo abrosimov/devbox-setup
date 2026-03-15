@@ -190,8 +190,7 @@
 
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
-      "Read(~/.gnupg/**)",
-      "Read(~/.config/gh/hosts.yml)"
+      "Read(~/.gnupg/**)"
     ],
     "allow": [
       "Task",

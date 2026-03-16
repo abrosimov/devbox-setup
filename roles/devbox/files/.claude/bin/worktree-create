@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# WorktreeCreate hook — delegates worktree creation to proj wt.
+# Receives JSON on stdin from Claude Code, prints absolute worktree path to stdout.
+#
+# Falls back to raw git worktree for repos not managed by proj.
+
+INPUT=$(cat)
+NAME=$(echo "$INPUT" | jq -r .name)
+
+# Try proj wt first (works when CWD is inside $PROJECTS_DIR/<project>/...)
+if output=$(fish -c "proj wt add '$NAME'" 2>&1); then
+  echo "$output" >&2
+  wt_path=$(echo "$output" | grep '^Ready: ' | sed 's/^Ready: //')
+  if [[ -n "$wt_path" ]]; then
+    echo "$wt_path"
+    exit 0
+  fi
+fi
+
+# Fallback: raw git worktree for non-proj repos
+root=$(git rev-parse --show-toplevel)
+project=$(basename "$root")
+default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||') || default_branch=main
+wt_dir="$(dirname "$root")/${project}-wt/${NAME}"
+mkdir -p "$(dirname "$wt_dir")"
+git worktree add -b "$NAME" "$wt_dir" "$default_branch" >&2
+
+# Claude extras for fallback path
+if [[ -f .claude/settings.local.json ]]; then
+  mkdir -p "$wt_dir/.claude"
+  cp .claude/settings.local.json "$wt_dir/.claude/"
+fi
+if [[ -d .claude/memory ]]; then
+  mkdir -p "$wt_dir/.claude"
+  ln -sf "$(cd .claude/memory && pwd)" "$wt_dir/.claude/memory"
+fi
+
+wt_abs=$(cd "$wt_dir" && pwd)
+echo "Fallback worktree created: $wt_abs" >&2
+echo "$wt_abs"

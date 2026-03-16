@@ -106,6 +106,7 @@ These are enforced by `alwaysApply: true` skills. Brief reminders:
 - **Agent delegation**: Use specialised agents for code changes when workflow is enabled (see `workflow` skill)
 - **Code navigation**: Grep/Glob discover files and text. LSP understands code. After locating a file, use LSP (`goToDefinition`, `findReferences`, `hover`, `documentSymbol`) instead of reading the whole file. Never use Grep to find function definitions — use `workspaceSymbol`. Before any refactor: `findReferences` first. After any edit: check LSP diagnostics. (see `lsp-navigation` + `lsp-tools` skills)
 - **Structural search**: For AST pattern matching (find all functions without error handling, structural refactoring), use `ast-grep` via Bash (see `ast-grep` skill)
+- **Worktrees**: Never use `EnterWorktree` directly. For worktree creation, run `proj wt add <branch>` via Bash (or `claude --worktree` from CLI, which delegates via hook). Layout: `$PROJECTS_DIR/<project>/<branch>/` (sibling of `base/`). See `workflow` skill for details.
 
 ---
 

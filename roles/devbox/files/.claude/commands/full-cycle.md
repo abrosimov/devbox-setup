@@ -621,7 +621,7 @@ If push/PR succeeds:
 > Next steps:
 > - Review the PR in GitHub
 > - Delete feature branch after merge: `git branch -d $BRANCH`
-> - Clean up worktree: `claude-wt rm $BRANCH` (if using worktrees)
+> - Clean up worktree: `proj wt rm $BRANCH` (if using worktrees)
 
 ## User Commands (Available at Any Gate)
 

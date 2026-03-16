@@ -353,7 +353,7 @@ One Jira ticket can span multiple branches/worktrees:
 
 | Script | Purpose | Called By |
 |--------|---------|----------|
-| `.claude/bin/git-default-branch` | Detect project's default branch | Commands, `claude-wt` |
+| `.claude/bin/git-default-branch` | Detect project's default branch | Commands, `proj wt` |
 | `.claude/bin/git-safe-commit` | Commit with branch protection + secret detection | Commands |
 | `.claude/bin/git-safe-merge` | ff-only merge with dependency check (opt-in integration branch) | User (manual) |
 
@@ -376,34 +376,37 @@ Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 
 ## Worktree Parallelism
 
-For working on multiple tasks simultaneously, use git worktrees via `claude-wt`:
+For working on multiple tasks simultaneously, use git worktrees via `proj wt`:
 
 ```bash
-claude-wt new PROJ-123_backend                       # branch from default branch
-claude-wt new PROJ-123_frontend --from PROJ-123_backend  # chain from another branch
-claude-wt list --ticket PROJ-123                     # see all worktrees for a ticket
-claude-wt status                                     # show all with PR status
-claude-wt rm PROJ-123_backend                        # remove after merge
-claude-wt clean                                      # prune all merged worktrees
+proj wt add PROJ-123_backend                          # branch from default branch
+proj wt add PROJ-123_frontend --from PROJ-123_backend  # chain from another branch
+proj wt ls                                             # list worktrees
+proj wt status                                         # show all with PR status
+proj wt rm PROJ-123_backend                            # remove after merge
+proj wt clean                                          # prune all merged worktrees
 ```
 
-Directory layout: `../<project>-wt/<branch-name>/`
+Directory layout: `$PROJECTS_DIR/<project>/<branch-name>/` (sibling of `base/`)
 
-Each worktree gets its own Claude Code session. `claude-wt` automatically:
-- Copies `settings.local.json` to the worktree
-- Symlinks downstream memory for shared knowledge
+Each worktree gets its own Claude Code session. `proj wt add` automatically:
+- Copies `.claude/settings.local.json` to the worktree
+- Symlinks `.claude/memory/` for shared downstream knowledge
 - Creates the branch from the default branch (or specified base via `--from`)
+- Tracks existing remote branches when available
+
+The `WorktreeCreate` hook in `hooks.json` delegates to `proj wt`, so `claude --worktree <name>` also follows this layout.
 
 ### Parallel Workflow Example
 
 ```
 Terminal 1:                          Terminal 2:
-claude-wt new PROJ-123_backend       claude-wt new PROJ-123_frontend
-claude --cwd ../project-wt/...       claude --cwd ../project-wt/...
+proj wt add PROJ-123_backend        proj wt add PROJ-123_frontend
+claude --cwd $PROJECTS_DIR/p/...    claude --cwd $PROJECTS_DIR/p/...
 > /implement backend API              > /implement frontend dashboard
 > /test                               > /test
 > /review → 'pr'                      > /review → 'pr'
-claude-wt rm PROJ-123_backend         claude-wt rm PROJ-123_frontend
+proj wt rm PROJ-123_backend          proj wt rm PROJ-123_frontend
 ```
 
 ## Configuration

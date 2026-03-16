@@ -34,7 +34,9 @@ function proj --description "Project management: clone repos, cd into projects"
         echo "  proj wt sync                       — merge upstream into current worktree"
         echo "  proj wt push                       — push current branch to origin"
         echo "  proj wt ls                         — list worktrees"
+        echo "  proj wt status                     — show worktrees with PR status"
         echo "  proj wt rm <name>                  — remove worktree"
+        echo "  proj wt clean                      — remove all fully-merged worktrees"
         echo "  proj wt <name>                     — cd to worktree"
         return 2
     end
@@ -220,7 +222,9 @@ function proj --description "Project management: clone repos, cd into projects"
                 echo "  proj wt sync                       — merge upstream into current worktree"
                 echo "  proj wt push                       — push current branch to origin"
                 echo "  proj wt ls                         — list worktrees"
+                echo "  proj wt status                     — show worktrees with PR status"
                 echo "  proj wt rm <name>                  — remove worktree"
+                echo "  proj wt clean                      — remove all fully-merged worktrees"
                 echo "  proj wt <name>                     — cd to worktree"
                 return 2
             end
@@ -291,6 +295,19 @@ function proj --description "Project management: clone repos, cd into projects"
                     end
 
                     and echo "Ready: $wt_path"
+                    # Claude Code extras (settings.local.json + memory symlink)
+                    if test -d "$base_dir/.claude"
+                        if test -f "$base_dir/.claude/settings.local.json"
+                            mkdir -p "$wt_path/.claude"
+                            cp "$base_dir/.claude/settings.local.json" "$wt_path/.claude/"
+                            echo "Copied .claude/settings.local.json"
+                        end
+                        if test -d "$base_dir/.claude/memory"
+                            mkdir -p "$wt_path/.claude"
+                            ln -sf (realpath "$base_dir/.claude/memory") "$wt_path/.claude/memory"
+                            echo "Linked .claude/memory"
+                        end
+                    end
                     and cd "$wt_path"
 
                 case sync
@@ -359,6 +376,60 @@ function proj --description "Project management: clone repos, cd into projects"
                     end
 
                     git -C "$base_dir" worktree remove "$wt_path"
+
+                case status
+                    set -l default_branch
+                    set -l head_ref (git -C "$base_dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
+                    if test -n "$head_ref"
+                        set default_branch (string replace 'refs/remotes/origin/' '' -- $head_ref)
+                    else if git -C "$base_dir" show-ref --verify --quiet refs/remotes/origin/main
+                        set default_branch main
+                    else if git -C "$base_dir" show-ref --verify --quiet refs/remotes/origin/master
+                        set default_branch master
+                    else
+                        set default_branch (git -C "$base_dir" branch --show-current)
+                    end
+
+                    printf "%-50s %-30s %s\n" "WORKTREE" "BRANCH" "STATUS"
+                    printf "%-50s %-30s %s\n" "--------" "------" "------"
+
+                    for line in (git -C "$base_dir" worktree list)
+                        set -l wt (echo $line | awk '{print $1}')
+                        set -l br (git -C "$wt" branch --show-current 2>/dev/null; or echo "(detached)")
+                        set -l label
+
+                        if test "$wt" = "$base_dir"
+                            set label "(base)"
+                        else
+                            set -l ahead (git -C "$base_dir" rev-list --count "$default_branch".."$br" 2>/dev/null; or echo "?")
+                            set -l pr_state (gh pr view "$br" --json state --jq .state 2>/dev/null; or echo "no PR")
+                            set label "+$ahead commits | PR: $pr_state"
+                        end
+
+                        printf "%-50s %-30s %s\n" "$wt" "$br" "$label"
+                    end
+
+                case clean
+                    echo "Cleaning merged worktrees..."
+                    set -l removed 0
+
+                    for line in (git -C "$base_dir" worktree list | tail -n +2)
+                        set -l wt (echo $line | awk '{print $1}')
+                        test "$wt" = "$base_dir"; and continue
+
+                        set -l br (git -C "$wt" branch --show-current 2>/dev/null)
+                        test -z "$br"; and continue
+
+                        if git -C "$base_dir" branch --merged 2>/dev/null | grep -q "^[[:space:]]*$br\$"
+                            echo "  Removing: $wt ($br)"
+                            git -C "$base_dir" worktree remove "$wt" 2>/dev/null; or true
+                            git -C "$base_dir" branch -d "$br" 2>/dev/null; or true
+                            set removed (math $removed + 1)
+                        end
+                    end
+
+                    git -C "$base_dir" worktree prune
+                    echo "Done. Removed $removed worktree(s)."
 
                 case '*'
                     # Bare name → cd to worktree directory

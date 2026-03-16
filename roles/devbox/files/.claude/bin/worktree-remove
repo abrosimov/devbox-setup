@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# WorktreeRemove hook — delegates worktree removal to proj wt.
+# Receives JSON on stdin from Claude Code.
+#
+# Falls back to raw git worktree remove for non-proj repos.
+
+INPUT=$(cat)
+WT_PATH=$(echo "$INPUT" | jq -r .worktree_path)
+NAME=$(basename "$WT_PATH")
+
+# Try proj wt rm first
+if fish -c "cd '$WT_PATH' && proj wt rm '$NAME'" >&2 2>&1; then
+  exit 0
+fi
+
+# Fallback: raw git worktree remove
+git worktree remove "$WT_PATH" >&2 2>/dev/null || rm -rf "$WT_PATH" >&2

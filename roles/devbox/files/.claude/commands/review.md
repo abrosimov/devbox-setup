@@ -128,4 +128,4 @@ EOF
 If push/PR succeeds:
 > PR created for `$BRANCH` against `$DEFAULT_BRANCH`.
 >
-> Cleanup: `claude-wt rm $BRANCH` (if using worktrees)
+> Cleanup: `proj wt rm $BRANCH` (if using worktrees)

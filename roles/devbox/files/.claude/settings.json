@@ -309,6 +309,8 @@
       "Bash(git worktree list)",
       "Bash(git commit *)",
 
+      "Bash(fish -c 'proj wt *')",
+
       "Bash(.claude/bin/*)",
 
       "Bash(find . *)",

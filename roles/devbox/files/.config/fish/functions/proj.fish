@@ -334,7 +334,7 @@ function proj --description "Project management: clone repos, cd into projects"
                     end
 
                     echo "Merging origin/$upstream into current branch..."
-                    git merge "origin/$upstream" --no-edit
+                    git merge "origin/$upstream" --no-edit --no-verify
                     # Let git merge report success/conflict
 
                 case push

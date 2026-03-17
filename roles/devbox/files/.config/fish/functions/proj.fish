@@ -12,6 +12,7 @@ function __proj_install_hooks --argument-names repo_dir
         cp "$hook" "$hooks_dst/$hook_name"
         chmod +x "$hooks_dst/$hook_name"
     end
+    git -C "$repo_dir" config core.hooksPath "$hooks_dst"
     echo "Installed git hooks"
 end
 

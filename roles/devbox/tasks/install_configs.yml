@@ -1,17 +1,39 @@
 ---
 # =============================================================================
-# Block 1: .claude subdirectories — rsync with --delete (stale file cleanup)
+# Block 1: .claude subdirectories — symlinks to repo (bidirectional editing)
 # =============================================================================
 
-- name: Deploy managed .claude subdirectories
-  ansible.posix.synchronize:
-    src: "{{ role_path }}/files/.claude/{{ item }}/"
-    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}/"
-    delete: true
-    recursive: true
-    checksum: true
-    rsync_opts:
-      - "--chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+- name: Ensure .claude directory exists
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude"
+    state: directory
+    mode: "0755"
+  tags: [configs, claude]
+
+- name: Check existing .claude subdirectory types
+  ansible.builtin.stat:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
+  loop: "{{ devbox_claude_managed_dirs }}"
+  loop_control:
+    label: ".claude/{{ item }}"
+  register: claude_dir_stats
+  tags: [configs, claude]
+
+- name: Remove real directories before symlinking (content is in repo)
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item.item }}"
+    state: absent
+  loop: "{{ claude_dir_stats.results }}"
+  loop_control:
+    label: ".claude/{{ item.item }}"
+  when: item.stat.exists and not item.stat.islnk
+  tags: [configs, claude]
+
+- name: Deploy managed .claude subdirectories as symlinks
+  ansible.builtin.file:
+    src: "{{ role_path }}/files/.claude/{{ item }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
+    state: link
   loop: "{{ devbox_claude_managed_dirs }}"
   loop_control:
     label: ".claude/{{ item }}"

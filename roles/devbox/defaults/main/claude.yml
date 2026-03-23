@@ -1,5 +1,5 @@
 ---
-# Managed .claude subdirectories deployed via rsync (--delete removes stale files).
+# Managed .claude subdirectories deployed as symlinks to the repo (bidirectional).
 # Root files (CLAUDE.md, settings.json, hooks.json, config.md) are copied separately.
 devbox_claude_managed_dirs:
   - agents

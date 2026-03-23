@@ -25,6 +25,7 @@ endif
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
        fixfish list-skills list-agents \
+       claude-diff claude-pull \
        test test-nvim test-fish test-json test-bash test-skill-evals
 
 help:
@@ -199,6 +200,32 @@ endif
 		--eval-set "$$trigger_file" \
 		--model $(MODEL) \
 		--verbose
+
+CLAUDE_ROOT_FILES := CLAUDE.md settings.json hooks.json config.md
+CLAUDE_SRC        := roles/devbox/files/.claude
+CLAUDE_DEST       := $(HOME)/.claude
+
+claude-diff:
+	@echo "=== Drift: deployed ~/.claude vs repo (root files only) ==="
+	@drift=0; \
+	for f in $(CLAUDE_ROOT_FILES); do \
+		if ! diff -q $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f >/dev/null 2>&1; then \
+			echo "  CHANGED: $$f"; drift=1; \
+		fi; \
+	done; \
+	[ $$drift -eq 0 ] && echo "  No drift detected." || echo "  Run 'make claude-pull' to back-propagate."
+
+claude-pull:
+	@echo "=== Pulling root files from ~/.claude to repo ==="
+	@for f in $(CLAUDE_ROOT_FILES); do \
+		if ! diff -q $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f >/dev/null 2>&1; then \
+			cp $(CLAUDE_DEST)/$$f $(CLAUDE_SRC)/$$f; \
+			echo "  PULLED: $$f"; \
+		else \
+			echo "  SKIP:   $$f (no changes)"; \
+		fi; \
+	done
+	@echo "Review with: git diff"
 
 test: test-json test-fish test-bash test-nvim test-skill-evals
 	@echo "All tests passed."

@@ -48,6 +48,10 @@ make fixfish          # upgrade fish, update plugins, apply tide config from def
 # Vault management
 make vault-init      # create and encrypt vault/devbox_ssh_config.yml
 
+# Claude config back-propagation (root files only — subdirs are symlinked)
+make claude-diff     # show drift between deployed ~/.claude and repo
+make claude-pull     # copy changed root files back from ~/.claude to repo
+
 # Claude Code config validation
 make validate-claude # validate agent/skill library cross-references
 make validate-skills # structural validation of skill evals (fast, CI-safe)
@@ -83,7 +87,7 @@ Everything lives in one role. No multi-role orchestration.
 
 Six deployment blocks, each using the most efficient method:
 
-1. **rsync `--delete`** — `.claude/` subdirs (agents, skills, etc.). Stale files removed automatically.
+1. **symlinks** — `.claude/` subdirs (agents, skills, etc.) symlinked to repo for bidirectional editing.
 2. **copy loop** — `.claude/` root files (CLAUDE.md, settings.json, hooks.json, config.md)
 3. **copy dir** — `kitty/`, `nvim/`, `fish/completions/`, `fish/functions/` as whole directories (no `--delete`, safe for local overlay)
 4. **copy loop** — individual files (fish/config.fish, conf.d/aliases.fish, README.md)
@@ -161,7 +165,7 @@ Use via `/devcontainer init` (Claude Code command) or `claude-devcontainer init`
 
 When working in `roles/devbox/files/.claude/` you are editing files that get deployed to `~/.claude/`. This is a distinct activity from editing the Ansible playbook itself:
 
-- **Agent/skill/command changes** don't need `make run` — test by copying files directly to `~/.claude/` or symlinking
+- **Agent/skill/command changes** don't need `make run` — subdirs are symlinked, so edits in the repo are live in `~/.claude/` immediately
 - **`settings.json` changes** affect sandbox permissions, network allowlists, and tool approvals globally
 - **`hooks.json` changes** define pre/post hooks for tool calls (scripts in `bin/`)
 - **`templates/` changes** affect devcontainer scaffolding for new projects

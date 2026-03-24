@@ -16,6 +16,90 @@ function __proj_install_hooks --argument-names repo_dir
     echo "Installed git hooks"
 end
 
+# Helper: copy git-ignored files to a new worktree
+# Uses .wtfiles manifest if present, otherwise prompts interactively
+function __proj_wt_copy_shared --argument-names base_dir wt_path
+    set -l manifest "$base_dir/.wtfiles"
+
+    if test -f "$manifest"
+        while read -l line
+            string match -qr '^\s*(#|$)' -- "$line"; and continue
+            set line (string trim -- "$line")
+
+            set -l verb copy
+            set -l fpath
+            if string match -qr '^(copy|link)\s+' -- "$line"
+                set verb (string match -r '^(copy|link)' -- "$line")[1]
+                set fpath (string replace -r '^(copy|link)\s+' '' -- "$line")
+            else
+                set fpath "$line"
+            end
+
+            if not test -e "$base_dir/$fpath"
+                echo "  .wtfiles: skip $fpath (not found)"
+                continue
+            end
+
+            mkdir -p (dirname "$wt_path/$fpath")
+
+            switch $verb
+                case copy
+                    cp -r "$base_dir/$fpath" "$wt_path/$fpath"
+                    echo "  Copied $fpath"
+                case link
+                    ln -sf (realpath "$base_dir/$fpath") "$wt_path/$fpath"
+                    echo "  Linked $fpath"
+            end
+        end <"$manifest"
+        return 0
+    end
+
+    # Fallback: scan for ignored files and prompt
+    set -l ignored (git -C "$base_dir" ls-files --others --ignored --exclude-standard 2>/dev/null)
+    test (count $ignored) -eq 0; and return 0
+
+    # Filter noise: build artifacts, caches, OS junk
+    set -l candidates
+    for f in $ignored
+        string match -qr '^(node_modules|vendor|dist|build|__pycache__|\.cache|target|\.next|\.nuxt|\.turbo|coverage)/' -- "$f"; and continue
+        string match -qr '\.(pyc|pyo|class|o|so|dylib)$' -- "$f"; and continue
+        string match -qr '(\.DS_Store|Thumbs\.db)$' -- "$f"; and continue
+        string match -qr '\.log$' -- "$f"; and continue
+        set -a candidates "$f"
+    end
+
+    test (count $candidates) -eq 0; and return 0
+
+    echo ""
+    echo "Git-ignored files in base/ that may be needed:"
+    for i in (seq (count $candidates))
+        printf "  %d. %s\n" $i "$candidates[$i]"
+    end
+    echo ""
+    read -P "Copy to worktree? [a=all / n=none / 1,3,...]: " answer
+
+    switch "$answer"
+        case '' n N no
+            return 0
+        case a A all
+            for f in $candidates
+                mkdir -p (dirname "$wt_path/$f")
+                cp -r "$base_dir/$f" "$wt_path/$f"
+                echo "  Copied $f"
+            end
+        case '*'
+            for idx in (string split ',' -- "$answer")
+                set idx (string trim -- "$idx")
+                if string match -qr '^\d+$' -- "$idx"; and test "$idx" -ge 1 -a "$idx" -le (count $candidates)
+                    set -l f "$candidates[$idx]"
+                    mkdir -p (dirname "$wt_path/$f")
+                    cp -r "$base_dir/$f" "$wt_path/$f"
+                    echo "  Copied $f"
+                end
+            end
+    end
+end
+
 function proj --description "Project management: clone repos, cd into projects"
     if not set -q PROJECTS_DIR
         echo "PROJECTS_DIR is not set. Run make work / make personal to configure."
@@ -39,6 +123,11 @@ function proj --description "Project management: clone repos, cd into projects"
         echo "  proj wt rm <name>                  — remove worktree"
         echo "  proj wt clean                      — remove all fully-merged worktrees"
         echo "  proj wt <name>                     — cd to worktree"
+        echo ""
+        echo "  .wtfiles in repo root: list files to copy/link into new worktrees"
+        echo "    .env               — copy (default)"
+        echo "    copy config/local  — explicit copy"
+        echo "    link data/fixtures — symlink"
         return 2
     end
 
@@ -309,6 +398,8 @@ function proj --description "Project management: clone repos, cd into projects"
                             echo "Linked .claude/memory"
                         end
                     end
+                    # Copy git-ignored files (.wtfiles manifest or interactive)
+                    __proj_wt_copy_shared "$base_dir" "$wt_path"
                     and cd "$wt_path"
 
                 case sync

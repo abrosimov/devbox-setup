@@ -417,9 +417,9 @@ function proj --description "Project management: clone repos, cd into projects"
                         return 1
                     end
 
-                    # Fetch and merge
+                    # Fetch and merge (fetch in worktree so its tracking refs update)
                     echo "Fetching origin/$upstream..."
-                    if not git -C "$base_dir" fetch origin "$upstream"
+                    if not git fetch origin "$upstream"
                         echo "Fetch failed"
                         return 1
                     end

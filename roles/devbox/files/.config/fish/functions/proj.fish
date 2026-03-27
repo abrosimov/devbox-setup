@@ -120,7 +120,7 @@ function proj --description "Project management: clone repos, cd into projects"
         echo "  proj wt push                       — push current branch to origin"
         echo "  proj wt ls                         — list worktrees"
         echo "  proj wt status                     — show worktrees with PR status"
-        echo "  proj wt rm <name>                  — remove worktree"
+        echo "  proj wt rm [-f] <name>              — remove worktree and branch"
         echo "  proj wt clean                      — remove all fully-merged worktrees"
         echo "  proj wt <name>                     — cd to worktree"
         echo ""
@@ -313,7 +313,7 @@ function proj --description "Project management: clone repos, cd into projects"
                 echo "  proj wt push                       — push current branch to origin"
                 echo "  proj wt ls                         — list worktrees"
                 echo "  proj wt status                     — show worktrees with PR status"
-                echo "  proj wt rm <name>                  — remove worktree"
+                echo "  proj wt rm [-f] <name>              — remove worktree and branch"
                 echo "  proj wt clean                      — remove all fully-merged worktrees"
                 echo "  proj wt <name>                     — cd to worktree"
                 return 2
@@ -347,18 +347,22 @@ function proj --description "Project management: clone repos, cd into projects"
                         end
                     end
 
-                    # Default base: detect from origin/HEAD
+                    # Default base: branch currently checked out in base/
                     if not set -q base_branch[1]
-                        set -l head_ref (git -C "$base_dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
-                        if test -n "$head_ref"
-                            set base_branch (string replace 'refs/remotes/origin/' '' -- $head_ref)
-                        else if git -C "$base_dir" show-ref --verify --quiet refs/remotes/origin/main
-                            set base_branch main
-                        else if git -C "$base_dir" show-ref --verify --quiet refs/remotes/origin/master
-                            set base_branch master
-                        else
-                            echo "Cannot detect default branch. Use --from <base>."
-                            return 2
+                        set base_branch (git -C "$base_dir" branch --show-current)
+                        if test -z "$base_branch"
+                            # Detached HEAD — fall back to origin/HEAD or main/master
+                            set -l head_ref (git -C "$base_dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
+                            if test -n "$head_ref"
+                                set base_branch (string replace 'refs/remotes/origin/' '' -- $head_ref)
+                            else if git -C "$base_dir" show-ref --verify --quiet refs/remotes/origin/main
+                                set base_branch main
+                            else if git -C "$base_dir" show-ref --verify --quiet refs/remotes/origin/master
+                                set base_branch master
+                            else
+                                echo "Cannot detect default branch. Use --from <base>."
+                                return 2
+                            end
                         end
                     end
 
@@ -466,12 +470,24 @@ function proj --description "Project management: clone repos, cd into projects"
                     git -C "$base_dir" worktree list
 
                 case rm
-                    if test (count $argv) -ne 1
-                        echo "proj wt rm <name>"
+                    # Parse -f/--force flag
+                    set -l force false
+                    set -l positional
+                    for arg in $argv
+                        switch $arg
+                            case -f --force
+                                set force true
+                            case '*'
+                                set -a positional $arg
+                        end
+                    end
+
+                    if test (count $positional) -ne 1
+                        echo "proj wt rm [-f] <name>"
                         return 2
                     end
 
-                    set -l wt_name $argv[1]
+                    set -l wt_name $positional[1]
                     set -l wt_path "$project_dir/$wt_name"
 
                     if not test -d "$wt_path"
@@ -479,12 +495,31 @@ function proj --description "Project management: clone repos, cd into projects"
                         return 1
                     end
 
+                    # Resolve the branch checked out in the worktree
+                    set -l wt_branch (git -C "$wt_path" branch --show-current 2>/dev/null)
+
                     # If we're inside the worktree being removed, cd out first
                     if string match -q "$wt_path*" -- $PWD
                         cd "$project_dir"
                     end
 
-                    git -C "$base_dir" worktree remove "$wt_path"
+                    if test "$force" = true
+                        git -C "$base_dir" worktree remove --force "$wt_path"
+                    else
+                        git -C "$base_dir" worktree remove "$wt_path"
+                    end
+                    or return $status
+
+                    # Delete the local branch after removing the worktree
+                    if test -n "$wt_branch"
+                        if test "$force" = true
+                            git -C "$base_dir" branch -D "$wt_branch" 2>/dev/null
+                        else
+                            git -C "$base_dir" branch -d "$wt_branch" 2>/dev/null
+                        end
+                        and echo "Deleted branch $wt_branch"
+                        or echo "Branch $wt_branch not deleted (not fully merged). Use -f to force."
+                    end
 
                 case status
                     set -l default_branch

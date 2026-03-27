@@ -72,5 +72,6 @@ complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a '(__p
 complete -c proj -n '__proj_seen_wt; and string match -q "* wt add*" -- (commandline -cp)' -a '(__proj_remote_branches)'
 complete -c proj -n '__proj_seen_wt; and string match -q "* wt add*" -- (commandline -cp)' -l from -d 'Base branch'
 
-# proj wt rm: complete with worktree names
+# proj wt rm: complete with worktree names and -f flag
 complete -c proj -n '__proj_seen_wt; and string match -q "* wt rm*" -- (commandline -cp)' -a '(__proj_worktree_names)'
+complete -c proj -n '__proj_seen_wt; and string match -q "* wt rm*" -- (commandline -cp)' -s f -l force -d 'Force remove worktree and delete unmerged branch'

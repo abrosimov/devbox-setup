@@ -21,7 +21,11 @@ fi
 # Fallback: raw git worktree for non-proj repos
 root=$(git rev-parse --show-toplevel)
 project=$(basename "$root")
-default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||') || default_branch=main
+# Prefer the branch currently checked out; fall back to origin/HEAD or main
+default_branch=$(git branch --show-current 2>/dev/null)
+if [[ -z "$default_branch" ]]; then
+  default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||') || default_branch=main
+fi
 wt_dir="$(dirname "$root")/${project}-wt/${NAME}"
 mkdir -p "$(dirname "$wt_dir")"
 git worktree add -b "$NAME" "$wt_dir" "$default_branch" >&2

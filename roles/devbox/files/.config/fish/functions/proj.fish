@@ -410,12 +410,29 @@ function proj --description "Project management: clone repos, cd into projects"
                         return 2
                     end
 
-                    # Detect upstream from base's current branch
-                    set -l upstream (git -C "$base_dir" branch --show-current)
+                    # Detect upstream: tracking branch > nearest remote branch by merge-base
+                    set -l upstream
+                    set -l tracking (git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null)
+                    if test -n "$tracking"
+                        set upstream (string replace 'origin/' '' -- $tracking)
+                    else
+                        set -l best_time 0
+                        for ref in (git branch -r --list 'origin/main' 'origin/master' 'origin/release-*' 'origin/develop' 2>/dev/null)
+                            set ref (string trim -- $ref)
+                            set -l mb (git merge-base HEAD "$ref" 2>/dev/null)
+                            test -z "$mb"; and continue
+                            set -l mb_time (git log -1 --format=%ct "$mb")
+                            if test "$mb_time" -gt "$best_time"
+                                set best_time $mb_time
+                                set upstream (string replace 'origin/' '' -- $ref)
+                            end
+                        end
+                    end
                     if test -z "$upstream"
-                        echo "Cannot detect upstream branch (base/ is in detached HEAD?)"
+                        echo "Cannot detect upstream branch. Set tracking with: git branch -u origin/<branch>"
                         return 1
                     end
+                    echo "Upstream: origin/$upstream"
 
                     # Fetch and merge (fetch in worktree so its tracking refs update)
                     echo "Fetching origin/$upstream..."

@@ -497,7 +497,7 @@ return {
 			"mxsdev/nvim-dap-vscode-js",
 			{
 				"microsoft/vscode-js-debug",
-				build = "npm install --legacy-peer-deps && npx gulp vsDebugServerBundle && mv dist out",
+				build = "npm ci --legacy-peer-deps && npx gulp vsDebugServerBundle && mv dist out",
 			},
 			"rcarriga/nvim-dap-ui",
 			"nvim-neotest/nvim-nio",

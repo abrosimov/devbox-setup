@@ -26,13 +26,13 @@ vim.opt.clipboard = 'unnamedplus'
 
 -- Delete/change/x go to black hole register — don't pollute OS clipboard.
 -- Yank (y) and paste (p) still sync with OS clipboard via unnamedplus.
--- Use <leader>d when you need "cut" (delete + copy to clipboard).
+-- Use <leader>X when you need "cut" (delete + copy to clipboard).
 vim.keymap.set({ 'n', 'v' }, 'd', '"_d')
 vim.keymap.set({ 'n', 'v' }, 'D', '"_D')
 vim.keymap.set({ 'n', 'v' }, 'c', '"_c')
 vim.keymap.set({ 'n', 'v' }, 'C', '"_C')
 vim.keymap.set('n', 'x', '"_x')
-vim.keymap.set({ 'n', 'v' }, '<leader>d', 'd', { desc = 'Cut (delete + yank to clipboard)' })
+vim.keymap.set({ 'n', 'v' }, '<leader>X', 'd', { desc = 'Cut (delete + yank to clipboard)' })
 
 -- Save undo history
 vim.opt.undofile = true
@@ -82,8 +82,11 @@ end)
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+
+-- Git conflict marker navigation (treesitter owns [c/]c for classes)
+vim.keymap.set('n', '[C', '[c', { desc = 'Previous git [C]onflict marker' })
+vim.keymap.set('n', ']C', ']c', { desc = 'Next git [C]onflict marker' })
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows

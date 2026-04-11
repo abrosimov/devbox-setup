@@ -416,7 +416,7 @@ return {
 			},
 		},
 		keys = {
-			{ "<leader>t", "<cmd>Neotree toggle filesystem<CR>", desc = "Toggle file explorer" },
+			{ "<leader>e", "<cmd>Neotree toggle filesystem<CR>", desc = "Toggle file explorer" },
 			{ "<leader>b", "<cmd>Neotree toggle buffers<CR>", desc = "Toggle open buffers" },
 		},
 	},
@@ -762,7 +762,7 @@ return {
 			wk.add({
 				{ "<leader>f", group = "Find" },
 				{ "<leader>d", group = "Debug", icon = "" },
-				{ "<leader>t", group = "Test/Tree" },
+				{ "<leader>t", group = "Test" },
 				{ "<leader>g", group = "Git" },
 				{ "<leader>x", group = "Diagnostics" },
 				{ "<leader>r", group = "Refactor/Run" },

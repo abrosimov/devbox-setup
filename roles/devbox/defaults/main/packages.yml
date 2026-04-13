@@ -109,6 +109,7 @@ devbox_packages:
     - { pkg: "github.com/sqlc-dev/sqlc/cmd/sqlc@latest", bin: "sqlc" }
     - { pkg: "golang.org/x/tools/gopls@latest", bin: "gopls" }
     - { pkg: "github.com/go-delve/delve/cmd/dlv@latest", bin: "dlv" }
+    - { pkg: "github.com/sqls-server/sqls@latest", bin: "sqls" }
 
   # kubectl — direct binary download (pinned version)
   kubectl:
@@ -124,3 +125,4 @@ devbox_packages:
     - keyring
     - basedpyright
     - pylint
+    - sqlfluff

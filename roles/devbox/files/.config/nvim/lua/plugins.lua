@@ -85,6 +85,7 @@ return {
 				"hcl",
 				"ini",
 				"nginx",
+				"sql",
 			}
 			ts.install(langs, { summary = false })
 
@@ -303,6 +304,10 @@ return {
 			vim.lsp.config("buf_ls", {})
 			vim.lsp.enable("buf_ls")
 
+			-- SQL (sqls — supports PostgreSQL, MySQL)
+			vim.lsp.config("sqls", {})
+			vim.lsp.enable("sqls")
+
 			-- Dart LSP is handled by flutter-tools.nvim — do NOT configure dartls here
 
 			-- Disable hover from ruff so basedpyright handles it
@@ -450,6 +455,7 @@ return {
 					bash = { "shfmt" },
 					fish = { "fish_indent" },
 					proto = { "buf" },
+					sql = { "sqlfluff" },
 					terraform = { "terraform_fmt" },
 					toml = { "taplo" },
 				},
@@ -472,6 +478,10 @@ return {
 							end
 							return {}
 						end,
+					},
+					sqlfluff = {
+						args = { "format", "--dialect", "ansi", "-" },
+						stdin = true,
 					},
 				},
 			})

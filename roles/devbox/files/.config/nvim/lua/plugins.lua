@@ -304,10 +304,6 @@ return {
 			vim.lsp.config("buf_ls", {})
 			vim.lsp.enable("buf_ls")
 
-			-- SQL (sqls — supports PostgreSQL, MySQL)
-			vim.lsp.config("sqls", {})
-			vim.lsp.enable("sqls")
-
 			-- Dart LSP is handled by flutter-tools.nvim — do NOT configure dartls here
 
 			-- Disable hover from ruff so basedpyright handles it
@@ -484,6 +480,24 @@ return {
 						stdin = true,
 					},
 				},
+			})
+		end,
+	},
+
+	-- 6b. Linting — nvim-lint
+	{
+		"mfussenegger/nvim-lint",
+		event = { "BufReadPre", "BufNewFile" },
+		config = function()
+			local lint = require("lint")
+			lint.linters_by_ft = {
+				sql = { "sqlfluff" },
+			}
+			vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
+				group = vim.api.nvim_create_augroup("nvim-lint", { clear = true }),
+				callback = function()
+					lint.try_lint()
+				end,
 			})
 		end,
 	},

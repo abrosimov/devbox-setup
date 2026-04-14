@@ -116,6 +116,7 @@ function proj --description "Project management: clone repos, cd into projects"
         echo "  proj <name>        — cd into project directory"
         echo ""
         echo "  proj wt add <branch> [--from base] — create worktree"
+        echo "  proj wt fork <branch>              — fork from current worktree"
         echo "  proj wt sync                       — merge upstream into current worktree"
         echo "  proj wt push                       — push current branch to origin"
         echo "  proj wt ls                         — list worktrees"
@@ -309,6 +310,7 @@ function proj --description "Project management: clone repos, cd into projects"
             if test (count $argv) -lt 1
                 echo "Usage:"
                 echo "  proj wt add <branch> [--from base] — create worktree (tracks remote if exists)"
+                echo "  proj wt fork <branch>              — fork from current worktree"
                 echo "  proj wt sync                       — merge upstream into current worktree"
                 echo "  proj wt push                       — push current branch to origin"
                 echo "  proj wt ls                         — list worktrees"
@@ -403,6 +405,47 @@ function proj --description "Project management: clone repos, cd into projects"
                         end
                     end
                     # Copy git-ignored files (.wtfiles manifest or interactive)
+                    __proj_wt_copy_shared "$base_dir" "$wt_path"
+                    and cd "$wt_path"
+
+                case fork
+                    if test (count $argv) -lt 1
+                        echo "proj wt fork <branch>"
+                        return 2
+                    end
+
+                    set -l branch $argv[1]
+                    set -l source_commit (git rev-parse HEAD 2>/dev/null)
+                    if test -z "$source_commit"
+                        echo "Cannot resolve HEAD — are you inside a git worktree?"
+                        return 1
+                    end
+
+                    set -l dir_name (string replace -a '/' '-' -- $branch)
+                    set -l wt_path "$project_dir/$dir_name"
+
+                    if test -d "$wt_path"
+                        echo "Directory already exists: $wt_path"
+                        return 1
+                    end
+
+                    git -C "$base_dir" worktree add -b "$branch" "$wt_path" "$source_commit"
+                    or return $status
+
+                    echo "Forked from $(git rev-parse --abbrev-ref HEAD 2>/dev/null; or echo $source_commit) → $wt_path"
+
+                    if test -d "$base_dir/.claude"
+                        if test -f "$base_dir/.claude/settings.local.json"
+                            mkdir -p "$wt_path/.claude"
+                            cp "$base_dir/.claude/settings.local.json" "$wt_path/.claude/"
+                            echo "Copied .claude/settings.local.json"
+                        end
+                        if test -d "$base_dir/.claude/memory"
+                            mkdir -p "$wt_path/.claude"
+                            ln -sf (realpath "$base_dir/.claude/memory") "$wt_path/.claude/memory"
+                            echo "Linked .claude/memory"
+                        end
+                    end
                     __proj_wt_copy_shared "$base_dir" "$wt_path"
                     and cd "$wt_path"
 

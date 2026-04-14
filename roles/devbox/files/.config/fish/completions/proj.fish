@@ -44,7 +44,7 @@ end
 # Helper: check if we're completing after "proj wt add/rm/ls/sync/push"
 function __proj_seen_wt_subcommand
     set -l cmd (commandline -opc)
-    test (count $cmd) -ge 3; and test "$cmd[2]" = wt; and contains -- "$cmd[3]" add rm ls sync push
+    test (count $cmd) -ge 3; and test "$cmd[2]" = wt; and contains -- "$cmd[3]" add fork rm ls sync push
 end
 
 # Subcommands
@@ -60,6 +60,7 @@ complete -c proj -n '__fish_use_subcommand' -a '(set -q PROJECTS_DIR; and test -
 
 # proj wt subcommands
 complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a add -d 'Create worktree (tracks remote if exists)'
+complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a fork -d 'Fork from current worktree'
 complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a sync -d 'Merge upstream into current worktree'
 complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a push -d 'Push current branch to origin'
 complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a ls -d 'List worktrees'
@@ -71,6 +72,8 @@ complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a '(__p
 # proj wt add: complete with remote branches
 complete -c proj -n '__proj_seen_wt; and string match -q "* wt add*" -- (commandline -cp)' -a '(__proj_remote_branches)'
 complete -c proj -n '__proj_seen_wt; and string match -q "* wt add*" -- (commandline -cp)' -l from -d 'Base branch'
+
+# proj wt fork: no special completions (new branch name is user-provided)
 
 # proj wt rm: complete with worktree names and -f flag
 complete -c proj -n '__proj_seen_wt; and string match -q "* wt rm*" -- (commandline -cp)' -a '(__proj_worktree_names)'

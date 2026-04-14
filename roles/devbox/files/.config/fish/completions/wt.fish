@@ -3,6 +3,7 @@ complete -c wt -f
 
 # Reuse helpers from proj completions
 complete -c wt -n '__fish_use_subcommand' -a add -d 'Create worktree'
+complete -c wt -n '__fish_use_subcommand' -a fork -d 'Fork from current worktree'
 complete -c wt -n '__fish_use_subcommand' -a ls -d 'List worktrees'
 complete -c wt -n '__fish_use_subcommand' -a rm -d 'Remove worktree'
 

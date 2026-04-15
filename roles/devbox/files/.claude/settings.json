@@ -127,6 +127,8 @@
         "ghcr.io",
         "registry.k8s.io",
 
+        "mcp.atlassian.com",
+
         "stackoverflow.com",
         "*.stackexchange.com"
       ],

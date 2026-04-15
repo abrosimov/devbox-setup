@@ -142,6 +142,7 @@
     {% if item.network is defined %}--network={{ item.network }}{% endif %}
     {% if item.read_only | default(false) %}--read-only{% endif %}
     {% if item.init | default(false) %}--init{% endif %}
+    {% for k, v in (item.env | default({})).items() %}-e {{ k }}={{ v }} {% endfor %}
     {{ item.image }}
   loop: "{{ mcp_docker_servers }}"
   become: true

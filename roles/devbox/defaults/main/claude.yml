@@ -23,6 +23,8 @@ mcp_docker_servers:
     init: true
   - name: context7
     image: mcp/context7
+    env:
+      MCP_TRANSPORT: stdio
 
 mcp_script_servers:
   - name: memory-upstream

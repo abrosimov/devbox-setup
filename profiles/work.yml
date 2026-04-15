@@ -3,4 +3,6 @@ devbox_projects_dir: "$HOME/Work"
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []
 # devbox_extra_brew_casks: []
-# devbox_extra_mcp_http_servers: []
+devbox_extra_mcp_http_servers:
+  - name: atlassian
+    url: "https://mcp.atlassian.com/v1/mcp"

@@ -50,7 +50,9 @@ vim.opt.splitbelow = true
 -- Cursor must always be like "block"
 vim.opt.guicursor = "n-v-c-i:block"
 
-vim.opt.mouse = ""
+vim.opt.mouse = "a"
+vim.keymap.set({ 'n', 'v', 'i' }, '<ScrollWheelUp>', '<Nop>')
+vim.keymap.set({ 'n', 'v', 'i' }, '<ScrollWheelDown>', '<Nop>')
 
 vim.opt.cursorline = true
 vim.opt.scrolloff = 10

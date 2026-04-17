@@ -10,12 +10,14 @@ Checks:
   stale          Old-style doc references, formatting issues
   grounding      Builder skill grounding reference files
   meta-pipeline  Meta-reviewer existence, builder skill wiring
+  budget         Skill description budget utilisation (16K char limit)
 
 Usage:
   validate-config.py                           # all checks, ~/.claude root
   validate-config.py --root .                  # all checks, current directory
   validate-config.py --check agents,skills     # subset of checks
   validate-config.py --json                    # machine-readable output
+  validate-config.py --budget                  # detailed budget breakdown
 """
 
 from __future__ import annotations
@@ -309,6 +311,106 @@ def check_stale_patterns(root: Path) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+SKILL_BUDGET_CHARS = 16_000
+SKILL_BUDGET_WARN = 0.80
+SKILL_BUDGET_ERROR = 0.95
+
+
+def check_skill_budget(root: Path) -> tuple[list[str], list[str]]:
+    """Check total skill description budget utilisation against 16K limit."""
+    skills_dir = root / "skills"
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not skills_dir.is_dir():
+        return errors, warnings
+
+    entries: list[tuple[str, int]] = []
+
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+
+        content = skill_file.read_text()
+        fm = parse_frontmatter(content)
+        if fm is None or "name" not in fm or "description" not in fm:
+            continue
+
+        entry = f"- {fm['name']}: {fm['description']}"
+        entries.append((fm["name"], len(entry)))
+
+    total = sum(size for _, size in entries)
+    utilisation = total / SKILL_BUDGET_CHARS if SKILL_BUDGET_CHARS > 0 else 0
+
+    if utilisation > SKILL_BUDGET_ERROR:
+        errors.append(
+            f"[BUDGET_EXCEEDED] Skill description budget: {total}/{SKILL_BUDGET_CHARS} chars "
+            f"({utilisation:.0%}) — skills may be silently dropped from system prompt"
+        )
+    elif utilisation > SKILL_BUDGET_WARN:
+        warnings.append(
+            f"[BUDGET_HIGH] Skill description budget: {total}/{SKILL_BUDGET_CHARS} chars "
+            f"({utilisation:.0%}) — approaching limit"
+        )
+
+    return errors, warnings
+
+
+def format_budget_report(root: Path) -> str:
+    """Produce a detailed per-skill budget breakdown (for standalone use)."""
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir():
+        return "No skills directory found."
+
+    entries: list[tuple[str, int]] = []
+
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+
+        content = skill_file.read_text()
+        fm = parse_frontmatter(content)
+        if fm is None or "name" not in fm or "description" not in fm:
+            continue
+
+        entry = f"- {fm['name']}: {fm['description']}"
+        entries.append((fm["name"], len(entry)))
+
+    entries.sort(key=lambda x: x[1], reverse=True)
+    total = sum(size for _, size in entries)
+    utilisation = total / SKILL_BUDGET_CHARS if SKILL_BUDGET_CHARS > 0 else 0
+
+    lines = [
+        "Skill Description Budget Report",
+        "=" * 40,
+        "",
+        f"{'Skill':<40} {'Chars':>6}",
+        "-" * 47,
+    ]
+    for name, size in entries:
+        lines.append(f"{name:<40} {size:>6}")
+
+    lines.append("-" * 47)
+    lines.append(f"{'TOTAL':<40} {total:>6} / {SKILL_BUDGET_CHARS}")
+    lines.append(f"{'Utilisation':<40} {utilisation:>6.0%}")
+    lines.append("")
+
+    if utilisation > SKILL_BUDGET_ERROR:
+        lines.append(f"FAIL — budget exceeded ({utilisation:.0%})")
+    elif utilisation > SKILL_BUDGET_WARN:
+        lines.append(f"WARN — budget high ({utilisation:.0%})")
+    else:
+        lines.append(f"OK — budget healthy ({utilisation:.0%})")
+
+    return "\n".join(lines)
+
+
 _GROUNDING_REFS: dict[str, list[str]] = {
     "agent-builder": [
         "references/anthropic-agent-authoring.md",
@@ -372,6 +474,7 @@ ALL_CHECKS: dict[str, callable] = {
     "stale": check_stale_patterns,
     "grounding": check_grounding,
     "meta-pipeline": check_meta_pipeline,
+    "budget": check_skill_budget,
 }
 
 
@@ -484,7 +587,16 @@ def main() -> None:
         dest="json_output",
         help="Output results as JSON",
     )
+    parser.add_argument(
+        "--budget",
+        action="store_true",
+        help="Show detailed skill description budget report and exit",
+    )
     args = parser.parse_args()
+
+    if args.budget:
+        print(format_budget_report(args.root))
+        sys.exit(0)
 
     checks = [c.strip() for c in args.check.split(",")] if args.check else None
     results = run_checks(args.root, checks)

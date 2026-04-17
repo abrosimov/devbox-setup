@@ -20,19 +20,11 @@ vim.opt.number = true
 -- Enable break indent
 vim.opt.breakindent = true
 
--- Sync clipboard between OS and Neovim.
---  See `:help 'clipboard'`
-vim.opt.clipboard = 'unnamedplus'
-
--- Delete/change/x go to black hole register — don't pollute OS clipboard.
--- Yank (y) and paste (p) still sync with OS clipboard via unnamedplus.
--- Use <leader>X when you need "cut" (delete + copy to clipboard).
-vim.keymap.set({ 'n', 'v' }, 'd', '"_d')
-vim.keymap.set({ 'n', 'v' }, 'D', '"_D')
-vim.keymap.set({ 'n', 'v' }, 'c', '"_c')
-vim.keymap.set({ 'n', 'v' }, 'C', '"_C')
-vim.keymap.set('n', 'x', '"_x')
-vim.keymap.set({ 'n', 'v' }, '<leader>X', 'd', { desc = 'Cut (delete + yank to clipboard)' })
+-- Yank goes to system clipboard; delete/paste use vim's unnamed register.
+vim.keymap.set({ 'n', 'v' }, 'y', '"+y')
+vim.keymap.set('n', 'Y', '"+Y')
+vim.keymap.set({ 'n', 'v' }, '<leader>p', '"+p', { desc = 'Paste from system clipboard' })
+vim.keymap.set({ 'n', 'v' }, '<leader>P', '"+P', { desc = 'Paste from system clipboard (above)' })
 
 -- Save undo history
 vim.opt.undofile = true
@@ -57,6 +49,8 @@ vim.opt.splitbelow = true
 
 -- Cursor must always be like "block"
 vim.opt.guicursor = "n-v-c-i:block"
+
+vim.opt.mouse = ""
 
 vim.opt.cursorline = true
 vim.opt.scrolloff = 10

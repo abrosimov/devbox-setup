@@ -25,6 +25,7 @@ endif
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
        fixfish list-skills list-agents \
+       audit-budget \
        claude-diff claude-pull \
        test test-nvim test-fish test-json test-bash test-skill-evals
 
@@ -44,6 +45,7 @@ help:
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
+	@echo "  make audit-budget    - show detailed skill description budget report"
 	@echo "  make validate-skills  - validate skill evals (structure, schema, coverage)"
 	@echo "  make eval-skills      - run trigger evals via Anthropic's run_eval.py (slow, needs claude CLI)"
 	@echo "  make improve-skills   - optimize skill description for trigger accuracy (run_loop.py)"
@@ -133,6 +135,9 @@ list-agents:
 
 validate-claude:
 	@python3 roles/devbox/files/.claude/bin/validate-config.py --root roles/devbox/files/.claude
+
+audit-budget:
+	@python3 roles/devbox/files/.claude/bin/validate-config.py --root roles/devbox/files/.claude --budget
 
 validate-skills:
 	@echo "Validating skill eval files..."

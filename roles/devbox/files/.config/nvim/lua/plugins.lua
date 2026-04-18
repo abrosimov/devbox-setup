@@ -86,6 +86,8 @@ return {
 				"ini",
 				"nginx",
 				"sql",
+				"gotmpl",
+				"helm",
 			}
 			ts.install(langs, { summary = false })
 
@@ -144,6 +146,7 @@ return {
 				"marksman",
 				"taplo",
 				"terraformls",
+				"helm_ls",
 			},
 		},
 	},
@@ -299,6 +302,16 @@ return {
 			-- Terraform/HCL
 			vim.lsp.config("terraformls", {})
 			vim.lsp.enable("terraformls")
+
+			-- Helm
+			vim.lsp.config("helm_ls", {
+				settings = {
+					["helm-ls"] = {
+						yamlls = { path = "yaml-language-server" },
+					},
+				},
+			})
+			vim.lsp.enable("helm_ls")
 
 			-- Protobuf (buf CLI)
 			vim.lsp.config("buf_ls", {})
@@ -799,7 +812,19 @@ return {
 		end,
 	},
 
-	-- 14. Auto-close brackets
+	-- 14. Helm template block highlighting
+	{
+		"qvalentin/helm-ls.nvim",
+		ft = "helm",
+		opts = {},
+	},
+
+	-- 15. Jinja2 syntax highlighting
+	{
+		"Glench/Vim-Jinja2-Syntax",
+	},
+
+	-- 16. Auto-close brackets
 	{
 		"windwp/nvim-autopairs",
 		event = "InsertEnter",

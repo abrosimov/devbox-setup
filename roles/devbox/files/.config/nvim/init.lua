@@ -139,4 +139,13 @@ vim.api.nvim_create_autocmd("LspAttach", {
     end,
 })
 
+-- Helm chart filetype detection (templates/*.yaml → helm)
+vim.filetype.add({
+	pattern = {
+		[".*/templates/.*%.ya?ml"] = "helm",
+		[".*/templates/.*%.tpl"] = "helm",
+		["helmfile.*%.ya?ml"] = "helm",
+	},
+})
+
 require("config.lazy")

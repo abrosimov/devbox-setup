@@ -75,8 +75,10 @@ devbox_brew_secondary:
   - shfmt          # Shell/Bash code formatter
   - clang-format   # C/C++ code formatter
   - ast-grep       # Structural AST code search — used by Claude Code ast-grep skill
+  - codex           # OpenAI Codex CLI
 
 devbox_brew_secondary_casks:
+  - codex-app
   - obsidian
   - goland
   - webstorm

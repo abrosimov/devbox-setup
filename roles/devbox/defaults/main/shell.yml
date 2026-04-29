@@ -6,7 +6,6 @@ devbox_fish_plugins:
   - ivakyb/fish_ssh_agent
   - jorgebucaran/autopair.fish
   - meaningful-ooo/sponge
-  - nickeb96/puffer-fish
   - franciscolourenco/done
   - PatrickF1/fzf.fish
   - jethrokuan/z

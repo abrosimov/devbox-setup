@@ -51,14 +51,7 @@ DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 
 Store these values — pass to agent, do not re-compute.
 
-### 2. Detect Project Language
-
-Check for project markers:
-- If `go.mod` exists → **Go project**
-- If `pyproject.toml` or `requirements.txt` exists → **Python project**
-- If both or unclear → Ask user which language to use
-
-### 3. Identify What Needs Testing
+### 2. Identify What Needs Testing
 
 Check recent changes:
 ```bash
@@ -67,7 +60,7 @@ git diff --name-only HEAD~1
 
 Or if there's an implementation summary from SE, use that for context.
 
-### 4. Pre-flight Complexity Check (if no model specified)
+### 3. Pre-flight Complexity Check (if no model specified)
 
 **Skip this step if user explicitly specified a model OR `complexity_escalation` is `false`.**
 
@@ -108,11 +101,9 @@ git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.py' 2>/dev/null | grep -v test
 
 **If ANY threshold exceeded**, use **opus**. Otherwise use **sonnet**.
 
-### 5. Run Appropriate Agent
+### 4. Run unit-test-writer Agent
 
-Based on detected language:
-- **Go**: Use `unit-test-writer-go` agent
-- **Python**: Use `unit-test-writer-python` agent
+The unified `unit-test-writer` agent handles Go, Python and TypeScript/React/Next.js. Language detection happens inside the agent (Step 1 of its workflow) — no per-language routing here.
 
 **IMPORTANT**: When invoking the Task tool, include the `model` parameter:
 - If user specified model → use that model
@@ -121,7 +112,7 @@ Based on detected language:
 Example Task invocation:
 ```
 Task(
-  subagent_type: "unit-test-writer-go",
+  subagent_type: "unit-test-writer",
   model: "{determined_model}",  // "sonnet" or "opus"
   prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\n{task description}"
 )
@@ -132,7 +123,7 @@ The agent will:
 - Write comprehensive tests
 - Provide summary and suggest next step
 
-### 6. Commit Tests
+### 5. Commit Tests
 
 **If `auto_commit` is `false`, skip this step.** Show changed files and tell the user:
 
@@ -146,7 +137,7 @@ After the agent completes and tests pass:
 .claude/bin/git-safe-commit -m "test($JIRA_ISSUE): add tests for $BRANCH_NAME"
 ```
 
-### 7. After Completion
+### 6. After Completion
 
 Present the agent's summary and suggested next step to the user.
 

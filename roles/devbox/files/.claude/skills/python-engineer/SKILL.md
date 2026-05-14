@@ -1,12 +1,6 @@
 ---
 name: python-engineer
-description: >
-  Write clean, typed, production-ready Python code with full type hints and modern
-  idioms. Use when implementing Python features, creating Python functions, writing
-  Python services, fixing Python bugs, or refactoring Python code. Also use when
-  the user works with Python classes, decorators, async code, data models, CLI tools,
-  or API endpoints — even for seemingly simple Python tasks, as this skill enforces
-  project-specific conventions and quality standards.
+description: Write clean, typed, production-ready Python code with full type hints and modern idioms. Use when implementing Python functions, services, classes, decorators, async code, data models, CLI tools, or API endpoints — enforces project conventions.
 allowed-tools: Read, Edit, Grep, Glob, Bash
 ---
 

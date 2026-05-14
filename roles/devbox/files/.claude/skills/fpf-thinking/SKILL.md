@@ -1,13 +1,6 @@
 ---
 name: fpf-thinking
-description: >
-  First Principles Framework (FPF) integration for systems thinking.
-  Provides protocol for using the FPF spec as a RAG resource, routing table
-  mapping problem types to spec sections, and artifact recipes.
-  For complex problems beyond software: project characterisation, domain
-  vocabulary, naming discipline, principles-to-work mapping, SoTA harvesting.
-  Use when tackling complex analysis, systems thinking, or first-principles
-  reasoning about architecture, domain modelling, or trade-offs.
+description: First Principles Framework (FPF) protocol for systems thinking, domain modelling, and architectural trade-offs. Use when tackling complex analysis, first-principles reasoning, project characterisation, or naming discipline.
 ---
 
 # FPF-Guided Systems Thinking

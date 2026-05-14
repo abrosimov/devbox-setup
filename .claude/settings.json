@@ -36,7 +36,6 @@
       "Bash(git push:*)",
       "Bash(git rebase:*)",
       "Bash(git reset:*)"
-    ],
-    "defaultMode": "acceptEdits"
+    ]
   }
 }

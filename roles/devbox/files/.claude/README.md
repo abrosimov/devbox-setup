@@ -9,8 +9,8 @@ Specialised subagents for different tasks. Spawned via `/implement`, `/test`, `/
 | Category | Examples |
 |----------|----------|
 | Software Engineers | `software-engineer-go`, `software-engineer-python`, `software-engineer-frontend` |
-| Test Writers | `unit-test-writer-go`, `unit-test-writer-python`, `unit-test-writer-frontend` |
-| Reviewers | `code-reviewer-go`, `code-reviewer-python`, `code-reviewer-frontend` |
+| Test Writers | `unit-test-writer` (polyglot: Go, Python, Frontend) |
+| Reviewers | `code-reviewer` (polyglot: Go, Python, Frontend) |
 | Planners | `technical-planner`, `domain-expert`, `api-designer`, `database-designer` |
 | Utilities | `explorer`, `researcher`, `ui-designer` |
 

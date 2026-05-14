@@ -1,11 +1,6 @@
 ---
 name: lsp-tools
-description: >
-  LSP code intelligence for semantic navigation, refactoring, and diagnostics.
-  Teaches agents when and how to use Claude Code's built-in LSP tools instead of
-  grep-based text search. Covers the coordinate bridge pattern, decision tree,
-  mandatory constraints, and workflow recipes. Use when refactoring, renaming symbols,
-  finding references or callers, navigating to definitions, or analysing call hierarchy.
+description: LSP code intelligence for semantic navigation, refactoring, and diagnostics — when and how to use built-in LSP tools instead of grep. Use when refactoring, renaming symbols, finding references or callers, navigating to definitions, or analysing call hierarchy.
 ---
 
 # LSP Code Intelligence

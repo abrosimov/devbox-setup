@@ -1,11 +1,6 @@
 ---
 name: mcp-memory
-description: >
-  Memory MCP patterns for persistent knowledge graph across conversations. Covers
-  entity creation, relation management, observation tracking, search, and naming
-  conventions for upstream (TPM, domain, planners) and downstream (reviewers) scopes.
-  Use when persisting knowledge across sessions, creating entities or relations,
-  or querying the knowledge graph for cross-conversation context.
+description: Memory MCP patterns for persistent knowledge graph — entities, relations, observations, upstream/downstream scopes. Use when persisting knowledge across sessions, creating entities or relations, or querying the graph.
 ---
 
 # Memory MCP

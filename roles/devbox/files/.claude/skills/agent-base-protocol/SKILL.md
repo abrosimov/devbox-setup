@@ -22,7 +22,13 @@ The Write/Edit tools are auto-approved by `acceptEdits` mode. Bash heredocs prom
 
 ## Language Standard
 
-Use **British English** spelling in all output (behaviour, organisation, analyse, colour, honour, licence [noun], practise [verb], catalogue, etc.). See `project-preferences` skill for full list.
+**Written artifacts** — file contents, code, comments, docstrings, commit messages, PR titles/descriptions, plans, designs, JSON outputs, and persisted memory files — MUST use **British English** spelling (behaviour, organisation, analyse, colour, honour, licence [noun], practise [verb], catalogue, etc.) regardless of the conversation language.
+
+**Conversational responses** — chat replies, AskUserQuestion text, TaskCreate subjects, and any UI-visible output that is not persisted — match the user's language. If the user writes in Russian, respond in Russian; if in English, respond in English.
+
+A non-blocking PostToolUse hook (`bin/post-edit-cyrillic-guard`) warns when Cyrillic characters appear in Edit/Write/MultiEdit/NotebookEdit content outside the allowlist (`testdata/`, `fixtures/`, `memory/`). Self-correct on the next edit when the warning fires.
+
+See `project-preferences` skill for the full word list.
 
 ## When to Ask for Clarification
 

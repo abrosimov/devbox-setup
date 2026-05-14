@@ -41,37 +41,32 @@ DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 
 Store these values — pass to agent, do not re-compute.
 
-### 2. Detect Project Language
-
-Check for project markers:
-- If `go.mod` exists → **Go project**
-- If `pyproject.toml` or `requirements.txt` exists → **Python project**
-- If both or unclear → Ask user which language to use
-
-### 3. Gather Review Context
+### 2. Gather Review Context
 
 ```bash
 git diff $DEFAULT_BRANCH...HEAD
 ```
 
-Check if implementation plan exists at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see `config` skill)
+Check if implementation plan exists at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see `config` skill).
 
-### 4. Run Appropriate Agent
+Language detection is the agent's responsibility — `code-reviewer` runs `git diff --name-only` in its Step 1, classifies files by extension, and loads only the relevant `{lang}-engineer`/`{lang}-testing` skills. Polyglot diffs (e.g. Go backend + frontend) are reviewed stack-by-stack within a single invocation.
 
-Based on detected language:
-- **Go**: Use `code-reviewer-go` agent
-- **Python**: Use `code-reviewer-python` agent
+### 3. Run code-reviewer Agent
+
+The unified `code-reviewer` agent handles Go, Python and TypeScript/React/Next.js. No language-specific routing required.
 
 **IMPORTANT**: When invoking the Task tool, always pass `model: "opus"` explicitly (or the user-specified model).
 
 Example Task invocation:
 ```
 Task(
-  subagent_type: "code-reviewer-go",
+  subagent_type: "code-reviewer",
   model: "opus",
   prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\n{task description}"
 )
 ```
+
+If `JIRA_ISSUE` was resolved to `"none"` in Step 1, pass it through unchanged — the agent will skip Jira fetching and review the diff only.
 
 The agent will:
 - Analyze code against requirements

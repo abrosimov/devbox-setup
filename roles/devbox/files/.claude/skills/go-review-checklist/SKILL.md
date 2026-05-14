@@ -2,9 +2,9 @@
 name: go-review-checklist
 description: >
   Go code review checklist, verification checkpoints, and review patterns.
-  Used by code-reviewer-go agent. Covers enumeration, verification, counter-evidence,
-  backward compatibility, and domain compliance checks. Use when reviewing Go code
-  or running verification checkpoints.
+  Used by the code-reviewer agent when reviewing Go files. Covers enumeration,
+  verification, counter-evidence, backward compatibility, and domain compliance
+  checks. Use when reviewing Go code or running verification checkpoints.
 ---
 
 # Go Review Checklist

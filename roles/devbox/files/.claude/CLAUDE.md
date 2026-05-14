@@ -53,6 +53,14 @@ After presenting options/analysis, always end with:
 
 Never add `Co-Authored-By` trailers to commit messages.
 
+### Language Policy
+
+**Written artifacts**: British English only. File contents, code comments, docstrings, commit messages, PR titles/descriptions, plans, designs, JSON outputs, and persisted memory files MUST be in British English regardless of conversation language.
+
+**Conversational responses**: match the user's language (Russian or English). Chat replies, `AskUserQuestion` text, and `TaskCreate` subjects follow the user.
+
+A non-blocking PostToolUse hook (`bin/post-edit-cyrillic-guard`) warns when Cyrillic leaks into Edit/Write/MultiEdit/NotebookEdit content. Allowlist: `testdata/`, `fixtures/`, `memory/`. When the warning fires, self-correct on the next edit. Full rules: see `agent-base-protocol` and `project-preferences` skills.
+
 ---
 
 ## Code Projects Only

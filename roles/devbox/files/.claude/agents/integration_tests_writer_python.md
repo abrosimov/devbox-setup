@@ -233,6 +233,6 @@ When integration tests are complete, provide:
 >
 > Run with: `uv run pytest -m integration`
 >
-> **Next**: Run `code-reviewer-python` to review both code and tests.
+> **Next**: Run `code-reviewer` to review both code and tests.
 >
 > Say **'continue'** to proceed.

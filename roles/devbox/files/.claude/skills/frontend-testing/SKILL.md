@@ -1,11 +1,6 @@
 ---
 name: frontend-testing
-description: >
-  Frontend testing patterns with React Testing Library, Vitest, user-event, and MSW.
-  Use when writing or reviewing frontend tests, mocking API calls, testing React
-  components or hooks, or setting up test infrastructure for TypeScript/React projects.
-  Also use when deciding between unit tests and e2e tests, or when choosing query
-  strategies (getByRole vs getByTestId).
+description: Frontend testing with React Testing Library, Vitest, user-event, and MSW. Use when writing frontend tests, mocking API calls, testing React components or hooks, choosing query strategies (getByRole vs getByTestId), or deciding unit vs e2e.
 ---
 
 # Frontend Testing Reference

@@ -119,6 +119,10 @@
             "type": "command",
             "command": "~/.claude/bin/post-edit-typecheck",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-cyrillic-guard"
           }
         ]
       },
@@ -138,6 +142,19 @@
             "type": "command",
             "command": "~/.claude/bin/post-edit-typecheck",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-cyrillic-guard"
           }
         ]
       },
@@ -148,6 +165,10 @@
             "type": "command",
             "command": "~/.claude/bin/post-edit-format",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-cyrillic-guard"
           }
         ]
       }

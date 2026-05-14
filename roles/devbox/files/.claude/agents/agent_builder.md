@@ -100,7 +100,7 @@ Every agent in this system falls into one of these archetypes. Use the correct t
 
 ### Archetype 1: Code-Writing Agent
 
-**Examples**: `software-engineer-go`, `unit-tests-writer-python`
+**Examples**: `software-engineer-go`, `unit-test-writer`
 
 **Mandatory sections** (in order):
 1. FORBIDDEN PATTERNS (zero-tolerance items at the very top)
@@ -145,7 +145,7 @@ Every agent in this system falls into one of these archetypes. Use the correct t
 
 ### Archetype 3: Review Agent
 
-**Examples**: `code-reviewer-go`, `code-reviewer-python`
+**Examples**: `code-reviewer`, `database-reviewer`
 
 **Mandatory sections** (in order):
 1. File Operations

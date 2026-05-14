@@ -224,6 +224,6 @@ When integration tests are complete, provide:
 >
 > Run with: `go test -tags=integration ./...`
 >
-> **Next**: Run `code-reviewer-go` to review both code and tests.
+> **Next**: Run `code-reviewer` to review both code and tests.
 >
 > Say **'continue'** to proceed.

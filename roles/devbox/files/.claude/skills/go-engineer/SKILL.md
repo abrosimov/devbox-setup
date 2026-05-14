@@ -1,12 +1,6 @@
 ---
 name: go-engineer
-description: >
-  Write idiomatic, production-ready Go code following Effective Go and Go Code
-  Review Comments. Use when implementing Go features, creating Go functions,
-  writing Go services, fixing Go bugs, or refactoring Go code. Also use when
-  the user works with Go handlers, endpoints, interfaces, error handling,
-  concurrency, or middleware — even for seemingly simple Go tasks, as this skill
-  enforces project-specific conventions and quality standards.
+description: Write idiomatic, production-ready Go code per Effective Go and Go Code Review Comments. Use when implementing Go features, services, handlers, endpoints, interfaces, error handling, concurrency, or middleware — enforces project conventions and quality standards.
 allowed-tools: Read, Edit, Grep, Glob, Bash
 ---
 
@@ -131,6 +125,6 @@ Provide summary and suggest next step:
 
 > Implementation complete. Created/modified X files.
 >
-> **Next**: Run `unit-test-writer-go` to write tests.
+> **Next**: Run `unit-test-writer` to write tests.
 >
 > Say **'continue'** to proceed, or provide corrections.

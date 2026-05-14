@@ -62,7 +62,7 @@ Use `/init-workflow` to explicitly set up the workflow config:
 │   ├── software_engineer_*.md
 │   ├── unit_tests_writer_*.md
 │   ├── integration_tests_writer_*.md
-│   ├── code_reviewer_*.md
+│   ├── code_reviewer.md            # polyglot: Go, Python, Frontend
 │   ├── implementation_planner_*.md
 │   ├── api_designer.md
 │   ├── database_designer.md
@@ -219,7 +219,7 @@ This gate prevents agents from fabricating verification results — the orchestr
   Depends on: Step 5b
 
 ### Step 7: Review
-- **code_reviewer_*** — Validates implementation against requirements (per language/stack)
+- **code_reviewer** — Validates implementation against requirements. Detects stacks in the diff (Go / Python / Frontend) and loads matching skills
   Depends on: Step 6
   If blocking issues found → return to Step 5 with feedback
 
@@ -304,9 +304,7 @@ Grounding references (cached Anthropic docs) are read at the start of every buil
 | **Any Python topic** | `software-engineer-python` | `/implement` |
 | **Any Frontend topic** (React, TypeScript, Next.js) | `software-engineer-frontend` | `/implement` |
 | **Fullstack feature** | Backend SE + Frontend SE (sequential or parallel) | `/implement` |
-| Go tests | `unit-test-writer-go` | `/test` |
-| Python tests | `unit-test-writer-python` | `/test` |
-| Frontend tests | `unit-test-writer-frontend` | `/test` |
+| Unit tests (any stack) | `unit-test-writer` | `/test` |
 
 ### Exceptions (Answer Directly)
 
@@ -463,7 +461,7 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 | Model | Agents |
 |-------|--------|
-| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, **all implementation-planner-\***, **all code-reviewer-\***, **all software-engineer-\*** |
+| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, code-reviewer, **all implementation-planner-\***, **all software-engineer-\*** |
 | `sonnet` | unit-test-writer-*, observability-engineer, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
 | `haiku` | Search, grep, file discovery tasks (via `model: "haiku"` in Task tool) |
 

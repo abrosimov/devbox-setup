@@ -4,6 +4,9 @@ description: >
   How Claude Code's sandbox interacts with language toolchains (Go, Python, Node).
   Covers writable directories, network restrictions, env var configuration,
   and a decision tree for diagnosing tool failures in sandbox.
+  Not to be confused with `project-toolchain` (invocation ergonomics) —
+  `sandbox-toolchain` covers environment boundaries: what the sandbox allows
+  (writable dirs, network allowlist, env vars).
 alwaysApply: false
 triggers:
   - sandbox

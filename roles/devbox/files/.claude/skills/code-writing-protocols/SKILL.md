@@ -381,6 +381,24 @@ Exit Routine Mode and ask ONLY if you encounter:
 
 ---
 
+## User-Supplied Code is a Sketch, Not a Spec
+
+When the user provides example code in the brief — a draft fix, an illustrative snippet, a "make it look like this" pattern — treat it as a **sketch showing intent**, not as a spec to transcribe verbatim. Comments inside the sketch are subject to the same `code-comments` rules as any other comment in the codebase.
+
+The failure mode this guards against is **draft pass-through**: the agent transcribes user-supplied code faithfully, and bloated comments the user wrote by reflex (often branch-label narration — see `code-comments` "What's NOT WHY") end up in production. The engineer's job is to apply project conventions, not to act as a stenographer.
+
+**Before transcribing user-supplied code:**
+
+1. Run the verbosity check from `code-comments` on every comment in the sketch.
+2. For any comment that fails — ≥4 lines, branch-label narration, speculative ("if someone later adds…"), mechanism over-explanation, or restating visible code:
+   - **Compress** to the load-bearing core.
+   - **Flag the change** in your reply: "I shortened the comment on `file.py:NN` from N lines to M because <rule>. Was the original load-bearing for a reason I'm missing?"
+3. **Never silently strip a comment.** If you're uncertain whether the content is load-bearing, ask. The user may know an invariant you don't.
+
+This applies to all code in the prompt: inline snippets, code fences, attached files, multi-file briefs. The same rule applies to test-writer agents transcribing example tests.
+
+---
+
 ## Self-Review: Comment Audit (MANDATORY)
 
 Before completing ANY implementation or test-writing task, answer honestly:
@@ -392,7 +410,32 @@ Before completing ANY implementation or test-writing task, answer honestly:
 2. **For each comment I kept, does deleting it make the code unclear?**
    - If NO: **Delete it NOW**
 
-Only proceed after removing all narration comments.
+3. **For each surviving comment, can I cut it by ≥50% without losing the load-bearing part?**
+   - Comments are where helpfulness drift shows up most. Default is 1 line; ≥4 lines means it should be a docstring/ADR, not a comment. See `code-comments` skill, Verbosity Ceiling.
+   - If YES: **Cut it NOW**
+
+4. **Does any comment contain speculation ("if someone later adds X..."), mechanism over-explanation, or restate visible code?**
+   - These are drift, not WHY. See `code-comments` skill, "What's NOT WHY".
+   - If YES: **Strip those parts NOW**
+
+Only proceed after all four checks pass.
+
+---
+
+## Adversarial Self-Review Before Reporting
+
+Before reporting analysis, recommendations, or findings — comment-cut totals, refactor proposals, tier ladders (Conservative/Recommended/Aggressive), risk rankings — ask:
+
+> *"If a strict reviewer applied the rule rigorously to my OWN recommendation, what would they cut, sharpen, or tighten?"*
+
+Apply that cut, then report. **The strict reading of a rule IS the recommended reading.** Conservative tiers must justify their leniency, not the other way round. The agent's default posture is too lenient — this pass corrects for it.
+
+Applies to:
+- **Comment-audit cuts**: the strict four-way deletion (see `code-comments` skill) is the default recommendation, not the Conservative tier
+- **Refactor proposals**: the maximally simple option is the default
+- **DSS / tier ladders**: the strictest option is the default; relax only with explicit reason
+
+When in doubt: the rule's strict reading wins. The user can over-rule; the agent should not pre-emptively relax on the user's behalf.
 
 ---
 
@@ -583,6 +626,8 @@ After Pre-Flight passes, verify these quality checks. Language-specific items ar
 - [ ] I have NOT added narration comments (Create, Get, Check, Return, Initialize, Handle, Render, Map, Set)
 - [ ] For each comment I wrote: if I delete it, does the code become unclear? If NO → deleted it
 - [ ] The only comments remaining explain WHY (business rules, gotchas), not WHAT
+- [ ] Every surviving comment is ≤3 lines. Multi-paragraph WHY blocks have been cut (≥4 lines → docstring/ADR, not a comment)
+- [ ] No comment contains speculation ("if someone later adds X..."), mechanism over-explanation, or restates visible code
 
 ### Scope Check (Anti-Helpfulness)
 - [ ] I did NOT add features not in the plan

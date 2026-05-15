@@ -4,7 +4,9 @@ description: >
   Sequential Thinking MCP patterns for structured multi-step reasoning. Covers when
   to use sequential thinking, thought management, branching, and summary generation.
   Use when decomposing complex problems, performing multi-step analysis, evaluating
-  trade-offs, or needing structured thought chains with branching.
+  trade-offs, or needing structured thought chains with branching. Not to be confused
+  with `fpf-thinking` (systems framing) or `diverge-synthesize-select` (option choice) —
+  sequential thinking is for stepwise decomposition with revisable thoughts.
 ---
 
 # Sequential Thinking MCP

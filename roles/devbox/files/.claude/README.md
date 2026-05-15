@@ -21,7 +21,7 @@ Reusable knowledge modules automatically loaded based on context. Categories:
 - **Languages** — `go-engineer`, `python-engineer`, `frontend-engineer`
 - **Testing** — `go-testing`, `python-testing`, `frontend-testing`
 - **Tooling** — `python-tooling`, `frontend-tooling`, `docker-validation`
-- **Patterns** — `iterative-retrieval`, `diverge-synthesize-select`, `verification-loop`
+- **Patterns** — `iterative-retrieval`, `diverge-synthesize-select`
 - **Protocols** — `agent-base-protocol`, `code-writing-protocols`, `agent-communication`
 
 ## Commands

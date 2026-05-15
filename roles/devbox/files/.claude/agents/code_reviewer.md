@@ -31,7 +31,7 @@ Use for: small PRs, routine changes, follow-up reviews after fixes.
 | F3 | Error context wrapping | Exception chaining (`raise ... from`) | No `any` types / unsafe `as` |
 | F4 | No runtime `panic()` | No bare `except:` / `except Exception:` | Accessibility basics (no `<div onClick>`, all `<img>` have `alt`) |
 | F5 | Pointer/value receiver consistency | Visibility (`__` on leaf classes, `Final` constants) | Hook correctness (no `useEffect` for derived state) |
-| F6 | No narration comments | No narration comments / unnecessary docstrings | No narration comments |
+| F6 | No narration; no multi-paragraph WHY blocks (≥4 lines = candidate to cut) | No narration; no unnecessary docstrings; no multi-paragraph WHY blocks | No narration; no multi-paragraph WHY blocks |
 
 **Fast Review Output Format:**
 
@@ -296,7 +296,7 @@ Language-specific verification themes (run only for detected stacks):
 
 | ID | Name | What to verify | Reference skill |
 |----|------|----------------|-----------------|
-| C-1 | Comment Quality (BLOCKING) | No narration comments, no section dividers, only WHY/WARNING/TODO. Search diff for `// [A-Z][a-z].*the`, `# Check`, `// Render`, `// ---`, `# ===`, etc. | `code-comments` |
+| C-1 | Comment Quality (BLOCKING) | No narration, no section dividers, only terse WHY/WARNING/TODO. Search diff for narration tells (`// [A-Z][a-z].*the`, `# Check`, `// Render`, `// ---`, `# ===`) AND multi-paragraph WHY blocks (any consecutive run of ≥4 `//` or `#` lines added in the diff). Each multi-paragraph block is a candidate: flag it and propose a compressed version per the `code-comments` Verbosity Ceiling. Also strip speculative/futurist WHY (`# if someone later adds X...`) and mechanism over-explanation. | `code-comments` |
 | C-2 | Lint Suppression Discipline | Every new `//nolint`, `# noqa`, `# type: ignore`, `eslint-disable`, `@ts-ignore`, `@ts-expect-error` is justified, scoped, and was approved. | `lint-discipline` |
 | C-3 | Scope Verification | Plan/spec/design exists? Walk the **Review Contract**, **SE Verification Contract**, **Assumption Register**, **Test Mandate** rows. Classify SE additions as production-necessity (OK) or product-feature (FLAG). | upstream `plan.md` |
 | C-4 | Complexity Review | Apply Occam's Razor. Flag unnecessary abstractions, premature generalisation, deep nesting, reversal-test failures (could this be deleted/inlined?). | — |

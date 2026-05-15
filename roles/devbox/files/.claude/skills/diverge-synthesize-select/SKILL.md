@@ -1,6 +1,6 @@
 ---
 name: diverge-synthesize-select
-description: Diverge-Synthesize-Select (DSS) protocol for generating diverse solution options, synthesising the best elements, and presenting structured choices. Use when exploring options, comparing approaches, or evaluating trade-offs.
+description: Diverge-Synthesize-Select (DSS) protocol for generating diverse solution options, synthesising the best elements, and presenting structured choices. Use when exploring options, comparing approaches, or evaluating trade-offs. Not to be confused with `fpf-thinking` (problem framing) or `mcp-sequential-thinking` (step chains) — DSS generates explicit options and presents a structured choice.
 alwaysApply: false
 ---
 

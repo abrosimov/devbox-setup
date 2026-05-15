@@ -110,7 +110,7 @@ Replace `{scope}` with `memory-upstream` or `memory-downstream` depending on you
 
 ### Context Survival Entities (Upstream)
 
-Used by the `/checkpoint` command and resume protocol (see `context-survival` skill):
+Used by the `/checkpoint` command and resume protocol:
 
 | Entity Type | Naming Pattern | Example |
 |-------------|---------------|---------|

@@ -3,6 +3,9 @@ name: project-toolchain
 description: >
   Project toolchain detection and correct command prefixes per language.
   Prevents failures from bare tool invocations outside virtual environments.
+  Not to be confused with `sandbox-toolchain` (Claude Code sandbox boundaries) —
+  `project-toolchain` covers invocation ergonomics: what to type
+  (e.g. `uv run pytest`, `pnpm test`) so commands actually work.
 alwaysApply: true
 ---
 

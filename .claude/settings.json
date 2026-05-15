@@ -2,6 +2,11 @@
   "permissions": {
     "defaultMode": "acceptEdits",
     "allow": [
+      "Edit",
+      "Write",
+      "NotebookEdit",
+      "Bash(rm:roles/devbox/files/.claude/skills/**)",
+      "Bash(rm:roles/devbox/files/.claude/agents/**)",
       "Task",
       "Glob",
       "Grep",

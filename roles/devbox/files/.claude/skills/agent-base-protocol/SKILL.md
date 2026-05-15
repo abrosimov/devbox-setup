@@ -58,8 +58,10 @@ After completing the exploration protocol, present options:
 
 ### How to Ask
 
+**Default to a multiple-choice ask.** The user can pick a letter in 1 second; free-text takes 30. Multiple-choice also externalises your internal candidate distribution, which is the point.
+
 1. **Provide context** — What you are working on, what led to this question
-2. **Present options** — List interpretations with trade-offs (not just "what should I do?")
+2. **Prefer multiple-choice over free-text** — Produce 2–4 concrete interpretations or approaches (A/B/C/D), each with a one-line trade-off. Free-text "what did you mean?" is permitted only when you cannot enumerate a small candidate set.
 3. **State your recommendation** — Which option you would choose and why
 4. **Ask the specific question** — What decision you need from them
 

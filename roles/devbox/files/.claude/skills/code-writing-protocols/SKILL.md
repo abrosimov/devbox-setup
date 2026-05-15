@@ -34,6 +34,7 @@ Look for explicit approval in the last 2-3 user messages:
 - User said "ultrathink", "analyze", "think about", "propose"
 - User said "interesting", "I see", "okay" (acknowledgment ≠ approval)
 - No explicit approval after presenting alternatives
+- Approval covered scope X; current action covers scope Y (different scope = new approval needed)
 
 ### Step 2: If Approval NOT Found
 
@@ -448,6 +449,11 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 **1. Problem Clarity**
 - [ ] I can state the problem in one sentence
 - [ ] I understand WHY this needs to change (not just WHAT)
+
+**1.5. Ambiguity Surface**
+- [ ] I have written down the Restated-intent / Assumptions / Open-questions block from `CLAUDE.md` (or held it in mind for routine work)
+- [ ] For each assumption: "if the user meant the opposite, would I do anything different?" → if YES, this is an open question, not an assumption
+- [ ] All open questions are resolved (approval token, user answer, or explicit re-read of conversation that confirms)
 
 **2. Solution Quality**
 - [ ] This addresses root cause, not just symptom

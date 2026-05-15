@@ -10,3 +10,5 @@ local/
 
 tmp/
 roles/devbox/files/.config/nvim/lazy-lock.json
+__pycache__/
+*.pyc

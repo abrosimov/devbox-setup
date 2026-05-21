@@ -16,8 +16,10 @@ function __proj_install_hooks --argument-names repo_dir
     echo "Installed git hooks"
 end
 
-# Helper: copy git-ignored files to a new worktree
-# Uses .wtfiles manifest if present, otherwise prompts interactively
+# Helper: seed a new worktree with gitignored files shared from base
+# Uses .wtfiles manifest if present, otherwise prompts interactively.
+# Default verb is `link` (symlink); explicit `copy` is the escape hatch
+# for entries that must diverge per worktree.
 function __proj_wt_copy_shared --argument-names base_dir wt_path
     set -l manifest "$base_dir/.wtfiles"
 
@@ -26,7 +28,7 @@ function __proj_wt_copy_shared --argument-names base_dir wt_path
             string match -qr '^\s*(#|$)' -- "$line"; and continue
             set line (string trim -- "$line")
 
-            set -l verb copy
+            set -l verb link
             set -l fpath
             if string match -qr '^(copy|link)\s+' -- "$line"
                 set verb (string match -r '^(copy|link)' -- "$line")[1]
@@ -76,7 +78,7 @@ function __proj_wt_copy_shared --argument-names base_dir wt_path
         printf "  %d. %s\n" $i "$candidates[$i]"
     end
     echo ""
-    read -P "Copy to worktree? [a=all / n=none / 1,3,...]: " answer
+    read -P "Link into worktree? [a=all / n=none / 1,3,...]: " answer
 
     switch "$answer"
         case '' n N no
@@ -84,8 +86,8 @@ function __proj_wt_copy_shared --argument-names base_dir wt_path
         case a A all
             for f in $candidates
                 mkdir -p (dirname "$wt_path/$f")
-                cp -r "$base_dir/$f" "$wt_path/$f"
-                echo "  Copied $f"
+                ln -sf (realpath "$base_dir/$f") "$wt_path/$f"
+                echo "  Linked $f"
             end
         case '*'
             for idx in (string split ',' -- "$answer")
@@ -93,8 +95,8 @@ function __proj_wt_copy_shared --argument-names base_dir wt_path
                 if string match -qr '^\d+$' -- "$idx"; and test "$idx" -ge 1 -a "$idx" -le (count $candidates)
                     set -l f "$candidates[$idx]"
                     mkdir -p (dirname "$wt_path/$f")
-                    cp -r "$base_dir/$f" "$wt_path/$f"
-                    echo "  Copied $f"
+                    ln -sf (realpath "$base_dir/$f") "$wt_path/$f"
+                    echo "  Linked $f"
                 end
             end
     end
@@ -125,10 +127,10 @@ function proj --description "Project management: clone repos, cd into projects"
         echo "  proj wt clean                      — remove all fully-merged worktrees"
         echo "  proj wt <name>                     — cd to worktree"
         echo ""
-        echo "  .wtfiles in repo root: list files to copy/link into new worktrees"
-        echo "    .env               — copy (default)"
-        echo "    copy config/local  — explicit copy"
-        echo "    link data/fixtures — symlink"
+        echo "  .wtfiles in repo root: list gitignored paths to share with new worktrees"
+        echo "    .env               — symlink (default)"
+        echo "    link data/fixtures — explicit symlink"
+        echo "    copy config/local  — copy instead (for per-worktree divergence)"
         return 2
     end
 
@@ -391,20 +393,7 @@ function proj --description "Project management: clone repos, cd into projects"
                     end
 
                     and echo "Ready: $wt_path"
-                    # Claude Code extras (settings.local.json + memory symlink)
-                    if test -d "$base_dir/.claude"
-                        if test -f "$base_dir/.claude/settings.local.json"
-                            mkdir -p "$wt_path/.claude"
-                            cp "$base_dir/.claude/settings.local.json" "$wt_path/.claude/"
-                            echo "Copied .claude/settings.local.json"
-                        end
-                        if test -d "$base_dir/.claude/memory"
-                            mkdir -p "$wt_path/.claude"
-                            ln -sf (realpath "$base_dir/.claude/memory") "$wt_path/.claude/memory"
-                            echo "Linked .claude/memory"
-                        end
-                    end
-                    # Copy git-ignored files (.wtfiles manifest or interactive)
+                    # Seed worktree from .wtfiles manifest (or interactive prompt)
                     __proj_wt_copy_shared "$base_dir" "$wt_path"
                     and cd "$wt_path"
 
@@ -434,18 +423,6 @@ function proj --description "Project management: clone repos, cd into projects"
 
                     echo "Forked from $(git rev-parse --abbrev-ref HEAD 2>/dev/null; or echo $source_commit) → $wt_path"
 
-                    if test -d "$base_dir/.claude"
-                        if test -f "$base_dir/.claude/settings.local.json"
-                            mkdir -p "$wt_path/.claude"
-                            cp "$base_dir/.claude/settings.local.json" "$wt_path/.claude/"
-                            echo "Copied .claude/settings.local.json"
-                        end
-                        if test -d "$base_dir/.claude/memory"
-                            mkdir -p "$wt_path/.claude"
-                            ln -sf (realpath "$base_dir/.claude/memory") "$wt_path/.claude/memory"
-                            echo "Linked .claude/memory"
-                        end
-                    end
                     __proj_wt_copy_shared "$base_dir" "$wt_path"
                     and cd "$wt_path"
 

@@ -93,7 +93,7 @@ Halt immediately and request confirmation if you would:
 - Write to a file you have not previously read
 - Skip a pre-commit hook (`--no-verify`) or signing (`--no-gpg-sign`)
 
-These are categorical. There are no exceptions. Hooks in `hooks.json` already block force-push, `--amend`, `--no-verify`, and commits on main; the list above is the prompt-level memory aid covering the actions hooks do not yet catch (out-of-scope edits, unread-file writes, `rm -rf`, `git reset --hard`, destructive SQL).
+These are categorical. There are no exceptions. Hooks in `hooks.json` (via `bin/pre_bash_safety_gate.py`) block all the destructive shell actions above. Out-of-scope edits and unread-file writes depend on conversation state and remain prompt-only.
 
 ### Before Any Implementation
 

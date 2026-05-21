@@ -1,6 +1,7 @@
 .ansible/
 .claude/memory
 .claude/commands
+.claude/settings.local.json
 .idea/
 .vscode/
 debug/

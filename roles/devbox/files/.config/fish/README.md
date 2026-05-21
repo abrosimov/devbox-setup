@@ -52,6 +52,28 @@
 | `wt rm <name>` | Remove worktree |
 | `wt <name>` | `cd` to worktree directory |
 
+#### `.wtfiles` manifest
+
+A `.wtfiles` in the repo root lists gitignored paths to share with every new
+worktree. Default verb is `link` (symlink); use `copy` only when the entry must
+diverge per worktree.
+
+```
+# bare path → symlink (default)
+.claude/settings.local.json
+.claude/memory
+
+# explicit verbs
+link node_modules
+copy .env       # per-worktree credentials that should not propagate
+```
+
+Recommended for `.claude/` projects: symlink `agents/`, `commands/`, `skills/`,
+`memory/`, `settings.local.json`, and `workflow.json`. Never share `.venv`,
+`node_modules` across worktrees if dependencies diverge per branch — let each
+worktree rebuild and rely on the global cache (pnpm store, `uv` cache, Go module
+cache).
+
 ### Kubernetes (`k`)
 
 Run `k` with no arguments for full usage. Wrapper around kubectl with context/namespace helpers.

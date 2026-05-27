@@ -134,7 +134,6 @@ return {
 			automatic_enable = false,
 			ensure_installed = {
 				"gopls",
-				"basedpyright",
 				"ts_ls",
 				"rust_analyzer",
 				"clangd",
@@ -174,32 +173,11 @@ return {
 			})
 			vim.lsp.enable("gopls")
 
-			-- Python — basedpyright for types/completion/import code actions, ruff for linting/formatting
-			vim.lsp.config("basedpyright", {
-				before_init = function(_, config)
-					if not config.root_dir then
-						return
-					end
-					local venv_python = config.root_dir .. "/.venv/bin/python"
-					if vim.uv.fs_stat(venv_python) then
-						config.settings.python.pythonPath = venv_python
-					end
-				end,
-				settings = {
-					python = {
-						pythonPath = "",
-					},
-					basedpyright = {
-						analysis = {
-							autoImportCompletions = true,
-							autoSearchPaths = true,
-							diagnosticMode = "openFilesOnly",
-							useLibraryCodeForTypes = true,
-						},
-					},
-				},
-			})
-			vim.lsp.enable("basedpyright")
+			-- Python — pyrefly for types/completion/navigation, ruff for linting/formatting.
+			-- Pyrefly currently ignores LSP-client settings (facebook/pyrefly#1633); strictness
+			-- and analysis options must live in per-project pyrefly.toml or [tool.pyrefly].
+			vim.lsp.config("pyrefly", {})
+			vim.lsp.enable("pyrefly")
 
 			vim.lsp.config("ruff", {})
 			vim.lsp.enable("ruff")
@@ -319,7 +297,7 @@ return {
 
 			-- Dart LSP is handled by flutter-tools.nvim — do NOT configure dartls here
 
-			-- Disable hover from ruff so basedpyright handles it
+			-- Disable hover from ruff so pyrefly handles it
 			vim.api.nvim_create_autocmd("LspAttach", {
 				group = vim.api.nvim_create_augroup("lsp_disable_ruff_hover", { clear = true }),
 				callback = function(args)
@@ -637,7 +615,7 @@ return {
 		end,
 	},
 
-	-- 9. Auto-import via LSP code actions (basedpyright provides "Add import" actions)
+	-- 9. Auto-import via LSP code actions (pyrefly provides "Add import" actions)
 	{
 		"neovim/nvim-lspconfig",
 		keys = {

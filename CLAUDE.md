@@ -10,36 +10,31 @@ Ansible-based developer workstation setup tool that automates installation and c
 
 ## Commands
 
+A profile is mandatory for any playbook run. Bare `make run` / `make dev` / `make check` fail with `PROFILE is required` — use the per-profile wrappers below. `personal` targets a personal laptop (`PROJECTS_DIR=~/Projects`); `work` targets a work laptop (`PROJECTS_DIR=~/Work`).
+
 ```bash
 # Bootstrap (macOS only — installs Homebrew, Ansible, collections)
 make init
 
-# Full setup run (prompts for vault password and sudo)
-make run
-
-# Development mode — deploys to ../debug/dotfiles instead of ~
-make dev
+# Full setup runs (prompt for vault password and sudo)
+make personal   # personal profile
+make work       # work profile
 
 # Increase verbosity (V=1 through V=4)
-make run V=2
+make personal V=2
 
-# Partial runs via tags
-make packages       # package installation only
-make configs        # configuration files only
-make user           # user setup and shell config only
+# Development mode — deploys to ../debug/dotfiles instead of ~
+make dev-personal
+make dev-work
 
-# Dev mode with specific phases
-make dev-packages
-make dev-configs
-make dev-user
-
-# Custom tag combinations
-make run TAGS="packages,configs"
-make dev TAGS="configs"
+# Tag-scoped runs (no convenience targets — pass --tags via EXTRA_VARS)
+make personal EXTRA_VARS='--tags packages'
+make dev-personal EXTRA_VARS='--tags configs'
 
 # Linting and dry-run
 make lint            # syntax-check + ansible-lint
-make check           # dry-run (check mode, prompts for vault+sudo)
+make check-personal  # dry-run with personal profile (prompts for vault + sudo)
+make check-work      # dry-run with work profile
 make check-dev       # dry-run in dev_mode (uses test vault, no sudo)
 
 # Fish shell upgrade + tide prompt sync
@@ -165,7 +160,7 @@ Use via `/devcontainer init` (Claude Code command) or `claude-devcontainer init`
 
 When working in `roles/devbox/files/.claude/` you are editing files that get deployed to `~/.claude/`. This is a distinct activity from editing the Ansible playbook itself:
 
-- **Agent/skill/command changes** don't need `make run` — subdirs are symlinked, so edits in the repo are live in `~/.claude/` immediately
+- **Agent/skill/command changes** don't need a playbook re-run (`make personal`/`make work`) — subdirs are symlinked, so edits in the repo are live in `~/.claude/` immediately
 - **`settings.json` changes** affect sandbox permissions, network allowlists, and tool approvals globally
 - **`hooks.json` changes** define pre/post hooks for tool calls (scripts in `bin/`)
 - **`templates/` changes** affect devcontainer scaffolding for new projects

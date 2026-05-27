@@ -10,29 +10,30 @@ Ansible-based developer workstation setup. Automates installation of packages, d
 ## Quick Start
 
 ```bash
-make init   # Bootstrap (macOS: Homebrew, Ansible, collections)
-make run    # Full run (prompts for vault password and sudo)
-make dev    # Development mode — deploys to ../debug/dotfiles
+make init       # Bootstrap (macOS: Homebrew, Ansible, collections)
+make personal   # Full run with the personal profile (prompts for vault + sudo)
+make work       # Full run with the work profile
 ```
+
+A profile is mandatory: bare `make run` / `make dev` / `make check` fail with `PROFILE is required`. Use the per-profile wrappers below.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `make run` | Full setup (prompts for vault + sudo) |
-| `make dev` | Deploy to `../debug/dotfiles` instead of `~` |
-| `make packages` | Package installation only |
-| `make configs` | Configuration files only |
-| `make user` | User setup and shell config only |
-| `make run TAGS="..."` | Custom tag combination |
+| `make personal` | Full setup with personal profile (prompts for vault + sudo) |
+| `make work` | Full setup with work profile |
+| `make dev-personal` | Deploy to `../debug/dotfiles` with personal profile |
+| `make dev-work` | Deploy to `../debug/dotfiles` with work profile |
+| `make check-personal` | Dry-run with personal profile |
+| `make check-work` | Dry-run with work profile |
+| `make check-dev` | Dry-run in dev_mode (test vault, no sudo) |
 | `make upgrade-personal` | Upgrade all packages (personal profile) |
 | `make upgrade-work` | Upgrade all packages (work profile) |
 | `make lint` | Syntax-check + ansible-lint |
-| `make check` | Dry-run (check mode) |
-| `make check-dev` | Dry-run in dev_mode |
 | `make validate-claude` | Validate agent/skill cross-references |
 
-Add `V=1` through `V=4` for verbosity.
+Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_VARS='-e foo=bar'` (e.g. `--tags`: `make personal EXTRA_VARS='--tags packages'`).
 
 ## Configuration
 

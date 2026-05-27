@@ -124,6 +124,6 @@ devbox_packages:
     - ansible-lint
     - debugpy
     - keyring
-    - basedpyright
+    - pyrefly
     - pylint
     - sqlfluff

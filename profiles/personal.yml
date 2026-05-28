@@ -2,5 +2,12 @@ devbox_projects_dir: "$HOME/Projects"
 
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []
-# devbox_extra_brew_casks: []
+# Docker Desktop lives in the `_no_binaries` list because brew's regular
+# install path fails on this cask: the .pkg ships root-owned files inside
+# /Applications/Docker.app, and brew's post-install `xattr -w` step runs as
+# the user. See Homebrew/homebrew-cask#147300 and Homebrew/brew#16309.
+# The original Docker on this machine was installed from docker.com (pre-repo),
+# which left the .app and CLI shims already in place; brew just adopts it.
+devbox_extra_brew_casks_no_binaries:
+  - docker-desktop   # Personal machines use Docker Desktop; work uses OrbStack.
 # devbox_extra_mcp_http_servers: []

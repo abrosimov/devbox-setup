@@ -20,6 +20,8 @@
     state: present
     install_options: 'adopt'
     upgrade_all: false
+    sudo_password: "{{ ansible_become_password }}"
+  no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
   register: cask_primary_result
   failed_when:
     - cask_primary_result.failed is defined

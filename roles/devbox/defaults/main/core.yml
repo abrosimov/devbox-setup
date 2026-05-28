@@ -14,4 +14,11 @@ devbox_projects_dir: "$HOME/Projects"
 # Lists are concatenated with base lists in task files via `+`.
 devbox_extra_brew: []
 devbox_extra_brew_casks: []
+# Casks installed with `--no-binaries` to skip brew's CLI shim + Spotlight
+# metadata steps. Required for casks like `docker-desktop` whose .pkg installer
+# writes root-owned files into the .app bundle, after which brew's post-install
+# `xattr -w` (run as the user) fails with "Operation not permitted". The
+# affected CLIs (e.g. docker, docker-compose) are linked by the vendor's own
+# installer into /usr/local/bin, so the user-facing surface is unchanged.
+devbox_extra_brew_casks_no_binaries: []
 devbox_extra_mcp_http_servers: []

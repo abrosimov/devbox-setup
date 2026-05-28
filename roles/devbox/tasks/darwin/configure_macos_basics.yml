@@ -1,0 +1,65 @@
+---
+# Codifies the manual steps from kabrosimov_notes/MacOS/*.md so a fresh install
+# converges to the expected state via `make personal` / `make work`.
+
+# --- Touch ID for sudo (note: "Using TouchID for sudo.md") -------------------
+# Persistent across system updates via sudo_local (Sonoma+).
+# Only useful when the lid is open; Touch ID is disabled in clamshell — see
+# future_projects/macos_tooling_setup.md for the YubiKey fallback plan.
+
+- name: "Ensure /etc/pam.d/sudo_local exists from Apple template"
+  ansible.builtin.copy:
+    src: /etc/pam.d/sudo_local.template
+    dest: /etc/pam.d/sudo_local
+    remote_src: true
+    owner: root
+    group: wheel
+    mode: "0644"
+    force: false
+  become: true
+
+- name: "Enable Touch ID PAM module in sudo_local"
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sudo_local
+    regexp: '^#?\s*auth\s+sufficient\s+pam_tid\.so\s*$'
+    line: "auth       sufficient     pam_tid.so"
+    state: present
+  become: true
+
+# --- Clamshell stay-awake (note: "Disable sleep when macbook is closed.md") --
+# Mandatory for the 90%-clamshell-with-external-keyboard workflow.
+
+- name: "Read current disablesleep state"
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      pmset -g custom | awk '/disablesleep/ {print $2; exit}'
+    executable: /bin/bash
+  register: pmset_disablesleep
+  changed_when: false
+  check_mode: false
+
+- name: "Disable sleep when lid is closed (clamshell mode stays awake)"
+  ansible.builtin.command: pmset -a disablesleep 1
+  when: pmset_disablesleep.stdout | trim != "1"
+  become: true
+
+# --- Developer mode (note: "Enable Developer mode.md") -----------------------
+# Removes the password prompt every time a debugger attaches to a process.
+
+- name: "Check DevToolsSecurity status"
+  ansible.builtin.command: /usr/sbin/DevToolsSecurity --status
+  register: devtools_status
+  changed_when: false
+  check_mode: false
+  failed_when: false
+
+- name: "Enable developer mode (debugger access without password)"
+  ansible.builtin.command: /usr/sbin/DevToolsSecurity --enable
+  when: '"enabled" not in (devtools_status.stdout | default(""))'
+  become: true
+
+# HiDPI for external displays (note: "Enable HiDPI for external displays.md")
+# is now handled by installing BetterDisplay via Homebrew cask — no Ansible
+# step needed. BetterDisplay's config lives in ~/Library/Application Support;
+# tracking it in this repo is a follow-up (see future_projects).

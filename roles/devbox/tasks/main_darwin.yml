@@ -9,6 +9,8 @@
   ansible.builtin.include_tasks: darwin/install_from_uv.yml
 - name: "Install kubectl"
   ansible.builtin.include_tasks: darwin/install_kubectl.yml
+- name: "Configure macOS basics (Touch ID for sudo, clamshell, dev mode)"
+  ansible.builtin.include_tasks: darwin/configure_macos_basics.yml
 - name: "Install configs"
   ansible.builtin.include_tasks: install_configs.yml
 - name: "Apply configs"

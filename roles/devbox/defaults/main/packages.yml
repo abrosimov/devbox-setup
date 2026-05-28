@@ -1,5 +1,15 @@
 ---
 # =============================================================================
+# Homebrew taps (third-party repositories)
+# =============================================================================
+
+# Tapped before any secondary install; required for FelixKratz tools
+# (sketchybar, borders) and nikitabobko's AeroSpace cask.
+devbox_brew_taps:
+  - nikitabobko/tap
+  - FelixKratz/formulae
+
+# =============================================================================
 # Homebrew formulae and casks
 # =============================================================================
 
@@ -47,7 +57,7 @@ devbox_brew_secondary:
   - uv
   - helm
   - tree-sitter-cli
-  - orbstack
+  # orbstack moved to profile overrides (work uses orbstack, personal uses docker-desktop).
   - k9s
   - fzf
   - tmux
@@ -76,6 +86,9 @@ devbox_brew_secondary:
   - clang-format   # C/C++ code formatter
   - ast-grep       # Structural AST code search — used by Claude Code ast-grep skill
   - codex           # OpenAI Codex CLI
+  - lima            # Linux VM (eBPF/bpftrace sandbox, perf-style observability)
+  - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
+  - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
 
 devbox_brew_secondary_casks:
   - codex-app
@@ -88,6 +101,13 @@ devbox_brew_secondary_casks:
   - claude
   - freelens
   - zen
+  # Window management / awesome-wm-on-mac stack (configured separately).
+  - nikitabobko/tap/aerospace  # i3-like tiling window manager (no SIP off)
+  - alt-tab                    # Window-level Alt-Tab (vs default app-level Cmd-Tab)
+  - raycast                    # App launcher with script-commands (rofi replacement)
+  - hammerspoon                # Lua scripting bridge to macOS (cursor/window/USB events)
+  - karabiner-elements         # Key remap for built-in laptop kb (Kinesis has its own ZMK)
+  - betterdisplay              # HiDPI for external monitors (replaces one-key-hidpi note)
 
 # npm packages (installed globally via node from secondary).
 devbox_npm_packages:

@@ -2,7 +2,9 @@
 
 PLAYBOOK      := playbooks/main.yml
 VAULT_OPTS    := --ask-vault-pass
-SUDO_OPTS     := -K
+# Sudo password is captured via `vars_prompt: ansible_become_password` in
+# playbooks/main.yml so it can also be passed to homebrew_cask.sudo_password.
+# Removing `-K` here avoids a redundant second prompt.
 EXTRA_VARS    ?=
 TEST_VAULT    := --vault-password-file tests/vault-password -e vault_file=../tests/vault.yml
 PROFILE       ?=
@@ -70,7 +72,7 @@ ifndef PROFILE
 	$(error PROFILE is required. Use: make personal, make work, make dev-personal, or make dev-work)
 endif
 	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook $(SUDO_OPTS) $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
+	ansible-playbook $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
 
 dev:
 	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
@@ -96,7 +98,7 @@ ifndef PROFILE
 	$(error PROFILE is required. Use: make check-personal or make check-work)
 endif
 	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook --check $(SUDO_OPTS) $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
+	ansible-playbook --check $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
 
 check-work:
 	$(MAKE) check PROFILE=work V=$(V)
@@ -112,7 +114,8 @@ upgrade-personal:
 
 check-dev:
 	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook --check $(VERBOSE) $(TEST_VAULT) -e dev_mode=true $(PLAYBOOK)
+	ansible-playbook --check $(VERBOSE) $(TEST_VAULT) \
+	    -e dev_mode=true -e ansible_become_password=dev-mode-placeholder $(PLAYBOOK)
 
 fixfish:
 	@echo "Upgrading fish and applying tide config..."

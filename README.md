@@ -52,6 +52,24 @@ make personal   # Personal laptop
 make work       # Work laptop
 ```
 
+Current per-profile differences:
+
+| | `personal` | `work` |
+|---|---|---|
+| Projects dir | `$HOME/Projects` | `$HOME/Work` |
+| Container runtime | `docker-desktop` | `orbstack` |
+| Extra MCP servers | none | `atlassian` (HTTP) |
+
+### System-Level macOS Tweaks
+
+On Darwin, the playbook also codifies the manual steps previously kept in personal notes via `roles/devbox/tasks/darwin/configure_macos_basics.yml`:
+
+- Touch ID for `sudo` (persisted in `/etc/pam.d/sudo_local` across system updates)
+- `pmset -a disablesleep 1` — keeps the Mac awake when the lid is closed (clamshell workflow)
+- `DevToolsSecurity --enable` — no password prompt when attaching a debugger
+
+HiDPI for external displays is handled by installing [BetterDisplay](https://github.com/waydabber/BetterDisplay) as a Homebrew cask.
+
 ### Local Overlay
 
 Laptop-only files that should not be committed go into `roles/devbox/local/`. This directory is gitignored and mirrors `roles/devbox/files/`. Files deploy **after** the main pass, so they override repo-managed ones.

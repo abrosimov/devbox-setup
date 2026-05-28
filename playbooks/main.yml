@@ -2,6 +2,19 @@
   hosts: 127.0.0.1
   connection: local
 
+  # Prompted once at playbook start. Captured under the magic variable name
+  # `ansible_become_password` so it serves two purposes simultaneously:
+  #   1. Ansible uses it transparently for any `become: true` task — no `-K` flag needed.
+  #   2. It is forwarded to `community.general.homebrew_cask` via `sudo_password:` so
+  #      brew can install pkg-based casks (e.g. karabiner-elements) non-interactively
+  #      without resorting to a NOPASSWD sudoers rule.
+  # Tasks that consume it MUST set `no_log: true` to keep verbose output safe.
+  vars_prompt:
+    - name: ansible_become_password
+      prompt: "Sudo password (used for become tasks and Homebrew cask pkg installers)"
+      private: true
+      confirm: false
+
   vars_files:
     - "{{ vault_file | default('../vault/devbox_ssh_config.yml') }}"
 

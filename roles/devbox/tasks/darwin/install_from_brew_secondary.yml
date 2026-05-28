@@ -1,4 +1,9 @@
 ---
+- name: "Tap third-party Homebrew repositories"
+  community.general.homebrew_tap:
+    name: "{{ devbox_brew_taps }}"
+    state: present
+
 - name: "Install Homebrew apps"
   community.general.homebrew:
     name: "{{ devbox_brew_secondary + devbox_extra_brew }}"
@@ -10,11 +15,35 @@
     state: present
     install_options: 'adopt'
     upgrade_all: false
+    sudo_password: "{{ ansible_become_password }}"
+  no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
   register: cask_secondary_result
   failed_when:
     - cask_secondary_result.failed is defined
     - cask_secondary_result.failed
     - '"already installed" not in cask_secondary_result.msg'
+
+# Separate task for casks whose post-install `xattr -w` step fails because the
+# .pkg lays down root-owned files inside /Applications/<App>.app. Adding
+# `no-binaries` skips brew's shim+Spotlight-metadata step entirely; the cask
+# itself still installs and the vendor installer creates its own CLI symlinks.
+# Currently used only for docker-desktop on personal profiles.
+- name: "Install Homebrew casks (no-binaries variant)"
+  community.general.homebrew_cask:
+    name: "{{ devbox_extra_brew_casks_no_binaries }}"
+    state: present
+    install_options:
+      - adopt
+      - no-binaries
+    upgrade_all: false
+    sudo_password: "{{ ansible_become_password }}"
+  no_log: true
+  when: devbox_extra_brew_casks_no_binaries | length > 0
+  register: cask_no_binaries_result
+  failed_when:
+    - cask_no_binaries_result.failed is defined
+    - cask_no_binaries_result.failed
+    - '"already installed" not in cask_no_binaries_result.msg'
 
 - name: "Install npm packages"
   community.general.npm:

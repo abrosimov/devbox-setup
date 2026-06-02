@@ -30,6 +30,8 @@ abbr -a vd nvim -d
 abbr -a dc docker compose
 abbr -a -- - "cd -"
 
+abbr -a kss kitty-save-session
+
 abbr -a stash git stash # TODO: In the video on YT there was a nice hack for git stash.
 
 abbr -a --set-cursor gg "git grep -n '%'"

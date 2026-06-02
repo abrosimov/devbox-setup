@@ -84,7 +84,7 @@ roles/devbox/local/.config/fish/functions/kstg.fish
 Keybindings and usage for each tool:
 
 - [Neovim](roles/devbox/files/.config/nvim/README.md) — LSP, completion, navigation, testing, debugging
-- [Kitty](roles/devbox/files/.config/kitty/README.md) — splits, tabs, hints, scrollback
+- [Kitty](roles/devbox/files/.config/kitty/README.md) — layout-independent bindings, readline-on-cyrillic, smart Cmd+Q, session save/restore
 - [Fish](roles/devbox/files/.config/fish/README.md) — abbreviations, functions, plugins
 - [Claude Code](roles/devbox/files/.claude/README.md) — agents, skills, commands, MCP servers
 

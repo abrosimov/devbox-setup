@@ -23,13 +23,13 @@ devbox_shell:
     - { name: PROJECTS_DIR, value: "{{ devbox_projects_dir }}" }
 
   path_prepend:
+    - "$HOME/bin"
+    - "$HOME/.local/bin"
     - /opt/homebrew/bin
 
   path_append:
     - "$GOPATH/bin"
     - "$FLUTTER_PATH/bin"
-    - "$HOME/.local/bin"
-    - "$HOME/bin"
     - "$HOME/.claude/bin"
     - "$GEM_HOME/bin"
 

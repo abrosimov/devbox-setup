@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""Back-propagate ~/.claude/settings.json into the repo with smart filtering.
+
+Compares ~/.claude/settings.json (deployed, sometimes mutated by Claude at
+runtime when you grant "Always allow") with the in-repo source of truth at
+roles/devbox/files/.claude/settings.json. Additions to permissions.allow are
+classified into auto-keep, auto-drop, or needs-review using a heuristic table;
+review entries are prompted one by one; kept entries are inserted into the
+matching blank-line-separated section so the repo's hand-formatted structure
+survives the round trip.
+
+The script is additive only: it never deletes anything from the repo. Drift
+in non-permissions keys (sandbox, env, statusLine, etc.) is reported but not
+modified.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+
+REPO_FILE = Path("roles/devbox/files/.claude/settings.json")
+DEPLOYED_FILE = Path.home() / ".claude" / "settings.json"
+LOG_DIR = Path("tmp")
+
+# Broad tool families that are safe to absorb into the baseline allowlist.
+KEEP_PATTERNS = [
+    r"^Bash\(go (test|build|run|mod|get|install|generate|vet|clean|tool|env|list|work|version)\b",
+    r"^Bash\((goimports|golangci-lint|gopls|mockery|sqlc|govulncheck|staticcheck|gofumpt|delve|dlv)\b",
+    r"^Bash\((uv|uvx|pytest|ruff|mypy|pylint|black|isort|poetry|pip|python|python3|hatch|pdm)\b",
+    r"^Bash\((pnpm|npm|npx|node|yarn|bun|tsc|eslint|prettier|vitest|jest)\b",
+    r"^Bash\((make|task|cargo|rustc|rustup|buf|protoc|grpcurl|jsonnet|jsonnetfmt|jb)\b",
+    r"^Bash\((docker|podman|kubectl|helm|k9s|hadolint|dclint|kustomize|skaffold)\b",
+    r"^Bash\(git (add|status|diff|log|show|branch|blame|ls-files|ls-tree|rev-parse|stash|switch|remote|fetch|worktree|commit|config --get|describe|merge-base)\b",
+    r"^Bash\(gh (pr|issue|api|run|repo|workflow|release) ",
+    r"^Bash\((cat|grep|rg|ls|test|head|tail|wc|stat|file|jq|yq|which|sort|uniq|cut|tr|awk|sed|xargs|diff|env|date|basename|dirname|realpath|readlink|find|fd|tree|fzf|cloc|bat|column|paste)\b",
+    r"^Bash\((mise|claude|ansible|ansible-lint|ansible-playbook|opam|tofu|terraform|packer)\b",
+    r"^Bash\(fish -c 'proj wt",
+    r"^Bash\(\.claude/bin/",
+    r"^(mcp__|Task|Glob|Grep|Read|Edit|Write|NotebookEdit|WebSearch|WebFetch|LSP)",
+]
+
+# Dangerous or never-wanted entries.
+DROP_PATTERNS = [
+    r"^Bash\(rm( |\)|$)",
+    r"^Bash\(rm -",
+    r"^Bash\(sudo\b",
+    r"^Bash\((curl|wget)\b",
+    r"^Bash\((kill|killall|pkill)\b",
+    r"^Bash\(git (push|reset|rebase|clean)\b",
+    r"^Bash\(git commit (--amend|--no-verify)",
+    r"^Bash\(git (tag|rm|mv) ",
+    r"^Bash\(git checkout -- ",
+    r"^Bash\(find (/|~) ",
+    r"^Bash\((npm|pnpm|uv) publish\b",
+    r"^Bash\(docker (rm|rmi)\b",
+    r"^Bash\(pip uninstall\b",
+    r"^Bash\(gh (pr (close|merge)|issue close)\b",
+    r"^(Edit|Write)\(\*\*/\*\.(pem|key)\)",
+    r"^Read\(~/\.(ssh|aws|gnupg)/",
+]
+
+# Markers that suggest a one-off, session-specific entry rather than a reusable rule.
+HYPER_SPECIFIC_MARKERS = (
+    "--testPathPattern",
+    "--bail",
+    "/private/",
+    "$TMPDIR",
+    "/tmp/",
+    "node_modules",
+    "/Users/",
+)
+
+
+def colour(text: str, code: str) -> str:
+    if not sys.stdout.isatty():
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
+def is_subsumed(entry: str, existing: set[str]) -> bool:
+    """True if a wildcard entry already in repo covers this entry."""
+    for ex in existing:
+        if "*" not in ex:
+            continue
+        pattern = re.escape(ex).replace(r"\*", ".*")
+        if re.fullmatch(pattern, entry):
+            return True
+    return False
+
+
+def classify(entry: str, repo_allow: set[str]) -> str:
+    """Return 'keep', 'drop', or 'review' for a candidate addition."""
+    if entry in repo_allow:
+        return "keep"
+    for pattern in DROP_PATTERNS:
+        if re.match(pattern, entry):
+            return "drop"
+    if any(marker in entry for marker in HYPER_SPECIFIC_MARKERS):
+        return "drop"
+    for pattern in KEEP_PATTERNS:
+        if re.match(pattern, entry):
+            if is_subsumed(entry, repo_allow):
+                return "drop"
+            return "keep"
+    return "review"
+
+
+def parse_allow_sections(repo_text: str) -> tuple[list[list[str]], str]:
+    """Extract permissions.allow as a list of sections separated by blank lines.
+
+    Returns (sections, indent) where indent is the per-item indentation string.
+    """
+    array_match = re.search(r'"allow":\s*\[\n(.*?)\n(?P<close_indent>\s*)\]', repo_text, re.DOTALL)
+    if not array_match:
+        raise RuntimeError("could not locate permissions.allow array in repo file")
+    body = array_match.group(1)
+    indent_match = re.match(r"(\s+)", body)
+    indent = indent_match.group(1) if indent_match else "      "
+    sections: list[list[str]] = []
+    current: list[str] = []
+    for raw_line in body.split("\n"):
+        line = raw_line.strip().rstrip(",")
+        if not line:
+            if current:
+                sections.append(current)
+                current = []
+            continue
+        if line.startswith('"') and line.endswith('"'):
+            current.append(line[1:-1])
+    if current:
+        sections.append(current)
+    return sections, indent
+
+
+def common_prefix_len(a: str, b: str) -> int:
+    n = 0
+    for ca, cb in zip(a, b):
+        if ca != cb:
+            break
+        n += 1
+    return n
+
+
+def pick_section(entry: str, sections: list[list[str]]) -> int:
+    """Index of the section sharing the longest prefix with `entry`."""
+    best_idx = len(sections) - 1
+    best_score = 0
+    for idx, sec in enumerate(sections):
+        for existing in sec:
+            score = common_prefix_len(entry, existing)
+            if score > best_score:
+                best_score = score
+                best_idx = idx
+    return best_idx
+
+
+def rewrite_allow(repo_text: str, additions_by_section: dict[int, list[str]]) -> str:
+    """Rebuild the permissions.allow array literal with new entries appended in place."""
+    sections, indent = parse_allow_sections(repo_text)
+    rebuilt_sections: list[str] = []
+    for idx, section in enumerate(sections):
+        merged = list(section)
+        for new_entry in additions_by_section.get(idx, []):
+            if new_entry not in merged:
+                merged.append(new_entry)
+        rebuilt_sections.append(",\n".join(f'{indent}"{e}"' for e in merged))
+    body = ",\n\n".join(rebuilt_sections)
+    pattern = re.compile(r'("allow":\s*\[\n)(.*?)(\n\s*\])', re.DOTALL)
+    return pattern.sub(lambda m: m.group(1) + body + m.group(3), repo_text, count=1)
+
+
+def prompt_review(entry: str, repo_allow: list[str]) -> str:
+    print(f"\n  {colour('REVIEW', '33')} {entry}")
+    while True:
+        answer = input("    keep / drop / show / quit ? [k/d/s/q] ").strip().lower()
+        if answer in ("k", "keep", ""):
+            return "keep"
+        if answer in ("d", "drop"):
+            return "drop"
+        if answer in ("s", "show"):
+            scored = sorted(
+                ((common_prefix_len(entry, ex), ex) for ex in repo_allow),
+                reverse=True,
+            )
+            print("    Nearest existing repo entries:")
+            for score, ex in scored[:5]:
+                if score < 4:
+                    break
+                print(f"      ({score} chars) {ex}")
+            continue
+        if answer in ("q", "quit"):
+            print("    Aborted by user.")
+            sys.exit(2)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Smart pull from ~/.claude/settings.json")
+    parser.add_argument("--dry-run", action="store_true", help="report only, do not write")
+    parser.add_argument("--yes", action="store_true", help="skip interactive review, drop all ambiguous entries")
+    args = parser.parse_args()
+
+    if not DEPLOYED_FILE.exists():
+        print(f"error: {DEPLOYED_FILE} does not exist", file=sys.stderr)
+        return 1
+    if not REPO_FILE.exists():
+        print(f"error: {REPO_FILE} does not exist (run from devbox-setup root)", file=sys.stderr)
+        return 1
+
+    repo_text = REPO_FILE.read_text()
+    try:
+        deployed_data = json.loads(DEPLOYED_FILE.read_text())
+        repo_data = json.loads(repo_text)
+    except json.JSONDecodeError as exc:
+        print(f"error: failed to parse JSON ({exc})", file=sys.stderr)
+        return 1
+
+    repo_allow = repo_data.get("permissions", {}).get("allow", [])
+    deployed_allow = deployed_data.get("permissions", {}).get("allow", [])
+    repo_allow_set = set(repo_allow)
+    deployed_allow_set = set(deployed_allow)
+
+    additions = [e for e in deployed_allow if e not in repo_allow_set]
+    removals = [e for e in repo_allow if e not in deployed_allow_set]
+
+    keep: list[str] = []
+    drop: list[str] = []
+    review: list[str] = []
+    for entry in additions:
+        verdict = classify(entry, repo_allow_set)
+        if verdict == "keep":
+            keep.append(entry)
+        elif verdict == "drop":
+            drop.append(entry)
+        else:
+            review.append(entry)
+
+    other_drift: list[str] = []
+    for key in set(deployed_data) | set(repo_data):
+        if key == "permissions":
+            continue
+        if deployed_data.get(key) != repo_data.get(key):
+            other_drift.append(key)
+
+    print(colour("=== claude-pull-review ===", "1"))
+    print(f"  deployed : {DEPLOYED_FILE}")
+    print(f"  repo     : {REPO_FILE}")
+    print()
+    print(colour("permissions.allow drift", "36"))
+    print(f"  additions    : {len(additions)} (auto-keep {len(keep)}, auto-drop {len(drop)}, review {len(review)})")
+    print(f"  removals     : {len(removals)} (deployed lacks; repo unchanged)")
+    if other_drift:
+        print(colour(f"\nother top-level keys differ : {sorted(other_drift)}", "33"))
+        print("  not handled here — inspect with 'make claude-diff'")
+
+    if review and not args.yes:
+        print(colour(f"\n--- review {len(review)} entries ---", "1"))
+        for entry in review:
+            verdict = prompt_review(entry, repo_allow)
+            if verdict == "keep":
+                keep.append(entry)
+            else:
+                drop.append(entry)
+    elif review and args.yes:
+        drop.extend(review)
+        review = []
+
+    print(colour("\n=== summary ===", "1"))
+    print(f"  kept    : {len(keep)}")
+    print(f"  dropped : {len(drop)}")
+
+    if drop:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        log_path = LOG_DIR / f"claude-pull-rejected-{stamp}.log"
+        log_path.write_text("\n".join(drop) + "\n")
+        print(f"  drops logged : {log_path}")
+
+    if args.dry_run:
+        print(colour("\ndry-run — no files modified", "36"))
+        return 0
+
+    if not keep:
+        print("  nothing to apply.")
+        return 0
+
+    sections, _ = parse_allow_sections(repo_text)
+    by_section: dict[int, list[str]] = {}
+    for entry in keep:
+        idx = pick_section(entry, sections)
+        by_section.setdefault(idx, []).append(entry)
+    new_text = rewrite_allow(repo_text, by_section)
+    REPO_FILE.write_text(new_text)
+    print(colour(f"  wrote: {REPO_FILE}", "32"))
+    print(colour(f"\n  review with: git diff {REPO_FILE}", "36"))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

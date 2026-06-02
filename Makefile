@@ -28,7 +28,7 @@ endif
        upgrade-work upgrade-personal \
        fixfish list-skills list-agents \
        audit-budget \
-       claude-diff claude-pull \
+       claude-diff claude-pull claude-pull-review \
        test test-nvim test-fish test-json test-bash test-skill-evals
 
 help:
@@ -59,6 +59,9 @@ help:
 	@echo "  make test-bash        - bash script syntax check"
 	@echo "  make list-skills      - list all Claude Code skills"
 	@echo "  make list-agents      - list all Claude Code agents"
+	@echo "  make claude-diff      - show content drift between ~/.claude and repo"
+	@echo "  make claude-pull-review - smart pull of settings.json (heuristic + interactive)"
+	@echo "  make claude-pull      - wholesale copy of root files from ~/.claude to repo"
 	@echo ""
 	@echo "Options:"
 	@echo "  V=1..4                - verbosity level (-v to -vvvv)"
@@ -218,13 +221,22 @@ claude-diff:
 	@drift=0; \
 	for f in $(CLAUDE_ROOT_FILES); do \
 		if ! diff -q $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f >/dev/null 2>&1; then \
-			echo "  CHANGED: $$f"; drift=1; \
+			echo ""; \
+			echo "--- $$f ---"; \
+			diff -u $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f || true; \
+			drift=1; \
 		fi; \
 	done; \
-	[ $$drift -eq 0 ] && echo "  No drift detected." || echo "  Run 'make claude-pull' to back-propagate."
+	if [ $$drift -eq 0 ]; then \
+		echo "  No drift detected."; \
+	else \
+		echo ""; \
+		echo "Smart pull (settings.json):   make claude-pull-review"; \
+		echo "Dumb pull (all files):        make claude-pull"; \
+	fi
 
 claude-pull:
-	@echo "=== Pulling root files from ~/.claude to repo ==="
+	@echo "=== Pulling root files from ~/.claude to repo (wholesale copy) ==="
 	@for f in $(CLAUDE_ROOT_FILES); do \
 		if ! diff -q $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f >/dev/null 2>&1; then \
 			cp $(CLAUDE_DEST)/$$f $(CLAUDE_SRC)/$$f; \
@@ -234,6 +246,9 @@ claude-pull:
 		fi; \
 	done
 	@echo "Review with: git diff"
+
+claude-pull-review:
+	@python3 scripts/claude-pull-review $(ARGS)
 
 test: test-json test-fish test-bash test-nvim test-skill-evals
 	@echo "All tests passed."

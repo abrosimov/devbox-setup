@@ -6,6 +6,19 @@ if test -d /opt/homebrew
   /opt/homebrew/bin/brew shellenv fish | source
 end
 
+# PATH must be set BEFORE mise activate — mise saves __MISE_ORIG_PATH and restores it on every prompt
+{% for p in devbox_shell.path_prepend %}
+fish_add_path -g -p {{ p }}
+{% endfor %}
+{% for p in devbox_shell.path_append %}
+fish_add_path -g -a {{ p }}
+{% endfor %}
+{% for item in devbox_shell.path_conditional %}
+if test -d {{ item.check }}
+  fish_add_path -g -a {{ item.add }}
+end
+{% endfor %}
+
 if type -q mise
   mise activate fish | source
 end

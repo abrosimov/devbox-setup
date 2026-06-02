@@ -135,9 +135,8 @@
   loop:
     - { src: .bashrc.j2,                              dest: .bashrc }
     - { src: .gemrc.j2,                               dest: .gemrc }
-    - { src: .npmrc.j2,                                dest: .npmrc }
+    - { src: .npmrc.j2,                               dest: .npmrc }
     - { src: .config/fish/conf.d/_init_env.fish.j2,   dest: .config/fish/conf.d/_init_env.fish }
-    - { src: .config/fish/conf.d/_init_path.fish.j2,  dest: .config/fish/conf.d/_init_path.fish }
   loop_control:
     label: "{{ item.dest }}"
   tags: [configs]

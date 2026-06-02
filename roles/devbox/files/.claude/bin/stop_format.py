@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""stop-format — Stop hook that auto-formats git-modified files at turn end.
+
+Stdlib only — no external dependencies.
+
+Event: Stop
+Exit codes:
+    0  — always. The hook is advisory; per-file errors are swallowed.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+from typing import Callable, Optional, Tuple
+
+# Matches the legacy Node hook's 15s ceiling.
+FORMATTER_TIMEOUT_SEC: int = 15
+
+MAX_PARENT_WALK: int = 20
+
+PRETTIER_MARKERS: Tuple[str, ...] = (
+    ".prettierrc",
+    ".prettierrc.json",
+    ".prettierrc.js",
+    "prettier.config.js",
+    "package.json",
+)
+
+GO_MODULE_RE = re.compile(r"^module\s+(\S+)", re.MULTILINE)
+
+
+def _run(argv: list[str], *, cwd: Optional[str] = None) -> bool:
+    try:
+        result = subprocess.run(
+            argv,
+            cwd=cwd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=FORMATTER_TIMEOUT_SEC,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def _capture(argv: list[str]) -> Optional[str]:
+    try:
+        out = subprocess.check_output(
+            argv,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=FORMATTER_TIMEOUT_SEC,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return None
+    return out.strip()
+
+
+def _walk_ancestors(start_dir: str, predicate: Callable[[str], bool]) -> Optional[str]:
+    current = start_dir
+    for _ in range(MAX_PARENT_WALK):
+        if predicate(current):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            return None
+        current = parent
+    return None
+
+
+def _find_go_module(file_path: str) -> Optional[str]:
+    def has_gomod(d: str) -> bool:
+        return os.path.isfile(os.path.join(d, "go.mod"))
+
+    module_dir = _walk_ancestors(os.path.dirname(file_path), has_gomod)
+    if module_dir is None:
+        return None
+    try:
+        with open(os.path.join(module_dir, "go.mod"), encoding="utf-8") as fh:
+            match = GO_MODULE_RE.search(fh.read())
+    except OSError:
+        return None
+    return match.group(1) if match else None
+
+
+def _find_prettier_root(file_path: str) -> Optional[str]:
+    def has_marker(d: str) -> bool:
+        return any(os.path.exists(os.path.join(d, m)) for m in PRETTIER_MARKERS)
+
+    return _walk_ancestors(os.path.dirname(file_path), has_marker)
+
+
+def _log(tool: str, file_path: str) -> None:
+    sys.stderr.write(f"[stop-format] {tool} → {os.path.basename(file_path)}\n")
+
+
+def format_go(file_path: str) -> Optional[str]:
+    module = _find_go_module(file_path)
+    if module is None:
+        return None
+    gopath = _capture(["go", "env", "GOPATH"])
+    goimports = f"{gopath}/bin/goimports" if gopath else "goimports"
+    if _run([goimports, "-local", module, "-w", file_path]):
+        return "goimports"
+    return None
+
+
+def format_python(file_path: str) -> Optional[str]:
+    check_ok = _run(["ruff", "check", "--fix", "--quiet", file_path])
+    format_ok = _run(["ruff", "format", "--quiet", file_path])
+    if check_ok and format_ok:
+        return "ruff"
+    if format_ok:
+        return "ruff (format only)"
+    if check_ok:
+        return "ruff (check only)"
+    return None
+
+
+def format_prettier(file_path: str) -> Optional[str]:
+    root = _find_prettier_root(file_path)
+    if root is None:
+        return None
+    if _run(["npx", "prettier", "--write", file_path], cwd=root):
+        return "prettier"
+    return None
+
+
+FORMATTERS: dict[str, Callable[[str], Optional[str]]] = {
+    ".go": format_go,
+    ".py": format_python,
+    ".ts": format_prettier,
+    ".tsx": format_prettier,
+    ".js": format_prettier,
+    ".jsx": format_prettier,
+}
+
+
+def _git_modified_files() -> list[str]:
+    try:
+        out = subprocess.check_output(
+            ["git", "diff", "--name-only", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=FORMATTER_TIMEOUT_SEC,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return []
+    cwd = os.getcwd()
+    files: list[str] = []
+    for line in out.splitlines():
+        rel = line.strip()
+        if not rel:
+            continue
+        abs_path = os.path.join(cwd, rel)
+        if os.path.isfile(abs_path):
+            files.append(abs_path)
+    return files
+
+
+def main() -> int:
+    raw = sys.stdin.read()
+    if raw.strip():
+        try:
+            json.loads(raw)
+        except ValueError:
+            sys.stderr.write("[stop-format] warning: invalid stdin JSON, formatting anyway\n")
+
+    for file_path in _git_modified_files():
+        ext = os.path.splitext(file_path)[1].lower()
+        formatter = FORMATTERS.get(ext)
+        if formatter is None:
+            continue
+        tool = formatter(file_path)
+        if tool is not None:
+            _log(tool, file_path)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

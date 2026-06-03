@@ -89,6 +89,7 @@ devbox_brew_secondary:
   - lima            # Linux VM (eBPF/bpftrace sandbox, perf-style observability)
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
+  - gost            # GO Simple Tunnel — HTTP-to-SOCKS bridge used by `pub` mode
 
 devbox_brew_secondary_casks:
   - codex-app
@@ -108,6 +109,14 @@ devbox_brew_secondary_casks:
   - hammerspoon                # Lua scripting bridge to macOS (cursor/window/USB events)
   - karabiner-elements         # Key remap for built-in laptop kb (Kinesis has its own ZMK)
   - betterdisplay              # HiDPI for external monitors (replaces one-key-hidpi note)
+
+# Secondary casks installed with `--no-binaries` (mirrors the docker-desktop
+# pattern). Required for pkg-based casks whose installer writes root-owned
+# files inside /Applications/<App>.app; brew's post-install `xattr -w` step
+# runs as the user and fails. Shared across profiles; concatenated with
+# `devbox_extra_brew_casks_no_binaries` from profile overrides at install time.
+devbox_brew_secondary_casks_no_binaries:
+  - cloudflare-warp            # WARP VPN; .pkg ships /usr/local/bin/warp-cli directly
 
 # npm packages (installed globally via node from secondary).
 devbox_npm_packages:

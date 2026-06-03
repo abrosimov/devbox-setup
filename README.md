@@ -88,6 +88,39 @@ Keybindings and usage for each tool:
 - [Fish](roles/devbox/files/.config/fish/README.md) — abbreviations, functions, plugins
 - [Claude Code](roles/devbox/files/.claude/README.md) — agents, skills, commands, MCP servers
 
+## Pub Mode
+
+Optional tunnel for running Claude Code on untrusted wifi where a middlebox resets TCP on HTTP uploads larger than roughly 1.4 KB (`ECONNRESET`). At home or in the office, leave it off — `claude` goes direct (no proxy variables exist in the resting state).
+
+Chain when enabled:
+
+```
+claude  ->  http://127.0.0.1:8080 (gost)  ->  socks5://127.0.0.1:40000 (WARP)  ->  Cloudflare  ->  Anthropic
+```
+
+WARP runs in proxy mode (no system DNS or route changes), with a local `gost` HTTP-to-SOCKS bridge fronting it because Claude Code honours `HTTP(S)_PROXY` only, not SOCKS. The bridge binds `127.0.0.1` explicitly so it is never exposed to the untrusted network.
+
+### Usage
+
+When `claude` breaks on bad wifi:
+
+```fish
+pub on       # Connect WARP + start the loopback-bound gost bridge
+             # + export HTTPS_PROXY / HTTP_PROXY (and lowercase twins) as universal fish vars.
+             # Restart your claude sessions to pick up the proxy.
+
+pub off      # Erase the proxy vars + stop the bridge + disconnect WARP.
+             # Restart your claude sessions to drop the proxy.
+
+pub status   # warp-cli status, bridge up/down, current HTTPS_PROXY value.
+```
+
+`pub on` sets the proxy variables as **universal fish variables** (`set -Ux`), so every fish session and every child process inherits them in one shot. That's why already-running `claude` sessions need a manual restart — they read env once at startup.
+
+### Caveat
+
+WARP proxy mode uses MASQUE, which enforces a roughly 10-second per-request limit. Long-running Claude responses that drop mid-stream are the chain timing out, not the `pub` toggle itself. Disable `pub` for long-form work when you're on a trusted network.
+
 ## Testing
 
 ```bash

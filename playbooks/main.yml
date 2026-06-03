@@ -18,5 +18,13 @@
   vars_files:
     - "{{ vault_file | default('../vault/devbox_ssh_config.yml') }}"
 
+  # Touch ID for sudo (pam_tid.so) pops a UI dialog before sudo reads its
+  # stdin password. The dialog has a ~60s timeout, so Ansible's default
+  # become timeout of 10s fails AFK runs with "Timed out waiting for become
+  # success or become password prompt". 120s lets the dialog expire and
+  # fall through to password auth.
+  vars:
+    ansible_become_timeout: 120
+
   roles:
     - devbox

@@ -159,6 +159,67 @@ class TestRmRf(unittest.TestCase):
         self.assertFalse(gate.evaluate("rm -f file.txt").blocked)
 
 
+class TestProjectTmp(unittest.TestCase):
+    """rm -rf is allowed for paths under <project-root>/tmp/ (realpath-validated)."""
+
+    def setUp(self) -> None:
+        import tempfile
+        self._tmpdir = tempfile.mkdtemp(prefix="gate-test-")
+        self._project_root = Path(self._tmpdir) / "myproj"
+        (self._project_root / ".git").mkdir(parents=True)
+        (self._project_root / "tmp").mkdir()
+        (self._project_root / "tmp" / "render-out").mkdir()
+        # Symlink escape attack: tmp/escape -> /etc
+        (self._project_root / "tmp" / "escape").symlink_to("/etc")
+        # Pretend cwd is the project root.
+        self._cwd_patch = mock.patch.object(
+            gate.Path, "cwd", return_value=self._project_root
+        )
+        self._cwd_patch.start()
+
+    def tearDown(self) -> None:
+        import shutil
+        self._cwd_patch.stop()
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_allows_rm_inside_project_tmp(self):
+        d = gate.evaluate("rm -rf tmp/render-out")
+        self.assertFalse(d.blocked, d.message)
+
+    def test_allows_rm_glob_inside_project_tmp(self):
+        # rm -rf tmp/* expands at shell level; we exercise a concrete child.
+        d = gate.evaluate("rm -rf tmp/render-out/intermediate")
+        self.assertFalse(d.blocked, d.message)
+
+    def test_blocks_rm_of_tmp_itself(self):
+        # We allow contents, not the tmp/ dir itself.
+        d = gate.evaluate("rm -rf tmp")
+        # rm-rf rule may still allow if "tmp" basename happens to match a safe
+        # name, but it should NOT match via the project-tmp rule for the dir itself.
+        # Confirm: with no .cache/.venv/etc basename, plain "tmp" is unsafe.
+        self.assertTrue(d.blocked, d.message)
+
+    def test_blocks_symlink_escape(self):
+        # tmp/escape is a symlink to /etc — realpath should defeat this.
+        d = gate.evaluate("rm -rf tmp/escape")
+        self.assertTrue(d.blocked, d.message)
+
+    def test_blocks_path_traversal(self):
+        d = gate.evaluate("rm -rf tmp/../../../etc")
+        self.assertTrue(d.blocked, d.message)
+
+    def test_blocks_mixed_tmp_and_unsafe(self):
+        d = gate.evaluate("rm -rf tmp/ok /etc/foo")
+        self.assertTrue(d.blocked, d.message)
+
+    def test_no_project_root_falls_back(self):
+        # Outside a git checkout the project-tmp rule does not apply.
+        with mock.patch.object(gate, "_project_root_from_cwd", return_value=None):
+            d = gate.evaluate("rm -rf tmp/foo")
+            # Falls back to old behaviour — "tmp/foo" is not in SAFE_RM_BASENAMES so blocked.
+            self.assertTrue(d.blocked, d.message)
+
+
 class TestGitResetHard(unittest.TestCase):
     def test_blocks_reset_hard(self):
         self.assertTrue(gate.evaluate("git reset --hard").blocked)

@@ -6,6 +6,23 @@
 # Persistent across system updates via sudo_local (Sonoma+).
 # Only useful when the lid is open; Touch ID is disabled in clamshell — see
 # future_projects/macos_tooling_setup.md for the YubiKey fallback plan.
+#
+# Pre-check without sudo so AFK re-runs of a converged machine never invoke
+# `become` here -- otherwise pam_tid.so pops a Touch ID dialog that blocks
+# sudo's password prompt past Ansible's become timeout. sudo_local is 0644,
+# so the stat + grep run unprivileged.
+
+- name: "Stat /etc/pam.d/sudo_local"
+  ansible.builtin.stat:
+    path: /etc/pam.d/sudo_local
+  register: sudo_local_stat
+
+- name: "Check if Touch ID PAM module already enabled in sudo_local"
+  ansible.builtin.command: grep -Eq '^auth[[:space:]]+sufficient[[:space:]]+pam_tid\.so' /etc/pam.d/sudo_local
+  register: sudo_local_pam_tid
+  changed_when: false
+  failed_when: false
+  when: sudo_local_stat.stat.exists
 
 - name: "Ensure /etc/pam.d/sudo_local exists from Apple template"
   ansible.builtin.copy:
@@ -17,6 +34,7 @@
     mode: "0644"
     force: false
   become: true
+  when: not sudo_local_stat.stat.exists
 
 - name: "Enable Touch ID PAM module in sudo_local"
   ansible.builtin.lineinfile:
@@ -25,6 +43,7 @@
     line: "auth       sufficient     pam_tid.so"
     state: present
   become: true
+  when: sudo_local_pam_tid.rc | default(1) != 0
 
 # --- Clamshell stay-awake (note: "Disable sleep when macbook is closed.md") --
 # Mandatory for the 90%-clamshell-with-external-keyboard workflow.

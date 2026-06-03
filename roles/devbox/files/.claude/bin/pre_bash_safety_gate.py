@@ -16,6 +16,7 @@ import shlex
 import subprocess
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 
@@ -94,6 +95,53 @@ def _current_branch() -> str:
         return ""
 
 
+def _project_root_from_cwd() -> Optional[Path]:
+    """Walk up from cwd looking for a .git directory; return the project root.
+
+    Returns None if cwd is outside any git checkout.
+    """
+    try:
+        cwd = Path.cwd().resolve()
+    except (OSError, RuntimeError):
+        return None
+    for ancestor in (cwd, *cwd.parents):
+        if (ancestor / ".git").is_dir():
+            return ancestor
+    return None
+
+
+def _is_within_project_tmp(path: str) -> bool:
+    """True if path resolves under <project-root>/tmp/.
+
+    Uses realpath() to resolve symlinks — prevents escape via a tmp/foo symlink
+    that points outside the project. Returns False if cwd is not in a git checkout.
+
+    Relative paths are anchored to <project-root>, not the current working
+    directory. At runtime the two coincide (Claude Code launches commands from
+    the project root); anchoring to project_root makes the logic robust under
+    tests where cwd is patched at the Path.cwd() level only.
+    """
+    project_root = _project_root_from_cwd()
+    if project_root is None:
+        return False
+    try:
+        p = Path(path)
+        if not p.is_absolute():
+            p = project_root / p
+        abs_path = p.resolve(strict=False)
+        safe_root = (project_root / "tmp").resolve(strict=False)
+    except (OSError, RuntimeError):
+        return False
+    if abs_path == safe_root:
+        # rm -rf tmp itself is not intended — only contents.
+        return False
+    try:
+        abs_path.relative_to(safe_root)
+        return True
+    except ValueError:
+        return False
+
+
 def _is_safe_rm_path(path: str) -> bool:
     # Literal env-var references — agents often emit these unexpanded.
     if path.startswith(("$TMPDIR", "${TMPDIR}", "$TMP", "${TMP}")):
@@ -111,6 +159,9 @@ def _is_safe_rm_path(path: str) -> bool:
                 return True
         except (ValueError, OSError):
             pass
+    # Project-local tmp/ — realpath-validated, symlink-safe.
+    if _is_within_project_tmp(path):
+        return True
     # Any directory component matches a known safe basename.
     parts = path.replace("\\", "/").strip("/").split("/")
     return any(p in SAFE_RM_BASENAMES for p in parts)

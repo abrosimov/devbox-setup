@@ -100,6 +100,7 @@ devbox_brew_secondary_casks:
   - pycharm
   - ghostty
   - claude
+  - chatgpt
   - freelens
   - zen
   # Window management / awesome-wm-on-mac stack (configured separately).

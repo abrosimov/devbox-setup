@@ -12,7 +12,7 @@ Run the configuration validator and present findings.
 python3 ~/.claude/bin/validate-config.py --root .
 ```
 
-If the working directory is not the `.claude/` root, adjust `--root` accordingly (e.g. `--root ~/.claude` or `--root roles/devbox/files/.claude`).
+If the working directory is not the `.claude/` root, adjust `--root` accordingly (e.g. `--root ~/.claude` or `--root roles/devbox/files/dot_claude`).
 
 2. If the script reports **errors**, investigate each one:
    - `[SKILL_REF]` — agent references a skill that doesn't exist; check for typos or missing skill directories

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ansible-based developer workstation setup tool that automates installation and configuration of development tools, dotfiles, and system preferences. Supports macOS (Darwin) and Ubuntu Linux.
 
-**Key distinction**: `roles/devbox/files/.claude/` contains files deployed to `~/.claude/` (user's global Claude Code config). The `CLAUDE.md` there is the **global authority protocol**, not this project's instructions.
+**Key distinction**: `roles/devbox/files/dot_claude/` contains files deployed to `~/.claude/` (user's global Claude Code config). The directory is named `dot_claude/` rather than `.claude/` so Claude Code does not treat edits to it as self-modifications. The `USER_AUTHORITY_PROTOCOL.md` there is the **global authority protocol** — it is deployed as `~/.claude/CLAUDE.md` and is not this project's instructions.
 
 ## Commands
 
@@ -144,11 +144,11 @@ Current per-profile differences:
 | Container runtime cask | `docker-desktop` | `orbstack` |
 | Extra MCP HTTP servers | none | `atlassian` |
 
-### Claude Code Config (in `roles/devbox/files/.claude/`)
+### Claude Code Config (in `roles/devbox/files/dot_claude/`)
 
 | Path | Purpose | Deployed To |
 |------|---------|-------------|
-| `CLAUDE.md` | User Authority Protocol | `~/.claude/CLAUDE.md` |
+| `USER_AUTHORITY_PROTOCOL.md` | User Authority Protocol (renamed on deploy) | `~/.claude/CLAUDE.md` |
 | `settings.json` | Default permissions (allow/deny) | `~/.claude/settings.json` |
 | `hooks.json` | Pre/post tool-call hooks | `~/.claude/hooks.json` |
 | `agents/*.md` | Agent definitions (33 agents) | `~/.claude/agents/` |
@@ -172,9 +172,10 @@ Use via `/devcontainer init` (Claude Code command) or `claude-devcontainer init`
 
 ## Editing Claude Code Config
 
-When working in `roles/devbox/files/.claude/` you are editing files that get deployed to `~/.claude/`. This is a distinct activity from editing the Ansible playbook itself:
+When working in `roles/devbox/files/dot_claude/` you are editing files that get deployed to `~/.claude/`. This is a distinct activity from editing the Ansible playbook itself:
 
-- **Agent/skill/command changes** don't need a playbook re-run (`make personal`/`make work`) — subdirs are symlinked, so edits in the repo are live in `~/.claude/` immediately
+- **Deploy after editing**: managed subdirs are no longer symlinked. After changing agents/skills/commands/etc., run `make claude-push` to deploy via the slim `playbooks/claude.yml` (no sudo, no vault) — `~3-5s`. A full `make personal`/`make work` does the same work (Block 1 + Block 2 in `roles/devbox/tasks/install_configs.yml`) as part of the wider playbook.
+- **Repo is the only source of truth**: Block 1 runs `ansible.posix.synchronize` with `--delete` per managed subdir, so any edits made directly under `~/.claude/agents/`, `skills/`, etc. are overwritten on next push. Host-only state (`projects/`, `plans/`, `memory/`, `plugins/`, ...) is never in scope of `--delete`.
 - **`settings.json` changes** affect sandbox permissions, network allowlists, and tool approvals globally
 - **`hooks.json` changes** define pre/post hooks for tool calls (scripts in `bin/`)
 - **`templates/` changes** affect devcontainer scaffolding for new projects
@@ -183,7 +184,7 @@ When working in `roles/devbox/files/.claude/` you are editing files that get dep
 - Run `bin/validate-pipeline-output --progress-check --project-dir <path>` to validate progress spine files
 - **`schemas/` changes** define JSON Schema contracts for pipeline execution (stream completion, execution DAG, pipeline state, progress plan, progress agent) — validated by `bin/validate-pipeline-output`
 - **`bin/progress`** is the serializer for the progress spine system — manages milestone DAG and per-agent status files in `{PROJECT_DIR}/progress/`
-- The `CLAUDE.md` in `roles/devbox/files/.claude/` is the **User Authority Protocol** — it governs all Claude Code sessions globally, not just this project
+- The `USER_AUTHORITY_PROTOCOL.md` in `roles/devbox/files/dot_claude/` is deployed as `~/.claude/CLAUDE.md` and is the **User Authority Protocol** — it governs all Claude Code sessions globally, not just this project
 
 ## Dependencies
 

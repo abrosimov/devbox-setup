@@ -10,6 +10,21 @@ TEST_VAULT    := --vault-password-file tests/vault-password -e vault_file=../tes
 PROFILE       ?=
 PROFILE_OPTS  = $(if $(PROFILE),-e @profiles/$(PROFILE).yml)
 
+# Claude Code config — single source of truth for the repo-side path. The
+# managed-subdirs list lives in devbox_claude_managed_dirs (roles/devbox/defaults/main/claude.yml)
+# and is read by both `make personal`/`make work` and `make claude-push`.
+CLAUDE_SRC          := roles/devbox/files/dot_claude
+CLAUDE_DEST         := $(HOME)/.claude
+# Root files where source name == destination name. The User Authority Protocol
+# is handled separately because it is renamed on deploy: USER_AUTHORITY_PROTOCOL.md
+# in the repo -> CLAUDE.md in ~/.claude/ (the filename Claude Code expects).
+# These are used by claude-diff / claude-pull only; claude-push delegates to
+# Ansible (single source of truth for the managed-subdirs list).
+CLAUDE_ROOT_FILES   := settings.json hooks.json config.md
+CLAUDE_AUTHORITY_SRC  := USER_AUTHORITY_PROTOCOL.md
+CLAUDE_AUTHORITY_DEST := CLAUDE.md
+SKILLS_DIR          := $(CLAUDE_SRC)/skills
+
 # Verbosity levels (V=1 → -v, V=2 → -vv, etc.)
 ifeq ($(V),1)
   VERBOSE := -v
@@ -28,7 +43,7 @@ endif
        upgrade-work upgrade-personal \
        fixfish list-skills list-agents \
        audit-budget \
-       claude-diff claude-pull claude-pull-review \
+       claude-diff claude-pull claude-pull-review claude-push \
        test test-nvim test-fish test-json test-bash test-skill-evals
 
 help:
@@ -62,6 +77,7 @@ help:
 	@echo "  make claude-diff      - show content drift between ~/.claude and repo"
 	@echo "  make claude-pull-review - smart pull of settings.json (heuristic + interactive)"
 	@echo "  make claude-pull      - wholesale copy of root files from ~/.claude to repo"
+	@echo "  make claude-push      - deploy Claude config via slim playbook (no sudo, no vault)"
 	@echo ""
 	@echo "Options:"
 	@echo "  V=1..4                - verbosity level (-v to -vvvv)"
@@ -137,21 +153,20 @@ list-skills:
 	@ls -1 $(SKILLS_DIR) | sort | nl -ba
 
 list-agents:
-	@ls -1 roles/devbox/files/.claude/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | sort | nl -ba
+	@ls -1 $(CLAUDE_SRC)/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | sort | nl -ba
 
 validate-claude:
-	@python3 roles/devbox/files/.claude/bin/validate-config.py --root roles/devbox/files/.claude
+	@python3 $(CLAUDE_SRC)/bin/validate-config.py --root $(CLAUDE_SRC)
 
 audit-budget:
-	@python3 roles/devbox/files/.claude/bin/validate-config.py --root roles/devbox/files/.claude --budget
+	@python3 $(CLAUDE_SRC)/bin/validate-config.py --root $(CLAUDE_SRC) --budget
 
 validate-skills:
 	@echo "Validating skill eval files..."
-	@python3 roles/devbox/files/.claude/bin/validate-skill-evals
+	@python3 $(CLAUDE_SRC)/bin/validate-skill-evals
 
 # Anthropic skill-creator scripts (installed via claude-plugins-official)
 EVAL_SCRIPTS := $(shell ls -d ~/.claude/plugins/cache/anthropic-agent-skills/example-skills/*/skills/skill-creator/scripts 2>/dev/null | head -1)
-SKILLS_DIR   := roles/devbox/files/.claude/skills
 SKILL        ?=
 MODEL        ?= claude-opus-4-6
 EVAL_WORKERS ?= 5
@@ -212,13 +227,15 @@ endif
 		--model $(MODEL) \
 		--verbose
 
-CLAUDE_ROOT_FILES := CLAUDE.md settings.json hooks.json config.md
-CLAUDE_SRC        := roles/devbox/files/.claude
-CLAUDE_DEST       := $(HOME)/.claude
-
 claude-diff:
 	@echo "=== Drift: deployed ~/.claude vs repo (root files only) ==="
 	@drift=0; \
+	if ! diff -q $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC) $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) >/dev/null 2>&1; then \
+		echo ""; \
+		echo "--- $(CLAUDE_AUTHORITY_SRC) <-> $(CLAUDE_AUTHORITY_DEST) ---"; \
+		diff -u $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC) $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) || true; \
+		drift=1; \
+	fi; \
 	for f in $(CLAUDE_ROOT_FILES); do \
 		if ! diff -q $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f >/dev/null 2>&1; then \
 			echo ""; \
@@ -237,6 +254,12 @@ claude-diff:
 
 claude-pull:
 	@echo "=== Pulling root files from ~/.claude to repo (wholesale copy) ==="
+	@if ! diff -q $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC) $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) >/dev/null 2>&1; then \
+		cp $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC); \
+		echo "  PULLED: $(CLAUDE_AUTHORITY_DEST) -> $(CLAUDE_AUTHORITY_SRC)"; \
+	else \
+		echo "  SKIP:   $(CLAUDE_AUTHORITY_SRC) (no changes)"; \
+	fi
 	@for f in $(CLAUDE_ROOT_FILES); do \
 		if ! diff -q $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f >/dev/null 2>&1; then \
 			cp $(CLAUDE_DEST)/$$f $(CLAUDE_SRC)/$$f; \
@@ -250,13 +273,20 @@ claude-pull:
 claude-pull-review:
 	@python3 scripts/claude-pull-review $(ARGS)
 
+# Fast-path Claude config deploy via dedicated slim playbook.
+# Reuses Block 1 + Block 2 of roles/devbox/tasks/install_configs.yml under the
+# claude tag, so this and `make personal`/`make work` share a single implementation.
+# No sudo prompt, no vault load.
+claude-push:
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags claude playbooks/claude.yml
+
 test: test-json test-fish test-bash test-nvim test-skill-evals
 	@echo "All tests passed."
 
 test-json:
 	@echo "Validating JSON files..."
 	@fail=0; \
-	for f in $$(find roles/devbox/files/.claude -name '*.json' -not -path '*/local/*'); do \
+	for f in $$(find $(CLAUDE_SRC) -name '*.json' -not -path '*/local/*'); do \
 		jq . "$$f" > /dev/null 2>&1 || { echo "  FAIL: $$f"; fail=1; }; \
 	done; \
 	[ $$fail -eq 0 ] && echo "  OK: all JSON files valid" || exit 1
@@ -272,7 +302,7 @@ test-fish:
 test-bash:
 	@echo "Validating bash script syntax..."
 	@fail=0; \
-	for f in $$(find roles/devbox/files/.claude/bin -type f); do \
+	for f in $$(find $(CLAUDE_SRC)/bin -type f); do \
 		head -1 "$$f" | grep -q 'bash' || continue; \
 		bash -n "$$f" 2>&1 || { echo "  FAIL: $$f"; fail=1; }; \
 	done; \
@@ -287,4 +317,4 @@ test-nvim:
 
 test-skill-evals:
 	@echo "Validating skill eval files..."
-	@python3 roles/devbox/files/.claude/bin/validate-skill-evals
+	@python3 $(CLAUDE_SRC)/bin/validate-skill-evals

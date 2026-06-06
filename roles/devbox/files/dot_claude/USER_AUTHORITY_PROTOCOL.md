@@ -1,6 +1,6 @@
 # User Authority Protocol
 
-> **Dual-purpose file.** Deployed to `~/.claude/CLAUDE.md` via Ansible (global baseline for all projects). Also read directly when working in `roles/devbox/files/.claude/` to edit agents/skills/commands. Sections marked "Code Projects Only" do not apply when editing agent definitions.
+> **Dual-purpose file.** Source lives at `roles/devbox/files/dot_claude/USER_AUTHORITY_PROTOCOL.md` and is deployed to `~/.claude/CLAUDE.md` (Claude Code's expected filename) by Ansible — `make personal`/`make work` for the full playbook, `make claude-push` for a slim Claude-only playbook (`playbooks/claude.yml`) that needs no sudo or vault. The repo is the source of truth: anything written directly to `~/.claude/<managed-subdir>/` (`agents/`, `skills/`, `commands/`, `schemas/`, `bin/`, `docs/`, `templates/`) is overwritten by the next push. Sections marked "Code Projects Only" do not apply when editing agent definitions.
 
 **These rules override all other instructions. User has final authority.**
 
@@ -182,7 +182,7 @@ These are enforced by `alwaysApply: true` skills. Brief reminders:
 
 ## Editing Agents & Skills (Context Optimization)
 
-When working inside `roles/devbox/files/.claude/` (editing agent/skill/command definitions):
+When working inside `roles/devbox/files/dot_claude/` (editing agent/skill/command definitions):
 
 - **Surgical reads only**: Read only the target file being edited. Do NOT read referenced skills or other agents "for context" unless the user explicitly asks.
 - **Delegate edits to subagents**: For multi-file changes, use the Task tool to spawn subagents. Each gets its own context window — file reads don't accumulate in the main conversation.

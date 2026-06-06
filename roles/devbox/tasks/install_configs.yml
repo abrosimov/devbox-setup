@@ -1,6 +1,8 @@
 ---
 # =============================================================================
-# Block 1: .claude subdirectories — symlinks to repo (bidirectional editing)
+# Block 1: .claude managed subdirs — one-way rsync from repo to ~/.claude/<dir>/
+# --delete is scoped per subdir, so host-only state under ~/.claude/ (projects/,
+# plans/, memory/, plugins/, todos/, statsig/, ...) is never in scope.
 # =============================================================================
 
 - name: Ensure .claude directory exists
@@ -19,42 +21,59 @@
   register: claude_dir_stats
   tags: [configs, claude]
 
-- name: Remove real directories before symlinking (content is in repo)
+- name: "Remove stale symlinks (legacy: managed subdirs used to be symlinks into the repo)"
   ansible.builtin.file:
     path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item.item }}"
     state: absent
   loop: "{{ claude_dir_stats.results }}"
   loop_control:
     label: ".claude/{{ item.item }}"
-  when: item.stat.exists and not item.stat.islnk
+  when: item.stat.exists and item.stat.islnk
   tags: [configs, claude]
 
-- name: Deploy managed .claude subdirectories as symlinks
+- name: Ensure managed .claude subdirs exist as real directories
   ansible.builtin.file:
-    src: "{{ role_path }}/files/.claude/{{ item }}"
-    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
-    state: link
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
+    state: directory
+    mode: "0755"
   loop: "{{ devbox_claude_managed_dirs }}"
   loop_control:
     label: ".claude/{{ item }}"
   tags: [configs, claude]
 
+- name: Sync managed .claude subdirs from repo (one-way, --delete scoped per subdir)
+  ansible.posix.synchronize:
+    src: "{{ role_path }}/files/dot_claude/{{ item }}/"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}/"
+    delete: true
+    recursive: true
+    perms: true
+    rsync_opts:
+      - "--exclude=.DS_Store"
+  delegate_to: localhost
+  loop: "{{ devbox_claude_managed_dirs }}"
+  loop_control:
+    label: ".claude/{{ item }}/"
+  tags: [configs, claude]
+
 # =============================================================================
 # Block 2: .claude root files — explicit copy
+# USER_AUTHORITY_PROTOCOL.md is renamed on the host to CLAUDE.md (the filename
+# Claude Code expects); other files keep their names.
 # =============================================================================
 
 - name: Deploy .claude root files
   ansible.builtin.copy:
-    src: "files/.claude/{{ item }}"
-    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
+    src: "{{ role_path }}/files/dot_claude/{{ item.src }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item.dest }}"
     mode: "0644"
   loop:
-    - CLAUDE.md
-    - settings.json
-    - hooks.json
-    - config.md
+    - { src: USER_AUTHORITY_PROTOCOL.md, dest: CLAUDE.md }
+    - { src: settings.json,              dest: settings.json }
+    - { src: hooks.json,                 dest: hooks.json }
+    - { src: config.md,                  dest: config.md }
   loop_control:
-    label: ".claude/{{ item }}"
+    label: ".claude/{{ item.dest }}"
   tags: [configs, claude]
 
 # =============================================================================

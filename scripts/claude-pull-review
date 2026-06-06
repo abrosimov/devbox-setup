@@ -3,7 +3,7 @@
 
 Compares ~/.claude/settings.json (deployed, sometimes mutated by Claude at
 runtime when you grant "Always allow") with the in-repo source of truth at
-roles/devbox/files/.claude/settings.json. Additions to permissions.allow are
+roles/devbox/files/dot_claude/settings.json. Additions to permissions.allow are
 classified into auto-keep, auto-drop, or needs-review using a heuristic table;
 review entries are prompted one by one; kept entries are inserted into the
 matching blank-line-separated section so the repo's hand-formatted structure
@@ -23,7 +23,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-REPO_FILE = Path("roles/devbox/files/.claude/settings.json")
+REPO_FILE = Path("roles/devbox/files/dot_claude/settings.json")
 DEPLOYED_FILE = Path.home() / ".claude" / "settings.json"
 LOG_DIR = Path("tmp")
 

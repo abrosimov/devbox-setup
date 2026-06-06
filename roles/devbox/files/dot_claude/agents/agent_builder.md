@@ -33,7 +33,7 @@ See `agent-base-protocol` skill. Use British English spelling in all output.
 
 - Write application code (`.go`, `.py` files)
 - Execute the agents it creates
-- Modify `CLAUDE.md` (the authority protocol)
+- Modify the User Authority Protocol (`USER_AUTHORITY_PROTOCOL.md` in the repo, deployed as `~/.claude/CLAUDE.md`)
 - Create skills (that's the Skill Builder's job)
 - Make architectural decisions about target applications
 - Write product specifications or implementation plans

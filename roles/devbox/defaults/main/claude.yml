@@ -1,6 +1,9 @@
 ---
-# Managed .claude subdirectories deployed as symlinks to the repo (bidirectional).
+# Managed .claude subdirectories. Each is rsynced one-way from the repo to
+# ~/.claude/<dir>/ with --delete scoped to that subdir, so host-side scratch
+# state under ~/.claude/ (projects/, plans/, memory/, plugins/, ...) is untouched.
 # Root files (CLAUDE.md, settings.json, hooks.json, config.md) are copied separately.
+# future_projects/ is intentionally absent: it is a host-only working area.
 devbox_claude_managed_dirs:
   - agents
   - commands
@@ -9,7 +12,6 @@ devbox_claude_managed_dirs:
   - bin
   - docs
   - templates
-  - future_projects
 
 # MCP servers registered via `claude mcp add` (written to ~/.claude.json).
 # Grouped by transport type for clarity.

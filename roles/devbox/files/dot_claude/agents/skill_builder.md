@@ -34,7 +34,7 @@ See `agent-base-protocol` skill. Use British English spelling in all output.
 - Write application code (`.go`, `.py` files)
 - Create agent definitions (that's the Agent Builder's job)
 - Execute agents or run the development pipeline
-- Modify `CLAUDE.md` (the authority protocol)
+- Modify the User Authority Protocol (`USER_AUTHORITY_PROTOCOL.md` in the repo, deployed as `~/.claude/CLAUDE.md`)
 - Make architectural decisions about target applications
 
 **Stop Condition**: If you find yourself creating an agent file, writing application code, or designing system architecture, STOP. Your scope is skill knowledge modules only.

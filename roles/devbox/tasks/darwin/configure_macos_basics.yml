@@ -16,6 +16,7 @@
   ansible.builtin.stat:
     path: /etc/pam.d/sudo_local
   register: sudo_local_stat
+  tags: [macos]
 
 - name: "Check if Touch ID PAM module already enabled in sudo_local"
   ansible.builtin.command: grep -Eq '^auth[[:space:]]+sufficient[[:space:]]+pam_tid\.so' /etc/pam.d/sudo_local
@@ -23,6 +24,7 @@
   changed_when: false
   failed_when: false
   when: sudo_local_stat.stat.exists
+  tags: [macos]
 
 - name: "Ensure /etc/pam.d/sudo_local exists from Apple template"
   ansible.builtin.copy:
@@ -35,6 +37,7 @@
     force: false
   become: true
   when: not sudo_local_stat.stat.exists
+  tags: [macos]
 
 - name: "Enable Touch ID PAM module in sudo_local"
   ansible.builtin.lineinfile:
@@ -44,6 +47,7 @@
     state: present
   become: true
   when: sudo_local_pam_tid.rc | default(1) != 0
+  tags: [macos]
 
 # --- Clamshell stay-awake (note: "Disable sleep when macbook is closed.md") --
 # Mandatory for the 90%-clamshell-with-external-keyboard workflow.
@@ -57,11 +61,13 @@
   register: pmset_disablesleep
   changed_when: false
   check_mode: false
+  tags: [macos]
 
 - name: "Disable sleep when lid is closed (clamshell mode stays awake)"
   ansible.builtin.command: pmset -a disablesleep 1
   when: pmset_disablesleep.stdout | trim != "1"
   become: true
+  tags: [macos]
 
 # --- Developer mode (note: "Enable Developer mode.md") -----------------------
 # Removes the password prompt every time a debugger attaches to a process.
@@ -72,11 +78,13 @@
   changed_when: false
   check_mode: false
   failed_when: false
+  tags: [macos]
 
 - name: "Enable developer mode (debugger access without password)"
   ansible.builtin.command: /usr/sbin/DevToolsSecurity --enable
   when: '"enabled" not in (devtools_status.stdout | default(""))'
   become: true
+  tags: [macos]
 
 # HiDPI for external displays (note: "Enable HiDPI for external displays.md")
 # is now handled by installing BetterDisplay via Homebrew cask — no Ansible

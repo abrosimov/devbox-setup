@@ -1,0 +1,25 @@
+---
+# Fast-path: re-register Claude Code MCP servers via `claude mcp add`.
+# Reuses the MCP register tasks in roles/devbox/tasks/apply_configs.yml
+# under the `mcp` tag.
+#
+# No sudo (devbox_skip_become=true bypasses the self-become on each task).
+# No vault. Invoked via `make mcp-sync`.
+
+- name: Sync Claude Code MCP servers
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+
+  vars:
+    devbox_skip_become: true
+
+  vars_files:
+    - "../roles/devbox/defaults/main/core.yml"
+    - "../roles/devbox/defaults/main/claude.yml"
+
+  tasks:
+    - name: Re-register MCP servers
+      ansible.builtin.import_tasks: "../roles/devbox/tasks/apply_configs.yml"
+      vars:
+        role_path: "{{ playbook_dir }}/../roles/devbox"

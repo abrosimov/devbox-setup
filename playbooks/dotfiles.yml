@@ -1,0 +1,21 @@
+---
+# Fast-path: deploy kitty / nvim / fish / bash configs and Jinja templates.
+# Reuses Blocks 3-5 of roles/devbox/tasks/install_configs.yml under the
+# `dotfiles` tag — single source of truth with `make personal` / `make work`.
+#
+# No sudo, no vault. Invoked via `make dotfiles-push`.
+
+- name: Deploy dotfile configs
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - "../roles/devbox/defaults/main/core.yml"
+    - "../roles/devbox/defaults/main/shell.yml"
+
+  tasks:
+    - name: Deploy dotfile directories, individual files and Jinja templates
+      ansible.builtin.import_tasks: "../roles/devbox/tasks/install_configs.yml"
+      vars:
+        role_path: "{{ playbook_dir }}/../roles/devbox"

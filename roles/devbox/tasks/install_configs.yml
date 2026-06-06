@@ -82,7 +82,7 @@
 
 - name: Deploy dotfile directories
   ansible.builtin.copy:
-    src: "files/{{ item }}/"
+    src: "{{ role_path }}/files/{{ item }}/"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item }}/"
     mode: "0644"
     directory_mode: "0755"
@@ -93,7 +93,7 @@
     - .config/fish/functions
   loop_control:
     label: "{{ item }}/"
-  tags: [configs]
+  tags: [configs, dotfiles]
 
 # =============================================================================
 # Block 3b: proj hooks directory — executable scripts
@@ -101,11 +101,11 @@
 
 - name: Deploy proj hooks (executable)
   ansible.builtin.copy:
-    src: "files/.local/share/proj/hooks/"
+    src: "{{ role_path }}/files/.local/share/proj/hooks/"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.local/share/proj/hooks/"
     mode: "0755"
     directory_mode: "0755"
-  tags: [configs]
+  tags: [configs, dotfiles]
 
 # =============================================================================
 # Block 4: individual plain files that don't fit a directory copy
@@ -113,7 +113,7 @@
 
 - name: Deploy individual config files
   ansible.builtin.copy:
-    src: "files/{{ item }}"
+    src: "{{ role_path }}/files/{{ item }}"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item }}"
     mode: "0644"
   loop:
@@ -125,15 +125,15 @@
     - README.md
   loop_control:
     label: "{{ item }}"
-  tags: [configs]
+  tags: [configs, dotfiles]
 
 - name: Deploy confidential config (skip if exists)
   ansible.builtin.copy:
-    src: "files/.config/fish/conf.d/_init_env_confidential.fish"
+    src: "{{ role_path }}/files/.config/fish/conf.d/_init_env_confidential.fish"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.config/fish/conf.d/_init_env_confidential.fish"
     mode: "0644"
     force: false
-  tags: [configs]
+  tags: [configs, dotfiles]
 
 # =============================================================================
 # Block 5: Jinja2 templates
@@ -144,11 +144,11 @@
     path: "{{ devbox_paths.dotfiles_root_dir }}/.config/fish/conf.d"
     state: directory
     mode: "0755"
-  tags: [configs]
+  tags: [configs, dotfiles]
 
 - name: Render config templates
   ansible.builtin.template:
-    src: "files/{{ item.src }}"
+    src: "{{ role_path }}/files/{{ item.src }}"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.dest }}"
     mode: "0644"
   loop:
@@ -158,7 +158,7 @@
     - { src: .config/fish/conf.d/_init_env.fish.j2,   dest: .config/fish/conf.d/_init_env.fish }
   loop_control:
     label: "{{ item.dest }}"
-  tags: [configs]
+  tags: [configs, dotfiles]
 
 # =============================================================================
 # Block 6: local overlay — private files not tracked in VCS
@@ -170,11 +170,13 @@
   ansible.builtin.stat:
     path: "{{ role_path }}/local"
   register: local_overlay_dir
+  tags: [configs, local]
 
 - name: Collect files from local overlay
   ansible.builtin.set_fact:
-    local_filetree_items: "{{ lookup('community.general.filetree', 'local/', wantlist=True) }}"
+    local_filetree_items: "{{ lookup('community.general.filetree', role_path ~ '/local/', wantlist=True) }}"
   when: local_overlay_dir.stat.exists
+  tags: [configs, local]
 
 - name: Create directories from local overlay
   ansible.builtin.file:
@@ -185,23 +187,26 @@
   loop_control:
     label: "{{ item.path }}"
   when: local_overlay_dir.stat.exists and item.state == 'directory'
+  tags: [configs, local]
 
 - name: Copy local overlay files
   ansible.builtin.copy:
-    src: "local/{{ item.path }}"
+    src: "{{ role_path }}/local/{{ item.path }}"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
     mode: "{{ item.mode | default('0644') }}"
   loop: "{{ local_filetree_items | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
   when: local_overlay_dir.stat.exists and item.state == 'file' and not item.path.endswith('.j2')
+  tags: [configs, local]
 
 - name: Render local overlay templates
   ansible.builtin.template:
-    src: "local/{{ item.path }}"
+    src: "{{ role_path }}/local/{{ item.path }}"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path | regex_replace('\\.j2$', '') }}"
     mode: "{{ item.mode | default('0644') }}"
   loop: "{{ local_filetree_items | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
+  tags: [configs, local]
   when: local_overlay_dir.stat.exists and item.state == 'file' and item.path.endswith('.j2')

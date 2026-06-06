@@ -41,9 +41,9 @@ endif
 .PHONY: run dev help init vault-init lint check check-dev validate-claude validate-skills eval-skills improve-skills \
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
-       fixfish list-skills list-agents \
-       audit-budget \
+       list-skills list-agents audit-budget \
        claude-diff claude-pull claude-pull-review claude-push \
+       dotfiles-push shell-push mcp-sync local-push macos-defaults \
        test test-nvim test-fish test-json test-bash test-skill-evals
 
 help:
@@ -66,7 +66,16 @@ help:
 	@echo "  make validate-skills  - validate skill evals (structure, schema, coverage)"
 	@echo "  make eval-skills      - run trigger evals via Anthropic's run_eval.py (slow, needs claude CLI)"
 	@echo "  make improve-skills   - optimize skill description for trigger accuracy (run_loop.py)"
-	@echo "  make fixfish           - upgrade fish, update plugins, apply tide config"
+	@echo ""
+	@echo "Maintenance (slim playbooks, no full bootstrap):"
+	@echo "  make claude-push      - deploy Claude config (no sudo, no vault)"
+	@echo "  make dotfiles-push    - deploy kitty / nvim / fish / bash configs + templates (no sudo, no vault)"
+	@echo "  make shell-push       - refresh fish + fisher plugins + tide preset + font cache (no sudo)"
+	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
+	@echo "  make local-push       - deploy gitignored local/ overlay (no sudo, no vault)"
+	@echo "  make macos-defaults   - re-apply Touch ID / pmset / DevToolsSecurity (sudo required)"
+	@echo ""
+	@echo "Test / introspection:"
 	@echo "  make test             - run all config validation tests"
 	@echo "  make test-nvim        - headless smoke test of nvim config"
 	@echo "  make test-fish        - fish shell config syntax check"
@@ -77,7 +86,6 @@ help:
 	@echo "  make claude-diff      - show content drift between ~/.claude and repo"
 	@echo "  make claude-pull-review - smart pull of settings.json (heuristic + interactive)"
 	@echo "  make claude-pull      - wholesale copy of root files from ~/.claude to repo"
-	@echo "  make claude-push      - deploy Claude config via slim playbook (no sudo, no vault)"
 	@echo ""
 	@echo "Options:"
 	@echo "  V=1..4                - verbosity level (-v to -vvvv)"
@@ -135,13 +143,6 @@ check-dev:
 	ANSIBLE_FORCE_COLOR=1 \
 	ansible-playbook --check $(VERBOSE) $(TEST_VAULT) \
 	    -e dev_mode=true -e ansible_become_password=dev-mode-placeholder $(PLAYBOOK)
-
-fixfish:
-	@echo "Upgrading fish and applying tide config..."
-	brew upgrade fish
-	fish -c 'fisher remove ilancosman/tide@v6 2>/dev/null; fisher install ilancosman/tide; fisher update'
-	fish -c 'tide configure --auto --style=Rainbow --prompt_colors='"'"'True color'"'"' --show_time='"'"'24-hour format'"'"' --rainbow_prompt_separators=Angled --powerline_prompt_heads=Sharp --powerline_prompt_tails=Flat --powerline_prompt_style='"'"'One line'"'"' --prompt_spacing=Compact --icons='"'"'Many icons'"'"' --transient=No'
-	@echo "Done. Restart your shell to apply changes."
 
 init:
 	@./scripts/init.sh
@@ -279,6 +280,33 @@ claude-pull-review:
 # No sudo prompt, no vault load.
 claude-push:
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags claude playbooks/claude.yml
+
+# Fast-path: kitty / nvim / fish / bash configs + Jinja templates.
+# Reuses Blocks 3-5 of roles/devbox/tasks/install_configs.yml under `dotfiles`.
+dotfiles-push:
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags dotfiles playbooks/dotfiles.yml
+
+# Fast-path: fish + fisher plugins + tide preset + font cache.
+# Reuses fish/tide/font-cache tasks in apply_configs.yml under `shell`.
+# Replaces the old `fixfish` shell incantation. No sudo (slim playbook bypasses
+# the defensive self-become via devbox_skip_become).
+shell-push:
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags shell playbooks/shell.yml
+
+# Fast-path: re-register Claude Code MCP servers via `claude mcp add`.
+# Reuses the MCP register tasks in apply_configs.yml under `mcp`. No sudo.
+mcp-sync:
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags mcp playbooks/mcp.yml
+
+# Fast-path: gitignored local overlay (roles/devbox/local/).
+# Reuses Block 6 of install_configs.yml under `local`.
+local-push:
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local playbooks/local.yml
+
+# Re-apply macOS basics: Touch ID for sudo, pmset disablesleep, DevToolsSecurity.
+# Reuses configure_macos_basics.yml under `macos`. Sudo IS required.
+macos-defaults:
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags macos playbooks/macos.yml
 
 test: test-json test-fish test-bash test-nvim test-skill-evals
 	@echo "All tests passed."

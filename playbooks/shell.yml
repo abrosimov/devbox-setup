@@ -1,0 +1,25 @@
+---
+# Fast-path: refresh fish plugins (fisher), tide prompt preset, and font cache.
+# Replaces the old `make fixfish` shell incantation. Reuses the fish/tide
+# tasks in roles/devbox/tasks/apply_configs.yml under the `shell` tag.
+#
+# No sudo (devbox_skip_become=true bypasses the self-become on each task).
+# No vault. Invoked via `make shell-push`.
+
+- name: Refresh fish + tide
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: true   # ansible_facts.env.HOME needed by font-cache task
+
+  vars:
+    devbox_skip_become: true
+
+  vars_files:
+    - "../roles/devbox/defaults/main/core.yml"
+    - "../roles/devbox/defaults/main/shell.yml"
+
+  tasks:
+    - name: Apply fish + tide + font-cache tasks
+      ansible.builtin.import_tasks: "../roles/devbox/tasks/apply_configs.yml"
+      vars:
+        role_path: "{{ playbook_dir }}/../roles/devbox"

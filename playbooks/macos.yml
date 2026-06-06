@@ -1,0 +1,30 @@
+---
+# Fast-path: re-apply macOS basics — Touch ID for sudo, pmset disablesleep,
+# DevToolsSecurity. Reuses roles/devbox/tasks/darwin/configure_macos_basics.yml
+# under the `macos` tag.
+#
+# Sudo IS required: tasks write to /etc/pam.d/sudo_local and call pmset.
+# No vault. Invoked via `make macos-defaults`.
+
+- name: Apply macOS basics
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+
+  vars_prompt:
+    - name: ansible_become_password
+      prompt: "Sudo password (Touch ID dialog or password)"
+      private: true
+      confirm: false
+
+  vars:
+    ansible_become_timeout: 120
+
+  vars_files:
+    - "../roles/devbox/defaults/main/core.yml"
+
+  tasks:
+    - name: Apply macOS configuration tasks
+      ansible.builtin.import_tasks: "../roles/devbox/tasks/darwin/configure_macos_basics.yml"
+      vars:
+        role_path: "{{ playbook_dir }}/../roles/devbox"

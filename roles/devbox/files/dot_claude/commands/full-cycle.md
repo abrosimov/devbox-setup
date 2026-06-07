@@ -227,10 +227,10 @@ Update `pipeline_state.json` with `feature_type`.
 | `fullstack` | [Designer ‖ Planner] → G2 → API Designer → G3 | Design options presented |
 
 **For UI / fullstack features:**
-1. Run `designer` agent AND `implementation-planner-{lang}` agent in parallel (both with `PIPELINE_MODE=true`):
+1. Run `designer` agent AND `implementation-planner` agent in parallel (both with `PIPELINE_MODE=true`). Pass the detected stack as context:
    ```
    Task(subagent_type: "designer", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
-   Task(subagent_type: "implementation-planner-{lang}", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   Task(subagent_type: "implementation-planner", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\nStack: {Go|Python|Python (Flask monolith)|Frontend|Fullstack}\n\n...")
    ```
 2. Designer presents 3-5 design options
 3. Update pipeline state: `designer.status = "completed"`, `impl_planner.status = "completed"`
@@ -253,9 +253,9 @@ Record chosen option in `decisions.json` and `pipeline_state.json` (`designer.se
 On approval, Designer develops full spec for selected option autonomously.
 
 **For backend features:**
-1. Run `implementation-planner-{lang}` agent:
+1. Run `implementation-planner` agent (pass the detected stack as context):
    ```
-   Task(subagent_type: "implementation-planner-{lang}", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\n\n...")
+   Task(subagent_type: "implementation-planner", model: "opus", prompt: "PIPELINE_MODE=true\nContext: ...\nStack: {Go|Python|Python (Flask monolith)|Frontend|Fullstack}\n\n...")
    ```
 2. Update pipeline state: `impl_planner.status = "completed"`
 3. Skip G2 entirely, proceed to API Designer

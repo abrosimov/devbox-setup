@@ -63,7 +63,7 @@ Use `/init-workflow` to explicitly set up the workflow config:
 │   ├── unit_tests_writer_*.md
 │   ├── integration_tests_writer_*.md
 │   ├── code_reviewer.md            # polyglot: Go, Python, Frontend
-│   ├── implementation_planner_*.md
+│   ├── implementation_planner.md   # stack-agnostic (Go/Python/frontend)
 │   ├── api_designer.md
 │   ├── database_designer.md
 │   ├── designer.md
@@ -165,7 +165,7 @@ Each command:
   Skipped when: Simple domain (Cynefin = Clear, <5 entities) or user says 'skip model'
 
 ### Step 3: Planning + Design (parallel for UI features)
-- **implementation_planner_*** — Creates detailed implementation plans with work streams
+- **implementation_planner** — Creates detailed implementation plans with work streams (stack-agnostic)
   Depends on: Step 2
   Produces: `plan.md`, `plan_output.json` (includes `work_streams` and `parallelism_groups`)
 - **designer** — Creates UI/UX design specs, design tokens, component specifications
@@ -461,7 +461,7 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 | Model | Agents |
 |-------|--------|
-| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, code-reviewer, **all implementation-planner-\***, **all software-engineer-\*** |
+| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, code-reviewer, **implementation-planner**, **all software-engineer-\*** |
 | `sonnet` | unit-test-writer-*, observability-engineer, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
 | `haiku` | Search, grep, file discovery tasks (via `model: "haiku"` in Task tool) |
 

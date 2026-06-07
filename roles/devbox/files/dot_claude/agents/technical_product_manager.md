@@ -601,7 +601,7 @@ Any items requiring further clarification before implementation.
 ### 5. Suggested Next Step
 > Specification complete.
 >
-> **Next**: Run `implementation-planner-go` or `implementation-planner-python` to create detailed implementation plan.
+> **Next**: Run `implementation-planner` to create detailed implementation plan.
 >
 > Say **'continue'** to proceed, or provide corrections to the spec.
 

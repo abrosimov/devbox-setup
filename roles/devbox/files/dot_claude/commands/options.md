@@ -47,8 +47,7 @@ Based on the problem type, select the most appropriate agent:
 | Architecture, system design, tech selection | `architect` | Cross-cutting technical analysis |
 | Domain decisions, requirement trade-offs | `domain-expert` | Trust calculus, assumption validation |
 | UI/UX direction, component strategy | `designer` | Visual/interaction design expertise |
-| Implementation approach, code structure (Go) | `implementation-planner-go` | Language-specific planning |
-| Implementation approach, code structure (Python) | `implementation-planner-python` | Language-specific planning |
+| Implementation approach, work streams, execution DAG | `implementation-planner` | Stack-agnostic functional planning (detects Go/Python/frontend) |
 | Mixed / unclear | `architect` | Safe default for broad technical decisions |
 
 ### 5. Spawn the Agent

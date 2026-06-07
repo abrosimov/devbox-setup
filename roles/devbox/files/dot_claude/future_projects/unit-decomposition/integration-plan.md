@@ -28,18 +28,17 @@
 
 ## Phase 2: Planner produces units
 
-### 2.1 Update Go implementation planner
+> **Note (2026-06-07)**: The three per-language planners (`implementation_planner_go.md`,
+> `implementation_planner_python.md`, `implementation_planner_python_monolith.md`) have been
+> merged into a single stack-agnostic `agents/implementation_planner.md`. The steps below now
+> apply once, to that single file.
 
-- **File**: `agents/implementation_planner_go.md`
+### 2.1 Update the implementation planner
+
+- **File**: `agents/implementation_planner.md`
 - **Change**: Add "Implementation Units" section to plan template. Within each Work Stream, planner produces a `units` array with: id, title, layer, depends_on_units, requirements, description, verification, codebase_anchor
-- **Key**: The planner uses RAG to find codebase anchors for each unit
+- **Key**: The planner uses RAG to find codebase anchors for each unit; verification commands are stack-conditional (Go: `go build`/`go vet`; Python: `ruff check`/`mypy`/`pytest`)
 - **Test**: Run `/plan` on a multi-FR feature and verify units appear in plan_output.json
-
-### 2.2 Update Python implementation planner
-
-- **File**: `agents/implementation_planner_python.md`
-- **Change**: Same as 2.1 adapted for Python verification commands (`ruff check`, `mypy`, `pytest`)
-- **Test**: Same as 2.1
 
 ### 2.3 Update structured output skill
 

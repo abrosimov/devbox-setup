@@ -66,6 +66,33 @@
             "command": "~/.claude/bin/pre_write_existing_guard.py"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-plan-code-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-plan-code-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-plan-code-guard"
+          }
+        ]
       }
     ],
     "PermissionRequest": [

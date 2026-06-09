@@ -354,7 +354,7 @@ When domain model is complete, provide:
 ### 2. Suggested Next Step
 > Domain model complete.
 >
-> **Next**: Proceed to Gate 1 for user validation, then run `implementation-planner-go` or `implementation-planner-python` to create implementation plan from the domain model.
+> **Next**: Proceed to Gate 1 for user validation, then run `implementation-planner` to create implementation plan from the domain model.
 >
 > Say **'continue'** to proceed, or provide corrections to the model.
 

@@ -24,6 +24,8 @@ Project directory: `{PROJECT_DIR}` (from resolve-context JSON)
 
 ### 2. Detect Project Stack
 
+There is a **single, stack-agnostic** planner: `implementation-planner`. It detects the stack itself, but you still detect it here to pass as context (and to label the run).
+
 Check for project markers (check ALL — a project may have multiple):
 - If `go.mod` exists → **Go backend**
 - If `pyproject.toml` or `requirements.txt` exists → **Python backend**
@@ -31,17 +33,17 @@ Check for project markers (check ALL — a project may have multiple):
 
 **Stack classification:**
 
-| Markers Found | Classification | Planners to Run |
-|---------------|---------------|-----------------|
-| Go only | `backend` | `implementation-planner-go` |
-| Python only | `backend` | `implementation-planner-python` (or `-monolith`) |
-| Frontend only | `frontend` | `implementation-planner-go` or `-python` (use as generic planner with frontend awareness) |
-| Backend + Frontend | `fullstack` | Backend planner (Go or Python) — planner is stack-aware and will create work streams for both |
+| Markers Found | Classification | Stack to pass to planner |
+|---------------|---------------|--------------------------|
+| Go only | `backend` | `Go` |
+| Python only | `backend` | `Python` (or `Python (Flask monolith)`) |
+| Frontend only | `frontend` | `Frontend` |
+| Backend + Frontend | `fullstack` | `Fullstack` — planner creates work streams for both |
 | Unclear | — | Ask user |
 
 For Python projects, also check if it's a Flask-OpenAPI3 monolith:
-- If `app/application/__init__.py` exists with layer initialization → Use `implementation-planner-python-monolith`
-- Otherwise → Use `implementation-planner-python`
+- If `app/application/__init__.py` exists with layer initialization → pass `Stack: Python (Flask monolith)` and note its layered-DI / repository constraints
+- Otherwise → pass `Stack: Python`
 
 **For fullstack projects**, tell the planner about the frontend stack so it can create appropriate work streams:
 - Include in agent prompt: `Frontend stack detected: [Next.js/Vite/etc.] — create work streams for both backend and frontend agents.`
@@ -58,21 +60,17 @@ If no spec exists, the planner will work from user requirements directly.
 
 The plan will be created at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md`
 
-### 4. Run Appropriate Agent
+### 4. Run the Planner
 
-Based on detected stack/architecture:
-- **Go (backend or fullstack)**: Use `implementation-planner-go` agent
-- **Python (standard)**: Use `implementation-planner-python` agent
-- **Python (Flask monolith)**: Use `implementation-planner-python-monolith` agent
-- **Frontend-only** (no backend markers): Use `implementation-planner-go` or `-python` as generic planner — include frontend context
+Always use the single `implementation-planner` agent. Pass the detected stack/architecture as context — the agent tailors language-conditional guidance (security patterns, downstream SE agent, manifest) itself.
 
 **IMPORTANT**: When invoking the Task tool, always pass `model: "opus"` explicitly. The Task tool inherits the parent's model by default — without an explicit `model` parameter, the agent runs on the parent's model, ignoring the agent frontmatter.
 
 ```
 Task(
-  subagent_type: "implementation-planner-{go|python|python-monolith}",
+  subagent_type: "implementation-planner",
   model: "opus",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\nStack: {backend|frontend|fullstack}\nFrontend stack: {Next.js|Vite|etc.}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\nStack: {Go|Python|Python (Flask monolith)|Frontend|Fullstack}\nFrontend stack: {Next.js|Vite|etc.}\n\n{task description}"
 )
 ```
 

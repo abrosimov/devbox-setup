@@ -212,7 +212,7 @@ Summary of top-level fields:
 
 ```json
 {
-  "metadata": { "agent": "implementation-planner-*", "version": "1.1", "..." : "..." },
+  "metadata": { "agent": "implementation-planner", "version": "1.1", "..." : "..." },
   "requirements": [
     {
       "id": "FR-001",

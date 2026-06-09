@@ -151,7 +151,7 @@ Current per-profile differences:
 | `USER_AUTHORITY_PROTOCOL.md` | User Authority Protocol (renamed on deploy) | `~/.claude/CLAUDE.md` |
 | `settings.json` | Default permissions (allow/deny) | `~/.claude/settings.json` |
 | `hooks.json` | Pre/post tool-call hooks | `~/.claude/hooks.json` |
-| `agents/*.md` | Agent definitions (33 agents) | `~/.claude/agents/` |
+| `agents/*.md` | Agent definitions (27 agents) | `~/.claude/agents/` |
 | `commands/*.md` | Slash commands — 22 (/implement, /test, /status, /guide, etc.) | `~/.claude/commands/` |
 | `skills/*/SKILL.md` | Reusable knowledge modules (85 skills) | `~/.claude/skills/` |
 | `schemas/*.json` | JSON Schema files for pipeline validation | `~/.claude/schemas/` |

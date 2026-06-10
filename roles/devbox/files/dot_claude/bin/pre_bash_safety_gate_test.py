@@ -75,8 +75,144 @@ class TestForcePush(unittest.TestCase):
         # Intentional tightening from the legacy hook: safer variant is allowed.
         self.assertFalse(gate.evaluate("git push --force-with-lease").blocked)
 
+    def test_allows_normal_feature_push(self):
+        self.assertFalse(gate.evaluate("git push origin feature/x").blocked)
+
+    def test_blocks_refspec_plus_prefix(self):
+        # "+feature" = force semantics at the refspec layer.
+        d = gate.evaluate("git push origin +feature")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "force-push")
+
+    def test_blocks_refspec_local_colon_plus_remote(self):
+        # "local:+main" = force on remote side.
+        d = gate.evaluate("git push origin local:+main")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "force-push")
+
+    def test_blocks_refspec_plus_local_colon_remote(self):
+        # "+local:remote" — plus prefix on entire refspec.
+        d = gate.evaluate("git push origin +feature:other")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "force-push")
+
+
+class TestPushMirrorAll(unittest.TestCase):
+    def test_blocks_mirror(self):
+        d = gate.evaluate("git push --mirror origin")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-mirror-all")
+
+    def test_blocks_all(self):
+        d = gate.evaluate("git push --all origin")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-mirror-all")
+
+    def test_blocks_all_no_remote(self):
+        self.assertTrue(gate.evaluate("git push --all").blocked)
+
     def test_allows_normal_push(self):
-        self.assertFalse(gate.evaluate("git push origin main").blocked)
+        self.assertFalse(gate.evaluate("git push origin feature/x").blocked)
+
+
+class TestPushDeleteBranch(unittest.TestCase):
+    def test_blocks_delete_flag(self):
+        d = gate.evaluate("git push --delete origin feature/x")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-delete-branch")
+
+    def test_blocks_colon_refspec(self):
+        d = gate.evaluate("git push origin :feature/x")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-delete-branch")
+
+    def test_blocks_colon_refs_heads_refspec(self):
+        d = gate.evaluate("git push origin :refs/heads/feature/x")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-delete-branch")
+
+    def test_allows_normal_refspec(self):
+        # local:remote (both sides non-empty) is a normal push, not a delete.
+        self.assertFalse(gate.evaluate("git push origin local:remote-feature").blocked)
+
+    def test_allows_normal_push(self):
+        self.assertFalse(gate.evaluate("git push origin feature/x").blocked)
+
+
+class TestPushToProtected(unittest.TestCase):
+    def test_blocks_bare_main(self):
+        d = gate.evaluate("git push origin main")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-to-protected")
+        self.assertIn("main", d.message or "")
+
+    def test_blocks_bare_master(self):
+        d = gate.evaluate("git push origin master")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-to-protected")
+
+    def test_blocks_local_colon_main(self):
+        self.assertTrue(gate.evaluate("git push origin foo:main").blocked)
+
+    def test_blocks_refs_heads_master(self):
+        d = gate.evaluate("git push origin local:refs/heads/master")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-to-protected")
+
+    def test_blocks_head_colon_main(self):
+        d = gate.evaluate("git push origin HEAD:main")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-to-protected")
+
+    def test_blocks_refs_remotes_origin_main(self):
+        d = gate.evaluate("git push origin local:refs/remotes/origin/main")
+        self.assertTrue(d.blocked)
+        self.assertEqual(d.rule_name, "push-to-protected")
+
+    def test_allows_feature_branch(self):
+        self.assertFalse(gate.evaluate("git push origin feature/x").blocked)
+
+    def test_allows_set_upstream_feature(self):
+        # -u must not confuse positional parsing.
+        self.assertFalse(gate.evaluate("git push -u origin feature/x").blocked)
+
+    def test_allows_bare_push(self):
+        # Bare `git push` is safe — rule_commit_on_main prevents new commits
+        # on main/master in the first place.
+        self.assertFalse(gate.evaluate("git push").blocked)
+
+    def test_allows_remote_only(self):
+        # `git push origin` (no refspec) = current branch -> upstream. Same
+        # reasoning as bare `git push`.
+        self.assertFalse(gate.evaluate("git push origin").blocked)
+
+    def test_allows_branch_with_main_substring(self):
+        # "mainline" is NOT main — exact match only.
+        self.assertFalse(gate.evaluate("git push origin mainline").blocked)
+
+    def test_allows_branch_with_master_path(self):
+        # "feature/master-cleanup" is NOT master.
+        self.assertFalse(gate.evaluate("git push origin feature/master-cleanup").blocked)
+
+    def test_env_var_extends_protected(self):
+        # User adds "develop" to protected list via env var.
+        with mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "main,master,develop"}):
+            d = gate.evaluate("git push origin develop")
+            self.assertTrue(d.blocked)
+            self.assertEqual(d.rule_name, "push-to-protected")
+
+    def test_env_var_wildcard_release(self):
+        with mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "main,master,release/*"}):
+            d = gate.evaluate("git push origin release/1.0")
+            self.assertTrue(d.blocked)
+            # And a non-matching branch is still allowed.
+            self.assertFalse(gate.evaluate("git push origin feature/x").blocked)
+
+    def test_env_var_override_removes_default(self):
+        # User explicitly sets only "develop" — main is no longer protected here.
+        with mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "develop"}):
+            self.assertFalse(gate.evaluate("git push origin main").blocked)
+            self.assertTrue(gate.evaluate("git push origin develop").blocked)
 
 
 class TestAmend(unittest.TestCase):

@@ -17,6 +17,8 @@ devbox_shell:
   env:
     - { name: EDITOR, value: nvim }
     - { name: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, value: "1" }
+    # Protected branches for ~/.claude/bin/pre_bash_safety_gate.py — comma-separated, fnmatch wildcards supported.
+    - { name: CC_PROTECTED_BRANCHES, value: "main,master,develop,release/*,release-*" }
     - { name: GOPATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/go" }
     - { name: FLUTTER_PATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/flutter" }
     - { name: GEM_HOME, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/ruby/gems" }

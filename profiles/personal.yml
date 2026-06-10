@@ -1,4 +1,5 @@
 devbox_projects_dir: "$HOME/Projects"
+devbox_active_profile: "personal"
 
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []

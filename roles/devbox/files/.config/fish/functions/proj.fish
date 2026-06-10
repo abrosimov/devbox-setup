@@ -103,8 +103,9 @@ function __proj_wt_copy_shared --argument-names base_dir wt_path
 end
 
 function proj --description "Project management: clone repos, cd into projects"
-    if not set -q PROJECTS_DIR
-        echo "PROJECTS_DIR is not set. Run make work / make personal to configure."
+    if not set -q AION_AUTOPOIESEON
+        echo "AION_AUTOPOIESEON is not set. Run make work / make personal to configure."
+        echo "(See roles/devbox/defaults/main/shell.yml for naming rationale.)"
         return 2
     end
 
@@ -157,7 +158,7 @@ function proj --description "Project management: clone repos, cd into projects"
                 return 2
             end
 
-            set -l project_dir "$PROJECTS_DIR/$name"
+            set -l project_dir "$AION_AUTOPOIESEON/$name"
             set -l base_dir "$project_dir/base"
 
             if test -d "$project_dir"
@@ -178,11 +179,11 @@ function proj --description "Project management: clone repos, cd into projects"
             cd "$base_dir"
 
         case ls
-            if not test -d "$PROJECTS_DIR"
-                echo "No projects directory: $PROJECTS_DIR"
+            if not test -d "$AION_AUTOPOIESEON"
+                echo "No projects directory: $AION_AUTOPOIESEON"
                 return 1
             end
-            for dir in $PROJECTS_DIR/*/
+            for dir in $AION_AUTOPOIESEON/*/
                 basename $dir
             end
 
@@ -192,7 +193,7 @@ function proj --description "Project management: clone repos, cd into projects"
                 return 2
             end
             set -l name $argv[1]
-            set -l project_dir "$PROJECTS_DIR/$name"
+            set -l project_dir "$AION_AUTOPOIESEON/$name"
             set -l base_dir "$project_dir/base"
 
             if test -d "$project_dir"
@@ -215,7 +216,7 @@ function proj --description "Project management: clone repos, cd into projects"
                 return 2
             end
             set -l name $argv[1]
-            set -l project_dir "$PROJECTS_DIR/$name"
+            set -l project_dir "$AION_AUTOPOIESEON/$name"
 
             # Check project exists
             if not test -d "$project_dir"
@@ -276,13 +277,13 @@ function proj --description "Project management: clone repos, cd into projects"
 
         case hooks
             # Install hooks to current project — detect from PWD
-            set -l rel (string replace "$PROJECTS_DIR/" '' -- $PWD)
+            set -l rel (string replace "$AION_AUTOPOIESEON/" '' -- $PWD)
             if test "$rel" = "$PWD"
-                echo "Not inside PROJECTS_DIR ($PROJECTS_DIR)"
+                echo "Not inside AION_AUTOPOIESEON ($AION_AUTOPOIESEON)"
                 return 2
             end
             set -l project (string split '/' -- $rel)[1]
-            set -l project_dir "$PROJECTS_DIR/$project"
+            set -l project_dir "$AION_AUTOPOIESEON/$project"
             set -l base_dir "$project_dir/base"
 
             if not test -d "$base_dir/.git"
@@ -294,13 +295,13 @@ function proj --description "Project management: clone repos, cd into projects"
 
         case wt
             # Worktree management — detect project from PWD
-            set -l rel (string replace "$PROJECTS_DIR/" '' -- $PWD)
+            set -l rel (string replace "$AION_AUTOPOIESEON/" '' -- $PWD)
             if test "$rel" = "$PWD"
-                echo "Not inside PROJECTS_DIR ($PROJECTS_DIR)"
+                echo "Not inside AION_AUTOPOIESEON ($AION_AUTOPOIESEON)"
                 return 2
             end
             set -l project (string split '/' -- $rel)[1]
-            set -l project_dir "$PROJECTS_DIR/$project"
+            set -l project_dir "$AION_AUTOPOIESEON/$project"
             set -l base_dir "$project_dir/base"
 
             if not test -d "$base_dir/.git"
@@ -608,7 +609,7 @@ function proj --description "Project management: clone repos, cd into projects"
 
         case '*'
             # Bare name → cd shortcut
-            set -l target "$PROJECTS_DIR/$cmd"
+            set -l target "$AION_AUTOPOIESEON/$cmd"
             if not test -d "$target"
                 echo "Project not found: $target"
                 return 1

@@ -10,6 +10,42 @@ TEST_VAULT    := --vault-password-file tests/vault-password -e vault_file=../tes
 PROFILE       ?=
 PROFILE_OPTS  = $(if $(PROFILE),-e @profiles/$(PROFILE).yml)
 
+# .devbox-profile stamp file at repo root — written by `make personal` /
+# `make work` (post_tasks in playbooks/main.yml), gitignored, holds a single
+# token: `personal` or `work`. Slim targets read it via STAMP_PROFILE so they
+# can resolve the active profile without the user repeating PROFILE=... every
+# time. Hybrid resolution: explicit PROFILE= overrides the stamp.
+DEVBOX_STAMP   := .devbox-profile
+STAMP_PROFILE  = $(shell test -f $(DEVBOX_STAMP) && head -n1 $(DEVBOX_STAMP) | tr -d '[:space:]' || true)
+ACTIVE_PROFILE = $(or $(PROFILE),$(STAMP_PROFILE))
+ACTIVE_OPTS    = $(if $(ACTIVE_PROFILE),-e @profiles/$(ACTIVE_PROFILE).yml)
+
+define require_profile
+	@if [ -z "$(ACTIVE_PROFILE)" ]; then \
+		echo "ERROR: No active profile."; \
+		echo "  Run 'make personal' or 'make work' once to stamp the profile,"; \
+		echo "  or pass PROFILE=personal|work explicitly to this target."; \
+		exit 1; \
+	fi
+endef
+
+# Dev venv — lazy bootstrap for developer-mode targets (lint-*, typecheck-*,
+# test-py). The operator-flow (init / personal / work / *-push / upgrade-*)
+# does NOT depend on this venv and never touches it. See pyproject.toml for
+# the rationale.
+DEV_VENV     := .venv
+DEV_BIN      := $(DEV_VENV)/bin
+DEV_SENTINEL := $(DEV_VENV)/.devbox-installed
+
+$(DEV_SENTINEL): pyproject.toml
+	@command -v uv >/dev/null 2>&1 || { \
+		echo "ERROR: uv is required for dev tooling. Install via 'brew install uv'."; \
+		exit 1; \
+	}
+	@echo "Bootstrapping dev venv via 'uv sync --group dev'..."
+	@uv sync --group dev --quiet
+	@touch $@
+
 # Claude Code config — single source of truth for the repo-side path. The
 # managed-subdirs list lives in devbox_claude_managed_dirs (roles/devbox/defaults/main/claude.yml)
 # and is read by both `make personal`/`make work` and `make claude-push`.
@@ -38,25 +74,35 @@ else
   VERBOSE :=
 endif
 
-.PHONY: run dev help init vault-init lint check check-dev validate-claude validate-skills eval-skills improve-skills \
+.PHONY: run dev help init vault-init check check-dev validate-claude validate-skills eval-skills improve-skills \
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        claude-diff claude-pull claude-pull-review claude-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
-       test test-nvim test-fish test-json test-bash test-skill-evals
+       test test-nvim test-fish test-json test-bash test-skill-evals test-py \
+       lint lint-ansible lint-yaml lint-py typecheck-py dev-bootstrap
 
 help:
 	@echo ""
 	@echo "Usage:"
-	@echo "  make personal         - run with personal profile (PROJECTS_DIR=~/Projects)"
-	@echo "  make work             - run with work profile (PROJECTS_DIR=~/Work)"
+	@echo "  make personal         - run with personal profile (AION_AUTOPOIESEON=~/Projects)"
+	@echo "  make work             - run with work profile (AION_AUTOPOIESEON=~/Work)"
 	@echo "  make dev-personal     - dev_mode + personal profile"
 	@echo "  make dev-work         - dev_mode + work profile"
 	@echo "  make check-personal   - dry-run with personal profile"
 	@echo "  make check-work       - dry-run with work profile"
 	@echo "  make check-dev        - dry-run in dev_mode (test vault)"
-	@echo "  make lint             - syntax check + ansible-lint"
+	@echo ""
+	@echo "Developer-mode (auto-bootstraps .venv via uv on first run):"
+	@echo "  make lint             - run all linters: yaml, py, ansible, type-check"
+	@echo "  make lint-yaml        - yamllint only"
+	@echo "  make lint-py          - ruff check + format check"
+	@echo "  make lint-ansible     - ansible-playbook --syntax-check + ansible-lint"
+	@echo "  make typecheck-py     - pyrefly type check"
+	@echo "  make test-py          - pytest"
+	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
+	@echo ""
 	@echo "  make init             - install Homebrew, Ansible, and dependencies (macOS only)"
 	@echo "  make vault-init       - create and encrypt vault/devbox_ssh_config.yml"
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
@@ -116,9 +162,37 @@ dev-work:
 dev-personal:
 	$(MAKE) run PROFILE=personal EXTRA_VARS='-e dev_mode=true' V=$(V)
 
-lint:
-	ansible-playbook --syntax-check $(TEST_VAULT) $(PLAYBOOK)
-	ansible-lint $(PLAYBOOK)
+# `lint` aggregates all dev-mode linters. Runs them in sequence so the first
+# failure stops the rest (sequence chosen by cost: fast/cheap → slow).
+lint: lint-yaml lint-py lint-ansible typecheck-py
+
+dev-bootstrap: $(DEV_SENTINEL)
+	@echo "Dev venv ready: $(DEV_VENV)"
+	@$(DEV_BIN)/python --version
+
+# ANSIBLE_VAULT_PASSWORD_FILE is a defence-in-depth alongside .ansible-lint's
+# extra_vars override (see that file's comment block). The test password also
+# decrypts the test vault stub if it ever has to be touched.
+lint-ansible: $(DEV_SENTINEL)
+	@$(DEV_BIN)/ansible-playbook --syntax-check $(TEST_VAULT) $(PLAYBOOK)
+	@ANSIBLE_VAULT_PASSWORD_FILE=tests/vault-password $(DEV_BIN)/ansible-lint $(PLAYBOOK)
+
+lint-yaml: $(DEV_SENTINEL)
+	@$(DEV_BIN)/yamllint .
+
+# `ruff check` is in advisory mode (--exit-zero) until the legacy Python debt in
+# roles/devbox/files/dot_claude/bin/ is cleaned up — see
+# roles/devbox/files/dot_claude/future_projects/ruff_strict_migration.md.
+# The formatter is enforced strictly: it is deterministic and auto-fixable.
+lint-py: $(DEV_SENTINEL)
+	@$(DEV_BIN)/ruff check --exit-zero .
+	@$(DEV_BIN)/ruff format --check .
+
+typecheck-py: $(DEV_SENTINEL)
+	@$(DEV_BIN)/pyrefly check
+
+test-py: $(DEV_SENTINEL)
+	@$(DEV_BIN)/pytest
 
 check:
 ifndef PROFILE
@@ -134,10 +208,10 @@ check-personal:
 	$(MAKE) check PROFILE=personal V=$(V)
 
 upgrade-work:
-	$(MAKE) run PROFILE=work EXTRA_VARS='-e upgrade_mode=true' V=$(V)
+	$(MAKE) run PROFILE=work EXTRA_VARS='-e devbox_upgrade_mode=true' V=$(V)
 
 upgrade-personal:
-	$(MAKE) run PROFILE=personal EXTRA_VARS='-e upgrade_mode=true' V=$(V)
+	$(MAKE) run PROFILE=personal EXTRA_VARS='-e devbox_upgrade_mode=true' V=$(V)
 
 check-dev:
 	ANSIBLE_FORCE_COLOR=1 \
@@ -278,37 +352,48 @@ claude-pull-review:
 # Reuses Block 1 + Block 2 of roles/devbox/tasks/install_configs.yml under the
 # claude tag, so this and `make personal`/`make work` share a single implementation.
 # No sudo prompt, no vault load.
+#
+# Slim targets resolve the active profile via the .devbox-profile stamp (or
+# explicit PROFILE=...). This prevents accidental renders of profile-dependent
+# vars (e.g. devbox_projects_dir) with the wrong value when invoked outside the
+# main personal/work workflow.
 claude-push:
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags claude playbooks/claude.yml
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags claude $(ACTIVE_OPTS) playbooks/claude.yml
 
 # Fast-path: kitty / nvim / fish / bash configs + Jinja templates.
 # Reuses Blocks 3-5 of roles/devbox/tasks/install_configs.yml under `dotfiles`.
 dotfiles-push:
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags dotfiles playbooks/dotfiles.yml
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags dotfiles $(ACTIVE_OPTS) playbooks/dotfiles.yml
 
 # Fast-path: fish + fisher plugins + tide preset + font cache.
 # Reuses fish/tide/font-cache tasks in apply_configs.yml under `shell`.
 # Replaces the old `fixfish` shell incantation. No sudo (slim playbook bypasses
 # the defensive self-become via devbox_skip_become).
 shell-push:
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags shell playbooks/shell.yml
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags shell $(ACTIVE_OPTS) playbooks/shell.yml
 
 # Fast-path: re-register Claude Code MCP servers via `claude mcp add`.
 # Reuses the MCP register tasks in apply_configs.yml under `mcp`. No sudo.
 mcp-sync:
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags mcp playbooks/mcp.yml
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags mcp $(ACTIVE_OPTS) playbooks/mcp.yml
 
 # Fast-path: gitignored local overlay (roles/devbox/local/).
 # Reuses Block 6 of install_configs.yml under `local`.
 local-push:
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local playbooks/local.yml
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local $(ACTIVE_OPTS) playbooks/local.yml
 
 # Re-apply macOS basics: Touch ID for sudo, pmset disablesleep, DevToolsSecurity.
 # Reuses configure_macos_basics.yml under `macos`. Sudo IS required.
 macos-defaults:
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags macos playbooks/macos.yml
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
 
-test: test-json test-fish test-bash test-nvim test-skill-evals
+test: test-json test-fish test-bash test-nvim test-skill-evals test-py
 	@echo "All tests passed."
 
 test-json:

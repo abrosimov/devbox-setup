@@ -39,7 +39,7 @@
 
 | Command | Description |
 |---------|-------------|
-| `proj clone <url>` | Clone repo into `$PROJECTS_DIR/<name>/base/` |
+| `proj clone <url>` | Clone repo into `$AION_AUTOPOIESEON/<name>/base/` |
 | `proj ls` | List projects |
 | `proj <name>` | `cd` into project directory |
 

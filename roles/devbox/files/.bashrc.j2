@@ -5,6 +5,9 @@ eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null)"
 command -v mise >/dev/null 2>&1 && eval "$(mise activate bash)"
 
 # Environment
+# Rendered from roles/devbox/defaults/main/shell.yml. The Ancient Greek env vars
+# (MNEMOSYNE_PERISTASEOS, AION_AUTOPOIESEON) are intentional — see shell.yml
+# for etymology and rationale.
 {% for entry in devbox_shell.env %}
 export {{ entry.name }}="{{ entry.value }}"
 {% endfor %}

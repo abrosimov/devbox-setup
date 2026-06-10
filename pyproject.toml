@@ -1,0 +1,133 @@
+# Dev-tooling workspace for the devbox-setup repository.
+#
+# Scope: this pyproject is ONLY for developer tooling (lint, typecheck, test) used
+# when editing this repo. The operator-flow (`make init`, `make personal`, `make work`)
+# does NOT depend on it. A fresh machine can be provisioned without ever materialising
+# the .venv defined here.
+#
+# Bootstrap: lazy. The Makefile sentinel target `.venv/.devbox-installed` runs
+# `uv sync --group dev` on first invocation of any dev target (lint-py, typecheck-py,
+# test-py, etc.) and re-runs only when this file changes.
+#
+# Naming: `package = false` under [tool.uv] tells uv we are not a buildable package,
+# we are a "virtual project" that exists only to pin dev dependencies.
+
+[project]
+name = "devbox-setup-dev"
+version = "0"
+description = "Dev tooling for devbox-setup. Operator path is independent."
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = [
+    "ansible-lint>=24.0",
+    "yamllint>=1.35",
+    "ruff>=0.6",
+    "pyrefly>=0.10",
+    "pytest>=8.0",
+    "hypothesis>=6.100",
+]
+
+[tool.uv]
+package = false
+
+# ─── Ruff ────────────────────────────────────────────────────────────────────
+# Strict-by-default: `select = ["ALL"]` opts into every rule, then `ignore` strips
+# only rules that are genuinely impractical or conflict with the formatter.
+# Per-file overrides further relax rules for tests and CLI/hook scripts.
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    ".venv",
+    "tests/generated",
+    "debug",
+    "roles/devbox/local",
+    "roles/devbox/files/dot_claude/plugins",
+    "roles/devbox/files/dot_claude/skills/example-skills",
+    "roles/devbox/files/dot_claude/skills/document-skills",
+    "roles/devbox/files/.config/nvim",
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    # Docstring rules — utility scripts and hook handlers don't need them
+    "D",
+    # Deprecated and over-strict annotation rules
+    "ANN101", "ANN102",  # deprecated (self/cls)
+    "ANN401",            # Any disallowed — too strict for dynamic glue scripts
+    # Formatter conflicts (standard ruff guidance)
+    "COM812", "ISC001",
+    # Copyright headers — not used in this project
+    "CPY",
+    # CLI scripts legitimately print
+    "T20",
+    # Subprocess is required for hook/wrapper scripts; inputs are validated
+    # at boundaries (see bin/pre_bash_safety_gate.py and friends)
+    "S603", "S607",
+    # bin/ and scripts/ are not packages — no need for __init__.py
+    "INP001",
+    # Todos and FIXMEs are legitimate, not lint warnings
+    "FIX", "TD",
+    # Sometimes a public function genuinely needs many arguments
+    "PLR0913",
+    # Long exception messages — fine for diagnostic CLIs
+    "TRY003",
+    # Magic values — sometimes the clearest expression of intent
+    "PLR2004",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",        # assert is the whole point of tests
+    "PLR2004",     # magic numbers OK in test cases
+    "ANN",         # annotations optional in tests
+    "D",           # docstrings optional in tests
+]
+"roles/devbox/files/dot_claude/bin/**" = [
+    "EXE001",      # Shebang present but file not executable — handled by deploy
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+line-ending = "lf"
+
+# ─── Pyrefly ─────────────────────────────────────────────────────────────────
+# Meta's Python type-checker. Scoped explicitly to first-party scripts to avoid
+# pulling in deployed-but-not-maintained-here trees (Anthropic skill examples etc.).
+[tool.pyrefly]
+python-version = "3.12"
+project-includes = [
+    "roles/devbox/files/dot_claude/bin",
+    "scripts",
+    "tests",
+]
+project-excludes = [
+    ".venv",
+    "debug",
+    "tests/generated",
+    "roles/devbox/local",
+    "roles/devbox/files/dot_claude/plugins",
+    "roles/devbox/files/dot_claude/skills/example-skills",
+    "roles/devbox/files/dot_claude/skills/document-skills",
+]
+# bin/ is a flat directory of scripts that import each other (e.g. *_test.py
+# imports the corresponding implementation). Add it as a search root so pyrefly
+# can resolve sibling imports.
+search-path = ["roles/devbox/files/dot_claude/bin"]
+
+# ─── Pytest ──────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+# tests/ holds Ansible vault fixtures, not Python tests. The Python tests for
+# hook scripts live next to their implementations in dot_claude/bin/ (e.g.
+# pre_bash_safety_gate_test.py is the sibling of pre_bash_safety_gate.py).
+testpaths = ["tests", "roles/devbox/files/dot_claude/bin"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "slow: tests that take longer than 1s",
+    "integration: tests that touch real systems",
+]

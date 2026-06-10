@@ -385,7 +385,7 @@ proj wt rm PROJ-123_backend                            # remove after merge
 proj wt clean                                          # prune all merged worktrees
 ```
 
-Directory layout: `$PROJECTS_DIR/<project>/<branch-name>/` (sibling of `base/`)
+Directory layout: `$AION_AUTOPOIESEON/<project>/<branch-name>/` (sibling of `base/`)
 
 Each worktree gets its own Claude Code session. `proj wt add` automatically:
 - Copies `.claude/settings.local.json` to the worktree
@@ -400,7 +400,7 @@ The `WorktreeCreate` hook in `hooks.json` delegates to `proj wt`, so `claude --w
 ```
 Terminal 1:                          Terminal 2:
 proj wt add PROJ-123_backend        proj wt add PROJ-123_frontend
-claude --cwd $PROJECTS_DIR/p/...    claude --cwd $PROJECTS_DIR/p/...
+claude --cwd $AION_AUTOPOIESEON/p/... claude --cwd $AION_AUTOPOIESEON/p/...
 > /implement backend API              > /implement frontend dashboard
 > /test                               > /test
 > /review → 'pr'                      > /review → 'pr'

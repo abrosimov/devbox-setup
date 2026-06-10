@@ -1,3 +1,7 @@
+# Rendered from roles/devbox/defaults/main/shell.yml. Do not edit by hand —
+# changes will be overwritten by `make claude-push` / `make dotfiles-push`.
+# The Ancient Greek env vars (MNEMOSYNE_PERISTASEOS, AION_AUTOPOIESEON) are
+# intentional — see shell.yml for etymology and rationale.
 {% for entry in devbox_shell.env %}
 set -gx {{ entry.name }} "{{ entry.value }}"
 {% endfor %}

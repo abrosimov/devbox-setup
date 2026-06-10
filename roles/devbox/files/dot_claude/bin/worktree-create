@@ -8,7 +8,7 @@ set -euo pipefail
 INPUT=$(cat)
 NAME=$(echo "$INPUT" | jq -r .name)
 
-# Try proj wt first (works when CWD is inside $PROJECTS_DIR/<project>/...)
+# Try proj wt first (works when CWD is inside $AION_AUTOPOIESEON/<project>/...)
 if output=$(fish -c "proj wt add '$NAME'" 2>&1); then
   echo "$output" >&2
   wt_path=$(echo "$output" | grep '^Ready: ' | sed 's/^Ready: //')

@@ -6,6 +6,7 @@ Run from any directory:
 or via unittest discovery:
     python3 -m unittest bin.pre_bash_safety_gate_test
 """
+
 from __future__ import annotations
 
 import sys
@@ -14,7 +15,7 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import pre_bash_safety_gate as gate  # noqa: E402
+import pre_bash_safety_gate as gate
 
 
 class TestHeredoc(unittest.TestCase):
@@ -300,6 +301,7 @@ class TestProjectTmp(unittest.TestCase):
 
     def setUp(self) -> None:
         import tempfile
+
         self._tmpdir = tempfile.mkdtemp(prefix="gate-test-")
         self._project_root = Path(self._tmpdir) / "myproj"
         (self._project_root / ".git").mkdir(parents=True)
@@ -308,13 +310,12 @@ class TestProjectTmp(unittest.TestCase):
         # Symlink escape attack: tmp/escape -> /etc
         (self._project_root / "tmp" / "escape").symlink_to("/etc")
         # Pretend cwd is the project root.
-        self._cwd_patch = mock.patch.object(
-            gate.Path, "cwd", return_value=self._project_root
-        )
+        self._cwd_patch = mock.patch.object(gate.Path, "cwd", return_value=self._project_root)
         self._cwd_patch.start()
 
     def tearDown(self) -> None:
         import shutil
+
         self._cwd_patch.stop()
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 

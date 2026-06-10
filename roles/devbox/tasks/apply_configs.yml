@@ -6,31 +6,34 @@
 
 - name: Find fish shell path
   ansible.builtin.command: "command -v fish"
-  register: fish_shell_path
+  register: devbox_fish_shell_path
   changed_when: false
   check_mode: false
-  failed_when: fish_shell_path.rc != 0
+  failed_when: devbox_fish_shell_path.rc != 0
   tags: [configs, shell]
 
 - name: Find fc-cache path
   ansible.builtin.command: "command -v fc-cache"
-  register: fc_cache_path
+  register: devbox_fc_cache_path
   changed_when: false
   check_mode: false
   failed_when: false
   tags: [configs, shell]
 
 - name: Regenerate font cache for user directories
-  ansible.builtin.command: "{{ fc_cache_path.stdout }} -f {{ ansible_facts['env']['HOME'] }}/Library/Fonts {{ ansible_facts['env']['HOME'] }}/.local/share/fonts"
+  ansible.builtin.command: >-
+    {{ devbox_fc_cache_path.stdout }} -f
+    {{ ansible_facts['env']['HOME'] }}/Library/Fonts
+    {{ ansible_facts['env']['HOME'] }}/.local/share/fonts
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
-  when: fc_cache_path.rc == 0
+  when: devbox_fc_cache_path.rc == 0
   changed_when: false
   failed_when: false
   tags: [configs, shell]
 
 - name: "Migration: remove pinned tide@v6 before unpinned install"
-  ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher remove ilancosman/tide@v6'"
+  ansible.builtin.shell: "{{ devbox_fish_shell_path.stdout }} -c 'fisher remove ilancosman/tide@v6'"
   args:
     executable: /bin/bash
   become: "{{ not (devbox_skip_become | default(false)) }}"
@@ -40,7 +43,7 @@
   tags: [configs, shell]
 
 - name: Install fisher plugins
-  ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher install {{ item }}'"
+  ansible.builtin.shell: "{{ devbox_fish_shell_path.stdout }} -c 'fisher install {{ item }}'"
   args:
     executable: /bin/bash
   loop: "{{ devbox_fish_plugins }}"
@@ -51,7 +54,7 @@
 
 - name: "Configure done plugin: 300s threshold, Kitty remote control"
   ansible.builtin.shell: |
-    {{ fish_shell_path.stdout }} -c '
+    {{ devbox_fish_shell_path.stdout }} -c '
       set -U __done_min_cmd_duration 300000
       set -U __done_kitty_remote_control 1
       set -U __done_notification_duration 5000
@@ -64,7 +67,7 @@
   tags: [configs, shell]
 
 - name: Update fisher plugins
-  ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c 'fisher update'"
+  ansible.builtin.shell: "{{ devbox_fish_shell_path.stdout }} -c 'fisher update'"
   args:
     executable: /bin/bash
   become: "{{ not (devbox_skip_become | default(false)) }}"
@@ -73,7 +76,7 @@
   tags: [configs, shell]
 
 - name: Configure tide prompt (auto mode)
-  ansible.builtin.shell: "{{ fish_shell_path.stdout }} -c '{{ devbox_tide_configure_auto }}'"
+  ansible.builtin.shell: "{{ devbox_fish_shell_path.stdout }} -c '{{ devbox_tide_configure_auto }}'"
   args:
     executable: /bin/bash
   become: "{{ not (devbox_skip_become | default(false)) }}"
@@ -98,7 +101,7 @@
 
 - name: Find Claude Code CLI path
   ansible.builtin.command: "command -v claude"
-  register: claude_cli_path
+  register: devbox_claude_cli_path
   changed_when: false
   check_mode: false
   failed_when: false
@@ -106,48 +109,48 @@
 
 - name: Add Claude Code plugin marketplaces
   ansible.builtin.command: >
-    {{ claude_cli_path.stdout }} plugin marketplace add {{ item.repo }}
-  loop: "{{ claude_plugin_marketplaces }}"
+    {{ devbox_claude_cli_path.stdout }} plugin marketplace add {{ item.repo }}
+  loop: "{{ devbox_claude_plugin_marketplaces }}"
   loop_control:
     label: "{{ item.name }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
-  when: claude_cli_path.rc == 0
+  when: devbox_claude_cli_path.rc == 0
   changed_when: false
   failed_when: false
   tags: [configs, claude]
 
 - name: Install Claude Code plugins (user scope)
   ansible.builtin.command: >
-    {{ claude_cli_path.stdout }} plugin install
+    {{ devbox_claude_cli_path.stdout }} plugin install
     {% if item.marketplace is defined %}{{ item.name }}@{{ item.marketplace }}{% else %}{{ item.name }}{% endif %}
     --scope user
-  loop: "{{ claude_plugins }}"
+  loop: "{{ devbox_claude_plugins }}"
   loop_control:
     label: "{{ item.name }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
-  when: claude_cli_path.rc == 0
+  when: devbox_claude_cli_path.rc == 0
   changed_when: false
   failed_when: false
   tags: [configs, claude]
 
 - name: Enable Claude Code plugins (user scope)
   ansible.builtin.command: >
-    {{ claude_cli_path.stdout }} plugin enable {{ item.name }} --scope user
-  loop: "{{ claude_plugins }}"
+    {{ devbox_claude_cli_path.stdout }} plugin enable {{ item.name }} --scope user
+  loop: "{{ devbox_claude_plugins }}"
   loop_control:
     label: "{{ item.name }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
-  when: claude_cli_path.rc == 0
+  when: devbox_claude_cli_path.rc == 0
   changed_when: false
   failed_when: false
   tags: [configs, claude]
 
 - name: Register Claude Code MCP servers - Docker (user scope)
   ansible.builtin.command: >
-    {{ claude_cli_path.stdout }} mcp add
+    {{ devbox_claude_cli_path.stdout }} mcp add
     --transport stdio
     --scope user
     {{ item.name }}
@@ -157,40 +160,40 @@
     {% if item.init | default(false) %}--init{% endif %}
     {% for k, v in (item.env | default({})).items() %}-e {{ k }}={{ v }} {% endfor %}
     {{ item.image }}
-  loop: "{{ mcp_docker_servers }}"
+  loop: "{{ devbox_mcp_docker_servers }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
-  when: claude_cli_path.rc == 0
+  when: devbox_claude_cli_path.rc == 0
   changed_when: false
   failed_when: false
   tags: [configs, claude, mcp]
 
 - name: Register Claude Code MCP servers - Script (user scope)
   ansible.builtin.command: >
-    {{ claude_cli_path.stdout }} mcp add
+    {{ devbox_claude_cli_path.stdout }} mcp add
     --transport stdio
     --scope user
     {{ item.name }}
     -- {{ item.command }}
-  loop: "{{ mcp_script_servers }}"
+  loop: "{{ devbox_mcp_script_servers }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
-  when: claude_cli_path.rc == 0
+  when: devbox_claude_cli_path.rc == 0
   changed_when: false
   failed_when: false
   tags: [configs, claude, mcp]
 
 - name: Register Claude Code MCP servers - HTTP (user scope)
   ansible.builtin.command: >
-    {{ claude_cli_path.stdout }} mcp add
+    {{ devbox_claude_cli_path.stdout }} mcp add
     --transport {{ item.transport | default('http') }}
     --scope user
     {{ item.name }}
     {{ item.url }}
-  loop: "{{ mcp_http_servers + devbox_extra_mcp_http_servers }}"
+  loop: "{{ devbox_mcp_http_servers + devbox_extra_mcp_http_servers }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
-  when: claude_cli_path.rc == 0
+  when: devbox_claude_cli_path.rc == 0
   changed_when: false
   failed_when: false
   tags: [configs, claude, mcp]

@@ -18,14 +18,14 @@
   loop: "{{ devbox_claude_managed_dirs }}"
   loop_control:
     label: ".claude/{{ item }}"
-  register: claude_dir_stats
+  register: devbox_claude_dir_stats
   tags: [configs, claude]
 
 - name: "Remove stale symlinks (legacy: managed subdirs used to be symlinks into the repo)"
   ansible.builtin.file:
     path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item.item }}"
     state: absent
-  loop: "{{ claude_dir_stats.results }}"
+  loop: "{{ devbox_claude_dir_stats.results }}"
   loop_control:
     label: ".claude/{{ item.item }}"
   when: item.stat.exists and item.stat.islnk
@@ -69,9 +69,9 @@
     mode: "0644"
   loop:
     - { src: USER_AUTHORITY_PROTOCOL.md, dest: CLAUDE.md }
-    - { src: settings.json,              dest: settings.json }
-    - { src: hooks.json,                 dest: hooks.json }
-    - { src: config.md,                  dest: config.md }
+    - { src: settings.json, dest: settings.json }
+    - { src: hooks.json, dest: hooks.json }
+    - { src: config.md, dest: config.md }
   loop_control:
     label: ".claude/{{ item.dest }}"
   tags: [configs, claude]
@@ -152,10 +152,10 @@
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.dest }}"
     mode: "0644"
   loop:
-    - { src: .bashrc.j2,                              dest: .bashrc }
-    - { src: .gemrc.j2,                               dest: .gemrc }
-    - { src: .npmrc.j2,                               dest: .npmrc }
-    - { src: .config/fish/conf.d/_init_env.fish.j2,   dest: .config/fish/conf.d/_init_env.fish }
+    - { src: .bashrc.j2, dest: .bashrc }
+    - { src: .gemrc.j2, dest: .gemrc }
+    - { src: .npmrc.j2, dest: .npmrc }
+    - { src: .config/fish/conf.d/_init_env.fish.j2, dest: .config/fish/conf.d/_init_env.fish }
   loop_control:
     label: "{{ item.dest }}"
   tags: [configs, dotfiles]
@@ -169,13 +169,13 @@
 - name: Check if local overlay directory exists
   ansible.builtin.stat:
     path: "{{ role_path }}/local"
-  register: local_overlay_dir
+  register: devbox_local_overlay_dir
   tags: [configs, local]
 
 - name: Collect files from local overlay
   ansible.builtin.set_fact:
-    local_filetree_items: "{{ lookup('community.general.filetree', role_path ~ '/local/', wantlist=True) }}"
-  when: local_overlay_dir.stat.exists
+    devbox_local_filetree_items: "{{ lookup('community.general.filetree', role_path ~ '/local/', wantlist=True) }}"
+  when: devbox_local_overlay_dir.stat.exists
   tags: [configs, local]
 
 - name: Create directories from local overlay
@@ -183,10 +183,10 @@
     path: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
     state: directory
     mode: "{{ item.mode }}"
-  loop: "{{ local_filetree_items | default([]) }}"
+  loop: "{{ devbox_local_filetree_items | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
-  when: local_overlay_dir.stat.exists and item.state == 'directory'
+  when: devbox_local_overlay_dir.stat.exists and item.state == 'directory'
   tags: [configs, local]
 
 - name: Copy local overlay files
@@ -194,10 +194,10 @@
     src: "{{ role_path }}/local/{{ item.path }}"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
     mode: "{{ item.mode | default('0644') }}"
-  loop: "{{ local_filetree_items | default([]) }}"
+  loop: "{{ devbox_local_filetree_items | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
-  when: local_overlay_dir.stat.exists and item.state == 'file' and not item.path.endswith('.j2')
+  when: devbox_local_overlay_dir.stat.exists and item.state == 'file' and not item.path.endswith('.j2')
   tags: [configs, local]
 
 - name: Render local overlay templates
@@ -205,8 +205,8 @@
     src: "{{ role_path }}/local/{{ item.path }}"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path | regex_replace('\\.j2$', '') }}"
     mode: "{{ item.mode | default('0644') }}"
-  loop: "{{ local_filetree_items | default([]) }}"
+  loop: "{{ devbox_local_filetree_items | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
   tags: [configs, local]
-  when: local_overlay_dir.stat.exists and item.state == 'file' and item.path.endswith('.j2')
+  when: devbox_local_overlay_dir.stat.exists and item.state == 'file' and item.path.endswith('.j2')

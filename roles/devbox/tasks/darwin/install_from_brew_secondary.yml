@@ -7,7 +7,7 @@
 - name: "Install Homebrew apps"
   community.general.homebrew:
     name: "{{ devbox_brew_secondary + devbox_extra_brew }}"
-    state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
+    state: "{{ 'latest' if devbox_upgrade_mode | default(false) | bool else 'present' }}"
 
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
@@ -17,11 +17,11 @@
     upgrade_all: false
     sudo_password: "{{ ansible_become_password }}"
   no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
-  register: cask_secondary_result
+  register: devbox_cask_secondary_result
   failed_when:
-    - cask_secondary_result.failed is defined
-    - cask_secondary_result.failed
-    - '"already installed" not in cask_secondary_result.msg'
+    - devbox_cask_secondary_result.failed is defined
+    - devbox_cask_secondary_result.failed
+    - '"already installed" not in devbox_cask_secondary_result.msg'
 
 # Separate task for casks whose post-install `xattr -w` step fails because the
 # .pkg lays down root-owned files inside /Applications/<App>.app. Adding
@@ -39,17 +39,17 @@
     sudo_password: "{{ ansible_become_password }}"
   no_log: true
   when: (devbox_brew_secondary_casks_no_binaries + devbox_extra_brew_casks_no_binaries) | length > 0
-  register: cask_no_binaries_result
+  register: devbox_cask_no_binaries_result
   failed_when:
-    - cask_no_binaries_result.failed is defined
-    - cask_no_binaries_result.failed
-    - '"already installed" not in cask_no_binaries_result.msg'
+    - devbox_cask_no_binaries_result.failed is defined
+    - devbox_cask_no_binaries_result.failed
+    - '"already installed" not in devbox_cask_no_binaries_result.msg'
 
 - name: "Install npm packages"
   community.general.npm:
     name: "{{ item }}"
     global: true
-    state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
+    state: "{{ 'latest' if devbox_upgrade_mode | default(false) | bool else 'present' }}"
   environment:
     PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
   loop: "{{ devbox_npm_packages }}"

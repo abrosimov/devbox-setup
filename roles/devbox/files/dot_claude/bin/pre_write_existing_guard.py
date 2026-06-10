@@ -20,17 +20,17 @@ Exit codes:
     0  — allow (no file_path, file missing, file empty, or any error path)
     2  — block (file exists with size > 0)
 """
+
 from __future__ import annotations
 
 import json
 import os
 import sys
-from typing import Optional
 
 RULE_NAME: str = "pre-write-existing-guard"
 
 
-def _extract_file_path(raw: str) -> Optional[str]:
+def _extract_file_path(raw: str) -> str | None:
     if not raw.strip():
         return None
     try:

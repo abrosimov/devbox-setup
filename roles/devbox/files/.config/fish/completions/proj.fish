@@ -12,7 +12,7 @@ complete -c proj -n '__fish_use_subcommand' -a ls -d 'List projects'
 complete -c proj -n '__fish_use_subcommand' -a wt -d 'Worktree management'
 
 # Project names as cd shortcuts
-complete -c proj -n '__fish_use_subcommand' -a '(set -q PROJECTS_DIR; and test -d "$PROJECTS_DIR"; and for d in $PROJECTS_DIR/*/; basename $d; end)'
+complete -c proj -n '__fish_use_subcommand' -a '(set -q AION_AUTOPOIESEON; and test -d "$AION_AUTOPOIESEON"; and for d in $AION_AUTOPOIESEON/*/; basename $d; end)'
 
 # proj wt subcommands
 complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a add -d 'Create worktree (tracks remote if exists)'

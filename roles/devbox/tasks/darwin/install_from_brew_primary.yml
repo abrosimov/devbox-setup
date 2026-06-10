@@ -2,17 +2,17 @@
 - name: "Install Homebrew apps"
   community.general.homebrew:
     name: "{{ devbox_brew_primary }}"
-    state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
+    state: "{{ 'latest' if devbox_upgrade_mode | default(false) | bool else 'present' }}"
 
 - name: "Install fontconfig (ignore post-install warnings)"
   community.general.homebrew:
     name: "{{ devbox_brew_primary_special }}"
-    state: "{{ 'latest' if upgrade_mode | default(false) | bool else 'present' }}"
-  register: fontconfig_result
+    state: "{{ 'latest' if devbox_upgrade_mode | default(false) | bool else 'present' }}"
+  register: devbox_fontconfig_result
   failed_when:
-    - fontconfig_result.failed is defined
-    - fontconfig_result.failed
-    - '"post-install" not in fontconfig_result.msg'
+    - devbox_fontconfig_result.failed is defined
+    - devbox_fontconfig_result.failed
+    - '"post-install" not in devbox_fontconfig_result.msg'
 
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
@@ -22,8 +22,8 @@
     upgrade_all: false
     sudo_password: "{{ ansible_become_password }}"
   no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
-  register: cask_primary_result
+  register: devbox_cask_primary_result
   failed_when:
-    - cask_primary_result.failed is defined
-    - cask_primary_result.failed
-    - '"already installed" not in cask_primary_result.msg'
+    - devbox_cask_primary_result.failed is defined
+    - devbox_cask_primary_result.failed
+    - '"already installed" not in devbox_cask_primary_result.msg'

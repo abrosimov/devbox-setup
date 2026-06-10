@@ -8,6 +8,7 @@ hooks.json with a single rule table.
 
 Stdlib only — no external dependencies.
 """
+
 from __future__ import annotations
 
 import fnmatch
@@ -16,41 +17,80 @@ import re
 import shlex
 import subprocess
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, FrozenSet, List, Optional, Tuple
-
 
 # --- allow-lists and recognised tokens --------------------------------------
 
 # Path basename components that mark an ``rm -rf`` target as safe.
-SAFE_RM_BASENAMES: frozenset = frozenset({
-    "node_modules", ".venv", "venv", "dist", "build", "target",
-    ".next", ".cache", ".pytest_cache", "__pycache__",
-    ".mypy_cache", ".ruff_cache", ".tox", ".parcel-cache",
-    "coverage", "htmlcov", ".turbo", ".vite",
-})
+SAFE_RM_BASENAMES: frozenset = frozenset(
+    {
+        "node_modules",
+        ".venv",
+        "venv",
+        "dist",
+        "build",
+        "target",
+        ".next",
+        ".cache",
+        ".pytest_cache",
+        "__pycache__",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".tox",
+        ".parcel-cache",
+        "coverage",
+        "htmlcov",
+        ".turbo",
+        ".vite",
+    }
+)
 
 # Lint/type suppression directives that should never be written via Bash.
-LINT_SUPPRESSION_TOKENS: Tuple[str, ...] = (
-    "noqa", "nolint", "ts-ignore", "ts-expect-error",
-    "eslint-disable", "type: ignore", "type:ignore",
+LINT_SUPPRESSION_TOKENS: tuple[str, ...] = (
+    "noqa",
+    "nolint",
+    "ts-ignore",
+    "ts-expect-error",
+    "eslint-disable",
+    "type: ignore",
+    "type:ignore",
     "SuppressWarnings",
 )
 
 # Bash builtins/commands that write to files (substring-matched against the
 # raw command, preserving the legacy hook's behaviour).
-FILE_WRITER_TOKENS: Tuple[str, ...] = (
-    "sed", "echo", "printf", "cat", "tee", "perl", "python", "ruby", "awk",
+FILE_WRITER_TOKENS: tuple[str, ...] = (
+    "sed",
+    "echo",
+    "printf",
+    "cat",
+    "tee",
+    "perl",
+    "python",
+    "ruby",
+    "awk",
 )
 
 # SQL CLI tools whose ``-c`` / ``-e`` flags execute literal SQL.
-SQL_TOOL_NAMES: frozenset = frozenset({
-    "psql", "mysql", "mariadb", "sqlite3", "cockroach",
-})
-SQL_EXEC_FLAGS: frozenset = frozenset({
-    "-c", "-e", "--command", "--execute",
-})
+SQL_TOOL_NAMES: frozenset = frozenset(
+    {
+        "psql",
+        "mysql",
+        "mariadb",
+        "sqlite3",
+        "cockroach",
+    }
+)
+SQL_EXEC_FLAGS: frozenset = frozenset(
+    {
+        "-c",
+        "-e",
+        "--command",
+        "--execute",
+    }
+)
 SQL_DESTRUCTIVE_RE = re.compile(
     r"\b(DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE(\s+TABLE)?)\b",
     re.IGNORECASE,
@@ -59,27 +99,30 @@ SQL_DESTRUCTIVE_RE = re.compile(
 
 # --- types ------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class Ctx:
     """Per-invocation context passed to every rule."""
-    cmd: str          # raw command as received from $CC_BASH_COMMAND
-    argv: List[str]   # shlex-tokenised argv (empty if cmd is unparseable)
+
+    cmd: str  # raw command as received from $CC_BASH_COMMAND
+    argv: list[str]  # shlex-tokenised argv (empty if cmd is unparseable)
 
 
 @dataclass(frozen=True)
 class Decision:
     blocked: bool
-    rule_name: Optional[str] = None
-    message: Optional[str] = None
+    rule_name: str | None = None
+    message: str | None = None
 
 
 ALLOW = Decision(blocked=False)
-RuleFn = Callable[[Ctx], Optional[str]]
+RuleFn = Callable[[Ctx], str | None]
 
 
 # --- helpers ----------------------------------------------------------------
 
-def _tool(argv: List[str]) -> str:
+
+def _tool(argv: list[str]) -> str:
     return os.path.basename(argv[0]) if argv else ""
 
 
@@ -96,7 +139,7 @@ def _current_branch() -> str:
         return ""
 
 
-def _project_root_from_cwd() -> Optional[Path]:
+def _project_root_from_cwd() -> Path | None:
     """Walk up from cwd looking for a .git directory; return the project root.
 
     Returns None if cwd is outside any git checkout.
@@ -168,7 +211,7 @@ def _is_safe_rm_path(path: str) -> bool:
     return any(p in SAFE_RM_BASENAMES for p in parts)
 
 
-def _protected_branches() -> FrozenSet[str]:
+def _protected_branches() -> frozenset[str]:
     """Set of protected branch patterns (supports fnmatch wildcards).
 
     Reads CC_PROTECTED_BRANCHES (comma-separated). Defaults to {"main", "master"}.
@@ -188,10 +231,9 @@ def _refspec_target(refspec: str) -> str:
     against a protected-branch list.
     """
     target = refspec.split(":", 1)[1] if ":" in refspec else refspec
-    if target.startswith("+"):
-        target = target[1:]
+    target = target.removeprefix("+")
     if target.startswith("refs/heads/"):
-        return target[len("refs/heads/"):]
+        return target[len("refs/heads/") :]
     if target.startswith("refs/remotes/"):
         parts = target.split("/", 3)
         if len(parts) == 4:
@@ -199,13 +241,13 @@ def _refspec_target(refspec: str) -> str:
     return target
 
 
-def _matches_protected(branch: str, patterns: FrozenSet[str]) -> bool:
+def _matches_protected(branch: str, patterns: frozenset[str]) -> bool:
     if not branch:
         return False
     return any(fnmatch.fnmatchcase(branch, p) for p in patterns)
 
 
-def _push_positionals(argv: List[str]) -> List[str]:
+def _push_positionals(argv: list[str]) -> list[str]:
     """Positional arguments to ``git push`` (all argv entries past ``push`` that
     do not start with ``-``). Used to extract remote + refspec(s)."""
     return [a for a in argv[2:] if not a.startswith("-")]
@@ -213,31 +255,32 @@ def _push_positionals(argv: List[str]) -> List[str]:
 
 # --- rule implementations ---------------------------------------------------
 
-def rule_heredoc(ctx: Ctx) -> Optional[str]:
+
+def rule_heredoc(ctx: Ctx) -> str | None:
     if "<<" in ctx.cmd:
-        return ("Use the Write tool to create files or Edit to modify them. "
-                "Do not use Bash heredocs (<<). Write/Edit are auto-approved in "
-                "acceptEdits mode and produce cleaner diffs.")
+        return (
+            "Use the Write tool to create files or Edit to modify them. "
+            "Do not use Bash heredocs (<<). Write/Edit are auto-approved in "
+            "acceptEdits mode and produce cleaner diffs."
+        )
     return None
 
 
-def rule_commit_on_main(ctx: Ctx) -> Optional[str]:
+def rule_commit_on_main(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "commit":
         if _current_branch() in {"main", "master"}:
-            return ("Cannot commit on the main/master branch. "
-                    "Create a feature branch first.")
+            return "Cannot commit on the main/master branch. Create a feature branch first."
     return None
 
 
-def rule_merge_on_main(ctx: Ctx) -> Optional[str]:
+def rule_merge_on_main(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "merge":
         if _current_branch() in {"main", "master"}:
-            return ("Cannot merge into the main/master branch. "
-                    "Use a feature branch instead.")
+            return "Cannot merge into the main/master branch. Use a feature branch instead."
     return None
 
 
-def rule_force_push(ctx: Ctx) -> Optional[str]:
+def rule_force_push(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "push":
         return None
     msg = "Force push is not allowed. Push normally or ask the user."
@@ -256,21 +299,24 @@ def rule_force_push(ctx: Ctx) -> Optional[str]:
     return None
 
 
-def rule_push_mirror_all(ctx: Ctx) -> Optional[str]:
+def rule_push_mirror_all(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "push":
         return None
     for arg in ctx.argv[2:]:
         if arg in {"--mirror", "--all"}:
-            return ("git push --mirror/--all is not allowed (pushes all refs). "
-                    "Push specific branches instead.")
+            return (
+                "git push --mirror/--all is not allowed (pushes all refs). "
+                "Push specific branches instead."
+            )
     return None
 
 
-def rule_push_delete_branch(ctx: Ctx) -> Optional[str]:
+def rule_push_delete_branch(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "push":
         return None
-    msg = ("Branch deletion via git push is not allowed. "
-           "Ask the user before deleting remote branches.")
+    msg = (
+        "Branch deletion via git push is not allowed. Ask the user before deleting remote branches."
+    )
     for arg in ctx.argv[2:]:
         if arg == "--delete":
             return msg
@@ -280,7 +326,7 @@ def rule_push_delete_branch(ctx: Ctx) -> Optional[str]:
     return None
 
 
-def rule_push_to_protected(ctx: Ctx) -> Optional[str]:
+def rule_push_to_protected(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "push":
         return None
     positionals = _push_positionals(ctx.argv)
@@ -294,42 +340,48 @@ def rule_push_to_protected(ctx: Ctx) -> Optional[str]:
     for refspec in refspecs:
         target = _refspec_target(refspec)
         if _matches_protected(target, protected):
-            return (f"Cannot push to protected branch '{target}'. "
-                    "Use a feature branch and open a PR/MR.")
+            return (
+                f"Cannot push to protected branch '{target}'. "
+                "Use a feature branch and open a PR/MR."
+            )
     return None
 
 
-def rule_amend(ctx: Ctx) -> Optional[str]:
+def rule_amend(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "commit":
         if "--amend" in ctx.argv:
             return "Amending commits is not allowed. Create a new commit instead."
     return None
 
 
-def rule_no_verify(ctx: Ctx) -> Optional[str]:
+def rule_no_verify(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "commit":
         if "--no-verify" in ctx.argv:
-            return ("--no-verify is not allowed. Fix the pre-commit hook issues "
-                    "instead of bypassing them.")
+            return (
+                "--no-verify is not allowed. Fix the pre-commit hook issues "
+                "instead of bypassing them."
+            )
     return None
 
 
-def rule_lint_suppression_via_bash(ctx: Ctx) -> Optional[str]:
+def rule_lint_suppression_via_bash(ctx: Ctx) -> str | None:
     if not any(t in ctx.cmd for t in LINT_SUPPRESSION_TOKENS):
         return None
     if any(t in ctx.cmd for t in FILE_WRITER_TOKENS):
-        return ("Detected Bash command that writes lint suppression directives "
-                "to files. Use the Edit tool instead, and fix the underlying "
-                "issue rather than suppressing it.")
+        return (
+            "Detected Bash command that writes lint suppression directives "
+            "to files. Use the Edit tool instead, and fix the underlying "
+            "issue rather than suppressing it."
+        )
     return None
 
 
-def rule_rm_rf(ctx: Ctx) -> Optional[str]:
+def rule_rm_rf(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "rm":
         return None
     has_recursive = False
     has_force = False
-    paths: List[str] = []
+    paths: list[str] = []
     for arg in ctx.argv[1:]:
         if arg == "--":
             continue
@@ -348,91 +400,90 @@ def rule_rm_rf(ctx: Ctx) -> Optional[str]:
         return None
     unsafe = [p for p in paths if not _is_safe_rm_path(p)]
     if unsafe:
-        return (f"rm -rf outside known-safe paths is not allowed. "
-                f"Unsafe targets: {' '.join(unsafe)}. "
-                "State the path and ask the user before proceeding.")
+        return (
+            f"rm -rf outside known-safe paths is not allowed. "
+            f"Unsafe targets: {' '.join(unsafe)}. "
+            "State the path and ask the user before proceeding."
+        )
     return None
 
 
-def rule_git_reset_hard(ctx: Ctx) -> Optional[str]:
+def rule_git_reset_hard(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "reset":
         if "--hard" in ctx.argv:
-            return ("git reset --hard destroys uncommitted work. "
-                    "Ask the user before running.")
+            return "git reset --hard destroys uncommitted work. Ask the user before running."
     return None
 
 
-def rule_git_clean(ctx: Ctx) -> Optional[str]:
+def rule_git_clean(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "clean":
         return None
     for arg in ctx.argv[2:]:
         if arg == "--force":
-            return ("git clean --force destroys untracked work. "
-                    "Ask the user before running.")
+            return "git clean --force destroys untracked work. Ask the user before running."
         if arg.startswith("-") and not arg.startswith("--") and "f" in arg:
-            return ("git clean -f destroys untracked work. "
-                    "Ask the user before running.")
+            return "git clean -f destroys untracked work. Ask the user before running."
     return None
 
 
-def rule_wholesale_checkout_restore(ctx: Ctx) -> Optional[str]:
+def rule_wholesale_checkout_restore(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2:
         return None
     if ctx.argv[1] == "checkout" and len(ctx.argv) >= 3 and ctx.argv[-1] == ".":
-        return ("Wholesale `git checkout .` discards local edits. "
-                "Restore named files or ask the user.")
+        return (
+            "Wholesale `git checkout .` discards local edits. Restore named files or ask the user."
+        )
     if ctx.argv[1] == "restore" and len(ctx.argv) >= 3 and ctx.argv[-1] == ".":
-        return ("Wholesale `git restore` discards local edits. "
-                "Restore named files or ask the user.")
+        return "Wholesale `git restore` discards local edits. Restore named files or ask the user."
     return None
 
 
-def rule_branch_force_delete(ctx: Ctx) -> Optional[str]:
+def rule_branch_force_delete(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) == "git" and len(ctx.argv) >= 3 and ctx.argv[1] == "branch":
         if "-D" in ctx.argv:
             return "git branch -D force-deletes unmerged branches. Use -d, or ask the user."
     return None
 
 
-def rule_destructive_sql(ctx: Ctx) -> Optional[str]:
+def rule_destructive_sql(ctx: Ctx) -> str | None:
     tool = _tool(ctx.argv)
     if tool not in SQL_TOOL_NAMES:
         return None
     for i, arg in enumerate(ctx.argv[1:], start=1):
-        sql_payload: Optional[str] = None
+        sql_payload: str | None = None
         if arg in SQL_EXEC_FLAGS and i + 1 < len(ctx.argv):
             sql_payload = ctx.argv[i + 1]
         elif arg.startswith("--command=") or arg.startswith("--execute="):
             sql_payload = arg.split("=", 1)[1]
         if sql_payload and SQL_DESTRUCTIVE_RE.search(sql_payload):
-            return (f"Destructive SQL detected in {tool}. "
-                    "Confirm with the user before running.")
+            return f"Destructive SQL detected in {tool}. Confirm with the user before running."
     return None
 
 
 # --- rule table -------------------------------------------------------------
 
-RULES: List[Tuple[str, RuleFn]] = [
-    ("heredoc",                    rule_heredoc),
-    ("commit-on-main",             rule_commit_on_main),
-    ("merge-on-main",              rule_merge_on_main),
-    ("force-push",                 rule_force_push),
-    ("push-mirror-all",            rule_push_mirror_all),
-    ("push-delete-branch",         rule_push_delete_branch),
-    ("push-to-protected",          rule_push_to_protected),
-    ("amend",                      rule_amend),
-    ("no-verify",                  rule_no_verify),
-    ("lint-suppression-via-bash",  rule_lint_suppression_via_bash),
-    ("rm-rf",                      rule_rm_rf),
-    ("git-reset-hard",             rule_git_reset_hard),
-    ("git-clean",                  rule_git_clean),
+RULES: list[tuple[str, RuleFn]] = [
+    ("heredoc", rule_heredoc),
+    ("commit-on-main", rule_commit_on_main),
+    ("merge-on-main", rule_merge_on_main),
+    ("force-push", rule_force_push),
+    ("push-mirror-all", rule_push_mirror_all),
+    ("push-delete-branch", rule_push_delete_branch),
+    ("push-to-protected", rule_push_to_protected),
+    ("amend", rule_amend),
+    ("no-verify", rule_no_verify),
+    ("lint-suppression-via-bash", rule_lint_suppression_via_bash),
+    ("rm-rf", rule_rm_rf),
+    ("git-reset-hard", rule_git_reset_hard),
+    ("git-clean", rule_git_clean),
     ("wholesale-checkout-restore", rule_wholesale_checkout_restore),
-    ("branch-force-delete",        rule_branch_force_delete),
-    ("destructive-sql",            rule_destructive_sql),
+    ("branch-force-delete", rule_branch_force_delete),
+    ("destructive-sql", rule_destructive_sql),
 ]
 
 
 # --- entry points -----------------------------------------------------------
+
 
 def evaluate(cmd: str) -> Decision:
     """Evaluate ``cmd`` against the rule table. First match wins."""

@@ -10,6 +10,14 @@ tests/generated
 local/
 
 tmp/
+.devbox-profile
 roles/devbox/files/.config/nvim/lazy-lock.json
 __pycache__/
 *.pyc
+
+# Dev venv and tool caches (see pyproject.toml — operator-flow ignores this).
+.venv/
+.ruff_cache/
+.pyrefly_cache/
+.pytest_cache/
+.hypothesis/

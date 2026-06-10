@@ -1,0 +1,54 @@
+# yamllint config for the devbox-setup repo.
+# Strict, but tuned for Ansible (Jinja2 in {{ }} and {% %}) and the fact that
+# Ansible files start with `- name:` instead of `---` in some idioms.
+#
+# Run via `make lint-yaml`.
+
+extends: default
+
+ignore: |
+  .venv/
+  .ruff_cache/
+  .pyrefly_cache/
+  .pytest_cache/
+  .hypothesis/
+  debug/
+  tests/generated/
+  roles/devbox/local/
+  roles/devbox/files/dot_claude/plugins/
+  roles/devbox/files/dot_claude/skills/example-skills/
+  roles/devbox/files/dot_claude/skills/document-skills/
+  roles/devbox/files/.config/nvim/lazy-lock.json
+  uv.lock
+
+rules:
+  line-length:
+    max: 120
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+
+  # Ansible playbook tasks legitimately omit the `---` start marker
+  document-start: disable
+
+  # Ansible uses `on:`, `yes/no` etc. as legitimate values, but the keys are fine
+  truthy:
+    check-keys: false
+    allowed-values: ["true", "false", "yes", "no"]
+
+  # Ansible vars often have aligned `{ key: value }` with inner padding
+  braces:
+    max-spaces-inside: 1
+    min-spaces-inside: 0
+  brackets:
+    max-spaces-inside: 1
+    min-spaces-inside: 0
+
+  # File-mode strings like "0644" are common in Ansible copy/template tasks
+  octal-values:
+    forbid-implicit-octal: false
+    forbid-explicit-octal: false
+
+  # Jinja2 templates often need wider comment context
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable

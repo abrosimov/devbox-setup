@@ -1,15 +1,15 @@
 function _tide_item_proj_pwd
     # Custom pwd for Tide prompt with:
-    # - Project-aware display for PROJECTS_DIR
+    # - Project-aware display for AION_AUTOPOIESEON (workspace root)
     # - Ellipsis pattern for deep paths: first/.../last
 
     set -l pwd_display
 
     if test "$PWD" = "$HOME"
         set pwd_display "~"
-    else if set -q PROJECTS_DIR; and string match -q "$PROJECTS_DIR/*" -- $PWD
-        # Inside PROJECTS_DIR — project-aware display
-        set -l rel (string replace "$PROJECTS_DIR/" '' -- $PWD)
+    else if set -q AION_AUTOPOIESEON; and string match -q "$AION_AUTOPOIESEON/*" -- $PWD
+        # Inside the workspace root — project-aware display
+        set -l rel (string replace "$AION_AUTOPOIESEON/" '' -- $PWD)
         set -l parts (string split '/' -- $rel)
         set -l project $parts[1]
 
@@ -21,7 +21,7 @@ function _tide_item_proj_pwd
             set pwd_display "$project/.../$parts[-1]"
         end
     else
-        # Outside PROJECTS_DIR — use ellipsis pattern
+        # Outside the workspace root — use ellipsis pattern
         set -l path (string replace "$HOME" "~" -- $PWD)
         set -l parts (string split '/' -- $path)
 

@@ -10,7 +10,7 @@ Ansible-based developer workstation setup tool that automates installation and c
 
 ## Commands
 
-A profile is mandatory for any playbook run. Bare `make run` / `make dev` / `make check` fail with `PROFILE is required` — use the per-profile wrappers below. `personal` targets a personal laptop (`PROJECTS_DIR=~/Projects`); `work` targets a work laptop (`PROJECTS_DIR=~/Work`).
+A profile is mandatory for any playbook run. Bare `make run` / `make dev` / `make check` fail with `PROFILE is required` — use the per-profile wrappers below. `personal` targets a personal laptop (`AION_AUTOPOIESEON=~/Projects`); `work` targets a work laptop (`AION_AUTOPOIESEON=~/Work`). Slim targets (`make dotfiles-push` etc.) recover the active profile from the `.devbox-profile` stamp written by the previous full run, or fail with a hint if no stamp exists.
 
 The sudo password is captured once at playbook start via `vars_prompt: ansible_become_password` (defined in `playbooks/main.yml`). Ansible uses it transparently for any `become: true` task and forwards it to `community.general.homebrew_cask` via the `sudo_password:` parameter, so pkg-based casks (karabiner-elements, etc.) install non-interactively. This is why the Makefile does NOT pass `-K` to `ansible-playbook` — that flag would trigger a redundant second prompt and its captured value is not exposed for templating. Tasks that consume `ansible_become_password` MUST set `no_log: true` to avoid leakage in verbose output.
 
@@ -110,7 +110,7 @@ Defaults are split into four files under `defaults/main/`:
 
 | File | Contents |
 |------|----------|
-| `core.yml` | `devbox_user`, `devbox_paths`, `devbox_projects_dir`, `upgrade_mode`, `devbox_extra_*` extension points |
+| `core.yml` | `devbox_user`, `devbox_paths`, `devbox_projects_dir`, `devbox_active_profile`, `upgrade_mode`, `devbox_extra_*` extension points |
 | `packages.yml` | `devbox_brew_taps`, `devbox_brew_*` lists, `devbox_npm_packages`, `devbox_appstore_apps`, `devbox_packages` (go_tools, kubectl, uv_tools) |
 | `shell.yml` | `devbox_shell` (env, PATH), `devbox_fish_plugins`, `devbox_tide_configure_auto` |
 | `claude.yml` | `devbox_claude_managed_dirs`, `mcp_*_servers`, `claude_plugin*` |
@@ -119,7 +119,8 @@ Defaults are split into four files under `defaults/main/`:
 
 Key variables:
 - `devbox_paths.dotfiles_root_dir` — target for deployment (`~` normally, `../debug/dotfiles` in dev_mode)
-- `devbox_shell.env` / `path_prepend` / `path_append` / `path_conditional` — single source of truth for shell environment. Templates for fish and bash iterate these lists.
+- `devbox_shell.env` / `path_prepend` / `path_append` / `path_conditional` — single source of truth for shell environment. Templates for fish and bash iterate these lists. The Ancient Greek env vars (`MNEMOSYNE_PERISTASEOS` for the active profile, `AION_AUTOPOIESEON` for the workspace root) are intentional — see the comment block in `roles/devbox/defaults/main/shell.yml` for etymology and rationale. `PROJECTS_DIR` is kept as a transitional alias.
+- `devbox_active_profile` — `personal` / `work`. Overridden in `profiles/{name}.yml`, stamped to `.devbox-profile` at repo root by `playbooks/main.yml` post_tasks, and read by slim targets (`dotfiles-push`, `shell-push`, `mcp-sync`, etc.) so they recover the active profile without re-running the full personal/work playbook.
 - `devbox_brew_secondary` + `devbox_extra_brew` — base packages + profile-specific additions (concatenated in task files)
 - `devbox_extra_*` — extension points for profile overrides (default to `[]` in `core.yml`)
 - `devbox_extra_brew_casks_no_binaries` — separate cask list installed with `--no-binaries` to skip brew's CLI shim + Spotlight metadata steps. Required for casks whose .pkg writes root-owned files inside /Applications/<App>.app (post-install `xattr -w` runs as the user and fails). Currently used for `docker-desktop`.

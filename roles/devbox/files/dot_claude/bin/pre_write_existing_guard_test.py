@@ -6,6 +6,7 @@ Run from any directory:
 or via unittest discovery:
     python3 -m unittest bin.pre_write_existing_guard_test
 """
+
 from __future__ import annotations
 
 import io

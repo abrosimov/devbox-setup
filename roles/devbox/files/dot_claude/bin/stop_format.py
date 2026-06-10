@@ -7,6 +7,7 @@ Event: Stop
 Exit codes:
     0  — always. The hook is advisory; per-file errors are swallowed.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,14 +15,14 @@ import os
 import re
 import subprocess
 import sys
-from typing import Callable, Optional, Tuple
+from collections.abc import Callable
 
 # Matches the legacy Node hook's 15s ceiling.
 FORMATTER_TIMEOUT_SEC: int = 15
 
 MAX_PARENT_WALK: int = 20
 
-PRETTIER_MARKERS: Tuple[str, ...] = (
+PRETTIER_MARKERS: tuple[str, ...] = (
     ".prettierrc",
     ".prettierrc.json",
     ".prettierrc.js",
@@ -32,7 +33,7 @@ PRETTIER_MARKERS: Tuple[str, ...] = (
 GO_MODULE_RE = re.compile(r"^module\s+(\S+)", re.MULTILINE)
 
 
-def _run(argv: list[str], *, cwd: Optional[str] = None) -> bool:
+def _run(argv: list[str], *, cwd: str | None = None) -> bool:
     try:
         result = subprocess.run(
             argv,
@@ -48,7 +49,7 @@ def _run(argv: list[str], *, cwd: Optional[str] = None) -> bool:
     return result.returncode == 0
 
 
-def _capture(argv: list[str]) -> Optional[str]:
+def _capture(argv: list[str]) -> str | None:
     try:
         out = subprocess.check_output(
             argv,
@@ -61,7 +62,7 @@ def _capture(argv: list[str]) -> Optional[str]:
     return out.strip()
 
 
-def _walk_ancestors(start_dir: str, predicate: Callable[[str], bool]) -> Optional[str]:
+def _walk_ancestors(start_dir: str, predicate: Callable[[str], bool]) -> str | None:
     current = start_dir
     for _ in range(MAX_PARENT_WALK):
         if predicate(current):
@@ -73,7 +74,7 @@ def _walk_ancestors(start_dir: str, predicate: Callable[[str], bool]) -> Optiona
     return None
 
 
-def _find_go_module(file_path: str) -> Optional[str]:
+def _find_go_module(file_path: str) -> str | None:
     def has_gomod(d: str) -> bool:
         return os.path.isfile(os.path.join(d, "go.mod"))
 
@@ -88,7 +89,7 @@ def _find_go_module(file_path: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
-def _find_prettier_root(file_path: str) -> Optional[str]:
+def _find_prettier_root(file_path: str) -> str | None:
     def has_marker(d: str) -> bool:
         return any(os.path.exists(os.path.join(d, m)) for m in PRETTIER_MARKERS)
 
@@ -99,7 +100,7 @@ def _log(tool: str, file_path: str) -> None:
     sys.stderr.write(f"[stop-format] {tool} → {os.path.basename(file_path)}\n")
 
 
-def format_go(file_path: str) -> Optional[str]:
+def format_go(file_path: str) -> str | None:
     module = _find_go_module(file_path)
     if module is None:
         return None
@@ -110,7 +111,7 @@ def format_go(file_path: str) -> Optional[str]:
     return None
 
 
-def format_python(file_path: str) -> Optional[str]:
+def format_python(file_path: str) -> str | None:
     check_ok = _run(["ruff", "check", "--fix", "--quiet", file_path])
     format_ok = _run(["ruff", "format", "--quiet", file_path])
     if check_ok and format_ok:
@@ -122,7 +123,7 @@ def format_python(file_path: str) -> Optional[str]:
     return None
 
 
-def format_prettier(file_path: str) -> Optional[str]:
+def format_prettier(file_path: str) -> str | None:
     root = _find_prettier_root(file_path)
     if root is None:
         return None
@@ -131,7 +132,7 @@ def format_prettier(file_path: str) -> Optional[str]:
     return None
 
 
-FORMATTERS: dict[str, Callable[[str], Optional[str]]] = {
+FORMATTERS: dict[str, Callable[[str], str | None]] = {
     ".go": format_go,
     ".py": format_python,
     ".ts": format_prettier,

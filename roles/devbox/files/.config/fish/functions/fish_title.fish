@@ -5,9 +5,10 @@ function fish_title
         return
     end
 
-    # Inside PROJECTS_DIR — show project name (and JIRA key for worktrees)
-    if set -q PROJECTS_DIR; and string match -q "$PROJECTS_DIR/*" -- $PWD
-        set -l rel (string replace "$PROJECTS_DIR/" '' -- $PWD)
+    # Inside the workspace root (AION_AUTOPOIESEON) — show project name
+    # (and JIRA key for worktrees)
+    if set -q AION_AUTOPOIESEON; and string match -q "$AION_AUTOPOIESEON/*" -- $PWD
+        set -l rel (string replace "$AION_AUTOPOIESEON/" '' -- $PWD)
         set -l parts (string split '/' -- $rel)
         set -l project $parts[1]
 

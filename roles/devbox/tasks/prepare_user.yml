@@ -1,15 +1,15 @@
 ---
 - name: Find a shell path
   ansible.builtin.command: "command -v fish"
-  register: shell_path
+  register: devbox_shell_path
   changed_when: false
   check_mode: false
-  failed_when: shell_path.rc != 0
+  failed_when: devbox_shell_path.rc != 0
 
 - name: Fail early if shell not found
   ansible.builtin.assert:
     that:
-      - shell_path.stdout | length > 0
+      - devbox_shell_path.stdout | length > 0
     fail_msg: "Shell not found in PATH even after installation!"
 
 - name: Update user
@@ -17,7 +17,7 @@
   ansible.builtin.user:
     name: "{{ devbox_user.login }}"
     comment: Kirill Abrosimov
-    shell: "{{ shell_path.stdout }}"
+    shell: "{{ devbox_shell_path.stdout }}"
     create_home: false
     update_password: on_create
     generate_ssh_key: true

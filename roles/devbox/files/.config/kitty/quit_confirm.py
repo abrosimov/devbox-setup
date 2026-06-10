@@ -11,16 +11,14 @@ window does not affect other kitty OS windows.
 
 import json
 import subprocess
-from typing import List, Optional, Tuple
 
 from kittens.tui.handler import Handler, result_handler
 from kittens.tui.loop import Loop
 
-
 IDLE_SHELLS = frozenset({"fish", "bash", "zsh", "sh", "dash", "ksh"})
 
 
-def _foreground_command(window: dict) -> Optional[Tuple[str, str]]:
+def _foreground_command(window: dict) -> tuple[str, str] | None:
     """Return (short_name, display_cmd) of the first non-idle foreground
     process inside a kitty window, or None if everything is idle."""
     for proc in window.get("foreground_processes", []) or []:
@@ -35,7 +33,7 @@ def _foreground_command(window: dict) -> Optional[Tuple[str, str]]:
     return None
 
 
-def _busy_tabs_in_focused_window() -> List[Tuple[str, str]]:
+def _busy_tabs_in_focused_window() -> list[tuple[str, str]]:
     """Return a list of (tab_label, foreground_command_display) for tabs in
     the focused OS window where the foreground command is not just an idle
     shell."""
@@ -57,7 +55,7 @@ def _busy_tabs_in_focused_window() -> List[Tuple[str, str]]:
     if focused is None:
         return []
 
-    busy: List[Tuple[str, str]] = []
+    busy: list[tuple[str, str]] = []
     for tab in focused.get("tabs", []):
         tab_label = tab.get("title") or f"tab {tab.get('id')}"
         for window in tab.get("windows", []):
@@ -71,7 +69,7 @@ def _busy_tabs_in_focused_window() -> List[Tuple[str, str]]:
 class QuitDialog(Handler):
     """Minimal yes/no overlay that lists busy sessions."""
 
-    def __init__(self, busy: List[Tuple[str, str]]):
+    def __init__(self, busy: list[tuple[str, str]]):
         super().__init__()
         self.busy = busy
         self.answer = "cancel"
@@ -98,7 +96,7 @@ class QuitDialog(Handler):
             self.quit_loop(0)
 
 
-def main(args: List[str]) -> str:
+def main(args: list[str]) -> str:
     _ = args  # part of kitten main() API contract
     busy = _busy_tabs_in_focused_window()
     if not busy:

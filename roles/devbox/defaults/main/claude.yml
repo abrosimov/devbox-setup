@@ -15,7 +15,7 @@ devbox_claude_managed_dirs:
 
 # MCP servers registered via `claude mcp add` (written to ~/.claude.json).
 # Grouped by transport type for clarity.
-mcp_docker_servers:
+devbox_mcp_docker_servers:
   - name: sequentialthinking
     image: mcp/sequentialthinking
     network: none
@@ -28,13 +28,13 @@ mcp_docker_servers:
     env:
       MCP_TRANSPORT: stdio
 
-mcp_script_servers:
+devbox_mcp_script_servers:
   - name: memory-upstream
     command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-upstream"
   - name: memory-downstream
     command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-downstream"
 
-mcp_http_servers:
+devbox_mcp_http_servers:
   - name: figma
     url: "https://mcp.figma.com/mcp"
     transport: sse
@@ -42,13 +42,13 @@ mcp_http_servers:
 # Claude Code plugins installed via `claude plugin` CLI.
 # Marketplaces are GitHub repos containing plugin manifests.
 # Plugins are installed from marketplaces by name.
-claude_plugin_marketplaces:
+devbox_claude_plugin_marketplaces:
   - repo: anthropics/skills
     name: anthropic-agent-skills
   - repo: currents-dev/playwright-best-practices-skill
     name: currents-dev-playwright
 
-claude_plugins:
+devbox_claude_plugins:
   - name: example-skills
     marketplace: anthropic-agent-skills
   - name: document-skills

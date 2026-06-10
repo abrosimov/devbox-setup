@@ -26,12 +26,14 @@ import argparse
 import json
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
-
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Frontmatter parsing
 # ---------------------------------------------------------------------------
+
 
 def parse_frontmatter(content: str) -> dict[str, str] | None:
     """Extract YAML frontmatter from markdown content.
@@ -120,6 +122,7 @@ def parse_skills_list(content: str) -> list[str]:
 # Individual checks — each returns (errors, warnings)
 # ---------------------------------------------------------------------------
 
+
 def check_agents(root: Path) -> tuple[list[str], list[str]]:
     agents_dir = root / "agents"
     errors: list[str] = []
@@ -133,9 +136,7 @@ def check_agents(root: Path) -> tuple[list[str], list[str]]:
     skills_dir = root / "skills"
     if skills_dir.is_dir():
         available_skills = {
-            d.name
-            for d in skills_dir.iterdir()
-            if d.is_dir() and (d / "SKILL.md").exists()
+            d.name for d in skills_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()
         }
 
     for agent_file in sorted(agents_dir.glob("*.md")):
@@ -153,8 +154,7 @@ def check_agents(root: Path) -> tuple[list[str], list[str]]:
 
         if "model" in fm and fm["model"] not in ("sonnet", "opus", "haiku"):
             errors.append(
-                f'[AGENT_MODEL] {name}: Invalid model "{fm["model"]}" '
-                "(expected sonnet/opus/haiku)"
+                f'[AGENT_MODEL] {name}: Invalid model "{fm["model"]}" (expected sonnet/opus/haiku)'
             )
 
         for skill in parse_skills_list(content):
@@ -187,15 +187,12 @@ def check_skills(root: Path) -> tuple[list[str], list[str]]:
 
         if fm is None:
             errors.append(
-                f"[SKILL_FRONTMATTER] {skill_dir.name}/SKILL.md: "
-                "Missing or invalid frontmatter"
+                f"[SKILL_FRONTMATTER] {skill_dir.name}/SKILL.md: Missing or invalid frontmatter"
             )
             continue
 
         if "name" not in fm:
-            errors.append(
-                f'[SKILL_FIELD] {skill_dir.name}/SKILL.md: Missing "name" field'
-            )
+            errors.append(f'[SKILL_FIELD] {skill_dir.name}/SKILL.md: Missing "name" field')
         elif fm["name"] != skill_dir.name:
             warnings.append(
                 f"[SKILL_NAME_MISMATCH] {skill_dir.name}/SKILL.md: "
@@ -203,9 +200,7 @@ def check_skills(root: Path) -> tuple[list[str], list[str]]:
             )
 
         if "description" not in fm:
-            errors.append(
-                f'[SKILL_FIELD] {skill_dir.name}/SKILL.md: Missing "description" field'
-            )
+            errors.append(f'[SKILL_FIELD] {skill_dir.name}/SKILL.md: Missing "description" field')
 
     return errors, warnings
 
@@ -465,7 +460,7 @@ def check_meta_pipeline(root: Path) -> tuple[list[str], list[str]]:
 # Registry & runner
 # ---------------------------------------------------------------------------
 
-ALL_CHECKS: dict[str, callable] = {
+ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "agents": check_agents,
     "skills": check_skills,
     "commands": check_commands,
@@ -499,10 +494,7 @@ def run_checks(root: Path, checks: list[str] | None = None) -> dict:
     counts = {
         "agents": len(list(agents_dir.glob("*.md"))) if agents_dir.is_dir() else 0,
         "skills": (
-            len([
-                d for d in skills_dir.iterdir()
-                if d.is_dir() and (d / "SKILL.md").exists()
-            ])
+            len([d for d in skills_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()])
             if skills_dir.is_dir()
             else 0
         ),
@@ -517,6 +509,7 @@ def run_checks(root: Path, checks: list[str] | None = None) -> dict:
 # ---------------------------------------------------------------------------
 # Output formatting
 # ---------------------------------------------------------------------------
+
 
 def format_text(results: dict) -> str:
     counts = results["counts"]
@@ -562,6 +555,7 @@ def format_text(results: dict) -> str:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

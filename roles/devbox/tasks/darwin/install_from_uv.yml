@@ -12,7 +12,7 @@
   loop: "{{ devbox_packages.uv_tools }}"
   loop_control:
     label: "{{ item }}"
-  when: not (upgrade_mode | default(false) | bool)
+  when: not (devbox_upgrade_mode | default(false) | bool)
 
 - name: "Upgrade Python tools via uv"
   ansible.builtin.command:
@@ -22,5 +22,5 @@
   loop: "{{ devbox_packages.uv_tools }}"
   loop_control:
     label: "{{ item }}"
-  when: upgrade_mode | default(false) | bool
+  when: devbox_upgrade_mode | default(false) | bool
   changed_when: true

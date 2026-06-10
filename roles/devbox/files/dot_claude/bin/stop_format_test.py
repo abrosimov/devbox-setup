@@ -6,6 +6,7 @@ Run from any directory:
 or via unittest discovery:
     python3 -m unittest bin.stop_format_test
 """
+
 from __future__ import annotations
 
 import io
@@ -73,7 +74,10 @@ class TestGitDiscovery(unittest.TestCase):
 
     def test_returns_empty_on_git_failure(self):
         import subprocess
-        with mock.patch("subprocess.check_output", side_effect=subprocess.CalledProcessError(128, "git")):
+
+        with mock.patch(
+            "subprocess.check_output", side_effect=subprocess.CalledProcessError(128, "git")
+        ):
             self.assertEqual(sf._git_modified_files(), [])
 
     def test_returns_empty_on_oserror(self):
@@ -82,7 +86,10 @@ class TestGitDiscovery(unittest.TestCase):
 
     def test_returns_empty_on_timeout(self):
         import subprocess
-        with mock.patch("subprocess.check_output", side_effect=subprocess.TimeoutExpired("git", 15)):
+
+        with mock.patch(
+            "subprocess.check_output", side_effect=subprocess.TimeoutExpired("git", 15)
+        ):
             self.assertEqual(sf._git_modified_files(), [])
 
     def test_returns_empty_when_diff_is_empty(self):
@@ -128,15 +135,12 @@ class TestFormatDispatch(unittest.TestCase):
 
         def fake_go(p):
             called["go"].append(p)
-            return None
 
         def fake_py(p):
             called["py"].append(p)
-            return None
 
         def fake_pr(p):
             called["pr"].append(p)
-            return None
 
         patched = {
             ".go": fake_go,
@@ -203,7 +207,6 @@ class TestFormatDispatch(unittest.TestCase):
 
             def spy(p):
                 called.append(p)
-                return None
 
             patched = {".go": spy, ".py": spy, ".ts": spy, ".tsx": spy, ".js": spy, ".jsx": spy}
             with mock.patch.object(sf, "_git_modified_files", return_value=[tmp]):
@@ -223,7 +226,6 @@ class TestFormatDispatch(unittest.TestCase):
 
             def spy(p):
                 called.append(p)
-                return None
 
             patched = {".go": spy, ".py": spy, ".ts": spy, ".tsx": spy, ".js": spy, ".jsx": spy}
             with mock.patch.object(sf, "_git_modified_files", return_value=[tmp]):
@@ -255,7 +257,9 @@ class TestFormatGo(unittest.TestCase):
 
     def test_returns_goimports_on_success(self):
         with tempfile.TemporaryDirectory() as d:
-            Path(os.path.join(d, "go.mod")).write_text("module example.com/foo\n\ngo 1.21\n", encoding="utf-8")
+            Path(os.path.join(d, "go.mod")).write_text(
+                "module example.com/foo\n\ngo 1.21\n", encoding="utf-8"
+            )
             file_path = os.path.join(d, "main.go")
             Path(file_path).touch()
             with mock.patch.object(sf, "_capture", return_value="/home/user/go"):
@@ -319,7 +323,9 @@ class TestFormatGo(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             nested = os.path.join(root, "pkg", "sub")
             os.makedirs(nested)
-            Path(os.path.join(root, "go.mod")).write_text("module example.com/nested\n", encoding="utf-8")
+            Path(os.path.join(root, "go.mod")).write_text(
+                "module example.com/nested\n", encoding="utf-8"
+            )
             file_path = os.path.join(nested, "util.go")
             Path(file_path).touch()
             with mock.patch.object(sf, "_capture", return_value=None):
@@ -355,9 +361,11 @@ class TestFormatPython(unittest.TestCase):
 
     def test_calls_ruff_check_first_then_format(self):
         calls = []
+
         def capture_call(argv, **_):
             calls.append(argv[:3])
             return True
+
         with mock.patch.object(sf, "_run", side_effect=capture_call):
             sf.format_python("/any/file.py")
         self.assertEqual(calls[0], ["ruff", "check", "--fix"])
@@ -497,16 +505,21 @@ class TestFormatPrettier(unittest.TestCase):
         self.assertIn(file_path, argv)
 
     def test_all_prettier_marker_filenames_trigger_discovery(self):
-        markers = [".prettierrc", ".prettierrc.json", ".prettierrc.js", "prettier.config.js", "package.json"]
+        markers = [
+            ".prettierrc",
+            ".prettierrc.json",
+            ".prettierrc.js",
+            "prettier.config.js",
+            "package.json",
+        ]
         for marker in markers:
-            with self.subTest(marker=marker):
-                with tempfile.TemporaryDirectory() as d:
-                    Path(os.path.join(d, marker)).write_text("{}", encoding="utf-8")
-                    file_path = os.path.join(d, "f.ts")
-                    Path(file_path).touch()
-                    with mock.patch.object(sf, "_run", return_value=True):
-                        result = sf.format_prettier(file_path)
-                    self.assertEqual(result, "prettier")
+            with self.subTest(marker=marker), tempfile.TemporaryDirectory() as d:
+                Path(os.path.join(d, marker)).write_text("{}", encoding="utf-8")
+                file_path = os.path.join(d, "f.ts")
+                Path(file_path).touch()
+                with mock.patch.object(sf, "_run", return_value=True):
+                    result = sf.format_prettier(file_path)
+                self.assertEqual(result, "prettier")
 
 
 class TestErrorHandling(unittest.TestCase):
@@ -518,6 +531,7 @@ class TestErrorHandling(unittest.TestCase):
 
     def test_run_returns_false_on_timeout(self):
         import subprocess
+
         with mock.patch("subprocess.run", side_effect=subprocess.TimeoutExpired("cmd", 15)):
             self.assertFalse(sf._run(["slow-formatter"]))
 
@@ -539,12 +553,18 @@ class TestErrorHandling(unittest.TestCase):
 
     def test_capture_returns_none_on_called_process_error(self):
         import subprocess
-        with mock.patch("subprocess.check_output", side_effect=subprocess.CalledProcessError(1, "cmd")):
+
+        with mock.patch(
+            "subprocess.check_output", side_effect=subprocess.CalledProcessError(1, "cmd")
+        ):
             self.assertIsNone(sf._capture(["cmd", "--bad"]))
 
     def test_capture_returns_none_on_timeout(self):
         import subprocess
-        with mock.patch("subprocess.check_output", side_effect=subprocess.TimeoutExpired("cmd", 15)):
+
+        with mock.patch(
+            "subprocess.check_output", side_effect=subprocess.TimeoutExpired("cmd", 15)
+        ):
             self.assertIsNone(sf._capture(["cmd"]))
 
     def test_capture_strips_trailing_whitespace(self):
@@ -562,10 +582,12 @@ class TestMainIntegration(unittest.TestCase):
 
     def _make_patched_formatters(self, calls: dict, return_values: dict):
         """Build a FORMATTERS dict that records calls and returns configured values."""
+
         def _make(key):
             def fmt(path):
                 calls[key].append(path)
                 return return_values.get(key)
+
             return fmt
 
         return {
@@ -590,10 +612,14 @@ class TestMainIntegration(unittest.TestCase):
             ret = {".go": "goimports", ".py": "ruff", ".ts": "prettier"}
             patched = self._make_patched_formatters(calls, ret)
 
-            with mock.patch.object(sf, "_git_modified_files", return_value=[go_file, py_file, ts_file, md_file]):
-                with mock.patch.object(sf, "FORMATTERS", patched):
-                    with mock.patch.object(sys, "stdin", io.StringIO('{"type":"stop"}')):
-                        result = sf.main()
+            with (
+                mock.patch.object(
+                    sf, "_git_modified_files", return_value=[go_file, py_file, ts_file, md_file]
+                ),
+                mock.patch.object(sf, "FORMATTERS", patched),
+            ):
+                with mock.patch.object(sys, "stdin", io.StringIO('{"type":"stop"}')):
+                    result = sf.main()
 
         self.assertEqual(result, 0)
         self.assertEqual(calls[".go"], [go_file])

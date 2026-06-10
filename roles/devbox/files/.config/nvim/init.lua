@@ -20,9 +20,9 @@ vim.opt.number = true
 -- Enable break indent
 vim.opt.breakindent = true
 
--- Yank goes to system clipboard; delete/paste use vim's unnamed register.
-vim.keymap.set({ 'n', 'v' }, 'y', '"+y')
-vim.keymap.set('n', 'Y', '"+Y')
+-- Yank/paste system-clipboard helpers under <leader>; default y/Y/p use unnamed register.
+vim.keymap.set({ 'n', 'v' }, '<leader>y', '"+y', { desc = 'Yank to system clipboard' })
+vim.keymap.set('n',          '<leader>Y', '"+Y', { desc = 'Yank line to system clipboard' })
 vim.keymap.set({ 'n', 'v' }, '<leader>p', '"+p', { desc = 'Paste from system clipboard' })
 vim.keymap.set({ 'n', 'v' }, '<leader>P', '"+P', { desc = 'Paste from system clipboard (above)' })
 
@@ -50,9 +50,8 @@ vim.opt.splitbelow = true
 -- Cursor must always be like "block"
 vim.opt.guicursor = "n-v-c-i:block"
 
-vim.opt.mouse = "a"
-vim.keymap.set({ 'n', 'v', 'i' }, '<ScrollWheelUp>', '<Nop>')
-vim.keymap.set({ 'n', 'v', 'i' }, '<ScrollWheelDown>', '<Nop>')
+-- Mouse handled by the terminal (kitty copy_on_select clipboard) — keep nvim out of it.
+vim.opt.mouse = ""
 
 vim.opt.cursorline = true
 vim.opt.scrolloff = 10

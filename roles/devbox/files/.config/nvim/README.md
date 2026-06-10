@@ -133,5 +133,6 @@ Supported: Go, Python, TypeScript, JavaScript, Rust, C, C++, Dart, Swift, OCaml
 
 ## Clipboard
 
-Delete/change operations go to black hole register (don't pollute clipboard).
-Use `.d` when you need "cut" (delete + copy to clipboard).
+`y`/`d`/`p` work with vim's unnamed register — they do NOT touch the system clipboard.
+Mouse selection in the terminal goes to the system clipboard (kitty `copy_on_select`).
+Use `<leader>y` / `<leader>Y` to yank into the system clipboard, `<leader>p` / `<leader>P` to paste from it.

@@ -1,51 +1,7 @@
-# Completions for proj function
+# Completions for proj function.
+# Helper functions live in functions/__proj_*.fish so fish autoload picks them up
+# regardless of whether `proj` or `wt` is being completed first.
 complete -c proj -f
-
-# Helper: detect current project from PWD
-function __proj_current_project
-    set -q PROJECTS_DIR; or return 1
-    set -l rel (string replace "$PROJECTS_DIR/" '' -- $PWD)
-    test "$rel" = "$PWD"; and return 1
-    set -l project (string split '/' -- $rel)[1]
-    echo "$project"
-end
-
-function __proj_base_dir
-    set -l project (__proj_current_project)
-    or return 1
-    echo "$PROJECTS_DIR/$project/base"
-end
-
-# Helper: list worktree directory names (excluding base)
-function __proj_worktree_names
-    set -l project (__proj_current_project)
-    or return
-    for d in $PROJECTS_DIR/$project/*/
-        set -l name (basename $d)
-        if test "$name" != base
-            echo $name
-        end
-    end
-end
-
-# Helper: list remote branch names
-function __proj_remote_branches
-    set -l bd (__proj_base_dir)
-    or return
-    git -C "$bd" branch -r 2>/dev/null | string replace -r '^\s*origin/' '' | string match -rv '^HEAD '
-end
-
-# Helper: check if we're completing after "proj wt"
-function __proj_seen_wt
-    set -l cmd (commandline -opc)
-    test (count $cmd) -ge 2; and test "$cmd[2]" = wt
-end
-
-# Helper: check if we're completing after "proj wt add/rm/ls/sync/push"
-function __proj_seen_wt_subcommand
-    set -l cmd (commandline -opc)
-    test (count $cmd) -ge 3; and test "$cmd[2]" = wt; and contains -- "$cmd[3]" add fork rm ls sync push
-end
 
 # Subcommands
 complete -c proj -n '__fish_use_subcommand' -a clone -d 'Clone a repo into base/'
@@ -70,11 +26,11 @@ complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a rm -d
 complete -c proj -n '__proj_seen_wt; and not __proj_seen_wt_subcommand' -a '(__proj_worktree_names)'
 
 # proj wt add: complete with remote branches
-complete -c proj -n '__proj_seen_wt; and string match -q "* wt add*" -- (commandline -cp)' -a '(__proj_remote_branches)'
-complete -c proj -n '__proj_seen_wt; and string match -q "* wt add*" -- (commandline -cp)' -l from -d 'Base branch'
+complete -c proj -n '__proj_seen_wt_add' -a '(__proj_remote_branches)'
+complete -c proj -n '__proj_seen_wt_add' -l from -d 'Base branch'
 
 # proj wt fork: no special completions (new branch name is user-provided)
 
 # proj wt rm: complete with worktree names and -f flag
-complete -c proj -n '__proj_seen_wt; and string match -q "* wt rm*" -- (commandline -cp)' -a '(__proj_worktree_names)'
-complete -c proj -n '__proj_seen_wt; and string match -q "* wt rm*" -- (commandline -cp)' -s f -l force -d 'Force remove worktree and delete unmerged branch'
+complete -c proj -n '__proj_seen_wt_rm' -a '(__proj_worktree_names)'
+complete -c proj -n '__proj_seen_wt_rm' -s f -l force -d 'Force remove worktree and delete unmerged branch'

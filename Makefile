@@ -46,6 +46,23 @@ $(DEV_SENTINEL): pyproject.toml
 	@uv sync --group dev --quiet
 	@touch $@
 
+# Ansible collections — lazy install + refresh on requirements.yml change.
+# Sentinel lives next to the actual install ($HOME/.ansible/collections/) so
+# wiping the install directory also wipes the sentinel and triggers reinstall.
+# Required by ansible.posix.synchronize (Block 1 of install_configs.yml) and
+# community.general.homebrew_cask.
+COLLECTIONS_SENTINEL := $(HOME)/.ansible/collections/.devbox-collections-installed
+
+$(COLLECTIONS_SENTINEL): requirements.yml
+	@command -v ansible-galaxy >/dev/null 2>&1 || { \
+		echo "ERROR: ansible-galaxy not found. Run 'make init' first."; \
+		exit 1; \
+	}
+	@echo "Installing Ansible collections from requirements.yml..."
+	@ansible-galaxy collection install -r requirements.yml
+	@mkdir -p $(dir $@)
+	@touch $@
+
 # Claude Code config — single source of truth for the repo-side path. The
 # managed-subdirs list lives in devbox_claude_managed_dirs (roles/devbox/defaults/main/claude.yml)
 # and is read by both `make personal`/`make work` and `make claude-push`.
@@ -140,7 +157,7 @@ help:
 	@echo "  EXTRA_VARS='-e foo=bar' - pass extra variables"
 	@echo ""
 
-run: test
+run: test $(COLLECTIONS_SENTINEL)
 ifndef PROFILE
 	$(error PROFILE is required. Use: make personal, make work, make dev-personal, or make dev-work)
 endif
@@ -173,7 +190,7 @@ dev-bootstrap: $(DEV_SENTINEL)
 # ANSIBLE_VAULT_PASSWORD_FILE is a defence-in-depth alongside .ansible-lint's
 # extra_vars override (see that file's comment block). The test password also
 # decrypts the test vault stub if it ever has to be touched.
-lint-ansible: $(DEV_SENTINEL)
+lint-ansible: $(DEV_SENTINEL) $(COLLECTIONS_SENTINEL)
 	@$(DEV_BIN)/ansible-playbook --syntax-check $(TEST_VAULT) $(PLAYBOOK)
 	@ANSIBLE_VAULT_PASSWORD_FILE=tests/vault-password $(DEV_BIN)/ansible-lint $(PLAYBOOK)
 
@@ -194,7 +211,7 @@ typecheck-py: $(DEV_SENTINEL)
 test-py: $(DEV_SENTINEL)
 	@$(DEV_BIN)/pytest
 
-check:
+check: $(COLLECTIONS_SENTINEL)
 ifndef PROFILE
 	$(error PROFILE is required. Use: make check-personal or make check-work)
 endif
@@ -213,7 +230,7 @@ upgrade-work:
 upgrade-personal:
 	$(MAKE) run PROFILE=personal EXTRA_VARS='-e devbox_upgrade_mode=true' V=$(V)
 
-check-dev:
+check-dev: $(COLLECTIONS_SENTINEL)
 	ANSIBLE_FORCE_COLOR=1 \
 	ansible-playbook --check $(VERBOSE) $(TEST_VAULT) \
 	    -e dev_mode=true -e ansible_become_password=dev-mode-placeholder $(PLAYBOOK)
@@ -357,13 +374,13 @@ claude-pull-review:
 # explicit PROFILE=...). This prevents accidental renders of profile-dependent
 # vars (e.g. devbox_projects_dir) with the wrong value when invoked outside the
 # main personal/work workflow.
-claude-push:
+claude-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags claude $(ACTIVE_OPTS) playbooks/claude.yml
 
 # Fast-path: kitty / nvim / fish / bash configs + Jinja templates.
 # Reuses Blocks 3-5 of roles/devbox/tasks/install_configs.yml under `dotfiles`.
-dotfiles-push:
+dotfiles-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags dotfiles $(ACTIVE_OPTS) playbooks/dotfiles.yml
 
@@ -371,25 +388,25 @@ dotfiles-push:
 # Reuses fish/tide/font-cache tasks in apply_configs.yml under `shell`.
 # Replaces the old `fixfish` shell incantation. No sudo (slim playbook bypasses
 # the defensive self-become via devbox_skip_become).
-shell-push:
+shell-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags shell $(ACTIVE_OPTS) playbooks/shell.yml
 
 # Fast-path: re-register Claude Code MCP servers via `claude mcp add`.
 # Reuses the MCP register tasks in apply_configs.yml under `mcp`. No sudo.
-mcp-sync:
+mcp-sync: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags mcp $(ACTIVE_OPTS) playbooks/mcp.yml
 
 # Fast-path: gitignored local overlay (roles/devbox/local/).
 # Reuses Block 6 of install_configs.yml under `local`.
-local-push:
+local-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local $(ACTIVE_OPTS) playbooks/local.yml
 
 # Re-apply macOS basics: Touch ID for sudo, pmset disablesleep, DevToolsSecurity.
 # Reuses configure_macos_basics.yml under `macos`. Sudo IS required.
-macos-defaults:
+macos-defaults: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
 

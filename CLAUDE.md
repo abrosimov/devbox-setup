@@ -153,7 +153,7 @@ Current per-profile differences:
 | `settings.json` | Default permissions (allow/deny) | `~/.claude/settings.json` |
 | `hooks.json` | Pre/post tool-call hooks | `~/.claude/hooks.json` |
 | `agents/*.md` | Agent definitions (28 agents) | `~/.claude/agents/` |
-| `commands/*.md` | Slash commands — 22 (/implement, /test, /status, /guide, etc.) | `~/.claude/commands/` |
+| `commands/*.md` | Slash commands — 23 (/implement, /test, /status, /focus, etc.) | `~/.claude/commands/` |
 | `skills/*/SKILL.md` | Reusable knowledge modules (85 skills) | `~/.claude/skills/` |
 | `schemas/*.json` | JSON Schema files for pipeline validation | `~/.claude/schemas/` |
 | `bin/*` | Helper scripts (MCP wrappers, hooks, validation) | `~/.claude/bin/` |

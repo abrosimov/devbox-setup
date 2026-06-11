@@ -132,10 +132,10 @@ help:
 	@echo ""
 	@echo "Maintenance (slim playbooks, no full bootstrap):"
 	@echo "  make claude-push      - deploy Claude config (no sudo, no vault)"
-	@echo "  make dotfiles-push    - deploy kitty / nvim / fish / bash configs + templates (no sudo, no vault)"
+	@echo "  make dotfiles-push    - deploy kitty / nvim / fish / bash configs + templates + local/ overlay (no sudo, no vault)"
 	@echo "  make shell-push       - refresh fish + fisher plugins + tide preset + font cache (no sudo)"
 	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
-	@echo "  make local-push       - deploy gitignored local/ overlay (no sudo, no vault)"
+	@echo "  make local-push       - deploy only gitignored local/ overlay (surgical; already included in dotfiles-push)"
 	@echo "  make macos-defaults   - re-apply Touch ID / pmset / DevToolsSecurity (sudo required)"
 	@echo ""
 	@echo "Test / introspection:"
@@ -378,11 +378,12 @@ claude-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags claude $(ACTIVE_OPTS) playbooks/claude.yml
 
-# Fast-path: kitty / nvim / fish / bash configs + Jinja templates.
-# Reuses Blocks 3-5 of roles/devbox/tasks/install_configs.yml under `dotfiles`.
+# Fast-path: kitty / nvim / fish / bash configs + Jinja templates + local overlay.
+# Reuses Blocks 3-5 (dotfiles) and Block 6 (local) of install_configs.yml.
+# Use `make local-push` if you want to iterate on the overlay alone.
 dotfiles-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags dotfiles $(ACTIVE_OPTS) playbooks/dotfiles.yml
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags dotfiles,local $(ACTIVE_OPTS) playbooks/dotfiles.yml
 
 # Fast-path: fish + fisher plugins + tide preset + font cache.
 # Reuses fish/tide/font-cache tasks in apply_configs.yml under `shell`.

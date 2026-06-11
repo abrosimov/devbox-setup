@@ -1,0 +1,105 @@
+name: CI
+
+# Lint + validate the repo on every push to the working branches and on PRs.
+# Each job mirrors a Makefile target so the Makefile stays the single source of
+# truth — CI never re-spells a tool invocation, it just runs `make <target>`.
+#
+# Deliberately NOT run here:
+#   - test-nvim     : downloads lazy.nvim plugins at runtime (slow, flaky)
+#   - eval-skills   : needs the `claude` CLI + Anthropic API (cost, secrets)
+#   - the operator flow (make personal/work) : provisions a real machine
+
+on:
+  push:
+    branches:
+      - master
+      - "claude/**"
+  pull_request:
+    branches:
+      - master
+
+# A newer push to the same ref cancels the older, still-running CI.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint (yaml · python · ansible · types)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      # Put the dev venv on PATH up front. The bin dir doesn't exist yet, but
+      # PATH is resolved at exec time: `make lint` populates .venv via uv first
+      # (DEV_SENTINEL), so the later bare `ansible-galaxy` in COLLECTIONS_SENTINEL
+      # resolves to the venv copy by the time it runs.
+      - name: Put dev venv on PATH
+        run: echo "${GITHUB_WORKSPACE}/.venv/bin" >> "${GITHUB_PATH}"
+
+      - name: make lint
+        run: make lint
+
+  validate:
+    name: Validate (claude config · skill evals · json)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # jq is preinstalled on ubuntu-latest runners; assert it so a future image
+      # change fails loudly instead of silently skipping the JSON check.
+      - name: Check jq is available
+        run: jq --version
+
+      - name: Validate Claude agent/skill/command cross-references
+        run: make validate-claude
+
+      - name: Validate skill eval files
+        run: make validate-skills
+
+      - name: Validate JSON config + schema files
+        run: make test-json
+
+  test:
+    name: Test (pytest · bash · fish)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install fish shell
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fish
+
+      - name: Python unit tests
+        run: make test-py
+
+      - name: Bash script syntax check
+        run: make test-bash
+
+      - name: Fish config syntax check
+        run: make test-fish

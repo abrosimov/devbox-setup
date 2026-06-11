@@ -22,7 +22,7 @@ For any non-trivial request, default to reconnaissance, not inference.
 - Pure information requests (read, search, summarise, explain)
 - Single-file edits with named file + named change + scope already in conversation
 - Tier 1 routine tasks (formatting, removing narration comments, dead-code removal)
-- User invokes override: "just do it", "directly", "skip plan", "no plan", "go", "/implement"
+- User invokes override: "just do it", "directly", "skip plan", "no plan", "go", "/techne-implement"
 
 **"Would it matter?" check.** *If the user actually meant X instead of Y, would I do anything different?* "Nothing material" → exempt. "Anything material" → not exempt; apply Inquiry.
 
@@ -91,7 +91,7 @@ Class triggers apply by the nature of the action, not the wording. "I am confide
 - "yes", "yep", "y", "go ahead", "proceed", "do it"
 - "approved", "looks good", "implement it"
 - "option 1" / "option 2" (explicit choice)
-- `/implement` command
+- `/techne-implement` command
 
 **NOT approval** (keep waiting):
 - "interesting", "I see", "okay"
@@ -163,8 +163,8 @@ The agent workflow is controlled by a per-project `.claude/workflow.json` file.
 > **B) Lightweight** — agents required for code changes, you commit manually
 > **C) Skip** — work without the agent pipeline this session
 
-- **A** → run `/init-workflow full`
-- **B** → run `/init-workflow light`
+- **A** → run `/techne-init-workflow full`
+- **B** → run `/techne-init-workflow light`
 - **C** → proceed normally; do not ask again this session
 
 **Only ask once per session.** If the user chose C, remember it for the rest of the conversation.
@@ -172,7 +172,7 @@ The agent workflow is controlled by a per-project `.claude/workflow.json` file.
 **When `workflow.json` exists with `"agent_pipeline": true`:**
 
 All code changes MUST go through agents. For ANY modification to `.go`, `.py`, `.ts`, `.tsx` files:
-1. Use `/implement` command to spawn the appropriate software-engineer agent
+1. Use `/techne-implement` command to spawn the appropriate software-engineer agent
 2. NEVER use Edit/Write tools directly on code files
 
 Agents enforce:
@@ -183,7 +183,7 @@ Agents enforce:
 
 **When `workflow.json` is absent or `"agent_pipeline": false`:**
 
-Agents are available via `/implement`, `/test`, `/review` but not mandatory. Direct code edits are allowed.
+Agents are available via `/techne-implement`, `/techne-test`, `/techne-review` but not mandatory. Direct code edits are allowed.
 
 ### Cross-Cutting Rules (Always Active)
 
@@ -192,7 +192,7 @@ These are enforced by `alwaysApply: true` skills. Brief reminders:
 - **Immutability**: Prefer data transformation pipelines over mutation — return new instances, don't modify in place (see `project-preferences` skill)
 - **Comments**: Only WHY/WARNING/TODO — never narrate what code does (see `code-comments` skill)
 - **Security at boundaries**: Validate all external input; never trust user data internally
-- **Model selection**: Opus for SE/reviewers/planners (use `/implement sonnet` for cost-sensitive tasks), Sonnet for test writers/utility agents, Haiku for search/grep
+- **Model selection**: Opus for SE/reviewers/planners (use `/techne-implement sonnet` for cost-sensitive tasks), Sonnet for test writers/utility agents, Haiku for search/grep
 - **Agent delegation**: Use specialised agents for code changes when workflow is enabled (see `workflow` skill)
 - **Code navigation**: Grep/Glob discover files and text. LSP understands code. After locating a file, use LSP (`goToDefinition`, `findReferences`, `hover`, `documentSymbol`) instead of reading the whole file. Never use Grep to find function definitions — use `workspaceSymbol`. Before any refactor: `findReferences` first. After any edit: check LSP diagnostics. (see `lsp-navigation` + `lsp-tools` skills)
 - **Structural search**: For AST pattern matching (find all functions without error handling, structural refactoring), use `ast-grep` via Bash (see `ast-grep` skill)

@@ -26,7 +26,7 @@ Look for explicit approval in the last 2-3 user messages:
 - "yes", "yep", "y", "go ahead", "proceed", "do it"
 - "approved", "looks good", "implement it"
 - "option 1" / "option 2" (explicit choice after options presented)
-- `/implement` command invocation
+- `/techne-implement` command invocation
 
 ❌ **NOT approval** (stop immediately):
 - Last message asked for analysis/proposal/options
@@ -47,7 +47,7 @@ This agent requires explicit user approval before implementation.
 
 Last user message appears to be requesting analysis/options, not implementation.
 
-**To proceed**: Reply with "yes", "go ahead", or use `/implement`.
+**To proceed**: Reply with "yes", "go ahead", or use `/techne-implement`.
 ```
 
 ### Step 3: If Approval Found
@@ -645,7 +645,7 @@ After Pre-Flight passes, verify these quality checks. Language-specific items ar
 ## After Completion (All Code-Writing Agents)
 
 1. **Comment audit**: Remove ALL narration comments (see Self-Review above)
-2. **Completion format**: See `agent-communication` skill — Completion Output Format. Interactive mode: summarise work and suggest next step (`/test` for SE, `/review` for test writers). Pipeline mode: return structured result with status.
+2. **Completion format**: See `agent-communication` skill — Completion Output Format. Interactive mode: summarise work and suggest next step (`/techne-test` for SE, `/techne-review` for test writers). Pipeline mode: return structured result with status.
 
 ---
 

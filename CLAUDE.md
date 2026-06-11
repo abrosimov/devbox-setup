@@ -153,7 +153,7 @@ Current per-profile differences:
 | `settings.json` | Default permissions (allow/deny) | `~/.claude/settings.json` |
 | `hooks.json` | Pre/post tool-call hooks | `~/.claude/hooks.json` |
 | `agents/*.md` | Agent definitions (28 agents) | `~/.claude/agents/` |
-| `commands/*.md` | Slash commands — 23 (/implement, /test, /status, /focus, etc.) | `~/.claude/commands/` |
+| `commands/techne-*.md` | Slash commands — 23, all `techne-` prefixed (`/techne-implement`, `/techne-test`, `/techne-plan`, etc.) | `~/.claude/commands/` |
 | `skills/*/SKILL.md` | Reusable knowledge modules (85 skills) | `~/.claude/skills/` |
 | `schemas/*.json` | JSON Schema files for pipeline validation | `~/.claude/schemas/` |
 | `bin/*` | Helper scripts (MCP wrappers, hooks, validation) | `~/.claude/bin/` |
@@ -180,6 +180,7 @@ When working in `roles/devbox/files/dot_claude/` you are editing files that get 
 - **`settings.json` changes** affect sandbox permissions, network allowlists, and tool approvals globally
 - **`hooks.json` changes** define pre/post hooks for tool calls (scripts in `bin/`)
 - **`templates/` changes** affect devcontainer scaffolding for new projects
+- **Command naming — `techne-` prefix**: every file in `commands/` is named `techne-<name>.md` and invoked as `/techne-<name>`. The prefix is deliberate: bare names like `/focus`, `/plan`, `/status`, `/review`, `/verify` collide with Claude Code's built-in commands and bundled skills (the built-in/bundled one wins, shadowing the custom command). New commands MUST keep the `techne-` prefix, and any cross-reference to a command (in agents, skills, other commands, `bin/` hint text) MUST use the `/techne-<name>` form.
 - Run `make validate-claude` to check cross-references between agents, skills, and commands
 - Run `bin/validate-pipeline-output --help` to test the pipeline validation script locally
 - Run `bin/validate-pipeline-output --progress-check --project-dir <path>` to validate progress spine files

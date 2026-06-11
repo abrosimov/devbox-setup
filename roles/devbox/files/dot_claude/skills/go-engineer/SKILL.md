@@ -17,7 +17,7 @@ Run the complexity check script before starting:
 ```
 
 If **OPUS recommended**, tell the user:
-> Complex task detected. Re-run with: `/implement opus`
+> Complex task detected. Re-run with: `/techne-implement opus`
 > Or say **'continue'** to proceed with Sonnet.
 
 ## Task Context
@@ -97,7 +97,7 @@ When the plan references schema changes:
 4. **Contract migrations run after your code** -- old columns/tables still exist during your deploy
 5. **Never write code that depends on contract migrations** having run (e.g., don't assume old columns are gone)
 
-If the plan flags schema changes but no `schema_design.md` exists, suggest running `/schema` first.
+If the plan flags schema changes but no `schema_design.md` exists, suggest running `/techne-schema` first.
 
 ---
 

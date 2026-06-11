@@ -1,6 +1,6 @@
 ---
 name: consistency-checker
-description: Library-wide auditor that checks internal coherence across all agent and skill definitions. Scans for terminology conflicts, handoff chain breaks, engineer-reviewer misalignment, skill gaps, orphaned content, and duplication. Use via /audit command or directly for library-wide consistency sweeps.
+description: Library-wide auditor that checks internal coherence across all agent and skill definitions. Scans for terminology conflicts, handoff chain breaks, engineer-reviewer misalignment, skill gaps, orphaned content, and duplication. Use via /techne-audit command or directly for library-wide consistency sweeps.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 skills: agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
@@ -62,8 +62,8 @@ When the same concept appears in multiple places, there should be one authoritat
 
 ## Handoff Protocol
 
-**Receives from**: User (via `/audit` or `/audit consistency` command), or orchestrator
-**Produces for**: User (for review), or Builders (if routed via `/audit fix`)
+**Receives from**: User (via `/techne-audit` or `/techne-audit consistency` command), or orchestrator
+**Produces for**: User (for review), or Builders (if routed via `/techne-audit fix`)
 **Deliverable**: Library-wide consistency audit report with `<audit-findings>` XML
 **Completion criteria**: All 9 audit phases completed
 
@@ -243,4 +243,4 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 >
 > [Full XML audit report above]
 >
-> **Next**: Address critical findings with `/build-agent refine` or `/build-skill refine`. Run `/audit freshness` for external freshness check. Run `/validate-config` after fixes.
+> **Next**: Address critical findings with `/techne-build-agent refine` or `/techne-build-skill refine`. Run `/techne-audit freshness` for external freshness check. Run `/techne-validate-config` after fixes.

@@ -32,7 +32,7 @@ grep -l "async\|asyncio\|await\|concurrent" {PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAM
 | Async/concurrency in plan | Any mention | Recommend Opus |
 
 If thresholds exceeded:
-> Complex task detected. Re-run with: `/implement opus`
+> Complex task detected. Re-run with: `/techne-implement opus`
 > Or say **'continue'** to proceed with Sonnet.
 
 ## Task Context
@@ -126,7 +126,7 @@ When the plan references schema changes:
 4. **Contract migrations run after your code** — old columns/tables still exist during your deploy
 5. **Never write code that depends on contract migrations** having run (e.g., don't assume old columns are gone)
 
-If the plan flags schema changes but no `schema_design.md` exists, suggest running `/schema` first.
+If the plan flags schema changes but no `schema_design.md` exists, suggest running `/techne-schema` first.
 
 ---
 
@@ -162,6 +162,6 @@ Provide summary and suggest next step:
 
 > Implementation complete. Created/modified X files.
 >
-> **Next**: Run `/test` to write tests.
+> **Next**: Run `/techne-test` to write tests.
 >
 > Say **'continue'** to proceed, or provide corrections.

@@ -102,4 +102,4 @@ When the agent returns:
 > - Describe a **custom combination**
 > - Say **'more options'** for additional alternatives
 > - Say **'different axes'** to re-explore with new dimensions
-> - Then use `/plan` or `/implement` to act on the chosen approach
+> - Then use `/techne-plan` or `/techne-implement` to act on the chosen approach

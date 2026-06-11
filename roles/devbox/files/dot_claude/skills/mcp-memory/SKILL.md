@@ -110,7 +110,7 @@ Replace `{scope}` with `memory-upstream` or `memory-downstream` depending on you
 
 ### Context Survival Entities (Upstream)
 
-Used by the `/checkpoint` command and resume protocol:
+Used by the `/techne-checkpoint` command and resume protocol:
 
 | Entity Type | Naming Pattern | Example |
 |-------------|---------------|---------|
@@ -175,7 +175,7 @@ When a review reveals a recurring pattern:
 
 ### Pattern 4: Checkpoint Storage (Upstream)
 
-When `/checkpoint` saves a snapshot, it optionally stores a summary entity:
+When `/techne-checkpoint` saves a snapshot, it optionally stores a summary entity:
 
 ```
 1. create_entities([{

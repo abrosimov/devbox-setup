@@ -86,7 +86,7 @@ fi
 
 if [[ "$RECOMMEND_OPUS" -eq 1 ]]; then
     echo -e "${YELLOW}=== RECOMMENDATION: OPUS ===${NC}"
-    echo "Complex task detected. Use: /implement opus"
+    echo "Complex task detected. Use: /techne-implement opus"
     exit 1
 else
     echo -e "${GREEN}=== RECOMMENDATION: SONNET ===${NC}"

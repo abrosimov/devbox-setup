@@ -67,7 +67,7 @@ if [ -f "$PROJECT_DIR/pipeline_state.json" ]; then
 else
   echo "No pipeline state found for this project."
   echo ""
-  echo "Run /full-cycle to start a new pipeline, or /implement for individual tasks."
+  echo "Run /techne-full-cycle to start a new pipeline, or /techne-implement for individual tasks."
 fi
 ```
 

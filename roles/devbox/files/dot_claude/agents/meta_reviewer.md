@@ -72,7 +72,7 @@ For each assertion the builder makes, ask:
 
 ## Handoff Protocol
 
-**Receives from**: Agent Builder or Skill Builder (via `/build-agent` or `/build-skill` command pipeline)
+**Receives from**: Agent Builder or Skill Builder (via `/techne-build-agent` or `/techne-build-skill` command pipeline)
 **Produces for**: User (for final approval decision)
 **Deliverable**: Structured review report with findings
 **Completion criteria**: All challenge areas evaluated, all findings categorised by severity

@@ -3,7 +3,7 @@
 // session-save — Hook script for PreCompact and SessionEnd events.
 //
 // Reads git state and updates MEMORY.md "Working State" section
-// as a safety net for context survival. The /checkpoint command
+// as a safety net for context survival. The /techne-checkpoint command
 // provides richer, AI-powered snapshots; this hook is the automatic fallback.
 //
 // Events: PreCompact, SessionEnd
@@ -96,7 +96,7 @@ function updateWorkingState(memoryDir, event) {
     `- **SHA**: ${sha}`,
     `- **Modified**: ${filesLine}`,
     `- **Last event**: ${eventLabel} at ${now}`,
-    `- **Note**: Run \`/checkpoint resume\` to reconstruct full context`,
+    `- **Note**: Run \`/techne-checkpoint resume\` to reconstruct full context`,
   ].join("\n");
 
   let content = fs.readFileSync(memFile, "utf8");

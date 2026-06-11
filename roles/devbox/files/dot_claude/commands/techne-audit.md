@@ -7,10 +7,10 @@ You are orchestrating a **library-wide audit** of all agent and skill definition
 ## Parse Arguments
 
 Check what the user requested:
-- `/audit` → Run both freshness and consistency audits in parallel, merge reports
-- `/audit freshness` → Freshness auditor only (external staleness)
-- `/audit consistency` → Consistency checker only (internal coherence)
-- `/audit fix` → Run both audits, then route findings to builders for remediation
+- `/techne-audit` → Run both freshness and consistency audits in parallel, merge reports
+- `/techne-audit freshness` → Freshness auditor only (external staleness)
+- `/techne-audit consistency` → Consistency checker only (internal coherence)
+- `/techne-audit fix` → Run both audits, then route findings to builders for remediation
 
 ## Steps
 
@@ -189,9 +189,9 @@ Audit complete.
 **Freshness**: {verdict} ({N critical}, {N important}, {N suggestions})
 **Consistency**: {verdict} ({N critical}, {N important}, {N suggestions})
 
-To fix findings automatically: `/audit fix`
-To fix specific artifacts: `/build-agent refine <name>` or `/build-skill refine <name>`
-To verify after fixes: `/validate-config`
+To fix findings automatically: `/techne-audit fix`
+To fix specific artifacts: `/techne-build-agent refine <name>` or `/techne-build-skill refine <name>`
+To verify after fixes: `/techne-validate-config`
 ```
 
 **For fix mode:**
@@ -202,5 +202,5 @@ Audit fix cycle complete.
 **Findings addressed**: {N critical}, {N important}
 **Skipped**: {N}
 
-Recommended: Run `/validate-config` to verify system integrity after changes.
+Recommended: Run `/techne-validate-config` to verify system integrity after changes.
 ```

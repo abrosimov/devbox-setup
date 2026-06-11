@@ -37,7 +37,7 @@ Machine-readable JSON Schema files live in `schemas/`:
 | Stream Completion | `schemas/stream_completion.schema.json` | Stream executors (Phase 4 DAG) |
 | Execution DAG | `schemas/execution_dag.schema.json` | Full-cycle orchestrator |
 | Pipeline State | `schemas/pipeline_state.schema.json` | Full-cycle orchestrator |
-| DSS Output | `schemas/dss_output.schema.json` | `/options` command, DSS protocol |
+| DSS Output | `schemas/dss_output.schema.json` | `/techne-options` command, DSS protocol |
 | Progress Plan | `schemas/progress_plan.schema.json` | TPM (init), Impl Planner (refine) |
 | Progress Agent | `schemas/progress_agent.schema.json` | All pipeline agents |
 
@@ -236,7 +236,7 @@ Summary of top-level fields:
       "id": "WS-1",
       "name": "string (e.g., Data Layer, API Contract, Backend Logic, Frontend UI)",
       "agent": "string (e.g., database-designer, api-designer, software-engineer-go, software-engineer-frontend)",
-      "command": "string (e.g., /schema, /api-design, /implement)",
+      "command": "string (e.g., /techne-schema, /techne-api-design, /techne-implement)",
       "requirements": ["string (FR/NFR IDs assigned to this stream)"],
       "depends_on": ["string (WS IDs that must complete before this stream starts)"],
       "blocks": ["string (WS IDs that cannot start until this stream completes)"]
@@ -307,7 +307,7 @@ Summary of top-level fields:
 
 ### DSS — `dss_output.json`
 
-Written by the Diverge-Synthesize-Select protocol (invoked via `/options` or when agents encounter Tier 3 Wide decisions). See `schemas/dss_output.schema.json` for the authoritative definition.
+Written by the Diverge-Synthesize-Select protocol (invoked via `/techne-options` or when agents encounter Tier 3 Wide decisions). See `schemas/dss_output.schema.json` for the authoritative definition.
 
 Top-level fields: `problem_statement`, `complexity` (tier, n_options, sub_factors), `strategy_axes` (2-5 orthogonal dimensions), `options` (N generated, each with axis position), `evaluation` (criteria, eliminated, top_candidates, synthesis), `selected` (choice, rationale, decided_by).
 
@@ -460,7 +460,7 @@ Progress tracking is **distinct from** structured output:
 | **Purpose** | Final deliverable contract | Live status tracking |
 | **Written** | Once, at agent completion | Incrementally during work |
 | **Schema** | Stage-specific (spec, plan, design...) | `progress_plan` + `progress_agent` |
-| **Read by** | Downstream agents | Orchestrator + `/status` command |
+| **Read by** | Downstream agents | Orchestrator + `/techne-status` command |
 | **Required?** | Yes (pipeline mode) | Optional (graceful degradation) |
 
 Agents produce BOTH: structured output (final artifact) + progress updates (live status). They serve different consumers and timelines.

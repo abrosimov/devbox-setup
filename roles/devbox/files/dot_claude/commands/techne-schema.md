@@ -8,7 +8,7 @@ You are orchestrating the schema design phase of a development workflow.
 
 **Before spawning the database designer agent, verify ONE of these conditions:**
 
-1. User explicitly invoked `/schema` command (this counts as approval)
+1. User explicitly invoked `/techne-schema` command (this counts as approval)
 2. User said "yes", "go ahead", "proceed" after seeing a proposal
 3. User selected a specific option from alternatives presented
 
@@ -17,11 +17,11 @@ You are orchestrating the schema design phase of a development workflow.
 ## Parse Arguments
 
 Check if user passed a database argument:
-- `/schema postgres` or `/schema postgresql` → force **PostgreSQL** mode
-- `/schema mysql` → force **MySQL** mode
-- `/schema mongo` or `/schema mongodb` → force **MongoDB** mode
-- `/schema cockroach` or `/schema cockroachdb` → force **CockroachDB** mode
-- `/schema` (no argument) → auto-detect database
+- `/techne-schema postgres` or `/techne-schema postgresql` → force **PostgreSQL** mode
+- `/techne-schema mysql` → force **MySQL** mode
+- `/techne-schema mongo` or `/techne-schema mongodb` → force **MongoDB** mode
+- `/techne-schema cockroach` or `/techne-schema cockroachdb` → force **CockroachDB** mode
+- `/techne-schema` (no argument) → auto-detect database
 
 ## Steps
 

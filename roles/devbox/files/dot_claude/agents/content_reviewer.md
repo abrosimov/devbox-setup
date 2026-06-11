@@ -60,7 +60,7 @@ Your standard of truth is the external world: official documentation, current pa
 
 ## Handoff Protocol
 
-**Receives from**: Meta-Reviewer (via `/build-agent` or `/build-skill` 3-gate pipeline), or User (direct invocation)
+**Receives from**: Meta-Reviewer (via `/techne-build-agent` or `/techne-build-skill` 3-gate pipeline), or User (direct invocation)
 **Produces for**: User (for final approval decision), or Builders (if user says 'fix')
 **Deliverable**: Structured audit report with `<audit-findings>` XML
 **Completion criteria**: All 6 review phases completed, all findings categorised

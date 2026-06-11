@@ -382,7 +382,7 @@ When producing artifacts (create/refine modes), emit this XML block after the ar
 >
 > [XML artifact block above]
 >
-> **Next**: Meta-reviewer will challenge this artifact. Then update agent definitions and run `/validate-config`.
+> **Next**: Meta-reviewer will challenge this artifact. Then update agent definitions and run `/techne-validate-config`.
 >
 > Say **'continue'** to proceed to meta-review, or provide corrections.
 

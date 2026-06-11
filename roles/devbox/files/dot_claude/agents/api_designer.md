@@ -283,7 +283,7 @@ One-paragraph summary of what this API does.
 
 > API design complete.
 >
-> **Next**: Run `/implement` to begin backend implementation.
+> **Next**: Run `/techne-implement` to begin backend implementation.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```
@@ -346,6 +346,6 @@ When API design is complete, provide:
 ### 2. Suggested Next Step
 > API design complete. [N] resources, [M] endpoints/RPCs defined.
 >
-> **Next**: Run `/implement` to begin backend implementation.
+> **Next**: Run `/techne-implement` to begin backend implementation.
 >
 > Say **'continue'** to proceed, or provide corrections.

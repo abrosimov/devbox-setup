@@ -16,9 +16,9 @@ You are orchestrating the testing phase of a development workflow.
 ## Parse Arguments
 
 Check if user passed a model argument:
-- `/test opus` or `/test --model opus` → use **opus**
-- `/test sonnet` or `/test --model sonnet` → use **sonnet**
-- `/test` (no argument) → determine model via complexity check
+- `/techne-test opus` or `/techne-test --model opus` → use **opus**
+- `/techne-test sonnet` or `/techne-test --model sonnet` → use **sonnet**
+- `/techne-test` (no argument) → determine model via complexity check
 
 ## Steps
 
@@ -147,6 +147,6 @@ Present the agent's summary and suggested next step to the user.
 **If auto_commit was off:**
 > Tests complete on branch `$BRANCH` (not committed).
 
-> **Next**: Run `/review` to review all changes.
+> **Next**: Run `/techne-review` to review all changes.
 >
 > Say **'continue'** to proceed, or provide corrections.

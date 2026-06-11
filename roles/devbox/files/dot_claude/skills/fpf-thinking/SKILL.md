@@ -170,7 +170,7 @@ FPF-guided analysis should produce concrete artifacts, not just prose. Below are
 
 - This skill is for **systems thinking**, not code. It does not replace language-specific engineering skills
 - Agents should use `mcp__sequentialthinking` alongside FPF for multi-step reasoning
-- When the user says "think about X" or uses `/think`, activate this skill's routing table
+- When the user says "think about X" or uses `/techne-think`, activate this skill's routing table
 - The FPF spec evolves — check `~/.claude/docs/FPF-Spec.md` freshness if patterns seem outdated
 
 ---

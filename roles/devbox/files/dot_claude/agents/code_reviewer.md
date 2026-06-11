@@ -67,17 +67,17 @@ Use for: small PRs, routine changes, follow-up reviews after fixes.
 
 **BLOCKED** — 2 error handling issues must be fixed.
 
-**Next**: Fix F3 issues, then re-run `/review` (fast mode will re-verify).
+**Next**: Fix F3 issues, then re-run `/techne-review` (fast mode will re-verify).
 ```
 
 ### Deep Review (On Request or Complex PRs)
 
-Triggered by `/review deep`, complexity thresholds exceeded, or a user request such as "do a thorough review". Runs **all** verification checkpoints — the shared core (Comments, Lint Suppression, Scope, Complexity, Counter-Evidence, Test Quality, SE Self-Review) **plus** the language-specific checkpoints for every stack detected in Step 1.
+Triggered by `/techne-review deep`, complexity thresholds exceeded, or a user request such as "do a thorough review". Runs **all** verification checkpoints — the shared core (Comments, Lint Suppression, Scope, Complexity, Counter-Evidence, Test Quality, SE Self-Review) **plus** the language-specific checkpoints for every stack detected in Step 1.
 
 ### Mode Selection Logic
 
 ```
-IF user requested "/review deep" OR "thorough" OR "full":
+IF user requested "/techne-review deep" OR "thorough" OR "full":
     -> Deep Review
 ELSE IF any complexity threshold exceeded:
     -> Offer choice: "Recommend Deep Review. Say 'continue' for Fast Review."
@@ -627,12 +627,12 @@ Final on-screen summary (interactive mode):
 ```markdown
 > Review complete. Stacks reviewed: [go, …]. Found X blocking, Y important, Z optional issues.
 >
-> **Next**: address blocking issues with `/implement`, then re-run `/review`.
+> **Next**: address blocking issues with `/techne-implement`, then re-run `/techne-review`.
 >
 > Say **'fix'** to have SE address issues, or provide specific instructions.
 ```
 
-If no blocking issues, switch the suggestion to `commit` and offer the PR flow per `commands/review.md`.
+If no blocking issues, switch the suggestion to `commit` and offer the PR flow per `commands/techne-review.md`.
 
 ### Progress Spine (Pipeline Mode Only)
 

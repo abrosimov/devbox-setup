@@ -6,7 +6,7 @@ You are extracting a valuable pattern from the current session and saving it as 
 
 ## When to Use
 
-Run `/learn` after you've solved a non-trivial problem. Good candidates:
+Run `/techne-learn` after you've solved a non-trivial problem. Good candidates:
 
 - **Error resolution patterns** — error → root cause → fix (especially non-obvious ones)
 - **Debugging techniques** — steps that weren't immediately obvious
@@ -30,7 +30,7 @@ Review the current conversation and identify the most valuable insight. Ask your
 
 If nothing stands out, tell the user:
 
-> No strong patterns to extract from this session. `/learn` works best after solving non-obvious problems.
+> No strong patterns to extract from this session. `/techne-learn` works best after solving non-obvious problems.
 
 ### 2. Draft the Skill
 
@@ -98,4 +98,4 @@ Write the skill file using the Write tool to `~/.claude/skills/learned/{label}.m
 Users can:
 - Read/edit skills directly in `~/.claude/skills/learned/`
 - Delete skills that are no longer useful
-- Promote a learned skill to a full skill module via `/build-skill`
+- Promote a learned skill to a full skill module via `/techne-build-skill`

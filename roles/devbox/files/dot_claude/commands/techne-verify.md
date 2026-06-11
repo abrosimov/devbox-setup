@@ -4,13 +4,13 @@ description: Run pre-PR quality gate — build, typecheck, lint, test, debug sca
 
 You are running a lightweight, deterministic quality gate before code review or PR creation.
 
-Unlike `/review` (which spawns a code reviewer agent for deep analysis), `/verify` runs automated checks only. Use it as a fast sanity check.
+Unlike `/techne-review` (which spawns a code reviewer agent for deep analysis), `/techne-verify` runs automated checks only. Use it as a fast sanity check.
 
 ## Parse Arguments
 
-- `/verify` or `/verify full` → run all checks (default)
-- `/verify quick` → build + typecheck only
-- `/verify pre-pr` → all checks + secret scan
+- `/techne-verify` or `/techne-verify full` → run all checks (default)
+- `/techne-verify quick` → build + typecheck only
+- `/techne-verify pre-pr` → all checks + secret scan
 
 ## Steps
 
@@ -99,7 +99,7 @@ pnpm exec tsc --noEmit 2>&1
 npx tsc --noEmit 2>&1
 ```
 
-#### Check 3: Lint (skip if `/verify quick`)
+#### Check 3: Lint (skip if `/techne-verify quick`)
 
 **Go:**
 ```bash
@@ -129,7 +129,7 @@ pnpm run lint 2>&1
 npm run lint 2>&1
 ```
 
-#### Check 3b: Docker Lint (skip if `/verify quick` or no Docker files)
+#### Check 3b: Docker Lint (skip if `/techne-verify quick` or no Docker files)
 
 Only run if Dockerfiles or compose files were detected in Step 1.
 
@@ -146,7 +146,7 @@ dclint . 2>&1
 
 Skip gracefully if hadolint or dclint are not installed.
 
-#### Check 4: Test Suite (skip if `/verify quick`)
+#### Check 4: Test Suite (skip if `/techne-verify quick`)
 
 **Go:**
 ```bash
@@ -173,7 +173,7 @@ pnpm test 2>&1
 npm test -- --watchAll=false 2>&1
 ```
 
-#### Check 4b: Smoke Test (skip if `/verify quick`)
+#### Check 4b: Smoke Test (skip if `/techne-verify quick`)
 
 Run if a smoke test convention is detected:
 
@@ -184,7 +184,7 @@ Run if a smoke test convention is detected:
 
 Skip if neither convention found (not an error).
 
-#### Check 5: Debug Statement Scan (skip if `/verify quick`)
+#### Check 5: Debug Statement Scan (skip if `/techne-verify quick`)
 
 Scan for debug statements that should not be committed:
 
@@ -199,7 +199,7 @@ grep -rn 'print(\|breakpoint(\|pdb\.set_trace\|import pdb' --include='*.py' --ex
 grep -rn 'console\.log\|console\.debug\|debugger' --include='*.ts' --include='*.tsx' --exclude='*.test.*' --exclude='*.spec.*' . 2>/dev/null | head -10
 ```
 
-#### Check 6: Secret Scan (only for `/verify pre-pr`)
+#### Check 6: Secret Scan (only for `/techne-verify pre-pr`)
 
 ```bash
 # Check for common secret patterns
@@ -239,11 +239,11 @@ Present a clear PASS/FAIL report:
 
 If all checks pass:
 
-> Verification passed. Ready for `/review` or PR.
+> Verification passed. Ready for `/techne-review` or PR.
 
 If issues found:
 
-> Verification found N issue(s). Fix and re-run `/verify`.
+> Verification found N issue(s). Fix and re-run `/techne-verify`.
 
 ### 4. Suggest Next Step
 
@@ -251,6 +251,6 @@ Based on result:
 
 | Result | Suggestion |
 |--------|------------|
-| All pass | "Run `/review` for code review, or `/checkpoint` to save progress." |
-| Minor issues | "Fix the issues above and re-run `/verify`." |
+| All pass | "Run `/techne-review` for code review, or `/techne-checkpoint` to save progress." |
+| Minor issues | "Fix the issues above and re-run `/techne-verify`." |
 | Build fails | "Build is broken. Fix compilation errors first." |

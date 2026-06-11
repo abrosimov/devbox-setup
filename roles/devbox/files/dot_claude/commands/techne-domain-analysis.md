@@ -74,7 +74,7 @@ This is an interactive process. Engage with the challenges - they improve the fi
 ### 5. After Completion
 
 When domain analysis is complete (all challenges resolved), check `domain_output.json` for complexity:
-- **Cynefin = `clear` AND < 5 entities** → skip Domain Modeller, go to `/plan`
+- **Cynefin = `clear` AND < 5 entities** → skip Domain Modeller, go to `/techne-plan`
 - **Otherwise** → recommend Domain Modeller for formal DDD
 
 **Next step suggestion (complex domain)**:
@@ -82,11 +82,11 @@ When domain analysis is complete (all challenges resolved), check `domain_output
 >
 > **Next**: Run `domain-modeller` agent to formalise bounded contexts, aggregates, and context map.
 >
-> Say **'continue'** to run Domain Modeller, **'skip model'** to go straight to `/plan`, or address remaining challenges.
+> Say **'continue'** to run Domain Modeller, **'skip model'** to go straight to `/techne-plan`, or address remaining challenges.
 
 **Next step suggestion (simple domain)**:
 > Domain analysis complete. Simple domain (Cynefin: Clear, N entities) — formal DDD modelling skipped.
 >
-> **Next**: Run `/plan` to create implementation plan from validated requirements.
+> **Next**: Run `/techne-plan` to create implementation plan from validated requirements.
 >
 > Say **'continue'** to proceed, or address any remaining open challenges.

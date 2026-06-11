@@ -4,7 +4,8 @@
 Checks:
   agents         Agent frontmatter fields, model values, skill cross-references
   skills         Skill frontmatter fields, name/directory match
-  commands       Command frontmatter fields
+  commands       Command frontmatter fields, techne- filename prefix
+  command-refs   techne- namespace integrity (dangling refs, bare invocations)
   json           JSON validity for schemas/, hooks.json, settings.json
   references     Broken markdown links in agent files
   stale          Old-style doc references, formatting issues
@@ -215,6 +216,13 @@ def check_commands(root: Path) -> tuple[list[str], list[str]]:
         return errors, warnings
 
     for cmd_file in sorted(commands_dir.glob("*.md")):
+        if not cmd_file.name.startswith("techne-"):
+            errors.append(
+                f"[CMD_PREFIX] {cmd_file.name}: command file must be named "
+                f"techne-{cmd_file.name} — all commands carry the techne- namespace "
+                "prefix so they do not collide with built-in commands or bundled skills"
+            )
+
         content = cmd_file.read_text()
         fm = parse_frontmatter(content)
 
@@ -271,6 +279,99 @@ def check_references(root: Path) -> tuple[list[str], list[str]]:
             candidates = [root / target, root / "docs" / target]
             if not any(c.exists() for c in candidates):
                 errors.append(f'[DOC_REF] {md_file.name}: Broken link to "{target}"')
+
+    return errors, warnings
+
+
+# ---------------------------------------------------------------------------
+# Command namespace integrity (techne- prefix convention)
+# ---------------------------------------------------------------------------
+#
+# Managed locations scanned for command-reference integrity. Host-only trees
+# (projects/, plans/, memory/, plugins/, future_projects/, ...) are never
+# scanned — they hold user content that legitimately uses bare slash tokens.
+_CMD_SCAN_DIRS = ("agents", "skills", "commands", "bin", "docs")
+_CMD_SCAN_ROOT_FILES = ("README.md", "config.md", "USER_AUTHORITY_PROTOCOL.md")
+# docs/ carries formal specifications with illustrative slash tokens (e.g. an
+# example HTTP endpoint named after a word that happens to match a command), so
+# it is kept for the deterministic dangling-reference scan but excluded from the
+# heuristic bare-invocation scan.
+_CMD_BARE_EXCLUDE_DIRS = ("docs",)
+_CMD_SCAN_SUFFIXES = ("", ".md", ".py", ".sh", ".js")
+
+_TECHNE_REF_RE = re.compile(r"/techne-([a-z0-9][a-z0-9-]*)")
+
+
+def _iter_managed_files(root: Path):
+    for d in _CMD_SCAN_DIRS:
+        sub = root / d
+        if not sub.is_dir():
+            continue
+        for path in sorted(sub.rglob("*")):
+            if path.is_file() and path.suffix in _CMD_SCAN_SUFFIXES:
+                yield path
+    for name in _CMD_SCAN_ROOT_FILES:
+        path = root / name
+        if path.is_file():
+            yield path
+
+
+def check_command_refs(root: Path) -> tuple[list[str], list[str]]:
+    """Enforce the techne- command namespace across the managed config.
+
+    ERROR  every ``/techne-<x>`` reference must resolve to a command file
+           (catches typos and references to renamed/removed commands).
+    WARN   a bare ``/<name>`` invocation that matches a known command stem but
+           is missing the techne- prefix (it would invoke a built-in/bundled
+           command instead of the intended custom one).
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    commands_dir = root / "commands"
+    if not commands_dir.is_dir():
+        return errors, warnings
+
+    stems = sorted(
+        p.name[len("techne-") : -len(".md")] for p in commands_dir.glob("techne-*.md")
+    )
+    if not stems:
+        return errors, warnings
+    known = set(stems)
+
+    # Boundary-guarded matcher for a bare command name missing the prefix. The
+    # preceding char excludes word/path/url separators so `commands/`, `http://`
+    # and hyphenated names are skipped; the following char excludes path
+    # continuations so file/path tokens (a plan markdown file, a design dir, a
+    # schema_ snake_case symbol) are not flagged.
+    bare_re = re.compile(
+        r"(?<![A-Za-z0-9_./-])/(" + "|".join(re.escape(s) for s in stems) + r")(?![A-Za-z0-9/_.-])"
+    )
+
+    for path in _iter_managed_files(root):
+        rel = path.relative_to(root)
+        try:
+            content = path.read_text(errors="ignore")
+        except OSError:
+            continue
+
+        for match in _TECHNE_REF_RE.finditer(content):
+            stem = match.group(1)
+            if stem not in known:
+                errors.append(
+                    f'[CMD_REF] {rel}: reference to "/techne-{stem}" but '
+                    f"commands/techne-{stem}.md does not exist"
+                )
+
+        if rel.parts and rel.parts[0] in _CMD_BARE_EXCLUDE_DIRS:
+            continue
+        for match in bare_re.finditer(content):
+            line = content.count("\n", 0, match.start()) + 1
+            stem = match.group(1)
+            warnings.append(
+                f'[CMD_BARE] {rel}:{line}: bare "/{stem}" should be "/techne-{stem}" '
+                "(bare name collides with a built-in command or bundled skill)"
+            )
 
     return errors, warnings
 
@@ -464,6 +565,7 @@ ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "agents": check_agents,
     "skills": check_skills,
     "commands": check_commands,
+    "command-refs": check_command_refs,
     "json": check_json_files,
     "references": check_references,
     "stale": check_stale_patterns,

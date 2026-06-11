@@ -75,6 +75,6 @@ When API design is complete, present the summary.
 **Next step suggestion**:
 > API design complete.
 >
-> **Next**: Run `/implement` to begin backend implementation, or `/design` for UI/UX design.
+> **Next**: Run `/techne-implement` to begin backend implementation, or `/techne-design` for UI/UX design.
 >
 > Say **'continue'** to proceed, or address any remaining open questions.

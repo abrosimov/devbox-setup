@@ -7,13 +7,13 @@ You are orchestrating a **3-gate pipeline** for skill module creation, validatio
 ## Parse Arguments
 
 Check what the user requested:
-- `/build-skill <name>` → Create a new skill with this name
-- `/build-skill validate <name>` → Validate an existing skill
-- `/build-skill validate all` → Validate all skills
-- `/build-skill refine <name>` → Refine an existing skill
-- `/build-skill audit` → Full library audit (overlaps, gaps, terminology)
-- `/build-skill self-improve` → Skill Builder analyses and improves itself
-- `/build-skill` (no args) → Ask user what they want to build
+- `/techne-build-skill <name>` → Create a new skill with this name
+- `/techne-build-skill validate <name>` → Validate an existing skill
+- `/techne-build-skill validate all` → Validate all skills
+- `/techne-build-skill refine <name>` → Refine an existing skill
+- `/techne-build-skill audit` → Full library audit (overlaps, gaps, terminology)
+- `/techne-build-skill self-improve` → Skill Builder analyses and improves itself
+- `/techne-build-skill` (no args) → Ask user what they want to build
 
 ## Pipeline Overview
 
@@ -219,12 +219,12 @@ Present the content reviewer's findings:
 Skill pipeline complete. Recommended next steps:
 1. Review the skill at .claude/skills/<name>/SKILL.md
 2. Add this skill to relevant agents' `skills:` field
-3. Run `/validate-config` to verify system integrity
-4. Run `/audit` for library-wide freshness and consistency checks
+3. Run `/techne-validate-config` to verify system integrity
+4. Run `/techne-audit` for library-wide freshness and consistency checks
 ```
 
 **For audits:**
 ```markdown
 Audit complete. Review the findings and decide which to address.
-Use `/build-skill refine <name>` to improve specific skills.
+Use `/techne-build-skill refine <name>` to improve specific skills.
 ```

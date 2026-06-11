@@ -365,10 +365,10 @@ Each stream maps to a downstream agent and command. Streams with no dependency b
 
 | Stream | Agent | Command | Requirements | Depends On | Parallel With |
 |--------|-------|---------|--------------|------------|---------------|
-| WS-1: Data Layer | database-designer | `/schema` | FR-1 (storage) | — | — |
-| WS-2: API Contract | api-designer | `/api-design` | FR-2, FR-3 | WS-1 | — |
-| WS-3: Backend Logic | software-engineer-{go\|python} | `/implement` | FR-1–FR-5 | WS-1, WS-2 | WS-4, WS-5 |
-| WS-4: Frontend UI | software-engineer-frontend | `/implement` | FR-6, FR-7 | WS-2 | WS-3, WS-5 |
+| WS-1: Data Layer | database-designer | `/techne-schema` | FR-1 (storage) | — | — |
+| WS-2: API Contract | api-designer | `/techne-api-design` | FR-2, FR-3 | WS-1 | — |
+| WS-3: Backend Logic | software-engineer-{go\|python} | `/techne-implement` | FR-1–FR-5 | WS-1, WS-2 | WS-4, WS-5 |
+| WS-4: Frontend UI | software-engineer-frontend | `/techne-implement` | FR-6, FR-7 | WS-2 | WS-3, WS-5 |
 | WS-5: Observability | observability-engineer | — | NFR-1, NFR-2 | WS-2 | WS-3, WS-4 |
 
 ### Rules
@@ -603,14 +603,14 @@ If the feature involves **any** data model changes (new tables, new columns, col
 
 1. **Flag them explicitly** in the plan under a `## Schema Changes` section
 2. **Identify the migration phases** — which changes are expand (safe before code) vs contract (requires code deploy first)
-3. **Recommend `/schema` before `/implement`** in your suggested next steps
+3. **Recommend `/techne-schema` before `/techne-implement`** in your suggested next steps
 
 ### Schema Changes Section Template
 
 ```markdown
 ## Schema Changes
 
-This feature requires database schema modifications. Run `/schema` before `/implement`.
+This feature requires database schema modifications. Run `/techne-schema` before `/techne-implement`.
 
 | Change | Phase | Dependency |
 |--------|-------|------------|
@@ -702,7 +702,7 @@ Based on the work streams defined in the plan, suggest the execution order:
 > | 2 | [next stream(s) — note if parallel] | [agent(s)] | [command(s)] |
 > | ... | ... | ... | ... |
 >
-> **Next**: Run the first stream's command (e.g., `/schema` if schema changes, `/api-design` if API-first, or `/implement` if straight to code).
+> **Next**: Run the first stream's command (e.g., `/techne-schema` if schema changes, `/techne-api-design` if API-first, or `/techne-implement` if straight to code).
 >
 > Say **'continue'** to proceed, or provide corrections to the plan.
 

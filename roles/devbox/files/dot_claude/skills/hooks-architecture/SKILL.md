@@ -518,7 +518,7 @@ Suggest checkpoint after N tool calls.
 
 # Suggest checkpoint every 50 tool calls
 if (( TOOL_COUNT % 50 == 0 )); then
-    echo "SUGGESTION: Consider creating a checkpoint (/checkpoint)"
+    echo "SUGGESTION: Consider creating a checkpoint (/techne-checkpoint)"
 fi
 
 exit 0

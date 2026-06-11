@@ -17,7 +17,7 @@ Run the complexity check script before starting:
 ```
 
 If **OPUS recommended**, tell the user:
-> Complex task detected. Re-run with: `/implement opus`
+> Complex task detected. Re-run with: `/techne-implement opus`
 > Or say **'continue'** to proceed with Sonnet.
 
 ## Task Context
@@ -146,6 +146,6 @@ Provide summary and suggest next step:
 
 > Implementation complete. Created/modified X files.
 >
-> **Next**: Run `/test` to write tests.
+> **Next**: Run `/techne-test` to write tests.
 >
 > Say **'continue'** to proceed, or provide corrections.

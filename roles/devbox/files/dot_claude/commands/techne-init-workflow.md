@@ -6,9 +6,9 @@ You are setting up the agent workflow for the current project by creating `.clau
 
 ## Parse Arguments
 
-- `/init-workflow full` → full preset
-- `/init-workflow light` → lightweight preset
-- `/init-workflow` (no argument) → ask user to choose
+- `/techne-init-workflow full` → full preset
+- `/techne-init-workflow light` → lightweight preset
+- `/techne-init-workflow` (no argument) → ask user to choose
 
 ## Presets
 
@@ -21,7 +21,7 @@ You are setting up the agent workflow for the current project by creating `.clau
 
 | Flag | `true` | `false` |
 |------|--------|---------|
-| `agent_pipeline` | Code changes MUST go through agents (`/implement`) | Direct Edit/Write on code files allowed |
+| `agent_pipeline` | Code changes MUST go through agents (`/techne-implement`) | Direct Edit/Write on code files allowed |
 | `auto_commit` | Commands auto-commit via `git-safe-commit` after each phase | User commits manually |
 | `complexity_escalation` | Auto-downgrade SE agents to Sonnet for simple tasks | Always use agent's default model (opus) |
 
@@ -90,7 +90,7 @@ Then use the Write tool to create `.claude/workflow.json` with the chosen settin
 >
 > Config: `.claude/workflow.json`
 >
-> To change later: `/init-workflow` or edit `.claude/workflow.json` directly.
+> To change later: `/techne-init-workflow` or edit `.claude/workflow.json` directly.
 > To disable: delete `.claude/workflow.json`.
 
 ### 5. Offer Project Settings

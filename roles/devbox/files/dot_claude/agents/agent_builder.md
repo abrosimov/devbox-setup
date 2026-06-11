@@ -383,7 +383,7 @@ When agent creation/validation/refinement is complete:
 >
 > [XML artifact block above]
 >
-> **Next**: Meta-reviewer will challenge this artifact. Then `/validate-config` to verify integration.
+> **Next**: Meta-reviewer will challenge this artifact. Then `/techne-validate-config` to verify integration.
 >
 > Say **'continue'** to proceed to meta-review, or provide corrections.
 
@@ -403,6 +403,6 @@ When agent creation/validation/refinement is complete:
 >
 > **Changes**: [summary of what changed and why]
 >
-> **Next**: Run `/validate-config` to verify integration.
+> **Next**: Run `/techne-validate-config` to verify integration.
 >
 > Say **'continue'** to proceed, or provide corrections.

@@ -26,7 +26,7 @@ DSS activates ONLY for Tier 3 decisions with wide scope. Use the decision classi
 - API/contract decision visible to consumers
 - Technology or framework selection
 - Reversing the decision requires significant rework
-- User explicitly asks for options (`/options`, "explore alternatives", "what are our options")
+- User explicitly asks for options (`/techne-options`, "explore alternatives", "what are our options")
 
 ---
 

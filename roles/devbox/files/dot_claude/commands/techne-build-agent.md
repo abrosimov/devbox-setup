@@ -7,12 +7,12 @@ You are orchestrating a **3-gate pipeline** for agent definition creation, valid
 ## Parse Arguments
 
 Check what the user requested:
-- `/build-agent <name>` → Create a new agent with this name
-- `/build-agent validate <name>` → Validate an existing agent
-- `/build-agent validate all` → Validate all agents
-- `/build-agent refine <name>` → Refine an existing agent
-- `/build-agent self-improve` → Agent Builder analyses and improves itself
-- `/build-agent` (no args) → Ask user what they want to build
+- `/techne-build-agent <name>` → Create a new agent with this name
+- `/techne-build-agent validate <name>` → Validate an existing agent
+- `/techne-build-agent validate all` → Validate all agents
+- `/techne-build-agent refine <name>` → Refine an existing agent
+- `/techne-build-agent self-improve` → Agent Builder analyses and improves itself
+- `/techne-build-agent` (no args) → Ask user what they want to build
 
 ## Pipeline Overview
 
@@ -213,7 +213,7 @@ The new agent needs these skills that don't exist yet:
 - `<skill-1>`: <description>
 - `<skill-2>`: <description>
 
-Run `/build-skill <name>` for each, or say 'skip' to proceed without them.
+Run `/techne-build-skill <name>` for each, or say 'skip' to proceed without them.
 ```
 
 ### 7. After Completion
@@ -221,7 +221,7 @@ Run `/build-skill <name>` for each, or say 'skip' to proceed without them.
 ```markdown
 Agent pipeline complete. Recommended next steps:
 1. Review the definition at .claude/agents/<name>.md
-2. Create any missing skills with `/build-skill`
-3. Run `/validate-config` to verify system integrity
-4. Run `/audit` for library-wide freshness and consistency checks
+2. Create any missing skills with `/techne-build-skill`
+3. Run `/techne-validate-config` to verify system integrity
+4. Run `/techne-audit` for library-wide freshness and consistency checks
 ```

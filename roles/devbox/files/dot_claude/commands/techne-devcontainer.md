@@ -6,9 +6,9 @@ You are setting up a Docker devcontainer for sandboxed Claude Code development. 
 
 ## Parse Arguments
 
-- `/devcontainer` or `/devcontainer init` → initialise devcontainer for this project
-- `/devcontainer add-domain <domain>` → append domain to `.devcontainer/domains.conf`
-- `/devcontainer strip <lang>` → disable a language in `.devcontainer/devcontainer.json` build args
+- `/techne-devcontainer` or `/techne-devcontainer init` → initialise devcontainer for this project
+- `/techne-devcontainer add-domain <domain>` → append domain to `.devcontainer/domains.conf`
+- `/techne-devcontainer strip <lang>` → disable a language in `.devcontainer/devcontainer.json` build args
 
 ## Subcommand: init
 
@@ -92,8 +92,8 @@ If tracked, mention:
 > Next steps:
 > - **VS Code**: "Reopen in Container" from command palette
 > - **CLI**: `claude-devcontainer build && claude-devcontainer run`
-> - **Add domains**: `/devcontainer add-domain example.com`
-> - **Remove a language**: `/devcontainer strip rust`
+> - **Add domains**: `/techne-devcontainer add-domain example.com`
+> - **Remove a language**: `/techne-devcontainer strip rust`
 
 ## Subcommand: add-domain
 
@@ -109,7 +109,7 @@ Check if `.devcontainer/domains.conf` exists:
 [ -f .devcontainer/domains.conf ] && echo "EXISTS" || echo "MISSING"
 ```
 
-If missing, inform the user to run `/devcontainer init` first.
+If missing, inform the user to run `/techne-devcontainer init` first.
 
 If present, use the Edit tool to append the domain at the end of the file.
 

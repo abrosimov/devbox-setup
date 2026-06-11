@@ -65,7 +65,7 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 | **Content Reviewer** | agent/skill artifact, 2-3 referenced skills | `<audit-findings>` XML (inline) |
 | **Freshness Auditor** | all `agents/*.md`, all `skills/*/SKILL.md` | `<audit-findings scope="library">` XML (inline) |
 | **Consistency Checker** | all `agents/*.md`, all `skills/*/SKILL.md`, all `commands/*.md` | `<audit-findings scope="library">` XML (inline) |
-| **DSS (via /options)** | `spec.md`, `domain_analysis.md`, `plan.md`?, `design.md`? | `dss_output.json` |
+| **DSS (via /techne-options)** | `spec.md`, `domain_analysis.md`, `plan.md`?, `design.md`? | `dss_output.json` |
 | **Architect** | `spec.md`, `domain_analysis.md`, `plan.md`? | *(architecture analysis — inline)* |
 | **TDD Guide** | *(user query)* | *(TDD guidance — inline)* |
 | **Build Resolver (Go)** | *(build error logs)* | *(code fixes — direct edits)* |
@@ -183,8 +183,8 @@ Agents operate in two modes depending on who invoked them:
 
 | Mode | Invoked By | Flag | Behaviour |
 |------|-----------|------|-----------|
-| **Interactive** (default) | `/implement`, `/test`, `/review`, or direct user | `PIPELINE_MODE` absent | Talk to user, ask for confirmation |
-| **Pipeline** | `/full-cycle` orchestrator via Task tool | `PIPELINE_MODE=true` in prompt | Return result to orchestrator, no prompts |
+| **Interactive** (default) | `/techne-implement`, `/techne-test`, `/techne-review`, or direct user | `PIPELINE_MODE` absent | Talk to user, ask for confirmation |
+| **Pipeline** | `/techne-full-cycle` orchestrator via Task tool | `PIPELINE_MODE=true` in prompt | Return result to orchestrator, no prompts |
 
 **Detection**: Check your invocation prompt for `PIPELINE_MODE=true`. If absent, default to interactive mode.
 
@@ -263,7 +263,7 @@ When an agent completes its work and `PIPELINE_MODE` is NOT set:
 ```markdown
 > Implementation complete. Created/modified X files.
 >
-> **Next**: Run `/test` to write tests.
+> **Next**: Run `/techne-test` to write tests.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```
@@ -272,7 +272,7 @@ When an agent completes its work and `PIPELINE_MODE` is NOT set:
 ```markdown
 > Tests complete. X test cases covering Y scenarios.
 >
-> **Next**: Run `/review` to review implementation and tests.
+> **Next**: Run `/techne-review` to review implementation and tests.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```
@@ -281,7 +281,7 @@ When an agent completes its work and `PIPELINE_MODE` is NOT set:
 ```markdown
 > API design complete. 4 resources, 12 endpoints defined.
 >
-> **Next**: Run `/implement` to begin backend implementation, or `/design` for UI/UX design.
+> **Next**: Run `/techne-implement` to begin backend implementation, or `/techne-design` for UI/UX design.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```
@@ -290,7 +290,7 @@ When an agent completes its work and `PIPELINE_MODE` is NOT set:
 ```markdown
 > Design specification complete. 8 components specified, 42 tokens defined.
 >
-> **Next**: Run `/implement` to have `software-engineer-frontend` implement from this spec.
+> **Next**: Run `/techne-implement` to have `software-engineer-frontend` implement from this spec.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```
@@ -299,7 +299,7 @@ When an agent completes its work and `PIPELINE_MODE` is NOT set:
 ```markdown
 > Review complete. Found X blocking, Y important, Z optional issues.
 >
-> **Next**: Address blocking issues with `/implement`, then re-run `/review`.
+> **Next**: Address blocking issues with `/techne-implement`, then re-run `/techne-review`.
 >
 > Say **'fix'** to have SE address issues, or provide specific instructions.
 ```
@@ -325,7 +325,7 @@ When `PIPELINE_MODE=true`, use the pipeline completion format (see above). Do NO
 
 **Interactive mode only.** In pipeline mode, use the model assigned by the orchestrator.
 
-SE agents default to opus. When the `/implement` command auto-downgrades to sonnet for a simple task, it shows:
+SE agents default to opus. When the `/techne-implement` command auto-downgrades to sonnet for a simple task, it shows:
 
 ```markdown
 Task looks straightforward (N files, ~M lines). Using Sonnet for speed. Say 'opus' to override.
@@ -380,7 +380,7 @@ Before implementation, agents must verify explicit approval exists.
 - "yes", "yep", "y", "go ahead", "proceed", "do it"
 - "approved", "looks good", "implement it"
 - "option 1" / "option 2" (explicit choice)
-- `/implement` command
+- `/techne-implement` command
 
 ### NOT Approval (Keep Waiting)
 
@@ -403,7 +403,7 @@ Or if not found:
 
 This agent requires explicit user approval before implementation.
 
-**To proceed**: Reply with "yes", "go ahead", or use `/implement`.
+**To proceed**: Reply with "yes", "go ahead", or use `/techne-implement`.
 ```
 
 ## Decision Classification
@@ -444,7 +444,7 @@ Every agent has boundaries. When you catch yourself crossing them, STOP.
 
 ## Pipeline Gates
 
-When using `/full-cycle`, the pipeline pauses at 4 strategic gates instead of after every agent. Agents run autonomously between gates.
+When using `/techne-full-cycle`, the pipeline pauses at 4 strategic gates instead of after every agent. Agents run autonomously between gates.
 
 | Gate | After | User Decides | Why |
 |------|-------|-------------|-----|
@@ -463,7 +463,7 @@ When using `/full-cycle`, the pipeline pauses at 4 strategic gates instead of af
 
 ### Backward Compatibility
 
-Individual commands (`/implement`, `/test`, `/review`, etc.) keep their existing per-step approval behaviour. Gates **only** apply when using `/full-cycle`.
+Individual commands (`/techne-implement`, `/techne-test`, `/techne-review`, etc.) keep their existing per-step approval behaviour. Gates **only** apply when using `/techne-full-cycle`.
 
 ## Feedback Format
 
@@ -595,7 +595,7 @@ When handing off between agents (especially during long sessions or after compac
 | Situation | Use Structured Handoff? |
 |-----------|------------------------|
 | Agent-to-agent in pipeline mode | Yes — always |
-| `/implement` → `/test` → `/review` chain | Yes — pass via prompt context |
+| `/techne-implement` → `/techne-test` → `/techne-review` chain | Yes — pass via prompt context |
 | After context compaction | Yes — restore from `pre-compact-mask` output |
 | Single-agent interactive session | No — free-text is fine |
 

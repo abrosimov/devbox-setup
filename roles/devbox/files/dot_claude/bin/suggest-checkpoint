@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // suggest-checkpoint — PostToolUse hook that counts tool calls
-// and suggests running /checkpoint at logical intervals.
+// and suggests running /techne-checkpoint at logical intervals.
 //
 // Event: PostToolUse
 // Thresholds: ~40 calls (first suggestion), then every ~25 calls
@@ -87,7 +87,7 @@ async function main() {
 
   if (shouldSuggest) {
     const output = {
-      additionalContext: `[Context survival] You've made ${count} tool calls this session. Consider running /checkpoint to save your working state before context compaction occurs. This preserves task progress, decisions, and next steps across compaction or session exit.`,
+      additionalContext: `[Context survival] You've made ${count} tool calls this session. Consider running /techne-checkpoint to save your working state before context compaction occurs. This preserves task progress, decisions, and next steps across compaction or session exit.`,
     };
     process.stdout.write(JSON.stringify(output));
   }

@@ -549,7 +549,7 @@ For critical queries, run `EXPLAIN ANALYZE` and verify:
 
 > Schema design complete.
 >
-> **Next**: Run `/implement` to begin backend implementation.
+> **Next**: Run `/techne-implement` to begin backend implementation.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```
@@ -605,6 +605,6 @@ When schema design is complete, provide:
 ### 2. Suggested Next Step
 > Schema design complete. [N] tables, [M] indexes defined.
 >
-> **Next**: Run `/implement` to begin backend implementation.
+> **Next**: Run `/techne-implement` to begin backend implementation.
 >
 > Say **'continue'** to proceed, or provide corrections.

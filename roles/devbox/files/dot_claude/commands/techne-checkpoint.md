@@ -6,10 +6,10 @@ You are managing context survival checkpoints. This command has subcommands.
 
 ## Parse Arguments
 
-- `/checkpoint` or `/checkpoint save` → **save** (default)
-- `/checkpoint save {label}` → save with explicit label
-- `/checkpoint resume` → resume from latest checkpoint
-- `/checkpoint list` → list available checkpoints
+- `/techne-checkpoint` or `/techne-checkpoint save` → **save** (default)
+- `/techne-checkpoint save {label}` → save with explicit label
+- `/techne-checkpoint resume` → resume from latest checkpoint
+- `/techne-checkpoint list` → list available checkpoints
 
 ## Subcommand: save (default)
 
@@ -157,7 +157,7 @@ Skip silently if MCP is unavailable.
 > - File: `checkpoints/{filename}`
 > - MEMORY.md working state updated.
 >
-> To resume later: `/checkpoint resume`
+> To resume later: `/techne-checkpoint resume`
 ```
 
 ---
@@ -274,4 +274,4 @@ Present as a table:
 
 If no checkpoints exist:
 
-> No checkpoints found. Run `/checkpoint` to create one.
+> No checkpoints found. Run `/techne-checkpoint` to create one.

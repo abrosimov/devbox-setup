@@ -49,7 +49,7 @@ Parse the JSON. Extract flags (default to `true` if key is missing):
 | `auto_commit` | `true` | If `false`, skip all auto-commit steps; show changes and let user commit |
 | `complexity_escalation` | `true` | If `false`, always use agent's default model (no auto-downgrade of SE agents to Sonnet) |
 
-Note: `agent_pipeline` is not checked here — `/full-cycle` always uses agents by definition.
+Note: `agent_pipeline` is not checked here — `/techne-full-cycle` always uses agents by definition.
 
 **Git Setup**:
 
@@ -658,11 +658,11 @@ Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 
 - The pipeline pauses only at 4 strategic gates, not after every agent
 - Agents run autonomously between gates with `PIPELINE_MODE=true` — they make Tier 2 decisions autonomously, log them in structured output, and return results without prompting
-- Individual commands (`/implement`, `/test`, `/review`) still use per-step approval (interactive mode)
+- Individual commands (`/techne-implement`, `/techne-test`, `/techne-review`) still use per-step approval (interactive mode)
 - Phase 4 builds an `execution_dag.json` from plan work streams and executes nodes as dependencies resolve — parallel streams run concurrently, cross-stream nodes (review, gate) wait for all predecessors
 - Each stream executor writes a `{stream}_completion.json` validated by `bin/validate-pipeline-output` against `schemas/stream_completion.schema.json` — exit codes drive retry/escalation logic (0=pass, 1=malformed, 2=reality-check, 3=build-fail, 4=test-fail)
 - After each SE agent completes, `~/.claude/bin/verify-se-completion` runs as an independent gate before test writer or code reviewer stages. This is separate from the agent's self-reported Pre-Flight results. If the script is absent, the gate is skipped with a warning. A non-zero exit blocks pipeline advancement and offers to re-invoke the SE agent with the specific errors. The result is recorded as `se_independently_verified` in the completion file and as `verification` on the SE stage in pipeline state.
-- Pipeline state persists in `pipeline_state.json` and `execution_dag.json` — resume with `/full-cycle` if interrupted
+- Pipeline state persists in `pipeline_state.json` and `execution_dag.json` — resume with `/techne-full-cycle` if interrupted
 - Decisions are logged in `decisions.json` for audit trail
 - Use `stop` at any time to exit
 - One Jira ticket can span multiple worktrees (e.g., `PROJ-123_backend`, `PROJ-123_frontend`)

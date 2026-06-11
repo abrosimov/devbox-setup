@@ -4,7 +4,7 @@ Global Claude Code configuration deployed to `~/.claude/`.
 
 ## Agents
 
-Specialised subagents for different tasks. Spawned via `/implement`, `/test`, `/review` commands or Task tool.
+Specialised subagents for different tasks. Spawned via `/techne-implement`, `/techne-test`, `/techne-review` commands or Task tool.
 
 | Category | Examples |
 |----------|----------|
@@ -30,20 +30,20 @@ Slash commands for common workflows:
 
 | Command | Description |
 |---------|-------------|
-| `/implement` | Spawn software engineer agent for code changes |
-| `/test` | Write tests for recent changes |
-| `/review` | Code review with language-specific reviewer |
-| `/plan` | Create implementation plan from requirements |
-| `/design` | UI/UX design specification |
-| `/api-design` | Design API contracts (REST/gRPC) |
-| `/schema` | Database schema design |
-| `/options` | Generate diverse solution options (DSS protocol) |
-| `/think` | Structured systems thinking (FPF) |
-| `/verify` | Pre-PR quality gate (build, lint, test) |
-| `/status` | Show pipeline progress |
-| `/guide` | Show available capabilities |
-| `/devcontainer` | Set up Docker sandbox for isolated runs |
-| `/checkpoint` | Save/restore session context |
+| `/techne-implement` | Spawn software engineer agent for code changes |
+| `/techne-test` | Write tests for recent changes |
+| `/techne-review` | Code review with language-specific reviewer |
+| `/techne-plan` | Create implementation plan from requirements |
+| `/techne-design` | UI/UX design specification |
+| `/techne-api-design` | Design API contracts (REST/gRPC) |
+| `/techne-schema` | Database schema design |
+| `/techne-options` | Generate diverse solution options (DSS protocol) |
+| `/techne-think` | Structured systems thinking (FPF) |
+| `/techne-verify` | Pre-PR quality gate (build, lint, test) |
+| `/techne-status` | Show pipeline progress |
+| `/techne-guide` | Show available capabilities |
+| `/techne-devcontainer` | Set up Docker sandbox for isolated runs |
+| `/techne-checkpoint` | Save/restore session context |
 
 ## Hooks
 
@@ -70,7 +70,7 @@ Docker sandbox with network-level isolation for agent runs. Features:
 - Language toolchains (Go, Python, Node, Rust, OCaml)
 - Host settings.json bind-mounted read-only
 
-Use via `/devcontainer init` command.
+Use via `/techne-devcontainer init` command.
 
 ## Validation
 

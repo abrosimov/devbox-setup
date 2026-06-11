@@ -7,9 +7,9 @@ You are orchestrating the review phase of a development workflow.
 ## Parse Arguments
 
 Check if user passed a model argument:
-- `/review opus` or `/review --model opus` → use **opus**
-- `/review sonnet` or `/review --model sonnet` → use **sonnet**
-- `/review` (no argument) → use **opus** (default)
+- `/techne-review opus` or `/techne-review --model opus` → use **opus**
+- `/techne-review sonnet` or `/techne-review --model sonnet` → use **sonnet**
+- `/techne-review` (no argument) → use **opus** (default)
 
 ## Steps
 

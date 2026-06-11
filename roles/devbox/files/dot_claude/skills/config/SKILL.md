@@ -35,11 +35,11 @@ The agent workflow is opt-in per project. Config file: `.claude/workflow.json` i
 |------|---------|-------------|
 | `agent_pipeline` | `true` | When `true`, code changes MUST go through agents. When `false`, direct edits allowed |
 | `auto_commit` | `true` | When `true`, commands auto-commit via `git-safe-commit`. When `false`, user commits manually |
-| `complexity_escalation` | `true` | When `true`, `/implement` auto-downgrades SE agents to Sonnet for simple tasks. When `false`, always use agent default model (opus) |
+| `complexity_escalation` | `true` | When `true`, `/techne-implement` auto-downgrades SE agents to Sonnet for simple tasks. When `false`, always use agent default model (opus) |
 
 **Commands read this file at Step 0** and adjust behavior accordingly. If the file is missing, commands default all flags to `true` (backward compatible).
 
-Create with `/init-workflow` or manually.
+Create with `/techne-init-workflow` or manually.
 
 The default branch is detected automatically by `.claude/bin/git-default-branch`:
 ```bash
@@ -146,7 +146,7 @@ All project documentation is organized by Jira issue and branch name:
 | Product specification | TPM | `{PROJECT_DIR}/spec.md` |
 | Research findings | TPM | `{PROJECT_DIR}/research.md` |
 | Decision log | TPM | `{PROJECT_DIR}/decisions.md` |
-| FPF analysis | /think command | `{PROJECT_DIR}/analysis.md` |
+| FPF analysis | /techne-think command | `{PROJECT_DIR}/analysis.md` |
 | Domain analysis | Domain Expert | `{PROJECT_DIR}/domain_analysis.md` |
 | Domain model | Domain Modeller | `{PROJECT_DIR}/domain_model.md` |
 | API design rationale | API Designer | `{PROJECT_DIR}/api_design.md` |
@@ -204,10 +204,10 @@ docs/
 | File | Created By | Path |
 |------|-----------|------|
 | Main PRD | TPM | `docs/prd.md` |
-| Project-wide ADR | /think, Architect | `docs/decisions/NNN-<topic>.md` |
-| Architecture doc | /think, Architect | `docs/design/<topic>.md` |
+| Project-wide ADR | /techne-think, Architect | `docs/decisions/NNN-<topic>.md` |
+| Architecture doc | /techne-think, Architect | `docs/design/<topic>.md` |
 | Core domain model | Domain Modeller | `docs/domain/<context>.md` |
-| FPF analysis (cross-cutting) | /think command | `docs/decisions/NNN-<topic>.md` or `docs/design/<topic>.md` |
+| FPF analysis (cross-cutting) | /techne-think command | `docs/decisions/NNN-<topic>.md` or `docs/design/<topic>.md` |
 
 **Routing rule**: If thinking relates to a specific Jira ticket → `{PROJECT_DIR}/analysis.md`. If cross-cutting → `docs/decisions/` or `docs/design/`.
 
@@ -238,7 +238,7 @@ Deployed by Ansible. Contains:
 
 ### Project `.claude/settings.json`
 
-Optional. Use when a project needs additional permissions beyond the global baseline, or wants to restrict certain operations. Created automatically by `/init-workflow` if requested.
+Optional. Use when a project needs additional permissions beyond the global baseline, or wants to restrict certain operations. Created automatically by `/techne-init-workflow` if requested.
 
 ### `settings.local.json` — Personal Overrides
 

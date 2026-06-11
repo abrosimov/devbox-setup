@@ -19,38 +19,38 @@ This environment has **19 slash commands**, **33 specialised agents**, and **79 
 The recommended flow for any code change:
 
 ```
-/implement          → spawns a software engineer agent (Go, Python, or Frontend)
-/test               → generates tests for what you just changed
-/review             → code review by a specialised reviewer agent
-/verify             → pre-PR quality gate (build, lint, typecheck, test)
+/techne-implement          → spawns a software engineer agent (Go, Python, or Frontend)
+/techne-test               → generates tests for what you just changed
+/techne-review             → code review by a specialised reviewer agent
+/techne-verify             → pre-PR quality gate (build, lint, typecheck, test)
 ```
 
 **Example:** "Add a retry middleware to the HTTP client"
-→ `/implement` detects Go, spawns the Go software engineer agent, writes the code, formats with `goimports`.
+→ `/techne-implement` detects Go, spawns the Go software engineer agent, writes the code, formats with `goimports`.
 
-You can also skip the pipeline and ask me to edit code directly — the agent workflow is opt-in per project via `/init-workflow`.
+You can also skip the pipeline and ask me to edit code directly — the agent workflow is opt-in per project via `/techne-init-workflow`.
 
 ---
 
 ### Planning Before Coding
 
 ```
-/plan               → create an implementation plan from requirements or a spec
-/domain-analysis    → challenge assumptions with a domain expert agent
-/api-design         → design REST/OpenAPI or Protobuf/gRPC contracts
-/schema             → design a database schema (Postgres, MySQL, Mongo, CockroachDB)
-/design             → create UI/UX spec with design tokens
+/techne-plan               → create an implementation plan from requirements or a spec
+/techne-domain-analysis    → challenge assumptions with a domain expert agent
+/techne-api-design         → design REST/OpenAPI or Protobuf/gRPC contracts
+/techne-schema             → design a database schema (Postgres, MySQL, Mongo, CockroachDB)
+/techne-design             → create UI/UX spec with design tokens
 ```
 
 **Example:** "Design a notification system"
-→ `/plan` reads the codebase, produces a step-by-step plan, waits for your approval before any implementation.
+→ `/techne-plan` reads the codebase, produces a step-by-step plan, waits for your approval before any implementation.
 
 ---
 
 ### Full Development Cycle
 
 ```
-/full-cycle         → runs the complete pipeline with milestone gates:
+/techne-full-cycle         → runs the complete pipeline with milestone gates:
                       TPM → Domain → Model → Design → Plan → API → Implement → Test → Review
 ```
 
@@ -61,9 +61,9 @@ Each phase produces output consumed by the next. You approve at each gate.
 ### Project Setup
 
 ```
-/init-workflow      → enable the agent pipeline for this project
+/techne-init-workflow      → enable the agent pipeline for this project
                       (full = auto-commit + complexity escalation, or lightweight)
-/devcontainer       → scaffold a Docker sandbox with iptables egress firewall
+/techne-devcontainer       → scaffold a Docker sandbox with iptables egress firewall
                       (language auto-detection, domain allowlist from settings.json)
 ```
 
@@ -80,8 +80,8 @@ claude-devcontainer run --bypass  → run with --dangerously-skip-permissions
 ### Session Management
 
 ```
-/checkpoint         → save context before exiting or when context gets large
-/checkpoint resume  → restore context in a new session
+/techne-checkpoint         → save context before exiting or when context gets large
+/techne-checkpoint resume  → restore context in a new session
 ```
 
 ---
@@ -89,11 +89,11 @@ claude-devcontainer run --bypass  → run with --dangerously-skip-permissions
 ### Meta: Building Agents & Skills
 
 ```
-/build-agent        → create or validate an agent definition (with adversarial meta-review)
-/build-skill        → create or validate a skill module
-/audit              → audit the library for freshness and consistency
-/validate-config    → check cross-references and frontmatter integrity
-/learn              → extract a pattern from this session into a reusable skill
+/techne-build-agent        → create or validate an agent definition (with adversarial meta-review)
+/techne-build-skill        → create or validate a skill module
+/techne-audit              → audit the library for freshness and consistency
+/techne-validate-config    → check cross-references and frontmatter integrity
+/techne-learn              → extract a pattern from this session into a reusable skill
 ```
 
 ---

@@ -1,6 +1,6 @@
 ---
 name: freshness-auditor
-description: Library-wide auditor that checks external freshness of all agent and skill definitions. Scans for outdated library versions, deprecated APIs, stale language version references, and best practice drift. Use via /audit command or directly for library-wide freshness sweeps.
+description: Library-wide auditor that checks external freshness of all agent and skill definitions. Scans for outdated library versions, deprecated APIs, stale language version references, and best practice drift. Use via /techne-audit command or directly for library-wide freshness sweeps.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 skills: agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
@@ -60,8 +60,8 @@ Scan every agent and skill in the library. Do not skip files because they "look 
 
 ## Handoff Protocol
 
-**Receives from**: User (via `/audit` or `/audit freshness` command), or orchestrator
-**Produces for**: User (for review), or Builders (if routed via `/audit fix`)
+**Receives from**: User (via `/techne-audit` or `/techne-audit freshness` command), or orchestrator
+**Produces for**: User (for review), or Builders (if routed via `/techne-audit fix`)
 **Deliverable**: Library-wide freshness audit report with `<audit-findings>` XML
 **Completion criteria**: All 7 audit phases completed for all artifacts
 
@@ -216,4 +216,4 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 >
 > [Full XML audit report above]
 >
-> **Next**: Address critical findings with `/build-agent refine` or `/build-skill refine`. Run `/audit consistency` for internal coherence check. Run `/validate-config` after fixes.
+> **Next**: Address critical findings with `/techne-build-agent refine` or `/techne-build-skill refine`. Run `/techne-audit consistency` for internal coherence check. Run `/techne-validate-config` after fixes.

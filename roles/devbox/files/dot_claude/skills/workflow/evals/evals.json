@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "What commands are available for the agent pipeline?",
-      "expected_output": "Lists slash commands: /implement, /test, /review, /plan, /full-cycle, etc.",
+      "expected_output": "Lists slash commands: /techne-implement, /techne-test, /techne-review, /techne-plan, /techne-full-cycle, etc.",
       "expectations": [
         "Lists available slash commands",
         "Explains what each command does",
@@ -14,29 +14,29 @@
     {
       "id": 2,
       "prompt": "Which agent should I use for writing Go code?",
-      "expected_output": "Recommends software-engineer-go agent via /implement command",
+      "expected_output": "Recommends software-engineer-go agent via /techne-implement command",
       "expectations": [
         "Recommends the Go software engineer agent",
-        "References /implement command for spawning it",
+        "References /techne-implement command for spawning it",
         "Mentions Opus as default model for SE agents"
       ]
     },
     {
       "id": 3,
       "prompt": "I want to run the full development cycle for this feature",
-      "expected_output": "Explains /full-cycle command with its milestone gates",
+      "expected_output": "Explains /techne-full-cycle command with its milestone gates",
       "expectations": [
-        "References /full-cycle command",
+        "References /techne-full-cycle command",
         "Explains the milestone gates (TPM → Domain → Model → Implementation)",
         "Describes the sequential workflow"
       ]
     },
     {
       "id": 4,
-      "prompt": "How do I use /implement with Sonnet to save costs?",
-      "expected_output": "Explains /implement sonnet for cost-sensitive tasks",
+      "prompt": "How do I use /techne-implement with Sonnet to save costs?",
+      "expected_output": "Explains /techne-implement sonnet for cost-sensitive tasks",
       "expectations": [
-        "Explains the /implement sonnet syntax",
+        "Explains the /techne-implement sonnet syntax",
         "Notes that Opus is default, Sonnet is opt-in",
         "Mentions cost savings as the reason for Sonnet option"
       ]

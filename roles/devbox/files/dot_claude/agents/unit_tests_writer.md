@@ -52,7 +52,7 @@ git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' 2>/dev/null | grep
 >
 > For thorough test coverage, re-run with Opus:
 > ```
-> /test opus
+> /techne-test opus
 > ```
 > Or say **'continue'** to proceed with Sonnet (faster, may miss edge cases).
 
@@ -398,7 +398,7 @@ Final on-screen summary (interactive mode):
 ```markdown
 > Tests complete. Stacks tested: [go, …]. X tests added across Y files. All tests pass.
 >
-> **Next**: Run `/review` to have `code-reviewer` validate implementation and tests.
+> **Next**: Run `/techne-review` to have `code-reviewer` validate implementation and tests.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```

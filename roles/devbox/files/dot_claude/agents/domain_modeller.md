@@ -86,7 +86,7 @@ Check for existing documentation at `{PROJECT_DIR}/` (see `config` skill for `PR
 - `domain_output.json` — Structured output from Domain Expert (check for `discovery_events`, `discovery_commands`)
 - `spec.md` — PM's specification (for additional context)
 
-If `domain_analysis.md` does not exist, **STOP** and tell the user to run `/domain-analysis` first.
+If `domain_analysis.md` does not exist, **STOP** and tell the user to run `/techne-domain-analysis` first.
 
 **Task Context**: Use `JIRA_ISSUE` and `BRANCH_NAME` from orchestrator. If invoked directly:
 ```bash

@@ -37,17 +37,17 @@ Per-project `.claude/workflow.json`:
 
 When Claude detects a code project without `.claude/workflow.json`, it asks the user whether to enable the workflow. See `CLAUDE.md` for the detection logic.
 
-Use `/init-workflow` to explicitly set up the workflow config:
+Use `/techne-init-workflow` to explicitly set up the workflow config:
 
 ```bash
-/init-workflow full    # all flags true
-/init-workflow light   # agent_pipeline: true, auto_commit: false
-/init-workflow         # interactive — choose preset or custom
+/techne-init-workflow full    # all flags true
+/techne-init-workflow light   # agent_pipeline: true, auto_commit: false
+/techne-init-workflow         # interactive — choose preset or custom
 ```
 
 ### Without workflow.json
 
-- All commands (`/implement`, `/test`, `/review`, `/full-cycle`) still work — they use agents regardless
+- All commands (`/techne-implement`, `/techne-test`, `/techne-review`, `/techne-full-cycle`) still work — they use agents regardless
 - Direct code edits via Edit/Write are allowed (no enforcement)
 - Commands default all flags to `true` for backward compatibility
 
@@ -103,24 +103,24 @@ Use `/init-workflow` to explicitly set up the workflow config:
 
 | Command | Description | When to Use |
 |---------|-------------|-------------|
-| `/domain-analysis` | Validate requirements, challenge assumptions | After spec, before planning |
-| `/plan` | Create implementation plan from spec | Before implementation (complex tasks) |
-| `/api-design` | Design API contracts (REST/OpenAPI or Protobuf/gRPC) | After planning, before backend implementation |
-| `/schema` | Design database schema with migrations | After planning, before/alongside backend implementation |
-| `/design` | Create UI/UX design spec and design tokens | After spec/domain analysis, before frontend implementation |
-| `/implement` | Run SE agent for current task | Start implementation |
-| `/test` | Run test writer agent | After implementation |
-| `/review` | Run code reviewer agent | After tests |
-| `/full-cycle` | Run complete pipeline with 4 milestone gates | Standard development |
-| `/init-workflow` | Initialise agent workflow for current project | First time in a project |
-| `/build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
-| `/build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
-| `/audit` | Run library-wide freshness and/or consistency audit | After adding agents/skills, periodic maintenance |
-| `/validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
-| `/checkpoint` | Save or restore context across sessions/compaction | At logical boundaries, after milestones |
-| `/verify` | Run pre-PR quality gate (build, typecheck, lint, test, debug scan) | Before `/review` or PR creation |
-| `/options` | Generate diverse solution options via DSS (Diverge-Synthesize-Select) | Before design decisions with wide scope |
-| `/learn` | Extract a reusable pattern from current session | After solving non-trivial problems |
+| `/techne-domain-analysis` | Validate requirements, challenge assumptions | After spec, before planning |
+| `/techne-plan` | Create implementation plan from spec | Before implementation (complex tasks) |
+| `/techne-api-design` | Design API contracts (REST/OpenAPI or Protobuf/gRPC) | After planning, before backend implementation |
+| `/techne-schema` | Design database schema with migrations | After planning, before/alongside backend implementation |
+| `/techne-design` | Create UI/UX design spec and design tokens | After spec/domain analysis, before frontend implementation |
+| `/techne-implement` | Run SE agent for current task | Start implementation |
+| `/techne-test` | Run test writer agent | After implementation |
+| `/techne-review` | Run code reviewer agent | After tests |
+| `/techne-full-cycle` | Run complete pipeline with 4 milestone gates | Standard development |
+| `/techne-init-workflow` | Initialise agent workflow for current project | First time in a project |
+| `/techne-build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
+| `/techne-build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
+| `/techne-audit` | Run library-wide freshness and/or consistency audit | After adding agents/skills, periodic maintenance |
+| `/techne-validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
+| `/techne-checkpoint` | Save or restore context across sessions/compaction | At logical boundaries, after milestones |
+| `/techne-verify` | Run pre-PR quality gate (build, typecheck, lint, test, debug scan) | Before `/techne-review` or PR creation |
+| `/techne-options` | Generate diverse solution options via DSS (Diverge-Synthesize-Select) | Before design decisions with wide scope |
+| `/techne-learn` | Extract a reusable pattern from current session | After solving non-trivial problems |
 
 Each command:
 - Auto-detects project stack (Go/Python/Frontend/Fullstack)
@@ -132,8 +132,8 @@ Each command:
 
 | Mode | Trigger | Approval Model |
 |------|---------|---------------|
-| **Per-step** | Individual commands (`/implement`, `/test`, `/review`) | Approve after each agent |
-| **Gated** | `/full-cycle` | 4 milestone gates, autonomous between |
+| **Per-step** | Individual commands (`/techne-implement`, `/techne-test`, `/techne-review`) | Approve after each agent |
+| **Gated** | `/techne-full-cycle` | 4 milestone gates, autonomous between |
 | **Manual** | Call agents directly by name | Maximum control |
 
 ### Gated Mode — 4 Milestone Gates
@@ -202,7 +202,7 @@ Each command:
 
 ### Step 5b: Post-Agent Verification Gate
 
-After each SE agent completes, `/implement` and `/full-cycle` run independent verification via `~/.claude/bin/verify-se-completion`:
+After each SE agent completes, `/techne-implement` and `/techne-full-cycle` run independent verification via `~/.claude/bin/verify-se-completion`:
 
 1. **Build check** — runs `go build`/`uv sync`/`pnpm build` independently
 2. **Test check** — runs `go test`/`pytest`/`pnpm test` independently
@@ -247,7 +247,7 @@ This gate prevents agents from fabricating verification results — the orchestr
 
 ### Meta-Pipeline (Infrastructure)
 
-`/build-agent` and `/build-skill` use a 3-gate pipeline for create/refine modes:
+`/techne-build-agent` and `/techne-build-skill` use a 3-gate pipeline for create/refine modes:
 
 ```
 Builder → GATE 1 (user review) → Meta-Reviewer → GATE 2 (user approve) → Content Reviewer → GATE 3 (user approve)
@@ -267,13 +267,13 @@ Grounding references (cached Anthropic docs) are read at the start of every buil
 
 ### Audit Pipeline
 
-`/audit` runs library-wide checks across all agents and skills:
+`/techne-audit` runs library-wide checks across all agents and skills:
 
 ```
-/audit           → [Freshness Auditor ‖ Consistency Checker] → merged report
-/audit freshness → Freshness Auditor only
-/audit consistency → Consistency Checker only
-/audit fix       → [Freshness Auditor ‖ Consistency Checker] → route findings to builders
+/techne-audit           → [Freshness Auditor ‖ Consistency Checker] → merged report
+/techne-audit freshness → Freshness Auditor only
+/techne-audit consistency → Consistency Checker only
+/techne-audit fix       → [Freshness Auditor ‖ Consistency Checker] → route findings to builders
 ```
 
 - Freshness Auditor (Sonnet): external staleness — versions, deprecated APIs, best practice drift
@@ -300,11 +300,11 @@ Grounding references (cached Anthropic docs) are read at the start of every buil
 
 | Task | Agent | Command |
 |------|-------|---------|
-| **Any Go topic** | `software-engineer-go` | `/implement` |
-| **Any Python topic** | `software-engineer-python` | `/implement` |
-| **Any Frontend topic** (React, TypeScript, Next.js) | `software-engineer-frontend` | `/implement` |
-| **Fullstack feature** | Backend SE + Frontend SE (sequential or parallel) | `/implement` |
-| Unit tests (any stack) | `unit-test-writer` | `/test` |
+| **Any Go topic** | `software-engineer-go` | `/techne-implement` |
+| **Any Python topic** | `software-engineer-python` | `/techne-implement` |
+| **Any Frontend topic** (React, TypeScript, Next.js) | `software-engineer-frontend` | `/techne-implement` |
+| **Fullstack feature** | Backend SE + Frontend SE (sequential or parallel) | `/techne-implement` |
+| Unit tests (any stack) | `unit-test-writer` | `/techne-test` |
 
 ### Exceptions (Answer Directly)
 
@@ -401,9 +401,9 @@ The `WorktreeCreate` hook in `hooks.json` delegates to `proj wt`, so `claude --w
 Terminal 1:                          Terminal 2:
 proj wt add PROJ-123_backend        proj wt add PROJ-123_frontend
 claude --cwd $AION_AUTOPOIESEON/p/... claude --cwd $AION_AUTOPOIESEON/p/...
-> /implement backend API              > /implement frontend dashboard
-> /test                               > /test
-> /review → 'pr'                      > /review → 'pr'
+> /techne-implement backend API              > /techne-implement frontend dashboard
+> /techne-test                               > /techne-test
+> /techne-review → 'pr'                      > /techne-review → 'pr'
 proj wt rm PROJ-123_backend          proj wt rm PROJ-123_frontend
 ```
 
@@ -441,10 +441,10 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 | Priority | Source | Example |
 |----------|--------|---------|
-| 1 (highest) | User explicit argument | `/implement sonnet`, `/implement opus` |
+| 1 (highest) | User explicit argument | `/techne-implement sonnet`, `/techne-implement opus` |
 | 2 | Agent frontmatter default | See table below |
 
-**Default model philosophy**: Opus is the default for SE agents. Use `/implement sonnet` for cost-sensitive tasks where quality trade-off is acceptable (Sonnet 4.6: 79.6% SWE-bench vs Opus 80.8%).
+**Default model philosophy**: Opus is the default for SE agents. Use `/techne-implement sonnet` for cost-sensitive tasks where quality trade-off is acceptable (Sonnet 4.6: 79.6% SWE-bench vs Opus 80.8%).
 
 **CRITICAL — `model` must be passed explicitly:**
 - The Task tool **inherits the parent conversation's model** when no `model` parameter is given

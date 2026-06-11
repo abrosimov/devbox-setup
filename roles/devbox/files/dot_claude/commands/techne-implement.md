@@ -8,7 +8,7 @@ You are orchestrating the implementation phase of a development workflow.
 
 **Before spawning any implementation agent, verify ONE of these conditions:**
 
-1. User explicitly invoked `/implement` command (this counts as approval)
+1. User explicitly invoked `/techne-implement` command (this counts as approval)
 2. User said "yes", "go ahead", "proceed", "implement it" after seeing a proposal
 3. User selected a specific option from alternatives presented
 
@@ -26,10 +26,10 @@ You are orchestrating the implementation phase of a development workflow.
 ## Parse Arguments
 
 Check if user passed a model argument:
-- `/implement opus` or `/implement --model opus` → use **opus**
-- `/implement sonnet` or `/implement --model sonnet` → use **sonnet** (cost-saving mode)
-- `/implement` (no argument) → default **opus**
-- `/implement fast` → use **sonnet**, skip all pre-flight checks
+- `/techne-implement opus` or `/techne-implement --model opus` → use **opus**
+- `/techne-implement sonnet` or `/techne-implement --model sonnet` → use **sonnet** (cost-saving mode)
+- `/techne-implement` (no argument) → default **opus**
+- `/techne-implement fast` → use **sonnet**, skip all pre-flight checks
 
 ## Steps
 
@@ -128,14 +128,14 @@ Check for project markers (check ALL — a project may have multiple):
 
 ### 4. Determine Model
 
-**Default model is opus.** Use sonnet only when the user explicitly requests it (`/implement sonnet` or `/implement fast`).
+**Default model is opus.** Use sonnet only when the user explicitly requests it (`/techne-implement sonnet` or `/techne-implement fast`).
 
 | User Input | Model | Notes |
 |------------|-------|-------|
-| `/implement` | opus | Default — highest quality |
-| `/implement opus` | opus | Explicit |
-| `/implement sonnet` | sonnet | Cost-saving mode |
-| `/implement fast` | sonnet | Cost-saving + skip pre-flight |
+| `/techne-implement` | opus | Default — highest quality |
+| `/techne-implement opus` | opus | Explicit |
+| `/techne-implement sonnet` | sonnet | Cost-saving mode |
+| `/techne-implement fast` | sonnet | Cost-saving + skip pre-flight |
 
 If user says 'sonnet' → switch to sonnet and proceed.
 
@@ -311,6 +311,6 @@ Present the agent's summary and suggested next step to the user.
 **If auto_commit was off:**
 > Implementation complete on branch `$BRANCH` (not committed).
 
-> **Next**: Run `/test` to write tests.
+> **Next**: Run `/techne-test` to write tests.
 >
 > Say **'continue'** to proceed, or provide corrections.

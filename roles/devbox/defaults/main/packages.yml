@@ -8,6 +8,7 @@
 devbox_brew_taps:
   - nikitabobko/tap
   - FelixKratz/formulae
+  - grafana/grafana
 
 # =============================================================================
 # Homebrew formulae and casks
@@ -90,6 +91,7 @@ devbox_brew_secondary:
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
   - gost            # GO Simple Tunnel — HTTP-to-SOCKS bridge used by `pub` mode
+  - grafana/grafana/gcx  # Grafana CLI — PromQL/LogQL/Tempo queries via Grafana datasources
 
 devbox_brew_secondary_casks:
   - codex-app

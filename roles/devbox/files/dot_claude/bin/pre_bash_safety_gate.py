@@ -123,7 +123,7 @@ RuleFn = Callable[[Ctx], str | None]
 
 
 def _tool(argv: list[str]) -> str:
-    return os.path.basename(argv[0]) if argv else ""
+    return Path(argv[0]).name if argv else ""
 
 
 def _current_branch() -> str:
@@ -181,24 +181,27 @@ def _is_within_project_tmp(path: str) -> bool:
         return False
     try:
         abs_path.relative_to(safe_root)
-        return True
     except ValueError:
         return False
+    return True
 
 
 def _is_safe_rm_path(path: str) -> bool:
     # Literal env-var references — agents often emit these unexpanded.
     if path.startswith(("$TMPDIR", "${TMPDIR}", "$TMP", "${TMP}")):
         return True
-    # /tmp prefix.
-    if path.startswith("/tmp/") or path.rstrip("/") == "/tmp":
+    # /tmp prefix. The literal string is the POSIX path being matched against
+    # user-supplied targets, not a tempfile we create — S108 does not apply.
+    if path.startswith("/tmp/") or path.rstrip("/") == "/tmp":  # noqa: S108
         return True
-    # Resolved $TMPDIR (macOS sets this to /var/folders/...).
+    # Resolved $TMPDIR (macOS sets this to /var/folders/...). Use absolute()
+    # not resolve() — we deliberately do NOT follow symlinks here; the
+    # symlink-escape defence is handled by _is_within_project_tmp().
     tmpdir = os.environ.get("TMPDIR", "")
     if tmpdir:
         try:
-            abs_path = os.path.abspath(path)
-            abs_tmp = os.path.abspath(tmpdir).rstrip("/")
+            abs_path = str(Path(path).absolute())
+            abs_tmp = str(Path(tmpdir).absolute()).rstrip("/")
             if abs_path == abs_tmp or abs_path.startswith(abs_tmp + "/"):
                 return True
         except (ValueError, OSError):
@@ -267,16 +270,24 @@ def rule_heredoc(ctx: Ctx) -> str | None:
 
 
 def rule_commit_on_main(ctx: Ctx) -> str | None:
-    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "commit":
-        if _current_branch() in {"main", "master"}:
-            return "Cannot commit on the main/master branch. Create a feature branch first."
+    if (
+        _tool(ctx.argv) == "git"
+        and len(ctx.argv) >= 2
+        and ctx.argv[1] == "commit"
+        and _current_branch() in {"main", "master"}
+    ):
+        return "Cannot commit on the main/master branch. Create a feature branch first."
     return None
 
 
 def rule_merge_on_main(ctx: Ctx) -> str | None:
-    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "merge":
-        if _current_branch() in {"main", "master"}:
-            return "Cannot merge into the main/master branch. Use a feature branch instead."
+    if (
+        _tool(ctx.argv) == "git"
+        and len(ctx.argv) >= 2
+        and ctx.argv[1] == "merge"
+        and _current_branch() in {"main", "master"}
+    ):
+        return "Cannot merge into the main/master branch. Use a feature branch instead."
     return None
 
 
@@ -348,19 +359,26 @@ def rule_push_to_protected(ctx: Ctx) -> str | None:
 
 
 def rule_amend(ctx: Ctx) -> str | None:
-    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "commit":
-        if "--amend" in ctx.argv:
-            return "Amending commits is not allowed. Create a new commit instead."
+    if (
+        _tool(ctx.argv) == "git"
+        and len(ctx.argv) >= 2
+        and ctx.argv[1] == "commit"
+        and "--amend" in ctx.argv
+    ):
+        return "Amending commits is not allowed. Create a new commit instead."
     return None
 
 
 def rule_no_verify(ctx: Ctx) -> str | None:
-    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "commit":
-        if "--no-verify" in ctx.argv:
-            return (
-                "--no-verify is not allowed. Fix the pre-commit hook issues "
-                "instead of bypassing them."
-            )
+    if (
+        _tool(ctx.argv) == "git"
+        and len(ctx.argv) >= 2
+        and ctx.argv[1] == "commit"
+        and "--no-verify" in ctx.argv
+    ):
+        return (
+            "--no-verify is not allowed. Fix the pre-commit hook issues instead of bypassing them."
+        )
     return None
 
 
@@ -376,13 +394,16 @@ def rule_lint_suppression_via_bash(ctx: Ctx) -> str | None:
     return None
 
 
-def rule_rm_rf(ctx: Ctx) -> str | None:
-    if _tool(ctx.argv) != "rm":
-        return None
+def _parse_rm_args(argv: list[str]) -> tuple[bool, bool, list[str]]:
+    """Extract (recursive, force, paths) from an ``rm`` argv tail.
+
+    Handles long flags (``--recursive``, ``--force``), short flag bundles
+    (``-rf``, ``-Rf``), and the ``--`` end-of-flags sentinel.
+    """
     has_recursive = False
     has_force = False
     paths: list[str] = []
-    for arg in ctx.argv[1:]:
+    for arg in argv:
         if arg == "--":
             continue
         if arg == "--recursive":
@@ -396,6 +417,13 @@ def rule_rm_rf(ctx: Ctx) -> str | None:
                 has_force = True
         else:
             paths.append(arg)
+    return has_recursive, has_force, paths
+
+
+def rule_rm_rf(ctx: Ctx) -> str | None:
+    if _tool(ctx.argv) != "rm":
+        return None
+    has_recursive, has_force, paths = _parse_rm_args(ctx.argv[1:])
     if not (has_recursive and has_force) or not paths:
         return None
     unsafe = [p for p in paths if not _is_safe_rm_path(p)]
@@ -409,9 +437,13 @@ def rule_rm_rf(ctx: Ctx) -> str | None:
 
 
 def rule_git_reset_hard(ctx: Ctx) -> str | None:
-    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "reset":
-        if "--hard" in ctx.argv:
-            return "git reset --hard destroys uncommitted work. Ask the user before running."
+    if (
+        _tool(ctx.argv) == "git"
+        and len(ctx.argv) >= 2
+        and ctx.argv[1] == "reset"
+        and "--hard" in ctx.argv
+    ):
+        return "git reset --hard destroys uncommitted work. Ask the user before running."
     return None
 
 
@@ -439,9 +471,13 @@ def rule_wholesale_checkout_restore(ctx: Ctx) -> str | None:
 
 
 def rule_branch_force_delete(ctx: Ctx) -> str | None:
-    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 3 and ctx.argv[1] == "branch":
-        if "-D" in ctx.argv:
-            return "git branch -D force-deletes unmerged branches. Use -d, or ask the user."
+    if (
+        _tool(ctx.argv) == "git"
+        and len(ctx.argv) >= 3
+        and ctx.argv[1] == "branch"
+        and "-D" in ctx.argv
+    ):
+        return "git branch -D force-deletes unmerged branches. Use -d, or ask the user."
     return None
 
 
@@ -453,7 +489,7 @@ def rule_destructive_sql(ctx: Ctx) -> str | None:
         sql_payload: str | None = None
         if arg in SQL_EXEC_FLAGS and i + 1 < len(ctx.argv):
             sql_payload = ctx.argv[i + 1]
-        elif arg.startswith("--command=") or arg.startswith("--execute="):
+        elif arg.startswith(("--command=", "--execute=")):
             sql_payload = arg.split("=", 1)[1]
         if sql_payload and SQL_DESTRUCTIVE_RE.search(sql_payload):
             return f"Destructive SQL detected in {tool}. Confirm with the user before running."

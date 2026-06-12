@@ -9,13 +9,32 @@ Scope is intentionally limited to the CURRENT OS window — quitting one
 window does not affect other kitty OS windows.
 """
 
+from __future__ import annotations
+
 import json
 import subprocess
+from typing import Protocol
 
 from kittens.tui.handler import Handler, result_handler
 from kittens.tui.loop import Loop
 
 IDLE_SHELLS = frozenset({"fish", "bash", "zsh", "sh", "dash", "ksh"})
+
+
+# Duck-typed slices of the kitty API surface — kitty does not ship type stubs
+# we depend on, so we describe the minimum we use as Protocols.
+class _KeyEvent(Protocol):
+    def matches(self, name: str) -> bool: ...
+
+
+class _Window(Protocol):
+    os_window_id: int
+
+
+class _Boss(Protocol):
+    window_id_map: dict[int, _Window]
+
+    def close_os_window(self, os_window_id: int) -> None: ...
 
 
 def _foreground_command(window: dict) -> tuple[str, str] | None:
@@ -69,7 +88,7 @@ def _busy_tabs_in_focused_window() -> list[tuple[str, str]]:
 class QuitDialog(Handler):
     """Minimal yes/no overlay that lists busy sessions."""
 
-    def __init__(self, busy: list[tuple[str, str]]):
+    def __init__(self, busy: list[tuple[str, str]]) -> None:
         super().__init__()
         self.busy = busy
         self.answer = "cancel"
@@ -85,12 +104,15 @@ class QuitDialog(Handler):
             self.print(f"  {label}: {cmd}\r\n")
         self.print("\r\nClose this window anyway? [y/N]: ")
 
-    def on_text(self, text: str, in_bracketed_paste: bool = False) -> None:
+    # Signature is dictated by the kitty Handler API — positional `text` and a
+    # positional `in_bracketed_paste` bool are part of the contract, so FBT001
+    # and FBT002 do not apply.
+    def on_text(self, text: str, in_bracketed_paste: bool = False) -> None:  # noqa: FBT001, FBT002
         _ = in_bracketed_paste  # part of kitty Handler API contract
         self.answer = "close" if text in ("y", "Y") else "cancel"
         self.quit_loop(0)
 
-    def on_key(self, key_event) -> None:
+    def on_key(self, key_event: _KeyEvent) -> None:
         if key_event.matches("esc") or key_event.matches("ctrl+c"):
             self.answer = "cancel"
             self.quit_loop(0)
@@ -107,8 +129,14 @@ def main(args: list[str]) -> str:
     return dialog.answer
 
 
+# Signature is fixed by kitty's @result_handler decorator contract.
 @result_handler(no_ui=False)
-def handle_result(args, answer, target_window_id, boss) -> None:  # type: ignore[no-untyped-def]
+def handle_result(
+    args: list[str],
+    answer: str,
+    target_window_id: int,
+    boss: _Boss,
+) -> None:
     _ = args  # part of @result_handler API contract
     if answer != "close":
         return

@@ -85,6 +85,18 @@ ignore = [
     "ANN",         # annotations optional in tests
     "D",           # docstrings optional in tests
 ]
+# The hook-test files in dot_claude/bin/ are pytest tests, not utility scripts.
+# pytest discovery is configured via testpaths in [tool.pytest.ini_options]; the
+# same conventions (assert, private member access, hardcoded /tmp paths, ...)
+# apply here.
+"roles/devbox/files/dot_claude/bin/test_*.py" = [
+    "S101",        # assert is the whole point of tests
+    "PLR2004",     # magic numbers OK in test cases
+    "SLF001",      # private member access is expected (testing _-prefixed helpers)
+    "S108",        # hardcoded /tmp paths are test fixtures, not real artifacts
+    "ANN",         # annotations optional in tests
+    "D",           # docstrings optional in tests
+]
 "roles/devbox/files/dot_claude/bin/**" = [
     "EXE001",      # Shebang present but file not executable — handled by deploy
 ]
@@ -94,6 +106,21 @@ quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
 line-ending = "lf"
+
+# ─── Pyright ─────────────────────────────────────────────────────────────────
+# Pyright is the type checker used by the editor harness (Read-tool Pyright
+# integration). It needs to be pointed at the uv-managed dev venv so it can
+# resolve dev-only deps (pytest, hypothesis, ansible-lint, ...).
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+# kittens.tui.* is only resolvable at runtime inside kitty itself. No installable
+# stub package exists, so silence missing-import for this directory only — keeps
+# real typos elsewhere visible.
+[[tool.pyright.executionEnvironments]]
+root = "roles/devbox/files/.config/kitty"
+reportMissingImports = "none"
 
 # ─── Pyrefly ─────────────────────────────────────────────────────────────────
 # Meta's Python type-checker. Scoped explicitly to first-party scripts to avoid
@@ -119,13 +146,22 @@ project-excludes = [
 # can resolve sibling imports.
 search-path = ["roles/devbox/files/dot_claude/bin"]
 
+# kittens.tui.* is only resolvable at runtime inside kitty itself. The path is
+# already excluded from project-checking via project-includes, but a direct
+# `pyrefly check <path>` (e.g. by the editor harness) bypasses that — silence
+# missing-import for this directory only.
+[[tool.pyrefly.sub-config]]
+matches = "roles/devbox/files/.config/kitty/**"
+[tool.pyrefly.sub-config.errors]
+missing-import = false
+
 # ─── Pytest ──────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 # tests/ holds Ansible vault fixtures, not Python tests. The Python tests for
 # hook scripts live next to their implementations in dot_claude/bin/ (e.g.
 # pre_bash_safety_gate_test.py is the sibling of pre_bash_safety_gate.py).
 testpaths = ["tests", "roles/devbox/files/dot_claude/bin"]
-python_files = ["test_*.py", "*_test.py"]
+python_files = ["test_*.py"]
 addopts = "-ra --strict-markers --strict-config"
 markers = [
     "slow: tests that take longer than 1s",

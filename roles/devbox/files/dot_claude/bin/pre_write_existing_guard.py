@@ -24,8 +24,8 @@ Exit codes:
 from __future__ import annotations
 
 import json
-import os
 import sys
+from pathlib import Path
 
 RULE_NAME: str = "pre-write-existing-guard"
 
@@ -48,7 +48,7 @@ def _extract_file_path(raw: str) -> str | None:
 
 def _is_blocking(file_path: str) -> bool:
     try:
-        size = os.path.getsize(file_path)
+        size = Path(file_path).stat().st_size
     except OSError:
         return False
     return size > 0

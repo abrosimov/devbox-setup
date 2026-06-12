@@ -27,13 +27,41 @@ import argparse
 import json
 import re
 import sys
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
 
 # ---------------------------------------------------------------------------
 # Frontmatter parsing
 # ---------------------------------------------------------------------------
+
+
+_NEW_KEY_RE = re.compile(r"^[a-zA-Z][-\w]*:")
+
+
+def _find_frontmatter_end(lines: list[str]) -> int | None:
+    for i, line in enumerate(lines[1:], 1):
+        if line.strip() == "---":
+            return i
+    return None
+
+
+def _parse_kv_line(line: str) -> tuple[str, str] | None:
+    """Parse ``key: value`` (or return None if line is not a kv pair).
+
+    Strips surrounding quotes; the ``>`` sentinel for multiline is left intact
+    for the caller to detect.
+    """
+    if ":" not in line or line.lstrip().startswith("-"):
+        return None
+    key, value = line.split(":", 1)
+    key = key.strip()
+    value = value.strip()
+    if len(value) >= 2 and value[0] in ('"', "'") and value[-1] == value[0]:
+        value = value[1:-1]
+    return key, value
 
 
 def parse_frontmatter(content: str) -> dict[str, str] | None:
@@ -51,11 +79,7 @@ def parse_frontmatter(content: str) -> dict[str, str] | None:
     if not lines or lines[0].strip() != "---":
         return None
 
-    end = None
-    for i, line in enumerate(lines[1:], 1):
-        if line.strip() == "---":
-            end = i
-            break
+    end = _find_frontmatter_end(lines)
     if end is None:
         return None
 
@@ -68,7 +92,7 @@ def parse_frontmatter(content: str) -> dict[str, str] | None:
         # Inside a multiline > block — accumulate until next key or blank
         if multiline:
             stripped = line.strip()
-            if stripped and not re.match(r"^[a-zA-Z][-\w]*:", line):
+            if stripped and not _NEW_KEY_RE.match(line):
                 current_value += " " + stripped
                 continue
             # Flush multiline value
@@ -79,26 +103,15 @@ def parse_frontmatter(content: str) -> dict[str, str] | None:
             current_value = ""
             # Fall through to process current line as potential new key
 
-        if ":" not in line:
+        kv = _parse_kv_line(line)
+        if kv is None:
             continue
-        # Skip YAML list items (- foo: bar)
-        if line.lstrip().startswith("-"):
-            continue
-
-        key, value = line.split(":", 1)
-        key = key.strip()
-        value = value.strip()
-
+        key, value = kv
         if value == ">":
             current_key = key
             current_value = ""
             multiline = True
             continue
-
-        # Strip surrounding quotes
-        if len(value) >= 2 and value[0] in ('"', "'") and value[-1] == value[0]:
-            value = value[1:-1]
-
         result[key] = value
 
     # Flush trailing multiline
@@ -149,18 +162,22 @@ def check_agents(root: Path) -> tuple[list[str], list[str]]:
             errors.append(f"[AGENT_FRONTMATTER] {name}: Missing or invalid frontmatter")
             continue
 
-        for field in ("name", "description", "tools", "model", "skills"):
-            if field not in fm:
-                errors.append(f'[AGENT_FIELD] {name}: Missing required field "{field}"')
+        errors.extend(
+            f'[AGENT_FIELD] {name}: Missing required field "{field}"'
+            for field in ("name", "description", "tools", "model", "skills")
+            if field not in fm
+        )
 
         if "model" in fm and fm["model"] not in ("sonnet", "opus", "haiku"):
             errors.append(
                 f'[AGENT_MODEL] {name}: Invalid model "{fm["model"]}" (expected sonnet/opus/haiku)'
             )
 
-        for skill in parse_skills_list(content):
-            if skill not in available_skills:
-                errors.append(f'[SKILL_REF] {name}: References non-existent skill "{skill}"')
+        errors.extend(
+            f'[SKILL_REF] {name}: References non-existent skill "{skill}"'
+            for skill in parse_skills_list(content)
+            if skill not in available_skills
+        )
 
     return errors, warnings
 
@@ -302,13 +319,21 @@ _CMD_SCAN_SUFFIXES = ("", ".md", ".py", ".sh", ".js")
 _TECHNE_REF_RE = re.compile(r"/techne-([a-z0-9][a-z0-9-]*)")
 
 
-def _iter_managed_files(root: Path):
+def _is_test_file(path: Path) -> bool:
+    # Test files carry intentional fixture strings that would trip the
+    # command-namespace checks; skip them.
+    return (path.name.startswith("test_") and path.suffix == ".py") or path.name.endswith(
+        "_test.py"
+    )
+
+
+def _iter_managed_files(root: Path) -> Iterator[Path]:
     for d in _CMD_SCAN_DIRS:
         sub = root / d
         if not sub.is_dir():
             continue
         for path in sorted(sub.rglob("*")):
-            if path.is_file() and path.suffix in _CMD_SCAN_SUFFIXES:
+            if path.is_file() and path.suffix in _CMD_SCAN_SUFFIXES and not _is_test_file(path):
                 yield path
     for name in _CMD_SCAN_ROOT_FILES:
         path = root / name
@@ -332,9 +357,7 @@ def check_command_refs(root: Path) -> tuple[list[str], list[str]]:
     if not commands_dir.is_dir():
         return errors, warnings
 
-    stems = sorted(
-        p.name[len("techne-") : -len(".md")] for p in commands_dir.glob("techne-*.md")
-    )
+    stems = sorted(p.name[len("techne-") : -len(".md")] for p in commands_dir.glob("techne-*.md"))
     if not stems:
         return errors, warnings
     known = set(stems)
@@ -527,9 +550,11 @@ def check_grounding(root: Path) -> tuple[list[str], list[str]]:
         if not skill_dir.is_dir():
             errors.append(f"[GROUNDING] skills/{skill_name}: Directory not found")
             continue
-        for ref in refs:
-            if not (skill_dir / ref).exists():
-                errors.append(f"[GROUNDING] {skill_name}/{ref}: File not found")
+        errors.extend(
+            f"[GROUNDING] {skill_name}/{ref}: File not found"
+            for ref in refs
+            if not (skill_dir / ref).exists()
+        )
 
     return errors, warnings
 
@@ -550,9 +575,11 @@ def check_meta_pipeline(root: Path) -> tuple[list[str], list[str]]:
     if "skill-builder" not in skills:
         errors.append('[META_PIPELINE] meta_reviewer.md: "skill-builder" missing from skills')
 
-    for skill in ("agent-builder", "skill-builder"):
-        if not (root / "skills" / skill / "SKILL.md").exists():
-            errors.append(f"[META_PIPELINE] skills/{skill}/SKILL.md not found")
+    errors.extend(
+        f"[META_PIPELINE] skills/{skill}/SKILL.md not found"
+        for skill in ("agent-builder", "skill-builder")
+        if not (root / "skills" / skill / "SKILL.md").exists()
+    )
 
     return errors, warnings
 
@@ -624,15 +651,13 @@ def format_text(results: dict) -> str:
     if results["errors"]:
         lines.append("Errors (must fix)")
         lines.append("-" * 20)
-        for e in results["errors"]:
-            lines.append(f"  {e}")
+        lines.extend(f"  {e}" for e in results["errors"])
         lines.append("")
 
     if results["warnings"]:
         lines.append("Warnings (should fix)")
         lines.append("-" * 20)
-        for w in results["warnings"]:
-            lines.append(f"  {w}")
+        lines.extend(f"  {w}" for w in results["warnings"])
         lines.append("")
 
     lines.append("Summary")

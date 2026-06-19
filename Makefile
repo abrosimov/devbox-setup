@@ -98,7 +98,7 @@ endif
        claude-diff claude-pull claude-pull-review claude-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        test test-nvim test-fish test-json test-bash test-skill-evals test-py \
-       lint lint-ansible lint-yaml lint-py typecheck-py dev-bootstrap
+       lint lint-ansible lint-yaml lint-py typecheck-py dev-bootstrap clean
 
 help:
 	@echo ""
@@ -449,3 +449,10 @@ test-nvim:
 test-skill-evals:
 	@echo "Validating skill eval files..."
 	@python3 $(CLAUDE_SRC)/bin/validate-skill-evals
+
+# Wipe the hermetic state directory (.devbox/ holds ansible local_tmp,
+# dev_mode dotfiles target, and any other ephemeral runtime artefacts).
+# Gitignored, fully owned by this repo — safe to recreate from scratch.
+clean:
+	@rm -rf $(CURDIR)/.devbox
+	@echo "Cleaned: $(CURDIR)/.devbox"

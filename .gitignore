@@ -1,4 +1,5 @@
 .ansible/
+/.devbox/
 .claude/memory
 .claude/commands
 .claude/settings.local.json

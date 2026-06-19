@@ -381,6 +381,7 @@
       "Bash(jq *)",
       "Bash(which *)",
       "Bash(pwd)",
+      "Bash(cd *)",
       "Bash(head *)",
       "Bash(tail *)",
       "Bash(diff *)",

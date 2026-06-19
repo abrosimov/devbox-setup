@@ -88,8 +88,16 @@ ignore = [
 # The hook-test files in dot_claude/bin/ are pytest tests, not utility scripts.
 # pytest discovery is configured via testpaths in [tool.pytest.ini_options]; the
 # same conventions (assert, private member access, hardcoded /tmp paths, ...)
-# apply here.
+# apply here. Skill-bundled scripts under skills/*/scripts/ follow the same shape.
 "roles/devbox/files/dot_claude/bin/test_*.py" = [
+    "S101",        # assert is the whole point of tests
+    "PLR2004",     # magic numbers OK in test cases
+    "SLF001",      # private member access is expected (testing _-prefixed helpers)
+    "S108",        # hardcoded /tmp paths are test fixtures, not real artifacts
+    "ANN",         # annotations optional in tests
+    "D",           # docstrings optional in tests
+]
+"roles/devbox/files/dot_claude/skills/**/scripts/test_*.py" = [
     "S101",        # assert is the whole point of tests
     "PLR2004",     # magic numbers OK in test cases
     "SLF001",      # private member access is expected (testing _-prefixed helpers)
@@ -128,7 +136,7 @@ reportMissingImports = "none"
 [tool.pyrefly]
 python-version = "3.12"
 project-includes = [
-    "roles/devbox/files/dot_claude/bin",
+    "roles/devbox/files/dot_claude",
     "scripts",
     "tests",
 ]
@@ -141,10 +149,13 @@ project-excludes = [
     "roles/devbox/files/dot_claude/skills/example-skills",
     "roles/devbox/files/dot_claude/skills/document-skills",
 ]
-# bin/ is a flat directory of scripts that import each other (e.g. *_test.py
-# imports the corresponding implementation). Add it as a search root so pyrefly
-# can resolve sibling imports.
-search-path = ["roles/devbox/files/dot_claude/bin"]
+# bin/ and skills/*/scripts/ are flat directories of scripts that import each
+# other (e.g. test_foo.py imports foo). Add them as search roots so pyrefly can
+# resolve sibling imports.
+search-path = [
+    "roles/devbox/files/dot_claude/bin",
+    "roles/devbox/files/dot_claude/skills/techne-fewer-permission-prompts/scripts",
+]
 
 # kittens.tui.* is only resolvable at runtime inside kitty itself. The path is
 # already excluded from project-checking via project-includes, but a direct
@@ -157,10 +168,10 @@ missing-import = false
 
 # ─── Pytest ──────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
-# tests/ holds Ansible vault fixtures, not Python tests. The Python tests for
-# hook scripts live next to their implementations in dot_claude/bin/ (e.g.
-# pre_bash_safety_gate_test.py is the sibling of pre_bash_safety_gate.py).
-testpaths = ["tests", "roles/devbox/files/dot_claude/bin"]
+# tests/ holds Ansible vault fixtures, not Python tests. Python tests live next
+# to their implementations under dot_claude/ — hook scripts in bin/, skill helpers
+# in skills/*/scripts/.
+testpaths = ["tests", "roles/devbox/files/dot_claude"]
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers --strict-config"
 markers = [

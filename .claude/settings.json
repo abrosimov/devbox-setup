@@ -28,10 +28,13 @@
       "Bash(git blame:*)",
       "Bash(git ls-files:*)",
       "Bash(git rev-parse:*)",
+      "Bash(git merge-base:*)",
       "Bash(brew list:*)",
       "Bash(brew info:*)",
       "WebSearch",
-      "WebFetch"
+      "WebFetch",
+      "mcp__atlassian__getAccessibleAtlassianResources",
+      "mcp__atlassian__getJiraIssue"
     ],
     "deny": [
       "Bash(rm:*)",

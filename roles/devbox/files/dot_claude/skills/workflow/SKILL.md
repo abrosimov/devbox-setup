@@ -387,6 +387,8 @@ proj wt clean                                          # prune all merged worktr
 
 Directory layout: `$AION_AUTOPOIESEON/<project>/<branch-name>/` (sibling of `base/`)
 
+Operate on a worktree from its own cwd (the Claude session is started there), or use `git -C <path>` / absolute paths. Never prepend `cd <path> &&` to a command — see *Shell discipline* in `CLAUDE.md`.
+
 Each worktree gets its own Claude Code session. `proj wt add` automatically:
 - Copies `.claude/settings.local.json` to the worktree
 - Symlinks `.claude/memory/` for shared downstream knowledge

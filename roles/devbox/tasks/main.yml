@@ -4,7 +4,7 @@
     devbox_paths: "{{ devbox_paths | combine({'dotfiles_root_dir': dev_dotfiles_path_override}) }}"
   when: dev_mode | default(false) | bool
   vars:
-    dev_dotfiles_path_override: "../debug/dotfiles"
+    dev_dotfiles_path_override: ".devbox/debug/dotfiles"
 
 - name: "Install necessary homebrew packages for MacOS"
   ansible.builtin.include_tasks: main_darwin.yml

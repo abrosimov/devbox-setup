@@ -52,20 +52,6 @@
   changed_when: false
   tags: [configs, shell]
 
-- name: "Configure done plugin: 300s threshold, Kitty remote control"
-  ansible.builtin.shell: |
-    {{ devbox_fish_shell_path.stdout }} -c '
-      set -U __done_min_cmd_duration 300000
-      set -U __done_kitty_remote_control 1
-      set -U __done_notification_duration 5000
-    '
-  args:
-    executable: /bin/bash
-  become: "{{ not (devbox_skip_become | default(false)) }}"
-  become_user: "{{ devbox_user.login }}"
-  changed_when: false
-  tags: [configs, shell]
-
 - name: Update fisher plugins
   ansible.builtin.shell: "{{ devbox_fish_shell_path.stdout }} -c 'fisher update'"
   args:

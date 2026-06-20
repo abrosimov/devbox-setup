@@ -258,25 +258,6 @@ All FPF artifacts follow this template:
 <!-- When should this be revisited? -->
 ```
 
-### Memory Integration
-
-After generating the artifact, store key insights in memory-upstream:
-
-```
-mcp__memory-upstream__create_entities([
-  {
-    name: "<Decision/Analysis name>",
-    entityType: "Decision" | "Analysis" | "DesignDoc",
-    observations: [
-      "Conclusion: <one-line summary>",
-      "Key trade-off: <main trade-off identified>",
-      "Open question: <most important unresolved item>"
-    ]
-  }
-])
-```
-
-This enables cross-session recall of past thinking.
 
 ### Dialogue Mode
 

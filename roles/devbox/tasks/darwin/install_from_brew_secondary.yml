@@ -4,6 +4,39 @@
     name: "{{ devbox_brew_taps }}"
     state: present
 
+# Homebrew 6.0 (HOMEBREW_REQUIRE_TAP_TRUST, on by default) refuses to load
+# formulae from un-trusted third-party taps — *any* untrusted tap aborts any
+# `brew install`/`brew update`, even if we are not installing from it, because
+# brew enumerates all tapped repos when computing dependencies. So we must
+# trust the full set of tapped non-official repos, not just devbox_brew_taps.
+#
+# The sweep approach (enumerate `brew tap`, skip homebrew/core + homebrew/cask)
+# tolerates latent state from past experiments: as long as a tap is on the
+# machine, it gets trusted. `make audit-taps` reports strays so the user can
+# decide to untap (via `make untap-stale`) or declare.
+#
+# There is no community.general `homebrew_trust` module as of 13.0.0, so trust
+# is granted via the brew CLI directly. Whole-tap trust (not --formula) because
+# Homebrew rejects --formula for custom remotes (#22685).
+- name: "Read Homebrew trust manifest"
+  ansible.builtin.command: brew trust --json v1
+  register: devbox_brew_trust_state
+  changed_when: false
+  check_mode: false
+
+- name: "Enumerate all currently tapped Homebrew repositories"
+  ansible.builtin.command: brew tap
+  register: devbox_brew_tapped_list
+  changed_when: false
+  check_mode: false
+
+- name: "Trust all non-official tapped Homebrew repositories"
+  ansible.builtin.command:
+    cmd: "brew trust --tap {{ item }}"
+  loop: "{{ devbox_brew_tapped_list.stdout_lines | reject('match', '^homebrew/(core|cask)$') | list }}"
+  when: (item | lower) not in (devbox_brew_trust_state.stdout | lower)
+  changed_when: true
+
 - name: "Install Homebrew apps"
   community.general.homebrew:
     name: "{{ devbox_brew_secondary + devbox_extra_brew }}"

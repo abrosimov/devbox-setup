@@ -183,3 +183,55 @@
   changed_when: false
   failed_when: false
   tags: [configs, claude, mcp]
+
+# Reconciler: anything registered at user scope that is NOT in the declared
+# union above gets removed. Makes defaults/main/claude.yml the single source
+# of truth for MCP servers — drop an entry from the YAML and the next
+# `make claude-push` (or full playbook) will deregister it.
+#
+# `claude mcp list` prints `<name>: <command-or-url> - <status>` per line
+# plus a header. Names may contain spaces and dots (e.g. "claude.ai Gmail"),
+# so we match everything up to the first `:`. Servers prefixed with
+# "claude.ai " are auto-registered by Claude Code itself (Anthropic-managed
+# Gmail/Drive/Calendar integrations) — they get re-added automatically, so
+# removing them would just churn. The reject() filter excludes them.
+- name: List currently registered MCP servers (user scope)
+  ansible.builtin.command: "{{ devbox_claude_cli_path.stdout }} mcp list"
+  register: devbox_mcp_current_raw
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when: devbox_claude_cli_path.rc == 0
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  tags: [configs, claude, mcp]
+
+- name: Compute MCP reconciler diff (registered - declared - auto-managed)
+  ansible.builtin.set_fact:
+    devbox_mcp_to_remove: >-
+      {{ (devbox_mcp_current_raw.stdout_lines | default([])
+          | select('match', '^[^:]+:\s')
+          | map('regex_replace', '^([^:]+?):\s.*$', '\1')
+          | reject('match', '^claude\.ai ')
+          | list)
+         | difference(
+             (devbox_mcp_docker_servers
+              + devbox_mcp_script_servers
+              + devbox_mcp_http_servers
+              + devbox_extra_mcp_http_servers)
+             | map(attribute='name') | list) }}
+  when: devbox_claude_cli_path.rc == 0
+  tags: [configs, claude, mcp]
+
+- name: Remove undeclared MCP servers (user scope)
+  ansible.builtin.command: >
+    {{ devbox_claude_cli_path.stdout }} mcp remove {{ item }} --scope user
+  loop: "{{ devbox_mcp_to_remove | default([]) }}"
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when:
+    - devbox_claude_cli_path.rc == 0
+    - devbox_mcp_to_remove | default([]) | length > 0
+  changed_when: true
+  failed_when: false
+  tags: [configs, claude, mcp]

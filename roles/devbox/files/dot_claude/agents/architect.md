@@ -1,9 +1,9 @@
 ---
 name: architect
 description: System design specialist for architecture decisions, technology selection, and high-level design. Read-only — analyses but never modifies code.
-tools: Read, Grep, Glob, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
+tools: Read, Grep, Glob, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: agent-communication, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking, diverge-synthesize-select
+skills: agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-02-15
 ---
 

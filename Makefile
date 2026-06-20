@@ -95,6 +95,7 @@ endif
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
+       audit audit-brew audit-brewfile audit-taps untap-stale \
        claude-diff claude-pull claude-pull-review claude-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        sync-upstream-docs \
@@ -127,6 +128,10 @@ help:
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
 	@echo "  make audit-budget    - show detailed skill description budget report"
+	@echo "  make audit           - run brew supply-chain audit: CVE scan (brew vulns) + brew audit --installed"
+	@echo "  make audit-brewfile  - emit a Brewfile snapshot of devbox brew lists (stdout)"
+	@echo "  make audit-taps      - report status of every tapped brew repo (declared / stale / stray)"
+	@echo "  make untap-stale     - untap the curated stale-tap list (safe: nothing installed from them)"
 	@echo "  make validate-skills  - validate skill evals (structure, schema, coverage)"
 	@echo "  make eval-skills      - run trigger evals via Anthropic's run_eval.py (slow, needs claude CLI)"
 	@echo "  make improve-skills   - optimize skill description for trigger accuracy (run_loop.py)"
@@ -254,6 +259,100 @@ validate-claude:
 
 audit-budget:
 	@python3 $(CLAUDE_SRC)/bin/validate-config.py --root $(CLAUDE_SRC) --budget
+
+# Supply-chain audit for Homebrew packages. Uses Homebrew/brew-vulns (an official
+# subcommand that queries OSV.dev) for CVE scanning, and `brew audit --installed`
+# for metadata health (broken URLs, deprecated deps, missing licences).
+#
+# `brew audit --installed` without --strict deliberately stays out of style-check
+# territory: those checks are author-facing and produce noise for packages we
+# don't maintain. We only want operator signal.
+#
+# `audit` runs against the live local install (everything currently in /opt/homebrew).
+# `audit-brewfile` emits the static repo-defined package set as a Brewfile — used
+# by .github/workflows/brew-audit.yml on a clean macos-latest runner.
+PACKAGES_YML  := roles/devbox/defaults/main/packages.yml
+PROFILE_YML   := profiles/$(or $(ACTIVE_PROFILE),personal).yml
+
+audit: audit-brew
+
+audit-brew:
+	@echo "=== Ensuring brew-vulns is installed ==="
+	@if ! command -v brew >/dev/null 2>&1; then \
+		echo "ERROR: brew not found in PATH."; exit 1; \
+	fi
+	@brew list --formula brew-vulns >/dev/null 2>&1 \
+		|| brew install Homebrew/brew-vulns/brew-vulns
+	@echo
+	@echo "=== brew vulns (CVE scan via OSV) ==="
+	@brew vulns --severity high || true
+	@echo
+	@echo "=== brew audit --installed (URLs / licences / deprecations) ==="
+	@brew audit --installed --skip-style || true
+
+audit-brewfile:
+	@command -v yq >/dev/null 2>&1 || { \
+		echo "ERROR: yq is required (brew install yq)."; exit 1; \
+	}
+	@printf '# Generated from %s + %s — do not edit.\n' "$(PACKAGES_YML)" "$(PROFILE_YML)"
+	@for tap in $$(yq -r '.devbox_brew_taps[]' $(PACKAGES_YML)); do \
+		printf 'tap "%s"\n' "$$tap"; \
+	done
+	@for f in $$(yq -r '.devbox_brew_primary[],.devbox_brew_primary_special[],.devbox_brew_secondary[]' $(PACKAGES_YML)); do \
+		printf 'brew "%s"\n' "$$f"; \
+	done
+	@for f in $$(yq -r '.devbox_extra_brew[]? // empty' $(PROFILE_YML) 2>/dev/null); do \
+		printf 'brew "%s"\n' "$$f"; \
+	done
+	@for c in $$(yq -r '.devbox_brew_primary_casks[],.devbox_brew_secondary_casks[],.devbox_brew_secondary_casks_no_binaries[]' $(PACKAGES_YML)); do \
+		printf 'cask "%s"\n' "$$c"; \
+	done
+	@for c in $$(yq -r '.devbox_extra_brew_casks[]?,.devbox_extra_brew_casks_no_binaries[]?' $(PROFILE_YML) 2>/dev/null); do \
+		printf 'cask "%s"\n' "$$c"; \
+	done
+
+# Curated list of third-party brew taps we want gone. Re-evaluated periodically
+# via `make audit-taps`. Adding a tap here is a one-way intent: if it ever
+# becomes needed again, declare it in roles/devbox/defaults/main/packages.yml
+# (devbox_brew_taps) and remove from this list. Verified empty/unused as of
+# 2026-06-20 — see git log for the audit that produced this list.
+STALE_TAPS := \
+  go-task/tap \
+  homebrew/cask-fonts \
+  hudochenkov/sshpass \
+  jakehilborn/jakehilborn
+
+audit-taps:
+	@command -v yq >/dev/null 2>&1 || { \
+		echo "ERROR: yq is required (brew install yq)."; exit 1; \
+	}
+	@declared=$$(yq -r '.devbox_brew_taps[]' $(PACKAGES_YML) | tr '[:upper:]' '[:lower:]'); \
+	stale=$$(printf '%s\n' $(STALE_TAPS)); \
+	printf "%-40s %-12s %s\n" "TAP" "DECLARED" "STATUS"; \
+	printf "%-40s %-12s %s\n" "---" "--------" "------"; \
+	brew tap | while read tap; do \
+		lc=$$(printf '%s' "$$tap" | tr '[:upper:]' '[:lower:]'); \
+		if printf '%s\n' "$$tap" | grep -qE '^homebrew/(core|cask)$$'; then \
+			d="official"; s="-"; \
+		elif printf '%s\n' "$$declared" | grep -qx "$$lc"; then \
+			d="yes"; s="OK"; \
+		elif printf '%s\n' "$$stale" | grep -qx "$$tap"; then \
+			d="no"; s="STALE (run: make untap-stale)"; \
+		else \
+			d="no"; s="STRAY — declare in devbox_brew_taps or add to STALE_TAPS"; \
+		fi; \
+		printf "%-40s %-12s %s\n" "$$tap" "$$d" "$$s"; \
+	done
+
+untap-stale:
+	@for tap in $(STALE_TAPS); do \
+		if brew tap | grep -qx "$$tap"; then \
+			echo "untap: $$tap"; \
+			brew untap "$$tap" || true; \
+		else \
+			echo "skip:  $$tap (already untapped)"; \
+		fi; \
+	done
 
 validate-skills:
 	@echo "Validating skill eval files..."

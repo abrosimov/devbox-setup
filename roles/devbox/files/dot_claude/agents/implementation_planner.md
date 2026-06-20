@@ -1,9 +1,9 @@
 ---
 name: implementation-planner
 description: Stack-agnostic implementation planner — turns specs or requirements into functional implementation plans (requirements, acceptance criteria, work streams, execution DAG) for software engineers. Detects the project stack itself and tailors language-conditional guidance; never writes code.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, mcp__memory-upstream, LSP
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, LSP
 model: opus
-skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, lsp-tools, agent-base-protocol, diverge-synthesize-select
+skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, lsp-tools, agent-base-protocol, diverge-synthesize-select
 updated: 2026-06-07
 ---
 
@@ -710,7 +710,7 @@ Based on the work streams defined in the plan, suggest the execution order:
 
 ## MCP Integration
 
-See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
+See `mcp-sequential-thinking` skill for structured reasoning patterns. If the MCP server is unavailable, proceed without it.
 
 ## Behaviour Summary
 

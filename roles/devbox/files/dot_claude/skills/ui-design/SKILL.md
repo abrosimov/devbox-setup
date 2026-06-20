@@ -119,42 +119,12 @@ Each component spec in `design.md` follows this structure:
 
 ---
 
-## Figma MCP Integration
+## Working Without a Figma File
 
-See `mcp-figma` skill for the full tool reference and usage patterns.
-
-### Reading Designs
-
-When a Figma URL is available:
-- `mcp__figma__get_metadata(fileKey, nodeId)` -- structural overview (node IDs, types, positions, sizes)
-- `mcp__figma__get_design_context(fileKey, nodeId)` -- detailed context for specific nodes (primary read tool)
-- `mcp__figma__get_variable_defs(fileKey, nodeId)` -- extract design tokens/variables with resolved values
-- `mcp__figma__get_screenshot(fileKey, nodeId)` -- visual capture for reference
-
-> **Tip**: Use `get_metadata` first for large files to identify key nodes, then `get_design_context` on specific nodes.
-
-### Creating Visual Documentation (FigJam)
-
-- `mcp__figma__generate_diagram(name, mermaidSyntax)` -- create user flow diagrams, component state machines, sequence diagrams in FigJam
-- Supported types: `flowchart`, `stateDiagram-v2`, `sequenceDiagram`, `gantt`
-- **MUST** present returned URLs to user as markdown links
-
-### Workflow with Figma
-
-1. Ask user for Figma URL (designer agent handles this in Step 1)
-2. Read existing designs via `get_metadata` --> `get_design_context`
-3. Extract tokens via `get_variable_defs` --> use as baseline for `design_system.tokens.json`
-4. Create user flow diagrams in FigJam via `generate_diagram`
-5. Create component state diagrams in FigJam via `generate_diagram`
-6. Set up Code Connect mappings for existing components
-7. Note discrepancies between Figma and spec (report to user)
-
-### Without Figma
-
-If Figma MCP is not available, work from:
-- User descriptions and requirements
+Without direct Figma access, work from:
+- User descriptions and requirements (ask the user to attach screenshots of any Figma frames they reference)
 - Existing CSS/theme files in the codebase
-- Describe user flows in text within `design.md` instead of FigJam diagrams
+- Describe user flows in text within `design.md` rather than embedded FigJam diagrams
 
 ---
 

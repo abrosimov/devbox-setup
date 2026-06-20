@@ -1,9 +1,9 @@
 ---
 name: technical-product-manager
 description: Technical product manager who transforms ideas into detailed product specifications through research, interactive user interviews, and iterative refinement.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking, diverge-synthesize-select
+skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-03-03
 ---
 
@@ -637,7 +637,7 @@ Any items requiring further clarification before implementation.
 
 ## MCP Integration
 
-See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
+See `mcp-sequential-thinking` skill for structured reasoning patterns. If the MCP server is unavailable, proceed without it.
 
 ## Step-by-Step Thinking Process
 

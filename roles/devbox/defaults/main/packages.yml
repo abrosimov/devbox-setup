@@ -3,12 +3,17 @@
 # Homebrew taps (third-party repositories)
 # =============================================================================
 
-# Tapped before any secondary install; required for FelixKratz tools
-# (sketchybar, borders) and nikitabobko's AeroSpace cask.
+# Tapped before any secondary install. Trust is granted in the playbook to
+# every non-official tap currently present on the machine (sweep over
+# `brew tap`), so adding an entry here also marks intent — `make audit-taps`
+# flags any third-party tap that is on the machine but missing from this list.
 devbox_brew_taps:
-  - nikitabobko/tap
-  - FelixKratz/formulae
-  - grafana/grafana
+  - nikitabobko/tap        # aerospace tiling WM
+  - FelixKratz/formulae    # sketchybar, borders (JankyBorders)
+  - grafana/grafana        # gcx + Grafana CLIs
+  - bufbuild/buf           # `buf` Protobuf CLI (no longer in homebrew-core)
+  - goreleaser/tap         # goreleaser, nfpm, chglog — release automation
+  - ktr0731/evans          # evans gRPC REPL (upstream frozen since 2023, kept for the REPL UX)
 
 # =============================================================================
 # Homebrew formulae and casks
@@ -70,6 +75,7 @@ devbox_brew_secondary:
   - jsonnet-bundler
   - gh             # GitHub CLI — needed by Claude Code PR workflow
   - glab           # GitLab CLI — mirrors gh for GitLab workflows
+  - goreleaser     # Go release automation (binaries, archives, brew tap, signed releases)
   - jq             # JSON processor — used by scripts and agents
   - ripgrep        # Fast grep — fallback for Claude Code Grep tool
   - fd             # Fast find — used by Claude Code Glob tool
@@ -82,6 +88,8 @@ devbox_brew_secondary:
   - cmake          # C/C++ build system
   - bazelisk       # Bazel version manager (installs as `bazel`)
   - buf            # Protobuf toolchain — LSP (buf_ls), formatter, linter
+  - grpcurl        # curl-for-gRPC — scripted/CI calls, mTLS, reflection
+  - evans          # gRPC REPL with autocompletion — interactive exploration of unknown APIs
   - stylua         # Lua code formatter
   - shfmt          # Shell/Bash code formatter
   - clang-format   # C/C++ code formatter

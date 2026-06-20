@@ -3,6 +3,10 @@
 .claude/memory
 .claude/commands
 .claude/settings.local.json
+# Personal Claude Code state file. Lives at the user's $HOME normally; if it
+# ever appears anywhere inside the repo (e.g. accidental copy), refuse it —
+# contains OAuth tokens, project history, cached growth-book features.
+.claude.json
 .idea/
 .vscode/
 debug/

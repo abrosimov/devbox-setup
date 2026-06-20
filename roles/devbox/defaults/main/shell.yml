@@ -17,6 +17,12 @@ devbox_shell:
   env:
     - { name: EDITOR, value: nvim }
     - { name: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, value: "1" }
+    # Homebrew bottle attestation enforcement (sigstore/cosign provenance via
+    # GitHub's `gh` CLI). Introduced in 4.3.0, must be set explicitly even for
+    # developers since 4.6.0. Requires `gh` (installed via devbox_brew_secondary).
+    # If a bottle lacks an attestation the install fails — unset this var to
+    # opt out should that ever block a real install path.
+    - { name: HOMEBREW_VERIFY_ATTESTATIONS, value: "1" }
     # Protected branches for ~/.claude/bin/pre_bash_safety_gate.py — comma-separated, fnmatch wildcards supported.
     - { name: CC_PROTECTED_BRANCHES, value: "main,master,develop,release/*,release-*" }
     - { name: GOPATH, value: "$HOME/{{ devbox_paths.programming_deps_dir }}/go" }

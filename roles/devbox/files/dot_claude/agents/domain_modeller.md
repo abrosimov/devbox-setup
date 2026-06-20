@@ -1,9 +1,9 @@
 ---
 name: domain-modeller
 description: Domain modeller who formalizes validated domain analysis into DDD models with bounded contexts, aggregates, events, and system design bridge. Produces verifiable domain models consumed by all downstream agents.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking, mcp__memory-upstream
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, mcp-memory, agent-base-protocol, fpf-thinking
+skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking
 updated: 2026-02-17
 ---
 
@@ -362,7 +362,7 @@ When domain model is complete, provide:
 
 ## MCP Integration
 
-See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
+See `mcp-sequential-thinking` skill for structured reasoning patterns. If the MCP server is unavailable, proceed without it.
 
 ## Behaviour Summary
 

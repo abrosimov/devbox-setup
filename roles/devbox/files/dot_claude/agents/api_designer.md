@@ -331,7 +331,7 @@ Document when you yield:
 
 ## MCP Integration
 
-See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
+See `mcp-sequential-thinking` skill for structured reasoning patterns. If the MCP server is unavailable, proceed without it.
 
 ## After Completion
 

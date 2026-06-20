@@ -1,9 +1,9 @@
 ---
 name: code-reviewer
 description: Code reviewer for Go, Python and TypeScript/React/Next.js — validates implementation against requirements and catches issues missed by engineer and test writer. Detects the language(s) in the diff and loads the matching `{lang}-engineer` and `{lang}-testing` skills before reviewing.
-tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__atlassian, mcp__memory-downstream, mcp__playwright, mcp__figma, mcp__storybook, LSP
+tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__atlassian, mcp__playwright, mcp__storybook, LSP
 model: opus
-skills: go-engineer, go-testing, go-review-checklist, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, project-toolchain, sandbox-toolchain, code-comments, lint-discipline, agent-communication, shared-utils, mcp-memory, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: go-engineer, go-testing, go-review-checklist, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, project-toolchain, sandbox-toolchain, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-05-11
 ---
 
@@ -187,7 +187,6 @@ If no recognised stack is detected (only configs, docs, migrations, etc.), say s
 
 | Tool | Required stack | If stack absent |
 |------|----------------|-----------------|
-| `mcp__figma` | frontend | Do NOT invoke. |
 | `mcp__playwright` | frontend | Do NOT invoke. |
 | `mcp__storybook` | frontend | Do NOT invoke. |
 | `NotebookEdit` | python | Do NOT invoke. |
@@ -225,9 +224,7 @@ Likewise, do NOT consult stack-specific skills (`{lang}-engineer`, `{lang}-testi
 
 5. **Design artefacts** (only when frontend is in the stack set):
    - `design.md`, `design_system.tokens.json`, `design_output.json` in `{PROJECT_DIR}/`.
-   - If `design_output.json.figma_source` is set, use `mcp__figma__get_screenshot(fileKey, nodeId)` to capture the original design for visual comparison.
-
-6. **Memory** — query `mcp__memory-downstream` for prior findings about this repo/area (see `mcp-memory` skill).
+   - If `design_output.json.figma_source` is set, ask the user to provide a screenshot of the referenced Figma node for visual comparison.
 
 ### Step 3: Requirements Analysis
 
@@ -363,7 +360,7 @@ Only the sub-tables for stacks detected in Step 1 apply. **Verdict per checkpoin
 | FE-I | Security | **CRITICAL** — `dangerouslySetInnerHTML` requires DOMPurify when content is user-derived; no `eval`/`new Function`; no exposed API keys; tokens not in `localStorage` (use httpOnly cookies); no sensitive data in `console.log`. **CONTEXT** — URL injection / open redirect, `postMessage` without origin check, non-`NEXT_PUBLIC_` env vars in client code. |
 | FE-J | Performance | No inline objects/arrays in JSX props for memoised children; heavy libs lazy-loaded; below-fold content code-split; `next/image` (not `<img>`) with priority for LCP and explicit dimensions; no full-library imports when tree-shakeable subpaths exist. |
 | FE-K | Style & Naming | kebab-case files; PascalCase components; camelCase functions/vars; boolean prefixes `is/has/can/should`; named exports (except Next.js page/layout); function declarations for components. |
-| FE-L | Design Compliance (when `design.md` present) | Component props/states match spec; design tokens used instead of hardcoded values; a11y plan items implemented; responsive breakpoints honoured; reused components actually reused. Use `mcp__figma__get_screenshot` for visual comparison when `figma_source` is available. |
+| FE-L | Design Compliance (when `design.md` present) | Component props/states match spec; design tokens used instead of hardcoded values; a11y plan items implemented; responsive breakpoints honoured; reused components actually reused. |
 | FE-M | Storybook / Playwright Smoke (optional) | If `mcp__storybook` is available, verify the implemented components render in Storybook. If `mcp__playwright` is available and a dev server runs, navigate, snapshot accessibility tree, check `browser_console_messages`. Skip with a note if unavailable. |
 
 ### Step 7: Counter-Evidence Hunt (REQUIRED)
@@ -407,11 +404,7 @@ Flag any shortcut (changing a signature directly, skipping branches, deprecating
 
 For each acceptance criterion: identify the implementing code, verify it matches exactly, flag gaps. If a domain model is present, run the ubiquitous-language / invariant / aggregate-boundary checks from C-10 and audit `autonomous_decisions` from the SE output.
 
-### Step 11: Memory Capture
-
-Write significant findings to `mcp__memory-downstream` (recurring anti-patterns, codebase-specific gotchas, security findings). See `mcp-memory` skill.
-
-### Step 12: Report + Structured Output
+### Step 11: Report + Structured Output
 
 Produce two artefacts:
 
@@ -609,9 +602,8 @@ git diff "$DEFAULT_BRANCH"...HEAD --name-only -- '*.tsx' | xargs grep -n "<img\b
 
 ## MCP Integration
 
-See `mcp-memory` skill (session-start search, during-work store, entity naming). Frontend reviews may additionally use:
+Frontend reviews may additionally use:
 - `mcp__playwright` — accessibility/console smoke test (optional, requires dev server).
-- `mcp__figma` — capture original design via `figma_source` for visual comparison.
 - `mcp__storybook` — verify components render in Storybook.
 
 If any MCP server is unavailable, proceed without it and note the gap in the report.
@@ -674,6 +666,5 @@ Before completing the review, verify:
 **Deliverables produced**
 - [ ] Markdown report inline.
 - [ ] `cr_output.json` written to `{PROJECT_DIR}/` with `metadata.stacks` as an array of actually-reviewed stacks.
-- [ ] Memory updated (`mcp__memory-downstream`).
 
 ---

@@ -1,10 +1,10 @@
 ---
 name: software-engineer-frontend
 description: Frontend software engineer - writes clean, typed, production-ready TypeScript/React/Next.js code. Use this agent for ANY frontend code changes, no matter how small. Even simple changes benefit from enforced standards.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__figma, mcp__storybook, LSP
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__storybook, LSP
 model: opus
 permissionMode: acceptEdits
-skills: frontend-engineer, frontend-tooling, ui-design, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-figma, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: frontend-engineer, frontend-tooling, ui-design, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-17
 ---
 
@@ -76,8 +76,7 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 | `frontend-testing` | React Testing Library, MSW, test patterns |
 | `playwright-e2e` | Playwright e2e test authoring — scoped locators, strict mode, testability contract |
 | `frontend-tooling` | Next.js, Vite, pnpm, ESLint, TypeScript config, Storybook |
-| `ui-design` | W3C design tokens, component specs, responsive layout, Figma/Storybook MCP |
-| `mcp-figma` | Figma MCP tool usage — token extraction, component reading, design verification |
+| `ui-design` | W3C design tokens, component specs, responsive layout, Storybook MCP |
 | `mcp-storybook` | Storybook MCP tool usage — component inventory, prop discovery, pattern matching |
 | `shared-utils` | Jira context extraction from branch |
 
@@ -116,7 +115,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
      - If project has no token system yet → create one from this file; do not hardcode raw values
      - Colour, spacing, typography, shadow, radius, breakpoint, and z-index tokens MUST come from this file — never invent values
    - **`design_output.json`** — Structured output. Read `figma_source` for the Figma file URL/key and `figma_artifacts` for diagram URLs
-5. **Verify against Figma source** (if `design_output.json` has `figma_source`): Use `mcp__figma__get_design_context` and `mcp__figma__get_screenshot` to compare implementation against the original design. Flag visual discrepancies before completing.
+5. **Verify against Figma source** (if `design_output.json` has `figma_source`): ask the user to share a screenshot of the referenced Figma node so you can compare implementation against the original design. Flag visual discrepancies before completing.
 6. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `${PROJECT_DIR}/`. Extract:
    - **Ubiquitous language** — use these exact terms in component names, props, state variables
    - **Domain events** — use event names from model when naming callbacks and handlers
@@ -239,7 +238,7 @@ echo "$CHANGED" | xargs grep -n 'localStorage.*token\|localStorage.*secret\|loca
 
 ## MCP Integration
 
-See `mcp-sequential-thinking` skill for structured reasoning patterns and `mcp-memory` skill for persistent knowledge (session start search, during-work store, entity naming). If any MCP server is unavailable, proceed without it.
+See `mcp-sequential-thinking` skill for structured reasoning patterns. If the MCP server is unavailable, proceed without it.
 
 ---
 

@@ -13,8 +13,10 @@ devbox_claude_managed_dirs:
   - docs
   - templates
 
-# MCP servers registered via `claude mcp add` (written to ~/.claude.json).
-# Grouped by transport type for clarity.
+# MCP servers registered via `claude mcp add` (written to ~/.claude.json under
+# the `mcpServers` key, user scope). Grouped by transport type for clarity.
+# The reconciler step in apply_configs.yml removes any user-scope MCP server
+# not listed below, so these lists are the single source of truth.
 devbox_mcp_docker_servers:
   - name: sequentialthinking
     image: mcp/sequentialthinking
@@ -28,16 +30,15 @@ devbox_mcp_docker_servers:
     env:
       MCP_TRANSPORT: stdio
 
-devbox_mcp_script_servers:
-  - name: memory-upstream
-    command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-upstream"
-  - name: memory-downstream
-    command: "{{ ansible_facts['env']['HOME'] }}/.claude/bin/memory-downstream"
+# Empty by default. memory-upstream / memory-downstream were removed
+# 2026-06-20 — the file-based memory system in ~/.claude/memory/ replaces
+# the graph-MCP approach.
+devbox_mcp_script_servers: []
 
-devbox_mcp_http_servers:
-  - name: figma
-    url: "https://mcp.figma.com/mcp"
-    transport: sse
+# Empty by default. figma was removed 2026-06-20 — design work goes through
+# the figma plugin / web app instead. devbox_extra_mcp_http_servers (set per
+# profile) still provides an extension point (e.g. atlassian on the work profile).
+devbox_mcp_http_servers: []
 
 # Claude Code plugins installed via `claude plugin` CLI.
 # Marketplaces are GitHub repos containing plugin manifests.

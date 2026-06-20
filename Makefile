@@ -97,6 +97,7 @@ endif
        list-skills list-agents audit-budget \
        claude-diff claude-pull claude-pull-review claude-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
+       sync-upstream-docs \
        test test-nvim test-fish test-json test-bash test-skill-evals test-py \
        lint lint-ansible lint-yaml lint-py typecheck-py dev-bootstrap clean
 
@@ -137,6 +138,7 @@ help:
 	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
 	@echo "  make local-push       - deploy only gitignored local/ overlay (surgical; already included in dotfiles-push)"
 	@echo "  make macos-defaults   - re-apply Touch ID / pmset / DevToolsSecurity (sudo required)"
+	@echo "  make sync-upstream-docs - pull fresh FPF-Spec.md from ailev/FPF@main and reset drift state"
 	@echo ""
 	@echo "Test / introspection:"
 	@echo "  make test             - run all config validation tests"
@@ -410,6 +412,22 @@ local-push: $(COLLECTIONS_SENTINEL)
 macos-defaults: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
+
+# Pull a fresh copy of the upstream FPF spec into dot_claude/docs/ and reset the
+# drift state file used by the statusline / tide badge. Run when the badge (or
+# curiosity) tells you the vendored copy lags upstream. Atomic: state file is
+# only updated after curl succeeds.
+FPF_LOCAL    := roles/devbox/files/dot_claude/docs/FPF-Spec.md
+FPF_UPSTREAM := https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md
+FPF_STATE    := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/fpf-drift
+
+sync-upstream-docs:
+	@tmp=$$(mktemp) && \
+		curl -sfSL --max-time 15 $(FPF_UPSTREAM) -o $$tmp && \
+		mv $$tmp $(FPF_LOCAL) && \
+		mkdir -p $(dir $(FPF_STATE)) && \
+		echo 0 > $(FPF_STATE) && \
+		echo "Synced $(notdir $(FPF_LOCAL)) from upstream; drift state reset"
 
 test: test-json test-fish test-bash test-nvim test-skill-evals test-py
 	@echo "All tests passed."

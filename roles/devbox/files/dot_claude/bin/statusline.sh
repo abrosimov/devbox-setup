@@ -76,12 +76,35 @@ if [ -n "$branch" ]; then
     git_segment="${c_muted} ${SEP} ${c_gold} ${branch}"
 fi
 
+# ── FPF drift badge (only inside devbox-setup with drift > 0) ───────────────
+fpf_segment=""
+fpf_doc="${cwd}/roles/devbox/files/dot_claude/docs/FPF-Spec.md"
+if [ -f "$fpf_doc" ]; then
+    # Fire background refresh; statusline never blocks on network.
+    ( "$HOME/.claude/bin/fpf-drift-check" --local "$fpf_doc" >/dev/null 2>&1 & ) >/dev/null 2>&1
+    fpf_state="${XDG_CACHE_HOME:-$HOME/.cache}/devbox-setup/fpf-drift"
+    if [ -f "$fpf_state" ]; then
+        fpf_drift=$(cat "$fpf_state" 2>/dev/null)
+        if [ -n "$fpf_drift" ] && [ "$fpf_drift" -gt 0 ] 2>/dev/null; then
+            if [ "$fpf_drift" -gt 200 ]; then
+                fpf_color="$c_red"
+            else
+                fpf_color="$c_yellow"
+            fi
+            fpf_segment="${c_muted} ${SEP} ${fpf_color}FPF Δ${fpf_drift}"
+        fi
+    fi
+fi
+
 # ── Assemble the line ────────────────────────────────────────────────────────
 printf '%s%s%s' "$c_teal" "$short_cwd" "$RESET"
 printf ' %s ' "$SEP"
 printf '%s%s' "$ctx_segment" "$RESET"
 if [ -n "$git_segment" ]; then
     printf '%s%s' "$git_segment" "$RESET"
+fi
+if [ -n "$fpf_segment" ]; then
+    printf '%s%s' "$fpf_segment" "$RESET"
 fi
 printf ' %s ' "$SEP"
 printf '%s%s%s' "$c_muted" "$model" "$RESET"

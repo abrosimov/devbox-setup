@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/internal/foo/bar.go",
+    "content": "4TH,"
+  },
+  "tool_response": "{EJ^[~uA2",
+  "hook_event_name": "PostToolUse"
+}

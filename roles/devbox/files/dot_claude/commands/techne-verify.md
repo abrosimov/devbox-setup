@@ -251,6 +251,6 @@ Based on result:
 
 | Result | Suggestion |
 |--------|------------|
-| All pass | "Run `/techne-review` for code review, or `/techne-checkpoint` to save progress." |
+| All pass | "Run `/techne-review` for code review, or proceed with commit and PR." |
 | Minor issues | "Fix the issues above and re-run `/techne-verify`." |
 | Build fails | "Build is broken. Fix compilation errors first." |

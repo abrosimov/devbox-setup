@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git -C <HOME>/Projects/personal-notes/base status --short 2>&1 | head -30",
+    "description": "Check personal-notes git status"
+  },
+  "hook_event_name": "PreToolUse"
+}

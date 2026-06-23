@@ -447,18 +447,7 @@ Write `{PROJECT_DIR}/spec_output.json` following the schema in `structured-outpu
 
 Include all required metadata fields. For stage-specific fields, extract key data from the spec you just wrote: personas, goals, functional requirements, non-functional requirements, out of scope items, and open questions.
 
-**This step is supplementary** — `spec.md` is the primary deliverable. The JSON enables automated pipeline tracking and downstream agent consumption.
-
-### Step 6.5: Initialize Progress Spine (Pipeline Mode Only)
-
-If `PIPELINE_MODE=true` and `PROJECT_DIR` is set:
-
-```bash
-~/.claude/bin/progress init --project-dir "$PROJECT_DIR" --pipeline-id "$PIPELINE_ID" --feature-type "$FEATURE_TYPE" || true
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent technical-product-manager --milestone M-spec --status completed --summary "Spec and structured output written" --quiet || true
-```
-
-This creates the `progress/` directory with milestone scaffolding. Subsequent agents will refine it.
+**This step is supplementary** — `spec.md` is the primary deliverable. The JSON enables downstream agent consumption.
 
 ---
 

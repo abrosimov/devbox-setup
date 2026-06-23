@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "mypy =Fe",
+    "description": "=Fe"
+  },
+  "hook_event_name": "PreToolUse"
+}

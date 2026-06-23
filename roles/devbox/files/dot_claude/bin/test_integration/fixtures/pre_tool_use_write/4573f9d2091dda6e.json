@@ -1,0 +1,8 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/swap_test.go",
+    "content": "//go:build vectors\n\npackage ingest\n\nimport (\n\t\"context\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/config\"\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/embedder\"\n)\n\nfunc TestAtomicRebuild(t *testing.T) {\n\tdir := t.TempDir()\n\tindexPath := filepath.Join(dir, \"test.bleve\")\n\n\tix, err := NewIndexer(indexPath, 768)\n\tif err != nil {\n\t\tt.Fatalf(\"NewIndexer: %v\", err)\n\t}\n\tdefer ix.Close()\n\n\t// Create docs directory with files\n\tdocsDir := filepath.Join(dir, \"docs\")\n\tos.Mkdir(docsDir, 0755)\n\tos.WriteFile(filepath.Join(docsDir, \"one.md\"), []byte(\"## Section A\\n\\nContent A.\"), 0644)\n\tos.WriteFile(filepath.Join(docsDir, \"two.md\"), []byte(\"## Section B\\n\\nContent B.\"), 0644)\n\n\temb := embedder.NewMockEmbedder(768)\n\tsecCfg := config.SecurityConfig{\n\t\tExtensionAllowlist: []string{\".md\", \".txt\"},\n\t\tDirectoryBlocklist: []string{\".git\"},\n\t\tMaxFileSizeBytes:   1 * 1024 * 1024,\n\t}\n\n\tresult, err := AtomicRebuild(\n\t\tcontext.Background(),\n\t\tix, emb, secCfg, 16000,\n\t\tdocsDir, \"global\", \"reference\",\n\t)\n\tif err != nil {\n\t\tt.Fatalf(\"AtomicRebuild: %v\", err)\n\t}\n\n\tif result.Indexed != 2 {\n\t\tt.Errorf(\"Indexed = %d, want 2\", result.Indexed)\n\t}\n\tif result.Chunks != 2 {\n\t\tt.Errorf(\"Chunks = %d, want 2\", result.Chunks)\n\t}\n}\n"
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/indexer.go",
+    "old_string": "\tbatch := ix.index.NewBatch()\n\tfor _, c := range chunks {\n\t\tdoc := bleveChunk{\n\t\t\tQualifiedID:  c.QualifiedID,\n\t\t\tSectionID:    c.SectionID,\n\t\t\tDocumentSlug: c.DocumentSlug,\n\t\t\tTitle:        c.Title,\n\t\t\tContent:      c.Content,\n\t\t\tScope:        c.Scope,\n\t\t\tKind:         c.Kind,\n\t\t\tTags:         c.Tags,\n\t\t\tPosition:     c.Position,\n\t\t}\n\t\tif err := batch.Index(c.QualifiedID, doc); err != nil {\n\t\t\treturn fmt.Errorf(\"indexing chunk %s: %w\", c.QualifiedID, err)\n\t\t}\n\t}",
+    "new_string": "\tbatch := ix.index.NewBatch()\n\tfor i := range chunks {\n\t\tc := &chunks[i]\n\t\tdoc := bleveChunk{\n\t\t\tQualifiedID:  c.QualifiedID,\n\t\t\tSectionID:    c.SectionID,\n\t\t\tDocumentSlug: c.DocumentSlug,\n\t\t\tTitle:        c.Title,\n\t\t\tContent:      c.Content,\n\t\t\tScope:        c.Scope,\n\t\t\tKind:         c.Kind,\n\t\t\tTags:         c.Tags,\n\t\t\tPosition:     c.Position,\n\t\t}\n\t\tif err := batch.Index(c.QualifiedID, doc); err != nil {\n\t\t\treturn fmt.Errorf(\"indexing chunk %s: %w\", c.QualifiedID, err)\n\t\t}\n\t}"
+  },
+  "hook_event_name": "PreToolUse"
+}

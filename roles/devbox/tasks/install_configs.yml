@@ -50,6 +50,7 @@
     perms: true
     rsync_opts:
       - "--exclude=.DS_Store"
+      - "--exclude=__pycache__"
   delegate_to: localhost
   loop: "{{ devbox_claude_managed_dirs }}"
   loop_control:

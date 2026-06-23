@@ -1,0 +1,8 @@
+{
+  "session_id": "sess_b98e91f2",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "python -m venv .venv"
+  }
+}

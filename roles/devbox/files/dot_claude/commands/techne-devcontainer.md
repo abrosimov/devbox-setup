@@ -91,7 +91,7 @@ If tracked, mention:
 >
 > Next steps:
 > - **VS Code**: "Reopen in Container" from command palette
-> - **CLI**: `claude-devcontainer build && claude-devcontainer run`
+> - **CLI**: `~/.claude/bin/claude_devcontainer.py build && ~/.claude/bin/claude_devcontainer.py run`
 > - **Add domains**: `/techne-devcontainer add-domain example.com`
 > - **Remove a language**: `/techne-devcontainer strip rust`
 

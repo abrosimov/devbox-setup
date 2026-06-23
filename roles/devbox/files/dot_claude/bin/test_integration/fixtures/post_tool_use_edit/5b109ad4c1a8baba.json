@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/indexer.go",
+    "old_string": "// Indexer manages the bleve index for knowledge chunks.",
+    "new_string": "// maxSearchSize is the maximum number of hits to fetch during internal search operations.\nconst maxSearchSize = 10000\n\n// Indexer manages the bleve index for knowledge chunks."
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

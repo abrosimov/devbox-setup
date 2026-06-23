@@ -1,0 +1,8 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/usr/local/bin/something",
+    "content": ""
+  },
+  "hook_event_name": "PreToolUse"
+}

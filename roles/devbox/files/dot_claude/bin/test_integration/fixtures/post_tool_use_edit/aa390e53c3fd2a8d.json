@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/cmd/rag-mcp/main.go",
+    "old_string": "//go:build vectors\n\npackage main",
+    "new_string": "package main"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

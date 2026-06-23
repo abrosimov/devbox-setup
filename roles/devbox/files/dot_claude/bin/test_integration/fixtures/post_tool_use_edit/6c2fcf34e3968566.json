@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/embedder/ollama.go",
+    "old_string": "// NewOllamaBackend constructs an Ollama embedding backend.\n// It performs a health check at construction time and fails fast if Ollama is unreachable.\nfunc NewOllamaBackend(cfg config.EmbedderConfig) (*OllamaBackend, error) {",
+    "new_string": "// NewOllamaBackend constructs an Ollama embedding backend.\n// It performs a health check at construction time and fails fast if Ollama is unreachable.\nfunc NewOllamaBackend(cfg *config.EmbedderConfig) (*OllamaBackend, error) {"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

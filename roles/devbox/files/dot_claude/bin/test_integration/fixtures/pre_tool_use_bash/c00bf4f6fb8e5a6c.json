@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la <HOME>/.claude/bin/",
+    "description": "List existing MCP wrapper scripts"
+  },
+  "hook_event_name": "PreToolUse"
+}

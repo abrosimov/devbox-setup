@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/internal/foo/bar.go",
+    "old_string": "echo hello",
+    "new_string": "",
+    "replace_all": false
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "content": "i|1/R7"
+  },
+  "tool_response": "kNvW ",
+  "hook_event_name": "PostToolUse"
+}

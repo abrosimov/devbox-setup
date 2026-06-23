@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/indexer.go",
+    "old_string": "\treq := bleve.NewSearchRequest(query)\n\treq.Size = 10000",
+    "new_string": "\treq := bleve.NewSearchRequest(query)\n\treq.Size = maxSearchSize"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/nonexistent/path.txt",
+    "old_string": "jOg(vqO",
+    "new_string": "3IR",
+    "replace_all": false
+  },
+  "tool_response": "O",
+  "hook_event_name": "PostToolUse"
+}

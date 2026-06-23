@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/read.go",
+    "old_string": "\treq.Size = 10000\n\treq.Fields = []string{\n\t\t\"qualifiedId\", \"documentSlug\", \"sectionId\", \"title\",\n\t\t\"scope\", \"kind\", \"tags\", \"position\",\n\t}\n\treq.SortBy([]string{\"position\"})",
+    "new_string": "\treq.Size = maxTOCSections\n\treq.Fields = []string{\n\t\t\"qualifiedId\", \"documentSlug\", \"sectionId\", \"title\",\n\t\t\"scope\", \"kind\", \"tags\", \"position\",\n\t}\n\treq.SortBy([]string{\"position\"})"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

@@ -288,15 +288,6 @@ Include all required metadata fields. Extract all bounded contexts, aggregates, 
 
 **This step is supplementary** — `domain_model.md` is the primary deliverable. The JSON enables downstream agent consumption.
 
-### Progress Spine (Pipeline Mode Only)
-
-```bash
-# At start of work:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent domain-modeller --milestone M-domain-model --status started --quiet || true
-# At completion:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent domain-modeller --milestone M-domain-model --status completed --summary "Domain model complete" --quiet || true
-```
-
 ---
 
 ## Complexity Awareness

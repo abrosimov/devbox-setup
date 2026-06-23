@@ -47,7 +47,7 @@ Use `/techne-init-workflow` to explicitly set up the workflow config:
 
 ### Without workflow.json
 
-- All commands (`/techne-implement`, `/techne-test`, `/techne-review`, `/techne-full-cycle`) still work — they use agents regardless
+- All commands (`/techne-implement`, `/techne-test`, `/techne-review`) still work — they use agents regardless
 - Direct code edits via Edit/Write are allowed (no enforcement)
 - Commands default all flags to `true` for backward compatibility
 
@@ -86,13 +86,11 @@ Use `/techne-init-workflow` to explicitly set up the workflow config:
 │   ├── implement.md
 │   ├── test.md
 │   ├── review.md
-│   ├── full-cycle.md
 │   ├── init-workflow.md
 │   ├── build-agent.md
 │   ├── build-skill.md
 │   ├── validate-config.md
 │   ├── audit.md
-│   ├── checkpoint.md
 │   ├── verify.md
 │   └── learn.md
 ├── skills/                # Reusable knowledge modules
@@ -111,13 +109,11 @@ Use `/techne-init-workflow` to explicitly set up the workflow config:
 | `/techne-implement` | Run SE agent for current task | Start implementation |
 | `/techne-test` | Run test writer agent | After implementation |
 | `/techne-review` | Run code reviewer agent | After tests |
-| `/techne-full-cycle` | Run complete pipeline with 4 milestone gates | Standard development |
 | `/techne-init-workflow` | Initialise agent workflow for current project | First time in a project |
 | `/techne-build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
 | `/techne-build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
 | `/techne-audit` | Run library-wide freshness and/or consistency audit | After adding agents/skills, periodic maintenance |
 | `/techne-validate-config` | Check cross-references, skill existence, frontmatter integrity | After config changes |
-| `/techne-checkpoint` | Save or restore context across sessions/compaction | At logical boundaries, after milestones |
 | `/techne-verify` | Run pre-PR quality gate (build, typecheck, lint, test, debug scan) | Before `/techne-review` or PR creation |
 | `/techne-options` | Generate diverse solution options via DSS (Diverge-Synthesize-Select) | Before design decisions with wide scope |
 | `/techne-learn` | Extract a reusable pattern from current session | After solving non-trivial problems |
@@ -128,114 +124,33 @@ Each command:
 - Suggests next step after completion
 - For fullstack projects, routes to appropriate agent(s) based on work streams
 
-## Pipeline Modes
+## Invocation Modes
 
 | Mode | Trigger | Approval Model |
 |------|---------|---------------|
 | **Per-step** | Individual commands (`/techne-implement`, `/techne-test`, `/techne-review`) | Approve after each agent |
-| **Gated** | `/techne-full-cycle` | 4 milestone gates, autonomous between |
 | **Manual** | Call agents directly by name | Maximum control |
 
-### Gated Mode — 4 Milestone Gates
+## Agent Roster
 
-| Gate | After | User Decides |
-|------|-------|-------------|
-| G1 | TPM + Domain Expert + Domain Modeller | "Is this the right problem and domain model?" |
-| G2 | Designer options | "Which design direction?" (skipped for backend) |
-| G3 | Design + API + Plan all ready | "Ready to implement?" |
-| G4 | Code Review complete | "Ship it?" |
+Specialist agents available via `/techne-*` commands. Each is invoked one-shot for its specific concern. See `agents/` for full definitions.
 
-## Agent Pipeline
+| Stage | Agent | Produces |
+|-------|-------|----------|
+| Requirements | `technical_product_manager` | `spec.md`, `spec_output.json` |
+| Domain validation | `domain_expert` | `domain_analysis.md`, `domain_output.json` |
+| Domain modelling | `domain_modeller` | `domain_model.md`, `domain_model.json` |
+| Planning | `implementation_planner` | `plan.md`, `plan_output.json` |
+| UI design | `designer` | `design.md`, `design_output.json` |
+| Database design | `database_designer` | `schema_design.md`, migrations |
+| API design | `api_designer` | `api_design.md`, `api_design_output.json` |
+| Implementation | `software_engineer_{go,python,frontend}` | source code, `se_{lang}_output.json` |
+| Observability | `observability_engineer` | dashboards, alerts |
+| Unit tests | `unit_tests_writer_{go,python,frontend}` | test files |
+| Integration tests | `integration_tests_writer_{go,python}` | test files |
+| Review | `code_reviewer` | review report (inline) |
 
-<pipeline>
-
-### Step 1: Requirements
-- **technical_product_manager** — Transforms ideas into product specifications
-  Produces: `spec.md`, `spec_output.json`
-
-### Step 2: Domain Validation
-- **domain_expert** — Challenges assumptions, validates requirements, discovers events/commands
-  Depends on: Step 1
-  Produces: `domain_analysis.md`, `domain_output.json`
-
-### Step 2b: Domain Modelling
-- **domain_modeller** — Formalises domain analysis into DDD model with bounded contexts, aggregates, events, and system design bridge
-  Depends on: Step 2
-  Produces: `domain_model.md`, `domain_model.json`
-  Skipped when: Simple domain (Cynefin = Clear, <5 entities) or user says 'skip model'
-
-### Step 3: Planning + Design (parallel for UI features)
-- **implementation_planner** — Creates detailed implementation plans with work streams (stack-agnostic)
-  Depends on: Step 2
-  Produces: `plan.md`, `plan_output.json` (includes `work_streams` and `parallelism_groups`)
-- **designer** — Creates UI/UX design specs, design tokens, component specifications
-  Depends on: Step 2 (runs parallel with planner for UI features)
-  Produces: `design.md`, `design_output.json`
-  Skipped when: feature_type = backend
-
-### Step 4: Contracts (driven by work streams)
-- **database_designer** — Designs database schemas with migrations (PostgreSQL, MySQL, MongoDB, CockroachDB)
-  Depends on: Step 3
-  Produces: `schema_design.md`, migrations
-  Skipped when: plan has no schema work stream
-- **api_designer** — Designs API contracts (REST/OpenAPI or Protobuf/gRPC)
-  Depends on: Step 3 (and Step 4a if schema changes exist)
-  Produces: `api_design.md`, `api_design_output.json`
-
-### Step 5: Implementation (DAG-driven, stream-independent execution)
-
-**Execution model**: Phase 4 uses a DAG (Directed Acyclic Graph) where each task node executes as soon as its dependencies resolve. Streams don't wait for each other.
-
-- **Backend SE**: Depends on Gate 3 approval only
-  Produces: source code, `se_{lang}_output.json`, `backend_completion.json`
-- **Frontend SE**: Depends on Gate 3 approval + API contract
-  Produces: source code, `se_frontend_output.json`, `frontend_completion.json`
-  (Can run in parallel with backend — depends on API contract, NOT backend implementation)
-- **Observability**: Depends on Gate 3 approval
-  Produces: dashboards, alerts (can run in parallel with SE agents)
-- **Test Writers**: Depend on their stream's SE completion (NOT all streams)
-  Backend tests start as soon as backend SE finishes, even if frontend SE is still running
-- **Code Reviewer**: Depends on ALL streams completing tests
-  If blocking issues found → return to affected stream(s) with feedback
-
-**Schema-driven verification**: Each stream writes `{stream}_completion.json` (schema: `schemas/stream_completion.schema.json`). The orchestrator validates via `bin/validate-pipeline-output --full` before advancing the DAG. Exit codes drive targeted retry prompts.
-
-### Step 5b: Post-Agent Verification Gate
-
-After each SE agent completes, `/techne-implement` and `/techne-full-cycle` run independent verification via `~/.claude/bin/verify-se-completion`:
-
-1. **Build check** — runs `go build`/`uv sync`/`pnpm build` independently
-2. **Test check** — runs `go test`/`pytest`/`pnpm test` independently
-3. **Lint check** — runs `golangci-lint`/`ruff`/`eslint` independently
-
-If any check fails, the pipeline blocks advancement and offers to re-invoke the SE agent with the specific errors.
-
-This gate prevents agents from fabricating verification results — the orchestrator independently confirms that code compiles, tests pass, and linting is clean before advancing.
-
-### Step 6: Testing
-- **unit_tests_writer_*** — Writes unit tests with bug-hunting mindset (per language/stack)
-  Depends on: Step 5b
-- **integration_tests_writer_*** — Writes integration tests with real dependencies
-  Depends on: Step 5b
-
-### Step 7: Review
-- **code_reviewer** — Validates implementation against requirements. Detects stacks in the diff (Go / Python / Frontend) and loads matching skills
-  Depends on: Step 6
-  If blocking issues found → return to Step 5 with feedback
-
-</pipeline>
-
-<transitions>
-- After Step 2 completes → Step 2b (Domain Modeller) runs if domain is complex
-- After Step 2b completes (or is skipped) → **Gate 1** (user approval: "right problem + right model?")
-- Steps 3a (Planner) and 3b (Designer) run in parallel for UI/fullstack features
-- Planner produces work streams that drive Steps 4-5 execution order and DAG construction
-- Step 4 (contracts): Schema designer (if needed) runs before API designer; both autonomous
-- Step 5 (implementation): **DAG-based execution** — each stream (SE → verify → test) runs independently. A stream's test writer starts immediately when its SE passes the verification gate (Step 5b), without waiting for other streams. Cross-stream tasks (review) start when all their specific dependencies resolve.
-- Step 5b (verification gate): After each SE agent completes, `bin/verify-se-completion` runs build, test, and lint checks independently. Failure blocks the stream and re-invokes the SE agent with specific errors. Success advances the stream to Step 6.
-- After Step 5b completes (all streams verified) → Step 6 (testing) → Step 7 (review) → **Gate 4** (user approval: "ship it?")
-- Validation is deterministic (exit codes), not probabilistic (LLM self-assessment)
-</transitions>
+Each stage runs independently via its `/techne-*` command. The user drives the flow by choosing which command to run next.
 
 **Infrastructure agents** (outside the development pipeline):
 - **agent_builder** — Creates, validates, and refines agent definitions
@@ -352,8 +267,8 @@ One Jira ticket can span multiple branches/worktrees:
 | Script | Purpose | Called By |
 |--------|---------|----------|
 | `.claude/bin/git-default-branch` | Detect project's default branch | Commands, `proj wt` |
-| `.claude/bin/git-safe-commit` | Commit with branch protection + secret detection | Commands |
-| `.claude/bin/git-safe-merge` | ff-only merge with dependency check (opt-in integration branch) | User (manual) |
+| `.claude/bin/git_safe_commit.py` | Commit with branch protection + secret detection | Commands |
+| `.claude/bin/git_safe_merge.py` | ff-only merge with dependency check (opt-in integration branch) | User (manual) |
 
 ### Separation of Concerns
 

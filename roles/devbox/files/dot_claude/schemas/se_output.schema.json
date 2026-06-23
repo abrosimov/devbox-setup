@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "se_output.schema.json",
   "title": "Software Engineer Output",
-  "description": "Contract for SE agent completion artifacts. Filename convention: se_{agent_suffix}_output.json (e.g., se_go_output.json, se_python_output.json, se_frontend_output.json). Validated by bin/validate-pipeline-output and enforced by bin/pre-write-completion-gate.",
+  "description": "Contract for SE agent completion artifacts. Filename convention: se_{agent_suffix}_output.json (e.g., se_go_output.json, se_python_output.json, se_frontend_output.json).",
   "type": "object",
   "required": ["metadata", "files_changed", "requirements_implemented", "verification_evidence"],
   "properties": {

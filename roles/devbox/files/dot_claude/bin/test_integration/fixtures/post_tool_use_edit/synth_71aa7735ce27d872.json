@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/nonexistent/path.txt",
+    "old_string": "$Hos]",
+    "new_string": "",
+    "replace_all": false
+  },
+  "tool_response": "TH,",
+  "hook_event_name": "PostToolUse"
+}

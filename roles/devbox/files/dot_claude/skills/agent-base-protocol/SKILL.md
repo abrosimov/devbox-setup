@@ -26,7 +26,7 @@ The Write/Edit tools are auto-approved by `acceptEdits` mode. Bash heredocs prom
 
 **Conversational responses** — chat replies, AskUserQuestion text, TaskCreate subjects, and any UI-visible output that is not persisted — match the user's language. If the user writes in Russian, respond in Russian; if in English, respond in English.
 
-A non-blocking PostToolUse hook (`bin/post-edit-cyrillic-guard`) warns when Cyrillic characters appear in Edit/Write/MultiEdit/NotebookEdit content outside the allowlist (`testdata/`, `fixtures/`, `memory/`). Self-correct on the next edit when the warning fires.
+A non-blocking PostToolUse hook (`bin/post_edit_cyrillic_guard.py`) warns when Cyrillic characters appear in Edit/Write/MultiEdit/NotebookEdit content outside the allowlist (`testdata/`, `fixtures/`, `memory/`). Self-correct on the next edit when the warning fires.
 
 See `project-preferences` skill for the full word list.
 

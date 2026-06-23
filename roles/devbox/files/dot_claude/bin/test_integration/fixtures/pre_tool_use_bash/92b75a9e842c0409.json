@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la <HOME>/Projects/agentic-rag-mcp/spike 2>/dev/null || echo \"spike directory check\""
+  },
+  "hook_event_name": "PreToolUse"
+}

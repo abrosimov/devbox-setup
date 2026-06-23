@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls <HOME>/Projects/devbox-setup/roles/ 2>/dev/null; echo \"---\"; ls <HOME>/Projects/devbox-setup/scripts/ 2>/dev/null",
+    "description": "Inspect devbox-setup roles and scripts"
+  },
+  "hook_event_name": "PreToolUse"
+}

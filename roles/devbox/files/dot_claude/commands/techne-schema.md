@@ -28,7 +28,7 @@ Check if user passed a database argument:
 ### 1. Compute Task Context (once)
 
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 RC=$?
 ```
 

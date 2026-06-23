@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/indexer.go",
+    "old_string": "// GetHash returns the stored hash for a path.\nfunc (ix *Indexer) GetHash(path string) (string, bool) {\n\tix.mu.RLock()\n\tdefer ix.mu.RUnlock()\n\n\th, ok := ix.hashes[path]\n\treturn h, ok\n}",
+    "new_string": "// GetHash returns the stored hash for a path.\nfunc (ix *Indexer) GetHash(path string) (string, bool) {\n\tix.mu.RLock()\n\tdefer ix.mu.RUnlock()\n\n\th, ok := ix.hashes[path]\n\treturn h, ok\n}\n\n// RemoveHash removes the stored hash for a path.\nfunc (ix *Indexer) RemoveHash(path string) {\n\tix.mu.Lock()\n\tdefer ix.mu.Unlock()\n\n\tdelete(ix.hashes, path)\n}"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

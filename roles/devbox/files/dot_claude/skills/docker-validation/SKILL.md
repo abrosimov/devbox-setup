@@ -133,15 +133,6 @@ curl -sf http://localhost:8080/health
 echo "Smoke test passed"
 ```
 
-## Integration with verify-se-completion
-
-The `verify-se-completion` script includes Docker validation as phases 5 and 6:
-
-- **Phase 5 (Docker Lint)**: Runs always. Finds Dockerfiles (maxdepth 3) and runs hadolint; finds compose files and runs dclint. Exit code 6 on failure.
-- **Phase 6 (Smoke Test)**: Skipped in `--quick` mode. Detects smoke test convention and runs it. Exit code 7 on failure.
-
-Both phases skip gracefully if tools are not installed or no Docker files are found.
-
 ## Post-Edit Hook Integration
 
 The `post-edit-lint` hook automatically runs:

@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/server/tool_handlers.go",
+    "old_string": "\t\tif _, err := s.embedder.Embed(testCtx, \"health\", 1); err != nil {",
+    "new_string": "\t\tif _, err := s.embedder.Embed(testCtx, \"health\", embedder.PurposeQuery); err != nil {"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

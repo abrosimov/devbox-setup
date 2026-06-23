@@ -126,7 +126,7 @@ Runs before context compaction (when conversation grows too large).
 **Example**: Save session state
 ```bash
 #!/usr/bin/env bash
-# bin/session-save
+# bin/session_save.py (illustrative example — actual implementation is Python)
 
 # Save git status, modified files, current branch
 git status --short > ~/.claude/sessions/$SESSION_ID/git_status.txt
@@ -209,7 +209,7 @@ Runs when agent is about to finish. Can force continuation via `additionalContex
 **Example**: Verify lint-clean before completion
 ```javascript
 #!/usr/bin/env node
-// bin/stop-lint-gate
+// bin/stop_lint_gate.py (illustrative example — actual implementation is Python)
 
 const data = JSON.parse(input);
 
@@ -510,15 +510,15 @@ exit 0
 
 ### Checkpoint Suggestion (PostToolUse)
 
-Suggest checkpoint after N tool calls.
+Suggest summarising state into MEMORY.md after N tool calls.
 
 ```bash
 #!/usr/bin/env bash
-# bin/suggest-checkpoint
+# bin/suggest_checkpoint.py (illustrative example — actual implementation is Python)
 
-# Suggest checkpoint every 50 tool calls
+# Suggest summarising progress every 50 tool calls
 if (( TOOL_COUNT % 50 == 0 )); then
-    echo "SUGGESTION: Consider creating a checkpoint (/techne-checkpoint)"
+    echo "SUGGESTION: Summarise current progress into MEMORY.md before compaction"
 fi
 
 exit 0
@@ -547,7 +547,7 @@ Save state before compaction or session end.
 
 ```bash
 #!/usr/bin/env bash
-# bin/session-save
+# bin/session_save.py (illustrative example — actual implementation is Python)
 
 session_dir="$HOME/.claude/sessions/$SESSION_ID"
 mkdir -p "$session_dir"

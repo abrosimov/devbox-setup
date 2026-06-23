@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "content": "2D"
+  },
+  "tool_response": "p^e]{6]j",
+  "hook_event_name": "PostToolUse"
+}

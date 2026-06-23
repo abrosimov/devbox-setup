@@ -540,16 +540,7 @@ Write `{PROJECT_DIR}/domain_output.json` following the schema in `structured-out
 
 Include all required metadata fields. For stage-specific fields, extract key data from the domain analysis you just wrote: assumptions with validation status, discovery model (entities, relationships, invariants), constraints, risks, Cynefin classification, **discovery events**, and **discovery commands**.
 
-**This step is supplementary** — `domain_analysis.md` is the primary deliverable. The JSON enables automated pipeline tracking and downstream agent consumption (especially the Domain Modeller which reads discovery events/commands).
-
-### Progress Spine (Pipeline Mode Only)
-
-```bash
-# At start of work:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent domain-expert --milestone M-domain --status started --quiet || true
-# At completion:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent domain-expert --milestone M-domain --status completed --summary "Domain analysis complete" --quiet || true
-```
+**This step is supplementary** — `domain_analysis.md` is the primary deliverable. The JSON enables downstream agent consumption (especially the Domain Modeller which reads discovery events/commands).
 
 ---
 

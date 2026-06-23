@@ -1,0 +1,9 @@
+{
+  "session_id": "sess_wn3m21n9r",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/nonexistent/path.txt",
+    "content": ""
+  }
+}

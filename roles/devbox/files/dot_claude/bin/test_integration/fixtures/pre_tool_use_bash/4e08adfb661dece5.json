@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "grep -nE \"^### .*— Р[0-9]+\" <HOME>/Projects/warp-and-weft/base/План-работ.md 2>/dev/null | tail -10",
+    "description": "Find journal entry header pattern"
+  },
+  "hook_event_name": "PreToolUse"
+}

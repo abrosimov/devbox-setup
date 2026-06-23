@@ -1,0 +1,8 @@
+{
+  "session_id": "sess_znt5c046n",
+  "transcript_path": "<TMPDIR>/transcript.jsonl",
+  "cwd": "<TMPDIR>",
+  "hook_event_name": "PreCompact",
+  "trigger": "auto",
+  "custom_instructions": ""
+}

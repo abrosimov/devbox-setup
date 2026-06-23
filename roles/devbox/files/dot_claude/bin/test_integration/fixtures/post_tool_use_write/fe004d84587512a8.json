@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/testdata/no-headers.md",
+    "content": "This document has no section headers at all.\n\nIt is just plain text content spread across multiple paragraphs.\n\nThis is useful for testing the fallback behavior when no ## headers are found.\n"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

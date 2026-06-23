@@ -76,7 +76,7 @@ git checkout -b <branch-name> "$DEFAULT_BRANCH"
 ### 2. Compute Task Context (once)
 
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 RC=$?
 ```
 
@@ -87,21 +87,6 @@ RC=$?
   - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
 
 Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent, do not re-compute.
-
-### 2.5. Check for Progress Spine
-
-**Check for progress spine**: If `{PROJECT_DIR}/progress/plan.json` exists, check the agent's status:
-```bash
-AGENT_STATUS=$(jq -r '.status // "unknown"' "$PROJECT_DIR/progress/${AGENT_TYPE}.json" 2>/dev/null || echo "unknown")
-```
-If status is `"running"` (agent was interrupted) or `"failed"` or `"blocked"`, run reconciliation:
-```bash
-if [[ "$AGENT_STATUS" == "running" || "$AGENT_STATUS" == "failed" || "$AGENT_STATUS" == "blocked" ]]; then
-  RESUME_JSON=$(~/.claude/bin/progress reconcile --project-dir "$PROJECT_DIR" --agent "$AGENT_TYPE" --pre-sha "$PRE_SHA" 2>/dev/null || echo '{}')
-  RESUME_HINT=$(echo "$RESUME_JSON" | jq -r '.resume_hint' 2>/dev/null || echo "")
-fi
-```
-Include `RESUME_CONTEXT=true` and the reconciled hint in the agent's prompt so it knows where to resume.
 
 ### 3. Detect Project Stack
 
@@ -187,91 +172,6 @@ Each agent will:
 - Implement the required changes
 - Provide summary and suggest next step
 
-**Update progress view**: After agent completion, read merged progress and project to task UI:
-```bash
-PROGRESS=$(~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format json 2>/dev/null || echo '{}')
-```
-For each milestone in the progress, create or update TaskCreate/TaskUpdate entries so the user sees native progress indicators. Show a brief summary:
-```bash
-~/.claude/bin/progress view --project-dir "$PROJECT_DIR" --format summary 2>/dev/null || true
-```
-
-### 6a. Independent Verification
-
-After the agent Task returns, run independent verification before committing or reporting completion. This step does not trust the agent's self-reported results.
-
-**Detect language for verifier** (reuse markers from Step 3):
-- `go.mod` exists → `go`
-- `pyproject.toml` or `setup.py` exists → `python`
-- `package.json` exists → `node`
-
-**Check if verifier is available:**
-
-```bash
-VERIFIER=~/.claude/bin/verify-se-completion
-if [ ! -x "$VERIFIER" ]; then
-  echo "VERIFIER_SKIP: verify-se-completion not found"
-fi
-```
-
-If the verifier is not found or not executable, skip this step and note it in the completion report.
-
-**Run verification:**
-
-```bash
-# Base command
-CMD="$VERIFIER --lang <detected-lang> --work-dir <project-root>"
-
-# If the agent produced an output JSON, append --output-file
-if [ -n "$SE_OUTPUT_FILE" ] && [ -f "$SE_OUTPUT_FILE" ]; then
-  CMD="$CMD --output-file $SE_OUTPUT_FILE"
-fi
-
-$CMD
-VERIFY_EXIT=$?
-```
-
-**Act on the result:**
-
-| Exit code | Meaning | Action |
-|-----------|---------|--------|
-| `0` | Verification passed | Report "Implementation verified independently" and continue to Step 7 |
-| Non-zero | Verification failed | Show failure output; pause before commit; offer re-invocation |
-
-**If verification fails**, show the verifier output and prompt:
-
-> Verification found issues:
->
-> ```
-> {verifier output}
-> ```
->
-> Would you like me to re-invoke the agent to fix these?
-
-If the user says yes, go back to Step 6 and spawn the same agent again, passing the verification errors in the prompt context. If the user says no (or wants to proceed anyway), continue to Step 7 with a warning note.
-
-### 6b. SE Output Audit
-
-After verification, run the SE output auditor on the agent's output to detect fabrication patterns.
-
-```bash
-AUDITOR=~/.claude/bin/audit-work-log
-if [ -x "$AUDITOR" ] && [ -n "$SE_OUTPUT_FILE" ] && [ -f "$SE_OUTPUT_FILE" ]; then
-  $AUDITOR --se-output "$SE_OUTPUT_FILE" --lang <detected-lang> --json
-  AUDIT_EXIT=$?
-fi
-```
-
-| Exit code | Meaning | Action |
-|-----------|---------|--------|
-| `0` | Clean | Continue silently |
-| `1` | Advisory patterns found | Warn user: "SE output audit flagged possible excuse patterns" |
-| `2` | Missing commands | Warn user: "SE output audit found missing expected commands" |
-| `3` | Both advisory | Warn user with both findings |
-| `4` | **BLOCKING patterns** | **BLOCK** — "SE output audit detected high-confidence fabrication. Agent claimed it could not run tooling." Offer to re-invoke SE agent. |
-
-Exit 1-3 are advisory (warn only). Exit 4 is a hard block — do NOT proceed to commit or test until resolved.
-
 ### 7. Commit Changes
 
 **If `auto_commit` is `false`, skip this step.** Show changed files and tell the user:
@@ -287,7 +187,7 @@ After the agent completes successfully, commit the implementation:
 git status --short
 
 # Commit using safety wrapper (blocks protected branches, rejects secrets)
-.claude/bin/git-safe-commit -m "feat($JIRA_ISSUE): <concise description of implementation>"
+.claude/bin/git_safe_commit.py -m "feat($JIRA_ISSUE): <concise description of implementation>"
 ```
 
 **Commit message conventions:**
@@ -298,7 +198,7 @@ git status --short
 
 If specific files should be committed (not all changes):
 ```bash
-.claude/bin/git-safe-commit -m "feat($JIRA_ISSUE): <description>" file1.go file2.go
+.claude/bin/git_safe_commit.py -m "feat($JIRA_ISSUE): <description>" file1.go file2.go
 ```
 
 ### 8. After Completion

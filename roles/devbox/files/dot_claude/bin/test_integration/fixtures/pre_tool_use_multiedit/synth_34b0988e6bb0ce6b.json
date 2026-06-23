@@ -1,0 +1,14 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "<HOME>/.config/fish/config.fish",
+    "edits": [
+      {
+        "old_string": "Qp^",
+        "new_string": "undefined",
+        "replace_all": false
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

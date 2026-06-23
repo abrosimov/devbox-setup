@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "grep -nE \"^(##|### )(Р|Решение)\" <HOME>/Projects/warp-and-weft/base/План-работ.md 2>/dev/null | tail -10; echo \"---\"; head -30 <HOME>/Projects/warp-and-weft/base/План-работ.md 2>/dev/null",
+    "description": "Find journal entry format and head of plan"
+  },
+  "hook_event_name": "PreToolUse"
+}

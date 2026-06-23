@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/server/server.go",
+    "content": "//go:build vectors\n\npackage server\n\nimport (\n\t\"context\"\n\t\"log/slog\"\n\t\"time\"\n\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/config\"\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/embedder\"\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/ingest\"\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/search\"\n\n\t\"github.com/modelcontextprotocol/go-sdk/mcp\"\n)\n\n// Server wraps the MCP server with knowledge intelligence tools.\ntype Server struct {\n\tmcp      *mcp.Server\n\tpipeline *ingest.Pipeline\n\tsearcher *search.Searcher\n\tembedder embedder.Embedder\n\tcfg      config.Config\n\tstarted  time.Time\n}\n\n// New creates a new knowledge MCP server.\nfunc New(\n\tpipeline *ingest.Pipeline,\n\tsearcher *search.Searcher,\n\temb embedder.Embedder,\n\tcfg config.Config,\n) *Server {\n\ts := &Server{\n\t\tmcp: mcp.NewServer(\n\t\t\t&mcp.Implementation{\n\t\t\t\tName:    \"knowledge-mcp\",\n\t\t\t\tVersion: \"0.1.0\",\n\t\t\t},\n\t\t\tnil,\n\t\t),\n\t\tpipeline: pipeline,\n\t\tsearcher: searcher,\n\t\tembedder: emb,\n\t\tcfg:      cfg,\n\t\tstarted:  time.Now(),\n\t}\n\n\ts.registerTools()\n\treturn s\n}\n\n// Run starts the MCP server on stdio transport.\nfunc (s *Server) Run(ctx context.Context) error {\n\tslog.Info(\"starting knowledge MCP server\",\n\t\t\"name\", \"knowledge-mcp\",\n\t\t\"version\", \"0.1.0\",\n\t)\n\treturn s.mcp.Run(ctx, &mcp.StdioTransport{})\n}\n\n// Uptime returns the server's uptime.\nfunc (s *Server) Uptime() time.Duration {\n\treturn time.Since(s.started)\n}\n"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

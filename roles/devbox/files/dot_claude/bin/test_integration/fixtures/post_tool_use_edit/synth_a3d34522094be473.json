@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/.config/fish/config.fish",
+    "old_string": "",
+    "new_string": "homebrew",
+    "replace_all": false
+  },
+  "tool_response": "1/0",
+  "hook_event_name": "PostToolUse"
+}

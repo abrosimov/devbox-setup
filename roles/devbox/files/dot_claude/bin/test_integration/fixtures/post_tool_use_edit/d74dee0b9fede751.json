@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/spike/ollama_context_test.go",
+    "old_string": "\treq, _ := http.NewRequestWithContext(ctx, \"GET\", host+\"/api/tags\", nil)",
+    "new_string": "\treq, _ := http.NewRequestWithContext(ctx, http.MethodGet, host+\"/api/tags\", http.NoBody)"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

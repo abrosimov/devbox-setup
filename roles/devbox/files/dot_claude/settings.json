@@ -13,7 +13,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/bin/statusline.sh"
+    "command": "~/.claude/bin/statusline.py"
   },
   "sandbox": {
     "enabled": true,

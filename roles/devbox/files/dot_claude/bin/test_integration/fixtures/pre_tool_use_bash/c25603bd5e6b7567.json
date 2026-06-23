@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la <HOME>/Projects/agentic-rag-mcp/ | grep -E \"\\.(go|md|json)$|^d\"",
+    "description": "List root files and directories"
+  },
+  "hook_event_name": "PreToolUse"
+}

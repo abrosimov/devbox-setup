@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "find <HOME>/Projects/agentic-rag-mcp/internal/ingest/testdata -type f"
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/README.md",
+    "old_string": "x}Au",
+    "new_string": "k~)_/",
+    "replace_all": false
+  },
+  "tool_response": "<",
+  "hook_event_name": "PostToolUse"
+}

@@ -20,7 +20,7 @@ If no argument provided, ask:
 ### 2. Resolve Context
 
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context 2>/dev/null) && RC=$? || RC=$?
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py 2>/dev/null) && RC=$? || RC=$?
 ```
 
 Extract `JIRA_ISSUE`, `BRANCH_NAME`, and `PROJECT_DIR` from the context. Use `config` skill paths for artifact placement.

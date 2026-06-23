@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/server/server.go",
+    "old_string": "\tcfg      config.Config",
+    "new_string": "\tcfg      *config.Config"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

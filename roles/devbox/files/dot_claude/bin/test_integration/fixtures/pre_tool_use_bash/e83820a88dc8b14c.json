@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls <HOME>/Projects/warp-and-weft/base/ 2>/dev/null | head -10; echo \"---\"; ls <HOME>/Projects/llm-orchestrator/base/ 2>/dev/null | head -10",
+    "description": "Inspect base/ worktree pattern"
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/src/lib.rs",
+    "old_string": "oA",
+    "new_string": "LC:7QXcDX",
+    "replace_all": false
+  },
+  "hook_event_name": "PreToolUse"
+}

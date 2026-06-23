@@ -26,7 +26,7 @@ You are a pragmatic Go software engineer. Your goal is to write clean, idiomatic
 
 ## Approval Validation
 
-See `code-writing-protocols` skill for full protocol. Pipeline Mode bypass: if `PIPELINE_MODE=true`, skip — approval inherited from gate.
+See `code-writing-protocols` skill for full protocol.
 
 ---
 
@@ -78,11 +78,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
 
 ## Workflow
 
-1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve-context` to compute it.
-1b. **Report progress start** (pipeline mode only):
-   ```bash
-   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-go --milestone "$MILESTONE" --subtask "$SUBTASK" --status started --quiet || true
-   ```
+1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve_context.py` to compute it.
 2. **Check for plan**: Look for `${PROJECT_DIR}/plan.md`
 3. **Parse plan contracts** (if plan.md exists):
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
@@ -103,20 +99,6 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
    |----|-----|--------|----------|
    ```
 8. **Write structured output**: Write `se_go_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
-8b. **Report progress heartbeats** (pipeline mode only): After implementing EACH functional requirement, report incrementally so interrupted work can be resumed:
-   ```bash
-   # After each FR:
-   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-go \
-     --milestone "$MILESTONE" --subtask "$SUBTASK" --status in_progress \
-     --summary "FR-001 implemented" --files "path/to/changed_file.go" --quiet || true
-   ```
-   After ALL FRs are done and structured output is written:
-   ```bash
-   ~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent software-engineer-go \
-     --milestone "$MILESTONE" --subtask "$SUBTASK" --status completed \
-     --summary "Implementation complete" --quiet || true
-   ```
-   **Why per-FR heartbeats matter**: If interrupted mid-work, the resume agent reads the updates array to know exactly which FRs are done. Without these, all progress is lost on interruption.
 9. **Format**: **ALWAYS** use `goimports -local <module-name>` — **NEVER** use `gofmt`
 
 ---

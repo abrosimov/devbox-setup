@@ -1,0 +1,29 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/etc/hostname",
+    "edits": [
+      {
+        "old_string": "microsoft",
+        "new_string": "",
+        "replace_all": true
+      },
+      {
+        "old_string": "K",
+        "new_string": "ZZ.G?9V]",
+        "replace_all": true
+      },
+      {
+        "old_string": "Fo+My6G>|Zt",
+        "new_string": "/!Yc{@",
+        "replace_all": true
+      },
+      {
+        "old_string": "h_y{kZNxr}2f",
+        "new_string": "w}wL",
+        "replace_all": false
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

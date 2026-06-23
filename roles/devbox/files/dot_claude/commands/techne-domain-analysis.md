@@ -9,7 +9,7 @@ You are orchestrating the domain analysis phase of a development workflow.
 ### 1. Compute Task Context (once)
 
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 RC=$?
 ```
 

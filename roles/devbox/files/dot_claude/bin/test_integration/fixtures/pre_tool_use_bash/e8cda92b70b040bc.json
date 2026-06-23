@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls <HOME>/.claude/projects/-Users-<HOME>-Projects/memory/ 2>/dev/null && echo \"---\" && cat <HOME>/.claude/projects/-Users-<HOME>-Projects/memory/MEMORY.md 2>/dev/null",
+    "description": "Inspect existing memory for this scope"
+  },
+  "hook_event_name": "PreToolUse"
+}

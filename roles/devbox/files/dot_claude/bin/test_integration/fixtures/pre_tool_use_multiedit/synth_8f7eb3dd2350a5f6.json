@@ -1,0 +1,29 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/etc/hostname",
+    "edits": [
+      {
+        "old_string": "S-Xa",
+        "new_string": "5fx",
+        "replace_all": false
+      },
+      {
+        "old_string": "SV7zTRe",
+        "new_string": "0/0",
+        "replace_all": false
+      },
+      {
+        "old_string": "RfUn\"$b",
+        "new_string": "DX",
+        "replace_all": false
+      },
+      {
+        "old_string": "Rk~x76",
+        "new_string": "v",
+        "replace_all": true
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -6,8 +6,8 @@
 # the .venv defined here.
 #
 # Bootstrap: lazy. The Makefile sentinel target `.venv/.devbox-installed` runs
-# `uv sync --group dev` on first invocation of any dev target (lint-py, typecheck-py,
-# test-py, etc.) and re-runs only when this file changes.
+# `uv sync --group dev` on first invocation of any dev target (lint-py, typecheck,
+# test, test-integration, qa, etc.) and re-runs only when this file changes.
 #
 # Naming: `package = false` under [tool.uv] tells uv we are not a buildable package,
 # we are a "virtual project" that exists only to pin dev dependencies.
@@ -54,9 +54,8 @@ select = ["ALL"]
 ignore = [
     # Docstring rules — utility scripts and hook handlers don't need them
     "D",
-    # Deprecated and over-strict annotation rules
-    "ANN101", "ANN102",  # deprecated (self/cls)
-    "ANN401",            # Any disallowed — too strict for dynamic glue scripts
+    # Any disallowed — too strict for dynamic glue scripts
+    "ANN401",
     # Formatter conflicts (standard ruff guidance)
     "COM812", "ISC001",
     # Copyright headers — not used in this project
@@ -97,6 +96,21 @@ ignore = [
     "ANN",         # annotations optional in tests
     "D",           # docstrings optional in tests
 ]
+# Integration harness — sibling test_integration/ directory has its own test_*.py
+# files plus helper modules (anonymise.py, runner.py, ...). Tests get the looser
+# per-file ignore set; the helpers stay strict via the bin/** umbrella ignore.
+"roles/devbox/files/dot_claude/bin/test_integration/test_*.py" = [
+    "S101",        # assert is the whole point of tests
+    "PLR2004",     # magic numbers OK in test cases
+    "SLF001",      # private member access is expected (testing _-prefixed helpers)
+    "S108",        # hardcoded /tmp paths are test fixtures, not real artifacts
+    "ANN",         # annotations optional in tests
+    "D",           # docstrings optional in tests
+    "PLC0415",     # local imports OK in tests (lazy hypothesis import)
+]
+"roles/devbox/files/dot_claude/bin/test_integration/fixtures/**" = [
+    "ALL",         # fixtures are data, not code
+]
 "roles/devbox/files/dot_claude/skills/**/scripts/test_*.py" = [
     "S101",        # assert is the whole point of tests
     "PLR2004",     # magic numbers OK in test cases
@@ -107,6 +121,26 @@ ignore = [
 ]
 "roles/devbox/files/dot_claude/bin/**" = [
     "EXE001",      # Shebang present but file not executable — handled by deploy
+    "E402",        # sys.path.insert hack before imports is the shared-lib pattern
+]
+# Phase 5 rename via copy: validate_skill_evals.py is a byte-identical copy of
+# the legacy validate-skill-evals (no extension), which Ruff did not see because
+# of the missing .py suffix. The copy now surfaces inherited style debt (long
+# argparse-driven f-strings in main(), nested validators with high branch counts)
+# that pre-dates this migration. Refactoring would diverge from the byte-copy
+# contract of Phase 5 (the original is still on disk and referenced by Makefile/
+# commands until Phase 6/8). Widening this ignore set will happen in Phase 8 when
+# the legacy original is deleted and the snake_case version becomes the only copy.
+"roles/devbox/files/dot_claude/bin/validate_skill_evals.py" = [
+    "C901",        # complex validators inherited from legacy script
+    "E501",        # long argparse/print f-strings in main() inherited from legacy
+    "PLR0912",     # branchy validators inherited from legacy script
+    "PLR0915",     # long main() inherited from legacy script
+    "PLC0415",     # local argparse import inherited from legacy script
+    "F841",        # unused description_value assignment inherited from legacy
+    "SIM103",      # explicit return True/False blocks inherited from legacy
+    "RUF005",      # list concatenation style inherited from legacy
+    "ANN201",      # main() missing return annotation inherited from legacy
 ]
 
 [tool.ruff.format]
@@ -129,6 +163,22 @@ venv = ".venv"
 [[tool.pyright.executionEnvironments]]
 root = "roles/devbox/files/.config/kitty"
 reportMissingImports = "none"
+
+# bin/ scripts use a runtime sys.path.insert trick to find sibling modules
+# (`_claude_lib`, peer scripts under test) — Pyright needs extraPaths to mirror
+# this, otherwise siblings appear unresolved even though pyrefly and pytest
+# both accept them.
+[[tool.pyright.executionEnvironments]]
+root = "roles/devbox/files/dot_claude/bin"
+extraPaths = ["roles/devbox/files/dot_claude/bin"]
+
+# Integration harness lives under bin/test_integration/ and imports its
+# siblings as ``test_integration.X``. Pyright resolves this when ``bin/`` is on
+# the path, but spell out the test_integration execution environment explicitly
+# so the LSP picks it up even when opening files outside the harness directly.
+[[tool.pyright.executionEnvironments]]
+root = "roles/devbox/files/dot_claude/bin/test_integration"
+extraPaths = ["roles/devbox/files/dot_claude/bin"]
 
 # ─── Pyrefly ─────────────────────────────────────────────────────────────────
 # Meta's Python type-checker. Scoped explicitly to first-party scripts to avoid
@@ -166,6 +216,77 @@ matches = "roles/devbox/files/.config/kitty/**"
 [tool.pyrefly.sub-config.errors]
 missing-import = false
 
+# Strict mode for the bin/ shared library. Scope is the new _claude_lib package
+# only — pre-existing scripts in bin/ (pre_bash_safety_gate.py, validate-config.py,
+# stop_format.py, …) carry legacy debt that will be cleaned up as part of the
+# Phase 2-5 migration (see plans/rosy-noodling-axolotl.md). Widening the glob to
+# bin/** before then would block the migration on unrelated drive-by fixes.
+#
+# The plan asks for: implicit-any, missing-return-type, inconsistent-override,
+# unbound-name. Pyrefly 1.0 spells some of those differently — actual rule keys
+# used here, with the plan's intent in brackets:
+#   - implicit-any           (plan: implicit-any)            — covers Any everywhere
+#   - implicit-any-parameter (plan: implicit-any narrower)    — unannotated params
+#   - unannotated-return     (plan: missing-return-type)      — closest pyrefly key
+#   - bad-override           (plan: inconsistent-override)    — closest pyrefly key
+#   - unbound-name           (plan: unbound-name)             — exact match
+[[tool.pyrefly.sub-config]]
+matches = "roles/devbox/files/dot_claude/bin/_claude_lib/**"
+[tool.pyrefly.sub-config.errors]
+implicit-any = true
+implicit-any-parameter = true
+unannotated-return = true
+bad-override = true
+unbound-name = true
+
+# Phase 2 migration: the same strict rules apply to the new Python hook scripts
+# that replace the Node.js ones. Tests live alongside but follow the looser
+# bin/test_*.py per-file-ignore set from ruff (no return-type/annotation needed).
+[[tool.pyrefly.sub-config]]
+matches = "roles/devbox/files/dot_claude/bin/{pre_plan_code_guard,stop_lint_gate,pre_edit_lint_guard,pre_write_completion_gate,post_edit_lint,session_save,post_edit_typecheck,health_check,suggest_checkpoint}.py"
+[tool.pyrefly.sub-config.errors]
+implicit-any = true
+implicit-any-parameter = true
+unannotated-return = true
+bad-override = true
+unbound-name = true
+
+# Phase 3 migration: 10 Bash hook/CLI scripts replaced by Python. Same strict
+# rule set as Phase 2. Tests live alongside but follow the looser bin/test_*.py
+# per-file-ignore set from ruff (no return-type/annotation needed).
+[[tool.pyrefly.sub-config]]
+matches = "roles/devbox/files/dot_claude/bin/{permission_auto_approve,pre_bash_toolchain_guard,pre_bash_boundary_wrap,pre_compact_mask,post_edit_cyrillic_guard,pre_tmpdir_guard,resolve_context,git_safe_commit,git_safe_merge,fpf_drift_check}.py"
+[tool.pyrefly.sub-config.errors]
+implicit-any = true
+implicit-any-parameter = true
+unannotated-return = true
+bad-override = true
+unbound-name = true
+
+# Phase 4 migration: 3 Bash CLI tools replaced by Python (statusline, fix-perms,
+# devcontainer). Same strict rule set as Phases 2-3.
+[[tool.pyrefly.sub-config]]
+matches = "roles/devbox/files/dot_claude/bin/{statusline,claude_fix_perms,claude_devcontainer}.py"
+[tool.pyrefly.sub-config.errors]
+implicit-any = true
+implicit-any-parameter = true
+unannotated-return = true
+bad-override = true
+unbound-name = true
+
+# Phase 5 migration: existing Python scripts renamed from hyphenated names to
+# snake_case (validate-config.py → validate_config.py, validate-skill-evals →
+# validate_skill_evals.py). Same strict rule set as Phases 2-4. The legacy
+# hyphenated originals stay on disk until Phase 8 and are NOT under strict mode.
+[[tool.pyrefly.sub-config]]
+matches = "roles/devbox/files/dot_claude/bin/{validate_config,validate_skill_evals}.py"
+[tool.pyrefly.sub-config.errors]
+implicit-any = true
+implicit-any-parameter = true
+unannotated-return = true
+bad-override = true
+unbound-name = true
+
 # ─── Pytest ──────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 # tests/ holds Ansible vault fixtures, not Python tests. Python tests live next
@@ -176,5 +297,5 @@ python_files = ["test_*.py"]
 addopts = "-ra --strict-markers --strict-config"
 markers = [
     "slow: tests that take longer than 1s",
-    "integration: tests that touch real systems",
+    "integration: subprocess-based integration tests (slower)",
 ]

@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/pipeline.go",
+    "old_string": "\t\tif err := p.indexer.RemoveDocument(slug); err != nil {\n\t\t\t\tslog.Error(\"removing deleted document\", \"path\", path, \"error\", err)\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\t// Remove from hash tracking.\n\t\t\tp.indexer.mu.Lock()\n\t\t\tdelete(p.indexer.hashes, path)\n\t\t\tp.indexer.mu.Unlock()",
+    "new_string": "\t\tif err := p.indexer.RemoveDocument(slug); err != nil {\n\t\t\t\tslog.Error(\"removing deleted document\", \"path\", path, \"error\", err)\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\t// Remove from hash tracking.\n\t\t\tp.indexer.RemoveHash(path)"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

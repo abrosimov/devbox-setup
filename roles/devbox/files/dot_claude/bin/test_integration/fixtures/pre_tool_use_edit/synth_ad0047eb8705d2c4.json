@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/README.md",
+    "old_string": "W9gBeS",
+    "new_string": "W9gBeS",
+    "replace_all": true
+  },
+  "hook_event_name": "PreToolUse"
+}

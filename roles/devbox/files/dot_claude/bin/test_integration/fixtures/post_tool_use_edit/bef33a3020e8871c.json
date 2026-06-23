@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/server/tools.go",
+    "old_string": "\ttype ReadArgs struct {\n\t\tID      string `json:\"id\" jsonschema:\"required\"`\n\t\tContext int    `json:\"context,omitempty\"`\n\t}",
+    "new_string": "\ttype ReadArgs struct {\n\t\tID      string `json:\"id\" jsonschema:\"Section qualified ID (e.g. doc-slug:A.1) or document slug for TOC\"`\n\t\tContext int    `json:\"context,omitempty\" jsonschema:\"Number of surrounding sections to include (0-5)\"`\n\t}"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

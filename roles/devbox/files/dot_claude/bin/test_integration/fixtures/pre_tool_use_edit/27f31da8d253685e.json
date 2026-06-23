@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/config/config.go",
+    "old_string": "\tif v := os.Getenv(\"RAG_MCP_EMBEDDER_DIMENSIONS\"); v != \"\" {\n\t\tif n, err := strconv.Atoi(v); err == nil && n > 0 {\n\t\t\tcfg.Embedder.Dimensions = n\n\t\t}\n\t}\n\tif v := os.Getenv(\"RAG_MCP_OLLAMA_HOST\"); v != \"\" {\n\t\tcfg.Embedder.Ollama.Host = v\n\t}\n\tif v := os.Getenv(\"RAG_MCP_INDEX_PATH\"); v != \"\" {\n\t\tcfg.IndexPath = v\n\t}\n\tif v := os.Getenv(\"RAG_MCP_LOG_LEVEL\"); v != \"\" {\n\t\tcfg.Log.Level = v\n\t}\n\tif v := os.Getenv(\"RAG_MCP_MAX_CHUNK_SIZE\"); v != \"\" {\n\t\tif n, err := strconv.Atoi(v); err == nil && n > 0 {\n\t\t\tcfg.Knowledge.MaxChunkSize = n\n\t\t}\n\t}\n\tif v := os.Getenv(\"RAG_MCP_GLOBAL_SOURCES\"); v != \"\" {\n\t\tcfg.Knowledge.GlobalSources = strings.Split(v, \",\")\n\t}\n}",
+    "new_string": "\tenvPositiveInt(\"RAG_MCP_EMBEDDER_DIMENSIONS\", &cfg.Embedder.Dimensions)\n\tif v := os.Getenv(\"RAG_MCP_OLLAMA_HOST\"); v != \"\" {\n\t\tcfg.Embedder.Ollama.Host = v\n\t}\n\tif v := os.Getenv(\"RAG_MCP_INDEX_PATH\"); v != \"\" {\n\t\tcfg.IndexPath = v\n\t}\n\tif v := os.Getenv(\"RAG_MCP_LOG_LEVEL\"); v != \"\" {\n\t\tcfg.Log.Level = v\n\t}\n\tenvPositiveInt(\"RAG_MCP_MAX_CHUNK_SIZE\", &cfg.Knowledge.MaxChunkSize)\n\tif v := os.Getenv(\"RAG_MCP_GLOBAL_SOURCES\"); v != \"\" {\n\t\tcfg.Knowledge.GlobalSources = strings.Split(v, \",\")\n\t}\n}\n\n// envPositiveInt reads an env var as a positive integer and assigns it to dst.\nfunc envPositiveInt(key string, dst *int) {\n\tif v := os.Getenv(key); v != \"\" {\n\t\tif n, err := strconv.Atoi(v); err == nil && n > 0 {\n\t\t\t*dst = n\n\t\t}\n\t}\n}"
+  },
+  "hook_event_name": "PreToolUse"
+}

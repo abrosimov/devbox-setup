@@ -306,10 +306,6 @@ Write `dss_output.json` to `{PROJECT_DIR}/` conforming to `schemas/dss_output.sc
 }
 ```
 
-### Pipeline Mode
-
-In `PIPELINE_MODE=true`, DSS still presents options to the user. Tier 3 Wide decisions inherently require human input — autonomous selection is not permitted. Set `decided_by: "pending"` and escalate.
-
 ---
 
 ## Context Window Protection

@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "which proj 2>/dev/null && proj --help 2>&1 | head -30 || echo \"proj not on PATH\"",
+    "description": "Check proj CLI availability"
+  },
+  "hook_event_name": "PreToolUse"
+}

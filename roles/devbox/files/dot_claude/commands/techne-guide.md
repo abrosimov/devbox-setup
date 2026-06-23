@@ -47,17 +47,6 @@ You can also skip the pipeline and ask me to edit code directly — the agent wo
 
 ---
 
-### Full Development Cycle
-
-```
-/techne-full-cycle         → runs the complete pipeline with milestone gates:
-                      TPM → Domain → Model → Design → Plan → API → Implement → Test → Review
-```
-
-Each phase produces output consumed by the next. You approve at each gate.
-
----
-
 ### Project Setup
 
 ```
@@ -69,19 +58,10 @@ Each phase produces output consumed by the next. You approve at each gate.
 
 **Devcontainer CLI** (outside Claude Code):
 ```
-claude-devcontainer init      → copy template, detect languages
-claude-devcontainer build     → build the Docker image
-claude-devcontainer run       → run Claude Code inside the container
-claude-devcontainer run --bypass  → run with --dangerously-skip-permissions
-```
-
----
-
-### Session Management
-
-```
-/techne-checkpoint         → save context before exiting or when context gets large
-/techne-checkpoint resume  → restore context in a new session
+~/.claude/bin/claude_devcontainer.py init      → copy template, detect languages
+~/.claude/bin/claude_devcontainer.py build     → build the Docker image
+~/.claude/bin/claude_devcontainer.py run       → run Claude Code inside the container
+~/.claude/bin/claude_devcontainer.py run --bypass  → run with --dangerously-skip-permissions
 ```
 
 ---

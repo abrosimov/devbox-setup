@@ -1,0 +1,14 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/etc/hostname",
+    "edits": [
+      {
+        "old_string": "",
+        "new_string": "",
+        "replace_all": false
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

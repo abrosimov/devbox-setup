@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/search.go",
+    "old_string": "\tcfg      config.SearchConfig",
+    "new_string": "\tcfg      *config.SearchConfig"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

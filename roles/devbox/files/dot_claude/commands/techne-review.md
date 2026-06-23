@@ -28,7 +28,7 @@ Parse the JSON. Extract flags (default to `true` if key is missing):
 ### 1. Compute Task Context (once)
 
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 RC=$?
 DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
@@ -102,7 +102,7 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   # If auto_commit is false, warn user about uncommitted changes
   # and ask them to commit before pushing. Do NOT auto-commit.
   # If auto_commit is true (default):
-  .claude/bin/git-safe-commit -m "chore($JIRA_ISSUE): final changes after review"
+  .claude/bin/git_safe_commit.py -m "chore($JIRA_ISSUE): final changes after review"
 fi
 
 # Push and create PR

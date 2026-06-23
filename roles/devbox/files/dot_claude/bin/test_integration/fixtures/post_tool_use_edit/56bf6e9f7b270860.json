@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/server/server.go",
+    "old_string": "// New creates a new knowledge MCP server.\nfunc New(\n\tpipeline *ingest.Pipeline,\n\tsearcher *search.Searcher,\n\temb embedder.Embedder,\n\tcfg config.Config,\n) *Server {",
+    "new_string": "// New creates a new knowledge MCP server.\nfunc New(\n\tpipeline *ingest.Pipeline,\n\tsearcher *search.Searcher,\n\temb embedder.Embedder,\n\tcfg *config.Config,\n) *Server {"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la <HOME>/Projects/agentic-rag-mcp/ | grep -E \"(README|docs|CLAUDE)\""
+  },
+  "hook_event_name": "PreToolUse"
+}

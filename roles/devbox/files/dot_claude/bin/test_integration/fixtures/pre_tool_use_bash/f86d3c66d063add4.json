@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "find <HOME>/Projects/agentic-rag-mcp -type f -name \"*.go\" | grep -E \"(config|domain|embedder|search|ingest|server)\" | head -20"
+  },
+  "hook_event_name": "PreToolUse"
+}

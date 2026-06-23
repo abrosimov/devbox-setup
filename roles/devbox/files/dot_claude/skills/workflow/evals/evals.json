@@ -4,11 +4,11 @@
     {
       "id": 1,
       "prompt": "What commands are available for the agent pipeline?",
-      "expected_output": "Lists slash commands: /techne-implement, /techne-test, /techne-review, /techne-plan, /techne-full-cycle, etc.",
+      "expected_output": "Lists slash commands: /techne-implement, /techne-test, /techne-review, /techne-plan, etc.",
       "expectations": [
         "Lists available slash commands",
         "Explains what each command does",
-        "References the agent pipeline concept"
+        "References the agent roster"
       ]
     },
     {
@@ -23,12 +23,12 @@
     },
     {
       "id": 3,
-      "prompt": "I want to run the full development cycle for this feature",
-      "expected_output": "Explains /techne-full-cycle command with its milestone gates",
+      "prompt": "How do I sequence planning, implementing, testing, and reviewing for a new feature?",
+      "expected_output": "Explains running /techne-plan, then /techne-implement, /techne-test, /techne-review in order",
       "expectations": [
-        "References /techne-full-cycle command",
-        "Explains the milestone gates (TPM → Domain → Model → Implementation)",
-        "Describes the sequential workflow"
+        "References /techne-plan, /techne-implement, /techne-test, /techne-review",
+        "Describes one-shot per-command invocation",
+        "Notes user drives the flow by choosing each next command"
       ]
     },
     {

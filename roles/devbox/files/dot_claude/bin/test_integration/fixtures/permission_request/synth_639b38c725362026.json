@@ -1,0 +1,11 @@
+{
+  "session_id": "sess_xui1c1d0y",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/.config/fish/config.fish",
+    "old_string": "kQPqXa",
+    "new_string": "5fx",
+    "replace_all": false
+  }
+}

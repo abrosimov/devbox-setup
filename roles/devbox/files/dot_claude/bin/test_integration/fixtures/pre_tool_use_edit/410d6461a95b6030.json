@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/swap_test.go",
+    "old_string": "//go:build vectors\n\npackage ingest",
+    "new_string": "package ingest"
+  },
+  "hook_event_name": "PreToolUse"
+}

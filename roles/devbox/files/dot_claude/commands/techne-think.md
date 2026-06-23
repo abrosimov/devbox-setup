@@ -29,7 +29,7 @@ Determine where the artifact should be written:
 
 ```bash
 # Try to get ticket context
-CONTEXT_JSON=$(~/.claude/bin/resolve-context 2>/dev/null) && RC=$? || RC=$?
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py 2>/dev/null) && RC=$? || RC=$?
 ```
 
 | Condition | Scope | Artifact Path |

@@ -151,7 +151,7 @@ Use context provided by orchestrator: `BRANCH`, `JIRA_ISSUE`, `BRANCH_NAME`, `DE
 
 If invoked directly (no context), compute once:
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
 
@@ -625,21 +625,6 @@ Final on-screen summary (interactive mode):
 ```
 
 If no blocking issues, switch the suggestion to `commit` and offer the PR flow per `commands/techne-review.md`.
-
-### Progress Spine (Pipeline Mode Only)
-
-```bash
-# At start
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent code-reviewer \
-  --milestone "$MILESTONE" --subtask "${MILESTONE}.review" --status started --quiet || true
-
-# At completion
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent code-reviewer \
-  --milestone "$MILESTONE" --subtask "${MILESTONE}.review" --status completed \
-  --summary "Review complete (stacks: <list>)" --quiet || true
-```
-
-`$MILESTONE` is provided by the orchestrator (e.g., `M-ws-1`).
 
 ---
 

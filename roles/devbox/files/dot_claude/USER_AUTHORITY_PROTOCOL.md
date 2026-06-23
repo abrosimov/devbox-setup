@@ -139,7 +139,7 @@ Never add `Co-Authored-By` trailers to commit messages.
 
 **Conversational responses**: match the user's language (Russian or English). Chat replies, `AskUserQuestion` text, and `TaskCreate` subjects follow the user.
 
-A non-blocking PostToolUse hook (`bin/post-edit-cyrillic-guard`) warns when Cyrillic leaks into Edit/Write/MultiEdit/NotebookEdit content. Allowlist: `testdata/`, `fixtures/`, `memory/`. When the warning fires, self-correct on the next edit. Full rules: see `agent-base-protocol` and `project-preferences` skills.
+A non-blocking PostToolUse hook (`bin/post_edit_cyrillic_guard.py`) warns when Cyrillic leaks into Edit/Write/MultiEdit/NotebookEdit content. Allowlist: `testdata/`, `fixtures/`, `memory/`. When the warning fires, self-correct on the next edit. Full rules: see `agent-base-protocol` and `project-preferences` skills.
 
 ---
 

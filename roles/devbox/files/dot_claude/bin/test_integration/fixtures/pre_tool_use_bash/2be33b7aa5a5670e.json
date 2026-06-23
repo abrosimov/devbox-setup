@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "grep -n \"^## Р\\|^### Р\\|^Р[0-9]\\+\" <HOME>/Projects/warp-and-weft/base/План-работ.md 2>/dev/null | tail -20",
+    "description": "Find highest Р-number in journal"
+  },
+  "hook_event_name": "PreToolUse"
+}

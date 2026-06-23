@@ -19,7 +19,7 @@ Opinionated choices that differ from community defaults. These are NOT standard 
 
 **Conversational responses** to the user (chat, AskUserQuestion, TaskCreate subjects, other non-persisted UI output) match the user's language. Persisted artifacts stay British English regardless of conversation language.
 
-Enforcement: non-blocking PostToolUse hook `bin/post-edit-cyrillic-guard` warns on Cyrillic in edited content; allowlist for `testdata/`, `fixtures/`, `memory/`.
+Enforcement: non-blocking PostToolUse hook `bin/post_edit_cyrillic_guard.py` warns on Cyrillic in edited content; allowlist for `testdata/`, `fixtures/`, `memory/`.
 
 ---
 

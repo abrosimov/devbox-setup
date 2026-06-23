@@ -16,8 +16,6 @@ Shared decision-making and quality protocols for all code-writing agents (SE-go,
 
 **Before ANY code work, validate approval in the conversation context.**
 
-**Pipeline Mode bypass**: If `PIPELINE_MODE=true` is set in your invocation prompt, skip this entire section — the orchestrator already has gate approval. Log `✓ Pipeline mode — approval inherited from gate` and proceed directly to the Decision Classification Protocol.
-
 ### Step 1: Scan Recent Messages
 
 Look for explicit approval in the last 2-3 user messages:
@@ -96,8 +94,6 @@ Tasks with clear patterns but minor implementation choices.
 - Small refactoring choices
 
 **Action:** Briefly consider 2-3 approaches. Check codebase for precedent. Select best fit. Document choice if non-obvious.
-
-**Pipeline Mode**: In `PIPELINE_MODE=true`, make Tier 2 decisions autonomously and log each in the `autonomous_decisions` array of your structured output (see `agent-communication` skill — Autonomous Decision Logging).
 
 **Internal reasoning format:**
 ```
@@ -594,7 +590,7 @@ If a test cannot meaningfully fail first (e.g., testing existing behaviour that 
 
 ## Pre-Flight Verification (SE Agents)
 
-Build, test, and lint checks are **hook-enforced** — `pre-write-completion-gate` blocks artifact writes unless `verify-se-completion` passes (build + test + lint + docker lint + smoke). You still MUST run checks manually and report results.
+Run build, test, and lint checks manually before completing. The `stop_lint_gate` and `stop_format` hooks enforce clean lint at task completion, so unresolved lint issues will block the Stop event regardless.
 
 ### Pre-Flight Report (REQUIRED OUTPUT)
 

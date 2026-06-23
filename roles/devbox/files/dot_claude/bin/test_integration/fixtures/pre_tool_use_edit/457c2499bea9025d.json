@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/search.go",
+    "old_string": "\t\tsearchResults = append(searchResults, SearchResult{\n\t\t\tQualifiedID:  getString(hit.Fields, \"qualifiedId\"),\n\t\t\tDocumentSlug: getString(hit.Fields, \"documentSlug\"),\n\t\t\tSectionID:    getString(hit.Fields, \"sectionId\"),\n\t\t\tTitle:        getString(hit.Fields, \"title\"),\n\t\t\tScore:        hit.Score,\n\t\t\tSnippet:      GenerateSnippet(content, 500),",
+    "new_string": "\t\tsearchResults = append(searchResults, SearchResult{\n\t\t\tQualifiedID:  getString(hit.Fields, \"qualifiedId\"),\n\t\t\tDocumentSlug: getString(hit.Fields, \"documentSlug\"),\n\t\t\tSectionID:    getString(hit.Fields, \"sectionId\"),\n\t\t\tTitle:        getString(hit.Fields, \"title\"),\n\t\t\tScore:        hit.Score,\n\t\t\tSnippet:      GenerateSnippet(content, defaultSnippetLen),"
+  },
+  "hook_event_name": "PreToolUse"
+}

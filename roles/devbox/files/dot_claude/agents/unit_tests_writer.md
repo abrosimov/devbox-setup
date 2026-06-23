@@ -108,7 +108,7 @@ Use context provided by orchestrator: `BRANCH`, `JIRA_ISSUE`, `BRANCH_NAME`, `DE
 
 If invoked directly (no context), compute once:
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
 
@@ -406,21 +406,6 @@ Final on-screen summary (interactive mode):
 ## Log Work
 
 See `code-writing-protocols` skill — Log Work.
-
-### Progress Spine (Pipeline Mode Only)
-
-```bash
-# At start:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent unit-test-writer \
-  --milestone "$MILESTONE" --subtask "${MILESTONE}.test" --status started --quiet || true
-
-# At completion:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent unit-test-writer \
-  --milestone "$MILESTONE" --subtask "${MILESTONE}.test" --status completed \
-  --summary "Tests written (stacks: <list>)" --quiet || true
-```
-
-`$MILESTONE` is provided by the orchestrator in the agent's prompt context (e.g., `M-ws-1`).
 
 ---
 

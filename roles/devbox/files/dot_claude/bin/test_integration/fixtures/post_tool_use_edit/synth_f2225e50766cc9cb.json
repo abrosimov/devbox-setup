@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/internal/foo/bar.go",
+    "old_string": "6I*!otod8p?b}_CpmCBE}W",
+    "new_string": "QZ3N=",
+    "replace_all": false
+  },
+  "tool_response": "QZ3N=",
+  "hook_event_name": "PostToolUse"
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for validate-config.py command-namespace checks.
+"""Tests for validate_config.py command-namespace checks.
 
 Run from any directory:
     pytest roles/devbox/files/dot_claude/bin/test_validate_config.py
@@ -11,22 +11,12 @@ warnings), including the boundary cases that must NOT be flagged.
 
 from __future__ import annotations
 
-import importlib.util
-from pathlib import Path
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from types import ModuleType
+import validate_config as vc
 
-# validate-config.py has a hyphen, so it cannot be imported by name.
-_SPEC = importlib.util.spec_from_file_location(
-    "validate_config", Path(__file__).resolve().parent / "validate-config.py"
-)
-if _SPEC is None or _SPEC.loader is None:
-    msg = "Failed to load validate-config.py module spec"
-    raise RuntimeError(msg)
-vc: ModuleType = importlib.util.module_from_spec(_SPEC)
-_SPEC.loader.exec_module(vc)
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _codes(messages: list[str]) -> list[str]:
@@ -85,7 +75,6 @@ def test_dangling_techne_ref_errors(tmp_path: Path) -> None:
 
 
 def test_dangling_ref_in_docs_still_errors(tmp_path: Path) -> None:
-    # docs/ is excluded from the bare-name scan but kept for dangling refs.
     root = _build_root(tmp_path, ["plan"], {"docs/spec.md": "uses `/techne-ghost`\n"})
     errors, _ = vc.check_command_refs(root)
     assert "CMD_REF" in _codes(errors)
@@ -107,7 +96,6 @@ def test_bare_name_in_docs_not_flagged(tmp_path: Path) -> None:
 
 
 def test_host_only_dir_not_scanned(tmp_path: Path) -> None:
-    # projects/ is user content — never scanned, even for dangling refs.
     root = _build_root(tmp_path, ["plan"], {"projects/p.md": "Run `/plan` and `/techne-ghost`.\n"})
     errors, warnings = vc.check_command_refs(root)
     assert "CMD_BARE" not in _codes(warnings)
@@ -140,7 +128,6 @@ def test_hyphenated_stem_resolves(tmp_path: Path) -> None:
 
 
 def test_test_prefixed_file_excluded(tmp_path: Path) -> None:
-    # bin/test_*.py carries fixture strings that must not trip the scan.
     root = _build_root(
         tmp_path,
         ["plan"],
@@ -152,7 +139,6 @@ def test_test_prefixed_file_excluded(tmp_path: Path) -> None:
 
 
 def test_test_suffixed_file_excluded(tmp_path: Path) -> None:
-    # Defensive: legacy *_test.py naming must also be skipped.
     root = _build_root(
         tmp_path,
         ["plan"],

@@ -1,0 +1,14 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/nonexistent/path.txt",
+    "edits": [
+      {
+        "old_string": "l",
+        "new_string": "",
+        "replace_all": true
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

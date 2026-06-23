@@ -11,7 +11,6 @@ This environment has an agent pipeline with specialised commands. When unsure wh
 | `/techne-review` | Code review via a reviewer agent |
 | `/techne-verify` | Pre-PR quality gate (build, lint, typecheck, test) |
 | `/techne-plan` | Create an implementation plan from requirements |
-| `/techne-checkpoint` | Save/restore session context across exits |
 
 ## Project Setup
 
@@ -22,11 +21,10 @@ This environment has an agent pipeline with specialised commands. When unsure wh
 | `/techne-schema` | Design a database schema |
 | `/techne-api-design` | Design API contracts (REST or gRPC) |
 
-## Full Lifecycle
+## Discovery & Design
 
 | Command | What it does |
 |---------|-------------|
-| `/techne-full-cycle` | Complete dev cycle: spec → domain → design → plan → implement → test → review |
 | `/techne-domain-analysis` | Validate requirements with a domain expert |
 | `/techne-design` | Create UI/UX design specification |
 

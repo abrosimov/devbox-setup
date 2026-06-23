@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git -C <HOME>/Projects/llm-orchestrator/base status --short 2>&1 | head -30",
+    "description": "Check llm-orchestrator git status"
+  },
+  "hook_event_name": "PreToolUse"
+}

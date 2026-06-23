@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/read.go",
+    "old_string": "\treq.Size = 10000\n\treq.Fields = []string{\n\t\t\"qualifiedId\", \"documentSlug\", \"sectionId\", \"title\",\n\t\t\"content\", \"scope\", \"kind\", \"tags\", \"position\",\n\t}\n\n\tresults, err := s.index.Search(req)\n\tif err != nil {\n\t\treturn nil, err\n\t}",
+    "new_string": "\treq.Size = maxTOCSections\n\treq.Fields = []string{\n\t\t\"qualifiedId\", \"documentSlug\", \"sectionId\", \"title\",\n\t\t\"content\", \"scope\", \"kind\", \"tags\", \"position\",\n\t}\n\n\tresults, err := s.index.Search(req)\n\tif err != nil {\n\t\treturn nil, err\n\t}"
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,19 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/etc/hostname",
+    "edits": [
+      {
+        "old_string": "Bafz#v;Y'12Hwx1",
+        "new_string": "",
+        "replace_all": false
+      },
+      {
+        "old_string": "Bafz#v;Y'12Hwx1",
+        "new_string": "",
+        "replace_all": false
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

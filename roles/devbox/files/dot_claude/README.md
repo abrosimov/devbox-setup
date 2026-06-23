@@ -40,10 +40,8 @@ Slash commands for common workflows:
 | `/techne-options` | Generate diverse solution options (DSS protocol) |
 | `/techne-think` | Structured systems thinking (FPF) |
 | `/techne-verify` | Pre-PR quality gate (build, lint, test) |
-| `/techne-status` | Show pipeline progress |
 | `/techne-guide` | Show available capabilities |
 | `/techne-devcontainer` | Set up Docker sandbox for isolated runs |
-| `/techne-checkpoint` | Save/restore session context |
 
 ## Hooks
 

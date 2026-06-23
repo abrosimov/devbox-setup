@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls <HOME>/Projects/warp-and-weft/base/warp/ <HOME>/Projects/warp-and-weft/base/weft/ <HOME>/Projects/warp-and-weft/base/backlog/ <HOME>/Projects/warp-and-weft/base/_templates/ <HOME>/Projects/warp-and-weft/base/Приложения/ <HOME>/Projects/warp-and-weft/base/archive/ 2>/dev/null",
+    "description": "List warp, weft, backlog, templates contents"
+  },
+  "hook_event_name": "PreToolUse"
+}

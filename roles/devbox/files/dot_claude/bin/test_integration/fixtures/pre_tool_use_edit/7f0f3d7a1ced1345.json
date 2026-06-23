@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/search.go",
+    "old_string": "// NewSearcher creates a searcher backed by a bleve index.\nfunc NewSearcher(index bleve.Index, emb embedder.Embedder, cfg config.SearchConfig) *Searcher {",
+    "new_string": "// NewSearcher creates a searcher backed by a bleve index.\nfunc NewSearcher(index bleve.Index, emb embedder.Embedder, cfg *config.SearchConfig) *Searcher {"
+  },
+  "hook_event_name": "PreToolUse"
+}

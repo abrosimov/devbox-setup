@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "cat <HOME>/Projects/agents-hooks-guard/base/CLAUDE.md 2>/dev/null | head -80",
+    "description": "Inspect agents-hooks-guard CLAUDE.md"
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/.config/fish/config.fish",
+    "old_string": "0_?S9V|+u",
+    "new_string": "h8o",
+    "replace_all": true
+  },
+  "hook_event_name": "PreToolUse"
+}

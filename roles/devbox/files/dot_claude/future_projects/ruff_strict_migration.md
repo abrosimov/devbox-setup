@@ -14,8 +14,8 @@ The existing Python scripts under `roles/devbox/files/dot_claude/bin/` and a
 handful in `scripts/` predate this strict baseline and currently produce
 **~644 violations** after `ruff format` and `ruff check --fix` have been applied.
 
-To unblock the rest of the dev tooling (`make lint-yaml`, `make typecheck-py`,
-`make test-py`, and `ruff format --check`), `make lint-py` runs
+To unblock the rest of the dev tooling (`make lint-yaml`, `make typecheck`,
+`make test`, and `ruff format --check`), `make lint-py` runs
 `ruff check --exit-zero` — it reports issues but does not fail. The formatter
 remains strict (it is deterministic and auto-fixable).
 
@@ -96,5 +96,5 @@ When `make lint-py` is clean (no violations from `ruff check`), edit `Makefile`:
 ## Related
 
 - `pyproject.toml` — current ruff config (look for the `[tool.ruff.lint]` block).
-- `Makefile` — `lint-py`, `typecheck-py`, `test-py` targets.
+- `Makefile` — `lint-py`, `typecheck`, `test` targets.
 - `.yamllint.yml` — companion YAML linter config.

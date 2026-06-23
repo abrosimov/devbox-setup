@@ -1,15 +1,14 @@
 ---
 name: structured-output
 description: >
-  JSON schemas for structured agent output, hybrid output pattern, pipeline state tracking,
-  and decision logging. Enables automated pipeline coordination and downstream agent
-  consumption. Use when producing structured JSON output, tracking pipeline state,
-  or logging agent decisions.
+  JSON schemas for structured agent output and the hybrid markdown+JSON pattern.
+  Use when producing structured JSON output (`spec_output.json`, `plan_output.json`,
+  `se_*_output.json`, etc.) alongside the primary markdown deliverable.
 ---
 
 # Structured Output
 
-Defines the "common language" for agent pipeline coordination. Each agent produces structured JSON alongside its existing markdown deliverables.
+Defines the "common language" for agent handoffs. Each agent produces structured JSON alongside its existing markdown deliverables so downstream agents can consume typed fields without re-parsing prose.
 
 ## Hybrid Output Pattern
 
@@ -17,7 +16,7 @@ Each agent produces **TWO** files:
 - `{stage}.md` — existing markdown (reasoning, rationale, human-readable) — **primary deliverable**
 - `{stage}_output.json` — structured contract (metadata + typed fields for downstream agents) — **supplementary**
 
-The markdown document is always the authoritative source. The JSON enables automated pipeline tracking and downstream agent consumption.
+The markdown document is always the authoritative source. The JSON enables typed downstream consumption.
 
 ## Graceful Degradation Rule
 
@@ -34,40 +33,9 @@ Machine-readable JSON Schema files live in `schemas/`:
 | Schema | File | Used By |
 |--------|------|---------|
 | SE Output | `schemas/se_output.schema.json` | SE agents (Go, Python, Frontend), Test Writers, Code Reviewers |
-| Stream Completion | `schemas/stream_completion.schema.json` | Stream executors (Phase 4 DAG) |
-| Execution DAG | `schemas/execution_dag.schema.json` | Full-cycle orchestrator |
-| Pipeline State | `schemas/pipeline_state.schema.json` | Full-cycle orchestrator |
 | DSS Output | `schemas/dss_output.schema.json` | `/techne-options` command, DSS protocol |
-| Progress Plan | `schemas/progress_plan.schema.json` | TPM (init), Impl Planner (refine) |
-| Progress Agent | `schemas/progress_agent.schema.json` | All pipeline agents |
 
 These files are the **authoritative** schema definitions. The inline JSON examples below are derived from them. When in doubt, the schema file wins.
-
-## Programmatic Validation
-
-Agent output is verified by `bin/validate-pipeline-output` — a deterministic script, not LLM self-assessment:
-
-```bash
-# Validate stream completion output
-bin/validate-pipeline-output --schema stream_completion --file backend_completion.json
-
-# Full validation: schema + reality check + build + tests
-bin/validate-pipeline-output --full --file backend_completion.json --lang go
-
-# Validate DAG integrity (cycles, dangling edges, required fields)
-bin/validate-pipeline-output --dag-check --file execution_dag.json
-```
-
-Exit codes map to specific failure types:
-
-| Code | Meaning | Orchestrator Action |
-|------|---------|-------------------|
-| 0 | Passed | Advance pipeline |
-| 1 | Schema violation | Retry: "Output JSON malformed" |
-| 2 | Reality mismatch | Retry: "Claimed files don't exist" |
-| 3 | Build failure | Retry: "Code doesn't compile: {error}" |
-| 4 | Test failure | Retry: "Tests fail: {error}" |
-| 5 | DAG integrity | Rebuild DAG |
 
 ---
 
@@ -350,122 +318,6 @@ The `metadata.role` field captures what was built (api, cli, library, worker, fr
 The `deviations[]` field replaces the former `work_log_*.md` narrative — structured plan deviation tracking instead of free-form prose.
 
 > **Downstream usage**: Test Writer reads `requirements_implemented` + `verification_summary` to target untested areas. Code Reviewer reads `domain_compliance` + `autonomous_decisions` to audit DDD adherence and Tier 2 choices.
-
-### Stream Completion — `{stream}_completion.json`
-
-Written by stream executors at the end of Phase 4 DAG execution. Validated by `bin/validate-pipeline-output --full`. See `schemas/stream_completion.schema.json` for authoritative definition.
-
-```json
-{
-  "stream": "string (stream identifier, e.g., 'backend', 'frontend')",
-  "status": "enum: complete | partial | blocked | failed",
-  "steps": [
-    {
-      "name": "enum: se | commit_impl | test | commit_test",
-      "status": "enum: passed | failed | skipped",
-      "error": "string (required if status=failed)",
-      "output_file": "string (path to step output, e.g., se_{lang}_output.json)"
-    }
-  ],
-  "git_sha": "string (HEAD SHA after completion, pattern: ^[a-f0-9]{7,40}$)",
-  "files_modified": ["string (relative paths of modified files)"],
-  "output_files": ["string (paths to structured output JSONs)"],
-  "build_passed": "boolean (language-specific build check result)",
-  "tests_passed": "boolean",
-  "tests_total": "integer",
-  "tests_failed": "integer",
-  "attempt": "integer (1 = first try, 2+ = retry)",
-  "started_at": "string (ISO 8601)",
-  "completed_at": "string (ISO 8601)"
-}
-```
-
-**Invariants enforced by schema:**
-- If `status=complete`: no step may have `status=failed`, and `build_passed` must be `true`
-- If `status=failed`: at least one step must have `status=failed` with a non-empty `error`
-- `git_sha` must match `^[a-f0-9]{7,40}$` pattern
-
-> **Downstream usage**: Orchestrator validates with `bin/validate-pipeline-output --full`. Exit code determines whether to advance DAG, retry, or escalate.
-
----
-
-## Pipeline State Schema — `pipeline_state.json`
-
-Tracks pipeline progress across the full development cycle.
-
-```json
-{
-  "pipeline_id": "JIRA-123_feature-name",
-  "feature_type": "ui | backend | fullstack",
-  "stages": {
-    "tpm": { "status": "completed | in_progress | pending | skipped", "output": "spec.md", "approved_at": "ISO 8601 | null" },
-    "domain_expert": { "status": "...", "output": "domain_analysis.md", "approved_at": null },
-    "domain_modeller": { "status": "...", "output": "domain_model.md", "approved_at": null },
-    "designer": { "status": "...", "output": "design.md", "selected_option": "string | null", "figma_source": { "url": "string | null", "file_key": "string | null" }, "figma_artifacts": { "user_flow_url": "string | null", "state_diagram_count": "number" }, "approved_at": null },
-    "impl_planner": { "status": "...", "output": "plan.md", "approved_at": null },
-    "database_designer": { "status": "...", "output": "schema_design.md", "approved_at": null },
-    "api_designer": { "status": "...", "output": "api_design.md", "approved_at": null },
-    "software_engineer_backend": { "status": "...", "approved_at": null },
-    "software_engineer_frontend": { "status": "...", "approved_at": null },
-    "test_writer": { "status": "...", "approved_at": null },
-    "code_reviewer": { "status": "...", "approved_at": null },
-    "observability_engineer": { "status": "...", "approved_at": null }
-  },
-  "current_gate": "G1 | G2 | G3 | G4 | none",
-  "decisions": []
-}
-```
-
-### Stage Status Values
-
-| Status | Meaning |
-|--------|---------|
-| `pending` | Not yet started |
-| `in_progress` | Agent currently running |
-| `completed` | Agent finished, output available |
-| `skipped` | Stage not applicable for this feature type |
-
----
-
-## Decision Log Schema — `decisions.json`
-
-Records user decisions at pipeline gates and key decision points.
-
-```json
-{
-  "decisions": [
-    {
-      "id": "D1",
-      "gate": "G2",
-      "stage": "designer",
-      "question": "Which design direction?",
-      "options_presented": ["Minimalist", "Dashboard", "Wizard"],
-      "chosen": "Dashboard",
-      "rationale": "User preference for information density",
-      "decided_by": "user",
-      "timestamp": "ISO 8601"
-    }
-  ]
-}
-```
-
----
-
-## Progress Spine (Supplementary Tracking)
-
-Progress tracking is **distinct from** structured output:
-
-| Aspect | Structured Output (`*_output.json`) | Progress (`progress/*.json`) |
-|--------|--------------------------------------|-------------------------------|
-| **Purpose** | Final deliverable contract | Live status tracking |
-| **Written** | Once, at agent completion | Incrementally during work |
-| **Schema** | Stage-specific (spec, plan, design...) | `progress_plan` + `progress_agent` |
-| **Read by** | Downstream agents | Orchestrator + `/techne-status` command |
-| **Required?** | Yes (pipeline mode) | Optional (graceful degradation) |
-
-Agents produce BOTH: structured output (final artifact) + progress updates (live status). They serve different consumers and timelines.
-
-See `agent-communication` skill → "Progress Spine Protocol" for update patterns.
 
 ---
 

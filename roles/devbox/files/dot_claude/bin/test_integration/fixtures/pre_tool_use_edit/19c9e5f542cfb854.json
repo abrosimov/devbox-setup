@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/server/tool_handlers.go",
+    "old_string": "func indexStructured(result *domain.IndexResult) map[string]any {\n\treturn map[string]any{\n\t\t\"type\": \"indexResponse\",\n\t\t\"result\": map[string]any{\n\t\t\t\"indexed\":    result.Indexed,\n\t\t\t\"unchanged\":  result.Unchanged,\n\t\t\t\"removed\":    result.Removed,\n\t\t\t\"errors\":     result.Errors,\n\t\t\t\"chunks\":     result.Chunks,\n\t\t\t\"durationMs\": result.Duration.Milliseconds(),\n\t\t},\n\t\t\"details\": result.Details,\n\t\t\"errors\":  result.FileErrors,\n\t}\n}",
+    "new_string": "func indexStructured(result *domain.IndexResult) map[string]any {\n\tdetails := result.Details\n\tif details == nil {\n\t\tdetails = []domain.IndexDetail{}\n\t}\n\tfileErrors := result.FileErrors\n\tif fileErrors == nil {\n\t\tfileErrors = []domain.IndexFileError{}\n\t}\n\treturn map[string]any{\n\t\t\"type\": \"indexResponse\",\n\t\t\"result\": map[string]any{\n\t\t\t\"indexed\":    result.Indexed,\n\t\t\t\"unchanged\":  result.Unchanged,\n\t\t\t\"removed\":    result.Removed,\n\t\t\t\"errors\":     result.Errors,\n\t\t\t\"chunks\":     result.Chunks,\n\t\t\t\"durationMs\": result.Duration.Milliseconds(),\n\t\t},\n\t\t\"details\": details,\n\t\t\"errors\":  fileErrors,\n\t}\n}"
+  },
+  "hook_event_name": "PreToolUse"
+}

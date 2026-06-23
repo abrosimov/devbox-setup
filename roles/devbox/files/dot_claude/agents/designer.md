@@ -344,16 +344,7 @@ Write `{PROJECT_DIR}/design_output.json` following the schema in `structured-out
 
 Include all required metadata fields. For stage-specific fields, extract key data from the design you just wrote: design options (with trade-offs, complexity, component/token counts), selected option, components list, tokens summary, accessibility plan.
 
-**This step is supplementary** — `design.md` is the primary deliverable. The JSON enables automated pipeline tracking and downstream agent consumption.
-
-### Progress Spine (Pipeline Mode Only)
-
-```bash
-# At start of work:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent designer --milestone M-design --status started --quiet || true
-# At completion:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent designer --milestone M-design --status completed --summary "Design specification complete" --quiet || true
-```
+**This step is supplementary** — `design.md` is the primary deliverable. The JSON enables downstream agent consumption.
 
 ---
 

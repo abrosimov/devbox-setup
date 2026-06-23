@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "for d in devbox-setup warp-and-weft llm-orchestrator agentic-rag-mcp provider go-versioning-helper proto-store codenavd obsidian-tasks-system everything-claude-code; do\n  echo \"=== $d ===\"\n  ls <HOME>/Projects/$d/ 2>/dev/null | head -15\ndone",
+    "description": "Sample top-level layouts of key projects"
+  },
+  "hook_event_name": "PreToolUse"
+}

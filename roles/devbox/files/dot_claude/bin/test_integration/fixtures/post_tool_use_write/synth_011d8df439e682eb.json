@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/nonexistent/path.txt",
+    "content": "jOg(vqO"
+  },
+  "tool_response": "jOg(vqO",
+  "hook_event_name": "PostToolUse"
+}

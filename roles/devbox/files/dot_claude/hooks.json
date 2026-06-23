@@ -6,11 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-bash-toolchain-guard"
+            "command": "~/.claude/bin/pre_bash_toolchain_guard.py"
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-tmpdir-guard"
+            "command": "~/.claude/bin/pre_tmpdir_guard.py"
           },
           {
             "type": "command",
@@ -18,7 +18,7 @@
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-bash-boundary-wrap"
+            "command": "~/.claude/bin/pre_bash_boundary_wrap.py"
           }
         ]
       },
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-tmpdir-guard"
+            "command": "~/.claude/bin/pre_tmpdir_guard.py"
           }
         ]
       },
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-edit-lint-guard"
+            "command": "~/.claude/bin/pre_edit_lint_guard.py"
           }
         ]
       },
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-edit-lint-guard"
+            "command": "~/.claude/bin/pre_edit_lint_guard.py"
           }
         ]
       },
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-write-completion-gate"
+            "command": "~/.claude/bin/pre_write_completion_gate.py"
           }
         ]
       },
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-plan-code-guard"
+            "command": "~/.claude/bin/pre_plan_code_guard.py"
           }
         ]
       },
@@ -81,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-plan-code-guard"
+            "command": "~/.claude/bin/pre_plan_code_guard.py"
           }
         ]
       },
@@ -90,7 +90,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-plan-code-guard"
+            "command": "~/.claude/bin/pre_plan_code_guard.py"
           }
         ]
       }
@@ -100,7 +100,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/permission-auto-approve"
+            "command": "~/.claude/bin/permission_auto_approve.py"
           }
         ]
       }
@@ -110,7 +110,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/suggest-checkpoint",
+            "command": "~/.claude/bin/suggest_checkpoint.py",
             "async": true
           }
         ]
@@ -120,16 +120,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-lint"
+            "command": "~/.claude/bin/post_edit_lint.py"
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-typecheck",
+            "command": "~/.claude/bin/post_edit_typecheck.py",
             "async": true
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+            "command": "~/.claude/bin/post_edit_cyrillic_guard.py"
           }
         ]
       },
@@ -138,16 +138,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-lint"
+            "command": "~/.claude/bin/post_edit_lint.py"
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-typecheck",
+            "command": "~/.claude/bin/post_edit_typecheck.py",
             "async": true
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+            "command": "~/.claude/bin/post_edit_cyrillic_guard.py"
           }
         ]
       },
@@ -156,7 +156,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+            "command": "~/.claude/bin/post_edit_cyrillic_guard.py"
           }
         ]
       },
@@ -165,7 +165,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+            "command": "~/.claude/bin/post_edit_cyrillic_guard.py"
           }
         ]
       }
@@ -179,7 +179,7 @@
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/stop-lint-gate"
+            "command": "~/.claude/bin/stop_lint_gate.py"
           }
         ]
       }
@@ -189,11 +189,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/session-save"
+            "command": "~/.claude/bin/session_save.py"
           },
           {
             "type": "command",
-            "command": "~/.claude/bin/pre-compact-mask"
+            "command": "~/.claude/bin/pre_compact_mask.py"
           }
         ]
       }
@@ -203,7 +203,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/session-save"
+            "command": "~/.claude/bin/session_save.py"
           }
         ]
       }

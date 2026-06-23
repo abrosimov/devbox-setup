@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/embedder/factory.go",
+    "content": "package embedder\n\nimport (\n\t\"fmt\"\n\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/config\"\n)\n\n// NewEmbedder constructs the configured embedding backend.\n// Called once at startup. Returns error if backend is unknown or unreachable.\nfunc NewEmbedder(cfg config.EmbedderConfig) (Embedder, error) {\n\tswitch cfg.Backend {\n\tcase \"ollama\", \"\":\n\t\treturn NewOllamaBackend(cfg)\n\tcase \"onnx\":\n\t\treturn nil, fmt.Errorf(\"ONNX Runtime backend not yet implemented\")\n\tcase \"llamacpp\":\n\t\treturn nil, fmt.Errorf(\"llama.cpp backend not yet implemented\")\n\tcase \"mock\":\n\t\treturn NewMockEmbedder(cfg.Dimensions), nil\n\tdefault:\n\t\treturn nil, fmt.Errorf(\"unknown embedder backend: %q\", cfg.Backend)\n\t}\n}\n"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

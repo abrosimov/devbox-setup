@@ -1,0 +1,8 @@
+{
+  "session_id": "sess_2et1mc7my2p6w5z0",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git rebase main"
+  }
+}

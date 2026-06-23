@@ -294,16 +294,7 @@ Write `{PROJECT_DIR}/api_design_output.json` following the schema in `structured
 
 Include all required metadata fields. For stage-specific fields, extract key data from the API design you just wrote: format (openapi/protobuf), resources with operations and relationships, error strategy, pagination approach, and spec file path.
 
-**This step is supplementary** — `api_design.md` is the primary deliverable. The JSON enables automated pipeline tracking and downstream agent consumption.
-
-### Progress Spine (Pipeline Mode Only)
-
-```bash
-# At start of work:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent api-designer --milestone M-api --status started --quiet || true
-# At completion:
-~/.claude/bin/progress update --project-dir "$PROJECT_DIR" --agent api-designer --milestone M-api --status completed --summary "API design complete" --quiet || true
-```
+**This step is supplementary** — `api_design.md` is the primary deliverable. The JSON enables downstream agent consumption.
 
 ---
 

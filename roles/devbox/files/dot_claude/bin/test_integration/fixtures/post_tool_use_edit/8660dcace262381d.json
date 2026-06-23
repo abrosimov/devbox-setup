@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/read.go",
+    "old_string": "import (\n\t\"fmt\"\n\t\"sort\"\n\t\"strings\"\n\n\t\"github.com/<HOME>/bleve/v2\"\n\tbleveSearch \"github.com/<HOME>/bleve/v2/search\"\n)\n\n// Read retrieves a section by qualified ID or a document TOC by slug.\nfunc (s *Searcher) Read(id string, contextN int) (ReadResponse, error) {\n\tif contextN < 0 {\n\t\tcontextN = 0\n\t}\n\tif contextN > 5 {\n\t\tcontextN = 5\n\t}",
+    "new_string": "import (\n\t\"fmt\"\n\t\"sort\"\n\t\"strings\"\n\n\t\"github.com/<HOME>/bleve/v2\"\n\tbleveSearch \"github.com/<HOME>/bleve/v2/search\"\n)\n\n// maxContextSections is the maximum number of surrounding sections to return.\nconst maxContextSections = 5\n\n// maxTOCSections is the maximum sections to retrieve for a TOC query.\nconst maxTOCSections = 10000\n\n// maxAmbiguousResults is the maximum disambiguation results to return.\nconst maxAmbiguousResults = 100\n\n// Read retrieves a section by qualified ID or a document TOC by slug.\nfunc (s *Searcher) Read(id string, contextN int) (ReadResponse, error) {\n\tif contextN < 0 {\n\t\tcontextN = 0\n\t}\n\tif contextN > maxContextSections {\n\t\tcontextN = maxContextSections\n\t}"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

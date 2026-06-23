@@ -49,10 +49,10 @@ Extract Jira issue from git branch name.
 
 **Convention:** Branch names follow `JIRAPRJ-123_description_of_branch`
 
-**Primary method**: `~/.claude/bin/resolve-context` -- outputs JSON with `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`. Exit 0 = valid, exit 2 = non-convention branch (falls back to `_adhoc/{sanitised_branch}/`).
+**Primary method**: `~/.claude/bin/resolve_context.py` -- outputs JSON with `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`. Exit 0 = valid, exit 2 = non-convention branch (falls back to `_adhoc/{sanitised_branch}/`).
 
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 # Parse JSON for JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
 ```
 

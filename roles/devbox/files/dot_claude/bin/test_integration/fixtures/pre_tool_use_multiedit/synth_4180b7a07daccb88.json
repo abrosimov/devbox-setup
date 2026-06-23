@@ -1,0 +1,29 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "<TMPDIR>/scratch.txt",
+    "edits": [
+      {
+        "old_string": "d*1y)n-?'oA",
+        "new_string": "Infinity",
+        "replace_all": false
+      },
+      {
+        "old_string": "|*$vw5",
+        "new_string": "d*1y)n-?'oA",
+        "replace_all": false
+      },
+      {
+        "old_string": "aG'1(",
+        "new_string": "d*1y)n-?'oA",
+        "replace_all": false
+      },
+      {
+        "old_string": "",
+        "new_string": "&1;cDX",
+        "replace_all": false
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

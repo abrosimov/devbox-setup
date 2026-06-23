@@ -29,10 +29,10 @@ define require_profile
 	fi
 endef
 
-# Dev venv — lazy bootstrap for developer-mode targets (lint-*, typecheck-*,
-# test-py). The operator-flow (init / personal / work / *-push / upgrade-*)
-# does NOT depend on this venv and never touches it. See pyproject.toml for
-# the rationale.
+# Dev venv — lazy bootstrap for developer-mode targets (lint-*, typecheck,
+# test, test-integration, qa). The operator-flow (init / personal / work /
+# *-push / upgrade-*) does NOT depend on this venv and never touches it.
+# See pyproject.toml for the rationale.
 DEV_VENV     := .venv
 DEV_BIN      := $(DEV_VENV)/bin
 DEV_SENTINEL := $(DEV_VENV)/.devbox-installed
@@ -91,7 +91,7 @@ else
   VERBOSE :=
 endif
 
-.PHONY: run dev help init vault-init check check-dev validate-claude validate-skills eval-skills improve-skills \
+.PHONY: run dev help init vault-init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills \
        work personal dev-work dev-personal check-work check-personal \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
@@ -99,8 +99,9 @@ endif
        claude-diff claude-pull claude-pull-review claude-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        sync-upstream-docs \
-       test test-nvim test-fish test-json test-bash test-skill-evals test-py \
-       lint lint-ansible lint-yaml lint-py typecheck-py dev-bootstrap clean
+       test test-integration test-nvim test-fish test-json \
+       regenerate-fixtures \
+       lint lint-ansible lint-yaml lint-py typecheck qa dev-bootstrap clean
 
 help:
 	@echo ""
@@ -118,8 +119,10 @@ help:
 	@echo "  make lint-yaml        - yamllint only"
 	@echo "  make lint-py          - ruff check + format check"
 	@echo "  make lint-ansible     - ansible-playbook --syntax-check + ansible-lint"
-	@echo "  make typecheck-py     - pyrefly type check"
-	@echo "  make test-py          - pytest"
+	@echo "  make typecheck        - pyrefly type check"
+	@echo "  make test             - pytest unit tests (excludes integration)"
+	@echo "  make test-integration - pytest subprocess integration tests (slower)"
+	@echo "  make qa               - lint + typecheck + test + test-integration (full gate)"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
 	@echo "  make init             - install Homebrew, Ansible, and dependencies (macOS only)"
@@ -146,11 +149,10 @@ help:
 	@echo "  make sync-upstream-docs - pull fresh FPF-Spec.md from ailev/FPF@main and reset drift state"
 	@echo ""
 	@echo "Test / introspection:"
-	@echo "  make test             - run all config validation tests"
+	@echo "  make validate-configs - run all repo-config validation (json + fish + nvim)"
 	@echo "  make test-nvim        - headless smoke test of nvim config"
 	@echo "  make test-fish        - fish shell config syntax check"
 	@echo "  make test-json        - JSON config/schema validation"
-	@echo "  make test-bash        - bash script syntax check"
 	@echo "  make list-skills      - list all Claude Code skills"
 	@echo "  make list-agents      - list all Claude Code agents"
 	@echo "  make claude-diff      - show content drift between ~/.claude and repo"
@@ -188,7 +190,7 @@ dev-personal:
 
 # `lint` aggregates all dev-mode linters. Runs them in sequence so the first
 # failure stops the rest (sequence chosen by cost: fast/cheap → slow).
-lint: lint-yaml lint-py lint-ansible typecheck-py
+lint: lint-yaml lint-py lint-ansible typecheck
 
 dev-bootstrap: $(DEV_SENTINEL)
 	@echo "Dev venv ready: $(DEV_VENV)"
@@ -208,15 +210,28 @@ lint-yaml: $(DEV_SENTINEL)
 # roles/devbox/files/dot_claude/bin/ is cleaned up — see
 # roles/devbox/files/dot_claude/future_projects/ruff_strict_migration.md.
 # The formatter is enforced strictly: it is deterministic and auto-fixable.
+#
+# Scope: roles/devbox/files/dot_claude/ — covers bin/ (hook scripts, shared lib)
+# and skills/*/scripts/ (skill-bundled utilities). Other Python files in the repo
+# (.config/kitty/) are not project code; pyrefly's project-includes handles those.
 lint-py: $(DEV_SENTINEL)
-	@$(DEV_BIN)/ruff check --exit-zero .
-	@$(DEV_BIN)/ruff format --check .
+	@$(DEV_BIN)/ruff check --exit-zero roles/devbox/files/dot_claude/
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/
 
-typecheck-py: $(DEV_SENTINEL)
-	@$(DEV_BIN)/pyrefly check
+typecheck: $(DEV_SENTINEL) ## Pyrefly type check across dot_claude/bin/
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/
 
-test-py: $(DEV_SENTINEL)
-	@$(DEV_BIN)/pytest
+test: $(DEV_SENTINEL) ## Pytest unit tests in dot_claude/ (excludes integration — see test-integration)
+	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/ -m "not integration"
+
+test-integration: $(DEV_SENTINEL) ## Pytest subprocess integration tests (smoke + hypothesis)
+	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/bin/test_integration/ -m integration -v
+
+qa: lint-py typecheck test test-integration ## Full Python quality gate (lint + typecheck + tests + integration)
+
+regenerate-fixtures: $(DEV_SENTINEL) ## Re-extract recorded fixtures + regenerate synthetic ones
+	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/extract_fixtures.py --max-per-bucket 50
+	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/generate_fixtures.py --all --seed 42 --count 30
 
 check: $(COLLECTIONS_SENTINEL)
 ifndef PROFILE
@@ -255,10 +270,10 @@ list-agents:
 	@ls -1 $(CLAUDE_SRC)/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | sort | nl -ba
 
 validate-claude:
-	@python3 $(CLAUDE_SRC)/bin/validate-config.py --root $(CLAUDE_SRC)
+	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC)
 
 audit-budget:
-	@python3 $(CLAUDE_SRC)/bin/validate-config.py --root $(CLAUDE_SRC) --budget
+	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --budget
 
 # Supply-chain audit for Homebrew packages. Uses Homebrew/brew-vulns (an official
 # subcommand that queries OSV.dev) for CVE scanning, and `brew audit --installed`
@@ -356,7 +371,7 @@ untap-stale:
 
 validate-skills:
 	@echo "Validating skill eval files..."
-	@python3 $(CLAUDE_SRC)/bin/validate-skill-evals
+	@python3 $(CLAUDE_SRC)/bin/validate_skill_evals.py
 
 # Anthropic skill-creator scripts (installed via claude-plugins-official)
 EVAL_SCRIPTS := $(shell ls -d ~/.claude/plugins/cache/anthropic-agent-skills/example-skills/*/skills/skill-creator/scripts 2>/dev/null | head -1)
@@ -528,8 +543,8 @@ sync-upstream-docs:
 		echo 0 > $(FPF_STATE) && \
 		echo "Synced $(notdir $(FPF_LOCAL)) from upstream; drift state reset"
 
-test: test-json test-fish test-bash test-nvim test-skill-evals test-py
-	@echo "All tests passed."
+validate-configs: test-json test-fish test-nvim ## Validate repo configs (JSON, fish, nvim)
+	@echo "All config validations passed."
 
 test-json:
 	@echo "Validating JSON files..."
@@ -547,25 +562,12 @@ test-fish:
 	done; \
 	[ $$fail -eq 0 ] && echo "  OK: all fish files valid" || exit 1
 
-test-bash:
-	@echo "Validating bash script syntax..."
-	@fail=0; \
-	for f in $$(find $(CLAUDE_SRC)/bin -type f); do \
-		head -1 "$$f" | grep -q 'bash' || continue; \
-		bash -n "$$f" 2>&1 || { echo "  FAIL: $$f"; fail=1; }; \
-	done; \
-	[ $$fail -eq 0 ] && echo "  OK: all bash scripts valid" || exit 1
-
 test-nvim:
 	@echo "Validating nvim config (headless)..."
 	@ln -sfn $(CURDIR)/roles/devbox/files/.config/nvim /tmp/nvim-test
 	@XDG_CONFIG_HOME=/tmp NVIM_APPNAME=nvim-test nvim --headless +"lua vim.defer_fn(function() vim.cmd('qa') end, 5000)" 2>&1 \
 		&& echo "  OK: nvim config loaded without errors" \
 		|| (echo "  FAIL: nvim config has errors"; exit 1)
-
-test-skill-evals:
-	@echo "Validating skill eval files..."
-	@python3 $(CLAUDE_SRC)/bin/validate-skill-evals
 
 # Wipe the hermetic state directory (.devbox/ holds ansible local_tmp,
 # dev_mode dotfiles target, and any other ephemeral runtime artefacts).

@@ -82,7 +82,7 @@ devbox_brew_secondary:
   - tree           # Directory tree — used by agents for codebase exploration
   - cloc           # Count lines of code by language
   - yq             # YAML/JSON/XML processor (like jq for YAML)
-  - hadolint       # Dockerfile linter — used by verify-se-completion and post-edit-lint
+  - hadolint       # Dockerfile linter — used by post_edit_lint.py
   - swi-prolog     # Prolog runtime — includes built-in LSP support
   - swift-format   # Apple's official Swift code formatter
   - cmake          # C/C++ build system

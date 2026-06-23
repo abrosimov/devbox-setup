@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/search.go",
+    "old_string": "\t// Build BM25 query on content\n\tcontentQuery := bleve.NewMatchQuery(q)\n\tcontentQuery.SetField(\"content\")\n\tcontentQuery.Analyzer = \"standard\"\n\n\t// Also search in title\n\ttitleQuery := bleve.NewMatchQuery(q)\n\ttitleQuery.SetField(\"title\")\n\ttitleQuery.Analyzer = \"standard\"\n\n\t// Combine content + title queries\n\ttextQuery := bleve.NewDisjunctionQuery(contentQuery, titleQuery)\n\n\t// Build filters\n\tvar filterQueries []query.Query",
+    "new_string": "\t// Build BM25 query on content.\n\tcontentQuery := bleve.NewMatchQuery(q)\n\tcontentQuery.SetField(\"content\")\n\tcontentQuery.Analyzer = \"standard\"\n\n\t// Also search in title.\n\ttitleQuery := bleve.NewMatchQuery(q)\n\ttitleQuery.SetField(\"title\")\n\ttitleQuery.Analyzer = \"standard\"\n\n\t// Combine content + title queries.\n\ttextQuery := bleve.NewDisjunctionQuery(contentQuery, titleQuery)\n\n\t// Build filters.\n\tvar filterQueries []query.Query"
+  },
+  "hook_event_name": "PreToolUse"
+}

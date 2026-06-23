@@ -1,0 +1,8 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/domain/chunk_test.go",
+    "content": "package domain\n\nimport \"testing\"\n\nfunc TestSlugFromPath(t *testing.T) {\n\ttests := []struct {\n\t\tinput string\n\t\twant  string\n\t}{\n\t\t{\"docs/fpf-spec.md\", \"fpf-spec\"},\n\t\t{\"docs/architecture.md\", \"architecture\"},\n\t\t{\"fpf-spec.md\", \"fpf-spec\"},\n\t\t{\"My Document.md\", \"my-document\"},\n\t\t{\"UPPER_CASE.txt\", \"upper-case\"},\n\t\t{\".hidden.md\", \"hidden\"},\n\t\t{\"docs/some path/doc.md\", \"doc\"},\n\t\t{\"no-extension\", \"no-extension\"},\n\t\t{\"decision-009-embedding.md\", \"decision-009-embedding\"},\n\t\t{\"docs/My Cool Doc!!!.md\", \"my-cool-doc\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.input, func(t *testing.T) {\n\t\t\tgot := SlugFromPath(tt.input)\n\t\t\tif got != tt.want {\n\t\t\t\tt.Errorf(\"SlugFromPath(%q) = %q, want %q\", tt.input, got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestQualifiedID(t *testing.T) {\n\ttests := []struct {\n\t\tslug      string\n\t\tsectionID string\n\t\twant      string\n\t}{\n\t\t{\"fpf-spec\", \"A.1\", \"fpf-spec:A.1\"},\n\t\t{\"architecture\", \"overview\", \"architecture:overview\"},\n\t\t{\"doc\", \"3\", \"doc:3\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.want, func(t *testing.T) {\n\t\t\tgot := QualifiedID(tt.slug, tt.sectionID)\n\t\t\tif got != tt.want {\n\t\t\t\tt.Errorf(\"QualifiedID(%q, %q) = %q, want %q\", tt.slug, tt.sectionID, got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n"
+  },
+  "hook_event_name": "PreToolUse"
+}

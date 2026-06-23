@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ENV=prod jOg(vqO ./script.sh",
+    "description": "3IR"
+  },
+  "hook_event_name": "PreToolUse"
+}

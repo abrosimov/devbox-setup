@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "find <HOME>/Projects/agentic-rag-mcp/docs -type f | head -30",
+    "description": "List all docs files"
+  },
+  "hook_event_name": "PreToolUse"
+}

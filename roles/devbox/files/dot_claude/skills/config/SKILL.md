@@ -72,7 +72,7 @@ When set, commands offer local merge as an additional option alongside push+PR.
 
 Compute once at the start:
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)  # exit 0=valid, exit 2=non-convention branch
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)  # exit 0=valid, exit 2=non-convention branch
 # Parse: JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
 DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
@@ -86,7 +86,7 @@ Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH
 
 Use context provided by orchestrator. If invoked directly (no context), compute once:
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve-context)  # exit 0=valid, exit 2=non-convention branch
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)  # exit 0=valid, exit 2=non-convention branch
 # Parse: JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
 ```
 

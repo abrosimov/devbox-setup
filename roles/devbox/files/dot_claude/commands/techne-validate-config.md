@@ -9,7 +9,7 @@ Run the configuration validator and present findings.
 1. Run the validator script against the Claude Code config root:
 
 ```bash
-python3 ~/.claude/bin/validate-config.py --root .
+python3 ~/.claude/bin/validate_config.py --root .
 ```
 
 If the working directory is not the `.claude/` root, adjust `--root` accordingly (e.g. `--root ~/.claude` or `--root roles/devbox/files/dot_claude`).
@@ -34,10 +34,10 @@ If the working directory is not the `.claude/` root, adjust `--root` accordingly
 
 ```bash
 # Run only specific checks
-python3 ~/.claude/bin/validate-config.py --root . --check agents,skills
+python3 ~/.claude/bin/validate_config.py --root . --check agents,skills
 
 # Machine-readable output
-python3 ~/.claude/bin/validate-config.py --root . --json
+python3 ~/.claude/bin/validate_config.py --root . --json
 ```
 
 Available checks: `agents`, `skills`, `commands`, `json`, `references`, `stale`, `grounding`, `meta-pipeline`.

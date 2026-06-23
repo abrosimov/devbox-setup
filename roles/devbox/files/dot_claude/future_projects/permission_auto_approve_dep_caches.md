@@ -2,6 +2,15 @@
 
 ## Problem
 
+FROM USER:
+- GOSUMDB=off, etc.
+the same with python.
+should be also considered, so this is not a final doc.
+go vet
+go mod tidy
+go mod download.
+same for python
+
 Software-engineer agents (Go and Python) routinely run commands like:
 
 ```bash

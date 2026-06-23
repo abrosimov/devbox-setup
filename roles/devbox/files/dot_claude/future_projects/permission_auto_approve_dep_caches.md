@@ -10,6 +10,14 @@ go vet
 go mod tidy
 go mod download.
 same for python
+sample of bad permissions request:
+```
+GOSUMDB=off go doc github.com/grafana/grafana-foundation-sdk/go/timeseries.PanelBuilder 2>&1
+```
+go doc is available. For some reason claude provides agents with additional instructions, like:
+if X won't work use Y.
+Or use Y. 
+We need to think how to prevent it. And how can we catch it on hooks level
 
 Software-engineer agents (Go and Python) routinely run commands like:
 

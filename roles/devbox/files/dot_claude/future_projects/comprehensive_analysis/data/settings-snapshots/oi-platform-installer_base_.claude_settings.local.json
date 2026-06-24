@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:gitlab.com)",
+      "mcp__atlassian__getJiraIssue",
+      "LSP",
+      "Read(//Users/kabrosimov/Work/mlops-be/MLOPS-7120_fix_and_unify_vault_transit_naming_schema/**)",
+      "Bash(ENV_NAME=local uv run pytest tests/app/modules/blueprints/services/test_BlueprintCrudService.py tests/app/modules/secrets_blueprint/test_SecretsBlueprintService.py tests/app/modules/vault/test_vault_service.py tests/app/shared/clients/vault/test_VaultKeyBuilder.py -v)",
+      "mcp__atlassian__getAccessibleAtlassianResources",
+      "mcp__atlassian__getConfluencePage",
+      "Read(//Users/kabrosimov/Work/mlops-be/MLOPS-7120_unify_vault_configuration_according_to_spec/**)",
+      "Bash(grep -rn \"\\\\bvault_config\\\\.role\\\\b\\\\|VaultClient\\(.*role=\" app/ common/ tests/ --include=\"*.py\")",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(unset VIRTUAL_ENV)",
+      "Bash(ENV_NAME=local uv run --active pytest tests/app/shared/clients/vault/ tests/app/modules/vault/ tests/app/application/ tests/app/config/test_application_config.py -v)",
+      "Bash(ENV_NAME=local uv run --active pytest tests/app/shared/clients/vault/ tests/app/modules/vault/ tests/app/application/ tests/app/config/test_application_config.py)",
+      "mcp__atlassian__updateConfluencePage",
+      "mcp__atlassian__editJiraIssue"
+    ]
+  }
+}

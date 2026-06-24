@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__atlassian__atlassianUserInfo",
+      "mcp__atlassian__getAccessibleAtlassianResources",
+      "WebFetch(domain:gitlab.com)",
+      "mcp__atlassian__searchJiraIssuesUsingJql",
+      "mcp__atlassian__search"
+    ]
+  }
+}

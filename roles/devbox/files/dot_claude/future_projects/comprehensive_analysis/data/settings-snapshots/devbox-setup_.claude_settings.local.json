@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ANSIBLE_LOCAL_TEMP=__TRACKED_VAR__/ansible-tmp ansible-playbook --syntax-check playbooks/claude.yml)",
+      "Bash(ANSIBLE_LOCAL_TEMP=__TRACKED_VAR__/ansible-tmp ansible-lint roles/devbox/tasks/apply_configs.yml)"
+    ]
+  }
+}

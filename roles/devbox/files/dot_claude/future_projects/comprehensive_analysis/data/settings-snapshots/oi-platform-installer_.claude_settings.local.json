@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(kubectl cluster-info:*)",
+      "Bash(kubectl config view:*)",
+      "Bash(kubectl --kubeconfig=/Users/kabrosimov/Work/mlops-be/kube_config_local_cluster/member-kc-docker_internal.yml get svc -A)",
+      "Bash(kubectl:*)",
+      "Bash(git rev-list:*)",
+      "Bash(xargs cat:*)",
+      "mcp__sequentialthinking__sequentialthinking",
+      "Bash(git checkout:*)",
+      "WebSearch",
+      "WebFetch(domain:grafana.com)",
+      "WebFetch(domain:grafana.github.io)"
+    ]
+  }
+}

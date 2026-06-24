@@ -1,0 +1,234 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-bash-toolchain-guard"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-tmpdir-guard"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre_bash_safety_gate.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-bash-boundary-wrap"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-tmpdir-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-edit-lint-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-edit-lint-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-write-completion-gate"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre_write_existing_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-plan-code-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-plan-code-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-plan-code-guard"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/permission-auto-approve"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/suggest-checkpoint",
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-lint"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-typecheck",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-lint"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-typecheck",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/post-edit-cyrillic-guard"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/stop_format.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/stop-lint-gate"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/session-save"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/pre-compact-mask"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/session-save"
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/worktree-create",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/worktree-remove",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

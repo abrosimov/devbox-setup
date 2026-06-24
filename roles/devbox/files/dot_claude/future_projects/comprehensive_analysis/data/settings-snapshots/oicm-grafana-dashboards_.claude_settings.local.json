@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:grafana.develop.openinnovation.ai)",
+      "mcp__sequentialthinking__sequentialthinking"
+    ]
+  }
+}

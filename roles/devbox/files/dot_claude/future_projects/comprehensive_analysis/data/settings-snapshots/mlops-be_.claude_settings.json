@@ -1,0 +1,88 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(ENV_NAME=local pytest:*)",
+      "Bash(ENV_NAME=local python -m pytest:*)",
+      "Bash(ENV_NAME=local uv run pytest:*)",
+      "Bash(ENV_NAME=local uv run --active pytest:*)",
+      "Bash(ENV_NAME=local uv run python -m pytest:*)",
+      "Bash(ENV_NAME=local uv run --active python -m pytest:*)",
+
+      "Bash(ENV_NAME=local python -c:*)",
+      "Bash(ENV_NAME=local uv run python -c:*)",
+      "Bash(ENV_NAME=local uv run --active python -c:*)",
+
+      "Bash(ENV_NAME=local make:*)",
+      "Bash(make:*)",
+
+      "Bash(uv run pytest:*)",
+      "Bash(uv run python -c:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run black:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv add:*)",
+      "Bash(uv lock:*)",
+      "Bash(uv pip:*)",
+      "Bash(uv cache:*)",
+      "Bash(uvx:*)",
+
+      "Bash(ruff check:*)",
+      "Bash(ruff format:*)",
+      "Bash(black:*)",
+      "Bash(black --check:*)",
+      "Bash(mypy:*)",
+      "Bash(python -m black:*)",
+      "Bash(python -m ruff:*)",
+      "Bash(python -m py_compile:*)",
+
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git status:*)",
+      "Bash(git grep:*)",
+
+      "Bash(git checkout -b:*)",
+      "Bash(git switch:*)",
+      "Bash(git stash push:*)",
+      "Bash(git stash list:*)",
+      "Bash(git stash show:*)",
+      "Bash(git apply --check:*)",
+
+      "Bash(docker compose:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker info:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker images:*)",
+
+      "Bash(source .env)",
+      "Bash(source .env.template)",
+      "Bash(source .venv/bin/activate)",
+
+      "Bash(gitleaks detect:*)",
+      "Bash(skaffold:*)",
+      "Bash(tar:*)",
+
+      "Read(//tmp/**)",
+
+      "mcp__atlassian__*",
+      "mcp__sequentialthinking__*",
+
+      "WebFetch(domain:docs.claude.com)",
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:files.pythonhosted.org)",
+      "WebFetch(domain:prometheus.github.io)",
+      "WebFetch(domain:uwsgi-docs.readthedocs.io)",
+      "WebFetch(domain:openinnovationai.atlassian.net)",
+      "WebFetch(domain:auth.oicm.my-local)",
+      "WebFetch(domain:oicm.oicm.my-local)",
+      "WebSearch",
+
+      "Skill(implement)"
+    ]
+  }
+}

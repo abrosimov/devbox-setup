@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__atlassian__getJiraIssue",
+      "mcp__atlassian__getAccessibleAtlassianResources",
+      "Bash(ENV_NAME=local uv run pytest tests/app/modules/monitoring/ tests/app/http/controllers/modules/monitoring/ -x --tb=short)",
+      "Bash(ENV_NAME=local uv run pytest tests/app/modules/monitoring/ tests/app/http/controllers/modules/monitoring/ --tb=line)",
+      "mcp__atlassian__searchJiraIssuesUsingJql"
+    ],
+    "additionalDirectories": [
+      "/Users/kabrosimov/Work/oiai-work-notes"
+    ]
+  }
+}

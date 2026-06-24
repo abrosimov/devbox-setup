@@ -19,6 +19,18 @@ if X won't work use Y.
 Or use Y. 
 We need to think how to prevent it. And how can we catch it on hooks level
 
+Дальше, очень много где завязывается на TMPDIR, при этом постоянно просит разрешения на операции
+внутри этой директории. Смысл? Вот очередной пример:
+```
+diff -rq $TMPDIR/oicm-gpu-v0012/mlops-be out/mlops-be 2>&1 | head -10; echo "==="; diff -rq
+   $TMPDIR/oicm-gpu-v0012/mlops-be-infrastructure out/mlops-be-infrastructure 2>&1 | head -10; echo "==="; diff -rq
+   $TMPDIR/oicm-gpu-v0012/mlops-be-api out/mlops-be-api 2>&1 | head -10
+```
+Ну вот тут-то зачем спрашивать разрешения? Почему-то использует bash command prompt, а не Bash tool?
+
+как дополнение над чем подумать: с учетом что он делает go doc, можем ли как-то кэшировать, чтобы лишние tool calls не делать. как вообще можно этот процесс улучшить?
+Аналогично, у всех агентов должны быть такие доступы. observability-engineer тоже хочет анализировать go код.
+
 Software-engineer agents (Go and Python) routinely run commands like:
 
 ```bash

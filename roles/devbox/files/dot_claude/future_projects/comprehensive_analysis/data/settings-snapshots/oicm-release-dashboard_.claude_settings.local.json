@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:gitlab.com)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebFetch(domain:honnef.co)",
+      "WebFetch(domain:cloud.google.com)"
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ENV_NAME=local uv run pytest tests/app/shared/clients/kubernetes/v2/test_kubernetes_client.py tests/app/shared/clients/kubernetes/v2/test_KarmadaClient.py tests/app/shared/clients/nfs/pv_manager/test_nfs_pv_manager.py -q)",
+      "Bash(ENV_NAME=local uv run pytest tests/app/shared/clients/kubernetes/v2/test_kubernetes_client.py::TestKubernetesClient::test_should_raise_KubernetesClientError_when_delete_by_manifest_raises_ApiException tests/app/shared/clients/kubernetes/v2/test_kubernetes_client.py::TestKubernetesClient::test_should_fail_during_updating_custom_object)",
+      "Bash(ENV_NAME=local uv run pytest tests/app/shared/clients/kubernetes/v2/ tests/app/shared/clients/nfs/ -q)",
+      "Bash(ENV_NAME=local uv run pytest tests/app/shared/clients/kubernetes/v2/test_KubernetesClientFactory.py -q)",
+      "Bash(ENV_NAME=local uv run pytest tests/app/modules/scheduling/ -q)",
+      "Bash(ENV_NAME=local uv run pytest tests/app/modules/scheduling/ tests/app/shared/clients/ -q)",
+      "Bash(ENV_NAME=local uv run --no-sync pytest tests/app/modules/scheduling/ -q)",
+      "Bash(ENV_NAME=local uv run --no-sync pytest tests/app/modules/scheduling/ tests/app/modules/llm_fine_tuning/ tests/app/modules/notebooks/ tests/app/modules/model_deployment/ -q)"
+    ]
+  }
+}

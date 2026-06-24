@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run *)",
+      "Bash(uv sync *)",
+      "Bash(uv add *)",
+      "Bash(uv pip *)",
+      "Bash(uv lock *)",
+      "Bash(uvx *)",
+      "Bash(pytest *)",
+      "Bash(ruff *)",
+      "Bash(mypy *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(make *)"
+    ]
+  }
+}

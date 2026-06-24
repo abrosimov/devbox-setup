@@ -170,6 +170,16 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/proposal_discipline.py"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -180,6 +190,10 @@
           {
             "type": "command",
             "command": "~/.claude/bin/stop_lint_gate.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/proposal_discipline.py"
           }
         ]
       }

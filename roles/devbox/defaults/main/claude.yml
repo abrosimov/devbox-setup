@@ -12,6 +12,7 @@ devbox_claude_managed_dirs:
   - bin
   - docs
   - templates
+  - output-styles
 
 # MCP servers registered via `claude mcp add` (written to ~/.claude.json under
 # the `mcpServers` key, user scope). Grouped by transport type for clarity.

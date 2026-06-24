@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -11,19 +12,46 @@ from _claude_lib import env, hooks, paths, proc
 
 GITIGNORE_ENTRY = "tmp/"
 
+# Claude Code's sandbox writeAllowOnly designates /tmp/claude and
+# /private/tmp/claude as the canonical session-scratch namespace, and resolves
+# $TMPDIR to a subpath of that namespace. Blocking those at the hook layer
+# duplicates the sandbox boundary and breaks the cache dirs declared in
+# settings.json (UV_CACHE_DIR=/tmp/claude/uv-cache, GOCACHE=/tmp/claude/..., ...).
+_BARE_TMP_DIRS = frozenset({"/tmp", "/var/tmp"})  # noqa: S108
+
+
+def _allowed_prefixes() -> tuple[str, ...]:
+    prefixes = ["/tmp/claude/", "/private/tmp/claude/"]  # noqa: S108
+    tmpdir = os.environ.get("TMPDIR", "").rstrip("/")
+    # Refuse to allowlist a bare /tmp or /var/tmp via $TMPDIR — that would
+    # collapse the guard to a no-op. Only namespaced subdirs are honoured.
+    if tmpdir and tmpdir not in _BARE_TMP_DIRS:
+        prefixes.append(tmpdir + "/")
+    return tuple(prefixes)
+
+
+_TMP_PATH_RE = re.compile(r"(?:/var/tmp/|/tmp/)[\w./~+\-]*")
+
 
 def is_blocked_path(value: str) -> bool:
     if not value:
         return False
-    # The literal "/tmp/" here is the POSIX path being matched against user-supplied
-    # commands, not a tempfile we create — S108 does not apply.
-    return "/tmp/" in value or "/var/tmp/" in value  # noqa: S108
+    allowed = _allowed_prefixes()
+    # Inspect each /tmp/... or /var/tmp/... occurrence; the command passes only
+    # when every occurrence falls under an allowlisted prefix.
+    for match in _TMP_PATH_RE.finditer(value):
+        token = match.group(0)
+        if not any(token.startswith(p) for p in allowed):
+            return True
+    return False
 
 
 def is_blocked_file_target(value: str) -> bool:
     if not value:
         return False
-    return value.startswith(("/tmp/", "/var/tmp/"))  # noqa: S108
+    if not value.startswith(("/tmp/", "/var/tmp/")):  # noqa: S108
+        return False
+    return not any(value.startswith(p) for p in _allowed_prefixes())
 
 
 def find_project_root(cwd: Path) -> Path:
@@ -104,11 +132,12 @@ def main() -> int:
     ensure_tmp_dir(root)
     ensure_gitignore(root)
 
+    # User-facing message embeds blocked POSIX paths as documentation — S108
+    # is a false positive on the f-strings that mention them.
     sys.stderr.write(
-        # User-facing message mentions the blocked POSIX path — not a tempfile we create.
-        f"BLOCKED: Do not use /tmp/ or /var/tmp/. Use {root}/tmp/ instead "  # noqa: S108
-        "(project-local). The directory has been auto-created and added to "
-        ".gitignore.\n",
+        "BLOCKED: Do not use /tmp/ or /var/tmp/ outside the sandbox namespace. "
+        f"Use {root}/tmp/ (project-local; auto-created and added to .gitignore), "  # noqa: S108
+        "or the sandbox-allowed namespace (/tmp/claude/, /private/tmp/claude/, $TMPDIR).\n",
     )
     return hooks.BLOCK
 

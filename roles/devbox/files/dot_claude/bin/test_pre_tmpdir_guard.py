@@ -19,6 +19,9 @@ def _clear_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     # exercise the env-var protocol set the vars explicitly via ``monkeypatch.setenv``.
     monkeypatch.delenv("CC_BASH_COMMAND", raising=False)
     monkeypatch.delenv("CC_TOOL_INPUT_FILE_PATH", raising=False)
+    # Default TMPDIR off so allowlist tests get deterministic state. Individual
+    # tests that exercise $TMPDIR allowlisting set it explicitly.
+    monkeypatch.delenv("TMPDIR", raising=False)
 
 
 def test_is_blocked_path_detects_tmp_substring() -> None:
@@ -244,6 +247,76 @@ def test_evaluate_falls_back_to_stdin_when_env_empty() -> None:
 
 def test_evaluate_both_empty_allows() -> None:
     blocked, target = pre_tmpdir_guard.evaluate({})
+    assert not blocked
+    assert target is None
+
+
+# Allowlist: sandbox-namespaced tmp dirs (/tmp/claude/, /private/tmp/claude/) and $TMPDIR.
+
+
+def test_is_blocked_path_allows_tmp_claude_namespace() -> None:
+    assert not pre_tmpdir_guard.is_blocked_path("ls /tmp/claude/uv-cache")
+    assert not pre_tmpdir_guard.is_blocked_path("cp foo /tmp/claude/x/y")
+
+
+def test_is_blocked_path_allows_private_tmp_claude_namespace() -> None:
+    # macOS resolves /tmp to /private/tmp; both forms must be allowlisted.
+    assert not pre_tmpdir_guard.is_blocked_path("ls /private/tmp/claude/uv-cache")
+
+
+def test_is_blocked_path_still_blocks_general_tmp() -> None:
+    # The allowlist only covers the sandbox namespace, not all of /tmp.
+    assert pre_tmpdir_guard.is_blocked_path("ls /tmp/random.txt")
+    assert pre_tmpdir_guard.is_blocked_path("cp file /var/tmp/here")
+
+
+def test_is_blocked_path_blocks_when_mixed_allowed_and_disallowed() -> None:
+    # Any single non-allowlisted /tmp/ token in the command poisons the whole command.
+    assert pre_tmpdir_guard.is_blocked_path("cat /tmp/claude/ok /tmp/other")
+
+
+def test_is_blocked_path_allows_diff_against_sandbox_tmp() -> None:
+    # The user's original complaint: `diff foo /tmp/claude/bar` was being blocked.
+    assert not pre_tmpdir_guard.is_blocked_path("diff src/x.py /tmp/claude/x.py")
+
+
+def test_is_blocked_file_target_allows_sandbox_namespace() -> None:
+    assert not pre_tmpdir_guard.is_blocked_file_target("/tmp/claude/log")
+    assert not pre_tmpdir_guard.is_blocked_file_target("/private/tmp/claude/log")
+
+
+def test_is_blocked_file_target_still_blocks_general_tmp() -> None:
+    assert pre_tmpdir_guard.is_blocked_file_target("/tmp/foo.txt")
+    assert pre_tmpdir_guard.is_blocked_file_target("/var/tmp/log")
+
+
+def test_tmpdir_env_subdirectory_is_allowlisted(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Sandbox sets TMPDIR to a namespaced subdir; that path must pass.
+    monkeypatch.setenv("TMPDIR", "/var/folders/abc/T/")
+    assert not pre_tmpdir_guard.is_blocked_file_target("/var/folders/abc/T/scratch")
+    # And the macOS canonical form should remain unaffected (no /tmp/ substring).
+    assert not pre_tmpdir_guard.is_blocked_path("touch /var/folders/abc/T/scratch")
+
+
+def test_tmpdir_env_pointing_at_bare_tmp_does_not_collapse_guard(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # If TMPDIR=/tmp (Linux default), honouring it would defeat the guard. Refuse.
+    monkeypatch.setenv("TMPDIR", "/tmp")
+    assert pre_tmpdir_guard.is_blocked_file_target("/tmp/foo.txt")
+    assert pre_tmpdir_guard.is_blocked_path("touch /tmp/foo.txt")
+
+
+def test_evaluate_allows_command_in_sandbox_namespace() -> None:
+    payload: dict[str, object] = {"tool_input": {"command": "cat /tmp/claude/log"}}
+    blocked, target = pre_tmpdir_guard.evaluate(payload)
+    assert not blocked
+    assert target is None
+
+
+def test_evaluate_allows_write_to_sandbox_namespace() -> None:
+    payload: dict[str, object] = {"tool_input": {"file_path": "/tmp/claude/scratch.txt"}}
+    blocked, target = pre_tmpdir_guard.evaluate(payload)
     assert not blocked
     assert target is None
 

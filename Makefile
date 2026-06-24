@@ -99,7 +99,7 @@ endif
        claude-diff claude-pull claude-pull-review claude-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        sync-upstream-docs \
-       test test-integration test-nvim test-fish test-json \
+       test test-integration test-nvim test-fish test-json test-bash \
        regenerate-fixtures \
        lint lint-ansible lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -152,6 +152,7 @@ help:
 	@echo "  make validate-configs - run all repo-config validation (json + fish + nvim)"
 	@echo "  make test-nvim        - headless smoke test of nvim config"
 	@echo "  make test-fish        - fish shell config syntax check"
+	@echo "  make test-bash        - bash script syntax check (bash -n)"
 	@echo "  make test-json        - JSON config/schema validation"
 	@echo "  make list-skills      - list all Claude Code skills"
 	@echo "  make list-agents      - list all Claude Code agents"
@@ -561,6 +562,17 @@ test-fish:
 		fish --no-execute "$$f" 2>&1 || { echo "  FAIL: $$f"; fail=1; }; \
 	done; \
 	[ $$fail -eq 0 ] && echo "  OK: all fish files valid" || exit 1
+
+# Bash syntax check via `bash -n`. Scope = live scripts only.
+# Excludes future_projects/*/hooks-snapshots/ — those are frozen historical
+# copies kept for reference, not executable code in the supported set.
+test-bash:
+	@echo "Validating bash script syntax..."
+	@fail=0; \
+	for f in $$(find scripts roles/devbox/files/dot_claude/templates roles/devbox/files/dot_claude/skills -name '*.sh' -not -path '*/future_projects/*' -not -path '*/hooks-snapshots/*'); do \
+		bash -n "$$f" 2>&1 || { echo "  FAIL: $$f"; fail=1; }; \
+	done; \
+	[ $$fail -eq 0 ] && echo "  OK: all bash scripts have valid syntax" || exit 1
 
 test-nvim:
 	@echo "Validating nvim config (headless)..."

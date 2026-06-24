@@ -12,6 +12,9 @@
 - name: "Install necessary homebrew packages for Linux"
   ansible.builtin.include_tasks: main_linux.yml
   when: ansible_facts['os_family'] == "Linux"
+- name: "Ensure workspace root + WORKSPACE.md marker"
+  ansible.builtin.include_tasks: ensure_workspace_marker.yml
+  tags: [workspace, configs]
 - name: "Job is done"
   ansible.builtin.debug:
     msg: "Now please reboot your system to make changes applied properly"

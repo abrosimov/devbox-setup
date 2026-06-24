@@ -48,6 +48,34 @@ function __proj_wt_claude_action --argument-names base_dir
     echo $action
 end
 
+# Helper: list paths inside a worktree considered "ours" — wrapper-level
+# injections (`.claude`, `CLAUDE.md`) and every entry from `base/.wtfiles`
+# (with optional `link`/`copy` verb stripped, `claude` pseudo-entry skipped).
+# Used by `wt rm` to distinguish managed artefacts from user work.
+function __proj_wt_collect_ours --argument-names base_dir
+    echo .claude
+    echo CLAUDE.md
+
+    set -l manifest "$base_dir/.wtfiles"
+    test -f "$manifest"; or return 0
+
+    while read -l line
+        string match -qr '^\s*(#|$)' -- "$line"; and continue
+        set line (string trim -- "$line")
+
+        if string match -qr '^claude(\s+(link|copy))?\s*$' -- "$line"
+            continue
+        end
+
+        set -l fpath $line
+        if string match -qr '^(copy|link)\s+' -- "$line"
+            set fpath (string replace -r '^(copy|link)\s+' '' -- "$line")
+        end
+
+        echo $fpath
+    end <"$manifest"
+end
+
 # Helper: inject wrapper-level .claude/ and CLAUDE.md into a new worktree.
 # Defaults to relative symlinks (portable across machines). Respects the
 # `claude link`/`claude copy` directive in .wtfiles (read from base/, the
@@ -349,7 +377,7 @@ function proj --description "Project management: clone repos, cd into projects"
         echo "  proj wt ls                         — list worktrees"
         echo "  proj wt status                     — show worktrees with PR status"
         echo "  proj wt rm [-f] <name>              — remove worktree and branch"
-        echo "  proj wt clean                      — remove all fully-merged worktrees"
+        echo "  proj wt clean [--age <days>]      — remove merged + stale (>30d, no unpushed); .wtkeep skips"
         echo "  proj wt fix-claude-links [--apply] [<project>] — migrate existing worktrees to symlinked .claude/ + CLAUDE.md"
         echo "  proj wt <name>                     — cd to worktree"
         echo ""
@@ -461,6 +489,21 @@ function proj --description "Project management: clone repos, cd into projects"
                 return 1
             end
 
+            # Refuse if a previous conversion left a staging directory behind.
+            # Manual inspection avoids silently clobbering recovery state.
+            set -l leftovers
+            for d in $project_dir.converting.*
+                test -e "$d"; and set -a leftovers $d
+            end
+            if test (count $leftovers) -gt 0
+                echo "Found leftover staging directories from a previous conversion:"
+                for d in $leftovers
+                    echo "  $d"
+                end
+                echo "Inspect and recover (or remove) manually, then re-run."
+                return 1
+            end
+
             # Check for uncommitted staged changes
             if not git -C "$project_dir" diff --cached --quiet
                 echo "Uncommitted staged changes detected. Commit or reset before converting."
@@ -483,11 +526,22 @@ function proj --description "Project management: clone repos, cd into projects"
                 mv "$project_dir/$f" "$tmp_preserve/"
             end
 
-            # Do the conversion: rename → mkdir → move back as base/
-            set -l tmp_dir "$project_dir.converting"
-            mv "$project_dir" "$tmp_dir"
+            # Do the conversion through a unique staging directory so concurrent
+            # conversions don't collide and a crash leaves a recoverable trail.
+            set -l staging (mktemp -d "$project_dir.converting.XXXXXX")
+            if test -z "$staging"
+                echo "Failed to create staging directory beside $project_dir"
+                # Roll back preserved files so the project isn't decapitated.
+                for f in $preserve_files
+                    mv "$tmp_preserve/$f" "$project_dir/"
+                end
+                rmdir "$tmp_preserve" 2>/dev/null
+                return 1
+            end
+            mv "$project_dir" "$staging/repo"
             mkdir -p "$project_dir"
-            mv "$tmp_dir" "$project_dir/base"
+            mv "$staging/repo" "$project_dir/base"
+            rmdir "$staging" 2>/dev/null
 
             # Restore preserved files at wrapper level
             for f in $preserve_files
@@ -590,7 +644,7 @@ function proj --description "Project management: clone repos, cd into projects"
                 echo "  proj wt ls                         — list worktrees"
                 echo "  proj wt status                     — show worktrees with PR status"
                 echo "  proj wt rm [-f] <name>              — remove worktree and branch"
-                echo "  proj wt clean                      — remove all fully-merged worktrees"
+                echo "  proj wt clean [--age <days>]      — remove merged + stale (>30d, no unpushed); .wtkeep skips"
                 echo "  proj wt fix-claude-links [--apply] [<project>] — migrate worktrees to symlinked .claude/ + CLAUDE.md"
                 echo "  proj wt <name>                     — cd to worktree"
                 return 2
@@ -783,7 +837,10 @@ function proj --description "Project management: clone repos, cd into projects"
                         return 2
                     end
 
-                    set -l wt_name $positional[1]
+                    # Reverse the slash sanitisation applied by `wt add`/`wt fork`:
+                    # accept either the on-disk directory name or the original
+                    # branch name (e.g. `feature/login` resolves to `feature-login/`).
+                    set -l wt_name (string replace -a '/' '-' -- $positional[1])
                     set -l wt_path "$project_dir/$wt_name"
 
                     if not test -d "$wt_path"
@@ -802,6 +859,49 @@ function proj --description "Project management: clone repos, cd into projects"
                     if test "$force" = true
                         git -C "$base_dir" worktree remove --force "$wt_path"
                     else
+                        # Classify dirty entries: "ours" (managed symlinks from
+                        # __proj_wt_link_claude / __proj_wt_copy_shared) can be
+                        # cleaned silently; anything else blocks removal until
+                        # the user commits, stashes, or re-runs with -f.
+                        set -l ours_set (__proj_wt_collect_ours "$base_dir")
+                        set -l user_dirty
+                        set -l our_files
+
+                        for line in (git -C "$wt_path" status --porcelain=v1 -uall 2>/dev/null)
+                            set -l code (string sub --length 2 -- "$line")
+                            set -l path (string sub --start 4 -- "$line")
+
+                            if test "$code" = '??'
+                                set -l is_ours false
+                                for ours in $ours_set
+                                    if test "$path" = "$ours"; and test -L "$wt_path/$path"
+                                        set is_ours true
+                                        break
+                                    end
+                                end
+                                if test "$is_ours" = true
+                                    set -a our_files $path
+                                else
+                                    set -a user_dirty $path
+                                end
+                            else
+                                set -a user_dirty "$code $path"
+                            end
+                        end
+
+                        if test (count $user_dirty) -gt 0
+                            echo "Worktree has uncommitted changes:"
+                            for p in $user_dirty
+                                echo "  $p"
+                            end
+                            echo "Commit, stash, or run 'wt rm -f $wt_name' to discard."
+                            return 1
+                        end
+
+                        for p in $our_files
+                            rm -f "$wt_path/$p"
+                        end
+
                         git -C "$base_dir" worktree remove "$wt_path"
                     end
                     or return $status
@@ -850,18 +950,71 @@ function proj --description "Project management: clone repos, cd into projects"
                     end
 
                 case clean
-                    echo "Cleaning merged worktrees..."
+                    # Default policy: remove worktrees that are (merged) OR
+                    # (no commits in last $age days AND no unpushed work).
+                    # `--age 0` disables age-based GC. A `.wtkeep` file at
+                    # worktree root unconditionally skips the worktree.
+                    set -l age 30
+                    set -l i 1
+                    while test $i -le (count $argv)
+                        switch $argv[$i]
+                            case --age
+                                set age $argv[(math $i + 1)]
+                                set i (math $i + 2)
+                            case '*'
+                                echo "Unknown flag: $argv[$i]"
+                                echo "Usage: proj wt clean [--age <days>]"
+                                return 2
+                        end
+                    end
+                    if not string match -qr '^\d+$' -- "$age"
+                        echo "--age must be a non-negative integer"
+                        return 2
+                    end
+
+                    if test "$age" -eq 0
+                        echo "Cleaning merged worktrees..."
+                    else
+                        echo "Cleaning merged + stale (>$age days, no unpushed) worktrees..."
+                    end
+
                     set -l removed 0
+                    set -l now (date +%s)
+                    set -l age_seconds (math "$age * 86400")
+                    set -l merged_list (git -C "$base_dir" branch --merged 2>/dev/null | string trim)
 
                     for line in (git -C "$base_dir" worktree list | tail -n +2)
                         set -l wt (echo $line | awk '{print $1}')
                         test "$wt" = "$base_dir"; and continue
 
+                        if test -e "$wt/.wtkeep"
+                            echo "  Skipping (.wtkeep): $wt"
+                            continue
+                        end
+
                         set -l br (git -C "$wt" branch --show-current 2>/dev/null)
                         test -z "$br"; and continue
 
-                        if git -C "$base_dir" branch --merged 2>/dev/null | grep -q "^[[:space:]]*$br\$"
-                            echo "  Removing: $wt ($br)"
+                        set -l reason
+                        if contains -- "$br" $merged_list
+                            set reason merged
+                        else if test "$age" -gt 0
+                            set -l last_ts (git -C "$wt" log -1 --format=%ct HEAD 2>/dev/null)
+                            if test -n "$last_ts"; and test (math "$now - $last_ts") -gt "$age_seconds"
+                                # Require an upstream AND no unpushed commits.
+                                # Missing upstream → keep (could be local-only WIP).
+                                set -l upstream (git -C "$wt" rev-parse --abbrev-ref '@{u}' 2>/dev/null)
+                                if test -n "$upstream"
+                                    set -l unpushed (git -C "$wt" rev-list --count '@{u}..HEAD' 2>/dev/null)
+                                    if test -n "$unpushed"; and test "$unpushed" -eq 0
+                                        set reason "stale ($age+ days, no unpushed)"
+                                    end
+                                end
+                            end
+                        end
+
+                        if test -n "$reason"
+                            echo "  Removing ($reason): $wt ($br)"
                             git -C "$base_dir" worktree remove "$wt" 2>/dev/null; or true
                             git -C "$base_dir" branch -d "$br" 2>/dev/null; or true
                             set removed (math $removed + 1)
@@ -872,8 +1025,10 @@ function proj --description "Project management: clone repos, cd into projects"
                     echo "Done. Removed $removed worktree(s)."
 
                 case '*'
-                    # Bare name → cd to worktree directory
-                    set -l wt_path "$project_dir/$wt_cmd"
+                    # Bare name → cd to worktree directory. Mirror the slash
+                    # sanitisation from `wt add` so `wt feature/login` resolves.
+                    set -l wt_name (string replace -a '/' '-' -- $wt_cmd)
+                    set -l wt_path "$project_dir/$wt_name"
                     if test -d "$wt_path"
                         cd "$wt_path"
                     else

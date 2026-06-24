@@ -16,6 +16,71 @@ function __proj_install_hooks --argument-names repo_dir
     echo "Installed git hooks"
 end
 
+# Helper: read the `claude` action from .wtfiles, returning "link" (default) or "copy".
+# Recognised manifest entries (any of these forms):
+#   claude            → link
+#   claude link       → link
+#   claude copy       → copy
+# Returns the action string on stdout.
+function __proj_wt_claude_action --argument-names base_dir
+    set -l manifest "$base_dir/.wtfiles"
+    set -l action link
+
+    if not test -f "$manifest"
+        echo $action
+        return 0
+    end
+
+    while read -l line
+        string match -qr '^\s*(#|$)' -- "$line"; and continue
+        set line (string trim -- "$line")
+        if string match -qr '^claude(\s+(link|copy))?\s*$' -- "$line"
+            set -l rest (string replace -r '^claude\s*' '' -- "$line")
+            set rest (string trim -- "$rest")
+            if test "$rest" = copy
+                set action copy
+            else
+                set action link
+            end
+        end
+    end <"$manifest"
+
+    echo $action
+end
+
+# Helper: inject wrapper-level .claude/ and CLAUDE.md into a new worktree.
+# Defaults to relative symlinks (portable across machines). Respects the
+# `claude link`/`claude copy` directive in .wtfiles (read from base/, the
+# repo root) for per-worktree divergence. Skips silently when the source is
+# missing; warns when the target already exists.
+function __proj_wt_link_claude --argument-names project_dir base_dir wt_path
+    set -l action (__proj_wt_claude_action "$base_dir")
+
+    for item in .claude CLAUDE.md
+        set -l src "$project_dir/$item"
+        set -l dst "$wt_path/$item"
+
+        if not test -e "$src"
+            continue
+        end
+
+        if test -e "$dst" -o -L "$dst"
+            echo "  claude: $item already exists in worktree, skipping"
+            continue
+        end
+
+        switch $action
+            case copy
+                cp -R "$src" "$dst"
+                echo "  copied: $item"
+            case '*'
+                # Relative target: parent dir of wt_path is the wrapper.
+                ln -s "../$item" "$dst"
+                echo "  linked: $item"
+        end
+    end
+end
+
 # Helper: seed a new worktree with gitignored files shared from base
 # Uses .wtfiles manifest if present, otherwise prompts interactively.
 # Default verb is `link` (symlink); explicit `copy` is the escape hatch
@@ -27,6 +92,12 @@ function __proj_wt_copy_shared --argument-names base_dir wt_path
         while read -l line
             string match -qr '^\s*(#|$)' -- "$line"; and continue
             set line (string trim -- "$line")
+
+            # The `claude` pseudo-entry is handled by __proj_wt_link_claude;
+            # skip it here so it is not treated as a real path.
+            if string match -qr '^claude(\s+(link|copy))?\s*$' -- "$line"
+                continue
+            end
 
             set -l verb link
             set -l fpath
@@ -102,6 +173,159 @@ function __proj_wt_copy_shared --argument-names base_dir wt_path
     end
 end
 
+# Helper: classify a worktree-local .claude/ directory for migration.
+# Prints one of: empty | only-settings-local | has-unexpected:<list>
+function __proj_wt_classify_claude_dir --argument-names dir
+    set -l entries
+    for e in $dir/* $dir/.*
+        set -l name (basename $e)
+        test "$name" = .; or test "$name" = ..; and continue
+        test -e "$e" -o -L "$e"; or continue
+        set -a entries $name
+    end
+
+    if test (count $entries) -eq 0
+        echo empty
+        return 0
+    end
+
+    set -l unexpected
+    for e in $entries
+        if test "$e" != settings.local.json
+            set -a unexpected $e
+        end
+    end
+
+    if test (count $unexpected) -eq 0
+        echo only-settings-local
+    else
+        echo "has-unexpected:"(string join ',' -- $unexpected)
+    end
+end
+
+# Helper: compare two settings.local.json files. Prints "subset" if `a` has no
+# top-level keys missing from `b`, otherwise "diverged:<unique-keys>".
+# Falls back to "diverged:unknown" if jq is unavailable or files unparseable.
+function __proj_wt_settings_subset --argument-names a b
+    if not type -q jq
+        echo "diverged:unknown(jq missing)"
+        return 0
+    end
+    set -l unique (jq -r --slurpfile b "$b" '
+        (. // {}) as $a
+        | ($b[0] // {}) as $bj
+        | (($a | keys_unsorted // []) - ($bj | keys_unsorted // [])) | .[]
+    ' "$a" 2>/dev/null)
+    if test (count $unique) -eq 0
+        echo subset
+    else
+        echo "diverged:"(string join ',' -- $unique)
+    end
+end
+
+# Helper: walk every worktree under a project and fix .claude / CLAUDE.md links.
+# When `apply` is "true", performs changes; otherwise prints what would happen.
+function __proj_wt_fix_claude_links_for_project --argument-names project_dir apply
+    set -l project (basename "$project_dir")
+    set -l base_dir "$project_dir/base"
+
+    if not test -d "$base_dir/.git"
+        echo "[$project] not new-style (no base/.git), skipping"
+        return 0
+    end
+
+    echo "[$project]"
+
+    for entry in $project_dir/*
+        test -d "$entry"; or continue
+        set -l name (basename "$entry")
+        test "$name" = base; and continue
+
+        # Verify this is a real worktree (has a .git file pointing into base/.git).
+        if not test -f "$entry/.git"
+            continue
+        end
+
+        for item in .claude CLAUDE.md
+            set -l src "$project_dir/$item"
+            set -l dst "$entry/$item"
+
+            if not test -e "$src"
+                continue
+            end
+
+            # Case B: already a symlink → skip silently.
+            if test -L "$dst"
+                continue
+            end
+
+            # Case A: missing → create symlink.
+            if not test -e "$dst"
+                if test "$apply" = true
+                    ln -s "../$item" "$dst"
+                    echo "  $name: created symlink $item -> ../$item"
+                else
+                    echo "  $name: would create symlink $item -> ../$item"
+                end
+                continue
+            end
+
+            # Case C: real file/directory in worktree — inspect.
+            if test "$item" = CLAUDE.md
+                # Regular file in worktree: never overwrite automatically.
+                echo "  $name: $item is a regular file — manual review required (left untouched)"
+                continue
+            end
+
+            # .claude/ directory: classify contents.
+            set -l klass (__proj_wt_classify_claude_dir "$dst")
+
+            if test "$klass" = empty
+                if test "$apply" = true
+                    rmdir "$dst"
+                    and ln -s "../$item" "$dst"
+                    and echo "  $name: removed empty $item/ and symlinked to ../$item"
+                else
+                    echo "  $name: would remove empty $item/ and symlink to ../$item"
+                end
+                continue
+            end
+
+            if test "$klass" = only-settings-local
+                set -l wrapper_settings "$src/settings.local.json"
+                set -l wt_settings "$dst/settings.local.json"
+                set -l verdict subset
+
+                if test -f "$wt_settings" -a -f "$wrapper_settings"
+                    set verdict (__proj_wt_settings_subset "$wt_settings" "$wrapper_settings")
+                else if test -f "$wt_settings" -a ! -f "$wrapper_settings"
+                    # Wrapper has no settings.local.json — worktree's would be lost.
+                    set verdict "diverged:wrapper-missing-settings.local.json"
+                end
+
+                if test "$verdict" = subset
+                    if test "$apply" = true
+                        rm -rf "$dst"
+                        and ln -s "../$item" "$dst"
+                        and echo "  $name: removed (settings.local.json was subset) and symlinked $item"
+                    else
+                        echo "  $name: would remove $item/ (only settings.local.json, subset of wrapper) and symlink"
+                    end
+                else
+                    set -l unique_keys (string replace 'diverged:' '' -- $verdict)
+                    echo "  $name: needs manual merge — settings.local.json has unique entries: $unique_keys"
+                    echo "    inspect: diff $wrapper_settings $wt_settings"
+                end
+                continue
+            end
+
+            # has-unexpected:<list>
+            set -l extras (string replace 'has-unexpected:' '' -- $klass)
+            echo "  $name: skipped — $item/ contains unexpected entries: $extras"
+        end
+    end
+end
+
 function proj --description "Project management: clone repos, cd into projects"
     if not set -q AION_AUTOPOIESEON
         echo "AION_AUTOPOIESEON is not set. Run make work / make personal to configure."
@@ -126,12 +350,15 @@ function proj --description "Project management: clone repos, cd into projects"
         echo "  proj wt status                     — show worktrees with PR status"
         echo "  proj wt rm [-f] <name>              — remove worktree and branch"
         echo "  proj wt clean                      — remove all fully-merged worktrees"
+        echo "  proj wt fix-claude-links [--apply] [<project>] — migrate existing worktrees to symlinked .claude/ + CLAUDE.md"
         echo "  proj wt <name>                     — cd to worktree"
         echo ""
         echo "  .wtfiles in repo root: list gitignored paths to share with new worktrees"
         echo "    .env               — symlink (default)"
         echo "    link data/fixtures — explicit symlink"
         echo "    copy config/local  — copy instead (for per-worktree divergence)"
+        echo "    claude             — link .claude/ and CLAUDE.md (default for new worktrees)"
+        echo "    claude copy        — copy .claude/ and CLAUDE.md instead (per-worktree divergence)"
         return 2
     end
 
@@ -294,6 +521,50 @@ function proj --description "Project management: clone repos, cd into projects"
             __proj_install_hooks "$base_dir"
 
         case wt
+            # `fix-claude-links` is project-agnostic — handle before PWD-based detection.
+            if test (count $argv) -ge 1 -a "$argv[1]" = fix-claude-links
+                set -e argv[1]
+                set -l apply false
+                set -l target_project
+                for arg in $argv
+                    switch $arg
+                        case --apply
+                            set apply true
+                        case '*'
+                            set target_project $arg
+                    end
+                end
+
+                if test -z "$target_project"
+                    if not test -d "$AION_AUTOPOIESEON"
+                        echo "No projects directory: $AION_AUTOPOIESEON"
+                        return 1
+                    end
+                    if test "$apply" != true
+                        echo "(dry-run; pass --apply to actually change files)"
+                    end
+                    for dir in $AION_AUTOPOIESEON/*/
+                        set -l pdir (string trim --right --chars=/ -- "$dir")
+                        # Only new-style projects with a wrapper-level .claude/ or CLAUDE.md.
+                        test -d "$pdir/base/.git"; or continue
+                        if test -d "$pdir/.claude" -o -f "$pdir/CLAUDE.md"
+                            __proj_wt_fix_claude_links_for_project "$pdir" $apply
+                        end
+                    end
+                else
+                    set -l pdir "$AION_AUTOPOIESEON/$target_project"
+                    if not test -d "$pdir"
+                        echo "Project not found: $pdir"
+                        return 1
+                    end
+                    if test "$apply" != true
+                        echo "(dry-run; pass --apply to actually change files)"
+                    end
+                    __proj_wt_fix_claude_links_for_project "$pdir" $apply
+                end
+                return 0
+            end
+
             # Worktree management — detect project from PWD
             set -l rel (string replace "$AION_AUTOPOIESEON/" '' -- $PWD)
             if test "$rel" = "$PWD"
@@ -320,6 +591,7 @@ function proj --description "Project management: clone repos, cd into projects"
                 echo "  proj wt status                     — show worktrees with PR status"
                 echo "  proj wt rm [-f] <name>              — remove worktree and branch"
                 echo "  proj wt clean                      — remove all fully-merged worktrees"
+                echo "  proj wt fix-claude-links [--apply] [<project>] — migrate worktrees to symlinked .claude/ + CLAUDE.md"
                 echo "  proj wt <name>                     — cd to worktree"
                 return 2
             end
@@ -396,6 +668,8 @@ function proj --description "Project management: clone repos, cd into projects"
                     and echo "Ready: $wt_path"
                     # Seed worktree from .wtfiles manifest (or interactive prompt)
                     __proj_wt_copy_shared "$base_dir" "$wt_path"
+                    # Inherit wrapper-level .claude/ and CLAUDE.md (symlinks by default).
+                    __proj_wt_link_claude "$project_dir" "$base_dir" "$wt_path"
                     and cd "$wt_path"
 
                 case fork
@@ -425,6 +699,7 @@ function proj --description "Project management: clone repos, cd into projects"
                     echo "Forked from $(git rev-parse --abbrev-ref HEAD 2>/dev/null; or echo $source_commit) → $wt_path"
 
                     __proj_wt_copy_shared "$base_dir" "$wt_path"
+                    __proj_wt_link_claude "$project_dir" "$base_dir" "$wt_path"
                     and cd "$wt_path"
 
                 case sync

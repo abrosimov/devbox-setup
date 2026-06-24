@@ -186,7 +186,6 @@ FPF thinking produces durable artifacts, not just ephemeral reasoning. All thoug
 | **Ticket-scoped** | Problem mentions Jira issue (e.g., "PROJ-123") or current branch follows convention | `{PROJECT_DIR}/analysis.md` |
 | **Cross-cutting decision** | Problem is project-wide, strategic, or spans tickets | `docs/decisions/NNN-<topic>.md` |
 | **Cross-cutting design** | Problem is architectural exploration | `docs/design/<topic>.md` |
-| **Memory only** | Quick exploration, no durable artifact needed | Store insights in memory-upstream only |
 
 ### File Naming
 

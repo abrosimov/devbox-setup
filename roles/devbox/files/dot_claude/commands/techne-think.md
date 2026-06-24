@@ -11,7 +11,6 @@ Routes complex, non-code problems to the appropriate thinking agent with FPF (Fi
 **Key features:**
 - Thoughts are streamed to console for real-time visibility
 - Human-readable artifact is persisted (ticket-scoped or cross-cutting)
-- Key insights stored in memory for cross-session recall
 - Dialogue mode offered after analysis
 
 ## Steps
@@ -82,9 +81,6 @@ ARTIFACT GENERATION:
 11. Follow the format in fpf-thinking skill: Artifact Persistence section
 12. If cross-cutting ADR: ensure docs/decisions/ exists, use next sequential number (NNN)
 13. If cross-cutting design: ensure docs/design/ exists
-
-MEMORY INTEGRATION:
-14. Store key insights in memory-upstream (see fpf-thinking skill)
 
 Return: { artifact_path: string, summary: string, open_questions: string[] }"
 )

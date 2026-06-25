@@ -1,0 +1,5 @@
+---
+- name: Restart ControlCenter
+  ansible.builtin.command: killall ControlCenter
+  failed_when: false  # process absent on fresh install / headless
+  changed_when: true

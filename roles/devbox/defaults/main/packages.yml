@@ -98,6 +98,7 @@ devbox_brew_secondary:
   - lima            # Linux VM (eBPF/bpftrace sandbox, perf-style observability)
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
+  - nightlight      # Night Shift CLI
   - gost            # GO Simple Tunnel — HTTP-to-SOCKS bridge used by `pub` mode
   - grafana/grafana/gcx  # Grafana CLI — PromQL/LogQL/Tempo queries via Grafana datasources
 

@@ -1,0 +1,16 @@
+---
+devbox_macos_defaults:
+  # ByHost plist — host: currentHost is required, otherwise the write lands
+  # in the wrong plist and silently no-ops. Bluetooth: 2 = show, 24 = hide.
+  - domain: com.apple.controlcenter
+    host: currentHost
+    key: Bluetooth
+    type: int
+    value: 2
+
+devbox_extra_macos_defaults: []
+
+devbox_night_shift:
+  enabled: true
+  schedule: "21:00 09:00"   # "sunset" or "HH:MM HH:MM"
+  temperature: 65           # 0..100

@@ -1,0 +1,65 @@
+---
+- name: "Apply macOS user defaults"
+  community.general.osx_defaults:
+    domain: "{{ item.domain }}"
+    host: "{{ item.host | default(omit) }}"
+    key: "{{ item.key }}"
+    type: "{{ item.type }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ devbox_macos_defaults + (devbox_extra_macos_defaults | default([])) }}"
+  loop_control:
+    label: "{{ item.domain }}.{{ item.key }}"
+  notify: Restart ControlCenter
+  tags: [macos, defaults]
+
+# Night Shift lives in CoreBrightness (no public `defaults` schema) — driven
+# via the `nightlight` brew formula.
+
+- name: "Night Shift — read current state"
+  ansible.builtin.command: nightlight status
+  register: devbox_nightlight_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: devbox_night_shift.enabled | default(false)
+  tags: [macos, defaults, nightshift]
+
+- name: "Night Shift — turn on"
+  ansible.builtin.command: nightlight on
+  when:
+    - devbox_night_shift.enabled | default(false)
+    - devbox_nightlight_status.stdout | default('') is not search('(?i)status:?\\s*on')
+  changed_when: true
+  tags: [macos, defaults, nightshift]
+
+- name: "Night Shift — set schedule ({{ devbox_night_shift.schedule }})"
+  ansible.builtin.command: "nightlight schedule {{ devbox_night_shift.schedule }}"
+  when:
+    - devbox_night_shift.enabled | default(false)
+    - devbox_night_shift.schedule != "sunset"
+    - devbox_nightlight_status.stdout | default('') is not search(_devbox_ns_schedule_re)
+  vars:
+    # Tolerant of whatever separator `nightlight status` prints between times.
+    _devbox_ns_schedule_re: "{{ devbox_night_shift.schedule | regex_replace('\\s+', '.*') }}"
+  changed_when: true
+  tags: [macos, defaults, nightshift]
+
+- name: "Night Shift — set schedule (sunset → sunrise)"
+  ansible.builtin.command: nightlight schedule sunset
+  when:
+    - devbox_night_shift.enabled | default(false)
+    - devbox_night_shift.schedule == "sunset"
+    - devbox_nightlight_status.stdout | default('') is not search('(?i)sunset')
+  changed_when: true
+  tags: [macos, defaults, nightshift]
+
+- name: "Night Shift — set temperature ({{ devbox_night_shift.temperature }})"
+  ansible.builtin.command: "nightlight temp {{ devbox_night_shift.temperature }}"
+  when:
+    - devbox_night_shift.enabled | default(false)
+    - devbox_nightlight_status.stdout | default('') is not search(_devbox_ns_temp_re)
+  vars:
+    _devbox_ns_temp_re: "(?i)temp(erature)?:?\\s*{{ devbox_night_shift.temperature }}\\b"
+  changed_when: true
+  tags: [macos, defaults, nightshift]

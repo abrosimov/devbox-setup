@@ -75,6 +75,7 @@ devbox_brew_secondary:
   - jsonnet-bundler
   - gh             # GitHub CLI — needed by Claude Code PR workflow
   - glab           # GitLab CLI — mirrors gh for GitLab workflows
+  - git-lfs        # Git Large File Storage — required by repos using LFS pointers
   - goreleaser     # Go release automation (binaries, archives, brew tap, signed releases)
   - jq             # JSON processor — used by scripts and agents
   - ripgrep        # Fast grep — fallback for Claude Code Grep tool

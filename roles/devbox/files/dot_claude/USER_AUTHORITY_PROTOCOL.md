@@ -161,29 +161,9 @@ A non-blocking PostToolUse hook (`bin/post_edit_cyrillic_guard.py`) warns when C
 
 When formatting Go code, **ALWAYS** use `goimports -local <module-name>`, **NEVER** use `go fmt` or `gofmt`. Extract `<module-name>` from the first line of `go.mod`.
 
-### Agent Workflow (Opt-In Per Project)
+### Agent Pipeline (Always On)
 
-The agent workflow is controlled by a per-project `.claude/workflow.json` file.
-
-**Detection:** When a user asks you to write or modify code (`.go`, `.py`, `.ts`, `.tsx` files) and no `.claude/workflow.json` exists in the project root, ask:
-
-> This project doesn't have the agent workflow configured. Would you like to enable it?
->
-> **A) Full workflow** — agents required for code changes, auto-commit after each phase
-> **B) Lightweight** — agents required for code changes, you commit manually
-> **C) Skip** — work without the agent pipeline this session
-
-- **A** → run `/techne-init-workflow full`
-- **B** → run `/techne-init-workflow light`
-- **C** → proceed normally; do not ask again this session
-
-**Only ask once per session.** If the user chose C, remember it for the rest of the conversation.
-
-**When `workflow.json` exists with `"agent_pipeline": true`:**
-
-All code changes MUST go through agents. For ANY modification to `.go`, `.py`, `.ts`, `.tsx` files:
-1. Use `/techne-implement` command to spawn the appropriate software-engineer agent
-2. NEVER use Edit/Write tools directly on code files
+For ANY modification to `.go`, `.py`, `.ts`, `.tsx` files in a code project, use `/techne-implement` to spawn the appropriate software-engineer agent. NEVER use Edit/Write/MultiEdit tools directly on these files — even for trivial one-line changes.
 
 Agents enforce:
 - Proper approval flow
@@ -191,9 +171,15 @@ Agents enforce:
 - Production necessities (error handling, logging, timeouts)
 - Consistent patterns from the codebase
 
-**When `workflow.json` is absent or `"agent_pipeline": false`:**
+The user commits manually after each agent run — agents do not auto-commit.
 
-Agents are available via `/techne-implement`, `/techne-test`, `/techne-review` but not mandatory. Direct code edits are allowed.
+**Exemptions** (direct Edit/Write allowed):
+
+1. **Editing this configuration.** Files under `roles/devbox/files/dot_claude/` (and the deployed `~/.claude/`) — agents, skills, commands, hooks, bin scripts. The exemption at the top of this section ("Skipped when editing agent/skill/command definitions…") already covers this; see the `editing-claude-config` skill.
+2. **Tier 1 routine tasks.** Auto-formatting (`goimports`, `ruff format`, `prettier`), removing narration comments, dead-code removal. These are already exempt under the Inquiry protocol — agents would add overhead without value.
+3. **Per-turn override words.** The user can opt out for a single turn by saying any of: `just edit`, `direct`, `skip agent`, `прямо`, `напрямую`, `без агента`. The opt-out applies only to that turn; the default reverts immediately on the next request.
+
+For everything else (new functions, refactors, bug fixes, even one-liner logic changes), route through `/techne-implement`. No per-project opt-in — the rule is global.
 
 ### Cross-Cutting Rules (Always Active)
 

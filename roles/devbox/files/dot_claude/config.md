@@ -16,7 +16,6 @@ This environment has an agent pipeline with specialised commands. When unsure wh
 
 | Command | What it does |
 |---------|-------------|
-| `/techne-init-workflow` | Enable agent pipeline for the current project |
 | `/techne-devcontainer` | Scaffold a Docker sandbox with egress firewall |
 | `/techne-schema` | Design a database schema |
 | `/techne-api-design` | Design API contracts (REST or gRPC) |

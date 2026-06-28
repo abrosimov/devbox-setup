@@ -69,7 +69,7 @@ copy .env       # per-worktree credentials that should not propagate
 ```
 
 Recommended for `.claude/` projects: symlink `agents/`, `commands/`, `skills/`,
-`memory/`, `settings.local.json`, and `workflow.json`. Never share `.venv`,
+`memory/`, and `settings.local.json`. Never share `.venv`,
 `node_modules` across worktrees if dependencies diverge per branch — let each
 worktree rebuild and rely on the global cache (pnpm store, `uv` cache, Go module
 cache).

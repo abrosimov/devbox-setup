@@ -11,45 +11,11 @@ description: >
 
 This document describes the agent pipeline and workflow commands for projects using the Claude Code agent system.
 
-## Opt-In Model
+## Agent Pipeline (Always On)
 
-The agent workflow is **opt-in per project** via `.claude/workflow.json`. Agents, commands, and skills are deployed globally to `~/.claude/` and always available, but **enforcement** (mandatory agent usage, auto-commit, auto-downgrade) is controlled per-project.
+The agent pipeline is enforced globally for every project. Any change to source code (`.go`, `.py`, `.ts`, `.tsx`, ...) MUST go through the appropriate specialist agent via `/techne-*` commands — direct `Edit`/`Write` on code files is not allowed. See `USER_AUTHORITY_PROTOCOL.md` for the authoritative rule.
 
-### Workflow Config
-
-Per-project `.claude/workflow.json`:
-
-```json
-{
-  "agent_pipeline": true,
-  "auto_commit": true,
-  "complexity_escalation": true
-}
-```
-
-| Flag | `true` | `false` | Default |
-|------|--------|---------|---------|
-| `agent_pipeline` | Code changes MUST go through agents | Direct Edit/Write allowed | `true` |
-| `auto_commit` | Commands auto-commit after each phase | User commits manually | `true` |
-| `complexity_escalation` | Legacy flag — ignored | Legacy flag — ignored | `true` |
-
-### Project Initialization
-
-When Claude detects a code project without `.claude/workflow.json`, it asks the user whether to enable the workflow. See `CLAUDE.md` for the detection logic.
-
-Use `/techne-init-workflow` to explicitly set up the workflow config:
-
-```bash
-/techne-init-workflow full    # all flags true
-/techne-init-workflow light   # agent_pipeline: true, auto_commit: false
-/techne-init-workflow         # interactive — choose preset or custom
-```
-
-### Without workflow.json
-
-- All commands (`/techne-implement`, `/techne-test`, `/techne-review`) still work — they use agents regardless
-- Direct code edits via Edit/Write are allowed (no enforcement)
-- Commands default all flags to `true` for backward compatibility
+The user commits manually after each agent run; commands do not auto-commit.
 
 ## Directory Structure
 
@@ -86,7 +52,6 @@ Use `/techne-init-workflow` to explicitly set up the workflow config:
 │   ├── implement.md
 │   ├── test.md
 │   ├── review.md
-│   ├── init-workflow.md
 │   ├── build-agent.md
 │   ├── build-skill.md
 │   ├── validate-config.md
@@ -109,7 +74,6 @@ Use `/techne-init-workflow` to explicitly set up the workflow config:
 | `/techne-implement` | Run SE agent for current task | Start implementation |
 | `/techne-test` | Run test writer agent | After implementation |
 | `/techne-review` | Run code reviewer agent | After tests |
-| `/techne-init-workflow` | Initialise agent workflow for current project | First time in a project |
 | `/techne-build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
 | `/techne-build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
 | `/techne-audit` | Run library-wide freshness and/or consistency audit | After adding agents/skills, periodic maintenance |
@@ -248,7 +212,7 @@ Each feature branch is independent. No local merge — integration happens via P
 
 1. Command creates feature branch from default branch (or uses current)
 2. SE agent implements on feature branch (agent never touches git)
-3. Command auto-commits after each agent phase via `git-safe-commit` (when `auto_commit: true` in `workflow.json`)
+3. User commits manually after each agent phase (commands do not auto-commit; use `git-safe-commit` for branch-protection + secret detection)
 4. After review, user pushes and creates PR
 5. Merge happens in GitHub/GitLab (not locally)
 

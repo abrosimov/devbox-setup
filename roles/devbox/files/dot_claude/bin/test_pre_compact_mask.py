@@ -58,12 +58,6 @@ def test_render_with_pipeline_state() -> None:
     assert "  test: in_progress" in out
 
 
-def test_render_with_workflow() -> None:
-    state = pcm.State(workflow_active=True)
-    out = pcm.render(state)
-    assert "Workflow: active" in out
-
-
 def test_read_pipeline_stages_filters_pending(tmp_path: Path) -> None:
     state_file = tmp_path / "state.json"
     state_file.write_text(
@@ -113,16 +107,6 @@ def test_find_pipeline_state_falls_back_to_claude_dir(tmp_path: Path) -> None:
 
 def test_find_pipeline_state_returns_none_when_absent(tmp_path: Path) -> None:
     assert pcm.find_pipeline_state(tmp_path) is None
-
-
-def test_workflow_active_true_when_file_exists(tmp_path: Path) -> None:
-    (tmp_path / ".claude").mkdir()
-    (tmp_path / ".claude" / "workflow.json").write_text("{}", encoding="utf-8")
-    assert pcm.workflow_active(tmp_path) is True
-
-
-def test_workflow_active_false_when_missing(tmp_path: Path) -> None:
-    assert pcm.workflow_active(tmp_path) is False
 
 
 def test_collect_state_uses_git_output(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

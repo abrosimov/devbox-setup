@@ -33,20 +33,6 @@ Check if user passed a model argument:
 
 ## Steps
 
-### 0. Read Workflow Config
-
-```bash
-cat .claude/workflow.json 2>/dev/null || echo '{}'
-```
-
-Parse the JSON. Extract flags (default to `true` if key is missing, to preserve backward compatibility with projects that have the file but lack a key):
-
-| Flag | Default | Effect |
-|------|---------|--------|
-| `agent_pipeline` | `true` | If `false`, this command still works but isn't mandatory |
-| `auto_commit` | `true` | If `false`, skip commit steps (Steps 7-8 change) |
-| `complexity_escalation` | `true` | Legacy flag — ignored (Opus is always the default for SE agents) |
-
 ### 1. Git Setup
 
 Ensure you are on the correct branch before any work begins.
@@ -172,23 +158,15 @@ Each agent will:
 - Implement the required changes
 - Provide summary and suggest next step
 
-### 7. Commit Changes
+### 7. Show Changes
 
-**If `auto_commit` is `false`, skip this step.** Show changed files and tell the user:
-
-> Changes ready on branch `$BRANCH`. Commit when you're ready.
-
-**If `auto_commit` is `true` (default):**
-
-After the agent completes successfully, commit the implementation:
+After the agent completes successfully, show the user the changed files:
 
 ```bash
-# List changed files for the commit
 git status --short
-
-# Commit using safety wrapper (blocks protected branches, rejects secrets)
-.claude/bin/git_safe_commit.py -m "feat($JIRA_ISSUE): <concise description of implementation>"
 ```
+
+The user will commit manually. Do NOT auto-commit. If the user asks for help drafting a commit message, suggest the following conventions:
 
 **Commit message conventions:**
 - `feat(PROJ-123):` for new features
@@ -196,20 +174,11 @@ git status --short
 - `refactor(PROJ-123):` for refactoring
 - Use the Jira issue as scope
 
-If specific files should be committed (not all changes):
-```bash
-.claude/bin/git_safe_commit.py -m "feat($JIRA_ISSUE): <description>" file1.go file2.go
-```
-
 ### 8. After Completion
 
 Present the agent's summary and suggested next step to the user.
 
-**If auto_commit was on:**
-> Implementation committed on branch `$BRANCH`.
-
-**If auto_commit was off:**
-> Implementation complete on branch `$BRANCH` (not committed).
+> Implementation complete on branch `$BRANCH`. The user will commit manually.
 
 > **Next**: Run `/techne-test` to write tests.
 >

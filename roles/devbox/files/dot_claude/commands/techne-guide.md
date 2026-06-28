@@ -10,7 +10,7 @@ Print this:
 
 ## What I Can Do
 
-This environment has **19 slash commands**, **33 specialised agents**, and **79 knowledge skills**. Here's how to use them.
+This environment has **18 slash commands**, **33 specialised agents**, and **79 knowledge skills**. Here's how to use them.
 
 ---
 
@@ -28,7 +28,7 @@ The recommended flow for any code change:
 **Example:** "Add a retry middleware to the HTTP client"
 → `/techne-implement` detects Go, spawns the Go software engineer agent, writes the code, formats with `goimports`.
 
-You can also skip the pipeline and ask me to edit code directly — the agent workflow is opt-in per project via `/techne-init-workflow`.
+Agents are mandatory for all code edits — every change to `.go`, `.py`, `.ts`, or `.tsx` files goes through a specialised software engineer agent (no per-project opt-in).
 
 ---
 
@@ -50,8 +50,6 @@ You can also skip the pipeline and ask me to edit code directly — the agent wo
 ### Project Setup
 
 ```
-/techne-init-workflow      → enable the agent pipeline for this project
-                      (full = auto-commit + complexity escalation, or lightweight)
 /techne-devcontainer       → scaffold a Docker sandbox with iptables egress firewall
                       (language auto-detection, domain allowlist from settings.json)
 ```

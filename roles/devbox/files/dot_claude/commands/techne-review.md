@@ -13,18 +13,6 @@ Check if user passed a model argument:
 
 ## Steps
 
-### 0. Read Workflow Config
-
-```bash
-cat .claude/workflow.json 2>/dev/null || echo '{}'
-```
-
-Parse the JSON. Extract flags (default to `true` if key is missing):
-
-| Flag | Default | Effect |
-|------|---------|--------|
-| `auto_commit` | `true` | If `false`, skip auto-commit of review fixes |
-
 ### 1. Compute Task Context (once)
 
 ```bash
@@ -97,12 +85,11 @@ If no blocking issues, offer options:
 When user says **'pr'**:
 
 ```bash
-# Ensure all changes are committed first
+# Ensure all changes are committed first. If there are uncommitted changes,
+# warn the user and ask them to commit before pushing. Do NOT auto-commit.
 if ! git diff --quiet || ! git diff --cached --quiet; then
-  # If auto_commit is false, warn user about uncommitted changes
-  # and ask them to commit before pushing. Do NOT auto-commit.
-  # If auto_commit is true (default):
-  .claude/bin/git_safe_commit.py -m "chore($JIRA_ISSUE): final changes after review"
+  echo "Uncommitted changes detected. Please commit them before pushing."
+  exit 1
 fi
 
 # Push and create PR

@@ -19,27 +19,7 @@ This file contains configurable paths and settings for agents and commands.
 | `DEFAULT_BRANCH` | auto-detected | Project's default branch (main/master/develop) |
 | `INTEGRATION_BRANCH` | *(none — opt-in)* | Optional local integration branch for pre-PR testing |
 
-## Workflow Config (Per-Project)
-
-The agent workflow is opt-in per project. Config file: `.claude/workflow.json` in the project root.
-
-```json
-{
-  "agent_pipeline": true,
-  "auto_commit": true,
-  "complexity_escalation": true
-}
-```
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `agent_pipeline` | `true` | When `true`, code changes MUST go through agents. When `false`, direct edits allowed |
-| `auto_commit` | `true` | When `true`, commands auto-commit via `git-safe-commit`. When `false`, user commits manually |
-| `complexity_escalation` | `true` | When `true`, `/techne-implement` auto-downgrades SE agents to Sonnet for simple tasks. When `false`, always use agent default model (opus) |
-
-**Commands read this file at Step 0** and adjust behavior accordingly. If the file is missing, commands default all flags to `true` (backward compatible).
-
-Create with `/techne-init-workflow` or manually.
+## Default Branch Detection
 
 The default branch is detected automatically by `.claude/bin/git-default-branch`:
 ```bash
@@ -238,7 +218,7 @@ Deployed by Ansible. Contains:
 
 ### Project `.claude/settings.json`
 
-Optional. Use when a project needs additional permissions beyond the global baseline, or wants to restrict certain operations. Created automatically by `/techne-init-workflow` if requested.
+Optional. Use when a project needs additional permissions beyond the global baseline, or wants to restrict certain operations. Create manually as needed.
 
 ### `settings.local.json` — Personal Overrides
 

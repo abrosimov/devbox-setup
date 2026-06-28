@@ -22,19 +22,6 @@ Check if user passed a model argument:
 
 ## Steps
 
-### 0. Read Workflow Config
-
-```bash
-cat .claude/workflow.json 2>/dev/null || echo '{}'
-```
-
-Parse the JSON. Extract flags (default to `true` if key is missing):
-
-| Flag | Default | Effect |
-|------|---------|--------|
-| `auto_commit` | `true` | If `false`, skip commit step |
-| `complexity_escalation` | `true` | If `false`, skip complexity check (use agent's default model) |
-
 ### 1. Compute Task Context (once)
 
 ```bash
@@ -62,7 +49,7 @@ Or if there's an implementation summary from SE, use that for context.
 
 ### 3. Pre-flight Complexity Check (if no model specified)
 
-**Skip this step if user explicitly specified a model OR `complexity_escalation` is `false`.**
+**Skip this step if user explicitly specified a model.**
 
 Run complexity assessment:
 
@@ -123,29 +110,25 @@ The agent will:
 - Write comprehensive tests
 - Provide summary and suggest next step
 
-### 5. Commit Tests
+### 5. Show Changes
 
-**If `auto_commit` is `false`, skip this step.** Show changed files and tell the user:
-
-> Tests ready on branch `$BRANCH`. Commit when you're ready.
-
-**If `auto_commit` is `true` (default):**
-
-After the agent completes and tests pass:
+After the agent completes and tests pass, show the user the changed files:
 
 ```bash
-.claude/bin/git_safe_commit.py -m "test($JIRA_ISSUE): add tests for $BRANCH_NAME"
+git status --short
+```
+
+The user will commit manually. Do NOT auto-commit. If the user asks for a suggested message, use:
+
+```
+test($JIRA_ISSUE): add tests for $BRANCH_NAME
 ```
 
 ### 6. After Completion
 
 Present the agent's summary and suggested next step to the user.
 
-**If auto_commit was on:**
-> Tests committed on branch `$BRANCH`.
-
-**If auto_commit was off:**
-> Tests complete on branch `$BRANCH` (not committed).
+> Tests complete on branch `$BRANCH`. The user will commit manually.
 
 > **Next**: Run `/techne-review` to review all changes.
 >

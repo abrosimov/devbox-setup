@@ -18,7 +18,6 @@ class State:
     staged: list[str] = field(default_factory=list)
     pipeline_state_path: str | None = None
     pipeline_state_stages: list[tuple[str, str]] = field(default_factory=list)
-    workflow_active: bool = False
 
 
 PIPELINE_PATTERNS: tuple[str, ...] = (
@@ -69,10 +68,6 @@ def read_pipeline_stages(state_path: str) -> list[tuple[str, str]]:
     return out
 
 
-def workflow_active(cwd: Path) -> bool:
-    return (cwd / ".claude" / "workflow.json").is_file()
-
-
 def collect_state(cwd: Path) -> State:
     state = State()
     state.branch = current_branch(cwd)
@@ -81,7 +76,6 @@ def collect_state(cwd: Path) -> State:
     state.pipeline_state_path = find_pipeline_state(cwd)
     if state.pipeline_state_path:
         state.pipeline_state_stages = read_pipeline_stages(state.pipeline_state_path)
-    state.workflow_active = workflow_active(cwd)
     return state
 
 
@@ -101,8 +95,6 @@ def render(state: State) -> str:
         lines.append(f"Pipeline state: {state.pipeline_state_path}")
         for name, status in state.pipeline_state_stages:
             lines.append(f"  {name}: {status}")
-    if state.workflow_active:
-        lines.append("Workflow: active")
     lines.append("--- END PRESERVED CONTEXT ---")
     return "\n".join(lines) + "\n"
 

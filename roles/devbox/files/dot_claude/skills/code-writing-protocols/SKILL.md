@@ -16,6 +16,8 @@ Shared decision-making and quality protocols for all code-writing agents (SE-go,
 
 **Before ANY code work, validate approval in the conversation context.**
 
+> **Canonical source:** `CLAUDE.md` §What Counts as Approval + §Approval-Required Triggers is authoritative. The lists below mirror it for convenience — if they ever diverge, the UAP wins.
+
 ### Step 1: Scan Recent Messages
 
 Look for explicit approval in the last 2-3 user messages:
@@ -55,6 +57,14 @@ Log the approval and proceed:
 ✓ Approval found: "[quote the approval phrase]"
 Proceeding with implementation...
 ```
+
+### Approval Ownership (Subagents)
+
+**Approval is owned by the main thread.** When you run as a subagent dispatched via a `Task` call, the dispatch prompt carries the approval — the main thread already collected it from the user.
+
+- **Do NOT re-ask the user for approval** on scope already covered by your dispatch prompt. Re-prompting duplicates the gate and burns context.
+- The Approval Validation scan above applies to the **dispatch prompt and conversation you were given**, not to a fresh user turn you must solicit.
+- **If you hit new ambiguity outside your dispatched scope**, return to the main thread with a clarification request in your result — state the open question and stop. Do not interactively re-prompt the user yourself.
 
 ## MANDATORY: Decision Classification Protocol
 

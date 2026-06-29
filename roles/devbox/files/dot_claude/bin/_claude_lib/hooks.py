@@ -31,8 +31,20 @@ def write_additional_context(message: str) -> None:
     sys.stdout.flush()
 
 
-def write_decision(behavior: Literal["allow", "deny"], reason: str | None = None) -> None:
-    hook_output: dict[str, object] = {"permissionDecision": behavior}
+def write_decision(
+    behavior: Literal["allow", "deny", "ask", "defer"],
+    reason: str | None = None,
+) -> None:
+    """Emit PreToolUse hook JSON decision.
+
+    Per Claude Code hooks schema, ``hookEventName: "PreToolUse"`` is
+    required alongside ``permissionDecision``. ``permissionDecisionReason``
+    is surfaced to the LLM so the agent can self-correct on denial.
+    """
+    hook_output: dict[str, object] = {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": behavior,
+    }
     if reason is not None:
         hook_output["permissionDecisionReason"] = reason
     payload = {"hookSpecificOutput": hook_output}

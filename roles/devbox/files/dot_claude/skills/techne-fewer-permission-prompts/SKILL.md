@@ -20,11 +20,17 @@ The format for permissions is: `Bash(foo*)`, `Bash(foo)`, `Bash(foo bar *)`, `mc
 
 ## Steps
 
-1. **Run the scanner.** Execute `${CLAUDE_SKILL_DIR}/scripts/scan_transcripts.py` with no flags. It discovers the 50 most recently-modified JSONL files under `~/.claude/projects/*/*.jsonl`, parses Bash and MCP tool calls, strips `sudo`/`timeout`/env-prefix/wrapper leaders, splits on quote-aware pipes/`&&`/`||`/`;`, and prints JSON on stdout:
+1. **Run the scanner.** Execute `${CLAUDE_SKILL_DIR}/scripts/scan_transcripts.py` with no flags. It merges two sources:
+
+   - **Transcripts** — the 50 most recently-modified JSONL files under `~/.claude/projects/*/*.jsonl` (all Bash and MCP tool calls)
+   - **Telemetry** — every shard under `~/.claude/state/missed_approvals/YYYY/MM/DD/HH.jsonl` written by the `bash_decision_gate` hook. This is the **high-signal** source: each record is a command that did NOT auto-approve and therefore prompted, i.e. a candidate for the allowlist.
+
+   The scanner strips `sudo`/`timeout`/env-prefix/wrapper leaders, splits on quote-aware pipes/`&&`/`||`/`;`, and prints JSON on stdout:
 
    ```json
    {
      "scanned_files": 50,
+     "scanned_telemetry": 14,
      "bash": [
        {"cmd": "git", "sub": "status", "count": 42, "sample": "git status --short"}
      ],
@@ -34,7 +40,7 @@ The format for permissions is: `Bash(foo*)`, `Bash(foo)`, `Bash(foo bar *)`, `mc
    }
    ```
 
-   `bash` is sorted by count descending (top 60); `mcp` likewise (top 30). Use this JSON as your input for steps 2–7. Pass `--pretty` only for human-readable debugging at the CLI — the skill itself consumes JSON.
+   `bash` is sorted by count descending (top 60); `mcp` likewise (top 30). Counts are merged across both sources. Use this JSON as your input for steps 2–7. Pass `--pretty` only for human-readable debugging at the CLI — the skill itself consumes JSON. Pass `--no-telemetry` to scan transcripts only (useful when telemetry shards are stale).
 
 2. **Filter to read-only.** Keep only commands that don't mutate state. Examples of read-only: `ls`, `cat`, `pwd`, `git status`, `git log`, `git diff`, `git show`, `git branch`, `rg`, `grep`, `find`, `head`, `tail`, `wc`, `file`, `which`, `echo`, `date`, `gh pr view`, `gh pr list`, `gh pr diff`, `gh issue view`, `gh issue list`, `gh run list`, `gh run view`, `gh api` (GET), `bun run typecheck`, `bun run lint`, `bun run test` (for tests that don't mutate), `docker ps`, `docker logs`, `kubectl get`, `kubectl describe`, `ps`, `top`, `df`, `du`, `env`, `printenv`, any MCP tool with `read`/`get`/`list`/`search`/`view` in its name.
 

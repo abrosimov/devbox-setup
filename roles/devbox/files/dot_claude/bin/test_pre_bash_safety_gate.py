@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Tests for pre_bash_safety_gate.
+"""Tests for the Phase-1 deny rules (originally in pre_bash_safety_gate).
+
+The rules are now part of bash_decision_gate. This file uses
+``evaluate_phase1_legacy`` for the pre-unification Decision shape so the
+existing assertion patterns (``decision.blocked``, ``decision.rule_name``,
+``decision.message``) work unchanged.
 
 Run from any directory:
     pytest roles/devbox/files/dot_claude/bin/test_pre_bash_safety_gate.py
@@ -19,26 +24,26 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import pre_bash_safety_gate as gate
+import bash_decision_gate as gate
 
 # --- Heredoc ----------------------------------------------------------------
 
 
 def test_blocks_heredoc() -> None:
-    assert gate.evaluate("cat << EOF\nhi\nEOF").blocked
+    assert gate.evaluate_phase1_legacy("cat << EOF\nhi\nEOF").blocked
 
 
 def test_blocks_here_string() -> None:
     # Preserves legacy substring-match: <<< also contains '<<'.
-    assert gate.evaluate("cat <<< hello").blocked
+    assert gate.evaluate_phase1_legacy("cat <<< hello").blocked
 
 
 def test_allows_plain_echo() -> None:
-    assert not gate.evaluate("echo hello").blocked
+    assert not gate.evaluate_phase1_legacy("echo hello").blocked
 
 
 def test_allows_redirect() -> None:
-    assert not gate.evaluate("echo hi > file.txt").blocked
+    assert not gate.evaluate_phase1_legacy("echo hi > file.txt").blocked
 
 
 # --- Commit on main ---------------------------------------------------------
@@ -46,19 +51,19 @@ def test_allows_redirect() -> None:
 
 def test_blocks_commit_on_main() -> None:
     with mock.patch.object(gate, "_current_branch", return_value="main"):
-        d = gate.evaluate("git commit -m 'wip'")
+        d = gate.evaluate_phase1_legacy("git commit -m 'wip'")
     assert d.blocked
     assert d.rule_name == "commit-on-main"
 
 
 def test_blocks_commit_on_master() -> None:
     with mock.patch.object(gate, "_current_branch", return_value="master"):
-        assert gate.evaluate("git commit").blocked
+        assert gate.evaluate_phase1_legacy("git commit").blocked
 
 
 def test_allows_commit_on_feature() -> None:
     with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
-        assert not gate.evaluate("git commit -m 'fix'").blocked
+        assert not gate.evaluate_phase1_legacy("git commit -m 'fix'").blocked
 
 
 # --- Merge on main ----------------------------------------------------------
@@ -66,59 +71,59 @@ def test_allows_commit_on_feature() -> None:
 
 def test_blocks_merge_into_main() -> None:
     with mock.patch.object(gate, "_current_branch", return_value="main"):
-        assert gate.evaluate("git merge feature/x").blocked
+        assert gate.evaluate_phase1_legacy("git merge feature/x").blocked
 
 
 def test_allows_merge_into_feature() -> None:
     with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
-        assert not gate.evaluate("git merge main").blocked
+        assert not gate.evaluate_phase1_legacy("git merge main").blocked
 
 
 # --- Force push -------------------------------------------------------------
 
 
 def test_blocks_force() -> None:
-    assert gate.evaluate("git push --force").blocked
+    assert gate.evaluate_phase1_legacy("git push --force").blocked
 
 
 def test_blocks_force_short_flag() -> None:
-    assert gate.evaluate("git push -f").blocked
+    assert gate.evaluate_phase1_legacy("git push -f").blocked
 
 
 def test_blocks_force_with_origin() -> None:
-    assert gate.evaluate("git push origin main --force").blocked
+    assert gate.evaluate_phase1_legacy("git push origin main --force").blocked
 
 
 def test_blocks_force_equals() -> None:
-    assert gate.evaluate("git push --force=origin").blocked
+    assert gate.evaluate_phase1_legacy("git push --force=origin").blocked
 
 
 def test_allows_force_with_lease() -> None:
     # Intentional tightening from the legacy hook: safer variant is allowed.
-    assert not gate.evaluate("git push --force-with-lease").blocked
+    assert not gate.evaluate_phase1_legacy("git push --force-with-lease").blocked
 
 
 def test_allows_normal_feature_push() -> None:
-    assert not gate.evaluate("git push origin feature/x").blocked
+    assert not gate.evaluate_phase1_legacy("git push origin feature/x").blocked
 
 
 def test_blocks_refspec_plus_prefix() -> None:
     # "+feature" = force semantics at the refspec layer.
-    d = gate.evaluate("git push origin +feature")
+    d = gate.evaluate_phase1_legacy("git push origin +feature")
     assert d.blocked
     assert d.rule_name == "force-push"
 
 
 def test_blocks_refspec_local_colon_plus_remote() -> None:
     # "local:+main" = force on remote side.
-    d = gate.evaluate("git push origin local:+main")
+    d = gate.evaluate_phase1_legacy("git push origin local:+main")
     assert d.blocked
     assert d.rule_name == "force-push"
 
 
 def test_blocks_refspec_plus_local_colon_remote() -> None:
     # "+local:remote" — plus prefix on entire refspec.
-    d = gate.evaluate("git push origin +feature:other")
+    d = gate.evaluate_phase1_legacy("git push origin +feature:other")
     assert d.blocked
     assert d.rule_name == "force-push"
 
@@ -127,145 +132,145 @@ def test_blocks_refspec_plus_local_colon_remote() -> None:
 
 
 def test_blocks_mirror() -> None:
-    d = gate.evaluate("git push --mirror origin")
+    d = gate.evaluate_phase1_legacy("git push --mirror origin")
     assert d.blocked
     assert d.rule_name == "push-mirror-all"
 
 
 def test_blocks_all() -> None:
-    d = gate.evaluate("git push --all origin")
+    d = gate.evaluate_phase1_legacy("git push --all origin")
     assert d.blocked
     assert d.rule_name == "push-mirror-all"
 
 
 def test_blocks_all_no_remote() -> None:
-    assert gate.evaluate("git push --all").blocked
+    assert gate.evaluate_phase1_legacy("git push --all").blocked
 
 
 def test_allows_normal_push() -> None:
-    assert not gate.evaluate("git push origin feature/x").blocked
+    assert not gate.evaluate_phase1_legacy("git push origin feature/x").blocked
 
 
 # --- Push delete branch -----------------------------------------------------
 
 
 def test_blocks_delete_flag() -> None:
-    d = gate.evaluate("git push --delete origin feature/x")
+    d = gate.evaluate_phase1_legacy("git push --delete origin feature/x")
     assert d.blocked
     assert d.rule_name == "push-delete-branch"
 
 
 def test_blocks_colon_refspec() -> None:
-    d = gate.evaluate("git push origin :feature/x")
+    d = gate.evaluate_phase1_legacy("git push origin :feature/x")
     assert d.blocked
     assert d.rule_name == "push-delete-branch"
 
 
 def test_blocks_colon_refs_heads_refspec() -> None:
-    d = gate.evaluate("git push origin :refs/heads/feature/x")
+    d = gate.evaluate_phase1_legacy("git push origin :refs/heads/feature/x")
     assert d.blocked
     assert d.rule_name == "push-delete-branch"
 
 
 def test_allows_normal_refspec() -> None:
     # local:remote (both sides non-empty) is a normal push, not a delete.
-    assert not gate.evaluate("git push origin local:remote-feature").blocked
+    assert not gate.evaluate_phase1_legacy("git push origin local:remote-feature").blocked
 
 
 def test_allows_normal_push_delete_section() -> None:
-    assert not gate.evaluate("git push origin feature/x").blocked
+    assert not gate.evaluate_phase1_legacy("git push origin feature/x").blocked
 
 
 # --- Push to protected branches ---------------------------------------------
 
 
 def test_blocks_bare_main() -> None:
-    d = gate.evaluate("git push origin main")
+    d = gate.evaluate_phase1_legacy("git push origin main")
     assert d.blocked
     assert d.rule_name == "push-to-protected"
     assert "main" in (d.message or "")
 
 
 def test_blocks_bare_master() -> None:
-    d = gate.evaluate("git push origin master")
+    d = gate.evaluate_phase1_legacy("git push origin master")
     assert d.blocked
     assert d.rule_name == "push-to-protected"
 
 
 def test_blocks_local_colon_main() -> None:
-    assert gate.evaluate("git push origin foo:main").blocked
+    assert gate.evaluate_phase1_legacy("git push origin foo:main").blocked
 
 
 def test_blocks_refs_heads_master() -> None:
-    d = gate.evaluate("git push origin local:refs/heads/master")
+    d = gate.evaluate_phase1_legacy("git push origin local:refs/heads/master")
     assert d.blocked
     assert d.rule_name == "push-to-protected"
 
 
 def test_blocks_head_colon_main() -> None:
-    d = gate.evaluate("git push origin HEAD:main")
+    d = gate.evaluate_phase1_legacy("git push origin HEAD:main")
     assert d.blocked
     assert d.rule_name == "push-to-protected"
 
 
 def test_blocks_refs_remotes_origin_main() -> None:
-    d = gate.evaluate("git push origin local:refs/remotes/origin/main")
+    d = gate.evaluate_phase1_legacy("git push origin local:refs/remotes/origin/main")
     assert d.blocked
     assert d.rule_name == "push-to-protected"
 
 
 def test_allows_feature_branch() -> None:
-    assert not gate.evaluate("git push origin feature/x").blocked
+    assert not gate.evaluate_phase1_legacy("git push origin feature/x").blocked
 
 
 def test_allows_set_upstream_feature() -> None:
     # -u must not confuse positional parsing.
-    assert not gate.evaluate("git push -u origin feature/x").blocked
+    assert not gate.evaluate_phase1_legacy("git push -u origin feature/x").blocked
 
 
 def test_allows_bare_push() -> None:
     # Bare `git push` is safe — rule_commit_on_main prevents new commits
     # on main/master in the first place.
-    assert not gate.evaluate("git push").blocked
+    assert not gate.evaluate_phase1_legacy("git push").blocked
 
 
 def test_allows_remote_only() -> None:
     # `git push origin` (no refspec) = current branch -> upstream. Same
     # reasoning as bare `git push`.
-    assert not gate.evaluate("git push origin").blocked
+    assert not gate.evaluate_phase1_legacy("git push origin").blocked
 
 
 def test_allows_branch_with_main_substring() -> None:
     # "mainline" is NOT main — exact match only.
-    assert not gate.evaluate("git push origin mainline").blocked
+    assert not gate.evaluate_phase1_legacy("git push origin mainline").blocked
 
 
 def test_allows_branch_with_master_path() -> None:
     # "feature/master-cleanup" is NOT master.
-    assert not gate.evaluate("git push origin feature/master-cleanup").blocked
+    assert not gate.evaluate_phase1_legacy("git push origin feature/master-cleanup").blocked
 
 
 def test_env_var_extends_protected() -> None:
     # User adds "develop" to protected list via env var.
     with mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "main,master,develop"}):
-        d = gate.evaluate("git push origin develop")
+        d = gate.evaluate_phase1_legacy("git push origin develop")
         assert d.blocked
         assert d.rule_name == "push-to-protected"
 
 
 def test_env_var_wildcard_release() -> None:
     with mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "main,master,release/*"}):
-        d = gate.evaluate("git push origin release/1.0")
+        d = gate.evaluate_phase1_legacy("git push origin release/1.0")
         assert d.blocked
         # And a non-matching branch is still allowed.
-        assert not gate.evaluate("git push origin feature/x").blocked
+        assert not gate.evaluate_phase1_legacy("git push origin feature/x").blocked
 
 
 def test_env_var_override_removes_default() -> None:
     # User explicitly sets only "develop" — main is no longer protected here.
     with mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "develop"}):
-        assert not gate.evaluate("git push origin main").blocked
-        assert gate.evaluate("git push origin develop").blocked
+        assert not gate.evaluate_phase1_legacy("git push origin main").blocked
+        assert gate.evaluate_phase1_legacy("git push origin develop").blocked
 
 
 # --- Amend / no-verify ------------------------------------------------------
@@ -273,102 +278,102 @@ def test_env_var_override_removes_default() -> None:
 
 def test_blocks_amend() -> None:
     with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
-        assert gate.evaluate("git commit --amend").blocked
+        assert gate.evaluate_phase1_legacy("git commit --amend").blocked
 
 
 def test_blocks_amend_with_message() -> None:
     with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
-        assert gate.evaluate("git commit --amend -m 'oops'").blocked
+        assert gate.evaluate_phase1_legacy("git commit --amend -m 'oops'").blocked
 
 
 def test_blocks_no_verify() -> None:
     with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
-        assert gate.evaluate("git commit --no-verify -m 'fix'").blocked
+        assert gate.evaluate_phase1_legacy("git commit --no-verify -m 'fix'").blocked
 
 
 # --- Lint suppression -------------------------------------------------------
 
 
 def test_blocks_echo_noqa() -> None:
-    assert gate.evaluate("echo '# noqa: E501' >> file.py").blocked
+    assert gate.evaluate_phase1_legacy("echo '# noqa: E501' >> file.py").blocked
 
 
 def test_blocks_sed_ts_ignore() -> None:
-    assert gate.evaluate("sed -i 's/.*/\\/\\/ ts-ignore/' file.ts").blocked
+    assert gate.evaluate_phase1_legacy("sed -i 's/.*/\\/\\/ ts-ignore/' file.ts").blocked
 
 
 def test_blocks_cat_pipe_grep_eslint_disable() -> None:
     # Preserves legacy: cat in any pipeline that references suppression.
-    assert gate.evaluate("cat file | grep eslint-disable").blocked
+    assert gate.evaluate_phase1_legacy("cat file | grep eslint-disable").blocked
 
 
 def test_allows_grep_only() -> None:
-    assert not gate.evaluate("grep noqa file.py").blocked
+    assert not gate.evaluate_phase1_legacy("grep noqa file.py").blocked
 
 
 def test_allows_clean_lint_run() -> None:
-    assert not gate.evaluate("ruff check .").blocked
+    assert not gate.evaluate_phase1_legacy("ruff check .").blocked
 
 
 # --- rm -rf -----------------------------------------------------------------
 
 
 def test_allows_node_modules() -> None:
-    assert not gate.evaluate("rm -rf node_modules").blocked
+    assert not gate.evaluate_phase1_legacy("rm -rf node_modules").blocked
 
 
 def test_allows_dotvenv() -> None:
-    assert not gate.evaluate("rm -rf .venv").blocked
+    assert not gate.evaluate_phase1_legacy("rm -rf .venv").blocked
 
 
 def test_allows_dist_build() -> None:
-    assert not gate.evaluate("rm -rf dist build").blocked
+    assert not gate.evaluate_phase1_legacy("rm -rf dist build").blocked
 
 
 def test_allows_nested_node_modules() -> None:
-    assert not gate.evaluate("rm -rf ./packages/app/node_modules").blocked
+    assert not gate.evaluate_phase1_legacy("rm -rf ./packages/app/node_modules").blocked
 
 
 def test_allows_pycache() -> None:
-    assert not gate.evaluate("rm -rf __pycache__").blocked
+    assert not gate.evaluate_phase1_legacy("rm -rf __pycache__").blocked
 
 
 def test_allows_tmp() -> None:
-    assert not gate.evaluate("rm -rf /tmp/foo").blocked
+    assert not gate.evaluate_phase1_legacy("rm -rf /tmp/foo").blocked
 
 
 def test_allows_tmpdir_literal() -> None:
-    assert not gate.evaluate('rm -rf "$TMPDIR/foo"').blocked
+    assert not gate.evaluate_phase1_legacy('rm -rf "$TMPDIR/foo"').blocked
 
 
 def test_blocks_etc() -> None:
-    assert gate.evaluate("rm -rf /etc/passwd").blocked
+    assert gate.evaluate_phase1_legacy("rm -rf /etc/passwd").blocked
 
 
 def test_blocks_home() -> None:
-    assert gate.evaluate('rm -rf "$HOME"').blocked
+    assert gate.evaluate_phase1_legacy('rm -rf "$HOME"').blocked
 
 
 def test_blocks_root() -> None:
-    assert gate.evaluate("rm -rf /").blocked
+    assert gate.evaluate_phase1_legacy("rm -rf /").blocked
 
 
 def test_blocks_mixed_safe_and_unsafe() -> None:
     # Any unsafe target -> block.
-    assert gate.evaluate("rm -rf node_modules /etc/foo").blocked
+    assert gate.evaluate_phase1_legacy("rm -rf node_modules /etc/foo").blocked
 
 
 def test_allows_rm_without_force() -> None:
     # rm without both -r and -f is outside this rule's scope.
-    assert not gate.evaluate("rm node_modules").blocked
+    assert not gate.evaluate_phase1_legacy("rm node_modules").blocked
 
 
 def test_allows_rm_r_only() -> None:
-    assert not gate.evaluate("rm -r node_modules").blocked
+    assert not gate.evaluate_phase1_legacy("rm -r node_modules").blocked
 
 
 def test_allows_rm_f_only() -> None:
-    assert not gate.evaluate("rm -f file.txt").blocked
+    assert not gate.evaluate_phase1_legacy("rm -f file.txt").blocked
 
 
 # --- Project tmp ------------------------------------------------------------
@@ -393,21 +398,21 @@ def project_root(tmp_path: Path) -> Iterator[Path]:
 
 def test_allows_rm_inside_project_tmp(project_root: Path) -> None:
     _ = project_root
-    d = gate.evaluate("rm -rf tmp/render-out")
+    d = gate.evaluate_phase1_legacy("rm -rf tmp/render-out")
     assert not d.blocked, d.message
 
 
 def test_allows_rm_glob_inside_project_tmp(project_root: Path) -> None:
     _ = project_root
     # rm -rf tmp/* expands at shell level; we exercise a concrete child.
-    d = gate.evaluate("rm -rf tmp/render-out/intermediate")
+    d = gate.evaluate_phase1_legacy("rm -rf tmp/render-out/intermediate")
     assert not d.blocked, d.message
 
 
 def test_blocks_rm_of_tmp_itself(project_root: Path) -> None:
     _ = project_root
     # We allow contents, not the tmp/ dir itself.
-    d = gate.evaluate("rm -rf tmp")
+    d = gate.evaluate_phase1_legacy("rm -rf tmp")
     # rm-rf rule may still allow if "tmp" basename happens to match a safe
     # name, but it should NOT match via the project-tmp rule for the dir itself.
     # Confirm: with no .cache/.venv/etc basename, plain "tmp" is unsafe.
@@ -417,26 +422,26 @@ def test_blocks_rm_of_tmp_itself(project_root: Path) -> None:
 def test_blocks_symlink_escape(project_root: Path) -> None:
     _ = project_root
     # tmp/escape is a symlink to /etc — realpath should defeat this.
-    d = gate.evaluate("rm -rf tmp/escape")
+    d = gate.evaluate_phase1_legacy("rm -rf tmp/escape")
     assert d.blocked, d.message
 
 
 def test_blocks_path_traversal(project_root: Path) -> None:
     _ = project_root
-    d = gate.evaluate("rm -rf tmp/../../../etc")
+    d = gate.evaluate_phase1_legacy("rm -rf tmp/../../../etc")
     assert d.blocked, d.message
 
 
 def test_blocks_mixed_tmp_and_unsafe(project_root: Path) -> None:
     _ = project_root
-    d = gate.evaluate("rm -rf tmp/ok /etc/foo")
+    d = gate.evaluate_phase1_legacy("rm -rf tmp/ok /etc/foo")
     assert d.blocked, d.message
 
 
 def test_no_project_root_falls_back() -> None:
     # Outside a git checkout the project-tmp rule does not apply.
     with mock.patch.object(gate, "_project_root_from_cwd", return_value=None):
-        d = gate.evaluate("rm -rf tmp/foo")
+        d = gate.evaluate_phase1_legacy("rm -rf tmp/foo")
         # Falls back to old behaviour — "tmp/foo" is not in SAFE_RM_BASENAMES so blocked.
         assert d.blocked, d.message
 
@@ -445,178 +450,178 @@ def test_no_project_root_falls_back() -> None:
 
 
 def test_blocks_reset_hard() -> None:
-    assert gate.evaluate("git reset --hard").blocked
+    assert gate.evaluate_phase1_legacy("git reset --hard").blocked
 
 
 def test_blocks_reset_hard_with_ref() -> None:
-    assert gate.evaluate("git reset --hard HEAD~1").blocked
+    assert gate.evaluate_phase1_legacy("git reset --hard HEAD~1").blocked
 
 
 def test_allows_reset_soft() -> None:
-    assert not gate.evaluate("git reset --soft HEAD~1").blocked
+    assert not gate.evaluate_phase1_legacy("git reset --soft HEAD~1").blocked
 
 
 def test_allows_plain_reset() -> None:
-    assert not gate.evaluate("git reset HEAD").blocked
+    assert not gate.evaluate_phase1_legacy("git reset HEAD").blocked
 
 
 # --- git clean --------------------------------------------------------------
 
 
 def test_blocks_clean_fd() -> None:
-    assert gate.evaluate("git clean -fd").blocked
+    assert gate.evaluate_phase1_legacy("git clean -fd").blocked
 
 
 def test_blocks_clean_df() -> None:
-    assert gate.evaluate("git clean -df").blocked
+    assert gate.evaluate_phase1_legacy("git clean -df").blocked
 
 
 def test_blocks_clean_force() -> None:
-    assert gate.evaluate("git clean --force").blocked
+    assert gate.evaluate_phase1_legacy("git clean --force").blocked
 
 
 def test_allows_clean_dry_run() -> None:
-    assert not gate.evaluate("git clean -n").blocked
+    assert not gate.evaluate_phase1_legacy("git clean -n").blocked
 
 
 def test_allows_clean_interactive() -> None:
-    assert not gate.evaluate("git clean -i").blocked
+    assert not gate.evaluate_phase1_legacy("git clean -i").blocked
 
 
 # --- wholesale checkout / restore -------------------------------------------
 
 
 def test_blocks_checkout_dot() -> None:
-    assert gate.evaluate("git checkout .").blocked
+    assert gate.evaluate_phase1_legacy("git checkout .").blocked
 
 
 def test_blocks_checkout_dash_dot() -> None:
-    assert gate.evaluate("git checkout -- .").blocked
+    assert gate.evaluate_phase1_legacy("git checkout -- .").blocked
 
 
 def test_blocks_restore_dot() -> None:
-    assert gate.evaluate("git restore .").blocked
+    assert gate.evaluate_phase1_legacy("git restore .").blocked
 
 
 def test_blocks_restore_staged_dot() -> None:
-    assert gate.evaluate("git restore --staged .").blocked
+    assert gate.evaluate_phase1_legacy("git restore --staged .").blocked
 
 
 def test_allows_checkout_branch() -> None:
-    assert not gate.evaluate("git checkout main").blocked
+    assert not gate.evaluate_phase1_legacy("git checkout main").blocked
 
 
 def test_allows_restore_named_file() -> None:
-    assert not gate.evaluate("git restore file.py").blocked
+    assert not gate.evaluate_phase1_legacy("git restore file.py").blocked
 
 
 def test_allows_checkout_named_file() -> None:
-    assert not gate.evaluate("git checkout -- file.py").blocked
+    assert not gate.evaluate_phase1_legacy("git checkout -- file.py").blocked
 
 
 def test_allows_checkout_new_branch() -> None:
-    assert not gate.evaluate("git checkout -b feature/x").blocked
+    assert not gate.evaluate_phase1_legacy("git checkout -b feature/x").blocked
 
 
 # --- branch force-delete ----------------------------------------------------
 
 
 def test_blocks_branch_force_delete() -> None:
-    assert gate.evaluate("git branch -D feature/x").blocked
+    assert gate.evaluate_phase1_legacy("git branch -D feature/x").blocked
 
 
 def test_allows_branch_d() -> None:
-    assert not gate.evaluate("git branch -d feature/x").blocked
+    assert not gate.evaluate_phase1_legacy("git branch -d feature/x").blocked
 
 
 def test_allows_branch_list() -> None:
-    assert not gate.evaluate("git branch").blocked
+    assert not gate.evaluate_phase1_legacy("git branch").blocked
 
 
 # --- destructive SQL --------------------------------------------------------
 
 
 def test_blocks_psql_drop_table() -> None:
-    assert gate.evaluate('psql -c "DROP TABLE users"').blocked
+    assert gate.evaluate_phase1_legacy('psql -c "DROP TABLE users"').blocked
 
 
 def test_blocks_psql_drop_database() -> None:
-    assert gate.evaluate('psql -c "DROP DATABASE prod"').blocked
+    assert gate.evaluate_phase1_legacy('psql -c "DROP DATABASE prod"').blocked
 
 
 def test_blocks_mysql_truncate() -> None:
-    assert gate.evaluate('mysql -e "TRUNCATE TABLE logs"').blocked
+    assert gate.evaluate_phase1_legacy('mysql -e "TRUNCATE TABLE logs"').blocked
 
 
 def test_blocks_sql_case_insensitive() -> None:
-    assert gate.evaluate('psql -c "drop table foo"').blocked
+    assert gate.evaluate_phase1_legacy('psql -c "drop table foo"').blocked
 
 
 def test_blocks_sql_command_equals() -> None:
-    assert gate.evaluate("psql --command='DROP TABLE foo'").blocked
+    assert gate.evaluate_phase1_legacy("psql --command='DROP TABLE foo'").blocked
 
 
 def test_allows_grep_drop_table() -> None:
     # grep is not a SQL CLI tool -> no SQL rule applies.
-    assert not gate.evaluate("grep 'DROP TABLE' migration.sql").blocked
+    assert not gate.evaluate_phase1_legacy("grep 'DROP TABLE' migration.sql").blocked
 
 
 def test_allows_select() -> None:
-    assert not gate.evaluate('psql -c "SELECT * FROM users"').blocked
+    assert not gate.evaluate_phase1_legacy('psql -c "SELECT * FROM users"').blocked
 
 
 def test_allows_psql_file_input() -> None:
     # File-driven input is not inspected; user can audit the SQL file.
-    assert not gate.evaluate("psql -f migration.sql").blocked
+    assert not gate.evaluate_phase1_legacy("psql -f migration.sql").blocked
 
 
 # --- Safe common operations (smoke) -----------------------------------------
 
 
 def test_smoke_ls() -> None:
-    assert not gate.evaluate("ls -la").blocked
+    assert not gate.evaluate_phase1_legacy("ls -la").blocked
 
 
 def test_smoke_cd() -> None:
-    assert not gate.evaluate("cd /tmp").blocked
+    assert not gate.evaluate_phase1_legacy("cd /tmp").blocked
 
 
 def test_smoke_git_status() -> None:
-    assert not gate.evaluate("git status").blocked
+    assert not gate.evaluate_phase1_legacy("git status").blocked
 
 
 def test_smoke_git_diff() -> None:
-    assert not gate.evaluate("git diff").blocked
+    assert not gate.evaluate_phase1_legacy("git diff").blocked
 
 
 def test_smoke_git_log() -> None:
-    assert not gate.evaluate("git log --oneline -10").blocked
+    assert not gate.evaluate_phase1_legacy("git log --oneline -10").blocked
 
 
 def test_smoke_go_test() -> None:
-    assert not gate.evaluate("go test ./...").blocked
+    assert not gate.evaluate_phase1_legacy("go test ./...").blocked
 
 
 def test_smoke_npm_install() -> None:
-    assert not gate.evaluate("npm install").blocked
+    assert not gate.evaluate_phase1_legacy("npm install").blocked
 
 
 def test_smoke_uv_run() -> None:
-    assert not gate.evaluate("uv run pytest").blocked
+    assert not gate.evaluate_phase1_legacy("uv run pytest").blocked
 
 
 # --- Edge cases -------------------------------------------------------------
 
 
 def test_empty_command() -> None:
-    assert not gate.evaluate("").blocked
+    assert not gate.evaluate_phase1_legacy("").blocked
 
 
 def test_unparseable_command_with_heredoc() -> None:
     # Unbalanced quote -> shlex fails -> only raw-string rules can fire.
     # The heredoc rule still catches '<<' via substring.
-    assert gate.evaluate('cat << EOF\nbad "quote').blocked
+    assert gate.evaluate_phase1_legacy('cat << EOF\nbad "quote').blocked
 
 
 def test_unparseable_command_no_match() -> None:
-    assert not gate.evaluate('echo "unterminated').blocked
+    assert not gate.evaluate_phase1_legacy('echo "unterminated').blocked

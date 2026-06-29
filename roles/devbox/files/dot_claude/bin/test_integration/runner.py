@@ -1,10 +1,16 @@
 """Subprocess runner for the integration harness.
 
 Builds a hardened ``env`` (deterministic ``$HOME``, ``$TMPDIR``, ``$PATH``,
-masked sandbox-specific variables) and invokes the script via its shebang —
-``subprocess.run([str(path), ...])``. If the path is not executable, the
-return result carries ``permission_denied`` and the caller surfaces it as a
-failure rather than crashing.
+masked sandbox-specific variables) and invokes the script. When a sibling
+``.venv/bin/python`` exists next to the script, the runner uses it directly
+to mirror how the script is launched in production (where ``hooks.json``
+spawns ``uv run --project ~/.claude/bin python <script>``, which resolves to
+the same ``.venv/bin/python``). Falls back to executing the script via its
+shebang when no venv is present.
+
+If the path is not executable, the return result carries
+``permission_denied`` and the caller surfaces it as a failure rather than
+crashing.
 
 Stdlib only.
 """
@@ -107,7 +113,9 @@ def run_script(request: RunRequest, tmp_root: Path) -> RunResult:
             stderr="",
             error=f"script missing: {request.script_path}",
         )
-    if not os.access(request.script_path, os.X_OK):
+    venv_python = request.script_path.parent / ".venv" / "bin" / "python"
+    interpreter = str(venv_python) if venv_python.exists() else None
+    if interpreter is None and not os.access(request.script_path, os.X_OK):
         return RunResult(
             returncode=-1,
             stdout="",
@@ -124,10 +132,12 @@ def run_script(request: RunRequest, tmp_root: Path) -> RunResult:
     }
     env = build_env(env_overrides, home, tmpdir)
     stdin = _resolve_placeholders(request.stdin, home, tmpdir)
-    argv = [
-        str(request.script_path),
-        *[_resolve_placeholders(arg, home, tmpdir) for arg in request.argv],
-    ]
+    resolved_args = [_resolve_placeholders(arg, home, tmpdir) for arg in request.argv]
+    argv = (
+        [interpreter, str(request.script_path), *resolved_args]
+        if interpreter is not None
+        else [str(request.script_path), *resolved_args]
+    )
     cwd: Path | str | None
     if request.cwd is None:
         cwd = home

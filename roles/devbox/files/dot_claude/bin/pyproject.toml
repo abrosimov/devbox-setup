@@ -1,0 +1,16 @@
+[project]
+name = "claude-hooks"
+version = "0.0.0"
+description = "Claude Code hook scripts and helpers — runtime environment for ~/.claude/bin/."
+requires-python = ">=3.11"
+dependencies = ["bashlex"]
+
+# Not a distributable package — the scripts in this directory are invoked by
+# absolute path from ~/.claude/hooks.json via `uv run --project ~/.claude/bin
+# python ~/.claude/bin/<script>.py`. The directory is a uv environment, not a
+# Python package.
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = ["pytest", "hypothesis"]

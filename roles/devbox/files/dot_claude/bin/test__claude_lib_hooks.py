@@ -55,7 +55,12 @@ def test_write_decision_allow(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "stdout", out)
     hooks.write_decision("allow")
     payload = json.loads(out.getvalue())
-    assert payload == {"hookSpecificOutput": {"permissionDecision": "allow"}}
+    assert payload == {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "allow",
+        },
+    }
 
 
 def test_write_decision_deny_with_reason(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -65,8 +70,22 @@ def test_write_decision_deny_with_reason(monkeypatch: pytest.MonkeyPatch) -> Non
     payload = json.loads(out.getvalue())
     assert payload == {
         "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": "not allowed",
+        },
+    }
+
+
+def test_write_decision_defer(monkeypatch: pytest.MonkeyPatch) -> None:
+    out = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", out)
+    hooks.write_decision("defer")
+    payload = json.loads(out.getvalue())
+    assert payload == {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "defer",
         },
     }
 

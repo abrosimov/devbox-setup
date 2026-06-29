@@ -127,7 +127,7 @@ Explicit boundaries with a stop condition:
 
 ### 6. When to Ask for Clarification
 
-Must include the rule: "Ask ONE question at a time."
+Must include the rule: "Batch all open doubts into a single `AskUserQuestion` call" (defer to `CLAUDE.md` §Discipline Protocol — Inquiry).
 
 ### 7. After Completion
 

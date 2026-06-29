@@ -185,7 +185,7 @@ Stop and ask the user when:
 
 ### How to Ask Questions
 
-**CRITICAL: Ask ONE question at a time.** Never overwhelm with multiple questions.
+**CRITICAL: Batch all open doubts into a single `AskUserQuestion` call.** Do not drip-feed questions one at a time. See `CLAUDE.md` §Discipline Protocol — Inquiry for the binding rule.
 
 **Format:**
 ```markdown

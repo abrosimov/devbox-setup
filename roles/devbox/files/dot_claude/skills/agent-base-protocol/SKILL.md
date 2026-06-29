@@ -32,7 +32,7 @@ See `project-preferences` skill for the full word list.
 
 ## When to Ask for Clarification
 
-**CRITICAL: Ask ONE question at a time.** Do not overwhelm the user.
+**CRITICAL: Batch all open doubts into a single `AskUserQuestion` call.** Do not drip-feed questions one at a time. Gather every unresolved doubt, then ask them together — each with 2–4 concrete options. See `CLAUDE.md` §Discipline Protocol — Inquiry for the binding rule.
 
 ### NEVER Ask (Routine Tasks — Tier 1)
 

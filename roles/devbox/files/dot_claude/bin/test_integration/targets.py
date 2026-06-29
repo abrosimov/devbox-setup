@@ -82,7 +82,6 @@ def _target(
 # Common exit-code sets, named so the table reads declaratively.
 _PRE_TOOL_USE_CODES: Final = frozenset({0, 2})
 _POST_TOOL_USE_CODES: Final = frozenset({0})
-_PERMISSION_REQUEST_CODES: Final = frozenset({0})
 _STOP_CODES: Final = frozenset({0, 2})
 _PRE_COMPACT_CODES: Final = frozenset({0})
 
@@ -106,8 +105,8 @@ INTEGRATION_TARGETS: tuple[IntegrationTarget, ...] = (
         exit_codes=_PRE_TOOL_USE_CODES,
     ),
     _target(
-        "pre_bash_safety_gate.bash",
-        "pre_bash_safety_gate.py",
+        "bash_decision_gate.bash",
+        "bash_decision_gate.py",
         "pre_tool_use_bash",
         exit_codes=_PRE_TOOL_USE_CODES,
         stdout_json_schema="pre_tool_use_decision",
@@ -212,14 +211,6 @@ INTEGRATION_TARGETS: tuple[IntegrationTarget, ...] = (
         "post_edit_cyrillic_guard.py",
         "post_tool_use_write",
         exit_codes=_POST_TOOL_USE_CODES,
-    ),
-    # --- PermissionRequest -------------------------------------------------
-    _target(
-        "permission_auto_approve",
-        "permission_auto_approve.py",
-        "permission_request",
-        exit_codes=_PERMISSION_REQUEST_CODES,
-        stdout_json_schema="permission_request_decision",
     ),
     # --- Stop --------------------------------------------------------------
     _target(

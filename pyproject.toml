@@ -26,6 +26,11 @@ dev = [
     "pyrefly>=0.10",
     "pytest>=8.0",
     "hypothesis>=6.100",
+    # Runtime dep of roles/devbox/files/dot_claude/bin/bash_decision_gate.py.
+    # Pinned authoritatively in bin/pyproject.toml + bin/uv.lock for the
+    # deployed venv; mirrored here so the root dev venv (used by `make test`
+    # and Pyright LSP) can also resolve it.
+    "bashlex",
 ]
 
 [tool.uv]

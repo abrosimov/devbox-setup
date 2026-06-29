@@ -14,6 +14,7 @@ devbox_brew_taps:
   - bufbuild/buf           # `buf` Protobuf CLI (no longer in homebrew-core)
   - goreleaser/tap         # goreleaser, nfpm, chglog — release automation
   - ktr0731/evans          # evans gRPC REPL (upstream frozen since 2023, kept for the REPL UX)
+  - smudge/smudge          # nightlight (Night Shift CLI, removed from homebrew-core)
 
 # =============================================================================
 # Homebrew formulae and casks
@@ -76,7 +77,7 @@ devbox_brew_secondary:
   - gh             # GitHub CLI — needed by Claude Code PR workflow
   - glab           # GitLab CLI — mirrors gh for GitLab workflows
   - git-lfs        # Git Large File Storage — required by repos using LFS pointers
-  - goreleaser     # Go release automation (binaries, archives, brew tap, signed releases)
+  - goreleaser/tap/goreleaser  # Go release automation; fully-qualified to disambiguate from the homebrew-core cask
   - jq             # JSON processor — used by scripts and agents
   - ripgrep        # Fast grep — fallback for Claude Code Grep tool
   - fd             # Fast find — used by Claude Code Glob tool
@@ -99,7 +100,7 @@ devbox_brew_secondary:
   - lima            # Linux VM (eBPF/bpftrace sandbox, perf-style observability)
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
-  - nightlight      # Night Shift CLI
+  - smudge/smudge/nightlight  # Night Shift CLI (tap: smudge/smudge)
   - gost            # GO Simple Tunnel — HTTP-to-SOCKS bridge used by `pub` mode
   - grafana/grafana/gcx  # Grafana CLI — PromQL/LogQL/Tempo queries via Grafana datasources
 

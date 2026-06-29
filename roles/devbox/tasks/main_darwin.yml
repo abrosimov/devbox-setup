@@ -1,8 +1,20 @@
 ---
-- name: "Install necessary homebrew packages"
-  ansible.builtin.include_tasks: darwin/install_from_brew_primary.yml
-- name: "Install secondary homebrew packages"
-  ansible.builtin.include_tasks: darwin/install_from_brew_secondary.yml
+# Defer Homebrew's automatic post-install cleanup for the duration of the
+# brew install phase. Brew normally deletes outdated keg versions immediately
+# after an upgrade, which can strand a dependent formula whose binary still
+# references the now-removed dylib (classic case: `llhttp` bumped to 9.4.x
+# while the installed `node` is still linked against 9.3.x → npm fails with
+# `dyld: Library not loaded`). We run a controlled `brew cleanup` once at
+# the end of the playbook, after every brew-installed tool downstream
+# (npm/opam/swipl/fisher) has had a chance to run.
+- name: "Install necessary and secondary Homebrew packages (cleanup deferred)"
+  environment:
+    HOMEBREW_NO_INSTALL_CLEANUP: "1"
+  block:
+    - name: "Install necessary homebrew packages"
+      ansible.builtin.include_tasks: darwin/install_from_brew_primary.yml
+    - name: "Install secondary homebrew packages"
+      ansible.builtin.include_tasks: darwin/install_from_brew_secondary.yml
 - name: "Install Go tools"
   ansible.builtin.include_tasks: darwin/install_from_go.yml
 - name: "Install Python tools via uv"
@@ -19,5 +31,7 @@
   ansible.builtin.include_tasks: apply_configs.yml
 - name: "Finish user polishing"
   ansible.builtin.include_tasks: prepare_user.yml
+- name: "Finalize Homebrew (controlled cleanup deferred from install phase)"
+  ansible.builtin.include_tasks: darwin/finalize_brew.yml
 # - name: "Install Mac AppStore packages"
 #   ansible.builtin.include_tasks: darwin/install_from_appstore.yml

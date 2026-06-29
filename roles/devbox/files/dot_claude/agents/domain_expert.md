@@ -215,7 +215,7 @@ Do NOT accept user stories at face value.
 
 ## Workflow
 
-**CRITICAL: Ask ONE question at a time.** When you have multiple questions, ask the first one, wait for the response, then ask the next. Never overwhelm the user with multiple questions in a single message.
+**CRITICAL: Batch all open doubts into a single `AskUserQuestion` call.** Gather every unresolved question, then ask them together — each with 2–4 concrete options (as in the example below). Do not drip-feed one at a time. See `CLAUDE.md` §Discipline Protocol — Inquiry for the binding rule. (Exception: the Cynefin classification sequence in Step 2 is deliberately sequential — each answer informs the next.)
 
 **How to ask challenging questions:**
 1. **Provide context** — what assumption you're challenging and why
@@ -243,7 +243,7 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 
 ### Step 2: Classify the Problem (Cynefin)
 
-Ask user these questions **one at a time** (wait for each response):
+Ask user these questions as a deliberate Socratic **sequence** — each answer informs the next (wait for each response):
 1. "What domain are we operating in?" (Force them to think about it)
 2. "What makes you confident in that classification?"
 3. "What would change your mind?"

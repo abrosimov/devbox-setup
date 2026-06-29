@@ -1,0 +1,10 @@
+---
+# Controlled `brew cleanup` to compensate for HOMEBREW_NO_INSTALL_CLEANUP=1
+# set on the brew install phase in main_darwin.yml. By the time this runs,
+# every brew-installed binary used downstream (npm/opam/swipl/fisher) has
+# already executed against a consistent set of dylibs, so removing the
+# outdated keg versions is safe.
+- name: "Run brew cleanup (deferred from install phase)"
+  ansible.builtin.command: brew cleanup
+  changed_when: false
+  tags: [packages, brew]

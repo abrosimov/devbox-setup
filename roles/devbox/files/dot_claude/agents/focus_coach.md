@@ -111,9 +111,9 @@ execute or to plan the entire road.
 
 ## When to Ask for Clarification
 
-Per `agent-base-protocol`: **ask ONE question at a time.** The most common question is simply
-"Какая сейчас одна цель?" when the anchor is missing. Do not interrogate — one sharp question,
-then proceed.
+By coaching design, **ask one sharp question, not a battery.** A focus coach surfaces the single
+next action, so the agent-wide "batch every doubt" rule does not apply here — interrogation defeats
+the purpose. The most common question is simply "Какая сейчас одна цель?" when the anchor is missing.
 
 ## Handoff Protocol
 

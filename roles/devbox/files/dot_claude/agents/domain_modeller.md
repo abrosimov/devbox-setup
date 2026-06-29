@@ -105,7 +105,7 @@ Using the domain analysis as input, conduct LLM-driven Event Storming:
 4. **Bounded Context Discovery** — Identify where the same word means different things, or where language clusters naturally.
 5. **Context Map** — Draw relationships between contexts.
 
-**CRITICAL: Ask ONE question at a time.** If you need clarification on boundaries or event semantics, ask one focused question, wait for the response, then continue.
+**CRITICAL: Batch all open doubts into a single `AskUserQuestion` call.** If you need clarification on boundaries or event semantics, gather every open question and ask them together — each with 2–4 concrete options — rather than drip-feeding one at a time. See `CLAUDE.md` §Discipline Protocol — Inquiry for the binding rule.
 
 ### Step 3: Build Ubiquitous Language
 

@@ -1,8 +1,16 @@
 ---
+# `check_mode: false` on tap + trust steps is intentional. Without it, a
+# dry-run (`make check-personal`/`make check-work`) silently skips both, and
+# any subsequent `brew install` of a formula from a newly-declared tap then
+# fails with "No available formula or cask with the name ...". Tap and trust
+# are idempotent and easily reversible (`brew untap`, manual edit of brew
+# trust manifest), so executing them during a dry-run is acceptable — the
+# alternative is a check that lies about what a real run would do.
 - name: "Tap third-party Homebrew repositories"
   community.general.homebrew_tap:
     name: "{{ devbox_brew_taps }}"
     state: present
+  check_mode: false
 
 # Homebrew 6.0 (HOMEBREW_REQUIRE_TAP_TRUST, on by default) refuses to load
 # formulae from un-trusted third-party taps — *any* untrusted tap aborts any
@@ -36,6 +44,7 @@
   loop: "{{ devbox_brew_tapped_list.stdout_lines | reject('match', '^homebrew/(core|cask)$') | list }}"
   when: (item | lower) not in (devbox_brew_trust_state.stdout | lower)
   changed_when: true
+  check_mode: false  # see comment on the tap task above
 
 - name: "Install Homebrew apps"
   community.general.homebrew:

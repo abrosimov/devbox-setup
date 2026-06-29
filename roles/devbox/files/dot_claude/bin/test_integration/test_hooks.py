@@ -431,12 +431,12 @@ def _run_target(
     assert stderr_ok, f"{target.label} stderr violation: {stderr_reason}"
 
 
-# Permanent regression: this @example used to expose a schema bug where
-# pre_bash_safety_gate emitted PreToolUse-shape JSON
-# (``hookSpecificOutput.permissionDecision``) when it should have emitted
-# PermissionRequest-shape (``hookSpecificOutput.decision.behavior``). Fixed in
-# ``hooks.write_permission_request_decision``. Retained as an @example so the
-# property test always exercises this input even when the random draw misses it.
+# Permanent regression: this @example used to expose a schema bug where the
+# unified hook (formerly pre_bash_safety_gate) emitted malformed PreToolUse
+# JSON. ``bash_decision_gate`` now writes both Phase-1 deny and Phase-2
+# allow/defer through ``hooks.write_decision`` with the correct envelope.
+# Retained as an @example so the property test always exercises this input
+# even when the random draw misses it.
 @example(
     payload={
         "tool_name": "Bash",
@@ -447,8 +447,8 @@ def _run_target(
 @pytest.mark.integration
 @PROPERTY_SETTINGS
 @given(payload=_bash_payload())
-def test_pre_bash_safety_gate_property(payload: dict[str, object], tmp_path: Path) -> None:
-    target = _target_by_label("pre_bash_safety_gate.bash")
+def test_bash_decision_gate_property(payload: dict[str, object], tmp_path: Path) -> None:
+    target = _target_by_label("bash_decision_gate.bash")
     stdin = json.dumps(payload, ensure_ascii=False)
     env: dict[str, str] = {}
     tool_input = payload["tool_input"]

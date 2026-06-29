@@ -51,10 +51,45 @@
     rsync_opts:
       - "--exclude=.DS_Store"
       - "--exclude=__pycache__"
+      - "--exclude=.venv"
+      - "--exclude=.hypothesis"
+      - "--exclude=.pytest_cache"
   delegate_to: localhost
   loop: "{{ devbox_claude_managed_dirs }}"
   loop_control:
     label: ".claude/{{ item }}/"
+  tags: [configs, claude]
+
+# =============================================================================
+# Block 1b: Claude hooks runtime venv
+# The scripts under .claude/bin/ declare their dependencies (notably bashlex
+# for bash_decision_gate.py) in bin/pyproject.toml. We materialise an
+# isolated .venv next to them via `uv sync --frozen`. hooks.json invokes
+# each script as `uv run --project ~/.claude/bin python ~/.claude/bin/<x>.py`
+# which resolves to that same .venv. --no-dev excludes pytest/hypothesis
+# from the deployed venv — those are dev-only and live in the repo for
+# `make test-claude-hooks`.
+# Runs in both the full playbook and the slim `make claude-push` flow,
+# since playbooks/claude.yml import_tasks install_configs.yml.
+# =============================================================================
+
+- name: Find uv path
+  ansible.builtin.command: "command -v uv"
+  register: devbox_uv_path
+  changed_when: false
+  check_mode: false
+  failed_when: devbox_uv_path.rc != 0
+  tags: [configs, claude]
+
+- name: Bootstrap Claude hooks venv via uv sync
+  ansible.builtin.command:
+    cmd: "{{ devbox_uv_path.stdout }} sync --frozen --no-dev"
+    chdir: "{{ devbox_paths.dotfiles_root_dir }}/.claude/bin"
+  register: devbox_claude_uv_sync
+  changed_when: >-
+    'Resolved' in (devbox_claude_uv_sync.stderr | default(''))
+    or 'Installed' in (devbox_claude_uv_sync.stderr | default(''))
+    or 'Prepared' in (devbox_claude_uv_sync.stderr | default(''))
   tags: [configs, claude]
 
 # =============================================================================

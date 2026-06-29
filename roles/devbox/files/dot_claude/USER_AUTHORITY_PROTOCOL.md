@@ -26,7 +26,7 @@ For any non-trivial request, default to reconnaissance, not inference.
 
 **"Would it matter?" check.** *If the user actually meant X instead of Y, would I do anything different?* "Nothing material" → exempt. "Anything material" → not exempt; apply Inquiry.
 
-**Disclosure block (first reply, always):**
+**Disclosure block (first reply to a non-trivial request).** This block is structured reconnaissance, not preamble — it is the one exception to the Voice "no preamble" rule below. Skip it for the exempt cases above.
 > #### Restated intent
 > What I understood you to want — one sentence.
 >
@@ -55,7 +55,7 @@ For any non-trivial request, default to reconnaissance, not inference.
 Default: fact density. Brainstorm: bounded generative breadth (voice mode only — does not bypass approval gates).
 
 **Default — fact density.**
-- Lead with the answer; no preamble, no restating the user.
+- Lead with the answer; no preamble, no restating the user. (Sole exception: the first-reply Disclosure block above.)
 - Cite verifiable claims: `path:line`, URL, doc anchor. If the source is one tool call away, do not paraphrase from memory.
 - Prefer numbers and identifiers over adjectives ("reduced 794 → 502 lines" beats "significant reduction").
 - End-of-turn summary: 1–2 sentences max — what changed, what is next.
@@ -121,7 +121,7 @@ Halt immediately and request confirmation if you would:
 - Write to a file you have not previously read
 - Skip a pre-commit hook (`--no-verify`) or signing (`--no-gpg-sign`)
 
-These are categorical. There are no exceptions. Hooks in `hooks.json` (via `bin/pre_bash_safety_gate.py`) block all the destructive shell actions above. Out-of-scope edits and unread-file writes depend on conversation state and remain prompt-only.
+These are categorical. There are no exceptions. Hooks in `hooks.json` (via `bin/bash_decision_gate.py`) block all the destructive shell actions above through Phase-1 deny rules. Out-of-scope edits and unread-file writes depend on conversation state and remain prompt-only.
 
 ### Before Any Implementation
 
@@ -183,15 +183,14 @@ For everything else (new functions, refactors, bug fixes, even one-liner logic c
 
 ### Cross-Cutting Rules (Always Active)
 
-These are enforced by `alwaysApply: true` skills. Brief reminders:
+Two kinds of rule live here. The first group is fully enforced by `alwaysApply: true` skills — the skill carries the binding detail, so these are one-line pointers only. The second group has **no skill backstop**: the text below is the sole source, so it is kept verbatim.
 
-- **Immutability**: Prefer data transformation pipelines over mutation — return new instances, don't modify in place (see `project-preferences` skill)
-- **Comments**: Only WHY/WARNING/TODO — never narrate what code does (see `code-comments` skill)
+**Skill-backed (pointer only — the named skill is authoritative):** immutability → `project-preferences`; comments (WHY/WARNING/TODO only) → `code-comments`; agent delegation → `workflow`; LSP-first navigation → `lsp-navigation` + `lsp-tools`; structural/AST search → `ast-grep`.
+
+**No backstop (load-bearing — full text):**
+
 - **Security at boundaries**: Validate all external input; never trust user data internally
 - **Model selection**: Opus for SE/reviewers/planners (use `/techne-implement sonnet` for cost-sensitive tasks), Sonnet for test writers/utility agents, Haiku for search/grep
-- **Agent delegation**: Use specialised agents for code changes when workflow is enabled (see `workflow` skill)
-- **Code navigation**: Grep/Glob discover files and text. LSP understands code. After locating a file, use LSP (`goToDefinition`, `findReferences`, `hover`, `documentSymbol`) instead of reading the whole file. Never use Grep to find function definitions — use `workspaceSymbol`. Before any refactor: `findReferences` first. After any edit: check LSP diagnostics. (see `lsp-navigation` + `lsp-tools` skills)
-- **Structural search**: For AST pattern matching (find all functions without error handling, structural refactoring), use `ast-grep` via Bash (see `ast-grep` skill)
 - **Worktrees**: Never use `EnterWorktree` directly. For worktree creation, run `proj wt add <branch>` via Bash (or `claude --worktree` from CLI, which delegates via hook). Layout: `$AION_AUTOPOIESEON/<project>/<branch>/` (sibling of `base/`). See `workflow` skill for details.
 - **Shell discipline**: Never prefix a command with `cd <path> &&`. To run a command in another directory, use the tool's path flag (`git -C <path>`, `make -C <path>`, `pytest --rootdir <path>`) or an absolute path. To check cwd, use `pwd` standalone. The compound `cd <path> && …` adds no value and obscures intent — applies even when `<path>` equals the current directory. For sustained cross-directory work in one session, prefer `--add-dir <path>` at launch or `/add-dir <path>` mid-session — it extends session scope cleanly. Worktrees share `.git`, so cross-worktree git ops (`git -C <path>`, `git cherry-pick`, `git diff branchA branchB`) work without `--add-dir`.
 - **Bash shape**: never use multi-line `if/then/fi`, `for/do/done`, `while/do/done`, or heredocs (`<<EOF`) as a single Bash tool call. Split into multiple sequential Bash calls, or write a temporary script via `Write` and invoke it via `Bash`. Reason: the harness tokenises multi-line input into fragments and, when "Always allow" fires, persists garbage rules such as `Bash(fi)`, `Bash(done)`, `Bash(EOF)` that never re-match anything useful.

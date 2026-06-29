@@ -138,7 +138,7 @@ Every agent in this system falls into one of these archetypes. Use the correct t
 7. Handoff Protocol
 8. Reference Documents
 9. Workflow Steps
-10. When to Ask for Clarification ("Ask ONE question at a time")
+10. When to Ask for Clarification ("Batch all open doubts into a single `AskUserQuestion` call")
 11. After Completion (standardised output format)
 
 **No `permissionMode` needed** — these agents don't write code.
@@ -298,7 +298,7 @@ Run these checks against any agent definition:
 | Handoff Protocol | Present with receives-from, produces-for, deliverable, completion criteria | Error |
 | "Does NOT Do" section | Present with stop conditions | Error |
 | "After Completion" section | Present with standardised format | Error |
-| "When to Ask" section | Present, includes "ONE question at a time" | Warning |
+| "When to Ask" section | Present, includes "batch into a single `AskUserQuestion` call" | Warning |
 
 ### Cross-Reference Validation
 

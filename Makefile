@@ -99,7 +99,7 @@ endif
        claude-diff claude-pull claude-pull-review claude-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        sync-upstream-docs \
-       test test-integration test-nvim test-fish test-json test-bash \
+       test test-integration test-claude-hooks test-nvim test-fish test-json test-bash \
        regenerate-fixtures \
        lint lint-ansible lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -122,6 +122,7 @@ help:
 	@echo "  make typecheck        - pyrefly type check"
 	@echo "  make test             - pytest unit tests (excludes integration)"
 	@echo "  make test-integration - pytest subprocess integration tests (slower)"
+	@echo "  make test-claude-hooks - pytest under bin/'s own uv project (deployed-venv shape)"
 	@echo "  make qa               - lint + typecheck + test + test-integration (full gate)"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
@@ -171,8 +172,8 @@ run: test $(COLLECTIONS_SENTINEL)
 ifndef PROFILE
 	$(error PROFILE is required. Use: make personal, make work, make dev-personal, or make dev-work)
 endif
-	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
+	@ANSIBLE_FORCE_COLOR=1 ./scripts/with_sudo_keepalive.sh \
+	    ansible-playbook $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
 
 dev:
 	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
@@ -227,6 +228,15 @@ test: $(DEV_SENTINEL) ## Pytest unit tests in dot_claude/ (excludes integration 
 
 test-integration: $(DEV_SENTINEL) ## Pytest subprocess integration tests (smoke + hypothesis)
 	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/bin/test_integration/ -m integration -v
+
+# Isolated check against the deployed-shape venv: same uv sync --frozen that
+# Ansible runs in production, then pytest from bin/'s own dev group. Catches
+# drift between bin/uv.lock and the test suite (e.g. bashlex version skew)
+# that `make test` would miss because it uses the root dev venv.
+test-claude-hooks: ## Pytest under bin/'s own uv project (mirrors deployed venv)
+	@uv sync --project roles/devbox/files/dot_claude/bin --quiet
+	@uv run --project roles/devbox/files/dot_claude/bin \
+	  pytest roles/devbox/files/dot_claude/bin
 
 qa: lint-py typecheck test test-integration ## Full Python quality gate (lint + typecheck + tests + integration)
 
@@ -524,9 +534,12 @@ local-push: $(COLLECTIONS_SENTINEL)
 
 # Re-apply macOS basics: Touch ID for sudo, pmset disablesleep, DevToolsSecurity.
 # Reuses configure_macos_basics.yml under `macos`. Sudo IS required.
+# Wrapped in with_sudo_keepalive.sh — see scripts/with_sudo_keepalive.sh for
+# the rationale (pam_tid + ansible stdin race on Tahoe 26.x).
 macos-defaults: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
+	@ANSIBLE_FORCE_COLOR=1 ./scripts/with_sudo_keepalive.sh \
+	    ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
 
 # Pull a fresh copy of the upstream FPF spec into dot_claude/docs/ and reset the
 # drift state file used by the statusline / tide badge. Run when the badge (or

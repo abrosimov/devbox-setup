@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """Scan recent Claude Code transcripts and tally Bash/MCP tool-call frequencies.
 
+Two sources are merged:
+
+  1. ~/.claude/projects/*/*.jsonl — transcripts (all tool calls)
+  2. ~/.claude/state/missed_approvals/YYYY/MM/DD/HH.jsonl — telemetry from
+     the bash_decision_gate hook (commands that did NOT auto-approve and
+     thus prompted; the high-signal source for "what should be on the
+     allowlist but isn't")
+
 Emits JSON on stdout by default; pass ``--pretty`` for a human-readable table.
 """
 
@@ -10,6 +18,7 @@ import json
 import re
 import sys
 from collections import Counter
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Final
 
@@ -17,6 +26,10 @@ MAX_FILES: Final[int] = 50
 TOP_BASH: Final[int] = 60
 TOP_MCP: Final[int] = 30
 SAMPLE_LIMIT: Final[int] = 120
+
+TELEMETRY_ROOT: Final[Path] = (
+    Path.home() / ".claude" / "state" / "missed_approvals"
+)
 
 ENV_RE: Final[re.Pattern[str]] = re.compile(r"^[A-Z_][A-Z0-9_]*=\S+\s+")
 SUBSHELL_LEADERS: Final[frozenset[str]] = frozenset(
@@ -98,6 +111,37 @@ def discover_transcripts() -> list[Path]:
     return files[:MAX_FILES]
 
 
+def discover_telemetry() -> list[Path]:
+    """Find hourly missed-approval shards under TELEMETRY_ROOT.
+
+    Layout: YYYY/MM/DD/HH.jsonl. Newest-first ordering by path components
+    (date is in the path; no stat call needed).
+    """
+    if not TELEMETRY_ROOT.is_dir():
+        return []
+    files = [p for p in TELEMETRY_ROOT.glob("*/*/*/*.jsonl") if p.is_file()]
+    files.sort(key=lambda p: p.parts[-4:], reverse=True)
+    return files
+
+
+def _iter_telemetry_cmds(path: Path) -> Iterator[str]:
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                line = raw.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                cmd = obj.get("cmd")
+                if isinstance(cmd, str) and cmd.strip():
+                    yield cmd
+    except OSError:
+        return
+
+
 def _iter_tool_uses(path: Path) -> list[dict[str, object]]:
     out: list[dict[str, object]] = []
     try:
@@ -137,6 +181,15 @@ def _absorb_bash(
     cmd = inp.get("command")
     if not isinstance(cmd, str) or not cmd.strip():
         return
+    _absorb_bash_cmd(cmd, counts, samples)
+
+
+def _absorb_bash_cmd(
+    cmd: str,
+    counts: Counter[tuple[str, str]],
+    samples: dict[tuple[str, str], str],
+) -> None:
+    """Shared cmd-string ingester used by both transcript and telemetry sources."""
     for segment in split_pipes(cmd):
         head = extract_head(segment)
         if head is None:
@@ -151,6 +204,7 @@ def _absorb_bash(
 
 def tally(
     files: list[Path],
+    telemetry_files: list[Path] | None = None,
 ) -> tuple[Counter[tuple[str, str]], dict[tuple[str, str], str], Counter[str]]:
     bash_counts: Counter[tuple[str, str]] = Counter()
     bash_samples: dict[tuple[str, str], str] = {}
@@ -164,6 +218,9 @@ def tally(
                 _absorb_bash(use, bash_counts, bash_samples)
             elif name.startswith("mcp__"):
                 mcp_counts[name] += 1
+    for t in telemetry_files or []:
+        for cmd in _iter_telemetry_cmds(t):
+            _absorb_bash_cmd(cmd, bash_counts, bash_samples)
     return bash_counts, bash_samples, mcp_counts
 
 
@@ -172,19 +229,26 @@ def build_payload(
     bash_counts: Counter[tuple[str, str]],
     bash_samples: dict[tuple[str, str], str],
     mcp_counts: Counter[str],
+    telemetry_files: list[Path] | None = None,
 ) -> dict[str, object]:
     bash_rows = [
         {"cmd": cmd, "sub": sub, "count": count, "sample": bash_samples.get((cmd, sub), "")}
         for (cmd, sub), count in bash_counts.most_common(TOP_BASH)
     ]
     mcp_rows = [{"name": name, "count": count} for name, count in mcp_counts.most_common(TOP_MCP)]
-    return {"scanned_files": len(files), "bash": bash_rows, "mcp": mcp_rows}
+    return {
+        "scanned_files": len(files),
+        "scanned_telemetry": len(telemetry_files or []),
+        "bash": bash_rows,
+        "mcp": mcp_rows,
+    }
 
 
 def render_pretty(payload: dict[str, object]) -> str:
     lines: list[str] = []
     scanned = payload.get("scanned_files", 0)
-    lines.append(f"Scanned {scanned} transcript(s)")
+    scanned_telemetry = payload.get("scanned_telemetry", 0)
+    lines.append(f"Scanned {scanned} transcript(s), {scanned_telemetry} telemetry shard(s)")
     lines.append("")
     lines.append("Bash:")
     bash = payload.get("bash")
@@ -216,9 +280,11 @@ def render_pretty(payload: dict[str, object]) -> str:
 
 def main(argv: list[str]) -> int:
     pretty = "--pretty" in argv[1:]
+    skip_telemetry = "--no-telemetry" in argv[1:]
     files = discover_transcripts()
-    bash_counts, bash_samples, mcp_counts = tally(files)
-    payload = build_payload(files, bash_counts, bash_samples, mcp_counts)
+    telemetry_files = [] if skip_telemetry else discover_telemetry()
+    bash_counts, bash_samples, mcp_counts = tally(files, telemetry_files)
+    payload = build_payload(files, bash_counts, bash_samples, mcp_counts, telemetry_files)
     if pretty:
         sys.stdout.write(render_pretty(payload))
     else:

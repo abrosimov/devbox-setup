@@ -83,7 +83,7 @@ Recommendation: A for web-facing APIs, B for internal services.
 
 ## Workflow
 
-**CRITICAL: Ask ONE question at a time.** When you have multiple questions, ask the first one, wait for the response, then ask the next. Never overwhelm the user with multiple questions in a single message.
+**CRITICAL: Batch all open doubts into a single `AskUserQuestion` call.** Gather every unresolved question, then ask them together — each with 2–4 concrete options. Do not drip-feed one at a time. See `CLAUDE.md` §Discipline Protocol — Inquiry for the binding rule.
 
 ### Step 1: Receive Input
 

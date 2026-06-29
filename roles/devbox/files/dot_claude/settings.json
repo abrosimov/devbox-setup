@@ -23,7 +23,10 @@
     "excludedCommands": [
       "docker",
       "docker-compose",
-      "podman"
+      "podman",
+      "git",
+      "glab",
+      "gh"
     ],
     "allowUnsandboxedCommands": false,
     "network": {

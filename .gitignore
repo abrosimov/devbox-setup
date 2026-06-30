@@ -26,3 +26,4 @@ __pycache__/
 .pyrefly_cache/
 .pytest_cache/
 .hypothesis/
+claude_improvements/.obsidian/workspace.json

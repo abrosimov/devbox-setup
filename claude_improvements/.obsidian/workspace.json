@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "FPF_seminar/12-llm-agent-quality-dpf/12-00-spine.md",
+                "file": "rc-31-agent-satisficing.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "12-00-spine"
+              "title": "rc-31-agent-satisficing"
             }
           },
           {
@@ -137,7 +137,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "FPF_seminar/12-llm-agent-quality-dpf/12-00-spine.md",
+                "file": "rc-31-agent-satisficing.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -147,7 +147,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for 12-00-spine"
+              "title": "Backlinks for rc-31-agent-satisficing"
             }
           },
           {
@@ -156,12 +156,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "FPF_seminar/12-llm-agent-quality-dpf/12-00-spine.md",
+                "file": "rc-31-agent-satisficing.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from 12-00-spine"
+              "title": "Outgoing links from rc-31-agent-satisficing"
             }
           },
           {
@@ -199,13 +199,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "FPF_seminar/12-llm-agent-quality-dpf/12-00-spine.md",
+                "file": "rc-31-agent-satisficing.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of 12-00-spine"
+              "title": "Outline of rc-31-agent-satisficing"
             }
           }
         ]
@@ -228,6 +228,9 @@
   },
   "active": "bb5f204f2cb93891",
   "lastOpenFiles": [
+    "FPF_seminar/12-llm-agent-quality-dpf/12-00-spine.md",
+    "20-consolidation-plan.md",
+    "rc-31-agent-satisficing.md",
     "FPF_seminar/12-llm-agent-quality-dpf/README.md",
     "FPF_seminar/12-llm-agent-quality-dpf/12-15-patterns-F-ru.md",
     "FPF_seminar/12-llm-agent-quality-dpf/12-20-local-practice-edition-ru.md",
@@ -244,7 +247,6 @@
     "FPF_seminar/12-llm-agent-quality-dpf/12-11-patterns-B.md",
     "FPF_seminar/12-llm-agent-quality-dpf/12-10-patterns-A-ru.md",
     "FPF_seminar/12-llm-agent-quality-dpf/12-10-patterns-A.md",
-    "FPF_seminar/12-llm-agent-quality-dpf/12-00-spine.md",
     "rc-28-lint-test-output-flood.md",
     "FPF_seminar/12-llm-agent-quality-dpf/12-02-measurement-frame-ru.md",
     "FPF_seminar/12-llm-agent-quality-dpf/12-01-source-pack-ru.md",
@@ -252,8 +254,6 @@
     "rc-01-rlhf-pushback-loop.md",
     "rc-26-no-bullshit-detector.md",
     "rc-23-role-boundary-violations.md",
-    "02-external-research.md",
-    "rc-10-compaction-derailment.md",
     "FPF_seminar/12-llm-agent-quality-dpf/_inputs",
     "FPF_seminar/12-llm-agent-quality-dpf",
     "FPF_seminar"

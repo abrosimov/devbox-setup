@@ -17,8 +17,9 @@ Comprehensive analysis of Claude Code (Opus 4.7/4.8) behavioural problems, root 
 | See what Anthropic + community know | [[02-external-research]] (~80 cited sources) |
 | See what `dot_claude/` already does, where it has gaps | [[03-current-config-map]] |
 | See behavioural mechanisms from Claude's own reflection | [[04-reflection-evidence]] |
-| See all 30 root causes at a glance | [[10-root-causes-overview]] |
+| See all 31 root causes at a glance | [[10-root-causes-overview]] |
 | Pick a single root cause and start fixing | Any `rc-NN-*` file (each has ≥5 fix proposals) |
+| See the prioritised action plan + agent-topology DSS (3×SE vs 1×SE) | [[20-consolidation-plan]] |
 
 ## Catalogue by causal layer
 
@@ -82,6 +83,12 @@ Branch and commit discipline.
 - [[rc-29-no-master-pull-protocol]] — no auto-fetch after commit
 - [[rc-30-coauthor-trailer-leak]] — Co-Author ban advisory only
 
+### Cross-layer additions
+
+RCs that span more than one causal layer and so do not sit cleanly under one of A-F.
+
+- [[rc-31-agent-satisficing]] — workarounds in code instead of root-cause fix in config (Layer C primary, Layer E spillover). Captures Fix 8 — DoD block, PostToolUse workaround-pattern hook, debugging diff-first protocol.
+
 ## Symptom → root-cause cross-reference
 
 Quick lookup for "I saw symptom S-XYZ — which RCs does it map to?". Strongest mapping listed first.
@@ -129,6 +136,9 @@ Quick lookup for "I saw symptom S-XYZ — which RCs does it map to?". Strongest 
 | [[01-symptoms-inventory#S-039]] no roadmaps | RC-22 |
 | [[01-symptoms-inventory#S-040]] no out-of-CLI feedback | (no RC — feature, not bug) |
 | [[01-symptoms-inventory#S-041]] lint/test output flood | RC-28 |
+| [[01-symptoms-inventory#S-018]] reinvents wheels (also: workaround helpers `_absolutise_*`) | RC-15, **RC-31** |
+| [[01-symptoms-inventory#S-024]] external locus of control (also: env-prefix patch instead of config fix) | RC-15, **RC-31** |
+| [[01-symptoms-inventory#S-027]] false done (also: declared fixed via workaround) | RC-24, RC-05, **RC-31** |
 
 ## How to use this catalogue across sessions
 
@@ -177,11 +187,11 @@ These would expand fix proposals in those RCs in a follow-up pass.
 
 - **Phase 1 evidence (4 files)**: symptoms, external research, config map, behavioural reflection. ~1144 lines.
 - **Phase 2 synthesis (1 file)**: root-causes overview. 107 lines.
-- **Phase 3 fix files (30 files)**: one per RC, ~115 lines avg. ~3500 lines.
-- **Phase 4 hub (this file)**: navigation.
+- **Phase 3 fix files (31 files)**: one per RC, ~115 lines avg. ~3600 lines.
+- **Phase 4 hub (this file) + consolidation plan**: navigation + [[20-consolidation-plan]] (prioritised tranches + agent-topology DSS).
 - **Internal: `_writer-instructions.md`** (194 lines) — template + asset vocabulary used by writer agents.
 
-Total: 36 files, ~4900 lines. Compact-per-file, indexed, cross-linked.
+Total: 38 files, ~5300 lines. Compact-per-file, indexed, cross-linked.
 
 ## Κάτοπτρον — FPF seminar
 

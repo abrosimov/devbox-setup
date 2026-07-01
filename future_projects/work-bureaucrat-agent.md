@@ -230,7 +230,9 @@ If A / A / A / A is the final decision across the four dimensions:
   - `templates/work-vault/iter-finding.md` (the F-NN template)
   - `templates/work-vault/iter-index.md` (the MoC template)
 
-## 8. Locked decisions (2026-06-29)
+## 8. Locked decisions
+
+### 2026-06-29
 
 1. **Iteration model — A.** Per-F files (`iterNN/F-NN.md`) plus an
    auto-generated `_index.md` MoC. `depends-on` / `blocks` in frontmatter.
@@ -246,6 +248,25 @@ If A / A / A / A is the final decision across the four dimensions:
 4. **Enforcement strength — A.** Three layers: script-generated templates,
    `PostToolUse` hook on `*.md` writes inside the vault, and the skill
    for qualitative rules.
+
+### 2026-07-01
+
+5. **Path carrier — A1 (hardcode in agent).** The vault absolute path is
+   literal inside `work-bureaucrat.md`. No env var beyond
+   `$MNEMOSYNE_PERISTASEOS`. Path change = one edit to the agent file.
+   **Scope confirmed: work-bureaucrat only.** A personal-side agent is
+   out of scope for this brainstorm; it will get its own agent file (and
+   its own decisions) when the time comes. Two hard-coded values in the
+   agent will therefore be: the vault absolute path, and the fact this
+   agent is for the work profile.
+
+## 8a. Still-open (not blocking template work)
+
+- **Vault metadata carrier (axis B).** Where `OICM` / `MLOPS` prefixes
+  and company id live. Simplest default assumed for now: **B6 — hardcode
+  in the agent alongside the path**. Promoted to B3 (`<vault>/.vault-meta.yml`)
+  only if a second company / prefix change makes that worthwhile.
+  Recorded as an assumption, not a decision — flag it if wrong.
 
 ## 9. Implementation outline (rough)
 

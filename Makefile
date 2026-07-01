@@ -10,21 +10,20 @@ TEST_VAULT    := --vault-password-file tests/vault-password -e vault_file=../tes
 PROFILE       ?=
 PROFILE_OPTS  = $(if $(PROFILE),-e @profiles/$(PROFILE).yml)
 
-# .devbox-profile stamp file at repo root — written by `make personal` /
-# `make work` (post_tasks in playbooks/main.yml), gitignored, holds a single
-# token: `personal` or `work`. Slim targets read it via STAMP_PROFILE so they
-# can resolve the active profile without the user repeating PROFILE=... every
-# time. Hybrid resolution: explicit PROFILE= overrides the stamp.
-DEVBOX_STAMP   := .devbox-profile
-STAMP_PROFILE  = $(shell test -f $(DEVBOX_STAMP) && head -n1 $(DEVBOX_STAMP) | tr -d '[:space:]' || true)
-ACTIVE_PROFILE = $(or $(PROFILE),$(STAMP_PROFILE))
+# Slim targets recover the active profile from MNEMOSYNE_PERISTASEOS — the env
+# var that `make personal` / `make work` render into the user's shell rc (see
+# devbox_shell.env in roles/devbox/defaults/main/shell.yml). Any fresh login
+# shell after the first full run has it exported. Explicit PROFILE= wins if
+# both are set. First-ever bootstrap: pass PROFILE=personal|work explicitly
+# (or start a new shell so the just-rendered rc is sourced).
+ACTIVE_PROFILE = $(or $(PROFILE),$(MNEMOSYNE_PERISTASEOS))
 ACTIVE_OPTS    = $(if $(ACTIVE_PROFILE),-e @profiles/$(ACTIVE_PROFILE).yml)
 
 define require_profile
 	@if [ -z "$(ACTIVE_PROFILE)" ]; then \
 		echo "ERROR: No active profile."; \
-		echo "  Run 'make personal' or 'make work' once to stamp the profile,"; \
-		echo "  or pass PROFILE=personal|work explicitly to this target."; \
+		echo "  MNEMOSYNE_PERISTASEOS is unset — start a new shell after the first"; \
+		echo "  'make personal' / 'make work' run, or pass PROFILE=personal|work explicitly."; \
 		exit 1; \
 	fi
 endef
@@ -497,7 +496,7 @@ claude-pull-review:
 # claude tag, so this and `make personal`/`make work` share a single implementation.
 # No sudo prompt, no vault load.
 #
-# Slim targets resolve the active profile via the .devbox-profile stamp (or
+# Slim targets resolve the active profile via MNEMOSYNE_PERISTASEOS (or
 # explicit PROFILE=...). This prevents accidental renders of profile-dependent
 # vars (e.g. devbox_projects_dir) with the wrong value when invoked outside the
 # main personal/work workflow.

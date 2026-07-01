@@ -11,10 +11,10 @@ devbox_paths:
 devbox_projects_dir: "$HOME/Projects"
 
 # Active profile name, overridden in profiles/{personal,work}.yml.
-# Rendered into the MNEMOSYNE_PERISTASEOS env var and stamped to .devbox-profile
-# at repo root by playbooks/main.yml post_tasks. Slim playbooks (dotfiles-push,
-# shell-push, mcp-sync) read the stamp via Makefile to recover the active profile
-# without re-running the full personal/work playbook.
+# Rendered into the MNEMOSYNE_PERISTASEOS env var (see devbox_shell.env in
+# shell.yml). Slim playbooks (dotfiles-push, shell-push, mcp-sync) read that
+# env var via Makefile ACTIVE_PROFILE to recover the active profile without
+# re-running the full personal/work playbook.
 devbox_active_profile: "unknown"
 
 # Profile extension points — overridden in profiles/*.yml.

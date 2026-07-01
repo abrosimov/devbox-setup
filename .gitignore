@@ -15,7 +15,6 @@ tests/generated
 local/
 
 tmp/
-.devbox-profile
 roles/devbox/files/.config/nvim/lazy-lock.json
 __pycache__/
 *.pyc

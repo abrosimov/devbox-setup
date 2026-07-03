@@ -687,7 +687,7 @@ _WRITE_ESCAPE_REASON: Final[str] = (
 )
 
 
-def parse_safely(cmd: str) -> tuple[object | None, str | None]:
+def parse_safely(cmd: str) -> tuple[list[object] | None, str | None]:
     """Parse cmd with bashlex; return (trees, error_reason).
 
     On any parse failure (empty, comment, ParsingError, NotImplementedError,

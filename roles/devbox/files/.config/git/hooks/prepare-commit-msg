@@ -1,0 +1,36 @@
+#!/bin/bash
+# proj-managed. Global prepare-commit-msg hook (activated via core.hooksPath in
+# ~/.gitconfig). Prepends/appends a Jira-style key derived from the branch name.
+#
+# Safe globally: a branch with no [A-Z]{2,}-[0-9]+ key (e.g. personal branches,
+# main) is a no-op. Repos with their own core.hooksPath (Husky, Lefthook) shadow
+# this by local-over-global precedence. Validating hooks a repo drops directly in
+# .git/hooks are shadowed by the global hooksPath, but CI re-runs those.
+set -euo pipefail
+
+msg_file="$1"
+commit_source="${2:-}"
+
+# Do not touch machine-generated messages (merge/squash bodies).
+case "$commit_source" in
+    merge|squash) exit 0 ;;
+esac
+
+# Detached HEAD or no branch → nothing to derive a key from.
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || true)
+[ -z "$branch" ] && exit 0
+
+# First Jira key anywhere in the branch: feature/ABC-123-x and ABC-123_x → ABC-123.
+key=$(printf '%s' "$branch" | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || true)
+[ -z "$key" ] && exit 0
+
+msg=$(cat "$msg_file")
+case "$msg" in
+    *"[$key]"*) exit 0 ;;   # already tagged
+esac
+
+# prefix (default) | suffix — configurable via `git config jira.keyPosition`.
+case "$(git config --get jira.keyPosition || echo prefix)" in
+    suffix) printf '%s [%s]\n' "$msg" "$key" > "$msg_file" ;;
+    *)      printf '[%s]: %s\n' "$key" "$msg" > "$msg_file" ;;
+esac

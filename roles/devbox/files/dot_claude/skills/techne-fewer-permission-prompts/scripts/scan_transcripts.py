@@ -27,9 +27,7 @@ TOP_BASH: Final[int] = 60
 TOP_MCP: Final[int] = 30
 SAMPLE_LIMIT: Final[int] = 120
 
-TELEMETRY_ROOT: Final[Path] = (
-    Path.home() / ".claude" / "state" / "missed_approvals"
-)
+TELEMETRY_ROOT: Final[Path] = Path.home() / ".claude" / "state" / "missed_approvals"
 
 ENV_RE: Final[re.Pattern[str]] = re.compile(r"^[A-Z_][A-Z0-9_]*=\S+\s+")
 SUBSHELL_LEADERS: Final[frozenset[str]] = frozenset(

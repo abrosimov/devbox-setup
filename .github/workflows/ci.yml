@@ -98,6 +98,9 @@ jobs:
       - name: Python unit tests
         run: make test
 
+      - name: Git hook tests
+        run: make test-git-hooks
+
       - name: Bash script syntax check
         run: make test-bash
 

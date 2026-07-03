@@ -462,8 +462,7 @@ def rule_push_delete_branch(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "push":
         return None
     msg = (
-        "Branch deletion via git push is not allowed. Ask the user before deleting "
-        "remote branches."
+        "Branch deletion via git push is not allowed. Ask the user before deleting remote branches."
     )
     for arg in ctx.argv[2:]:
         if arg == "--delete":
@@ -570,7 +569,9 @@ def rule_wholesale_checkout_restore(ctx: Ctx) -> str | None:
             "Wholesale `git checkout .` discards local edits. Restore named files or ask the user."
         )
     if ctx.argv[1] == "restore" and len(ctx.argv) >= 3 and ctx.argv[-1] == ".":
-        return "Wholesale `git restore .` discards local edits. Restore named files or ask the user."
+        return (
+            "Wholesale `git restore .` discards local edits. Restore named files or ask the user."
+        )
     return None
 
 
@@ -686,7 +687,7 @@ _WRITE_ESCAPE_REASON: Final[str] = (
 )
 
 
-def parse_safely(cmd: str) -> tuple[object | None, str | None]:
+def parse_safely(cmd: str) -> tuple[list[object] | None, str | None]:
     """Parse cmd with bashlex; return (trees, error_reason).
 
     On any parse failure (empty, comment, ParsingError, NotImplementedError,
@@ -1058,20 +1059,15 @@ def _is_write_command(argv: list[str]) -> bool:
         if head == "sed":
             return any(a == "-i" or a == "--in-place" or a.startswith("-i") for a in argv[1:])
         if head == "awk":
-            return any(
-                a in {"-i", "--in-place"} or "system(" in a for a in argv[1:]
-            )
+            return any(a in {"-i", "--in-place"} or "system(" in a for a in argv[1:])
         if head == "find":
-            return any(
-                f in argv[1:] for f in {"-delete", "-exec", "-execdir", "-ok"}
-            )
+            return any(f in argv[1:] for f in {"-delete", "-exec", "-execdir", "-ok"})
         if head == "tar":
             return any(
                 ("c" in a or "x" in a) and a.startswith("-") and not a.startswith("--")
                 for a in argv[1:]
             ) or any(
-                a in {"--create", "--extract", "--append", "--update", "--delete"}
-                for a in argv[1:]
+                a in {"--create", "--extract", "--append", "--update", "--delete"} for a in argv[1:]
             )
         if head == "unzip":
             return not any(a in {"-l", "-v", "-t"} for a in argv[1:])

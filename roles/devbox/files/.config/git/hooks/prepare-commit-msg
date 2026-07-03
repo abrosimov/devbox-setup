@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+# proj-managed. Global prepare-commit-msg hook (activated via core.hooksPath in
+# ~/.config/git/config). Prepends/appends a Jira-style key derived from the
+# branch name to the commit message.
+#
+# Self-contained, standard library only — git invokes it standalone, so it must
+# not import anything outside the stdlib. Tests: tests/git_hooks/.
+#
+# Safe globally: a branch with no [A-Z]{2,}-[0-9]+ key (personal branches, main)
+# is a no-op. Repos with their own core.hooksPath (Husky, Lefthook) shadow this
+# by local-over-global precedence.
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+KEY_RE = re.compile(r"[A-Z]{2,}-[0-9]+")
+
+
+def git(*args: str) -> str:
+    """Return stripped stdout of a git command, or '' if it fails."""
+    result = subprocess.run(
+        ["git", *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def build_message(msg: str, key: str, position: str) -> str:
+    """Return the message with the key applied. Empty string means 'no change'."""
+    if f"[{key}]" in msg:  # already tagged
+        return ""
+    body = msg.rstrip("\n")
+    if position == "suffix":
+        return f"{body} [{key}]\n"
+    return f"[{key}]: {body}\n"
+
+
+def main(argv: list[str]) -> int:
+    if not argv:
+        return 0
+    msg_file = argv[0]
+    commit_source = argv[1] if len(argv) > 1 else ""
+
+    # Do not touch machine-generated messages (merge/squash bodies).
+    if commit_source in ("merge", "squash"):
+        return 0
+
+    # Detached HEAD or no branch → nothing to derive a key from.
+    branch = git("symbolic-ref", "--short", "HEAD")
+    if not branch:
+        return 0
+
+    # First Jira key anywhere in the branch:
+    #   feature/ABC-123-login and ABC-123_login both → ABC-123.
+    match = KEY_RE.search(branch)
+    if not match:  # personal branches / main → no-op
+        return 0
+    key = match.group(0)
+
+    path = Path(msg_file)
+    msg = path.read_text(encoding="utf-8")
+
+    # prefix (default) | suffix — configurable via `git config jira.keyPosition`.
+    position = git("config", "--get", "jira.keyPosition") or "prefix"
+    new_msg = build_message(msg, key, position)
+    if not new_msg:
+        return 0
+
+    path.write_text(new_msg, encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

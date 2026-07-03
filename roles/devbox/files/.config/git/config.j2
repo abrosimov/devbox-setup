@@ -1,0 +1,51 @@
+# Managed by devbox (roles/devbox/files/.config/git/config.j2). This is the XDG
+# global config (~/.config/git/config), which git reads IN ADDITION to
+# ~/.gitconfig. It is deliberately NOT ~/.gitconfig: your personal file is left
+# untouched, and where a key is set in both, ~/.gitconfig wins (loaded last).
+# Behavioral, non-secret settings only — identity is added separately per
+# profile (see the git-identity follow-up).
+
+[init]
+	defaultBranch = main
+
+# --- Branchless push/pull -----------------------------------------------------
+# `push` / `pull` need no branch argument: current branch, same name on origin.
+[push]
+	default = simple
+	autoSetupRemote = true       # first push auto-creates upstream (git >= 2.37)
+
+[pull]
+	ff = only                    # never a surprise merge commit; diverged = stop
+
+[fetch]
+	prune = true                 # drop local refs for branches deleted on origin
+
+# --- Merge / rebase quality-of-life -------------------------------------------
+[rebase]
+	autoStash = true             # dirty tree does not block rebase
+	autosquash = true
+
+[merge]
+	conflictStyle = zdiff3       # conflict markers include the common ancestor
+
+[rerere]
+	enabled = true               # remember conflict resolutions, replay on redo
+
+[diff]
+	algorithm = histogram
+	colorMoved = default
+
+# --- Guardrails ---------------------------------------------------------------
+[advice]
+	detachedHead = true          # warn on detached HEAD (see `sw` abbr / switch)
+
+# --- Global hooks -------------------------------------------------------------
+# Plain global hooks (prepare-commit-msg Jira key, etc.). Repos that set their
+# own core.hooksPath (Husky, Lefthook, or an older proj per-repo install) win by
+# local-over-global precedence.
+[core]
+	hooksPath = ~/.config/git/hooks
+
+# Jira key position for the prepare-commit-msg hook: prefix (default) | suffix.
+[jira]
+	keyPosition = prefix

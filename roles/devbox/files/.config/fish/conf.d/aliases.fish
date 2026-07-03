@@ -8,8 +8,17 @@ abbr -a cob git checkout -b
 abbr -a add git add
 abbr -a gdc git diff --cached
 
-abbr -a pull git pull origin
-abbr -a push git push origin
+# Safer branch switching: `sw` refuses to detach HEAD unless given --detach,
+# so `sw <sha>` errors instead of silently detaching (unlike `co <sha>`).
+# `restore` splits the file-restore half out of the overloaded `checkout`.
+abbr -a sw git switch
+abbr -a swc git switch -c
+abbr -a restore git restore
+
+# Branchless: current branch, same name on origin. push.autoSetupRemote sets the
+# upstream on first push; pull.ff=only stops loudly instead of a surprise merge.
+abbr -a pull git pull
+abbr -a push git push
 
 abbr -a merge git merge
 

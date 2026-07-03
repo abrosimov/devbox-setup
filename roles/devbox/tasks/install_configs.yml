@@ -132,13 +132,14 @@
   tags: [configs, dotfiles]
 
 # =============================================================================
-# Block 3b: proj hooks directory — executable scripts
+# Block 3b: global git hooks — executable scripts (activated via core.hooksPath
+# in ~/.gitconfig). Plain global hooks, not installed per-repo by proj.
 # =============================================================================
 
-- name: Deploy proj hooks (executable)
+- name: Deploy global git hooks (executable)
   ansible.builtin.copy:
-    src: "{{ role_path }}/files/.local/share/proj/hooks/"
-    dest: "{{ devbox_paths.dotfiles_root_dir }}/.local/share/proj/hooks/"
+    src: "{{ role_path }}/files/.config/git/hooks/"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.config/git/hooks/"
     mode: "0755"
     directory_mode: "0755"
   tags: [configs, dotfiles]
@@ -175,11 +176,14 @@
 # Block 5: Jinja2 templates
 # =============================================================================
 
-- name: Ensure fish conf.d directory exists
+- name: Ensure template destination directories exist
   ansible.builtin.file:
-    path: "{{ devbox_paths.dotfiles_root_dir }}/.config/fish/conf.d"
+    path: "{{ devbox_paths.dotfiles_root_dir }}/{{ item }}"
     state: directory
     mode: "0755"
+  loop:
+    - .config/fish/conf.d
+    - .config/git
   tags: [configs, dotfiles]
 
 - name: Render config templates
@@ -191,6 +195,7 @@
     - { src: .bashrc.j2, dest: .bashrc }
     - { src: .gemrc.j2, dest: .gemrc }
     - { src: .npmrc.j2, dest: .npmrc }
+    - { src: .config/git/config.j2, dest: .config/git/config }
     - { src: .config/fish/conf.d/_init_env.fish.j2, dest: .config/fish/conf.d/_init_env.fish }
   loop_control:
     label: "{{ item.dest }}"

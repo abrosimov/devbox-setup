@@ -294,9 +294,11 @@ unbound-name = true
 
 # ─── Pytest ──────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
-# tests/ holds Ansible vault fixtures, not Python tests. Python tests live next
-# to their implementations under dot_claude/ — hook scripts in bin/, skill helpers
-# in skills/*/scripts/.
+# tests/ holds Ansible vault fixtures plus tests for deploy-dir artefacts that
+# cannot host a test beside them (tests/git_hooks/ covers the global git hook,
+# which is deployed verbatim to ~/.config/git/hooks/). Other Python tests live
+# next to their implementations under dot_claude/ — hook scripts in bin/, skill
+# helpers in skills/*/scripts/.
 testpaths = ["tests", "roles/devbox/files/dot_claude"]
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers --strict-config"

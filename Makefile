@@ -92,6 +92,7 @@ endif
 
 .PHONY: run dev help init vault-init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills \
        work personal dev-work dev-personal check-work check-personal \
+       git-identity git-identity-ensure \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        audit audit-brew audit-brewfile audit-taps untap-stale \
@@ -178,10 +179,24 @@ endif
 dev:
 	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
 
-work:
+# git-identity — generate a per-profile git identity (user.name/email/signing key)
+# into the gitignored local overlay and apply it to ~/.config/git/ immediately.
+# Standalone: `make git-identity` (uses the active profile). It is also a
+# prerequisite of personal/work via git-identity-ensure, which only generates
+# when the identity is missing (idempotent — no prompt on later runs).
+git-identity:
+	@./scripts/git-identity-gen.sh $(or $(ACTIVE_PROFILE),$(error PROFILE is required: make git-identity PROFILE=personal|work))
+
+git-identity-ensure:
+	@test -f roles/devbox/local/.config/git/identity-$(PROFILE).gitconfig \
+	    || ./scripts/git-identity-gen.sh $(PROFILE)
+
+work: PROFILE = work
+work: git-identity-ensure
 	$(MAKE) run PROFILE=work V=$(V)
 
-personal:
+personal: PROFILE = personal
+personal: git-identity-ensure
 	$(MAKE) run PROFILE=personal V=$(V)
 
 dev-work:

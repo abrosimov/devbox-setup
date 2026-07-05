@@ -51,10 +51,15 @@ The catalogue has 31 quantified acceptance signals; the harness repo has the res
 
 ## 2. Target architecture
 
-**One harness, two repos.**
+**One harness, two repos** (transitional) → **templates-with-their-evals vs harness** (end state).
 
-- **Harness** = `llm-tools-configuration/evals/` (canonical suites, backends, `NormalizedResult`, baselines, calibration, OTel). Its own plan already anticipates extraction into a standalone `llm-eval-harness` "once a second consumer exists" — devbox-setup is that second consumer, so building devbox suites against it is also the extraction rehearsal.
-- **System-under-test + corpus** = devbox-setup. Suites, fixtures, and baselines for `dot_claude` live here (`evals/` at repo root, mirroring the vault's evidence-first convention); a Makefile var points at a sibling harness checkout (`EVAL_HARNESS_DIR ?= ../llm-tools-configuration`).
+The boundary follows ordinary software practice: test *cases* live with the code under test; the test *framework* is a versioned dependency. Concretely:
+
+- **Templates + their evals** — skills/agents/hooks together with their suites, fixtures, calibration anchor sets, config-specific graders, and baselines. An eval is the behavioural spec of its template: they change in the same commit, and a baseline is only meaningful as (suite × config version × model), which co-location gives for free via the commit hash. End home: `llm-tools-configuration` ("llm-toolbox"), after the `dot_claude` migration out of devbox-setup.
+- **Harness** = runner core, backends, generic scorers (instruction-adherence, tool-correctness), calibration machinery, OTel, and the suite/result schemas. Generic by design (already targets claude/codex/gemini). Extracted into standalone `llm-eval-harness` per the eval-stack plan's item 10 seams (`ScorerProtocol`, `FixtureLoader`) — but only **after** the seam is proven by a first end-to-end run; splitting before that risks two broken repos instead of one.
+- **Transition**: until the migration, devbox-setup hosts the `dot_claude` suites (`evals/` at repo root) with a Makefile var pointing at a sibling harness checkout (`EVAL_HARNESS_DIR ?= ../llm-tools-configuration`).
+
+Precondition for all of this: **unify `llm-tools-configuration`** — its `master` and `eval-stack-implementation` branches have unrelated histories (re-squashed roots of the same April snapshot). Reconciliation is mechanical: master's unique value is 15 purely-additive doc files; the eval branch carries the newer implementation. Graft + ours-merge; done as PR #5 in that repo.
 
 **Transcript substrate** (the one shared library everything needs): run `claude -p "<prompt>" --output-format stream-json` headless in a fixture workspace, parse the emitted event stream into a `Transcript` object (ordered tool calls with inputs/outputs/exit codes, final message, token usage). Nearly every known-error grader is a predicate over `(Transcript, workspace diff)`. This replaces the fictional `tool_calls` extraction in the current runtime provider and must be built against the *actual* CLI output schema (verify with `claude -p 'read file X' --output-format stream-json` before coding; no `--cwd` flag exists — set the subprocess cwd).
 
@@ -115,7 +120,7 @@ Re-run cadence: B1 on every `make validate-claude` (cheap); B2/B3 before and aft
 
 | Phase | Content | Effort | Gate |
 |---|---|---|---|
-| 0 — repair | WS-A items 2–4; WS-B1+B2 (vendored runner, ledger) | 2–3 days | `make eval-skills` runs self-contained; ledger emits JSON |
+| 0 — repair | unify llm-tools-configuration branches (PR #5 there); WS-A items 2–4; WS-B1+B2 (vendored runner, ledger) | 2–3 days | unified master; `make eval-skills` runs self-contained; ledger emits JSON |
 | 1 — baseline | §4 campaign B1–B4 | ~1 week incl. corpus v0 authoring | baselines committed; report written |
 | 2 — broaden | WS-C; WS-A Inspect scaffold | 1–2 weeks, parallelisable | 40/40 trigger coverage; evals.json executed once |
 | 3 — gate | WS-D; consolidation tranches begin, each measured pre/post | ongoing | no tranche lands without eval delta |
@@ -126,16 +131,18 @@ Hard ordering constraint: **Phase 1 before any UAP trim or config surgery** — 
 ## 7. Decisions taken / open questions
 
 Decisions:
-1. Harness home = llm-tools-configuration (devbox is second consumer → triggers the planned `llm-eval-harness` extraction; no third system).
-2. Baseline before change — Phase 1 blocks Tranche 1.
-3. Deterministic graders (G1/G2) preferred; G3 judges only with calibrated anchors.
-4. Known-error corpus is append-only: every new observed failure becomes a row in §3.
+1. Repo topology: suites/fixtures/anchors/baselines co-locate with the templates they test; harness is a separate versioned dependency. End state: templates+evals in llm-toolbox, machinery in `llm-eval-harness`; extraction only after a first end-to-end run proves the `ScorerProtocol`/`FixtureLoader` seams.
+2. Sequencing to get there: unify llm-tools-configuration → prove the seam (transcript substrate + E01–E03 + first baseline) → migrate `dot_claude` devbox→toolbox → extract harness.
+3. Baseline before change — Phase 1 blocks Tranche 1.
+4. Deterministic graders (G1/G2) preferred; G3 judges only with calibrated anchors.
+5. Known-error corpus is append-only: every new observed failure becomes a row in §3.
+6. Scenario baselines live with the suites (vault/devbox now, llm-toolbox after migration) — follows from decision 1.
 
 Open:
 1. Model matrix for B2/B3 — sonnet-only to control cost, or 2-model from day one? (default: sonnet matrix + opus spot-checks)
 2. N per scenario — 5 (cheap, noisy) vs 10 (stable, 2× cost)? (default: 5, raise for flaky scenarios)
-3. Where scenario baselines live long-term — vault (`claude_improvements/baselines/`) vs harness `evals/baselines/`? (default: vault while single-consumer)
-4. Inspect AI timing — before or after corpus v0? (default: after; corpus v0 needs only the transcript substrate, not a backend)
+3. Inspect AI timing — before or after corpus v0? (default: after; corpus v0 needs only the transcript substrate, not a backend)
+4. `~/.claude` ownership during the devbox→toolbox migration — Ansible Block 1 (`synchronize --delete`) and toolbox `install.sh` both write there; exactly one deployer must own it at any time.
 
 ## See also
 

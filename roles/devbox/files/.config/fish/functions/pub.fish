@@ -16,12 +16,24 @@ function pub --description "WARP proxy toggle for untrusted wifi (HTTP bridge on
                 sleep 1
             end
 
-            # Universal exported vars: every fish session and every child
-            # process inherits them. Lowercase wins in Claude Code, so set both.
-            set -Ux HTTPS_PROXY http://127.0.0.1:8080
-            set -Ux HTTP_PROXY http://127.0.0.1:8080
-            set -Ux https_proxy http://127.0.0.1:8080
-            set -Ux http_proxy http://127.0.0.1:8080
+            # Session-scoped exported vars. Only the current fish session and
+            # its children see the proxy — closing the window drops it,
+            # eliminating the "forgot to `pub off`" foot-gun where universal
+            # vars point at a dead `gost` listener across reboots. Lowercase
+            # wins in Claude Code, so set both.
+            #
+            # Also clear any lingering universal vars from an older `pub on`
+            # (they'd otherwise be re-inherited from `fish_variables` on next
+            # session start and shadow the -gx here).
+            set -eU HTTPS_PROXY 2>/dev/null
+            set -eU HTTP_PROXY 2>/dev/null
+            set -eU https_proxy 2>/dev/null
+            set -eU http_proxy 2>/dev/null
+
+            set -gx HTTPS_PROXY http://127.0.0.1:8080
+            set -gx HTTP_PROXY http://127.0.0.1:8080
+            set -gx https_proxy http://127.0.0.1:8080
+            set -gx http_proxy http://127.0.0.1:8080
 
             if curl -s --max-time 5 --proxy http://127.0.0.1:8080 \
                     https://www.cloudflare.com/cdn-cgi/trace | grep -q 'warp=on'
@@ -31,10 +43,16 @@ function pub --description "WARP proxy toggle for untrusted wifi (HTTP bridge on
                 echo "WARNING: tunnel did not come up -- check 'pub status' and 'warp-cli status'"
             end
         case off
-            set -eU HTTPS_PROXY
-            set -eU HTTP_PROXY
-            set -eU https_proxy
-            set -eU http_proxy
+            # Drop both scopes: -g clears the current session's exported var,
+            # -U clears any legacy universal set (harmless if empty).
+            set -eg HTTPS_PROXY 2>/dev/null
+            set -eg HTTP_PROXY 2>/dev/null
+            set -eg https_proxy 2>/dev/null
+            set -eg http_proxy 2>/dev/null
+            set -eU HTTPS_PROXY 2>/dev/null
+            set -eU HTTP_PROXY 2>/dev/null
+            set -eU https_proxy 2>/dev/null
+            set -eU http_proxy 2>/dev/null
             pkill -f 'gost.*:8080' >/dev/null 2>&1
             warp-cli disconnect >/dev/null
             echo "pub mode OFF"

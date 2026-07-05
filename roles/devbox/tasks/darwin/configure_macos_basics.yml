@@ -49,6 +49,34 @@
   when: devbox_sudo_local_pam_tid.rc | default(1) != 0
   tags: [macos]
 
+# pam_reattach reattaches the sudo authentication to the user's GUI (Aqua)
+# session, which is what makes the Touch ID prompt actually surface when sudo
+# is invoked from a detached process context (tmux, kitty, screen, wrapper
+# scripts like scripts/with_sudo_keepalive.sh). Without it, pam_tid.so silently
+# skips the fingerprint dialog and falls through to password auth — the
+# `Password:` prompt from `sudo -v` at wrapper start becomes a real prompt
+# instead of a Touch ID tap. Installed via `pam-reattach` in
+# devbox_brew_secondary; MUST come BEFORE pam_tid in the PAM stack.
+
+- name: "Check if pam_reattach already enabled in sudo_local"
+  ansible.builtin.command: grep -Eq '^auth[[:space:]]+optional[[:space:]]+.*/pam_reattach\.so' /etc/pam.d/sudo_local
+  register: devbox_sudo_local_pam_reattach
+  changed_when: false
+  failed_when: false
+  when: devbox_sudo_local_stat.stat.exists
+  tags: [macos]
+
+- name: "Enable pam_reattach in sudo_local (before pam_tid) so Touch ID works in tmux/kitty"
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sudo_local
+    regexp: '^#?\s*auth\s+optional\s+.*/pam_reattach\.so.*$'
+    line: "auth       optional       /opt/homebrew/lib/pam/pam_reattach.so ignore_ssh"
+    insertbefore: '^auth\s+sufficient\s+pam_tid\.so'
+    state: present
+  become: true
+  when: devbox_sudo_local_pam_reattach.rc | default(1) != 0
+  tags: [macos]
+
 # --- Clamshell stay-awake (note: "Disable sleep when macbook is closed.md") --
 # Mandatory for the 90%-clamshell-with-external-keyboard workflow.
 

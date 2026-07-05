@@ -99,7 +99,7 @@ endif
        claude-diff claude-pull claude-pull-review claude-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        sync-upstream-docs \
-       test test-integration test-claude-hooks test-git-hooks test-nvim test-fish test-json test-bash \
+       test test-integration test-claude-hooks test-git-hooks test-scripts test-nvim test-fish test-json test-bash \
        regenerate-fixtures \
        lint lint-ansible lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -124,6 +124,7 @@ help:
 	@echo "  make test-integration - pytest subprocess integration tests (slower)"
 	@echo "  make test-claude-hooks - pytest under bin/'s own uv project (deployed-venv shape)"
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
+	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
 	@echo "  make qa               - lint + typecheck + test + test-integration (full gate)"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
@@ -185,11 +186,11 @@ dev:
 # prerequisite of personal/work via git-identity-ensure, which only generates
 # when the identity is missing (idempotent — no prompt on later runs).
 git-identity:
-	@./scripts/git-identity-gen.sh $(or $(ACTIVE_PROFILE),$(error PROFILE is required: make git-identity PROFILE=personal|work))
+	@./scripts/git-identity-gen.py $(or $(ACTIVE_PROFILE),$(error PROFILE is required: make git-identity PROFILE=personal|work))
 
 git-identity-ensure:
 	@test -f roles/devbox/local/.config/git/identity-$(PROFILE).gitconfig \
-	    || ./scripts/git-identity-gen.sh $(PROFILE)
+	    || ./scripts/git-identity-gen.py $(PROFILE)
 
 work: PROFILE = work
 work: git-identity-ensure
@@ -246,6 +247,9 @@ test-integration: $(DEV_SENTINEL) ## Pytest subprocess integration tests (smoke 
 
 test-git-hooks: $(DEV_SENTINEL) ## Pytest for the global git hooks (prepare-commit-msg)
 	@$(DEV_BIN)/pytest tests/git_hooks -q
+
+test-scripts: $(DEV_SENTINEL) ## Pytest for scripts/ (git-identity-gen.py and friends)
+	@$(DEV_BIN)/pytest tests/scripts -q
 
 # Isolated check against the deployed-shape venv: same uv sync --frozen that
 # Ansible runs in production, then pytest from bin/'s own dev group. Catches

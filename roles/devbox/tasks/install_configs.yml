@@ -114,7 +114,30 @@
 
 # =============================================================================
 # Block 3: dotfile directories — copy whole dir (no --delete, safe for overlay)
+#
+# First: ensure the parent dirs that subsequent individual-file copies
+# (Block 4, Block 4b) and template renders (Block 5) write into. Whole-dir
+# copies in this block (kitty/, nvim/, fish/completions/, fish/functions/,
+# .config/git/hooks/) create their own dest, so we only enumerate the
+# parents that individual `copy` and `template` tasks depend on.
+#
+# Idempotent by design, and required for greenfield targets: in dev_mode
+# devbox_paths.dotfiles_root_dir is a fresh empty tree (.devbox/debug/dotfiles),
+# so relying on fish having pre-created ~/.config/fish/conf.d/ silently
+# broke `make dev-personal` and would break any CI run against clean FS.
 # =============================================================================
+
+- name: Ensure dotfile parent directories exist
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - .config
+    - .config/fish
+    - .config/fish/conf.d
+    - .config/git
+  tags: [configs, dotfiles]
 
 - name: Deploy dotfile directories
   ansible.builtin.copy:
@@ -174,17 +197,8 @@
 
 # =============================================================================
 # Block 5: Jinja2 templates
+# Destination directories are ensured up front (see Block 3's first task).
 # =============================================================================
-
-- name: Ensure template destination directories exist
-  ansible.builtin.file:
-    path: "{{ devbox_paths.dotfiles_root_dir }}/{{ item }}"
-    state: directory
-    mode: "0755"
-  loop:
-    - .config/fish/conf.d
-    - .config/git
-  tags: [configs, dotfiles]
 
 - name: Render config templates
   ansible.builtin.template:

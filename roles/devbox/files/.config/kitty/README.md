@@ -94,7 +94,10 @@ Intentionally not remapped:
 
 ## Scrollback & shell integration
 
-Built into kitty's shell-integration layer, not custom-bound:
+**Cyrillic-fixed via scancode remaps** — same pattern as `Ctrl+letter` above.
+Kitty's shell-integration defaults match by character and break on non-Latin
+input sources; the maps in `kitty.conf` under "Keybindings — Scrollback /
+prompts" restore them at the physical-key layer.
 
 | Key | Action |
 |-----|--------|
@@ -105,6 +108,12 @@ Built into kitty's shell-integration layer, not custom-bound:
 
 `shell_integration` is set to `no-cursor` — all features enabled except
 cursor-shape reset, so vim/nvim manage their own cursor.
+
+> These remaps are an **interim workaround** for the wider Cyrillic + Ctrl/Alt
+> problem. The systemic fix lives at the Karabiner-Elements layer and will
+> also cover Claude Code, VS Code, and every other app. See
+> `~/.claude/future_projects/keyboard_project.md`. Retire this block after
+> the Karabiner rule ships and is verified.
 
 ## Font size
 

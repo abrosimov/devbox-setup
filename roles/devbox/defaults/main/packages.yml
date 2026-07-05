@@ -15,7 +15,6 @@ devbox_brew_taps:
   - goreleaser/tap         # goreleaser, nfpm, chglog — release automation
   - ktr0731/evans          # evans gRPC REPL (upstream frozen since 2023, kept for the REPL UX)
   - smudge/smudge          # nightlight (Night Shift CLI, removed from homebrew-core)
-  - mongodb/brew           # mongosh — official MongoDB shell tap
   - hashicorp/tap          # vault, terraform, consul — HashiCorp official tap
 
 # =============================================================================
@@ -70,6 +69,7 @@ devbox_brew_secondary:
   - k9s
   - fzf
   - tmux
+  - pam-reattach   # Touch ID for sudo in tmux/kitty/screen; wired into sudo_local by configure_macos_basics.yml
   - mise
   - fnm             # Fast Node Manager — auto-switches Node version on cd
   - golangci-lint
@@ -105,7 +105,7 @@ devbox_brew_secondary:
   - smudge/smudge/nightlight  # Night Shift CLI (tap: smudge/smudge)
   - gost            # GO Simple Tunnel — HTTP-to-SOCKS bridge used by `pub` mode
   - grafana/grafana/gcx  # Grafana CLI — PromQL/LogQL/Tempo queries via Grafana datasources
-  - mongodb/brew/mongosh    # MongoDB shell (tap: mongodb/brew)
+  - mongosh                 # MongoDB shell (homebrew/core — was mongodb/brew, moved upstream 2026)
   - hashicorp/tap/vault     # HashiCorp Vault CLI (tap: hashicorp/tap)
 
 devbox_brew_secondary_casks:

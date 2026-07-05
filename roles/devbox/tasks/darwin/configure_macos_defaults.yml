@@ -14,13 +14,35 @@
   tags: [macos, defaults]
 
 # Night Shift lives in CoreBrightness (no public `defaults` schema) — driven
-# via the `nightlight` brew formula.
-
-- name: "Night Shift — read current state"
+# via the `nightlight` brew formula. Idempotency is structural: each dimension
+# (status / schedule / temperature) is queried via the CLI that actually
+# emits it, then compared to the desired value from `devbox_night_shift`.
+# `nightlight status` output format ("on until 9:00") does NOT contain the
+# schedule or temperature — DO NOT collapse the three reads back into one.
+#
+# Locale assumption: the Mac is set to a 24-hour clock. In 12-hour locales
+# nightlight prints "9:00pm to 9:00am" and the schedule compare below misses,
+# causing the set task to fire every run (still safe, just not idempotent).
+- name: "Night Shift — read current status"
   ansible.builtin.command: nightlight status
-  register: devbox_nightlight_status
+  register: devbox_ns_status
   changed_when: false
-  failed_when: false
+  check_mode: false
+  when: devbox_night_shift.enabled | default(false)
+  tags: [macos, defaults, nightshift]
+
+- name: "Night Shift — read current schedule"
+  ansible.builtin.command: nightlight schedule
+  register: devbox_ns_schedule
+  changed_when: false
+  check_mode: false
+  when: devbox_night_shift.enabled | default(false)
+  tags: [macos, defaults, nightshift]
+
+- name: "Night Shift — read current temperature"
+  ansible.builtin.command: nightlight temp
+  register: devbox_ns_temp
+  changed_when: false
   check_mode: false
   when: devbox_night_shift.enabled | default(false)
   tags: [macos, defaults, nightshift]
@@ -29,28 +51,38 @@
   ansible.builtin.command: nightlight on
   when:
     - devbox_night_shift.enabled | default(false)
-    - devbox_nightlight_status.stdout | default('') is not search('(?i)status:?\\s*on')
+    - (devbox_ns_status.stdout | default('') | trim) is match('^off\b')
   changed_when: true
   tags: [macos, defaults, nightshift]
 
 - name: "Night Shift — set schedule ({{ devbox_night_shift.schedule }})"
   ansible.builtin.command: "nightlight schedule {{ devbox_night_shift.schedule }}"
+  vars:
+    # devbox_night_shift.schedule is "HH:MM HH:MM" (zero-padded); nightlight
+    # prints "H:MM to H:MM" (24-hr, no leading zero on the hour). Normalize
+    # the config to the CLI shape before comparing.
+    _devbox_ns_from_h: "{{ devbox_night_shift.schedule.split()[0].split(':')[0] | int }}"
+    _devbox_ns_from_m: "{{ devbox_night_shift.schedule.split()[0].split(':')[1] }}"
+    _devbox_ns_to_h: "{{ devbox_night_shift.schedule.split()[1].split(':')[0] | int }}"
+    _devbox_ns_to_m: "{{ devbox_night_shift.schedule.split()[1].split(':')[1] }}"
+    _devbox_ns_expected_schedule: >-
+      {{ _devbox_ns_from_h }}:{{ _devbox_ns_from_m }} to
+      {{ _devbox_ns_to_h }}:{{ _devbox_ns_to_m }}
   when:
     - devbox_night_shift.enabled | default(false)
     - devbox_night_shift.schedule != "sunset"
-    - devbox_nightlight_status.stdout | default('') is not search(_devbox_ns_schedule_re)
-  vars:
-    # Tolerant of whatever separator `nightlight status` prints between times.
-    _devbox_ns_schedule_re: "{{ devbox_night_shift.schedule | regex_replace('\\s+', '.*') }}"
+    - (devbox_ns_schedule.stdout | default('') | trim) != _devbox_ns_expected_schedule
   changed_when: true
   tags: [macos, defaults, nightshift]
 
 - name: "Night Shift — set schedule (sunset → sunrise)"
-  ansible.builtin.command: nightlight schedule sunset
+  # `nightlight schedule start` — not `schedule sunset` (`sunset` is not a
+  # subcommand; the CLI prints usage and exits 0 without changing state).
+  ansible.builtin.command: nightlight schedule start
   when:
     - devbox_night_shift.enabled | default(false)
     - devbox_night_shift.schedule == "sunset"
-    - devbox_nightlight_status.stdout | default('') is not search('(?i)sunset')
+    - (devbox_ns_schedule.stdout | default('') | trim) != 'sunset to sunrise'
   changed_when: true
   tags: [macos, defaults, nightshift]
 
@@ -58,8 +90,6 @@
   ansible.builtin.command: "nightlight temp {{ devbox_night_shift.temperature }}"
   when:
     - devbox_night_shift.enabled | default(false)
-    - devbox_nightlight_status.stdout | default('') is not search(_devbox_ns_temp_re)
-  vars:
-    _devbox_ns_temp_re: "(?i)temp(erature)?:?\\s*{{ devbox_night_shift.temperature }}\\b"
+    - (devbox_ns_temp.stdout | default('') | trim | int) != (devbox_night_shift.temperature | int)
   changed_when: true
   tags: [macos, defaults, nightshift]

@@ -28,19 +28,3 @@
 
   roles:
     - devbox
-
-  post_tasks:
-    # Stamp the active profile to .devbox-profile at repo root so slim playbooks
-    # (dotfiles-push, shell-push, mcp-sync, claude-push, local-push, macos-defaults)
-    # can recover the profile without re-running the full personal/work playbook.
-    # Without this, those targets would re-render config files with the default
-    # devbox_projects_dir from core.yml and silently overwrite a work machine's
-    # PROJECTS_DIR with the personal value.
-    - name: Stamp active profile to .devbox-profile
-      ansible.builtin.copy:
-        content: "{{ devbox_active_profile }}\n"
-        dest: "{{ playbook_dir }}/../.devbox-profile"
-        mode: '0644'
-      when: devbox_active_profile is defined and devbox_active_profile != "unknown"
-      delegate_to: localhost
-      tags: [always]

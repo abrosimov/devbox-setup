@@ -192,6 +192,14 @@ The JSON is auto-formatted by the GUI which makes diffs noisy. Use Karabiner's
 before any keymap config takes effect. See `karabiner_activation.md` for the
 one-time post-install procedure.
 
+**Interim workaround (already applied, 2026-07-05):** kitty's shell-integration
+prompt-jump / pager bindings (`ctrl+shift+z/x/g/h`) and readline (`ctrl+letter`)
+are remapped via scancodes in `roles/devbox/files/.config/kitty/kitty.conf`,
+so they survive Cyrillic layout inside kitty. This does **not** help Claude
+Code — kitty forwards the character, not the scancode — the Karabiner rule
+is still the real solution. Retire the kitty scancode blocks once the
+Karabiner rule ships and is verified on both `personal` and `work` profiles.
+
 **Reference rule library:** [ke-complex-modifications.pqrs.org](https://ke-complex-modifications.pqrs.org/)
 — search for "Cyrillic to QWERTY shortcuts" or "Keep modifier shortcuts in
 Latin layout".

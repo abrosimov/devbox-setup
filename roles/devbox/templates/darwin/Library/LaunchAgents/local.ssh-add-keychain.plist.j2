@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed by devbox (roles/devbox/templates/Library/LaunchAgents/local.ssh-add-keychain.plist.j2).
+  Runs `ssh-add --apple-load-keychain` at every user login so identities stored
+  in the login keychain (see darwin/configure_ssh_keychain.yml) are pre-loaded
+  into ssh-agent without a first-use prompt.
+
+  KeepAlive is deliberately absent — ssh-add exits after loading; no daemon.
+  RunAtLoad triggers the one-shot execution during launchd's session bring-up.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.ssh-add-keychain</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/ssh-add</string>
+        <string>--apple-load-keychain</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/ssh-add-keychain.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/ssh-add-keychain.log</string>
+</dict>
+</plist>

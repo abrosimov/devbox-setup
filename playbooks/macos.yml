@@ -11,11 +11,9 @@
   connection: local
   gather_facts: false
 
-  vars_prompt:
-    - name: ansible_become_password
-      prompt: "Sudo password (Touch ID dialog or password)"
-      private: true
-      confirm: false
+  # Sudo comes from the macOS login keychain slot `devbox-sudo` via
+  # `become_password_file` (ansible.cfg [privilege_escalation]). Seeded by
+  # scripts/ensure_secrets.sh, invoked as a Makefile prereq of `macos-defaults`.
 
   vars:
     ansible_become_timeout: 120

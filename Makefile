@@ -1,12 +1,14 @@
 # Makefile
 
 PLAYBOOK      := playbooks/main.yml
-VAULT_OPTS    := --ask-vault-pass
-# Sudo password is captured via `vars_prompt: ansible_become_password` in
-# playbooks/main.yml so it can also be passed to homebrew_cask.sudo_password.
-# Removing `-K` here avoids a redundant second prompt.
+# Sudo password now comes from macOS login keychain slot `devbox-sudo` via
+# `become_password_file = scripts/keychain-become-pass.sh` (see ansible.cfg
+# [privilege_escalation]). Homebrew cask tasks read the same slot through the
+# `devbox_sudo_password` var defined in roles/devbox/defaults/main/core.yml.
+# The SSH passphrase (formerly in vault/) lives in slot `devbox-ssh-passphrase`.
+# Both slots are seeded by scripts/ensure_secrets.sh (target `secrets-ready`),
+# invoked automatically as a prereq of run/check/macos-defaults.
 EXTRA_VARS    ?=
-TEST_VAULT    := --vault-password-file tests/vault-password -e vault_file=../tests/vault.yml
 PROFILE       ?=
 PROFILE_OPTS  = $(if $(PROFILE),-e @profiles/$(PROFILE).yml)
 
@@ -90,9 +92,10 @@ else
   VERBOSE :=
 endif
 
-.PHONY: run dev help init vault-init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills \
+.PHONY: run dev help init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills \
        work personal dev-work dev-personal check-work check-personal \
        git-identity git-identity-ensure \
+       secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        audit audit-brew audit-brewfile audit-taps untap-stale \
@@ -129,7 +132,9 @@ help:
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
 	@echo "  make init             - install Homebrew, Ansible, and dependencies (macOS only)"
-	@echo "  make vault-init       - create and encrypt vault/devbox_ssh_config.yml"
+	@echo "  make secrets-init     - seed macOS keychain slots (devbox-sudo, devbox-ssh-passphrase)"
+	@echo "  make sudo-reseed      - reseed only the devbox-sudo keychain slot (after login password rotation)"
+	@echo "  make ssh-passphrase-reseed - reseed only the devbox-ssh-passphrase keychain slot"
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
@@ -170,12 +175,33 @@ help:
 	@echo "  EXTRA_VARS='-e foo=bar' - pass extra variables"
 	@echo ""
 
-run: test $(COLLECTIONS_SENTINEL)
+run: test $(COLLECTIONS_SENTINEL) secrets-ready
 ifndef PROFILE
 	$(error PROFILE is required. Use: make personal, make work, make dev-personal, or make dev-work)
 endif
-	@ANSIBLE_FORCE_COLOR=1 ./scripts/with_sudo_keepalive.sh \
-	    ansible-playbook $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
+	@ANSIBLE_FORCE_COLOR=1 \
+	 ANSIBLE_BECOME_PASSWORD_FILE="$(CURDIR)/scripts/keychain-become-pass.sh" \
+	 ./scripts/with_sudo_keepalive.sh \
+	    ansible-playbook $(VERBOSE) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
+
+# secrets-ready is a prerequisite target that ensures both macOS keychain
+# slots (devbox-sudo, devbox-ssh-passphrase) are seeded before any playbook
+# run. First-time seed is interactive (prompts via `read -srp`); subsequent
+# runs are silent no-ops. Non-Darwin: silent no-op.
+secrets-ready:
+	@./scripts/ensure_secrets.sh
+
+# User-facing entrypoints for interactive seed/rotation.
+secrets-init:
+	@./scripts/ensure_secrets.sh
+
+sudo-reseed:
+	@security delete-generic-password -a "$$USER" -s devbox-sudo >/dev/null 2>&1 || true
+	@./scripts/ensure_secrets.sh --only sudo
+
+ssh-passphrase-reseed:
+	@security delete-generic-password -a "$$USER" -s devbox-ssh-passphrase >/dev/null 2>&1 || true
+	@./scripts/ensure_secrets.sh --only ssh
 
 dev:
 	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
@@ -214,12 +240,11 @@ dev-bootstrap: $(DEV_SENTINEL)
 	@echo "Dev venv ready: $(DEV_VENV)"
 	@$(DEV_BIN)/python --version
 
-# ANSIBLE_VAULT_PASSWORD_FILE is a defence-in-depth alongside .ansible-lint's
-# extra_vars override (see that file's comment block). The test password also
-# decrypts the test vault stub if it ever has to be touched.
+# No vault password needed — secrets migrated to macOS login keychain
+# (see roles/devbox/defaults/main/core.yml + ansible.cfg become_password_file).
 lint-ansible: $(DEV_SENTINEL) $(COLLECTIONS_SENTINEL)
-	@$(DEV_BIN)/ansible-playbook --syntax-check $(TEST_VAULT) $(PLAYBOOK)
-	@ANSIBLE_VAULT_PASSWORD_FILE=tests/vault-password $(DEV_BIN)/ansible-lint $(PLAYBOOK)
+	@$(DEV_BIN)/ansible-playbook --syntax-check $(PLAYBOOK)
+	@$(DEV_BIN)/ansible-lint $(PLAYBOOK)
 
 lint-yaml: $(DEV_SENTINEL)
 	@$(DEV_BIN)/yamllint .
@@ -266,12 +291,12 @@ regenerate-fixtures: $(DEV_SENTINEL) ## Re-extract recorded fixtures + regenerat
 	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/extract_fixtures.py --max-per-bucket 50
 	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/generate_fixtures.py --all --seed 42 --count 30
 
-check: $(COLLECTIONS_SENTINEL)
+check: $(COLLECTIONS_SENTINEL) secrets-ready
 ifndef PROFILE
 	$(error PROFILE is required. Use: make check-personal or make check-work)
 endif
 	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook --check $(VERBOSE) $(VAULT_OPTS) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
+	ansible-playbook --check $(VERBOSE) $(PROFILE_OPTS) $(EXTRA_VARS) $(PLAYBOOK)
 
 check-work:
 	$(MAKE) check PROFILE=work V=$(V)
@@ -287,14 +312,13 @@ upgrade-personal:
 
 check-dev: $(COLLECTIONS_SENTINEL)
 	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook --check $(VERBOSE) $(TEST_VAULT) \
-	    -e dev_mode=true -e ansible_become_password=dev-mode-placeholder $(PLAYBOOK)
+	ansible-playbook --check $(VERBOSE) \
+	    -e dev_mode=true \
+	    -e devbox_sudo_password_override=dev-mode \
+	    -e devbox_ssh_pass_phrase_override=dev-mode $(PLAYBOOK)
 
 init:
 	@./scripts/init.sh
-
-vault-init:
-	@./scripts/vault-init.sh
 
 list-skills:
 	@ls -1 $(SKILLS_DIR) | sort | nl -ba
@@ -558,9 +582,11 @@ local-push: $(COLLECTIONS_SENTINEL)
 # Reuses configure_macos_basics.yml under `macos`. Sudo IS required.
 # Wrapped in with_sudo_keepalive.sh — see scripts/with_sudo_keepalive.sh for
 # the rationale (pam_tid + ansible stdin race on Tahoe 26.x).
-macos-defaults: $(COLLECTIONS_SENTINEL)
+macos-defaults: $(COLLECTIONS_SENTINEL) secrets-ready
 	$(require_profile)
-	@ANSIBLE_FORCE_COLOR=1 ./scripts/with_sudo_keepalive.sh \
+	@ANSIBLE_FORCE_COLOR=1 \
+	 ANSIBLE_BECOME_PASSWORD_FILE="$(CURDIR)/scripts/keychain-become-pass.sh" \
+	 ./scripts/with_sudo_keepalive.sh \
 	    ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
 
 # Pull a fresh copy of the upstream FPF spec into dot_claude/docs/ and reset the

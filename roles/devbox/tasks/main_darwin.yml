@@ -1,4 +1,20 @@
 ---
+# Guard: fail loud if the keychain slots (see roles/devbox/defaults/main/core.yml)
+# resolved to the sentinel `MISSING`. Reachable only if scripts/ensure_secrets.sh
+# was bypassed — the Makefile chains it as a prereq of `run`/`check`/`macos-defaults`,
+# and `check-dev` sets both `_override` vars via `-e`. Assert first so misconfigured
+# runs die before any package install / sudo escalation.
+- name: "Assert secrets available (devbox-sudo, devbox-ssh-passphrase in login keychain)"
+  ansible.builtin.assert:
+    that:
+      - devbox_user.ssh_pass_phrase != 'MISSING'
+      - devbox_sudo_password != 'MISSING'
+    fail_msg: >-
+      Keychain slots not seeded. Run `make secrets-init` interactively,
+      or re-run `make personal`/`make work` from a TTY (auto-prompts).
+  when: not (dev_mode | default(false) | bool)
+  tags: [always]
+
 # Defer Homebrew's automatic post-install cleanup for the duration of the
 # brew install phase. Brew normally deletes outdated keg versions immediately
 # after an upgrade, which can strand a dependent formula whose binary still

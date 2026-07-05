@@ -2,27 +2,13 @@
 profile: null
 use_default_rules: true
 
-# `playbooks/main.yml` loads `vault_file | default('../vault/devbox_ssh_config.yml')`
-# whose default is an ansible-vault-encrypted file. When ansible-lint spawns its
-# internal `ansible-playbook --syntax-check`, it does NOT inherit the Makefile's
-# `-e vault_file=../tests/vault.yml` override and tries to decrypt the production
-# vault → fatal error. Forcing the override here points the syntax check at the
-# unencrypted test stub (same stub used by `make check-dev`). The Makefile
-# additionally exports `ANSIBLE_VAULT_PASSWORD_FILE=tests/vault-password` as a
-# safety net for any nested vault expansion.
 # Advisory rules — surface but don't fail. Backlog in
 # roles/devbox/files/dot_claude/future_projects/ansible_lint_pending.md.
 warn_list:
   - no-changed-when    # 2 occurrences in darwin/configure_macos_basics.yml
 
-extra_vars:
-  vault_file: ../tests/vault.yml
-
 exclude_paths:
   - .venv/
-  - vault/
-  - tests/vault.yml
-  - tests/vault-password
   - tests/generated/
   - debug/
   - roles/devbox/local/

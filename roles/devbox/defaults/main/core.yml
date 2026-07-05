@@ -1,9 +1,26 @@
 ---
 devbox_upgrade_mode: false
 
+# Secrets flow: both `devbox_user.ssh_pass_phrase` and `devbox_sudo_password`
+# are read from macOS login keychain slots (`devbox-ssh-passphrase` and
+# `devbox-sudo`, seeded by scripts/ensure_secrets.sh). The `_override` hooks
+# are for dev_mode / test runs — `make check-dev` sets them via `-e`. When the
+# slot is missing the lookup falls back to the literal string `MISSING`, which
+# an assert task in main_darwin.yml catches before any consumer runs.
 devbox_user:
   login: kabrosimov
-  ssh_pass_phrase: "{{ vault_devbox_user.vault_ssh_pass_phrase }}"
+  ssh_pass_phrase: >-
+    {{ devbox_ssh_pass_phrase_override |
+       default(lookup('pipe',
+         'security find-generic-password -w -a ' ~ lookup('env', 'USER') ~
+         ' -s devbox-ssh-passphrase 2>/dev/null || echo MISSING'), true) }}
+
+devbox_sudo_password: >-
+  {{ devbox_sudo_password_override |
+     default(lookup('pipe',
+       'security find-generic-password -w -a ' ~ lookup('env', 'USER') ~
+       ' -s devbox-sudo 2>/dev/null || echo MISSING'), true) }}
+
 devbox_paths:
   dotfiles_root_dir: "~"
   programming_deps_dir: ".programming"

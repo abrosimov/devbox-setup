@@ -8,11 +8,13 @@
 # pam_opendirectory step reads a corrupted stdin buffer, returning "Sorry,
 # try again". Ansible then sees a duplicate password prompt and bails.
 #
-# Fix: pre-cache sudo interactively (in the terminal, where pam_tid behaves
-# correctly), and keep the timestamp warm via `sudo -n true` on a fast loop
-# (well under the default 300s sudo timestamp_timeout). While the timestamp
-# is valid, ansible's `become: true` reuses it without ever invoking pam_tid
-# again, sidestepping the race entirely.
+# Fix: pre-cache sudo non-interactively by reading the `devbox-sudo` login
+# keychain slot and piping into `sudo -S -v`, then keep the timestamp warm
+# via `sudo -n true` on a fast loop (well under the default 300s sudo
+# timestamp_timeout). While the timestamp is valid, ansible's `become: true`
+# reuses it without ever invoking pam_tid again, sidestepping the race
+# entirely. The keychain slot is seeded by scripts/ensure_secrets.sh, invoked
+# as a Makefile prereq of `run`/`macos-defaults`. Rotate via `make sudo-reseed`.
 #
 # Verified for macOS Tahoe 26.x (pam_tid mechanics unchanged from Sonoma).
 # Usage: with_sudo_keepalive.sh <command> [args...]
@@ -43,15 +45,24 @@ _log() { printf '%s [pid=%d] %s\n' "$(_ts)" "$$" "$*" >>"${KEEPALIVE_LOG}"; }
 : >"${KEEPALIVE_LOG}"
 _log "wrapper: start, argv0='$1', interval=${KEEPALIVE_INTERVAL}s, retries=${KEEPALIVE_RETRIES}, retry_delay=${KEEPALIVE_RETRY_DELAY}s"
 
-# Prime the sudo timestamp interactively. pam_tid (Touch ID) or password
-# prompt — both fine here, because the terminal owns stdin and the user
-# can respond. Failure aborts before we touch the actual workload.
-if ! sudo -v; then
-    _log "wrapper: sudo -v failed — aborting"
-    echo "with_sudo_keepalive: sudo -v failed (see ${KEEPALIVE_LOG})" >&2
+# Prime the sudo timestamp using the password from the login keychain slot
+# `devbox-sudo` (seeded by scripts/ensure_secrets.sh, invoked as a Makefile
+# prereq). The wrapper never prompts interactively — a missing slot means the
+# operator bypassed the prereq, and we fail loudly with the seed pointer.
+_SUDO_PW="$(/usr/bin/security find-generic-password -w -a "$USER" -s devbox-sudo 2>/dev/null || true)"
+if [[ -z "${_SUDO_PW}" ]]; then
+    _log "wrapper: devbox-sudo missing from keychain — aborting"
+    echo "with_sudo_keepalive: devbox-sudo missing from keychain. Run: make secrets-init" >&2
     exit 1
 fi
-_log "wrapper: sudo -v ok"
+if ! printf '%s\n' "${_SUDO_PW}" | sudo -S -v 2>/dev/null; then
+    _log "wrapper: sudo -S -v failed with keychain password (stale password?)"
+    echo "with_sudo_keepalive: sudo failed — password may have rotated. Run: make sudo-reseed" >&2
+    unset _SUDO_PW
+    exit 1
+fi
+unset _SUDO_PW
+_log "wrapper: sudo -S -v ok (keychain-primed)"
 
 # Background keep-alive: refresh the sudo timestamp every
 # ${KEEPALIVE_INTERVAL}s. On a `sudo -n true` failure, retry up to

@@ -12,13 +12,13 @@ Ansible-based developer workstation setup tool that automates installation and c
 
 A profile is mandatory for any playbook run. Bare `make run` / `make dev` / `make check` fail with `PROFILE is required` — use the per-profile wrappers below. `personal` targets a personal laptop (`AION_AUTOPOIESEON=~/Projects`); `work` targets a work laptop (`AION_AUTOPOIESEON=~/Work`). Slim targets (`make dotfiles-push` etc.) recover the active profile from the `MNEMOSYNE_PERISTASEOS` env var rendered into the user's shell rc by the previous full run, or fail with a hint if the var is unset. First-ever bootstrap: pass `PROFILE=personal|work` explicitly, or start a new shell after `make personal`/`make work` so the just-rendered rc is sourced.
 
-The sudo password is captured once at playbook start via `vars_prompt: ansible_become_password` (defined in `playbooks/main.yml`). Ansible uses it transparently for any `become: true` task and forwards it to `community.general.homebrew_cask` via the `sudo_password:` parameter, so pkg-based casks (karabiner-elements, etc.) install non-interactively. This is why the Makefile does NOT pass `-K` to `ansible-playbook` — that flag would trigger a redundant second prompt and its captured value is not exposed for templating. Tasks that consume `ansible_become_password` MUST set `no_log: true` to avoid leakage in verbose output.
+Sudo and SSH passphrase live in the macOS login keychain (slots `devbox-sudo` and `devbox-ssh-passphrase`), seeded on first run by `scripts/ensure_secrets.sh` — chained as a Makefile prereq (`secrets-ready`) on `run`, `check`, and `macos-defaults`, so `make personal`/`make work` prompts once on a fresh machine and never again. Ansible reads sudo through `become_password_file = scripts/keychain-become-pass.sh` (see `ansible.cfg [privilege_escalation]`); `community.general.homebrew_cask.sudo_password:` reads it via the `devbox_sudo_password` variable defined in `roles/devbox/defaults/main/core.yml`. Any task consuming these values MUST set `no_log: true`. Rotation entrypoints: `make sudo-reseed`, `make ssh-passphrase-reseed`. First read from any subprocess pops a one-time Keychain ACL dialog — grant "Always Allow" once.
 
 ```bash
 # Bootstrap (macOS only — installs Homebrew, Ansible, collections)
 make init
 
-# Full setup runs (prompt for vault password and sudo)
+# Full setup runs (first run: 2 keychain seed prompts; subsequent: 0 prompts)
 make personal   # personal profile
 make work       # work profile
 
@@ -35,15 +35,17 @@ make dev-personal EXTRA_VARS='--tags configs'
 
 # Linting and dry-run
 make lint            # syntax-check + ansible-lint
-make check-personal  # dry-run with personal profile (prompts for vault + sudo)
+make check-personal  # dry-run with personal profile
 make check-work      # dry-run with work profile
-make check-dev       # dry-run in dev_mode (uses test vault, no sudo)
+make check-dev       # dry-run in dev_mode (override vars, no sudo/keychain)
 
 # Fish shell upgrade + tide prompt sync
 make fixfish          # upgrade fish, update plugins, apply tide config from defaults
 
-# Vault management
-make vault-init      # create and encrypt vault/devbox_ssh_config.yml
+# Secrets (macOS login keychain)
+make secrets-init            # seed devbox-sudo + devbox-ssh-passphrase (idempotent)
+make sudo-reseed             # after macOS login password rotation
+make ssh-passphrase-reseed   # after SSH passphrase change or key regen
 
 # Claude config back-propagation (root files only — subdirs are symlinked)
 make claude-diff     # show drift between deployed ~/.claude and repo
@@ -134,7 +136,7 @@ Profiles select non-sensitive per-machine configuration. Applied via `make perso
 |-------|--------|---------|
 | 1. Role defaults | `defaults/main/*.yml` | Base package lists, shell env, MCP servers |
 | 2. Profile | `profiles/{personal,work}.yml` | Machine-flavor overrides (extra packages, project dir) |
-| 3. Vault | `vault/devbox_ssh_config.yml` | Encrypted secrets (SSH passphrase) |
+| 3. Keychain | macOS login keychain (`devbox-sudo`, `devbox-ssh-passphrase`) | Machine-local secrets (sudo password, SSH passphrase). Seeded by `scripts/ensure_secrets.sh`. |
 | 4. Local overlay | `roles/devbox/local/` | Sensitive *files* — gitignored, for proprietary configs (k8s wrappers, internal hostnames) |
 
 Current per-profile differences:
@@ -175,7 +177,7 @@ Use via `/devcontainer init` (Claude Code command) or `claude-devcontainer init`
 
 When working in `roles/devbox/files/dot_claude/` you are editing files that get deployed to `~/.claude/`. This is a distinct activity from editing the Ansible playbook itself:
 
-- **Deploy after editing**: managed subdirs are no longer symlinked. After changing agents/skills/commands/etc., run `make claude-push` to deploy via the slim `playbooks/claude.yml` (no sudo, no vault) — `~3-5s`. A full `make personal`/`make work` does the same work (Block 1 + Block 2 in `roles/devbox/tasks/install_configs.yml`) as part of the wider playbook.
+- **Deploy after editing**: managed subdirs are no longer symlinked. After changing agents/skills/commands/etc., run `make claude-push` to deploy via the slim `playbooks/claude.yml` (no sudo, no keychain lookup) — `~3-5s`. A full `make personal`/`make work` does the same work (Block 1 + Block 2 in `roles/devbox/tasks/install_configs.yml`) as part of the wider playbook.
 - **Repo is the only source of truth**: Block 1 runs `ansible.posix.synchronize` with `--delete` per managed subdir, so any edits made directly under `~/.claude/agents/`, `skills/`, etc. are overwritten on next push. Host-only state (`projects/`, `plans/`, `memory/`, `plugins/`, ...) is never in scope of `--delete`.
 - **`settings.json` changes** affect sandbox permissions, network allowlists, and tool approvals globally
 - **`hooks.json` changes** define pre/post hooks for tool calls (scripts in `bin/`)

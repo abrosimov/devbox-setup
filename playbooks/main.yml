@@ -2,21 +2,14 @@
   hosts: 127.0.0.1
   connection: local
 
-  # Prompted once at playbook start. Captured under the magic variable name
-  # `ansible_become_password` so it serves two purposes simultaneously:
-  #   1. Ansible uses it transparently for any `become: true` task — no `-K` flag needed.
-  #   2. It is forwarded to `community.general.homebrew_cask` via `sudo_password:` so
-  #      brew can install pkg-based casks (e.g. karabiner-elements) non-interactively
-  #      without resorting to a NOPASSWD sudoers rule.
-  # Tasks that consume it MUST set `no_log: true` to keep verbose output safe.
-  vars_prompt:
-    - name: ansible_become_password
-      prompt: "Sudo password (used for become tasks and Homebrew cask pkg installers)"
-      private: true
-      confirm: false
-
-  vars_files:
-    - "{{ vault_file | default('../vault/devbox_ssh_config.yml') }}"
+  # Sudo password flows from the macOS login keychain slot `devbox-sudo` via
+  # `become_password_file = scripts/keychain-become-pass.sh` (see ansible.cfg
+  # [privilege_escalation]). The same slot is exposed to task templates as
+  # `devbox_sudo_password` in roles/devbox/defaults/main/core.yml — required by
+  # `community.general.homebrew_cask.sudo_password:` for pkg-based casks
+  # (karabiner-elements, docker-desktop, ...) to install non-interactively.
+  # Seed on first run happens via scripts/ensure_secrets.sh, invoked as a
+  # Makefile prereq of `run`. Rotate via `make sudo-reseed`.
 
   # Touch ID for sudo (pam_tid.so) pops a UI dialog before sudo reads its
   # stdin password. The dialog has a ~60s timeout, so Ansible's default

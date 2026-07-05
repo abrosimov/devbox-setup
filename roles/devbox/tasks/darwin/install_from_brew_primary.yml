@@ -20,7 +20,7 @@
     state: present
     install_options: 'adopt'
     upgrade_all: false
-    sudo_password: "{{ ansible_become_password }}"
+    sudo_password: "{{ devbox_sudo_password }}"
   no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
   register: devbox_cask_primary_result
   failed_when:

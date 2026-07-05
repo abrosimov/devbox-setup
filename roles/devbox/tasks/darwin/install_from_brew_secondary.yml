@@ -57,7 +57,7 @@
     state: present
     install_options: 'adopt'
     upgrade_all: false
-    sudo_password: "{{ ansible_become_password }}"
+    sudo_password: "{{ devbox_sudo_password }}"
   no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
   register: devbox_cask_secondary_result
   failed_when:
@@ -78,7 +78,7 @@
       - adopt
       - no-binaries
     upgrade_all: false
-    sudo_password: "{{ ansible_become_password }}"
+    sudo_password: "{{ devbox_sudo_password }}"
   no_log: true
   when: (devbox_brew_secondary_casks_no_binaries + devbox_extra_brew_casks_no_binaries) | length > 0
   register: devbox_cask_no_binaries_result

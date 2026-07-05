@@ -11,9 +11,11 @@ Ansible-based developer workstation setup. Automates installation of packages, d
 
 ```bash
 make init       # Bootstrap (macOS: Homebrew, Ansible, collections)
-make personal   # Full run with the personal profile (prompts for vault + sudo)
+make personal   # Full run with the personal profile
 make work       # Full run with the work profile
 ```
+
+On the very first run, `make personal`/`make work` prompts once for the sudo/login password and once for the SSH key passphrase (both stored in the macOS login Keychain as `devbox-sudo` and `devbox-ssh-passphrase`). Subsequent runs are non-interactive.
 
 A profile is mandatory: bare `make run` / `make dev` / `make check` fail with `PROFILE is required`. Use the per-profile wrappers below.
 
@@ -21,13 +23,13 @@ A profile is mandatory: bare `make run` / `make dev` / `make check` fail with `P
 
 | Command | Description |
 |---------|-------------|
-| `make personal` | Full setup with personal profile (prompts for vault + sudo) |
+| `make personal` | Full setup with personal profile |
 | `make work` | Full setup with work profile |
 | `make dev-personal` | Deploy to `../debug/dotfiles` with personal profile |
 | `make dev-work` | Deploy to `../debug/dotfiles` with work profile |
 | `make check-personal` | Dry-run with personal profile |
 | `make check-work` | Dry-run with work profile |
-| `make check-dev` | Dry-run in dev_mode (test vault, no sudo) |
+| `make check-dev` | Dry-run in dev_mode (override vars, no sudo/keychain) |
 | `make upgrade-personal` | Upgrade all packages (personal profile) |
 | `make upgrade-work` | Upgrade all packages (work profile) |
 | `make lint` | Syntax-check + ansible-lint |
@@ -37,11 +39,24 @@ Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_V
 
 ## Configuration
 
-### Vault
+### Secrets (macOS Keychain)
+
+Two login-keychain slots are used, seeded automatically on first `make personal`/`make work`:
+
+| Slot | Contents | Consumers |
+|---|---|---|
+| `devbox-sudo` | Login/sudo password | `scripts/with_sudo_keepalive.sh` (primes `sudo -v`); `ansible.cfg` `become_password_file`; Homebrew cask `sudo_password:` (via `devbox_sudo_password` var) |
+| `devbox-ssh-passphrase` | SSH key passphrase | `roles/devbox/tasks/prepare_user.yml` (key generation); `configure_ssh_keychain.yml` (writes `SSH: <path>` slot for `ssh-add --apple-load-keychain`) |
+
+Rotation:
 
 ```bash
-make vault-init  # Create and encrypt vault/devbox_ssh_config.yml
+make sudo-reseed              # after changing macOS login password
+make ssh-passphrase-reseed    # after changing/regenerating SSH passphrase
+make secrets-init             # reseed both (idempotent -U)
 ```
+
+Inspect existing slots via `security find-generic-password -s devbox-sudo` (or `-s devbox-ssh-passphrase`). The first read from any subprocess triggers a one-time Keychain ACL dialog — click "Always Allow" to grant `security` silent access thereafter.
 
 ### Profiles
 

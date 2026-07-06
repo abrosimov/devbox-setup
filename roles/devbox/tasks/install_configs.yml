@@ -215,6 +215,17 @@
     label: "{{ item.dest }}"
   tags: [configs, dotfiles]
 
+# OS-specific git overlay. Included from ~/.config/git/config via [include]
+# path = ~/.config/git/config-{darwin,linux}. Only the current-OS file is
+# deployed; the missing include is silently ignored by git.
+- name: Render OS-specific git config overlay (Darwin)
+  ansible.builtin.template:
+    src: "{{ role_path }}/files/.config/git/config-darwin.j2"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.config/git/config-darwin"
+    mode: "0644"
+  when: ansible_facts['os_family'] == 'Darwin'
+  tags: [configs, dotfiles]
+
 # =============================================================================
 # Block 6: local overlay — private files not tracked in VCS
 # Deploys AFTER main blocks so local files override repo-managed ones.

@@ -1,0 +1,12 @@
+# Managed by devbox (roles/devbox/files/.config/git/config-darwin.j2). Deployed
+# only on Darwin by install_configs.yml, pulled in from ~/.config/git/config via
+# [include]. Missing on Linux → git silently ignores the include line.
+#
+# When adding/removing keys here, keep `devbox_gitconfig_known_keys` in
+# roles/devbox/tasks/sanitize_gitconfig.yml in sync.
+
+# git-credential-osxkeychain ships with Homebrew git on macOS. Stores HTTPS
+# credentials in the login keychain; used for `git push` / `git clone` over
+# HTTPS. Not applicable on Linux (helper binary does not exist there).
+[credential]
+	helper = osxkeychain

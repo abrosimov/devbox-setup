@@ -55,6 +55,7 @@
       - core.editor
       - core.quotepath
       - core.hookspath
+      - core.autocrlf
       - push.followtags
       - push.default
       - push.autosetupremote
@@ -67,6 +68,16 @@
       - diff.algorithm
       - diff.colormoved
       - advice.detachedhead
+      - filter.lfs.smudge
+      - filter.lfs.process
+      - filter.lfs.required
+      - filter.lfs.clean
+      # → managed config-darwin.j2 (Darwin-only overlay, no-op on Linux)
+      - credential.helper
+      # No managed target — allowed because devbox canonical is `pull.ff = only`
+      # (see config.j2 [pull]). Any legacy `pull.rebase` in ~/.gitconfig is
+      # archived and the value is dropped.
+      - pull.rebase
     devbox_gitconfig_actual_keys: >-
       {{ (devbox_gitconfig_keys.stdout_lines | default([]))
          | map('lower') | list }}

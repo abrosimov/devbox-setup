@@ -75,6 +75,16 @@
 # Jira key position for prepare-commit-msg is per-profile (suffix on work,
 # no-op on personal — see identity-work.gitconfig).
 
+# --- HTTPS → SSH URL rewrites ------------------------------------------------
+# `insteadOf` (not `pushInsteadOf`) — read *and* write go over SSH, keychain
+# HTTPS credentials never touched. Applies to fetch, clone, push. A repo cloned
+# from https://gitlab.com/foo/bar.git behaves as if cloned from git@gitlab.com:foo/bar.git.
+# Works on Linux too provided the SSH key is uploaded to the provider.
+[url "git@gitlab.com:"]
+	insteadOf = https://gitlab.com/
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+
 # --- OS-specific overlay -----------------------------------------------------
 # Rendered from config-{darwin,linux}.j2 next to this file, deployed only on the
 # matching OS by install_configs.yml. Missing include paths are silently ignored

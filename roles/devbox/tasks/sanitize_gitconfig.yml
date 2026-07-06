@@ -72,6 +72,8 @@
       - filter.lfs.process
       - filter.lfs.required
       - filter.lfs.clean
+      - url.git@gitlab.com:.insteadof
+      - url.git@github.com:.insteadof
       # → managed config-darwin.j2 (Darwin-only overlay, no-op on Linux)
       - credential.helper
       # No managed target — allowed because devbox canonical is `pull.ff = only`

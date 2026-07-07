@@ -283,6 +283,19 @@ Every agent has boundaries. When you catch yourself crossing them, STOP.
 - Adding features not in plan → STOP, ask about scope
 - Implementing without approval → STOP, request approval
 
+## Human-Only Actions
+
+Some side effects require a human owner and are never delegated to an agent, even with approval in-scope:
+
+| Action | Why human-only | What agent does instead |
+|---|---|---|
+| **Create Jira issue** (`mcp__atlassian__createJiraIssue`) | Issue creation binds tracking metadata (project, reporter, labels) that only the human owns; blocked in `settings.json` `permissions.deny` | Draft the issue text (title + description + acceptance criteria) in the chat or in a file; user creates the issue and pastes the URL back |
+| **Create Jira issue link** (`mcp__atlassian__createIssueLink`) | Same rationale; blocked | Suggest the link (source key → target key + link type) in chat; user creates it |
+| **Push commits, open PRs, approve/merge PRs** | Externally visible state change | Prepare the commit/PR body in the working branch; user executes `git push` / `gh pr create` |
+| **Delete/close Jira issues or Confluence pages** | Irreversible from the agent's side | Never — always defer |
+
+Agent-safe Jira operations: `getJiraIssue`, `searchJiraIssuesUsingJql`, `addCommentToJiraIssue`, `editJiraIssue`, `transitionJiraIssue`, `addWorklogToJiraIssue`. Comments and transitions are reversible; issue create is not.
+
 ## Feedback Format
 
 When reporting issues back to another agent or user:

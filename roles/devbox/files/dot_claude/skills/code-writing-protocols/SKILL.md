@@ -500,6 +500,50 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 
 ---
 
+## No Ad-Hoc Validation
+
+**Rule.** Do not run tools to "check that something works". If it can break — write a test. If it can't break — trust the framework guarantee. There is no legitimate middle ground.
+
+Ad-hoc validation burns context, invites workaround escalation (e.g. cache overrides when the check happens to fail), and substitutes for real coverage. It also masquerades as diligence — that's why it feels tempting.
+
+### Forbidden Patterns
+
+Blocked by `pre-bash-toolchain-guard` where feasible; forbidden by this protocol always:
+
+| Pattern | Wrong intent | Right thing |
+|---|---|---|
+| `python -c "import X"` (in uv/poetry project) | "Is the module importable?" | If it matters → smoke test. If it doesn't → don't check. |
+| `uv run python -c "import X"` | Same | Same |
+| `pytest --collect-only` / `pytest --co` | "Does pyproject wiring work?" | Trust `[tool.pytest.ini_options]`; add a real test if in doubt. |
+| `pytest -k nonexistent` | "Confirm pytest runs" | Same. |
+| `curl http://localhost/health` after starting a service | "Is it up?" | Real health check in the app; monitored by CI. |
+| `psql -c "SELECT 1"` after a migration | "Is DB reachable?" | Migration itself asserts connectivity. |
+| `git commit --allow-empty` | "Trigger CI" | Push a real change or re-run CI explicitly. |
+| Creating a `tmp_test.py` file to verify one thing | "Prove behaviour" | Add to the real test suite. |
+
+### Narrow Whitelist
+
+These are the ONLY legitimate reasons to run a "checking" command:
+
+1. **User literally asked** ("show me the output of X").
+2. **Preflight per `sandbox-toolchain`** — `go version && go build ./...`, `uv sync`, `pnpm install` at task start. This is environment diagnosis, not code validation.
+3. **Recovering environment state after modification** — `env | grep UV_CACHE` when you suspect a var was clobbered. Diagnostic, not validation.
+4. **Real test execution as part of the workflow** — `uv run pytest tests/`, `go test ./...`, `pnpm test`. These are running the suite, not one-off checks.
+
+Nothing else. If you're about to type "let me quickly verify that…", stop — either write a test or move on.
+
+### Under-the-Line Test
+
+Before running any command whose purpose is "check that X works", ask:
+
+- **Would a passing result change my next action?** If no → don't run it.
+- **Would a failing result be caught by an existing test or CI?** If yes → don't run it, let the test/CI catch it.
+- **Do I already know the answer from reading the code?** If yes → don't run it.
+
+Two "yes/no" of the above pointing at "don't run" is a hard stop.
+
+---
+
 ## Anti-Laziness Protocol
 
 ### Verification Commands Are Mandatory
@@ -530,9 +574,11 @@ The following phrases in Pre-Flight reports or SE output artifacts indicate the 
 
 | Language | Sandbox Workaround |
 |----------|-------------------|
-| Go | `settings.json` `env` block sets `GOCACHE`/`GOMODCACHE`/`GOTOOLCHAIN` -- no prefix needed |
-| Python | `uv run` prefix (uv manages own cache) |
-| Node | `npx` prefix (respects local node_modules) |
+| Go | Per-session `GOCACHE`/`GOMODCACHE` injected by `pre_bash_cache_env` hook; `GOTOOLCHAIN=local` in `settings.json` -- no prefix needed |
+| Python | `uv run` prefix; per-session `UV_CACHE_DIR`/`RUFF_CACHE_DIR`/`MYPY_CACHE_DIR` injected by hook |
+| Node | `npx` prefix (respects local node_modules); per-session `NPM_CONFIG_CACHE` injected by hook |
+
+**On cache corruption**: use the tool's clean command (`uv cache clean`, `go clean -cache`, `ruff clean`) — never inline-override the cache env var. See `sandbox-toolchain` for details. Overriding `UV_CACHE_DIR=…` or similar is blocked by `pre-bash-toolchain-guard`.
 
 ### Pre-Flight Evidence Requirements
 

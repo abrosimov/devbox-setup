@@ -181,6 +181,22 @@ The user commits manually after each agent run — agents do not auto-commit.
 
 For everything else (new functions, refactors, bug fixes, even one-liner logic changes), route through `/techne-implement`. No per-project opt-in — the rule is global.
 
+#### Agent Delegation Etiquette
+
+Once a task is delegated, respect the agent's own protocol (its skills, its hooks, its judgement). Do not micromanage.
+
+**Never do these when talking to a subagent** (in the delegation prompt or in follow-up `SendMessage`):
+
+- **Do not paste shell commands** the agent should run. Especially not `PYTHONPATH=… .venv/bin/python …`, `UV_CACHE_DIR=… uv sync`, `pytest --collect-only`, `python -c "import X"`, or any inline env-var override. The agent's skills already know the correct invocation form; a pasted command overrides that with a workaround.
+- **Do not suggest cache/env workarounds** ("try clearing UV_CACHE_DIR", "set PYTHONPATH to…"). If the agent hit a real environment problem, escalate to the user or reframe the task — do not push a workaround down the chain.
+- **Do not ask the agent to "quickly check that X works".** That is ad-hoc validation (see `code-writing-protocols` → No Ad-Hoc Validation). Either it belongs in a test the agent writes, or it is trusted framework behaviour and no check is needed.
+
+**When an agent returns an error**, the two acceptable responses are:
+1. **Escalate to the user** with the exact error and ask for direction.
+2. **Reframe the scope** and re-invoke a fresh agent with an updated task description (not a "here's what to do" cheat-sheet).
+
+Diagnostic hints are fine ("the error mentions X module — is that in the layout?"). Command dictation is not.
+
 ### Cross-Cutting Rules (Always Active)
 
 Two kinds of rule live here. The first group is fully enforced by `alwaysApply: true` skills — the skill carries the binding detail, so these are one-line pointers only. The second group has **no skill backstop**: the text below is the sole source, so it is kept verbatim.

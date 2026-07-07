@@ -1,14 +1,8 @@
 {
   "autoMemoryEnabled": false,
   "env": {
-    "UV_CACHE_DIR": "/tmp/claude/uv-cache",
-    "RUFF_CACHE_DIR": "/tmp/claude/ruff-cache",
-    "MYPY_CACHE_DIR": "/tmp/claude/mypy-cache",
-    "GOCACHE": "/tmp/claude/go-build-cache",
-    "GOMODCACHE": "/tmp/claude/go-mod-cache",
     "GOTOOLCHAIN": "local",
     "GOPROXY": "https://proxy.golang.org,off",
-    "NPM_CONFIG_CACHE": "/tmp/claude/npm-cache",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
     "ENABLE_LSP_TOOL": "1"
   },
@@ -225,7 +219,9 @@
       "Write(**/*.key)",
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
-      "Read(~/.gnupg/**)"
+      "Read(~/.gnupg/**)",
+      "mcp__atlassian__createJiraIssue",
+      "mcp__atlassian__createIssueLink"
     ],
     "allow": [
       "Task",

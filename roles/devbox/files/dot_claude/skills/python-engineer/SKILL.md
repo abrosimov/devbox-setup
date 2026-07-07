@@ -98,8 +98,7 @@ Type hints and clear names are your documentation.
 
 ## Sandbox Cache Configuration
 
-Claude Code sets cache env vars globally via `settings.json` `env` block:
-- `UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`
+Cache env vars (`UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR`) are injected per-session by the `pre_bash_cache_env` hook — one dedicated cache tree per Claude session (`/tmp/claude/sessions/<sid>/…`).
 
 **No manual prefix needed.** Just run commands directly:
 
@@ -109,10 +108,17 @@ ruff check .
 mypy src/
 ```
 
-If a command fails with "Operation not permitted" or cache errors:
-1. Verify env vars are active: `env | grep -E 'UV_CACHE|RUFF_CACHE|MYPY_CACHE'`
-2. Check `settings.json` `allowedDomains` for network errors
-3. **Never** claim "sandbox blocks" -- report the actual error
+**Recovery on cache corruption** — the pattern is `<tool> cache clean`, never `<VAR>=/tmp/x` override:
+
+```bash
+uv cache clean     # UV cache corruption (missing METADATA etc.)
+ruff clean         # ruff cache
+rm -rf $MYPY_CACHE_DIR  # mypy has no clean subcommand
+```
+
+Then retry the original command. Inline `UV_CACHE_DIR=…` (or any cache-var) override is blocked by `pre-bash-toolchain-guard` — it hides the real issue and pollutes the session. See `sandbox-toolchain` skill for full toolchain-cache rules.
+
+**Never** claim "sandbox blocks" — report the actual error.
 
 ---
 

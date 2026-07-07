@@ -37,52 +37,42 @@ Claude Code's sandbox enforces filesystem and network isolation at the OS level.
 
 ### Go
 
-Go has three sandbox-breaking defaults:
+Go has three sandbox-breaking defaults. `GOTOOLCHAIN=local` is pinned globally in `settings.json`. `GOCACHE` and `GOMODCACHE` are injected per-session by the `pre_bash_cache_env` hook (`/tmp/claude/sessions/<sid>/go-{build,mod}-cache`).
 
-| Default Behaviour | Problem | Fix |
-|---|---|---|
-| `GOTOOLCHAIN=auto` | Downloads newer Go binary — fails (network/filesystem) | Already configured via `settings.json` `env` block (`GOTOOLCHAIN=local`) |
-| `GOCACHE=~/Library/Caches/go-build` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
-| `GOMODCACHE=~/go/pkg/mod` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
-
-No manual prefix needed -- just run commands directly:
+No manual prefix needed — just run commands directly:
 ```bash
 go build ./...
 go test ./...
 ```
 
-If cache errors occur, verify env is active: `env | grep -E 'GOCACHE|GOMODCACHE'`.
+If cache errors occur, verify env is active: `env | grep -E 'GOCACHE|GOMODCACHE'`. On corruption, run `go clean -cache` or `go clean -modcache` — do not override `GOCACHE=…` inline (blocked by `pre-bash-toolchain-guard`).
 
 ### Python (uv, ruff, mypy)
 
-Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist.
+Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist. The `pre_bash_cache_env` hook injects per-session cache paths (`/tmp/claude/sessions/<sid>/<tool>-cache`) as `export UV_CACHE_DIR=… RUFF_CACHE_DIR=… …;` prefix on every Bash call.
 
-| Default Behaviour | Problem | Fix |
-|---|---|---|
-| `UV_CACHE_DIR=~/.cache/uv` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
-| `RUFF_CACHE_DIR=~/.cache/ruff` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
-| `MYPY_CACHE_DIR=.mypy_cache` | Usually fine (CWD), but set explicitly for consistency | Already configured via `settings.json` `env` block |
-
-No manual prefix needed -- just run commands directly:
+No manual prefix needed — just run commands directly:
 ```bash
 uv run pytest
 ruff check .
 mypy src/
 ```
 
-If cache errors occur, verify env is active: `env | grep -E 'UV_CACHE|RUFF_CACHE|MYPY_CACHE'`.
+**Never override cache env vars inline.** `pre_bash_toolchain_guard` blocks it. If you see a cache-corruption error (`Failed to install … METADATA: No such file`), the fix is:
+```bash
+uv cache clean          # not `UV_CACHE_DIR=/tmp/x uv sync`
+ruff clean              # for ruff
+rm -rf $MYPY_CACHE_DIR  # mypy has no clean subcommand
+```
+Then retry the original command. Overriding `UV_CACHE_DIR` (or `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR`, `PIP_CACHE_DIR`, `POETRY_CACHE_DIR`) at invocation time is treated as a workaround and blocked.
 
-If bare `python`/`pytest`/`mypy` fail, use the `uv run` prefix (enforced by `pre-bash-toolchain-guard` hook).
+If bare `python`/`pytest`/`mypy` fail, use the `uv run` prefix (enforced by `pre-bash-toolchain-guard` hook). Direct `.venv/bin/<tool>` and `PYTHONPATH=… python …` are also blocked — they bypass uv/poetry env management.
 
 ### Node (npm/pnpm)
 
-npm caches to `~/.npm/` by default, which is outside the sandbox write allowlist. `node_modules/` is fine (inside CWD).
+npm caches to `~/.npm/` by default, which is outside the sandbox write allowlist. `node_modules/` is fine (inside CWD). `NPM_CONFIG_CACHE` is injected per-session by the `pre_bash_cache_env` hook.
 
-| Default Behaviour | Problem | Fix |
-|---|---|---|
-| `NPM_CONFIG_CACHE=~/.npm` | Outside sandbox write allowlist | Already configured via `settings.json` `env` block |
-
-No manual prefix needed -- just run commands directly:
+No manual prefix needed — just run commands directly:
 ```bash
 npx vitest
 npm install
@@ -118,6 +108,7 @@ Tool command fails
 
 1. **Never write "sandbox blocks this" and continue.** Either fix the sandbox configuration or STOP and report to the user.
 2. **Never retry a failing command hoping it will work.** Sandbox restrictions are deterministic — if it fails once, it fails every time.
-3. **Always use `$TMPDIR`, never hardcode `/tmp`.** The sandbox sets `$TMPDIR` to a writable directory. Hardcoded `/tmp` may not be the same path.
-4. **Preflight before coding.** Run `go version && go build ./...` (or equivalent) before writing code. If the toolchain is broken, stop immediately.
-5. **SKIP ≠ acceptable.** If a verification check is skipped because a tool is missing, that means verification is incomplete. Do not write completion artifacts with unverified code.
+3. **Never override cache env vars inline.** `UV_CACHE_DIR=… uv sync`, `GOCACHE=… go build`, and their siblings are workarounds — `pre-bash-toolchain-guard` blocks them. On cache corruption, use the tool's own clean command (`uv cache clean`, `go clean -cache`, `ruff clean`).
+4. **Always use `$TMPDIR`, never hardcode `/tmp`.** The sandbox sets `$TMPDIR` to a writable directory. Hardcoded `/tmp` may not be the same path.
+5. **Preflight before coding.** Run `go version && go build ./...` (or equivalent) before writing code. If the toolchain is broken, stop immediately.
+6. **SKIP ≠ acceptable.** If a verification check is skipped because a tool is missing, that means verification is incomplete. Do not write completion artifacts with unverified code.

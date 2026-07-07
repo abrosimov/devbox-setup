@@ -1,35 +1,36 @@
 # Permission auto-approve: read-only inspection of dependency caches
 
-## Problem
+## Status (as of 2026-07-07)
 
-FROM USER:
-- GOSUMDB=off, etc.
-the same with python.
-should be also considered, so this is not a final doc.
-go vet
-go mod tidy
-go mod download.
-same for python
-sample of bad permissions request:
+The **per-session cache workaround problem** (originally the top item on this doc's wish-list) is now solved by a different mechanism:
+
+- `bin/pre_bash_cache_env.py` — new PreToolUse Bash hook injecting per-session `UV_CACHE_DIR` / `RUFF_CACHE_DIR` / `MYPY_CACHE_DIR` / `PYTEST_CACHE_DIR` / `GOCACHE` / `GOMODCACHE` / `NPM_CONFIG_CACHE` (base: `/tmp/claude/sessions/<sid>/`), plus 7-day TTL cleanup.
+- `bin/pre_bash_toolchain_guard.py` — extended to block `.venv/bin/*`, inline `UV_CACHE_DIR=…` / `PYTHONPATH=…` overrides, `python -c "import X"`, `pytest --collect-only`, `uv run --no-sync`, `--no-cache`/`--no-incremental`/`--force-reinstall`, `git commit --allow-empty`, `kill -9`, `chmod 777`.
+- `USER_AUTHORITY_PROTOCOL.md` — new **Agent Delegation Etiquette** subsection under Agent Pipeline forbidding the main session from feeding shell workarounds to subagents.
+- `skills/code-writing-protocols/SKILL.md` — new **No Ad-Hoc Validation** section covering the "quickly check X works" antipattern.
+- `settings.json` — `mcp__atlassian__createJiraIssue` / `createIssueLink` added to `permissions.deny`.
+
+What this doc still covers below is the **read-only inspection carve-out** for `permission-auto-approve` and the associated skill addenda pointing agents at `go doc` / `pydoc` / LSP instead of `Bash(grep …)`. Those remain future work.
+
+## Still-open items
+
+**GOSUMDB=off, go vet, go mod tidy, go mod download** — permission prompts on Go read-only-ish commands. `go vet` and `go mod download` are read-only-ish and would benefit from a similar carve-out. `GOSUMDB=off` is a legitimate override (bypasses public sumdb) and should NOT be classed as a workaround — this is different from the cache-workaround pattern above. Same story for python: `pip download`, `pip show`, `poetry show` should ideally auto-approve.
+
+**Sample of bad permissions request:**
 ```
 GOSUMDB=off go doc github.com/grafana/grafana-foundation-sdk/go/timeseries.PanelBuilder 2>&1
 ```
-go doc is available. For some reason claude provides agents with additional instructions, like:
-if X won't work use Y.
-Or use Y. 
-We need to think how to prevent it. And how can we catch it on hooks level
+`go doc` is a legitimate read-only tool — the prompt for permission is pure friction.
 
-Дальше, очень много где завязывается на TMPDIR, при этом постоянно просит разрешения на операции
-внутри этой директории. Смысл? Вот очередной пример:
+**TMPDIR-scoped ops still ask for permission.** Sample:
 ```
-diff -rq $TMPDIR/oicm-gpu-v0012/mlops-be out/mlops-be 2>&1 | head -10; echo "==="; diff -rq
-   $TMPDIR/oicm-gpu-v0012/mlops-be-infrastructure out/mlops-be-infrastructure 2>&1 | head -10; echo "==="; diff -rq
-   $TMPDIR/oicm-gpu-v0012/mlops-be-api out/mlops-be-api 2>&1 | head -10
+diff -rq $TMPDIR/oicm-gpu-v0012/mlops-be out/mlops-be 2>&1 | head -10
 ```
-Ну вот тут-то зачем спрашивать разрешения? Почему-то использует bash command prompt, а не Bash tool?
+Everything inside `$TMPDIR` is sandbox-writable by design — read-only diff on it should never prompt. Investigate why `Bash(diff …)` isn't auto-approved even though `Bash(diff *)` is in the allowlist; likely the `$TMPDIR` expansion + pipe combination triggers the same conservative fall-through as `$()` substitution.
 
-как дополнение над чем подумать: с учетом что он делает go doc, можем ли как-то кэшировать, чтобы лишние tool calls не делать. как вообще можно этот процесс улучшить?
-Аналогично, у всех агентов должны быть такие доступы. observability-engineer тоже хочет анализировать go код.
+**Caching `go doc` output.** Repeated `go doc pkg.Symbol` calls across a session hit the module cache each time — could memoise via a per-session cache file. Related to the LSP addenda below (which reduce the need for `go doc` in the first place).
+
+**Agent access parity.** `observability-engineer` and other Go-consuming agents should have the same auto-approvals as `software-engineer-go`. Audit is a separate small task.
 
 Software-engineer agents (Go and Python) routinely run commands like:
 
@@ -67,15 +68,15 @@ Auto-approve a Bash command iff **all** hold:
 
    | Language | Root marker |
    |----------|-------------|
-   | Go | `/tmp/claude/go-mod-cache` |
+   | Go | `/tmp/claude/sessions/*/go-mod-cache` (per-session, glob) |
    | Go | `$(go env GOMODCACHE)` (literal) |
    | Go | `$(go env GOPATH)/pkg/mod` (literal) |
    | Python | `.venv/lib/python*/site-packages` |
    | Python | `venv/lib/python*/site-packages` |
-   | Python | `/tmp/claude/uv-cache` |
+   | Python | `/tmp/claude/sessions/*/uv-cache` (per-session, glob) |
    | Python | `$(uv cache dir)` (literal) |
    | Rust | `~/.cargo/registry/src` |
-   | Node | `/tmp/claude/npm-cache` |
+   | Node | `/tmp/claude/sessions/*/npm-cache` (per-session, glob) |
    | Project | `.gomodcache` (suggested gitignored symlink) |
    | Project | `.sitepkgs` (suggested gitignored symlink) |
 
@@ -242,6 +243,6 @@ The `Grep` tool fully bypasses `Bash` permission machinery — no substring matc
 
 ## Related context
 
-- Source machine state at time of analysis: `~/.claude/settings.json` has all cache env vars pinned to `/tmp/claude/*` (Go, uv, ruff, mypy, npm).
-- `~/.claude/bin/permission-auto-approve` is identical to the Ansible template — no local drift to reconcile.
+- **Cache env vars are no longer pinned in `settings.json`.** Since the per-session cache-env hook landed, cache paths are injected per Bash call as `/tmp/claude/sessions/<sid>/<tool>-cache`. The read-only-root list in this doc's carve-out design must be updated: replace bare `/tmp/claude/uv-cache` with the glob `/tmp/claude/sessions/*/uv-cache`, and the same for `go-mod-cache`, `npm-cache`, etc.
+- `~/.claude/bin/permission-auto-approve` should be checked for drift vs the Ansible template before starting work here.
 - LSP plugins enabled per `~/.claude/settings.json`: `gopls-lsp`, `pyright-lsp`, `typescript-lsp` — so the LSP-based redirect in the skill addenda has tooling support out of the box.

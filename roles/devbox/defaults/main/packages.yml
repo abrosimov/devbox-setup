@@ -99,6 +99,7 @@ devbox_brew_secondary:
   - clang-format   # C/C++ code formatter
   - ast-grep       # Structural AST code search — used by Claude Code ast-grep skill
   - codex           # OpenAI Codex CLI
+  - gemini-cli      # Google Gemini CLI
   - lima            # Linux VM (eBPF/bpftrace sandbox, perf-style observability)
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)

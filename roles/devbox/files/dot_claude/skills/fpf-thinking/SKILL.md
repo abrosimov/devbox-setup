@@ -11,9 +11,9 @@ Protocol for using the First Principles Framework as a structured reasoning aid 
 
 ## Spec Location
 
-The full FPF spec is at `~/.claude/docs/FPF-Spec.md` (~50,000 lines, ~4.4MB).
+The full FPF spec is at `~/.claude/docs/FPF-Spec.md` (~94,000 lines, ~9.3MB, ~7,000 headings across eight Parts A–G and I). The spec grows continuously — it roughly doubled between two editions — so treat every line count as approximate and **navigate by id, never by absolute line number**.
 
-**Never load the full file.** Use Grep and targeted Read (offset + limit) to retrieve relevant sections on demand. The routing table below maps problem types to section line ranges.
+**Never load the full file.** Use Grep and targeted Read (offset + limit) to retrieve relevant sections on demand. The routing table below maps problem types to section *ids*; resolve each id to its current line with Grep, then Read from there.
 
 ---
 
@@ -27,17 +27,47 @@ From FPF README (mandatory):
 
 ---
 
+## Pattern Anatomy
+
+FPF is a **pattern language**: nearly every concept section (an id like `A.2.1`, `C.11`, `E.9`) is written to one canonical template. The sub-headings inside a section are addressed with a colon — `A.2.1:4` is the Solution slot of pattern `A.2.1` — and the slot **number** is far more stable than its wording. Knowing the anatomy lets you fetch the one part you need instead of reading the whole pattern.
+
+| Slot | Canonical name | Typical content | Almost always present |
+|---|---|---|---|
+| `:0` | Use this when | Applicability / entry cue | sometimes |
+| `:1` | Problem frame | How the problem is set up | yes |
+| `:2` | Problem | The problem addressed | yes |
+| `:3` | Forces | Tensions and trade-offs | yes |
+| `:4` | **Solution** | The pattern's core answer (largest slot) | yes |
+| `:5` | Archetypal Grounding | Worked cases (Tell–Show–Show) | yes |
+| `:6` | Bias-Annotation | Bias/assurance notes | yes |
+| `:7` | Conformance Checklist | Normative acceptance tests | yes |
+| `:8` | Common Anti-Patterns | How it fails, how to avoid | yes |
+| `:9` | Consequences | What changes, residual risk | usually |
+| `:10` | Rationale | Why this pattern | usually |
+| `:11` | SoTA-Echoing | Ties to state of the art | often |
+| `:12` | Relations | Cross-references to other patterns | often |
+| `:End` | *(sentinel)* | Empty marker — ends the pattern | yes |
+
+How to use the anatomy:
+
+- **Targeted retrieval.** For "what does A.2.1 *require*?" read `A.2.1:7` (Conformance Checklist), not the whole section. For "why?" read `:10` (Rationale). For "how does it connect?" read `:12` (Relations).
+- **Titles vary, numbers don't.** Grep the id + slot number (`^#+ C\.11:7 `); do not assume the exact slot wording.
+- **`:End` is a boundary, not content** — it marks where a pattern stops. Use it to bound a Read.
+- **Not every section is a pattern.** Overview/glossary/front-matter sections (e.g. `A.0`, Part-level intros, Preface) do not follow the template — read them whole.
+
+---
+
 ## Routing Table
 
 When facing a complex problem, identify the problem type and read the corresponding FPF sections.
 
 ### How to navigate the spec
 
-The spec uses `## Section-ID - Title` headers. Use Grep to find section starts:
+The spec uses `## Section-ID - Title` headers. **The id is the stable handle; the title drifts** (casing and wording change edition to edition, ids do not). Grep for the id, not the title:
 ```
-Grep(pattern="^## A\\.1 ", path="~/.claude/docs/FPF-Spec.md")
+Grep(pattern="^#+ A\\.1 ", path="~/.claude/docs/FPF-Spec.md")
 ```
-Then Read with offset/limit from the matched line number (~200-400 lines per section).
+Then Read with offset/limit from the matched line number (~200-400 lines per section). To jump *inside* a section straight to the slot you need (see Pattern Anatomy below), grep the slot header — e.g. `Grep(pattern="^#+ A\\.2\\.1:4 ")` lands on the Solution of `A.2.1`.
 
 ### Problem → Section Map
 
@@ -56,6 +86,17 @@ Then Read with offset/limit from the matched line number (~200-400 lines per sec
 | **"How to make this decision auditable?"** — Traceability, rationale capture | Design rationale records, evidence graphs, assurance levels | E.9 (DRR), A.10 (Evidence Graph), B.3.3 (Assurance Levels) |
 | **"How to compare across different contexts?"** — Cross-domain alignment with loss awareness | Bridges with congruence levels, cross-context mapping, loss notes | F.9 (Bridges), A.6.9 (Cross-Context Sameness), C.3.3 (KindBridge) |
 | **"What are the boundary contracts?"** — Interface discipline, promise vs. work | Boundary norm routing, contract unpacking, service facets | A.6 (Signature Stack), A.6.B (Boundary Norm Square), A.6.C (Contract Unpacking), A.6.8 (Service Polysemy) |
+| **"How should an AI agent plan its tool use?"** — Call planning, tool selection, role-bound action | Agentic tool-use calculus, role-method-work alignment | C.24 (Agentic Tool-Use & Call Planning), A.15 (Role-Method-Work), A.13 (Agency Spectrum) |
+| **"Which option do we choose (under uncertainty)?"** — Decision-making, selection policy | Decision theory, explore-exploit governance | C.11 (Decision Theory), C.19 (Explore-Exploit), C.18 (NQD search) |
+| **"Is X actually causing Y?"** — Causal claims, counterfactuals, intervention | Causal-use questions, causality ladder, identification | C.28 (CausalUse-CAL) |
+| **"Will this hold over time?"** — Forecasts, trends, state-vs-rate claims | Temporal claim adequacy, state readings, trends | C.27 (Temporal Claim Adequacy) |
+| **"What are the ethical trade-offs?"** — Value conflict across levels, bias, mediation | Multi-scale ethics, interlevel conflict, ethical mediation | D.1 (Value Plurality), D.2 (Multilevel Ethics), D.3 (Interlevel Conflict), D.4 (Mediation), D.5 (Bias Audit) |
+| **"Design or critique an architecture."** — Structure selection, modularity, synthesis | Grounded architecture, modularity, candidate synthesis, structural adequacy | C.30 (Grounded Architecture), C.31 (Modularity), C.32 (Candidate Synthesis), C.33–C.35 (Structural Adequacy) |
+| **"What kind of problem is this?"** — Problem typing, task signatures | Problem typing, TaskSignature assignment | C.22 (Problem Typing), C.3 (Kinds & Typed Reasoning), C.2 (Epistemic Composition) |
+| **"How do we author/quality-gate an FPF pattern?"** — Writing or reviewing patterns | Authoring conventions, quality gates, mechanism introduction | E.8 (Authoring Conventions), E.19 (Pattern Quality Gates), E.20 (Mechanism Introduction), E.10 (Lexical Rules) |
+| **"How does culture/organisation evolve?"** — Cultural evolution engineering | Cultural-evolution characterisation and engineering | C.36 (Cultural Evolution) |
+
+> The map is a **starting set, not a table of contents** — it points at the load-bearing sections for common problem types. Most Part A–G/I chapters are *not* listed; when a problem doesn't match a row, Grep the spec's own headers (`^#+ [A-G]\.` ) or its ToC to locate the nearest chapter, then apply the Pattern Anatomy above.
 
 ---
 
@@ -157,7 +198,7 @@ FPF-guided analysis should produce concrete artifacts, not just prose. Below are
 
 | Anti-Pattern | Why It Fails | Instead |
 |---|---|---|
-| Loading the full 4.4MB spec | Floods context, agent can't reason | Grep for section headers, Read targeted ranges |
+| Loading the full ~9.3MB spec | Floods context, agent can't reason | Grep for section headers, Read targeted ranges |
 | Using FPF jargon in output | User asked for plain language; jargon obscures | Translate every FPF concept to everyday terms |
 | Treating FPF as a checklist | FPF is generative, not prescriptive | Use patterns to structure thinking, not to tick boxes |
 | Applying all sections at once | Overwhelming; most problems need 2-3 sections | Use routing table to select relevant sections only |

@@ -3,3 +3,13 @@
   ansible.builtin.command: killall ControlCenter
   failed_when: false  # process absent on fresh install / headless
   changed_when: true
+
+- name: Restart Dock
+  ansible.builtin.command: killall Dock
+  failed_when: false
+  changed_when: true
+
+- name: Restart Finder
+  ansible.builtin.command: killall Finder
+  failed_when: false
+  changed_when: true

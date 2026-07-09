@@ -1,5 +1,6 @@
 ---
 devbox_macos_defaults:
+  # --- Control Center ------------------------------------------------------
   # ByHost plist — host: currentHost is required, otherwise the write lands
   # in the wrong plist and silently no-ops. Bluetooth: 2 = show, 24 = hide.
   - domain: com.apple.controlcenter
@@ -7,6 +8,149 @@ devbox_macos_defaults:
     key: Bluetooth
     type: int
     value: 2
+
+  # --- Keyboard ------------------------------------------------------------
+  # KeyRepeat / InitialKeyRepeat require re-login to take effect (per-app
+  # cached at process start). GUI clamps at 2/15; below that is CLI-only.
+  # KeyRepeat=1 ≈ 15ms between repeats; InitialKeyRepeat=10 ≈ 150ms hold.
+  - domain: NSGlobalDomain
+    key: KeyRepeat
+    type: int
+    value: 1
+  - domain: NSGlobalDomain
+    key: InitialKeyRepeat
+    type: int
+    value: 10
+  # Disable press-and-hold for accented characters — restores key repeat in
+  # code editors (VS Code, JetBrains, Neovim GUI). Terminal apps unaffected.
+  - domain: NSGlobalDomain
+    key: ApplePressAndHoldEnabled
+    type: bool
+    value: false
+
+  # --- UI animations -------------------------------------------------------
+  # Instant window resize (no visible tween).
+  - domain: NSGlobalDomain
+    key: NSWindowResizeTime
+    type: float
+    value: 0.001
+  # Kill open/close window animations globally.
+  - domain: NSGlobalDomain
+    key: NSAutomaticWindowAnimationsEnabled
+    type: bool
+    value: false
+  # Instant Quick Look. `-g` domain is an alias for NSGlobalDomain.
+  # UNVERIFIED on Tahoe 26: Quick Look was partly rewritten for Liquid Glass
+  # and this legacy High-Sierra-era key may now be a silent no-op. Kept
+  # because a no-op cannot regress; remove if empirically confirmed dead.
+  - domain: NSGlobalDomain
+    key: QLPanelAnimationDuration
+    type: float
+    value: 0
+  # NOTE: `com.apple.universalaccess reduceMotion = true` intentionally NOT
+  # applied — active regression on Tahoe causes 1–1.5s lag in text-suggestion
+  # popups (TextEdit, Scrivener, some Cocoa fields). Apple bug, not third
+  # party. See discussions.apple.com/thread/256176693. `NSAutomaticWindow-
+  # AnimationsEnabled = false` above covers most of what we wanted anyway.
+  #
+  # Reduce transparency — removes blur passes, small GPU/CPU win especially
+  # on Intel Macs and on external 4K/5K displays.
+  # Tahoe caveat: regressed on 26.1 / 26.2 (sidebars + titlebars still
+  # translucent), fixed in 26.3+. On <26.3 combine with Appearance →
+  # Liquid Glass → Tinted as a fallback.
+  - domain: com.apple.universalaccess
+    key: reduceTransparency
+    type: bool
+    value: true
+
+  # --- Dock ----------------------------------------------------------------
+  # autohide-time-modifier: seconds for the slide animation (0.15 ≈ snappy
+  # but still visible). autohide-delay: 0 removes the hover-to-show delay.
+  - domain: com.apple.dock
+    key: autohide-time-modifier
+    type: float
+    value: 0.15
+  - domain: com.apple.dock
+    key: autohide-delay
+    type: float
+    value: 0
+  # NOTE: `com.apple.dock expose-animation-duration` intentionally NOT set —
+  # dead key on modern macOS. Mission Control speed is compositor-bound on
+  # WindowServer, not on animation timing (see tomeraviv.github.io/
+  # FastMissionControl). Writing the key succeeds silently and has zero
+  # perceptible effect on Tahoe; kept out of the list for hygiene.
+  #
+  # Disable the bounce animation when launching an app from the Dock.
+  - domain: com.apple.dock
+    key: launchanim
+    type: bool
+    value: false
+
+  # --- Text input substitutions -------------------------------------------
+  # All of these mangle source code (smart quotes break string literals,
+  # em-dashes break CLI flags, autocaps breaks identifiers). Off globally.
+  - domain: NSGlobalDomain
+    key: NSAutomaticQuoteSubstitutionEnabled
+    type: bool
+    value: false
+  - domain: NSGlobalDomain
+    key: NSAutomaticDashSubstitutionEnabled
+    type: bool
+    value: false
+  - domain: NSGlobalDomain
+    key: NSAutomaticPeriodSubstitutionEnabled
+    type: bool
+    value: false
+  - domain: NSGlobalDomain
+    key: NSAutomaticSpellingCorrectionEnabled
+    type: bool
+    value: false
+  - domain: NSGlobalDomain
+    key: NSAutomaticCapitalizationEnabled
+    type: bool
+    value: false
+  # Inline prediction (ghost-text suggestions inside text fields). Introduced
+  # in Sequoia; on Tahoe 26.2 / 26.3 leaving it enabled triggers a 100%-CPU
+  # loop in some Cocoa apps. Fix status on 26.4+ unclear — kept off as cheap
+  # insurance. See itech4mac.net/2026/02.
+  - domain: NSGlobalDomain
+    key: NSAutomaticInlinePredictionEnabled
+    type: bool
+    value: false
+
+  # --- Finder --------------------------------------------------------------
+  # Always show file extensions (both in Finder and system-wide file lists).
+  - domain: NSGlobalDomain
+    key: AppleShowAllExtensions
+    type: bool
+    value: true
+  # Show hidden files (dotfiles) in Finder — matches CLI expectations.
+  - domain: com.apple.finder
+    key: AppleShowAllFiles
+    type: bool
+    value: true
+  # Skip the "are you sure you want to change the extension?" dialog.
+  - domain: com.apple.finder
+    key: FXEnableExtensionChangeWarning
+    type: bool
+    value: false
+
+  # --- Misc ----------------------------------------------------------------
+  # Lock appearance (dark/light) instead of the "Auto" switch — avoids
+  # mid-day theme flip that Terminal/kitty do not react to gracefully.
+  - domain: NSGlobalDomain
+    key: AppleInterfaceStyleSwitchesAutomatically
+    type: bool
+    value: false
+  # Switch the "<app> quit unexpectedly" dialog to notification-style — the
+  # modal dialog no longer blocks the workflow. Logs still land in
+  # ~/Library/Logs/DiagnosticReports/. `DialogType = "none"` is dead on
+  # modern macOS (Problem Reporter rewrite); `UseUNC = 1` is the surviving
+  # functional key. See eclecticlight.co/2021/12/10.
+  - domain: com.apple.CrashReporter
+    key: UseUNC
+    type: int
+    value: 1
 
 devbox_extra_macos_defaults: []
 

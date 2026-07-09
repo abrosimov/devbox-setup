@@ -118,3 +118,69 @@
 # is now handled by installing BetterDisplay via Homebrew cask — no Ansible
 # step needed. BetterDisplay's config lives in ~/Library/Application Support;
 # tracking it in this repo is a follow-up (see future_projects).
+
+# --- Caps Lock delay override -----------------------------------------------
+# Apple debounces the Caps Lock modifier by ~200ms to prevent accidental
+# toggles. That delay breaks Caps Lock when it is remapped as a keyboard-
+# layout switcher (Karabiner / built-in "Change key type"): the switch feels
+# laggy and drops fast keystrokes. `hidutil property --set` with
+# `CapsLockDelayOverride: 0` removes the debounce.
+#
+# hidutil settings do not persist across reboots or logout, so a LaunchAgent
+# reapplies the override at every login (RunAtLoad). Bootstrap here also
+# applies it immediately without waiting for a re-login. Applied to all HID
+# keyboards (no --matching filter) — covers built-in and external.
+
+- name: "Caps Lock delay — ensure LaunchAgents directory exists"
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents"
+    state: directory
+    mode: '0755'
+  tags: [macos, hidutil, launchagent]
+
+- name: "Caps Lock delay — deploy hidutil LaunchAgent plist"
+  ansible.builtin.template:
+    src: darwin/Library/LaunchAgents/local.hidutil-capslock.plist.j2
+    dest: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.hidutil-capslock.plist"
+    mode: '0644'
+  register: devbox_hidutil_launchagent
+  tags: [macos, hidutil, launchagent]
+
+- name: "Caps Lock delay — check LaunchAgent bootstrap status"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "gui/{{ ansible_facts['user_uid'] }}/local.hidutil-capslock"
+  register: devbox_hidutil_launchagent_status
+  changed_when: false
+  failed_when: false
+  tags: [macos, hidutil, launchagent]
+
+- name: "Caps Lock delay — bootout LaunchAgent (if plist changed)"
+  # bootstrap fails on already-loaded services; if we redeployed the plist, we
+  # must bootout first to pick up the new definition.
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "gui/{{ ansible_facts['user_uid'] }}/local.hidutil-capslock"
+  when:
+    - devbox_hidutil_launchagent.changed
+    - devbox_hidutil_launchagent_status.rc == 0
+  changed_when: true
+  failed_when: false
+  tags: [macos, hidutil, launchagent]
+
+- name: "Caps Lock delay — bootstrap LaunchAgent (applies override immediately)"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootstrap
+      - "gui/{{ ansible_facts['user_uid'] }}"
+      - "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.hidutil-capslock.plist"
+  when: >-
+    devbox_hidutil_launchagent.changed
+    or devbox_hidutil_launchagent_status.rc != 0
+  changed_when: true
+  tags: [macos, hidutil, launchagent]

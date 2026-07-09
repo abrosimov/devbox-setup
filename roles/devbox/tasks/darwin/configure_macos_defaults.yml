@@ -10,7 +10,10 @@
   loop: "{{ devbox_macos_defaults + (devbox_extra_macos_defaults | default([])) }}"
   loop_control:
     label: "{{ item.domain }}.{{ item.key }}"
-  notify: Restart ControlCenter
+  notify:
+    - Restart ControlCenter
+    - Restart Dock
+    - Restart Finder
   tags: [macos, defaults]
 
 # Night Shift lives in CoreBrightness (no public `defaults` schema) — driven

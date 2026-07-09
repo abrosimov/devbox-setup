@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed by devbox (roles/devbox/templates/darwin/Library/LaunchAgents/local.hidutil-capslock.plist.j2).
+  Runs `hidutil property --set '{"CapsLockDelayOverride":0}'` at every user
+  login so the Caps Lock modifier fires immediately — required for using Caps
+  Lock as a keyboard-layout switcher without Apple's ~200ms debounce delay.
+
+  hidutil property values do not persist across reboots or user sessions; the
+  LaunchAgent re-applies the override on each login. Applied to all HID
+  keyboards (no --matching filter) — covers built-in MacBook keyboard and any
+  external keyboards.
+
+  KeepAlive is deliberately absent — hidutil exits after applying the property;
+  no daemon. RunAtLoad triggers the one-shot execution during launchd's
+  session bring-up.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.hidutil-capslock</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/hidutil</string>
+        <string>property</string>
+        <string>--set</string>
+        <string>{"CapsLockDelayOverride":0}</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/hidutil-capslock.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/hidutil-capslock.log</string>
+</dict>
+</plist>

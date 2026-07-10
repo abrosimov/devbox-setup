@@ -7,6 +7,12 @@
     type: "{{ item.type }}"
     value: "{{ item.value }}"
     state: present
+    # Skip the module's own type-comparison guard. Native `defaults write` will
+    # overwrite atomically when the on-disk type differs from the requested one,
+    # but the module raises `Type mismatch` instead of delegating. Turning the
+    # guard off makes the task self-healing against manual `defaults write X Y`
+    # calls (without `-bool`/`-int`) that leave keys stored as strings.
+    check_type: false
   loop: "{{ devbox_macos_defaults + (devbox_extra_macos_defaults | default([])) }}"
   loop_control:
     label: "{{ item.domain }}.{{ item.key }}"

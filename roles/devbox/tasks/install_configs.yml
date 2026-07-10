@@ -230,6 +230,11 @@
 # Block 6: local overlay — private files not tracked in VCS
 # Deploys AFTER main blocks so local files override repo-managed ones.
 # Uses filetree for flexibility (local/ is small and may contain templates).
+#
+# `local/host_state/` is reserved for machine-state exported from apps
+# (e.g. BetterDisplay settings.plist) consumed by dedicated task files.
+# It is intentionally excluded from the filetree loop below — those files
+# are not dotfile-shape and must NOT be copied into the user's home.
 # =============================================================================
 
 - name: Check if local overlay directory exists
@@ -252,7 +257,11 @@
   loop: "{{ devbox_local_filetree_items | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
-  when: devbox_local_overlay_dir.stat.exists and item.state == 'directory'
+  when:
+    - devbox_local_overlay_dir.stat.exists
+    - item.state == 'directory'
+    - not item.path.startswith('host_state/')
+    - item.path != 'host_state'
   tags: [configs, local]
 
 - name: Copy local overlay files
@@ -263,7 +272,11 @@
   loop: "{{ devbox_local_filetree_items | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
-  when: devbox_local_overlay_dir.stat.exists and item.state == 'file' and not item.path.endswith('.j2')
+  when:
+    - devbox_local_overlay_dir.stat.exists
+    - item.state == 'file'
+    - not item.path.endswith('.j2')
+    - not item.path.startswith('host_state/')
   tags: [configs, local]
 
 - name: Render local overlay templates
@@ -275,4 +288,8 @@
   loop_control:
     label: "{{ item.path }}"
   tags: [configs, local]
-  when: devbox_local_overlay_dir.stat.exists and item.state == 'file' and item.path.endswith('.j2')
+  when:
+    - devbox_local_overlay_dir.stat.exists
+    - item.state == 'file'
+    - item.path.endswith('.j2')
+    - not item.path.startswith('host_state/')

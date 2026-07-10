@@ -1,0 +1,39 @@
+---
+# Import BetterDisplay Pro configuration from the local overlay.
+#
+# The exported plist contains the Paddle Pro license key, so the file lives
+# under `roles/devbox/local/host_state/` — gitignored via `local/` in the
+# repo root .gitignore. The `host_state/` subdirectory is explicitly excluded
+# from the filetree loop in `install_configs.yml` (Block 6) so it does NOT
+# get copied into the user's home directory as dotfile-shape overlay.
+#
+# `defaults import` is required over a raw plist copy: cfprefsd caches
+# preferences and a file-level overwrite is silently ignored. Source:
+# https://github.com/waydabber/BetterDisplay/wiki/Export-and-import-app-settings
+
+- name: "BetterDisplay — check for exported settings in local overlay"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/local/host_state/betterdisplay/settings.plist"
+  register: devbox_bd_settings
+  tags: [macos, betterdisplay]
+
+- name: "BetterDisplay — import settings"
+  when: devbox_bd_settings.stat.exists
+  tags: [macos, betterdisplay]
+  block:
+    - name: "BetterDisplay — quit before import (cfprefsd caches otherwise)"
+      ansible.builtin.command: >
+        osascript -e 'tell application "BetterDisplay" to quit'
+      changed_when: false
+      failed_when: false
+
+    - name: "BetterDisplay — import settings via defaults(1)"
+      ansible.builtin.command: >
+        defaults import pro.betterdisplay.BetterDisplay
+        {{ role_path }}/local/host_state/betterdisplay/settings.plist
+      changed_when: true
+
+    - name: "BetterDisplay — relaunch"
+      ansible.builtin.command: open -a BetterDisplay
+      changed_when: false
+      failed_when: false

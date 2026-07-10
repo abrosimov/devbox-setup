@@ -22,6 +22,7 @@ PYTHON_SCRIPT_RE: Final[re.Pattern[str]] = re.compile(r"^python3?\s+(?!-)")
 
 CACHE_WORKAROUND_VARS: Final[tuple[str, ...]] = (
     "UV_CACHE_DIR",
+    "UV_TOOL_DIR",
     "RUFF_CACHE_DIR",
     "MYPY_CACHE_DIR",
     "PYTEST_CACHE_DIR",
@@ -36,6 +37,41 @@ CACHE_WORKAROUND_VARS: Final[tuple[str, ...]] = (
     "PNPM_STORE_PATH",
     "CARGO_HOME",
     "CARGO_TARGET_DIR",
+)
+
+# Go toolchain/module-resolution overrides. GOTOOLCHAIN is pinned to `local`
+# in settings.json — overriding forces a toolchain download that will fail in
+# sandbox. GOSUMDB/GOINSECURE bypass checksum verification. The remaining vars
+# override module resolution or build behaviour — almost always a workaround.
+# Cross-compilation (GOOS/GOARCH) and CGO_ENABLED are legitimate tuners and
+# stay out of this list.
+GO_TOOLCHAIN_OVERRIDE_VARS: Final[tuple[str, ...]] = (
+    "GOTOOLCHAIN",
+    "GOFLAGS",
+    "GOPROXY",
+    "GOSUMDB",
+    "GOPRIVATE",
+    "GOINSECURE",
+    "GO111MODULE",
+    "GOWORK",
+    "GOVCS",
+    "GOEXPERIMENT",
+)
+
+_ALL_WATCHED_VARS: Final[frozenset[str]] = frozenset(
+    CACHE_WORKAROUND_VARS + GO_TOOLCHAIN_OVERRIDE_VARS + ("PYTHONPATH",),
+)
+
+# `export VAR=…` anywhere in the command (mid-line, after `;`, etc.).
+EXPORT_ASSIGN_RE: Final[re.Pattern[str]] = re.compile(
+    r"\bexport\s+([A-Za-z_][A-Za-z0-9_]*)=",
+)
+
+# Standalone `VAR=…` followed by a command separator (`;`, `&&`, `||`, newline).
+# Distinguishes from leading `VAR=… <cmd>` (handled by LEADING_ENV_ASSIGNS_RE)
+# and from `docker run -e VAR=… image cmd` (no separator after value).
+STANDALONE_ASSIGN_RE: Final[re.Pattern[str]] = re.compile(
+    r"(?:^|[\s;&|(])([A-Za-z_][A-Za-z0-9_]*)=\S+\s*(?:;|&&|\|\||\n)",
 )
 
 LEADING_ENV_ASSIGNS_RE: Final[re.Pattern[str]] = re.compile(
@@ -140,6 +176,43 @@ def _check_venv(cmd: str) -> Block | None:
     return None
 
 
+def _workaround_block(var: str, form: str) -> Block:
+    """Build a Block message for a watched env var in one of three forms.
+
+    form: ``inline`` (leading `VAR=… <cmd>`), ``export`` (`export VAR=…`),
+    ``standalone`` (`VAR=…;` mid-command). Message wording is tailored per
+    var class: caches, PYTHONPATH, Go toolchain overrides.
+    """
+    prefix = {
+        "inline": f"Inline `{var}=…` at command start",
+        "export": f"`export {var}=…`",
+        "standalone": f"Standalone `{var}=…;` assignment",
+    }[form]
+    if var in CACHE_WORKAROUND_VARS:
+        return Block(
+            f"{prefix} overrides tool cache/tool-dir paths managed by "
+            "pre_bash_cache_env hook — never override manually. If the cache is "
+            "corrupt, run `uv cache clean` (or the tool's own clean subcommand) "
+            "and retry.",
+        )
+    if var == "PYTHONPATH":
+        return Block(
+            f"{prefix} is a workaround. Configure imports in pyproject.toml "
+            "(src-layout, packages) or use `uv run` — do not patch sys.path at "
+            "invocation time.",
+        )
+    # Go toolchain / module-resolution override
+    return Block(
+        f"{prefix} overrides Go toolchain or module behaviour. GOTOOLCHAIN is "
+        "pinned to `local` in settings.json (override forces a toolchain "
+        "download that fails in sandbox); GOSUMDB/GOINSECURE bypass checksum "
+        "verification; GOPROXY/GOPRIVATE/GO111MODULE/GOWORK/GOVCS/GOFLAGS/"
+        "GOEXPERIMENT override module resolution or build behaviour and are "
+        "almost always a workaround. If the Go build fails, escalate to the "
+        "user — do not reroute via env vars.",
+    )
+
+
 def _check_env_var_workaround(cmd: str) -> Block | None:
     match = LEADING_ENV_ASSIGNS_RE.match(cmd)
     if not match:
@@ -147,16 +220,43 @@ def _check_env_var_workaround(cmd: str) -> Block | None:
     leading = match.group(1)
     for var in CACHE_WORKAROUND_VARS:
         if re.search(rf"\b{re.escape(var)}=", leading):
-            return Block(
-                f"Inline `{var}=…` at command start is a workaround. Tool caches "
-                "are managed by pre_bash_cache_env hook — never override manually. "
-                "If the cache is corrupt, run `<tool> cache clean` and retry.",
-            )
+            return _workaround_block(var, "inline")
     if re.search(r"\bPYTHONPATH=", leading):
+        return _workaround_block("PYTHONPATH", "inline")
+    for var in GO_TOOLCHAIN_OVERRIDE_VARS:
+        if re.search(rf"\b{re.escape(var)}=", leading):
+            return _workaround_block(var, "inline")
+    return None
+
+
+def _check_export_cache_workaround(cmd: str) -> Block | None:
+    """Catch `export VAR=…` and standalone `VAR=…;` mid-command.
+
+    Leading `VAR=… <cmd>` inline env-prefix is handled by
+    ``_check_env_var_workaround``; this check covers the two remaining forms
+    that reach the same effect through the current shell environment.
+    """
+    for match in EXPORT_ASSIGN_RE.finditer(cmd):
+        var = match.group(1)
+        if var in _ALL_WATCHED_VARS:
+            return _workaround_block(var, "export")
+    for match in STANDALONE_ASSIGN_RE.finditer(cmd):
+        var = match.group(1)
+        if var in _ALL_WATCHED_VARS:
+            return _workaround_block(var, "standalone")
+    return None
+
+
+def _check_uvx(cmd: str, start: Path) -> Block | None:
+    if not _starts_with(cmd, "uvx"):
+        return None
+    if _has_marker(start, UV_LOCK):
         return Block(
-            "Inline `PYTHONPATH=…` is a workaround. Configure imports in "
-            "pyproject.toml (src-layout, packages) or use `uv run` — do not "
-            "patch sys.path at invocation time.",
+            "`uvx <tool>` runs an isolated one-shot install and bypasses the "
+            "project's uv environment and lockfile. In a uv project, use "
+            "`uv add <tool>` (or `uv add --dev`) and then `uv run <tool>`. "
+            "If `uv run <tool>` fails, escalate to the user — do not bypass "
+            "with uvx.",
         )
     return None
 
@@ -341,6 +441,7 @@ def evaluate(cmd: str, start: Path) -> Block | None:
         _check_pip,
         _check_venv,
         _check_env_var_workaround,
+        _check_export_cache_workaround,
         _check_no_sync,
         _check_skip_cache_flags,
         _check_allow_empty_commit,
@@ -351,6 +452,7 @@ def evaluate(cmd: str, start: Path) -> Block | None:
         if result is not None:
             return result
     for context_check in (
+        _check_uvx,
         _check_pytest,
         _check_mypy,
         _check_pylint,

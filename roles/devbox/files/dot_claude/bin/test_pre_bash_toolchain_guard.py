@@ -367,3 +367,219 @@ def test_allows_kill_TERM(tmp_path: Path) -> None:
 def test_allows_chmod_normal(tmp_path: Path) -> None:
     assert guard.evaluate("chmod 755 script.sh", tmp_path) is None
     assert guard.evaluate("chmod +x script.sh", tmp_path) is None
+
+
+# --- export VAR=… cache/PYTHONPATH workaround ---
+
+
+def test_blocks_export_uv_cache_dir(tmp_path: Path) -> None:
+    result = guard.evaluate("export UV_CACHE_DIR=/tmp/x", tmp_path)
+    assert result is not None
+    assert "UV_CACHE_DIR" in result.message
+    assert "cache clean" in result.message
+
+
+def test_blocks_export_uv_tool_dir(tmp_path: Path) -> None:
+    result = guard.evaluate("export UV_TOOL_DIR=/tmp/tools", tmp_path)
+    assert result is not None
+    assert "UV_TOOL_DIR" in result.message
+
+
+def test_blocks_export_uv_cache_dir_then_uv_sync(tmp_path: Path) -> None:
+    result = guard.evaluate("export UV_CACHE_DIR=/tmp/x; uv sync", tmp_path)
+    assert result is not None
+    assert "UV_CACHE_DIR" in result.message
+
+
+def test_blocks_export_gocache(tmp_path: Path) -> None:
+    result = guard.evaluate("export GOCACHE=/tmp/g && go build ./...", tmp_path)
+    assert result is not None
+    assert "GOCACHE" in result.message
+
+
+def test_blocks_export_pythonpath(tmp_path: Path) -> None:
+    result = guard.evaluate("export PYTHONPATH=/foo/bin", tmp_path)
+    assert result is not None
+    assert "PYTHONPATH" in result.message
+    assert "pyproject.toml" in result.message
+
+
+def test_allows_export_benign_var(tmp_path: Path) -> None:
+    assert guard.evaluate("export TZ=UTC", tmp_path) is None
+    assert guard.evaluate("export FOO=bar; echo $FOO", tmp_path) is None
+
+
+# --- Inline UV_TOOL_DIR (leading env-prefix, existing pattern) ---
+
+
+def test_blocks_inline_uv_tool_dir_override(tmp_path: Path) -> None:
+    result = guard.evaluate("UV_TOOL_DIR=/tmp/tools uvx ruff", tmp_path)
+    assert result is not None
+    assert "UV_TOOL_DIR" in result.message
+
+
+# --- Standalone VAR=…; assignment (mid-command) ---
+
+
+def test_blocks_standalone_uv_cache_dir_assignment(tmp_path: Path) -> None:
+    result = guard.evaluate("UV_CACHE_DIR=/tmp/x; uv sync", tmp_path)
+    assert result is not None
+    assert "UV_CACHE_DIR" in result.message
+
+
+def test_blocks_standalone_pythonpath_with_and(tmp_path: Path) -> None:
+    result = guard.evaluate("PYTHONPATH=/foo && python -m pytest", tmp_path)
+    assert result is not None
+    assert "PYTHONPATH" in result.message
+
+
+def test_allows_docker_run_with_uv_tool_dir_e_flag(tmp_path: Path) -> None:
+    # `-e VAR=x` inside docker run — no separator after value; must not
+    # false-positive on either the export check or the standalone check.
+    assert (
+        guard.evaluate("docker run -e UV_TOOL_DIR=/x image cmd", tmp_path) is None
+    )
+
+
+def test_allows_benign_standalone_assignment(tmp_path: Path) -> None:
+    # Non-cache vars are ignored by the standalone-assign check.
+    assert guard.evaluate("FOO=1; echo $FOO", tmp_path) is None
+
+
+# --- uvx blocked in uv project, allowed outside ---
+
+
+def test_blocks_uvx_in_uv_project(tmp_path: Path) -> None:
+    project = _project_with_marker(tmp_path, "uv.lock")
+    result = guard.evaluate("uvx ruff check .", project)
+    assert result is not None
+    assert "uvx" in result.message
+    assert "uv add" in result.message
+
+
+def test_blocks_bare_uvx_in_uv_project(tmp_path: Path) -> None:
+    project = _project_with_marker(tmp_path, "uv.lock")
+    result = guard.evaluate("uvx", project)
+    assert result is not None
+
+
+def test_allows_uvx_outside_uv_project(tmp_path: Path) -> None:
+    project = tmp_path / "no_markers"
+    project.mkdir()
+    assert guard.evaluate("uvx cookiecutter gh:foo/bar", project) is None
+
+
+def test_allows_uvx_lookalike_prefix(tmp_path: Path) -> None:
+    project = _project_with_marker(tmp_path, "uv.lock")
+    # Word boundary — `uvxfoo` is not `uvx`.
+    assert guard.evaluate("uvxfoo --help", project) is None
+
+
+# --- Go toolchain / module-resolution override vars ---
+
+
+def test_blocks_inline_gotoolchain_override(tmp_path: Path) -> None:
+    result = guard.evaluate("GOTOOLCHAIN=go1.99 go build ./...", tmp_path)
+    assert result is not None
+    assert "GOTOOLCHAIN" in result.message
+    assert "Go toolchain" in result.message or "toolchain" in result.message.lower()
+
+
+def test_blocks_inline_goflags_override(tmp_path: Path) -> None:
+    result = guard.evaluate("GOFLAGS=-mod=mod go test ./...", tmp_path)
+    assert result is not None
+    assert "GOFLAGS" in result.message
+
+
+def test_blocks_inline_goproxy_override(tmp_path: Path) -> None:
+    result = guard.evaluate("GOPROXY=direct go mod download", tmp_path)
+    assert result is not None
+    assert "GOPROXY" in result.message
+
+
+def test_blocks_inline_gosumdb_off(tmp_path: Path) -> None:
+    result = guard.evaluate("GOSUMDB=off go build ./...", tmp_path)
+    assert result is not None
+    assert "GOSUMDB" in result.message
+
+
+def test_blocks_inline_goinsecure(tmp_path: Path) -> None:
+    result = guard.evaluate(
+        "GOINSECURE=example.com go get example.com/pkg",
+        tmp_path,
+    )
+    assert result is not None
+    assert "GOINSECURE" in result.message
+
+
+def test_blocks_inline_go111module_off(tmp_path: Path) -> None:
+    result = guard.evaluate("GO111MODULE=off go build ./...", tmp_path)
+    assert result is not None
+    assert "GO111MODULE" in result.message
+
+
+def test_blocks_export_gotoolchain(tmp_path: Path) -> None:
+    result = guard.evaluate(
+        "export GOTOOLCHAIN=go1.99; go build",
+        tmp_path,
+    )
+    assert result is not None
+    assert "GOTOOLCHAIN" in result.message
+
+
+def test_blocks_export_goflags(tmp_path: Path) -> None:
+    result = guard.evaluate("export GOFLAGS=-mod=mod", tmp_path)
+    assert result is not None
+    assert "GOFLAGS" in result.message
+
+
+def test_blocks_standalone_gosumdb_assignment(tmp_path: Path) -> None:
+    result = guard.evaluate("GOSUMDB=off && go build ./...", tmp_path)
+    assert result is not None
+    assert "GOSUMDB" in result.message
+
+
+def test_blocks_export_gowork_off(tmp_path: Path) -> None:
+    result = guard.evaluate("export GOWORK=off", tmp_path)
+    assert result is not None
+    assert "GOWORK" in result.message
+
+
+def test_blocks_export_govcs(tmp_path: Path) -> None:
+    result = guard.evaluate("export GOVCS=*:all", tmp_path)
+    assert result is not None
+    assert "GOVCS" in result.message
+
+
+def test_blocks_export_goexperiment(tmp_path: Path) -> None:
+    result = guard.evaluate("export GOEXPERIMENT=rangefunc", tmp_path)
+    assert result is not None
+    assert "GOEXPERIMENT" in result.message
+
+
+def test_blocks_env_prefixed_goprivate(tmp_path: Path) -> None:
+    result = guard.evaluate(
+        "env GOPRIVATE=example.com go build ./...",
+        tmp_path,
+    )
+    assert result is not None
+    assert "GOPRIVATE" in result.message
+
+
+def test_allows_goos_cross_compile(tmp_path: Path) -> None:
+    # Cross-compilation is legitimate — GOOS/GOARCH must not false-positive.
+    assert guard.evaluate("GOOS=linux GOARCH=amd64 go build ./...", tmp_path) is None
+
+
+def test_allows_cgo_enabled(tmp_path: Path) -> None:
+    # CGO toggle is a legitimate build knob.
+    assert guard.evaluate("CGO_ENABLED=1 go build ./...", tmp_path) is None
+    assert guard.evaluate("export CGO_ENABLED=0", tmp_path) is None
+
+
+def test_allows_docker_run_with_go_env_e_flag(tmp_path: Path) -> None:
+    # `-e VAR=x` inside docker run — must not false-positive on the standalone
+    # or export check.
+    assert (
+        guard.evaluate("docker run -e GOFLAGS=-race image cmd", tmp_path) is None
+    )

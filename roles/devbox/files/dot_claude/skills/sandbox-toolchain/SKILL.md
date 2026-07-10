@@ -13,6 +13,15 @@ triggers:
   - GOCACHE
   - GOMODCACHE
   - GOTOOLCHAIN
+  - GOFLAGS
+  - GOPROXY
+  - GOSUMDB
+  - GOPRIVATE
+  - GOINSECURE
+  - GO111MODULE
+  - UV_CACHE_DIR
+  - UV_TOOL_DIR
+  - uvx
   - toolchain
   - "permission denied"
   - "operation not permitted"
@@ -45,11 +54,22 @@ go build ./...
 go test ./...
 ```
 
-If cache errors occur, verify env is active: `env | grep -E 'GOCACHE|GOMODCACHE'`. On corruption, run `go clean -cache` or `go clean -modcache` — do not override `GOCACHE=…` inline (blocked by `pre-bash-toolchain-guard`).
+If cache errors occur, verify env is active: `env | grep -E 'GOCACHE|GOMODCACHE'`. On corruption, run `go clean -cache` or `go clean -modcache` — do not override `GOCACHE=…` inline (blocked by `pre_bash_toolchain_guard`).
+
+**Never override Go toolchain or module-resolution env vars.** `pre_bash_toolchain_guard` blocks all three shapes (inline `VAR=… go …`, `export VAR=…`, standalone `VAR=…;`) for the following vars:
+
+| Var | Why blocked |
+|-----|-------------|
+| `GOTOOLCHAIN` | Pinned to `local` in settings.json. Override forces a toolchain download that fails in sandbox (host allowlist excludes Go download mirrors). |
+| `GOSUMDB`, `GOINSECURE` | Bypass checksum verification / allow insecure fetches — security-relevant, never a legitimate workaround. |
+| `GOPROXY`, `GOPRIVATE` | Override module source / privacy — usually a workaround for a real module-resolution problem. |
+| `GO111MODULE`, `GOWORK`, `GOVCS`, `GOFLAGS`, `GOEXPERIMENT` | Legacy/mode toggles and build-flag overrides — almost always a workaround. |
+
+Cross-compilation (`GOOS`, `GOARCH`) and `CGO_ENABLED` are legitimate build tuners and stay allowed. If the Go build fails, escalate to the user — do not reroute via env vars.
 
 ### Python (uv, ruff, mypy)
 
-Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist. The `pre_bash_cache_env` hook injects per-session cache paths (`/tmp/claude/sessions/<sid>/<tool>-cache`) as `export UV_CACHE_DIR=… RUFF_CACHE_DIR=… …;` prefix on every Bash call.
+Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist. The `pre_bash_cache_env` hook injects per-session cache paths (`/tmp/claude/sessions/<sid>/<tool>-cache`) as `export UV_CACHE_DIR=… UV_TOOL_DIR=… RUFF_CACHE_DIR=… …;` prefix on every Bash call.
 
 No manual prefix needed — just run commands directly:
 ```bash
@@ -58,15 +78,24 @@ ruff check .
 mypy src/
 ```
 
-**Never override cache env vars inline.** `pre_bash_toolchain_guard` blocks it. If you see a cache-corruption error (`Failed to install … METADATA: No such file`), the fix is:
+**Never override cache env vars — in any form.** `pre_bash_toolchain_guard` blocks all three shapes:
+- inline env-prefix: `UV_CACHE_DIR=/tmp/x uv sync`
+- explicit export: `export UV_CACHE_DIR=/tmp/x; uv sync`
+- standalone assignment then chain: `UV_CACHE_DIR=/tmp/x && uv sync`
+
+Watched vars: `UV_CACHE_DIR`, `UV_TOOL_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR`, `PIP_CACHE_DIR`, `POETRY_CACHE_DIR` (plus the Go, Node, Cargo siblings — see `CACHE_WORKAROUND_VARS` in the guard). `PYTHONPATH` is treated the same way — never patch `sys.path` at invocation time; configure `src`-layout in `pyproject.toml` or use `uv run`.
+
+If you see a cache-corruption error (`Failed to install … METADATA: No such file`), the fix is:
 ```bash
 uv cache clean          # not `UV_CACHE_DIR=/tmp/x uv sync`
 ruff clean              # for ruff
 rm -rf $MYPY_CACHE_DIR  # mypy has no clean subcommand
 ```
-Then retry the original command. Overriding `UV_CACHE_DIR` (or `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR`, `PIP_CACHE_DIR`, `POETRY_CACHE_DIR`) at invocation time is treated as a workaround and blocked.
+Then retry the original command.
 
-If bare `python`/`pytest`/`mypy` fail, use the `uv run` prefix (enforced by `pre-bash-toolchain-guard` hook). Direct `.venv/bin/<tool>` and `PYTHONPATH=… python …` are also blocked — they bypass uv/poetry env management.
+**Never `uvx <tool>` in a uv project.** `uvx` runs an isolated one-shot install and bypasses the project's uv env and `uv.lock`. In a uv project (detected by `uv.lock` in ancestry), the guard blocks `uvx`. Use `uv add <tool>` (or `uv add --dev`) plus `uv run <tool>` instead. If `uv run <tool>` fails — **escalate to the user; do not work around it with uvx.** `uvx` is fine for genuinely standalone one-shots outside any uv project (e.g. `uvx cookiecutter gh:foo/bar` in an empty scratch dir).
+
+If bare `python`/`pytest`/`mypy` fail, use the `uv run` prefix (enforced by `pre_bash_toolchain_guard` hook). Direct `.venv/bin/<tool>` and `PYTHONPATH=… python …` are also blocked — they bypass uv/poetry env management.
 
 ### Node (npm/pnpm)
 
@@ -108,7 +137,8 @@ Tool command fails
 
 1. **Never write "sandbox blocks this" and continue.** Either fix the sandbox configuration or STOP and report to the user.
 2. **Never retry a failing command hoping it will work.** Sandbox restrictions are deterministic — if it fails once, it fails every time.
-3. **Never override cache env vars inline.** `UV_CACHE_DIR=… uv sync`, `GOCACHE=… go build`, and their siblings are workarounds — `pre-bash-toolchain-guard` blocks them. On cache corruption, use the tool's own clean command (`uv cache clean`, `go clean -cache`, `ruff clean`).
-4. **Always use `$TMPDIR`, never hardcode `/tmp`.** The sandbox sets `$TMPDIR` to a writable directory. Hardcoded `/tmp` may not be the same path.
-5. **Preflight before coding.** Run `go version && go build ./...` (or equivalent) before writing code. If the toolchain is broken, stop immediately.
-6. **SKIP ≠ acceptable.** If a verification check is skipped because a tool is missing, that means verification is incomplete. Do not write completion artifacts with unverified code.
+3. **Never override cache or toolchain env vars — in any form.** `UV_CACHE_DIR=… uv sync`, `export GOTOOLCHAIN=…`, `GOSUMDB=off; go build` and their siblings are workarounds — `pre_bash_toolchain_guard` blocks all three shapes (inline env-prefix, `export`, standalone `VAR=…;`) for cache vars, Go toolchain-override vars, and `PYTHONPATH`. On cache corruption, use the tool's own clean command (`uv cache clean`, `go clean -cache`, `ruff clean`). On toolchain/module-resolution errors, escalate to the user.
+4. **Never `uvx <tool>` in a uv project.** `uvx` bypasses the project env and `uv.lock`. Use `uv add <tool>` + `uv run <tool>`. If `uv run` fails, escalate — do not fall back to `uvx`.
+5. **Always use `$TMPDIR`, never hardcode `/tmp`.** The sandbox sets `$TMPDIR` to a writable directory. Hardcoded `/tmp` may not be the same path.
+6. **Preflight before coding.** Run `go version && go build ./...` (or equivalent) before writing code. If the toolchain is broken, stop immediately.
+7. **SKIP ≠ acceptable.** If a verification check is skipped because a tool is missing, that means verification is incomplete. Do not write completion artifacts with unverified code.

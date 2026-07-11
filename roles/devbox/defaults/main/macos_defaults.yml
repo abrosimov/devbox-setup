@@ -11,16 +11,20 @@ devbox_macos_defaults:
 
   # --- Keyboard ------------------------------------------------------------
   # KeyRepeat / InitialKeyRepeat require re-login to take effect (per-app
-  # cached at process start). GUI clamps at 2/15; below that is CLI-only.
-  # KeyRepeat=1 ≈ 15ms between repeats; InitialKeyRepeat=10 ≈ 150ms hold.
+  # cached at process start). GUI slider clamps at KeyRepeat=2 / InitialKeyRepeat=15.
+  # KeyRepeat=2 ≈ 30ms between repeats; InitialKeyRepeat=20 ≈ 300ms hold.
+  # Previously ran at 1/10 (15ms/150ms), which caused stray double-letters and
+  # multi-backspace: the 150ms hold threshold is easily crossed by natural
+  # typing latency (Bluetooth jitter, finger settling), triggering unintended
+  # repeats. 2/20 keeps macOS-slider-max repeat speed with a safer hold buffer.
   - domain: NSGlobalDomain
     key: KeyRepeat
     type: int
-    value: 1
+    value: 2
   - domain: NSGlobalDomain
     key: InitialKeyRepeat
     type: int
-    value: 10
+    value: 20
   # Disable press-and-hold for accented characters — restores key repeat in
   # code editors (VS Code, JetBrains, Neovim GUI). Terminal apps unaffected.
   - domain: NSGlobalDomain

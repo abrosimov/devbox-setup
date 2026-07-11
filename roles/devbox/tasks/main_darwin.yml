@@ -31,6 +31,8 @@
       ansible.builtin.include_tasks: darwin/install_from_brew_primary.yml
     - name: "Install secondary homebrew packages"
       ansible.builtin.include_tasks: darwin/install_from_brew_secondary.yml
+- name: "De-quarantine trusted unsigned casks (post-brew, before first launch)"
+  ansible.builtin.include_tasks: darwin/dequarantine_casks.yml
 - name: "Install Go tools"
   ansible.builtin.include_tasks: darwin/install_from_go.yml
 - name: "Install Python tools via uv"

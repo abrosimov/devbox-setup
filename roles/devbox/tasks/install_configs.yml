@@ -157,14 +157,26 @@
 # =============================================================================
 # Block 3b: global git hooks — executable scripts (activated via core.hooksPath
 # in ~/.gitconfig). Plain global hooks, not installed per-repo by proj.
+#
+# One-way rsync with `delete: true`: the repo is the single source of truth
+# for the global hooks directory. This purges third-party artefacts left by
+# `git lfs install --global` (post-checkout / post-commit / post-merge /
+# pre-push), which otherwise fire on every `git clone` — including
+# `brew tap` — and abort with "git-lfs was not found" when brew invokes
+# git with a sanitised PATH. If a user wants LFS, they should run
+# `git lfs install --local` per-repo instead.
 # =============================================================================
 
-- name: Deploy global git hooks (executable)
-  ansible.builtin.copy:
+- name: Sync global git hooks (one-way, --delete purges non-managed hooks like stale git-lfs)
+  ansible.posix.synchronize:
     src: "{{ role_path }}/files/.config/git/hooks/"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.config/git/hooks/"
-    mode: "0755"
-    directory_mode: "0755"
+    delete: true
+    recursive: true
+    rsync_opts:
+      - "--exclude=.DS_Store"
+      - "--chmod=D0755,F0755"
+  delegate_to: localhost
   tags: [configs, dotfiles]
 
 # =============================================================================

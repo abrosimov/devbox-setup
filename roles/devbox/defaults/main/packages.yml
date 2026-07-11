@@ -16,6 +16,7 @@ devbox_brew_taps:
   - ktr0731/evans          # evans gRPC REPL (upstream frozen since 2023, kept for the REPL UX)
   - smudge/smudge          # nightlight (Night Shift CLI, removed from homebrew-core)
   - hashicorp/tap          # vault, terraform, consul — HashiCorp official tap
+  - ArtemYurov/tomobar     # TomoBar Pomodoro menu bar app (actively-maintained TomatoBar fork)
 
 # =============================================================================
 # Homebrew formulae and casks

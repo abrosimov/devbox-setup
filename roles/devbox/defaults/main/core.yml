@@ -46,3 +46,11 @@ devbox_extra_brew_casks: []
 # installer into /usr/local/bin, so the user-facing surface is unchanged.
 devbox_extra_brew_casks_no_binaries: []
 devbox_extra_mcp_http_servers: []
+# Casks whose signatures we accept without Gatekeeper verification. Homebrew 5.0
+# removed `--no-quarantine`; macOS 26 Tahoe removed the right-click Gatekeeper
+# bypass. `xattr -rd com.apple.quarantine` is the only non-interactive path
+# left (documented workaround per Homebrew discussion #6537). Bypasses
+# Gatekeeper Developer-ID check AND first-launch XProtect scan for listed
+# apps — runtime protection (SIP, sandbox, TCC) is unaffected. Only add apps
+# you have personally vetted.
+devbox_trusted_unsigned_casks: []   # list of .app basenames (no `.app` suffix)

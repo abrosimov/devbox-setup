@@ -3,6 +3,13 @@ devbox_active_profile: "personal"
 
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []
+devbox_extra_brew_casks:
+  - tomobar          # Pomodoro menu bar timer (TomatoBar fork; tap ArtemYurov/tomobar)
+# TomoBar tap-cask ships an ad-hoc-signed DMG (no Apple Developer ID); the
+# post-brew task in darwin/dequarantine_casks.yml strips the quarantine xattr
+# so the first launch does not hit the Gatekeeper dialog.
+devbox_trusted_unsigned_casks:
+  - TomoBar
 # Docker Desktop lives in the `_no_binaries` list because brew's regular
 # install path fails on this cask: the .pkg ships root-owned files inside
 # /Applications/Docker.app, and brew's post-install `xattr -w` step runs as

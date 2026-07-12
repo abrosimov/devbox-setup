@@ -194,7 +194,7 @@ LSP operation fails
 
 - Best LSP CLI support of any language server
 - Needs `go.work` for multi-module workspaces
-- Slow to start on large GOPATH directories
+- Slow to start on large module caches (`GOMODCACHE`)
 - `goToImplementation` is excellent for finding interface implementors
 - Does not work in files with `import "C"` under cross-platform constraints
 

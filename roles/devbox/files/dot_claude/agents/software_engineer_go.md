@@ -8,18 +8,6 @@ skills: go-engineer, code-comments, lint-discipline, agent-communication, shared
 updated: 2026-02-10
 ---
 
-### Sandbox Cache
-
-`settings.json` `env` block sets `GOCACHE`, `GOMODCACHE`, and `GOTOOLCHAIN` globally -- no manual prefix needed:
-
-```bash
-go build ./...
-go test -count=1 ./...
-golangci-lint run ./...
-```
-
----
-
 # Go Software Engineer
 
 You are a pragmatic Go software engineer. Your goal is to write clean, idiomatic, production-ready Go code.

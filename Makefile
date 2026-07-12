@@ -154,7 +154,7 @@ help:
 	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
 	@echo "  make local-push       - deploy only gitignored local/ overlay (surgical; already included in dotfiles-push)"
 	@echo "  make macos-defaults   - re-apply Touch ID / pmset / DevToolsSecurity (sudo required)"
-	@echo "  make sync-upstream-docs - pull fresh FPF-Spec.md from ailev/FPF@main and reset drift state"
+	@echo "  make sync-upstream-docs - pull fresh FPF-Spec.md + Narrative doc from ailev/FPF@main and reset drift state"
 	@echo ""
 	@echo "Test / introspection:"
 	@echo "  make validate-configs - run all repo-config validation (json + fish + nvim)"
@@ -589,21 +589,28 @@ macos-defaults: $(COLLECTIONS_SENTINEL) secrets-ready
 	 ./scripts/with_sudo_keepalive.sh \
 	    ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
 
-# Pull a fresh copy of the upstream FPF spec into dot_claude/docs/ and reset the
-# drift state file used by the statusline / tide badge. Run when the badge (or
-# curiosity) tells you the vendored copy lags upstream. Atomic: state file is
-# only updated after curl succeeds.
-FPF_LOCAL    := roles/devbox/files/dot_claude/docs/FPF-Spec.md
-FPF_UPSTREAM := https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md
-FPF_STATE    := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/fpf-drift
+# Pull fresh copies of the upstream FPF spec and companion Narrative doc into
+# dot_claude/docs/ and reset the drift state file used by the statusline / tide
+# badge. Run when the badge (or curiosity) tells you the vendored copy lags
+# upstream. Atomic per file (temp → mv); drift state resets only after both
+# curls succeed.
+FPF_LOCAL     := roles/devbox/files/dot_claude/docs/FPF-Spec.md
+FPF_UPSTREAM  := https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md
+NARR_LOCAL    := roles/devbox/files/dot_claude/docs/Narrativization-and-Narrative-Studies-Principles-Framework.md
+NARR_UPSTREAM := https://raw.githubusercontent.com/ailev/FPF/main/Narrativization-and-Narrative-Studies-Principles-Framework.md
+FPF_STATE     := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/fpf-drift
 
 sync-upstream-docs:
 	@tmp=$$(mktemp) && \
 		curl -sfSL --max-time 15 $(FPF_UPSTREAM) -o $$tmp && \
 		mv $$tmp $(FPF_LOCAL) && \
-		mkdir -p $(dir $(FPF_STATE)) && \
-		echo 0 > $(FPF_STATE) && \
-		echo "Synced $(notdir $(FPF_LOCAL)) from upstream; drift state reset"
+		echo "Synced $(notdir $(FPF_LOCAL))"
+	@tmp=$$(mktemp) && \
+		curl -sfSL --max-time 15 $(NARR_UPSTREAM) -o $$tmp && \
+		mv $$tmp $(NARR_LOCAL) && \
+		echo "Synced $(notdir $(NARR_LOCAL))"
+	@mkdir -p $(dir $(FPF_STATE)) && echo 0 > $(FPF_STATE) && \
+		echo "Drift state reset"
 
 validate-configs: test-json test-fish test-nvim ## Validate repo configs (JSON, fish, nvim)
 	@echo "All config validations passed."

@@ -22,7 +22,7 @@ Check marker files in the working directory before running any tool:
 |--------|-------|-----------|----------------|---------|
 | `uv.lock` | Python (uv) | `uv run` | `uv add` / `uv add --dev` | `uv sync` |
 | `poetry.lock` | Python (poetry) | `poetry run` | `poetry add` / `poetry add --group dev` | `poetry install` |
-| `requirements.txt` only | Python (pip) | `.venv/bin/python` | `pip install` | `pip install -r requirements.txt` |
+| `requirements.txt` only | Python (pip via uv) | `uv run python` | `uv pip install` | `uv venv && uv pip install -r requirements.txt` |
 | `go.mod` | Go | *(none)* | `go get` | `go mod download` |
 | `pnpm-lock.yaml` | Frontend (pnpm) | `pnpm` | `pnpm add` / `pnpm add -D` | `pnpm install` |
 | `package-lock.json` | Frontend (npm) | `npx` | `npm install` | `npm install` |

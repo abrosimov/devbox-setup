@@ -176,7 +176,7 @@ exit 0
 # bin/session-end
 
 # Remove temporary session files
-rm -rf /tmp/claude-session-$SESSION_ID
+rm -rf "$TMPDIR/claude-session-$SESSION_ID"
 
 exit 0
 ```

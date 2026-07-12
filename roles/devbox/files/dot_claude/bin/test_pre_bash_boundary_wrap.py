@@ -54,15 +54,13 @@ def test_build_wrap_uses_token_in_tag() -> None:
     wrap = bw.build_wrap("gh pr view 1", "deadbeefcafebabe")
     assert wrap.tag == "untrusted-content-deadbeefcafebabe"
     assert wrap.token == "deadbeefcafebabe"  # noqa: S105
-    assert wrap.tag in wrap.wrapped_command
-    assert "gh pr view 1" in wrap.wrapped_command
     assert wrap.tag in wrap.additional_context
 
 
-def test_build_wrap_includes_open_and_close_tag() -> None:
+def test_build_wrap_additional_context_mentions_untrusted() -> None:
     wrap = bw.build_wrap("git log", "tok")
-    assert f"<{wrap.tag}>" in wrap.wrapped_command
-    assert f"</{wrap.tag}>" in wrap.wrapped_command
+    assert "UNTRUSTED" in wrap.additional_context
+    assert wrap.tag in wrap.additional_context
 
 
 def test_main_no_wrapping_for_clean_command(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -89,7 +87,7 @@ def test_main_wraps_gh_command(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = json.loads(out.getvalue())
     hook = payload["hookSpecificOutput"]
     assert hook["hookEventName"] == "PreToolUse"
-    assert "untrusted-content-abcdef01" in hook["updatedInput"]["command"]
+    assert "updatedInput" not in hook
     assert "untrusted-content-abcdef01" in hook["additionalContext"]
 
 
@@ -103,7 +101,9 @@ def test_main_wraps_git_log(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "stdout", out)
     assert bw.main(token_factory=lambda: "tok123ff") == 0
     payload = json.loads(out.getvalue())
-    assert "untrusted-content-tok123ff" in payload["hookSpecificOutput"]["updatedInput"]["command"]
+    hook = payload["hookSpecificOutput"]
+    assert "updatedInput" not in hook
+    assert "untrusted-content-tok123ff" in hook["additionalContext"]
 
 
 def test_main_empty_input(monkeypatch: pytest.MonkeyPatch) -> None:

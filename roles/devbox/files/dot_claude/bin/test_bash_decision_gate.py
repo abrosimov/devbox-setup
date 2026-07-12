@@ -485,6 +485,57 @@ def test_telemetry_failure_does_not_raise(monkeypatch: pytest.MonkeyPatch) -> No
     bdg.log_miss("x", "y", "deny", "z")
 
 
+def test_telemetry_rotates_when_shard_exceeds_threshold(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    shard = tmp_path / "12.jsonl"
+    # Seed the shard with content larger than the threshold.
+    shard.write_bytes(b"x" * (bdg.TELEMETRY_MAX_BYTES + 1))
+    monkeypatch.setattr(bdg, "_telemetry_path", lambda: shard)
+
+    bdg.log_miss("newer command", TEST_CWD, "deny", "reason")
+
+    rotated = sorted(tmp_path.glob("12.jsonl.*.old"))
+    assert len(rotated) == 1
+    # Rotated file preserves the pre-rotation bytes.
+    assert rotated[0].stat().st_size == bdg.TELEMETRY_MAX_BYTES + 1
+    # The new shard contains only the fresh record.
+    lines = shard.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0])["cmd"] == "newer command"
+
+
+def test_telemetry_does_not_rotate_below_threshold(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    shard = tmp_path / "12.jsonl"
+    shard.write_text('{"seed": true}\n', encoding="utf-8")
+    monkeypatch.setattr(bdg, "_telemetry_path", lambda: shard)
+
+    bdg.log_miss("cmd", TEST_CWD, "deny", None)
+
+    assert list(tmp_path.glob("12.jsonl.*.old")) == []
+    # Both the seed line and the new record are present.
+    assert len(shard.read_text(encoding="utf-8").strip().splitlines()) == 2
+
+
+def test_telemetry_prunes_old_rotations(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    shard = tmp_path / "12.jsonl"
+    shard.write_bytes(b"x" * (bdg.TELEMETRY_MAX_BYTES + 1))
+    # Seed more rotated siblings than the retention limit. Names sort so that
+    # smaller stamps are "older" — those get pruned when rotation runs.
+    for i in range(bdg.TELEMETRY_MAX_ROTATED + 3):
+        (tmp_path / f"12.jsonl.2020010{i}T000000Z.old").write_text("old", encoding="utf-8")
+    monkeypatch.setattr(bdg, "_telemetry_path", lambda: shard)
+
+    bdg.log_miss("cmd", TEST_CWD, "deny", None)
+
+    rotated = sorted(tmp_path.glob("12.jsonl.*.old"))
+    assert len(rotated) == bdg.TELEMETRY_MAX_ROTATED
+
+
 # ============================================================
 # Main entry point — JSON IO
 # ============================================================

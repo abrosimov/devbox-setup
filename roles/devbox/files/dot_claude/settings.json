@@ -4,7 +4,14 @@
     "GOTOOLCHAIN": "local",
     "GOPROXY": "https://proxy.golang.org,off",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
-    "ENABLE_LSP_TOOL": "1"
+    "ENABLE_LSP_TOOL": "1",
+    "UV_CACHE_DIR": "/tmp/claude/uv-cache",
+    "RUFF_CACHE_DIR": "/tmp/claude/ruff-cache",
+    "MYPY_CACHE_DIR": "/tmp/claude/mypy-cache",
+    "PYTEST_CACHE_DIR": "/tmp/claude/pytest-cache",
+    "GOCACHE": "/tmp/claude/go-build-cache",
+    "GOMODCACHE": "/tmp/claude/go-mod-cache",
+    "NPM_CONFIG_CACHE": "/tmp/claude/npm-cache"
   },
   "statusLine": {
     "type": "command",

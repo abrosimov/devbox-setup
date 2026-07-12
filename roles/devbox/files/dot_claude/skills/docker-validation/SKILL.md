@@ -16,7 +16,7 @@ Static linting and runtime smoke testing for Docker artifacts.
 | Tool | Purpose | Install | Requires Daemon |
 |------|---------|---------|-----------------|
 | hadolint | Dockerfile linter | `brew install hadolint` | No |
-| dclint | docker-compose linter | `npm install -g dclint` | No |
+| dclint | docker-compose linter | `pnpm dlx dclint` (per-invocation, no global install) | No |
 
 Both are static analysis tools — no Docker daemon needed.
 

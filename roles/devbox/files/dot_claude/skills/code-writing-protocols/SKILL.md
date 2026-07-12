@@ -574,9 +574,9 @@ The following phrases in Pre-Flight reports or SE output artifacts indicate the 
 
 | Language | Sandbox Workaround |
 |----------|-------------------|
-| Go | Per-session `GOCACHE`/`GOMODCACHE` injected by `pre_bash_cache_env` hook; `GOTOOLCHAIN=local` in `settings.json` -- no prefix needed |
-| Python | `uv run` prefix; per-session `UV_CACHE_DIR`/`RUFF_CACHE_DIR`/`MYPY_CACHE_DIR` injected by hook |
-| Node | `npx` prefix (respects local node_modules); per-session `NPM_CONFIG_CACHE` injected by hook |
+| Go | `GOCACHE`/`GOMODCACHE`/`GOTOOLCHAIN=local` in `settings.json` env -- no prefix needed |
+| Python | `uv run` prefix; `UV_CACHE_DIR`/`RUFF_CACHE_DIR`/`MYPY_CACHE_DIR` in `settings.json` env |
+| Node | `npx` prefix (respects local node_modules); `NPM_CONFIG_CACHE` in `settings.json` env |
 
 **On cache corruption**: use the tool's clean command (`uv cache clean`, `go clean -cache`, `ruff clean`) — never inline-override the cache env var. See `sandbox-toolchain` for details. Overriding `UV_CACHE_DIR=…` or similar is blocked by `pre-bash-toolchain-guard`.
 

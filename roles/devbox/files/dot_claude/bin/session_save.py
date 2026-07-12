@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import sys
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
@@ -97,6 +99,28 @@ def render_working_state(state: dict[str, str | list[str]], event: str, now: str
     )
 
 
+def _atomic_write_text(target: Path, content: str) -> None:
+    # Write to a temp file in the same directory, then rename atomically.
+    # Concurrent hook invocations (PreCompact + SessionEnd on two sessions in the
+    # same project) can otherwise race and lose one writer's changes. Any failure
+    # leaves the original file untouched — the temp file is cleaned up on error.
+    parent = target.parent
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{target.name}.",
+        suffix=".tmp",
+        dir=str(parent),
+    )
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        tmp_path.replace(target)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp_path.unlink()
+        raise
+
+
 def update_memory(memory_dir: Path, event: str, cwd: Path, now: str) -> None:
     memory_file = memory_dir / "MEMORY.md"
     if not memory_file.exists():
@@ -106,12 +130,16 @@ def update_memory(memory_dir: Path, event: str, cwd: Path, now: str) -> None:
         return
 
     working_state = render_working_state(state, event, now)
-    content = memory_file.read_text(encoding="utf-8")
-    if WORKING_STATE_RE.search(content):
-        new_content = WORKING_STATE_RE.sub(working_state, content, count=1)
-    else:
-        new_content = working_state + "\n\n" + content
-    memory_file.write_text(new_content, encoding="utf-8")
+    try:
+        content = memory_file.read_text(encoding="utf-8")
+        if WORKING_STATE_RE.search(content):
+            new_content = WORKING_STATE_RE.sub(working_state, content, count=1)
+        else:
+            new_content = working_state + "\n\n" + content
+        _atomic_write_text(memory_file, new_content)
+    except OSError:
+        # Best-effort: never break the session-end hook on a partial write.
+        return
 
 
 def current_timestamp() -> str:

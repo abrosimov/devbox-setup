@@ -53,9 +53,12 @@ def test_setup_sets_npm_cache_under_tmpdir(clean_env: Path) -> None:
     assert Path(env.os.environ["NPM_CONFIG_CACHE"]) == tmp / "npm-cache"
 
 
-def test_setup_sets_gopath_from_home(clean_env: Path) -> None:
+def test_setup_does_not_set_gopath(clean_env: Path) -> None:
+    # GOPATH is not touched by env.setup(); it must be provided via
+    # settings.json.env or fall back to Go's built-in $HOME/go default.
+    assert clean_env.exists()
     env.setup()
-    assert Path(env.os.environ["GOPATH"]) == clean_env / ".programming" / "go"
+    assert "GOPATH" not in env.os.environ
 
 
 def test_setup_does_not_clobber_existing_values(

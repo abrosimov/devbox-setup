@@ -42,7 +42,10 @@ def harden_path() -> None:
 
 
 def setup_go(home: Path, tmp: Path) -> None:
-    os.environ.setdefault("GOPATH", str(home / ".programming" / "go"))
+    # GOPATH is intentionally not set here: Go's built-in default of
+    # $HOME/go is a sensible fallback on any machine, and settings.json.env
+    # is the correct place to override it per-user.
+    del home
     os.environ.setdefault("GOTOOLCHAIN", "local")
     os.environ.setdefault("GOCACHE", str(tmp / "go-build-cache"))
     os.environ.setdefault("GOMODCACHE", str(tmp / "go-mod-cache"))

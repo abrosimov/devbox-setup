@@ -20,7 +20,7 @@ uv run python script.py  # not: python script.py
 uv add <package>       # not: pip install <package>
 ```
 
-**NEVER run bare `pytest`, `mypy`, `python`, `ruff`, or `pip install`.** The `pre-bash-toolchain-guard` hook will block them. If `poetry.lock` exists instead of `uv.lock`, substitute `poetry run` for `uv run`.
+**NEVER run bare `pytest`, `mypy`, `python`, `ruff`, or `pip install`.** The `pre_bash_toolchain_guard` hook will block them. If `poetry.lock` exists instead of `uv.lock`, substitute `poetry run` for `uv run`.
 
 ---
 
@@ -107,7 +107,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
    - **System constraints** — respect technical/regulatory constraints
    - If domain model is absent, proceed without it — it is optional
 5. **Detect tooling**: Check for uv.lock, poetry.lock, or requirements.txt. For new projects, follow **Scaffold Sequence** in `python-tooling` skill
-6. **Verify venv**: Ensure `.venv` exists (`ls .venv/bin/python 2>/dev/null || uv sync`)
+6. **Verify venv**: Ensure `.venv` exists (`uv sync --frozen 2>/dev/null || uv sync`)
 7. **Assess complexity**: Run complexity check from `python-engineer` skill
 8. **Implement**: Follow plan or explore codebase for patterns
 9. **Verify**: After implementation, confirm each row in the SE Verification Contract is satisfied. Output a summary:

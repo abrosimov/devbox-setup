@@ -36,6 +36,17 @@ Before running commands, detect the project setup from lock files and config fil
 
 Run these checks before declaring work complete:
 
+Substitute `<pm>` with the package manager detected above (`pnpm`, `npm`, `yarn`, or `bun`) and its runner (`pnpm dlx`, `npx`, `yarn dlx`, `bunx`):
+
 ```bash
-npx tsc --noEmit && npx eslint . && npx prettier --check . && npm test && npm run build
+<runner> tsc --noEmit && <runner> eslint . && <runner> prettier --check . && <pm> test && <pm> run build
 ```
+
+Concrete forms:
+
+| Package manager | Preflight command |
+|-----------------|-------------------|
+| pnpm | `pnpm dlx tsc --noEmit && pnpm dlx eslint . && pnpm dlx prettier --check . && pnpm test && pnpm run build` |
+| npm | `npx tsc --noEmit && npx eslint . && npx prettier --check . && npm test && npm run build` |
+| yarn | `yarn dlx tsc --noEmit && yarn dlx eslint . && yarn dlx prettier --check . && yarn test && yarn build` |
+| bun | `bunx tsc --noEmit && bunx eslint . && bunx prettier --check . && bun test && bun run build` |

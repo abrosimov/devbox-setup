@@ -1335,6 +1335,44 @@ def _telemetry_path() -> Path:
     )
 
 
+# Size threshold above which the current shard is rotated aside. Per-hour
+# partitioning already caps most growth; this is a safety net for pathological
+# hours (e.g. a runaway agent) that would otherwise let a single file grow
+# without bound.
+TELEMETRY_MAX_BYTES: Final[int] = 1 * 1024 * 1024  # 1 MiB
+TELEMETRY_MAX_ROTATED: Final[int] = 5
+
+
+def _rotate_telemetry(path: Path) -> None:
+    """Rename the shard aside and prune old rotations. Best-effort."""
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return
+    if size < TELEMETRY_MAX_BYTES:
+        return
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    rotated = path.with_name(f"{path.name}.{stamp}.old")
+    try:
+        path.replace(rotated)
+    except OSError:
+        return
+    # Prune older rotations, keeping the most recent TELEMETRY_MAX_ROTATED.
+    try:
+        siblings = sorted(
+            path.parent.glob(f"{path.name}.*.old"),
+            key=lambda p: p.name,
+            reverse=True,
+        )
+    except OSError:
+        return
+    for old in siblings[TELEMETRY_MAX_ROTATED:]:
+        try:
+            old.unlink()
+        except OSError:
+            continue
+
+
 def log_miss(
     cmd: str,
     cwd: str,
@@ -1345,6 +1383,8 @@ def log_miss(
     try:
         path = _telemetry_path()
         path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            _rotate_telemetry(path)
         record: dict[str, str] = {
             "ts": datetime.now(timezone.utc).isoformat(),
             "cwd": cwd,

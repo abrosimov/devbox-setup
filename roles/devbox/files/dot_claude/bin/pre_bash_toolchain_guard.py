@@ -190,8 +190,8 @@ def _workaround_block(var: str, form: str) -> Block:
     }[form]
     if var in CACHE_WORKAROUND_VARS:
         return Block(
-            f"{prefix} overrides tool cache/tool-dir paths managed by "
-            "pre_bash_cache_env hook — never override manually. If the cache is "
+            f"{prefix} overrides tool cache/tool-dir paths set at session start "
+            "via settings.json env — never override manually. If the cache is "
             "corrupt, run `uv cache clean` (or the tool's own clean subcommand) "
             "and retry.",
         )

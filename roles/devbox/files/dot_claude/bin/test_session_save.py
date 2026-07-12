@@ -82,6 +82,73 @@ def test_update_memory_prepends_when_section_missing(
     assert "## Other" in content
 
 
+def test_update_memory_writes_atomically(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Concurrent writers must never observe a half-written MEMORY.md. Verify
+    # the write goes via Path.replace by intercepting it and checking that
+    # the destination target is the real memory file.
+    memory_dir = tmp_path / "memory"
+    memory_dir.mkdir()
+    memory_file = memory_dir / "MEMORY.md"
+    memory_file.write_text("## Working State\n- **Branch**: old\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        session_save,
+        "collect_git_state",
+        lambda _cwd: {"branch": "new", "sha": "abc", "files": []},
+    )
+
+    seen_replace: dict[str, object] = {}
+    real_replace = Path.replace
+
+    def _spy_replace(self: Path, target: Path | str) -> Path:
+        seen_replace["src"] = str(self)
+        seen_replace["dst"] = str(target)
+        return real_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", _spy_replace)
+    session_save.update_memory(memory_dir, "SessionEnd", tmp_path, "2026-06-20 12:00")
+
+    assert seen_replace["dst"] == str(memory_file)
+    # The source should have been a sibling temp file in the same dir.
+    assert Path(str(seen_replace["src"])).parent == memory_dir
+    # No leftover temp files.
+    leftovers = [p for p in memory_dir.iterdir() if p.name != "MEMORY.md"]
+    assert leftovers == []
+    assert "- **Branch**: new" in memory_file.read_text(encoding="utf-8")
+
+
+def test_update_memory_swallows_write_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    memory_dir = tmp_path / "memory"
+    memory_dir.mkdir()
+    memory_file = memory_dir / "MEMORY.md"
+    original = "## Working State\n- **Branch**: old\n"
+    memory_file.write_text(original, encoding="utf-8")
+
+    monkeypatch.setattr(
+        session_save,
+        "collect_git_state",
+        lambda _cwd: {"branch": "new", "sha": "abc", "files": []},
+    )
+
+    fail_msg = "simulated rename failure"
+
+    def _fail_replace(_self: Path, _target: Path | str) -> Path:
+        raise OSError(fail_msg)
+
+    monkeypatch.setattr(Path, "replace", _fail_replace)
+    # Must not raise despite the OSError bubbling from _atomic_write_text.
+    session_save.update_memory(memory_dir, "SessionEnd", tmp_path, "2026-06-20 12:00")
+
+    # Original file is untouched; no stale temp files linger.
+    assert memory_file.read_text(encoding="utf-8") == original
+    leftovers = [p for p in memory_dir.iterdir() if p.name != "MEMORY.md"]
+    assert leftovers == []
+
+
 def test_update_memory_no_branch_skips_write(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

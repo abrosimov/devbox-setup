@@ -1,5 +1,7 @@
 # Permission auto-approve: read-only inspection of dependency caches
 
+**Status: superseded.** The `pre_bash_cache_env.py` hook described below was implemented, deployed, then removed on 2026-07-11 in favour of static cache paths in `settings.json.env`. This doc is retained as design history; the read-only inspection carve-out and skill addenda remain valid future work.
+
 ## Status (as of 2026-07-07)
 
 The **per-session cache workaround problem** (originally the top item on this doc's wish-list) is now solved by a different mechanism:

@@ -46,7 +46,7 @@ Claude Code's sandbox enforces filesystem and network isolation at the OS level.
 
 ### Go
 
-Go has three sandbox-breaking defaults. `GOTOOLCHAIN=local` is pinned globally in `settings.json`. `GOCACHE` and `GOMODCACHE` are injected per-session by the `pre_bash_cache_env` hook (`/tmp/claude/sessions/<sid>/go-{build,mod}-cache`).
+Go has three sandbox-breaking defaults. `GOTOOLCHAIN=local`, `GOCACHE`, and `GOMODCACHE` are all set in `settings.json` env block at session start, pointing at writable paths under `/tmp/claude/` (`go-build-cache`, `go-mod-cache`).
 
 No manual prefix needed — just run commands directly:
 ```bash
@@ -69,7 +69,7 @@ Cross-compilation (`GOOS`, `GOARCH`) and `CGO_ENABLED` are legitimate build tune
 
 ### Python (uv, ruff, mypy)
 
-Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist. The `pre_bash_cache_env` hook injects per-session cache paths (`/tmp/claude/sessions/<sid>/<tool>-cache`) as `export UV_CACHE_DIR=… UV_TOOL_DIR=… RUFF_CACHE_DIR=… …;` prefix on every Bash call.
+Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist. `settings.json` env block sets `UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR` to `/tmp/claude/<tool>-cache/` at session start — inherited by every Bash call without command rewriting.
 
 No manual prefix needed — just run commands directly:
 ```bash
@@ -89,7 +89,7 @@ If you see a cache-corruption error (`Failed to install … METADATA: No such fi
 ```bash
 uv cache clean          # not `UV_CACHE_DIR=/tmp/x uv sync`
 ruff clean              # for ruff
-rm -rf $MYPY_CACHE_DIR  # mypy has no clean subcommand
+rm -rf "$MYPY_CACHE_DIR"  # mypy has no clean subcommand
 ```
 Then retry the original command.
 
@@ -99,7 +99,7 @@ If bare `python`/`pytest`/`mypy` fail, use the `uv run` prefix (enforced by `pre
 
 ### Node (npm/pnpm)
 
-npm caches to `~/.npm/` by default, which is outside the sandbox write allowlist. `node_modules/` is fine (inside CWD). `NPM_CONFIG_CACHE` is injected per-session by the `pre_bash_cache_env` hook.
+npm caches to `~/.npm/` by default, which is outside the sandbox write allowlist. `node_modules/` is fine (inside CWD). `NPM_CONFIG_CACHE` is set in `settings.json` env block (`/tmp/claude/npm-cache/`).
 
 No manual prefix needed — just run commands directly:
 ```bash

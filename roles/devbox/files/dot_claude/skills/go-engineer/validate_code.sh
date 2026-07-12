@@ -99,6 +99,6 @@ if [ $violations -eq 0 ]; then
 else
     echo -e "${RED}❌ Found $violations violation(s)${NC}"
     echo ""
-    echo "Fix violations or bypass with: git commit --no-verify"
+    echo "Fix violations and re-run validation. Do NOT bypass with --no-verify (forbidden by User Authority Protocol)."
     exit 1
 fi

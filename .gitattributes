@@ -1,0 +1,10 @@
+# Karabiner-Elements' GUI rewrites karabiner.json with alphabetically-sorted keys
+# on every save, producing noisy diffs. The `jq-sort` filter normalises keys on
+# `git add` so working-tree vs. index comparisons stay sorted-vs-sorted.
+#
+# Filter definition lives in ~/.config/git/config (deployed from
+# roles/devbox/files/.config/git/config.j2). On a fresh clone before
+# `make personal` runs, the filter is undefined and git silently no-ops it —
+# harmless, at worst one commit's diff shows Karabiner's reordering.
+roles/devbox/files/.config/karabiner/karabiner.json                                             filter=jq-sort
+roles/devbox/files/.config/karabiner/assets/complex_modifications/*.json                        filter=jq-sort

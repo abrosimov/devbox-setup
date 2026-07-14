@@ -150,6 +150,8 @@
     - .config/nvim
     - .config/fish/completions
     - .config/fish/functions
+    - .config/karabiner
+    - .hammerspoon
   loop_control:
     label: "{{ item }}/"
   tags: [configs, dotfiles]

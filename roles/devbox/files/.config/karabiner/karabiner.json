@@ -1,0 +1,104 @@
+{
+  "profiles": [
+    {
+      "complex_modifications": {
+        "rules": [
+          {
+            "description": "Tap Right Command → English, Tap Right Option → Russian",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "identifiers": [
+                      {
+                        "is_built_in_keyboard": true
+                      }
+                    ],
+                    "type": "device_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "right_command",
+                  "modifiers": {
+                    "optional": [
+                      "any"
+                    ]
+                  }
+                },
+                "parameters": {
+                  "basic.to_if_held_down_threshold_milliseconds": 150
+                },
+                "to": [
+                  {
+                    "key_code": "right_command",
+                    "lazy": true
+                  }
+                ],
+                "to_if_alone": [
+                  {
+                    "select_input_source": {
+                      "language": "^en$"
+                    }
+                  }
+                ],
+                "to_if_held_down": [
+                  {
+                    "key_code": "right_command"
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "identifiers": [
+                      {
+                        "is_built_in_keyboard": true
+                      }
+                    ],
+                    "type": "device_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "right_option",
+                  "modifiers": {
+                    "optional": [
+                      "any"
+                    ]
+                  }
+                },
+                "parameters": {
+                  "basic.to_if_held_down_threshold_milliseconds": 150
+                },
+                "to": [
+                  {
+                    "key_code": "right_option",
+                    "lazy": true
+                  }
+                ],
+                "to_if_alone": [
+                  {
+                    "select_input_source": {
+                      "language": "^ru$"
+                    }
+                  }
+                ],
+                "to_if_held_down": [
+                  {
+                    "key_code": "right_option"
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          }
+        ]
+      },
+      "name": "Default profile",
+      "selected": true,
+      "virtual_hid_keyboard": {
+        "keyboard_type_v2": "ansi"
+      }
+    }
+  ]
+}

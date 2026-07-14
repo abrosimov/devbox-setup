@@ -72,6 +72,16 @@
 	required = true
 	clean = git-lfs clean -- %f
 
+# --- JSON key-sort filter ----------------------------------------------------
+# Referenced by .gitattributes in devbox-setup for karabiner.json (Karabiner
+# GUI reorders keys alphabetically on every save — clean-filter normalises on
+# `git add` so working-tree vs. index diffs stay sorted-vs-sorted). `smudge` is
+# a no-op; the working tree stays in whatever shape Karabiner wrote. Not
+# `required` — fresh clones without jq installed just skip normalisation.
+[filter "jq-sort"]
+	clean = jq --sort-keys .
+	smudge = cat
+
 # Jira key position for prepare-commit-msg is per-profile (suffix on work,
 # no-op on personal — see identity-work.gitconfig).
 

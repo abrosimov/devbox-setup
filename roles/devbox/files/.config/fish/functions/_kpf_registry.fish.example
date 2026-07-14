@@ -1,9 +1,24 @@
 # Copy this file to _kpf_registry.fish and fill in your values.
 #
-# Output format (single line, space-delimited):
-#   <kubeconfig-path> <namespace> <pod-name> <local-port> <remote-port>
+# Output format (single line, space-delimited, exactly 5 fields):
+#   <kubeconfig|-> <namespace> <kind>/<name> <local-port> <remote-port>
+#
+# Field 1:
+#   - literal path to a kubeconfig  → kpf runs kubectl directly (legacy).
+#   - "-"                           → kpf resolves the kubeconfig from
+#                                     ~/.config/kaws/clusters.yaml under the
+#                                     same env key and routes via
+#                                     `kaws <env> pf ...` (SSO pre-flight +
+#                                     refresh discipline come for free).
+#
+# Field 3: `<kind>/<name>` — kind is `pod` or `svc`.
 #
 # When called with no args, print "env service" per line (for `kpf list`).
+#
+# Special behaviour: for service "mongo", kpf reads the Bitnami secret
+# (`mongodb` / `mongodb-root-password`) in <namespace> and prints a
+# ready-to-paste mongodb:// URI before starting port-forward. Suppress with
+# `--no-creds`.
 
 function _kpf_registry
     if test (count $argv) -eq 0
@@ -18,15 +33,17 @@ function _kpf_registry
     set -l svc $argv[2]
 
     switch "$env:$svc"
-        # --- mongo ---
+        # --- mongo (kaws-managed env: kubeconfig from ~/.config/kaws/clusters.yaml) ---
         # case "env1:mongo"
-        #     echo "$HOME/.kube/env1.kubeconfig mongodb mongodb-0 57017 27017"
+        #     echo "- mongodb pod/mongodb-0 57017 27017"
+
+        # --- mongo (legacy: explicit kubeconfig path) ---
         # case "env2:mongo"
-        #     echo "$HOME/.kube/env2.kubeconfig mongodb mongodb-0 37017 27017"
+        #     echo "$HOME/.kube/env2.kubeconfig mongodb pod/mongodb-0 37017 27017"
 
         # --- redis ---
         # case "env1:redis"
-        #     echo "$HOME/.kube/env1.kubeconfig redis redis-master-0 56379 6379"
+        #     echo "- redis pod/redis-master-0 56379 6379"
 
         case '*'
             return 1

@@ -26,5 +26,6 @@ complete -c kpf -n '__fish_use_subcommand' -a '(__kpf_envs)'
 # Service names for selected env
 complete -c kpf -n 'not __fish_use_subcommand; and test (count (commandline -opc)) -eq 2' -a '(__kpf_services)'
 
-# --info flag
-complete -c kpf -n 'test (count (commandline -opc)) -ge 3' -l info -d 'Dry-run: show what would be executed'
+# Flags on 3rd+ positions
+complete -c kpf -n 'test (count (commandline -opc)) -ge 3' -l info      -d 'Dry-run: show what would be executed'
+complete -c kpf -n 'test (count (commandline -opc)) -ge 3' -l no-creds  -d 'Skip fetching MongoDB credentials'

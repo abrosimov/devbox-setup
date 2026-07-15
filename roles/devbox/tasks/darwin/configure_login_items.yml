@@ -1,0 +1,42 @@
+---
+# Register GUI apps (devbox_login_items + per-profile devbox_extra_login_items)
+# as macOS Login Items so they start at every login. This is the OS-sanctioned
+# autostart mechanism for GUI apps, distinct from the LaunchAgents used for
+# login-time COMMANDS (hidutil, ssh-add). Idempotent: read the current login-
+# item names once, then add only the missing ones.
+#
+# First run pops a one-time TCC Automation prompt (the controlling terminal
+# asks to control "System Events"). Grant "Allow" once — same one-time-grant
+# model as the login-keychain ACL. Under headless/SSH the prompt cannot be
+# answered and osascript fails; that is why this is gated to interactive runs
+# (not dev_mode) via the include in main_darwin.yml.
+
+- name: "Read current macOS login items"
+  ansible.builtin.command: >-
+    osascript -e 'tell application "System Events" to get the name of every login item'
+  register: devbox_login_items_current
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  tags: [macos, loginitems]
+
+- name: "Register GUI apps as macOS login items"
+  # `name` is the display name shown in System Settings; `path` is the bundle
+  # under /Applications. hidden:true launches the app without bringing its
+  # window forward — the expected behaviour for menu-bar apps.
+  ansible.builtin.command: >-
+    osascript -e 'tell application "System Events" to make login item at end
+    with properties {path:"/Applications/{{ item }}.app", hidden:true, name:"{{ item }}"}'
+  loop: "{{ devbox_login_items + (devbox_extra_login_items | default([])) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: item not in (devbox_login_items_current.stdout | default(''))
+  register: devbox_login_item_result
+  # osascript exits non-zero (error -1743) when the controlling process lacks
+  # TCC Automation rights — the case in CI/headless and on the very first run
+  # before the one-time "Allow". That is not a fatal provisioning error, so we
+  # never abort the play; a real success (rc 0) is the only thing reported as a
+  # change, so a denied run shows as skipped/ok rather than a false "changed".
+  changed_when: devbox_login_item_result.rc == 0
+  failed_when: false
+  tags: [macos, loginitems]

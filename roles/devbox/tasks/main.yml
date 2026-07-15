@@ -17,6 +17,25 @@
 - name: "Install necessary homebrew packages for Linux"
   ansible.builtin.include_tasks: main_linux.yml
   when: ansible_facts['os_family'] == "Linux"
-- name: "Job is done"
+# Re-login policy: nothing in this playbook requires a full reboot. Touch ID,
+# pmset disablesleep, DevToolsSecurity, the hidutil Caps Lock LaunchAgent and
+# Night Shift all apply immediately; Dock/Finder/ControlCenter defaults apply
+# via killall handlers. The only changes that need a fresh login SESSION are
+# login-cached NSGlobalDomain keyboard keys (KeyRepeat/InitialKeyRepeat, read
+# once at process start) and switching the login shell to fish on a fresh
+# machine. The gate below reads the results registered in configure_macos_-
+# defaults.yml and prepare_user.yml; on a converged run (or on Linux, where
+# neither Darwin task ran) both default away and the hint is skipped.
+- name: "Re-login hint (only when a login-cached setting changed)"
   ansible.builtin.debug:
-    msg: "Now please reboot your system to make changes applied properly"
+    msg: >-
+      Keyboard and/or login-shell settings changed. Log out and back in
+      (or open a new terminal / relaunch affected apps) to apply them.
+      No reboot needed.
+  when: >-
+    ((devbox_macos_defaults_result.results | default([]))
+     | selectattr('changed', 'defined') | selectattr('changed')
+     | map(attribute='item.key')
+     | select('in', ['KeyRepeat', 'InitialKeyRepeat'])
+     | list | length > 0)
+    or (devbox_user_result.changed | default(false))

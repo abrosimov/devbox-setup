@@ -80,7 +80,8 @@ devbox_brew_secondary:
   - gh             # GitHub CLI — needed by Claude Code PR workflow
   - glab           # GitLab CLI — mirrors gh for GitLab workflows
   - git-lfs        # Git Large File Storage — required by repos using LFS pointers
-  - goreleaser/tap/goreleaser  # Go release automation; fully-qualified to disambiguate from the homebrew-core cask
+  # goreleaser moved to devbox_brew_secondary_casks (goreleaser-pro cask); the
+  # standalone formula install is deprecated upstream.
   - jq             # JSON processor — used by scripts and agents
   - ripgrep        # Fast grep — fallback for Claude Code Grep tool
   - fd             # Fast find — used by Claude Code Glob tool
@@ -122,9 +123,9 @@ devbox_brew_secondary_casks:
   - chatgpt
   - freelens
   - zen
+  - goreleaser/tap/goreleaser-pro  # Go release automation (Pro edition, cask); replaces goreleaser formula
   # Window management / awesome-wm-on-mac stack (configured separately).
   - nikitabobko/tap/aerospace  # i3-like tiling window manager (no SIP off)
-  - alt-tab                    # Window-level Alt-Tab (vs default app-level Cmd-Tab)
   - raycast                    # App launcher with script-commands (rofi replacement)
   - hammerspoon                # Lua scripting bridge to macOS (cursor/window/USB events)
   - karabiner-elements         # Key remap for built-in laptop kb (Kinesis has its own ZMK)

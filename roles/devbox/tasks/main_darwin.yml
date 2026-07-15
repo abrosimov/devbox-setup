@@ -45,6 +45,9 @@
   ansible.builtin.include_tasks: darwin/configure_macos_defaults.yml
 - name: "Configure BetterDisplay (import display arrangement from local overlay if present)"
   ansible.builtin.include_tasks: darwin/configure_betterdisplay.yml
+- name: "Configure macOS login items (autostart GUI apps)"
+  ansible.builtin.include_tasks: darwin/configure_login_items.yml
+  when: not (dev_mode | default(false) | bool)
 - name: "Install configs"
   ansible.builtin.include_tasks: install_configs.yml
 - name: "Apply configs"

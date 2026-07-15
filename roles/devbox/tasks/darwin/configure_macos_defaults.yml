@@ -16,11 +16,18 @@
   loop: "{{ devbox_macos_defaults + (devbox_extra_macos_defaults | default([])) }}"
   loop_control:
     label: "{{ item.domain }}.{{ item.key }}"
+  register: devbox_macos_defaults_result
   notify:
     - Restart ControlCenter
     - Restart Dock
     - Restart Finder
   tags: [macos, defaults]
+
+# NOTE: devbox_macos_defaults_result feeds the re-login gate in main.yml. Most
+# defaults here apply via the killall handlers above or take effect immediately,
+# so they never need a fresh login. The exception is login-cached NSGlobalDomain
+# keyboard keys (KeyRepeat/InitialKeyRepeat): apps read them once at process
+# start, so a running session keeps the old value until logout/login.
 
 # Night Shift lives in CoreBrightness (no public `defaults` schema) — driven
 # via the `nightlight` brew formula. Idempotency is structural: each dimension

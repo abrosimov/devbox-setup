@@ -23,3 +23,7 @@
     generate_ssh_key: true
     ssh_key_type: "ed25519"
     ssh_key_passphrase: "{{ devbox_user.ssh_pass_phrase }}"
+  register: devbox_user_result
+  # NOTE: devbox_user_result feeds the re-login gate in main.yml. Fresh machines
+  # default to bash/zsh; switching the login shell to fish only takes effect in
+  # a new login session. On a converged machine the module reports ok.

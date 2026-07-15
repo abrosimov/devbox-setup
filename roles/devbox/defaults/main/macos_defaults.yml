@@ -162,3 +162,18 @@ devbox_night_shift:
   enabled: true
   schedule: "21:00 09:00"   # "sunset" or "HH:MM HH:MM"
   temperature: 65           # 0..100
+
+# GUI apps registered as macOS Login Items (System Settings → General → Login
+# Items) so they launch at every login. Entries are .app basenames (no `.app`
+# suffix) resolved under /Applications. This is the Apple-sanctioned autostart
+# path for GUI apps — distinct from the LaunchAgents used for login-time
+# COMMANDS (hidutil, ssh-add). Apps that ship their own "launch at login"
+# toggle (Cloudflare WARP, Karabiner-Elements, Docker Desktop) are deliberately
+# left off — they self-register and a second entry here would just duplicate.
+devbox_login_items:
+  - Raycast
+  - Hammerspoon
+  - BetterDisplay
+
+# Profile extension point — overridden in profiles/*.yml (personal adds TomoBar).
+devbox_extra_login_items: []

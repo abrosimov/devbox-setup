@@ -10,6 +10,10 @@ devbox_extra_brew_casks:
 # so the first launch does not hit the Gatekeeper dialog.
 devbox_trusted_unsigned_casks:
   - TomoBar
+# TomoBar is personal-only (cask above), so its login-item registration is too.
+# Concatenated with the shared devbox_login_items base in configure_login_items.yml.
+devbox_extra_login_items:
+  - TomoBar
 # Docker Desktop lives in the `_no_binaries` list because brew's regular
 # install path fails on this cask: the .pkg ships root-owned files inside
 # /Applications/Docker.app, and brew's post-install `xattr -w` step runs as

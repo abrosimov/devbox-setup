@@ -2,15 +2,19 @@
 # Codifies the manual steps from kabrosimov_notes/MacOS/*.md so a fresh install
 # converges to the expected state via `make personal` / `make work`.
 
-# --- Touch ID for sudo (note: "Using TouchID for sudo.md") -------------------
-# Persistent across system updates via sudo_local (Sonoma+).
-# Only useful when the lid is open; Touch ID is disabled in clamshell — see
-# future_projects/macos_tooling_setup.md for the YubiKey fallback plan.
+# --- Touch ID for sudo: deliberately NOT enabled -----------------------------
+# pam_tid deadlocks ansible `become` (GUI dialog, no text prompt → ansible times
+# out → run UNREACHABLE). Sharing a warm ticket with ansible via keepalive +
+# `timestamp_type=global` + `sudo -n` was tried and failed on macOS (ticket
+# invalidated within ~30s, `-n` did not suppress the GUI). So we remove pam_tid
+# and let `become` use the keychain password path (ansible.cfg
+# become_password_file). Cost: no interactive Touch-ID-for-sudo.
 #
-# Pre-check without sudo so AFK re-runs of a converged machine never invoke
-# `become` here -- otherwise pam_tid.so pops a Touch ID dialog that blocks
-# sudo's password prompt past Ansible's become timeout. sudo_local is 0644,
-# so the stat + grep run unprivileged.
+# The tasks below strip pam_tid/pam_reattach and the obsolete drop-in. On a
+# machine that still HAS pam_tid the first `become` here would itself deadlock —
+# migrate once by hand first:
+#     sudo sed -i '' -E '/pam_(tid|reattach)\.so/d' /etc/pam.d/sudo_local
+#     sudo rm -f /etc/sudoers.d/devbox-timestamp
 
 - name: "Stat /etc/pam.d/sudo_local"
   ansible.builtin.stat:
@@ -18,64 +22,42 @@
   register: devbox_sudo_local_stat
   tags: [macos]
 
-- name: "Check if Touch ID PAM module already enabled in sudo_local"
-  ansible.builtin.command: grep -Eq '^auth[[:space:]]+sufficient[[:space:]]+pam_tid\.so' /etc/pam.d/sudo_local
-  register: devbox_sudo_local_pam_tid
+- name: "Check whether pam_tid / pam_reattach lines are present in sudo_local"
+  ansible.builtin.command: grep -Eq '(pam_tid|pam_reattach)\.so' /etc/pam.d/sudo_local
+  register: devbox_sudo_local_pam
   changed_when: false
   failed_when: false
   when: devbox_sudo_local_stat.stat.exists
   tags: [macos]
 
-- name: "Ensure /etc/pam.d/sudo_local exists from Apple template"
-  ansible.builtin.copy:
-    src: /etc/pam.d/sudo_local.template
-    dest: /etc/pam.d/sudo_local
-    remote_src: true
-    owner: root
-    group: wheel
-    mode: "0644"
-    force: false
-  become: true
-  when: not devbox_sudo_local_stat.stat.exists
-  tags: [macos]
-
-- name: "Enable Touch ID PAM module in sudo_local"
+- name: "Remove Touch ID PAM module from sudo_local (pam_tid deadlocks ansible become)"
   ansible.builtin.lineinfile:
     path: /etc/pam.d/sudo_local
-    regexp: '^#?\s*auth\s+sufficient\s+pam_tid\.so\s*$'
-    line: "auth       sufficient     pam_tid.so"
-    state: present
+    regexp: '^\s*auth\s+sufficient\s+pam_tid\.so\s*$'
+    state: absent
   become: true
-  when: devbox_sudo_local_pam_tid.rc | default(1) != 0
+  when:
+    - devbox_sudo_local_stat.stat.exists
+    - devbox_sudo_local_pam.rc | default(1) == 0
   tags: [macos]
 
-# pam_reattach reattaches the sudo authentication to the user's GUI (Aqua)
-# session, which is what makes the Touch ID prompt actually surface when sudo
-# is invoked from a detached process context (tmux, kitty, screen, wrapper
-# scripts like scripts/with_sudo_keepalive.sh). Without it, pam_tid.so silently
-# skips the fingerprint dialog and falls through to password auth — the
-# `Password:` prompt from `sudo -v` at wrapper start becomes a real prompt
-# instead of a Touch ID tap. Installed via `pam-reattach` in
-# devbox_brew_secondary; MUST come BEFORE pam_tid in the PAM stack.
-
-- name: "Check if pam_reattach already enabled in sudo_local"
-  ansible.builtin.command: grep -Eq '^auth[[:space:]]+optional[[:space:]]+.*/pam_reattach\.so' /etc/pam.d/sudo_local
-  register: devbox_sudo_local_pam_reattach
-  changed_when: false
-  failed_when: false
-  when: devbox_sudo_local_stat.stat.exists
-  tags: [macos]
-
-- name: "Enable pam_reattach in sudo_local (before pam_tid) so Touch ID works in tmux/kitty"
+- name: "Remove pam_reattach from sudo_local (only useful alongside pam_tid)"
   ansible.builtin.lineinfile:
     path: /etc/pam.d/sudo_local
-    regexp: '^#?\s*auth\s+optional\s+.*/pam_reattach\.so.*$'
-    line: "auth       optional       /opt/homebrew/lib/pam/pam_reattach.so ignore_ssh"
-    insertbefore: '^auth\s+sufficient\s+pam_tid\.so'
-    state: present
+    regexp: '^\s*auth\s+optional\s+.*/pam_reattach\.so.*$'
+    state: absent
   become: true
-  when: devbox_sudo_local_pam_reattach.rc | default(1) != 0
+  when:
+    - devbox_sudo_local_stat.stat.exists
+    - devbox_sudo_local_pam.rc | default(1) == 0
   tags: [macos]
+
+- name: "Remove obsolete global-timestamp sudoers drop-in (from reverted fix A)"
+  ansible.builtin.file:
+    path: /etc/sudoers.d/devbox-timestamp
+    state: absent
+  become: true
+  tags: [macos, sudo]
 
 # --- Clamshell stay-awake (note: "Disable sleep when macbook is closed.md") --
 # Mandatory for the 90%-clamshell-with-external-keyboard workflow.

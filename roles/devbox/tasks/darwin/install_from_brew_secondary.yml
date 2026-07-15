@@ -51,6 +51,21 @@
     name: "{{ devbox_brew_secondary + devbox_extra_brew }}"
     state: "{{ 'latest' if devbox_upgrade_mode | default(false) | bool else 'present' }}"
 
+# Migration cleanup: goreleaser moved to the `goreleaser-pro` cask, which ships
+# the same `goreleaser` binary. Homebrew refuses to install it while the old
+# `goreleaser` formula/cask still owns /opt/homebrew/bin/goreleaser, and
+# `state: present` never removes a dropped package — so strip both here.
+# No-ops once migrated.
+- name: "Remove superseded goreleaser formula (replaced by goreleaser-pro cask)"
+  community.general.homebrew:
+    name: goreleaser
+    state: absent
+
+- name: "Remove superseded goreleaser cask (replaced by goreleaser-pro cask)"
+  community.general.homebrew_cask:
+    name: goreleaser
+    state: absent
+
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
     name: "{{ devbox_brew_secondary_casks + devbox_extra_brew_casks }}"

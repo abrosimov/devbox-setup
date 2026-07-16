@@ -583,3 +583,77 @@ def test_allows_docker_run_with_go_env_e_flag(tmp_path: Path) -> None:
     assert (
         guard.evaluate("docker run -e GOFLAGS=-race image cmd", tmp_path) is None
     )
+
+
+# --- Leading env-prefix strip: downstream checks see the real command ---
+
+
+def test_blocks_env_prefixed_pytest_in_uv_project(tmp_path: Path) -> None:
+    project = _project_with_marker(tmp_path, "uv.lock")
+    result = guard.evaluate("ENV_NAME=local pytest tests/", project)
+    assert result is not None
+    assert "uv run pytest" in result.message
+
+
+def test_blocks_env_prefixed_python_m_pytest_in_uv_project(tmp_path: Path) -> None:
+    project = _project_with_marker(tmp_path, "uv.lock")
+    result = guard.evaluate(
+        "ENV_NAME=local python -m pytest tests/foo.py -q",
+        project,
+    )
+    assert result is not None
+    assert "uv run pytest" in result.message
+
+
+def test_blocks_env_prefixed_bare_python_script_in_uv_project(tmp_path: Path) -> None:
+    project = _project_with_marker(tmp_path, "uv.lock")
+    result = guard.evaluate("FOO=bar python script.py", project)
+    assert result is not None
+    assert "uv run python" in result.message
+
+
+def test_blocks_env_prefixed_dotslash_venv_pytest_in_uv_project(tmp_path: Path) -> None:
+    project = _project_with_marker(tmp_path, "uv.lock")
+    result = guard.evaluate("ENV_NAME=local .venv/bin/pytest tests/", project)
+    assert result is not None
+    assert "uv run" in result.message
+
+
+def test_blocks_env_prefixed_absolute_venv_python_pytest_in_uv_project(
+    tmp_path: Path,
+) -> None:
+    # The exact form the user hit — permission-prompt trigger before the fix.
+    project = _project_with_marker(tmp_path, "uv.lock")
+    cmd = (
+        f"ENV_NAME=local {project}/.venv/bin/python -m pytest "
+        "tests/app/foo/test_bar.py --no-header 2>&1 | tail -5"
+    )
+    result = guard.evaluate(cmd, project)
+    assert result is not None
+    assert "uv run" in result.message
+
+
+def test_blocks_absolute_venv_pytest_in_uv_project(tmp_path: Path) -> None:
+    project = _project_with_marker(tmp_path, "uv.lock")
+    result = guard.evaluate(f"{project}/.venv/bin/pytest tests/", project)
+    assert result is not None
+    assert "uv run" in result.message
+
+
+def test_env_prefix_strip_still_catches_cache_workaround(tmp_path: Path) -> None:
+    # A benign leading assign followed by a watched cache var must still block
+    # on the watched one, not slip past because of the leading benign token.
+    result = guard.evaluate(
+        "ENV_NAME=local UV_CACHE_DIR=/tmp/x uv run pytest tests/",
+        tmp_path,
+    )
+    assert result is not None
+    assert "UV_CACHE_DIR" in result.message
+
+
+def test_env_prefix_strip_preserves_allow_for_uv_run(tmp_path: Path) -> None:
+    # Canonical form must remain allowed after the strip.
+    project = _project_with_marker(tmp_path, "uv.lock")
+    assert (
+        guard.evaluate("ENV_NAME=local uv run pytest tests/", project) is None
+    )

@@ -79,7 +79,7 @@ LEADING_ENV_ASSIGNS_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 VENV_DIRECT_RE: Final[re.Pattern[str]] = re.compile(
-    r"(?:^|[\s;&|(])(?:\.?/)?\.venv/bin/[A-Za-z0-9_.-]+",
+    r"(?:^|[\s;&|(=])(?:\S*/)?\.venv/bin/[A-Za-z0-9_.-]+",
 )
 
 PYTHON_C_IMPORT_RE: Final[re.Pattern[str]] = re.compile(
@@ -129,6 +129,23 @@ class Block:
 
 def _starts_with(cmd: str, prefix: str) -> bool:
     return cmd == prefix or cmd.startswith((prefix + " ", prefix + "\t"))
+
+
+def _strip_leading_env_assigns(cmd: str) -> str:
+    """Return ``cmd`` with any leading ``[env] VAR=value …`` prefix removed.
+
+    Downstream toolchain checks (``_check_pytest``, ``_check_venv_direct``,
+    ``_check_bare_python_script``, …) key off the head of the command. A
+    project-specific inline env-prefix like ``ENV_NAME=local pytest tests/``
+    otherwise hides ``pytest`` behind the assignment and slips past them.
+
+    ``_check_env_var_workaround`` and ``_check_export_cache_workaround``
+    still run against the original ``cmd`` — they need to see the assigns.
+    """
+    match = LEADING_ENV_ASSIGNS_RE.match(cmd)
+    if match is None:
+        return cmd
+    return cmd[match.end() :]
 
 
 def _has_marker(start: Path, marker: str) -> bool:
@@ -436,19 +453,24 @@ def _check_pnpm(cmd: str, start: Path) -> Block | None:
 
 
 def evaluate(cmd: str, start: Path) -> Block | None:
+    for env_check in (_check_env_var_workaround, _check_export_cache_workaround):
+        result = env_check(cmd)
+        if result is not None:
+            return result
+
+    stripped = _strip_leading_env_assigns(cmd)
+
     for check in (
         _check_go_fmt,
         _check_pip,
         _check_venv,
-        _check_env_var_workaround,
-        _check_export_cache_workaround,
         _check_no_sync,
         _check_skip_cache_flags,
         _check_allow_empty_commit,
         _check_force_flags,
         _check_pytest_collect_only,
     ):
-        result = check(cmd)
+        result = check(stripped)
         if result is not None:
             return result
     for context_check in (
@@ -463,7 +485,7 @@ def evaluate(cmd: str, start: Path) -> Block | None:
         _check_yarn,
         _check_pnpm,
     ):
-        result = context_check(cmd, start)
+        result = context_check(stripped, start)
         if result is not None:
             return result
     return None

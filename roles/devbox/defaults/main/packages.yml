@@ -85,6 +85,7 @@ devbox_brew_secondary:
   - jq             # JSON processor — used by scripts and agents
   - ripgrep        # Fast grep — fallback for Claude Code Grep tool
   - fd             # Fast find — used by Claude Code Glob tool
+  - ffmpeg         # Audio/video transcoding
   - tree           # Directory tree — used by agents for codebase exploration
   - cloc           # Count lines of code by language
   - yq             # YAML/JSON/XML processor (like jq for YAML)

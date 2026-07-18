@@ -8,7 +8,7 @@
 - name: Deploy dotfile configs
   hosts: 127.0.0.1
   connection: local
-  gather_facts: false
+  gather_facts: true   # ansible_facts.os_family needed by the OS-specific git overlay task in install_configs.yml
 
   vars_files:
     - "../roles/devbox/defaults/main/core.yml"

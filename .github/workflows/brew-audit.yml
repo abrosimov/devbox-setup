@@ -35,7 +35,7 @@ jobs:
     name: Brew CVE scan (OSV via brew-vulns)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install brew-vulns
         run: brew install Homebrew/brew-vulns/brew-vulns
@@ -61,7 +61,7 @@ jobs:
           fi
 
       - name: Upload SARIF to GitHub code scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
         with:
           sarif_file: brew-vulns.sarif
           category: brew-vulns

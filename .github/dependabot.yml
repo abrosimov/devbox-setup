@@ -1,0 +1,23 @@
+# Dependabot configuration.
+#
+# github-actions: keeps the SHA-pinned `uses:` refs in .github/workflows/ fresh.
+#   Dependabot updates both the commit SHA and the trailing "# vX.Y.Z" comment
+#   together, so the repo can satisfy the "pin to full-length commit SHA" policy
+#   without the pins going stale.
+#
+# uv: version updates for the root uv.lock (Python toolchain). Version updates do
+#   not propose pre-releases (rc/alpha/beta) while the current pin is stable, so
+#   no pre-release filtering is needed here. Security updates run independently of
+#   this file and may still bump to a pre-release when it is the only published
+#   fix for an advisory — that is intentional and handled per-PR.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"

@@ -25,7 +25,7 @@ dev = [
     "ruff>=0.6",
     "pyrefly>=0.10",
     "pytest>=8.0",
-    "hypothesis>=6.100",
+    "hypothesis>=6.156.7",
     # Runtime dep of roles/devbox/files/dot_claude/bin/bash_decision_gate.py.
     # Pinned authoritatively in bin/pyproject.toml + bin/uv.lock for the
     # deployed venv; mirrored here so the root dev venv (used by `make test`

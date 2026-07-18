@@ -109,11 +109,11 @@ prompts" restore them at the physical-key layer.
 `shell_integration` is set to `no-cursor` — all features enabled except
 cursor-shape reset, so vim/nvim manage their own cursor.
 
-> These remaps are an **interim workaround** for the wider Cyrillic + Ctrl/Alt
-> problem. The systemic fix lives at the Karabiner-Elements layer and will
-> also cover Claude Code, VS Code, and every other app. See
-> `~/.claude/future_projects/keyboard_project.md`. Retire this block after
-> the Karabiner rule ships and is verified.
+> These remaps are **kept permanently** (decision 2026-07-19): kitty is a
+> cross-OS terminal, so the scancode blocks help on Linux too. A Karabiner rule
+> will additionally cover the wider Cyrillic + Ctrl/Alt problem for non-kitty
+> apps (Claude Code, VS Code, etc.) — it is additive, not a replacement, so
+> this block stays. See `~/.claude/future_projects/keyboard_project.md`.
 
 ## Font size
 

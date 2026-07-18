@@ -344,7 +344,7 @@ def test_blocks_kill_9(tmp_path: Path) -> None:
     assert "Force" in result.message or "force" in result.message
 
 
-def test_blocks_kill_KILL(tmp_path: Path) -> None:
+def test_blocks_kill_sigkill(tmp_path: Path) -> None:
     result = guard.evaluate("kill -KILL 1234", tmp_path)
     assert result is not None
 
@@ -359,7 +359,7 @@ def test_blocks_chmod_recursive_777(tmp_path: Path) -> None:
     assert result is not None
 
 
-def test_allows_kill_TERM(tmp_path: Path) -> None:
+def test_allows_kill_sigterm(tmp_path: Path) -> None:
     assert guard.evaluate("kill -TERM 1234", tmp_path) is None
     assert guard.evaluate("kill 1234", tmp_path) is None
 
@@ -436,9 +436,7 @@ def test_blocks_standalone_pythonpath_with_and(tmp_path: Path) -> None:
 def test_allows_docker_run_with_uv_tool_dir_e_flag(tmp_path: Path) -> None:
     # `-e VAR=x` inside docker run — no separator after value; must not
     # false-positive on either the export check or the standalone check.
-    assert (
-        guard.evaluate("docker run -e UV_TOOL_DIR=/x image cmd", tmp_path) is None
-    )
+    assert guard.evaluate("docker run -e UV_TOOL_DIR=/x image cmd", tmp_path) is None
 
 
 def test_allows_benign_standalone_assignment(tmp_path: Path) -> None:
@@ -580,9 +578,7 @@ def test_allows_cgo_enabled(tmp_path: Path) -> None:
 def test_allows_docker_run_with_go_env_e_flag(tmp_path: Path) -> None:
     # `-e VAR=x` inside docker run — must not false-positive on the standalone
     # or export check.
-    assert (
-        guard.evaluate("docker run -e GOFLAGS=-race image cmd", tmp_path) is None
-    )
+    assert guard.evaluate("docker run -e GOFLAGS=-race image cmd", tmp_path) is None
 
 
 # --- Leading env-prefix strip: downstream checks see the real command ---
@@ -654,6 +650,4 @@ def test_env_prefix_strip_still_catches_cache_workaround(tmp_path: Path) -> None
 def test_env_prefix_strip_preserves_allow_for_uv_run(tmp_path: Path) -> None:
     # Canonical form must remain allowed after the strip.
     project = _project_with_marker(tmp_path, "uv.lock")
-    assert (
-        guard.evaluate("ENV_NAME=local uv run pytest tests/", project) is None
-    )
+    assert guard.evaluate("ENV_NAME=local uv run pytest tests/", project) is None

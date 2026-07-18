@@ -82,9 +82,7 @@ def test_update_memory_prepends_when_section_missing(
     assert "## Other" in content
 
 
-def test_update_memory_writes_atomically(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_update_memory_writes_atomically(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Concurrent writers must never observe a half-written MEMORY.md. Verify
     # the write goes via Path.replace by intercepting it and checking that
     # the destination target is the real memory file.

@@ -84,7 +84,7 @@ _FEEDBACK_PATTERNS_RU: Final[re.Pattern[str]] = re.compile(
     r"что\s+насчёт|"
     r"опция\s+\d+|"
     r"вариант\s+\d+|"
-    r"а\s+если|"
+    r"а\s+если|"  # noqa: RUF001 -- intentional Cyrillic in Russian feedback regex
     r"может\s+лучше|"
     r"нет,\s|"
     r"давай\s+(?:переделаем|поменяем|сменим)|"

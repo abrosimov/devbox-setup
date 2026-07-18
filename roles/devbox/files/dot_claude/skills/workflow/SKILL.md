@@ -43,21 +43,29 @@ The user commits manually after each agent run; commands do not auto-commit.
 │   ├── content_reviewer.md
 │   ├── freshness_auditor.md
 │   └── consistency_checker.md
-├── commands/              # Workflow slash commands
-│   ├── domain-analysis.md
-│   ├── plan.md
-│   ├── api-design.md
-│   ├── design.md
-│   ├── schema.md
-│   ├── implement.md
-│   ├── test.md
-│   ├── review.md
-│   ├── build-agent.md
-│   ├── build-skill.md
-│   ├── validate-config.md
-│   ├── audit.md
-│   ├── verify.md
-│   └── learn.md
+├── commands/              # Workflow slash commands (all techne- prefixed)
+│   ├── techne-api-design.md
+│   ├── techne-audit.md
+│   ├── techne-build-agent.md
+│   ├── techne-build-skill.md
+│   ├── techne-decision.md
+│   ├── techne-design.md
+│   ├── techne-devcontainer.md
+│   ├── techne-domain-analysis.md
+│   ├── techne-focus.md
+│   ├── techne-guide.md
+│   ├── techne-implement.md
+│   ├── techne-learn.md
+│   ├── techne-log.md
+│   ├── techne-next.md
+│   ├── techne-options.md
+│   ├── techne-plan.md
+│   ├── techne-review.md
+│   ├── techne-schema.md
+│   ├── techne-test.md
+│   ├── techne-think.md
+│   ├── techne-validate-config.md
+│   └── techne-verify.md
 ├── skills/                # Reusable knowledge modules
 └── docs/                  # Historical reference documentation
 ```
@@ -101,13 +109,13 @@ Specialist agents available via `/techne-*` commands. Each is invoked one-shot f
 
 | Stage | Agent | Produces |
 |-------|-------|----------|
-| Requirements | `technical_product_manager` | `spec.md`, `spec_output.json` |
-| Domain validation | `domain_expert` | `domain_analysis.md`, `domain_output.json` |
-| Domain modelling | `domain_modeller` | `domain_model.md`, `domain_model.json` |
-| Planning | `implementation_planner` | `plan.md`, `plan_output.json` |
-| UI design | `designer` | `design.md`, `design_output.json` |
+| Requirements | `technical_product_manager` | `spec.md` |
+| Domain validation | `domain_expert` | `domain_analysis.md` |
+| Domain modelling | `domain_modeller` | `domain_model.md` |
+| Planning | `implementation_planner` | `plan.md` |
+| UI design | `designer` | `design.md` |
 | Database design | `database_designer` | `schema_design.md`, migrations |
-| API design | `api_designer` | `api_design.md`, `api_design_output.json` |
+| API design | `api_designer` | `api_design.md`, `api_spec.yaml` |
 | Implementation | `software_engineer_{go,python,frontend}` | source code, `se_{lang}_output.json` |
 | Observability | `observability_engineer` | dashboards, alerts |
 | Unit tests | `unit_tests_writer_{go,python,frontend}` | test files |
@@ -123,6 +131,15 @@ Each stage runs independently via its `/techne-*` command. The user drives the f
 - **content_reviewer** — Content substance reviewer that verifies code examples, versions, security, and redundancy
 - **freshness_auditor** — Library-wide scanner for outdated versions, deprecated APIs, and best practice drift
 - **consistency_checker** — Library-wide scanner for terminology conflicts, broken handoffs, and coverage gaps
+
+**Additional agents** (support roles, invoked by commands or other agents as needed):
+- **architect** — System and solution architecture design across stacks
+- **build_resolver_go** — Diagnoses and fixes Go build/compile failures
+- **database_reviewer** — Reviews schema designs and migrations for correctness and safety
+- **doc_updater** — Updates documentation to reflect code and config changes
+- **refactor_cleaner** — Performs focused refactoring and dead-code cleanup
+- **tdd_guide** — Guides test-driven development flow (red-green-refactor)
+- **focus_coach** — Frames and paces a task into micro-steps (drives `/techne-focus`)
 
 ### Meta-Pipeline (Infrastructure)
 
@@ -298,7 +315,6 @@ Documentation is organized by Jira issue and branch:
 - `spec.md` - Product specification
 - `domain_analysis.md` - Domain analysis
 - `domain_model.md` - DDD domain model (bounded contexts, aggregates, invariants)
-- `domain_model.json` - Structured domain model
 - `plan.md` - Implementation plan
 - `api_design.md` - API design rationale and decisions
 - `api_spec.yaml` - OpenAPI specification (REST mode)

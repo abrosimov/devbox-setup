@@ -65,10 +65,9 @@ The agent will:
 - Generate design system rules and set up Code Connect (if Figma file provided)
 - Iterate with user on feedback
 - Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design_system.tokens.json`
-- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md` (includes FigJam diagram URLs)
-- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design_output.json` (includes `figma_source` for downstream agents)
+- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/design.md` (includes FigJam diagram URLs and the `figma_source` for downstream agents)
 
-**Important**: The designer is intentionally opinionated about minimal component sets and will challenge unnecessary complexity. This is by design. The Figma URL (if provided) is persisted in `design_output.json` so that Frontend Engineer and Code Reviewer agents can access the design file directly.
+**Important**: The designer is intentionally opinionated about minimal component sets and will challenge unnecessary complexity. This is by design. The Figma URL (if provided) is persisted in `design.md` so that Frontend Engineer and Code Reviewer agents can access the design file directly.
 
 ### 4. After Completion
 

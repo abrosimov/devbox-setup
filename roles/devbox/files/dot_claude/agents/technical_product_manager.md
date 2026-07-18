@@ -3,7 +3,7 @@ name: technical-product-manager
 description: Technical product manager who transforms ideas into detailed product specifications through research, interactive user interviews, and iterative refinement.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
+skills: config, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-03-03
 ---
 
@@ -439,15 +439,7 @@ I'll adjust the spec based on your feedback and either ask follow-up questions o
 When resumed:
 1. Process feedback, update `spec.md` and `decisions.md`
 2. If feedback raises new questions → pause again (normal)
-3. If user approves → proceed to Step 6
-
-### Step 6: Write Structured Output
-
-Write `{PROJECT_DIR}/spec_output.json` following the schema in `structured-output` skill.
-
-Include all required metadata fields. For stage-specific fields, extract key data from the spec you just wrote: personas, goals, functional requirements, non-functional requirements, out of scope items, and open questions.
-
-**This step is supplementary** — `spec.md` is the primary deliverable. The JSON enables downstream agent consumption.
+3. If user approves → the specification is complete (see "After Completion")
 
 ---
 
@@ -562,7 +554,6 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 **Produces for**: Domain Expert (`domain-expert`)
 **Deliverables**:
   - `spec.md` — primary (product specification in pitch format)
-  - `spec_output.json` — supplementary (structured contract for downstream agents)
   - `research.md` — research findings and alternatives analysis
   - `decisions.md` — running log of discussions and decisions
 **Completion criteria**: Specification complete with personas, goals, functional requirements, examples, appetite, and no-gos defined; user approval obtained

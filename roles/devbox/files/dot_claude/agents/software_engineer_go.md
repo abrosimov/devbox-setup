@@ -72,7 +72,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
    - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
-4. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `${PROJECT_DIR}/`. Extract:
+4. **Read domain model** (if available): Look for `domain_model.md` in `${PROJECT_DIR}/`. Extract:
    - **Ubiquitous language** — use these exact terms in code (type names, method names, variables)
    - **Aggregates + invariants** — implement invariants as validation logic; respect aggregate boundaries
    - **Domain events** — use event names from model when emitting events
@@ -145,7 +145,7 @@ See `code-writing-protocols` skill — Pre-Handoff Self-Review (From Plan, Comme
 
 ## Handoff Protocol
 
-**Receives from**: Implementation Planner (`plan.md`, `plan_output.json`), API Designer (`api_spec.yaml`), Database Designer (`schema_design.md`)
+**Receives from**: Implementation Planner (`plan.md`), API Designer (`api_spec.yaml`), Database Designer (`schema_design.md`)
 **Produces for**: Unit Test Writer Go, Integration Test Writer Go
 **Deliverables**:
   - source code (direct edits)

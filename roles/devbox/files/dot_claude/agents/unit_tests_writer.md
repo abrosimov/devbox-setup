@@ -99,8 +99,7 @@ Before writing tests, analyse the PROBLEM DOMAIN independently from the implemen
 **Produces for**: `code-reviewer` (the polyglot reviewer)
 **Deliverables**:
   - Test files for every detected stack (see Scope table above)
-  - `ut_output.json` written to `{PROJECT_DIR}/` — see "Structured Output" below
-**Completion criteria**: language detection completed, all public symbols in every detected stack have tests, error/exception paths covered, tests pass (Go also passes with `-race`), `ut_output.json` written.
+**Completion criteria**: language detection completed, all public symbols in every detected stack have tests, error/exception paths covered, tests pass (Go also passes with `-race`).
 
 ## Task Context
 
@@ -183,7 +182,7 @@ Extract:
 - `domain_compliance.invariants_implemented` — each invariant needs at least one test that exercises it.
 - `domain_compliance.terms_mapped` — use domain terms in test names and assertions.
 
-Then check for `domain_model.json` (preferred) or `domain_model.md` in `{PROJECT_DIR}/`. If found, extract:
+Then check for `domain_model.md` in `{PROJECT_DIR}/`. If found, extract:
 - **Invariants** — each is a test scenario (verify it rejects invalid state and accepts valid state).
 - **State machine transitions** — test valid transitions succeed and invalid transitions are rejected.
 - **Aggregate boundaries** — test that operations respect aggregate boundaries.
@@ -343,52 +342,6 @@ Go must always include `-race` for any concurrent code. Frontend must run typech
 
 ---
 
-## Structured Output: `ut_output.json`
-
-Write `ut_output.json` to `{PROJECT_DIR}/`. There is no formal JSON schema for unit-test writer output yet; use the following shape until one is added.
-
-```json
-{
-  "metadata": {
-    "agent": "unit-test-writer",
-    "stacks": ["go", "frontend"],
-    "branch": "PROJ-123_feature",
-    "jira_issue": "PROJ-123",
-    "date": "YYYY-MM-DD"
-  },
-  "test_files_written": [
-    { "stack": "go", "path": "pkg/user/user_test.go", "tests_added": 12 },
-    { "stack": "frontend", "path": "src/components/user-card.test.tsx", "tests_added": 8 }
-  ],
-  "coverage_summary": {
-    "public_symbols_tested": 20,
-    "public_symbols_untested": 0,
-    "error_paths_covered": 14,
-    "skipped_tests": 0
-  },
-  "mandate_coverage": [
-    { "ac": "AC-1", "scenario": "user creation rejects duplicate email", "test_function": "TestUserSuite/TestCreate_DuplicateEmail", "status": "implemented" }
-  ],
-  "domain_invariants_tested": [
-    { "invariant": "order total never negative", "test_function": "TestOrderSuite/TestTotal_NonNegative" }
-  ],
-  "verification_summary": [
-    { "stack": "go", "command": "go test -race ./...", "status": "pass" },
-    { "stack": "frontend", "command": "npx vitest run", "status": "pass" }
-  ],
-  "issues_raised": [
-    { "file": "pkg/user/user.go", "line": 45, "concern": "non-deterministic behaviour blocks reliable testing", "addressed_to": "software-engineer" }
-  ],
-  "summary": "X tests added across Y files; all green"
-}
-```
-
-`metadata.stacks` MUST be a JSON array listing every stack actually tested in this run. If only Go files changed, write `["go"]`; if Go + frontend, write `["go", "frontend"]`. Downstream tooling keys off this field.
-
-Filename is always `ut_output.json` — there are no per-language variants. If a previous run wrote the file, overwrite it.
-
----
-
 ## After Completion
 
 See `code-writing-protocols` skill — After Completion.
@@ -422,7 +375,7 @@ Before completing the task, verify:
 **Coverage (per detected stack)**
 - [ ] All public functions / exported components / hooks tested.
 - [ ] Every error/exception path exercised.
-- [ ] Every domain invariant from `domain_model.json` exercised (when model present).
+- [ ] Every domain invariant from `domain_model.md` exercised (when model present).
 - [ ] Every Test Mandate row from `plan.md` exercised (when plan present).
 - [ ] Bug-hunting scenarios applied (boundary, security, concurrency/async, state transitions).
 
@@ -433,5 +386,4 @@ Before completing the task, verify:
 
 **Deliverables produced**
 - [ ] Test files written to the correct locations per stack.
-- [ ] `ut_output.json` written to `{PROJECT_DIR}/` with `metadata.stacks` as an array.
-- [ ] Mandate coverage matrix included in `ut_output.json` (when plan exists).
+- [ ] Test Mandate coverage matrix output on screen (when plan exists).

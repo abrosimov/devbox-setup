@@ -110,9 +110,9 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
      - If project uses a theme object (e.g., Tailwind, Stitches, vanilla-extract) → map tokens to theme config
      - If project has no token system yet → create one from this file; do not hardcode raw values
      - Colour, spacing, typography, shadow, radius, breakpoint, and z-index tokens MUST come from this file — never invent values
-   - **`design_output.json`** — Structured output. Read `figma_source` for the Figma file URL/key and `figma_artifacts` for diagram URLs
-5. **Verify against Figma source** (if `design_output.json` has `figma_source`): ask the user to share a screenshot of the referenced Figma node so you can compare implementation against the original design. Flag visual discrepancies before completing.
-6. **Read domain model** (if available): Look for `domain_model.json` (preferred) or `domain_model.md` in `${PROJECT_DIR}/`. Extract:
+   - **Figma references** in `design.md` — read the Figma file URL/key and diagram URLs for source-of-truth comparison
+5. **Verify against Figma source** (if `design.md` names a Figma source): ask the user to share a screenshot of the referenced Figma node so you can compare implementation against the original design. Flag visual discrepancies before completing.
+6. **Read domain model** (if available): Look for `domain_model.md` in `${PROJECT_DIR}/`. Extract:
    - **Ubiquitous language** — use these exact terms in component names, props, state variables
    - **Domain events** — use event names from model when naming callbacks and handlers
    - **System constraints** — respect performance/UX constraints
@@ -272,7 +272,7 @@ See `code-writing-protocols` skill — Pre-Handoff Self-Review (From Plan, Comme
 
 ## Handoff Protocol
 
-**Receives from**: Implementation Planner (`plan.md`, `plan_output.json`), Designer (`design.md`, `design_output.json`), API Designer (`api_spec.yaml`)
+**Receives from**: Implementation Planner (`plan.md`), Designer (`design.md`), API Designer (`api_spec.yaml`)
 **Produces for**: Unit Test Writer Frontend
 **Deliverables**:
   - source code (direct edits)

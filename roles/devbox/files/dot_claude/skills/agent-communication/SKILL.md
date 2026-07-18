@@ -14,15 +14,14 @@ Standardised patterns for agent-to-agent handoffs, user communication, and escal
 Every agent must define its position in the pipeline:
 
 ```markdown
-**Receives from**: <upstream agent or "User"> (`document.md` + optionally `{stage}_output.json`)
+**Receives from**: <upstream agent or "User"> (`document.md`)
 **Produces for**: <downstream agent or "User">
 **Deliverables**:
   - `document.md` — primary (human-readable reasoning and rationale)
-  - `{stage}_output.json` — supplementary (structured contract for downstream agents, see `structured-output` skill)
 **Completion criteria**: <what must be true before handoff>
 ```
 
-When reading upstream output, check for `{stage}_output.json` first (faster, typed). Fall back to the markdown file if JSON is not available.
+SE agents optionally emit `se_{lang}_output.json` / `se_frontend_output.json` alongside the source code — read by the Test Writer and Code Reviewer (see `structured-output` skill).
 
 ### Common Sequences
 
@@ -52,18 +51,18 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 
 | Agent | Reads | Writes |
 |-------|-------|--------|
-| **TPM** | *(user input)* | `spec.md`, `research.md`, `decisions.md`, `spec_output.json` |
-| **Domain Expert** | `spec.md`, `spec_output.json` | `domain_analysis.md`, `domain_output.json` |
-| **Domain Modeller** | `domain_analysis.md`, `domain_output.json`, `spec.md` | `domain_model.md`, `domain_model.json` |
-| **Designer** | `spec.md`, `domain_analysis.md`, `plan.md`?, `api_design.md`? | `design.md`, `design_system.tokens.json`, `design_output.json` |
-| **Impl Planner** | `spec.md`, `spec_output.json`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `plan.md`, `plan_output.json` |
-| **Database Designer** | `plan.md`, `plan_output.json`, `spec.md`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `schema_design.md`, `migrations/` |
-| **API Designer** | `plan.md`, `plan_output.json`, `spec.md`, `domain_analysis.md`, `domain_model.md`, `domain_model.json` | `api_design.md`, `api_spec.yaml`, `api_design_output.json` |
-| **SE (backend)** | `plan.md`, `plan_output.json`, `api_spec.yaml`, `schema_design.md`, `domain_model.md`?, `domain_model.json`? | *(source code)*, `se_{lang}_output.json` |
-| **SE (frontend)** | `plan.md`, `plan_output.json`, `design.md`, `design_output.json`, `api_spec.yaml`, `domain_model.md`?, `domain_model.json`? | *(source code)*, `se_frontend_output.json` |
-| **Observability** | `plan.md`, `plan_output.json` | *(dashboards, alerts)* |
-| **Test Writer** | `plan.md`, `spec.md`, `domain_model.json`?, `domain_model.md`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(test files)* |
-| **Code Reviewer** | `plan.md`, `spec.md`, `domain_model.json`?, `domain_model.md`?, `design.md`?, `design_output.json`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(review report — inline)* |
+| **TPM** | *(user input)* | `spec.md`, `research.md`, `decisions.md` |
+| **Domain Expert** | `spec.md` | `domain_analysis.md` |
+| **Domain Modeller** | `domain_analysis.md`, `spec.md` | `domain_model.md` |
+| **Designer** | `spec.md`, `domain_analysis.md`, `plan.md`?, `api_design.md`? | `design.md`, `design_system.tokens.json` |
+| **Impl Planner** | `spec.md`, `domain_analysis.md`, `domain_model.md` | `plan.md` |
+| **Database Designer** | `plan.md`, `spec.md`, `domain_analysis.md`, `domain_model.md` | `schema_design.md`, `migrations/` |
+| **API Designer** | `plan.md`, `spec.md`, `domain_analysis.md`, `domain_model.md` | `api_design.md`, `api_spec.yaml` |
+| **SE (backend)** | `plan.md`, `api_spec.yaml`, `schema_design.md`, `domain_model.md`? | *(source code)*, `se_{lang}_output.json` |
+| **SE (frontend)** | `plan.md`, `design.md`, `api_spec.yaml`, `domain_model.md`? | *(source code)*, `se_frontend_output.json` |
+| **Observability** | `plan.md` | *(dashboards, alerts)* |
+| **Test Writer** | `plan.md`, `spec.md`, `domain_model.md`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(test files)* |
+| **Code Reviewer** | `plan.md`, `spec.md`, `domain_model.md`?, `design.md`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(review report — inline)* |
 | **Content Reviewer** | agent/skill artifact, 2-3 referenced skills | `<audit-findings>` XML (inline) |
 | **Freshness Auditor** | all `agents/*.md`, all `skills/*/SKILL.md` | `<audit-findings scope="library">` XML (inline) |
 | **Consistency Checker** | all `agents/*.md`, all `skills/*/SKILL.md`, all `commands/*.md` | `<audit-findings scope="library">` XML (inline) |
@@ -79,16 +78,7 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 
 **Rule**: When an agent's Step 1 lists files to check, it MUST match this table. If you add a new agent or artifact, update this table first.
 
-**Fallback**: If a JSON file doesn't exist, fall back to the corresponding markdown file. Never fail because a JSON file is missing (see `structured-output` skill — Graceful Degradation Rule).
-
-### Work Stream Handoffs
-
-When the planner produces work streams, downstream agents consume them via `plan_output.json`:
-
-1. **Each `/techne-*` command reads** `plan_output.json` → extracts `work_streams` and `parallelism_groups`
-2. **Each stream's agent** receives its assigned `requirements` list as scope
-3. **API contract is the handshake** — frontend streams depend on API contract completion, not backend implementation
-4. **Schema before backend** — if a schema stream exists, it must complete before backend implementation begins
+**Fallback**: Optional `se_*_output.json` reads are best-effort — never fail because one is missing (see `structured-output` skill — Graceful Degradation Rule).
 
 ---
 
@@ -319,43 +309,6 @@ Action: [Fix blocking and re-review] or [Ready to proceed]
 
 ---
 
-## Structured Handoff Protocol
-
-When chaining `/techne-*` commands (especially during long sessions or after compaction), include structured context in the next agent's prompt to preserve critical state.
-
-### Handoff Schema
-
-```json
-{
-  "handoff": {
-    "from_agent": "string (agent name)",
-    "to_agent": "string (target agent name)",
-    "status": "complete | partial | blocked",
-    "branch": "string (current git branch)",
-    "files_modified": ["string (relative paths)"],
-    "decisions_made": [
-      { "question": "string", "decision": "string", "rationale": "string" }
-    ],
-    "blocking_issues": ["string (issues requiring resolution)"],
-    "context_keys": {
-      "jira_issue": "string",
-      "plan_path": "string",
-      "output_json": "string (path to structured output)"
-    }
-  }
-}
-```
-
-### When to Use
-
-| Situation | Use Structured Handoff? |
-|-----------|------------------------|
-| `/techne-implement` → `/techne-test` → `/techne-review` chain | Yes — pass via prompt context |
-| After context compaction | Yes — restore from `pre_compact_mask` output |
-| Single-agent interactive session | No — free-text is fine |
-
-### Compaction Survival
+## Compaction Survival
 
 The `pre_compact_mask` hook (in `hooks.json`) automatically captures branch, modified files, and key context before compaction. After compaction, the preserved context helps the next agent resume work without re-reading the entire codebase.
-
-For multi-step sessions, each agent should include `context_keys` in its completion output so the next agent can quickly locate all relevant artifacts without searching.

@@ -134,7 +134,7 @@ You are **antagonistic** to BOTH the implementation AND the tests:
 
 ## Scope
 
-**Identify issues only.** Never implement fixes. Your deliverable is a review report and a structured output file. The Software Engineer fixes issues.
+**Identify issues only.** Never implement fixes. Your deliverable is a review report (inline in the conversation). The Software Engineer fixes issues.
 
 ## Handoff Protocol
 
@@ -142,8 +142,7 @@ You are **antagonistic** to BOTH the implementation AND the tests:
 **Produces for**: back to Software Engineer (if issues) or User (if approved)
 **Deliverables**:
   - Structured review report (markdown, inline in the conversation)
-  - `cr_output.json` written to `{PROJECT_DIR}/` — see "Structured Output" below
-**Completion criteria**: language detection completed, all verification checkpoints for every detected stack completed, issues categorised by severity, `cr_output.json` written.
+**Completion criteria**: language detection completed, all verification checkpoints for every detected stack completed, issues categorised by severity.
 
 ## Task Context
 
@@ -216,15 +215,15 @@ Likewise, do NOT consult stack-specific skills (`{lang}-engineer`, `{lang}-testi
 
    Extract: `domain_compliance`, `autonomous_decisions`, `requirements_implemented`, `verification_summary`. For the frontend file, also extract `design_compliance`. If a file is absent, fall back to reviewing code directly.
 
-4. **Domain model** (if present): `domain_model.json` (preferred) or `domain_model.md` in `{PROJECT_DIR}/`. Extract:
+4. **Domain model** (if present): `domain_model.md` in `{PROJECT_DIR}/`. Extract:
    - **Ubiquitous language** — verify code uses domain terms correctly (type/class/component names, methods, props).
    - **Aggregates + invariants** — verify invariants are enforced and aggregate boundaries respected.
    - **Domain events** — verify event names match the model (Go/Python: event types; Frontend: callback/handler names).
    - If absent, skip domain-compliance checks.
 
 5. **Design artefacts** (only when frontend is in the stack set):
-   - `design.md`, `design_system.tokens.json`, `design_output.json` in `{PROJECT_DIR}/`.
-   - If `design_output.json.figma_source` is set, ask the user to provide a screenshot of the referenced Figma node for visual comparison.
+   - `design.md`, `design_system.tokens.json` in `{PROJECT_DIR}/`.
+   - If `design.md` references a Figma source, ask the user to provide a screenshot of the referenced Figma node for visual comparison.
 
 ### Step 3: Requirements Analysis
 
@@ -404,12 +403,9 @@ Flag any shortcut (changing a signature directly, skipping branches, deprecating
 
 For each acceptance criterion: identify the implementing code, verify it matches exactly, flag gaps. If a domain model is present, run the ubiquitous-language / invariant / aggregate-boundary checks from C-10 and audit `autonomous_decisions` from the SE output.
 
-### Step 11: Report + Structured Output
+### Step 11: Report
 
-Produce two artefacts:
-
-1. **Markdown report (inline in the conversation)** — see template below.
-2. **`cr_output.json`** — write to `{PROJECT_DIR}/cr_output.json` using the structure under "Structured Output" below.
+Produce the **markdown report (inline in the conversation)** — see template below.
 
 ---
 
@@ -499,54 +495,6 @@ Reinforce good patterns — well-structured error handling, excellent accessibil
 Review: X blocking | Y important | Z suggestions
 Action: [Fix blocking and re-review] or [Ready to merge]
 ```
-
----
-
-## Structured Output: `cr_output.json`
-
-Write `cr_output.json` to `{PROJECT_DIR}/`. There is no formal JSON schema for code reviewer output yet; use the following shape until one is added.
-
-```json
-{
-  "metadata": {
-    "agent": "code-reviewer",
-    "stacks": ["go", "frontend"],
-    "mode": "fast",
-    "branch": "PROJ-123_feature",
-    "jira_issue": "PROJ-123",
-    "date": "YYYY-MM-DD"
-  },
-  "checkpoint_results": [
-    { "id": "C-1", "name": "Comment Quality", "status": "pass" },
-    { "id": "GO-A", "name": "Error Handling", "status": "fail", "stack": "go" }
-  ],
-  "enumeration_summary": {
-    "lint_suppressions_added": 0,
-    "error_or_exception_sites": 0,
-    "type_safety_violations": 0,
-    "accessibility_violations": 0,
-    "untested_public_symbols": 0,
-    "skipped_tests": 0
-  },
-  "issues": {
-    "must_fix": [
-      { "file": "user.go", "line": 45, "checkpoint": "GO-A", "issue": "...", "fix": "..." }
-    ],
-    "should_fix": [],
-    "consider": []
-  },
-  "requirements_coverage": [
-    { "requirement": "FR-001", "status": "pass", "location": "user.go:120" }
-  ],
-  "counter_evidence_findings": [],
-  "verdict": "blocked" | "approved",
-  "summary": "X blocking | Y important | Z suggestions"
-}
-```
-
-`metadata.stacks` MUST be a JSON array listing every stack actually reviewed in this run. If only Go files changed, write `["go"]`; if Go + frontend, write `["go", "frontend"]`. Downstream tooling keys off this field.
-
-If a stack-specific output file already exists from a previous reviewer run, overwrite it. Filename is always `cr_output.json` — there are no per-language variants.
 
 ---
 
@@ -650,6 +598,5 @@ Before completing the review, verify:
 
 **Deliverables produced**
 - [ ] Markdown report inline.
-- [ ] `cr_output.json` written to `{PROJECT_DIR}/` with `metadata.stacks` as an array of actually-reviewed stacks.
 
 ---

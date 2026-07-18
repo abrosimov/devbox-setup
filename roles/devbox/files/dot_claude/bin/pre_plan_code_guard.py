@@ -106,8 +106,7 @@ FENCE_RE: Final[re.Pattern[str]] = re.compile(
 
 REMEDIATION: Final[str] = (
     "\nThe implementation planner describes WHAT, not HOW. Remove the code and\n"
-    "describe the behaviour (inputs, outputs, rules) instead. The machine-readable\n"
-    "execution DAG belongs in plan_output.json, not as a code block in plan.md.\n"
+    "describe the behaviour (inputs, outputs, rules) instead.\n"
 )
 USAGE_EXIT: Final[int] = 10
 

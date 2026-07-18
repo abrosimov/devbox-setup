@@ -93,19 +93,8 @@ All project documentation is organized by Jira issue and branch name:
 │   │   ├── design_system.tokens.json  # W3C Design Tokens
 │   │   ├── schema_design.md  # Database schema design rationale
 │   │   ├── migrations/       # Database migration files
-│   │   ├── spec_output.json  # TPM structured output
-│   │   ├── domain_output.json  # Domain Expert structured output
-│   │   ├── domain_model.json  # Domain Modeller structured output
-│   │   ├── plan_output.json  # Planner structured output
-│   │   ├── design_output.json  # Designer structured output
-│   │   ├── api_design_output.json  # API Designer structured output
 │   │   ├── se_{lang}_output.json   # Backend SE structured output
 │   │   ├── se_frontend_output.json # Frontend SE structured output
-│   │   ├── pipeline_state.json  # Pipeline progress tracking
-│   │   ├── decisions.json    # Pipeline decision log
-│   │   ├── progress/              # Progress spine tracking
-│   │   │   ├── plan.json          # Milestone DAG (TPM creates, Planner refines)
-│   │   │   └── *.json             # Per-agent status files
 │   │   └── memory/
 │   │       └── upstream.jsonl # Knowledge graph — domain knowledge, decisions (VCS)
 │   └── add_user_auth_v2/    # Branch: PROJ-123_add_user_auth_v2
@@ -137,16 +126,6 @@ All project documentation is organized by Jira issue and branch name:
 | Database migrations | Database Designer | `{PROJECT_DIR}/migrations/` |
 | Backend SE structured output | SE (backend) | `{PROJECT_DIR}/se_{lang}_output.json` |
 | Frontend SE structured output | SE (frontend) | `{PROJECT_DIR}/se_frontend_output.json` |
-| TPM structured output | TPM | `{PROJECT_DIR}/spec_output.json` |
-| Domain structured output | Domain Expert | `{PROJECT_DIR}/domain_output.json` |
-| Domain model structured output | Domain Modeller | `{PROJECT_DIR}/domain_model.json` |
-| Planner structured output | Impl Planner | `{PROJECT_DIR}/plan_output.json` |
-| Designer structured output | Designer | `{PROJECT_DIR}/design_output.json` |
-| API Designer structured output | API Designer | `{PROJECT_DIR}/api_design_output.json` |
-| Pipeline state | Commands | `{PROJECT_DIR}/pipeline_state.json` |
-| Pipeline decisions | Commands | `{PROJECT_DIR}/decisions.json` |
-| Progress plan | TPM, Impl Planner | `{PROJECT_DIR}/progress/plan.json` |
-| Agent progress | Each pipeline agent | `{PROJECT_DIR}/progress/{agent}.json` |
 | Memory (upstream) | TPM, Domain, Planners | `{PROJECT_DIR}/memory/upstream.jsonl` |
 | Memory (downstream) | Code Reviewers | `.claude/memory/downstream.jsonl` (project root, gitignored) |
 

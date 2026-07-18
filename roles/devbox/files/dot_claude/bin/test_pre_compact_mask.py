@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import json
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -44,69 +43,6 @@ def test_render_with_modified_and_staged() -> None:
     assert "  - b.py" in out
     assert "Staged files:" in out
     assert "  - c.py" in out
-
-
-def test_render_with_pipeline_state() -> None:
-    state = pcm.State(
-        branch="x",
-        pipeline_state_path="/path/to/pipeline_state.json",
-        pipeline_state_stages=[("plan", "completed"), ("test", "in_progress")],
-    )
-    out = pcm.render(state)
-    assert "Pipeline state: /path/to/pipeline_state.json" in out
-    assert "  plan: completed" in out
-    assert "  test: in_progress" in out
-
-
-def test_read_pipeline_stages_filters_pending(tmp_path: Path) -> None:
-    state_file = tmp_path / "state.json"
-    state_file.write_text(
-        json.dumps(
-            {
-                "stages": {
-                    "plan": {"status": "completed"},
-                    "test": {"status": "pending"},
-                    "review": {"status": "in_progress"},
-                }
-            }
-        ),
-        encoding="utf-8",
-    )
-    stages = pcm.read_pipeline_stages(str(state_file))
-    keys = {name for name, _ in stages}
-    assert "plan" in keys
-    assert "review" in keys
-    assert "test" not in keys
-
-
-def test_read_pipeline_stages_handles_invalid_json(tmp_path: Path) -> None:
-    state_file = tmp_path / "state.json"
-    state_file.write_text("not json", encoding="utf-8")
-    assert pcm.read_pipeline_stages(str(state_file)) == []
-
-
-def test_read_pipeline_stages_handles_missing_stages_key(tmp_path: Path) -> None:
-    state_file = tmp_path / "state.json"
-    state_file.write_text("{}", encoding="utf-8")
-    assert pcm.read_pipeline_stages(str(state_file)) == []
-
-
-def test_find_pipeline_state_picks_first_match(tmp_path: Path) -> None:
-    (tmp_path / "docs" / "implementation_plans" / "PROJ-1").mkdir(parents=True)
-    state = tmp_path / "docs" / "implementation_plans" / "PROJ-1" / "pipeline_state.json"
-    state.write_text("{}", encoding="utf-8")
-    assert pcm.find_pipeline_state(tmp_path) == str(state)
-
-
-def test_find_pipeline_state_falls_back_to_claude_dir(tmp_path: Path) -> None:
-    (tmp_path / ".claude").mkdir()
-    state = tmp_path / ".claude" / "pipeline_state.json"
-    state.write_text("{}", encoding="utf-8")
-    assert pcm.find_pipeline_state(tmp_path) == str(state)
-
-
-def test_find_pipeline_state_returns_none_when_absent(tmp_path: Path) -> None:
-    assert pcm.find_pipeline_state(tmp_path) is None
 
 
 def test_collect_state_uses_git_output(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

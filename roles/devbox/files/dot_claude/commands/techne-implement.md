@@ -92,8 +92,8 @@ Check for project markers (check ALL — a project may have multiple):
 | Unclear | — | Ask user |
 
 **Fullstack routing** — when both backend and frontend markers exist:
-1. Check for `plan_output.json` at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan_output.json`
-2. If `work_streams` exist in the JSON, route to the agent specified in each stream
+1. Check for `plan.md` at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md`
+2. If `plan.md` defines work streams, route to the agent specified in each stream
 3. If no work streams, ask user: "This is a fullstack project. Which part should I implement? (A) Backend, (B) Frontend, (C) Both sequentially"
 4. When running both, run backend first (it may produce API types/contracts the frontend needs), then frontend
 

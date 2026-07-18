@@ -600,7 +600,7 @@ State the concern, explain risks, and ask for direction.
 
 ## Handoff Protocol
 
-**Receives from**: Implementation Planner (`plan.md`, `plan_output.json`)
+**Receives from**: Implementation Planner (`plan.md`)
 **Produces for**: *(terminal — dashboards, alerts deployed)*
 **Deliverables**:
   - Grafana dashboards (Jsonnet/JSON)

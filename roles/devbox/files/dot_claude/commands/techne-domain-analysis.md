@@ -57,7 +57,6 @@ The agent will:
 - Discover domain events (past tense), commands (imperative), and actors
 - Define quality metrics (what matters, not what's easy to measure)
 - Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/domain_analysis.md`
-- Create `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/domain_output.json`
 
 **Important**: The domain expert is intentionally skeptical and will push back on unvalidated assumptions. This is by design - the goal is to catch issues before implementation.
 
@@ -73,7 +72,7 @@ This is an interactive process. Engage with the challenges - they improve the fi
 
 ### 5. After Completion
 
-When domain analysis is complete (all challenges resolved), check `domain_output.json` for complexity:
+When domain analysis is complete (all challenges resolved), check `domain_analysis.md` for complexity:
 - **Cynefin = `clear` AND < 5 entities** → skip Domain Modeller, go to `/techne-plan`
 - **Otherwise** → recommend Domain Modeller for formal DDD
 

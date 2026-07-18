@@ -3,7 +3,7 @@ name: api-designer
 description: API designer who creates contracts (REST/OpenAPI or Protobuf/gRPC) consumed by both frontend and backend. Acts as the bridge between implementation planning and engineering.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: config, agent-communication, structured-output, shared-utils, mcp-sequential-thinking, agent-base-protocol
+skills: config, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol
 updated: 2026-02-10
 ---
 
@@ -88,10 +88,10 @@ Recommendation: A for web-facing APIs, B for internal services.
 ### Step 1: Receive Input
 
 Check for existing documentation at `{PROJECT_DIR}/` (see `config` skill for `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`):
-- `plan.md` / `plan_output.json` — Implementation plan (primary input)
+- `plan.md` — Implementation plan (primary input)
 - `spec.md` — Product specification
 - `domain_analysis.md` — Domain analysis
-- `domain_model.md` / `domain_model.json` — Formal DDD model (from Domain Modeller, if exists). Read `bounded_contexts`, `aggregates[].commands`, `domain_events`, `context_map`, and `system_constraints` to inform API boundaries and endpoints.
+- `domain_model.md` — Formal DDD model (from Domain Modeller, if exists). Read the bounded contexts, aggregate commands, domain events, context map, and system constraints to inform API boundaries and endpoints.
 - `research.md` — Research findings
 
 If no documents exist, work directly with user requirements.
@@ -287,14 +287,6 @@ One-paragraph summary of what this API does.
 >
 > Say **'continue'** to proceed, or provide corrections.
 ```
-
-### Step 10: Write Structured Output
-
-Write `{PROJECT_DIR}/api_design_output.json` following the schema in `structured-output` skill.
-
-Include all required metadata fields. For stage-specific fields, extract key data from the API design you just wrote: format (openapi/protobuf), resources with operations and relationships, error strategy, pagination approach, and spec file path.
-
-**This step is supplementary** — `api_design.md` is the primary deliverable. The JSON enables downstream agent consumption.
 
 ---
 

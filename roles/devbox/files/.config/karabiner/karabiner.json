@@ -11,7 +11,13 @@
                   {
                     "identifiers": [
                       {
+                        "description": "MacBook built-in keyboard",
                         "is_built_in_keyboard": true
+                      },
+                      {
+                        "description": "Kinesis Advantage360 Pro (ZMK)",
+                        "product_id": 24926,
+                        "vendor_id": 7504
                       }
                     ],
                     "type": "device_if"
@@ -53,7 +59,13 @@
                   {
                     "identifiers": [
                       {
+                        "description": "MacBook built-in keyboard",
                         "is_built_in_keyboard": true
+                      },
+                      {
+                        "description": "Kinesis Advantage360 Pro (ZMK)",
+                        "product_id": 24926,
+                        "vendor_id": 7504
                       }
                     ],
                     "type": "device_if"

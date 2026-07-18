@@ -20,6 +20,7 @@ Checks (report-only):
   * duplicate           identical rule listed twice in one file's allow/deny
   * unparseable         settings file is not valid JSON
 """
+
 from __future__ import annotations
 
 import json
@@ -385,9 +386,7 @@ def run(argv: list[str], cwd: Path) -> tuple[int, list[ProjectReport] | str]:
             return 2, f"No projects with .claude/ found under {workspace}"
         for claude_dir in claude_dirs:
             layers = _project_layers(claude_dir, include_user=True)
-            reports.append(
-                ProjectReport(_project_label(claude_dir, workspace), analyse(layers))
-            )
+            reports.append(ProjectReport(_project_label(claude_dir, workspace), analyse(layers)))
     else:
         claude_dir = find_project_claude_dir(cwd)
         if claude_dir is None:
@@ -419,10 +418,7 @@ def format_report(reports: list[ProjectReport]) -> str:
 
 
 def format_json(reports: list[ProjectReport]) -> str:
-    payload = [
-        {"project": r.label, "findings": [f.to_json() for f in r.findings]}
-        for r in reports
-    ]
+    payload = [{"project": r.label, "findings": [f.to_json() for f in r.findings]} for r in reports]
     return json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
 
 

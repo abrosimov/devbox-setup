@@ -18,9 +18,11 @@ import json
 import re
 import sys
 from collections import Counter
-from collections.abc import Iterator
 from pathlib import Path
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 MAX_FILES: Final[int] = 50
 TOP_BASH: Final[int] = 60

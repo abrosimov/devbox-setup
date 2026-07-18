@@ -1,25 +1,62 @@
 # Ruff strict-mode migration
 
-**Status**: open
+**Status**: done (2026-07) — `ruff check` and `ruff format --check` both exit 0
+across the tree, and `--exit-zero` has been removed from `make lint-py`, so CI now
+enforces the strict baseline. The deliberate ignores listed in "Progress (2026-07)"
+below were accepted as permanent design decisions.
 **Created**: 2026-06-10
 **Repo**: `devbox-setup`
 
-## Context
+## Progress (2026-07)
+
+The `bin/` and `skills/*/scripts/` trees were brought to a clean `ruff check` and
+`ruff format` on branch `fix_linters`. `ruff check .` now exits 0 and
+`ruff format --check .` reports no diffs, so the formatter no longer breaks CI.
+
+Most violations were **fixed in code** (behaviour-preserving), verified green by
+`make typecheck`, `make test`, `make test-git-hooks`, and `make test-claude-hooks`:
+
+- `UP017` (`datetime.UTC`), `FURB188` (`str.removeprefix`), `I001`, `RUF100`,
+  `SIM114`, `PLC0208`, `RUF021`, `Q003`, `TC005` — ruff safe auto-fixes.
+- `PTH111`/`PTH109` — `os.path.expanduser`/`os.getcwd` → `pathlib.Path`.
+- `SIM102`/`SIM105`/`SIM110`, `TRY300`, `PERF401`, `PLR1714` — hand refactors in
+  `bash_decision_gate.py`.
+- `PT018` (split composite asserts), `RUF059`/`ARG001` (drop unused test
+  fixtures/unpacks), `N802` (`test_blocks_kill_KILL` → `test_blocks_kill_sigkill`,
+  `test_allows_kill_TERM` → `test_allows_kill_sigterm`) — in `test_*` files.
+- `TC003` — `Iterator` moved under `TYPE_CHECKING` in `scan_transcripts.py`.
+
+The following are **resolved via deliberate, scoped ignores** — each is a permanent
+design decision, not a punt. They mirror the existing `validate_skill_evals.py`
+precedent and were accepted as permanent, so `--exit-zero` was removed:
+
+| Rule(s) | Where | Mechanism | Reason |
+|---------|-------|-----------|--------|
+| `RUF001` | `bash_decision_gate.py`, `proposal_discipline.py`, `test_proposal_discipline.py` | per-file-ignore (former) + inline `# noqa` (latter two) | Intentional Cyrillic in Russian-language deny messages / feedback regex / test fixtures — the characters are meaningful, not accidental homoglyphs, so they must not be "corrected". |
+| `C901`, `PLR0911`, `PLR0912` | `bash_decision_gate.py` | per-file-ignore | Security-critical Bash gate; the command-shape dispatchers are branchy by nature (one branch per shell command / redirect shape). Splitting them would fragment the safety logic and reduce reviewability. Behaviour is pinned by `test_bash_decision_gate.py`. |
+| `S105` | `bash_decision_gate.py` `_SECRET_DENY_REASON` | inline `# noqa` | False positive — the constant is a deny-reason message template, not a credential. |
+| `S110` | `bash_decision_gate.py` `log_miss` | inline `# noqa` | Telemetry write is best-effort and MUST NOT break the hook. |
+
+Migration complete: `--exit-zero` was removed from the `lint-py` target and the
+explanatory comment block updated, so `make lint` now fails on any new `ruff check`
+violation under `roles/devbox/files/dot_claude/`.
+
+## Context (historical)
 
 `pyproject.toml` enables `ruff check select = ["ALL"]` with a curated `ignore`
 list (see the comment block in `pyproject.toml`). This catches modern Python
 hygiene problems strictly.
 
 The existing Python scripts under `roles/devbox/files/dot_claude/bin/` and a
-handful in `scripts/` predate this strict baseline and currently produce
-**~644 violations** after `ruff format` and `ruff check --fix` have been applied.
+handful in `scripts/` predated this strict baseline and, at the June 2026
+baseline, produced **~644 violations** after `ruff format` and `ruff check --fix`.
 
 To unblock the rest of the dev tooling (`make lint-yaml`, `make typecheck`,
-`make test`, and `ruff format --check`), `make lint-py` runs
-`ruff check --exit-zero` — it reports issues but does not fail. The formatter
-remains strict (it is deterministic and auto-fixable).
+`make test`, and `ruff format --check`), `make lint-py` ran `ruff check
+--exit-zero` — reporting issues without failing — while the formatter stayed
+strict. That advisory mode has since been removed (see "Flip the switch" above).
 
-This task captures the work to bring the existing code up to strict and then
+This task captured the work to bring the existing code up to strict and then
 flip `--exit-zero` off.
 
 ## Violation inventory (baseline, June 2026)
@@ -79,19 +116,20 @@ One commit per logical category. Easiest first (modernisations) → semantic las
 6. **Long tail** (`E741`, `S108`, `FBT*`, `RET*`, `TC003`, `PIE810`, `N802`,
    `PLR0912`, `TRY300`, etc.): one-shot pass.
 
-## Flip the switch
+## Flip the switch (done)
 
-When `make lint-py` is clean (no violations from `ruff check`), edit `Makefile`:
+The `Makefile` `lint-py` target was flipped to strict:
 
 ```diff
  lint-py: $(DEV_SENTINEL)
--	@$(DEV_BIN)/ruff check --exit-zero .
-+	@$(DEV_BIN)/ruff check .
- 	@$(DEV_BIN)/ruff format --check .
+-	@$(DEV_BIN)/ruff check --exit-zero roles/devbox/files/dot_claude/
++	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/
+ 	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/
 ```
 
-…and remove the explanatory comment block above the target. Update
-`pyproject.toml` to remove any per-file `ignore` rules that are no longer needed.
+The explanatory comment block above the target was updated to describe strict
+enforcement. The `per-file-ignores` in `pyproject.toml` were kept deliberately —
+see the table under "Progress (2026-07)" for why each is permanent.
 
 ## Related
 

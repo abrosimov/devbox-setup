@@ -128,6 +128,21 @@ ignore = [
     "EXE001",      # Shebang present but file not executable — handled by deploy
     "E402",        # sys.path.insert hack before imports is the shared-lib pattern
 ]
+# bash_decision_gate.py is the security-critical Bash PreToolUse gate. Its
+# command-shape dispatchers (walk_commands, check_audit_dir, check_shell_inline_exec,
+# _is_write_command, _write_path_args) are branchy by nature — one branch per shell
+# command / redirect shape — and the sibling test_bash_decision_gate.py suite pins
+# their behaviour. Splitting them into helpers would fragment the safety logic and
+# reduce reviewability without lowering real complexity, so the complexity rules are
+# scoped off here rather than refactored. RUF001 fires on the intentional Cyrillic in
+# the Russian-language deny-reason messages, which is user-facing prose, not an
+# accidental homoglyph in an identifier.
+"roles/devbox/files/dot_claude/bin/bash_decision_gate.py" = [
+    "C901",        # command-shape dispatchers are inherently branchy; tests pin behaviour
+    "PLR0911",     # guard-clause returns, one per command class
+    "PLR0912",     # branch-per-command-shape
+    "RUF001",      # intentional Cyrillic in Russian deny-reason messages
+]
 # Phase 5 rename via copy: validate_skill_evals.py is a byte-identical copy of
 # the legacy validate-skill-evals (no extension), which Ruff did not see because
 # of the missing .py suffix. The copy now surfaces inherited style debt (long

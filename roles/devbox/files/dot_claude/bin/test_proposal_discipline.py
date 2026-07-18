@@ -61,7 +61,7 @@ def test_detect_feedback_en_no_match_for_unrelated_text() -> None:
 
 
 def test_detect_feedback_ru_chto_naschet() -> None:
-    assert pd.detect_feedback("Что насчёт варианта с rsync?")
+    assert pd.detect_feedback("Что насчёт варианта с rsync?")  # noqa: RUF001 -- Russian test fixture
 
 
 def test_detect_feedback_ru_pomenyay() -> None:

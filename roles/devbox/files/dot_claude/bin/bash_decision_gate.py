@@ -41,6 +41,7 @@ a JSONL record to ~/.claude/state/missed_approvals/YYYY/MM/DD/HH.jsonl
 
 from __future__ import annotations
 
+import contextlib
 import fnmatch
 import json
 import os
@@ -50,17 +51,15 @@ import subprocess
 import sys
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final, Literal
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import env, hooks  # noqa: E402
-
 import bashlex
 import bashlex.errors
-
+from _claude_lib import env, hooks
 
 # ============================================================
 # CONSTANTS — Phase 1 (ported from safety_gate)
@@ -651,8 +650,7 @@ def evaluate_phase1_legacy(cmd: str) -> _Phase1LegacyDecision:
     if d.behavior == "deny":
         msg = d.reason or ""
         prefix = f"BLOCKED [{d.rule}]: "
-        if msg.startswith(prefix):
-            msg = msg[len(prefix) :]
+        msg = msg.removeprefix(prefix)
         return _Phase1LegacyDecision(blocked=True, rule_name=d.rule, message=msg)
     return _Phase1LegacyDecision(blocked=False)
 
@@ -671,7 +669,7 @@ _INTERP_DENY_REASON: Final[str] = (
 )
 
 _SECRET_DENY_REASON: Final[str] = (
-    "Path '{path}' содержит секреты (~/.ssh, ~/.aws, ~/.gnupg, *.pem, *.key, "
+    "Path '{path}' содержит секреты (~/.ssh, ~/.aws, ~/.gnupg, *.pem, *.key, "  # noqa: S105 -- deny-reason message template, not a credential
     "/etc/shadow, /etc/sudoers). Чтение и запись запрещены."
 )
 
@@ -737,7 +735,7 @@ def _nested_substitutions(word_node: object) -> Iterator[object]:
 def _resolve_cwd_shift(current: Path, target_str: str) -> Path:
     """Compute new effective_cwd after `cd <target_str>`."""
     if target_str.startswith("~"):
-        target_str = os.path.expanduser(target_str)
+        target_str = str(Path(target_str).expanduser())
     p = Path(target_str)
     if p.is_absolute():
         return p
@@ -808,9 +806,7 @@ def walk_commands(
                 if op in {"&&", ";"} and cd_pending is not None:
                     current = _resolve_cwd_shift(current, cd_pending)
                 cd_pending = None
-            elif pkind == "compound":
-                yield from walk_commands(p, current, depth + 1)
-            elif pkind == "list":
+            elif pkind in {"compound", "list"}:
                 yield from walk_commands(p, current, depth + 1)
 
 
@@ -858,9 +854,8 @@ def _shell_c_payload(argv: list[str]) -> str | None:
     for i, a in enumerate(argv[1:], start=1):
         if a == "-c" and i + 1 < len(argv):
             return argv[i + 1]
-        if a.startswith("-") and not a.startswith("--") and a.endswith("c"):
-            if i + 1 < len(argv):
-                return argv[i + 1]
+        if a.startswith("-") and not a.startswith("--") and a.endswith("c") and i + 1 < len(argv):
+            return argv[i + 1]
     return None
 
 
@@ -949,7 +944,7 @@ def check_shell_inline_exec(
 
 def _expand_user_arg(arg: str) -> str:
     if arg.startswith("~"):
-        return os.path.expanduser(arg)
+        return str(Path(arg).expanduser())
     return arg
 
 
@@ -960,7 +955,7 @@ def check_secret_path(argv: list[str]) -> Decision | None:
         candidates = {arg, _expand_user_arg(arg)}
         for cand in candidates:
             for pattern in SECRET_GLOBS:
-                expanded = os.path.expanduser(pattern)
+                expanded = str(Path(pattern).expanduser())
                 if fnmatch.fnmatchcase(cand, pattern) or fnmatch.fnmatchcase(cand, expanded):
                     return Decision(
                         behavior="deny",
@@ -987,9 +982,10 @@ def _resolve_arg_path(arg: str, eff_cwd: Path) -> Path:
 def _within(path: Path, ancestor: Path) -> bool:
     try:
         path.relative_to(ancestor)
-        return True
     except ValueError:
         return False
+    else:
+        return True
 
 
 def check_audit_dir(
@@ -1009,13 +1005,13 @@ def check_audit_dir(
         positionals = [a for a in argv[1:] if not a.startswith("-")]
         targets = positionals
     elif head == "find":
-        if any(f in argv[1:] for f in {"-delete", "-exec", "-execdir", "-ok"}):
+        if any(f in argv[1:] for f in ("-delete", "-exec", "-execdir", "-ok")):
             i = 1
             while i < len(argv) and not argv[i].startswith("-"):
                 targets.append(argv[i])
                 i += 1
     elif head == "sed":
-        if any(a == "-i" or a == "--in-place" or a.startswith("-i") for a in argv[1:]):
+        if any(a in {"-i", "--in-place"} or a.startswith("-i") for a in argv[1:]):
             targets = [a for a in argv[1:] if not a.startswith("-")][1:]
     elif head == "git" and len(argv) >= 2 and argv[1] in {"rm", "mv"}:
         targets = [a for a in argv[2:] if not a.startswith("-")]
@@ -1057,11 +1053,11 @@ def _is_write_command(argv: list[str]) -> bool:
         return True
     if head in AMBIGUOUS_COMMANDS:
         if head == "sed":
-            return any(a == "-i" or a == "--in-place" or a.startswith("-i") for a in argv[1:])
+            return any(a in {"-i", "--in-place"} or a.startswith("-i") for a in argv[1:])
         if head == "awk":
             return any(a in {"-i", "--in-place"} or "system(" in a for a in argv[1:])
         if head == "find":
-            return any(f in argv[1:] for f in {"-delete", "-exec", "-execdir", "-ok"})
+            return any(f in argv[1:] for f in ("-delete", "-exec", "-execdir", "-ok"))
         if head == "tar":
             return any(
                 ("c" in a or "x" in a) and a.startswith("-") and not a.startswith("--")
@@ -1089,10 +1085,7 @@ def _is_writable_target(target: str, eff_cwd: Path, extra: tuple[Path, ...]) -> 
     resolved = _resolve_arg_path(target, eff_cwd)
     if _within(resolved, eff_cwd) or resolved == eff_cwd:
         return True
-    for w in extra:
-        if _within(resolved, w) or resolved == w:
-            return True
-    return False
+    return any(_within(resolved, w) or resolved == w for w in extra)
 
 
 def _write_path_args(argv: list[str]) -> list[str]:
@@ -1121,7 +1114,7 @@ def _write_path_args(argv: list[str]) -> list[str]:
         return positionals[1:]
     if head == "tar":
         for i, a in enumerate(argv[1:], start=1):
-            if a == "-f" or a == "--file" and i + 1 < len(argv):
+            if a in {"-f", "--file"} and i + 1 < len(argv):
                 return [argv[i + 1]]
             if a.startswith("--file="):
                 return [a.split("=", 1)[1]]
@@ -1273,11 +1266,11 @@ def _load_bash_allow_patterns() -> list[str]:
     except json.JSONDecodeError:
         return []
     allow = data.get("permissions", {}).get("allow", [])
-    out: list[str] = []
-    for entry in allow:
-        if isinstance(entry, str) and entry.startswith("Bash(") and entry.endswith(")"):
-            out.append(entry[5:-1])
-    return out
+    return [
+        entry[5:-1]
+        for entry in allow
+        if isinstance(entry, str) and entry.startswith("Bash(") and entry.endswith(")")
+    ]
 
 
 def _load_allowed_dirs() -> list[str]:
@@ -1297,15 +1290,13 @@ def _writable_paths(allowed_dirs: list[str]) -> tuple[Path, ...]:
     out: list[Path] = []
     for d in allowed_dirs:
         try:
-            out.append(Path(os.path.expanduser(d)).resolve())
+            out.append(Path(d).expanduser().resolve())
         except (OSError, RuntimeError):
             continue
     tmp_env = os.environ.get("TMPDIR")
     if tmp_env:
-        try:
+        with contextlib.suppress(OSError, RuntimeError):
             out.append(Path(tmp_env).resolve())
-        except (OSError, RuntimeError):
-            pass
     # /tmp on macOS is a symlink to /private/tmp. Resolve so that
     # _within() comparisons against resolved target paths match.
     try:
@@ -1322,7 +1313,7 @@ def _writable_paths(allowed_dirs: list[str]) -> tuple[Path, ...]:
 
 def _telemetry_path() -> Path:
     home = Path(os.environ.get("HOME") or "/tmp")  # noqa: S108
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return (
         home
         / ".claude"
@@ -1351,7 +1342,7 @@ def _rotate_telemetry(path: Path) -> None:
         return
     if size < TELEMETRY_MAX_BYTES:
         return
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     rotated = path.with_name(f"{path.name}.{stamp}.old")
     try:
         path.replace(rotated)
@@ -1386,7 +1377,7 @@ def log_miss(
         if path.exists():
             _rotate_telemetry(path)
         record: dict[str, str] = {
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "ts": datetime.now(UTC).isoformat(),
             "cwd": cwd,
             "cmd": cmd,
             "reason": reason,
@@ -1396,7 +1387,7 @@ def log_miss(
         line = json.dumps(record, ensure_ascii=False)
         with path.open("a", encoding="utf-8") as fh:
             fh.write(line + "\n")
-    except Exception:  # noqa: BLE001  # telemetry MUST NOT break the hook
+    except Exception:  # noqa: BLE001, S110  # telemetry MUST NOT break the hook
         pass
 
 
@@ -1465,8 +1456,8 @@ def main() -> int:
     cmd = tool_input.get("command", "")
     if not isinstance(cmd, str) or not cmd.strip():
         return hooks.ALLOW
-    cwd_value = data.get("cwd", os.getcwd())
-    cwd = cwd_value if isinstance(cwd_value, str) else os.getcwd()
+    cwd_value = data.get("cwd", str(Path.cwd()))
+    cwd = cwd_value if isinstance(cwd_value, str) else str(Path.cwd())
 
     allowed_dirs = _load_allowed_dirs()
     settings_allow = _load_bash_allow_patterns()

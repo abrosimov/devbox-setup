@@ -249,16 +249,16 @@ lint-ansible: $(DEV_SENTINEL) $(COLLECTIONS_SENTINEL)
 lint-yaml: $(DEV_SENTINEL)
 	@$(DEV_BIN)/yamllint .
 
-# `ruff check` is in advisory mode (--exit-zero) until the legacy Python debt in
-# roles/devbox/files/dot_claude/bin/ is cleaned up — see
+# `ruff check` is enforced strictly (non-zero exit fails CI). The legacy Python
+# debt that once forced advisory mode (--exit-zero) has been cleared — see
 # roles/devbox/files/dot_claude/future_projects/ruff_strict_migration.md.
-# The formatter is enforced strictly: it is deterministic and auto-fixable.
+# The formatter is likewise enforced: it is deterministic and auto-fixable.
 #
 # Scope: roles/devbox/files/dot_claude/ — covers bin/ (hook scripts, shared lib)
 # and skills/*/scripts/ (skill-bundled utilities). Other Python files in the repo
 # (.config/kitty/) are not project code; pyrefly's project-includes handles those.
 lint-py: $(DEV_SENTINEL)
-	@$(DEV_BIN)/ruff check --exit-zero roles/devbox/files/dot_claude/
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/
 	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across dot_claude/bin/

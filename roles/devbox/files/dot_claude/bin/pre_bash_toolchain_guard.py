@@ -397,7 +397,7 @@ def _check_python_c_import(cmd: str, start: Path) -> Block | None:
     if not _has_python_project(start):
         return None
     return Block(
-        "Ad-hoc import check (`python -c \"import X\"`) is forbidden. If the "
+        'Ad-hoc import check (`python -c "import X"`) is forbidden. If the '
         "import matters, add a smoke test to the suite. See `code-writing-"
         "protocols` → No ad-hoc validation.",
     )

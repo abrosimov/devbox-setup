@@ -4,7 +4,6 @@ import io
 import json
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 
@@ -12,10 +11,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bash_decision_gate as bdg
 from _claude_lib import hooks
-
-if TYPE_CHECKING:
-    pass
-
 
 # Fixed working directory used in tests; resolves to itself so cwd-relative
 # checks (write-escape) treat it as the workspace root.
@@ -334,6 +329,17 @@ def test_find_delete_outside_denies() -> None:
     assert d.rule == "write-escape"
 
 
+@pytest.mark.parametrize("argv", [["tar", "-c", "-f"], ["tar", "--create", "--file"]])
+def test_write_path_args_tar_trailing_file_flag_returns_empty(argv: list[str]) -> None:
+    # Regression: a trailing -f/--file with no following token must not index
+    # past the end of argv (IndexError) — it falls through to no write path.
+    assert bdg._write_path_args(argv) == []
+
+
+def test_write_path_args_tar_wellformed_returns_archive() -> None:
+    assert bdg._write_path_args(["tar", "-c", "-f", "archive.tar"]) == ["archive.tar"]
+
+
 def test_redirect_outside_denies() -> None:
     d = _eval("echo hi > /etc/foo")
     assert d.behavior == "deny"
@@ -519,9 +525,7 @@ def test_telemetry_does_not_rotate_below_threshold(
     assert len(shard.read_text(encoding="utf-8").strip().splitlines()) == 2
 
 
-def test_telemetry_prunes_old_rotations(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_telemetry_prunes_old_rotations(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     shard = tmp_path / "12.jsonl"
     shard.write_bytes(b"x" * (bdg.TELEMETRY_MAX_BYTES + 1))
     # Seed more rotated siblings than the retention limit. Names sort so that
@@ -556,7 +560,7 @@ def _run_main(
 
 
 def test_main_non_bash_tool_passes_through(monkeypatch: pytest.MonkeyPatch) -> None:
-    rc, stdout, stderr = _run_main(monkeypatch, {"tool_name": "Read"})
+    rc, stdout, _ = _run_main(monkeypatch, {"tool_name": "Read"})
     assert rc == hooks.ALLOW
     assert stdout == ""
 
@@ -572,7 +576,6 @@ def test_main_empty_command_passes_through(monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_main_safe_command_emits_allow_json(
     monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
 ) -> None:
     # Stub the settings loaders to provide a known allow set.
     monkeypatch.setattr(bdg, "_load_bash_allow_patterns", lambda: DEFAULT_ALLOW)
@@ -677,7 +680,6 @@ def test_load_allowed_dirs_empty_when_absent(
 
 
 def test_allowed_dirs_extend_writable(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     scratch = tmp_path / "scratch"
@@ -698,21 +700,24 @@ def test_allowed_dirs_extend_writable(
 
 def test_walk_commands_yields_one_segment_per_simple_command() -> None:
     trees, err = bdg.parse_safely("grep foo file")
-    assert err is None and trees is not None
+    assert err is None
+    assert trees is not None
     segs = list(bdg.walk_commands(trees[0], Path(TEST_CWD)))
     assert len(segs) == 1
 
 
 def test_walk_commands_yields_three_for_pipeline() -> None:
     trees, err = bdg.parse_safely("a | b | c")
-    assert err is None and trees is not None
+    assert err is None
+    assert trees is not None
     segs = list(bdg.walk_commands(trees[0], Path(TEST_CWD)))
     assert len(segs) == 3
 
 
 def test_walk_commands_recurses_into_command_substitution() -> None:
     trees, err = bdg.parse_safely('echo "$(date +%Y)"')
-    assert err is None and trees is not None
+    assert err is None
+    assert trees is not None
     segs = list(bdg.walk_commands(trees[0], Path(TEST_CWD)))
     argv_heads = [bdg._extract_argv(s)[0] for s, _ in segs if bdg._extract_argv(s)]
     assert "echo" in argv_heads
@@ -721,12 +726,13 @@ def test_walk_commands_recurses_into_command_substitution() -> None:
 
 def test_walk_commands_cd_shift_applies_to_next_command() -> None:
     trees, err = bdg.parse_safely("cd /opt && rm /opt/foo")
-    assert err is None and trees is not None
+    assert err is None
+    assert trees is not None
     segs = list(bdg.walk_commands(trees[0], Path("/start")))
     # First segment (cd) — cwd is the starting cwd
     # Second segment (rm) — cwd shifted to /opt
     assert len(segs) == 2
     _cd_node, cd_cwd = segs[0]
-    rm_node, rm_cwd = segs[1]
+    _rm_node, rm_cwd = segs[1]
     assert str(cd_cwd) == "/start"
     assert str(rm_cwd) == "/opt"

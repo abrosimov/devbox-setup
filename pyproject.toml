@@ -24,7 +24,7 @@ dev = [
     "yamllint>=1.35",
     "ruff>=0.6",
     "pyrefly>=0.10",
-    "pytest>=8.0",
+    "pytest>=9.1.1",
     "hypothesis>=6.100",
     # Runtime dep of roles/devbox/files/dot_claude/bin/bash_decision_gate.py.
     # Pinned authoritatively in bin/pyproject.toml + bin/uv.lock for the

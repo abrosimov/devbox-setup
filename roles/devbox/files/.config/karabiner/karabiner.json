@@ -15,9 +15,14 @@
                         "is_built_in_keyboard": true
                       },
                       {
-                        "description": "Kinesis Advantage360 Pro (ZMK)",
+                        "description": "Kinesis Advantage360 Pro (Bluetooth/ZMK)",
                         "product_id": 24926,
                         "vendor_id": 7504
+                      },
+                      {
+                        "description": "Kinesis Advantage360 Pro (USB)",
+                        "product_id": 866,
+                        "vendor_id": 10730
                       }
                     ],
                     "type": "device_if"
@@ -63,9 +68,14 @@
                         "is_built_in_keyboard": true
                       },
                       {
-                        "description": "Kinesis Advantage360 Pro (ZMK)",
+                        "description": "Kinesis Advantage360 Pro (Bluetooth/ZMK)",
                         "product_id": 24926,
                         "vendor_id": 7504
+                      },
+                      {
+                        "description": "Kinesis Advantage360 Pro (USB)",
+                        "product_id": 866,
+                        "vendor_id": 10730
                       }
                     ],
                     "type": "device_if"

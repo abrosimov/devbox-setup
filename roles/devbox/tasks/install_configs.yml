@@ -137,6 +137,7 @@
     - .config/fish
     - .config/fish/conf.d
     - .config/git
+    - .config/karabiner
   tags: [configs, dotfiles]
 
 - name: Deploy dotfile directories
@@ -150,10 +151,24 @@
     - .config/nvim
     - .config/fish/completions
     - .config/fish/functions
-    - .config/karabiner
     - .hammerspoon
   loop_control:
     label: "{{ item }}/"
+  tags: [configs, dotfiles]
+
+# Karabiner owns ~/.config/karabiner/karabiner.json at runtime: it rewrites the
+# file on every device connect / variable change, storing machine-local state
+# (the devices array + per-device "Modify events" toggles). A wholesale copy would
+# clobber that state on every deploy, so we SEED the file only when absent
+# (force: false). Ongoing rule changes flow the other way — edit in the Karabiner
+# GUI, then `make karabiner-pull` to capture the portable complex_modifications
+# back into the repo (see Makefile karabiner-diff / karabiner-pull).
+- name: Seed Karabiner config only if absent (Karabiner owns the live file thereafter)
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/.config/karabiner/karabiner.json"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.config/karabiner/karabiner.json"
+    mode: "0644"
+    force: false
   tags: [configs, dotfiles]
 
 # =============================================================================

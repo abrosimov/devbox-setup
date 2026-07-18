@@ -79,6 +79,16 @@ CLAUDE_AUTHORITY_SRC  := USER_AUTHORITY_PROTOCOL.md
 CLAUDE_AUTHORITY_DEST := CLAUDE.md
 SKILLS_DIR          := $(CLAUDE_SRC)/skills
 
+# Karabiner: the repo seeds the live file only when absent (Karabiner owns it at
+# runtime — see install_configs.yml). karabiner-diff / karabiner-pull sync only the
+# portable complex_modifications back to the repo, never the machine-local state
+# (devices array, per-device "Modify events" toggles).
+KARABINER_SRC       := roles/devbox/files/.config/karabiner/karabiner.json
+KARABINER_DEST      := $(HOME)/.config/karabiner/karabiner.json
+# jq projection of the comparable/portable part: the selected profile's
+# complex_modifications (falls back to the first profile if none is selected).
+KARABINER_CM_JQ     := (first(.profiles[]|select(.selected==true)) // .profiles[0]).complex_modifications
+
 # Verbosity levels (V=1 → -v, V=2 → -vv, etc.)
 ifeq ($(V),1)
   VERBOSE := -v
@@ -167,6 +177,8 @@ help:
 	@echo "  make claude-diff      - show content drift between ~/.claude and repo"
 	@echo "  make claude-pull-review - smart pull of settings.json (heuristic + interactive)"
 	@echo "  make claude-pull      - wholesale copy of root files from ~/.claude to repo"
+	@echo "  make karabiner-diff   - show drift of Karabiner complex_modifications (repo vs live)"
+	@echo "  make karabiner-pull   - pull Karabiner complex_modifications from live into repo"
 	@echo ""
 	@echo "Options:"
 	@echo "  V=1..4                - verbosity level (-v to -vvvv)"
@@ -537,6 +549,41 @@ claude-pull:
 
 claude-pull-review:
 	@python3 scripts/claude-pull-review $(ARGS)
+
+# Karabiner back-propagation. The live file is edited via the Karabiner GUI; these
+# targets capture ONLY the portable complex_modifications back into the repo, so the
+# machine-local devices array / "Modify events" toggles are never dragged into VCS.
+# Reminder-free by design is out of scope — run karabiner-pull deliberately after a
+# GUI change (see karabiner_activation.md).
+karabiner-diff:
+	@echo "=== Drift: Karabiner complex_modifications (repo vs live ~/.config) ==="
+	@if [ ! -f "$(KARABINER_DEST)" ]; then echo "  live file not found: $(KARABINER_DEST)"; exit 0; fi
+	@repo_tmp=$$(mktemp); live_tmp=$$(mktemp); \
+	jq -S '.profiles[0].complex_modifications' $(KARABINER_SRC) > $$repo_tmp; \
+	jq -S '$(KARABINER_CM_JQ)' $(KARABINER_DEST) > $$live_tmp; \
+	if diff -q $$repo_tmp $$live_tmp >/dev/null 2>&1; then \
+		echo "  No drift detected."; \
+	else \
+		echo ""; diff -u $$repo_tmp $$live_tmp || true; \
+		echo ""; echo "Pull with: make karabiner-pull"; \
+	fi; \
+	rm -f $$repo_tmp $$live_tmp
+
+karabiner-pull:
+	@echo "=== Pulling Karabiner complex_modifications: live ~/.config -> repo ==="
+	@if [ ! -f "$(KARABINER_DEST)" ]; then echo "  ERROR: live file not found: $(KARABINER_DEST)"; exit 1; fi
+	@out=$$(mktemp); \
+	jq --slurpfile live $(KARABINER_DEST) \
+		'.profiles[0].complex_modifications = ((first($$live[0].profiles[]|select(.selected==true)) // $$live[0].profiles[0]).complex_modifications)' \
+		$(KARABINER_SRC) > $$out; \
+	if ! jq -e . $$out >/dev/null 2>&1; then echo "  ERROR: produced invalid JSON — aborting"; rm -f $$out; exit 1; fi; \
+	if diff -q $$out $(KARABINER_SRC) >/dev/null 2>&1; then \
+		echo "  SKIP: no changes"; rm -f $$out; \
+	else \
+		mv $$out $(KARABINER_SRC); \
+		echo "  PULLED: complex_modifications -> $(KARABINER_SRC)"; \
+		echo "  Review with: git diff $(KARABINER_SRC)"; \
+	fi
 
 # Fast-path Claude config deploy via dedicated slim playbook.
 # Reuses Block 1 + Block 2 of roles/devbox/tasks/install_configs.yml under the

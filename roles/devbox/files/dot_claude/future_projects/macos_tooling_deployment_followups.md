@@ -41,7 +41,7 @@ GUI-driven authoring is easier than editing JSON by hand.
 
 ## 2. `configure_macos_permissions.yml` — deep-link helper
 
-**Problem.** Karabiner, Hammerspoon, AeroSpace, AltTab, Raycast, JankyBorders
+**Problem.** Karabiner, Hammerspoon, AeroSpace, Raycast, JankyBorders
 all need TCC permissions (Accessibility / Input Monitoring / Screen
 Recording) granted through System Settings. Apple deliberately requires human
 approval — no supported programmatic grant without MDM. See
@@ -64,7 +64,7 @@ devbox_macos_apps:
     name: Karabiner-Elements
     permissions: [input_monitoring]
     system_extension: pqrs.org.Karabiner-VirtualHIDDevice
-  # ... AltTab, Raycast, JankyBorders, BetterDisplay
+  # ... Raycast, JankyBorders, BetterDisplay
 ```
 
 Add `roles/devbox/tasks/darwin/configure_macos_permissions.yml`:

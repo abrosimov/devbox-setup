@@ -13,7 +13,6 @@ Linux-style observability.
 | AeroSpace | `nikitabobko/tap/aerospace` (cask) | Accessibility |
 | Sketchybar | `FelixKratz/formulae/sketchybar` (formula) | none |
 | JankyBorders | `FelixKratz/formulae/borders` (formula) | Accessibility |
-| AltTab | `alt-tab` (cask) | Accessibility, Screen Recording |
 | Raycast | `raycast` (cask) | Accessibility, Full Disk Access (optional) |
 | Hammerspoon | `hammerspoon` (cask) | Accessibility, Screen Recording (optional) |
 | Karabiner-Elements | `karabiner-elements` (cask) | System Extension (kernel — manual approval on first run) |
@@ -35,16 +34,40 @@ System tweaks codified in `darwin/configure_macos_basics.yml`:
 Each item below should become a separate session. Order is suggested by
 dependency / blast radius.
 
-### 2.1 AeroSpace baseline (`~/.aerospace.toml`)
+### 2.1 AeroSpace baseline — DONE 2026-07-19
 
 **Where it helps:** primary window manager — replaces Mission Control + Cmd-Tab
 for window arrangement. Provides i3-style workspaces, tree-tiled layouts,
 keyboard-only window movement between displays.
 
-**Repo path:** `roles/devbox/files/.aerospace.toml` (deployed via existing copy
-loop in `install_configs.yml`).
+**Shipped:** `roles/devbox/files/.config/aerospace/aerospace.toml`, deployed to
+`~/.config/aerospace/aerospace.toml` via the copy-dir block in
+`install_configs.yml` (Block 3, alongside kitty/nvim — AeroSpace does not
+rewrite its own config, so a whole-dir copy is safe). XDG path chosen over the
+home-root `~/.aerospace.toml` for consistency with fish/kitty.
 
-**Minimal example to start from:**
+**Decisions taken:**
+- Mod key = **Alt** (kept the existing Karabiner tap-right-option→RU rule; that
+  fires on tap-alone, WM chords hold the modifier, so no conflict).
+- Focus cluster = **ijlm** (j/i/l/m), no arrow duplicates; a left-hand alternate
+  cluster is deferred until the split keyboard is in hand.
+- Workspaces 1-9, **shared** (not per-profile). `workspace-to-monitor-force-
+  assignment`: ws 1-5 → main, 6-9 → secondary (falls back to main; AeroSpace
+  re-applies on monitor connect/disconnect, so workspaces auto-redistribute).
+- `alt-space` toggles tiles⇄accordion; `alt-f` = in-workspace zoom (not macOS
+  native fullscreen, which breaks tiling); `alt-shift-space` = float⇄tile.
+- `start-at-login = false` for now (launch manually while dialling in).
+- Zen browser pinned to ws 1 via `on-window-detected` (`app.zen-browser.zen`).
+
+**Not expressible in AeroSpace (deferred to a Tier-2 `aerospace` CLI script):**
+precise per-workspace layouts with fixed proportions (e.g. browser at 70% +
+two stacked terminals). AeroSpace does not persist tree/proportions across
+restart, and `on-window-detected.run` allows only `layout floating|tiling` and
+`move-node-to-workspace`. Build such layouts at runtime with the `join-with`
+(`alt-ctrl-*`) and `resize` (`alt-minus`/`alt-equal`) bindings; script the
+rebuild only once the exact proportions have settled in daily use.
+
+**Original minimal example (superseded by the shipped file above):**
 
 ```toml
 # ~/.aerospace.toml
@@ -87,10 +110,7 @@ if.app-id = "net.kovidgoyal.kitty"
 run = ["layout tiles horizontal"]
 ```
 
-**Open questions for the config session:**
-- Mod key — Alt (default), Cmd, or hyper key from Kinesis?
-- Workspace-per-display vs shared workspaces?
-- Native macOS fullscreen apps — exclude or treat as floating?
+(Open questions above are now resolved — see "Decisions taken".)
 
 ### 2.2 Sketchybar (`~/.config/sketchybar/sketchybarrc` + `plugins/`)
 
@@ -197,8 +217,9 @@ prompt-jump / pager bindings (`ctrl+shift+z/x/g/h`) and readline (`ctrl+letter`)
 are remapped via scancodes in `roles/devbox/files/.config/kitty/kitty.conf`,
 so they survive Cyrillic layout inside kitty. This does **not** help Claude
 Code — kitty forwards the character, not the scancode — the Karabiner rule
-is still the real solution. Retire the kitty scancode blocks once the
-Karabiner rule ships and is verified on both `personal` and `work` profiles.
+is still needed for non-kitty apps. **Decision 2026-07-19:** keep the kitty
+scancode blocks permanently (kitty is cross-OS; they help on Linux too). The
+Karabiner rule is additive, not a replacement.
 
 **Reference rule library:** [ke-complex-modifications.pqrs.org](https://ke-complex-modifications.pqrs.org/)
 — search for "Cyrillic to QWERTY shortcuts" or "Keep modifier shortcuts in
@@ -286,14 +307,13 @@ fast on Apple Silicon.
 Greatest day-1 impact first; each item is a separate /full-cycle or focused session.
 
 1. **AeroSpace** (2.1) — without this nothing else makes sense
-2. **AltTab** — works out of the box, just open the GUI once to remap Cmd-Tab
-3. **Raycast** (2.4) — minimum viable: Cmd-Space override + 2-3 script commands
-4. **JankyBorders** (2.3) — 10-line config, immediate visual upgrade
-5. **Sketchybar** (2.2) — bigger investment, do once 1-4 are stable
-6. **Hammerspoon** (2.5) — only when you need something the above can't do
-7. **Karabiner** (2.6) — only when working lid-open
-8. **Lima** (2.8) — when next observability need arises
-9. **BetterDisplay** (2.7) — only if a new external monitor needs HiDPI
+2. **Raycast** (2.4) — minimum viable: Cmd-Space override + 2-3 script commands
+3. **JankyBorders** (2.3) — 10-line config, immediate visual upgrade
+4. **Sketchybar** (2.2) — bigger investment, do once 1-3 are stable
+5. **Hammerspoon** (2.5) — only when you need something the above can't do
+6. **Karabiner** (2.6) — only when working lid-open
+7. **Lima** (2.8) — when next observability need arises
+8. **BetterDisplay** (2.7) — only if a new external monitor needs HiDPI
 
 ## Reference repos (good full configs to crib from)
 

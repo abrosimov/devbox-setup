@@ -375,6 +375,48 @@ def test_git_dash_c_shifts_cwd_for_that_command() -> None:
 
 
 # ============================================================
+# redundant-cd (Shell discipline enforcement)
+# ============================================================
+
+
+def test_redundant_cd_absolute_target_denies() -> None:
+    # The exact shape that triggered this rule: `cd <cwd>; <command>`.
+    d = _eval(f'cd {TEST_CWD}; echo "=== here ==="')
+    assert d.behavior == "deny"
+    assert d.rule == "redundant-cd"
+
+
+def test_redundant_cd_with_trailing_slash_denies() -> None:
+    d = _eval(f"cd {TEST_CWD}/ && ls -la")
+    assert d.behavior == "deny"
+    assert d.rule == "redundant-cd"
+
+
+def test_redundant_cd_dot_denies() -> None:
+    d = _eval("cd . && ls")
+    assert d.behavior == "deny"
+    assert d.rule == "redundant-cd"
+
+
+def test_non_redundant_cd_to_other_dir_not_flagged() -> None:
+    # cd into a genuinely different directory must not trip redundant-cd.
+    d = _eval("cd /tmp && rm subdir/file")
+    assert d.behavior == "allow"
+
+
+def test_cd_into_subdir_not_flagged() -> None:
+    d = _eval("cd subdir && ls")
+    # Not redundant (target != cwd); ls is allowed, so this passes cleanly.
+    assert d.rule != "redundant-cd"
+
+
+def test_redundant_cd_with_dynamic_target_not_flagged() -> None:
+    # Runtime-expanded targets are unresolvable statically → never flagged.
+    d = _eval('cd "$PWD" && ls')
+    assert d.rule != "redundant-cd"
+
+
+# ============================================================
 # Pipe / list / recursion
 # ============================================================
 

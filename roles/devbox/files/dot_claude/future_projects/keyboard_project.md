@@ -1,7 +1,9 @@
 # Keyboard & macOS Diet — Project Index
 
 **Created:** 2026-07-05
-**Status:** parked, awaiting standalone session
+**Status:** in progress — AeroSpace baseline shipped 2026-07-19
+(`macos_tooling_setup.md` §2.1). Karabiner Cyrillic→Latin rule and the rest of
+the WM stack still pending.
 **Context:** consolidates three intertwined threads that share hardware,
 input-source, and per-machine dimensions. Doing them piecemeal creates
 conflicts (Karabiner CapsLock remap vs Kinesis firmware CapsLock remap —
@@ -30,10 +32,11 @@ one has to yield).
   `roles/devbox/files/.config/karabiner/assets/complex_modifications/*.json`,
   deployed via `install_configs.yml` Block 3 (copy dir).
 - Reference library: [ke-complex-modifications.pqrs.org](https://ke-complex-modifications.pqrs.org/).
-- **Interim in place:** kitty scancode remaps for Ctrl+letter and
-  Ctrl+Shift+{Z,X,G,H} in
-  `roles/devbox/files/.config/kitty/kitty.conf`. Retire once the Karabiner
-  rule lands.
+- **Kept permanently (decision 2026-07-19):** kitty scancode remaps for
+  Ctrl+letter and Ctrl+Shift+{Z,X,G,H} in
+  `roles/devbox/files/.config/kitty/kitty.conf` stay — kitty is a cross-OS
+  terminal and these help on Linux too. The Karabiner rule, when it lands, is
+  additive (covers Claude Code and non-kitty apps), not a replacement.
 
 ### 2. Kinesis Advantage 360 Pro — ZMK keymap
 
@@ -80,10 +83,13 @@ per-app overlays layered on top.
    prerequisite (system extension approval + reboot + Input Monitoring).
 2. **Karabiner Cyrillic → Latin rule**, versioned in repo, deployed on both
    profiles.
-3. **Verify kitty Cyrillic works via Karabiner alone**, then delete the
-   kitty scancode blocks (`Ctrl+letter` + `Ctrl+Shift+{Z,X,G,H}`) from
-   `kitty.conf` and update the kitty `README.md`.
+3. **Verify Cyrillic shortcuts work via Karabiner** in Claude Code and other
+   non-kitty apps. Do NOT touch the kitty scancode blocks — they stay (kitty
+   is cross-OS; the Karabiner rule is additive, not a replacement).
 4. **AeroSpace baseline** (`macos_tooling_setup.md` §2.1) — dominant WM.
+   **DONE 2026-07-19** — mod=Alt, ijlm focus cluster, ws 1-5→main / 6-9→
+   secondary, Zen→ws1. Precise per-workspace layouts deferred to a Tier-2
+   `aerospace` CLI script (AeroSpace can't persist proportions).
 5. **JankyBorders** (§2.3) and **Raycast** (§2.4) — quick visual and
    launcher wins.
 6. **Sketchybar** (§2.2) — bigger investment, do once 1-5 are stable.
@@ -112,13 +118,14 @@ per-app overlays layered on top.
 When this project starts, expect to touch:
 
 - `roles/devbox/files/.config/karabiner/` (new directory)
-- `roles/devbox/files/.aerospace.toml` (new file, per-profile)
+- `roles/devbox/files/.config/aerospace/aerospace.toml` — DONE 2026-07-19
+  (XDG path, shared across profiles; not the per-profile `.aerospace.toml`
+  originally sketched)
 - `roles/devbox/files/.config/sketchybar/` (new directory)
 - `roles/devbox/files/.config/borders/bordersrc` (new file)
 - `roles/devbox/files/.config/raycast/script-commands/` (new directory)
 - `roles/devbox/tasks/install_configs.yml` — Block 3 (copy dir) extensions
 - `roles/devbox/defaults/main/packages.yml` — already has the brew packages
 - `profiles/personal.yml` / `profiles/work.yml` — profile-conditional overrides
-- `roles/devbox/files/.config/kitty/kitty.conf` — DELETE Ctrl+letter block
-  and Ctrl+Shift+{Z,X,G,H} block once Karabiner rule is verified
-- `roles/devbox/files/.config/kitty/README.md` — sync with kitty.conf
+- `roles/devbox/files/.config/kitty/kitty.conf` — leave the scancode blocks in
+  place (cross-OS; not retired by the Karabiner rule)

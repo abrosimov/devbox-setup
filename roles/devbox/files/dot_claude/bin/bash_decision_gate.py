@@ -26,6 +26,8 @@ Three phases:
             ./.claude/claude_written_scripts/** → deny
         (e) write-escape — known write commands targeting paths outside
             (effective_cwd, allowed_dirs, /tmp, $TMPDIR) → deny
+        (f) redundant-cd — leading ``cd <path>`` whose resolved target is
+            already effective_cwd → deny (Shell discipline)
       effective_cwd tracks ``cd <path> &&`` and ``git -C <path>`` shifts.
 
   Phase 3 — Positive allow signal
@@ -684,6 +686,14 @@ _WRITE_ESCAPE_REASON: Final[str] = (
     "или cd в нужный каталог перед операцией."
 )
 
+_REDUNDANT_CD_REASON: Final[str] = (
+    "Redundant `cd {path}` — the shell is already in that directory "
+    "(effective_cwd={cwd}). Drop the `cd` prefix and run the command directly. "
+    "To operate elsewhere use a path flag (`git -C <path>`, `make -C <path>`, "
+    "`pytest --rootdir <path>`) or an absolute path; for sustained work in "
+    "another directory add it to the session with `/add-dir <path>`."
+)
+
 
 def parse_safely(cmd: str) -> tuple[list[object] | None, str | None]:
     """Parse cmd with bashlex; return (trees, error_reason).
@@ -1171,6 +1181,39 @@ def check_write_escape(
     return None
 
 
+# ----- (f) redundant-cd check -----
+
+# Chars that mean the target is expanded by the shell at runtime — we cannot
+# resolve it statically, so we never flag it (avoids false positives on
+# `cd "$PWD"`, `cd $(git rev-parse --show-toplevel)`, globbed targets).
+_CD_DYNAMIC_CHARS: Final[str] = "$*?`"
+
+
+def check_redundant_cd(argv: list[str], eff_cwd: Path) -> Decision | None:
+    """Deny a leading ``cd <path>`` whose target is the current directory.
+
+    A ``cd`` into the directory the shell is already in adds nothing and
+    obscures intent (User Authority Protocol — Shell discipline: applies even
+    when ``<path>`` equals the current directory). Blocking forces the model to
+    reissue without the noise. Genuine directory changes (resolved target !=
+    eff_cwd) and runtime-expanded targets pass untouched.
+    """
+    if len(argv) < 2 or argv[0] != "cd":
+        return None
+    target = argv[1]
+    if target.startswith("-"):  # `cd -`, option flags — not a literal path
+        return None
+    if any(c in target for c in _CD_DYNAMIC_CHARS):
+        return None
+    if _resolve_arg_path(target, eff_cwd) != eff_cwd:
+        return None
+    return Decision(
+        behavior="deny",
+        reason=_REDUNDANT_CD_REASON.format(path=target, cwd=str(eff_cwd)),
+        rule="redundant-cd",
+    )
+
+
 # ----- Phase 2 driver -----
 
 
@@ -1183,7 +1226,10 @@ def _analyze_segment(
     extra_writable: tuple[Path, ...],
     depth: int = 0,
 ) -> Decision | None:
-    """Apply 5 structural checks to a single CommandNode segment."""
+    """Apply structural checks to a single CommandNode segment."""
+    d = check_redundant_cd(argv, eff_cwd)
+    if d is not None:
+        return d
     d = check_interp_inline_exec(argv)
     if d is not None:
         return d

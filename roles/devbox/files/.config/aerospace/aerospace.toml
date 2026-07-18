@@ -1,0 +1,126 @@
+# AeroSpace baseline — i3-style tiling WM. Mod = Alt(Option).
+# Docs: https://nikitabobko.github.io/AeroSpace/guide
+#
+# Scope: navigation, window movement, manual layout construction, workspace ->
+# monitor assignment. Precise per-workspace layouts with fixed proportions are
+# NOT expressible here (AeroSpace does not persist tree/proportions across
+# restart); build them at runtime with the join-with / resize bindings below.
+
+# Off for now — launch AeroSpace manually while dialling in the config.
+start-at-login = false
+
+default-root-container-layout = 'tiles'
+# 'auto' => horizontal split on wide displays (laptop / clamshell), vertical on
+# tall ones. Matches i3 muscle memory on the built-in screen.
+default-root-container-orientation = 'auto'
+accordion-padding = 30
+
+# i3-style tree normalization (explicit for clarity; these are the defaults).
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+key-mapping.preset = 'qwerty'
+
+[gaps]
+inner.horizontal = 6
+inner.vertical   = 6
+outer.left       = 6
+outer.right      = 6
+outer.top        = 6
+outer.bottom     = 6
+
+# =============================================================================
+# MAIN MODE
+# =============================================================================
+[mode.main.binding]
+
+# Focus — right-hand ijlm cluster (j=left, i=up, l=right, m=down). A left-hand
+# alternate cluster can be added later as extra bindings to the same commands.
+alt-j = 'focus left'
+alt-i = 'focus up'
+alt-l = 'focus right'
+alt-m = 'focus down'
+
+# Move focused window.
+alt-shift-j = 'move left'
+alt-shift-i = 'move up'
+alt-shift-l = 'move right'
+alt-shift-m = 'move down'
+
+# join-with — pull the neighbour into a shared container. This is how nested
+# columns (e.g. browser | [terminal / terminal]) are built by hand.
+alt-ctrl-j = 'join-with left'
+alt-ctrl-i = 'join-with up'
+alt-ctrl-l = 'join-with right'
+alt-ctrl-m = 'join-with down'
+
+# Layouts.
+alt-space       = 'layout tiles accordion'   # toggle tiles <-> accordion
+alt-f           = 'fullscreen'                # zoom focused window within workspace
+alt-shift-space = 'layout floating tiling'    # toggle float <-> tile
+
+# Resize / balance.
+alt-minus = 'resize smart -50'
+alt-equal = 'resize smart +50'
+alt-0     = 'balance-sizes'
+
+# Workspaces.
+alt-1 = 'workspace 1'
+alt-2 = 'workspace 2'
+alt-3 = 'workspace 3'
+alt-4 = 'workspace 4'
+alt-5 = 'workspace 5'
+alt-6 = 'workspace 6'
+alt-7 = 'workspace 7'
+alt-8 = 'workspace 8'
+alt-9 = 'workspace 9'
+
+alt-shift-1 = 'move-node-to-workspace 1'
+alt-shift-2 = 'move-node-to-workspace 2'
+alt-shift-3 = 'move-node-to-workspace 3'
+alt-shift-4 = 'move-node-to-workspace 4'
+alt-shift-5 = 'move-node-to-workspace 5'
+alt-shift-6 = 'move-node-to-workspace 6'
+alt-shift-7 = 'move-node-to-workspace 7'
+alt-shift-8 = 'move-node-to-workspace 8'
+alt-shift-9 = 'move-node-to-workspace 9'
+
+alt-tab       = 'workspace-back-and-forth'
+alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+
+alt-shift-semicolon = 'mode service'
+
+# =============================================================================
+# SERVICE MODE — enter: alt-shift-;  exit: esc
+# =============================================================================
+[mode.service.binding]
+esc       = ['reload-config', 'mode main']
+r         = ['flatten-workspace-tree', 'mode main']   # reset tree to flat layout
+f         = ['layout floating tiling', 'mode main']
+backspace = ['close-all-windows-but-current', 'mode main']
+
+# =============================================================================
+# Workspace -> monitor assignment. ws 1-5 on the primary, 6-9 on the secondary
+# (falls back to primary when no secondary is attached). AeroSpace re-applies
+# this on every monitor connect/disconnect, so workspaces snap back
+# automatically when an external display is plugged in.
+# =============================================================================
+[workspace-to-monitor-force-assignment]
+1 = 'main'
+2 = 'main'
+3 = 'main'
+4 = 'main'
+5 = 'main'
+6 = 'secondary'
+7 = 'secondary'
+8 = 'secondary'
+9 = 'secondary'
+
+# =============================================================================
+# Window placement rules.
+# =============================================================================
+
+# Zen browser lives permanently on workspace 1.
+[[on-window-detected]]
+if.app-id = 'app.zen-browser.zen'
+run = ['move-node-to-workspace 1']

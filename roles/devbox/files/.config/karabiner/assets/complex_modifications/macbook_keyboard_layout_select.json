@@ -1,14 +1,25 @@
 {
   "rules": [
     {
-      "description": "Tap Right Command → English, Tap Right Option → Russian",
+      "description": "Tap Left/Right Command → English, Tap Left/Right Option → Russian",
       "manipulators": [
         {
           "conditions": [
             {
               "identifiers": [
                 {
+                  "description": "MacBook built-in keyboard",
                   "is_built_in_keyboard": true
+                },
+                {
+                  "description": "Kinesis Advantage360 Pro (Bluetooth/ZMK)",
+                  "product_id": 24926,
+                  "vendor_id": 7504
+                },
+                {
+                  "description": "Kinesis Advantage360 Pro (USB)",
+                  "product_id": 866,
+                  "vendor_id": 10730
                 }
               ],
               "type": "device_if"
@@ -50,7 +61,18 @@
             {
               "identifiers": [
                 {
+                  "description": "MacBook built-in keyboard",
                   "is_built_in_keyboard": true
+                },
+                {
+                  "description": "Kinesis Advantage360 Pro (Bluetooth/ZMK)",
+                  "product_id": 24926,
+                  "vendor_id": 7504
+                },
+                {
+                  "description": "Kinesis Advantage360 Pro (USB)",
+                  "product_id": 866,
+                  "vendor_id": 10730
                 }
               ],
               "type": "device_if"
@@ -86,9 +108,115 @@
             }
           ],
           "type": "basic"
+        },
+        {
+          "conditions": [
+            {
+              "identifiers": [
+                {
+                  "description": "MacBook built-in keyboard",
+                  "is_built_in_keyboard": true
+                },
+                {
+                  "description": "Kinesis Advantage360 Pro (Bluetooth/ZMK)",
+                  "product_id": 24926,
+                  "vendor_id": 7504
+                },
+                {
+                  "description": "Kinesis Advantage360 Pro (USB)",
+                  "product_id": 866,
+                  "vendor_id": 10730
+                }
+              ],
+              "type": "device_if"
+            }
+          ],
+          "from": {
+            "key_code": "left_command",
+            "modifiers": {
+              "optional": [
+                "any"
+              ]
+            }
+          },
+          "parameters": {
+            "basic.to_if_held_down_threshold_milliseconds": 150
+          },
+          "to": [
+            {
+              "key_code": "left_command",
+              "lazy": true
+            }
+          ],
+          "to_if_alone": [
+            {
+              "select_input_source": {
+                "language": "^en$"
+              }
+            }
+          ],
+          "to_if_held_down": [
+            {
+              "key_code": "left_command"
+            }
+          ],
+          "type": "basic"
+        },
+        {
+          "conditions": [
+            {
+              "identifiers": [
+                {
+                  "description": "MacBook built-in keyboard",
+                  "is_built_in_keyboard": true
+                },
+                {
+                  "description": "Kinesis Advantage360 Pro (Bluetooth/ZMK)",
+                  "product_id": 24926,
+                  "vendor_id": 7504
+                },
+                {
+                  "description": "Kinesis Advantage360 Pro (USB)",
+                  "product_id": 866,
+                  "vendor_id": 10730
+                }
+              ],
+              "type": "device_if"
+            }
+          ],
+          "from": {
+            "key_code": "left_option",
+            "modifiers": {
+              "optional": [
+                "any"
+              ]
+            }
+          },
+          "parameters": {
+            "basic.to_if_held_down_threshold_milliseconds": 150
+          },
+          "to": [
+            {
+              "key_code": "left_option",
+              "lazy": true
+            }
+          ],
+          "to_if_alone": [
+            {
+              "select_input_source": {
+                "language": "^ru$"
+              }
+            }
+          ],
+          "to_if_held_down": [
+            {
+              "key_code": "left_option"
+            }
+          ],
+          "type": "basic"
         }
       ]
     }
   ],
-  "title": "Right Cmd → English / Right Option → Russian (только встроенная клавиатура MacBook)"
+  "title": "Left/Right Command → English, Left/Right Option → Russian (built-in + Kinesis Advantage360 Pro)"
 }

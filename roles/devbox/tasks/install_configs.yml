@@ -147,7 +147,6 @@
     mode: "0644"
     directory_mode: "0755"
   loop:
-    - .config/aerospace
     - .config/kitty
     - .config/nvim
     - .config/fish/completions
@@ -168,6 +167,58 @@
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.config/karabiner/karabiner.json"
     mode: "0644"
     force: false
+  tags: [configs, dotfiles]
+
+# =============================================================================
+# Block 3c: AeroSpace config + the aerospace-layouts dynamic-layout uv project.
+# aerospace.toml / README.md are repo-owned; layouts/ is a standalone uv project
+# (own uv.lock/.venv), mirroring .claude/bin. We rsync the tree one-way with
+# --delete (repo is the single source of truth; the layout engine keeps its
+# runtime state under ~/.local/state/, NOT here, so nothing host-only is at
+# risk) while excluding build artefacts, then materialise the project's .venv
+# via `uv sync --frozen --no-dev` — mirroring Block 1b for .claude/bin. The
+# aerospace.toml keybindings invoke the built console-script at
+# ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts by ABSOLUTE path
+# (exec-and-forget runs via /bin/bash -c with no uv on PATH), so the venv must
+# exist for the layout binds to work.
+# =============================================================================
+
+- name: Sync AeroSpace config tree (one-way, --delete; excludes venv/build artefacts)
+  ansible.posix.synchronize:
+    src: "{{ role_path }}/files/.config/aerospace/"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.config/aerospace/"
+    delete: true
+    recursive: true
+    perms: true
+    rsync_opts:
+      - "--exclude=.DS_Store"
+      - "--exclude=.venv"
+      - "--exclude=__pycache__"
+      - "--exclude=.pytest_cache"
+      - "--exclude=.hypothesis"
+      - "--exclude=.ruff_cache"
+  delegate_to: localhost
+  tags: [configs, dotfiles]
+
+# Self-contained uv discovery so this works under `--tags dotfiles` alone (the
+# Block 1b `Find uv path` is claude-tagged and may not run).
+- name: Find uv path (AeroSpace layouts venv)
+  ansible.builtin.command: "command -v uv"
+  register: devbox_uv_path_aerospace
+  changed_when: false
+  check_mode: false
+  failed_when: devbox_uv_path_aerospace.rc != 0
+  tags: [configs, dotfiles]
+
+- name: Bootstrap AeroSpace layouts venv via uv sync
+  ansible.builtin.command:
+    cmd: "{{ devbox_uv_path_aerospace.stdout }} sync --frozen --no-dev"
+    chdir: "{{ devbox_paths.dotfiles_root_dir }}/.config/aerospace/layouts"
+  register: devbox_aerospace_uv_sync
+  changed_when: >-
+    'Resolved' in (devbox_aerospace_uv_sync.stderr | default(''))
+    or 'Installed' in (devbox_aerospace_uv_sync.stderr | default(''))
+    or 'Prepared' in (devbox_aerospace_uv_sync.stderr | default(''))
   tags: [configs, dotfiles]
 
 # =============================================================================

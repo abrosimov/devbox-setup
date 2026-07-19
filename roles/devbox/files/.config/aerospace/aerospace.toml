@@ -34,30 +34,53 @@ outer.bottom     = 6
 # =============================================================================
 [mode.main.binding]
 
-# Focus — right-hand ijlm cluster (j=left, i=up, l=right, m=down). A left-hand
-# alternate cluster can be added later as extra bindings to the same commands.
+# Focus — two mirrored clusters bound to the same commands.
+#   Right hand (centre k): i=up, j=left, l=right, comma=down.
+#   Left  hand (centre d): e=up, s=left, f=right, c=down.
 alt-j = 'focus left'
 alt-i = 'focus up'
 alt-l = 'focus right'
-alt-m = 'focus down'
+alt-comma = 'focus down'
+alt-s = 'focus left'
+alt-e = 'focus up'
+alt-f = 'focus right'
+alt-c = 'focus down'
 
-# Move focused window.
+# Move focused window — same two clusters.
 alt-shift-j = 'move left'
 alt-shift-i = 'move up'
 alt-shift-l = 'move right'
-alt-shift-m = 'move down'
+alt-shift-comma = 'move down'
+alt-shift-s = 'move left'
+alt-shift-e = 'move up'
+alt-shift-f = 'move right'
+alt-shift-c = 'move down'
 
 # join-with — pull the neighbour into a shared container. This is how nested
-# columns (e.g. browser | [terminal / terminal]) are built by hand.
+# columns (e.g. browser | [terminal / terminal]) are built by hand. Same clusters.
 alt-ctrl-j = 'join-with left'
 alt-ctrl-i = 'join-with up'
 alt-ctrl-l = 'join-with right'
-alt-ctrl-m = 'join-with down'
+alt-ctrl-comma = 'join-with down'
+alt-ctrl-s = 'join-with left'
+alt-ctrl-e = 'join-with up'
+alt-ctrl-f = 'join-with right'
+alt-ctrl-c = 'join-with down'
 
-# Layouts.
-alt-space       = 'layout tiles accordion'   # toggle tiles <-> accordion
-alt-f           = 'fullscreen'                # zoom focused window within workspace
-alt-shift-space = 'layout floating tiling'    # toggle float <-> tile
+# Layouts — dynamic layout engine (aerospace-layouts uv project). exec-and-forget
+# runs via /bin/bash -c, so ~ expands to $HOME. Path is the in-place uv .venv
+# console-script, materialised by `uv sync --frozen --no-dev` on deploy; these
+# binds are inert until that venv exists.
+alt-space       = 'exec-and-forget ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts cycle'
+alt-shift-space = 'exec-and-forget ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts cycle --reverse'
+alt-shift-minus = 'exec-and-forget ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts adjust-master -'
+alt-shift-equal = 'exec-and-forget ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts adjust-master +'
+alt-enter       = 'exec-and-forget ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts promote'
+alt-shift-enter = 'exec-and-forget ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts demote'
+
+# Native window ops relocated to free the efcs left-hand cluster.
+alt-z = 'fullscreen'              # zoom focused window within workspace (was alt-f)
+alt-t = 'layout floating tiling'  # toggle float <-> tile (was alt-shift-space)
 
 # Resize / balance.
 alt-minus = 'resize smart -50'

@@ -67,6 +67,14 @@ restart, and `on-window-detected.run` allows only `layout floating|tiling` and
 (`alt-ctrl-*`) and `resize` (`alt-minus`/`alt-equal`) bindings; script the
 rebuild only once the exact proportions have settled in daily use.
 
+**Update 2026-07-19:** the Tier-2 direction changed from app-pinned
+fixed-proportion frames (the Ion/i3 model above) to awesome-wm-style **dynamic,
+app-agnostic layout algorithms** (`tile`/`max`/`columns`, cycled by a key). A
+working uv project (`aerospace-layouts`, at
+`roles/devbox/files/.config/aerospace/layouts/`) now exists and `tile` is
+live-verified. See `aerospace_tier2_progress.md` for full status and the resume
+point (keybinding wiring + Ansible deploy still pending).
+
 **Original minimal example (superseded by the shipped file above):**
 
 ```toml

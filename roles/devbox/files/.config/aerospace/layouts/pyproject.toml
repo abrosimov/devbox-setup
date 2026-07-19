@@ -1,0 +1,50 @@
+[project]
+name = "aerospace-layouts"
+version = "0.1.0"
+description = "awesome-wm-style dynamic tiling layouts scripted on top of the AeroSpace CLI."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+# Standalone uv project, mirroring roles/devbox/files/dot_claude/bin/. Deployed to
+# ~/.config/aerospace/layouts/ and materialised with `uv sync --frozen`; AeroSpace
+# invokes the built console-script from the deployed .venv. It is intentionally NOT a
+# member of the repo dev-tooling workspace so it ships its own pinned .venv.
+[project.scripts]
+aerospace-layouts = "aerospace_layouts.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.25,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["pytest>=8.0", "hypothesis>=6.100"]
+lint = ["ruff>=0.8", "pyright>=1.1.390"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP", "C4", "SIM", "RUF", "ANN"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --strict-markers"
+markers = [
+    "live: smoke tests that drive the real AeroSpace WM; skipped unless AEROSPACE_LAYOUTS_LIVE=1",
+]

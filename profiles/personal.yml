@@ -4,13 +4,8 @@ devbox_active_profile: "personal"
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []
 # devbox_extra_brew_casks: []
-
-# Casks needing `--no-binaries` because their .pkg lays root-owned files
-# inside /Applications/<App>.app, which breaks brew's post-install
-# `xattr -w` step (runs as the user). See Homebrew/homebrew-cask#147300 and
-# Homebrew/brew#16309. Docker Desktop and Cloudflare WARP are personal-only
-# (work uses OrbStack and does not run WARP).
-devbox_extra_brew_casks_no_binaries:
-  - docker-desktop
-  - cloudflare-warp
 # devbox_extra_mcp_http_servers: []
+
+devbox_extra_brew_casks_no_binaries:
+  - docker-desktop     # personal-only; work uses OrbStack
+  - cloudflare-warp    # personal-only

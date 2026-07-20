@@ -131,14 +131,15 @@ devbox_brew_secondary_casks:
   - hammerspoon                # Lua scripting bridge to macOS (cursor/window/USB events)
   - karabiner-elements         # Key remap for built-in laptop kb (Kinesis has its own ZMK)
   - betterdisplay              # HiDPI for external monitors (replaces one-key-hidpi note)
+  - tomobar                    # Pomodoro menu bar timer (TomatoBar fork; tap ArtemYurov/tomobar)
 
 # Secondary casks installed with `--no-binaries` (mirrors the docker-desktop
 # pattern). Required for pkg-based casks whose installer writes root-owned
 # files inside /Applications/<App>.app; brew's post-install `xattr -w` step
-# runs as the user and fails. Shared across profiles; concatenated with
-# `devbox_extra_brew_casks_no_binaries` from profile overrides at install time.
-devbox_brew_secondary_casks_no_binaries:
-  - cloudflare-warp            # WARP VPN; .pkg ships /usr/local/bin/warp-cli directly
+# runs as the user and fails. Base list is empty; profile overrides in
+# `devbox_extra_brew_casks_no_binaries` supply the per-machine picks
+# (docker-desktop / cloudflare-warp on personal, none on work).
+devbox_brew_secondary_casks_no_binaries: []
 
 # npm packages (installed globally via node from secondary).
 devbox_npm_packages:

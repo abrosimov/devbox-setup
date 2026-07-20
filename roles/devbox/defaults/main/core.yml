@@ -53,4 +53,5 @@ devbox_extra_mcp_http_servers: []
 # Gatekeeper Developer-ID check AND first-launch XProtect scan for listed
 # apps — runtime protection (SIP, sandbox, TCC) is unaffected. Only add apps
 # you have personally vetted.
-devbox_trusted_unsigned_casks: []   # list of .app basenames (no `.app` suffix)
+devbox_trusted_unsigned_casks:      # list of .app basenames (no `.app` suffix)
+  - TomoBar   # ArtemYurov/tomobar cask; ad-hoc-signed DMG (no Developer ID)

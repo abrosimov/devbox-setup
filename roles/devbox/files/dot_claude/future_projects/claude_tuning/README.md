@@ -1,8 +1,17 @@
 # Claude Tuning — verbosity, completion, evidence-first
 
-**Status:** research complete, awaiting user decision on three open questions before edits.
-**Date opened:** 2026-07-20
+**Status:** W1 complete (RI1 → RI2). W2 opened (`route_W2_structural.md`) with resolved scope from Q-RI2-1..3; awaits Q-W2-1..3 decisions before frontmatter batch begins.
+**Date opened:** 2026-07-20. **Last update:** 2026-07-21.
 **Trigger:** user complaint about verbose responses, 60%-completion pattern, misrepresented restated intents.
+
+## Session handoff — how to resume
+
+1. Read this `README.md` (index).
+2. Read `problem_cards.md` (8 problem cards as FPF cue packs — PC1-PC8).
+3. Read `routed_cue_set.md` (13 candidate routes across 4 families, coverage matrix, wave rollout — reflects W1 completion).
+4. Read `route_RI1_rules_budget.md` + `rules_budget_baseline.md` (W1 output — RI1 script + baseline).
+5. Read `route_RI2_always_on_audit.md` (W1 output — RI2 audit with demotion recommendations).
+6. Open `route_W2_structural.md` (already scoped: RS1 + RS2 + RS5 + RI2 demotions + trigger-consistency validator). Decide Q-W2-1..3, then execute the sequencing inside the file.
 
 ## User complaint (original, verbatim)
 
@@ -29,51 +38,41 @@
 ## Distilled requirements
 
 1. **Reduce verbosity.** No graphomania, no restatement of user's own words, no filler.
-2. **Complete the task as asked.** Do not deliver 60%, ask about the remaining 40% as follow-up when the remaining 40% was in the original request. Do not split compound asks.
+2. **Complete the task as asked.** Do not deliver 60% and ask about the remaining 40% when that 40% was in the original request. Do not split compound asks.
 3. **Do not misrepresent the user in restated intents.** If restating, be precise; when in doubt, ask.
 4. **Assumptions must be evidence-backed.** Every silent choice — either verified in the repo (grep, read, LSP), or promoted to an explicit open question at the end of the reply. No unverified assumptions.
-5. **Answer placement for compound asks.** When the user combines a question with a work request, the answer to the question must appear at the end (after work is reported), not before the tool-call log that buries it.
+5. **Answer placement for compound asks.** When the user combines a question with a work request, the answer must appear at the end (after work is reported), not before the tool-call log.
+
+Refined and expanded into 8 problem cards — see `problem_cards.md`.
 
 ## File layout
 
 | File | Contents |
 |------|----------|
-| `README.md` | This file — index, user complaint, distilled requirements, open questions |
-| `evidence_log_mining.md` | Sub-agent report: verbatim evidence of failure patterns mined from `~/.claude/projects/` session logs |
-| `research_web.md` | Sub-agent report: web research on verbosity control, anti-satisficing, evidence-first patterns across Anthropic, OpenAI, Cursor, Cline, Aider, community sources |
-| `synthesis_and_proposal.md` | My synthesis of both reports, proposed structural changes to `dot_claude/`, open questions for the user |
+| `README.md` | This file — index, user complaint, distilled requirements, state log, session handoff |
+| `evidence_log_mining.md` | Sub-agent report: failure patterns mined from `~/.claude/projects/` session logs |
+| `research_web.md` | Sub-agent report: initial web research on verbosity control, anti-satisficing, evidence-first patterns |
+| `synthesis_and_proposal.md` | Initial 5-edit proposal with 3 open questions — **partially superseded** by the RoutedCueSet |
+| `problem_cards.md` | 8 problem cards (PC1-PC8) as FPF `U.PreArticulationCuePack` — the cues from which routes are derived |
+| `research_pattern_language.md` | Sub-agent report: 82-source web research on the Pattern-Language reformatting hypothesis — **verdict: no wholesale rewrite; lightweight hybrid** |
+| `routed_cue_set.md` | FPF `RoutedCueSet` (B.4.1) — 13 candidate routes across 4 families, coverage matrix, wave rollout plan |
+| `route_RI1_rules_budget.md` | Deep-dive on route RI1 — completed; contains baseline results and per-artefact notes |
+| `rules_budget_baseline.md` | Machine-generated baseline from `make rules-budget --baseline` (2026-07-21) |
+| `route_RI2_always_on_audit.md` | Deep-dive on route RI2 — always-on skill audit with per-skill keep/demote/split verdicts (Q-RI2-1..3 resolved) |
+| `route_W2_structural.md` | Deep-dive on W2 — RS1 + RS2 + RS5 + folded-in RI2 demotions + trigger-consistency validator (Q-W2-1..3 pending) |
 
-## Open questions (blocking implementation)
+## Open questions (superseded — kept for deliberation history)
 
-Presented via `AskUserQuestion` in-conversation; user requested clarification before answering. Reproduced here for persistence.
+The original Q1-Q3 below are **superseded** by the RoutedCueSet framework in `routed_cue_set.md`. Do not re-answer them; use the newer frame.
 
-### Q1 — Where to place anti-verbosity rules
+- **Q1 (superseded) — Where to place anti-verbosity rules.** Now handled by RC4 (retire ban-list; replace with one line) + RS1 (per-artefact `problem:` field for discovery).
+- **Q2 (superseded) — How to reshape the disclosure block.** Now handled by RC1 (Understood ask) + RC2 (seek evidence).
+- **Q3 (superseded) — Handling compound asks.** Now handled by RC6 (answer at end of reply).
 
-A) New always-on skill `voice-discipline` — ban-list, numeric anchor, hard opening in a dedicated `skills/voice-discipline/SKILL.md`. UAP §Voice shrinks to a 3–5-line pointer. Pro: does not bloat UAP (Arize warning on bloat causing rule loss). Con: another always-on skill in every session's context (~800 tokens).
+Live open questions now live inside each route deep-dive file — see `route_RI1_rules_budget.md` §Open questions for the current set (Q-RI1-1 to Q-RI1-5).
 
-B) Edit `USER_AUTHORITY_PROTOCOL.md` §Voice directly — numeric anchor + ban-list inline. Pro: single location, simple navigation. Con: UAP grows (already large), risk of bloat-induced rule loss per Arize.
+## State log
 
-C) Hybrid — critical bans in UAP, details in triggered skill. UAP §Voice gets a 5-line numeric anchor + top-5 forbidden phrases. New triggered skill `voice-discipline` (not always-on) with the full ban-list, examples, justified exceptions. Pro: minimum always-on footprint, details available on trigger. Con: details may not load when needed.
-
-### Q2 — How to reshape the disclosure block
-
-A) Remove the Assumptions section entirely — keep only (1) Restated intent (optional, only when the request is genuinely ambiguous), (2) Evidence I gathered — with path:line references, (3) Open questions — what evidence-recon could not resolve. Assumptions explicitly forbidden as a category. Pro: forces evidence-first. Con: rigid format, breaks muscle memory.
-
-B) Keep Assumptions with a mandatory Evidence check per item — each line in Assumptions must have inline evidence: `Assumption: X (verified: file.py:42)`, or migrate to Open questions if not verified. Pro: soft evolution of current format. Con: I might continue to skate through with "verified" claims that were not really verified.
-
-C) Trigger-based disclosure — appears only when the request is genuinely ambiguous. Remove the "first-reply on non-trivial request" trigger. Disclosure fires only when ≥2 materially different interpretations exist (the "would I do anything different?" check yields YES for ≥1 assumption). On unambiguous tasks — proceed to work. Pro: eliminates ceremonial disclosure. Con: brings back the risk of silent assumptions.
-
-### Q3 — Handling compound asks (question + work request in one turn)
-
-A) Answer at the end, single final message — structure: brief acknowledgement ("делаю X, отвечу на Y в конце") → tool calls → work report → answer to question. One final message. Pro: no scrolling. Con: if work is long, the question answer waits.
-
-B) Answer up-front, work silently — structure: brief answer → "делаю X" → tool calls → brief "готово". Pro: quick answer up-front. Con: user complained — answer floats up above the tool-call log.
-
-C) Split — answer immediately, then propose the work in a second message and await "go" — answer first, then "приступаю к Y — подтверди" and wait. Pro: clean separation. Con: extra round-trip when work is obvious and already sanctioned ("и да, согласен, делай").
-
-## Next actions
-
-1. User picks one option per open question (Q1, Q2, Q3) — or a variant.
-2. Draft edits to specific files under `roles/devbox/files/dot_claude/`.
-3. Present the diff for approval before writing.
-4. Deploy via `make claude-push`.
+- **2026-07-20.** Complaint captured. Log-mining + initial web-research sub-agents dispatched. `synthesis_and_proposal.md` drafted with a 5-edit proposal and 3 open questions (Q1-Q3).
+- **2026-07-21.** FPF `PROBLEM-SHAPING` re-frame. The 5 initial cues turned into problem cards (`problem_cards.md`, PC1-PC5). Pattern-Language reformatting hypothesis investigated via 82-source research (`research_pattern_language.md`); verdict: no wholesale rewrite, adopt a lightweight hybrid. 3 additional cues surfaced (PC6-PC8). Route framework built (`routed_cue_set.md`) — 13 candidate routes across 4 families with a wave-based rollout plan. W1 selected (RI1 rules-budget → RI2 always-on audit); RI1 deep-dive opened (`route_RI1_rules_budget.md`) with 5 open questions to resolve before implementation.
+- **2026-07-21 (later).** W1 executed end-to-end. Q-RI1-1..5 resolved (D, D, as-listed, A, A). Implemented `bin/rules_budget.py` + `bin/test_rules_budget.py` (37 tests green, <1s runtime, stdlib only). Added `make rules-budget` Makefile target. Captured `rules_budget_baseline.md` — 119 always-on rules, verdict `under` the 150-200 budget. Ran RI2 static audit (`route_RI2_always_on_audit.md`) — recommendation: demote 3 of 5 always-on skills (`code-comments`, `lint-discipline`, `lsp-navigation`) for 46-rule saving; flag `project-preferences` for split in W3. Q-RI2-1..3 resolved (W2 batch, W3 incremental split, add trigger-consistency validator in W2). Opened `route_W2_structural.md`: scope = RS1 + RS2 + RS5 + RI2 demotions + new validator; Q-W2-1..3 pending user decision.

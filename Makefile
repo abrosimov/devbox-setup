@@ -102,7 +102,7 @@ else
   VERBOSE :=
 endif
 
-.PHONY: run dev help init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills \
+.PHONY: run dev help init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills rules-budget \
        work personal dev-work dev-personal check-work check-personal \
        git-identity git-identity-ensure \
        secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed \
@@ -149,6 +149,7 @@ help:
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
 	@echo "  make audit-budget    - show detailed skill description budget report"
+	@echo "  make rules-budget    - count rule-like statements across skills/agents/commands/UAP (ARGS='--json' or '--baseline PATH')"
 	@echo "  make audit           - run brew supply-chain audit: CVE scan (brew vulns) + brew audit --installed"
 	@echo "  make audit-brewfile  - emit a Brewfile snapshot of devbox brew lists (stdout)"
 	@echo "  make audit-taps      - report status of every tapped brew repo (declared / stale / stray)"
@@ -343,6 +344,13 @@ validate-claude:
 
 audit-budget:
 	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --budget
+
+# Rules-budget instrumentation (RI1): count rule-like statements across
+# skills, agents, commands, and UAP. Baseline for W2-W5 tuning decisions.
+# ARGS lets callers pass through --json, --baseline PATH, etc.
+rules-budget:
+	@uv run --project $(CLAUDE_SRC)/bin \
+	  python $(CLAUDE_SRC)/bin/rules_budget.py --root $(CLAUDE_SRC) $(ARGS)
 
 # Supply-chain audit for Homebrew packages. Uses Homebrew/brew-vulns (an official
 # subcommand that queries OSV.dev) for CVE scanning, and `brew audit --installed`

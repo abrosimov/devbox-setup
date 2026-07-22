@@ -4,7 +4,7 @@ description: Unit tests specialist for Go, Python and TypeScript/React/Next.js â
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: sonnet
 permissionMode: acceptEdits
-skills: go-engineer, go-testing, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, code-comments, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
+skills: go-engineer, go-testing, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
 updated: 2026-05-13
 ---
 

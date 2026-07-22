@@ -1,9 +1,19 @@
 ---
 name: code-comments
-alwaysApply: true
 description: >
   Rules for code comments and documentation. Covers narration comments (forbidden),
   acceptable WHY comments, and docstring policies.
+triggers:
+  - comment
+  - comments
+  - docstring
+  - narration
+  - "//"
+  - "#"
+  - '"""'
+  - "/* */"
+  - "# type:"
+  - documentation
 ---
 
 # Code Comments Policy

@@ -3,23 +3,9 @@ devbox_active_profile: "personal"
 
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []
-devbox_extra_brew_casks:
-  - tomobar          # Pomodoro menu bar timer (TomatoBar fork; tap ArtemYurov/tomobar)
-# TomoBar tap-cask ships an ad-hoc-signed DMG (no Apple Developer ID); the
-# post-brew task in darwin/dequarantine_casks.yml strips the quarantine xattr
-# so the first launch does not hit the Gatekeeper dialog.
-devbox_trusted_unsigned_casks:
-  - TomoBar
-# TomoBar is personal-only (cask above), so its login-item registration is too.
-# Concatenated with the shared devbox_login_items base in configure_login_items.yml.
-devbox_extra_login_items:
-  - TomoBar
-# Docker Desktop lives in the `_no_binaries` list because brew's regular
-# install path fails on this cask: the .pkg ships root-owned files inside
-# /Applications/Docker.app, and brew's post-install `xattr -w` step runs as
-# the user. See Homebrew/homebrew-cask#147300 and Homebrew/brew#16309.
-# The original Docker on this machine was installed from docker.com (pre-repo),
-# which left the .app and CLI shims already in place; brew just adopts it.
-devbox_extra_brew_casks_no_binaries:
-  - docker-desktop   # Personal machines use Docker Desktop; work uses OrbStack.
+# devbox_extra_brew_casks: []
 # devbox_extra_mcp_http_servers: []
+
+devbox_extra_brew_casks_no_binaries:
+  - docker-desktop     # personal-only; work uses OrbStack
+  - cloudflare-warp    # personal-only

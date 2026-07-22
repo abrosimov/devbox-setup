@@ -12,7 +12,6 @@ triggers:
   - type: ignore
   - suppress
   - silence
-alwaysApply: true
 ---
 
 # Lint Discipline

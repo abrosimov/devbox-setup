@@ -2,16 +2,18 @@
 """Validate Claude Code agent/skill/command configuration integrity.
 
 Checks:
-  agents         Agent frontmatter fields, model values, skill cross-references
-  skills         Skill frontmatter fields, name/directory match
-  commands       Command frontmatter fields, techne- filename prefix
-  command-refs   techne- namespace integrity (dangling refs, bare invocations)
-  json           JSON validity for schemas/, hooks.json, settings.json
-  references     Broken markdown links in agent files
-  stale          Old-style doc references, formatting issues
-  grounding      Builder skill grounding reference files
-  meta-pipeline  Meta-reviewer existence, builder skill wiring
-  budget         Skill description budget utilisation (16K char limit)
+  agents               Agent frontmatter fields, model values, skill cross-references
+  skills               Skill frontmatter fields, name/directory match
+  commands             Command frontmatter fields, techne- filename prefix
+  command-refs         techne- namespace integrity (dangling refs, bare invocations)
+  json                 JSON validity for schemas/, hooks.json, settings.json
+  references           Broken markdown links in agent files
+  stale                Old-style doc references, formatting issues
+  grounding            Builder skill grounding reference files
+  meta-pipeline        Meta-reviewer existence, builder skill wiring
+  budget               Skill description budget utilisation (16K char limit)
+  related-links        related: frontmatter entries resolve to existing skills/agents
+  trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
 
 Usage:
   validate-config.py                           # all checks, ~/.claude root
@@ -130,6 +132,69 @@ def parse_skills_list(content: str) -> list[str]:
     # Strip optional surrounding brackets  skills: [a, b, c]
     raw = raw.strip("[] ")
     return [s.strip() for s in raw.split(",") if s.strip()]
+
+
+def _parse_inline_list(raw: str) -> list[str]:
+    """Parse an inline flow-style YAML list  ``[a, b, c]`` or ``a, b, c``."""
+    raw = raw.strip()
+    if not raw or raw == "[]":
+        return []
+    raw = raw.strip("[] ")
+    items: list[str] = []
+    for chunk in raw.split(","):
+        item = chunk.strip().strip("'\"")
+        if item:
+            items.append(item)
+    return items
+
+
+def _parse_block_list(lines: list[str], start: int) -> tuple[list[str], int]:
+    """Parse a block-style YAML list starting at ``lines[start + 1]``.
+
+    Consumes indented ``  - item`` lines until a non-list line is reached.
+    Returns (items, index-of-first-non-list-line).
+    """
+    items: list[str] = []
+    i = start + 1
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.lstrip()
+        if not stripped:
+            i += 1
+            continue
+        if not stripped.startswith("-"):
+            break
+        item = stripped[1:].strip().strip("'\"")
+        if item:
+            items.append(item)
+        i += 1
+    return items, i
+
+
+def parse_yaml_list(content: str, field: str) -> list[str]:
+    """Return the value of a YAML-list frontmatter field (inline or block form).
+
+    Returns [] when the field is absent, empty, or malformed.
+    """
+    lines = content.split("\n")
+    if not lines or lines[0].strip() != "---":
+        return []
+    end = _find_frontmatter_end(lines)
+    if end is None:
+        return []
+
+    prefix = f"{field}:"
+    for i in range(1, end):
+        line = lines[i]
+        stripped = line.strip()
+        if not stripped.startswith(prefix):
+            continue
+        after = stripped[len(prefix) :].strip()
+        if after:
+            return _parse_inline_list(after)
+        items, _ = _parse_block_list(lines[:end], i)
+        return items
+    return []
 
 
 # ---------------------------------------------------------------------------
@@ -399,6 +464,106 @@ def check_command_refs(root: Path) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def _collect_skill_names(root: Path) -> set[str]:
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir():
+        return set()
+    return {d.name for d in skills_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()}
+
+
+def _collect_agent_names(root: Path) -> set[str]:
+    agents_dir = root / "agents"
+    if not agents_dir.is_dir():
+        return set()
+    return {f.stem for f in agents_dir.glob("*.md")}
+
+
+def check_related_links(root: Path) -> tuple[list[str], list[str]]:
+    """Every name in a ``related:`` frontmatter list must resolve.
+
+    ``related:`` is optional. When present, each name must exist as either
+    a skill directory or an agent file (per Q-W2-6 = A the graph is small
+    and grep-seeded, so dangling refs are a real risk).
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    skills = _collect_skill_names(root)
+    agents = _collect_agent_names(root)
+    known = skills | agents
+
+    for skill_dir in sorted((root / "skills").iterdir() if (root / "skills").is_dir() else []):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+        related = parse_yaml_list(skill_file.read_text(), "related")
+        errors.extend(
+            f'[RELATED_REF] skills/{skill_dir.name}/SKILL.md: related "{name}" '
+            "does not resolve to a skill or agent"
+            for name in related
+            if name not in known
+        )
+
+    for agent_file in sorted((root / "agents").glob("*.md") if (root / "agents").is_dir() else []):
+        related = parse_yaml_list(agent_file.read_text(), "related")
+        errors.extend(
+            f'[RELATED_REF] agents/{agent_file.name}: related "{name}" '
+            "does not resolve to a skill or agent"
+            for name in related
+            if name not in known
+        )
+
+    return errors, warnings
+
+
+def check_trigger_consistency(root: Path) -> tuple[list[str], list[str]]:
+    """Warn when a trigger-loaded skill is not referenced by any agent.
+
+    A skill declaring ``triggers:`` (and not ``alwaysApply: true``) relies on
+    agents listing it under ``skills:`` for the trigger-load path to fire.
+    If zero agents reference it, the triggers are unreachable — this is
+    almost always an oversight after a demotion or rename.
+
+    Conservative: warn, never fail.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    agents_dir = root / "agents"
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir() or not agents_dir.is_dir():
+        return errors, warnings
+
+    agent_skill_refs: dict[str, int] = {}
+    for agent_file in agents_dir.glob("*.md"):
+        for skill in parse_skills_list(agent_file.read_text()):
+            agent_skill_refs[skill] = agent_skill_refs.get(skill, 0) + 1
+
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+        content = skill_file.read_text()
+        fm = parse_frontmatter(content) or {}
+        if fm.get("alwaysApply", "").lower() in ("true", "1", "yes"):
+            continue
+        triggers = parse_yaml_list(content, "triggers")
+        if not triggers:
+            continue
+        if agent_skill_refs.get(skill_dir.name, 0) == 0:
+            warnings.append(
+                f"[TRIGGER_CONSISTENCY] skills/{skill_dir.name}/SKILL.md: "
+                f"declares {len(triggers)} trigger(s) but no agent references "
+                "it in skills: — triggers are unreachable"
+            )
+
+    return errors, warnings
+
+
 _STALE_PATTERNS = [
     (re.compile(r"go/go_"), "old-style Go doc reference"),
     (re.compile(r"python/python_"), "old-style Python doc reference"),
@@ -599,6 +764,8 @@ ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "grounding": check_grounding,
     "meta-pipeline": check_meta_pipeline,
     "budget": check_skill_budget,
+    "related-links": check_related_links,
+    "trigger-consistency": check_trigger_consistency,
 }
 
 

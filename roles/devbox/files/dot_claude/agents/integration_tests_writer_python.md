@@ -4,7 +4,7 @@ description: Integration tests specialist for Python - writes database, HTTP, an
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: sonnet
 permissionMode: acceptEdits
-skills: python-engineer, python-testing, code-comments, agent-communication, shared-utils, agent-base-protocol
+skills: python-engineer, python-testing, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-10
 ---
 

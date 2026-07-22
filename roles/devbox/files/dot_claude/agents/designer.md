@@ -3,7 +3,7 @@ name: designer
 description: UI/UX Designer who creates design systems, layout specifications, component specifications, and accessibility plans. Acts as the bridge between planning and frontend engineering.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__storybook
 model: opus
-skills: config, ui-design, agent-communication, shared-utils, mcp-playwright, mcp-storybook, agent-base-protocol, diverge-synthesize-select
+skills: config, ui-design, self-contained-options, agent-communication, shared-utils, mcp-playwright, mcp-storybook, agent-base-protocol, diverge-synthesize-select
 updated: 2026-02-12
 ---
 

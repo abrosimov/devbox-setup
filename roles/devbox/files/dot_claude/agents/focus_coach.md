@@ -8,7 +8,7 @@ description: >
   what "done" means. Read-focused — it frames and paces work, it never does the work for you.
 tools: Read, Grep, Glob, Write, Edit
 model: sonnet
-skills: agent-communication, shared-utils, agent-base-protocol
+skills: self-contained-options, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-06-10
 ---
 

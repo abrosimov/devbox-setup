@@ -1,0 +1,80 @@
+---
+# AppleSymbolicHotKeys IDs: 64 = Cmd+Space (Spotlight), 65 = ⌥⌘+Space (Finder
+# search). `value` block is required — writing only `enabled = 0` renders as
+# "None" in System Settings and macOS re-enables the default on next login.
+# CoreServices binds at loginwindow; re-login is required (gate in main.yml).
+
+- name: "Read current Spotlight Cmd+Space hotkey state (id 64)"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/plutil
+      - -extract
+      - AppleSymbolicHotKeys.64.enabled
+      - raw
+      - -o
+      - "-"
+      - "{{ ansible_facts['env']['HOME'] }}/Library/Preferences/com.apple.symbolichotkeys.plist"
+  register: devbox_sh_cmd_space
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [macos, spotlight]
+
+- name: "Read current Spotlight Cmd+Option+Space hotkey state (id 65)"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/plutil
+      - -extract
+      - AppleSymbolicHotKeys.65.enabled
+      - raw
+      - -o
+      - "-"
+      - "{{ ansible_facts['env']['HOME'] }}/Library/Preferences/com.apple.symbolichotkeys.plist"
+  register: devbox_sh_cmd_opt_space
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [macos, spotlight]
+
+- name: "Disable Spotlight Cmd+Space (id 64)"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/defaults
+      - write
+      - com.apple.symbolichotkeys
+      - AppleSymbolicHotKeys
+      - -dict-add
+      - "64"
+      - '{enabled = 0; value = {parameters = (32, 49, 1048576); type = "standard";};}'
+  register: devbox_sh_cmd_space_write
+  when: >-
+    devbox_sh_cmd_space.rc != 0
+    or (devbox_sh_cmd_space.stdout | trim) != 'false'
+  changed_when: true
+  tags: [macos, spotlight]
+
+- name: "Disable Spotlight Cmd+Option+Space (id 65)"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/defaults
+      - write
+      - com.apple.symbolichotkeys
+      - AppleSymbolicHotKeys
+      - -dict-add
+      - "65"
+      - '{enabled = 0; value = {parameters = (32, 49, 1572864); type = "standard";};}'
+  register: devbox_sh_cmd_opt_space_write
+  when: >-
+    devbox_sh_cmd_opt_space.rc != 0
+    or (devbox_sh_cmd_opt_space.stdout | trim) != 'false'
+  changed_when: true
+  tags: [macos, spotlight]
+
+- name: "Flush cfprefsd so a subsequent read sees the new AppleSymbolicHotKeys"
+  ansible.builtin.command: killall cfprefsd
+  when: >-
+    (devbox_sh_cmd_space_write.changed | default(false))
+    or (devbox_sh_cmd_opt_space_write.changed | default(false))
+  changed_when: false
+  failed_when: false
+  tags: [macos, spotlight]

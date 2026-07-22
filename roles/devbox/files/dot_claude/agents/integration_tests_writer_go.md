@@ -4,7 +4,7 @@ description: Integration tests specialist for Go - writes database, HTTP, and me
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
-skills: go-engineer, go-testing, code-comments, agent-communication, shared-utils, agent-base-protocol
+skills: go-engineer, go-testing, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-10
 ---
 

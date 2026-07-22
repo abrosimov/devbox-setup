@@ -201,7 +201,7 @@ Diagnostic hints are fine ("the error mentions X module — is that in the layou
 
 Two kinds of rule live here. The first group is fully enforced by `alwaysApply: true` skills — the skill carries the binding detail, so these are one-line pointers only. The second group has **no skill backstop**: the text below is the sole source, so it is kept verbatim.
 
-**Skill-backed (pointer only — the named skill is authoritative):** immutability → `project-preferences`; comments (WHY/WARNING/TODO only) → `code-comments`; agent delegation → `workflow`; LSP-first navigation → `lsp-navigation` + `lsp-tools`; structural/AST search → `ast-grep`.
+**Skill-backed (pointer only — the named skill is authoritative):** immutability → `project-preferences`; comments (WHY/WARNING/TODO only) → `code-comments`; agent delegation → `workflow`; LSP-first navigation → `lsp-tools`; structural/AST search → `ast-grep`.
 
 **No backstop (load-bearing — full text):**
 

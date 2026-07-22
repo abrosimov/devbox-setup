@@ -3,7 +3,7 @@ name: database-designer
 description: Database schema designer who creates migration-ready schemas for PostgreSQL, MySQL, MongoDB, and CockroachDB. Focused on pragmatic, performance-oriented design with horizontal scaling readiness.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: config, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol
+skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol
 updated: 2026-02-10
 ---
 

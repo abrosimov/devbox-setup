@@ -151,16 +151,23 @@
     - .config/nvim
     - .config/fish/completions
     - .config/fish/functions
+    # Karabiner's portable rule library (assets/complex_modifications/). Repo is
+    # source of truth here; safe to overwrite. Only karabiner.json itself is
+    # runtime-owned and seeded separately below — do NOT collapse the two back
+    # into a single `.config/karabiner` copy (that regressed in 64abc86, which
+    # also silently stopped deploying this assets/ tree).
+    - .config/karabiner/assets
     - .hammerspoon
   loop_control:
     label: "{{ item }}/"
   tags: [configs, dotfiles]
 
 # Edit rule logic in assets/complex_modifications/*.json (portable source of
-# truth); karabiner.json's complex_modifications must mirror it. Karabiner owns
-# karabiner.json at runtime (machine-local device/toggle state), so we SEED it
-# only when absent (force: false) and pull rule changes back via
-# `make karabiner-pull` (see Makefile karabiner-diff / karabiner-pull).
+# truth, deployed by the copy loop above); karabiner.json's complex_modifications
+# must mirror it. Karabiner owns karabiner.json at runtime (machine-local
+# device/toggle state), so we SEED it only when absent (force: false) and pull
+# rule changes back via `make karabiner-pull` (see Makefile karabiner-diff /
+# karabiner-pull).
 - name: Seed Karabiner config only if absent (Karabiner owns the live file thereafter)
   ansible.builtin.copy:
     src: "{{ role_path }}/files/.config/karabiner/karabiner.json"

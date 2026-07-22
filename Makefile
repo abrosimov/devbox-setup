@@ -288,6 +288,9 @@ test-git-hooks: $(DEV_SENTINEL) ## Pytest for the global git hooks (prepare-comm
 test-scripts: $(DEV_SENTINEL) ## Pytest for scripts/ (git-identity-gen.py and friends)
 	@$(DEV_BIN)/pytest tests/scripts -q
 
+test-deploy: $(DEV_SENTINEL) ## Pytest for dotfile-deploy structure (guards karabiner assets deploy in install_configs.yml)
+	@$(DEV_BIN)/pytest tests/deploy -q
+
 # Isolated check against the deployed-shape venv: same uv sync --frozen that
 # Ansible runs in production, then pytest from bin/'s own dev group. Catches
 # drift between bin/uv.lock and the test suite (e.g. bashlex version skew)

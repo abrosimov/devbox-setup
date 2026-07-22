@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from aerospace_layouts.geometry import master_axis
 from aerospace_layouts.model import (
     Command,
     MasterSide,
@@ -9,12 +10,9 @@ from aerospace_layouts.model import (
     balance_sizes,
     join_with,
     move,
-    resize_smart,
+    resize_to,
     set_layout,
 )
-
-MASTER_WIDEN_STEP = 50
-MASTER_WIDEN_STEPS = 2
 
 
 @dataclass(frozen=True)
@@ -43,8 +41,7 @@ def tile_layout(
     windows: list[Window],
     master_side: MasterSide,
     workspace: str,
-    widen_steps: int = MASTER_WIDEN_STEPS,
-    widen_step: int = MASTER_WIDEN_STEP,
+    master_extent: int | None = None,
 ) -> list[Command]:
     if not windows:
         return []
@@ -69,7 +66,8 @@ def tile_layout(
         commands.append(move(cfg.relocate_dir, master.window_id))
 
     commands.append(balance_sizes(workspace))
-    # Design R: after balancing, nudge the master larger by a fixed number of relative
-    # steps. There is no percentage/points primitive in AeroSpace, so this is approximate.
-    commands.extend(resize_smart(widen_step, master.window_id) for _ in range(widen_steps))
+    # Design A: pin the master to an absolute fraction of the monitor (width for LEFT/RIGHT,
+    # height for TOP/BOTTOM). The gap between tiles is not subtracted -- an accepted approx.
+    if master_extent is not None:
+        commands.append(resize_to(master_axis(master_side), master_extent, master.window_id))
     return commands

@@ -7,10 +7,15 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from aerospace_layouts.model import MasterSide
 from aerospace_layouts.planner import (
     CYCLE,
+    FLATTENING_LAYOUTS,
+    ORDER_SENSITIVE_LAYOUTS,
     UnknownLayoutError,
     advance_index,
+    current_layout,
+    layout_names,
     plan_adjust_master,
     plan_demote,
     plan_layout,
@@ -22,6 +27,41 @@ from aerospace_layouts.state import State, get_index, load_state, save_state, se
 from .conftest import argv_strings, make_windows
 
 WS = "3"
+
+
+def test_cycle_is_the_master_stack_layouts_without_columns_fair_floating():
+    assert CYCLE == (
+        "tile",
+        "tile.left",
+        "tile.top",
+        "tile.bottom",
+        "max",
+    )
+    for excluded in ("columns", "fair", "floating"):
+        assert excluded not in CYCLE
+
+
+def test_columns_and_fair_stay_apply_targets_outside_the_cycle():
+    assert {"columns", "fair"} <= set(layout_names())
+    assert plan_layout("columns", make_windows(3), WS)
+    assert plan_layout("fair", make_windows(3), WS)
+
+
+def test_floating_stays_a_named_apply_target_outside_the_cycle():
+    assert "floating" in layout_names()
+    assert argv_strings(plan_layout("floating", make_windows(3), WS)) == [
+        "layout floating --window-id 10",
+        "layout floating --window-id 11",
+        "layout floating --window-id 12",
+    ]
+
+
+def test_current_layout_clamps_stale_out_of_range_index():
+    stored = len(CYCLE) + 3
+    state = State({WS: stored})
+    name = current_layout(state, WS)
+    assert name == CYCLE[stored % len(CYCLE)]
+    assert name in layout_names()
 
 
 def test_advance_wraps_modulo_cycle_length():
@@ -44,8 +84,15 @@ def test_missing_workspace_defaults_to_index_zero_then_advances_to_one():
 
 def test_record_layout_name_sets_index_to_cycle_position():
     state = State()
+    record_layout_name(state, WS, "tile.top")
+    assert get_index(state, WS) == CYCLE.index("tile.top")
+
+
+def test_record_out_of_cycle_name_leaves_index_untouched():
+    state = State()
+    set_index(state, WS, 2)
     record_layout_name(state, WS, "columns")
-    assert get_index(state, WS) == CYCLE.index("columns")
+    assert get_index(state, WS) == 2
 
 
 def test_record_unknown_name_leaves_index_untouched():
@@ -86,6 +133,21 @@ def test_save_is_atomic_and_leaves_no_temp_file(tmp_path: Path):
     on_disk = json.loads(path.read_text(encoding="utf-8"))
     assert on_disk == {"workspaces": {"1": {"layout_index": 1}}}
     assert list(tmp_path.iterdir()) == [path]
+
+
+def test_order_sensitive_layouts_are_the_tile_family_and_fair():
+    expected = frozenset({"tile", "tile.left", "tile.top", "tile.bottom", "fair"})
+    assert expected == ORDER_SENSITIVE_LAYOUTS
+
+
+def test_order_sensitive_is_subset_of_flattening():
+    assert ORDER_SENSITIVE_LAYOUTS <= FLATTENING_LAYOUTS
+
+
+def test_max_and_columns_flatten_but_are_order_agnostic():
+    assert {"max", "columns"} <= FLATTENING_LAYOUTS
+    assert "max" not in ORDER_SENSITIVE_LAYOUTS
+    assert "columns" not in ORDER_SENSITIVE_LAYOUTS
 
 
 def test_plan_layout_unknown_name_raises():
@@ -130,6 +192,42 @@ def test_plan_demote_from_middle_bubbles_remaining_distance():
     focused = windows[1].window_id
     commands = plan_demote(windows, focused)
     assert argv_strings(commands) == [f"swap dfs-next --window-id {focused}"] * 3
+
+
+def test_plan_promote_appends_absolute_master_resize_on_promoted_window():
+    windows = make_windows(4)
+    focused = windows[3].window_id
+    commands = plan_promote(windows, focused, master_extent=960, master_side=MasterSide.LEFT)
+    assert argv_strings(commands) == [
+        *([f"swap dfs-prev --window-id {focused}"] * 3),
+        f"resize width 960 --window-id {focused}",
+    ]
+
+
+def test_plan_promote_without_extent_emits_no_resize():
+    windows = make_windows(4)
+    focused = windows[3].window_id
+    assert (
+        argv_strings(plan_promote(windows, focused)) == [f"swap dfs-prev --window-id {focused}"] * 3
+    )
+
+
+def test_plan_demote_reasserts_size_on_new_master_when_old_master_demoted():
+    windows = make_windows(4)
+    focused = windows[0].window_id
+    commands = plan_demote(windows, focused, master_extent=540, master_side=MasterSide.BOTTOM)
+    new_master = windows[1].window_id
+    assert argv_strings(commands) == [
+        *([f"swap dfs-next --window-id {focused}"] * 3),
+        f"resize height 540 --window-id {new_master}",
+    ]
+
+
+def test_plan_demote_reasserts_size_on_untouched_master_when_stack_window_demoted():
+    windows = make_windows(4)
+    focused = windows[1].window_id
+    commands = plan_demote(windows, focused, master_extent=960, master_side=MasterSide.LEFT)
+    assert argv_strings(commands)[-1] == f"resize width 960 --window-id {windows[0].window_id}"
 
 
 def test_plan_adjust_master_grows_and_shrinks_master():

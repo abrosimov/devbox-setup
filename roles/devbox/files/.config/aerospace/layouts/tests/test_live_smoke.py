@@ -30,7 +30,8 @@ def test_tile_master_left_builds_master_plus_stack():
         - The master window occupies a single full-height column on the LEFT.
         - The other two windows form ONE vertical stack on the RIGHT (top/bottom),
           NOT a further-nested pair and NOT a horizontal row.
-        - The master is slightly WIDER than an even split (the resize nudges).
+        - The master occupies ~50% of the monitor width (Design A absolute resize);
+          the tile gap is not subtracted, so accept a small deviation from an exact half.
 
     IF THE STACK IS WRONG, this pins the exact `join-with` semantics to fix in
     layouts/tile.py:
@@ -48,6 +49,16 @@ def test_tile_master_left_builds_master_plus_stack():
     equal width, the odd window (odd count) landing in the LEFT column. The join-with
     merge-vs-nest semantics are identical to tile: each column's non-anchor windows must
     share ONE parent container, not nest pairwise.
+
+    ADDITIONAL LIVE CHECKS (require AeroSpace >= 0.21, eval-batched mutations):
+        (a) Cycle tile <-> fair (and around the cycle). Each step should feel near-instant
+            with NO intermediate flash -- the whole arrange sequence is one double-buffered
+            `aerospace eval`, not a visible series of joins/resizes.
+        (b) After `apply tile`, the master lands at ~50% of the monitor width (Design A).
+        (c) `promote` a stack window: it pulls onto the master half AND takes the ~50%
+            proportion in one gesture. `demote` the master: the new master takes ~50%.
+        (d) The eval batch applies atomically -- you never see a half-built tree between
+            the flatten and the final arranged layout.
     """
     client = AerospaceClient(subprocess_runner(os.environ.get("AEROSPACE_BIN", "aerospace")))
     workspace = client.focused_workspace()

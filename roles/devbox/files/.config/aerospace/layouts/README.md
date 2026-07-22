@@ -49,13 +49,27 @@ The console-script `aerospace-layouts` exposes:
 | `cycle [--reverse]` | Advance the focused workspace's stored index mod the cycle list, persist, apply. |
 | `apply <name>` | Apply a named layout (records its cycle index if it is in the cycle). |
 | `reapply` | Re-apply the current stored layout without advancing. |
-| `adjust-master (+ \| -)` | Nudge the master larger / smaller (`resize smart ± --window-id <master>`). |
-| `promote` | Swap the focused window into the master slot (dfs-index 0). |
-| `demote` | Swap the focused window toward the tail of the stack (inverse of `promote`). |
+| `adjust-master (+ \| -)` | Nudge the master larger / smaller by a fraction of the monitor width (`resize smart ± --window-id <master>`, step ≈ `0.05 × usable width`). |
+| `promote` | Swap the focused window into the master slot (dfs-index 0) and re-assert its 50% master proportion. |
+| `demote` | Swap the focused window toward the tail (inverse of `promote`); re-assert 50% on the new master. |
 | `diagnose [name]` | Non-destructive: print the window list, dfs-index->id map and planned commands. Runs `list-windows` + `flatten` + the dfs probe (restoring focus) but executes NO `join-with`/`resize`. Defaults to `tile`. |
 
 The cycle list is a single constant `planner.CYCLE`:
-`floating, tile, tile.left, tile.top, tile.bottom, fair, max, columns`.
+`tile, tile.left, tile.top, tile.bottom, max`. `columns` (even row) and `fair` (two stacks)
+are deliberately **out of the cycle** -- the workflow is master+stack halves, which they do
+not serve -- but both stay valid `apply columns` / `apply fair` targets. `floating` is also
+**not** in the cycle -- per-window float is a manual toggle (`apply floating`), not a cycle
+step; a floating-all step would trap the tiling layouts, which exclude floating windows.
+
+### Mutation batching (AeroSpace >= 0.21.0-Beta)
+
+The flatten + dfs probe read-back phase runs as individual calls (each needs the prior
+result), but the arrange/mutation sequence ships as **one** `aerospace eval '<cmd> ; <cmd> ;
+...>'` request. `;` runs each sub-command sequentially regardless of exit, so a
+`tolerate_nonzero` no-op `layout` never aborts the batch. The single round-trip is
+double-buffered by AeroSpace -- no intermediate-state flashes while cycling. A non-zero eval
+exit is logged at WARNING and never raised: intermediate layout no-ops legitimately make eval
+non-zero, and best-effort is correct for a keybinding.
 
 Environment:
 
@@ -96,9 +110,16 @@ AeroSpace rebuilds window trees from scratch on restart.
 
 ## How the tile master+stack tree is built
 
-Applying a reflow layout is a **two-phase** live sequence (`cli.apply_layout`), because
-`flatten` linearises the tree and thus changes which window sits where -- the join order
-can only be read *after* the flatten:
+`max` and `columns` are **order-agnostic**: they only ever touch `windows[0]` (root
+`set_layout` + balance), so they flatten but **skip** the dfs probe. This lets them cycle
+without the 2N-subprocess focus-flicker. Only the `tile` family and `fair` are
+**order-sensitive** (`planner.ORDER_SENSITIVE_LAYOUTS`) -- they need the true dfs order for
+master identity and the join sequence, so they run the probe below. `floating` skips the
+flatten entirely.
+
+Applying an order-sensitive reflow layout is a **two-phase** live sequence
+(`cli.apply_layout`), because `flatten` linearises the tree and thus changes which window
+sits where -- the join order can only be read *after* the flatten:
 
 1. `flatten-workspace-tree --workspace <ws>` executes live.
 2. The dfs order is probed on the freshly-flattened tree (`focus --dfs-index`), giving the
@@ -106,7 +127,8 @@ can only be read *after* the flatten:
 3. The pure layout function builds the arrange commands from that order.
 4. The arrange commands execute.
 
-The pure `tile_layout` therefore emits only the post-flatten arrange sequence (master-left):
+The pure `tile_layout` therefore emits only the post-flatten arrange sequence (master-left).
+The CLI batches these into one `aerospace eval` call:
 
 ```
 layout h_tiles --window-id w0               # force root horizontal (tolerates no-op)
@@ -115,9 +137,20 @@ join-with left --window-id w3               #   anchored on w1, one window at a 
 ...                                         #   (join count == n-2)
 layout v_tiles --window-id w1               # force the stack container vertical
 balance-sizes --workspace <ws>
-resize smart +50 --window-id w0             # Design R: nudge the master wider (x2)
-resize smart +50 --window-id w0
+resize width <points> --window-id w0        # Design A: absolute 50% master (see below)
 ```
+
+**Design A -- absolute master sizing.** The master is pinned to ~50% of the focused
+monitor's usable area via a single absolute `resize width <points>` (LEFT/RIGHT master) or
+`resize height <points>` (TOP/BOTTOM master), replacing the earlier relative
+`resize smart +50` nudges. The extent is `round(0.5 × usable_dimension)` where the usable
+width/height comes from AppKit `NSScreen.visibleFrame` (menu bar / Dock excluded).
+AeroSpace's `%{monitor-appkit-nsscreen-screens-id}` is a 1-based index into
+`NSScreen.screens()`; the CLI reads it via `aerospace list-monitors --focused`. The tile gap
+is not subtracted -- the half is an accepted approximation (live-verify per monitor). When
+the monitor cannot be read the resize is simply skipped (best-effort). `promote` re-asserts
+this half on the pulled window and `demote` on the new master, so a pull lands as a true
+half in one gesture.
 
 Key constraints handled:
 

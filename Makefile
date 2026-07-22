@@ -347,9 +347,12 @@ validate-claude:
 audit-budget:
 	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --budget
 
-# Supply-chain audit for Homebrew packages. Uses Homebrew/brew-vulns (an official
-# subcommand that queries OSV.dev) for CVE scanning, and `brew audit --installed`
-# for metadata health (broken URLs, deprecated deps, missing licences).
+# Supply-chain audit for Homebrew packages. Uses `brew vulns` (a built-in Homebrew
+# command since it was merged from the now-archived Homebrew/brew-vulns tap; queries
+# OSV.dev) for CVE scanning, and `brew audit --installed` for metadata health
+# (broken URLs, deprecated deps, missing licences). The old tap-install step was
+# removed: Homebrew deleted Homebrew/brew-vulns, so `brew install …/brew-vulns`
+# fails and re-taps a dead repo.
 #
 # `brew audit --installed` without --strict deliberately stays out of style-check
 # territory: those checks are author-facing and produce noise for packages we
@@ -364,15 +367,15 @@ PROFILE_YML   := profiles/$(or $(ACTIVE_PROFILE),personal).yml
 audit: audit-brew
 
 audit-brew:
-	@echo "=== Ensuring brew-vulns is installed ==="
 	@if ! command -v brew >/dev/null 2>&1; then \
 		echo "ERROR: brew not found in PATH."; exit 1; \
 	fi
-	@brew list --formula brew-vulns >/dev/null 2>&1 \
-		|| brew install Homebrew/brew-vulns/brew-vulns
-	@echo
 	@echo "=== brew vulns (CVE scan via OSV) ==="
-	@brew vulns --severity high || true
+	@if brew vulns --help >/dev/null 2>&1; then \
+		brew vulns --severity high || true; \
+	else \
+		echo "  (skipped: 'brew vulns' unavailable — built-in since the brew-vulns tap was archived; run 'brew update')"; \
+	fi
 	@echo
 	@echo "=== brew audit --installed (URLs / licences / deprecations) ==="
 	@brew audit --installed --skip-style || true
@@ -405,9 +408,11 @@ audit-brewfile:
 # 2026-06-20 — see git log for the audit that produced this list.
 STALE_TAPS := \
   go-task/tap \
+  homebrew/brew-vulns \
   homebrew/cask-fonts \
   hudochenkov/sshpass \
-  jakehilborn/jakehilborn
+  jakehilborn/jakehilborn \
+  mongodb/brew
 
 audit-taps:
 	@command -v yq >/dev/null 2>&1 || { \

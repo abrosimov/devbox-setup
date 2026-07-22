@@ -4,6 +4,104 @@
 **Companion to:** `macos_tooling_setup.md` §2.1 (AeroSpace baseline).
 **Purpose:** session handoff so setup can continue in a fresh session.
 
+---
+
+## SESSION 2 (2026-07-22) — RESUME HERE
+
+The Session-1 "RESUME HERE" block further down is **all DONE** (keybindings,
+`fair`, `demote`, deploy step, tap hygiene). Start the next session from here.
+
+### Deployed / current state
+- **AeroSpace upgraded 0.20.3-Beta → 0.21.3-Beta** (brew cask). `aerospace eval`
+  confirmed working (`aerospace eval 'balance-sizes'` → exit 0). `eval` semantics:
+  shell-like string, separators `; || && |` + parens, `&&` binds tighter than `||`,
+  pipe = pipefail.
+- **`config-version = 2`** added to `aerospace.toml` (v1 was warned as outdated;
+  only behavioural change is `persistent-workspaces` now defaults to empty — benign
+  for the current keybinding-driven use).
+- **eval-phase implemented & deployed** (SE agent, 120 passed / 1 skipped, ruff +
+  pyright strict clean):
+  - `executor.py`: whole mutation batch → ONE `aerospace eval 'cmd ; cmd ; …'`
+    (double-buffered); non-zero → WARNING, never raises; empty → no call.
+  - `geometry.py` (Design A): absolute 50 % master via `resize width|height <pts>`
+    from `NSScreen.visibleFrame` (pyobjc-framework-cocoa added to pyproject+lock);
+    monitor id via `list-monitors --focused` `%{monitor-appkit-nsscreen-screens-id}`;
+    degrades to None (no resize) if unavailable.
+  - `CYCLE` trimmed to `(tile, tile.left, tile.top, tile.bottom, max)`; `columns`
+    and `fair` removed from the cycle but still `apply`-able.
+  - `promote`/`demote` append the absolute master-resize (pull-to-half in one gesture).
+- Keybindings (deployed `aerospace.toml`): cycle `alt-space`/`alt-shift-space`;
+  focus clusters right `i/j/l/,` + left `e/s/f/c`; move `alt-shift-*`; join
+  `alt-ctrl-*`; `promote alt-enter` / `demote alt-shift-enter`; adjust-master
+  `alt-shift--`/`alt-shift-=`; fullscreen `alt-z`; float `alt-t` / unfloat `alt-shift-t`.
+
+### THE OPEN PROBLEM (why a fresh session is needed)
+**Even AFTER deploying the eval code + `reload-config`, `alt-space` still freezes
+and behaves unpredictably.** So `eval` batching did NOT solve the jank as the deep
+research predicted. Evidence: `~/Documents/freezes_and_unpredictable_behaviour.mov`
+(30 s, recorded on the deployed eval build). Frame analysis showed:
+- A **floating Finder file-picker panel** present throughout — excluded from tiling
+  (awesome-correct), sits on top, tiled windows reflow around it → looks chaotic.
+- **`max`/monocle** makes one window near-fullscreen with thin slivers — reads as
+  the "terminal maximizes" bug; likely just `v_accordion` doing its job.
+- **Narrow vertical columns** as the pre-layout default (AeroSpace native tiling).
+- Freezes are temporal (not visible in stills).
+
+### Hypotheses to test next session (START WITH A PROFILER — user's idea)
+- eval may NOT actually be collapsing the work: verify a real cycle emits ONE
+  `aerospace eval` call at runtime (log `AEROSPACE_LAYOUTS_LOG=info` and count
+  `aerospace` process spawns during one `alt-space`). If it's still N spawns, the
+  wiring didn't take (or the flatten+probe phase — which is NOT in the eval batch —
+  dominates).
+- The **dfs-probe (J2)** was never eval-able (needs read-back). It is `2N` focus
+  round-trips per apply and is the prime remaining latency/flicker suspect. Measure
+  its share. Deep-research option 5 (persistent socket helper over
+  `/tmp/bobko.aerospace-$USER.sock`) and **exotic A** (probe-free focus-walk INSIDE
+  one eval) target exactly this — reconsider them.
+- Confirm `geometry` isn't silently degrading to None (no 50 % master) or, worse,
+  throwing per-apply.
+- **Add a profiler / timing harness** to the CLI (per-phase timing: list → flatten →
+  probe → eval) so the freeze is measured, not guessed. This is the user's proposed
+  starting point.
+
+### Design items surfaced by the video (after the jank is measured/fixed)
+1. **Per-workspace default layout** (user's #1 ask): AeroSpace has NO native
+   per-workspace default. Needs `on-window-detected` / `exec-on-workspace-change`
+   callback → `aerospace-layouts apply <ws-default>` + a `ws→layout` config
+   (mostly `tile.left`/`tile.right`). This IS the deferred debounced auto-reapply,
+   and pairs with the **named-workspace scheme** (parked to its own session).
+2. **Drop `max` from the cycle** — the monocle reads as breakage; leave the pure
+   `tile` family (user wants "mostly tile left/right").
+3. **Auto-reapply after a floating dialog closes** so the layout re-collapses.
+
+### Other parked items
+- **Named-workspace scheme** (names instead of 1-9; `workspace <name>` +
+  force-assignment + Zen→ws1) — user wants it, its own session.
+- **`start-at-login = true`** — flip only once the environment satisfies the user
+  on all layouts (Kinesis at home, laptop screen). Currently `false`.
+- **Profiler + related ideas** — user has more; fresh session.
+
+### Uncommitted changeset (NOT committed — user commits manually)
+All on `master`, accumulated this session:
+- `roles/devbox/files/.config/aerospace/layouts/` — full uv project incl. `fair`,
+  `demote`, eval executor, `geometry.py` (Design A), trimmed cycle, tests.
+- `roles/devbox/files/.config/aerospace/aerospace.toml` — clusters, cycle/engine
+  binds, float/unfloat, `config-version = 2`.
+- `roles/devbox/tasks/install_configs.yml` — Block 3c (aerospace rsync + uv sync).
+- `CLAUDE.md` (project) — Block 3c doc.
+- `roles/devbox/defaults/main/packages.yml` — declared `abrosimov/otelbox` tap +
+  `otelbox-edge`.
+- `Makefile` — `STALE_TAPS` (+`mongodb/brew`, `homebrew/brew-vulns`); `audit-brew`
+  fixed for the deprecated `brew-vulns` tap (built-in `brew vulns`).
+
+### Machine follow-ups (operator, not repo)
+- `make untap-stale && make audit-taps` (remove `hudochenkov/sshpass`,
+  `jakehilborn/jakehilborn` after `brew uninstall sshpass displayplacer`, +
+  `homebrew/brew-vulns`) — confirm clean.
+- AeroSpace tray icon hidden behind the notch after the upgrade (menu-bar overflow).
+
+---
+
 ## What this is
 
 An awesome-wm-style **dynamic layout** system layered on AeroSpace's i3 tree.

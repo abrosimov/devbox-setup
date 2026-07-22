@@ -13,8 +13,13 @@ from aerospace_layouts.diagnostics import (
     format_diagnosis,
     format_window_line,
 )
-from aerospace_layouts.executor import run_commands
-from aerospace_layouts.model import Command, Window, flatten, floating_windows
+from aerospace_layouts.executor import run_eval
+from aerospace_layouts.geometry import (
+    MonitorDimensions,
+    focused_monitor_dimensions,
+    master_extent,
+)
+from aerospace_layouts.model import Command, MasterSide, Window, flatten, floating_windows
 from aerospace_layouts.ordering import (
     DfsProbeOrdering,
     WindowOrderer,
@@ -22,17 +27,22 @@ from aerospace_layouts.ordering import (
     order_by_dfs_map,
 )
 from aerospace_layouts.planner import (
+    ADJUST_MASTER_FRACTION,
+    ADJUST_MASTER_STEP,
     CYCLE,
     FLATTENING_LAYOUTS,
+    ORDER_SENSITIVE_LAYOUTS,
     advance_index,
+    current_layout,
     layout_names,
     plan_adjust_master,
     plan_demote,
     plan_layout,
     plan_promote,
     record_layout_name,
+    tile_master_side,
 )
-from aerospace_layouts.state import default_state_path, get_index, load_state, save_state
+from aerospace_layouts.state import default_state_path, load_state, save_state
 
 logger = logging.getLogger("aerospace_layouts")
 
@@ -97,6 +107,14 @@ def _flatten_and_probe(
     return dfs_map, ordered
 
 
+def _flatten_only(client: AerospaceClient, workspace: str) -> list[Window]:
+    # Order-agnostic layouts (max, columns) only touch windows[0], so they skip the dfs probe
+    # to avoid its 2N focus-flicker; flatten still runs. This never moves focus, so there is
+    # no capture/restore.
+    client.execute(flatten(workspace))
+    return client.list_windows(workspace)
+
+
 def focused_windows(
     client: AerospaceClient, orderer: WindowOrderer, workspace: str
 ) -> tuple[int | None, list[Window]]:
@@ -109,24 +127,57 @@ def focused_windows(
     return focused, windows
 
 
+def _log_excluded_floating(windows: list[Window]) -> None:
+    excluded = floating_windows(windows)
+    if excluded:
+        logger.info(
+            "excluding %d floating window(s) from tiling: %s",
+            len(excluded),
+            [w.window_id for w in excluded],
+        )
+
+
+def _monitor_dimensions(client: AerospaceClient) -> MonitorDimensions | None:
+    appkit_id = client.focused_monitor_appkit_id()
+    if appkit_id is None:
+        return None
+    return focused_monitor_dimensions(appkit_id)
+
+
+def _tile_master_geometry(client: AerospaceClient, name: str) -> tuple[int, MasterSide] | None:
+    side = tile_master_side(name)
+    if side is None:
+        return None
+    dims = _monitor_dimensions(client)
+    if dims is None:
+        return None
+    return master_extent(dims, side), side
+
+
+def _adjust_step(client: AerospaceClient) -> int:
+    dims = _monitor_dimensions(client)
+    if dims is None:
+        return ADJUST_MASTER_STEP
+    return round(ADJUST_MASTER_FRACTION * dims.width)
+
+
 def apply_layout(client: AerospaceClient, name: str, workspace: str) -> None:
     windows = client.list_windows(workspace)
     _log_windows(workspace, windows)
-    if name in FLATTENING_LAYOUTS:
+    if name in ORDER_SENSITIVE_LAYOUTS:
         dfs_map, windows = _flatten_and_probe(client, workspace)
         for line in format_dfs_map(dfs_map):
             logger.info("  %s", line)
-        excluded = floating_windows(windows)
-        if excluded:
-            logger.info(
-                "excluding %d floating window(s) from tiling: %s",
-                len(excluded),
-                [w.window_id for w in excluded],
-            )
+        _log_excluded_floating(windows)
+    elif name in FLATTENING_LAYOUTS:
+        windows = _flatten_only(client, workspace)
+        _log_excluded_floating(windows)
+        logger.info("dfs probe skipped (order-agnostic layout: %s)", name)
     logger.info("ordered (master first): %s", [w.window_id for w in windows])
-    commands = plan_layout(name, windows, workspace)
+    geometry = _tile_master_geometry(client, name)
+    commands = plan_layout(name, windows, workspace, geometry[0] if geometry else None)
     logger.info("planned %d command(s): %s", len(commands), format_commands(commands))
-    run_commands(client, commands)
+    run_eval(client, commands)
 
 
 def diagnose(client: AerospaceClient, name: str, workspace: str) -> list[Command]:
@@ -156,26 +207,29 @@ def _cycle(client: AerospaceClient, state_path: Path, *, reverse: bool) -> None:
 
 def _reapply(client: AerospaceClient, state_path: Path) -> None:
     workspace = client.focused_workspace()
-    index = get_index(load_state(state_path), workspace)
-    apply_layout(client, CYCLE[index], workspace)
+    apply_layout(client, current_layout(load_state(state_path), workspace), workspace)
 
 
-def _promote(client: AerospaceClient, orderer: WindowOrderer) -> None:
+def _promote(client: AerospaceClient, orderer: WindowOrderer, state_path: Path) -> None:
     workspace = client.focused_workspace()
     focused, windows = focused_windows(client, orderer, workspace)
-    run_commands(client, plan_promote(windows, focused))
+    geometry = _tile_master_geometry(client, current_layout(load_state(state_path), workspace))
+    extent, side = geometry if geometry else (None, None)
+    run_eval(client, plan_promote(windows, focused, extent, side))
 
 
-def _demote(client: AerospaceClient, orderer: WindowOrderer) -> None:
+def _demote(client: AerospaceClient, orderer: WindowOrderer, state_path: Path) -> None:
     workspace = client.focused_workspace()
     focused, windows = focused_windows(client, orderer, workspace)
-    run_commands(client, plan_demote(windows, focused))
+    geometry = _tile_master_geometry(client, current_layout(load_state(state_path), workspace))
+    extent, side = geometry if geometry else (None, None)
+    run_eval(client, plan_demote(windows, focused, extent, side))
 
 
 def _adjust_master(client: AerospaceClient, orderer: WindowOrderer, *, grow: bool) -> None:
     workspace = client.focused_workspace()
     _, windows = focused_windows(client, orderer, workspace)
-    run_commands(client, plan_adjust_master(windows, grow))
+    run_eval(client, plan_adjust_master(windows, grow, step=_adjust_step(client)))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -199,9 +253,9 @@ def main(argv: list[str] | None = None) -> int:
             case "adjust-master":
                 _adjust_master(client, orderer, grow=args.direction == "+")
             case "promote":
-                _promote(client, orderer)
+                _promote(client, orderer, state_path)
             case "demote":
-                _demote(client, orderer)
+                _demote(client, orderer, state_path)
             case "diagnose":
                 diagnose(client, args.name, client.focused_workspace())
             case _:  # unreachable: subparsers are required

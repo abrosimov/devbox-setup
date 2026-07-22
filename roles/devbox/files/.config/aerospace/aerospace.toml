@@ -6,6 +6,13 @@
 # NOT expressible here (AeroSpace does not persist tree/proportions across
 # restart); build them at runtime with the join-with / resize bindings below.
 
+# AeroSpace 0.21.x config schema (v2). The only behavioural change from v1 is that
+# `persistent-workspaces` now defaults to an empty array instead of being inferred
+# from the binding right-hand sides. Harmless here: workspaces 1-9 are created on
+# demand via the alt-1..9 binds and force-assigned to monitors below; nothing relies
+# on empty workspaces persisting (no status bar enumerates them yet).
+config-version = 2
+
 # Off for now — launch AeroSpace manually while dialling in the config.
 start-at-login = false
 
@@ -79,8 +86,9 @@ alt-enter       = 'exec-and-forget ~/.config/aerospace/layouts/.venv/bin/aerospa
 alt-shift-enter = 'exec-and-forget ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts demote'
 
 # Native window ops relocated to free the efcs left-hand cluster.
-alt-z = 'fullscreen'              # zoom focused window within workspace (was alt-f)
-alt-t = 'layout floating tiling'  # toggle float <-> tile (was alt-shift-space)
+alt-z       = 'fullscreen'       # zoom focused window within workspace (was alt-f)
+alt-t       = 'layout floating'  # float the focused window (explicit, not a toggle)
+alt-shift-t = 'layout tiling'    # un-float: return the focused window to the tiling tree
 
 # Resize / balance.
 alt-minus = 'resize smart -50'

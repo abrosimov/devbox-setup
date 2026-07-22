@@ -50,15 +50,20 @@ class FakeWm:
         focused: int | None = None,
         post_flatten_dfs: list[int] | None = None,
         layouts: dict[int, str] | None = None,
+        workspace: str = "3",
     ) -> None:
         self.dfs_ids = dfs_ids
         self.array_ids = array_ids if array_ids is not None else dfs_ids
         self.focused: int | None = focused
         self.post_flatten_dfs = post_flatten_dfs
         self.layouts = layouts or {}
+        self.workspace = workspace
         self.mutations: list[list[str]] = []
 
     def __call__(self, argv: list[str]) -> subprocess.CompletedProcess[str]:
+        if argv[:1] == ["list-workspaces"] and "--focused" in argv:
+            payload = json.dumps([{"workspace": self.workspace}])
+            return subprocess.CompletedProcess(argv, 0, payload, "")
         if argv[:1] == ["list-windows"] and "--focused" in argv:
             ids = [self.focused] if self.focused is not None else []
             return subprocess.CompletedProcess(argv, 0, self._windows_json(ids), "")
@@ -79,7 +84,16 @@ class FakeWm:
         return subprocess.CompletedProcess(argv, 0, "", "")
 
     def joined_ids(self) -> list[str]:
-        return [m[m.index("--window-id") + 1] for m in self.mutations if m[:1] == ["join-with"]]
+        # Arrange batches ship as one `eval '<cmd> ; <cmd> ...>'`, so unpack each eval segment
+        # (plus any bare mutation like flatten) before matching join-with targets.
+        segments = [seg for mutation in self.mutations for seg in self._segments(mutation)]
+        return [s[s.index("--window-id") + 1] for s in segments if s[:1] == ["join-with"]]
+
+    @staticmethod
+    def _segments(mutation: list[str]) -> list[list[str]]:
+        if mutation[:1] == ["eval"]:
+            return [segment.split(" ") for segment in mutation[1].split(" ; ")]
+        return [mutation]
 
     def _windows_json(self, window_ids: list[int]) -> str:
         rows = [

@@ -17,6 +17,7 @@ devbox_brew_taps:
   - smudge/smudge          # nightlight (Night Shift CLI, removed from homebrew-core)
   - hashicorp/tap          # vault, terraform, consul — HashiCorp official tap
   - ArtemYurov/tomobar     # TomoBar Pomodoro menu bar app (actively-maintained TomatoBar fork)
+  - abrosimov/otelbox      # otelbox-edge — OpenTelemetry toolbox (edge channel)
 
 # =============================================================================
 # Homebrew formulae and casks
@@ -110,6 +111,7 @@ devbox_brew_secondary:
   - grafana/grafana/gcx  # Grafana CLI — PromQL/LogQL/Tempo queries via Grafana datasources
   - mongosh                 # MongoDB shell (homebrew/core — was mongodb/brew, moved upstream 2026)
   - hashicorp/tap/vault     # HashiCorp Vault CLI (tap: hashicorp/tap)
+  - abrosimov/otelbox/otelbox-edge  # OpenTelemetry toolbox, edge channel (tap: abrosimov/otelbox)
 
 devbox_brew_secondary_casks:
   - codex-app

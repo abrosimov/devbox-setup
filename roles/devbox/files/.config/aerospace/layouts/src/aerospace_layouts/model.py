@@ -79,3 +79,7 @@ def balance_sizes(workspace: str) -> Command:
 
 def resize_smart(delta: int, window_id: int) -> Command:
     return Command(("resize", "smart", f"{delta:+d}"), window_id=window_id)
+
+
+def resize_to(axis: str, extent: int, window_id: int) -> Command:
+    return Command(("resize", axis, str(extent)), window_id=window_id)

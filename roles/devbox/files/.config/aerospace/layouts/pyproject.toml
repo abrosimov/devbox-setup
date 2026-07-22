@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "awesome-wm-style dynamic tiling layouts scripted on top of the AeroSpace CLI."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pyobjc-framework-cocoa>=12.2.1",
+]
 
 # Standalone uv project, mirroring roles/devbox/files/dot_claude/bin/. Deployed to
 # ~/.config/aerospace/layouts/ and materialised with `uv sync --frozen`; AeroSpace

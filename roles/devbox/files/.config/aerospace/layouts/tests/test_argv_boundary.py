@@ -5,7 +5,6 @@ import subprocess
 import pytest
 
 from aerospace_layouts.aerospace import WINDOW_FORMAT, AerospaceClient, AerospaceError
-from aerospace_layouts.executor import run_commands
 from aerospace_layouts.model import Command, join_with, set_layout
 
 from .conftest import FakeRunner, FakeWm
@@ -52,14 +51,6 @@ def test_execute_tolerates_nonzero_layout():
     AerospaceClient(runner).execute(set_layout("h_tiles", 10))
 
 
-def test_run_commands_does_not_abort_on_tolerated_layout_failure():
-    layout_argv = ["layout", "h_tiles", "--window-id", "10"]
-    runner = FakeRunner({tuple(layout_argv): _completed(layout_argv, 1, stderr="noop")})
-    commands = [set_layout("h_tiles", 10), join_with("left", 12)]
-    run_commands(AerospaceClient(runner), commands)
-    assert runner.argv_strings == ["layout h_tiles --window-id 10", "join-with left --window-id 12"]
-
-
 def test_list_windows_parses_json():
     payload = (
         '[{"app-name": "Zen", "window-id": 7, "window-title": "home"}, '
@@ -99,6 +90,37 @@ def test_focused_window_id_returns_none_when_empty():
     argv = ["list-windows", "--focused", "--json"]
     client = AerospaceClient(FakeRunner({tuple(argv): _completed(argv, 0, stdout="[]")}))
     assert client.focused_window_id() is None
+
+
+_MONITOR_ARGV = [
+    "list-monitors",
+    "--focused",
+    "--json",
+    "--format",
+    "%{monitor-appkit-nsscreen-screens-id}",
+]
+
+
+def test_focused_monitor_appkit_id_parses_one_based_index():
+    payload = '[{"monitor-appkit-nsscreen-screens-id": 2}]'
+    client = AerospaceClient(
+        FakeRunner({tuple(_MONITOR_ARGV): _completed(_MONITOR_ARGV, 0, payload)})
+    )
+    assert client.focused_monitor_appkit_id() == 2
+
+
+def test_focused_monitor_appkit_id_degrades_to_none_on_query_failure():
+    client = AerospaceClient(
+        FakeRunner({tuple(_MONITOR_ARGV): _completed(_MONITOR_ARGV, 1, stderr="x")})
+    )
+    assert client.focused_monitor_appkit_id() is None
+
+
+def test_focused_monitor_appkit_id_degrades_to_none_on_empty_output():
+    client = AerospaceClient(
+        FakeRunner({tuple(_MONITOR_ARGV): _completed(_MONITOR_ARGV, 0, stdout="")})
+    )
+    assert client.focused_monitor_appkit_id() is None
 
 
 def test_query_raises_on_nonzero():

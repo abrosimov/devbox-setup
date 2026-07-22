@@ -71,6 +71,32 @@ class AerospaceClient:
         windows = _parse_windows(payload)
         return windows[0].window_id if windows else None
 
+    def focused_monitor_appkit_id(self) -> int | None:
+        # Best-effort: master sizing is cosmetic, so a missing/garbled monitor read degrades
+        # to "no absolute resize" rather than aborting the keybinding. 1-based index into
+        # NSScreen.screens() (see geometry.focused_monitor_dimensions).
+        try:
+            payload = self._query(
+                [
+                    "list-monitors",
+                    "--focused",
+                    "--json",
+                    "--format",
+                    "%{monitor-appkit-nsscreen-screens-id}",
+                ]
+            )
+            rows = _parse_rows(payload)
+        except (AerospaceError, json.JSONDecodeError):
+            return None
+        if not rows:
+            return None
+        value = rows[0].get("monitor-appkit-nsscreen-screens-id")
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+        return None
+
     def focus_dfs_index(self, index: int) -> int | None:
         # Side-effecting probe: move focus to the dfs position, then read back which window
         # landed there. Returns None if the index is out of range (focus exits non-zero).

@@ -1,0 +1,383 @@
+# W2 frontmatter data table — problem: + related: for every skill and agent.
+# Consumed by scripts/apply_w2_frontmatter.py. User reviews before apply.
+# Authoring rules — see route_W2_structural.md §Anti-patterns.
+#
+# problem:  one line, 12-20 words, British English, framed as "the problem"
+#           this artefact addresses. NOT a paraphrase of description:. Empty
+#           string "" means "unclear — user to fill in".
+# related:  list of skill/agent names (strings). Grep-seeded from existing
+#           see-also / companion prose. Default []. Over-linking is anti.
+#
+# Note on identifiers:
+# - Skills use the DIRECTORY name (dashes), matching frontmatter `name:`.
+# - Agents use the FILE stem (underscores) per the W2 data-table spec; this
+#   differs from the agent's own frontmatter `name:` (which uses dashes).
+#   The apply script is expected to map underscore stems to their files.
+
+skills:
+  agent-base-protocol:
+    problem: "Every agent would otherwise re-inline the same file-ops, language, and clarification rules, drifting apart over time."
+    related:
+      - project-preferences
+      - shared-utils
+  agent-builder:
+    problem: "New agent definitions drift in shape without a shared archetype schema and pipeline-integration checklist."
+    related:
+      - agent-communication
+      - project-preferences
+      - skill-builder
+  agent-communication:
+    problem: "Agent handoffs, escalation, and completion formats fragment without a shared inter-agent contract."
+    related:
+      - config
+      - structured-output
+  ast-grep:
+    problem: "Grep misses structural code shapes; LSP misses cross-symbol patterns — no tool covers 'find all X that lack Y'."
+    related:
+      - lsp-tools
+  code-comments:
+    problem: "Narration and stale docstrings accumulate in code without a strict WHY-only rule and enforceable verbosity ceiling."
+    related:
+      - code-writing-protocols
+      - lint-discipline
+  code-writing-protocols:
+    problem: "Code-writing agents duplicate approval, decision-tier, and anti-satisficing rules that drift apart across languages."
+    related:
+      - agent-communication
+      - code-comments
+      - diverge-synthesize-select
+  config:
+    problem: "Agents and commands hard-code paths and task variables, leading to inconsistent PLANS_DIR / BRANCH_NAME resolution."
+    related:
+      - shared-utils
+      - workflow
+  diverge-synthesize-select:
+    problem: "Wide-scope Tier 3 decisions collapse into first-solution answers without explicit divergence and synthesis discipline."
+    related:
+      - code-writing-protocols
+      - fpf-thinking
+      - mcp-sequential-thinking
+      - structured-output
+  docker-validation:
+    problem: "Dockerfiles and compose files ship without lint and smoke checks, hiding runtime failures until deployment."
+    related: []
+  editing-claude-config:
+    problem: "Editing agents or skills naively reads every cross-referenced file, burning 30-50 K main-context tokens before any edit."
+    related:
+      - agent-builder
+      - skill-builder
+  fpf-thinking:
+    problem: "Complex systems problems get solved before they are framed, producing well-executed answers to the wrong question."
+    related:
+      - diverge-synthesize-select
+      - mcp-sequential-thinking
+  frontend-engineer:
+    problem: "TypeScript/React/Next.js code drifts from typed, accessible, project-convention idioms without an enforcement layer."
+    related:
+      - frontend-testing
+      - frontend-tooling
+      - playwright-e2e
+      - ui-design
+  frontend-testing:
+    problem: "Frontend tests target implementation details, use fragile queries, or mix unit/e2e scope without a query-priority contract."
+    related:
+      - frontend-engineer
+      - playwright-e2e
+  frontend-tooling:
+    problem: "Frontend commands fail silently when package manager, tsconfig, or lint config is mis-detected before running."
+    related:
+      - frontend-engineer
+      - project-toolchain
+  go-engineer:
+    problem: "Go code drifts from Effective Go and Review Comments idioms without an in-repo enforcement layer per project conventions."
+    related:
+      - go-testing
+      - go-review-checklist
+      - lint-discipline
+      - lsp-tools
+  go-review-checklist:
+    problem: "Go reviews sample rather than enumerate; verification steps are skipped without a structured checkpoint checklist."
+    related:
+      - go-engineer
+      - go-testing
+      - lint-discipline
+  go-testing:
+    problem: "Go tests miss error paths, misuse assert instead of require, or skip table-driven idioms without an explicit checklist."
+    related:
+      - go-engineer
+  hooks-architecture:
+    problem: "Claude Code hook scripts get authored ad hoc without a shared taxonomy of lifecycle events, exit codes, and blocking rules."
+    related: []
+  iterative-retrieval:
+    problem: "Subagents and research tasks return too much noise or too little signal without a DISPATCH/EVALUATE/REFINE loop."
+    related: []
+  lint-discipline:
+    problem: "Agents suppress lint diagnostics with noqa / nolint / eslint-disable rather than fixing the underlying issue."
+    related:
+      - code-comments
+      - code-writing-protocols
+  lsp-tools:
+    problem: "Code navigation defaults to grep even when semantic LSP queries would give exact references and impact analysis."
+    related:
+      - ast-grep
+  mcp-playwright:
+    problem: "Browser automation and accessibility inspection get scripted ad hoc without shared MCP tool conventions."
+    related:
+      - mcp-storybook
+      - playwright-e2e
+  mcp-sequential-thinking:
+    problem: "Multi-step reasoning collapses into a single response without a revisable, branchable chain-of-thought scaffold."
+    related:
+      - diverge-synthesize-select
+      - fpf-thinking
+  mcp-storybook:
+    problem: "New UI gets built before checking the existing component library, duplicating components or drifting from established patterns."
+    related:
+      - mcp-playwright
+      - ui-design
+  playwright-e2e:
+    problem: "E2E tests go flaky under SPA navigation and strict-mode locator ambiguity without scoped-locator and isolation patterns."
+    related:
+      - frontend-engineer
+      - frontend-testing
+      - mcp-playwright
+  project-preferences:
+    problem: "Opinionated project choices (British English, libraries, tooling) get re-derived or contradicted across skills without a single source."
+    related:
+      - agent-base-protocol
+  project-toolchain:
+    problem: "Bare tool invocations fail outside virtual environments because the correct per-language run-prefix is not detected first."
+    related:
+      - sandbox-toolchain
+      - python-tooling
+      - frontend-tooling
+  python-engineer:
+    problem: "Python code drifts from typing, PEP 8, and modern-idiom expectations without an in-repo enforcement layer per project conventions."
+    related:
+      - python-testing
+      - python-tooling
+      - sandbox-toolchain
+  python-monolith:
+    problem: "Flask-OpenAPI3 features get added without honouring the handler-service-repository layering and DI conventions of the monolith."
+    related:
+      - python-engineer
+      - python-tooling
+  python-testing:
+    problem: "Python tests target private methods, string-match exceptions, or duplicate cases instead of parametrising through public API."
+    related:
+      - python-engineer
+  python-tooling:
+    problem: "Python project setup drifts across uv/poetry/pip idioms, breaking installs and lock-file reproducibility."
+    related:
+      - project-toolchain
+      - python-engineer
+      - python-monolith
+  sandbox-toolchain:
+    problem: "Toolchain commands fail inside the Claude Code sandbox because writable dirs, network allowlist, and env vars are not understood."
+    related:
+      - project-toolchain
+  self-contained-options:
+    problem: "AskUserQuestion options become unreadable minutes later when scroll drops prior turns and labels lack concrete identifiers."
+    related:
+      - agent-communication
+  shared-utils:
+    problem: "Jira-key extraction and other cross-cutting helpers get re-implemented per agent, drifting in edge-case handling."
+    related:
+      - config
+  skill-builder:
+    problem: "New skill files drift in shape without a shared frontmatter schema, description pattern, and progressive-disclosure discipline."
+    related:
+      - agent-builder
+      - agent-communication
+      - project-preferences
+  structured-output:
+    problem: "Downstream agents re-parse markdown when a typed JSON contract alongside the primary deliverable would suffice."
+    related:
+      - agent-communication
+  techne-fewer-permission-prompts:
+    problem: "Repeated read-only Bash and MCP tool calls trigger permission dialogs that fragment focus and slow every session."
+    related: []
+  ui-design:
+    problem: "UI specs get authored without a W3C-token contract, WCAG plan, or Figma/Storybook integration, forcing rework downstream."
+    related:
+      - frontend-engineer
+      - mcp-storybook
+  workflow:
+    problem: "Slash-command routing, agent selection, and model policy fragment without a single reference for the pipeline."
+    related:
+      - config
+      - agent-communication
+
+agents:
+  agent_builder:
+    problem: "Agent definitions get drafted and refined ad hoc, drifting from archetype patterns and pipeline-integration requirements."
+    related:
+      - skill_builder
+      - meta_reviewer
+      - consistency_checker
+  api_designer:
+    problem: "API contracts get sketched inline during implementation instead of designed as a shared frontend/backend artefact."
+    related:
+      - implementation_planner
+      - domain_modeller
+      - architect
+  architect:
+    problem: "Architecture decisions get made inside implementation PRs, without ADRs or explicit trade-off analysis, hiding risk."
+    related:
+      - implementation_planner
+      - domain_modeller
+      - technical_product_manager
+      - api_designer
+  build_resolver_go:
+    problem: "Go compilation failures get patched at the symptom without classifying module, import-cycle, or CGO root causes."
+    related:
+      - software_engineer_go
+  code_reviewer:
+    problem: "Reviews miss cross-language issues that engineers and test writers overlooked, especially in polyglot diffs."
+    related:
+      - software_engineer_go
+      - software_engineer_python
+      - software_engineer_frontend
+      - unit_tests_writer
+      - meta_reviewer
+  consistency_checker:
+    problem: "Terminology conflicts, handoff breaks, and orphaned content accumulate across the agent/skill library without a graph audit."
+    related:
+      - freshness_auditor
+      - meta_reviewer
+      - agent_builder
+      - skill_builder
+  content_reviewer:
+    problem: "Code examples, library versions, and API signatures inside agent/skill definitions rot without a substance-level check."
+    related:
+      - meta_reviewer
+      - freshness_auditor
+      - consistency_checker
+  database_designer:
+    problem: "Schemas get authored inline during implementation without index justification, partitioning plan, or horizontal-scale readiness."
+    related:
+      - database_reviewer
+      - architect
+      - domain_modeller
+  database_reviewer:
+    problem: "Schema changes, migrations, and queries reach production with lock risks, missing indexes, or backward-incompatible shape."
+    related:
+      - database_designer
+  designer:
+    problem: "UI work starts without design tokens, layout specs, or accessibility plan, forcing frontend engineers to invent the contract."
+    related:
+      - software_engineer_frontend
+      - technical_product_manager
+      - implementation_planner
+  doc_updater:
+    problem: "Documentation goes stale silently as code evolves, without a specialist that detects and syncs the drift."
+    related:
+      - code_reviewer
+  domain_expert:
+    problem: "PM requirements pass to planners unchallenged, embedding unverified assumptions that surface only at implementation time."
+    related:
+      - technical_product_manager
+      - domain_modeller
+      - implementation_planner
+  domain_modeller:
+    problem: "Validated domain analysis stays informal without DDD formalisation into bounded contexts, aggregates, and events."
+    related:
+      - domain_expert
+      - architect
+      - api_designer
+      - database_designer
+  focus_coach:
+    problem: "Overwhelm and rabbit-holing derail work; the person needs external framing and pacing, not more content."
+    related: []
+  freshness_auditor:
+    problem: "Agent and skill definitions accumulate outdated library versions, deprecated APIs, and stale language references over time."
+    related:
+      - consistency_checker
+      - content_reviewer
+  implementation_planner:
+    problem: "Specs get handed to engineers as prose without work streams, acceptance criteria, or stack-conditional guidance."
+    related:
+      - technical_product_manager
+      - domain_expert
+      - architect
+      - software_engineer_go
+      - software_engineer_python
+      - software_engineer_frontend
+  integration_tests_writer_go:
+    problem: "Go integration coverage stays thin because writers default to unit-style mocks instead of testcontainers and real dependencies."
+    related:
+      - software_engineer_go
+      - unit_tests_writer
+      - tdd_guide
+  integration_tests_writer_python:
+    problem: "Python integration coverage stays thin because writers default to unit-style mocks instead of testcontainers and real dependencies."
+    related:
+      - software_engineer_python
+      - unit_tests_writer
+      - tdd_guide
+  meta_reviewer:
+    problem: "Builder-produced agent and skill definitions ship without adversarial checks against Anthropic docs and internal contradictions."
+    related:
+      - agent_builder
+      - skill_builder
+      - content_reviewer
+      - consistency_checker
+  observability_engineer:
+    problem: "Dashboards, alerts, and PromQL get authored ad hoc without Grafonnet structure or sandbox-first tooling."
+    related: []
+  refactor_cleaner:
+    problem: "Unused imports, variables, functions, and types accumulate because dead-code removal is nobody's dedicated job."
+    related:
+      - software_engineer_go
+      - software_engineer_python
+      - code_reviewer
+  skill_builder:
+    problem: "New skill modules drift in shape and description quality without a specialist that scaffolds and audits them."
+    related:
+      - agent_builder
+      - meta_reviewer
+      - consistency_checker
+  software_engineer_frontend:
+    problem: "TypeScript/React/Next.js code changes bypass typed, tested, accessible standards when written outside the frontend SE pipeline."
+    related:
+      - designer
+      - unit_tests_writer
+      - code_reviewer
+      - implementation_planner
+  software_engineer_go:
+    problem: "Go code changes bypass Effective-Go idioms and lint discipline when written outside the Go SE pipeline."
+    related:
+      - build_resolver_go
+      - unit_tests_writer
+      - integration_tests_writer_go
+      - code_reviewer
+      - implementation_planner
+  software_engineer_python:
+    problem: "Python code changes bypass typing, uv-run discipline, and PEP-8 standards when written outside the Python SE pipeline."
+    related:
+      - unit_tests_writer
+      - integration_tests_writer_python
+      - code_reviewer
+      - implementation_planner
+  tdd_guide:
+    problem: "Tests get written after implementation, losing the design pressure and behavioural clarity of a RED-GREEN-REFACTOR cycle."
+    related:
+      - unit_tests_writer
+      - integration_tests_writer_go
+      - integration_tests_writer_python
+  technical_product_manager:
+    problem: "Ideas skip the shape-up step and reach engineers as either wireframes or vague vibes, wasting cycles either way."
+    related:
+      - domain_expert
+      - implementation_planner
+      - designer
+  unit_tests_writer:
+    problem: "Unit tests chase coverage lines instead of actively hunting bugs, missing edge cases and error paths across stacks."
+    related:
+      - software_engineer_go
+      - software_engineer_python
+      - software_engineer_frontend
+      - integration_tests_writer_go
+      - integration_tests_writer_python
+      - tdd_guide
+      - code_reviewer

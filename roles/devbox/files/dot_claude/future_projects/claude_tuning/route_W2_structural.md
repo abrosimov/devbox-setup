@@ -12,7 +12,7 @@
 | Sub-route | Origin | What it does |
 |---|---|---|
 | **RS1** | routed_cue_set | Add `problem:` + `related:` optional fields to skill/agent frontmatter |
-| **RS2** | routed_cue_set | Generate `SKILLS-INDEX.md` cross-index from the `related:` graph |
+| ~~**RS2**~~ | routed_cue_set | ~~Generate `SKILLS-INDEX.md` cross-index from the `related:` graph~~ (dropped 2026-07-22 — see Q-W2-2 reversal) |
 | **RS5** | routed_cue_set | Extend `make validate-claude` to validate `related:` links |
 | **RI2-demotions** | Q-RI2-1 = W2 | Flip `alwaysApply: true` on 3 skills; add `triggers:` where needed |
 | **Trigger-consistency validator** | Q-RI2-3 = W2 | New check in `bin/validate_config.py` (see below) |
@@ -119,6 +119,8 @@ Waterfall inside the wave, because each step consumes the previous step's output
 
 **→ Decision: A.** Source: `roles/devbox/files/dot_claude/SKILLS-INDEX.md` → deployed to `~/.claude/SKILLS-INDEX.md`. Colocated with `USER_AUTHORITY_PROTOCOL.md`. `make skills-index` regenerates it. **File must be listed in `install_configs.yml` Block 2** (copy loop for `.claude/` root files) so `make claude-push` deploys it. Add to `.gitignore`? No — commit the generated file so drift is visible in review; the source-of-truth is the frontmatter graph, but the rendered index goes with the repo.
 
+**Reversal (2026-07-22).** Q-W2-2 rescinded — the rendered index adds no signal Claude actually uses (skill `description:` is already visible via the Skill tool; the related graph lives in frontmatter and is validated by `related-links`). Deleted `bin/build_skills_index.py`, `bin/test_build_skills_index.py`, `SKILLS-INDEX.md`, the `make skills-index` target, and the `install_configs.yml` Block 2 deploy hook. RS2 dropped from W2 scope. The `related:` graph remains authoritative in frontmatter; humans can `grep related:` or run a bespoke query when they need cluster views.
+
 ### Q-W2-3 — Seeding the `related:` graph
 
 - **A. (Recommended)** Grep-first: extract existing "see also" / "companion skill" prose mentions across skills+agents, hydrate `related:` from those. Then iteratively add more where obviously missing.
@@ -202,3 +204,32 @@ Grep harvested ~15 explicit see-also edges. Enough to seed but not to populate. 
 
 1. Execute the revised sequencing per chosen strategy (Phase 1a manual → apply script + data table → precondition fixes → validator + index).
 2. Update `README.md` state log; record post-W2 baseline for comparison; move to W3 (content edits — RC1-RC6 + `project-preferences` split).
+
+## Infrastructure session (2026-07-21, late)
+
+Everything except the frontmatter batch is now ready. Tomorrow's single decision: **approve `w2_frontmatter_data.yaml`**, then run the pre-baked commands.
+
+Delivered:
+
+- `future_projects/claude_tuning/w2_frontmatter_data.yaml` — 67 entries (39 skills + 28 agents). 100% `problem:` filled. 163 `related:` edges seeded from grep of prose (backticked names, disambiguation notes, pipeline handoffs).
+- `scripts/apply_w2_frontmatter.py` — dev tool. `--dry-run` prints unified diff. Idempotent. Refuses overwrite without `--force`. 11 tests in `tests/scripts/test_apply_w2_frontmatter.py`.
+- `bin/validate_config.py` — extended with `related-links` (error on dangling ref) and `trigger-consistency` (warn on unreachable trigger-loaded skill). 14 new tests. Registered in `ALL_CHECKS`.
+- ~~`bin/build_skills_index.py` + tests + `make skills-index` target + `install_configs.yml` Block 2 hook~~ — deleted 2026-07-22 (see Q-W2-2 reversal). RS2 dropped; related-graph stays in frontmatter, `related-links` validator enforces integrity.
+- **Phase 2a preconditions applied** — `code-comments` + `lint-discipline` added to `skills:` of `tdd_guide`, `refactor_cleaner`, `build_resolver_go`, `unit_tests_writer`, `integration_tests_writer_go`, `integration_tests_writer_python`.
+- **Phase 2a extension (2026-07-22)** — trigger-consistency warning surfaced `self-contained-options` as unreachable via the agent trigger-path. Added to `skills:` of 9 planning/design agents that call `AskUserQuestion`: `technical_product_manager`, `implementation_planner`, `architect`, `api_designer`, `database_designer`, `designer`, `domain_expert`, `domain_modeller`, `focus_coach`. Warning cleared. Always-on count unchanged (skill was never always-on).
+
+Verified:
+
+- `make validate-claude` → 0 errors, 0 warnings (after the Phase 2a extension on 2026-07-22 closed the `self-contained-options` trigger-path).
+- `make rules-budget` → **always-on flat count = 73** (target hit; matches plan's 119 → ~73 projection).
+- Full test suite: 1142 passed (was 1151 pre-reversal; 9 index tests removed).
+- Ruff clean on all new files; pre-existing `rules_budget.py` lint noise unchanged (W1 baggage, not in scope).
+
+Tomorrow's flow:
+
+1. Review `future_projects/claude_tuning/w2_frontmatter_data.yaml` — the single decision.
+2. `.venv/bin/python scripts/apply_w2_frontmatter.py --dry-run | less` — inspect diff.
+3. `.venv/bin/python scripts/apply_w2_frontmatter.py` — apply frontmatter to 67 files.
+4. `make validate-claude` — expect 0 errors, 0 warnings.
+5. `make rules-budget` — expect ~73 (frontmatter additions are not rule-shaped, so no drift).
+6. Commit and `make claude-push`.

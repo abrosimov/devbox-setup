@@ -147,3 +147,157 @@ def test_test_suffixed_file_excluded(tmp_path: Path) -> None:
     errors, warnings = vc.check_command_refs(root)
     assert _codes(errors).count("CMD_REF") == 0
     assert _codes(warnings).count("CMD_BARE") == 0
+
+
+# --- parse_yaml_list: inline + block YAML lists -------------------------------
+
+
+def test_parse_yaml_list_inline() -> None:
+    content = "---\nrelated: [alpha, beta, gamma]\n---\nbody\n"
+    assert vc.parse_yaml_list(content, "related") == ["alpha", "beta", "gamma"]
+
+
+def test_parse_yaml_list_inline_empty() -> None:
+    content = "---\nrelated: []\n---\nbody\n"
+    assert vc.parse_yaml_list(content, "related") == []
+
+
+def test_parse_yaml_list_absent() -> None:
+    content = "---\nname: x\n---\nbody\n"
+    assert vc.parse_yaml_list(content, "related") == []
+
+
+def test_parse_yaml_list_block() -> None:
+    content = "---\ntriggers:\n  - lint\n  - noqa\n  - eslint-disable\n---\nbody\n"
+    assert vc.parse_yaml_list(content, "triggers") == ["lint", "noqa", "eslint-disable"]
+
+
+def test_parse_yaml_list_block_stops_at_next_key() -> None:
+    content = "---\ntriggers:\n  - lint\nname: x\n---\nbody\n"
+    assert vc.parse_yaml_list(content, "triggers") == ["lint"]
+
+
+def test_parse_yaml_list_strips_quotes() -> None:
+    content = "---\nrelated: [\"alpha\", 'beta']\n---\nbody\n"
+    assert vc.parse_yaml_list(content, "related") == ["alpha", "beta"]
+
+
+# --- check_related_links: dangling related: refs ------------------------------
+
+
+def _build_related_root(tmp_path: Path) -> Path:
+    (tmp_path / "skills" / "alpha").mkdir(parents=True)
+    (tmp_path / "skills" / "alpha" / "SKILL.md").write_text(
+        "---\nname: alpha\ndescription: a\n---\nbody\n"
+    )
+    (tmp_path / "skills" / "beta").mkdir(parents=True)
+    (tmp_path / "skills" / "beta" / "SKILL.md").write_text(
+        "---\nname: beta\ndescription: b\n---\nbody\n"
+    )
+    (tmp_path / "agents").mkdir()
+    (tmp_path / "agents" / "agent_one.md").write_text(
+        "---\nname: agent-one\ndescription: a\ntools: Read\n"
+        "model: sonnet\nskills: alpha\n---\nbody\n"
+    )
+    return tmp_path
+
+
+def test_related_ref_resolves_to_skill(tmp_path: Path) -> None:
+    root = _build_related_root(tmp_path)
+    (root / "skills" / "alpha" / "SKILL.md").write_text(
+        "---\nname: alpha\ndescription: a\nrelated: [beta]\n---\nbody\n"
+    )
+    errors, _ = vc.check_related_links(root)
+    assert _codes(errors).count("RELATED_REF") == 0
+
+
+def test_related_ref_resolves_to_agent(tmp_path: Path) -> None:
+    root = _build_related_root(tmp_path)
+    (root / "skills" / "alpha" / "SKILL.md").write_text(
+        "---\nname: alpha\ndescription: a\nrelated: [agent_one]\n---\nbody\n"
+    )
+    errors, _ = vc.check_related_links(root)
+    assert _codes(errors).count("RELATED_REF") == 0
+
+
+def test_related_ref_dangling_errors(tmp_path: Path) -> None:
+    root = _build_related_root(tmp_path)
+    (root / "skills" / "alpha" / "SKILL.md").write_text(
+        "---\nname: alpha\ndescription: a\nrelated: [nonexistent]\n---\nbody\n"
+    )
+    errors, _ = vc.check_related_links(root)
+    assert _codes(errors).count("RELATED_REF") == 1
+
+
+def test_related_empty_is_ok(tmp_path: Path) -> None:
+    root = _build_related_root(tmp_path)
+    (root / "skills" / "alpha" / "SKILL.md").write_text(
+        "---\nname: alpha\ndescription: a\nrelated: []\n---\nbody\n"
+    )
+    errors, _ = vc.check_related_links(root)
+    assert _codes(errors).count("RELATED_REF") == 0
+
+
+def test_related_absent_is_ok(tmp_path: Path) -> None:
+    root = _build_related_root(tmp_path)
+    errors, _ = vc.check_related_links(root)
+    assert _codes(errors).count("RELATED_REF") == 0
+
+
+def test_related_dangling_on_agent(tmp_path: Path) -> None:
+    root = _build_related_root(tmp_path)
+    (root / "agents" / "agent_one.md").write_text(
+        "---\nname: agent-one\ndescription: a\ntools: Read\nmodel: sonnet\n"
+        "skills: alpha\nrelated: [ghost]\n---\nbody\n"
+    )
+    errors, _ = vc.check_related_links(root)
+    assert _codes(errors).count("RELATED_REF") == 1
+
+
+# --- check_trigger_consistency: unreachable triggers --------------------------
+
+
+def _build_trigger_root(tmp_path: Path) -> Path:
+    (tmp_path / "skills" / "referenced").mkdir(parents=True)
+    (tmp_path / "skills" / "referenced" / "SKILL.md").write_text(
+        "---\nname: referenced\ndescription: r\ntriggers:\n  - foo\n---\nbody\n"
+    )
+    (tmp_path / "skills" / "orphan").mkdir(parents=True)
+    (tmp_path / "skills" / "orphan" / "SKILL.md").write_text(
+        "---\nname: orphan\ndescription: o\ntriggers:\n  - bar\n---\nbody\n"
+    )
+    (tmp_path / "skills" / "always").mkdir(parents=True)
+    (tmp_path / "skills" / "always" / "SKILL.md").write_text(
+        "---\nname: always\ndescription: a\nalwaysApply: true\n---\nbody\n"
+    )
+    (tmp_path / "agents").mkdir()
+    (tmp_path / "agents" / "user.md").write_text(
+        "---\nname: user\ndescription: u\ntools: Read\nmodel: sonnet\n"
+        "skills: referenced\n---\nbody\n"
+    )
+    return tmp_path
+
+
+def test_trigger_orphan_warns(tmp_path: Path) -> None:
+    root = _build_trigger_root(tmp_path)
+    _, warnings = vc.check_trigger_consistency(root)
+    codes = _codes(warnings)
+    assert codes.count("TRIGGER_CONSISTENCY") == 1
+    assert any("orphan" in w for w in warnings)
+    assert not any("referenced" in w for w in warnings)
+
+
+def test_trigger_alwaysapply_skipped(tmp_path: Path) -> None:
+    root = _build_trigger_root(tmp_path)
+    _, warnings = vc.check_trigger_consistency(root)
+    assert not any("always" in w for w in warnings)
+
+
+def test_trigger_no_triggers_skipped(tmp_path: Path) -> None:
+    (tmp_path / "skills" / "plain").mkdir(parents=True)
+    (tmp_path / "skills" / "plain" / "SKILL.md").write_text(
+        "---\nname: plain\ndescription: p\n---\nbody\n"
+    )
+    (tmp_path / "agents").mkdir()
+    _, warnings = vc.check_trigger_consistency(tmp_path)
+    assert _codes(warnings).count("TRIGGER_CONSISTENCY") == 0

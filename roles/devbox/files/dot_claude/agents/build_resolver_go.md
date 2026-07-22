@@ -3,7 +3,7 @@ name: build-resolver-go
 description: Go build error specialist. Resolves compilation failures, module issues, import cycles, and CGO problems.
 tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
-skills: go-engineer, agent-communication, shared-utils, agent-base-protocol
+skills: go-engineer, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
 ---
 

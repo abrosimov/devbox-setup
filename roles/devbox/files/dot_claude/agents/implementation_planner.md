@@ -3,7 +3,7 @@ name: implementation-planner
 description: Stack-agnostic implementation planner — turns specs or requirements into functional implementation plans (requirements, acceptance criteria, work streams) for software engineers. Detects the project stack itself and tailors language-conditional guidance; never writes code.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, LSP
 model: opus
-skills: config, agent-communication, shared-utils, mcp-sequential-thinking, lsp-tools, agent-base-protocol, diverge-synthesize-select
+skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, lsp-tools, agent-base-protocol, diverge-synthesize-select
 updated: 2026-06-07
 ---
 

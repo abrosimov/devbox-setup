@@ -6,6 +6,23 @@ awesome-wm), now on macOS in clamshell mode 90% of the time with a Kinesis
 Advantage 360 Pro. Wants config-as-code, keyboard-first workflow, and
 Linux-style observability.
 
+## Progress log
+
+- **2026-07-23.** JankyBorders shipped end-to-end and deployed (service
+  `started`, verified live): `bordersrc` (Kanagawa palette, executable),
+  `install_configs.yml` wiring (Block 3 ensure-parent + dedicated 0755 copy),
+  `apply_configs.yml` launchd service via `community.general.homebrew_services`
+  (Darwin-gated). Raycast scoped to **launcher + installed-app search only**
+  (no script-commands): ⌘Space pinned via `osx_defaults`
+  (`raycastGlobalHotkey=Command-49`), AI / "Ask AI (Tab)" toggle left manual
+  (encrypted DB — not config-as-code-able), Pro judged not worth it. AeroSpace
+  `[gaps]` 6px → 1px. Roadmap §2.1/2.3/2.4 + Phase-2 ordering updated. New
+  deployment followup: the playbook does not auto-reload AeroSpace after a
+  config change (deployment-followups §4). **Remaining Phase-2 queue:**
+  Sketchybar (§2.2, next) → Hammerspoon expand (§2.5) → Karabiner activation
+  (§2.6) → Lima (§2.8) → BetterDisplay (§2.7). Full macOS `defaults` pass
+  (§3.3) deferred to last by user preference.
+
 ## Phase 1 — DONE (installation only, no configuration)
 
 | Tool | Brew name | Permissions needed on first launch |
@@ -58,6 +75,8 @@ home-root `~/.aerospace.toml` for consistency with fish/kitty.
   native fullscreen, which breaks tiling); `alt-shift-space` = float⇄tile.
 - `start-at-login = false` for now (launch manually while dialling in).
 - Zen browser pinned to ws 1 via `on-window-detected` (`app.zen-browser.zen`).
+- Gaps = **1px** (inner + outer), down from 6px — tight look; leaves a hair of
+  room so JankyBorders' 4px outline doesn't fuse adjacent windows (2026-07-23).
 
 **Not expressible in AeroSpace (deferred to a Tier-2 `aerospace` CLI script):**
 precise per-workspace layouts with fixed proportions (e.g. browser at 70% +
@@ -137,13 +156,32 @@ Talks to AeroSpace via events (`aerospace list-workspaces` etc.).
 - Which widgets — CPU only, full system metrics, or minimal?
 - Stick with menubar or full-height bar?
 
-### 2.3 JankyBorders (`~/.config/borders/bordersrc`)
+### 2.3 JankyBorders — DONE 2026-07-23
 
 **Where it helps:** thin coloured outline around the focused window — without
 it tiled windows are visually indistinguishable on identical-looking apps
 (two kitty windows side by side).
 
-**Example:**
+**Shipped:** `roles/devbox/files/.config/borders/bordersrc` (executable, 0755),
+deployed to `~/.config/borders/bordersrc`.
+
+**Decisions taken:**
+- Palette matched to the kitty **Kanagawa** theme, NOT the tokyo-night example
+  below: `active_color=0xff7e9cd8` (crystalBlue), `inactive_color=0xff363646`
+  (sumiInk3 / kitty `selection_background`). `width=4.0`, `style=round`.
+- Startup = **`brew services start borders`** (launchd), wired in
+  `apply_configs.yml` via `community.general.homebrew_services` (Darwin-gated).
+  NOT AeroSpace's `after-startup-command`: AeroSpace runs `start-at-login=false`
+  with no after-startup hook, and borders works independently of the WM
+  (harmless when AeroSpace is off).
+- Wiring: `install_configs.yml` Block 3 adds `.config/borders` to the
+  ensure-parents loop; a dedicated 0755 copy task deploys `bordersrc` — it must
+  be executable, borders execs it on startup.
+- AeroSpace `[gaps]` dropped 6px → 1px so the 4px outline doesn't fuse adjacent
+  windows (see §2.1).
+- Needs **Accessibility** to track focus across apps (Phase-1 table).
+
+**Original example (superseded — tokyo-night palette, aerospace-hook startup):**
 ```bash
 # ~/.config/borders/bordersrc
 options=(
@@ -155,9 +193,7 @@ options=(
 borders "${options[@]}"
 ```
 
-Started by AeroSpace's `after-startup-command` or a launchd agent.
-
-### 2.4 Raycast (script-commands + extensions)
+### 2.4 Raycast — DONE (decisions) 2026-07-23
 
 **Where it helps:** rofi-equivalent — launcher with custom scripts, snippets,
 window management commands, calculator, clipboard history, calendar.
@@ -182,10 +218,27 @@ to the repo.
 cd ~/Projects/"$1" && open -a Ghostty .
 ```
 
-**Items to decide:**
-- Free tier (no AI) vs Pro ($10/month — AI commands, Pro extensions)
-- Migrate from Spotlight by overriding `Cmd-Space`? Yes — Raycast standard
-- Custom hotkeys for top-3 daily apps: kitty, browser, Slack
+**Decisions taken (2026-07-23):**
+- **Scope = launcher + installed-app search only.** No `script-commands/`
+  seeded — empty scaffolds bring no value (deployment-followups §3). The repo
+  path above stays notional until the first real script is written.
+- **No config-as-code path for Raycast settings.** They live in an ENCRYPTED
+  sqlite DB (`~/Library/Application Support/com.raycast.macos/raycast-enc.sqlite`);
+  only a handful of keys sit in the `com.raycast.macos` plist. The AI /
+  "Ask AI (Tab)" toggle is DB-only — disable it by hand in Settings → AI.
+- **⌘Space** pinned via `osx_defaults` (`raycastGlobalHotkey = Command-49`) in
+  `roles/devbox/defaults/main/macos_defaults.yml`. Fresh-machine pre-seed only,
+  fragile (Raycast owns the plist; `raycastGlobalHotkeyMigrated` may reset it).
+  Still requires manually disabling Spotlight's ⌘Space in System Settings.
+- **Pro not worth it** for this profile: Free covers launcher use; Pro ($8/mo)
+  is only justified for Cloud Sync across personal↔work; Advanced AI (+$8) is
+  redundant given Claude Code. Start Free.
+- **Manual setup checklist** (not automatable): launch Raycast → grant
+  Accessibility → disable Spotlight ⌘Space + record Raycast ⌘Space → disable AI.
+
+**Deferred:** `.rayconfig` export (Settings → Advanced → Export) committed to
+`roles/devbox/local/` for a one-shot cross-machine restore — revisit when
+setting up the work laptop.
 
 ### 2.5 Hammerspoon (`~/.hammerspoon/init.lua`)
 
@@ -315,8 +368,8 @@ fast on Apple Silicon.
 Greatest day-1 impact first; each item is a separate /full-cycle or focused session.
 
 1. **AeroSpace** (2.1) — without this nothing else makes sense
-2. **Raycast** (2.4) — minimum viable: Cmd-Space override + 2-3 script commands
-3. **JankyBorders** (2.3) — 10-line config, immediate visual upgrade
+2. **Raycast** (2.4) — DONE 2026-07-23 (launcher-only + ⌘Space via osx_defaults)
+3. **JankyBorders** (2.3) — DONE 2026-07-23 (Kanagawa palette + brew-services)
 4. **Sketchybar** (2.2) — bigger investment, do once 1-3 are stable
 5. **Hammerspoon** (2.5) — only when you need something the above can't do
 6. **Karabiner** (2.6) — only when working lid-open

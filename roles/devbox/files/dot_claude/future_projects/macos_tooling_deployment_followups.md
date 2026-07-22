@@ -114,11 +114,35 @@ add per-tool config-reload hook to `apply_configs.yml` if needed
 needs `sketchybar --reload`; Borders is restarted by AeroSpace
 `after-startup-command`).
 
+## 4. AeroSpace (and Sketchybar/Borders) config reload after deploy
+
+**Problem.** `install_configs.yml` Block 3c rsyncs `aerospace.toml` into
+`~/.config/aerospace/`, but nothing runs `aerospace reload-config` — a running
+AeroSpace keeps the old config until a manual reload/restart. Surfaced
+2026-07-23 when the `[gaps]` 6px → 1px change didn't take effect after `make
+personal`; had to run `aerospace reload-config` by hand.
+
+**Design.** Add a Darwin-gated handler to `apply_configs.yml` that runs
+`aerospace reload-config` when the AeroSpace sync task reports `changed`
+(notify/handler pattern, mirroring the Dock/Finder killall handlers in
+`configure_macos_defaults.yml`). The same block should host the sibling reloads
+once those tools land: `sketchybar --reload` and the Borders restart (borders
+is already a launchd service, so `brew services restart borders`). Guard for
+AeroSpace not running — `reload-config` fails if the process is down, so
+`failed_when` on the "not running" message (or `changed_when: false` + ignore).
+
+**Not urgent** — one manual `aerospace reload-config` after deploy is trivial;
+becomes worth automating once config churn increases, and it is a hard
+prerequisite for the Sketchybar session (§2.2), which needs the same reload
+wiring to be usable.
+
 ## Suggested ordering
 
 1. **Follow-up 3** — comes for free with any tool-config session; no
    dedicated work.
-2. **Follow-up 2** — do once several tools are installed and permission
+2. **Follow-up 4** — fold into the Sketchybar session (§2.2); it needs the
+   same `--reload` handler, so build the reload block once for all three tools.
+3. **Follow-up 2** — do once several tools are installed and permission
    friction becomes noticeable during setup of a fresh machine.
-3. **Follow-up 1** — only when Karabiner rule set has grown enough that
+4. **Follow-up 1** — only when Karabiner rule set has grown enough that
    GUI-driven authoring beats direct JSON editing.

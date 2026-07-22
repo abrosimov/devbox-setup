@@ -29,12 +29,15 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 key-mapping.preset = 'qwerty'
 
 [gaps]
-inner.horizontal = 6
-inner.vertical   = 6
-outer.left       = 6
-outer.right      = 6
-outer.top        = 6
-outer.bottom     = 6
+# Tight 1px gaps (was 6px — felt too loose). JankyBorders' 4px outline draws
+# around each window, so a hair of gap keeps adjacent outlines from fusing;
+# drop to 0 if an edge-to-edge look is preferred.
+inner.horizontal = 1
+inner.vertical   = 1
+outer.left       = 1
+outer.right      = 1
+outer.top        = 1
+outer.bottom     = 1
 
 # =============================================================================
 # MAIN MODE

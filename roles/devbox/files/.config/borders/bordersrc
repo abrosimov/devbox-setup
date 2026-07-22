@@ -1,0 +1,21 @@
+#!/bin/bash
+# JankyBorders — coloured outline around the focused window so tiled, visually
+# identical apps (e.g. two kitty panes side by side) are distinguishable.
+#
+# Palette is matched to the kitty Kanagawa theme
+# (roles/devbox/files/.config/kitty/current-theme.conf), NOT the tokyo-night
+# values in the original planning note:
+#   active   = crystalBlue #7E9CD8
+#   inactive = sumiInk3    #363646  (kitty selection_background)
+# Colours are 0xAARRGGBB. Started as a launchd service via
+# `brew services start borders` (apply_configs.yml); borders execs this file on
+# startup and pushes the options to the running daemon — so it must stay +x.
+options=(
+	style=round
+	width=4.0
+	hidpi=off
+	active_color=0xff7e9cd8
+	inactive_color=0xff363646
+)
+
+borders "${options[@]}"

@@ -156,6 +156,22 @@ devbox_macos_defaults:
     type: int
     value: 1
 
+  # --- Third-party apps ----------------------------------------------------
+  # Raycast global hotkey → ⌘Space (keycode 49 = Space), replacing Spotlight.
+  # WARNING: unsupported surface. Raycast owns com.raycast.macos and stores
+  # most settings in an ENCRYPTED sqlite DB (raycast-enc.sqlite) — only a
+  # handful of keys live in the plist, and the AI / "Ask AI" toggle is NOT one
+  # of them (it cannot be set declaratively; disable it by hand in Settings →
+  # AI). This key only pre-seeds the launcher hotkey on a fresh machine before
+  # first launch; Raycast reads it at startup, so an already-running instance
+  # needs a relaunch to pick it up. The sibling raycastGlobalHotkeyMigrated
+  # flag hints at internal migration logic that may reset this — if the hotkey
+  # doesn't stick, fall back to recording ⌘Space manually in Settings.
+  - domain: com.raycast.macos
+    key: raycastGlobalHotkey
+    type: string
+    value: "Command-49"
+
 devbox_extra_macos_defaults: []
 
 devbox_night_shift:

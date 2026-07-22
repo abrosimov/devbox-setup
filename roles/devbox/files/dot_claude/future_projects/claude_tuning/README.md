@@ -1,17 +1,21 @@
 # Claude Tuning — verbosity, completion, evidence-first
 
-**Status:** W1 complete (RI1 → RI2). W2 opened (`route_W2_structural.md`) with resolved scope from Q-RI2-1..3; awaits Q-W2-1..3 decisions before frontmatter batch begins.
-**Date opened:** 2026-07-20. **Last update:** 2026-07-21.
+**Status:** W1 complete (RI1 → RI2). W2 Phase 1 + Phase 2a + all infrastructure done. **One decision pending: approve `w2_frontmatter_data.yaml`, then run the 5-command apply flow.** Q-W2-2 rescinded — SKILLS-INDEX generator dropped.
+**Date opened:** 2026-07-20. **Last update:** 2026-07-22.
 **Trigger:** user complaint about verbose responses, 60%-completion pattern, misrepresented restated intents.
 
 ## Session handoff — how to resume
 
-1. Read this `README.md` (index).
+**Fast path — if you are here only to apply the pending frontmatter batch:** jump to `route_W2_structural.md` §Infrastructure session → §Tomorrow's flow. Runs 5 commands (review YAML → dry-run → apply → validate → commit + push). All infrastructure (validator extensions, apply script, YAML data table, Phase 2a preconditions) is already in place; nothing to design.
+
+**Deep path — if you need the full history (W3 planning, retros, cross-referencing):**
+
+1. Read this `README.md` (index + state log).
 2. Read `problem_cards.md` (8 problem cards as FPF cue packs — PC1-PC8).
 3. Read `routed_cue_set.md` (13 candidate routes across 4 families, coverage matrix, wave rollout — reflects W1 completion).
 4. Read `route_RI1_rules_budget.md` + `rules_budget_baseline.md` (W1 output — RI1 script + baseline).
 5. Read `route_RI2_always_on_audit.md` (W1 output — RI2 audit with demotion recommendations).
-6. Open `route_W2_structural.md` (already scoped: RS1 + RS2 + RS5 + RI2 demotions + trigger-consistency validator). Decide Q-W2-1..3, then execute the sequencing inside the file.
+6. Open `route_W2_structural.md` — Q-W2-1..7 all resolved; §Infrastructure session records what was built and how to finish.
 
 ## User complaint (original, verbatim)
 

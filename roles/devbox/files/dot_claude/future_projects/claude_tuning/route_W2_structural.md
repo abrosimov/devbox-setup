@@ -225,11 +225,19 @@ Verified:
 - Full test suite: 1142 passed (was 1151 pre-reversal; 9 index tests removed).
 - Ruff clean on all new files; pre-existing `rules_budget.py` lint noise unchanged (W1 baggage, not in scope).
 
-Tomorrow's flow:
+### Tomorrow's flow
 
-1. Review `future_projects/claude_tuning/w2_frontmatter_data.yaml` — the single decision.
+Acceptance rubric for the YAML review (step 1). "Approve" means:
+
+- Every `problem:` reads as *the pain that would exist without this artefact* — not a paraphrase of `description:`. Edit or blank (empty string) any entry that fails this test.
+- Every `related:` list is a defensible adjacency — following the link would actually help someone reading the source artefact. Prune over-linking; leave `[]` where nothing obviously applies. Do not chase graph density.
+- Names in `related:` must match existing skill directory names (dashes) or agent file stems (underscores). Validator will fail hard on dangling refs during step 4.
+
+Runbook:
+
+1. Review `future_projects/claude_tuning/w2_frontmatter_data.yaml` against the rubric above — the single decision. Edit in place; the apply script reads it directly.
 2. `.venv/bin/python scripts/apply_w2_frontmatter.py --dry-run | less` — inspect diff.
 3. `.venv/bin/python scripts/apply_w2_frontmatter.py` — apply frontmatter to 67 files.
-4. `make validate-claude` — expect 0 errors, 0 warnings.
+4. `make validate-claude` — expect 0 errors, 0 warnings (dangling `related:` refs error here).
 5. `make rules-budget` — expect ~73 (frontmatter additions are not rule-shaped, so no drift).
 6. Commit and `make claude-push`.

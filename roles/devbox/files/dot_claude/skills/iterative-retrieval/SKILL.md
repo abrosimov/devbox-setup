@@ -5,6 +5,8 @@ description: >
   Solves the "don't know what I need" problem through DISPATCH/EVALUATE/REFINE/LOOP.
   Use when spawning Explore agents, when agents need to find relevant code, or when
   initial searches return too much noise or too little signal.
+problem: "Subagents and research tasks return too much noise or too little signal without a DISPATCH/EVALUATE/REFINE loop."
+related: []
 ---
 
 # Iterative Retrieval

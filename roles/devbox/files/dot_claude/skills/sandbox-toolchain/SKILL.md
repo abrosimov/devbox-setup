@@ -26,6 +26,8 @@ triggers:
   - "permission denied"
   - "operation not permitted"
   - "sandbox blocks"
+problem: "Toolchain commands fail inside the Claude Code sandbox because writable dirs, network allowlist, and env vars are not understood."
+related: [project-toolchain]
 ---
 
 # Sandbox Toolchain Compatibility

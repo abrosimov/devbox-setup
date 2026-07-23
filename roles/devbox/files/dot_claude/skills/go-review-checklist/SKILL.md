@@ -5,6 +5,8 @@ description: >
   Used by the code-reviewer agent when reviewing Go files. Covers enumeration,
   verification, counter-evidence, backward compatibility, and domain compliance
   checks. Use when reviewing Go code or running verification checkpoints.
+problem: "Go reviews sample rather than enumerate; verification steps are skipped without a structured checkpoint checklist."
+related: [go-engineer, go-testing, lint-discipline]
 ---
 
 # Go Review Checklist

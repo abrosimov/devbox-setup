@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequential
 model: opus
 skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-03-03
+problem: "Ideas skip the shape-up step and reach engineers as either wireframes or vague vibes, wasting cycles either way."
+related: [domain_expert, implementation_planner, designer]
 ---
 
 ## CRITICAL: File Operations

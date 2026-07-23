@@ -5,6 +5,8 @@ tools: Read, Grep, Glob, Bash, WebSearch
 model: sonnet
 skills: agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
+problem: "Schema changes, migrations, and queries reach production with lock risks, missing indexes, or backward-incompatible shape."
+related: [database_designer]
 ---
 
 You are a **database reviewer** — you review schema changes, migrations, and queries for correctness and performance.

@@ -6,6 +6,8 @@ model: sonnet
 permissionMode: acceptEdits
 skills: go-engineer, go-testing, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-10
+problem: "Go integration coverage stays thin because writers default to unit-style mocks instead of testcontainers and real dependencies."
+related: [software_engineer_go, unit_tests_writer, tdd_guide]
 ---
 
 ## CRITICAL: File Operations

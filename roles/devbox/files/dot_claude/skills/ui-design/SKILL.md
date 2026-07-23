@@ -5,6 +5,8 @@ description: >
   accessibility, and integration with Figma MCP and Storybook MCP. Use when creating design
   specifications, defining design tokens, planning responsive layouts, or ensuring accessibility
   compliance (WCAG).
+problem: "UI specs get authored without a W3C-token contract, WCAG plan, or Figma/Storybook integration, forcing rework downstream."
+related: [frontend-engineer, mcp-storybook]
 ---
 
 # UI/UX Design Knowledge

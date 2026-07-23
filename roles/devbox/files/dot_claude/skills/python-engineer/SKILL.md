@@ -2,6 +2,8 @@
 name: python-engineer
 description: Write clean, typed, production-ready Python code with full type hints and modern idioms. Use when implementing Python functions, services, classes, decorators, async code, data models, CLI tools, or API endpoints — enforces project conventions.
 allowed-tools: Read, Edit, Grep, Glob, Bash
+problem: "Python code drifts from typing, PEP 8, and modern-idiom expectations without an in-repo enforcement layer per project conventions."
+related: [lint-discipline, python-testing, python-tooling, sandbox-toolchain]
 ---
 
 # Python Software Engineer

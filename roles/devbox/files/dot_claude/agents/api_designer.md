@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequential
 model: opus
 skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol
 updated: 2026-02-10
+problem: "API contracts get sketched inline during implementation instead of designed as a shared frontend/backend artefact."
+related: [implementation_planner, domain_modeller, architect]
 ---
 
 ## CRITICAL: File Operations

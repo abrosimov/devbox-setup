@@ -1,6 +1,8 @@
 ---
 name: lsp-tools
 description: LSP code intelligence for semantic navigation, refactoring, and diagnostics — when and how to use built-in LSP tools instead of grep. Use when refactoring, renaming symbols, finding references or callers, navigating to definitions, or analysing call hierarchy.
+problem: "Code navigation defaults to grep even when semantic LSP queries would give exact references and impact analysis."
+related: [ast-grep]
 ---
 
 # LSP Code Intelligence

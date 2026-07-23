@@ -4,6 +4,8 @@ description: >
   JSON schemas for structured agent output and the hybrid markdown+JSON pattern.
   Use when producing structured JSON output (`se_*_output.json`, `dss_output.json`)
   alongside the primary markdown deliverable.
+problem: "Downstream agents re-parse markdown when a typed JSON contract alongside the primary deliverable would suffice."
+related: [agent-communication]
 ---
 
 # Structured Output

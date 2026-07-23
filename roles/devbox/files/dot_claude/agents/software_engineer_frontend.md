@@ -6,6 +6,8 @@ model: opus
 permissionMode: acceptEdits
 skills: frontend-engineer, frontend-tooling, ui-design, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-17
+problem: "TypeScript/React/Next.js code changes bypass typed, tested, accessible standards when written outside the frontend SE pipeline."
+related: [designer, unit_tests_writer, code_reviewer, implementation_planner]
 ---
 
 ## ZERO TOLERANCE: `any` Types

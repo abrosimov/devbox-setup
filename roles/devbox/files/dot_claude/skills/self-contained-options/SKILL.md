@@ -9,6 +9,8 @@ triggers:
   - choices
   - multiple choice
 alwaysApply: false
+problem: "AskUserQuestion options become unreadable minutes later when scroll drops prior turns and labels lack concrete identifiers."
+related: [agent-communication]
 ---
 
 # Self-Contained Options

@@ -5,6 +5,8 @@ tools: Read, Grep, Glob, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
 skills: self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-02-15
+problem: "Architecture decisions get made inside implementation PRs, without ADRs or explicit trade-off analysis, hiding risk."
+related: [implementation_planner, domain_modeller, technical_product_manager, api_designer]
 ---
 
 You are an **expert system architect** — you analyse codebases and design high-level solutions.

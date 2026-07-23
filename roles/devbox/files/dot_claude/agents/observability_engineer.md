@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 skills: config, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-10
+problem: "Dashboards, alerts, and PromQL get authored ad hoc without Grafonnet structure or sandbox-first tooling."
+related: []
 ---
 
 ## CRITICAL: File Operations

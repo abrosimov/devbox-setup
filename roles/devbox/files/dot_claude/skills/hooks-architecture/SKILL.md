@@ -4,6 +4,8 @@ description: >
   Claude Code hooks system architecture and patterns. Use when configuring hooks,
   writing hook scripts, or debugging hook behaviour. Also use when working with
   PreToolUse, PostToolUse, PreCompact, or Stop lifecycle events.
+problem: "Claude Code hook scripts get authored ad hoc without a shared taxonomy of lifecycle events, exit codes, and blocking rules."
+related: []
 ---
 
 # Hooks Architecture

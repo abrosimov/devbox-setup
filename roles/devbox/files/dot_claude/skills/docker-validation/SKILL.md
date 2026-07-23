@@ -5,6 +5,8 @@ description: >
   and runtime smoke testing conventions. Use when validating Dockerfiles, docker-compose files,
   or running container smoke tests.
 alwaysApply: false
+problem: "Dockerfiles and compose files ship without lint and smoke checks, hiding runtime failures until deployment."
+related: []
 ---
 
 # Docker Validation

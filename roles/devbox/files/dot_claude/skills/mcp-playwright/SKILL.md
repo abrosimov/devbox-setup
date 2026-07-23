@@ -5,6 +5,8 @@ description: >
   smoke testing. Covers navigation, interaction, screenshots, accessibility tree,
   and console monitoring. Use when automating browser interactions, running smoke
   tests, taking screenshots, or inspecting accessibility.
+problem: "Browser automation and accessibility inspection get scripted ad hoc without shared MCP tool conventions."
+related: [mcp-storybook, playwright-e2e]
 ---
 
 # Playwright MCP

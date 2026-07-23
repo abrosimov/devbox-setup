@@ -5,6 +5,8 @@ tools: Read, Grep, Glob, Bash
 model: sonnet
 skills: agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
 updated: 2026-02-18
+problem: "Terminology conflicts, handoff breaks, and orphaned content accumulate across the agent/skill library without a graph audit."
+related: [freshness_auditor, meta_reviewer, agent_builder, skill_builder]
 ---
 
 ## CRITICAL: File Operations

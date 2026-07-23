@@ -5,6 +5,8 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 skills: agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
 updated: 2026-02-18
+problem: "Agent and skill definitions accumulate outdated library versions, deprecated APIs, and stale language references over time."
+related: [consistency_checker, content_reviewer]
 ---
 
 ## CRITICAL: File Operations

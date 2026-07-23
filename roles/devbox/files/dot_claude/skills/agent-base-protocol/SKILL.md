@@ -4,6 +4,8 @@ description: >
   Shared foundational protocol for all agents. Covers file operations, language standard,
   and clarification rules. Referenced by all agent definitions to avoid duplication.
 alwaysApply: false
+problem: "Every agent would otherwise re-inline the same file-ops, language, and clarification rules, drifting apart over time."
+related: [project-preferences, shared-utils]
 ---
 
 # Agent Base Protocol

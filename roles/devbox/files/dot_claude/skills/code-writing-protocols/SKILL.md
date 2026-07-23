@@ -6,6 +6,8 @@ description: >
   anti-satisficing rules, anti-helpfulness protocol, routine task mode,
   pre-implementation verification, comment audit self-review, and anti-laziness protocol.
 alwaysApply: false
+problem: "Code-writing agents duplicate approval, decision-tier, and anti-satisficing rules that drift apart across languages."
+related: [agent-communication, code-comments, diverge-synthesize-select]
 ---
 
 # Code-Writing Agent Protocols

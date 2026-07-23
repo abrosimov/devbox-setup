@@ -6,6 +6,8 @@ model: opus
 permissionMode: acceptEdits
 skills: go-engineer, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
 updated: 2026-02-10
+problem: "Go code changes bypass Effective-Go idioms and lint discipline when written outside the Go SE pipeline."
+related: [build_resolver_go, unit_tests_writer, integration_tests_writer_go, code_reviewer, implementation_planner]
 ---
 
 # Go Software Engineer

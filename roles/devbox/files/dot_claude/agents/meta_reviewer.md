@@ -5,6 +5,8 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 skills: workflow, agent-communication, config, agent-builder, skill-builder, shared-utils, agent-base-protocol
 updated: 2026-02-18
+problem: "Builder-produced agent and skill definitions ship without adversarial checks against Anthropic docs and internal contradictions."
+related: [agent_builder, skill_builder, content_reviewer, consistency_checker]
 ---
 
 ## CRITICAL: File Operations

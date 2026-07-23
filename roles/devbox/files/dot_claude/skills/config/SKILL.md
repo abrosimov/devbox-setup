@@ -5,6 +5,8 @@ description: >
   and commands. Single source of truth for PLANS_DIR, JIRA_ISSUE, BRANCH_NAME, PROJECT_DIR.
   Use when resolving project paths, looking up configuration variables, or understanding
   the agent system directory structure.
+problem: "Agents and commands hard-code paths and task variables, leading to inconsistent PLANS_DIR / BRANCH_NAME resolution."
+related: [shared-utils, workflow]
 ---
 
 # Claude Code Configuration

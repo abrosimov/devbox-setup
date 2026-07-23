@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequential
 model: opus
 skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking
 updated: 2026-02-17
+problem: "Validated domain analysis stays informal without DDD formalisation into bounded contexts, aggregates, and events."
+related: [domain_expert, architect, api_designer, database_designer]
 ---
 
 ## CRITICAL: File Operations

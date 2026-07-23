@@ -149,6 +149,27 @@ def test_test_suffixed_file_excluded(tmp_path: Path) -> None:
     assert _codes(warnings).count("CMD_BARE") == 0
 
 
+def test_hidden_dir_not_scanned(tmp_path: Path) -> None:
+    # Tool caches like .hypothesis/, .pytest_cache/, .venv/ harvest string
+    # literals from source and store them in nested files. Those blobs must not
+    # be scanned — they would report dangling refs for every command mentioned
+    # anywhere in the code base.
+    root = _build_root(
+        tmp_path,
+        ["plan"],
+        {
+            "agents/.hypothesis/constants/blob": (
+                "# file: skills/x/scan.py\n"
+                "somewhere in a harvested literal: /techne-ghost and /techne-plan\n"
+            ),
+            "skills/foo/.pytest_cache/v/cache/nodeids": "/techne-ghost::x\n",
+        },
+    )
+    errors, warnings = vc.check_command_refs(root)
+    assert _codes(errors).count("CMD_REF") == 0
+    assert _codes(warnings).count("CMD_BARE") == 0
+
+
 # --- parse_yaml_list: inline + block YAML lists -------------------------------
 
 

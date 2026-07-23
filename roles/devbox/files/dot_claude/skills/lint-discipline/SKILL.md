@@ -12,6 +12,8 @@ triggers:
   - type: ignore
   - suppress
   - silence
+problem: "Agents suppress lint diagnostics with noqa / nolint / eslint-disable rather than fixing the underlying issue."
+related: [code-comments, code-writing-protocols]
 ---
 
 # Lint Discipline

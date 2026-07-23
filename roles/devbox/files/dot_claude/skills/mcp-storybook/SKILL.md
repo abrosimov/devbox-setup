@@ -1,6 +1,8 @@
 ---
 name: mcp-storybook
 description: Storybook MCP patterns — component inventory, prop discovery, pattern matching, visual reference. Use when exploring available components, checking existing stories or props, or understanding the component library before building new UI.
+problem: "New UI gets built before checking the existing component library, duplicating components or drifting from established patterns."
+related: [mcp-playwright, ui-design]
 ---
 
 # Storybook MCP

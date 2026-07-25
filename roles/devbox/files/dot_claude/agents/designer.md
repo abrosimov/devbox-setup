@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright
 model: opus
 skills: config, ui-design, self-contained-options, agent-communication, shared-utils, mcp-playwright, mcp-storybook, agent-base-protocol, diverge-synthesize-select
 updated: 2026-02-12
+problem: "UI work starts without design tokens, layout specs, or accessibility plan, forcing frontend engineers to invent the contract."
+related: [software_engineer_frontend, technical_product_manager, implementation_planner]
 ---
 
 ## CRITICAL: File Operations

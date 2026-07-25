@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 skills: workflow, agent-communication, config, code-comments, shared-utils, skill-builder, agent-base-protocol
 updated: 2026-02-10
+problem: "New skill modules drift in shape and description quality without a specialist that scaffolds and audits them."
+related: [agent_builder, meta_reviewer, consistency_checker]
 ---
 
 ## CRITICAL: File Operations

@@ -7,6 +7,8 @@ description: >
   trade-offs, or needing structured thought chains with branching. Not to be confused
   with `fpf-thinking` (systems framing) or `diverge-synthesize-select` (option choice) —
   sequential thinking is for stepwise decomposition with revisable thoughts.
+problem: "Multi-step reasoning collapses into a single response without a revisable, branchable chain-of-thought scaffold."
+related: [diverge-synthesize-select, fpf-thinking]
 ---
 
 # Sequential Thinking MCP

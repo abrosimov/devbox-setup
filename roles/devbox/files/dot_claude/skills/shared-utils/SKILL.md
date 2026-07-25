@@ -3,6 +3,8 @@ name: shared-utils
 description: >
   Shared utility scripts for all agents. Use when needing Jira context from branch,
   extracting issue keys, or using other cross-cutting utilities.
+problem: "Jira-key extraction and other cross-cutting helpers get re-implemented per agent, drifting in edge-case handling."
+related: [config]
 ---
 
 # Shared Utilities

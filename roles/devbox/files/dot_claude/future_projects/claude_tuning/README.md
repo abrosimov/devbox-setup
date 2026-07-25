@@ -1,21 +1,22 @@
 # Claude Tuning — verbosity, completion, evidence-first
 
-**Status:** W1 complete (RI1 → RI2). W2 Phase 1 + Phase 2a + all infrastructure done. **One decision pending: approve `w2_frontmatter_data.yaml`, then run the 5-command apply flow.** Q-W2-2 rescinded — SKILLS-INDEX generator dropped.
-**Date opened:** 2026-07-20. **Last update:** 2026-07-22.
+**Status:** W1 complete (RI1 → RI2). **W2 complete** — Phase 1 + Phase 2a landed in `4ffaf2f`; post-W2 always-on flat = 73 (target hit, see `rules_budget_post_w2.md`). W3 not started — 2 decisions pending (Q-W3-1 route order, Q-W3-2 `project-preferences` split).
+**Date opened:** 2026-07-20. **Last update:** 2026-07-23.
 **Trigger:** user complaint about verbose responses, 60%-completion pattern, misrepresented restated intents.
 
 ## Session handoff — how to resume
 
-**Fast path — if you are here only to apply the pending frontmatter batch:** jump to `route_W2_structural.md` §Infrastructure session → §Tomorrow's flow. Runs 5 commands (review YAML → dry-run → apply → validate → commit + push). All infrastructure (validator extensions, apply script, YAML data table, Phase 2a preconditions) is already in place; nothing to design.
+**Fast path — if you are here to open W3:** read the latest state snapshot in `state/2026/07/` (Execution order + Open questions Q-W3-1 / Q-W3-2), then jump to `routed_cue_set.md` §RC routes and decide the W3 wave. W2 apply is done (`4ffaf2f`); post-W2 baseline captured in `rules_budget_post_w2.md`.
 
-**Deep path — if you need the full history (W3 planning, retros, cross-referencing):**
+**Deep path — if you need the full history (W2 retro, cross-referencing, W3 route ranking):**
 
 1. Read this `README.md` (index + state log).
 2. Read `problem_cards.md` (8 problem cards as FPF cue packs — PC1-PC8).
 3. Read `routed_cue_set.md` (13 candidate routes across 4 families, coverage matrix, wave rollout — reflects W1 completion).
 4. Read `route_RI1_rules_budget.md` + `rules_budget_baseline.md` (W1 output — RI1 script + baseline).
 5. Read `route_RI2_always_on_audit.md` (W1 output — RI2 audit with demotion recommendations).
-6. Open `route_W2_structural.md` — Q-W2-1..7 all resolved; §Infrastructure session records what was built and how to finish.
+6. Open `route_W2_structural.md` — Q-W2-1..7 all resolved; §Infrastructure session records what was built. Apply landed in `4ffaf2f` (2026-07-23).
+7. Read `rules_budget_post_w2.md` — post-W2 baseline (always-on flat 119 → 73, target hit).
 
 ## User complaint (original, verbatim)
 
@@ -63,7 +64,12 @@ Refined and expanded into 8 problem cards — see `problem_cards.md`.
 | `route_RI1_rules_budget.md` | Deep-dive on route RI1 — completed; contains baseline results and per-artefact notes |
 | `rules_budget_baseline.md` | Machine-generated baseline from `make rules-budget --baseline` (2026-07-21) |
 | `route_RI2_always_on_audit.md` | Deep-dive on route RI2 — always-on skill audit with per-skill keep/demote/split verdicts (Q-RI2-1..3 resolved) |
-| `route_W2_structural.md` | Deep-dive on W2 — RS1 + RS2 + RS5 + folded-in RI2 demotions + trigger-consistency validator (Q-W2-1..3 pending) |
+| `route_W2_structural.md` | Deep-dive on W2 — RS1 + RS2 + RS5 + folded-in RI2 demotions + trigger-consistency validator (all Q-W2 resolved; apply landed in `4ffaf2f`) |
+| `rules_budget_post_w2.md` | Post-W2 rules-budget baseline (always-on flat 119 → 73, target hit) |
+| `w2_frontmatter_data.yaml` | YAML data table consumed by `scripts/apply_w2_frontmatter.py` (67 entries, 163 related-edges) |
+| `pending_deletes.md` | Deprecations queued for removal after W2 lands (housekeeping list) |
+| `state/` | Atomic state snapshots (see `state/STATE.md` MoC) |
+| `conversations/` | Atomic conversation logs (paired with state snapshots) |
 
 ## Open questions (superseded — kept for deliberation history)
 
@@ -82,3 +88,4 @@ Live open questions now live inside each route deep-dive file — see `route_RI1
 - **2026-07-21 (later).** W1 executed end-to-end. Q-RI1-1..5 resolved (D, D, as-listed, A, A). Implemented `bin/rules_budget.py` + `bin/test_rules_budget.py` (37 tests green, <1s runtime, stdlib only). Added `make rules-budget` Makefile target. Captured `rules_budget_baseline.md` — 119 always-on rules, verdict `under` the 150-200 budget. Ran RI2 static audit (`route_RI2_always_on_audit.md`) — recommendation: demote 3 of 5 always-on skills (`code-comments`, `lint-discipline`, `lsp-navigation`) for 46-rule saving; flag `project-preferences` for split in W3. Q-RI2-1..3 resolved (W2 batch, W3 incremental split, add trigger-consistency validator in W2). Opened `route_W2_structural.md`: scope = RS1 + RS2 + RS5 + RI2 demotions + new validator; Q-W2-1..3 pending user decision.
 - **2026-07-21 (evening).** W2 Phase 1a (LSP merge) + Phase 1b (demote `code-comments` / `lint-discipline`) committed in `5f4d4b4`. W2 infrastructure completed the same day: Phase 2a preconditions (6 agents), `scripts/apply_w2_frontmatter.py` + tests, `bin/validate_config.py` extended with `related-links` + `trigger-consistency` checks + tests, `bin/build_skills_index.py` + tests + `make skills-index` target, `install_configs.yml` Block 2 wired for `SKILLS-INDEX.md`, initial index generated. Subagent authored `w2_frontmatter_data.yaml` (67 entries, 163 related-edges). Rules-budget checkpoint: **73 always-on** (target hit). See `route_W2_structural.md` §Infrastructure session.
 - **2026-07-22.** Phase 2a extension: trigger-consistency warning surfaced `self-contained-options` as unreachable via the agent trigger-path; added to `skills:` of 9 planning/design agents. Q-W2-2 reversed — RS2 dropped: `bin/build_skills_index.py`, `bin/test_build_skills_index.py`, `SKILLS-INDEX.md`, `make skills-index` target, and `install_configs.yml` Block 2 hook removed. Rationale: the rendered index adds no signal Claude uses (`description:` visible via Skill tool; related-graph lives in frontmatter and is validated by `related-links`). Tomorrow's flow: review YAML → apply → validate → commit + `make claude-push`.
+- **2026-07-23.** **W2 apply landed** in commit `4ffaf2f`. `scripts/apply_w2_frontmatter.py` wrote `problem:` + `related:` into 39 SKILL.md + 28 agents/*.md (67 files, 0 skipped, 0 errors, idempotent). Pre-apply YAML tweaks: `skills/python-engineer.related` += `lint-discipline`; `agents/refactor_cleaner.related` += `software_engineer_frontend` (closed 2 defensible asymmetries). Same commit: **generic hook denial for `git commit` / `git push` in any context** (`bin/bash_decision_gate.py` — two new Phase-1 rules `rule_git_commit` / `rule_git_push`, positioned last so specific rules keep their messages); **CMD_REF false positive on hidden dirs closed** (`bin/validate_config.py::_iter_managed_files` skips `.`-prefixed path components — pre-existing local noise from `.hypothesis/` cache). Tests: +5 (4 hook + 1 validator), 14 inverted in `test_pre_bash_safety_gate.py`; 1122 passed. `make validate-claude` → 0 errors / 0 warnings. `make rules-budget` → **always-on flat = 73** (target hit, plan predicted 119 → ~73). Post-W2 baseline recorded in `rules_budget_post_w2.md`. **W2 done.** W3 pending 2 decisions: Q-W3-1 (RC1-RC6 ordering) + Q-W3-2 (`project-preferences` split — 3 files vs 2). State snapshot: `state/2026/07/2026-07-23-w2-apply-plus-git-hook-deny.md`.

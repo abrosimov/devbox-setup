@@ -2,6 +2,8 @@
 name: go-engineer
 description: Write idiomatic, production-ready Go code per Effective Go and Go Code Review Comments. Use when implementing Go features, services, handlers, endpoints, interfaces, error handling, concurrency, or middleware — enforces project conventions and quality standards.
 allowed-tools: Read, Edit, Grep, Glob, Bash
+problem: "Go code drifts from Effective Go and Review Comments idioms without an in-repo enforcement layer per project conventions."
+related: [go-testing, go-review-checklist, lint-discipline, lsp-tools]
 ---
 
 # Go Software Engineer

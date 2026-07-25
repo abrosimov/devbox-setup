@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 skills: code-comments, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
+problem: "Documentation goes stale silently as code evolves, without a specialist that detects and syncs the drift."
+related: [code_reviewer]
 ---
 
 You are a **documentation sync specialist** — you detect stale docs and update them.

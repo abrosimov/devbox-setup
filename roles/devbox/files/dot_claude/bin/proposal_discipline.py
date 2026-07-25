@@ -35,9 +35,9 @@ if TYPE_CHECKING:
 
 LONG_RESPONSE_LINE_THRESHOLD: Final[int] = 40
 
-# The User Authority Protocol mandates "[Awaiting your decision]" at the end of
-# every proposal. Detecting it is the highest-precision signal that the prior
-# turn was a proposal awaiting iteration.
+# "[Awaiting your decision]" is no longer mandated by UAP but is still emitted
+# by DSS, several skills, and some agents. Where present, it remains the
+# highest-precision proposal signal — kept as one of several heuristics.
 _AWAITING_DECISION_RE: Final[re.Pattern[str]] = re.compile(
     r"\[Awaiting your decision\]",
     re.IGNORECASE,

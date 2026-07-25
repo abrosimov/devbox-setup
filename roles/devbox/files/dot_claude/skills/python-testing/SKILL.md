@@ -4,6 +4,8 @@ description: >
   Python testing patterns with pytest, fixtures, mocking, and parametrised tests.
   Use when writing or reviewing Python tests, creating fixtures, setting up mocks,
   or structuring parametrised test cases.
+problem: "Python tests target private methods, string-match exceptions, or duplicate cases instead of parametrising through public API."
+related: [python-engineer]
 ---
 
 # Python Testing Patterns

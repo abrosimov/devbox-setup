@@ -14,6 +14,8 @@ triggers:
   - "/* */"
   - "# type:"
   - documentation
+problem: "Narration and stale docstrings accumulate in code without a strict WHY-only rule and enforceable verbosity ceiling."
+related: [code-writing-protocols, lint-discipline]
 ---
 
 # Code Comments Policy

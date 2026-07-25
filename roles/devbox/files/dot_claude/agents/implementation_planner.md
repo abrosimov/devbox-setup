@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, m
 model: opus
 skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, lsp-tools, agent-base-protocol, diverge-synthesize-select
 updated: 2026-06-07
+problem: "Specs get handed to engineers as prose without work streams, acceptance criteria, or stack-conditional guidance."
+related: [technical_product_manager, domain_expert, architect, software_engineer_go, software_engineer_python, software_engineer_frontend]
 ---
 
 ## CRITICAL: File Operations

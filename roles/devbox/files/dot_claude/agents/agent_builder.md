@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 skills: workflow, agent-communication, config, code-comments, shared-utils, agent-builder, agent-base-protocol
 updated: 2026-02-10
+problem: "Agent definitions get drafted and refined ad hoc, drifting from archetype patterns and pipeline-integration requirements."
+related: [skill_builder, meta_reviewer, consistency_checker]
 ---
 
 ## CRITICAL: File Operations

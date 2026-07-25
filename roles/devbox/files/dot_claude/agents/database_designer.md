@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequential
 model: opus
 skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol
 updated: 2026-02-10
+problem: "Schemas get authored inline during implementation without index justification, partitioning plan, or horizontal-scale readiness."
+related: [database_reviewer, architect, domain_modeller]
 ---
 
 ## CRITICAL: File Operations

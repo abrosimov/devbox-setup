@@ -5,6 +5,8 @@ description: >
   Covers slash commands, agent roles, language discussion policy, and key conventions.
   Use when determining which agent or command to use, understanding the pipeline flow,
   or looking up workflow conventions like model selection and agent routing.
+problem: "Slash-command routing, agent selection, and model policy fragment without a single reference for the pipeline."
+related: [config, agent-communication]
 ---
 
 # Workflow Reference

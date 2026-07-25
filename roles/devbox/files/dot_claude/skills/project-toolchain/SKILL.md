@@ -7,6 +7,8 @@ description: >
   `project-toolchain` covers invocation ergonomics: what to type
   (e.g. `uv run pytest`, `pnpm test`) so commands actually work.
 alwaysApply: true
+problem: "Bare tool invocations fail outside virtual environments because the correct per-language run-prefix is not detected first."
+related: [sandbox-toolchain, python-tooling, frontend-tooling]
 ---
 
 # Project Toolchain Rules

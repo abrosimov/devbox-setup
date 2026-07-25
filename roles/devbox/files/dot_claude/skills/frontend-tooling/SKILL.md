@@ -5,6 +5,8 @@ description: >
   Use when discussing project setup, build tools, package management, linting, formatting,
   or development tools. Also use when working with tsconfig, Storybook configuration, or
   build pipelines.
+problem: "Frontend commands fail silently when package manager, tsconfig, or lint config is mis-detected before running."
+related: [frontend-engineer, project-toolchain]
 ---
 
 # Frontend Tooling Reference

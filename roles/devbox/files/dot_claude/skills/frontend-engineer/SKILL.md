@@ -2,6 +2,8 @@
 name: frontend-engineer
 description: Write clean, typed, production-ready frontend code with TypeScript, React, and Next.js. Use when implementing React components, custom hooks, pages, forms, state management, styling, or accessibility — enforces project conventions.
 allowed-tools: Read, Edit, Grep, Glob, Bash
+problem: "TypeScript/React/Next.js code drifts from typed, accessible, project-convention idioms without an enforcement layer."
+related: [frontend-testing, frontend-tooling, playwright-e2e, ui-design]
 ---
 
 # Frontend Software Engineer

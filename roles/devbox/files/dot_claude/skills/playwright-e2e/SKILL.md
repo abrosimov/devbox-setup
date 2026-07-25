@@ -1,6 +1,8 @@
 ---
 name: playwright-e2e
 description: Playwright e2e test authoring — scoped locators, strict mode, SPA navigation, test isolation. Use when writing .spec.ts files, fixing flaky e2e tests, debugging strict mode violations, or targeting repeated elements in lists/tables.
+problem: "E2E tests go flaky under SPA navigation and strict-mode locator ambiguity without scoped-locator and isolation patterns."
+related: [frontend-engineer, frontend-testing, mcp-playwright]
 ---
 
 # Playwright E2E Test Authoring

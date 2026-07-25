@@ -5,6 +5,8 @@ description: >
   checklists for building skill modules in the Claude Code agent system. Use when creating
   a new skill, validating skill structure, or improving skill descriptions. Also use when
   working with SKILL.md files, skill frontmatter, or knowledge modules.
+problem: "New skill files drift in shape without a shared frontmatter schema, description pattern, and progressive-disclosure discipline."
+related: [agent-builder, agent-communication, project-preferences]
 ---
 
 # Skill Builder Reference

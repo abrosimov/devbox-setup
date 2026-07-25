@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequential
 model: opus
 skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-02-10
+problem: "PM requirements pass to planners unchallenged, embedding unverified assumptions that surface only at implementation time."
+related: [technical_product_manager, domain_modeller, implementation_planner]
 ---
 
 ## CRITICAL: File Operations

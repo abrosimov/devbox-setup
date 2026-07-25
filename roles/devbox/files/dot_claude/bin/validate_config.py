@@ -398,6 +398,11 @@ def _iter_managed_files(root: Path) -> Iterator[Path]:
         if not sub.is_dir():
             continue
         for path in sorted(sub.rglob("*")):
+            # Skip hidden dirs (.hypothesis/, .venv/, .pytest_cache/, ...) — they
+            # hold tool caches with harvested string literals that trip the
+            # regex-based namespace checks.
+            if any(part.startswith(".") for part in path.relative_to(sub).parts):
+                continue
             if path.is_file() and path.suffix in _CMD_SCAN_SUFFIXES and not _is_test_file(path):
                 yield path
     for name in _CMD_SCAN_ROOT_FILES:

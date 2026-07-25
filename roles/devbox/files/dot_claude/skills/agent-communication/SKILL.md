@@ -3,6 +3,8 @@ name: agent-communication
 description: >
   Shared patterns for agent handoffs, escalation rules, completion formats, and user
   interaction. Use when agents need to communicate with each other or with users.
+problem: "Agent handoffs, escalation, and completion formats fragment without a shared inter-agent contract."
+related: [config, structured-output]
 ---
 
 # Agent Communication Patterns

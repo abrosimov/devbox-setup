@@ -4,6 +4,8 @@ description: >
   Go testing patterns with testify suites, table-driven tests, and mocking with mockery.
   Use when writing or reviewing Go tests, creating test fixtures, setting up mocks,
   or structuring table-driven test cases.
+problem: "Go tests miss error paths, misuse assert instead of require, or skip table-driven idioms without an explicit checklist."
+related: [go-engineer]
 ---
 
 # Go Testing Patterns

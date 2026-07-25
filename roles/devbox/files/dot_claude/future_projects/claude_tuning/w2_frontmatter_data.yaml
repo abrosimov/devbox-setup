@@ -154,6 +154,7 @@ skills:
   python-engineer:
     problem: "Python code drifts from typing, PEP 8, and modern-idiom expectations without an in-repo enforcement layer per project conventions."
     related:
+      - lint-discipline
       - python-testing
       - python-tooling
       - sandbox-toolchain
@@ -330,6 +331,7 @@ agents:
     related:
       - software_engineer_go
       - software_engineer_python
+      - software_engineer_frontend
       - code_reviewer
   skill_builder:
     problem: "New skill modules drift in shape and description quality without a specialist that scaffolds and audits them."

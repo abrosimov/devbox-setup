@@ -9,6 +9,8 @@ description: >
   definitions. Keeps the main conversation context lean by deferring deep
   reads to subagents and Grep, and disabling unused MCP servers.
 alwaysApply: false
+problem: "Editing agents or skills naively reads every cross-referenced file, burning 30-50 K main-context tokens before any edit."
+related: [agent-builder, skill-builder]
 ---
 
 # Editing Claude Code Configuration

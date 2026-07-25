@@ -5,6 +5,8 @@ description: >
   for building agent definitions in the Claude Code agent system. Use when creating a new
   agent, validating agent structure, or improving agent definitions. Also use when working
   with agent frontmatter, archetypes, or agent pipeline integration.
+problem: "New agent definitions drift in shape without a shared archetype schema and pipeline-integration checklist."
+related: [agent-communication, project-preferences, skill-builder]
 ---
 
 # Agent Builder Reference

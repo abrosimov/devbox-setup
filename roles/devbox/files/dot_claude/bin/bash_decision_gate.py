@@ -409,6 +409,30 @@ def rule_heredoc(ctx: Ctx) -> str | None:
     return None
 
 
+def rule_git_commit(ctx: Ctx) -> str | None:
+    # Claude never creates commits — the human is the commit gatekeeper. This
+    # deny stands even when a project-level CLAUDE.md tells the agent to commit,
+    # which is the failure mode that motivated the rule (subagent auto-commits
+    # during /techne-implement runs).
+    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "commit":
+        return (
+            "Claude does not create commits. The user commits manually. "
+            "Draft the message for the user; do not run git commit."
+        )
+    return None
+
+
+def rule_git_push(ctx: Ctx) -> str | None:
+    # Claude never pushes. Pushing is a shared-state action reserved for the
+    # human. Complements rule_git_commit; both stand regardless of project
+    # CLAUDE.md overrides.
+    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "push":
+        return (
+            "Claude does not push. The user pushes manually after reviewing local commits."
+        )
+    return None
+
+
 def rule_commit_on_main(ctx: Ctx) -> str | None:
     if (
         _tool(ctx.argv) == "git"
@@ -621,6 +645,12 @@ PHASE1_RULES: Final[list[tuple[str, RuleFn]]] = [
     ("wholesale-checkout-restore", rule_wholesale_checkout_restore),
     ("branch-force-delete", rule_branch_force_delete),
     ("destructive-sql", rule_destructive_sql),
+    # Catch-alls last: specific rules above emit more actionable messages
+    # (e.g. "Cannot commit on main. Create a feature branch first.") than the
+    # generic "Claude does not commit" — so we let them fire first and only
+    # deny the remaining commit/push cases here.
+    ("git-commit", rule_git_commit),
+    ("git-push", rule_git_push),
 ]
 
 

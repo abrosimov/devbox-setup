@@ -5,6 +5,8 @@ description: >
   layers, dependency injection, SQLAlchemy session management, feature module structure.
   Use when working with Flask-OpenAPI3 projects, adding API endpoints, configuring dependency
   injection, or structuring feature modules in the monolith.
+problem: "Flask-OpenAPI3 features get added without honouring the handler-service-repository layering and DI conventions of the monolith."
+related: [python-engineer, python-tooling]
 ---
 
 # Flask-OpenAPI3 Monolith Patterns

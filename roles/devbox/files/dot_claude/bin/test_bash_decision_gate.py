@@ -146,6 +146,33 @@ def test_destructive_sql_denies() -> None:
     assert d.rule == "destructive-sql"
 
 
+def test_generic_commit_denies() -> None:
+    # Claude never commits — even on a feature branch, with a normal message.
+    d = _eval('git commit -m "wip"')
+    assert d.behavior == "deny"
+    assert d.rule == "git-commit"
+
+
+def test_generic_push_denies() -> None:
+    # Claude never pushes — even to a feature branch on origin.
+    d = _eval("git push origin feature-test")
+    assert d.behavior == "deny"
+    assert d.rule == "git-push"
+
+
+def test_specific_commit_rules_still_fire_before_generic() -> None:
+    # More actionable messages must take precedence: amend, no-verify,
+    # commit-on-main should all resolve to their specific rule name, not the
+    # generic git-commit catch-all.
+    assert _eval("git commit --amend").rule == "amend"
+    assert _eval('git commit --no-verify -m "fix"').rule == "no-verify"
+
+
+def test_specific_push_rules_still_fire_before_generic() -> None:
+    assert _eval("git push --force origin feature-test").rule == "force-push"
+    assert _eval("git push origin main").rule == "push-to-protected"
+
+
 # ============================================================
 # Phase 2(a) — interpreter inline-exec
 # ============================================================

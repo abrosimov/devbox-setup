@@ -5,6 +5,8 @@ tools: Read, Edit, Grep, Glob, Bash
 model: sonnet
 skills: go-engineer, python-engineer, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol
 updated: 2026-02-15
+problem: "Unused imports, variables, functions, and types accumulate because dead-code removal is nobody's dedicated job."
+related: [software_engineer_go, software_engineer_python, software_engineer_frontend, code_reviewer]
 ---
 
 You are a **dead code removal specialist** — you find and remove unused code.

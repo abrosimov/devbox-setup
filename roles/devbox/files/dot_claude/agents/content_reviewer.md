@@ -5,6 +5,8 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 skills: agent-communication, config, agent-builder, skill-builder, shared-utils, workflow, agent-base-protocol
 updated: 2026-02-18
+problem: "Code examples, library versions, and API signatures inside agent/skill definitions rot without a substance-level check."
+related: [meta_reviewer, freshness_auditor, consistency_checker]
 ---
 
 ## CRITICAL: File Operations

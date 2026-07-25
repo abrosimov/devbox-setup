@@ -5,6 +5,8 @@ description: >
   Project-specific conventions and opinionated choices. Library selections,
   tooling mandates, coding rules that differ from community defaults.
   Single source of truth — never duplicate these in other skills.
+problem: "Opinionated project choices (British English, libraries, tooling) get re-derived or contradicted across skills without a single source."
+related: [agent-base-protocol]
 ---
 
 # Project Preferences

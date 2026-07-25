@@ -1,6 +1,8 @@
 ---
 name: frontend-testing
 description: Frontend testing with React Testing Library, Vitest, user-event, and MSW. Use when writing frontend tests, mocking API calls, testing React components or hooks, choosing query strategies (getByRole vs getByTestId), or deciding unit vs e2e.
+problem: "Frontend tests target implementation details, use fragile queries, or mix unit/e2e scope without a query-priority contract."
+related: [frontend-engineer, playwright-e2e]
 ---
 
 # Frontend Testing Reference

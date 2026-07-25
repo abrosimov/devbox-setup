@@ -10,6 +10,8 @@ description: >
   judgement in the prompt. Also use when the user mentions allowlists, permission
   prompts, settings.json permissions, or wants to cut interruption from approval
   dialogs.
+problem: "Repeated read-only Bash and MCP tool calls trigger permission dialogs that fragment focus and slow every session."
+related: []
 ---
 
 # Fewer Permission Prompts (techne fork)

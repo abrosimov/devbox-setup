@@ -137,10 +137,12 @@
   "enabledPlugins": {
     "gopls-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "example-skills@anthropic-agent-skills": false,
+    "document-skills@anthropic-agent-skills": false
   },
   "permissions": {
-    "defaultMode": "acceptEdits",
+    "defaultMode": "auto",
     "deny": [
       "Bash(rm *)",
       "Bash(rm -*)",

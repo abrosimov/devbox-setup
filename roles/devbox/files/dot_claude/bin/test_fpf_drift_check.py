@@ -76,6 +76,30 @@ def test_state_dir_falls_back_to_home(monkeypatch: pytest.MonkeyPatch, tmp_path:
     assert fdc.state_dir() == tmp_path / ".cache" / "devbox-setup"
 
 
+def test_state_file_returns_fpf_path(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    assert fdc.state_file() == tmp_path / "devbox-setup" / "fpf-drift"
+
+
+def test_state_file_for_narrative(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    assert fdc.state_file_for(fdc.NARRATIVE_SPEC) == tmp_path / "devbox-setup" / "narrative-drift"
+
+
+def test_specs_cover_both_docs() -> None:
+    assert {spec.name for spec in fdc.SPECS} == {"FPF", "Narrative"}
+    assert {spec.state_filename for spec in fdc.SPECS} == {"fpf-drift", "narrative-drift"}
+
+
+def test_find_local_spec_honours_relative_path(tmp_path: Path) -> None:
+    nested = tmp_path / "a" / "b"
+    nested.mkdir(parents=True)
+    doc = tmp_path / fdc.NARRATIVE_SPEC.local_relative_path
+    doc.parent.mkdir(parents=True)
+    doc.write_text("# narrative", encoding="utf-8")
+    assert fdc.find_local_spec(nested, fdc.NARRATIVE_SPEC.local_relative_path) == doc
+
+
 def test_is_fresh_returns_false_for_missing(tmp_path: Path) -> None:
     assert not fdc.is_fresh(tmp_path / "absent", 1)
 
@@ -140,9 +164,10 @@ def test_write_state_overwrites_existing(tmp_path: Path) -> None:
 
 def test_run_skips_when_fresh(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    state = fdc.state_file()
-    state.parent.mkdir(parents=True, exist_ok=True)
-    state.write_text("3\n", encoding="utf-8")
+    for spec in fdc.SPECS:
+        state = fdc.state_file_for(spec)
+        state.parent.mkdir(parents=True, exist_ok=True)
+        state.write_text("3\n", encoding="utf-8")
 
     called: list[bool] = []
 
@@ -157,6 +182,7 @@ def test_run_skips_when_fresh(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
 
 def test_run_uses_explicit_local(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    monkeypatch.setenv("PWD", str(tmp_path))
     local = tmp_path / "spec.md"
     local.write_text("# fpf local\n", encoding="utf-8")
 
@@ -175,12 +201,62 @@ def test_run_uses_explicit_local(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     assert state.read_text(encoding="utf-8") == "2\n"
 
 
+def test_run_force_refreshes_both_docs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    repo = tmp_path / "repo"
+    for spec in fdc.SPECS:
+        doc = repo / spec.local_relative_path
+        doc.parent.mkdir(parents=True, exist_ok=True)
+        doc.write_text(f"# {spec.name} local\n", encoding="utf-8")
+    monkeypatch.setenv("PWD", str(repo))
+
+    def fake(cmd: list[str], **_kwargs: object) -> proc.CmdResult:
+        if cmd[0] == "curl":
+            Path(cmd[cmd.index("-o") + 1]).write_text("# upstream\n", encoding="utf-8")
+            return _ok()
+        if cmd[0] == "diff":
+            return _diff_result("1c1\n< up\n---\n> down\n", returncode=1)
+        return _err()
+
+    monkeypatch.setattr(proc, "run_cmd", fake)
+    assert fdc.run(["--force"]) == 0
+    assert fdc.state_file_for(fdc.FPF_SPEC).read_text(encoding="utf-8") == "2\n"
+    assert fdc.state_file_for(fdc.NARRATIVE_SPEC).read_text(encoding="utf-8") == "2\n"
+
+
+def test_run_per_doc_ttl_gating(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    repo = tmp_path / "repo"
+    for spec in fdc.SPECS:
+        doc = repo / spec.local_relative_path
+        doc.parent.mkdir(parents=True, exist_ok=True)
+        doc.write_text(f"# {spec.name} local\n", encoding="utf-8")
+    monkeypatch.setenv("PWD", str(repo))
+
+    fpf_state = fdc.state_file_for(fdc.FPF_SPEC)
+    fpf_state.parent.mkdir(parents=True, exist_ok=True)
+    fpf_state.write_text("7\n", encoding="utf-8")
+
+    def fake(cmd: list[str], **_kwargs: object) -> proc.CmdResult:
+        if cmd[0] == "curl":
+            Path(cmd[cmd.index("-o") + 1]).write_text("# upstream\n", encoding="utf-8")
+            return _ok()
+        if cmd[0] == "diff":
+            return _diff_result("1c1\n< up\n---\n> down\n", returncode=1)
+        return _err()
+
+    monkeypatch.setattr(proc, "run_cmd", fake)
+    assert fdc.run([]) == 0
+    assert fpf_state.read_text(encoding="utf-8") == "7\n"
+    assert fdc.state_file_for(fdc.NARRATIVE_SPEC).read_text(encoding="utf-8") == "2\n"
+
+
 def test_run_returns_one_when_local_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     monkeypatch.setenv("PWD", str(tmp_path))
-    monkeypatch.setattr(fdc, "find_local_spec", lambda _start: None)
+    monkeypatch.setattr(fdc, "find_local_spec", lambda *_a: None)
     assert fdc.run(["--force"]) == 1
 
 
@@ -188,6 +264,7 @@ def test_run_network_failure_preserves_state(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    monkeypatch.setenv("PWD", str(tmp_path))
     local = tmp_path / "spec.md"
     local.write_text("# fpf local\n", encoding="utf-8")
     state = fdc.state_file()

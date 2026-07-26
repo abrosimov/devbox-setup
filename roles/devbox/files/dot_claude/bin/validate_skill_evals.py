@@ -19,7 +19,8 @@ from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # SKILL.md frontmatter validation (adapted from Anthropic's quick_validate.py)
-# Extended to allow our custom keys: alwaysApply, triggers, version, allowed-tools
+# Extended to allow our custom keys: alwaysApply, triggers, version, allowed-tools,
+# problem, related
 # ---------------------------------------------------------------------------
 
 ALLOWED_FRONTMATTER_KEYS = {
@@ -34,6 +35,10 @@ ALLOWED_FRONTMATTER_KEYS = {
     "alwaysApply",
     "triggers",
     "version",
+    # Project convention (used by every skill): a one-line problem statement and
+    # a cross-reference list to sibling skills.
+    "problem",
+    "related",
 }
 
 

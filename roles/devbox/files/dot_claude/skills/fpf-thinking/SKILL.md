@@ -1,8 +1,8 @@
 ---
 name: fpf-thinking
-description: First Principles Framework (FPF) protocol for systems thinking, domain modelling, and architectural trade-offs. Use when tackling complex analysis, first-principles reasoning, project characterisation, or naming discipline. Not to be confused with `mcp-sequential-thinking` (step-by-step reasoning) or `diverge-synthesize-select` (option generation + choice) — FPF frames the problem itself.
+description: First Principles Framework (FPF) protocol for systems thinking, domain modelling, and architectural trade-offs. Use when tackling complex analysis, first-principles reasoning, project characterisation, or naming discipline. Not to be confused with `mcp-sequential-thinking` (step-by-step reasoning), `diverge-synthesize-select` (option generation + choice), or `narrative-thinking` (rendering already-framed material as narrative, explanation, or learning route) — FPF frames the problem itself.
 problem: "Complex systems problems get solved before they are framed, producing well-executed answers to the wrong question."
-related: [diverge-synthesize-select, mcp-sequential-thinking]
+related: [diverge-synthesize-select, mcp-sequential-thinking, narrative-thinking]
 ---
 
 # FPF-Guided Systems Thinking

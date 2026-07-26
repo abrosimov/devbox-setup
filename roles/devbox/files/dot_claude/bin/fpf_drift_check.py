@@ -13,14 +13,49 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _claude_lib import env, paths, proc
 
-UPSTREAM_URL: Final[str] = "https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md"
+
+@dataclass(frozen=True)
+class DocSpec:
+    name: str
+    upstream_url: str
+    local_relative_path: str
+    state_filename: str
+
+
+FPF_SPEC: Final[DocSpec] = DocSpec(
+    name="FPF",
+    upstream_url="https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md",
+    local_relative_path="roles/devbox/files/dot_claude/docs/FPF-Spec.md",
+    state_filename="fpf-drift",
+)
+NARRATIVE_SPEC: Final[DocSpec] = DocSpec(
+    name="Narrative",
+    upstream_url=(
+        "https://raw.githubusercontent.com/ailev/FPF/main/"
+        "Narrativization-and-Narrative-Studies-Principles-Framework.md"
+    ),
+    local_relative_path=(
+        "roles/devbox/files/dot_claude/docs/"
+        "Narrativization-and-Narrative-Studies-Principles-Framework.md"
+    ),
+    state_filename="narrative-drift",
+)
+SPECS: Final[tuple[DocSpec, ...]] = (FPF_SPEC, NARRATIVE_SPEC)
+
 DEFAULT_TTL_HOURS: Final[int] = 168
-LOCAL_RELATIVE_PATH: Final[str] = "roles/devbox/files/dot_claude/docs/FPF-Spec.md"
+
+# Retained so the FPF-only entrypoint and callers (statusline, tide) that key off
+# the FPF spec keep resolving without a spec object.
+UPSTREAM_URL: Final[str] = FPF_SPEC.upstream_url
+LOCAL_RELATIVE_PATH: Final[str] = FPF_SPEC.local_relative_path
 
 USAGE: Final[str] = (
     "Usage: fpf_drift_check.py [--force] [--local PATH]\n"
-    "Writes drifted line count (or '0') to the state file.\n"
-    "Skips network call when state file mtime is fresh, unless --force.\n"
+    "Refreshes drift state for the FPF spec and the companion Narrative doc,\n"
+    "writing each drifted line count (or '0') to its own state file.\n"
+    "Each doc is TTL-gated on its own state file; --force refreshes both.\n"
+    "--local PATH overrides the FPF spec location only; the Narrative doc is\n"
+    "always located by walking up from the current directory.\n"
 )
 
 
@@ -71,8 +106,12 @@ def state_dir() -> Path:
     return base / "devbox-setup"
 
 
+def state_file_for(spec: DocSpec) -> Path:
+    return state_dir() / spec.state_filename
+
+
 def state_file() -> Path:
-    return state_dir() / "fpf-drift"
+    return state_file_for(FPF_SPEC)
 
 
 def is_fresh(path: Path, ttl_hours: int) -> bool:
@@ -82,13 +121,13 @@ def is_fresh(path: Path, ttl_hours: int) -> bool:
     return age < ttl_hours * 3600
 
 
-def find_local_spec(start: Path) -> Path | None:
+def find_local_spec(start: Path, relative_path: str = LOCAL_RELATIVE_PATH) -> Path | None:
     current = start.resolve() if start.exists() else start
     if current.is_file():
         current = current.parent
     depth = 0
     while depth <= 20:
-        candidate = current / LOCAL_RELATIVE_PATH
+        candidate = current / relative_path
         if candidate.is_file():
             return candidate
         if current.parent == current:
@@ -98,14 +137,14 @@ def find_local_spec(start: Path) -> Path | None:
     return None
 
 
-def download_upstream(target: Path, timeout: int = 10) -> bool:
+def download_upstream(target: Path, url: str, timeout: int = 10) -> bool:
     result = proc.run_cmd(
         [
             "curl",
             "-sfSL",
             "--max-time",
             str(timeout),
-            UPSTREAM_URL,
+            url,
             "-o",
             str(target),
         ],
@@ -134,6 +173,35 @@ def write_state(value: int, target: Path) -> None:
     paths.atomic_write(target, f"{value}\n")
 
 
+def process_spec(spec: DocSpec, *, force: bool, local_override: str | None) -> int:
+    state = state_file_for(spec)
+    state.parent.mkdir(parents=True, exist_ok=True)
+
+    if not force and is_fresh(state, DEFAULT_TTL_HOURS):
+        return 0
+
+    if local_override is not None:
+        local_spec: Path | None = Path(local_override)
+    else:
+        cwd = Path(os.environ.get("PWD") or Path.cwd())
+        local_spec = find_local_spec(cwd, spec.local_relative_path)
+
+    if local_spec is None or not local_spec.is_file():
+        return 1
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{spec.state_filename}") as fh:
+        tmp_path = Path(fh.name)
+    try:
+        if not download_upstream(tmp_path, spec.upstream_url):
+            return 0
+        drift = count_drift(tmp_path, local_spec)
+        write_state(drift, state)
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+    return 0
+
+
 def run(argv: list[str]) -> int:
     parsed = parse_args(argv)
     if isinstance(parsed, ParseFailure):
@@ -143,31 +211,18 @@ def run(argv: list[str]) -> int:
         sys.stdout.write(USAGE)
         return 0
 
-    state = state_file()
-    state.parent.mkdir(parents=True, exist_ok=True)
-
-    if not parsed.force and is_fresh(state, DEFAULT_TTL_HOURS):
-        return 0
-
-    if parsed.local:
-        local_spec: Path | None = Path(parsed.local)
-    else:
-        cwd = Path(os.environ.get("PWD") or Path.cwd())
-        local_spec = find_local_spec(cwd)
-
-    if local_spec is None or not local_spec.is_file():
+    results = [
+        process_spec(
+            spec,
+            force=parsed.force,
+            local_override=parsed.local if spec is FPF_SPEC else None,
+        )
+        for spec in SPECS
+    ]
+    # Signal failure only when no vendored doc was found at all (mirrors the
+    # former FPF-only "not in repo" exit code).
+    if results and all(code == 1 for code in results):
         return 1
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".fpf") as fh:
-        tmp_path = Path(fh.name)
-    try:
-        if not download_upstream(tmp_path):
-            return 0
-        drift = count_drift(tmp_path, local_spec)
-        write_state(drift, state)
-    finally:
-        if tmp_path.exists():
-            tmp_path.unlink(missing_ok=True)
     return 0
 
 

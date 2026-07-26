@@ -252,6 +252,61 @@ def test_fpf_segment_red_above_threshold() -> None:
     assert "FPF Δ201" in seg
 
 
+def test_narrative_state_path_uses_xdg(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    assert sl.narrative_state_path() == tmp_path / "devbox-setup" / "narrative-drift"
+
+
+def test_narrative_state_path_falls_back_to_home(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert sl.narrative_state_path() == tmp_path / ".cache" / "devbox-setup" / "narrative-drift"
+
+
+def test_narrative_drift_value_missing(tmp_path: Path) -> None:
+    assert sl.narrative_drift_value(tmp_path / "absent") is None
+
+
+def test_narrative_drift_value_parses_number(tmp_path: Path) -> None:
+    target = tmp_path / "state"
+    target.write_text("42\n", encoding="utf-8")
+    assert sl.narrative_drift_value(target) == 42
+
+
+def test_narrative_drift_value_invalid_returns_none(tmp_path: Path) -> None:
+    target = tmp_path / "state"
+    target.write_text("not-a-number\n", encoding="utf-8")
+    assert sl.narrative_drift_value(target) is None
+
+
+def test_narrative_drift_value_empty_returns_none(tmp_path: Path) -> None:
+    target = tmp_path / "state"
+    target.write_text("", encoding="utf-8")
+    assert sl.narrative_drift_value(target) is None
+
+
+def test_narrative_segment_hidden_when_none() -> None:
+    assert sl.narrative_segment(None) == ""
+
+
+def test_narrative_segment_hidden_when_zero() -> None:
+    assert sl.narrative_segment(0) == ""
+
+
+def test_narrative_segment_yellow_under_threshold() -> None:
+    seg = sl.narrative_segment(150)
+    assert sl.C_YELLOW in seg
+    assert "NAR Δ150" in seg
+
+
+def test_narrative_segment_red_above_threshold() -> None:
+    seg = sl.narrative_segment(201)
+    assert sl.C_RED in seg
+    assert "NAR Δ201" in seg
+
+
 def test_trigger_fpf_refresh_no_script(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     # No script present — Popen must not be called.
@@ -299,7 +354,7 @@ def test_trigger_fpf_refresh_swallows_oserror(
 def test_render_assembles_cwd_ctx_model() -> None:
     parsed = sl.StatuslineInput(cwd="/tmp/x", model="Opus 4.7", remaining=80)
     with mock.patch.object(sl, "git_branch", return_value=None):
-        line = sl.render(parsed, "", None)
+        line = sl.render(parsed, "", None, None)
     assert "/tmp/x" in line
     assert "80%" in line
     assert "Opus 4.7" in line
@@ -310,14 +365,14 @@ def test_render_assembles_cwd_ctx_model() -> None:
 def test_render_includes_git_branch(tmp_path: Path) -> None:
     parsed = sl.StatuslineInput(cwd=str(tmp_path), model="Sonnet", remaining=10)
     with mock.patch.object(sl, "git_branch", return_value="main"):
-        line = sl.render(parsed, "", None)
+        line = sl.render(parsed, "", None, None)
     assert "main" in line
 
 
 def test_render_includes_fpf_when_positive(tmp_path: Path) -> None:
     parsed = sl.StatuslineInput(cwd=str(tmp_path), model="X", remaining=50)
     with mock.patch.object(sl, "git_branch", return_value=None):
-        line = sl.render(parsed, "", 250)
+        line = sl.render(parsed, "", 250, None)
     assert "FPF Δ250" in line
     assert sl.C_RED in line
 
@@ -325,14 +380,37 @@ def test_render_includes_fpf_when_positive(tmp_path: Path) -> None:
 def test_render_omits_fpf_when_zero(tmp_path: Path) -> None:
     parsed = sl.StatuslineInput(cwd=str(tmp_path), model="X", remaining=50)
     with mock.patch.object(sl, "git_branch", return_value=None):
-        line = sl.render(parsed, "", 0)
+        line = sl.render(parsed, "", 0, None)
     assert "FPF" not in line
+
+
+def test_render_includes_narrative_when_positive(tmp_path: Path) -> None:
+    parsed = sl.StatuslineInput(cwd=str(tmp_path), model="X", remaining=50)
+    with mock.patch.object(sl, "git_branch", return_value=None):
+        line = sl.render(parsed, "", None, 250)
+    assert "NAR Δ250" in line
+    assert sl.C_RED in line
+
+
+def test_render_omits_narrative_when_zero(tmp_path: Path) -> None:
+    parsed = sl.StatuslineInput(cwd=str(tmp_path), model="X", remaining=50)
+    with mock.patch.object(sl, "git_branch", return_value=None):
+        line = sl.render(parsed, "", None, 0)
+    assert "NAR" not in line
+
+
+def test_render_includes_both_drift_segments(tmp_path: Path) -> None:
+    parsed = sl.StatuslineInput(cwd=str(tmp_path), model="X", remaining=50)
+    with mock.patch.object(sl, "git_branch", return_value=None):
+        line = sl.render(parsed, "", 30, 40)
+    assert "FPF Δ30" in line
+    assert "NAR Δ40" in line
 
 
 def test_render_shortens_home_path() -> None:
     parsed = sl.StatuslineInput(cwd="/Users/me/Projects/x", model="X", remaining=50)
     with mock.patch.object(sl, "git_branch", return_value=None):
-        line = sl.render(parsed, "/Users/me", None)
+        line = sl.render(parsed, "/Users/me", None, None)
     assert "~/Projects/x" in line
     assert "/Users/me/Projects/x" not in line
 
@@ -349,6 +427,7 @@ def test_run_reads_stdin_and_writes_line(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setattr(sl, "git_branch", lambda _cwd: None)
     monkeypatch.setattr(sl, "trigger_fpf_refresh", lambda _path: None)
     monkeypatch.setattr(sl, "fpf_drift_value", lambda _path: None)
+    monkeypatch.setattr(sl, "narrative_drift_value", lambda _path: None)
 
     assert sl.run() == 0
     output = out.getvalue()
@@ -364,6 +443,7 @@ def test_run_handles_empty_stdin(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sl, "git_branch", lambda _cwd: None)
     monkeypatch.setattr(sl, "trigger_fpf_refresh", lambda _path: None)
     monkeypatch.setattr(sl, "fpf_drift_value", lambda _path: None)
+    monkeypatch.setattr(sl, "narrative_drift_value", lambda _path: None)
 
     assert sl.run() == 0
     output = out.getvalue()
@@ -380,6 +460,7 @@ def test_run_skips_fpf_refresh_outside_devbox(
     monkeypatch.setattr(sys, "stdout", io.StringIO())
     monkeypatch.setattr(sl, "git_branch", lambda _cwd: None)
     monkeypatch.setattr(sl, "fpf_drift_value", lambda _path: None)
+    monkeypatch.setattr(sl, "narrative_drift_value", lambda _path: None)
 
     called: list[bool] = []
 

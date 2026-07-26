@@ -28,6 +28,7 @@ BAR_WIDTH: Final[int] = 10
 CTX_OK_THRESHOLD: Final[int] = 50
 CTX_WARN_THRESHOLD: Final[int] = 20
 FPF_CRITICAL_THRESHOLD: Final[int] = 200
+NARRATIVE_CRITICAL_THRESHOLD: Final[int] = 200
 
 
 @dataclass(frozen=True)
@@ -146,17 +147,25 @@ def git_segment(branch: str | None) -> str:
     return f"{C_MUTED} {SEP} {C_GOLD} {branch}"
 
 
-def fpf_state_path() -> Path:
+def _drift_state_path(filename: str) -> Path:
     xdg = os.environ.get("XDG_CACHE_HOME") or ""
     if xdg:
         base = Path(xdg)
     else:
         home = os.environ.get("HOME") or str(Path.home())
         base = Path(home) / ".cache"
-    return base / "devbox-setup" / "fpf-drift"
+    return base / "devbox-setup" / filename
 
 
-def fpf_drift_value(state_path: Path) -> int | None:
+def fpf_state_path() -> Path:
+    return _drift_state_path("fpf-drift")
+
+
+def narrative_state_path() -> Path:
+    return _drift_state_path("narrative-drift")
+
+
+def _read_drift_value(state_path: Path) -> int | None:
     if not state_path.is_file():
         return None
     try:
@@ -169,6 +178,14 @@ def fpf_drift_value(state_path: Path) -> int | None:
         return int(raw)
     except ValueError:
         return None
+
+
+def fpf_drift_value(state_path: Path) -> int | None:
+    return _read_drift_value(state_path)
+
+
+def narrative_drift_value(state_path: Path) -> int | None:
+    return _read_drift_value(state_path)
 
 
 def _fpf_doc_path(cwd: str) -> Path | None:
@@ -185,9 +202,15 @@ def trigger_fpf_refresh(local_spec: Path) -> None:
     script = Path(home) / ".claude" / "bin" / "fpf_drift_check.py"
     if not script.is_file():
         return
+    # A single call refreshes both docs: FPF via --local, the Narrative doc via a
+    # walk-up, so seed the child cwd/PWD with the repo directory.
+    repo_dir = local_spec.parent
+    child_env = {**os.environ, "PWD": str(repo_dir)}
     try:
         subprocess.Popen(
             [str(script), "--local", str(local_spec)],
+            cwd=str(repo_dir) if repo_dir.is_dir() else None,
+            env=child_env,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
@@ -198,14 +221,27 @@ def trigger_fpf_refresh(local_spec: Path) -> None:
         return
 
 
-def fpf_segment(drift: int | None) -> str:
+def _drift_segment(drift: int | None, label: str, threshold: int) -> str:
     if drift is None or drift <= 0:
         return ""
-    colour = C_RED if drift > FPF_CRITICAL_THRESHOLD else C_YELLOW
-    return f"{C_MUTED} {SEP} {colour}FPF Δ{drift}"
+    colour = C_RED if drift > threshold else C_YELLOW
+    return f"{C_MUTED} {SEP} {colour}{label} Δ{drift}"
 
 
-def render(parsed: StatuslineInput, home: str, fpf_drift: int | None) -> str:
+def fpf_segment(drift: int | None) -> str:
+    return _drift_segment(drift, "FPF", FPF_CRITICAL_THRESHOLD)
+
+
+def narrative_segment(drift: int | None) -> str:
+    return _drift_segment(drift, "NAR", NARRATIVE_CRITICAL_THRESHOLD)
+
+
+def render(
+    parsed: StatuslineInput,
+    home: str,
+    fpf_drift: int | None,
+    narrative_drift: int | None,
+) -> str:
     short_cwd = shorten_path(parsed.cwd, home)
     pieces: list[str] = [
         f"{C_TEAL}{short_cwd}{ansi.RESET}",
@@ -219,6 +255,9 @@ def render(parsed: StatuslineInput, home: str, fpf_drift: int | None) -> str:
     fpf_part = fpf_segment(fpf_drift)
     if fpf_part:
         pieces.append(f"{fpf_part}{ansi.RESET}")
+    narrative_part = narrative_segment(narrative_drift)
+    if narrative_part:
+        pieces.append(f"{narrative_part}{ansi.RESET}")
     pieces.append(f" {SEP} ")
     pieces.append(f"{C_MUTED}{parsed.model}{ansi.RESET}")
     return "".join(pieces)
@@ -234,8 +273,9 @@ def run() -> int:
         trigger_fpf_refresh(local_spec)
 
     fpf_drift = fpf_drift_value(fpf_state_path())
+    narrative_drift = narrative_drift_value(narrative_state_path())
 
-    line = render(parsed, home, fpf_drift)
+    line = render(parsed, home, fpf_drift, narrative_drift)
     sys.stdout.write(line + "\n")
     return 0
 

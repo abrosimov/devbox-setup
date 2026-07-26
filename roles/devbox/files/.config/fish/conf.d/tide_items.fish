@@ -5,7 +5,7 @@
 set -g tide_left_prompt_items vi_mode os proj_pwd git
 
 # Right prompt: useful items only (removed rarely-used language indicators)
-set -g tide_right_prompt_items status cmd_duration context jobs fpf_drift node python go kubectl time
+set -g tide_right_prompt_items status cmd_duration context jobs fpf_drift narrative_drift node python go kubectl time
 
 # Treat orbstack as a "default" docker context (hides indicator when using orbstack)
 set -g tide_docker_default_contexts default colima orbstack
@@ -19,3 +19,7 @@ set -g tide_proj_pwd_icon $tide_pwd_icon
 # fpf_drift badge — drift between vendored docs/FPF-Spec.md and upstream
 set -g tide_fpf_drift_bg_color $tide_status_bg_color
 set -g tide_fpf_drift_color yellow
+
+# narrative_drift badge — drift between the vendored Narrative doc and upstream
+set -g tide_narrative_drift_bg_color $tide_status_bg_color
+set -g tide_narrative_drift_color yellow

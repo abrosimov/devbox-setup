@@ -662,6 +662,7 @@ FPF_UPSTREAM  := https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md
 NARR_LOCAL    := roles/devbox/files/dot_claude/docs/Narrativization-and-Narrative-Studies-Principles-Framework.md
 NARR_UPSTREAM := https://raw.githubusercontent.com/ailev/FPF/main/Narrativization-and-Narrative-Studies-Principles-Framework.md
 FPF_STATE     := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/fpf-drift
+NARR_STATE    := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/narrative-drift
 
 sync-upstream-docs:
 	@tmp=$$(mktemp) && \
@@ -672,7 +673,7 @@ sync-upstream-docs:
 		curl -sfSL --max-time 15 $(NARR_UPSTREAM) -o $$tmp && \
 		mv $$tmp $(NARR_LOCAL) && \
 		echo "Synced $(notdir $(NARR_LOCAL))"
-	@mkdir -p $(dir $(FPF_STATE)) && echo 0 > $(FPF_STATE) && \
+	@mkdir -p $(dir $(FPF_STATE)) && echo 0 > $(FPF_STATE) && echo 0 > $(NARR_STATE) && \
 		echo "Drift state reset"
 
 validate-configs: test-json test-fish test-nvim ## Validate repo configs (JSON, fish, nvim)

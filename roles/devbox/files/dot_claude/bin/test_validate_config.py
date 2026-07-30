@@ -322,3 +322,82 @@ def test_trigger_no_triggers_skipped(tmp_path: Path) -> None:
     (tmp_path / "agents").mkdir()
     _, warnings = vc.check_trigger_consistency(tmp_path)
     assert _codes(warnings).count("TRIGGER_CONSISTENCY") == 0
+
+
+# --- check_fpf_spec_refs: skill ids resolve in the vendored spec --------------
+
+
+_SPEC = """# First Principles Framework (FPF)
+## A.1 - Holon Ontic Foundation
+### A.1:4 - Solution
+### A.1:End
+## C.32.P2S - Problem to Structure
+## E.11.PUA \u2014 Pattern Use in a Working Situation
+## **A.22.CGUS** - Constraint-Governed Unfolding Structure
+# **Part H - Reserved**
+"""
+
+
+def _build_fpf_root(tmp_path: Path, skill_body: str, spec: str | None = _SPEC) -> Path:
+    skill_dir = tmp_path / "skills" / "fpf-thinking"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        f"---\nname: fpf-thinking\ndescription: f\n---\n{skill_body}\n"
+    )
+    if spec is not None:
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "FPF-Spec.md").write_text(spec)
+    return tmp_path
+
+
+def test_fpf_refs_resolved_ids_pass(tmp_path: Path) -> None:
+    root = _build_fpf_root(tmp_path, "Route via `C.32.P2S`, then A.1 and `E.11.PUA`.")
+    errors, warnings = vc.check_fpf_spec_refs(root)
+    assert errors == []
+    assert warnings == []
+
+
+def test_fpf_refs_dangling_id_errors(tmp_path: Path) -> None:
+    root = _build_fpf_root(tmp_path, "Inspect `C.99.GONE` for this.")
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert _codes(errors) == ["FPF_REFS"]
+    assert "C.99.GONE" in errors[0]
+
+
+def test_fpf_refs_bold_header_defines_id(tmp_path: Path) -> None:
+    root = _build_fpf_root(tmp_path, "See `A.22.CGUS`.")
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert errors == []
+
+
+def test_fpf_refs_ignores_grep_patterns_and_fences(tmp_path: Path) -> None:
+    body = (
+        "Grep `^#+ C\\.11:` to list slots, or `^#+ [A-G]\\.` for any part.\n"
+        "```\n"
+        'Grep(pattern="^#+ Z.9 ")\n'
+        "C.98.NOPE\n"
+        "```\n"
+    )
+    root = _build_fpf_root(tmp_path, body)
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert errors == []
+
+
+def test_fpf_refs_missing_spec_warns(tmp_path: Path) -> None:
+    root = _build_fpf_root(tmp_path, "See A.1.", spec=None)
+    errors, warnings = vc.check_fpf_spec_refs(root)
+    assert errors == []
+    assert _codes(warnings) == ["FPF_REFS"]
+
+
+def test_fpf_refs_no_skill_is_silent(tmp_path: Path) -> None:
+    errors, warnings = vc.check_fpf_spec_refs(tmp_path)
+    assert errors == []
+    assert warnings == []
+
+
+def test_fpf_refs_unparsable_spec_errors(tmp_path: Path) -> None:
+    root = _build_fpf_root(tmp_path, "See A.1.", spec="# FPF\n\nno pattern headers here\n")
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert _codes(errors) == ["FPF_REFS"]
+    assert "format changed" in errors[0]

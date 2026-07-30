@@ -13,7 +13,7 @@
 dist:
   name: otelcol-edge
   description: Durable OpenTelemetry edge collector (devbox) — redaction + file_storage WAL to one gateway.
-  output_path: ./_build
+  output_path: ./otelcol-edge/_build
   version: 0.156.0
 
 receivers:

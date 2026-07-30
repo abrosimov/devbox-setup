@@ -14,6 +14,7 @@ Checks:
   budget               Skill description budget utilisation (16K char limit)
   related-links        related: frontmatter entries resolve to existing skills/agents
   trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
+  fpf-refs             FPF pattern ids cited in skills resolve in docs/FPF-Spec.md
 
 Usage:
   validate-config.py                           # all checks, ~/.claude root
@@ -729,6 +730,89 @@ def check_grounding(root: Path) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+_FPF_SPEC_REL = "docs/FPF-Spec.md"
+_FPF_REF_SOURCES = ("skills/fpf-thinking/SKILL.md",)
+
+# A cited id: Part letter, dot, digit, then dot-separated alphanumeric segments.
+# Matches A.1, A.19.CN, C.32.P2S, A.6.P.WMR, E.17.ID.CR, B.5.2.0.
+_FPF_ID_RE = re.compile(r"\b([A-G]\.[0-9][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)")
+# A spec header: optional bold, the id, then a title separator or a slot colon.
+# The separator class is hyphen, en dash (u2013), em dash (u2014); the spec uses all three.
+_FPF_HEADER_RE = re.compile(
+    r"^#{1,6}\s+\*{0,2}([A-G]\.[0-9][A-Za-z0-9.]*?)\*{0,2}\s*(?=[-\u2013\u2014:])"
+)
+_FENCE_RE = re.compile(r"^\s*```")
+# Inline code carrying a backslash is a Grep pattern, not a citation.
+_REGEX_SPAN_RE = re.compile(r"`[^`]*\\[^`]*`")
+
+
+def _strip_non_citations(content: str) -> str:
+    """Drop fenced blocks and regex-bearing code spans before harvesting ids."""
+    kept: list[str] = []
+    in_fence = False
+    for line in content.split("\n"):
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            kept.append(_REGEX_SPAN_RE.sub(" ", line))
+    return "\n".join(kept)
+
+
+def collect_fpf_spec_ids(spec: str) -> set[str]:
+    """Every pattern id the spec defines, taken from its section headers."""
+    ids: set[str] = set()
+    for line in spec.split("\n"):
+        match = _FPF_HEADER_RE.match(line)
+        if match:
+            ids.add(match.group(1).rstrip("."))
+    return ids
+
+
+def collect_fpf_citations(content: str) -> dict[str, int]:
+    """Cited id -> first 1-indexed line, ignoring code fences and Grep patterns."""
+    cited: dict[str, int] = {}
+    for lineno, line in enumerate(_strip_non_citations(content).split("\n"), 1):
+        for match in _FPF_ID_RE.finditer(line):
+            cited.setdefault(match.group(1).rstrip("."), lineno)
+    return cited
+
+
+def check_fpf_spec_refs(root: Path) -> tuple[list[str], list[str]]:
+    """Every FPF pattern id cited in a skill must resolve in the vendored spec.
+
+    Guards the drift class that bin/fpf_drift_check.py cannot see: that script
+    compares the vendored spec against upstream, nothing compares the skill
+    against the spec. Line numbers are deliberately not checked — ids are the
+    stable handle, offsets are not.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    spec_file = root / _FPF_SPEC_REL
+    sources = [root / rel for rel in _FPF_REF_SOURCES]
+    present = [path for path in sources if path.is_file()]
+    if not present:
+        return errors, warnings
+
+    if not spec_file.is_file():
+        warnings.append(f"[FPF_REFS] {_FPF_SPEC_REL} not found — id resolution skipped")
+        return errors, warnings
+
+    spec_ids = collect_fpf_spec_ids(spec_file.read_text())
+    if not spec_ids:
+        errors.append(f"[FPF_REFS] {_FPF_SPEC_REL}: no pattern headers parsed — format changed?")
+        return errors, warnings
+
+    for path in present:
+        rel = path.relative_to(root)
+        for cited, lineno in sorted(collect_fpf_citations(path.read_text()).items()):
+            if cited not in spec_ids:
+                errors.append(f"[FPF_REFS] {rel}:{lineno}: '{cited}' not found in {_FPF_SPEC_REL}")
+
+    return errors, warnings
+
+
 def check_meta_pipeline(root: Path) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -771,6 +855,7 @@ ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "budget": check_skill_budget,
     "related-links": check_related_links,
     "trigger-consistency": check_trigger_consistency,
+    "fpf-refs": check_fpf_spec_refs,
 }
 
 

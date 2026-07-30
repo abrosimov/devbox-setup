@@ -15,6 +15,7 @@ tests/generated
 local/
 
 tmp/
+otelcol-edge/_build/
 roles/devbox/files/.config/nvim/lazy-lock.json
 __pycache__/
 *.pyc

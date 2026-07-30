@@ -32,8 +32,11 @@ A profile is mandatory: bare `make run` / `make dev` / `make check` fail with `P
 | `make check-dev` | Dry-run in dev_mode (override vars, no sudo/keychain) |
 | `make upgrade-personal` | Upgrade all packages (personal profile) |
 | `make upgrade-work` | Upgrade all packages (work profile) |
-| `make lint` | Syntax-check + ansible-lint |
+| `make lint` | Syntax-check + ansible-lint + semantics + typecheck |
+| `make lint-ansible-semantics` | Static catch for set_fact intra-task self-references |
 | `make validate-claude` | Validate agent/skill cross-references |
+| `make otelcol-edge-config` | Set otelcol-edge remote endpoint + ingestion token (`ONLY=endpoint\|token`) |
+| `make otelcol-edge-test` | Liveness smoke for the otelcol-edge collector (also runs after `make personal`/`work`) |
 
 Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_VARS='-e foo=bar'` (e.g. `--tags`: `make personal EXTRA_VARS='--tags packages'`).
 
@@ -137,9 +140,22 @@ pub status   # warp-cli status, bridge up/down, current HTTPS_PROXY value.
 
 WARP proxy mode uses MASQUE, which enforces a roughly 10-second per-request limit. Long-running Claude responses that drop mid-stream are the chain timing out, not the `pub` toggle itself. Disable `pub` for long-form work when you're on a trusted network.
 
+## OTLP Telemetry (`otelcol-edge`)
+
+A durable local OpenTelemetry collector — Ansible-deployed, `launchd`-supervised, no brew — sinks agent telemetry at `127.0.0.1:4317` (gRPC) / `:4318` (HTTP), buffers it on disk across outages, and forwards to one remote gateway with `deployment.environment.name={profile}` stamped on every record.
+
+Wired: Claude Code CLI (`OTEL_*` env in `~/.claude/settings.json`) and Codex CLI/app (`[otel]` table injected into `~/.codex/config.toml`). Antigravity (`agy`) has no native OTLP exporter — nothing wired; its telemetry path is a future `praetor`/agents-hooks-guard hook shim.
+
+```bash
+make otelcol-edge-config  # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token
+make otelcol-edge-test    # liveness smoke: binary, launchd service, :13133, :8888, OTLP round-trip
+```
+
+Also runs non-fatally at the end of `make personal`/`make work`. See [`otelcol-edge/README.md`](otelcol-edge/README.md) for the collector internals (component set, release flow, machine-local setup).
+
 ## Telemetry Tunnel (`otelbox`)
 
-The observability host keeps both browser UIs on loopback — only authenticated OTLP ingestion is published through the public edge. `otelbox` opens an SSH control master with the two forwards and launches the UIs:
+For viewing the SigNoz/ClickStack dashboards only — not part of the OTLP ingestion path above. The observability host keeps both browser UIs on loopback — only authenticated OTLP ingestion is published through the public edge. `otelbox` opens an SSH control master with the two forwards and launches the UIs:
 
 ```fish
 otelbox              # tunnel up + open SigNoz and ClickStack in the browser

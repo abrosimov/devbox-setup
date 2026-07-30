@@ -1,0 +1,70 @@
+---
+# ~/.gemini/ hosts two distinct CLIs:
+#   * gemini-cli  — supports OTLP export, pointed here at the local otelcol-edge
+#     (127.0.0.1:4317), the same collector Claude Code and Codex already feed.
+#   * antigravity-cli (agy) — has NO OTLP exporter; its telemetry is first-party
+#     Google Clearcut (telemetryclient.AntigravityClient, jetski/telemetry/*)
+#     and cannot be redirected. Only portable preferences are managed for it.
+# Both files are rewritten by their app (auth type, trustedWorkspaces), so we
+# merge our keys into the existing JSON rather than deploying whole files.
+
+- name: "Gemini/Antigravity — stat the settings files we merge into"
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['env']['HOME'] }}/{{ item.path }}"
+  loop:
+    - { key: gemini, path: ".gemini/settings.json" }
+    - { key: antigravity, path: ".gemini/antigravity-cli/settings.json" }
+  loop_control:
+    label: "{{ item.key }}"
+  register: devbox_gemini_stats
+  tags: [otel, gemini, agents]
+
+- name: "Gemini/Antigravity — read current settings"
+  ansible.builtin.slurp:
+    src: "{{ item.stat.path }}"
+  loop: "{{ devbox_gemini_stats.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  when: item.stat.exists
+  register: devbox_gemini_current
+  tags: [otel, gemini, agents]
+
+# combine(recursive=True) keeps app-owned keys we do not manage — security.auth
+# for gemini-cli, trustedWorkspaces for antigravity-cli (it holds private paths
+# and must never be sourced from this public repo).
+- name: "Gemini CLI — merge OTLP telemetry into ~/.gemini/settings.json"
+  ansible.builtin.copy:
+    content: >-
+      {{ (devbox_gemini_current.results[0].content | b64decode | from_json)
+         | combine({'telemetry': devbox_gemini_telemetry}, recursive=True)
+         | to_nice_json }}
+    dest: "{{ ansible_facts['env']['HOME'] }}/.gemini/settings.json"
+    mode: "0600"
+  when:
+    - devbox_gemini_stats.results[0].stat.exists
+    - not (devbox_gemini_current.results[0].skipped | default(false))
+  tags: [otel, gemini, agents]
+
+- name: "Antigravity CLI — merge devbox-owned preferences into settings.json"
+  ansible.builtin.copy:
+    content: >-
+      {{ (devbox_gemini_current.results[1].content | b64decode | from_json)
+         | combine(devbox_antigravity_settings, recursive=True)
+         | to_nice_json }}
+    dest: "{{ ansible_facts['env']['HOME'] }}/.gemini/antigravity-cli/settings.json"
+    mode: "0600"
+  when:
+    - devbox_gemini_stats.results[1].stat.exists
+    - not (devbox_gemini_current.results[1].skipped | default(false))
+  tags: [gemini, agents]
+
+- name: "Gemini/Antigravity — report skipped files"
+  ansible.builtin.debug:
+    msg: >-
+      {{ item.item.path }} not found — skipping. Launch the CLI once so it
+      writes its initial settings, then re-run.
+  loop: "{{ devbox_gemini_stats.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  when: not item.stat.exists
+  tags: [otel, gemini, agents]

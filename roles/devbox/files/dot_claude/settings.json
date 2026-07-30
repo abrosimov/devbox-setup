@@ -11,7 +11,19 @@
     "PYTEST_CACHE_DIR": "/tmp/claude/pytest-cache",
     "GOCACHE": "/tmp/claude/go-build-cache",
     "GOMODCACHE": "/tmp/claude/go-mod-cache",
-    "NPM_CONFIG_CACHE": "/tmp/claude/npm-cache"
+    "NPM_CONFIG_CACHE": "/tmp/claude/npm-cache",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "OTEL_TRACES_EXPORTER": "otlp",
+    "CLAUDE_CODE_ENHANCED_TELEMETRY_BETA": "1",
+    "OTEL_EXPORTER_OTLP_PROTOCOL": "grpc",
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317",
+    "OTEL_LOG_USER_PROMPTS": "1",
+    "OTEL_LOG_ASSISTANT_RESPONSES": "1",
+    "OTEL_LOG_TOOL_DETAILS": "1",
+    "OTEL_LOG_TOOL_CONTENT": "1",
+    "OTEL_LOG_RAW_API_BODIES": "1"
   },
   "statusLine": {
     "type": "command",

@@ -78,6 +78,10 @@ cache).
 
 Run `k` with no arguments for full usage. Wrapper around kubectl with context/namespace helpers.
 
+### Telemetry Tunnel (`otelbox`)
+
+`otelbox` opens an SSH control master to the observability host and launches the loopback-only UIs: bare `otelbox` brings the tunnel up and opens both, `otelbox down` closes it, `otelbox status` reports the forwarded ports. The SSH destination lives in `~/.config/otelbox/tunnel.env` (machine-local). Run `otelbox help` for the full subcommand list.
+
 ## Plugins
 
 Managed via [Fisher](https://github.com/jorgebucaran/fisher):

@@ -105,7 +105,7 @@ endif
 .PHONY: run dev help init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills rules-budget \
        work personal dev-work dev-personal check-work check-personal \
        git-identity git-identity-ensure \
-       secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed otelcol-edge-config \
+       secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed otelcol-edge-config otelcol-edge-test \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        audit audit-brew audit-brewfile audit-taps untap-stale \
@@ -147,6 +147,7 @@ help:
 	@echo "  make sudo-reseed      - reseed only the devbox-sudo keychain slot (after login password rotation)"
 	@echo "  make ssh-passphrase-reseed - reseed only the devbox-ssh-passphrase keychain slot"
 	@echo "  make otelcol-edge-config - set otelcol-edge remote endpoint (overlay) + ingestion token (keychain)"
+	@echo "  make otelcol-edge-test - liveness smoke: binary, service, :13133, :8888, OTLP round-trip"
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
@@ -224,6 +225,10 @@ ssh-passphrase-reseed:
 otelcol-edge-config:
 	@./scripts/otelcol-edge-config.sh $(if $(ONLY),--only $(ONLY))
 
+# Liveness smoke for the otelcol-edge collector — run after `make personal`.
+otelcol-edge-test:
+	@./scripts/otelcol-edge-test.sh
+
 dev:
 	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
 
@@ -242,10 +247,12 @@ git-identity-ensure:
 work: PROFILE = work
 work: git-identity-ensure
 	$(MAKE) run PROFILE=work V=$(V)
+	@./scripts/otelcol-edge-test.sh || true
 
 personal: PROFILE = personal
 personal: git-identity-ensure
 	$(MAKE) run PROFILE=personal V=$(V)
+	@./scripts/otelcol-edge-test.sh || true
 
 dev-work:
 	$(MAKE) run PROFILE=work EXTRA_VARS='-e dev_mode=true' V=$(V)

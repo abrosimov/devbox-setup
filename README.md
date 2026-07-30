@@ -137,6 +137,49 @@ pub status   # warp-cli status, bridge up/down, current HTTPS_PROXY value.
 
 WARP proxy mode uses MASQUE, which enforces a roughly 10-second per-request limit. Long-running Claude responses that drop mid-stream are the chain timing out, not the `pub` toggle itself. Disable `pub` for long-form work when you're on a trusted network.
 
+## Telemetry Tunnel (`otelbox`)
+
+The observability host keeps both browser UIs on loopback — only authenticated OTLP ingestion is published through the public edge. `otelbox` opens an SSH control master with the two forwards and launches the UIs:
+
+```fish
+otelbox              # tunnel up + open SigNoz and ClickStack in the browser
+otelbox up --no-open # tunnel up, no browser
+otelbox status       # the same table on its own
+otelbox down         # ssh -O exit through the control socket
+otelbox signoz       # ensure the tunnel, open one UI only
+otelbox clickstack
+```
+
+Every invocation ends with the same summary, so the ports never have to be remembered:
+
+```
+  tunnel      user@telemetry.example.com up             ~/.ssh/otelbox.sock
+  SigNoz      http://127.0.0.1:18080     listening      traces / metrics / logs
+  ClickStack  http://127.0.0.1:28080     listening      HyperDX: logs / sessions
+```
+
+The state column is a live `nc -z` probe of each forwarded port, not an assumption from the tunnel being up.
+
+The tunnel is a control master at `~/.ssh/otelbox.sock`, so `down` is an explicit `ssh -O exit` rather than a `pkill` pattern, and a second `otelbox up` reuses the existing session instead of stacking processes. `ExitOnForwardFailure=yes` makes a busy local port a hard failure instead of a tunnel with no working forwards.
+
+### Configuration
+
+The SSH destination is machine-local — this repository is public:
+
+```
+roles/devbox/files/.config/otelbox/tunnel.env.example  # committed template
+roles/devbox/local/.config/otelbox/tunnel.env          # real values, gitignored
+→ deployed to ~/.config/otelbox/tunnel.env by `make local-push`
+```
+
+```
+OTELBOX_TUNNEL_HOST=user@telemetry.example.com
+#OTELBOX_SIGNOZ_PORT=18080
+#OTELBOX_CLICKSTACK_PORT=28080
+```
+
+Ports default to `18080` (SigNoz) and `28080` (ClickStack) and only need overriding if the server-side loopback publications change.
+
 ## Testing
 
 ```bash

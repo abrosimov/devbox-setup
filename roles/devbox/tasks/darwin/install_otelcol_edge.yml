@@ -17,9 +17,21 @@
     devbox_otelcol_edge_bin: "{{ ansible_facts['env']['HOME'] }}/.local/bin/otelcol-edge"
     devbox_otelcol_edge_conf: "{{ ansible_facts['env']['HOME'] }}/.config/otelcol-edge"
     devbox_otelcol_edge_endpoint_env: "{{ ansible_facts['env']['HOME'] }}/.config/otelcol-edge/endpoint.env"
+    # Single source of truth for the version: otelcol-edge/builder.yaml dist.version
+    # (role_path is .../roles/devbox, so ../../ resolves to the repo root).
+    devbox_otelcol_edge_version: >-
+      {{ (lookup('ansible.builtin.file', role_path ~ '/../../otelcol-edge/builder.yaml')
+          | from_yaml).dist.version }}
+  when: devbox_packages.otelcol_edge.enabled | default(true)
+  tags: [otel, otelcol-edge]
+
+# Separate set_fact: keys in one set_fact are templated against the pre-task
+# scope, so asset_base cannot see the version defined above in the same task.
+- name: "OpenTelemetry edge — resolve download URL"
+  ansible.builtin.set_fact:
     devbox_otelcol_edge_asset_base: >-
       {{ devbox_packages.otelcol_edge.release_base }}/otelcol-edge-v{{
-      devbox_packages.otelcol_edge.version }}/otelcol-edge_darwin_arm64
+      devbox_otelcol_edge_version }}/otelcol-edge_darwin_arm64
   when: devbox_packages.otelcol_edge.enabled | default(true)
   tags: [otel, otelcol-edge]
 
@@ -113,7 +125,7 @@
   ansible.builtin.debug:
     msg: >-
       otelcol-edge service not started: {{ 'binary missing (publish the '
-      ~ 'otelcol-edge-v' ~ devbox_packages.otelcol_edge.version ~ ' release first)'
+      ~ 'otelcol-edge-v' ~ devbox_otelcol_edge_version ~ ' release first)'
       if not (devbox_otelcol_edge_bin_present | bool)
       else 'endpoint.env missing (create it via the local overlay — see '
       ~ 'endpoint.env.example)' }}.

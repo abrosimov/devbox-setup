@@ -1,19 +1,20 @@
 name: otelcol-edge
 
-# Build the slim OCB edge collector (darwin/arm64) and publish it as a GitHub
-# release, consumed by roles/devbox/tasks/darwin/install_otelcol_edge.yml via
-# get_url. Native build on an arm64 macOS runner — no cross-compile, no signing
-# dance. See otelcol-edge/README.md for the release flow.
+# Auto-release the slim OCB edge collector (darwin/arm64). The version is the
+# SINGLE source of truth in otelcol-edge/builder.yaml (dist.version): bump it,
+# merge to master, and this workflow builds + publishes the matching
+# `otelcol-edge-v<version>` release — no hand-cut tags. Idempotent: if the
+# release already exists, the build is skipped. workflow_dispatch forces a run
+# (still guarded by release existence — delete the release to rebuild).
+#
+# Ansible (roles/devbox/tasks/darwin/install_otelcol_edge.yml) reads the same
+# dist.version and downloads the published asset via get_url.
 
 on:
   push:
-    tags:
-      - "otelcol-edge-v*"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "otelcol-edge version (must match otelcol-edge/builder.yaml dist.version)"
-        required: true
+    branches: [master]
+    paths: ["otelcol-edge/builder.yaml"]
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -23,11 +24,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  check:
+    name: Resolve version + release state
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      release_exists: ${{ steps.resolve.outputs.release_exists }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve version from builder.yaml and check release
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(grep -E '^  version:' otelcol-edge/builder.yaml | head -1 | awk '{print $2}')"
+          if [ -z "$version" ]; then
+            echo "could not read dist.version from otelcol-edge/builder.yaml" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "otelcol-edge-v$version" >/dev/null 2>&1; then
+            echo "release_exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release otelcol-edge-v$version already exists — build will be skipped."
+          else
+            echo "release_exists=false" >> "$GITHUB_OUTPUT"
+            echo "Release otelcol-edge-v$version not found — will build and publish."
+          fi
+
   build:
     name: Build (darwin/arm64) + release
+    needs: check
+    if: needs.check.outputs.release_exists == 'false'
     runs-on: macos-14
     env:
-      OCB_VERSION: "0.156.0"
+      VERSION: ${{ needs.check.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -37,7 +68,7 @@ jobs:
         run: go version
 
       - name: Install OpenTelemetry Collector Builder (OCB)
-        run: go install go.opentelemetry.io/collector/cmd/builder@v${OCB_VERSION}
+        run: go install go.opentelemetry.io/collector/cmd/builder@v${VERSION}
 
       - name: Build otelcol-edge
         env:
@@ -60,11 +91,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            tag="otelcol-edge-v${{ inputs.version }}"
-          else
-            tag="${GITHUB_REF_NAME}"
-          fi
+          tag="otelcol-edge-v${VERSION}"
           gh release create "$tag" \
             --title "$tag" \
             --notes "OCB-built durable edge collector (darwin/arm64). See otelcol-edge/README.md." \

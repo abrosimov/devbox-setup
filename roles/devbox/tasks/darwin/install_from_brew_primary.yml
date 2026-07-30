@@ -1,8 +1,10 @@
 ---
+# update_homebrew first: refresh the API cache so a stale cask def can't fail parsing against newer brew DSL.
 - name: "Install Homebrew apps"
   community.general.homebrew:
     name: "{{ devbox_brew_primary }}"
     state: "{{ 'latest' if devbox_upgrade_mode | default(false) | bool else 'present' }}"
+    update_homebrew: true
 
 - name: "Install fontconfig (ignore post-install warnings)"
   community.general.homebrew:

@@ -47,6 +47,18 @@ jobs:
           echo "--- Brewfile.audit ---"
           cat Brewfile.audit
 
+      # Parse-check every declared formula/cask against fresh definitions (brew
+      # was updated above). Catches removed/renamed packages and upstream-broken
+      # definitions before they fail a real `make personal`.
+      - name: Resolve declared package definitions
+        run: |
+          rc=0
+          while read -r kind name; do
+            brew info "--$kind" "$name" >/dev/null 2>/tmp/brew-info-err \
+              || { echo "::error::$kind $name: $(cat /tmp/brew-info-err)"; rc=1; }
+          done < <(sed -nE -e 's/^brew "([^"]+)".*/formula \1/p' -e 's/^cask "([^"]+)".*/cask \1/p' Brewfile.audit)
+          exit "$rc"
+
       - name: Run brew vulns (full report)
         run: |
           # Full report across all severities for the job log. `|| true` so the

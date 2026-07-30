@@ -105,7 +105,7 @@ endif
 .PHONY: run dev help init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills rules-budget \
        work personal dev-work dev-personal check-work check-personal \
        git-identity git-identity-ensure \
-       secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed \
+       secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed otelcol-edge-config \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        audit audit-brew audit-brewfile audit-taps untap-stale \
@@ -114,7 +114,7 @@ endif
        sync-upstream-docs \
        test test-integration test-claude-hooks test-git-hooks test-scripts test-nvim test-fish test-json test-bash \
        regenerate-fixtures \
-       lint lint-ansible lint-yaml lint-py typecheck qa dev-bootstrap clean
+       lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
 
 help:
 	@echo ""
@@ -132,6 +132,7 @@ help:
 	@echo "  make lint-yaml        - yamllint only"
 	@echo "  make lint-py          - ruff check + format check"
 	@echo "  make lint-ansible     - ansible-playbook --syntax-check + ansible-lint"
+	@echo "  make lint-ansible-semantics - static catch for set_fact intra-task self-references"
 	@echo "  make typecheck        - pyrefly type check"
 	@echo "  make test             - pytest unit tests (excludes integration)"
 	@echo "  make test-integration - pytest subprocess integration tests (slower)"
@@ -145,6 +146,7 @@ help:
 	@echo "  make secrets-init     - seed macOS keychain slots (devbox-sudo, devbox-ssh-passphrase)"
 	@echo "  make sudo-reseed      - reseed only the devbox-sudo keychain slot (after login password rotation)"
 	@echo "  make ssh-passphrase-reseed - reseed only the devbox-ssh-passphrase keychain slot"
+	@echo "  make otelcol-edge-config - set otelcol-edge remote endpoint (overlay) + ingestion token (keychain)"
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
@@ -216,6 +218,12 @@ ssh-passphrase-reseed:
 	@security delete-generic-password -a "$$USER" -s devbox-ssh-passphrase >/dev/null 2>&1 || true
 	@./scripts/ensure_secrets.sh --only ssh
 
+# Interactive machine-local setup for the otelcol-edge collector: remote gateway
+# endpoint (gitignored local overlay) + Bearer ingestion token (login keychain).
+# Pass ONLY='endpoint' or ONLY='token' to set just one.
+otelcol-edge-config:
+	@./scripts/otelcol-edge-config.sh $(if $(ONLY),--only $(ONLY))
+
 dev:
 	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
 
@@ -247,7 +255,7 @@ dev-personal:
 
 # `lint` aggregates all dev-mode linters. Runs them in sequence so the first
 # failure stops the rest (sequence chosen by cost: fast/cheap → slow).
-lint: lint-yaml lint-py lint-ansible typecheck
+lint: lint-yaml lint-py lint-ansible lint-ansible-semantics typecheck
 
 dev-bootstrap: $(DEV_SENTINEL)
 	@echo "Dev venv ready: $(DEV_VENV)"
@@ -258,6 +266,12 @@ dev-bootstrap: $(DEV_SENTINEL)
 lint-ansible: $(DEV_SENTINEL) $(COLLECTIONS_SENTINEL)
 	@$(DEV_BIN)/ansible-playbook --syntax-check $(PLAYBOOK)
 	@$(DEV_BIN)/ansible-lint $(PLAYBOOK)
+
+# Static catch for runtime-only Ansible footguns (currently: a set_fact key that
+# references a sibling key in the same task — undefined at run time, invisible to
+# yamllint/ansible-lint/--syntax-check).
+lint-ansible-semantics: $(DEV_SENTINEL)
+	@$(DEV_BIN)/python scripts/lint_ansible_semantics.py
 
 lint-yaml: $(DEV_SENTINEL)
 	@$(DEV_BIN)/yamllint .

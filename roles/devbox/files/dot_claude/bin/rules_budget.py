@@ -144,9 +144,7 @@ KEYWORDS_SOFT = frozenset(
 _ALL_KEYWORDS = KEYWORDS_HARD | KEYWORDS_SOFT
 
 # Longest first so multi-word phrases (e.g. `MUST NOT`) match before their prefix.
-_KEYWORD_PATTERN = "|".join(
-    re.escape(kw) for kw in sorted(_ALL_KEYWORDS, key=len, reverse=True)
-)
+_KEYWORD_PATTERN = "|".join(re.escape(kw) for kw in sorted(_ALL_KEYWORDS, key=len, reverse=True))
 
 # Opening tokens allowed before the keyword: whitespace, list bullets,
 # numbered markers, and bold wrappers.
@@ -264,6 +262,43 @@ def _is_rule_section(title: str) -> bool:
     return bool(SECTION_HEADERS_RE.search(stripped))
 
 
+def _consume_heading(raw: str, section_stack: list[bool]) -> bool:
+    """Update the rule-shaped section stack for a heading line; True if consumed."""
+    heading = _HEADING_RE.match(raw)
+    if not heading:
+        return False
+    level = len(heading.group(1))
+    title = heading.group(2)
+    while len(section_stack) >= level:
+        section_stack.pop()
+    while len(section_stack) < level - 1:
+        # Fill missing ancestor levels as "not rule-shaped".
+        section_stack.append(False)
+    section_stack.append(_is_rule_section(title))
+    return True
+
+
+def _classify_content_line(line_no: int, raw: str, section_stack: list[bool]) -> RuleHit | None:
+    """Classify a non-structural content line into a RuleHit, or None."""
+    # Branch A: imperative keyword at the start of the line.
+    if _IMPERATIVE_RE.match(raw):
+        return RuleHit(
+            line_no=line_no,
+            kind="imperative",
+            strength=_line_strength_from_content(raw),
+            text=raw.strip(),
+        )
+    # Branch C: any bullet under a rule-shaped section.
+    if _LIST_ITEM_RE.match(raw) and any(section_stack):
+        return RuleHit(
+            line_no=line_no,
+            kind="section-bullet",
+            strength=_line_strength_from_content(raw),
+            text=raw.strip(),
+        )
+    return None
+
+
 def scan_lines(lines: list[str]) -> list[RuleHit]:
     """Scan a markdown file (post-frontmatter) and return deduplicated hits."""
     hits: dict[int, RuleHit] = {}
@@ -278,43 +313,16 @@ def scan_lines(lines: list[str]) -> list[RuleHit]:
             continue
         if in_code_block:
             continue
-
-        heading = _HEADING_RE.match(raw)
-        if heading:
-            level = len(heading.group(1))
-            title = heading.group(2)
-            while len(section_stack) >= level:
-                section_stack.pop()
-            while len(section_stack) < level - 1:
-                # Fill missing ancestor levels as "not rule-shaped".
-                section_stack.append(False)
-            section_stack.append(_is_rule_section(title))
+        if _consume_heading(raw, section_stack):
             continue
-
         if _BLOCKQUOTE_RE.match(raw) or _TABLE_ROW_RE.match(raw):
             continue
         if not raw.strip():
             continue
 
-        # Branch A: imperative keyword at the start of the line.
-        imperative = _IMPERATIVE_RE.match(raw)
-        if imperative:
-            hits[line_no] = RuleHit(
-                line_no=line_no,
-                kind="imperative",
-                strength=_line_strength_from_content(raw),
-                text=raw.strip(),
-            )
-            continue
-
-        # Branch C: any bullet under a rule-shaped section.
-        if _LIST_ITEM_RE.match(raw) and any(section_stack):
-            hits[line_no] = RuleHit(
-                line_no=line_no,
-                kind="section-bullet",
-                strength=_line_strength_from_content(raw),
-                text=raw.strip(),
-            )
+        hit = _classify_content_line(line_no, raw, section_stack)
+        if hit is not None:
+            hits[line_no] = hit
 
     return sorted(hits.values(), key=lambda h: h.line_no)
 
@@ -327,9 +335,7 @@ def scan_lines(lines: list[str]) -> list[RuleHit]:
 def _make_artefact(path: Path, kind: str, root: Path) -> Artefact:
     text = path.read_text(encoding="utf-8")
     lines = text.split("\n")
-    always_on = kind == "uap" or (
-        kind == "skill" and _read_frontmatter_alwaysapply(lines)
-    )
+    always_on = kind == "uap" or (kind == "skill" and _read_frontmatter_alwaysapply(lines))
     body_start = _frontmatter_end(lines)
     body = lines[body_start:]
     hits = scan_lines(body)
@@ -359,8 +365,7 @@ def discover(root: Path) -> list[Artefact]:
         (AGENTS_GLOB, "agent"),
         (COMMANDS_GLOB, "command"),
     ):
-        for path in sorted(root.glob(pattern)):
-            artefacts.append(_make_artefact(path, kind, root))
+        artefacts.extend(_make_artefact(path, kind, root) for path in sorted(root.glob(pattern)))
 
     return artefacts
 
@@ -432,9 +437,7 @@ def render_markdown(report: BudgetReport) -> str:
     lines.append("# Rules-Budget Report")
     lines.append("")
     lines.append(f"**Root:** `{report.root}`")
-    lines.append(
-        f"**Budget reference:** {BUDGET_LOW}-{BUDGET_HIGH} concurrent instructions"
-    )
+    lines.append(f"**Budget reference:** {BUDGET_LOW}-{BUDGET_HIGH} concurrent instructions")
     lines.append("")
     lines.append("## Aggregate")
     lines.append("")

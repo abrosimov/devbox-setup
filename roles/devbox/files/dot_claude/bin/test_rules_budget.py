@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-
 import rules_budget as rb
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +186,7 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-@pytest.fixture()
+@pytest.fixture
 def synthetic_root(tmp_path: Path) -> Path:
     _write(
         tmp_path / "USER_AUTHORITY_PROTOCOL.md",
@@ -198,8 +200,7 @@ def synthetic_root(tmp_path: Path) -> Path:
     )
     _write(
         tmp_path / "skills" / "trigger-skill" / "SKILL.md",
-        "---\nname: trigger-skill\ndescription: y\n---\n\n"
-        "# Skill\n\nALWAYS do the thing.\n",
+        "---\nname: trigger-skill\ndescription: y\n---\n\n# Skill\n\nALWAYS do the thing.\n",
     )
     _write(
         tmp_path / "agents" / "some_agent.md",
@@ -244,9 +245,7 @@ class TestBudgetReport:
 
     def test_hit_line_numbers_anchor_to_original_file(self, synthetic_root: Path) -> None:
         report = rb.build_report(synthetic_root)
-        skill = next(
-            a for a in report.artefacts if a.rel_path == "skills/always-on-skill/SKILL.md"
-        )
+        skill = next(a for a in report.artefacts if a.rel_path == "skills/always-on-skill/SKILL.md")
         # Frontmatter is 4 lines (---, name, description, alwaysApply, ---) so
         # rules start at least on line 6.
         assert all(h.line_no >= 6 for h in skill.hits)
@@ -258,14 +257,18 @@ class TestBudgetReport:
 
 
 class TestCLI:
-    def test_stdout_markdown(self, synthetic_root: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_stdout_markdown(
+        self, synthetic_root: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         exit_code = rb.main(["--root", str(synthetic_root)])
         assert exit_code == 0
         out = capsys.readouterr().out
         assert "# Rules-Budget Report" in out
         assert "Always-on" in out
 
-    def test_json_output_parses(self, synthetic_root: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_json_output_parses(
+        self, synthetic_root: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         exit_code = rb.main(["--root", str(synthetic_root), "--json"])
         assert exit_code == 0
         payload = json.loads(capsys.readouterr().out)

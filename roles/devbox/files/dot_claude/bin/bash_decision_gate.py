@@ -427,9 +427,7 @@ def rule_git_push(ctx: Ctx) -> str | None:
     # human. Complements rule_git_commit; both stand regardless of project
     # CLAUDE.md overrides.
     if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "push":
-        return (
-            "Claude does not push. The user pushes manually after reviewing local commits."
-        )
+        return "Claude does not push. The user pushes manually after reviewing local commits."
     return None
 
 

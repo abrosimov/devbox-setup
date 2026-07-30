@@ -1,0 +1,69 @@
+# User/gateway layer (repo source of truth). Loaded after base.yaml. Owns the
+# single remote gateway, its persistent WAL, and signal routing. The three
+# runtime values arrive as env vars, never baked into this file:
+#   ${env:OTELBOX_EDGE_STORAGE}  — WAL root, set by the LaunchAgent plist
+#                                  (~/.local/state/otelcol-edge).
+#   ${env:OTELBOX_EDGE_ENDPOINT} — remote gateway host:port, sourced by the
+#                                  wrapper from the local-overlay endpoint.env.
+#   ${env:OTELBOX_EDGE_TOKEN}    — Bearer ingestion key, read from the login
+#                                  keychain by the wrapper; never on disk.
+#
+# Queue sizing: file_storage.max_size caps EACH bbolt db file, not the directory.
+# Three signal pipelines → three queue dbs, so 5 GiB here permits ~15 GiB before
+# compaction headroom. Conservative planning:
+#   queue_bytes >= peak_accepted_bytes_per_s * max_outage_s * 2
+# The nested byte batcher splits outgoing OTLP at 3 MiB to stay under the remote
+# gateway's 4 MiB default gRPC receive limit — keep coordinated with that limit.
+# TLS verification stays on in every profile; never set tls.insecure: true.
+extensions:
+  file_storage/gateway:
+    directory: ${env:OTELBOX_EDGE_STORAGE}/gateway
+    create_directory: true
+    fsync: true
+    max_size: 5368709120
+    compaction:
+      on_start: true
+      on_rebound: true
+      directory: ${env:OTELBOX_EDGE_STORAGE}/compaction/gateway
+
+exporters:
+  otlp/gateway:
+    endpoint: ${env:OTELBOX_EDGE_ENDPOINT}
+    headers:
+      authorization: "Bearer ${env:OTELBOX_EDGE_TOKEN}"
+    tls:
+      insecure: false
+    compression: gzip
+    timeout: 10s
+    sending_queue:
+      enabled: true
+      storage: file_storage/gateway
+      sizer: items
+      queue_size: 500000
+      block_on_overflow: true
+      batch:
+        flush_timeout: 200ms
+        sizer: bytes
+        min_size: 1048576
+        max_size: 3145728
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 0s
+
+service:
+  extensions: [health_check, file_storage/gateway]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, redaction/secrets, batch]
+      exporters: [otlp/gateway]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, redaction/secrets, batch]
+      exporters: [otlp/gateway]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, redaction/secrets, batch]
+      exporters: [otlp/gateway]

@@ -59,6 +59,9 @@
 - name: "Configure SSH keychain (login-keychain passphrase + LaunchAgent)"
   ansible.builtin.include_tasks: darwin/configure_ssh_keychain.yml
   when: not (dev_mode | default(false) | bool)
+- name: "Install durable OpenTelemetry edge collector (OCB binary + LaunchAgent)"
+  ansible.builtin.include_tasks: darwin/install_otelcol_edge.yml
+  when: not (dev_mode | default(false) | bool)
 - name: "Finalize Homebrew (controlled cleanup deferred from install phase)"
   ansible.builtin.include_tasks: darwin/finalize_brew.yml
 # - name: "Install Mac AppStore packages"

@@ -1,0 +1,33 @@
+# OpenTelemetry Collector Builder (OCB) manifest for the devbox durable edge
+# collector. Produces a slim single binary containing ONLY the components the
+# workstation edge profile uses — loopback OTLP in, redaction + resource
+# detection, batching, and one OTLP/gRPC exporter with a file_storage-backed
+# persistent sending queue out to a single remote gateway.
+#
+# Built in CI by .github/workflows/otelcol-edge.yml (darwin/arm64), published as
+# a GitHub release, and pulled by roles/devbox/tasks/darwin/install_otelcol_edge.yml.
+#
+# Bump dist.version in lockstep with every component gomod version below AND
+# with devbox_packages.otelcol_edge.version in roles/devbox/defaults/main/packages.yml,
+# then push a matching `otelcol-edge-v<version>` tag.
+dist:
+  name: otelcol-edge
+  description: Durable OpenTelemetry edge collector (devbox) — redaction + file_storage WAL to one gateway.
+  output_path: ./_build
+  version: 0.156.0
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.156.0
+
+processors:
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.156.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.156.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.156.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.156.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.156.0
+
+extensions:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.156.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.156.0

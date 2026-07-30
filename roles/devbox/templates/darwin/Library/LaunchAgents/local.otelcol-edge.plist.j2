@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed by devbox (roles/devbox/templates/darwin/Library/LaunchAgents/local.otelcol-edge.plist.j2).
+  Supervises the durable OpenTelemetry edge collector via its wrapper
+  (see darwin/install_otelcol_edge.yml). Replaces `brew services` — this plist's
+  EnvironmentVariables inject the two per-profile, non-secret values the wrapper
+  can't source from a file/keychain:
+    - OTELBOX_EDGE_STORAGE       : file_storage WAL root.
+    - OTEL_RESOURCE_ATTRIBUTES   : read by the base config's `env` resource
+                                   detector to stamp every signal with the
+                                   originating profile ({{ devbox_active_profile | default('personal') }}).
+  The wrapper adds OTELBOX_EDGE_ENDPOINT (overlay file) + OTELBOX_EDGE_TOKEN
+  (login keychain). KeepAlive true: it's a long-running daemon, restarted on exit.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.otelcol-edge</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ ansible_facts['env']['HOME'] }}/.config/otelcol-edge/otelcol-edge-run</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OTELBOX_EDGE_STORAGE</key>
+        <string>{{ ansible_facts['env']['HOME'] }}/.local/state/otelcol-edge</string>
+        <key>OTEL_RESOURCE_ATTRIBUTES</key>
+        <string>deployment.environment.name={{ devbox_active_profile | default('personal') }}</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/otelcol-edge.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/otelcol-edge.log</string>
+</dict>
+</plist>

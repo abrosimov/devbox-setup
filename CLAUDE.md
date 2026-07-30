@@ -83,6 +83,7 @@ Everything lives in one role. No multi-role orchestration.
 7. `install_configs.yml` — deploy dotfiles (see below)
 8. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
 9. `prepare_user.yml` — shell, user-level setup
+10. `darwin/install_otelcol_edge.yml` — durable OpenTelemetry edge collector. Downloads the pinned OCB-built binary (`otelcol-edge`) from this repo's GitHub releases (built by `.github/workflows/otelcol-edge.yml`; source manifest `otelcol-edge/builder.yaml`), deploys the two config layers + keychain-reading wrapper, and supervises it via a `launchd` LaunchAgent — **no brew, no tap**. Per-profile `deployment.environment.name` stamp + `OTELBOX_EDGE_STORAGE` come from the plist; the remote endpoint from a gitignored local-overlay `endpoint.env`; the Bearer key from the login keychain slot `otelbox-edge-token`. Non-bricking: skips the service if the release binary or `endpoint.env` is absent. See `otelcol-edge/README.md`.
 
 ### Configuration Deployment (`install_configs.yml`)
 

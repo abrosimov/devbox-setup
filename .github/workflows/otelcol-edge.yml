@@ -1,0 +1,73 @@
+name: otelcol-edge
+
+# Build the slim OCB edge collector (darwin/arm64) and publish it as a GitHub
+# release, consumed by roles/devbox/tasks/darwin/install_otelcol_edge.yml via
+# get_url. Native build on an arm64 macOS runner — no cross-compile, no signing
+# dance. See otelcol-edge/README.md for the release flow.
+
+on:
+  push:
+    tags:
+      - "otelcol-edge-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "otelcol-edge version (must match otelcol-edge/builder.yaml dist.version)"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: otelcol-edge-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build (darwin/arm64) + release
+    runs-on: macos-14
+    env:
+      OCB_VERSION: "0.156.0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # macOS runners ship Go preinstalled — assert it rather than pinning a
+      # setup-go action (keeps this workflow to a single external action).
+      - name: Assert Go is available
+        run: go version
+
+      - name: Install OpenTelemetry Collector Builder (OCB)
+        run: go install go.opentelemetry.io/collector/cmd/builder@v${OCB_VERSION}
+
+      - name: Build otelcol-edge
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: "0"
+        run: |
+          "$(go env GOPATH)/bin/builder" --config otelcol-edge/builder.yaml
+          install -m 0755 otelcol-edge/_build/otelcol-edge otelcol-edge_darwin_arm64
+
+      - name: Smoke-check linked components
+        run: |
+          ./otelcol-edge_darwin_arm64 components | grep -q file_storage
+          ./otelcol-edge_darwin_arm64 components | grep -q redaction
+
+      - name: Checksum
+        run: shasum -a 256 otelcol-edge_darwin_arm64 | awk '{print $1}' > otelcol-edge_darwin_arm64.sha256
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="otelcol-edge-v${{ inputs.version }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          gh release create "$tag" \
+            --title "$tag" \
+            --notes "OCB-built durable edge collector (darwin/arm64). See otelcol-edge/README.md." \
+            otelcol-edge_darwin_arm64 otelcol-edge_darwin_arm64.sha256 \
+          || gh release upload "$tag" \
+            otelcol-edge_darwin_arm64 otelcol-edge_darwin_arm64.sha256 --clobber

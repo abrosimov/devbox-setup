@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Liveness smoke for the otelcol-edge collector — run after `make personal`.
 # Checks: binary, launchd service, health (:13133), internal metrics (:8888),
-# and one OTLP/HTTP round-trip (send a log, confirm the receiver accepted it).
+# one OTLP/HTTP round-trip (send a log, confirm the receiver accepted it), and
+# delivery to the remote gateway (no permanently dropped items).
 # Exit non-zero on any failure. Darwin-only.
 # No set -e/pipefail: every check must run even when a probe curl fails; the
 # final exit is driven by the explicit `fail` flag, not the first failing probe.
@@ -19,10 +20,12 @@ _bad() {
     fail=1
 }
 
-accepted_logs() {
+sum_metric() {
     curl -fsS --max-time 3 http://127.0.0.1:8888/metrics 2>/dev/null \
-        | awk '/^otelcol_receiver_accepted_log_records/ {s += $NF} END {print s + 0}'
+        | awk -v pat="$1" '$0 ~ pat {s += $NF} END {printf "%d\n", s}'
 }
+
+accepted_logs() { sum_metric '^otelcol_receiver_accepted_log_records'; }
 
 bin="${HOME}/.local/bin/otelcol-edge"
 if [[ -x "${bin}" ]]; then
@@ -72,6 +75,20 @@ if curl -fsS --max-time 3 -H 'Content-Type: application/json' \
     fi
 else
     _bad "OTLP/HTTP :4318 rejected the test log"
+fi
+
+# Delivery to the remote gateway. Everything above only proves the LOCAL half:
+# a wrong ingestion token leaves every check green while nothing reaches the
+# gateway. send_failed_* counts items the exporter gave up on, and with
+# retry_on_failure.max_elapsed_time: 0s only PERMANENT errors (auth, malformed)
+# reach it — transient ones retry forever. So any non-zero value means dropped,
+# not delayed.
+dropped=$(sum_metric '^otelcol_exporter_send_failed_')
+queued=$(sum_metric '^otelcol_exporter_queue_size')
+if [[ "${dropped}" -eq 0 ]]; then
+    _ok "gateway delivery: nothing dropped (queue depth ${queued})"
+else
+    _bad "gateway delivery: ${dropped} items dropped permanently (queue depth ${queued}); grep 'Exporting failed' ~/Library/Logs/otelcol-edge.log"
 fi
 
 if [[ "${fail}" -eq 0 ]]; then

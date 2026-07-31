@@ -78,6 +78,14 @@ CLAUDE_ROOT_FILES   := settings.json hooks.json config.md
 CLAUDE_AUTHORITY_SRC  := USER_AUTHORITY_PROTOCOL.md
 CLAUDE_AUTHORITY_DEST := CLAUDE.md
 SKILLS_DIR          := $(CLAUDE_SRC)/skills
+# Claude Code rewrites ~/.claude/settings.json in its own key order whenever a
+# setting is toggled in-session (e.g. via /sandbox), so a two-key change arrives
+# as a ~450-line diff on the way back into the repo. claude-diff / claude-pull
+# therefore compare and copy JSON root files through `jq -S`. It sorts object
+# keys only — the hand-curated order of the permissions.allow / deny arrays
+# survives. Non-JSON root files pass through verbatim; a missing or
+# non-parseable file falls back to raw content instead of failing the target.
+CLAUDE_NORM_FN = norm() { [ -f "$$1" ] || return 0; case "$$1" in *.json) jq -S . "$$1" 2>/dev/null || cat "$$1" ;; *) cat "$$1" ;; esac; }
 
 # Karabiner: the repo seeds the live file only when absent (Karabiner owns it at
 # runtime — see install_configs.yml). karabiner-diff / karabiner-pull sync only the
@@ -178,9 +186,9 @@ help:
 	@echo "  make test-json        - JSON config/schema validation"
 	@echo "  make list-skills      - list all Claude Code skills"
 	@echo "  make list-agents      - list all Claude Code agents"
-	@echo "  make claude-diff      - show content drift between ~/.claude and repo"
+	@echo "  make claude-diff      - show content drift between ~/.claude and repo (JSON key-sorted)"
 	@echo "  make claude-pull-review - smart pull of settings.json (heuristic + interactive)"
-	@echo "  make claude-pull      - wholesale copy of root files from ~/.claude to repo"
+	@echo "  make claude-pull      - wholesale copy of root files from ~/.claude to repo (JSON key-sorted)"
 	@echo "  make karabiner-diff   - show drift of Karabiner complex_modifications (repo vs live)"
 	@echo "  make karabiner-pull   - pull Karabiner complex_modifications from live into repo"
 	@echo ""
@@ -542,8 +550,9 @@ endif
 		--verbose
 
 claude-diff:
-	@echo "=== Drift: deployed ~/.claude vs repo (root files only) ==="
-	@drift=0; \
+	@echo "=== Drift: deployed ~/.claude vs repo (root files only; JSON key-sorted) ==="
+	@$(CLAUDE_NORM_FN); \
+	drift=0; \
 	if ! diff -q $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC) $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) >/dev/null 2>&1; then \
 		echo ""; \
 		echo "--- $(CLAUDE_AUTHORITY_SRC) <-> $(CLAUDE_AUTHORITY_DEST) ---"; \
@@ -551,12 +560,16 @@ claude-diff:
 		drift=1; \
 	fi; \
 	for f in $(CLAUDE_ROOT_FILES); do \
-		if ! diff -q $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f >/dev/null 2>&1; then \
+		src_tmp=$$(mktemp); dst_tmp=$$(mktemp); \
+		norm $(CLAUDE_SRC)/$$f > $$src_tmp; \
+		norm $(CLAUDE_DEST)/$$f > $$dst_tmp; \
+		if ! diff -q $$src_tmp $$dst_tmp >/dev/null 2>&1; then \
 			echo ""; \
 			echo "--- $$f ---"; \
-			diff -u $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f || true; \
+			diff -u $$src_tmp $$dst_tmp || true; \
 			drift=1; \
 		fi; \
+		rm -f $$src_tmp $$dst_tmp; \
 	done; \
 	if [ $$drift -eq 0 ]; then \
 		echo "  No drift detected."; \
@@ -567,20 +580,25 @@ claude-diff:
 	fi
 
 claude-pull:
-	@echo "=== Pulling root files from ~/.claude to repo (wholesale copy) ==="
+	@echo "=== Pulling root files from ~/.claude to repo (wholesale copy; JSON key-sorted) ==="
 	@if ! diff -q $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC) $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) >/dev/null 2>&1; then \
 		cp $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC); \
 		echo "  PULLED: $(CLAUDE_AUTHORITY_DEST) -> $(CLAUDE_AUTHORITY_SRC)"; \
 	else \
 		echo "  SKIP:   $(CLAUDE_AUTHORITY_SRC) (no changes)"; \
 	fi
-	@for f in $(CLAUDE_ROOT_FILES); do \
-		if ! diff -q $(CLAUDE_SRC)/$$f $(CLAUDE_DEST)/$$f >/dev/null 2>&1; then \
-			cp $(CLAUDE_DEST)/$$f $(CLAUDE_SRC)/$$f; \
+	@$(CLAUDE_NORM_FN); \
+	for f in $(CLAUDE_ROOT_FILES); do \
+		src_tmp=$$(mktemp); dst_tmp=$$(mktemp); \
+		norm $(CLAUDE_SRC)/$$f > $$src_tmp; \
+		norm $(CLAUDE_DEST)/$$f > $$dst_tmp; \
+		if ! diff -q $$src_tmp $$dst_tmp >/dev/null 2>&1; then \
+			cp $$dst_tmp $(CLAUDE_SRC)/$$f; \
 			echo "  PULLED: $$f"; \
 		else \
 			echo "  SKIP:   $$f (no changes)"; \
 		fi; \
+		rm -f $$src_tmp $$dst_tmp; \
 	done
 	@echo "Review with: git diff"
 

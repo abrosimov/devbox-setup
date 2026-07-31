@@ -41,6 +41,9 @@ BASE_DENY: Final[list[str]] = [
     "Bash(gh pr close *)",
     "Bash(gh pr merge *)",
     "Bash(gh issue close *)",
+    # WARNING: path-scoped file rules must use Edit(...) — Claude Code's file
+    # permission checks ignore Write(path) rules, and Edit(path) already covers
+    # every file-editing tool (Write, Edit, NotebookEdit).
     "Edit(.env)",
     "Edit(.env.*)",
     "Edit(**/.env)",
@@ -49,14 +52,6 @@ BASE_DENY: Final[list[str]] = [
     "Edit(**/*.pem)",
     "Edit(**/*.key)",
     "Edit(**/credentials*)",
-    "Write(.env)",
-    "Write(.env.*)",
-    "Write(**/.env)",
-    "Write(**/.env.*)",
-    "Write(**/secrets/**)",
-    "Write(**/*.pem)",
-    "Write(**/*.key)",
-    "Write(**/credentials*)",
 ]
 
 BASE_ALLOW: Final[list[str]] = [
@@ -66,7 +61,6 @@ BASE_ALLOW: Final[list[str]] = [
     "Edit",
     "Edit(**)",
     "Write",
-    "Write(**)",
     "NotebookEdit",
     "WebSearch",
     "WebFetch",

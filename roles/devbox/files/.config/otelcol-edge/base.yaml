@@ -6,6 +6,13 @@
 # attributes (override: false); the deployment.environment.name stamp is fed via
 # the `env` detector reading OTEL_RESOURCE_ATTRIBUTES (set per-profile in the
 # LaunchAgent plist). Redaction strips credential-like keys/values before export.
+#
+# telemetry.logs are the collector's OWN operational logs, not the ingested logs
+# signal. output_paths is deliberately left at its stderr default: the LaunchAgent
+# owns the file handle for ~/Library/Logs/otelcol-edge.log (StandardOutPath +
+# StandardErrorPath), so pointing the zap encoder at the same path directly would
+# give two uncoordinated writers. Sampling also stays at its upstream default
+# (10s tick, first 10, then every 100th) — it caps log storms during an outage.
 extensions:
   health_check:
     endpoint: 127.0.0.1:13133
@@ -46,6 +53,11 @@ processors:
 
 service:
   telemetry:
+    logs:
+      level: info
+      encoding: json
+      initial_fields:
+        service: otelcol-edge
     metrics:
       level: normal
       readers:

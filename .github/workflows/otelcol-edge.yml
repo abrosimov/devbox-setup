@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.resolve.outputs.version }}
+      ocb_version: ${{ steps.resolve.outputs.ocb_version }}
       release_exists: ${{ steps.resolve.outputs.release_exists }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,6 +45,33 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          # dist.version is <upstream>-custom-<n>. The suffix names OUR component
+          # set and has no upstream tag, so OCB must be installed at the bare
+          # upstream part: `go install ...cmd/builder@v<dist.version>` 404s
+          # (`-custom-<n>` parses as a valid semver pre-release, so Go does not
+          # reject the string — it just fetches a tag that was never cut).
+          ocb_version="${version%%-custom-*}"
+          case "$ocb_version" in
+            [0-9]*.[0-9]*.[0-9]*) ;;
+            *)
+              echo "dist.version '$version' has no bare X.Y.Z upstream prefix" >&2
+              exit 1
+              ;;
+          esac
+          echo "ocb_version=$ocb_version" >> "$GITHUB_OUTPUT"
+
+          # Lockstep guard: OCB must match the core collector modules it compiles.
+          # otlpreceiver is the anchor — it is core, always present, and its gomod
+          # moves with every upstream bump.
+          gomod_version="$(grep -E 'collector/receiver/otlpreceiver v' otelcol-edge/builder.yaml \
+            | head -1 | awk '{print $NF}')"
+          if [ "$gomod_version" != "v$ocb_version" ]; then
+            echo "upstream part of dist.version (v$ocb_version) != otlpreceiver gomod ($gomod_version)" >&2
+            echo "  bump dist.version and the gomod pins together" >&2
+            exit 1
+          fi
+
           if gh release view "otelcol-edge-v$version" >/dev/null 2>&1; then
             echo "release_exists=true" >> "$GITHUB_OUTPUT"
             echo "Release otelcol-edge-v$version already exists — build will be skipped."
@@ -59,6 +87,7 @@ jobs:
     runs-on: macos-14
     env:
       VERSION: ${{ needs.check.outputs.version }}
+      OCB_VERSION: ${{ needs.check.outputs.ocb_version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -68,7 +97,9 @@ jobs:
           go-version: stable
 
       - name: Install OpenTelemetry Collector Builder (OCB)
-        run: go install go.opentelemetry.io/collector/cmd/builder@v${VERSION}
+        # OCB_VERSION, not VERSION: dist.version carries the -custom-<n> suffix,
+        # which has no upstream tag. See the resolve step in the check job.
+        run: go install go.opentelemetry.io/collector/cmd/builder@v${OCB_VERSION}
 
       - name: Build otelcol-edge
         env:
@@ -80,9 +111,9 @@ jobs:
           install -m 0755 otelcol-edge/_build/otelcol-edge otelcol-edge_darwin_arm64
 
       - name: Smoke-check linked components
-        run: |
-          ./otelcol-edge_darwin_arm64 components | grep -q file_storage
-          ./otelcol-edge_darwin_arm64 components | grep -q redaction
+        # Compares per-kind component counts against builder.yaml, so a dropped
+        # component fails the build instead of shipping a silently thin binary.
+        run: ./otelcol-edge/smoke-check.sh ./otelcol-edge_darwin_arm64 otelcol-edge/builder.yaml
 
       - name: Checksum
         run: shasum -a 256 otelcol-edge_darwin_arm64 | awk '{print $1}' > otelcol-edge_darwin_arm64.sha256

@@ -47,6 +47,23 @@ jobs:
           echo "--- Brewfile.audit ---"
           cat Brewfile.audit
 
+      # Tap-sourced packages (sketchybar, borders, …) do not resolve on a clean
+      # runner until their taps are added; the generated Brewfile carries the
+      # declared taps as `tap "..."` lines but neither `brew info` nor
+      # `brew vulns` acts on them. Homebrew 6.0 additionally refuses to load
+      # formulae from untrusted third-party taps (HOMEBREW_REQUIRE_TAP_TRUST is
+      # on by default), so each tap is trusted right after it is added — the
+      # same whole-tap trust the playbook grants in
+      # roles/devbox/tasks/darwin/install_from_brew_secondary.yml.
+      - name: Tap and trust declared third-party repositories
+        run: |
+          rc=0
+          while read -r tap; do
+            brew tap "$tap" && brew trust --tap "$tap" \
+              || { echo "::error::tap $tap: could not be added or trusted"; rc=1; }
+          done < <(sed -nE 's/^tap "([^"]+)".*/\1/p' Brewfile.audit)
+          exit "$rc"
+
       # Parse-check every declared formula/cask against fresh definitions (brew
       # was updated above). Catches removed/renamed packages and upstream-broken
       # definitions before they fail a real `make personal`.
@@ -63,10 +80,12 @@ jobs:
         run: |
           # Full report across all severities for the job log. `|| true` so the
           # gate step below — not this one — decides the job's pass/fail state.
-          brew vulns --brewfile Brewfile.audit --json || true
+          # `--brewfile` only takes a path via `=`; a space-separated value is
+          # parsed as a formula name and the flag falls back to ./Brewfile.
+          brew vulns --brewfile=Brewfile.audit --json || true
 
       - name: Fail on high-severity vulnerabilities
         run: |
           # `brew vulns` exits non-zero when any open finding at or above the
           # requested severity is present. This is the pass/fail gate.
-          brew vulns --brewfile Brewfile.audit --severity high
+          brew vulns --brewfile=Brewfile.audit --severity high

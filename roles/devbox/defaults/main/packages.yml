@@ -24,7 +24,7 @@ devbox_brew_taps:
 
 # Primary: core packages installed first (no dependencies on secondary).
 devbox_brew_primary:
-  - kitty
+  # kitty moved to devbox_brew_primary_casks — it is cask-only upstream.
   - fish
   - fisher
   - bat
@@ -43,6 +43,7 @@ devbox_brew_primary_special:
   - fontconfig
 
 devbox_brew_primary_casks:
+  - kitty
   - ghostty
   - font-fira-code
   - font-ia-writer-duo
@@ -59,7 +60,7 @@ devbox_brew_secondary:
   - opam
   - erlang
   - rustup
-  - flutter
+  # flutter moved to devbox_brew_secondary_casks — it is cask-only upstream.
   - go
   - go-task
   - node
@@ -101,7 +102,7 @@ devbox_brew_secondary:
   - shfmt          # Shell/Bash code formatter
   - clang-format   # C/C++ code formatter
   - ast-grep       # Structural AST code search — used by Claude Code ast-grep skill
-  - codex           # OpenAI Codex CLI
+  # codex moved to devbox_brew_secondary_casks — it is cask-only upstream.
   - lima            # Linux VM (eBPF/bpftrace sandbox, perf-style observability)
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
@@ -112,7 +113,13 @@ devbox_brew_secondary:
   - hashicorp/tap/vault     # HashiCorp Vault CLI (tap: hashicorp/tap)
 
 devbox_brew_secondary_casks:
-  - codex-app
+  - codex            # OpenAI Codex CLI
+  - flutter          # Flutter SDK
+  # codex-app removed: discontinued upstream (deprecated 2026-07-12, brew
+  # disables the cask on 2027-07-12). OpenAI folded the standalone Codex
+  # desktop app into the unified ChatGPT desktop app — the `chatgpt` cask
+  # below covers the GUI, the `codex` cask above covers the CLI. Uninstalled
+  # by the `state: absent` task in tasks/darwin/install_from_brew_secondary.yml.
   - antigravity-cli  # Google Antigravity CLI (`agy`) — successor to gemini-cli; auto-migrates ~/.gemini/
   - obsidian
   - goland

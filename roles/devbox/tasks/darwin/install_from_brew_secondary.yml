@@ -66,6 +66,16 @@
     name: goreleaser
     state: absent
 
+# Migration cleanup: OpenAI discontinued the standalone Codex desktop app and
+# folded it into the unified ChatGPT desktop app (`chatgpt` cask). Homebrew
+# deprecated the cask on 2026-07-12 and disables it on 2027-07-12, at which
+# point a machine that still has it installed cannot upgrade it. The `codex`
+# CLI cask is a separate package and stays. No-op once removed.
+- name: "Remove discontinued codex-app cask (folded into the chatgpt app)"
+  community.general.homebrew_cask:
+    name: codex-app
+    state: absent
+
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
     name: "{{ devbox_brew_secondary_casks + devbox_extra_brew_casks }}"

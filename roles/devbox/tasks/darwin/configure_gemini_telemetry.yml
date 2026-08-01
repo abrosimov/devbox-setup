@@ -1,6 +1,6 @@
 ---
 # ~/.gemini/ hosts two distinct CLIs:
-#   * gemini-cli  — supports OTLP export, pointed here at the local otelcol-edge
+#   * gemini-cli  — supports OTLP export, pointed here at the local otelbox edge
 #     (127.0.0.1:4317), the same collector Claude Code and Codex already feed.
 #   * antigravity-cli (agy) — has NO OTLP exporter; its telemetry is first-party
 #     Google Clearcut (telemetryclient.AntigravityClient, jetski/telemetry/*)

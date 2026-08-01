@@ -1,34 +1,38 @@
 #!/usr/bin/env bash
-# Managed by devbox (roles/devbox/files/.config/otelcol-edge/otelcol-edge-run).
-# Launched by the local.otelcol-edge LaunchAgent. Injects the two runtime values
+# Managed by devbox (roles/devbox/files/.config/otelbox/edge/otelbox-edge-run).
+# Launched by the local.otelbox-edge LaunchAgent. Injects the two runtime values
 # the on-disk config must not carry, then exec's the collector:
 #   - OTELBOX_EDGE_ENDPOINT : remote gateway host:port, from the local-overlay
-#     env file (~/.config/otelcol-edge/endpoint.env). Non-secret, on disk.
+#     env file (~/.config/otelbox/edge/endpoint.env). Non-secret, on disk.
 #   - OTELBOX_EDGE_TOKEN    : Bearer ingestion key, read from the login keychain
 #     slot `otelbox-edge-token` at start — never written to disk.
 # OTELBOX_EDGE_STORAGE and OTEL_RESOURCE_ATTRIBUTES are set by the plist.
+#
+# The binary is the published `abrosimov/otelcol-otelbox` artefact, which serves
+# both the workstation edge and the server gateway; the role it plays is decided
+# entirely by the second --config argument below.
 #
 # Mirrors scripts/keychain-become-pass.sh's read pattern. Exits EX_CONFIG (78)
 # on missing endpoint/token so the failure is legible in the service log.
 set -euo pipefail
 
-bin="${HOME}/.local/bin/otelcol-edge"
-base="${HOME}/.config/otelcol-edge/base.yaml"
-profile="${HOME}/.config/otelcol-edge/config.gateway.yaml"
-endpoint_env="${HOME}/.config/otelcol-edge/endpoint.env"
+bin="${HOME}/.local/bin/otelcol-otelbox"
+base="${HOME}/.config/otelbox/edge/base.yaml"
+profile="${HOME}/.config/otelbox/edge/edge.yaml"
+endpoint_env="${HOME}/.config/otelbox/edge/endpoint.env"
 
 if [[ -f "${endpoint_env}" ]]; then
     set -a
     . "${endpoint_env}"
     set +a
 else
-    echo "otelcol-edge-run: missing ${endpoint_env}" >&2
+    echo "otelbox-edge-run: missing ${endpoint_env}" >&2
     echo "  Set OTELBOX_EDGE_ENDPOINT via the local overlay (see endpoint.env.example)." >&2
     exit 78
 fi
 
 if ! token="$(/usr/bin/security find-generic-password -w -a "${USER}" -s otelbox-edge-token 2>/dev/null)"; then
-    echo "otelcol-edge-run: keychain slot otelbox-edge-token missing." >&2
+    echo "otelbox-edge-run: keychain slot otelbox-edge-token missing." >&2
     echo "  Seed it: security add-generic-password -U -a \"\$USER\" -s otelbox-edge-token -w '<TOKEN>'" >&2
     exit 78
 fi

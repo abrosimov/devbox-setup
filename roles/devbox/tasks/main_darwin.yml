@@ -59,8 +59,8 @@
 - name: "Configure SSH keychain (login-keychain passphrase + LaunchAgent)"
   ansible.builtin.include_tasks: darwin/configure_ssh_keychain.yml
   when: not (dev_mode | default(false) | bool)
-- name: "Install durable OpenTelemetry edge collector (OCB binary + LaunchAgent)"
-  ansible.builtin.include_tasks: darwin/install_otelcol_edge.yml
+- name: "Install durable OpenTelemetry edge collector (otelcol-otelbox + LaunchAgent)"
+  ansible.builtin.include_tasks: darwin/install_otelbox_edge.yml
   when: not (dev_mode | default(false) | bool)
 - name: "Configure Codex OTLP telemetry (inject [otel] into ~/.codex/config.toml)"
   ansible.builtin.include_tasks: darwin/configure_codex_telemetry.yml

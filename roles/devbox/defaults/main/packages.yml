@@ -175,17 +175,24 @@ devbox_packages:
   kubectl:
     version: "1.32.5"
 
-  # otelcol-edge — durable OpenTelemetry edge collector. OCB-built slim binary
-  # (only the 7 components the edge profile uses), downloaded from this repo's
-  # GitHub releases (built by .github/workflows/otelcol-edge.yml). Deployed +
-  # supervised by tasks/darwin/install_otelcol_edge.yml via launchd (no brew).
-  # The version is NOT set here — it is the single source of truth in
-  # otelcol-edge/builder.yaml (dist.version), read at runtime by the task. Bump
-  # it there and merge to master; CI auto-publishes the matching release, then
-  # the next full run pulls it. See otelcol-edge/README.md.
-  otelcol_edge:
+  # otelbox edge — durable OpenTelemetry edge collector. The `otelcol-otelbox`
+  # artefact published by abrosimov/otelcol-otelbox, which builds one binary for
+  # both the workstation edge and the server gateway and owns the shared base
+  # configuration layer. Nothing is built in this repository. Deployed +
+  # supervised by tasks/darwin/install_otelbox_edge.yml via launchd (no brew —
+  # the artefact's Homebrew formula is for machines this playbook does not
+  # manage, and the task fails outright if both are installed).
+  #
+  # `version` is this artefact's own semantic version, not the upstream
+  # collector's. To bump: raise it here and run the playbook — the release
+  # already exists, there is nothing to build. A major bump means the shared
+  # base layer changed shape, so re-vendor
+  # roles/devbox/files/.config/otelbox/edge/base.yaml from the new release at
+  # the same time. Release tag is bare `v<version>`.
+  otelbox_edge:
     enabled: true
-    release_base: "https://github.com/abrosimov/devbox-setup/releases/download"
+    version: "1.0.0"
+    release_base: "https://github.com/abrosimov/otelcol-otelbox/releases/download"
 
   # Python tools installed via `uv tool install`.
   # Binary name matches tool name.

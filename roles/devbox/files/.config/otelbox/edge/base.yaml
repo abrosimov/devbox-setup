@@ -1,0 +1,86 @@
+# otelbox — SHARED BASE LAYER.
+#
+# Loaded first, always, and never on its own:
+#
+#   otelcol-otelbox --config config/base.yaml --config <exactly-one-role>.yaml
+#
+# Later `--config` arguments win. Map keys merge key by key; a list value
+# replaces the earlier list wholesale rather than appending to it.
+#
+# Why this layer exists at all: the redaction patterns must not be able to
+# diverge between the workstation and the server. Held in two role repositories
+# they would drift — a pattern added to one is a pattern the other silently
+# stops applying, and nothing fails to make that visible. Held here there is one
+# copy, so divergence is impossible rather than merely unlikely.
+#
+# This layer owns the processors both roles run plus the collector's own
+# telemetry, and nothing else. Receivers, exporters, extensions,
+# `service::pipelines` and `service::extensions` name a specific machine's
+# endpoints, storage directories and credentials, so they belong to the role
+# layer. Consequently this file alone declares no pipeline and is not a runnable
+# configuration.
+#
+# Vendored verbatim from abrosimov/otelcol-otelbox v1.0.0
+# (otelcol-otelbox_config.tar.gz / config/base.yaml). Do not hand-edit; pull a
+# new copy from the release being adopted instead.
+
+processors:
+  # Edge-sized: the workstation runs alongside everything else the developer is
+  # doing, so the collector is capped well below what the host could give it.
+  # The gateway role deliberately overrides all three (512/128/5s) — it is the
+  # only workload on its box and absorbs bursts from every edge at once.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+
+  # Not overridable in spirit: a role layer *can* replace these lists (they are
+  # YAML lists, so a role redefinition wins outright), but doing so defeats the
+  # reason this layer exists. Add patterns here, for both roles, or not at all.
+  #
+  # allow_all_keys keeps the processor in deny-list mode: attributes pass unless
+  # a pattern below matches. An allow-list would silently drop every attribute
+  # the applications have not been enumerated for, which is worse than leaking a
+  # key name — the telemetry would look healthy while being empty.
+  redaction/secrets:
+    allow_all_keys: true
+    blocked_key_patterns:
+      - '(?i).*authorization.*'
+      - '(?i).*api[._-]?key.*'
+      - '(?i).*cookie.*'
+      - '(?i)(^|.*[._-])(access|refresh|auth|secret|bearer)[._-]?token($|[._-].*)'
+      - '(?i).*password.*'
+    blocked_values:
+      - '(?i)Bearer\s+\S+'
+      - '(?i)(sk|rk|pk|api)[-_][A-Za-z0-9_-]{12,}'
+
+  # Edge-sized, and overridden by the gateway (8192/8192): the gateway merges
+  # traffic from every edge, so the same wall-clock timeout there fills a much
+  # larger batch and the send would otherwise be split for no reason.
+  batch:
+    timeout: 5s
+    send_batch_size: 2048
+    send_batch_max_size: 4096
+
+service:
+  telemetry:
+    # No `output_paths` here, on purpose. The supervisor owns the log file
+    # handle — launchd on the workstation, the container runtime on the server —
+    # and pointing the zap encoder at that same file would create two
+    # uncoordinated writers on one inode: interleaved partial lines, and a
+    # rotation that only one of the two writers follows. Logging to stdout keeps
+    # a single writer and leaves rotation where it is already solved.
+    logs:
+      level: info
+      encoding: json
+    metrics:
+      level: normal
+      # `readers` is a list, so a role layer that needs a different port
+      # replaces this entry outright rather than merging into it — the gateway
+      # does exactly that to move to 8889, because 8888 is taken there.
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 127.0.0.1
+                port: 8888

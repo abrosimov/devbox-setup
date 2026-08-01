@@ -48,9 +48,9 @@ make secrets-init            # seed devbox-sudo + devbox-ssh-passphrase (idempot
 make sudo-reseed             # after macOS login password rotation
 make ssh-passphrase-reseed   # after SSH passphrase change or key regen
 
-# otelcol-edge (durable local OTLP collector, Task Flow step 10)
-make otelcol-edge-config     # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token
-make otelcol-edge-test       # liveness smoke: binary, launchd service, :13133, :8888, OTLP round-trip
+# otelbox edge (durable local OTLP collector, Task Flow step 10)
+make otelbox-edge-config     # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token
+make otelbox-edge-test       # liveness + delivery smoke: binary, launchd service, :13133, :8888, OTLP round-trip
 
 # Claude config back-propagation (root files only — subdirs are symlinked)
 make claude-diff     # show drift between deployed ~/.claude and repo
@@ -88,7 +88,7 @@ Everything lives in one role. No multi-role orchestration.
 7. `install_configs.yml` — deploy dotfiles (see below)
 8. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
 9. `prepare_user.yml` — shell, user-level setup
-10. `darwin/install_otelcol_edge.yml` — durable OpenTelemetry edge collector. Downloads the pinned OCB-built binary (`otelcol-edge`) from this repo's GitHub releases (built by `.github/workflows/otelcol-edge.yml`; source manifest `otelcol-edge/builder.yaml`), deploys the two config layers + keychain-reading wrapper, and supervises it via a `launchd` LaunchAgent — **no brew, no tap**. Per-profile `deployment.environment.name` stamp + `OTELBOX_EDGE_STORAGE` come from the plist; the remote endpoint from a gitignored local-overlay `endpoint.env`; the Bearer key from the login keychain slot `otelbox-edge-token`. Non-bricking: skips the service if the release binary or `endpoint.env` is absent. See `otelcol-edge/README.md`.
+10. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. **Nothing is built here**: it downloads the pinned `otelcol-otelbox_darwin_arm64` asset (checksum-verified against the published `.sha256`) from [`abrosimov/otelcol-otelbox`](https://github.com/abrosimov/otelcol-otelbox), which owns the component set, the release pipeline and the shared base configuration layer for both this edge and the `remote_server_setup` gateway. Version pinned at `devbox_packages.otelbox_edge.version`; release tag is bare `v<version>`. The task deploys the two config layers (`base.yaml` vendored verbatim from the release + `edge.yaml`, the role layer this repo owns) plus the keychain-reading wrapper, runs `otelcol-otelbox validate` on the composed pair, and supervises it via the `local.otelbox-edge` LaunchAgent — **no brew** (a Homebrew keg of the same artefact is a hard failure: two copies, free to drift). Per-profile `deployment.environment.name` stamp + `OTELBOX_EDGE_STORAGE` come from the plist; the remote endpoint from a gitignored local-overlay `endpoint.env`; the Bearer key from the login keychain slot `otelbox-edge-token`. Non-bricking: skips the service if the release binary or `endpoint.env` is absent. It includes `darwin/migrate_otelcol_edge_to_otelbox.yml`, a transitional no-op-on-clean-machines step that moves a workstation off the former self-built `otelcol-edge` layout (WAL included). See `README.md` § OTLP Telemetry.
 11. `darwin/configure_codex_telemetry.yml` — blockinfile-injects an `[otel]` table into user-owned `~/.codex/config.toml` (OTLP gRPC → local edge :4317, `log_user_prompt`, `metrics_exporter→otlp` silences Codex's default statsig stream). Skips if a foreign hand-written `[otel]` already exists.
 12. `darwin/configure_codex_settings.yml` — lineinfile-owns scalar top-level keys (model, reasoning effort, `sandbox_mode`) of `~/.codex/config.toml` from `devbox_codex_settings`, `insertbefore: BOF` (TOML requires top-level keys before the first table).
 

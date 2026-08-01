@@ -1,40 +1,40 @@
 #!/usr/bin/env bash
-# Interactive one-time machine-local setup for the durable otelcol-edge collector.
+# Interactive one-time machine-local setup for the durable otelbox edge collector.
 # Fills the two values that are NOT tracked in the repo:
 #
 #   endpoint  — the remote gateway authority (host:port, no https://). Non-secret.
 #               Written to the gitignored local overlay
-#               roles/devbox/local/.config/otelcol-edge/endpoint.env (source of
-#               truth, deployed by Ansible) AND live to ~/.config/otelcol-edge/
+#               roles/devbox/local/.config/otelbox/edge/endpoint.env (source of
+#               truth, deployed by Ansible) AND live to ~/.config/otelbox/edge/
 #               endpoint.env so the running service picks it up immediately.
 #   token     — the Bearer ingestion key. Secret. Stored ONLY in the login
 #               keychain slot `otelbox-edge-token`, added with
 #               `-T /usr/bin/security` so the wrapper's `security
 #               find-generic-password` reads it silently after one "Always Allow".
 #
-# Consumed by roles/devbox/files/.config/otelcol-edge/otelcol-edge-run (wrapper)
-# and config.gateway.yaml (${env:OTELBOX_EDGE_ENDPOINT} / ${env:OTELBOX_EDGE_TOKEN}).
-# See otelcol-edge/README.md.
+# Consumed by roles/devbox/files/.config/otelbox/edge/otelbox-edge-run (wrapper)
+# and edge.yaml (${env:OTELBOX_EDGE_ENDPOINT} / ${env:OTELBOX_EDGE_TOKEN}).
+# See README.md § OTLP Telemetry.
 #
 # Invocation:
-#   make otelcol-edge-config                    — prompt for both, upsert
-#   ./scripts/otelcol-edge-config.sh --only endpoint
-#   ./scripts/otelcol-edge-config.sh --only token
+#   make otelbox-edge-config                    — prompt for both, upsert
+#   ./scripts/otelbox-edge-config.sh --only endpoint
+#   ./scripts/otelbox-edge-config.sh --only token
 #
 # Darwin-only (launchd + login keychain). Non-TTY: refuses to prompt, exits 1.
 
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
-    echo "otelcol-edge-config: macOS only (launchd + login keychain)." >&2
+    echo "otelbox-edge-config: macOS only (launchd + login keychain)." >&2
     exit 0
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "${SCRIPT_DIR}")"
 readonly SCRIPT_DIR REPO_ROOT
-readonly OVERLAY_ENV="${REPO_ROOT}/roles/devbox/local/.config/otelcol-edge/endpoint.env"
-readonly LIVE_ENV="${HOME}/.config/otelcol-edge/endpoint.env"
+readonly OVERLAY_ENV="${REPO_ROOT}/roles/devbox/local/.config/otelbox/edge/endpoint.env"
+readonly LIVE_ENV="${HOME}/.config/otelbox/edge/endpoint.env"
 readonly TOKEN_SVC="otelbox-edge-token"
 
 _only=""
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            echo "otelcol-edge-config: unknown argument: $1" >&2
+            echo "otelbox-edge-config: unknown argument: $1" >&2
             exit 64
             ;;
     esac
@@ -62,14 +62,14 @@ done
 case "${_only}" in
     "" | endpoint | token) ;;
     *)
-        echo "otelcol-edge-config: --only takes 'endpoint' or 'token', got '${_only}'" >&2
+        echo "otelbox-edge-config: --only takes 'endpoint' or 'token', got '${_only}'" >&2
         exit 64
         ;;
 esac
 
 _require_tty() {
     if [[ ! -t 0 ]]; then
-        echo "otelcol-edge-config: stdin is not a TTY — run interactively." >&2
+        echo "otelbox-edge-config: stdin is not a TTY — run interactively." >&2
         exit 1
     fi
 }
@@ -100,7 +100,7 @@ _set_endpoint() {
         break
     done
     if [[ -z "${endpoint}" ]]; then
-        echo "otelcol-edge-config: giving up on endpoint after 3 attempts" >&2
+        echo "otelbox-edge-config: giving up on endpoint after 3 attempts" >&2
         exit 1
     fi
 
@@ -109,7 +109,7 @@ _set_endpoint() {
     printf '%s\n' "${content}" >"${OVERLAY_ENV}"
     printf '%s\n' "${content}" >"${LIVE_ENV}"
     chmod 0644 "${OVERLAY_ENV}" "${LIVE_ENV}"
-    echo "otelcol-edge-config: wrote endpoint to overlay + live (${endpoint})" >&2
+    echo "otelbox-edge-config: wrote endpoint to overlay + live (${endpoint})" >&2
 }
 
 _set_token() {
@@ -126,7 +126,7 @@ _set_token() {
         echo "  empty input, try again (${attempt}/3)" >&2
     done
     if [[ -z "${token}" ]]; then
-        echo "otelcol-edge-config: giving up on token after 3 attempts" >&2
+        echo "otelbox-edge-config: giving up on token after 3 attempts" >&2
         exit 1
     fi
     /usr/bin/security add-generic-password \
@@ -136,7 +136,7 @@ _set_token() {
         -w "${token}" \
         -T /usr/bin/security \
         "${HOME}/Library/Keychains/login.keychain-db" >/dev/null
-    echo "otelcol-edge-config: stored '${TOKEN_SVC}' in login keychain" >&2
+    echo "otelbox-edge-config: stored '${TOKEN_SVC}' in login keychain" >&2
 }
 
 if [[ -z "${_only}" || "${_only}" == "endpoint" ]]; then
@@ -146,5 +146,5 @@ if [[ -z "${_only}" || "${_only}" == "token" ]]; then
     _set_token
 fi
 
-echo "otelcol-edge-config: done. Restart the service to apply:" >&2
-echo "  launchctl kickstart -k gui/\$(id -u)/local.otelcol-edge" >&2
+echo "otelbox-edge-config: done. Restart the service to apply:" >&2
+echo "  launchctl kickstart -k gui/\$(id -u)/local.otelbox-edge" >&2

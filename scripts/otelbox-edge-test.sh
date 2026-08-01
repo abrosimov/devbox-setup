@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# Liveness smoke for the otelcol-edge collector — run after `make personal`.
+# Liveness smoke for the otelbox edge collector — run after `make personal`.
 # Checks: binary, launchd service, health (:13133), internal metrics (:8888),
 # one OTLP/HTTP round-trip (send a log, confirm the receiver accepted it), and
 # delivery to the remote gateway (no permanently dropped items).
 # Exit non-zero on any failure. Darwin-only.
 # No set -e/pipefail: every check must run even when a probe curl fails; the
 # final exit is driven by the explicit `fail` flag, not the first failing probe.
+#
+# The delivery check is the local counterpart of the artefact repository's
+# TestEdgeToGatewayDelivery. Do not weaken it into a liveness check: it exists
+# because a wrong ingestion token once left every other check on this list green
+# while the telemetry went nowhere for days.
 set -u
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
-    echo "otelcol-edge-test: macOS only." >&2
+    echo "otelbox-edge-test: macOS only." >&2
     exit 0
 fi
 
@@ -27,14 +32,14 @@ sum_metric() {
 
 accepted_logs() { sum_metric '^otelcol_receiver_accepted_log_records'; }
 
-bin="${HOME}/.local/bin/otelcol-edge"
+bin="${HOME}/.local/bin/otelcol-otelbox"
 if [[ -x "${bin}" ]]; then
     _ok "binary ${bin}"
 else
-    _bad "binary missing: ${bin} (publish the release, then make personal)"
+    _bad "binary missing: ${bin} (check the pinned version in packages.yml, then make personal)"
 fi
 
-if info=$(launchctl print "gui/$(id -u)/local.otelcol-edge" 2>/dev/null); then
+if info=$(launchctl print "gui/$(id -u)/local.otelbox-edge" 2>/dev/null); then
     state=$(printf '%s\n' "${info}" | awk -F'= ' '/state = /{print $2; exit}')
     _ok "service state: ${state:-unknown}"
 else
@@ -64,7 +69,7 @@ fi
 
 before=$(accepted_logs)
 if curl -fsS --max-time 3 -H 'Content-Type: application/json' \
-    -d '{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"body":{"stringValue":"otelcol-edge-test"}}]}]}]}' \
+    -d '{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"body":{"stringValue":"otelbox-edge-test"}}]}]}]}' \
     http://127.0.0.1:4318/v1/logs >/dev/null 2>&1; then
     sleep 1
     after=$(accepted_logs)
@@ -88,12 +93,12 @@ queued=$(sum_metric '^otelcol_exporter_queue_size')
 if [[ "${dropped}" -eq 0 ]]; then
     _ok "gateway delivery: nothing dropped (queue depth ${queued})"
 else
-    _bad "gateway delivery: ${dropped} items dropped permanently (queue depth ${queued}); grep 'Exporting failed' ~/Library/Logs/otelcol-edge.log"
+    _bad "gateway delivery: ${dropped} items dropped permanently (queue depth ${queued}); grep 'Exporting failed' ~/Library/Logs/otelbox-edge.log"
 fi
 
 if [[ "${fail}" -eq 0 ]]; then
-    echo "otelcol-edge: all checks passed"
+    echo "otelbox-edge: all checks passed"
 else
-    echo "otelcol-edge: FAILED — see above; tail ~/Library/Logs/otelcol-edge.log" >&2
+    echo "otelbox-edge: FAILED — see above; tail ~/Library/Logs/otelbox-edge.log" >&2
     exit 1
 fi

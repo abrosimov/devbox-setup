@@ -1,0 +1,280 @@
+---
+# Durable OpenTelemetry edge collector — the published `otelcol-otelbox` binary
+# from abrosimov/otelcol-otelbox, pinned in defaults/main/packages.yml.
+#
+# Nothing is built here. The artefact repository owns the component set, the
+# shared base configuration layer and the release pipeline; this repository owns
+# the edge role layer, the secrets, the supervisor and the machine-local values.
+# Bumping the collector is editing the pinned version and running the playbook.
+#
+# The two configuration layers are composed base-first, as repeated --config
+# arguments (see the wrapper). Later arguments win, map keys merge key by key,
+# and a list value replaces the earlier list wholesale — which is why the role
+# layer restates nothing the base layer already owns.
+#
+# Non-bricking by design: if the release asset cannot be fetched, or the
+# machine-local endpoint.env has not been created, the service bootstrap warns
+# and skips instead of failing the whole run. The one hard failure is a Homebrew
+# keg of the same artefact — see the guard below.
+#
+# Guarded by the include in main_darwin.yml (Darwin + not dev_mode). Everything
+# below additionally honours devbox_packages.otelbox_edge.enabled.
+
+- name: "OpenTelemetry edge — check for a conflicting Homebrew keg"
+  # The artefact also publishes a Homebrew formula, whose own caveats say so:
+  # on a workstation this playbook manages, Homebrew is not the installation
+  # path. Both at once puts two copies on disk, free to drift, with launchd
+  # running the one Homebrew did not install.
+  ansible.builtin.command:
+    argv:
+      - brew
+      - list
+      - --formula
+      - --versions
+      - otelcol-otelbox
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_otelbox_edge_brew_keg
+  changed_when: false
+  failed_when: false
+  # A pure read, and a conflict a dry run should still report — so it runs under
+  # --check too. Without this the probe is skipped there, `rc` never exists, and
+  # the guard below has nothing to decide on.
+  check_mode: false
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — refuse to run alongside a Homebrew keg"
+  ansible.builtin.fail:
+    msg: >-
+      otelcol-otelbox is installed via Homebrew ({{
+      devbox_otelbox_edge_brew_keg.stdout | default('') | trim }}), and this
+      playbook installs the same artefact into ~/.local/bin. Two copies on disk
+      drift freely and launchd would run the one Homebrew did not install.
+      Resolve it with `brew uninstall otelcol-otelbox`, then re-run.
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_brew_keg.rc is defined
+    - devbox_otelbox_edge_brew_keg.rc == 0
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — migrate a machine off the legacy otelcol-edge layout"
+  # Transitional; runs before the directories below exist, because it renames
+  # into them. Safe and silent on a machine that never had the old collector.
+  ansible.builtin.include_tasks: darwin/migrate_otelcol_edge_to_otelbox.yml
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — resolve paths"
+  ansible.builtin.set_fact:
+    devbox_otelbox_edge_home: "{{ ansible_facts['env']['HOME'] }}"
+    devbox_otelbox_edge_bin: "{{ ansible_facts['env']['HOME'] }}/.local/bin/otelcol-otelbox"
+    devbox_otelbox_edge_conf: "{{ ansible_facts['env']['HOME'] }}/.config/otelbox/edge"
+    devbox_otelbox_edge_endpoint_env: "{{ ansible_facts['env']['HOME'] }}/.config/otelbox/edge/endpoint.env"
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+# Separate set_fact: keys in one set_fact are templated against the pre-task
+# scope, so asset_base cannot see a sibling key defined in the same task.
+# The release tag is bare `v<version>` — the artefact repository builds exactly
+# one artefact, so its tags carry no artefact prefix.
+- name: "OpenTelemetry edge — resolve download URL"
+  ansible.builtin.set_fact:
+    devbox_otelbox_edge_asset_base: >-
+      {{ devbox_packages.otelbox_edge.release_base }}/v{{
+      devbox_packages.otelbox_edge.version }}/otelcol-otelbox_darwin_arm64
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — ensure directories exist"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ devbox_otelbox_edge_home }}/.local/bin"
+    - "{{ devbox_otelbox_edge_conf }}"
+    - "{{ devbox_otelbox_edge_home }}/.local/state/otelbox/edge"
+    - "{{ devbox_otelbox_edge_home }}/Library/LaunchAgents"
+    - "{{ devbox_otelbox_edge_home }}/Library/Logs"
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — download the pinned release binary (darwin/arm64)"
+  # failed_when:false — a transient network failure, or a version pinned ahead
+  # of its release, must not brick the run. The service bootstrap below is gated
+  # on the binary actually being present, so ordering never fails the playbook.
+  # The checksum is fetched from the published .sha256 (bare hex, no filename
+  # column) rather than pinned here by hand.
+  ansible.builtin.get_url:
+    url: "{{ devbox_otelbox_edge_asset_base }}"
+    checksum: "sha256:{{ devbox_otelbox_edge_asset_base }}.sha256"
+    dest: "{{ devbox_otelbox_edge_bin }}"
+    mode: "0755"
+  register: devbox_otelbox_edge_download
+  failed_when: false
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — deploy config layers"
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/.config/otelbox/edge/{{ item }}"
+    dest: "{{ devbox_otelbox_edge_conf }}/{{ item }}"
+    mode: "0644"
+  loop:
+    - base.yaml
+    - edge.yaml
+    - endpoint.env.example
+  loop_control:
+    label: "otelbox/edge/{{ item }}"
+  register: devbox_otelbox_edge_layers
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — deploy wrapper (executable)"
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/.config/otelbox/edge/otelbox-edge-run"
+    dest: "{{ devbox_otelbox_edge_conf }}/otelbox-edge-run"
+    mode: "0755"
+  register: devbox_otelbox_edge_wrapper
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — deploy LaunchAgent plist"
+  ansible.builtin.template:
+    src: darwin/Library/LaunchAgents/local.otelbox-edge.plist.j2
+    dest: "{{ devbox_otelbox_edge_home }}/Library/LaunchAgents/local.otelbox-edge.plist"
+    mode: "0644"
+  register: devbox_otelbox_edge_plist
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — check installed binary + machine-local endpoint.env"
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ devbox_otelbox_edge_bin }}"
+    - "{{ devbox_otelbox_edge_endpoint_env }}"
+  loop_control:
+    label: "{{ item }}"
+  register: devbox_otelbox_edge_stats
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — decide whether the service can start"
+  # Bootstrap only when the binary is present AND the endpoint is configured.
+  # Stat the binary directly (not the get_url result) so a prior-run binary is
+  # honoured even when this run's download fails.
+  # The keychain token is checked by the wrapper at runtime (a missing slot is
+  # logged there, not here — it can be seeded after the first deploy).
+  ansible.builtin.set_fact:
+    devbox_otelbox_edge_bin_present: "{{ devbox_otelbox_edge_stats.results[0].stat.exists | default(false) }}"
+    devbox_otelbox_edge_endpoint_present: "{{ devbox_otelbox_edge_stats.results[1].stat.exists | default(false) }}"
+    devbox_otelbox_edge_ready: >-
+      {{ (devbox_otelbox_edge_stats.results[0].stat.exists | default(false))
+         and (devbox_otelbox_edge_stats.results[1].stat.exists | default(false)) }}
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — report skipped bootstrap (binary or endpoint missing)"
+  ansible.builtin.debug:
+    msg: >-
+      otelbox-edge service not started: {{ 'binary missing (the v'
+      ~ devbox_packages.otelbox_edge.version ~ ' release asset could not be '
+      ~ 'fetched from abrosimov/otelcol-otelbox)'
+      if not (devbox_otelbox_edge_bin_present | bool)
+      else 'endpoint.env missing (create it via `make otelbox-edge-config` — '
+      ~ 'see endpoint.env.example)' }}.
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - not (devbox_otelbox_edge_ready | bool)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — validate the composed configuration"
+  # Both layers together, exactly as the wrapper composes them. Dummy values for
+  # the three env references: an unset ${env:...} is a load error, not a default,
+  # and none of them is dialled or written by `validate`. Without this step a
+  # broken layer surfaces only as a launchd restart loop minutes later.
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_otelbox_edge_bin }}"
+      - validate
+      - "--config={{ devbox_otelbox_edge_conf }}/base.yaml"
+      - "--config={{ devbox_otelbox_edge_conf }}/edge.yaml"
+  environment:
+    OTELBOX_EDGE_STORAGE: /tmp/otelbox-edge-validate
+    OTELBOX_EDGE_ENDPOINT: validate.invalid:443
+    OTELBOX_EDGE_TOKEN: validate-only-not-a-credential
+  changed_when: false
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_ready | bool
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — check LaunchAgent bootstrap status"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge"
+  register: devbox_otelbox_edge_agent_status
+  changed_when: false
+  failed_when: false
+  # A pure read; runs under --check so the three decisions below have an rc.
+  check_mode: false
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_ready | bool
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — bootout LaunchAgent (if plist changed and loaded)"
+  # bootstrap fails on an already-loaded service; on a plist change we bootout
+  # first to pick up the new definition. Mirrors configure_ssh_keychain.yml.
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge"
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_ready | bool
+    - devbox_otelbox_edge_plist.changed
+    - devbox_otelbox_edge_agent_status.rc == 0
+  changed_when: true
+  failed_when: false
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — bootstrap LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootstrap
+      - "gui/{{ ansible_facts['user_uid'] }}"
+      - "{{ devbox_otelbox_edge_home }}/Library/LaunchAgents/local.otelbox-edge.plist"
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_ready | bool
+    - devbox_otelbox_edge_plist.changed or devbox_otelbox_edge_agent_status.rc != 0
+  changed_when: true
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — restart a running service after a binary or layer change"
+  # The plist is unchanged in this branch, so bootstrap above did not run and
+  # the service is still executing the previous binary and the previous layers.
+  # launchd has no reload: kickstart -k is the restart.
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - kickstart
+      - -k
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge"
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_ready | bool
+    - not devbox_otelbox_edge_plist.changed
+    - devbox_otelbox_edge_agent_status.rc == 0
+    - devbox_otelbox_edge_download.changed
+      or devbox_otelbox_edge_layers.changed
+      or devbox_otelbox_edge_wrapper.changed
+  changed_when: true
+  tags: [otel, otelbox-edge]

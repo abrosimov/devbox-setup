@@ -113,7 +113,7 @@ endif
 .PHONY: run dev help init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills rules-budget \
        work personal dev-work dev-personal check-work check-personal \
        git-identity git-identity-ensure \
-       secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed otelcol-edge-config otelcol-edge-test \
+       secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed otelbox-edge-config otelbox-edge-test \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        audit audit-brew audit-brewfile audit-taps untap-stale \
@@ -154,8 +154,8 @@ help:
 	@echo "  make secrets-init     - seed macOS keychain slots (devbox-sudo, devbox-ssh-passphrase)"
 	@echo "  make sudo-reseed      - reseed only the devbox-sudo keychain slot (after login password rotation)"
 	@echo "  make ssh-passphrase-reseed - reseed only the devbox-ssh-passphrase keychain slot"
-	@echo "  make otelcol-edge-config - set otelcol-edge remote endpoint (overlay) + ingestion token (keychain)"
-	@echo "  make otelcol-edge-test - liveness smoke: binary, service, :13133, :8888, OTLP round-trip"
+	@echo "  make otelbox-edge-config - set otelbox edge remote endpoint (overlay) + ingestion token (keychain)"
+	@echo "  make otelbox-edge-test - liveness smoke: binary, service, :13133, :8888, OTLP round-trip, delivery"
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
@@ -227,15 +227,15 @@ ssh-passphrase-reseed:
 	@security delete-generic-password -a "$$USER" -s devbox-ssh-passphrase >/dev/null 2>&1 || true
 	@./scripts/ensure_secrets.sh --only ssh
 
-# Interactive machine-local setup for the otelcol-edge collector: remote gateway
+# Interactive machine-local setup for the otelbox edge collector: remote gateway
 # endpoint (gitignored local overlay) + Bearer ingestion token (login keychain).
 # Pass ONLY='endpoint' or ONLY='token' to set just one.
-otelcol-edge-config:
-	@./scripts/otelcol-edge-config.sh $(if $(ONLY),--only $(ONLY))
+otelbox-edge-config:
+	@./scripts/otelbox-edge-config.sh $(if $(ONLY),--only $(ONLY))
 
-# Liveness smoke for the otelcol-edge collector — run after `make personal`.
-otelcol-edge-test:
-	@./scripts/otelcol-edge-test.sh
+# Liveness + delivery smoke for the otelbox edge collector — run after `make personal`.
+otelbox-edge-test:
+	@./scripts/otelbox-edge-test.sh
 
 dev:
 	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
@@ -255,12 +255,12 @@ git-identity-ensure:
 work: PROFILE = work
 work: git-identity-ensure
 	$(MAKE) run PROFILE=work V=$(V)
-	@./scripts/otelcol-edge-test.sh || true
+	@./scripts/otelbox-edge-test.sh || true
 
 personal: PROFILE = personal
 personal: git-identity-ensure
 	$(MAKE) run PROFILE=personal V=$(V)
-	@./scripts/otelcol-edge-test.sh || true
+	@./scripts/otelbox-edge-test.sh || true
 
 dev-work:
 	$(MAKE) run PROFILE=work EXTRA_VARS='-e dev_mode=true' V=$(V)

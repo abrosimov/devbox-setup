@@ -1,0 +1,166 @@
+# otelbox — EDGE ROLE LAYER (deployed, authoritative).
+#
+# ┌───────────────────────────────────────────────────────────────────────────┐
+# │ THIS IS THE AUTHORITATIVE COPY OF THE EDGE ROLE.                          │
+# │ `abrosimov/otelcol-otelbox` keeps a mirror at `config/examples/edge.yaml` │
+# │ so its CI can prove that the shared base layer still composes into a      │
+# │ valid, runnable role configuration. That mirror is only worth anything    │
+# │ while it stays faithful — a change made here belongs there too.           │
+# └───────────────────────────────────────────────────────────────────────────┘
+#
+# Loaded second, after the shared base layer, by the otelbox-edge-run wrapper:
+#
+#   otelcol-otelbox --config ~/.config/otelbox/edge/base.yaml \
+#                   --config ~/.config/otelbox/edge/edge.yaml
+#
+# This layer owns everything that names *this machine*: its loopback endpoints,
+# its storage directory, its gateway credential, and the pipelines wiring them
+# together. `memory_limiter`, `batch` and `redaction/secrets` come from the base
+# layer and are not restated — the edge runs them at the base values.
+#
+# Secrets arrive only as environment variables injected by launchd from the
+# login keychain; none of them are ever written into a configuration file.
+# Required: OTELBOX_EDGE_STORAGE, OTELBOX_EDGE_ENDPOINT, OTELBOX_EDGE_TOKEN.
+#   OTELBOX_EDGE_STORAGE  — WAL root, set by the LaunchAgent plist
+#                           (~/.local/state/otelbox/edge).
+#   OTELBOX_EDGE_ENDPOINT — remote gateway host:port, sourced by the wrapper
+#                           from the local-overlay endpoint.env.
+#   OTELBOX_EDGE_TOKEN    — Bearer ingestion key, read from the login keychain
+#                           slot `otelbox-edge-token`; never on disk.
+
+extensions:
+  health_check:
+    endpoint: 127.0.0.1:13133
+
+  # The WAL. Everything accepted from a local application is durable on disk
+  # before it is acknowledged, so a laptop that sleeps, loses its network or is
+  # rebooted mid-flight resumes the backlog instead of dropping it. fsync costs
+  # throughput the edge does not need and buys the only property it does.
+  #
+  # Sizing: max_size caps EACH bbolt db file, not the directory. Three signal
+  # pipelines share one exporter queue here, but a role that split them would
+  # multiply this figure. Conservative planning:
+  #   queue_bytes >= peak_accepted_bytes_per_s * max_outage_s * 2
+  file_storage/gateway:
+    directory: ${env:OTELBOX_EDGE_STORAGE}/gateway
+    create_directory: true
+    fsync: true
+    max_size: 5368709120
+    # bbolt does not return freed pages to the filesystem, so a drained queue
+    # keeps its high-water-mark file size until compaction rewrites it. Running
+    # on start and on rebound keeps a single spike from permanently occupying
+    # 5 GiB of a workstation disk.
+    compaction:
+      on_start: true
+      on_rebound: true
+      directory: ${env:OTELBOX_EDGE_STORAGE}/compaction/gateway
+
+receivers:
+  # Loopback only. This collector is reachable from the machine it runs on and
+  # from nowhere else — there is no authentication on these listeners precisely
+  # because the kernel is doing the access control instead.
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+        # Below the 8 MiB the gateway accepts, so an oversized payload is
+        # refused at the point it can still be attributed to a caller.
+        max_recv_msg_size_mib: 8
+      http:
+        endpoint: 127.0.0.1:4318
+
+processors:
+  # Deliberately in the role layer, not in the shared base. This processor
+  # stamps the *origin* of a signal, and origin is exactly what the two roles do
+  # not share: the `env` detector reads OTEL_RESOURCE_ATTRIBUTES, which launchd
+  # sets per profile on this workstation, and `system` reads this host's name.
+  # Running the same detectors on the gateway would restamp relayed telemetry
+  # with the server's identity and lose the edge that produced it.
+  #
+  # `override: false` protects attributes an application set for itself — the
+  # application knows more about what it is than the detectors do.
+  #
+  # NOTE: `resource_detection` is the canonical type in v0.156.0; plain
+  # `resourcedetection` is the deprecated alias, the same situation as
+  # `otlp` → `otlp_grpc` on the exporter below. Both names were carried by the
+  # collector this repository used to build for itself, and both were renamed
+  # in one change when it adopted the published artefact.
+  resource_detection:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
+
+exporters:
+  # `otlp_grpc`, not `otlp`: in v0.156.0 the OTLP gRPC exporter's canonical type
+  # is `otlp_grpc` and plain `otlp` is a deprecated alias kept for compatibility.
+  otlp_grpc/gateway:
+    endpoint: ${env:OTELBOX_EDGE_ENDPOINT}
+    headers:
+      authorization: "Bearer ${env:OTELBOX_EDGE_TOKEN}"
+    tls:
+      # NEVER set this to true. This leg crosses the public internet carrying a
+      # bearer token that grants ingest on the gateway; without verification the
+      # token is handed to whatever answers the DNS name. An expired or
+      # misissued server certificate is an incident to fix at the gateway, not a
+      # reason to relax this line.
+      insecure: false
+    compression: gzip
+    timeout: 10s
+    sending_queue:
+      enabled: true
+      # Binds the queue to the WAL above: enqueue means persisted, so an
+      # unclean shutdown loses nothing that was accepted.
+      storage: file_storage/gateway
+      sizer: items
+      queue_size: 500000
+      # Backpressure rather than silent loss: a full queue slows the local
+      # application down instead of discarding its telemetry. Acceptable here
+      # because the producers are this developer's own processes.
+      block_on_overflow: true
+      # The queue is measured in items while the batcher is measured in bytes,
+      # because the two answer different questions: how much backlog is held,
+      # versus how large a payload the gateway should receive. The 3 MiB ceiling
+      # keeps an outgoing send under the remote gateway's 4 MiB default gRPC
+      # receive limit — keep the two coordinated.
+      batch:
+        flush_timeout: 200ms
+        sizer: bytes
+        min_size: 1048576
+        max_size: 3145728
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      # No deadline. The WAL exists so an outage is survived, not timed out;
+      # a non-zero max_elapsed_time would drop the backlog the disk was bought
+      # to hold. Overflow, not expiry, is the intended loss mechanism.
+      max_elapsed_time: 0s
+
+service:
+  telemetry:
+    logs:
+      # Only `initial_fields` here. `level` and `encoding` come from the base
+      # layer and maps merge key by key, so restating them would buy nothing.
+      # This stamp names the process in ~/Library/Logs/otelbox-edge.log, which
+      # the LaunchAgent shares with nothing else — it is what tells a collector
+      # line apart from anything else that ends up in that file.
+      initial_fields:
+        service: otelbox-edge
+  extensions: [health_check, file_storage/gateway]
+  pipelines:
+    # Same shape in all three signals on purpose: redaction must be the last
+    # thing that can alter an attribute before it is batched and enqueued, and
+    # resource_detection must run before redaction so the attributes it adds are
+    # subject to the same patterns as everything else.
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource_detection, redaction/secrets, batch]
+      exporters: [otlp_grpc/gateway]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource_detection, redaction/secrets, batch]
+      exporters: [otlp_grpc/gateway]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource_detection, redaction/secrets, batch]
+      exporters: [otlp_grpc/gateway]

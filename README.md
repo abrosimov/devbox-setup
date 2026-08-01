@@ -35,8 +35,8 @@ A profile is mandatory: bare `make run` / `make dev` / `make check` fail with `P
 | `make lint` | Syntax-check + ansible-lint + semantics + typecheck |
 | `make lint-ansible-semantics` | Static catch for set_fact intra-task self-references |
 | `make validate-claude` | Validate agent/skill cross-references |
-| `make otelcol-edge-config` | Set otelcol-edge remote endpoint + ingestion token (`ONLY=endpoint\|token`) |
-| `make otelcol-edge-test` | Liveness smoke for the otelcol-edge collector (also runs after `make personal`/`work`) |
+| `make otelbox-edge-config` | Set the edge collector's remote endpoint + ingestion token (`ONLY=endpoint\|token`) |
+| `make otelbox-edge-test` | Liveness + delivery smoke for the edge collector (also runs after `make personal`/`work`) |
 
 Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_VARS='-e foo=bar'` (e.g. `--tags`: `make personal EXTRA_VARS='--tags packages'`).
 
@@ -140,18 +140,48 @@ pub status   # warp-cli status, bridge up/down, current HTTPS_PROXY value.
 
 WARP proxy mode uses MASQUE, which enforces a roughly 10-second per-request limit. Long-running Claude responses that drop mid-stream are the chain timing out, not the `pub` toggle itself. Disable `pub` for long-form work when you're on a trusted network.
 
-## OTLP Telemetry (`otelcol-edge`)
+## OTLP Telemetry (otelbox edge)
 
 A durable local OpenTelemetry collector — Ansible-deployed, `launchd`-supervised, no brew — sinks agent telemetry at `127.0.0.1:4317` (gRPC) / `:4318` (HTTP), buffers it on disk across outages, and forwards to one remote gateway with `deployment.environment.name={profile}` stamped on every record.
 
 Wired: Claude Code CLI (`OTEL_*` env in `~/.claude/settings.json`) and Codex CLI/app (`[otel]` table injected into `~/.codex/config.toml`). Antigravity (`agy`) has no native OTLP exporter — nothing wired; its telemetry path is a future `praetor`/agents-hooks-guard hook shim.
 
+### Where the collector comes from
+
+Nothing is built here. The binary is the published [`abrosimov/otelcol-otelbox`](https://github.com/abrosimov/otelcol-otelbox) artefact — one collector serving two roles, the workstation `edge` and the server `gateway` (the latter deployed by `remote_server_setup`). That repository owns the component set, the release pipeline and the **shared base configuration layer**; this one owns the edge role layer, the secrets, the supervisor and the machine-local values.
+
+Configuration is composed as exactly two `--config` arguments, base first. Later arguments win, map keys merge key by key, and a list value replaces the earlier list wholesale — which is why the role layer restates nothing the base layer already owns (`memory_limiter`, `batch`, `redaction/secrets`, the metrics reader).
+
+| Path | Role |
+|------|------|
+| `~/.local/bin/otelcol-otelbox` | the pinned release asset, checksum-verified on download |
+| `roles/devbox/files/.config/otelbox/edge/base.yaml` | shared layer, vendored verbatim from the release — do not hand-edit |
+| `roles/devbox/files/.config/otelbox/edge/edge.yaml` | the edge role layer; `otelcol-otelbox` mirrors it at `config/examples/edge.yaml`, so a change here belongs there too |
+| `~/.config/otelbox/edge/` | both layers + wrapper + `endpoint.env`, as deployed |
+| `~/.local/state/otelbox/edge/` | the on-disk WAL (bbolt) |
+| `~/Library/Logs/otelbox-edge.log` | service log, owned by the LaunchAgent `local.otelbox-edge` |
+
+**Bumping the collector:** raise `devbox_packages.otelbox_edge.version` in `roles/devbox/defaults/main/packages.yml` and run the playbook. The release already exists — there is nothing to build, no tag to cut and no CI to wait for. A **major** bump means the shared base layer changed shape, so re-vendor `base.yaml` from the new release in the same change; minor and patch bumps do not require it.
+
+Homebrew is not an installation path on a machine this playbook manages. The artefact publishes a formula for machines it does not, and installing both puts two copies on disk with `launchd` running the one Homebrew did not install — so the playbook fails outright if it finds a keg.
+
+### Machine-local setup (once per machine)
+
+Two values are not tracked in the repository. Both are set interactively by `make otelbox-edge-config` (add `ONLY=endpoint` / `ONLY=token` for just one; it needs a TTY):
+
+- **Endpoint** (non-secret) — written to the gitignored overlay `roles/devbox/local/.config/otelbox/edge/endpoint.env` (source of truth, deployed by Ansible) *and* live to `~/.config/otelbox/edge/endpoint.env`, so a restart picks it up without a full playbook run. Format: `OTELBOX_EDGE_ENDPOINT=otel.example.com:443` — `host:port`, no scheme.
+- **Ingestion key** (secret) — to the login keychain slot `otelbox-edge-token`, never on disk. Added with `-T /usr/bin/security` so the wrapper reads it silently after one "Always Allow".
+
+Neither is required for the playbook to succeed: without `endpoint.env` the service is not started and the run reports why.
+
 ```bash
-make otelcol-edge-config  # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token
-make otelcol-edge-test    # liveness smoke: binary, launchd service, :13133, :8888, OTLP round-trip
+make otelbox-edge-config  # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token
+make otelbox-edge-test    # binary, launchd service, :13133, :8888, OTLP round-trip, gateway delivery
 ```
 
-Also runs non-fatally at the end of `make personal`/`make work`. See [`otelcol-edge/README.md`](otelcol-edge/README.md) for the collector internals (component set, release flow, machine-local setup).
+Restart after changing either: `launchctl kickstart -k gui/$(id -u)/local.otelbox-edge`.
+
+`make otelbox-edge-test` also runs non-fatally at the end of `make personal`/`make work`. Its last check — `otelcol_exporter_send_failed_*` at zero — is the one that matters: a wrong ingestion token leaves every other check green while nothing reaches the gateway, which is exactly how a real outage went unnoticed for days.
 
 ## Telemetry Tunnel (`otelbox`)
 

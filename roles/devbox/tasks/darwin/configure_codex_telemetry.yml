@@ -16,7 +16,11 @@
     cmd: "grep -lE '{{ item.pattern }}' {{ ansible_facts['env']['HOME'] }}/.codex/config.toml"
   loop:
     - { key: otel, pattern: '^\[otel\]' }
-    - { key: marker, pattern: 'BEGIN devbox otelcol-edge telemetry' }
+    # Either marker counts as ours: the block was renamed when the collector
+    # moved into the otelbox namespace, and a machine still carrying the old
+    # one must be recognised (and cleaned up below), not mistaken for a
+    # hand-written [otel] we then refuse to touch.
+    - { key: marker, pattern: 'BEGIN devbox (otelcol-edge|otelbox edge) telemetry' }
   loop_control:
     label: "{{ item.key }}"
   register: devbox_codex_greps
@@ -47,10 +51,23 @@
     - not (devbox_codex_manage | default(false) | bool)
   tags: [otel, codex]
 
-- name: "Codex telemetry — inject [otel] block (OTLP gRPC -> local edge)"
+# TRANSITIONAL — delete once every managed workstation has run it. The marker
+# was renamed when the collector moved into the otelbox namespace; without this
+# step the rename would leave the old block in place and add a second one,
+# giving ~/.codex/config.toml two [otel] tables, which is a TOML load error.
+- name: "Codex telemetry — drop the legacy otelcol-edge block"
   ansible.builtin.blockinfile:
     path: "{{ ansible_facts['env']['HOME'] }}/.codex/config.toml"
     marker: "# {mark} devbox otelcol-edge telemetry"
+    state: absent
+    create: false
+  when: devbox_codex_manage | default(false) | bool
+  tags: [otel, codex]
+
+- name: "Codex telemetry — inject [otel] block (OTLP gRPC -> local edge)"
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_facts['env']['HOME'] }}/.codex/config.toml"
+    marker: "# {mark} devbox otelbox edge telemetry"
     create: false
     mode: "0600"
     block: |

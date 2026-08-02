@@ -79,7 +79,7 @@
   changed_when: false
   check_mode: false
   failed_when: devbox_uv_path.rc != 0
-  tags: [configs, claude]
+  tags: [configs, claude, agy]
 
 - name: Bootstrap Claude hooks venv via uv sync
   ansible.builtin.command:
@@ -90,12 +90,11 @@
     'Resolved' in (devbox_claude_uv_sync.stderr | default(''))
     or 'Installed' in (devbox_claude_uv_sync.stderr | default(''))
     or 'Prepared' in (devbox_claude_uv_sync.stderr | default(''))
-  tags: [configs, claude]
+  tags: [configs, claude, agy]
 
 # =============================================================================
 # Block 2: .claude root files — explicit copy
-# USER_AUTHORITY_PROTOCOL.md is renamed on the host to CLAUDE.md (the filename
-# Claude Code expects); other files keep their names.
+# These files keep their names on the host.
 # =============================================================================
 
 - name: Deploy .claude root files
@@ -104,13 +103,93 @@
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item.dest }}"
     mode: "0644"
   loop:
-    - { src: USER_AUTHORITY_PROTOCOL.md, dest: CLAUDE.md }
     - { src: settings.json, dest: settings.json }
     - { src: hooks.json, dest: hooks.json }
     - { src: config.md, dest: config.md }
   loop_control:
     label: ".claude/{{ item.dest }}"
   tags: [configs, claude]
+
+# =============================================================================
+# Block 2b: dot_ai (Shared AI configs) and dot_agy (Antigravity CLI configs)
+# =============================================================================
+
+- name: Ensure AI config parent directories exist
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - .gemini/antigravity-cli
+    - .gemini/config/rules
+  tags: [configs, ai, claude, agy]
+
+- name: Sync shared AI directories (dot_ai) to Claude (one-way, --delete)
+  ansible.posix.synchronize:
+    src: "{{ role_path }}/files/dot_ai/{{ item }}/"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}/"
+    delete: true
+    recursive: true
+    perms: true
+  delegate_to: localhost
+  loop: "{{ devbox_ai_managed_dirs }}"
+  tags: [configs, ai, claude]
+
+- name: Sync shared AI directories (dot_ai) to Antigravity (one-way)
+  ansible.posix.synchronize:
+    src: "{{ role_path }}/files/dot_ai/{{ item }}/"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/config/{{ item }}/"
+    recursive: true
+    perms: true
+    rsync_opts:
+      - "--exclude=.DS_Store"
+      - "--exclude=__pycache__"
+      - "--exclude=.venv"
+      - "--exclude=.hypothesis"
+      - "--exclude=.pytest_cache"
+  delegate_to: localhost
+  loop: "{{ devbox_ai_managed_dirs }}"
+  tags: [configs, ai, agy]
+
+- name: Translate Claude agent frontmatter for Antigravity
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/dot_agy/bin/translate_agents.py {{ devbox_paths.dotfiles_root_dir }}/.gemini/config/agents"
+  delegate_to: localhost
+  tags: [configs, ai, agy]
+
+- name: Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Claude
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/dot_ai/USER_AUTHORITY_PROTOCOL.md"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/CLAUDE.md"
+    mode: "0644"
+  tags: [configs, ai, claude]
+
+- name: Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Antigravity
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/dot_ai/USER_AUTHORITY_PROTOCOL.md"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/config/rules/AGENTS.md"
+    mode: "0644"
+  tags: [configs, ai, agy]
+
+- name: Render Antigravity managed settings
+  ansible.builtin.template:
+    src: "{{ role_path }}/files/dot_agy/cli/settings.json.j2"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/.settings.managed.json"
+    mode: "0600"
+  tags: [configs, agy]
+
+- name: Merge Antigravity CLI specific configs
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/dot_agy/bin/merge_settings.py {{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/.settings.managed.json {{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/settings.json"
+  delegate_to: localhost
+  tags: [configs, agy]
+
+- name: Deploy Antigravity global configs
+  ansible.builtin.template:
+    src: "{{ role_path }}/files/dot_agy/config/hooks.json.j2"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/config/hooks.json"
+    mode: "0644"
+  tags: [configs, agy]
 
 # =============================================================================
 # Block 3: dotfile directories — copy whole dir (no --delete, safe for overlay)

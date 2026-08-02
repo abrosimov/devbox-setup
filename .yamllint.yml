@@ -17,8 +17,8 @@ ignore: |
   roles/devbox/local/
   roles/devbox/files/dot_claude/future_projects/
   roles/devbox/files/dot_claude/plugins/
-  roles/devbox/files/dot_claude/skills/example-skills/
-  roles/devbox/files/dot_claude/skills/document-skills/
+  roles/devbox/files/dot_ai/skills/example-skills/
+  roles/devbox/files/dot_ai/skills/document-skills/
   roles/devbox/files/.config/nvim/lazy-lock.json
   uv.lock
 

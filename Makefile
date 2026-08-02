@@ -68,6 +68,7 @@ $(COLLECTIONS_SENTINEL): requirements.yml
 # managed-subdirs list lives in devbox_claude_managed_dirs (roles/devbox/defaults/main/claude.yml)
 # and is read by both `make personal`/`make work` and `make claude-push`.
 CLAUDE_SRC          := roles/devbox/files/dot_claude
+AI_SRC              := roles/devbox/files/dot_ai
 CLAUDE_DEST         := $(HOME)/.claude
 # Root files where source name == destination name. The User Authority Protocol
 # is handled separately because it is renamed on deploy: USER_AUTHORITY_PROTOCOL.md
@@ -77,7 +78,7 @@ CLAUDE_DEST         := $(HOME)/.claude
 CLAUDE_ROOT_FILES   := settings.json hooks.json config.md
 CLAUDE_AUTHORITY_SRC  := USER_AUTHORITY_PROTOCOL.md
 CLAUDE_AUTHORITY_DEST := CLAUDE.md
-SKILLS_DIR          := $(CLAUDE_SRC)/skills
+SKILLS_DIR          := $(AI_SRC)/skills
 # Claude Code rewrites ~/.claude/settings.json in its own key order whenever a
 # setting is toggled in-session (e.g. via /sandbox), so a two-key change arrives
 # as a ~450-line diff on the way back into the repo. claude-diff / claude-pull
@@ -117,7 +118,7 @@ endif
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        audit audit-brew audit-brewfile audit-taps untap-stale \
-       claude-diff claude-pull claude-pull-review claude-push \
+       claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        sync-upstream-docs \
        test test-integration test-claude-hooks test-git-hooks test-scripts test-nvim test-fish test-json test-bash \
@@ -171,6 +172,8 @@ help:
 	@echo ""
 	@echo "Maintenance (slim playbooks, no full bootstrap):"
 	@echo "  make claude-push      - deploy Claude config (no sudo, no vault)"
+	@echo "  make agy-push         - deploy Antigravity config (no sudo, no vault)"
+	@echo "  make codex-push       - deploy Codex config, guidance, agents + shared skills (no sudo, no vault)"
 	@echo "  make dotfiles-push    - deploy kitty / nvim / fish / bash configs + templates + local/ overlay (no sudo, no vault)"
 	@echo "  make shell-push       - refresh fish + fisher plugins + tide preset + font cache (no sudo)"
 	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
@@ -296,15 +299,15 @@ lint-yaml: $(DEV_SENTINEL)
 # roles/devbox/files/dot_claude/future_projects/ruff_strict_migration.md.
 # The formatter is likewise enforced: it is deterministic and auto-fixable.
 #
-# Scope: roles/devbox/files/dot_claude/ — covers bin/ (hook scripts, shared lib)
-# and skills/*/scripts/ (skill-bundled utilities). Other Python files in the repo
-# (.config/kitty/) are not project code; pyrefly's project-includes handles those.
+# Scope: the client/shared AI trees plus deploy tests. Other Python files in the
+# repo (.config/kitty/) are not project code; pyrefly's project-includes handles
+# those.
 lint-py: $(DEV_SENTINEL)
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/
 
-typecheck: $(DEV_SENTINEL) ## Pyrefly type check across dot_claude/bin/
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/
+typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/
 
 test: $(DEV_SENTINEL) ## Pytest unit tests in dot_claude/ (excludes integration — see test-integration)
 	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/ -m "not integration"
@@ -369,20 +372,20 @@ list-skills:
 	@ls -1 $(SKILLS_DIR) | sort | nl -ba
 
 list-agents:
-	@ls -1 $(CLAUDE_SRC)/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | sort | nl -ba
+	@ls -1 $(AI_SRC)/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | sort | nl -ba
 
 validate-claude:
-	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC)
+	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC)
 
 audit-budget:
-	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --budget
+	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC) --budget
 
 # Rules-budget instrumentation (RI1): count rule-like statements across
 # skills, agents, commands, and UAP. Baseline for W2-W5 tuning decisions.
 # ARGS lets callers pass through --json, --baseline PATH, etc.
 rules-budget:
 	@uv run --project $(CLAUDE_SRC)/bin \
-	  python $(CLAUDE_SRC)/bin/rules_budget.py --root $(CLAUDE_SRC) $(ARGS)
+	  python $(CLAUDE_SRC)/bin/rules_budget.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC) $(ARGS)
 
 # Supply-chain audit for Homebrew packages. Uses `brew vulns` (a built-in Homebrew
 # command since it was merged from the now-archived Homebrew/brew-vulns tap; queries
@@ -485,7 +488,7 @@ untap-stale:
 
 validate-skills:
 	@echo "Validating skill eval files..."
-	@python3 $(CLAUDE_SRC)/bin/validate_skill_evals.py
+	@python3 $(CLAUDE_SRC)/bin/validate_skill_evals.py $(SKILLS_DIR)
 
 # Anthropic skill-creator scripts (installed via claude-plugins-official)
 EVAL_SCRIPTS := $(shell ls -d ~/.claude/plugins/cache/anthropic-agent-skills/example-skills/*/skills/skill-creator/scripts 2>/dev/null | head -1)
@@ -653,6 +656,16 @@ claude-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags claude $(ACTIVE_OPTS) playbooks/claude.yml
 
+agy-push: $(COLLECTIONS_SENTINEL)
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags agy $(ACTIVE_OPTS) playbooks/claude.yml
+
+# Fast-path Codex deploy. The repo owns only the portable fragment from
+# dot_codex; app-owned config.toml tables are preserved by the reconciler.
+codex-push: $(COLLECTIONS_SENTINEL)
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags codex $(ACTIVE_OPTS) playbooks/codex.yml
+
 # Fast-path: kitty / nvim / fish / bash configs + Jinja templates + local overlay.
 # Reuses Blocks 3-5 (dotfiles) and Block 6 (local) of install_configs.yml.
 # Use `make local-push` if you want to iterate on the overlay alone.
@@ -692,13 +705,14 @@ macos-defaults: $(COLLECTIONS_SENTINEL) secrets-ready
 	    ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
 
 # Pull fresh copies of the upstream FPF spec and companion Narrative doc into
-# dot_claude/docs/ and reset the drift state file used by the statusline / tide
+# the shared fpf-thinking reference bundle and reset the drift state file used
+# by the statusline / tide
 # badge. Run when the badge (or curiosity) tells you the vendored copy lags
 # upstream. Atomic per file (temp → mv); drift state resets only after both
 # curls succeed.
-FPF_LOCAL     := roles/devbox/files/dot_claude/docs/FPF-Spec.md
+FPF_LOCAL     := roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md
 FPF_UPSTREAM  := https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md
-NARR_LOCAL    := roles/devbox/files/dot_claude/docs/Narrativization-and-Narrative-Studies-Principles-Framework.md
+NARR_LOCAL    := roles/devbox/files/dot_ai/skills/fpf-thinking/references/Narrativization-and-Narrative-Studies-Principles-Framework.md
 NARR_UPSTREAM := https://raw.githubusercontent.com/ailev/FPF/main/Narrativization-and-Narrative-Studies-Principles-Framework.md
 FPF_STATE     := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/fpf-drift
 NARR_STATE    := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/narrative-drift
@@ -740,7 +754,7 @@ test-fish:
 test-bash:
 	@echo "Validating bash script syntax..."
 	@fail=0; \
-	for f in $$(find scripts roles/devbox/files/dot_claude/templates roles/devbox/files/dot_claude/skills -name '*.sh' -not -path '*/future_projects/*' -not -path '*/hooks-snapshots/*'); do \
+	for f in $$(find scripts roles/devbox/files/dot_claude/templates $(AI_SRC)/skills -name '*.sh' -not -path '*/future_projects/*' -not -path '*/hooks-snapshots/*'); do \
 		bash -n "$$f" 2>&1 || { echo "  FAIL: $$f"; fail=1; }; \
 	done; \
 	[ $$fail -eq 0 ] && echo "  OK: all bash scripts have valid syntax" || exit 1

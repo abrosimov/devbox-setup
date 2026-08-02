@@ -32,6 +32,7 @@ A profile is mandatory: bare `make run` / `make dev` / `make check` fail with `P
 | `make check-dev` | Dry-run in dev_mode (override vars, no sudo/keychain) |
 | `make upgrade-personal` | Upgrade all packages (personal profile) |
 | `make upgrade-work` | Upgrade all packages (work profile) |
+| `make codex-push` | Deploy portable Codex settings, global guidance, custom agents, and compatible shared skills |
 | `make lint` | Syntax-check + ansible-lint + semantics + typecheck |
 | `make lint-ansible-semantics` | Static catch for set_fact intra-task self-references |
 | `make validate-claude` | Validate agent/skill cross-references |
@@ -105,7 +106,8 @@ Keybindings and usage for each tool:
 - [Kitty](roles/devbox/files/.config/kitty/README.md) — layout-independent bindings, readline-on-cyrillic, smart Cmd+Q, session save/restore
 - [AeroSpace](roles/devbox/files/.config/aerospace/README.md) — i3-style tiling WM, ijlm bindings, workspace→monitor auto-assignment
 - [Fish](roles/devbox/files/.config/fish/README.md) — abbreviations, functions, plugins
-- [Claude Code](roles/devbox/files/dot_claude/README.md) — agents, skills, commands, MCP servers
+- [Claude Config](roles/devbox/files/dot_claude/README.md) — Claude runtime, hooks, schemas, and templates
+- [Codex Config](roles/devbox/files/dot_codex/README.md) — portable settings, global guidance, native agents, FPF references, and ownership boundaries
 
 ## Pub Mode
 
@@ -144,7 +146,7 @@ WARP proxy mode uses MASQUE, which enforces a roughly 10-second per-request limi
 
 A durable local OpenTelemetry collector — Ansible-deployed, `launchd`-supervised, no brew — sinks agent telemetry at `127.0.0.1:4317` (gRPC) / `:4318` (HTTP), buffers it on disk across outages, and forwards to one remote gateway with `deployment.environment.name={profile}` stamped on every record.
 
-Wired: Claude Code CLI (`OTEL_*` env in `~/.claude/settings.json`) and Codex CLI/app (`[otel]` table injected into `~/.codex/config.toml`). Antigravity (`agy`) has no native OTLP exporter — nothing wired; its telemetry path is a future `praetor`/agents-hooks-guard hook shim.
+Wired: Claude Code CLI (`OTEL_*` env in `~/.claude/settings.json`), Codex CLI/app (`[otel]` managed from `dot_codex`), and Antigravity through the `agy` wrapper's standard OpenTelemetry environment variables.
 
 ### Where the collector comes from
 

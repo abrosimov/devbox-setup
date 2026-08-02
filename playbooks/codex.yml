@@ -1,0 +1,17 @@
+---
+# Slim userspace-only deploy for the portable Codex configuration layer.
+
+- name: Deploy Codex configs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - "../roles/devbox/defaults/main/core.yml"
+    - "../roles/devbox/defaults/main/codex.yml"
+
+  tasks:
+    - name: Deploy portable Codex settings, guidance, agents, and shared skills
+      ansible.builtin.import_tasks: "../roles/devbox/tasks/install_codex_configs.yml"
+      vars:
+        devbox_codex_role_path: "{{ playbook_dir }}/../roles/devbox"

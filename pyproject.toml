@@ -49,8 +49,8 @@ extend-exclude = [
     "debug",
     "roles/devbox/local",
     "roles/devbox/files/dot_claude/plugins",
-    "roles/devbox/files/dot_claude/skills/example-skills",
-    "roles/devbox/files/dot_claude/skills/document-skills",
+    "roles/devbox/files/dot_ai/skills/example-skills",
+    "roles/devbox/files/dot_ai/skills/document-skills",
     "roles/devbox/files/.config/nvim",
 ]
 
@@ -116,7 +116,7 @@ ignore = [
 "roles/devbox/files/dot_claude/bin/test_integration/fixtures/**" = [
     "ALL",         # fixtures are data, not code
 ]
-"roles/devbox/files/dot_claude/skills/**/scripts/test_*.py" = [
+"roles/devbox/files/dot_ai/skills/**/scripts/test_*.py" = [
     "S101",        # assert is the whole point of tests
     "PLR2004",     # magic numbers OK in test cases
     "SLF001",      # private member access is expected (testing _-prefixed helpers)
@@ -216,15 +216,15 @@ project-excludes = [
     "tests/generated",
     "roles/devbox/local",
     "roles/devbox/files/dot_claude/plugins",
-    "roles/devbox/files/dot_claude/skills/example-skills",
-    "roles/devbox/files/dot_claude/skills/document-skills",
+    "roles/devbox/files/dot_ai/skills/example-skills",
+    "roles/devbox/files/dot_ai/skills/document-skills",
 ]
 # bin/ and skills/*/scripts/ are flat directories of scripts that import each
 # other (e.g. test_foo.py imports foo). Add them as search roots so pyrefly can
 # resolve sibling imports.
 search-path = [
     "roles/devbox/files/dot_claude/bin",
-    "roles/devbox/files/dot_claude/skills/techne-fewer-permission-prompts/scripts",
+    "roles/devbox/files/dot_ai/skills/techne-fewer-permission-prompts/scripts",
 ]
 
 # kittens.tui.* is only resolvable at runtime inside kitty itself. The path is
@@ -314,7 +314,7 @@ unbound-name = true
 # which is deployed verbatim to ~/.config/git/hooks/). Other Python tests live
 # next to their implementations under dot_claude/ — hook scripts in bin/, skill
 # helpers in skills/*/scripts/.
-testpaths = ["tests", "roles/devbox/files/dot_claude"]
+testpaths = ["tests", "roles/devbox/files/dot_claude", "roles/devbox/files/dot_ai"]
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers --strict-config"
 markers = [

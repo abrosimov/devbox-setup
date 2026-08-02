@@ -25,7 +25,7 @@ class DocSpec:
 FPF_SPEC: Final[DocSpec] = DocSpec(
     name="FPF",
     upstream_url="https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md",
-    local_relative_path="roles/devbox/files/dot_claude/docs/FPF-Spec.md",
+    local_relative_path=("roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md"),
     state_filename="fpf-drift",
 )
 NARRATIVE_SPEC: Final[DocSpec] = DocSpec(
@@ -35,7 +35,7 @@ NARRATIVE_SPEC: Final[DocSpec] = DocSpec(
         "Narrativization-and-Narrative-Studies-Principles-Framework.md"
     ),
     local_relative_path=(
-        "roles/devbox/files/dot_claude/docs/"
+        "roles/devbox/files/dot_ai/skills/fpf-thinking/references/"
         "Narrativization-and-Narrative-Studies-Principles-Framework.md"
     ),
     state_filename="narrative-drift",

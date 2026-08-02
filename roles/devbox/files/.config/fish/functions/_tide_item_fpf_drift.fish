@@ -3,7 +3,8 @@ function _tide_item_fpf_drift
     # Background refresh (~weekly TTL) handled by bin/fpf_drift_check.py itself.
 
     set -l repo_root (git rev-parse --show-toplevel 2>/dev/null); or return
-    test -f "$repo_root/roles/devbox/files/dot_claude/docs/FPF-Spec.md"; or return
+    set -l fpf_spec "$repo_root/roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md"
+    test -f "$fpf_spec"; or return
 
     # Fire background refresh; never block the prompt.
     fish -c "$HOME/.claude/bin/fpf_drift_check.py >/dev/null 2>&1 &" >/dev/null 2>&1 &

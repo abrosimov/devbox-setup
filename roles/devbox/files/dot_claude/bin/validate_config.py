@@ -14,7 +14,7 @@ Checks:
   budget               Skill description budget utilisation (16K char limit)
   related-links        related: frontmatter entries resolve to existing skills/agents
   trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
-  fpf-refs             FPF pattern ids cited in skills resolve in docs/FPF-Spec.md
+  fpf-refs             FPF and NSTD ids cited by their skills resolve in bundled references
 
 Usage:
   validate-config.py                           # all checks, ~/.claude root
@@ -27,9 +27,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -399,10 +401,16 @@ def _iter_managed_files(root: Path) -> Iterator[Path]:
         if not sub.is_dir():
             continue
         for path in sorted(sub.rglob("*")):
+            relative_path = path.relative_to(sub)
             # Skip hidden dirs (.hypothesis/, .venv/, .pytest_cache/, ...) — they
             # hold tool caches with harvested string literals that trip the
             # regex-based namespace checks.
-            if any(part.startswith(".") for part in path.relative_to(sub).parts):
+            if any(part.startswith(".") for part in relative_path.parts):
+                continue
+            # Bundled references are source material, not executable command
+            # definitions. Slash tokens inside them must not enter the custom
+            # command namespace.
+            if "references" in relative_path.parts:
                 continue
             if path.is_file() and path.suffix in _CMD_SCAN_SUFFIXES and not _is_test_file(path):
                 yield path
@@ -730,8 +738,12 @@ def check_grounding(root: Path) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
-_FPF_SPEC_REL = "docs/FPF-Spec.md"
+_FPF_SPEC_REL = "skills/fpf-thinking/references/FPF-Spec.md"
 _FPF_REF_SOURCES = ("skills/fpf-thinking/SKILL.md",)
+_NSTD_SPEC_REL = (
+    "skills/fpf-thinking/references/Narrativization-and-Narrative-Studies-Principles-Framework.md"
+)
+_NSTD_REF_SOURCES = ("skills/narrative-thinking/SKILL.md",)
 
 # A cited id: Part letter, dot, digit, then dot-separated alphanumeric segments.
 # Matches A.1, A.19.CN, C.32.P2S, A.6.P.WMR, E.17.ID.CR, B.5.2.0.
@@ -740,6 +752,10 @@ _FPF_ID_RE = re.compile(r"\b([A-G]\.[0-9][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)")
 # The separator class is hyphen, en dash (u2013), em dash (u2014); the spec uses all three.
 _FPF_HEADER_RE = re.compile(
     r"^#{1,6}\s+\*{0,2}([A-G]\.[0-9][A-Za-z0-9.]*?)\*{0,2}\s*(?=[-\u2013\u2014:])"
+)
+_NSTD_ID_RE = re.compile(r"\b(NSTD\.[0-9][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)")
+_NSTD_HEADER_RE = re.compile(
+    r"^#{1,6}\s+\*{0,2}(NSTD\.[0-9][A-Za-z0-9.]*?)\*{0,2}\s*(?=[-\u2013\u2014:])"
 )
 _FENCE_RE = re.compile(r"^\s*```")
 # Inline code carrying a backslash is a Grep pattern, not a citation.
@@ -778,39 +794,90 @@ def collect_fpf_citations(content: str) -> dict[str, int]:
     return cited
 
 
+def collect_nstd_spec_ids(spec: str) -> set[str]:
+    """Return every NSTD pattern id defined by a section header."""
+    ids: set[str] = set()
+    for line in spec.split("\n"):
+        match = _NSTD_HEADER_RE.match(line)
+        if match:
+            ids.add(match.group(1).rstrip("."))
+    return ids
+
+
+def collect_nstd_citations(content: str) -> dict[str, int]:
+    """Return cited NSTD ids and their first 1-indexed line."""
+    cited: dict[str, int] = {}
+    for lineno, line in enumerate(_strip_non_citations(content).split("\n"), 1):
+        for match in _NSTD_ID_RE.finditer(line):
+            cited.setdefault(match.group(1).rstrip("."), lineno)
+    return cited
+
+
+def _check_framework_refs(
+    root: Path,
+    *,
+    label: str,
+    spec_relative_path: str,
+    source_relative_paths: tuple[str, ...],
+    collect_ids: Callable[[str], set[str]],
+    collect_citations: Callable[[str], dict[str, int]],
+) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    spec_file = root / spec_relative_path
+    sources = [root / relative_path for relative_path in source_relative_paths]
+    present = [path for path in sources if path.is_file()]
+    if not present:
+        return errors, warnings
+
+    if not spec_file.is_file():
+        warnings.append(f"[{label}] {spec_relative_path} not found — id resolution skipped")
+        return errors, warnings
+
+    spec_ids = collect_ids(spec_file.read_text())
+    if not spec_ids:
+        errors.append(
+            f"[{label}] {spec_relative_path}: no pattern headers parsed — format changed?"
+        )
+        return errors, warnings
+
+    for path in present:
+        relative_path = path.relative_to(root)
+        for cited, lineno in sorted(collect_citations(path.read_text()).items()):
+            if cited not in spec_ids:
+                errors.append(
+                    f"[{label}] {relative_path}:{lineno}: "
+                    f"'{cited}' not found in {spec_relative_path}"
+                )
+
+    return errors, warnings
+
+
 def check_fpf_spec_refs(root: Path) -> tuple[list[str], list[str]]:
-    """Every FPF pattern id cited in a skill must resolve in the vendored spec.
+    """Every FPF and NSTD id cited by its skill must resolve in the references.
 
     Guards the drift class that bin/fpf_drift_check.py cannot see: that script
     compares the vendored spec against upstream, nothing compares the skill
     against the spec. Line numbers are deliberately not checked — ids are the
     stable handle, offsets are not.
     """
-    errors: list[str] = []
-    warnings: list[str] = []
-
-    spec_file = root / _FPF_SPEC_REL
-    sources = [root / rel for rel in _FPF_REF_SOURCES]
-    present = [path for path in sources if path.is_file()]
-    if not present:
-        return errors, warnings
-
-    if not spec_file.is_file():
-        warnings.append(f"[FPF_REFS] {_FPF_SPEC_REL} not found — id resolution skipped")
-        return errors, warnings
-
-    spec_ids = collect_fpf_spec_ids(spec_file.read_text())
-    if not spec_ids:
-        errors.append(f"[FPF_REFS] {_FPF_SPEC_REL}: no pattern headers parsed — format changed?")
-        return errors, warnings
-
-    for path in present:
-        rel = path.relative_to(root)
-        for cited, lineno in sorted(collect_fpf_citations(path.read_text()).items()):
-            if cited not in spec_ids:
-                errors.append(f"[FPF_REFS] {rel}:{lineno}: '{cited}' not found in {_FPF_SPEC_REL}")
-
-    return errors, warnings
+    fpf_errors, fpf_warnings = _check_framework_refs(
+        root,
+        label="FPF_REFS",
+        spec_relative_path=_FPF_SPEC_REL,
+        source_relative_paths=_FPF_REF_SOURCES,
+        collect_ids=collect_fpf_spec_ids,
+        collect_citations=collect_fpf_citations,
+    )
+    nstd_errors, nstd_warnings = _check_framework_refs(
+        root,
+        label="NSTD_REFS",
+        spec_relative_path=_NSTD_SPEC_REL,
+        source_relative_paths=_NSTD_REF_SOURCES,
+        collect_ids=collect_nstd_spec_ids,
+        collect_citations=collect_nstd_citations,
+    )
+    return fpf_errors + nstd_errors, fpf_warnings + nstd_warnings
 
 
 def check_meta_pipeline(root: Path) -> tuple[list[str], list[str]]:
@@ -857,6 +924,33 @@ ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "trigger-consistency": check_trigger_consistency,
     "fpf-refs": check_fpf_spec_refs,
 }
+
+_AI_OWNED_ENTRIES = ("agents", "skills", "commands", "USER_AUTHORITY_PROTOCOL.md")
+
+
+@contextlib.contextmanager
+def validation_root(runtime_root: Path, ai_root: Path | None) -> Iterator[Path]:
+    """Expose split runtime/shared trees as the legacy single-root layout."""
+    if ai_root is None or ai_root.resolve() == runtime_root.resolve():
+        yield runtime_root
+        return
+
+    with tempfile.TemporaryDirectory(prefix="validate-ai-config-") as temporary_dir:
+        merged_root = Path(temporary_dir)
+        if runtime_root.is_dir():
+            for source in runtime_root.iterdir():
+                if source.name not in _AI_OWNED_ENTRIES:
+                    (merged_root / source.name).symlink_to(
+                        source.resolve(), target_is_directory=source.is_dir()
+                    )
+        if ai_root.is_dir():
+            for name in _AI_OWNED_ENTRIES:
+                source = ai_root / name
+                if source.exists():
+                    (merged_root / name).symlink_to(
+                        source.resolve(), target_is_directory=source.is_dir()
+                    )
+        yield merged_root
 
 
 def run_checks(root: Path, checks: list[str] | None = None) -> dict:
@@ -954,6 +1048,12 @@ def main() -> None:
         help="Root directory of Claude Code config (default: ~/.claude)",
     )
     parser.add_argument(
+        "--ai-root",
+        type=Path,
+        default=None,
+        help="Shared agents/skills/commands root when split from --root",
+    )
+    parser.add_argument(
         "--check",
         type=str,
         default=None,
@@ -972,12 +1072,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.budget:
-        print(format_budget_report(args.root))
-        sys.exit(0)
+    with validation_root(args.root, args.ai_root) as merged_root:
+        if args.budget:
+            print(format_budget_report(merged_root))
+            sys.exit(0)
 
-    checks = [c.strip() for c in args.check.split(",")] if args.check else None
-    results = run_checks(args.root, checks)
+        checks = [c.strip() for c in args.check.split(",")] if args.check else None
+        results = run_checks(merged_root, checks)
 
     if args.json_output:
         print(json.dumps(results, indent=2))

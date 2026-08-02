@@ -1,0 +1,52 @@
+---
+# Shared skills whose content is currently vendor-neutral and compatible with
+# Codex's Agent Skills discovery under ~/.agents/skills/<name>/SKILL.md.
+# Vendor-specific skills stay in dot_ai until they have a Codex adapter.
+devbox_codex_shared_skills:
+  - code-comments
+  - docker-validation
+  - fpf-thinking
+  - frontend-testing
+  - frontend-tooling
+  - go-review-checklist
+  - go-testing
+  - lint-discipline
+  - narrative-thinking
+  - playwright-e2e
+  - python-monolith
+  - python-testing
+  - python-tooling
+  - ui-design
+
+# Codex-native custom agents. Their TOML files live in dot_codex because the
+# format, model inheritance, sandbox semantics, and prompt contract are
+# client-specific even when the professional role originated in dot_ai.
+devbox_codex_agents:
+  - agent-builder
+  - api-designer
+  - architect
+  - build-resolver-go
+  - code-reviewer
+  - consistency-checker
+  - content-reviewer
+  - database-designer
+  - database-reviewer
+  - designer
+  - doc-updater
+  - domain-expert
+  - domain-modeller
+  - focus-coach
+  - freshness-auditor
+  - implementation-planner
+  - integration-tests-writer-go
+  - integration-tests-writer-python
+  - meta-reviewer
+  - observability-engineer
+  - refactor-cleaner
+  - skill-builder
+  - software-engineer-frontend
+  - software-engineer-go
+  - software-engineer-python
+  - tdd-guide
+  - technical-product-manager
+  - unit-test-writer

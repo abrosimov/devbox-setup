@@ -1,0 +1,113 @@
+---
+# Deploy the portable Codex layer without replacing app-owned ~/.codex state.
+
+- name: Resolve Codex config paths
+  ansible.builtin.set_fact:
+    devbox_codex_home: >-
+      {{ (lookup('env', 'HOME') ~ '/.codex')
+         if devbox_paths.dotfiles_root_dir == '~'
+         else (devbox_paths.dotfiles_root_dir ~ '/.codex') }}
+    devbox_codex_skills_home: >-
+      {{ (lookup('env', 'HOME') ~ '/.agents/skills')
+         if devbox_paths.dotfiles_root_dir == '~'
+         else (devbox_paths.dotfiles_root_dir ~ '/.agents/skills') }}
+    devbox_codex_agents_home: >-
+      {{ (lookup('env', 'HOME') ~ '/.codex/agents')
+         if devbox_paths.dotfiles_root_dir == '~'
+         else (devbox_paths.dotfiles_root_dir ~ '/.codex/agents') }}
+  tags: [configs, ai, codex]
+
+- name: Ensure Codex managed directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ devbox_codex_home }}", mode: "0700" }
+    - { path: "{{ devbox_codex_home }}/bin", mode: "0755" }
+    - { path: "{{ devbox_codex_agents_home }}", mode: "0700" }
+    - { path: "{{ devbox_codex_skills_home }}", mode: "0755" }
+  loop_control:
+    label: "{{ item.path }}"
+  tags: [configs, ai, codex]
+
+- name: Render repo-owned Codex config fragment
+  ansible.builtin.template:
+    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/config.toml.j2"
+    dest: "{{ devbox_codex_home }}/devbox-managed.toml"
+    mode: "0600"
+  tags: [configs, codex]
+
+- name: Install Codex config reconciler
+  ansible.builtin.copy:
+    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/bin/reconcile_config.py"
+    dest: "{{ devbox_codex_home }}/bin/reconcile_config.py"
+    mode: "0755"
+  tags: [configs, codex]
+
+- name: Reconcile repo-owned settings into app-owned Codex config
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_playbook_python }}"
+      - "{{ devbox_codex_home }}/bin/reconcile_config.py"
+      - --managed
+      - "{{ devbox_codex_home }}/devbox-managed.toml"
+      - --target
+      - "{{ devbox_codex_home }}/config.toml"
+  register: devbox_codex_reconcile
+  changed_when: devbox_codex_reconcile.stdout == 'changed'
+  tags: [configs, codex]
+
+- name: Install Codex global authority protocol
+  ansible.builtin.copy:
+    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/AGENTS.md"
+    dest: "{{ devbox_codex_home }}/AGENTS.md"
+    mode: "0600"
+  tags: [configs, ai, codex]
+
+- name: Install Codex custom agents
+  ansible.builtin.copy:
+    src: >-
+      {{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/agents/{{ item }}.toml
+    dest: "{{ devbox_codex_agents_home }}/{{ item }}.toml"
+    mode: "0600"
+  loop: "{{ devbox_codex_agents }}"
+  loop_control:
+    label: "{{ item }}"
+  tags: [configs, ai, codex]
+
+- name: Inspect managed Codex skill destinations
+  ansible.builtin.stat:
+    path: "{{ devbox_codex_skills_home }}/{{ item }}"
+  loop: "{{ devbox_codex_shared_skills }}"
+  register: devbox_codex_skill_destinations
+  loop_control:
+    label: "{{ item }}"
+  tags: [configs, ai, codex]
+
+- name: Remove stale symlinks at managed Codex skill destinations
+  ansible.builtin.file:
+    path: "{{ item.stat.path }}"
+    state: absent
+  loop: "{{ devbox_codex_skill_destinations.results }}"
+  when: item.stat.exists and item.stat.islnk
+  loop_control:
+    label: "{{ item.item }}"
+  tags: [configs, ai, codex]
+
+- name: Sync compatible shared skills to Codex
+  ansible.posix.synchronize:
+    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_ai/skills/{{ item }}/"
+    dest: "{{ devbox_codex_skills_home }}/{{ item }}/"
+    delete: true
+    recursive: true
+    perms: true
+    rsync_opts:
+      - "--exclude=.DS_Store"
+      - "--exclude=__pycache__"
+      - "--exclude=.pytest_cache"
+  delegate_to: localhost
+  loop: "{{ devbox_codex_shared_skills }}"
+  loop_control:
+    label: "{{ item }}"
+  tags: [configs, ai, codex]

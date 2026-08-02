@@ -95,6 +95,17 @@ def test_bare_name_in_docs_not_flagged(tmp_path: Path) -> None:
     assert "CMD_BARE" not in _codes(warnings)
 
 
+def test_skill_reference_files_are_not_command_scanned(tmp_path: Path) -> None:
+    root = _build_root(
+        tmp_path,
+        ["audit"],
+        {"skills/fpf-thinking/references/spec.md": "Use `/audit`, not `/techne-ghost`.\n"},
+    )
+    errors, warnings = vc.check_command_refs(root)
+    assert "CMD_BARE" not in _codes(warnings)
+    assert "CMD_REF" not in _codes(errors)
+
+
 def test_host_only_dir_not_scanned(tmp_path: Path) -> None:
     root = _build_root(tmp_path, ["plan"], {"projects/p.md": "Run `/plan` and `/techne-ghost`.\n"})
     errors, warnings = vc.check_command_refs(root)
@@ -345,8 +356,9 @@ def _build_fpf_root(tmp_path: Path, skill_body: str, spec: str | None = _SPEC) -
         f"---\nname: fpf-thinking\ndescription: f\n---\n{skill_body}\n"
     )
     if spec is not None:
-        (tmp_path / "docs").mkdir()
-        (tmp_path / "docs" / "FPF-Spec.md").write_text(spec)
+        references = skill_dir / "references"
+        references.mkdir()
+        (references / "FPF-Spec.md").write_text(spec)
     return tmp_path
 
 
@@ -368,6 +380,56 @@ def test_fpf_refs_bold_header_defines_id(tmp_path: Path) -> None:
     root = _build_fpf_root(tmp_path, "See `A.22.CGUS`.")
     errors, _ = vc.check_fpf_spec_refs(root)
     assert errors == []
+
+
+_NSTD_SPEC = """# Narrativization framework
+## NSTD.1 - Source-Structure Intake
+### NSTD.1:4 - Solution
+### NSTD.1:End
+## NSTD.6 — Rendering Quality Evaluation
+"""
+
+
+def _build_nstd_root(tmp_path: Path, skill_body: str, spec: str | None = _NSTD_SPEC) -> Path:
+    fpf_dir = tmp_path / "skills" / "fpf-thinking"
+    references = fpf_dir / "references"
+    references.mkdir(parents=True)
+    (fpf_dir / "SKILL.md").write_text(
+        "---\nname: fpf-thinking\ndescription: f\n---\nNo ids here.\n"
+    )
+    (references / "FPF-Spec.md").write_text(_SPEC)
+    if spec is not None:
+        (references / "Narrativization-and-Narrative-Studies-Principles-Framework.md").write_text(
+            spec
+        )
+
+    narrative_dir = tmp_path / "skills" / "narrative-thinking"
+    narrative_dir.mkdir()
+    (narrative_dir / "SKILL.md").write_text(
+        f"---\nname: narrative-thinking\ndescription: n\n---\n{skill_body}\n"
+    )
+    return tmp_path
+
+
+def test_nstd_refs_resolved_ids_pass(tmp_path: Path) -> None:
+    root = _build_nstd_root(tmp_path, "Start at `NSTD.1`, evaluate through NSTD.6.")
+    errors, warnings = vc.check_fpf_spec_refs(root)
+    assert errors == []
+    assert warnings == []
+
+
+def test_nstd_refs_dangling_id_errors(tmp_path: Path) -> None:
+    root = _build_nstd_root(tmp_path, "Inspect `NSTD.99`.")
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert _codes(errors) == ["NSTD_REFS"]
+    assert "NSTD.99" in errors[0]
+
+
+def test_nstd_refs_missing_spec_warns(tmp_path: Path) -> None:
+    root = _build_nstd_root(tmp_path, "Inspect `NSTD.1`.", spec=None)
+    errors, warnings = vc.check_fpf_spec_refs(root)
+    assert errors == []
+    assert _codes(warnings) == ["NSTD_REFS"]
 
 
 def test_fpf_refs_ignores_grep_patterns_and_fences(tmp_path: Path) -> None:

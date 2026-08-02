@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ansible-based developer workstation setup tool that automates installation and configuration of development tools, dotfiles, and system preferences. Supports macOS (Darwin) and Ubuntu Linux.
 
-**Key distinction**: `roles/devbox/files/dot_claude/` contains files deployed to `~/.claude/` (user's global Claude Code config). The directory is named `dot_claude/` rather than `.claude/` so Claude Code does not treat edits to it as self-modifications. The `USER_AUTHORITY_PROTOCOL.md` there is the **global authority protocol** — it is deployed as `~/.claude/CLAUDE.md` and is not this project's instructions.
+**Key distinction**: `roles/devbox/files/dot_claude/` contains Claude-specific files deployed to `~/.claude/`; `dot_codex/` contains the portable Codex settings, global guidance, and native agents deployed under `~/.codex/`; and `dot_ai/` contains shared source material. The `USER_AUTHORITY_PROTOCOL.md` in `dot_ai/` is the Claude/Antigravity authority source, while Codex uses its adapted `dot_codex/AGENTS.md`; neither is this project's instruction file.
 
 ## Commands
 
@@ -85,12 +85,11 @@ Everything lives in one role. No multi-role orchestration.
 4. `darwin/install_from_uv.yml` — Python tools via `uv tool` (variable-driven)
 5. `darwin/install_kubectl.yml` — pinned kubectl binary download
 6. `darwin/configure_macos_basics.yml` — codifies manual notes: Touch ID for sudo via `sudo_local`, `pmset disablesleep` for clamshell, `DevToolsSecurity --enable` for debugger access
-7. `install_configs.yml` — deploy dotfiles (see below)
-8. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
-9. `prepare_user.yml` — shell, user-level setup
-10. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. **Nothing is built here**: it downloads the pinned `otelcol-otelbox_darwin_arm64` asset (checksum-verified against the published `.sha256`) from [`abrosimov/otelcol-otelbox`](https://github.com/abrosimov/otelcol-otelbox), which owns the component set, the release pipeline and the shared base configuration layer for both this edge and the `remote_server_setup` gateway. Version pinned at `devbox_packages.otelbox_edge.version`; release tag is bare `v<version>`. The task deploys the two config layers (`base.yaml` vendored verbatim from the release + `edge.yaml`, the role layer this repo owns) plus the keychain-reading wrapper, runs `otelcol-otelbox validate` on the composed pair, and supervises it via the `local.otelbox-edge` LaunchAgent — **no brew** (a Homebrew keg of the same artefact is a hard failure: two copies, free to drift). Per-profile `deployment.environment.name` stamp + `OTELBOX_EDGE_STORAGE` come from the plist; the remote endpoint from a gitignored local-overlay `endpoint.env`; the Bearer key from the login keychain slot `otelbox-edge-token`. Non-bricking: skips the service if the release binary or `endpoint.env` is absent. It includes `darwin/migrate_otelcol_edge_to_otelbox.yml`, a transitional no-op-on-clean-machines step that moves a workstation off the former self-built `otelcol-edge` layout (WAL included). See `README.md` § OTLP Telemetry.
-11. `darwin/configure_codex_telemetry.yml` — blockinfile-injects an `[otel]` table into user-owned `~/.codex/config.toml` (OTLP gRPC → local edge :4317, `log_user_prompt`, `metrics_exporter→otlp` silences Codex's default statsig stream). Skips if a foreign hand-written `[otel]` already exists.
-12. `darwin/configure_codex_settings.yml` — lineinfile-owns scalar top-level keys (model, reasoning effort, `sandbox_mode`) of `~/.codex/config.toml` from `devbox_codex_settings`, `insertbefore: BOF` (TOML requires top-level keys before the first table).
+7. `install_configs.yml` — deploy shared AI/client configs and dotfiles (see below)
+8. `install_codex_configs.yml` — render `dot_codex/config.toml.j2`, merge its owned keys/tables into app-owned `~/.codex/config.toml`, install `dot_codex/AGENTS.md` plus native TOML agents, and deploy the compatible `dot_ai` skill subset to `~/.agents/skills/`
+9. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
+10. `prepare_user.yml` — shell, user-level setup
+11. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. **Nothing is built here**: it downloads the pinned `otelcol-otelbox_darwin_arm64` asset (checksum-verified against the published `.sha256`) from [`abrosimov/otelcol-otelbox`](https://github.com/abrosimov/otelcol-otelbox), which owns the component set, the release pipeline and the shared base configuration layer for both this edge and the `remote_server_setup` gateway. Version pinned at `devbox_packages.otelbox_edge.version`; release tag is bare `v<version>`. The task deploys the two config layers (`base.yaml` vendored verbatim from the release + `edge.yaml`, the role layer this repo owns) plus the keychain-reading wrapper, runs `otelcol-otelbox validate` on the composed pair, and supervises it via the `local.otelbox-edge` LaunchAgent — **no brew** (a Homebrew keg of the same artefact is a hard failure: two copies, free to drift). Per-profile `deployment.environment.name` stamp + `OTELBOX_EDGE_STORAGE` come from the plist; the remote endpoint from a gitignored local-overlay `endpoint.env`; the Bearer key from the login keychain slot `otelbox-edge-token`. Non-bricking: skips the service if the release binary or `endpoint.env` is absent. It includes `darwin/migrate_otelcol_edge_to_otelbox.yml`, a transitional no-op-on-clean-machines step that moves a workstation off the former self-built `otelcol-edge` layout (WAL included). See `README.md` § OTLP Telemetry.
 
 ### Configuration Deployment (`install_configs.yml`)
 
@@ -155,16 +154,19 @@ Current per-profile differences:
 | Container runtime cask | `docker-desktop` | `orbstack` |
 | Extra MCP HTTP servers | none | `atlassian` |
 
-### Claude Code Config (in `roles/devbox/files/dot_claude/`)
+### AI Config (in `roles/devbox/files/dot_claude/`, `dot_codex/`, and `dot_ai/`)
 
 | Path | Purpose | Deployed To |
 |------|---------|-------------|
-| `USER_AUTHORITY_PROTOCOL.md` | User Authority Protocol (renamed on deploy) | `~/.claude/CLAUDE.md` |
+| `dot_ai/USER_AUTHORITY_PROTOCOL.md` | Claude/Antigravity User Authority Protocol | `~/.claude/CLAUDE.md`, `~/.gemini/config/rules/AGENTS.md` |
+| `dot_codex/AGENTS.md` | Codex-adapted global working agreements | `~/.codex/AGENTS.md` |
 | `settings.json` | Default permissions (allow/deny) | `~/.claude/settings.json` |
 | `hooks.json` | Pre/post tool-call hooks | `~/.claude/hooks.json` |
-| `agents/*.md` | Agent definitions (28 agents) | `~/.claude/agents/` |
+| `dot_ai/agents/*.md` | Shared Markdown agent sources (28 agents) | `~/.claude/agents/`, `~/.gemini/config/agents/` |
+| `dot_codex/agents/*.toml` | All 28 Codex-native agent adapters | `~/.codex/agents/` |
 | `commands/techne-*.md` | Slash commands — 22, all `techne-` prefixed (`/techne-implement`, `/techne-test`, `/techne-plan`, etc.) | `~/.claude/commands/` |
-| `skills/*/SKILL.md` | Reusable knowledge modules (40 skills) | `~/.claude/skills/` |
+| `dot_ai/skills/*/SKILL.md` | Reusable knowledge modules (40 skills); Codex receives the compatible allowlist | `~/.claude/skills/`, `~/.gemini/config/skills/`, `~/.agents/skills/` |
+| `dot_ai/skills/fpf-thinking/references/` | Vendored FPF Core and companion NSTD specifications | Alongside each deployed `fpf-thinking` skill |
 | `schemas/*.json` | JSON Schema files (2: `se_output`, `dss_output`) for SE and DSS output validation | `~/.claude/schemas/` |
 | `bin/*` | Helper scripts (MCP wrappers, hooks, validation) | `~/.claude/bin/` |
 | `templates/` | Reusable project templates (devcontainer) | `~/.claude/templates/` |
@@ -183,7 +185,7 @@ Use via `/devcontainer init` (Claude Code command) or `claude-devcontainer init`
 
 ## Editing Claude Code Config
 
-When working in `roles/devbox/files/dot_claude/` you are editing files that get deployed to `~/.claude/`. This is a distinct activity from editing the Ansible playbook itself:
+When working in `roles/devbox/files/dot_claude/` and `dot_ai/` you are editing files that get deployed to `~/.claude/` and `~/.gemini/config/`. This is a distinct activity from editing the Ansible playbook itself:
 
 - **Deploy after editing**: managed subdirs are no longer symlinked. After changing agents/skills/commands/etc., run `make claude-push` to deploy via the slim `playbooks/claude.yml` (no sudo, no keychain lookup) — `~3-5s`. A full `make personal`/`make work` does the same work (Block 1 + Block 2 in `roles/devbox/tasks/install_configs.yml`) as part of the wider playbook.
 - **Repo is the only source of truth**: Block 1 runs `ansible.posix.synchronize` with `--delete` per managed subdir, so any edits made directly under `~/.claude/agents/`, `skills/`, etc. are overwritten on next push. Host-only state (`projects/`, `plans/`, `memory/`, `plugins/`, ...) is never in scope of `--delete`.
@@ -194,7 +196,7 @@ When working in `roles/devbox/files/dot_claude/` you are editing files that get 
 - **`templates/` changes** affect devcontainer scaffolding for new projects
 - **Command naming — `techne-` prefix**: every file in `commands/` is named `techne-<name>.md` and invoked as `/techne-<name>`. The prefix is deliberate: bare names like `/focus`, `/plan`, `/status`, `/review`, `/verify` collide with Claude Code's built-in commands and bundled skills (the built-in/bundled one wins, shadowing the custom command). New commands MUST keep the `techne-` prefix, and any cross-reference to a command (in agents, skills, other commands, `bin/` hint text) MUST use the `/techne-<name>` form.
 - Run `make validate-claude` to check cross-references between agents, skills, and commands
-- The `USER_AUTHORITY_PROTOCOL.md` in `roles/devbox/files/dot_claude/` is deployed as `~/.claude/CLAUDE.md` and is the **User Authority Protocol** — it governs all Claude Code sessions globally, not just this project
+- The `USER_AUTHORITY_PROTOCOL.md` in `roles/devbox/files/dot_ai/` is deployed as `~/.claude/CLAUDE.md` and `~/.gemini/config/rules/AGENTS.md`; Codex uses the separately adapted `roles/devbox/files/dot_codex/AGENTS.md`
 
 ## Dependencies
 

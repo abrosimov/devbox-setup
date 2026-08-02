@@ -1,0 +1,25 @@
+# Portable Codex settings owned by devbox-setup.
+#
+# This is a managed fragment, not a replacement for ~/.codex/config.toml.
+# reconcile_config.py owns the top-level scalars and complete tables declared
+# here while preserving app-owned tables such as projects, plugins,
+# marketplaces, desktop, MCP servers, notices, and tool suggestions.
+
+personality = "pragmatic"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
+service_tier = "default"
+sandbox_mode = "workspace-write"
+
+[features]
+memories = true
+
+[sandbox_workspace_write]
+network_access = true
+
+[otel]
+environment = "{{ devbox_active_profile }}"
+log_user_prompt = true
+exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
+trace_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
+metrics_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }

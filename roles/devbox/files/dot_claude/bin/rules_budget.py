@@ -557,6 +557,12 @@ def main(argv: list[str] | None = None) -> int:
         default=_default_root(),
         help="Config root (default: parent of this script's directory).",
     )
+    parser.add_argument(
+        "--ai-root",
+        type=Path,
+        default=None,
+        help="Shared agents/skills/commands/UAP root when split from --root.",
+    )
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of markdown.")
     parser.add_argument(
         "--baseline",
@@ -566,7 +572,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    root = args.root.resolve()
+    root = (args.ai_root or args.root).resolve()
     if not root.is_dir():
         print(f"error: root does not exist: {root}", file=sys.stderr)
         return 2

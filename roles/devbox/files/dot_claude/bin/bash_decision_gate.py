@@ -1522,12 +1522,13 @@ def main() -> int:
     data = hooks.read_hook_input()
     if not data:
         return hooks.ALLOW
-    if data.get("tool_name") != "Bash":
+    tool_name = data.get("tool_name") or data.get("toolName")
+    if tool_name not in {"Bash", "run_command"}:
         return hooks.ALLOW
-    tool_input = data.get("tool_input", {})
+    tool_input = data.get("tool_input") or data.get("input") or {}
     if not isinstance(tool_input, dict):
         return hooks.ALLOW
-    cmd = tool_input.get("command", "")
+    cmd = tool_input.get("command") or tool_input.get("CommandLine", "")
     if not isinstance(cmd, str) or not cmd.strip():
         return hooks.ALLOW
     cwd_value = data.get("cwd", str(Path.cwd()))

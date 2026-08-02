@@ -1,0 +1,162 @@
+{
+  "pre_bash_toolchain_guard": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_bash_toolchain_guard.py"
+    },
+    "enabled": true
+  },
+  "pre_tmpdir_guard": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_tmpdir_guard.py"
+    },
+    "enabled": true
+  },
+  "bash_decision_gate": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/bash_decision_gate.py"
+    },
+    "enabled": true
+  },
+  "pre_bash_boundary_wrap": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_bash_boundary_wrap.py"
+    },
+    "enabled": true
+  },
+  "pre_edit_lint_guard": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_edit_lint_guard.py"
+    },
+    "enabled": true
+  },
+  "pre_write_completion_gate": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_write_completion_gate.py"
+    },
+    "enabled": true
+  },
+  "pre_write_existing_guard": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_write_existing_guard.py"
+    },
+    "enabled": true
+  },
+  "pre_plan_code_guard": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_plan_code_guard.py"
+    },
+    "enabled": true
+  },
+  "suggest_checkpoint": {
+    "event": "PostToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/suggest_checkpoint.py"
+    },
+    "enabled": true
+  },
+  "post_edit_lint": {
+    "event": "PostToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/post_edit_lint.py"
+    },
+    "enabled": true
+  },
+  "post_edit_typecheck": {
+    "event": "PostToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/post_edit_typecheck.py"
+    },
+    "enabled": true
+  },
+  "post_edit_cyrillic_guard": {
+    "event": "PostToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/post_edit_cyrillic_guard.py"
+    },
+    "enabled": true
+  },
+  "proposal_discipline": {
+    "event": "Stop",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/proposal_discipline.py"
+    },
+    "enabled": true
+  },
+  "stop_format": {
+    "event": "Stop",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/stop_format.py"
+    },
+    "enabled": true
+  },
+  "stop_lint_gate": {
+    "event": "Stop",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/stop_lint_gate.py"
+    },
+    "enabled": true
+  },
+  "session_save": {
+    "event": "Stop",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/session_save.py"
+    },
+    "enabled": true
+  },
+  "pre_compact_mask": {
+    "event": "PreCompact",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_compact_mask.py"
+    },
+    "enabled": true
+  },
+  "session_prepare_python": {
+    "event": "Start",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/session_prepare_python.py"
+    },
+    "enabled": true
+  },
+  "worktree_create": {
+    "event": "WorktreeCreate",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/worktree-create"
+    },
+    "enabled": true
+  },
+  "worktree_remove": {
+    "event": "WorktreeRemove",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/worktree-remove"
+    },
+    "enabled": true
+  }
+}

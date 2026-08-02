@@ -191,7 +191,17 @@ def narrative_drift_value(state_path: Path) -> int | None:
 def _fpf_doc_path(cwd: str) -> Path | None:
     if not cwd:
         return None
-    candidate = Path(cwd) / "roles" / "devbox" / "files" / "dot_claude" / "docs" / "FPF-Spec.md"
+    candidate = (
+        Path(cwd)
+        / "roles"
+        / "devbox"
+        / "files"
+        / "dot_ai"
+        / "skills"
+        / "fpf-thinking"
+        / "references"
+        / "FPF-Spec.md"
+    )
     if candidate.is_file():
         return candidate
     return None

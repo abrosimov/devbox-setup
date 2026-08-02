@@ -1,0 +1,21 @@
+{
+  "allowNonWorkspaceAccess": true,
+  "colorScheme": "tokyo night",
+  "model": "Gemini 3.1 Pro (High)",
+  "permissions": {
+    "allow": [
+      "command(uv)",
+      "command(go tool task docs:check)",
+      "command(grep)",
+      "command(agy)",
+      "command(python3 -c \"import site; print(site.getsitepackages())\")",
+      "command(pip3 show google-antigravity)",
+      "command(find)",
+      "command(git ls-remote)"
+    ]
+  },
+  "trustedWorkspaces": [
+    "{{ devbox_projects_dir | replace('$HOME', lookup('env', 'HOME')) }}/agents-hooks-guard/base",
+    "{{ devbox_projects_dir | replace('$HOME', lookup('env', 'HOME')) }}/devbox-setup"
+  ]
+}

@@ -6,7 +6,7 @@ You are orchestrating an FPF-guided systems thinking session.
 
 ## What This Does
 
-Routes complex, non-code problems to the appropriate thinking agent with FPF (First Principles Framework) enabled. The agent uses FPF patterns from `~/.claude/docs/FPF-Spec.md` to structure analysis but responds in **plain language** — no framework jargon.
+Routes complex, non-code problems to the appropriate thinking agent with FPF (First Principles Framework) enabled. The agent uses the `fpf-thinking` skill and its bundled `references/FPF-Spec.md` to structure analysis but responds in **plain language** — no framework jargon.
 
 **Key features:**
 - Thoughts are streamed to console for real-time visibility
@@ -68,7 +68,7 @@ SCOPE: {ticket | cross-cutting}
 INSTRUCTIONS:
 1. Read the `fpf-thinking` skill for the routing table and protocol
 2. Identify which FPF sections are relevant using the routing table
-3. Grep `~/.claude/docs/FPF-Spec.md` for those section headers, then Read targeted ranges
+3. Locate `references/FPF-Spec.md` relative to the installed `fpf-thinking/SKILL.md`, search for those section ids, then read only the targeted ranges
 4. Use sequential thinking (mcp__sequentialthinking) for multi-step reasoning
 5. **STREAM EACH THOUGHT** — after each sequential thinking step, output a summary to console so the user can follow along
 6. Apply the FPF patterns to structure your analysis

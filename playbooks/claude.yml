@@ -1,18 +1,14 @@
 ---
-# Fast-path playbook for deploying just the Claude Code config.
+# Slim fast-path playbook for AI configs (Claude / Antigravity).
+# Uses `--tags claude` or `--tags agy` internally (see Makefile).
+# Runs only the tasks related to deploying AI configuration.
 #
-# Reuses the canonical Block 1 + Block 2 tasks from
-# roles/devbox/tasks/install_configs.yml under the `claude` tag — so this and
-# `make personal` / `make work` share a single implementation.
-#
-# No sudo prompt: none of the claude tasks use `become`.
-# No vault load:  none of the claude tasks reference `vault_*` vars.
-# No facts:       `~` expansion in `file:` and `synchronize:` works without them.
-#
-# Invoked via `make claude-push`. Runs in ~3-5s.
+# Unlike the main profiles (playbooks/personal.yml etc), this playbook runs
+# entirely in userspace: no `become: true`, no package managers, no
+# system-wide configuration, and no keychain vault unlocks required.
 
-- name: Deploy Claude Code config
-  hosts: 127.0.0.1
+- name: Deploy AI Configs
+  hosts: localhost
   connection: local
   gather_facts: false
 
@@ -20,8 +16,26 @@
     - "../roles/devbox/defaults/main/core.yml"
     - "../roles/devbox/defaults/main/claude.yml"
 
+  vars:
+    # Explicit list of subdirectories managed by Block 1 one-way rsync
+    # (these are exclusively owned by the repo; any host-side changes
+    # not committed back to the repo will be overwritten on deploy)
+    devbox_claude_managed_dirs:
+      - bin
+      - future_projects
+      - output-styles
+      - templates
+      - schemas
+      - docs
+
+    # These directories are shared between Claude and Antigravity
+    devbox_ai_managed_dirs:
+      - agents
+      - commands
+      - skills
+
   tasks:
-    - name: Deploy Claude Code managed subdirs and root files
+    - name: Deploy AI managed subdirs and root files
       ansible.builtin.import_tasks: "../roles/devbox/tasks/install_configs.yml"
       vars:
         # role_path is normally injected by the `roles:` loop. Set it explicitly

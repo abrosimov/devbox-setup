@@ -13,8 +13,8 @@ exclude_paths:
   - debug/
   - roles/devbox/local/
   - roles/devbox/files/dot_claude/plugins/
-  - roles/devbox/files/dot_claude/skills/example-skills/
-  - roles/devbox/files/dot_claude/skills/document-skills/
+  - roles/devbox/files/dot_ai/skills/example-skills/
+  - roles/devbox/files/dot_ai/skills/document-skills/
   - roles/devbox/files/.config/nvim/
   # main_linux.yml includes linux/install_from_apt_*.yml which do not yet exist
   # (Linux support is dormant — user runs Darwin only). Excluding the parent

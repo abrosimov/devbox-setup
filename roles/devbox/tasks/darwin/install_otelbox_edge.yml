@@ -58,13 +58,6 @@
     - devbox_otelbox_edge_brew_keg.rc == 0
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — migrate a machine off the legacy otelcol-edge layout"
-  # Transitional; runs before the directories below exist, because it renames
-  # into them. Safe and silent on a machine that never had the old collector.
-  ansible.builtin.include_tasks: darwin/migrate_otelcol_edge_to_otelbox.yml
-  when: devbox_packages.otelbox_edge.enabled | default(true)
-  tags: [otel, otelbox-edge]
-
 - name: "OpenTelemetry edge — resolve paths"
   ansible.builtin.set_fact:
     devbox_otelbox_edge_home: "{{ ansible_facts['env']['HOME'] }}"
@@ -114,6 +107,22 @@
   register: devbox_otelbox_edge_download
   failed_when: false
   when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — check downloaded binary before migration"
+  ansible.builtin.stat:
+    path: "{{ devbox_otelbox_edge_bin }}"
+  register: devbox_otel_bin_stat
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — migrate a machine off the legacy otelcol-edge layout"
+  # Transitional; runs before the directories below exist, because it renames
+  # into them. Safe and silent on a machine that never had the old collector.
+  ansible.builtin.include_tasks: darwin/migrate_otelcol_edge_to_otelbox.yml
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otel_bin_stat.stat.exists | default(false)
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — deploy config layers"

@@ -46,7 +46,6 @@
       - "gui/{{ ansible_facts['user_uid'] }}/local.otelcol-edge"
   when: devbox_otelbox_edge_legacy_agent.rc == 0
   changed_when: true
-  failed_when: false
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — ensure the parents of the migration targets exist"

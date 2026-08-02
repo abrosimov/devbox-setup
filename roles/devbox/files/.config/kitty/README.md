@@ -138,6 +138,10 @@ The terminal is treated as **always-on**. Two principles:
 Scope of `Cmd+Q` is **the current OS window only** — other kitty OS windows
 are untouched.
 
+`Cmd+,` (kitty's macOS default `edit_config_file`) is also disabled — it opens
+an editor in a new OS window, and the config is owned by this repo, so editing
+the deployed copy is a dead end.
+
 As a defence-in-depth, `confirm_os_window_close -1` is set, which makes
 kitty's built-in close paths (window-manager close button, remote-control
 `close-window`) also confirm when active processes are present.

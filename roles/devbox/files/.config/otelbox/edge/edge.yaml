@@ -91,9 +91,9 @@ processors:
     override: false
 
 exporters:
-  # `otlp_grpc`, not `otlp`: in v0.156.0 the OTLP gRPC exporter's canonical type
-  # is `otlp_grpc` and plain `otlp` is a deprecated alias kept for compatibility.
-  otlp_grpc/gateway:
+  # `otlp`, not `otlp_grpc`: kept for compatibility with the legacy WAL
+  # which expects the queue files to be named `exporter_otlp_gateway_*`.
+  otlp/gateway:
     endpoint: ${env:OTELBOX_EDGE_ENDPOINT}
     headers:
       authorization: "Bearer ${env:OTELBOX_EDGE_TOKEN}"
@@ -155,12 +155,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, resource_detection, redaction/secrets, batch]
-      exporters: [otlp_grpc/gateway]
+      exporters: [otlp/gateway]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, resource_detection, redaction/secrets, batch]
-      exporters: [otlp_grpc/gateway]
+      exporters: [otlp/gateway]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, resource_detection, redaction/secrets, batch]
-      exporters: [otlp_grpc/gateway]
+      exporters: [otlp/gateway]

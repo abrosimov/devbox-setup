@@ -182,7 +182,9 @@
 
 - name: Translate Claude agent frontmatter for Antigravity
   ansible.builtin.script:
-    cmd: "{{ role_path }}/files/dot_agy/bin/translate_agents.py {{ devbox_paths.dotfiles_root_dir }}/.gemini/config/agents"
+    cmd: >-
+      {{ role_path }}/files/dot_agy/bin/translate_agents.py
+      {{ devbox_paths.dotfiles_root_dir }}/.gemini/config/agents
   delegate_to: localhost
   tags: [configs, ai, agy]
 

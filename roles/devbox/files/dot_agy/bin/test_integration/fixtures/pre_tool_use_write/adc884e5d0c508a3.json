@@ -1,0 +1,8 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/frontmatter.go",
+    "content": "package ingest\n\nimport (\n\t\"strings\"\n\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/domain\"\n\n\t\"gopkg.in/yaml.v3\"\n)\n\n// ExtractFrontMatter parses YAML front matter from markdown content.\n// Returns the parsed front matter and the remaining body content.\n// If no front matter is present, returns zero FrontMatter and the full content.\nfunc ExtractFrontMatter(content string) (domain.FrontMatter, string) {\n\ttrimmed := strings.TrimSpace(content)\n\tif !strings.HasPrefix(trimmed, \"---\") {\n\t\treturn domain.FrontMatter{}, content\n\t}\n\n\t// Find the closing ---\n\trest := trimmed[3:]\n\tidx := strings.Index(rest, \"\\n---\")\n\tif idx < 0 {\n\t\treturn domain.FrontMatter{}, content\n\t}\n\n\tyamlBlock := rest[:idx]\n\tbody := rest[idx+4:] // skip \\n---\n\t// Trim leading newline from body\n\tbody = strings.TrimPrefix(body, \"\\n\")\n\n\tvar fm domain.FrontMatter\n\tif err := yaml.Unmarshal([]byte(yamlBlock), &fm); err != nil {\n\t\treturn domain.FrontMatter{}, content\n\t}\n\n\t// Parse raw map for arbitrary fields\n\tvar raw map[string]any\n\tif err := yaml.Unmarshal([]byte(yamlBlock), &raw); err == nil {\n\t\tfm.Raw = raw\n\t}\n\n\treturn fm, body\n}\n"
+  },
+  "hook_event_name": "PreToolUse"
+}

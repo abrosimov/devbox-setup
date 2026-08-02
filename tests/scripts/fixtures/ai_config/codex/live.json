@@ -1,0 +1,57 @@
+{
+  "model": "gpt-example-stable",
+  "features": {
+    "memories": true
+  },
+  "otel": {
+    "environment": "personal",
+    "log_user_prompt": true
+  },
+  "plugins": {
+    "example": {
+      "enabled": true
+    }
+  },
+  "marketplaces": {
+    "example": {
+      "enabled": true
+    }
+  },
+  "desktop": {
+    "analytics": true
+  },
+  "tui": {
+    "notifications": true
+  },
+  "tool_suggest": {
+    "enabled": true
+  },
+  "skills": {
+    "config": {
+      "example-skill": {
+        "enabled": true
+      }
+    }
+  },
+  "mcp_servers": {
+    "example": {
+      "command": "/usr/local/bin/example-mcp"
+    }
+  },
+  "projects": {
+    "/Users/example/Projects/machine-local": {
+      "trust_level": "trusted"
+    }
+  },
+  "notice": {
+    "model_migrations": {
+      "gpt-example-old": "gpt-example-preview"
+    }
+  },
+  "notify": [
+    "/Users/example/.local/bin/notifier"
+  ],
+  "futureVendorSetting": {
+    "enabled": true
+  }
+}

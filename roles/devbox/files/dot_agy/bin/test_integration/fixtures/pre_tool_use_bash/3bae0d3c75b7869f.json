@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "grep -rln \"^proj\\b\\|^wt\\b\\|function proj\\|function wt\\|proj()\\|wt()\" <HOME>/Projects/devbox-setup/roles/ <HOME>/Projects/devbox-setup/scripts/ 2>/dev/null | head -20",
+    "description": "Find proj and wt definitions"
+  },
+  "hook_event_name": "PreToolUse"
+}

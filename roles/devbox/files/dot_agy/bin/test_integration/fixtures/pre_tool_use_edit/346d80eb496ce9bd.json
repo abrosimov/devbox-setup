@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/pipeline.go",
+    "old_string": "func isSubpath(parent, child string) bool {\n\tabsParent, err := filepath.Abs(parent)\n\tif err != nil {\n\t\treturn false\n\t}\n\tabsChild, err := filepath.Abs(child)\n\tif err != nil {\n\t\treturn false\n\t}\n\trel, err := filepath.Rel(absParent, absChild)\n\tif err != nil {\n\t\treturn false\n\t}\n\treturn rel != \"..\" && rel != \"\" && rel[0] != '.'\n}",
+    "new_string": "func isSubpath(parent, child string) bool {\n\tabsParent, err := filepath.Abs(parent)\n\tif err != nil {\n\t\treturn false\n\t}\n\tabsChild, err := filepath.Abs(child)\n\tif err != nil {\n\t\treturn false\n\t}\n\trel, err := filepath.Rel(absParent, absChild)\n\tif err != nil {\n\t\treturn false\n\t}\n\treturn rel != \"..\" && rel != \"\" && !strings.HasPrefix(rel, \"..\")\n}"
+  },
+  "hook_event_name": "PreToolUse"
+}

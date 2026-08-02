@@ -1,0 +1,24 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "edits": [
+      {
+        "old_string": "H,",
+        "new_string": "{EJ^[~uA2",
+        "replace_all": false
+      },
+      {
+        "old_string": "1B(0$",
+        "new_string": "",
+        "replace_all": true
+      },
+      {
+        "old_string": "1B(0$",
+        "new_string": "",
+        "replace_all": true
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

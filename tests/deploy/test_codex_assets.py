@@ -125,6 +125,21 @@ def test_fpf_bundle_is_self_contained_and_vendor_neutral() -> None:
     assert "private chain-of-thought" in skill_text
 
 
+def test_go_engineer_is_deployed_and_vendor_neutral() -> None:
+    defaults = CODEX_DEFAULTS.read_text(encoding="utf-8")
+    agent = (CODEX_ROOT / "agents/software-engineer-go.toml").read_text(encoding="utf-8")
+    skill_root = AI_ROOT / "skills/go-engineer"
+    skill_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (skill_root / "SKILL.md", skill_root / "scripts/complexity_check.sh")
+    )
+
+    assert "  - go-engineer\n" in defaults
+    assert "Use go-engineer as the primary Go implementation workflow" in agent
+    for marker in ("Claude", "/techne-", "~/.claude", "OPUS", "SONNET"):
+        assert marker not in skill_text
+
+
 def test_codex_deploy_selects_fpf_skills_authority_and_agents() -> None:
     defaults = CODEX_DEFAULTS.read_text(encoding="utf-8")
     tasks = CODEX_TASKS.read_text(encoding="utf-8")

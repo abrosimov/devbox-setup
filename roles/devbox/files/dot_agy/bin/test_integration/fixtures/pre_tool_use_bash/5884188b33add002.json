@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "find <HOME>/Projects/agentic-rag-mcp -type f -name \"*.example*\" -o -name \"README*\"",
+    "description": "Find example config or readme files"
+  },
+  "hook_event_name": "PreToolUse"
+}

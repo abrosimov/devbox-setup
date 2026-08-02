@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/warp-and-weft/base/INDEX.md",
+    "old_string": "- [[weft/principles/INDEX|Принципы]] — `PRINCIPLE-00001`–`PRINCIPLE-00022`\n- [[weft/Открытые-вопросы|Открытые-вопросы]] — нерешённое",
+    "new_string": "- [[weft/principles/INDEX|Принципы]] — `PRINCIPLE-00001`–`PRINCIPLE-00022`\n- [[weft/open-questions/INDEX|Открытые вопросы (атомизированные)]] — новая семья, `OPEN-QUESTION-NNNNN` (см. [[План-работ#Р32|Р32]])\n- [[weft/Открытые-вопросы|Открытые-вопросы]] — нерешённое (исторический монолит О1–О16; миграция в атомы — [[backlog/TASK-00010-атомизация-открытых-вопросов|TASK-00010]])"
+  },
+  "hook_event_name": "PreToolUse"
+}

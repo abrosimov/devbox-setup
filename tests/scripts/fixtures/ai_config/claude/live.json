@@ -1,0 +1,21 @@
+{
+  "autoMemoryEnabled": false,
+  "enabledPlugins": {
+    "example-skills@example-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "example-marketplace": {
+      "source": "example/skills"
+    }
+  },
+  "model": "opus",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(uv run *)"
+    ]
+  },
+  "vendorSessionState": {
+    "state": "opaque"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/etc/hostname",
+    "edits": [
+      {
+        "old_string": "u8",
+        "new_string": "$",
+        "replace_all": true
+      },
+      {
+        "old_string": "",
+        "new_string": "xmj@",
+        "replace_all": false
+      },
+      {
+        "old_string": "<oRm~ur39u\"UUe",
+        "new_string": "=Fe",
+        "replace_all": true
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

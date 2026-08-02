@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+repo_root="$(dirname -- "$script_dir")"
+entrypoint="$script_dir/ai_config_cli.py"
+
+if [[ -x "$repo_root/.venv/bin/python" ]]; then
+  exec "$repo_root/.venv/bin/python" "$entrypoint" "$@"
+fi
+
+exec uv run --no-project --python '>=3.12' "$entrypoint" "$@"

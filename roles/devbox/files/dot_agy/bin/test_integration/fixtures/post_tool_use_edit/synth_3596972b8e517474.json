@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/.config/fish/config.fish",
+    "old_string": "0_?S9V|+u",
+    "new_string": "h8o",
+    "replace_all": false
+  },
+  "tool_response": "dhEWFqXcO[4f_Ud'#~7",
+  "hook_event_name": "PostToolUse"
+}

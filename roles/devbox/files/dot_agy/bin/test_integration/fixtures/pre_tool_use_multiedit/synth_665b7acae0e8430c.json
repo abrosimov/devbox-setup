@@ -1,0 +1,19 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/etc/hostname",
+    "edits": [
+      {
+        "old_string": "",
+        "new_string": "<KqC",
+        "replace_all": false
+      },
+      {
+        "old_string": "39",
+        "new_string": "$Hos]",
+        "replace_all": true
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

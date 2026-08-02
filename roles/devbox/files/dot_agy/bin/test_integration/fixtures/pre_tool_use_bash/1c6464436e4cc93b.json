@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls <HOME>/Projects/personal-notes/base/~specs/ <HOME>/Projects/personal-notes/base/scripts/ <HOME>/Projects/personal-notes/base/templates/ <HOME>/Projects/personal-notes/base/tests/ 2>/dev/null",
+    "description": "List specs, scripts, templates, tests"
+  },
+  "hook_event_name": "PreToolUse"
+}

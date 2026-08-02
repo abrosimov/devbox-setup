@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/read.go",
+    "old_string": "\tfor _, sec := range allSections {\n\t\tif sec.position >= minPos && sec.position <= maxPos && sec.position != position {\n\t\t\tctxSections = append(ctxSections, sec.section)\n\t\t}\n\t}",
+    "new_string": "\tfor i := range allSections {\n\t\tif allSections[i].position >= minPos && allSections[i].position <= maxPos && allSections[i].position != position {\n\t\t\tctxSections = append(ctxSections, allSections[i].section)\n\t\t}\n\t}"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

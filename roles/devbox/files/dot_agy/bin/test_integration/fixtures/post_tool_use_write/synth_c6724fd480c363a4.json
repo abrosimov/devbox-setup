@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/src/lib.rs",
+    "content": "O_CpmCBE}W"
+  },
+  "tool_response": "O_CpmCBE}W",
+  "hook_event_name": "PostToolUse"
+}

@@ -30,6 +30,23 @@ define require_profile
 	fi
 endef
 
+define ai_config_push_guard
+	@echo "WARNING: make $(1)-push is intentionally blocked."
+	@echo "The repository is the source of truth, but live changes must be reviewed first."
+	@echo ""
+	@echo "Inspect drift:"
+	@echo '  scripts/ai-config diff $(1) --repo-root "$(CURDIR)" --home "$$HOME" --profile "$$MNEMOSYNE_PERISTASEOS"'
+	@echo ""
+	@echo "Capture or resolve reviewed changes:"
+	@echo '  scripts/ai-config reconcile $(1) --repo-root "$(CURDIR)" --home "$$HOME" --profile "$$MNEMOSYNE_PERISTASEOS" [--decisions FILE]'
+	@echo ""
+	@echo "Preview a subsequent non-interactive apply:"
+	@echo '  scripts/ai-config apply $(1) --repo-root "$(CURDIR)" --home "$$HOME" --profile "$$MNEMOSYNE_PERISTASEOS" --check'
+	@echo ""
+	@echo "No Ansible command was run."
+	@exit 2
+endef
+
 # Dev venv — lazy bootstrap for developer-mode targets (lint-*, typecheck,
 # test, test-integration, qa). The operator-flow (init / personal / work /
 # *-push / upgrade-*) does NOT depend on this venv and never touches it.
@@ -64,29 +81,10 @@ $(COLLECTIONS_SENTINEL): requirements.yml
 	@mkdir -p $(dir $@)
 	@touch $@
 
-# Claude Code config — single source of truth for the repo-side path. The
-# managed-subdirs list lives in devbox_claude_managed_dirs (roles/devbox/defaults/main/claude.yml)
-# and is read by both `make personal`/`make work` and `make claude-push`.
+AI_CONFIG           := scripts/ai-config
 CLAUDE_SRC          := roles/devbox/files/dot_claude
 AI_SRC              := roles/devbox/files/dot_ai
-CLAUDE_DEST         := $(HOME)/.claude
-# Root files where source name == destination name. The User Authority Protocol
-# is handled separately because it is renamed on deploy: USER_AUTHORITY_PROTOCOL.md
-# in the repo -> CLAUDE.md in ~/.claude/ (the filename Claude Code expects).
-# These are used by claude-diff / claude-pull only; claude-push delegates to
-# Ansible (single source of truth for the managed-subdirs list).
-CLAUDE_ROOT_FILES   := settings.json hooks.json config.md
-CLAUDE_AUTHORITY_SRC  := USER_AUTHORITY_PROTOCOL.md
-CLAUDE_AUTHORITY_DEST := CLAUDE.md
 SKILLS_DIR          := $(AI_SRC)/skills
-# Claude Code rewrites ~/.claude/settings.json in its own key order whenever a
-# setting is toggled in-session (e.g. via /sandbox), so a two-key change arrives
-# as a ~450-line diff on the way back into the repo. claude-diff / claude-pull
-# therefore compare and copy JSON root files through `jq -S`. It sorts object
-# keys only — the hand-curated order of the permissions.allow / deny arrays
-# survives. Non-JSON root files pass through verbatim; a missing or
-# non-parseable file falls back to raw content instead of failing the target.
-CLAUDE_NORM_FN = norm() { [ -f "$$1" ] || return 0; case "$$1" in *.json) jq -S . "$$1" 2>/dev/null || cat "$$1" ;; *) cat "$$1" ;; esac; }
 
 # Karabiner: the repo seeds the live file only when absent (Karabiner owns it at
 # runtime — see install_configs.yml). karabiner-diff / karabiner-pull sync only the
@@ -121,7 +119,7 @@ endif
        claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        sync-upstream-docs \
-       test test-integration test-claude-hooks test-git-hooks test-scripts test-nvim test-fish test-json test-bash \
+       test test-integration test-ai-config test-deploy test-claude-hooks test-git-hooks test-scripts test-nvim test-fish test-json test-bash \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -145,10 +143,12 @@ help:
 	@echo "  make typecheck        - pyrefly type check"
 	@echo "  make test             - pytest unit tests (excludes integration)"
 	@echo "  make test-integration - pytest subprocess integration tests (slower)"
+	@echo "  make test-ai-config   - pytest for the ai-config reconciler"
+	@echo "  make test-deploy      - pytest for deployment structure"
 	@echo "  make test-claude-hooks - pytest under bin/'s own uv project (deployed-venv shape)"
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
 	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
-	@echo "  make qa               - lint + typecheck + test + test-integration (full gate)"
+	@echo "  make qa               - lint + typecheck + unit, integration, ai-config, and deploy tests"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
 	@echo "  make init             - install Homebrew, Ansible, and dependencies (macOS only)"
@@ -171,9 +171,9 @@ help:
 	@echo "  make improve-skills   - optimize skill description for trigger accuracy (run_loop.py)"
 	@echo ""
 	@echo "Maintenance (slim playbooks, no full bootstrap):"
-	@echo "  make claude-push      - deploy Claude config (no sudo, no vault)"
-	@echo "  make agy-push         - deploy Antigravity config (no sudo, no vault)"
-	@echo "  make codex-push       - deploy Codex config, guidance, agents + shared skills (no sudo, no vault)"
+	@echo "  make claude-push      - blocked safety guard; print Claude reconciliation workflow"
+	@echo "  make agy-push         - blocked safety guard; print Antigravity reconciliation workflow"
+	@echo "  make codex-push       - blocked safety guard; print Codex reconciliation workflow"
 	@echo "  make dotfiles-push    - deploy kitty / nvim / fish / bash configs + templates + local/ overlay (no sudo, no vault)"
 	@echo "  make shell-push       - refresh fish + fisher plugins + tide preset + font cache (no sudo)"
 	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
@@ -189,9 +189,15 @@ help:
 	@echo "  make test-json        - JSON config/schema validation"
 	@echo "  make list-skills      - list all Claude Code skills"
 	@echo "  make list-agents      - list all Claude Code agents"
-	@echo "  make claude-diff      - show content drift between ~/.claude and repo (JSON key-sorted)"
-	@echo "  make claude-pull-review - smart pull of settings.json (heuristic + interactive)"
-	@echo "  make claude-pull      - wholesale copy of root files from ~/.claude to repo (JSON key-sorted)"
+	@echo "  scripts/ai-config diff ENGINE --repo-root REPO --home HOME --profile personal|work"
+	@echo "                         - inspect semantic repo/live drift (primary interface)"
+	@echo "  scripts/ai-config apply ENGINE --repo-root REPO --home HOME --profile personal|work [--check]"
+	@echo "                         - apply deterministic changes that require no decision"
+	@echo "  scripts/ai-config reconcile ENGINE --repo-root REPO --home HOME --profile personal|work [--decisions FILE]"
+	@echo "                         - reconcile explicit repo/live decisions (primary interface)"
+	@echo "  make claude-diff      - compatibility alias for 'ai-config diff claude'"
+	@echo "  make claude-pull-review - compatibility alias for 'ai-config reconcile claude'"
+	@echo "  make claude-pull      - compatibility alias for claude-pull-review"
 	@echo "  make karabiner-diff   - show drift of Karabiner complex_modifications (repo vs live)"
 	@echo "  make karabiner-pull   - pull Karabiner complex_modifications from live into repo"
 	@echo ""
@@ -303,17 +309,21 @@ lint-yaml: $(DEV_SENTINEL)
 # repo (.config/kitty/) are not project code; pyrefly's project-includes handles
 # those.
 lint-py: $(DEV_SENTINEL)
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/
+	@bash -n scripts/ai-config
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ scripts/ai_config_cli.py scripts/ai_config/ tests/scripts/test_ai_config*.py
 
 test: $(DEV_SENTINEL) ## Pytest unit tests in dot_claude/ (excludes integration — see test-integration)
 	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/ -m "not integration"
 
 test-integration: $(DEV_SENTINEL) ## Pytest subprocess integration tests (smoke + hypothesis)
 	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/bin/test_integration/ -m integration -v
+
+test-ai-config: $(DEV_SENTINEL) ## Pytest for the ai-config reconciler
+	@$(DEV_BIN)/pytest tests/scripts/test_ai_config*.py -q
 
 test-git-hooks: $(DEV_SENTINEL) ## Pytest for the global git hooks (prepare-commit-msg)
 	@$(DEV_BIN)/pytest tests/git_hooks -q
@@ -333,7 +343,7 @@ test-claude-hooks: ## Pytest under bin/'s own uv project (mirrors deployed venv)
 	@uv run --project roles/devbox/files/dot_claude/bin \
 	  pytest roles/devbox/files/dot_claude/bin
 
-qa: lint-py typecheck test test-integration ## Full Python quality gate (lint + typecheck + tests + integration)
+qa: lint-py typecheck test test-integration test-ai-config test-deploy ## Full Python quality gate
 
 regenerate-fixtures: $(DEV_SENTINEL) ## Re-extract recorded fixtures + regenerate synthetic ones
 	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/extract_fixtures.py --max-per-bucket 50
@@ -553,60 +563,14 @@ endif
 		--verbose
 
 claude-diff:
-	@echo "=== Drift: deployed ~/.claude vs repo (root files only; JSON key-sorted) ==="
-	@$(CLAUDE_NORM_FN); \
-	drift=0; \
-	if ! diff -q $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC) $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) >/dev/null 2>&1; then \
-		echo ""; \
-		echo "--- $(CLAUDE_AUTHORITY_SRC) <-> $(CLAUDE_AUTHORITY_DEST) ---"; \
-		diff -u $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC) $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) || true; \
-		drift=1; \
-	fi; \
-	for f in $(CLAUDE_ROOT_FILES); do \
-		src_tmp=$$(mktemp); dst_tmp=$$(mktemp); \
-		norm $(CLAUDE_SRC)/$$f > $$src_tmp; \
-		norm $(CLAUDE_DEST)/$$f > $$dst_tmp; \
-		if ! diff -q $$src_tmp $$dst_tmp >/dev/null 2>&1; then \
-			echo ""; \
-			echo "--- $$f ---"; \
-			diff -u $$src_tmp $$dst_tmp || true; \
-			drift=1; \
-		fi; \
-		rm -f $$src_tmp $$dst_tmp; \
-	done; \
-	if [ $$drift -eq 0 ]; then \
-		echo "  No drift detected."; \
-	else \
-		echo ""; \
-		echo "Smart pull (settings.json):   make claude-pull-review"; \
-		echo "Dumb pull (all files):        make claude-pull"; \
-	fi
-
-claude-pull:
-	@echo "=== Pulling root files from ~/.claude to repo (wholesale copy; JSON key-sorted) ==="
-	@if ! diff -q $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC) $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) >/dev/null 2>&1; then \
-		cp $(CLAUDE_DEST)/$(CLAUDE_AUTHORITY_DEST) $(CLAUDE_SRC)/$(CLAUDE_AUTHORITY_SRC); \
-		echo "  PULLED: $(CLAUDE_AUTHORITY_DEST) -> $(CLAUDE_AUTHORITY_SRC)"; \
-	else \
-		echo "  SKIP:   $(CLAUDE_AUTHORITY_SRC) (no changes)"; \
-	fi
-	@$(CLAUDE_NORM_FN); \
-	for f in $(CLAUDE_ROOT_FILES); do \
-		src_tmp=$$(mktemp); dst_tmp=$$(mktemp); \
-		norm $(CLAUDE_SRC)/$$f > $$src_tmp; \
-		norm $(CLAUDE_DEST)/$$f > $$dst_tmp; \
-		if ! diff -q $$src_tmp $$dst_tmp >/dev/null 2>&1; then \
-			cp $$dst_tmp $(CLAUDE_SRC)/$$f; \
-			echo "  PULLED: $$f"; \
-		else \
-			echo "  SKIP:   $$f (no changes)"; \
-		fi; \
-		rm -f $$src_tmp $$dst_tmp; \
-	done
-	@echo "Review with: git diff"
+	$(require_profile)
+	@$(AI_CONFIG) diff claude --repo-root "$(CURDIR)" --home "$(HOME)" --profile "$(ACTIVE_PROFILE)" $(ARGS)
 
 claude-pull-review:
-	@python3 scripts/claude-pull-review $(ARGS)
+	$(require_profile)
+	@$(AI_CONFIG) reconcile claude --repo-root "$(CURDIR)" --home "$(HOME)" --profile "$(ACTIVE_PROFILE)" $(ARGS)
+
+claude-pull: claude-pull-review
 
 # Karabiner back-propagation. The live file is edited via the Karabiner GUI; these
 # targets capture ONLY the portable complex_modifications back into the repo, so the
@@ -643,28 +607,17 @@ karabiner-pull:
 		echo "  Review with: git diff $(KARABINER_SRC)"; \
 	fi
 
-# Fast-path Claude config deploy via dedicated slim playbook.
-# Reuses Block 1 + Block 2 of roles/devbox/tasks/install_configs.yml under the
-# claude tag, so this and `make personal`/`make work` share a single implementation.
-# No sudo prompt, no vault load.
-#
-# Slim targets resolve the active profile via MNEMOSYNE_PERISTASEOS (or
-# explicit PROFILE=...). This prevents accidental renders of profile-dependent
-# vars (e.g. devbox_projects_dir) with the wrong value when invoked outside the
-# main personal/work workflow.
-claude-push: $(COLLECTIONS_SENTINEL)
-	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags claude $(ACTIVE_OPTS) playbooks/claude.yml
+# These historical fast paths are intentionally hard-blocked. They used to be
+# easy to invoke as one-way deploys; keeping the names as guards prevents muscle
+# memory from bypassing the explicit diff/reconcile workflow.
+claude-push:
+	$(call ai_config_push_guard,claude)
 
-agy-push: $(COLLECTIONS_SENTINEL)
-	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags agy $(ACTIVE_OPTS) playbooks/claude.yml
+agy-push:
+	$(call ai_config_push_guard,agy)
 
-# Fast-path Codex deploy. The repo owns only the portable fragment from
-# dot_codex; app-owned config.toml tables are preserved by the reconciler.
-codex-push: $(COLLECTIONS_SENTINEL)
-	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags codex $(ACTIVE_OPTS) playbooks/codex.yml
+codex-push:
+	$(call ai_config_push_guard,codex)
 
 # Fast-path: kitty / nvim / fish / bash configs + Jinja templates + local overlay.
 # Reuses Blocks 3-5 (dotfiles) and Block 6 (local) of install_configs.yml.

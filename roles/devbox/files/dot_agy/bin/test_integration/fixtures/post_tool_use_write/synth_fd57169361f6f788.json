@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/src/lib.rs",
+    "content": "hEWFqXcO[4f_Ud'#~7"
+  },
+  "tool_response": "-arAu",
+  "hook_event_name": "PostToolUse"
+}

@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/src/lib.rs",
+    "old_string": "",
+    "new_string": "",
+    "replace_all": false
+  },
+  "tool_response": "ls)aNT:M2D",
+  "hook_event_name": "PostToolUse"
+}

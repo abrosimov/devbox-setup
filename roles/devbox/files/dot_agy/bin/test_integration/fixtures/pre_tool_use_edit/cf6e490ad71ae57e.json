@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/read.go",
+    "old_string": "\treq.Size = 100\n\treq.Fields = []string{\"qualifiedId\", \"documentSlug\"}",
+    "new_string": "\treq.Size = maxAmbiguousResults\n\treq.Fields = []string{\"qualifiedId\", \"documentSlug\"}"
+  },
+  "hook_event_name": "PreToolUse"
+}

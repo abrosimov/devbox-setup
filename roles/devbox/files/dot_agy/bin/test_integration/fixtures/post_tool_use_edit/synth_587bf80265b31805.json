@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "old_string": "X",
+    "new_string": "wRk~x76",
+    "replace_all": false
+  },
+  "tool_response": "v",
+  "hook_event_name": "PostToolUse"
+}

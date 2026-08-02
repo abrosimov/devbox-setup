@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "cat p^e]{6]j",
+    "description": "p^e]{6]j"
+  },
+  "hook_event_name": "PreToolUse"
+}

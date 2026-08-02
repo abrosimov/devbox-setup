@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git -C <HOME>/Projects/warp-and-weft/base add \\\n  \"INDEX.md\" \\\n  \"backlog/TASK-00001-хуки-агентского-конвейера.md\" \\\n  \"backlog/TASK-00006-ограничение-кода-и-формата-в-спецификации.md\" \\\n  \"backlog/TASK-00010-атомизация-открытых-вопросов.md\" \\\n  \"weft/Открытые-вопросы.md\" \\\n  \"weft/open-questions/INDEX.md\" \\\n  \"weft/open-questions/OPEN-QUESTION-00001-топология-W-and-W-и-соседних-vault.ru.md\" \\\n  \"План-работ.md\" \\\n  \"PRINCIPLE-00014-модель-сравнения-датированный-объект.md\" \\\n  \"Warp-and-Weft.md\" \\\n  \"archive/thoughts-and-dialogs/Диалог-2026-06-04-сосуществование-W-and-W-и-соседей.md\" && \\\ngit -C <HOME>/Projects/warp-and-weft/base commit -m \"$(cat <<'EOF'\nСохранение точки 2026-06-04 (диалог о топологии W&W ↔ соседей + WIP)\n\nЭтой сессией:\n- архив диалога автор ↔ Claude о сосуществовании с personal-notes,\n  Praetor (agents-hooks-guard), llm-orchestrator\n- проактивные структурные правки Claude: Р32 в План-работ, новая семья\n  weft/open-questions/ с INDEX, OPEN-QUESTION-00001, backlog/TASK-00010,\n  edit корневого INDEX\n- в План-работ → Вычитку добавлен пункт №1: разбор этого диалога\n\nWIP из предыдущей сессии (Р31, Iteration 0): удаление SPF-рамка.md,\nновый Warp-and-Weft.md, правки TASK-00001/TASK-00006/Открытые-вопросы.md,\nстаб PRINCIPLE-00014.\n\nТочка фиксируется AS-IS. Разбор отложен — приоритет №1 в Вычитке.\nEOF\n)\" && \\\ngit -C <HOME>/Projects/warp-and-weft/base status",
+    "description": "Stage all files by name, commit fixation point, verify status"
+  },
+  "hook_event_name": "PreToolUse"
+}

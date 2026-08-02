@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/testdata/frontmatter.md",
+    "content": "---\ntitle: \"Test Decision\"\nkind: decision\ndate: 2026-02-22\ntags: [embedding, model, search-quality]\nstatus: active\nscope: global\nsupersedes: DEC-007\n---\n\n## Context\n\nThe context for this decision including background information.\n\n## Decision\n\nWe decided to use nomic-embed-text-v1.5 for embeddings.\n\n## Rationale\n\nThe rationale for this decision is based on the 8192-token context window.\n"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/internal/foo/bar.go",
+    "old_string": "m5",
+    "new_string": "Infinity",
+    "replace_all": false
+  },
+  "hook_event_name": "PreToolUse"
+}

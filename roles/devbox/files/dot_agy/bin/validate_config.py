@@ -1,0 +1,1092 @@
+#!/usr/bin/env python3
+"""Validate Antigravity CLI agent/skill/command configuration integrity.
+
+Checks:
+  agents               Agent frontmatter fields, model values, skill cross-references
+  skills               Skill frontmatter fields, name/directory match
+  commands             Command frontmatter fields, techne- filename prefix
+  command-refs         techne- namespace integrity (dangling refs, bare invocations)
+  json                 JSON validity for schemas/, hooks.json, settings.json
+  references           Broken markdown links in agent files
+  stale                Old-style doc references, formatting issues
+  grounding            Builder skill grounding reference files
+  meta-pipeline        Meta-reviewer existence, builder skill wiring
+  budget               Skill description budget utilisation (16K char limit)
+  related-links        related: frontmatter entries resolve to existing skills/agents
+  trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
+  fpf-refs             FPF and NSTD ids cited by their skills resolve in bundled references
+
+Usage:
+  validate-config.py                           # all checks, ~/.gemini/antigravity-cli root
+  validate-config.py --root .                  # all checks, current directory
+  validate-config.py --check agents,skills     # subset of checks
+  validate-config.py --json                    # machine-readable output
+  validate-config.py --budget                  # detailed budget breakdown
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import json
+import re
+import sys
+import tempfile
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+# ---------------------------------------------------------------------------
+# Frontmatter parsing
+# ---------------------------------------------------------------------------
+
+
+_NEW_KEY_RE = re.compile(r"^[a-zA-Z][-\w]*:")
+
+
+def _find_frontmatter_end(lines: list[str]) -> int | None:
+    for i, line in enumerate(lines[1:], 1):
+        if line.strip() == "---":
+            return i
+    return None
+
+
+def _parse_kv_line(line: str) -> tuple[str, str] | None:
+    """Parse ``key: value`` (or return None if line is not a kv pair).
+
+    Strips surrounding quotes; the ``>`` sentinel for multiline is left intact
+    for the caller to detect.
+    """
+    if ":" not in line or line.lstrip().startswith("-"):
+        return None
+    key, value = line.split(":", 1)
+    key = key.strip()
+    value = value.strip()
+    if len(value) >= 2 and value[0] in ('"', "'") and value[-1] == value[0]:
+        value = value[1:-1]
+    return key, value
+
+
+def parse_frontmatter(content: str) -> dict[str, str] | None:
+    """Extract YAML frontmatter from markdown content.
+
+    Handles:
+      - Simple  key: value  (split on first colon)
+      - Quoted values  key: "value with: colons"
+      - Multiline >  continuation blocks
+      - List field  skills: a, b, c  (kept as raw string)
+
+    Returns None when no valid ``---`` delimited block is found.
+    """
+    lines = content.split("\n")
+    if not lines or lines[0].strip() != "---":
+        return None
+
+    end = _find_frontmatter_end(lines)
+    if end is None:
+        return None
+
+    result: dict[str, str] = {}
+    current_key: str | None = None
+    current_value = ""
+    multiline = False
+
+    for line in lines[1:end]:
+        # Inside a multiline > block — accumulate until next key or blank
+        if multiline:
+            stripped = line.strip()
+            if stripped and not _NEW_KEY_RE.match(line):
+                current_value += " " + stripped
+                continue
+            # Flush multiline value
+            if current_key:
+                result[current_key] = current_value.strip()
+            multiline = False
+            current_key = None
+            current_value = ""
+            # Fall through to process current line as potential new key
+
+        kv = _parse_kv_line(line)
+        if kv is None:
+            continue
+        key, value = kv
+        if value == ">":
+            current_key = key
+            current_value = ""
+            multiline = True
+            continue
+        result[key] = value
+
+    # Flush trailing multiline
+    if multiline and current_key:
+        result[current_key] = current_value.strip()
+
+    return result
+
+
+def parse_skills_list(content: str) -> list[str]:
+    """Return skill names from the ``skills:`` frontmatter field."""
+    fm = parse_frontmatter(content)
+    if not fm or "skills" not in fm:
+        return []
+    raw = fm["skills"]
+    # Strip optional surrounding brackets  skills: [a, b, c]
+    raw = raw.strip("[] ")
+    return [s.strip() for s in raw.split(",") if s.strip()]
+
+
+def _parse_inline_list(raw: str) -> list[str]:
+    """Parse an inline flow-style YAML list  ``[a, b, c]`` or ``a, b, c``."""
+    raw = raw.strip()
+    if not raw or raw == "[]":
+        return []
+    raw = raw.strip("[] ")
+    items: list[str] = []
+    for chunk in raw.split(","):
+        item = chunk.strip().strip("'\"")
+        if item:
+            items.append(item)
+    return items
+
+
+def _parse_block_list(lines: list[str], start: int) -> tuple[list[str], int]:
+    """Parse a block-style YAML list starting at ``lines[start + 1]``.
+
+    Consumes indented ``  - item`` lines until a non-list line is reached.
+    Returns (items, index-of-first-non-list-line).
+    """
+    items: list[str] = []
+    i = start + 1
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.lstrip()
+        if not stripped:
+            i += 1
+            continue
+        if not stripped.startswith("-"):
+            break
+        item = stripped[1:].strip().strip("'\"")
+        if item:
+            items.append(item)
+        i += 1
+    return items, i
+
+
+def parse_yaml_list(content: str, field: str) -> list[str]:
+    """Return the value of a YAML-list frontmatter field (inline or block form).
+
+    Returns [] when the field is absent, empty, or malformed.
+    """
+    lines = content.split("\n")
+    if not lines or lines[0].strip() != "---":
+        return []
+    end = _find_frontmatter_end(lines)
+    if end is None:
+        return []
+
+    prefix = f"{field}:"
+    for i in range(1, end):
+        line = lines[i]
+        stripped = line.strip()
+        if not stripped.startswith(prefix):
+            continue
+        after = stripped[len(prefix) :].strip()
+        if after:
+            return _parse_inline_list(after)
+        items, _ = _parse_block_list(lines[:end], i)
+        return items
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Individual checks — each returns (errors, warnings)
+# ---------------------------------------------------------------------------
+
+
+def check_agents(root: Path) -> tuple[list[str], list[str]]:
+    agents_dir = root / "agents"
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not agents_dir.is_dir():
+        errors.append("[AGENT_DIR] agents/ directory not found")
+        return errors, warnings
+
+    available_skills: set[str] = set()
+    skills_dir = root / "skills"
+    if skills_dir.is_dir():
+        available_skills = {
+            d.name for d in skills_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()
+        }
+
+    for agent_file in sorted(agents_dir.glob("*.md")):
+        name = agent_file.name
+        content = agent_file.read_text()
+        fm = parse_frontmatter(content)
+
+        if fm is None:
+            errors.append(f"[AGENT_FRONTMATTER] {name}: Missing or invalid frontmatter")
+            continue
+
+        errors.extend(
+            f'[AGENT_FIELD] {name}: Missing required field "{field}"'
+            for field in ("name", "description", "tools", "model", "skills")
+            if field not in fm
+        )
+
+        if "model" in fm and fm["model"] not in ("sonnet", "opus", "haiku"):
+            errors.append(
+                f'[AGENT_MODEL] {name}: Invalid model "{fm["model"]}" (expected sonnet/opus/haiku)'
+            )
+
+        errors.extend(
+            f'[SKILL_REF] {name}: References non-existent skill "{skill}"'
+            for skill in parse_skills_list(content)
+            if skill not in available_skills
+        )
+
+    return errors, warnings
+
+
+def check_skills(root: Path) -> tuple[list[str], list[str]]:
+    skills_dir = root / "skills"
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not skills_dir.is_dir():
+        errors.append("[SKILL_DIR] skills/ directory not found")
+        return errors, warnings
+
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            errors.append(f"[SKILL_FILE] {skill_dir.name}: Missing SKILL.md")
+            continue
+
+        content = skill_file.read_text()
+        fm = parse_frontmatter(content)
+
+        if fm is None:
+            errors.append(
+                f"[SKILL_FRONTMATTER] {skill_dir.name}/SKILL.md: Missing or invalid frontmatter"
+            )
+            continue
+
+        if "name" not in fm:
+            errors.append(f'[SKILL_FIELD] {skill_dir.name}/SKILL.md: Missing "name" field')
+        elif fm["name"] != skill_dir.name:
+            warnings.append(
+                f"[SKILL_NAME_MISMATCH] {skill_dir.name}/SKILL.md: "
+                f'name="{fm["name"]}" != directory "{skill_dir.name}"'
+            )
+
+        if "description" not in fm:
+            errors.append(f'[SKILL_FIELD] {skill_dir.name}/SKILL.md: Missing "description" field')
+
+    return errors, warnings
+
+
+def check_commands(root: Path) -> tuple[list[str], list[str]]:
+    commands_dir = root / "commands"
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not commands_dir.is_dir():
+        errors.append("[CMD_DIR] commands/ directory not found")
+        return errors, warnings
+
+    for cmd_file in sorted(commands_dir.glob("*.md")):
+        if not cmd_file.name.startswith("techne-"):
+            errors.append(
+                f"[CMD_PREFIX] {cmd_file.name}: command file must be named "
+                f"techne-{cmd_file.name} — all commands carry the techne- namespace "
+                "prefix so they do not collide with built-in commands or bundled skills"
+            )
+
+        content = cmd_file.read_text()
+        fm = parse_frontmatter(content)
+
+        if fm is None:
+            errors.append(f"[CMD_FRONTMATTER] {cmd_file.name}: Missing or invalid frontmatter")
+            continue
+
+        if "description" not in fm:
+            errors.append(f'[CMD_FIELD] {cmd_file.name}: Missing "description" field')
+
+    return errors, warnings
+
+
+def check_json_files(root: Path) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    for name in ("settings.json", "hooks.json"):
+        path = root / name
+        if path.exists():
+            try:
+                json.loads(path.read_text())
+            except json.JSONDecodeError as e:
+                errors.append(f"[JSON_INVALID] {name}: {e}")
+
+    schemas_dir = root / "schemas"
+    if schemas_dir.is_dir():
+        for schema_file in sorted(schemas_dir.glob("*.json")):
+            try:
+                json.loads(schema_file.read_text())
+            except json.JSONDecodeError as e:
+                errors.append(f"[JSON_INVALID] schemas/{schema_file.name}: {e}")
+
+    return errors, warnings
+
+
+_LINK_RE = re.compile(r"\]\((?!https?://|#|mailto:)([^)]+)\)")
+
+
+def check_references(root: Path) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    agents_dir = root / "agents"
+    if not agents_dir.is_dir():
+        return errors, warnings
+
+    for md_file in sorted(agents_dir.glob("*.md")):
+        content = md_file.read_text()
+        for match in _LINK_RE.finditer(content):
+            target = match.group(1)
+            if target.startswith("../") or "://" in target:
+                continue
+            candidates = [root / target, root / "docs" / target]
+            if not any(c.exists() for c in candidates):
+                errors.append(f'[DOC_REF] {md_file.name}: Broken link to "{target}"')
+
+    return errors, warnings
+
+
+# ---------------------------------------------------------------------------
+# Command namespace integrity (techne- prefix convention)
+# ---------------------------------------------------------------------------
+#
+# Managed locations scanned for command-reference integrity. Host-only trees
+# (projects/, plans/, memory/, plugins/, future_projects/, ...) are never
+# scanned — they hold user content that legitimately uses bare slash tokens.
+_CMD_SCAN_DIRS = ("agents", "skills", "commands", "bin", "docs")
+_CMD_SCAN_ROOT_FILES = ("README.md", "config.md", "USER_AUTHORITY_PROTOCOL.md")
+# docs/ carries formal specifications with illustrative slash tokens (e.g. an
+# example HTTP endpoint named after a word that happens to match a command), so
+# it is kept for the deterministic dangling-reference scan but excluded from the
+# heuristic bare-invocation scan.
+_CMD_BARE_EXCLUDE_DIRS = ("docs",)
+_CMD_SCAN_SUFFIXES = ("", ".md", ".py", ".sh", ".js")
+
+_TECHNE_REF_RE = re.compile(r"/techne-([a-z0-9][a-z0-9-]*)")
+
+
+def _is_test_file(path: Path) -> bool:
+    # Test files carry intentional fixture strings that would trip the
+    # command-namespace checks; skip them.
+    return (path.name.startswith("test_") and path.suffix == ".py") or path.name.endswith(
+        "_test.py"
+    )
+
+
+def _iter_managed_files(root: Path) -> Iterator[Path]:
+    for d in _CMD_SCAN_DIRS:
+        sub = root / d
+        if not sub.is_dir():
+            continue
+        for path in sorted(sub.rglob("*")):
+            relative_path = path.relative_to(sub)
+            # Skip hidden dirs (.hypothesis/, .venv/, .pytest_cache/, ...) — they
+            # hold tool caches with harvested string literals that trip the
+            # regex-based namespace checks.
+            if any(part.startswith(".") for part in relative_path.parts):
+                continue
+            # Bundled references are source material, not executable command
+            # definitions. Slash tokens inside them must not enter the custom
+            # command namespace.
+            if "references" in relative_path.parts:
+                continue
+            if path.is_file() and path.suffix in _CMD_SCAN_SUFFIXES and not _is_test_file(path):
+                yield path
+    for name in _CMD_SCAN_ROOT_FILES:
+        path = root / name
+        if path.is_file():
+            yield path
+
+
+def check_command_refs(root: Path) -> tuple[list[str], list[str]]:
+    """Enforce the techne- command namespace across the managed config.
+
+    ERROR  every ``/techne-<x>`` reference must resolve to a command file
+           (catches typos and references to renamed/removed commands).
+    WARN   a bare ``/<name>`` invocation that matches a known command stem but
+           is missing the techne- prefix (it would invoke a built-in/bundled
+           command instead of the intended custom one).
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    commands_dir = root / "commands"
+    if not commands_dir.is_dir():
+        return errors, warnings
+
+    stems = sorted(p.name[len("techne-") : -len(".md")] for p in commands_dir.glob("techne-*.md"))
+    if not stems:
+        return errors, warnings
+    known = set(stems)
+
+    # Boundary-guarded matcher for a bare command name missing the prefix. The
+    # preceding char excludes word/path/url separators so `commands/`, `http://`
+    # and hyphenated names are skipped; the following char excludes path
+    # continuations so file/path tokens (a plan markdown file, a design dir, a
+    # schema_ snake_case symbol) are not flagged.
+    bare_re = re.compile(
+        r"(?<![A-Za-z0-9_./-])/(" + "|".join(re.escape(s) for s in stems) + r")(?![A-Za-z0-9/_.-])"
+    )
+
+    for path in _iter_managed_files(root):
+        rel = path.relative_to(root)
+        try:
+            content = path.read_text(errors="ignore")
+        except OSError:
+            continue
+
+        for match in _TECHNE_REF_RE.finditer(content):
+            stem = match.group(1)
+            if stem not in known:
+                errors.append(
+                    f'[CMD_REF] {rel}: reference to "/techne-{stem}" but '
+                    f"commands/techne-{stem}.md does not exist"
+                )
+
+        if rel.parts and rel.parts[0] in _CMD_BARE_EXCLUDE_DIRS:
+            continue
+        for match in bare_re.finditer(content):
+            line = content.count("\n", 0, match.start()) + 1
+            stem = match.group(1)
+            warnings.append(
+                f'[CMD_BARE] {rel}:{line}: bare "/{stem}" should be "/techne-{stem}" '
+                "(bare name collides with a built-in command or bundled skill)"
+            )
+
+    return errors, warnings
+
+
+def _collect_skill_names(root: Path) -> set[str]:
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir():
+        return set()
+    return {d.name for d in skills_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()}
+
+
+def _collect_agent_names(root: Path) -> set[str]:
+    agents_dir = root / "agents"
+    if not agents_dir.is_dir():
+        return set()
+    return {f.stem for f in agents_dir.glob("*.md")}
+
+
+def check_related_links(root: Path) -> tuple[list[str], list[str]]:
+    """Every name in a ``related:`` frontmatter list must resolve.
+
+    ``related:`` is optional. When present, each name must exist as either
+    a skill directory or an agent file (per Q-W2-6 = A the graph is small
+    and grep-seeded, so dangling refs are a real risk).
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    skills = _collect_skill_names(root)
+    agents = _collect_agent_names(root)
+    known = skills | agents
+
+    for skill_dir in sorted((root / "skills").iterdir() if (root / "skills").is_dir() else []):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+        related = parse_yaml_list(skill_file.read_text(), "related")
+        errors.extend(
+            f'[RELATED_REF] skills/{skill_dir.name}/SKILL.md: related "{name}" '
+            "does not resolve to a skill or agent"
+            for name in related
+            if name not in known
+        )
+
+    for agent_file in sorted((root / "agents").glob("*.md") if (root / "agents").is_dir() else []):
+        related = parse_yaml_list(agent_file.read_text(), "related")
+        errors.extend(
+            f'[RELATED_REF] agents/{agent_file.name}: related "{name}" '
+            "does not resolve to a skill or agent"
+            for name in related
+            if name not in known
+        )
+
+    return errors, warnings
+
+
+def check_trigger_consistency(root: Path) -> tuple[list[str], list[str]]:
+    """Warn when a trigger-loaded skill is not referenced by any agent.
+
+    A skill declaring ``triggers:`` (and not ``alwaysApply: true``) relies on
+    agents listing it under ``skills:`` for the trigger-load path to fire.
+    If zero agents reference it, the triggers are unreachable — this is
+    almost always an oversight after a demotion or rename.
+
+    Conservative: warn, never fail.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    agents_dir = root / "agents"
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir() or not agents_dir.is_dir():
+        return errors, warnings
+
+    agent_skill_refs: dict[str, int] = {}
+    for agent_file in agents_dir.glob("*.md"):
+        for skill in parse_skills_list(agent_file.read_text()):
+            agent_skill_refs[skill] = agent_skill_refs.get(skill, 0) + 1
+
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+        content = skill_file.read_text()
+        fm = parse_frontmatter(content) or {}
+        if fm.get("alwaysApply", "").lower() in ("true", "1", "yes"):
+            continue
+        triggers = parse_yaml_list(content, "triggers")
+        if not triggers:
+            continue
+        if agent_skill_refs.get(skill_dir.name, 0) == 0:
+            warnings.append(
+                f"[TRIGGER_CONSISTENCY] skills/{skill_dir.name}/SKILL.md: "
+                f"declares {len(triggers)} trigger(s) but no agent references "
+                "it in skills: — triggers are unreachable"
+            )
+
+    return errors, warnings
+
+
+_STALE_PATTERNS = [
+    (re.compile(r"go/go_"), "old-style Go doc reference"),
+    (re.compile(r"python/python_"), "old-style Python doc reference"),
+]
+
+
+def check_stale_patterns(root: Path) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    agents_dir = root / "agents"
+    if not agents_dir.is_dir():
+        return errors, warnings
+
+    for agent_file in sorted(agents_dir.glob("*.md")):
+        lines = agent_file.read_text().split("\n")
+        in_code_block = False
+
+        for i, line in enumerate(lines, 1):
+            if line.strip().startswith("```"):
+                in_code_block = not in_code_block
+                continue
+            if in_code_block:
+                continue
+            for pattern, desc in _STALE_PATTERNS:
+                if pattern.search(line):
+                    warnings.append(f"[STALE] {agent_file.name}:{i}: {desc}")
+
+    return errors, warnings
+
+
+SKILL_BUDGET_CHARS = 16_000
+SKILL_BUDGET_WARN = 0.80
+SKILL_BUDGET_ERROR = 0.95
+
+
+def check_skill_budget(root: Path) -> tuple[list[str], list[str]]:
+    """Check total skill description budget utilisation against 16K limit."""
+    skills_dir = root / "skills"
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not skills_dir.is_dir():
+        return errors, warnings
+
+    entries: list[tuple[str, int]] = []
+
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+
+        content = skill_file.read_text()
+        fm = parse_frontmatter(content)
+        if fm is None or "name" not in fm or "description" not in fm:
+            continue
+
+        entry = f"- {fm['name']}: {fm['description']}"
+        entries.append((fm["name"], len(entry)))
+
+    total = sum(size for _, size in entries)
+    utilisation = total / SKILL_BUDGET_CHARS if SKILL_BUDGET_CHARS > 0 else 0
+
+    if utilisation > SKILL_BUDGET_ERROR:
+        errors.append(
+            f"[BUDGET_EXCEEDED] Skill description budget: {total}/{SKILL_BUDGET_CHARS} chars "
+            f"({utilisation:.0%}) — skills may be silently dropped from system prompt"
+        )
+    elif utilisation > SKILL_BUDGET_WARN:
+        warnings.append(
+            f"[BUDGET_HIGH] Skill description budget: {total}/{SKILL_BUDGET_CHARS} chars "
+            f"({utilisation:.0%}) — approaching limit"
+        )
+
+    return errors, warnings
+
+
+def format_budget_report(root: Path) -> str:
+    """Produce a detailed per-skill budget breakdown (for standalone use)."""
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir():
+        return "No skills directory found."
+
+    entries: list[tuple[str, int]] = []
+
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+
+        content = skill_file.read_text()
+        fm = parse_frontmatter(content)
+        if fm is None or "name" not in fm or "description" not in fm:
+            continue
+
+        entry = f"- {fm['name']}: {fm['description']}"
+        entries.append((fm["name"], len(entry)))
+
+    entries.sort(key=lambda x: x[1], reverse=True)
+    total = sum(size for _, size in entries)
+    utilisation = total / SKILL_BUDGET_CHARS if SKILL_BUDGET_CHARS > 0 else 0
+
+    lines = [
+        "Skill Description Budget Report",
+        "=" * 40,
+        "",
+        f"{'Skill':<40} {'Chars':>6}",
+        "-" * 47,
+    ]
+    for name, size in entries:
+        lines.append(f"{name:<40} {size:>6}")
+
+    lines.append("-" * 47)
+    lines.append(f"{'TOTAL':<40} {total:>6} / {SKILL_BUDGET_CHARS}")
+    lines.append(f"{'Utilisation':<40} {utilisation:>6.0%}")
+    lines.append("")
+
+    if utilisation > SKILL_BUDGET_ERROR:
+        lines.append(f"FAIL — budget exceeded ({utilisation:.0%})")
+    elif utilisation > SKILL_BUDGET_WARN:
+        lines.append(f"WARN — budget high ({utilisation:.0%})")
+    else:
+        lines.append(f"OK — budget healthy ({utilisation:.0%})")
+
+    return "\n".join(lines)
+
+
+_GROUNDING_REFS: dict[str, list[str]] = {
+    "agent-builder": [
+        "references/anthropic-agent-authoring.md",
+        "references/anthropic-prompt-engineering.md",
+    ],
+    "skill-builder": [
+        "references/anthropic-skill-authoring.md",
+    ],
+}
+
+
+def check_grounding(root: Path) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    for skill_name, refs in _GROUNDING_REFS.items():
+        skill_dir = root / "skills" / skill_name
+        if not skill_dir.is_dir():
+            errors.append(f"[GROUNDING] skills/{skill_name}: Directory not found")
+            continue
+        errors.extend(
+            f"[GROUNDING] {skill_name}/{ref}: File not found"
+            for ref in refs
+            if not (skill_dir / ref).exists()
+        )
+
+    return errors, warnings
+
+
+_FPF_SPEC_REL = "skills/fpf-thinking/references/FPF-Spec.md"
+_FPF_REF_SOURCES = ("skills/fpf-thinking/SKILL.md",)
+_NSTD_SPEC_REL = (
+    "skills/fpf-thinking/references/Narrativization-and-Narrative-Studies-Principles-Framework.md"
+)
+_NSTD_REF_SOURCES = ("skills/narrative-thinking/SKILL.md",)
+
+# A cited id: Part letter, dot, digit, then dot-separated alphanumeric segments.
+# Matches A.1, A.19.CN, C.32.P2S, A.6.P.WMR, E.17.ID.CR, B.5.2.0.
+_FPF_ID_RE = re.compile(r"\b([A-G]\.[0-9][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)")
+# A spec header: optional bold, the id, then a title separator or a slot colon.
+# The separator class is hyphen, en dash (u2013), em dash (u2014); the spec uses all three.
+_FPF_HEADER_RE = re.compile(
+    r"^#{1,6}\s+\*{0,2}([A-G]\.[0-9][A-Za-z0-9.]*?)\*{0,2}\s*(?=[-\u2013\u2014:])"
+)
+_NSTD_ID_RE = re.compile(r"\b(NSTD\.[0-9][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)")
+_NSTD_HEADER_RE = re.compile(
+    r"^#{1,6}\s+\*{0,2}(NSTD\.[0-9][A-Za-z0-9.]*?)\*{0,2}\s*(?=[-\u2013\u2014:])"
+)
+_FENCE_RE = re.compile(r"^\s*```")
+# Inline code carrying a backslash is a Grep pattern, not a citation.
+_REGEX_SPAN_RE = re.compile(r"`[^`]*\\[^`]*`")
+
+
+def _strip_non_citations(content: str) -> str:
+    """Drop fenced blocks and regex-bearing code spans before harvesting ids."""
+    kept: list[str] = []
+    in_fence = False
+    for line in content.split("\n"):
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            kept.append(_REGEX_SPAN_RE.sub(" ", line))
+    return "\n".join(kept)
+
+
+def collect_fpf_spec_ids(spec: str) -> set[str]:
+    """Every pattern id the spec defines, taken from its section headers."""
+    ids: set[str] = set()
+    for line in spec.split("\n"):
+        match = _FPF_HEADER_RE.match(line)
+        if match:
+            ids.add(match.group(1).rstrip("."))
+    return ids
+
+
+def collect_fpf_citations(content: str) -> dict[str, int]:
+    """Cited id -> first 1-indexed line, ignoring code fences and Grep patterns."""
+    cited: dict[str, int] = {}
+    for lineno, line in enumerate(_strip_non_citations(content).split("\n"), 1):
+        for match in _FPF_ID_RE.finditer(line):
+            cited.setdefault(match.group(1).rstrip("."), lineno)
+    return cited
+
+
+def collect_nstd_spec_ids(spec: str) -> set[str]:
+    """Return every NSTD pattern id defined by a section header."""
+    ids: set[str] = set()
+    for line in spec.split("\n"):
+        match = _NSTD_HEADER_RE.match(line)
+        if match:
+            ids.add(match.group(1).rstrip("."))
+    return ids
+
+
+def collect_nstd_citations(content: str) -> dict[str, int]:
+    """Return cited NSTD ids and their first 1-indexed line."""
+    cited: dict[str, int] = {}
+    for lineno, line in enumerate(_strip_non_citations(content).split("\n"), 1):
+        for match in _NSTD_ID_RE.finditer(line):
+            cited.setdefault(match.group(1).rstrip("."), lineno)
+    return cited
+
+
+def _check_framework_refs(
+    root: Path,
+    *,
+    label: str,
+    spec_relative_path: str,
+    source_relative_paths: tuple[str, ...],
+    collect_ids: Callable[[str], set[str]],
+    collect_citations: Callable[[str], dict[str, int]],
+) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    spec_file = root / spec_relative_path
+    sources = [root / relative_path for relative_path in source_relative_paths]
+    present = [path for path in sources if path.is_file()]
+    if not present:
+        return errors, warnings
+
+    if not spec_file.is_file():
+        warnings.append(f"[{label}] {spec_relative_path} not found — id resolution skipped")
+        return errors, warnings
+
+    spec_ids = collect_ids(spec_file.read_text())
+    if not spec_ids:
+        errors.append(
+            f"[{label}] {spec_relative_path}: no pattern headers parsed — format changed?"
+        )
+        return errors, warnings
+
+    for path in present:
+        relative_path = path.relative_to(root)
+        for cited, lineno in sorted(collect_citations(path.read_text()).items()):
+            if cited not in spec_ids:
+                errors.append(
+                    f"[{label}] {relative_path}:{lineno}: "
+                    f"'{cited}' not found in {spec_relative_path}"
+                )
+
+    return errors, warnings
+
+
+def check_fpf_spec_refs(root: Path) -> tuple[list[str], list[str]]:
+    """Every FPF and NSTD id cited by its skill must resolve in the references.
+
+    Guards the drift class that bin/fpf_drift_check.py cannot see: that script
+    compares the vendored spec against upstream, nothing compares the skill
+    against the spec. Line numbers are deliberately not checked — ids are the
+    stable handle, offsets are not.
+    """
+    fpf_errors, fpf_warnings = _check_framework_refs(
+        root,
+        label="FPF_REFS",
+        spec_relative_path=_FPF_SPEC_REL,
+        source_relative_paths=_FPF_REF_SOURCES,
+        collect_ids=collect_fpf_spec_ids,
+        collect_citations=collect_fpf_citations,
+    )
+    nstd_errors, nstd_warnings = _check_framework_refs(
+        root,
+        label="NSTD_REFS",
+        spec_relative_path=_NSTD_SPEC_REL,
+        source_relative_paths=_NSTD_REF_SOURCES,
+        collect_ids=collect_nstd_spec_ids,
+        collect_citations=collect_nstd_citations,
+    )
+    return fpf_errors + nstd_errors, fpf_warnings + nstd_warnings
+
+
+def check_meta_pipeline(root: Path) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    meta_file = root / "agents" / "meta_reviewer.md"
+    if not meta_file.exists():
+        errors.append("[META_PIPELINE] agents/meta_reviewer.md not found")
+        return errors, warnings
+
+    skills = parse_skills_list(meta_file.read_text())
+
+    if "agent-builder" not in skills:
+        errors.append('[META_PIPELINE] meta_reviewer.md: "agent-builder" missing from skills')
+    if "skill-builder" not in skills:
+        errors.append('[META_PIPELINE] meta_reviewer.md: "skill-builder" missing from skills')
+
+    errors.extend(
+        f"[META_PIPELINE] skills/{skill}/SKILL.md not found"
+        for skill in ("agent-builder", "skill-builder")
+        if not (root / "skills" / skill / "SKILL.md").exists()
+    )
+
+    return errors, warnings
+
+
+# ---------------------------------------------------------------------------
+# Registry & runner
+# ---------------------------------------------------------------------------
+
+ALL_CHECKS: dict[str, Callable[..., Any]] = {
+    "agents": check_agents,
+    "skills": check_skills,
+    "commands": check_commands,
+    "command-refs": check_command_refs,
+    "json": check_json_files,
+    "references": check_references,
+    "stale": check_stale_patterns,
+    "grounding": check_grounding,
+    "meta-pipeline": check_meta_pipeline,
+    "budget": check_skill_budget,
+    "related-links": check_related_links,
+    "trigger-consistency": check_trigger_consistency,
+    "fpf-refs": check_fpf_spec_refs,
+}
+
+_AI_OWNED_ENTRIES = ("agents", "skills", "commands", "USER_AUTHORITY_PROTOCOL.md")
+
+
+@contextlib.contextmanager
+def validation_root(runtime_root: Path, ai_root: Path | None) -> Iterator[Path]:
+    """Expose split runtime/shared trees as the legacy single-root layout."""
+    if ai_root is None or ai_root.resolve() == runtime_root.resolve():
+        yield runtime_root
+        return
+
+    with tempfile.TemporaryDirectory(prefix="validate-ai-config-") as temporary_dir:
+        merged_root = Path(temporary_dir)
+        if runtime_root.is_dir():
+            for source in runtime_root.iterdir():
+                if source.name not in _AI_OWNED_ENTRIES:
+                    (merged_root / source.name).symlink_to(
+                        source.resolve(), target_is_directory=source.is_dir()
+                    )
+        if ai_root.is_dir():
+            for name in _AI_OWNED_ENTRIES:
+                source = ai_root / name
+                if source.exists():
+                    (merged_root / name).symlink_to(
+                        source.resolve(), target_is_directory=source.is_dir()
+                    )
+        yield merged_root
+
+
+def run_checks(root: Path, checks: list[str] | None = None) -> dict:
+    selected = checks or list(ALL_CHECKS.keys())
+    all_errors: list[str] = []
+    all_warnings: list[str] = []
+
+    for name in selected:
+        fn = ALL_CHECKS.get(name)
+        if fn is None:
+            all_errors.append(f"[CONFIG] Unknown check: {name}")
+            continue
+        errs, warns = fn(root)
+        all_errors.extend(errs)
+        all_warnings.extend(warns)
+
+    agents_dir = root / "agents"
+    skills_dir = root / "skills"
+    commands_dir = root / "commands"
+
+    counts = {
+        "agents": len(list(agents_dir.glob("*.md"))) if agents_dir.is_dir() else 0,
+        "skills": (
+            len([d for d in skills_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()])
+            if skills_dir.is_dir()
+            else 0
+        ),
+        "commands": len(list(commands_dir.glob("*.md"))) if commands_dir.is_dir() else 0,
+        "errors": len(all_errors),
+        "warnings": len(all_warnings),
+    }
+
+    return {"errors": all_errors, "warnings": all_warnings, "counts": counts}
+
+
+# ---------------------------------------------------------------------------
+# Output formatting
+# ---------------------------------------------------------------------------
+
+
+def format_text(results: dict) -> str:
+    counts = results["counts"]
+    lines: list[str] = []
+
+    lines.append("Configuration Validation Report")
+    lines.append("=" * 40)
+    lines.append("")
+
+    if results["errors"]:
+        lines.append("Errors (must fix)")
+        lines.append("-" * 20)
+        lines.extend(f"  {e}" for e in results["errors"])
+        lines.append("")
+
+    if results["warnings"]:
+        lines.append("Warnings (should fix)")
+        lines.append("-" * 20)
+        lines.extend(f"  {w}" for w in results["warnings"])
+        lines.append("")
+
+    lines.append("Summary")
+    lines.append("-" * 20)
+    lines.append(f"  Agents:   {counts['agents']}")
+    lines.append(f"  Skills:   {counts['skills']}")
+    lines.append(f"  Commands: {counts['commands']}")
+    lines.append(f"  Errors:   {counts['errors']}")
+    lines.append(f"  Warnings: {counts['warnings']}")
+    lines.append("")
+
+    if counts["errors"] == 0 and counts["warnings"] == 0:
+        lines.append("PASS")
+    elif counts["errors"] > 0:
+        lines.append(f"FAIL — {counts['errors']} error(s)")
+    else:
+        lines.append(f"WARN — {counts['warnings']} warning(s)")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Validate Antigravity CLI agent/skill/command configuration.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Available checks: " + ", ".join(ALL_CHECKS),
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path.home() / ".gemini/antigravity-cli",
+        help="Root directory of Antigravity CLI config (default: ~/.gemini/antigravity-cli)",
+    )
+    parser.add_argument(
+        "--ai-root",
+        type=Path,
+        default=None,
+        help="Shared agents/skills/commands root when split from --root",
+    )
+    parser.add_argument(
+        "--check",
+        type=str,
+        default=None,
+        help="Comma-separated list of checks to run (default: all)",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Output results as JSON",
+    )
+    parser.add_argument(
+        "--budget",
+        action="store_true",
+        help="Show detailed skill description budget report and exit",
+    )
+    args = parser.parse_args()
+
+    with validation_root(args.root, args.ai_root) as merged_root:
+        if args.budget:
+            print(format_budget_report(merged_root))
+            sys.exit(0)
+
+        checks = [c.strip() for c in args.check.split(",")] if args.check else None
+        results = run_checks(merged_root, checks)
+
+    if args.json_output:
+        print(json.dumps(results, indent=2))
+    else:
+        print(format_text(results))
+
+    sys.exit(1 if results["counts"]["errors"] > 0 else 0)
+
+
+if __name__ == "__main__":
+    main()

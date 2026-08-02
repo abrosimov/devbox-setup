@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls <HOME>/Projects/llm-orchestrator/base/docs/ <HOME>/Projects/llm-orchestrator/base/drafts/ 2>/dev/null | head -40",
+    "description": "List llm-orchestrator docs and drafts"
+  },
+  "hook_event_name": "PreToolUse"
+}

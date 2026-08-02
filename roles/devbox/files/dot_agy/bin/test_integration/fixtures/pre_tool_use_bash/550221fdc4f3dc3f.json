@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "grep -nE \"Р31\\b|Р30\\b|Р29\\b\" <HOME>/Projects/warp-and-weft/base/План-работ.md 2>/dev/null | head -10",
+    "description": "Find Р30, Р31 anchors"
+  },
+  "hook_event_name": "PreToolUse"
+}

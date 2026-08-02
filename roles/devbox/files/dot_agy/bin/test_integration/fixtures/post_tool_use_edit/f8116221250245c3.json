@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/server/tools.go",
+    "old_string": "\ttype SearchArgs struct {\n\t\tQuery string   `json:\"query\" jsonschema:\"required\"`\n\t\tScope string   `json:\"scope,omitempty\" jsonschema:\"enum=global,enum=project,enum=all\"`\n\t\tKind  string   `json:\"kind,omitempty\" jsonschema:\"enum=reference,enum=decision,enum=trace\"`\n\t\tTags  []string `json:\"tags,omitempty\"`\n\t\tLimit int      `json:\"limit,omitempty\"`\n\t}",
+    "new_string": "\ttype SearchArgs struct {\n\t\tQuery string   `json:\"query\" jsonschema:\"Natural language search query\"`\n\t\tScope string   `json:\"scope,omitempty\" jsonschema:\"Scope filter: global, project, or all\"`\n\t\tKind  string   `json:\"kind,omitempty\" jsonschema:\"Kind filter: reference, decision, or trace\"`\n\t\tTags  []string `json:\"tags,omitempty\" jsonschema:\"Filter results by tags\"`\n\t\tLimit int      `json:\"limit,omitempty\" jsonschema:\"Maximum number of results (1-20, default 5)\"`\n\t}"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

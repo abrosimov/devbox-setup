@@ -1,0 +1,16 @@
+[project]
+name = "agy-hooks"
+version = "0.0.0"
+description = "Antigravity CLI hook scripts and helpers — runtime environment for ~/.gemini/antigravity-cli/bin/."
+requires-python = ">=3.11"
+dependencies = ["bashlex"]
+
+# Not a distributable package — the scripts in this directory are invoked by
+# absolute path from ~/.gemini/antigravity-cli/hooks.json via `uv run --project ~/.gemini/antigravity-cli/bin
+# python ~/.gemini/antigravity-cli/bin/<script>.py`. The directory is a uv environment, not a
+# Python package.
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = ["pytest", "hypothesis"]

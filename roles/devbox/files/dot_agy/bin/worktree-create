@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# WorktreeCreate hook — delegates worktree creation to proj wt.
+# Receives JSON on stdin from Antigravity CLI, prints absolute worktree path to stdout.
+#
+# Falls back to raw git worktree for repos not managed by proj.
+
+INPUT=$(cat)
+NAME=$(echo "$INPUT" | jq -r .name)
+
+# Try proj wt first (works when CWD is inside $AION_AUTOPOIESEON/<project>/...)
+if output=$(fish -c "proj wt add '$NAME'" 2>&1); then
+  echo "$output" >&2
+  wt_path=$(echo "$output" | grep '^Ready: ' | sed 's/^Ready: //')
+  if [[ -n "$wt_path" ]]; then
+    echo "$wt_path"
+    exit 0
+  fi
+fi
+
+# Fallback: raw git worktree for non-proj repos
+root=$(git rev-parse --show-toplevel)
+project=$(basename "$root")
+# Prefer the branch currently checked out; fall back to origin/HEAD or main
+default_branch=$(git branch --show-current 2>/dev/null)
+if [[ -z "$default_branch" ]]; then
+  default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||') || default_branch=main
+fi
+wt_dir="$(dirname "$root")/${project}-wt/${NAME}"
+mkdir -p "$(dirname "$wt_dir")"
+git worktree add -b "$NAME" "$wt_dir" "$default_branch" >&2
+
+# Antigravity extras for fallback path
+if [[ -f .gemini/antigravity-cli/settings.local.json ]]; then
+  mkdir -p "$wt_dir/.gemini/antigravity-cli"
+  cp .gemini/antigravity-cli/settings.local.json "$wt_dir/.gemini/antigravity-cli/"
+fi
+if [[ -d .gemini/antigravity-cli/memory ]]; then
+  mkdir -p "$wt_dir/.gemini/antigravity-cli"
+  ln -sf "$(cd .gemini/antigravity-cli/memory && pwd)" "$wt_dir/.gemini/antigravity-cli/memory"
+fi
+
+wt_abs=$(cd "$wt_dir" && pwd)
+echo "Fallback worktree created: $wt_abs" >&2
+echo "$wt_abs"

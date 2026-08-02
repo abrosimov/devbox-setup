@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+from ai_config import (
+    ChangeKind,
+    FieldManifest,
+    FieldScope,
+    ReconciliationPlan,
+    SemanticSnapshot,
+    plan_reconciliation,
+)
+from ai_config.cli import load_manifest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+MANIFEST_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "settings.ai-config.json"
+SETTINGS_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "settings.json"
+FIXTURES_PATH = Path(__file__).parent / "fixtures" / "ai_config" / "claude"
+
+
+class TestClaudeFieldManifest:
+    @pytest.fixture
+    def manifest(self) -> FieldManifest:
+        return load_manifest(MANIFEST_PATH)
+
+    @pytest.fixture
+    def plan(self, manifest: FieldManifest) -> ReconciliationPlan:
+        return plan_reconciliation(
+            base=SemanticSnapshot.from_json_file(FIXTURES_PATH / "base.json"),
+            repo=SemanticSnapshot.from_json_file(FIXTURES_PATH / "repo.json"),
+            live=SemanticSnapshot.from_json_file(FIXTURES_PATH / "live.json"),
+            manifest=manifest,
+        )
+
+    def test_current_repository_settings_are_explicitly_shared(
+        self,
+        manifest: FieldManifest,
+    ) -> None:
+        repository = SemanticSnapshot.from_json_file(SETTINGS_PATH)
+
+        scopes = {
+            field.path: manifest.scope_for(field.path) for field in repository.semantic_fields()
+        }
+
+        assert scopes
+        assert all(scope is FieldScope.SHARED for scope in scopes.values())
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            ("model",),
+            ("extraKnownMarketplaces", "example-marketplace", "source"),
+            ("enabledPlugins", "example-skills@example-marketplace"),
+            ("permissions", "allow"),
+        ],
+    )
+    def test_known_portable_live_fields_are_explicitly_shared(
+        self,
+        manifest: FieldManifest,
+        path: tuple[str, ...],
+    ) -> None:
+        assert manifest.scope_for(path) is FieldScope.SHARED
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            ("model",),
+            ("extraKnownMarketplaces", "example-marketplace", "source"),
+            ("enabledPlugins", "example-skills@example-marketplace"),
+            ("permissions", "allow"),
+        ],
+    )
+    def test_live_portable_changes_are_capture_live(
+        self,
+        plan: ReconciliationPlan,
+        path: tuple[str, ...],
+    ) -> None:
+        changes = {change.path: change.kind for change in plan.changes}
+
+        assert changes[path] is ChangeKind.CAPTURE_LIVE
+
+    def test_repository_only_change_is_apply_repo(self, plan: ReconciliationPlan) -> None:
+        changes = {change.path: change.kind for change in plan.changes}
+
+        assert changes[("autoMemoryEnabled",)] is ChangeKind.APPLY_REPO
+
+    def test_unclassified_live_field_remains_unknown(self, plan: ReconciliationPlan) -> None:
+        changes = {change.path: change.kind for change in plan.changes}
+
+        assert changes[("vendorSessionState", "state")] is ChangeKind.UNKNOWN

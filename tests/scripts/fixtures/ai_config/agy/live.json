@@ -1,0 +1,14 @@
+{
+  "allowNonWorkspaceAccess": true,
+  "colorScheme": "light",
+  "experimentalSetting": true,
+  "model": "Gemini Pro",
+  "permissions": {
+    "allow": [
+      "command(uv)"
+    ]
+  },
+  "trustedWorkspaces": [
+    "/Users/example/Projects/machine-local"
+  ]
+}

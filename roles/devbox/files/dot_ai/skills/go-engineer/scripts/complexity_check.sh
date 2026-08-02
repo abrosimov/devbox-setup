@@ -1,95 +1,85 @@
-#!/bin/bash
-# Go Implementation Complexity Check
-# Outputs metrics and recommends SONNET or OPUS model
-#
-# Usage: ./complexity_check.sh [plans_dir] [jira_issue]
-# Example: ./complexity_check.sh ~/.claude/plans PROJ-123
-#
-# Exit codes:
-#   0 - SONNET recommended (simple task)
-#   1 - OPUS recommended (complex task)
+#!/usr/bin/env bash
+# Classify implementation risk from an optional plan and the current branch diff.
 
 set -euo pipefail
 
-PLANS_DIR="${1:-}"
-JIRA_ISSUE="${2:-}"
+go_skill_plan_file="${1:-}"
+go_skill_base_ref="${2:-}"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+if [[ -n "$go_skill_plan_file" && ! -f "$go_skill_plan_file" ]]; then
+    echo "Plan file does not exist: $go_skill_plan_file" >&2
+    exit 2
+fi
 
-echo "=== Go Implementation Complexity Check ==="
-echo ""
+go_skill_plan_lines=0
+if [[ -n "$go_skill_plan_file" ]]; then
+    go_skill_plan_lines=$(wc -l < "$go_skill_plan_file" | tr -d ' ')
+fi
 
-# Metric 1: Plan lines (if plan exists)
-PLAN_LINES=0
-if [[ -n "$PLANS_DIR" && -n "$JIRA_ISSUE" && -f "${PLANS_DIR}/${JIRA_ISSUE}/plan.md" ]]; then
-    PLAN_LINES=$(wc -l < "${PLANS_DIR}/${JIRA_ISSUE}/plan.md" 2>/dev/null || echo 0)
-    echo "Plan lines: ${PLAN_LINES}"
+if [[ -z "$go_skill_base_ref" ]]; then
+    if go_skill_origin_head=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null); then
+        go_skill_base_ref="$go_skill_origin_head"
+    elif git rev-parse --verify --quiet main >/dev/null; then
+        go_skill_base_ref="main"
+    elif git rev-parse --verify --quiet master >/dev/null; then
+        go_skill_base_ref="master"
+    fi
+fi
+
+go_skill_changed_files=""
+if [[ -n "$go_skill_base_ref" ]] && git merge-base "$go_skill_base_ref" HEAD >/dev/null 2>&1; then
+    go_skill_changed_files=$(git diff --name-only "$go_skill_base_ref"...HEAD -- '*.go' | sed '/_test\.go$/d')
 else
-    echo "Plan lines: N/A (no plan found)"
+    go_skill_base_ref="unavailable"
 fi
 
-# Metric 2: Changed Go files (excluding tests)
-CHANGED_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | grep -v _test.go | wc -l | tr -d ' ' || echo 0)
-echo "Changed Go files (non-test): ${CHANGED_FILES}"
+go_skill_file_count=$(printf '%s\n' "$go_skill_changed_files" | sed '/^$/d' | wc -l | tr -d ' ')
+go_skill_concurrency_files=0
+go_skill_error_sites=0
 
-# Metric 3: Concurrency patterns in changed files
-CONCURRENCY_FILES=0
-if [[ "$CHANGED_FILES" -gt 0 ]]; then
-    CONCURRENCY_FILES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | \
-        grep -v _test.go | \
-        xargs grep -l "go func\|chan \|sync\.\|select {" 2>/dev/null | \
-        wc -l | tr -d ' ' || echo 0)
+while IFS= read -r go_skill_file; do
+    [[ -n "$go_skill_file" && -f "$go_skill_file" ]] || continue
+
+    if grep -Eq 'go[[:space:]]+func|chan[[:space:]]|sync\.|select[[:space:]]*\{' "$go_skill_file"; then
+        go_skill_concurrency_files=$((go_skill_concurrency_files + 1))
+    fi
+
+    go_skill_file_error_sites=$(grep -Ec 'if[[:space:]]+err[[:space:]]*!=[[:space:]]*nil|return.*err' "$go_skill_file" || true)
+    go_skill_error_sites=$((go_skill_error_sites + go_skill_file_error_sites))
+done <<EOF
+$go_skill_changed_files
+EOF
+
+go_skill_complexity="standard"
+go_skill_reasons=""
+
+if [[ "$go_skill_plan_lines" -gt 200 ]]; then
+    go_skill_complexity="high"
+    go_skill_reasons="${go_skill_reasons} plan-over-200-lines;"
 fi
-echo "Files with concurrency: ${CONCURRENCY_FILES}"
-
-# Metric 4: Error handling sites
-ERROR_SITES=0
-if [[ "$CHANGED_FILES" -gt 0 ]]; then
-    ERROR_SITES=$(git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.go' 2>/dev/null | \
-        grep -v _test.go | \
-        xargs grep -c "if err != nil\|return.*err" 2>/dev/null | \
-        awk -F: '{sum+=$2} END {print sum}' || echo 0)
+if [[ "$go_skill_file_count" -gt 8 ]]; then
+    go_skill_complexity="high"
+    go_skill_reasons="${go_skill_reasons} more-than-8-go-files;"
 fi
-echo "Error handling sites: ${ERROR_SITES}"
-
-echo ""
-echo "=== Thresholds ==="
-echo "Plan > 200 lines: $([ "$PLAN_LINES" -gt 200 ] && echo 'YES' || echo 'no')"
-echo "Files > 8: $([ "$CHANGED_FILES" -gt 8 ] && echo 'YES' || echo 'no')"
-echo "Concurrency: $([ "$CONCURRENCY_FILES" -gt 0 ] && echo 'YES' || echo 'no')"
-echo "Error sites > 20: $([ "$ERROR_SITES" -gt 20 ] && echo 'YES' || echo 'no')"
-
-echo ""
-
-# Decision
-RECOMMEND_OPUS=0
-
-if [[ "$PLAN_LINES" -gt 200 ]]; then
-    RECOMMEND_OPUS=1
+if [[ "$go_skill_concurrency_files" -gt 0 ]]; then
+    go_skill_complexity="high"
+    go_skill_reasons="${go_skill_reasons} concurrency;"
+fi
+if [[ "$go_skill_error_sites" -gt 20 ]]; then
+    go_skill_complexity="high"
+    go_skill_reasons="${go_skill_reasons} more-than-20-error-sites;"
 fi
 
-if [[ "$CHANGED_FILES" -gt 8 ]]; then
-    RECOMMEND_OPUS=1
+go_skill_reasons="${go_skill_reasons# }"
+go_skill_reasons="${go_skill_reasons%;}"
+if [[ -z "$go_skill_reasons" ]]; then
+    go_skill_reasons="none"
 fi
 
-if [[ "$CONCURRENCY_FILES" -gt 0 ]]; then
-    RECOMMEND_OPUS=1
-fi
-
-if [[ "$ERROR_SITES" -gt 20 ]]; then
-    RECOMMEND_OPUS=1
-fi
-
-if [[ "$RECOMMEND_OPUS" -eq 1 ]]; then
-    echo -e "${YELLOW}=== RECOMMENDATION: OPUS ===${NC}"
-    echo "Complex task detected. Use: /techne-implement opus"
-    exit 1
-else
-    echo -e "${GREEN}=== RECOMMENDATION: SONNET ===${NC}"
-    echo "Standard complexity. Proceeding with Sonnet."
-    exit 0
-fi
+echo "COMPLEXITY=$go_skill_complexity"
+echo "BASE_REF=$go_skill_base_ref"
+echo "PLAN_LINES=$go_skill_plan_lines"
+echo "CHANGED_GO_FILES=$go_skill_file_count"
+echo "CONCURRENCY_FILES=$go_skill_concurrency_files"
+echo "ERROR_SITES=$go_skill_error_sites"
+echo "REASONS=$go_skill_reasons"

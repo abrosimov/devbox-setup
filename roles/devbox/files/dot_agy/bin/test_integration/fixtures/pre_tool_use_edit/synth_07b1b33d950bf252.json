@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/src/lib.rs",
+    "old_string": " ",
+    "new_string": "O_CpmCBE}W",
+    "replace_all": true
+  },
+  "hook_event_name": "PreToolUse"
+}

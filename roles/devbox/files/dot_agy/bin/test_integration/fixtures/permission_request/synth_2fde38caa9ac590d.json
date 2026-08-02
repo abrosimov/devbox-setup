@@ -1,0 +1,8 @@
+{
+  "session_id": "sess_930ppm0o",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "cd /tmp && ls"
+  }
+}

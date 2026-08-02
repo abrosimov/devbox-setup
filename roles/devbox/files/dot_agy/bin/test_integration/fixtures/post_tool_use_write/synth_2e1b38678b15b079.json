@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/etc/hostname",
+    "content": "PpI^'1ZE2jI/2RfUn\"$b"
+  },
+  "tool_response": "DX",
+  "hook_event_name": "PostToolUse"
+}

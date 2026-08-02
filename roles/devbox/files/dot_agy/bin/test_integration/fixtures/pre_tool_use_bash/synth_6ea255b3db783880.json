@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "gofmt -w .",
+    "description": "h8o"
+  },
+  "hook_event_name": "PreToolUse"
+}

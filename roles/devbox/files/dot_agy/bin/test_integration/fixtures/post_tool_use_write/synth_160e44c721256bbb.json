@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/.config/fish/config.fish",
+    "content": "zcVsw"
+  },
+  "tool_response": "zcVsw",
+  "hook_event_name": "PostToolUse"
+}

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "engine": "codex",
+  "fields": [
+    {
+      "path": "personality",
+      "scope": "shared"
+    },
+    {
+      "path": "model",
+      "scope": "shared"
+    },
+    {
+      "path": "model_reasoning_effort",
+      "scope": "shared"
+    },
+    {
+      "path": "service_tier",
+      "scope": "shared"
+    },
+    {
+      "path": "sandbox_mode",
+      "scope": "shared"
+    },
+    {
+      "path": "features",
+      "scope": "shared"
+    },
+    {
+      "path": "sandbox_workspace_write",
+      "scope": "shared"
+    },
+    {
+      "path": "otel",
+      "scope": "shared"
+    },
+    {
+      "path": "otel.environment",
+      "scope": "environment",
+      "binding": "profile:devbox_active_profile"
+    },
+    {
+      "path": "plugins",
+      "scope": "shared"
+    },
+    {
+      "path": "marketplaces",
+      "scope": "shared"
+    },
+    {
+      "path": "desktop",
+      "scope": "shared"
+    },
+    {
+      "path": "tui",
+      "scope": "shared"
+    },
+    {
+      "path": "tool_suggest",
+      "scope": "shared"
+    },
+    {
+      "path": "skills.config",
+      "scope": "shared"
+    },
+    {
+      "path": "mcp_servers",
+      "scope": "shared"
+    },
+    {
+      "path": "projects",
+      "scope": "local-state"
+    },
+    {
+      "path": "notify",
+      "scope": "local-state"
+    },
+    {
+      "path": "notice",
+      "scope": "runtime"
+    }
+  ]
+}

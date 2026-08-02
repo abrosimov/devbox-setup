@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/swap.go",
+    "old_string": "\ttempIndex, err := CreateTempIndex(tempPath, indexer.Dims())",
+    "new_string": "\ttempIndex, err := CreateTempIndex(tempPath)"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

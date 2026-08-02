@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/etc/hostname",
+    "old_string": "S-Xa",
+    "new_string": "5fx",
+    "replace_all": false
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,8 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/embedder/factory_test.go",
+    "content": "package embedder\n\nimport (\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/config\"\n)\n\nfunc TestNewEmbedderMock(t *testing.T) {\n\tcfg := config.EmbedderConfig{\n\t\tBackend:    \"mock\",\n\t\tDimensions: 768,\n\t}\n\temb, err := NewEmbedder(cfg)\n\tif err != nil {\n\t\tt.Fatalf(\"NewEmbedder: %v\", err)\n\t}\n\tif emb.Dimensions() != 768 {\n\t\tt.Errorf(\"dimensions = %d, want 768\", emb.Dimensions())\n\t}\n}\n\nfunc TestNewEmbedderUnknown(t *testing.T) {\n\tcfg := config.EmbedderConfig{Backend: \"unknown\"}\n\t_, err := NewEmbedder(cfg)\n\tif err == nil {\n\t\tt.Fatal(\"expected error for unknown backend\")\n\t}\n\tif !strings.Contains(err.Error(), \"unknown embedder backend\") {\n\t\tt.Errorf(\"unexpected error: %v\", err)\n\t}\n}\n\nfunc TestNewEmbedderONNXNotImplemented(t *testing.T) {\n\tcfg := config.EmbedderConfig{Backend: \"onnx\"}\n\t_, err := NewEmbedder(cfg)\n\tif err == nil {\n\t\tt.Fatal(\"expected error for onnx backend\")\n\t}\n\tif !strings.Contains(err.Error(), \"not yet implemented\") {\n\t\tt.Errorf(\"unexpected error: %v\", err)\n\t}\n}\n"
+  },
+  "hook_event_name": "PreToolUse"
+}

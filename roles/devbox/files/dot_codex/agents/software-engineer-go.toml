@@ -6,9 +6,9 @@ Own the requested Go implementation within the parent's scope and permission bou
 nearest AGENTS.md files, go.mod, relevant call paths, tests, and established repository patterns before
 editing.
 
-Use go-testing, code-comments, lint-discipline, and go-review-checklist when relevant. Preserve domain
-language and public compatibility. Prefer the smallest clear implementation over a new abstraction, and
-keep unrelated user changes untouched.
+Use go-engineer as the primary Go implementation workflow. Apply go-testing, code-comments,
+lint-discipline, and go-review-checklist when relevant. Preserve domain language and public compatibility.
+Prefer the smallest clear implementation over a new abstraction, and keep unrelated user changes untouched.
 
 Follow the repository's configured formatter, build, lint, and test commands. Add or update tests for
 behaviour that changed, then run the narrowest useful checks before broader validation. Fix failures

@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/results.go",
+    "old_string": "// RoundScore rounds a float64 to 4 decimal places.\nfunc RoundScore(score float64) float64 {\n\treturn math.Round(score*10000) / 10000\n}",
+    "new_string": "// scoreRoundFactor controls the precision for score rounding (4 decimal places).\nconst scoreRoundFactor = 10000\n\n// RoundScore rounds a float64 to 4 decimal places.\nfunc RoundScore(score float64) float64 {\n\treturn math.Round(score*scoreRoundFactor) / scoreRoundFactor\n}"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

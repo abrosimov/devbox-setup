@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la <HOME>/.claude/settings.json 2>/dev/null; echo \"---\"; ls -la \"<HOME>/Library/Application Support/Claude/claude_desktop_config.json\" 2>/dev/null",
+    "description": "Check Claude settings files"
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "rm -rf  ",
+    "description": "O_CpmCBE}W"
+  },
+  "hook_event_name": "PreToolUse"
+}

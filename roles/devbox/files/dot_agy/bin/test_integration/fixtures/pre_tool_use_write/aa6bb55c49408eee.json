@@ -1,0 +1,8 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/sectionid_test.go",
+    "content": "package ingest\n\nimport \"testing\"\n\nfunc TestExtractSectionID(t *testing.T) {\n\ttests := []struct {\n\t\theading   string\n\t\twantID    string\n\t\twantTitle string\n\t}{\n\t\t// Lettered\n\t\t{\"A.1 - Trust in Claims\", \"A.1\", \"Trust in Claims\"},\n\t\t{\"B.2.3 Complex Pattern\", \"B.2.3\", \"Complex Pattern\"},\n\t\t{\"A.1 Trust in Claims\", \"A.1\", \"Trust in Claims\"},\n\n\t\t// Numbered with dot\n\t\t{\"3. Getting Started\", \"3\", \"Getting Started\"},\n\t\t{\"12. Advanced Usage\", \"12\", \"Advanced Usage\"},\n\n\t\t// Simple number\n\t\t{\"3 Getting Started\", \"3\", \"Getting Started\"},\n\n\t\t// Slug fallback\n\t\t{\"My Custom Section\", \"my-custom-section\", \"My Custom Section\"},\n\t\t{\"Error Handling & Retry\", \"error-handling-retry\", \"Error Handling & Retry\"},\n\n\t\t// Edge cases\n\t\t{\"\", \"untitled\", \"\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.heading, func(t *testing.T) {\n\t\t\tgotID, gotTitle := ExtractSectionID(tt.heading)\n\t\t\tif gotID != tt.wantID {\n\t\t\t\tt.Errorf(\"ExtractSectionID(%q) id = %q, want %q\", tt.heading, gotID, tt.wantID)\n\t\t\t}\n\t\t\tif gotTitle != tt.wantTitle {\n\t\t\t\tt.Errorf(\"ExtractSectionID(%q) title = %q, want %q\", tt.heading, gotTitle, tt.wantTitle)\n\t\t\t}\n\t\t})\n\t}\n}\n"
+  },
+  "hook_event_name": "PreToolUse"
+}

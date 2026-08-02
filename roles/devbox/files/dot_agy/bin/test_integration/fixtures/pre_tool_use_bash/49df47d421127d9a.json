@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "find <HOME>/Projects -maxdepth 2 -name \"go.mod\" -o -name \"pyproject.toml\" -o -name \"package.json\" -o -name \"Cargo.toml\" 2>/dev/null | head -50",
+    "description": "Find project manifest files"
+  },
+  "hook_event_name": "PreToolUse"
+}

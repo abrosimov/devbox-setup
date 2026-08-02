@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/read.go",
+    "old_string": "//go:build vectors\n\npackage search",
+    "new_string": "package search"
+  },
+  "hook_event_name": "PreToolUse"
+}

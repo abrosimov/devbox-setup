@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/nonexistent/path.txt",
+    "old_string": "1/R7",
+    "new_string": "kNvW ",
+    "replace_all": true
+  },
+  "hook_event_name": "PreToolUse"
+}

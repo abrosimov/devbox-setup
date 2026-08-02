@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls <HOME>/Projects/warp-and-weft/base/weft/principles/ <HOME>/Projects/warp-and-weft/base/warp/axioms/ 2>/dev/null | head -20",
+    "description": "Inspect atomized note naming for principles and axioms"
+  },
+  "hook_event_name": "PreToolUse"
+}

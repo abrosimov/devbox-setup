@@ -1,0 +1,20 @@
+{
+  "session_id": "sess_leho24bdil0l8",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/internal/foo/bar.go",
+    "edits": [
+      {
+        "old_string": "UlmYV!6I*!otod8p?b}_CpmCBE}W",
+        "new_string": "UlmYV!6I*!otod8p?b}_CpmCBE}W",
+        "replace_all": false
+      },
+      {
+        "old_string": "UlmYV!6I*!otod8p?b}_CpmCBE}W",
+        "new_string": "7>z0w-",
+        "replace_all": false
+      }
+    ]
+  }
+}

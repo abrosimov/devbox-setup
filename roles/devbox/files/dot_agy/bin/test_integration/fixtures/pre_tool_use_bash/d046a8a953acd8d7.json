@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "for d in */; do\n  d=${d%/}\n  if [ -d \"$d/base/.git\" ]; then\n    echo \"new-style: $d\"\n  elif [ -d \"$d/.git\" ]; then\n    echo \"old-style: $d\"\n  fi\ndone",
+    "description": "Classify projects by layout style"
+  },
+  "hook_event_name": "PreToolUse"
+}

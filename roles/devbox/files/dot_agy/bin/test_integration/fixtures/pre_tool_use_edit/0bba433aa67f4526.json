@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/frontmatter.go",
+    "old_string": "// ExtractFrontMatter parses YAML front matter from markdown content.\n// Returns the parsed front matter and the remaining body content.\n// If no front matter is present, returns zero FrontMatter and the full content.\nfunc ExtractFrontMatter(content string) (domain.FrontMatter, string) {",
+    "new_string": "// ExtractFrontMatter parses YAML front matter from markdown content.\n// Returns the parsed front matter and the remaining body content.\n// If no front matter is present, returns zero FrontMatter and the full content.\nfunc ExtractFrontMatter(content string) (fm domain.FrontMatter, body string) {"
+  },
+  "hook_event_name": "PreToolUse"
+}

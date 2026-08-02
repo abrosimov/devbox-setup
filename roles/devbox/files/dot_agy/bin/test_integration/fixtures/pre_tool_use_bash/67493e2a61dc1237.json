@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "find <HOME>/Projects/agentic-rag-mcp -name \"*config*\" -o -name \"*.json\" | head -20",
+    "description": "Find config and JSON files in the project"
+  },
+  "hook_event_name": "PreToolUse"
+}

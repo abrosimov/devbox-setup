@@ -3,7 +3,7 @@
     "event": "PreToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_bash_toolchain_guard.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_bash_toolchain_guard.py"
     },
     "enabled": true
   },
@@ -11,7 +11,7 @@
     "event": "PreToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_tmpdir_guard.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_tmpdir_guard.py"
     },
     "enabled": true
   },
@@ -19,7 +19,7 @@
     "event": "PreToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/bash_decision_gate.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/bash_decision_gate.py"
     },
     "enabled": true
   },
@@ -27,7 +27,7 @@
     "event": "PreToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_bash_boundary_wrap.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_bash_boundary_wrap.py"
     },
     "enabled": true
   },
@@ -35,7 +35,7 @@
     "event": "PreToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_edit_lint_guard.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_edit_lint_guard.py"
     },
     "enabled": true
   },
@@ -43,7 +43,7 @@
     "event": "PreToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_write_completion_gate.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_write_completion_gate.py"
     },
     "enabled": true
   },
@@ -51,7 +51,7 @@
     "event": "PreToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_write_existing_guard.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_write_existing_guard.py"
     },
     "enabled": true
   },
@@ -59,7 +59,7 @@
     "event": "PreToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_plan_code_guard.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_plan_code_guard.py"
     },
     "enabled": true
   },
@@ -67,7 +67,7 @@
     "event": "PostToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/suggest_checkpoint.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/suggest_checkpoint.py"
     },
     "enabled": true
   },
@@ -75,7 +75,7 @@
     "event": "PostToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/post_edit_lint.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/post_edit_lint.py"
     },
     "enabled": true
   },
@@ -83,7 +83,7 @@
     "event": "PostToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/post_edit_typecheck.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/post_edit_typecheck.py"
     },
     "enabled": true
   },
@@ -91,7 +91,7 @@
     "event": "PostToolUse",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/post_edit_cyrillic_guard.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/post_edit_cyrillic_guard.py"
     },
     "enabled": true
   },
@@ -99,7 +99,7 @@
     "event": "Stop",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/proposal_discipline.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/proposal_discipline.py"
     },
     "enabled": true
   },
@@ -107,7 +107,7 @@
     "event": "Stop",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/stop_format.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/stop_format.py"
     },
     "enabled": true
   },
@@ -115,7 +115,7 @@
     "event": "Stop",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/stop_lint_gate.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/stop_lint_gate.py"
     },
     "enabled": true
   },
@@ -123,7 +123,7 @@
     "event": "Stop",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/session_save.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/session_save.py"
     },
     "enabled": true
   },
@@ -131,7 +131,7 @@
     "event": "PreCompact",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/pre_compact_mask.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_compact_mask.py"
     },
     "enabled": true
   },
@@ -139,7 +139,7 @@
     "event": "Start",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.claude/bin/session_prepare_python.py"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/session_prepare_python.py"
     },
     "enabled": true
   },
@@ -147,7 +147,7 @@
     "event": "WorktreeCreate",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/worktree-create"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/worktree-create"
     },
     "enabled": true
   },
@@ -155,7 +155,64 @@
     "event": "WorktreeRemove",
     "handler": {
       "type": "command",
-      "command": "{{ lookup('env', 'HOME') }}/.claude/bin/worktree-remove"
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/worktree-remove"
+    },
+    "enabled": true
+  },
+  "universal_logger_pretooluse": {
+    "event": "PreToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/universal_logger.py PreToolUse"
+    },
+    "enabled": true
+  },
+  "universal_logger_posttooluse": {
+    "event": "PostToolUse",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/universal_logger.py PostToolUse",
+      "async": true
+    },
+    "enabled": true
+  },
+  "universal_logger_stop": {
+    "event": "Stop",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/universal_logger.py Stop"
+    },
+    "enabled": true
+  },
+  "universal_logger_precompact": {
+    "event": "PreCompact",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/universal_logger.py PreCompact"
+    },
+    "enabled": true
+  },
+  "universal_logger_start": {
+    "event": "Start",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/universal_logger.py Start"
+    },
+    "enabled": true
+  },
+  "universal_logger_worktreecreate": {
+    "event": "WorktreeCreate",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/universal_logger.py WorktreeCreate"
+    },
+    "enabled": true
+  },
+  "universal_logger_worktreeremove": {
+    "event": "WorktreeRemove",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/universal_logger.py WorktreeRemove"
     },
     "enabled": true
   }

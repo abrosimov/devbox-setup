@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/pipeline.go",
+    "old_string": "import (\n\t\"context\"\n\t\"errors\"\n\t\"fmt\"\n\t\"log/slog\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"time\"\n\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/config\"\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/domain\"\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/embedder\"\n)",
+    "new_string": "import (\n\t\"context\"\n\t\"errors\"\n\t\"fmt\"\n\t\"log/slog\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"time\"\n\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/config\"\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/domain\"\n\t\"github.com/a<HOME>/agentic-rag-mcp/internal/embedder\"\n)"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

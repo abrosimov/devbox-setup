@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "old_string": "5",
+    "new_string": "5",
+    "replace_all": false
+  },
+  "tool_response": "5",
+  "hook_event_name": "PostToolUse"
+}

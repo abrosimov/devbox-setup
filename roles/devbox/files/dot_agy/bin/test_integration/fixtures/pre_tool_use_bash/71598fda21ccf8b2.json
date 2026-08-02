@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "find <HOME>/Projects -maxdepth 2 -name \".claude\" -type d 2>/dev/null | head -30",
+    "description": "Find .claude config directories"
+  },
+  "hook_event_name": "PreToolUse"
+}

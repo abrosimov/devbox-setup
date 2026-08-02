@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/search/search.go",
+    "old_string": "// Searcher provides hybrid search and section retrieval.",
+    "new_string": "// defaultSnippetLen is the maximum snippet length for search results.\nconst defaultSnippetLen = 500\n\n// Searcher provides hybrid search and section retrieval."
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,11 @@
+{
+  "allowNonWorkspaceAccess": false,
+  "colorScheme": "tokyo night",
+  "model": "Gemini Pro",
+  "permissions": {
+    "allow": [
+      "command(uv)",
+      "command(git status)"
+    ]
+  }
+}

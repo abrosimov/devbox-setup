@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "find <HOME>/.claude/skills/ -name \"SKILL.md\" | wc -l 2>/dev/null; echo \"---\"; find <HOME>/.claude/skills/ -name \"*.md\" | head -10",
+    "description": "Count SKILL.md files and see structure"
+  },
+  "hook_event_name": "PreToolUse"
+}

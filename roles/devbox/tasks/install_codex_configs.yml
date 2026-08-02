@@ -7,6 +7,12 @@
       {{ (lookup('env', 'HOME') ~ '/.codex')
          if devbox_paths.dotfiles_root_dir == '~'
          else (devbox_paths.dotfiles_root_dir ~ '/.codex') }}
+    devbox_codex_ai_config_home: >-
+      {{ lookup('env', 'HOME')
+         if devbox_paths.dotfiles_root_dir == '~'
+         else devbox_paths.dotfiles_root_dir }}
+    devbox_codex_repo_root: >-
+      {{ (devbox_codex_role_path | default(role_path)) ~ '/../..' }}
     devbox_codex_skills_home: >-
       {{ (lookup('env', 'HOME') ~ '/.agents/skills')
          if devbox_paths.dotfiles_root_dir == '~'
@@ -24,38 +30,35 @@
     mode: "{{ item.mode }}"
   loop:
     - { path: "{{ devbox_codex_home }}", mode: "0700" }
-    - { path: "{{ devbox_codex_home }}/bin", mode: "0755" }
     - { path: "{{ devbox_codex_agents_home }}", mode: "0700" }
     - { path: "{{ devbox_codex_skills_home }}", mode: "0755" }
   loop_control:
     label: "{{ item.path }}"
   tags: [configs, ai, codex]
 
-- name: Render repo-owned Codex config fragment
-  ansible.builtin.template:
-    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/config.toml.j2"
-    dest: "{{ devbox_codex_home }}/devbox-managed.toml"
-    mode: "0600"
-  tags: [configs, codex]
-
-- name: Install Codex config reconciler
-  ansible.builtin.copy:
-    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/bin/reconcile_config.py"
-    dest: "{{ devbox_codex_home }}/bin/reconcile_config.py"
-    mode: "0755"
-  tags: [configs, codex]
-
-- name: Reconcile repo-owned settings into app-owned Codex config
+- name: Apply repo-owned Codex settings through ai-config
   ansible.builtin.command:
-    argv:
-      - "{{ ansible_playbook_python }}"
-      - "{{ devbox_codex_home }}/bin/reconcile_config.py"
-      - --managed
-      - "{{ devbox_codex_home }}/devbox-managed.toml"
-      - --target
-      - "{{ devbox_codex_home }}/config.toml"
+    argv: >-
+      {{ devbox_codex_ai_config_argv
+         + (['--check'] if ansible_check_mode else []) }}
   register: devbox_codex_reconcile
-  changed_when: devbox_codex_reconcile.stdout == 'changed'
+  changed_when: >-
+    devbox_codex_reconcile.rc == 0
+    and (devbox_codex_reconcile.stdout | from_json).changed
+  failed_when: devbox_codex_reconcile.rc != 0
+  check_mode: false
+  vars:
+    devbox_codex_ai_config_argv:
+      - "{{ devbox_codex_repo_root }}/scripts/ai-config"
+      - apply
+      - codex
+      - --repo-root
+      - "{{ devbox_codex_repo_root }}"
+      - --home
+      - "{{ devbox_codex_ai_config_home }}"
+      - --profile
+      - "{{ devbox_active_profile }}"
+      - --json
   tags: [configs, codex]
 
 - name: Install Codex global authority protocol
@@ -110,4 +113,21 @@
   loop: "{{ devbox_codex_shared_skills }}"
   loop_control:
     label: "{{ item }}"
+  tags: [configs, ai, codex]
+
+- name: Ensure Codex managed bin directory exists
+  ansible.builtin.file:
+    path: "{{ devbox_codex_home }}/bin"
+    state: directory
+    mode: "0755"
+  tags: [configs, ai, codex]
+
+- name: Sync Codex bin directory
+  ansible.posix.synchronize:
+    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/bin/"
+    dest: "{{ devbox_codex_home }}/bin/"
+    delete: true
+    recursive: true
+    perms: true
+  delegate_to: localhost
   tags: [configs, ai, codex]

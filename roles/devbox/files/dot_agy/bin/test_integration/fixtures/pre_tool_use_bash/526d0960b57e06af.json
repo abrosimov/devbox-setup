@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls <HOME>/.claude/skills/ | wc -l",
+    "description": "Count total skill files"
+  },
+  "hook_event_name": "PreToolUse"
+}

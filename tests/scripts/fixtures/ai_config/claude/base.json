@@ -1,0 +1,12 @@
+{
+  "autoMemoryEnabled": false,
+  "enabledPlugins": {
+    "example-skills@example-marketplace": false
+  },
+  "model": "sonnet",
+  "permissions": {
+    "allow": [
+      "Read"
+    ]
+  }
+}

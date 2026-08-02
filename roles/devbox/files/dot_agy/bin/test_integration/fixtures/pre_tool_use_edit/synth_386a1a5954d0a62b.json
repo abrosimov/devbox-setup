@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<TMPDIR>/scratch.txt",
+    "old_string": "Lz<{,*",
+    "new_string": "Lz<{,*",
+    "replace_all": true
+  },
+  "hook_event_name": "PreToolUse"
+}

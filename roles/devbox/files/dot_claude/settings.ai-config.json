@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "engine": "claude",
+  "fields": [
+    {
+      "path": "autoMemoryEnabled",
+      "scope": "shared"
+    },
+    {
+      "path": "enabledPlugins",
+      "scope": "shared"
+    },
+    {
+      "path": "env",
+      "scope": "shared"
+    },
+    {
+      "path": "extraKnownMarketplaces",
+      "scope": "shared"
+    },
+    {
+      "path": "model",
+      "scope": "shared"
+    },
+    {
+      "path": "permissions",
+      "scope": "shared"
+    },
+    {
+      "path": "permissions.allow",
+      "scope": "shared",
+      "strategy": "ordered-set"
+    },
+    {
+      "path": "permissions.deny",
+      "scope": "shared",
+      "strategy": "ordered-set"
+    },
+    {
+      "path": "permissions.additionalDirectories",
+      "scope": "shared",
+      "strategy": "ordered-set"
+    },
+    {
+      "path": "sandbox",
+      "scope": "shared"
+    },
+    {
+      "path": "skipAutoPermissionPrompt",
+      "scope": "shared"
+    },
+    {
+      "path": "statusLine",
+      "scope": "shared"
+    }
+  ]
+}

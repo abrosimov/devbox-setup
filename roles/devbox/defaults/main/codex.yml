@@ -8,6 +8,7 @@ devbox_codex_shared_skills:
   - fpf-thinking
   - frontend-testing
   - frontend-tooling
+  - go-engineer
   - go-review-checklist
   - go-testing
   - lint-discipline

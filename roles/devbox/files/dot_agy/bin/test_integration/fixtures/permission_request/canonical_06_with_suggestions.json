@@ -1,0 +1,13 @@
+{
+  "__doc__": "PermissionRequest with the optional permission_suggestions array (always-allow options the user would see in the dialog). Tests that auto-approve tolerates the extra field. Source: https://code.claude.com/docs/en/hooks (2026-06-21).",
+  "session_id": "sess_pr06",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "make qa"
+  },
+  "permission_suggestions": [
+    {"label": "Always allow make", "rule": "Bash(make:*)"},
+    {"label": "Always allow make qa", "rule": "Bash(make qa)"}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<TMPDIR>/scratch.txt",
+    "content": "=Fe"
+  },
+  "tool_response": "=Fe",
+  "hook_event_name": "PostToolUse"
+}

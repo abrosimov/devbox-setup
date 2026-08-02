@@ -1,0 +1,41 @@
+{
+  "model": "gpt-example-stable",
+  "features": {
+    "memories": true
+  },
+  "otel": {
+    "environment": "personal",
+    "log_user_prompt": true
+  },
+  "plugins": {
+    "example": {
+      "enabled": false
+    }
+  },
+  "marketplaces": {
+    "example": {
+      "enabled": false
+    }
+  },
+  "desktop": {
+    "analytics": false
+  },
+  "tui": {
+    "notifications": false
+  },
+  "tool_suggest": {
+    "enabled": false
+  },
+  "skills": {
+    "config": {
+      "example-skill": {
+        "enabled": false
+      }
+    }
+  },
+  "mcp_servers": {
+    "example": {
+      "command": "/opt/example/mcp"
+    }
+  }
+}

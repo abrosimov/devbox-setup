@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "old_string": "Fv@3AMd[N*b",
+    "new_string": "X",
+    "replace_all": false
+  },
+  "tool_response": "|",
+  "hook_event_name": "PostToolUse"
+}

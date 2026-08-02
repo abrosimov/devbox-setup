@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/embedder/ollama.go",
+    "old_string": "// NewOllamaBackendNoHealthCheck constructs an Ollama backend without the startup health check.\n// Useful for testing.\nfunc NewOllamaBackendNoHealthCheck(cfg config.EmbedderConfig) *OllamaBackend {",
+    "new_string": "// NewOllamaBackendNoHealthCheck constructs an Ollama backend without the startup health check.\n// Useful for testing.\nfunc NewOllamaBackendNoHealthCheck(cfg *config.EmbedderConfig) *OllamaBackend {"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

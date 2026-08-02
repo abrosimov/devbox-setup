@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "engine": "agy",
+  "fields": [
+    {
+      "path": "allowNonWorkspaceAccess",
+      "scope": "shared"
+    },
+    {
+      "path": "colorScheme",
+      "scope": "shared"
+    },
+    {
+      "path": "model",
+      "scope": "shared"
+    },
+    {
+      "path": "permissions",
+      "scope": "shared"
+    },
+    {
+      "path": "permissions.allow",
+      "scope": "shared",
+      "strategy": "ordered-set"
+    },
+    {
+      "path": "trustedWorkspaces",
+      "scope": "local-state"
+    }
+  ]
+}

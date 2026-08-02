@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la <HOME>/Projects/.claude 2>/dev/null; cat <HOME>/Projects/.gitignore 2>/dev/null; ls <HOME>/Projects/CLAUDE.md 2>/dev/null && echo \"EXISTS\" || echo \"NO CLAUDE.md\"",
+    "description": "Check for existing CLAUDE.md and .claude dir"
+  },
+  "hook_event_name": "PreToolUse"
+}

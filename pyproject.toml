@@ -225,6 +225,7 @@ project-excludes = [
 search-path = [
     "roles/devbox/files/dot_claude/bin",
     "roles/devbox/files/dot_ai/skills/techne-fewer-permission-prompts/scripts",
+    "scripts",
 ]
 
 # kittens.tui.* is only resolvable at runtime inside kitty itself. The path is
@@ -258,6 +259,37 @@ implicit-any-parameter = true
 unannotated-return = true
 bad-override = true
 unbound-name = true
+
+# New ai-config code starts fully typed. Pyrefly 1.0 has no per-sub-config
+# `preset = "strict"` (presets are project-wide), so mirror its opt-in checks
+# here and retain the repository's explicit annotation requirements.
+[[tool.pyrefly.sub-config]]
+matches = "scripts/ai_config/**"
+check-unannotated-defs = true
+infer-return-types = "checked"
+strict-callable-subtyping = true
+[tool.pyrefly.sub-config.errors]
+implicit-any = true
+implicit-any-parameter = true
+unannotated-return = true
+bad-override = true
+unbound-name = true
+missing-override-decorator = true
+unused-ignore = true
+
+[[tool.pyrefly.sub-config]]
+matches = "scripts/ai_config_cli.py"
+check-unannotated-defs = true
+infer-return-types = "checked"
+strict-callable-subtyping = true
+[tool.pyrefly.sub-config.errors]
+implicit-any = true
+implicit-any-parameter = true
+unannotated-return = true
+bad-override = true
+unbound-name = true
+missing-override-decorator = true
+unused-ignore = true
 
 # Phase 2 migration: the same strict rules apply to the new Python hook scripts
 # that replace the Node.js ones. Tests live alongside but follow the looser
@@ -315,6 +347,7 @@ unbound-name = true
 # next to their implementations under dot_claude/ — hook scripts in bin/, skill
 # helpers in skills/*/scripts/.
 testpaths = ["tests", "roles/devbox/files/dot_claude", "roles/devbox/files/dot_ai"]
+pythonpath = ["scripts"]
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers --strict-config"
 markers = [

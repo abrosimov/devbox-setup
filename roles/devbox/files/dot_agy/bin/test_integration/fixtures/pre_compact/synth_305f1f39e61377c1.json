@@ -1,0 +1,8 @@
+{
+  "session_id": "sess_w9prjrfm",
+  "transcript_path": "<HOME>/.claude/sessions/sess_aaaaaaaa/transcript.jsonl",
+  "cwd": "<HOME>/Projects/repo",
+  "hook_event_name": "PreCompact",
+  "trigger": "manual",
+  "custom_instructions": "="
+}

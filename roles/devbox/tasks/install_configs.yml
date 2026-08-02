@@ -103,11 +103,40 @@
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item.dest }}"
     mode: "0644"
   loop:
-    - { src: settings.json, dest: settings.json }
     - { src: hooks.json, dest: hooks.json }
     - { src: config.md, dest: config.md }
   loop_control:
     label: ".claude/{{ item.dest }}"
+  tags: [configs, claude]
+
+- name: Reconcile Claude settings
+  ansible.builtin.command:
+    argv: >-
+      {{
+        [
+          role_path ~ '/../../scripts/ai-config',
+          'apply',
+          'claude',
+          '--repo-root',
+          role_path ~ '/../..',
+          '--home',
+          (lookup('env', 'HOME')
+           if devbox_paths.dotfiles_root_dir == '~'
+           else (devbox_paths.dotfiles_root_dir
+                 if devbox_paths.dotfiles_root_dir.startswith('/')
+                 else role_path ~ '/../../' ~ devbox_paths.dotfiles_root_dir)),
+          '--profile',
+          devbox_active_profile,
+          '--json'
+        ]
+        + (['--check'] if ansible_check_mode else [])
+      }}
+  register: devbox_ai_config_claude
+  check_mode: false
+  changed_when: >-
+    devbox_ai_config_claude.rc == 0
+    and (devbox_ai_config_claude.stdout | from_json).changed | bool
+  failed_when: devbox_ai_config_claude.rc not in [0]
   tags: [configs, claude]
 
 # =============================================================================
@@ -171,16 +200,34 @@
     mode: "0644"
   tags: [configs, ai, agy]
 
-- name: Render Antigravity managed settings
-  ansible.builtin.template:
-    src: "{{ role_path }}/files/dot_agy/cli/settings.json.j2"
-    dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/.settings.managed.json"
-    mode: "0600"
-  tags: [configs, agy]
-
-- name: Merge Antigravity CLI specific configs
-  ansible.builtin.script:
-    cmd: "{{ role_path }}/files/dot_agy/bin/merge_settings.py {{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/.settings.managed.json {{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/settings.json"
+- name: Reconcile Antigravity settings
+  ansible.builtin.command:
+    argv: >-
+      {{
+        [
+          role_path ~ '/../../scripts/ai-config',
+          'apply',
+          'agy',
+          '--repo-root',
+          role_path ~ '/../..',
+          '--home',
+          (lookup('env', 'HOME')
+           if devbox_paths.dotfiles_root_dir == '~'
+           else (devbox_paths.dotfiles_root_dir
+                 if devbox_paths.dotfiles_root_dir.startswith('/')
+                 else role_path ~ '/../../' ~ devbox_paths.dotfiles_root_dir)),
+          '--profile',
+          devbox_active_profile,
+          '--json'
+        ]
+        + (['--check'] if ansible_check_mode else [])
+      }}
+  register: devbox_ai_config_agy
+  check_mode: false
+  changed_when: >-
+    devbox_ai_config_agy.rc == 0
+    and (devbox_ai_config_agy.stdout | from_json).changed | bool
+  failed_when: devbox_ai_config_agy.rc not in [0]
   delegate_to: localhost
   tags: [configs, agy]
 
@@ -189,6 +236,38 @@
     src: "{{ role_path }}/files/dot_agy/config/hooks.json.j2"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/config/hooks.json"
     mode: "0644"
+  tags: [configs, agy]
+
+- name: Ensure Antigravity bin directory exists
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/bin"
+    state: directory
+    mode: "0755"
+  tags: [configs, agy]
+
+- name: Sync Antigravity hook scripts from dot_agy/bin (one-way, --delete)
+  ansible.posix.synchronize:
+    src: "{{ role_path }}/files/dot_agy/bin/"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/bin/"
+    delete: true
+    recursive: true
+    perms: true
+    rsync_opts:
+      - "--exclude=.DS_Store"
+      - "--exclude=__pycache__"
+      - "--exclude=.venv"
+  delegate_to: localhost
+  tags: [configs, agy]
+
+- name: Bootstrap Antigravity hooks venv via uv sync
+  ansible.builtin.command:
+    cmd: "{{ devbox_uv_path.stdout }} sync --frozen --no-dev"
+    chdir: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/bin"
+  register: devbox_agy_uv_sync
+  changed_when: >-
+    'Resolved' in (devbox_agy_uv_sync.stderr | default(''))
+    or 'Installed' in (devbox_agy_uv_sync.stderr | default(''))
+    or 'Prepared' in (devbox_agy_uv_sync.stderr | default(''))
   tags: [configs, agy]
 
 # =============================================================================

@@ -1,0 +1,10 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/usr/local/bin/something",
+    "old_string": "RrAu",
+    "new_string": "k~)_/",
+    "replace_all": false
+  },
+  "hook_event_name": "PreToolUse"
+}

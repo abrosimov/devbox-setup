@@ -1,0 +1,11 @@
+{
+  "session_id": "sess_00000000",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "old_string": "",
+    "new_string": "",
+    "replace_all": false
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/nonexistent/path.txt",
+    "edits": [
+      {
+        "old_string": "UPMM",
+        "new_string": "u}RBG\"vGfYtgBeS",
+        "replace_all": false
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/ingest/testdata/simple.md",
+    "content": "# Simple Document\n\n## A.1 - First Section\n\nContent of the first section with some details.\n\n### Subsection\n\nMore details in the subsection.\n\n## A.2 - Second Section\n\nContent of the second section.\n\n## A.3 - Third Section\n\nContent of the third section.\n"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

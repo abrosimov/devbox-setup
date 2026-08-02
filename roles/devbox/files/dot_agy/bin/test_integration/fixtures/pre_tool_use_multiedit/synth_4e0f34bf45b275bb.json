@@ -1,0 +1,19 @@
+{
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/nonexistent/path.txt",
+    "edits": [
+      {
+        "old_string": "MOg(vqO",
+        "new_string": "3IR",
+        "replace_all": true
+      },
+      {
+        "old_string": "DRLz<{,*",
+        "new_string": "/El.rb!aw",
+        "replace_all": true
+      }
+    ]
+  },
+  "hook_event_name": "PreToolUse"
+}

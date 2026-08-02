@@ -93,6 +93,15 @@
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreToolUse"
+          }
+        ],
+        "matcher": ".*"
       }
     ],
     "PostToolUse": [
@@ -158,6 +167,16 @@
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostToolUse",
+            "async": true
+          }
+        ],
+        "matcher": ".*"
       }
     ],
     "UserPromptSubmit": [
@@ -186,6 +205,14 @@
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Stop"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -200,6 +227,14 @@
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_compact_mask.py"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreCompact"
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -212,6 +247,14 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionStart"
+          }
+        ]
       }
     ],
     "SessionEnd": [
@@ -220,6 +263,14 @@
           {
             "type": "command",
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_save.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionEnd"
           }
         ]
       }
@@ -233,6 +284,14 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py WorktreeCreate"
+          }
+        ]
       }
     ],
     "WorktreeRemove": [
@@ -242,6 +301,14 @@
             "type": "command",
             "command": "~/.claude/bin/worktree-remove",
             "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py WorktreeRemove"
           }
         ]
       }

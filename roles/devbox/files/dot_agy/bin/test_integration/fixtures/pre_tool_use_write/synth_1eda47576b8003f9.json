@@ -1,0 +1,8 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "content": "X"
+  },
+  "hook_event_name": "PreToolUse"
+}

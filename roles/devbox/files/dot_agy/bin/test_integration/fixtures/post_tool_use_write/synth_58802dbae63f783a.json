@@ -1,0 +1,9 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "<HOME>/Projects/repo/file.py",
+    "content": "QBM{030"
+  },
+  "tool_response": "Fv@3AMd[N*b",
+  "hook_event_name": "PostToolUse"
+}

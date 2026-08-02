@@ -1,0 +1,8 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la <HOME>/Projects/warp-and-weft/ <HOME>/Projects/warp-and-weft/base/ 2>/dev/null",
+    "description": "Inspect warp-and-weft wrapper and base layout"
+  },
+  "hook_event_name": "PreToolUse"
+}

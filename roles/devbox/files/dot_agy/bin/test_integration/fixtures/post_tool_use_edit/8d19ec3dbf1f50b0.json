@@ -1,0 +1,11 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "replace_all": false,
+    "file_path": "<HOME>/Projects/agentic-rag-mcp/internal/server/tools.go",
+    "old_string": "\ttype IndexArgs struct {\n\t\tPath  string `json:\"path\" jsonschema:\"required\"`\n\t\tScope string `json:\"scope,omitempty\" jsonschema:\"enum=global,enum=project\"`\n\t\tKind  string `json:\"kind,omitempty\" jsonschema:\"enum=reference,enum=decision,enum=trace\"`\n\t\tForce bool   `json:\"force,omitempty\"`\n\t}",
+    "new_string": "\ttype IndexArgs struct {\n\t\tPath  string `json:\"path\" jsonschema:\"Absolute path to a markdown file or directory to index\"`\n\t\tScope string `json:\"scope,omitempty\" jsonschema:\"Scope: global or project (default: project)\"`\n\t\tKind  string `json:\"kind,omitempty\" jsonschema:\"Kind: reference, decision, or trace (default: reference)\"`\n\t\tForce bool   `json:\"force,omitempty\" jsonschema:\"Force re-index even if file hash unchanged\"`\n\t}"
+  },
+  "tool_response": "",
+  "hook_event_name": "PostToolUse"
+}

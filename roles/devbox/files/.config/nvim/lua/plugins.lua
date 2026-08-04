@@ -348,7 +348,7 @@ return {
 			completion = { documentation = { auto_show = true } },
 			signature = { enabled = true },
 			sources = {
-				default = { "lsp", "path", "snippets", "buffer" },
+				default = { "lsp", "path", "snippets" },
 			},
 		},
 	},
@@ -769,7 +769,16 @@ return {
 		event = "VeryLazy",
 		opts = {
 			preset = "modern",
-			delay = 200,
+			triggers = {},
+		},
+		keys = {
+			{
+				"<C-g>",
+				function()
+					require("which-key").show()
+				end,
+				desc = "Show keybindings",
+			},
 		},
 		config = function(_, opts)
 			local wk = require("which-key")

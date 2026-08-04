@@ -4,13 +4,14 @@ Leader key: `.` (dot)
 
 ## Key Discovery (which-key)
 
-Press `.` and wait 200ms to see all available keybindings organized by group:
+Press `Ctrl+G` to see all available keybindings organized by group. The popup does
+not open automatically while entering a multi-key command.
 
 | Group | Prefix | Contents |
 |-------|--------|----------|
 | Find | `.f` | Telescope pickers (files, grep, buffers, keymaps) |
 | Debug | `.d` | DAP breakpoints, continue, test debug |
-| Test/Tree | `.t` | Neotest + Neo-tree toggle |
+| Test | `.t` | Neotest |
 | Git | `.g` | Worktree switching |
 | Diagnostics | `.x` | Trouble panel |
 | Refactor/Run | `.r` | Rename, run main |
@@ -20,7 +21,7 @@ Press `.` and wait 200ms to see all available keybindings organized by group:
 | Next | `]` | Next diagnostic/function/class |
 | Go to | `g` | Definition, implementation, references |
 
-**Fuzzy search all keymaps**: `.fk` opens Telescope keymap picker
+**Fuzzy search all keymaps**: `.fk` opens Telescope keymap picker.
 
 ## Navigation
 
@@ -62,7 +63,7 @@ Press `.` and wait 200ms to see all available keybindings organized by group:
 
 | Key | Action |
 |-----|--------|
-| `.t` | Toggle file explorer (right) |
+| `.e` | Toggle file explorer (right) |
 | `.b` | Toggle buffer list (left) |
 
 ## Git
@@ -92,7 +93,6 @@ Press `.` and wait 200ms to see all available keybindings organized by group:
 
 | Key | Action |
 |-----|--------|
-| `.e` | Show diagnostic float |
 | `.q` | Open diagnostic quickfix list |
 | `.xx` | Toggle Trouble diagnostics panel |
 

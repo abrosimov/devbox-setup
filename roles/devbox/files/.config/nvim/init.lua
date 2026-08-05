@@ -17,6 +17,12 @@ end
 vim.keymap.set('n', '<Space>', '<C-d>', { desc = 'Half page down' })
 
 vim.opt.number = true
+
+vim.opt.expandtab = true
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.softtabstop = 4
+
 -- Enable break indent
 vim.opt.breakindent = true
 

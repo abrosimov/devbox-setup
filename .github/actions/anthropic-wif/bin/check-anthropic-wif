@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${ANTHROPIC_FEDERATION_RULE_ID:?Run the Configure Anthropic WIF action first}"
+: "${ANTHROPIC_ORGANIZATION_ID:?Run the Configure Anthropic WIF action first}"
+: "${ANTHROPIC_SERVICE_ACCOUNT_ID:?Run the Configure Anthropic WIF action first}"
+: "${ANTHROPIC_WORKSPACE_ID:?Run the Configure Anthropic WIF action first}"
+: "${ANTHROPIC_IDENTITY_TOKEN_FILE:?Run the Configure Anthropic WIF action first}"
+
+response_file=$(mktemp "${RUNNER_TEMP:-/tmp}/anthropic-token-response.XXXXXX")
+trap 'rm -f "$response_file"' EXIT
+
+if ! jq --null-input \
+    --rawfile assertion "$ANTHROPIC_IDENTITY_TOKEN_FILE" \
+    --arg federation_rule_id "$ANTHROPIC_FEDERATION_RULE_ID" \
+    --arg organization_id "$ANTHROPIC_ORGANIZATION_ID" \
+    --arg service_account_id "$ANTHROPIC_SERVICE_ACCOUNT_ID" \
+    --arg workspace_id "$ANTHROPIC_WORKSPACE_ID" \
+    '{
+        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        assertion: ($assertion | rtrimstr("\n")),
+        federation_rule_id: $federation_rule_id,
+        organization_id: $organization_id,
+        service_account_id: $service_account_id,
+        workspace_id: $workspace_id
+    }' \
+    | curl --fail-with-body --silent --show-error \
+        --request POST \
+        --header "Content-Type: application/json" \
+        --data-binary @- \
+        --output "$response_file" \
+        https://api.anthropic.com/v1/oauth/token; then
+    jq '{error, error_description}' "$response_file" >&2 || true
+    exit 1
+fi
+
+jq --exit-status \
+    '(.access_token | startswith("sk-ant-oat01-")) and (.expires_in > 0)' \
+    "$response_file" >/dev/null
+jq --raw-output \
+    '"Anthropic WIF exchange succeeded: scope=\(.scope), expires_in=\(.expires_in)s"' \
+    "$response_file"

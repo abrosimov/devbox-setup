@@ -1,0 +1,38 @@
+name: Configure Anthropic WIF
+description: Configure keyless Anthropic authentication for a GitHub Actions job
+
+outputs:
+  identity-token-file:
+    description: Path to the short-lived GitHub OIDC identity token
+    value: ${{ steps.configure.outputs.identity-token-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Configure Anthropic Workload Identity Federation
+      id: configure
+      shell: bash
+      env:
+        ANTHROPIC_WIF_ACTION_PATH: ${{ github.action_path }}
+        ANTHROPIC_WIF_TOKEN_FILE: ${{ runner.temp }}/anthropic-identity-token
+      run: |
+        set -euo pipefail
+
+        if [[ -v ANTHROPIC_API_KEY || -v ANTHROPIC_AUTH_TOKEN || -v ANTHROPIC_PROFILE ]]; then
+          echo "::error::Static or profile-based Anthropic authentication would shadow WIF"
+          exit 1
+        fi
+
+        "${ANTHROPIC_WIF_ACTION_PATH}/bin/refresh-anthropic-identity-token" \
+          "$ANTHROPIC_WIF_TOKEN_FILE"
+
+        {
+          echo "ANTHROPIC_FEDERATION_RULE_ID=fdrl_012fnG39en6i4J9iXBaeNWfM"
+          echo "ANTHROPIC_ORGANIZATION_ID=c0297d32-a375-42a3-bca8-ea26b3824e08"
+          echo "ANTHROPIC_SERVICE_ACCOUNT_ID=svac_015intzGxfwcxbtjc8dnHgJW"
+          echo "ANTHROPIC_WORKSPACE_ID=wrkspc_01YFje15eC5qAC1jaBxhSRFT"
+          echo "ANTHROPIC_IDENTITY_TOKEN_FILE=${ANTHROPIC_WIF_TOKEN_FILE}"
+        } >> "$GITHUB_ENV"
+
+        echo "${ANTHROPIC_WIF_ACTION_PATH}/bin" >> "$GITHUB_PATH"
+        echo "identity-token-file=${ANTHROPIC_WIF_TOKEN_FILE}" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    echo "usage: refresh-anthropic-identity-token TOKEN_FILE" >&2
+    exit 2
+fi
+
+: "${ACTIONS_ID_TOKEN_REQUEST_URL:?GitHub Actions id-token: write permission is required}"
+: "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:?GitHub Actions id-token: write permission is required}"
+
+token_file=$1
+pending_token=$(mktemp "${token_file}.XXXXXX")
+trap 'rm -f "$pending_token"' EXIT
+
+curl --fail --silent --show-error \
+    --header "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+    "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://api.anthropic.com" \
+    | jq --exit-status --raw-output '.value | select(length > 0)' > "$pending_token"
+
+chmod 600 "$pending_token"
+mv "$pending_token" "$token_file"
+trap - EXIT

@@ -707,7 +707,7 @@ test-fish:
 test-bash:
 	@echo "Validating bash script syntax..."
 	@fail=0; \
-	for f in $$(find scripts roles/devbox/files/dot_claude/templates $(AI_SRC)/skills .github/actions -type f \( -name '*.sh' -o -path '*/anthropic-wif/bin/*' \) -not -path '*/future_projects/*' -not -path '*/hooks-snapshots/*'); do \
+	for f in $$(find scripts roles/devbox/files/dot_claude/templates $(AI_SRC)/skills -name '*.sh' -not -path '*/future_projects/*' -not -path '*/hooks-snapshots/*'); do \
 		bash -n "$$f" 2>&1 || { echo "  FAIL: $$f"; fail=1; }; \
 	done; \
 	[ $$fail -eq 0 ] && echo "  OK: all bash scripts have valid syntax" || exit 1

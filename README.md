@@ -62,36 +62,6 @@ make secrets-init             # reseed both (idempotent -U)
 
 Inspect existing slots via `security find-generic-password -s devbox-sudo` (or `-s devbox-ssh-passphrase`). The first read from any subprocess triggers a one-time Keychain ACL dialog — click "Always Allow" to grant `security` silent access thereafter.
 
-### Anthropic authentication in GitHub Actions
-
-The repository provides a public composite action at
-`.github/actions/anthropic-wif`. It configures Anthropic Workload Identity
-Federation for manually dispatched workflows in repositories owned by
-`abrosimov`. The action contains only non-secret Anthropic resource IDs. GitHub
-mints the short-lived OIDC assertion inside each authorised job; there is no
-Anthropic API key, GitHub secret, repository variable, environment, or PAT.
-
-Each calling job must grant `id-token: write` and invoke the action by an exact
-commit SHA:
-
-```yaml
-permissions:
-  contents: read
-  id-token: write
-
-steps:
-  - uses: abrosimov/devbox-setup/.github/actions/anthropic-wif@<commit-sha>
-  - run: with-anthropic-wif your-eval-command
-```
-
-`with-anthropic-wif` refreshes the GitHub identity token every three minutes,
-so long-running SDK or Claude Code processes can renew their Anthropic access
-token. The manual `Anthropic WIF check` workflow validates only the token
-exchange endpoint and never makes a model request.
-
-Local eval authentication remains separate. GitHub OIDC tokens exist only on
-Actions runners, so this action does not configure a laptop credential.
-
 ### Profiles
 
 Profiles select per-machine configuration:

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Liveness smoke for the otelbox edge collector — run after `make personal`.
-# Checks: binary, launchd service, health (:13133), internal metrics (:8888),
-# one OTLP/HTTP round-trip (send a log, confirm the receiver accepted it), and
-# delivery to the remote gateway (no permanently dropped items).
+# Checks the exact binary, service lifecycle, local ingest and delivery signals.
 # Exit non-zero on any failure. Darwin-only.
 # No set -e/pipefail: every check must run even when a probe curl fails; the
 # final exit is driven by the explicit `fail` flag, not the first failing probe.
@@ -32,11 +30,41 @@ sum_metric() {
 
 accepted_logs() { sum_metric '^otelcol_receiver_accepted_log_records'; }
 
+max_queue_percent() {
+    curl -fsS --max-time 3 http://127.0.0.1:8888/metrics 2>/dev/null \
+        | awk '
+            $1 ~ /^otelcol_exporter_queue_capacity\{/ {
+                key = $1
+                sub(/^otelcol_exporter_queue_capacity/, "", key)
+                capacity[key] = $NF
+            }
+            $1 ~ /^otelcol_exporter_queue_size\{/ {
+                key = $1
+                sub(/^otelcol_exporter_queue_size/, "", key)
+                size[key] = $NF
+            }
+            END {
+                found = 0
+                max = 0
+                for (key in size) {
+                    if (capacity[key] > 0) {
+                        found = 1
+                        percent = 100 * size[key] / capacity[key]
+                        if (percent > max) max = percent
+                    }
+                }
+                if (found) printf "%.0f\n", max
+                else print "-1"
+            }
+        '
+}
+
 bin="${HOME}/.local/bin/otelcol-otelbox"
-if [[ -x "${bin}" ]]; then
-    _ok "binary ${bin}"
+if [[ -x "${bin}" ]] && version=$("${bin}" --version 2>/dev/null) \
+    && [[ "${version}" == *"version 2.1.0"* ]]; then
+    _ok "binary v2.1.0: ${bin}"
 else
-    _bad "binary missing: ${bin} (check the pinned version in packages.yml, then make personal)"
+    _bad "binary missing or not v2.1.0: ${bin}"
 fi
 
 if info=$(launchctl print "gui/$(id -u)/local.otelbox-edge" 2>/dev/null); then
@@ -46,19 +74,18 @@ else
     _bad "service not loaded (launchctl print failed)"
 fi
 
-# Retry: right after `make personal` the collector may still be binding ports.
 health_ok=0
 for _ in 1 2 3 4 5; do
-    if curl -fsS --max-time 3 http://127.0.0.1:13133/ >/dev/null 2>&1; then
+    if curl -fsS --max-time 3 http://127.0.0.1:13133/status >/dev/null 2>&1; then
         health_ok=1
         break
     fi
     sleep 1
 done
 if [[ "${health_ok}" -eq 1 ]]; then
-    _ok "health :13133"
+    _ok "lifecycle health :13133/status"
 else
-    _bad "health :13133 not responding"
+    _bad "lifecycle health :13133/status not responding"
 fi
 
 if accepted_logs >/dev/null && curl -fsS --max-time 3 http://127.0.0.1:8888/metrics 2>/dev/null | grep -q '^otelcol_'; then
@@ -82,18 +109,15 @@ else
     _bad "OTLP/HTTP :4318 rejected the test log"
 fi
 
-# Delivery to the remote gateway. Everything above only proves the LOCAL half:
-# a wrong ingestion token leaves every check green while nothing reaches the
-# gateway. send_failed_* counts items the exporter gave up on, and with
-# retry_on_failure.max_elapsed_time: 0s only PERMANENT errors (auth, malformed)
-# reach it — transient ones retry forever. So any non-zero value means dropped,
-# not delayed.
 dropped=$(sum_metric '^otelcol_exporter_send_failed_')
-queued=$(sum_metric '^otelcol_exporter_queue_size')
-if [[ "${dropped}" -eq 0 ]]; then
-    _ok "gateway delivery: nothing dropped (queue depth ${queued})"
+enqueue_failed=$(sum_metric '^otelcol_exporter_enqueue_failed_')
+refused=$(sum_metric '^otelcol_receiver_refused_')
+queue_percent=$(max_queue_percent)
+if [[ "${dropped}" -eq 0 && "${enqueue_failed}" -eq 0 && "${refused}" -eq 0 \
+    && "${queue_percent}" -ge 0 && "${queue_percent}" -lt 80 ]]; then
+    _ok "gateway delivery: max queue ${queue_percent}%; no send, enqueue or receive failures"
 else
-    _bad "gateway delivery: ${dropped} items dropped permanently (queue depth ${queued}); grep 'Exporting failed' ~/Library/Logs/otelbox-edge.log"
+    _bad "gateway delivery: send_failed=${dropped}, enqueue_failed=${enqueue_failed}, refused=${refused}, max_queue=${queue_percent}%"
 fi
 
 if [[ "${fail}" -eq 0 ]]; then

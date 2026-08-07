@@ -7,13 +7,12 @@
 #               roles/devbox/local/.config/otelbox/edge/endpoint.env (source of
 #               truth, deployed by Ansible) AND live to ~/.config/otelbox/edge/
 #               endpoint.env so the running service picks it up immediately.
-#   token     — the Bearer ingestion key. Secret. Stored ONLY in the login
-#               keychain slot `otelbox-edge-token`, added with
-#               `-T /usr/bin/security` so the wrapper's `security
-#               find-generic-password` reads it silently after one "Always Allow".
+#   token     — the Bearer ingestion key. The Keychain is authoritative; v2.1
+#               receives a private header file in the per-user temporary area.
 #
 # Consumed by roles/devbox/files/.config/otelbox/edge/otelbox-edge-run (wrapper)
-# and edge.yaml (${env:OTELBOX_EDGE_ENDPOINT} / ${env:OTELBOX_EDGE_TOKEN}).
+# and edge.yaml (${env:OTELBOX_UPSTREAM_ENDPOINT} /
+# ${env:OTELBOX_UPSTREAM_AUTH_HEADER_FILE}).
 # See README.md § OTLP Telemetry.
 #
 # Invocation:
@@ -92,8 +91,8 @@ _set_endpoint() {
             endpoint=""
             continue
         fi
-        if [[ "${endpoint}" != *:* ]]; then
-            echo "  no port found — expected host:port (e.g. otel.example.com:443)" >&2
+        if [[ ! "${endpoint}" =~ ^[^[:space:]]+:[0-9]+$ ]]; then
+            echo "  expected host:numeric-port (e.g. otel.example.com:443)" >&2
             endpoint=""
             continue
         fi
@@ -104,7 +103,7 @@ _set_endpoint() {
         exit 1
     fi
 
-    local content="OTELBOX_EDGE_ENDPOINT=${endpoint}"
+    local content="OTELBOX_UPSTREAM_ENDPOINT=${endpoint}"
     mkdir -p "$(dirname "${OVERLAY_ENV}")" "$(dirname "${LIVE_ENV}")"
     printf '%s\n' "${content}" >"${OVERLAY_ENV}"
     printf '%s\n' "${content}" >"${LIVE_ENV}"
@@ -120,10 +119,10 @@ _set_token() {
         printf 'Bearer ingestion token (input hidden): ' >&2
         IFS= read -rs token || true
         printf '\n' >&2
-        if [[ -n "${token}" ]]; then
+        if [[ "${token}" =~ ^[A-Za-z0-9_-]+$ ]]; then
             break
         fi
-        echo "  empty input, try again (${attempt}/3)" >&2
+        echo "  expected a non-empty [A-Za-z0-9_-] token, try again (${attempt}/3)" >&2
     done
     if [[ -z "${token}" ]]; then
         echo "otelbox-edge-config: giving up on token after 3 attempts" >&2
@@ -136,7 +135,17 @@ _set_token() {
         -w "${token}" \
         -T /usr/bin/security \
         "${HOME}/Library/Keychains/login.keychain-db" >/dev/null
+
+    local runtime_root auth_dir auth_file
+    runtime_root="$(/usr/bin/getconf DARWIN_USER_TEMP_DIR)"
+    auth_dir="${runtime_root%/}/otelbox-edge"
+    auth_file="${auth_dir}/upstream-auth-header"
+    umask 077
+    mkdir -p "${auth_dir}"
+    chmod 0700 "${auth_dir}"
+    printf 'Bearer %s\n' "${token}" >"${auth_file}"
     echo "otelbox-edge-config: stored '${TOKEN_SVC}' in login keychain" >&2
+    echo "otelbox-edge-config: refreshed the private v2.1 header file" >&2
 }
 
 if [[ -z "${_only}" || "${_only}" == "endpoint" ]]; then
@@ -146,5 +155,9 @@ if [[ -z "${_only}" || "${_only}" == "token" ]]; then
     _set_token
 fi
 
-echo "otelbox-edge-config: done. Restart the service to apply:" >&2
-echo "  launchctl kickstart -k gui/\$(id -u)/local.otelbox-edge" >&2
+if [[ -z "${_only}" || "${_only}" == "endpoint" ]]; then
+    echo "otelbox-edge-config: restart the service to apply the endpoint:" >&2
+    echo "  launchctl kickstart -k gui/\$(id -u)/local.otelbox-edge" >&2
+else
+    echo "otelbox-edge-config: token rotated; the running v2.1 collector watches the header file." >&2
+fi

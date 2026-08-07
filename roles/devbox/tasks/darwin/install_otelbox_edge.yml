@@ -2,20 +2,12 @@
 # Durable OpenTelemetry edge collector — the published `otelcol-otelbox` binary
 # from abrosimov/otelcol-otelbox, pinned in defaults/main/packages.yml.
 #
-# Nothing is built here. The artefact repository owns the component set, the
-# shared base configuration layer and the release pipeline; this repository owns
-# the edge role layer, the secrets, the supervisor and the machine-local values.
-# Bumping the collector is editing the pinned version and running the playbook.
+# Nothing is built here. The artefact repository owns the component set and
+# release pipeline; this repository owns the deployed edge profile, secrets,
+# supervisor and machine-local values. Binary and profile move as one contract.
 #
-# The two configuration layers are composed base-first, as repeated --config
-# arguments (see the wrapper). Later arguments win, map keys merge key by key,
-# and a list value replaces the earlier list wholesale — which is why the role
-# layer restates nothing the base layer already owns.
-#
-# Non-bricking by design: if the release asset cannot be fetched, or the
-# machine-local endpoint.env has not been created, the service bootstrap warns
-# and skips instead of failing the whole run. The one hard failure is a Homebrew
-# keg of the same artefact — see the guard below.
+# Destructive legacy cleanup is gated by the exact binary, profile validation,
+# endpoint contract and Keychain credential. A missing input leaves v1 running.
 #
 # Guarded by the include in main_darwin.yml (Darwin + not dev_mode). Everything
 # below additionally honours devbox_packages.otelbox_edge.enabled.
@@ -62,6 +54,9 @@
   ansible.builtin.set_fact:
     devbox_otelbox_edge_home: "{{ ansible_facts['env']['HOME'] }}"
     devbox_otelbox_edge_bin: "{{ ansible_facts['env']['HOME'] }}/.local/bin/otelcol-otelbox"
+    devbox_otelbox_edge_staged_bin: >-
+      {{ ansible_facts['env']['HOME'] }}/.local/bin/otelcol-otelbox-{{
+      devbox_packages.otelbox_edge.version }}
     devbox_otelbox_edge_conf: "{{ ansible_facts['env']['HOME'] }}/.config/otelbox/edge"
     devbox_otelbox_edge_endpoint_env: "{{ ansible_facts['env']['HOME'] }}/.config/otelbox/edge/endpoint.env"
   when: devbox_packages.otelbox_edge.enabled | default(true)
@@ -93,6 +88,38 @@
   when: devbox_packages.otelbox_edge.enabled | default(true)
   tags: [otel, otelbox-edge]
 
+- name: "OpenTelemetry edge — inspect the current managed binary"
+  ansible.builtin.stat:
+    path: "{{ devbox_otelbox_edge_bin }}"
+  register: devbox_otelbox_edge_existing_bin_stat
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — read the current managed binary version"
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_otelbox_edge_bin }}"
+      - --version
+  register: devbox_otelbox_edge_existing_version
+  changed_when: false
+  failed_when: false
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_existing_bin_stat.stat.exists | default(false)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — classify the current managed binary"
+  ansible.builtin.set_fact:
+    devbox_otelbox_edge_existing_is_pinned: >-
+      {{
+        devbox_otelbox_edge_existing_bin_stat.stat.exists | default(false)
+        and (devbox_otelbox_edge_existing_version.rc | default(1)) == 0
+        and (devbox_otelbox_edge_existing_version.stdout | default('') | trim)
+          == ('otelcol-otelbox version ' ~ devbox_packages.otelbox_edge.version)
+      }}
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
 - name: "OpenTelemetry edge — download the pinned release binary (darwin/arm64)"
   # failed_when:false — a transient network failure, or a version pinned ahead
   # of its release, must not brick the run. The service bootstrap below is gated
@@ -102,42 +129,237 @@
   ansible.builtin.get_url:
     url: "{{ devbox_otelbox_edge_asset_base }}"
     checksum: "sha256:{{ devbox_otelbox_edge_asset_base }}.sha256"
-    dest: "{{ devbox_otelbox_edge_bin }}"
+    dest: "{{ devbox_otelbox_edge_staged_bin }}"
     mode: "0755"
   register: devbox_otelbox_edge_download
   failed_when: false
   when: devbox_packages.otelbox_edge.enabled | default(true)
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — check downloaded binary before migration"
+- name: "OpenTelemetry edge — inspect the downloaded binary"
   ansible.builtin.stat:
-    path: "{{ devbox_otelbox_edge_bin }}"
+    path: "{{ devbox_otelbox_edge_staged_bin }}"
   register: devbox_otel_bin_stat
   when: devbox_packages.otelbox_edge.enabled | default(true)
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — migrate a machine off the legacy otelcol-edge layout"
-  # Transitional; runs before the directories below exist, because it renames
-  # into them. Safe and silent on a machine that never had the old collector.
-  ansible.builtin.include_tasks: darwin/migrate_otelcol_edge_to_otelbox.yml
+- name: "OpenTelemetry edge — read the staged binary version"
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_otelbox_edge_staged_bin }}"
+      - --version
+  register: devbox_otelbox_edge_version
+  changed_when: false
+  failed_when: false
   when:
     - devbox_packages.otelbox_edge.enabled | default(true)
     - devbox_otel_bin_stat.stat.exists | default(false)
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — deploy config layers"
+- name: "OpenTelemetry edge — accept only the pinned binary"
+  ansible.builtin.set_fact:
+    devbox_otelbox_edge_binary_matches: >-
+      {{
+        devbox_otel_bin_stat.stat.exists | default(false)
+        and (devbox_otelbox_edge_version.rc | default(1)) == 0
+        and (devbox_otelbox_edge_version.stdout | default('') | trim)
+          == ('otelcol-otelbox version ' ~ devbox_packages.otelbox_edge.version)
+      }}
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — check the machine-local endpoint file"
+  ansible.builtin.stat:
+    path: "{{ devbox_otelbox_edge_endpoint_env }}"
+  register: devbox_otelbox_edge_endpoint_stat
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — validate the endpoint file contract"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/awk
+      - >-
+        NR == 1 && $0 ~ /^OTELBOX_UPSTREAM_ENDPOINT=[^[:space:]]+:[0-9]+$/
+        { valid=1 } END { exit !(NR == 1 && valid) }
+      - "{{ devbox_otelbox_edge_endpoint_env }}"
+  register: devbox_otelbox_edge_endpoint_check
+  changed_when: false
+  failed_when: false
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_endpoint_stat.stat.exists | default(false)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — check the Keychain credential"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/security
+      - find-generic-password
+      - -a
+      - "{{ ansible_facts['user_id'] }}"
+      - -s
+      - otelbox-edge-token
+  register: devbox_otelbox_edge_keychain_check
+  changed_when: false
+  failed_when: false
+  no_log: true
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — decide whether v2.1 preflight can run"
+  ansible.builtin.set_fact:
+    devbox_otelbox_edge_preflight_ready: >-
+      {{
+        devbox_otelbox_edge_binary_matches | bool
+        and devbox_otelbox_edge_endpoint_stat.stat.exists | default(false)
+        and (devbox_otelbox_edge_endpoint_check.rc | default(1)) == 0
+        and (devbox_otelbox_edge_keychain_check.rc | default(1)) == 0
+      }}
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — validate the v2.1 profile before cleanup"
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_otelbox_edge_staged_bin }}"
+      - validate
+      - "--config={{ role_path }}/files/.config/otelbox/edge/edge.yaml"
+  environment:
+    OTELBOX_BIND_HOST: 127.0.0.1
+    OTELBOX_HEALTH_ENDPOINT: 127.0.0.1:13133
+    OTELBOX_STORAGE_DIR: /tmp/otelbox-edge-validate
+    OTELBOX_UPSTREAM_ENDPOINT: validate.invalid:443
+    OTELBOX_UPSTREAM_AUTH_HEADER_FILE: /dev/null
+    OTELBOX_MEMORY_LIMIT_MIB: "400"
+    OTELBOX_MEMORY_SPIKE_LIMIT_MIB: "80"
+    OTELBOX_EXPORTER_CONSUMERS: "2"
+    OTELBOX_STORAGE_MAX_SIZE_BYTES: "6442450944"
+    OTELBOX_QUEUE_SIZE_BYTES: "4294967296"
+  changed_when: false
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — check for the legacy LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelcol-edge"
+  register: devbox_otelbox_edge_legacy_agent
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — check for an unpinned managed LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge"
+  register: devbox_otelbox_edge_unpinned_agent
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+    - not (devbox_otelbox_edge_existing_is_pinned | bool)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — stop the legacy collector"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelcol-edge"
+  changed_when: true
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+    - (devbox_otelbox_edge_legacy_agent.rc | default(1)) == 0
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — stop an unpinned managed collector"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge"
+  changed_when: true
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+    - not (devbox_otelbox_edge_existing_is_pinned | bool)
+    - (devbox_otelbox_edge_unpinned_agent.rc | default(1)) == 0
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — remove the legacy collector and WAL"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ devbox_otelbox_edge_home }}/.local/bin/otelcol-edge"
+    - "{{ devbox_otelbox_edge_home }}/.config/otelcol-edge"
+    - "{{ devbox_otelbox_edge_home }}/.local/state/otelcol-edge"
+    - "{{ devbox_otelbox_edge_home }}/Library/LaunchAgents/local.otelcol-edge.plist"
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — discard the pre-v2.1 managed WAL"
+  ansible.builtin.file:
+    path: "{{ devbox_otelbox_edge_home }}/.local/state/otelbox/edge"
+    state: absent
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+    - not (devbox_otelbox_edge_existing_is_pinned | bool)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — install the validated v2.1 binary"
+  ansible.builtin.copy:
+    src: "{{ devbox_otelbox_edge_staged_bin }}"
+    dest: "{{ devbox_otelbox_edge_bin }}"
+    remote_src: true
+    mode: "0755"
+  register: devbox_otelbox_edge_binary_installed
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — deploy the v2.1 profile"
   ansible.builtin.copy:
     src: "{{ role_path }}/files/.config/otelbox/edge/{{ item }}"
     dest: "{{ devbox_otelbox_edge_conf }}/{{ item }}"
     mode: "0644"
   loop:
-    - base.yaml
     - edge.yaml
     - endpoint.env.example
   loop_control:
     label: "otelbox/edge/{{ item }}"
-  register: devbox_otelbox_edge_layers
-  when: devbox_packages.otelbox_edge.enabled | default(true)
+  register: devbox_otelbox_edge_config_files
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — remove the v1 base layer"
+  ansible.builtin.file:
+    path: "{{ devbox_otelbox_edge_conf }}/base.yaml"
+    state: absent
+  register: devbox_otelbox_edge_base_removed
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — deploy wrapper (executable)"
@@ -146,7 +368,9 @@
     dest: "{{ devbox_otelbox_edge_conf }}/otelbox-edge-run"
     mode: "0755"
   register: devbox_otelbox_edge_wrapper
-  when: devbox_packages.otelbox_edge.enabled | default(true)
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — deploy LaunchAgent plist"
@@ -155,69 +379,29 @@
     dest: "{{ devbox_otelbox_edge_home }}/Library/LaunchAgents/local.otelbox-edge.plist"
     mode: "0644"
   register: devbox_otelbox_edge_plist
-  when: devbox_packages.otelbox_edge.enabled | default(true)
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_preflight_ready | bool
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — check installed binary + machine-local endpoint.env"
-  ansible.builtin.stat:
-    path: "{{ item }}"
-  loop:
-    - "{{ devbox_otelbox_edge_bin }}"
-    - "{{ devbox_otelbox_edge_endpoint_env }}"
-  loop_control:
-    label: "{{ item }}"
-  register: devbox_otelbox_edge_stats
-  when: devbox_packages.otelbox_edge.enabled | default(true)
-  tags: [otel, otelbox-edge]
-
-- name: "OpenTelemetry edge — decide whether the service can start"
-  # Bootstrap only when the binary is present AND the endpoint is configured.
-  # Stat the binary directly (not the get_url result) so a prior-run binary is
-  # honoured even when this run's download fails.
-  # The keychain token is checked by the wrapper at runtime (a missing slot is
-  # logged there, not here — it can be seeded after the first deploy).
+- name: "OpenTelemetry edge — decide whether v2.1 can start"
   ansible.builtin.set_fact:
-    devbox_otelbox_edge_bin_present: "{{ devbox_otelbox_edge_stats.results[0].stat.exists | default(false) }}"
-    devbox_otelbox_edge_endpoint_present: "{{ devbox_otelbox_edge_stats.results[1].stat.exists | default(false) }}"
     devbox_otelbox_edge_ready: >-
-      {{ (devbox_otelbox_edge_stats.results[0].stat.exists | default(false))
-         and (devbox_otelbox_edge_stats.results[1].stat.exists | default(false)) }}
+      {{ devbox_otelbox_edge_preflight_ready | bool }}
   when: devbox_packages.otelbox_edge.enabled | default(true)
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — report skipped bootstrap (binary or endpoint missing)"
   ansible.builtin.debug:
     msg: >-
-      otelbox-edge service not started: {{ 'binary missing (the v'
-      ~ devbox_packages.otelbox_edge.version ~ ' release asset could not be '
-      ~ 'fetched from abrosimov/otelcol-otelbox)'
-      if not (devbox_otelbox_edge_bin_present | bool)
-      else 'endpoint.env missing (create it via `make otelbox-edge-config` — '
-      ~ 'see endpoint.env.example)' }}.
+      otelbox-edge service not started: {{ 'the installed binary is not v'
+      ~ devbox_packages.otelbox_edge.version
+      if not (devbox_otelbox_edge_binary_matches | bool)
+      else 'run `make otelbox-edge-config` to install the v2.1 endpoint and '
+      ~ 'Keychain credential contract' }}.
   when:
     - devbox_packages.otelbox_edge.enabled | default(true)
     - not (devbox_otelbox_edge_ready | bool)
-  tags: [otel, otelbox-edge]
-
-- name: "OpenTelemetry edge — validate the composed configuration"
-  # Both layers together, exactly as the wrapper composes them. Dummy values for
-  # the three env references: an unset ${env:...} is a load error, not a default,
-  # and none of them is dialled or written by `validate`. Without this step a
-  # broken layer surfaces only as a launchd restart loop minutes later.
-  ansible.builtin.command:
-    argv:
-      - "{{ devbox_otelbox_edge_bin }}"
-      - validate
-      - "--config={{ devbox_otelbox_edge_conf }}/base.yaml"
-      - "--config={{ devbox_otelbox_edge_conf }}/edge.yaml"
-  environment:
-    OTELBOX_EDGE_STORAGE: /tmp/otelbox-edge-validate
-    OTELBOX_EDGE_ENDPOINT: validate.invalid:443
-    OTELBOX_EDGE_TOKEN: validate-only-not-a-credential
-  changed_when: false
-  when:
-    - devbox_packages.otelbox_edge.enabled | default(true)
-    - devbox_otelbox_edge_ready | bool
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — check LaunchAgent bootstrap status"
@@ -267,10 +451,7 @@
   changed_when: true
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — restart a running service after a binary or layer change"
-  # The plist is unchanged in this branch, so bootstrap above did not run and
-  # the service is still executing the previous binary and the previous layers.
-  # launchd has no reload: kickstart -k is the restart.
+- name: "OpenTelemetry edge — restart a running service after a managed change"
   ansible.builtin.command:
     argv:
       - /bin/launchctl
@@ -282,8 +463,9 @@
     - devbox_otelbox_edge_ready | bool
     - not devbox_otelbox_edge_plist.changed
     - devbox_otelbox_edge_agent_status.rc == 0
-    - devbox_otelbox_edge_download.changed
-      or devbox_otelbox_edge_layers.changed
+    - devbox_otelbox_edge_binary_installed.changed
+      or devbox_otelbox_edge_config_files.changed
+      or devbox_otelbox_edge_base_removed.changed
       or devbox_otelbox_edge_wrapper.changed
   changed_when: true
   tags: [otel, otelbox-edge]

@@ -1,33 +1,28 @@
 #!/usr/bin/env bash
 # Managed by devbox (roles/devbox/files/.config/otelbox/edge/otelbox-edge-run).
-# Launched by the local.otelbox-edge LaunchAgent. Injects the two runtime values
-# the on-disk config must not carry, then exec's the collector:
-#   - OTELBOX_EDGE_ENDPOINT : remote gateway host:port, from the local-overlay
-#     env file (~/.config/otelbox/edge/endpoint.env). Non-secret, on disk.
-#   - OTELBOX_EDGE_TOKEN    : Bearer ingestion key, read from the login keychain
-#     slot `otelbox-edge-token` at start — never written to disk.
-# OTELBOX_EDGE_STORAGE and OTEL_RESOURCE_ATTRIBUTES are set by the plist.
-#
-# The binary is the published `abrosimov/otelcol-otelbox` artefact, which serves
-# both the workstation edge and the server gateway; the role it plays is decided
-# entirely by the second --config argument below.
+# Launched by the local.otelbox-edge LaunchAgent. The Keychain remains the
+# credential authority; v2.1 receives a private watched header file in the
+# per-user temporary directory so credential rotation needs no restart.
 #
 # Mirrors scripts/keychain-become-pass.sh's read pattern. Exits EX_CONFIG (78)
 # on missing endpoint/token so the failure is legible in the service log.
 set -euo pipefail
 
 bin="${HOME}/.local/bin/otelcol-otelbox"
-base="${HOME}/.config/otelbox/edge/base.yaml"
 profile="${HOME}/.config/otelbox/edge/edge.yaml"
 endpoint_env="${HOME}/.config/otelbox/edge/endpoint.env"
 
-if [[ -f "${endpoint_env}" ]]; then
-    set -a
-    . "${endpoint_env}"
-    set +a
-else
+if [[ ! -f "${endpoint_env}" ]]; then
     echo "otelbox-edge-run: missing ${endpoint_env}" >&2
-    echo "  Set OTELBOX_EDGE_ENDPOINT via the local overlay (see endpoint.env.example)." >&2
+    echo "  Set OTELBOX_UPSTREAM_ENDPOINT via the local overlay (see endpoint.env.example)." >&2
+    exit 78
+fi
+
+IFS= read -r endpoint_line <"${endpoint_env}" || true
+if [[ "${endpoint_line}" =~ ^OTELBOX_UPSTREAM_ENDPOINT=([^[:space:]]+:[0-9]+)$ ]]; then
+    export OTELBOX_UPSTREAM_ENDPOINT="${BASH_REMATCH[1]}"
+else
+    echo "otelbox-edge-run: invalid ${endpoint_env}; expected OTELBOX_UPSTREAM_ENDPOINT=host:port" >&2
     exit 78
 fi
 
@@ -36,6 +31,15 @@ if ! token="$(/usr/bin/security find-generic-password -w -a "${USER}" -s otelbox
     echo "  Seed it: security add-generic-password -U -a \"\$USER\" -s otelbox-edge-token -w '<TOKEN>'" >&2
     exit 78
 fi
-export OTELBOX_EDGE_TOKEN="${token}"
 
-exec "${bin}" --config "${base}" --config "${profile}"
+runtime_root="$(/usr/bin/getconf DARWIN_USER_TEMP_DIR)"
+auth_dir="${runtime_root%/}/otelbox-edge"
+auth_file="${auth_dir}/upstream-auth-header"
+umask 077
+mkdir -p "${auth_dir}"
+chmod 0700 "${auth_dir}"
+printf 'Bearer %s\n' "${token}" >"${auth_file}"
+unset token
+
+export OTELBOX_UPSTREAM_AUTH_HEADER_FILE="${auth_file}"
+exec "${bin}" --config "${profile}"

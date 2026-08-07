@@ -5,14 +5,8 @@
   Supervises the published otelcol-otelbox binary in its edge role, via the
   wrapper (see darwin/install_otelbox_edge.yml). Replaces `brew services` — and
   Homebrew is not an installation path here at all; the playbook owns the binary.
-  This plist's EnvironmentVariables inject the two per-profile, non-secret values
-  the wrapper can't source from a file/keychain:
-    - OTELBOX_EDGE_STORAGE       : file_storage WAL root.
-    - OTEL_RESOURCE_ATTRIBUTES   : read by the edge layer's `env` resource
-                                   detector to stamp every signal with the
-                                   originating profile ({{ devbox_active_profile | default('personal') }}).
-  The wrapper adds OTELBOX_EDGE_ENDPOINT (overlay file) + OTELBOX_EDGE_TOKEN
-  (login keychain). KeepAlive true: it's a long-running daemon, restarted on exit.
+  The plist renders production bounds explicitly. The wrapper adds the upstream
+  endpoint and a private credential-header file derived from the login Keychain.
 -->
 <plist version="1.0">
 <dict>
@@ -26,8 +20,24 @@
 
     <key>EnvironmentVariables</key>
     <dict>
-        <key>OTELBOX_EDGE_STORAGE</key>
+        <key>OTELBOX_BIND_HOST</key>
+        <string>127.0.0.1</string>
+        <key>OTELBOX_HEALTH_ENDPOINT</key>
+        <string>127.0.0.1:13133</string>
+        <key>OTELBOX_STORAGE_DIR</key>
         <string>{{ ansible_facts['env']['HOME'] }}/.local/state/otelbox/edge</string>
+        <key>OTELBOX_MEMORY_LIMIT_MIB</key>
+        <string>400</string>
+        <key>OTELBOX_MEMORY_SPIKE_LIMIT_MIB</key>
+        <string>80</string>
+        <key>OTELBOX_EXPORTER_CONSUMERS</key>
+        <string>2</string>
+        <key>OTELBOX_AUTH_RETRY_INTERVAL</key>
+        <string>1h</string>
+        <key>OTELBOX_STORAGE_MAX_SIZE_BYTES</key>
+        <string>6442450944</string>
+        <key>OTELBOX_QUEUE_SIZE_BYTES</key>
+        <string>4294967296</string>
         <key>OTEL_RESOURCE_ATTRIBUTES</key>
         <string>deployment.environment.name={{ devbox_active_profile | default('personal') }}</string>
     </dict>

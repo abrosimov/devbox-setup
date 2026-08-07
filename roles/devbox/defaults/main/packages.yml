@@ -177,21 +177,17 @@ devbox_packages:
 
   # otelbox edge — durable OpenTelemetry edge collector. The `otelcol-otelbox`
   # artefact published by abrosimov/otelcol-otelbox, which builds one binary for
-  # both the workstation edge and the server gateway and owns the shared base
-  # configuration layer. Nothing is built in this repository. Deployed +
+  # both the workstation edge and the server gateway and owns the published
+  # role profiles. Nothing is built in this repository. Deployed +
   # supervised by tasks/darwin/install_otelbox_edge.yml via launchd (no brew —
   # the artefact's Homebrew formula is for machines this playbook does not
   # manage, and the task fails outright if both are installed).
   #
   # `version` is this artefact's own semantic version, not the upstream
-  # collector's. To bump: raise it here and run the playbook — the release
-  # already exists, there is nothing to build. A major bump means the shared
-  # base layer changed shape, so re-vendor
-  # roles/devbox/files/.config/otelbox/edge/base.yaml from the new release at
-  # the same time. Release tag is bare `v<version>`.
+  # collector's. The role profile and binary move together as one contract.
   otelbox_edge:
     enabled: true
-    version: "1.0.0"
+    version: "2.1.0"
     release_base: "https://github.com/abrosimov/otelcol-otelbox/releases/download"
 
   # Python tools installed via `uv tool install`.

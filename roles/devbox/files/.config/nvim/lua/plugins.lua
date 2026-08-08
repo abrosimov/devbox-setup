@@ -74,7 +74,6 @@ return {
 				"css",
 				"rust",
 				"ocaml",
-				"prolog",
 				"dart",
 				"swift",
 				"yaml",
@@ -94,8 +93,14 @@ return {
 			vim.api.nvim_create_autocmd("FileType", {
 				pattern = "*",
 				callback = function(ev)
-					pcall(vim.treesitter.start, ev.buf)
-					vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+					if ev.match == "prolog" then
+						vim.bo[ev.buf].syntax = "prolog"
+						return
+					end
+
+					if pcall(vim.treesitter.start, ev.buf) then
+						vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+					end
 				end,
 			})
 		end,

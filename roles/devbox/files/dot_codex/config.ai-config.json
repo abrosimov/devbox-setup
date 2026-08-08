@@ -27,6 +27,10 @@
       "scope": "shared"
     },
     {
+      "path": "hooks",
+      "scope": "shared"
+    },
+    {
       "path": "sandbox_workspace_write",
       "scope": "shared"
     },

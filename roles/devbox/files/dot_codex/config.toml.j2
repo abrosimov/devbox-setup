@@ -10,6 +10,7 @@ sandbox_mode = "workspace-write"
 
 [features]
 memories = true
+hooks = true
 
 [sandbox_workspace_write]
 network_access = true
@@ -20,9 +21,6 @@ log_user_prompt = true
 exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 trace_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 metrics_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
-
-[features]
-hooks = true
 
 [[hooks.PreToolUse]]
 matcher = ".*"

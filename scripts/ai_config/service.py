@@ -308,6 +308,7 @@ def _build_writes(
                 candidate=render_document(
                     snapshot_mapping(repository),
                     inspection.adapter.configuration_format,
+                    source=inspection.repository_source,
                 ),
                 validate=validator,
                 mode=inspection.adapter.repository_mode,
@@ -321,6 +322,7 @@ def _build_writes(
                 candidate=render_document(
                     snapshot_mapping(live),
                     inspection.adapter.configuration_format,
+                    source=inspection.live_source,
                 ),
                 validate=validator,
                 mode=inspection.adapter.live_mode,

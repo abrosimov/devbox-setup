@@ -71,6 +71,8 @@ class TestCodexManifestCoverage:
             (("service_tier",), FieldScope.SHARED),
             (("sandbox_mode",), FieldScope.SHARED),
             (("features", "memories"), FieldScope.SHARED),
+            (("features", "hooks"), FieldScope.SHARED),
+            (("hooks", "PreToolUse"), FieldScope.SHARED),
             (("sandbox_workspace_write", "network_access"), FieldScope.SHARED),
             (("otel", "log_user_prompt"), FieldScope.SHARED),
             (("otel", "exporter", "otlp-grpc", "endpoint"), FieldScope.SHARED),
@@ -101,6 +103,7 @@ class TestCodexManifestClassification:
         ("path", "expected_scope"),
         [
             (("features", "js_repl"), FieldScope.SHARED),
+            (("hooks", "SessionStart"), FieldScope.SHARED),
             (("plugins", "example", "enabled"), FieldScope.SHARED),
             (("marketplaces", "example", "enabled"), FieldScope.SHARED),
             (("desktop", "analytics"), FieldScope.SHARED),

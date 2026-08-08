@@ -49,6 +49,16 @@ SHARED_MANIFEST = """{
   ]
 }
 """
+ORDERED_SHARED_MANIFEST = """{
+  "schema_version": 1,
+  "engine": "claude",
+  "fields": [
+    {"path": "zebra", "scope": "shared"},
+    {"path": "setting", "scope": "shared"},
+    {"path": "alpha", "scope": "shared"}
+  ]
+}
+"""
 LOCAL_STATE_MANIFEST = """{
   "schema_version": 1,
   "engine": "claude",
@@ -267,6 +277,20 @@ class TestApplyService:
         assert tree.paths.live.read_bytes() == live_before
         assert base_path.read_bytes() == base_before
 
+    def test_mode_only_update_preserves_json_source_bytes(self, tmp_path: Path) -> None:
+        live_source = '{ "setting": "same" }\n'
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source='{"setting": "same"}\n',
+            manifest_source=SHARED_MANIFEST,
+            live_source=live_source,
+        )
+
+        operate(tree)
+
+        assert tree.paths.live.read_text(encoding="utf-8") == live_source
+
     def test_repository_only_change_updates_live_and_base(self, tmp_path: Path) -> None:
         tree = create_tree(
             tmp_path,
@@ -344,6 +368,30 @@ class TestDecisionService:
         assert read_json(tree.paths.repository) == {"setting": "live-new"}
         assert read_json(tree.paths.live) == {"setting": "live-new"}
         assert snapshot_mapping(state.snapshot) == {"setting": "live-new"}
+
+    def test_capture_live_preserves_repository_json_order(self, tmp_path: Path) -> None:
+        repository_source = """{
+  "zebra": true,
+  "setting": "old",
+  "alpha": true
+}
+"""
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=repository_source,
+            manifest_source=ORDERED_SHARED_MANIFEST,
+        )
+        operate(tree)
+        live_source = repository_source.replace('"old"', '"live"')
+        tree.paths.live.write_text(live_source, encoding="utf-8")
+        decisions = DecisionSet(
+            decisions=(FieldDecision(path=("setting",), source=DecisionSource.LIVE),),
+        )
+
+        operate(tree, mode=OperationMode.RECONCILE, decisions=decisions)
+
+        assert tree.paths.repository.read_text(encoding="utf-8") == live_source
 
     @pytest.mark.parametrize(
         ("source", "expected", "applied", "captured"),

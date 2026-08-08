@@ -110,12 +110,62 @@ def fingerprint_sensitive_fields(
 def render_document(
     configuration: MutableConfiguration,
     configuration_format: ConfigurationFormat,
+    *,
+    source: bytes | None = None,
 ) -> bytes:
+    source_configuration = (
+        _load_source_configuration(source, configuration_format) if source is not None else None
+    )
+    if source is not None and source_configuration == configuration:
+        return source
     if configuration_format is ConfigurationFormat.JSON:
-        return (
-            json.dumps(configuration, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-        ).encode()
+        if source_configuration is not None:
+            configuration = _preserve_mapping_order(source_configuration, configuration)
+        return (json.dumps(configuration, ensure_ascii=False, indent=2) + "\n").encode()
     return _render_toml(configuration).encode()
+
+
+def _load_source_configuration(
+    source: bytes,
+    configuration_format: ConfigurationFormat,
+) -> MutableConfiguration | None:
+    try:
+        text = source.decode()
+    except UnicodeDecodeError:
+        return None
+    try:
+        loaded = (
+            json.loads(text)
+            if configuration_format is ConfigurationFormat.JSON
+            else tomllib.loads(text)
+        )
+    except (json.JSONDecodeError, tomllib.TOMLDecodeError):
+        return None
+    if not isinstance(loaded, dict):
+        return None
+    return cast("MutableConfiguration", loaded)
+
+
+def _preserve_mapping_order(
+    source: MutableConfiguration,
+    desired: MutableConfiguration,
+) -> MutableConfiguration:
+    result: MutableConfiguration = {}
+    for key, source_value in source.items():
+        if key not in desired:
+            continue
+        desired_value = desired[key]
+        if isinstance(source_value, dict) and isinstance(desired_value, dict):
+            result[key] = _preserve_mapping_order(
+                cast("MutableConfiguration", source_value),
+                cast("MutableConfiguration", desired_value),
+            )
+        else:
+            result[key] = desired_value
+    for key, desired_value in desired.items():
+        if key not in source:
+            result[key] = desired_value
+    return result
 
 
 def validate_document(candidate: bytes, configuration_format: ConfigurationFormat) -> None:

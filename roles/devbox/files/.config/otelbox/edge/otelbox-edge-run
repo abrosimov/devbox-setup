@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # Managed by devbox (roles/devbox/files/.config/otelbox/edge/otelbox-edge-run).
 # Launched by the local.otelbox-edge LaunchAgent. The Keychain remains the
-# credential authority; v2.1 receives a private watched header file in the
-# per-user temporary directory so credential rotation needs no restart.
+# credential authority; the collector receives a private watched header file in
+# the per-user temporary directory so credential rotation needs no restart.
 #
 # Mirrors scripts/keychain-become-pass.sh's read pattern. Exits EX_CONFIG (78)
-# on missing endpoint/token so the failure is legible in the service log.
+# on a missing endpoint or token, and on half a client-certificate pair, so the
+# failure is legible in the service log.
 set -euo pipefail
 
 bin="${HOME}/.local/bin/otelcol-otelbox"
 profile="${HOME}/.config/otelbox/edge/edge.yaml"
 endpoint_env="${HOME}/.config/otelbox/edge/endpoint.env"
+client_cert="${HOME}/.config/otelbox/edge/client/client.crt"
+client_key="${HOME}/.config/otelbox/edge/client/client.key"
 
 if [[ ! -f "${endpoint_env}" ]]; then
     echo "otelbox-edge-run: missing ${endpoint_env}" >&2
@@ -18,11 +21,32 @@ if [[ ! -f "${endpoint_env}" ]]; then
     exit 78
 fi
 
-IFS= read -r endpoint_line <"${endpoint_env}" || true
-if [[ "${endpoint_line}" =~ ^OTELBOX_UPSTREAM_ENDPOINT=([^[:space:]]+:[0-9]+)$ ]]; then
+# Read the whole file rather than just its first line, so this matches the
+# preflight awk in install_otelbox_edge.yml exactly. The playbook only sees this
+# file at provisioning time; a second line added afterwards would otherwise be
+# accepted here and silently ignored. The loop (rather than mapfile) keeps the
+# wrapper working under the bash 3.2 that ships with macOS.
+endpoint_line=""
+endpoint_count=0
+while IFS= read -r line || [[ -n "${line}" ]]; do
+    if [[ "${endpoint_count}" -eq 0 ]]; then
+        endpoint_line="${line}"
+    fi
+    endpoint_count=$((endpoint_count + 1))
+done <"${endpoint_env}"
+
+if [[ "${endpoint_count}" -ne 1 ]]; then
+    echo "otelbox-edge-run: ${endpoint_env} must hold exactly one line, found ${endpoint_count}" >&2
+    exit 78
+fi
+
+# The `/` exclusion is what rejects a scheme prefix: without it `[^[:space:]]+`
+# swallows `https://otel.example.com` whole and the endpoint looks valid.
+if [[ "${endpoint_line}" =~ ^OTELBOX_UPSTREAM_ENDPOINT=([^[:space:]/]+:[0-9]+)$ ]]; then
     export OTELBOX_UPSTREAM_ENDPOINT="${BASH_REMATCH[1]}"
 else
     echo "otelbox-edge-run: invalid ${endpoint_env}; expected OTELBOX_UPSTREAM_ENDPOINT=host:port" >&2
+    echo "  host:port only — no scheme prefix." >&2
     exit 78
 fi
 
@@ -42,4 +66,21 @@ printf 'Bearer %s\n' "${token}" >"${auth_file}"
 unset token
 
 export OTELBOX_UPSTREAM_AUTH_HEADER_FILE="${auth_file}"
+
+# The client certificate is optional and machine-local: `make otelbox-edge-config
+# ONLY=cert` generates the pair into the gitignored overlay, and the playbook
+# deploys it beside this wrapper. Absent means no certificate is offered and the
+# bearer token stays the only credential. Half a pair is a configuration
+# mistake, not a degraded mode — configtls rejects a lone cert_file or key_file,
+# so fail here with the same legible exit code rather than at collector start.
+if [[ -f "${client_cert}" && -f "${client_key}" ]]; then
+    export OTELBOX_UPSTREAM_TLS_CERT_FILE="${client_cert}"
+    export OTELBOX_UPSTREAM_TLS_KEY_FILE="${client_key}"
+elif [[ -f "${client_cert}" || -f "${client_key}" ]]; then
+    echo "otelbox-edge-run: incomplete client certificate pair." >&2
+    echo "  Need both ${client_cert} and ${client_key}, or neither." >&2
+    echo "  Regenerate with: make otelbox-edge-config ONLY=cert" >&2
+    exit 78
+fi
+
 exec "${bin}" --config "${profile}"

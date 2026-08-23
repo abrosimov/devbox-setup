@@ -119,7 +119,7 @@ endif
        claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
        sync-upstream-docs \
-       test test-integration test-ai-config test-deploy test-claude-hooks test-git-hooks test-scripts test-nvim test-fish test-json test-bash \
+       test test-integration test-ai-config test-deploy test-claude-hooks test-git-hooks test-scripts test-otelbox test-nvim test-fish test-json test-bash \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -148,6 +148,7 @@ help:
 	@echo "  make test-claude-hooks - pytest under bin/'s own uv project (deployed-venv shape)"
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
 	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
+	@echo "  make test-otelbox     - pytest for the otelbox edge contract (wrapper, preflight, version pin)"
 	@echo "  make qa               - lint + typecheck + unit, integration, ai-config, and deploy tests"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
@@ -155,7 +156,7 @@ help:
 	@echo "  make secrets-init     - seed macOS keychain slots (devbox-sudo, devbox-ssh-passphrase)"
 	@echo "  make sudo-reseed      - reseed only the devbox-sudo keychain slot (after login password rotation)"
 	@echo "  make ssh-passphrase-reseed - reseed only the devbox-ssh-passphrase keychain slot"
-	@echo "  make otelbox-edge-config - set otelbox edge remote endpoint (overlay) + ingestion token (keychain)"
+	@echo "  make otelbox-edge-config - set otelbox edge remote endpoint (overlay) + ingestion token (keychain); ONLY=endpoint|token|cert"
 	@echo "  make otelbox-edge-test - liveness smoke: binary, service, :13133, :8888, OTLP round-trip, delivery"
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
@@ -239,6 +240,11 @@ ssh-passphrase-reseed:
 # Interactive machine-local setup for the otelbox edge collector: remote gateway
 # endpoint (gitignored local overlay) + Bearer ingestion token (login keychain).
 # Pass ONLY='endpoint' or ONLY='token' to set just one.
+#
+# ONLY='cert' generates the optional client-certificate pair into the same
+# gitignored overlay. It is not part of a bare run: most machines need no
+# certificate, and regenerating one invalidates what the gateway front end
+# already trusts.
 otelbox-edge-config:
 	@./scripts/otelbox-edge-config.sh $(if $(ONLY),--only $(ONLY))
 
@@ -310,13 +316,19 @@ lint-yaml: $(DEV_SENTINEL)
 # those.
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
 	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ scripts/ai_config_cli.py scripts/ai_config/ tests/scripts/test_ai_config*.py
 
-test: $(DEV_SENTINEL) ## Pytest unit tests in dot_claude/ (excludes integration — see test-integration)
+# A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
+# what a machine-local endpoint.env can silently break, and the failure mode is a
+# collector that never deploys. Cheap enough (~2s) to gate every provisioning run.
+test-otelbox: $(DEV_SENTINEL) ## Pytest for the otelbox edge collector contract
+	@$(DEV_BIN)/pytest tests/deploy/test_otelbox_edge_deploy.py tests/scripts/test_otelbox_edge_*.py -q
+
+test: $(DEV_SENTINEL) test-otelbox ## Pytest unit tests in dot_claude/ (excludes integration — see test-integration)
 	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/ -m "not integration"
 
 test-integration: $(DEV_SENTINEL) ## Pytest subprocess integration tests (smoke + hypothesis)

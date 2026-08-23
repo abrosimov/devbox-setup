@@ -26,6 +26,10 @@ dev = [
     "pyrefly>=0.10",
     "pytest>=8.0",
     "hypothesis>=6.158.0",
+    # Already present transitively via ansible-core; declared directly because
+    # tests/deploy/test_otelbox_edge_deploy.py renders the LaunchAgent template and
+    # evaluates a task's `when` expression rather than string-matching them.
+    "jinja2>=3.1",
     # Runtime dep of roles/devbox/files/dot_claude/bin/bash_decision_gate.py.
     # Pinned authoritatively in bin/pyproject.toml + bin/uv.lock for the
     # deployed venv; mirrored here so the root dev venv (used by `make test`

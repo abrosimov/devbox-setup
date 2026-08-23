@@ -1,7 +1,14 @@
-# otelbox 2.1 — deployed edge profile.
+# otelbox 2.2 — deployed edge profile.
 #
-# Adapted from abrosimov/otelcol-otelbox v2.1.0 config/edge.yaml. This file is
+# Adapted from abrosimov/otelcol-otelbox v2.2.0 config/edge.yaml. This file is
 # loaded alone; the binary and profile are one versioned contract.
+#
+# Two things arrived with 2.2.0. The gateway exporter gained an optional client
+# certificate — empty by default, so a machine without one behaves exactly as it
+# did under 2.1. And the gateway leg moved to zstd, which is safe only because
+# both ends of that leg are this same binary: a gRPC codec has to be registered
+# in the peer's build, not merely named in its configuration. Override with
+# OTELBOX_UPSTREAM_COMPRESSION where the leg terminates on something else.
 
 extensions:
   # Lifecycle health is deliberately separate from exporter delivery health.
@@ -102,7 +109,30 @@ exporters:
     tls:
       # The bearer credential must never be sent to an unverified peer.
       insecure: false
-    compression: gzip
+      # Optional client identity, for a gateway front end demanding mTLS. It is
+      # a factor the bearer token is not: the token names this client in the
+      # gateway's allowlist, the certificate proves possession of a host key to
+      # whatever stands in front of it, and the two rotate separately.
+      #
+      # Empty is the safe absent value — configtls then reads no material and
+      # offers no certificate. Supply both halves or neither: `validate` rejects
+      # a lone cert_file or key_file. A configured path that does not resolve is
+      # NOT a load error; the exporter fails at start with `failed to load TLS
+      # cert and key`, so a typo stops the process rather than quietly dropping
+      # the second factor.
+      cert_file: ${env:OTELBOX_UPSTREAM_TLS_CERT_FILE:-}
+      key_file: ${env:OTELBOX_UPSTREAM_TLS_KEY_FILE:-}
+      # Rotation without a restart, as the header file above has, by a different
+      # mechanism: polling rather than fsnotify, and lazy — the pair is re-read
+      # on the first handshake after this interval elapses. configtls defaults
+      # to 0, which pins the process to the material it started with.
+      reload_interval: ${env:OTELBOX_UPSTREAM_TLS_RELOAD_INTERVAL:-1h}
+    # zstd only because both ends of THIS leg are the same binary; the gateway's
+    # own recipient exporters stay on gzip, where the peer is a third-party
+    # backend. `none` is legitimate where the transport already compresses. No
+    # effect on the sizing invariants: `sizer: bytes` measures uncompressed
+    # items and the gateway's receive envelope applies after decompression.
+    compression: ${env:OTELBOX_UPSTREAM_COMPRESSION:-zstd}
     timeout: 10s
     sending_queue:
       enabled: true

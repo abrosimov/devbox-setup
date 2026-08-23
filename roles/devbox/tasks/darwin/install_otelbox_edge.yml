@@ -180,7 +180,7 @@
     argv:
       - /usr/bin/awk
       - >-
-        NR == 1 && $0 ~ /^OTELBOX_UPSTREAM_ENDPOINT=[^[:space:]]+:[0-9]+$/
+        NR == 1 && $0 ~ /^OTELBOX_UPSTREAM_ENDPOINT=[^[:space:]\/]+:[0-9]+$/
         { valid=1 } END { exit !(NR == 1 && valid) }
       - "{{ devbox_otelbox_edge_endpoint_env }}"
   register: devbox_otelbox_edge_endpoint_check
@@ -189,6 +189,42 @@
   when:
     - devbox_packages.otelbox_edge.enabled | default(true)
     - devbox_otelbox_edge_endpoint_stat.stat.exists | default(false)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — inspect the optional client certificate pair"
+  # Deployed by the local-overlay block in install_configs.yml, which runs
+  # earlier in the same play, so by now the pair is whatever this run installed.
+  ansible.builtin.stat:
+    path: "{{ devbox_otelbox_edge_conf }}/client/{{ item }}"
+  register: devbox_otelbox_edge_client_pair
+  loop:
+    - client.crt
+    - client.key
+  loop_control:
+    label: "otelbox/edge/client/{{ item }}"
+  when: devbox_packages.otelbox_edge.enabled | default(true)
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — refuse half a client certificate pair"
+  # Absent is a supported state: no certificate is offered and the bearer token
+  # remains the only credential. Exactly one half is not a degraded mode —
+  # configtls rejects a lone cert_file or key_file — so say so here rather than
+  # letting the service fail at start. Deliberately NOT folded into the preflight
+  # gate below: that gate gates the entire install, and a missing certificate
+  # must never stop the collector from being deployed.
+  ansible.builtin.fail:
+    msg: >-
+      Incomplete otelbox edge client certificate in {{
+      devbox_otelbox_edge_conf }}/client: need both client.crt and client.key,
+      or neither. Regenerate with `make otelbox-edge-config ONLY=cert`, or
+      remove the stray half from
+      roles/devbox/local/.config/otelbox/edge/client/.
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - (devbox_otelbox_edge_client_pair.results
+       | selectattr('stat.exists', 'defined')
+       | selectattr('stat.exists')
+       | list | length) == 1
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — check the Keychain credential"
@@ -207,7 +243,7 @@
   when: devbox_packages.otelbox_edge.enabled | default(true)
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — decide whether v2.1 preflight can run"
+- name: "OpenTelemetry edge — decide whether preflight can run"
   ansible.builtin.set_fact:
     devbox_otelbox_edge_preflight_ready: >-
       {{
@@ -219,7 +255,7 @@
   when: devbox_packages.otelbox_edge.enabled | default(true)
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — validate the v2.1 profile before cleanup"
+- name: "OpenTelemetry edge — validate the pinned profile before cleanup"
   ansible.builtin.command:
     argv:
       - "{{ devbox_otelbox_edge_staged_bin }}"
@@ -231,6 +267,13 @@
     OTELBOX_STORAGE_DIR: /tmp/otelbox-edge-validate
     OTELBOX_UPSTREAM_ENDPOINT: validate.invalid:443
     OTELBOX_UPSTREAM_AUTH_HEADER_FILE: /dev/null
+    # Empty on purpose: the absent-certificate case is the one every machine has
+    # to satisfy, and configtls treats empty paths as "offer no certificate".
+    # A supplied pair is checked at start, not by `validate`.
+    OTELBOX_UPSTREAM_TLS_CERT_FILE: ""
+    OTELBOX_UPSTREAM_TLS_KEY_FILE: ""
+    OTELBOX_UPSTREAM_TLS_RELOAD_INTERVAL: 1h
+    OTELBOX_UPSTREAM_COMPRESSION: zstd
     OTELBOX_MEMORY_LIMIT_MIB: "400"
     OTELBOX_MEMORY_SPIKE_LIMIT_MIB: "80"
     OTELBOX_EXPORTER_CONSUMERS: "2"
@@ -314,7 +357,7 @@
     - devbox_otelbox_edge_preflight_ready | bool
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — discard the pre-v2.1 managed WAL"
+- name: "OpenTelemetry edge — discard the WAL left by an unpinned collector"
   ansible.builtin.file:
     path: "{{ devbox_otelbox_edge_home }}/.local/state/otelbox/edge"
     state: absent
@@ -324,7 +367,7 @@
     - not (devbox_otelbox_edge_existing_is_pinned | bool)
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — install the validated v2.1 binary"
+- name: "OpenTelemetry edge — install the validated pinned binary"
   ansible.builtin.copy:
     src: "{{ devbox_otelbox_edge_staged_bin }}"
     dest: "{{ devbox_otelbox_edge_bin }}"
@@ -336,7 +379,7 @@
     - devbox_otelbox_edge_preflight_ready | bool
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — deploy the v2.1 profile"
+- name: "OpenTelemetry edge — deploy the pinned profile"
   ansible.builtin.copy:
     src: "{{ role_path }}/files/.config/otelbox/edge/{{ item }}"
     dest: "{{ devbox_otelbox_edge_conf }}/{{ item }}"
@@ -384,7 +427,7 @@
     - devbox_otelbox_edge_preflight_ready | bool
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — decide whether v2.1 can start"
+- name: "OpenTelemetry edge — decide whether the collector can start"
   ansible.builtin.set_fact:
     devbox_otelbox_edge_ready: >-
       {{ devbox_otelbox_edge_preflight_ready | bool }}
@@ -397,7 +440,7 @@
       otelbox-edge service not started: {{ 'the installed binary is not v'
       ~ devbox_packages.otelbox_edge.version
       if not (devbox_otelbox_edge_binary_matches | bool)
-      else 'run `make otelbox-edge-config` to install the v2.1 endpoint and '
+      else 'run `make otelbox-edge-config` to install the endpoint and '
       ~ 'Keychain credential contract' }}.
   when:
     - devbox_packages.otelbox_edge.enabled | default(true)

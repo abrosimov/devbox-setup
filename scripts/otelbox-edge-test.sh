@@ -16,6 +16,10 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
     exit 0
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "${SCRIPT_DIR}")"
+readonly SCRIPT_DIR REPO_ROOT
+
 fail=0
 _ok() { printf '  ok    %s\n' "$1"; }
 _bad() {
@@ -59,12 +63,22 @@ max_queue_percent() {
         '
 }
 
+# The pin lives in defaults/main/packages.yml and nowhere else. Repeating the
+# literal here is how a version bump ends up asserting the previous release.
+pinned=$(awk '
+    /^  otelbox_edge:/ { inblock = 1; next }
+    inblock && /^    version:/ { gsub(/["[:space:]]/, "", $2); print $2; exit }
+    inblock && /^  [a-z_]+:/ { exit }
+' "${REPO_ROOT}/roles/devbox/defaults/main/packages.yml")
+
 bin="${HOME}/.local/bin/otelcol-otelbox"
-if [[ -x "${bin}" ]] && version=$("${bin}" --version 2>/dev/null) \
-    && [[ "${version}" == *"version 2.1.0"* ]]; then
-    _ok "binary v2.1.0: ${bin}"
+if [[ -z "${pinned}" ]]; then
+    _bad "cannot read devbox_packages.otelbox_edge.version from defaults/main/packages.yml"
+elif [[ -x "${bin}" ]] && version=$("${bin}" --version 2>/dev/null) \
+    && [[ "${version}" == *"version ${pinned}"* ]]; then
+    _ok "binary v${pinned}: ${bin}"
 else
-    _bad "binary missing or not v2.1.0: ${bin}"
+    _bad "binary missing or not v${pinned}: ${bin}"
 fi
 
 if info=$(launchctl print "gui/$(id -u)/local.otelbox-edge" 2>/dev/null); then

@@ -49,7 +49,7 @@ make sudo-reseed             # after macOS login password rotation
 make ssh-passphrase-reseed   # after SSH passphrase change or key regen
 
 # otelbox edge (durable local OTLP collector, Task Flow step 10)
-make otelbox-edge-config     # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token
+make otelbox-edge-config     # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token|cert
 make otelbox-edge-test       # liveness + delivery smoke: binary, launchd service, :13133, :8888, OTLP round-trip
 
 # Claude config back-propagation (root files only — subdirs are symlinked)

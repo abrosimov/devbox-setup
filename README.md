@@ -152,13 +152,14 @@ Wired: Claude Code CLI (`OTEL_*` env in `~/.claude/settings.json`), Codex CLI/ap
 
 Nothing is built here. The binary is the published [`abrosimov/otelcol-otelbox`](https://github.com/abrosimov/otelcol-otelbox) artefact — one collector serving the workstation `edge` and the server roles deployed by `remote_server_setup`. That repository owns the component set, release pipeline and reference profiles; this one owns the deployed edge profile, secrets, supervisor and machine-local values.
 
-Version 2.1 loads one self-contained `edge.yaml`. The binary and profile are upgraded together; v1 `base.yaml` layering is deliberately unsupported.
+Version 2.x loads one self-contained `edge.yaml`. The binary and profile are upgraded together; v1 `base.yaml` layering is deliberately unsupported. The pin lives in `devbox_packages.otelbox_edge.version` and nowhere else — `otelbox-edge-test.sh` reads it from there rather than repeating the literal.
 
 | Path | Role |
 |------|------|
 | `~/.local/bin/otelcol-otelbox` | the pinned release asset, checksum-verified on download |
-| `roles/devbox/files/.config/otelbox/edge/edge.yaml` | self-contained v2.1 edge profile adapted from the published profile |
+| `roles/devbox/files/.config/otelbox/edge/edge.yaml` | self-contained v2.2 edge profile adapted from the published profile |
 | `~/.config/otelbox/edge/` | profile + wrapper + `endpoint.env`, as deployed |
+| `~/.config/otelbox/edge/client/` | optional client-certificate pair (mode 0700), deployed from the gitignored overlay |
 | `~/.local/state/otelbox/edge/` | the on-disk WAL (bbolt) |
 | `~/Library/Logs/otelbox-edge.log` | service log, owned by the LaunchAgent `local.otelbox-edge` |
 
@@ -168,23 +169,27 @@ Homebrew is not an installation path on a machine this playbook manages. The art
 
 ### Machine-local setup (once per machine)
 
-Two values are not tracked in the repository. Both are set interactively by `make otelbox-edge-config` (add `ONLY=endpoint` / `ONLY=token` for just one; it needs a TTY):
+Three values are not tracked in the repository. All are set by `make otelbox-edge-config` (add `ONLY=endpoint` / `ONLY=token` / `ONLY=cert` for just one; it needs a TTY):
 
-- **Endpoint** (non-secret) — written to the gitignored overlay `roles/devbox/local/.config/otelbox/edge/endpoint.env` and live to `~/.config/otelbox/edge/endpoint.env`. Format: `OTELBOX_UPSTREAM_ENDPOINT=otel.example.com:443` — `host:port`, no scheme.
-- **Ingestion key** (secret) — stored in the login Keychain slot `otelbox-edge-token`. The wrapper materialises the complete `Bearer <token>` header as a mode-0600 file below macOS's per-user temporary directory because v2.1 watches a credential file for live rotation; the Keychain remains authoritative.
+- **Endpoint** (non-secret) — written to the gitignored overlay `roles/devbox/local/.config/otelbox/edge/endpoint.env` and live to `~/.config/otelbox/edge/endpoint.env`. Format: `OTELBOX_UPSTREAM_ENDPOINT=otel.example.com:443` — `host:port`, no scheme. The name is matched exactly by both the wrapper and the playbook's preflight; the v1 `OTELBOX_EDGE_ENDPOINT` is rejected.
+- **Ingestion key** (secret) — stored in the login Keychain slot `otelbox-edge-token`. The wrapper materialises the complete `Bearer <token>` header as a mode-0600 file below macOS's per-user temporary directory because the collector watches a credential file for live rotation; the Keychain remains authoritative.
+- **Client certificate** (optional, secret half) — an EC P-256 self-signed leaf generated *on this machine* by `ONLY=cert`, valid 825 days (`OTELBOX_CERT_DAYS` overrides). Both halves land in the gitignored overlay `roles/devbox/local/.config/otelbox/edge/client/` and live in `~/.config/otelbox/edge/client/`; Ansible's overlay copy preserves modes, so the key stays 0600 inside a 0700 directory. The private key is never sent anywhere — only `client.crt` is meant to travel to whoever configures the gateway front end, the same shape as an SSH public key.
 
-Neither is required for the playbook to succeed: without `endpoint.env` the service is not started and the run reports why.
+None is required for the playbook to succeed: without `endpoint.env` the service is not started and the run reports why, and without a certificate the bearer token simply remains the only credential. Exactly *one* half of a certificate pair is a hard error — `configtls` rejects a lone `cert_file` or `key_file`, so both the playbook and the wrapper refuse it rather than letting the collector fail at start.
 
 ```bash
-make otelbox-edge-config  # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token
-make otelbox-edge-test    # binary, launchd service, :13133, :8888, OTLP round-trip, gateway delivery
+make otelbox-edge-config           # remote endpoint (local overlay) + ingestion token (keychain)
+make otelbox-edge-config ONLY=cert # generate the client-certificate pair into the overlay
+make otelbox-edge-test             # binary, launchd service, :13133, :8888, OTLP round-trip, gateway delivery
 ```
 
-Restart after changing the endpoint: `launchctl kickstart -k gui/$(id -u)/local.otelbox-edge`. Token changes update the watched header file and do not require a restart.
+Restart after changing the endpoint: `launchctl kickstart -k gui/$(id -u)/local.otelbox-edge`. Token changes update the watched header file and do not require a restart. A certificate needs one restart the first time — a collector that started without a pair holds empty paths for its lifetime — after which regenerations are re-read within `OTELBOX_UPSTREAM_TLS_RELOAD_INTERVAL` (1h) by polling, not instantly.
 
-`make otelbox-edge-test` also runs non-fatally at the end of `make personal`/`make work`. It requires v2.1, probes `/status`, sends a local OTLP marker and fails on exporter send/enqueue failures, receiver refusals or any signal queue at 80% capacity.
+The client-certificate fields arrived with upstream 2.2.0, together with the gateway leg moving from gzip to **zstd**. That codec is safe only because both ends of the leg are the same binary — a gRPC codec has to be registered in the peer's build, not merely named in its configuration — so a gateway still on 2.1.x will not accept it. Override it with `devbox_packages.otelbox_edge.upstream_compression` (`gzip` / `none`), which renders into the LaunchAgent — not in `endpoint.env`, which is a strict one-line contract that both the wrapper and the preflight check reject a second line in.
 
-The v2.1 apply is a one-way cleanup: after the exact pinned binary, endpoint and Keychain credential pass preflight, Ansible stops `local.otelcol-edge` and removes its binary, configuration, LaunchAgent and WAL. No v1 backlog or rollback bundle is retained.
+`make otelbox-edge-test` also runs non-fatally at the end of `make personal`/`make work`. It requires the pinned version, probes `/status`, sends a local OTLP marker and fails on exporter send/enqueue failures, receiver refusals or any signal queue at 80% capacity.
+
+The v2 apply is a one-way cleanup: after the exact pinned binary, endpoint and Keychain credential pass preflight, Ansible stops `local.otelcol-edge` and removes its binary, configuration, LaunchAgent and WAL. No v1 backlog or rollback bundle is retained.
 
 ## Telemetry Tunnel (`otelbox`)
 

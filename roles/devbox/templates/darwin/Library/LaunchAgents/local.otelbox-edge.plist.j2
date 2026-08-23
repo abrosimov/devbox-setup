@@ -38,6 +38,17 @@
         <string>6442450944</string>
         <key>OTELBOX_QUEUE_SIZE_BYTES</key>
         <string>4294967296</string>
+        <!--
+          The gateway leg's wire codec. zstd is upstream's 2.2.0 default and is
+          safe only while both ends of the leg are this same binary: a gRPC codec
+          must be registered in the peer's build, not merely named in its
+          configuration. A gateway still on 2.1.x needs gzip here. This is a
+          plist key rather than a line in endpoint.env because that file is a
+          strict one-line contract — the wrapper and the preflight awk both
+          reject a second line.
+        -->
+        <key>OTELBOX_UPSTREAM_COMPRESSION</key>
+        <string>{{ devbox_packages.otelbox_edge.upstream_compression | default('zstd') }}</string>
         <key>OTEL_RESOURCE_ATTRIBUTES</key>
         <string>deployment.environment.name={{ devbox_active_profile | default('personal') }}</string>
     </dict>

@@ -187,7 +187,13 @@ devbox_packages:
   # collector's. The role profile and binary move together as one contract.
   otelbox_edge:
     enabled: true
-    version: "2.1.0"
+    version: "2.2.0"
+    # Wire codec for the gateway leg, rendered into the LaunchAgent. zstd is
+    # upstream's 2.2.0 default and holds only while the gateway is the same
+    # binary — a gRPC codec has to be registered in the peer's build. Drop to
+    # `gzip` while the gateway is still on 2.1.x, or `none` where the transport
+    # already compresses.
+    upstream_compression: "zstd"
     release_base: "https://github.com/abrosimov/otelcol-otelbox/releases/download"
 
   # Python tools installed via `uv tool install`.

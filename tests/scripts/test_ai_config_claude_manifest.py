@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -45,6 +46,15 @@ class TestClaudeFieldManifest:
 
         assert scopes
         assert all(scope is FieldScope.SHARED for scope in scopes.values())
+
+    def test_otel_resource_classification_is_shared(
+        self,
+        manifest: FieldManifest,
+    ) -> None:
+        settings = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+
+        assert settings["env"]["OTEL_RESOURCE_ATTRIBUTES"] == ("otelbox.telemetry.class=llm")
+        assert manifest.scope_for(("env", "OTEL_RESOURCE_ATTRIBUTES")) is FieldScope.SHARED
 
     @pytest.mark.parametrize(
         "path",

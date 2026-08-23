@@ -1,0 +1,26 @@
+[
+  {
+    "query": "The VM boot smoke test fails in several places. Diagnose it, fix everything currently actionable, and keep iterating until the full smoke test is green.",
+    "should_trigger": true
+  },
+  {
+    "query": "Our CI-like local target is fail-fast. First collect failures from every independent gate, then repair the batch and rerun the complete target.",
+    "should_trigger": true
+  },
+  {
+    "query": "This service debugging session has retried the same error for hours. Rebuild the failure inventory and change strategy if the next repair does not reduce it.",
+    "should_trigger": true
+  },
+  {
+    "query": "Rename this local variable in the named function and run its existing unit test.",
+    "should_trigger": false
+  },
+  {
+    "query": "Explain what this compiler error means, but do not change any files.",
+    "should_trigger": false
+  },
+  {
+    "query": "Fix the documented typo in README.md.",
+    "should_trigger": false
+  }
+]

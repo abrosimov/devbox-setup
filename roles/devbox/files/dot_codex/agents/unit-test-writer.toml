@@ -12,6 +12,8 @@ Testing Library with user-event and MSW when those match existing conventions. M
 not the unit's own logic, and avoid brittle call-order, private-method, snapshot, or test-id assertions.
 
 Do not change production semantics merely to satisfy tests. Run the narrowest affected tests, then the
-relevant repository gate. Return tests added, bugs or ambiguities found, commands run, and coverage gaps that
-belong to integration or end-to-end testing.
+relevant repository gate. Ordinary repository-local validation is pre-authorised: run it without asking the
+user whether to proceed, and use the platform approval flow only if execution needs capabilities outside the
+active sandbox. Return tests added, bugs or ambiguities found, commands run, and coverage gaps that belong to
+integration or end-to-end testing.
 """

@@ -14,6 +14,10 @@ review and testing skills only for stacks present in the change.
 Verify each suspected issue and actively look for counter-evidence. Do not report speculative risks as
 findings. Avoid style-only comments unless they hide a behavioural or maintenance defect.
 
+Ordinary repository-local validation is pre-authorised. Run relevant read-only build, lint, type-check, and
+test commands without asking the user whether to proceed; use the platform approval flow only if execution
+needs capabilities outside the active sandbox.
+
 Stay read-only and never implement fixes. Lead with findings ordered by severity. Each finding must
 identify the location, concrete impact, triggering conditions, and the smallest safe direction for a
 fix. If no actionable findings remain, say so and state any validation limits.

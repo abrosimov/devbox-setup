@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import tomllib
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from .core import ReconciliationPlan, plan_reconciliation
-from .manifest import load_manifest
+from .core import FieldManifest, FieldRule, FieldScope, ReconciliationPlan, plan_reconciliation
+from .manifest import parse_manifest
 from .model import SemanticSnapshot, SnapshotError
+
+type RuntimeRuleBuilder = Callable[
+    [tuple[SemanticSnapshot, ...]],
+    tuple[FieldRule, ...],
+]
 
 
 class EngineKind(StrEnum):
@@ -37,6 +43,22 @@ class EngineAdapterSpec:
     manifest_relative_path: Path
     repository_mode: int = 0o644
     live_mode: int = 0o600
+    blocked_prefixes: tuple[tuple[str, ...], ...] = ()
+    runtime_rule_builder: RuntimeRuleBuilder | None = None
+
+
+def _codex_hook_state_rules(
+    snapshots: tuple[SemanticSnapshot, ...],
+) -> tuple[FieldRule, ...]:
+    paths = {
+        field.path
+        for snapshot in snapshots
+        for field in snapshot.semantic_fields()
+        if len(field.path) == 4
+        and field.path[:2] == ("hooks", "state")
+        and field.path[-1] in {"enabled", "trusted_hash"}
+    }
+    return tuple(FieldRule(path=path, scope=FieldScope.RUNTIME) for path in sorted(paths))
 
 
 _CLAUDE_ADAPTER = EngineAdapterSpec(
@@ -61,6 +83,8 @@ _CODEX_ADAPTER = EngineAdapterSpec(
     repository_relative_path=Path("roles/devbox/files/dot_codex/config.toml.j2"),
     live_relative_path=Path(".codex/config.toml"),
     manifest_relative_path=Path("roles/devbox/files/dot_codex/config.ai-config.json"),
+    blocked_prefixes=(("hooks", "state"),),
+    runtime_rule_builder=_codex_hook_state_rules,
 )
 
 
@@ -100,8 +124,34 @@ def load_engine_plan(
     base = SemanticSnapshot.from_json_file(base_path) if base_path is not None else None
     repository = load_snapshot(paths.repository, adapter.configuration_format)
     live = load_snapshot(paths.live, adapter.configuration_format)
-    manifest = load_manifest(paths.manifest)
+    runtime_snapshots = (live,) if base is None else (base, live)
+    manifest = parse_engine_manifest(
+        engine,
+        paths.manifest.read_bytes(),
+        runtime_snapshots=runtime_snapshots,
+    )
     return plan_reconciliation(base=base, repo=repository, live=live, manifest=manifest)
+
+
+def parse_engine_manifest(
+    engine: EngineKind,
+    source: bytes,
+    *,
+    runtime_snapshots: tuple[SemanticSnapshot, ...] = (),
+) -> FieldManifest:
+    manifest = parse_manifest(source)
+    adapter = engine_adapter(engine)
+    runtime_rules = (
+        adapter.runtime_rule_builder(runtime_snapshots)
+        if adapter.runtime_rule_builder is not None
+        else ()
+    )
+    return FieldManifest(
+        rules=(*manifest.rules, *runtime_rules),
+        schema_version=manifest.schema_version,
+        engine=manifest.engine,
+        blocked_prefixes=(*manifest.blocked_prefixes, *adapter.blocked_prefixes),
+    )
 
 
 def load_snapshot(

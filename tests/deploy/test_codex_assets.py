@@ -49,6 +49,18 @@ READ_ONLY_AGENTS = {
     "freshness-auditor",
     "meta-reviewer",
 }
+VALIDATION_AGENTS = {
+    "build-resolver-go",
+    "code-reviewer",
+    "integration-tests-writer-go",
+    "integration-tests-writer-python",
+    "refactor-cleaner",
+    "software-engineer-frontend",
+    "software-engineer-go",
+    "software-engineer-python",
+    "tdd-guide",
+    "unit-test-writer",
+}
 CLIENT_SPECIFIC_MARKERS = (
     "Anthropic",
     "AskUserQuestion",
@@ -103,6 +115,21 @@ def test_global_agents_file_fits_codex_instruction_budget() -> None:
     assert "For change, fix, build" in text
     assert "explicit confirmation" in text
     assert "fpf-thinking" in text
+    assert "software-engineer-go" in text
+    assert "software-engineer-python" in text
+    assert "software-engineer-frontend" in text
+    assert "goimports -local <module-path>" in text
+    assert "Pre-authorised local validation" in text
+    assert "golangci-lint" in text
+    assert "without asking the user whether to proceed" in text
+    assert "diagnose-and-repair" in text
+
+
+def test_validation_agents_do_not_ask_before_local_checks() -> None:
+    for name in VALIDATION_AGENTS:
+        agent = " ".join((CODEX_ROOT / f"agents/{name}.toml").read_text(encoding="utf-8").split())
+        assert "repository-local validation is pre-authorised" in agent
+        assert "without asking the user whether to proceed" in agent
 
 
 def test_fpf_bundle_is_self_contained_and_vendor_neutral() -> None:
@@ -136,8 +163,24 @@ def test_go_engineer_is_deployed_and_vendor_neutral() -> None:
 
     assert "  - go-engineer\n" in defaults
     assert "Use go-engineer as the primary Go implementation workflow" in agent
+    assert "goimports -local <module-path>" in agent
+    assert "goimports -local <module-path>" in skill_text
+    assert "standard fallback" not in skill_text
     for marker in ("Claude", "/techne-", "~/.claude", "OPUS", "SONNET"):
         assert marker not in skill_text
+
+
+def test_diagnostic_repair_loop_is_shared_and_vendor_neutral() -> None:
+    defaults = CODEX_DEFAULTS.read_text(encoding="utf-8")
+    shared_authority = (AI_ROOT / "USER_AUTHORITY_PROTOCOL.md").read_text(encoding="utf-8")
+    skill = (AI_ROOT / "skills/diagnose-and-repair/SKILL.md").read_text(encoding="utf-8")
+
+    assert "  - diagnose-and-repair\n" in defaults
+    assert "`diagnose-and-repair` skill" in shared_authority
+    assert "inventory -> plan -> repair batch -> rebaseline" in skill
+    assert "two materially different evidence-based repair attempts" in skill
+    for marker in ("Claude", "Codex", "Antigravity", "/techne-", "~/.claude", "~/.codex"):
+        assert marker not in skill
 
 
 def test_codex_deploy_selects_fpf_skills_authority_and_agents() -> None:

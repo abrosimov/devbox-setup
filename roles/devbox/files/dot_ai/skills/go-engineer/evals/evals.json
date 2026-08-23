@@ -46,11 +46,12 @@
     {
       "id": 5,
       "prompt": "Format this Go code",
-      "expected_output": "Uses the repository's configured Go formatter without imposing a foreign convention",
+      "expected_output": "Uses goimports with the module path as the local import prefix",
       "expectations": [
-        "Checks repository instructions or tooling before choosing a formatter",
-        "Uses goimports with the module prefix when the repository configures it",
-        "Accepts gofmt as the standard fallback when no stronger convention exists"
+        "Reads the module path from the module directive in go.mod",
+        "Uses goimports -local <module-path>",
+        "Does not use go fmt or gofmt",
+        "Does not format unrelated files unless a repository-owned gate requires it"
       ]
     }
   ]

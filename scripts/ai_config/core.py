@@ -89,6 +89,7 @@ class FieldManifest:
     rules: tuple[FieldRule, ...]
     schema_version: int = 1
     engine: str | None = None
+    blocked_prefixes: tuple[FieldPath, ...] = ()
 
     def __post_init__(self) -> None:
         paths = [rule.path for rule in self.rules]
@@ -108,7 +109,15 @@ class FieldManifest:
         ]
         if not matching_rules:
             return None
-        return max(matching_rules, key=lambda rule: len(rule.path))
+        rule = max(matching_rules, key=lambda candidate: len(candidate.path))
+        blocking_prefixes = [
+            prefix
+            for prefix in self.blocked_prefixes
+            if len(prefix) <= len(path) and path[: len(prefix)] == prefix
+        ]
+        if blocking_prefixes and rule.path != path:
+            return None
+        return rule
 
 
 @dataclass(frozen=True, slots=True)

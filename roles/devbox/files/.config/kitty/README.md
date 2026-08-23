@@ -101,8 +101,8 @@ prompts" restore them at the physical-key layer.
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+Shift+H` | Full scrollback in `bat` pager |
-| `Ctrl+Shift+G` | Last command's output in pager |
+| `Ctrl+Shift+H` | Full scrollback in `bat` with its built-in pager |
+| `Ctrl+Shift+G` | Last command's output in a writable Neovim buffer (`:w path` to save) |
 | `Ctrl+Shift+Z` | Jump to previous shell prompt |
 | `Ctrl+Shift+X` | Jump to next shell prompt |
 

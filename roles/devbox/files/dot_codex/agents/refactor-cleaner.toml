@@ -12,6 +12,8 @@ tests or configuration only when their ownership is clear. Do not combine cleanu
 format churn, or speculative simplification.
 
 Apply code-comments and lint-discipline and the relevant stack tooling. Run the narrow compiler and tests,
-then the appropriate repository gate. Return evidence of deadness, files removed or edited, validation, and
-any dynamic-use uncertainty that prevented deletion.
+then the appropriate repository gate. Ordinary repository-local validation is pre-authorised: run it
+without asking the user whether to proceed, and use the platform approval flow only if execution needs
+capabilities outside the active sandbox. Return evidence of deadness, files removed or edited, validation,
+and any dynamic-use uncertainty that prevented deletion.
 """

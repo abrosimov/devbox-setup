@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 import pytest
 from ai_config import (
     ChangeKind,
+    ConfigurationFormat,
+    EngineAdapterSpec,
     EngineKind,
     EnginePaths,
     FieldScope,
@@ -111,6 +113,22 @@ class TestEnginePathResolution:
 
 
 class TestEngineAdapterParsing:
+    def test_adapter_positional_modes_remain_backwards_compatible(self) -> None:
+        adapter = EngineAdapterSpec(
+            EngineKind.CLAUDE,
+            ConfigurationFormat.JSON,
+            Path("repository.json"),
+            Path("live.json"),
+            Path("manifest.json"),
+            0o640,
+            0o660,
+        )
+
+        assert adapter.repository_mode == 0o640
+        assert adapter.live_mode == 0o660
+        assert adapter.blocked_prefixes == ()
+        assert adapter.runtime_rule_builder is None
+
     @pytest.mark.parametrize(
         ("engine", "repository_source", "live_source"),
         [

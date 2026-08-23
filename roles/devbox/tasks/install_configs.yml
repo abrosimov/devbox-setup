@@ -410,7 +410,7 @@
     recursive: true
     rsync_opts:
       - "--exclude=.DS_Store"
-      - "--chmod=D0755,F0755"
+      - "--chmod=Du=rwx,Dgo=rx,Fu=rwx,Fgo=rx"
   delegate_to: localhost
   tags: [configs, dotfiles]
 
@@ -507,6 +507,46 @@
   when: devbox_local_overlay_dir.stat.exists
   tags: [configs, local]
 
+- name: Refuse an incomplete otelbox edge client certificate overlay
+  ansible.builtin.fail:
+    msg: >-
+      Incomplete otelbox edge client certificate in
+      roles/devbox/local/.config/otelbox/edge/client: need both client.crt and
+      client.key, or neither.
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - devbox_local_overlay_dir.stat.exists
+    - (devbox_local_filetree_items | default([])
+       | selectattr('path', 'in', [
+           '.config/otelbox/edge/client/client.crt',
+           '.config/otelbox/edge/client/client.key'
+         ])
+       | selectattr('state', 'equalto', 'file')
+       | list
+       | length) == 1
+  tags: [configs, local, otel, otelbox-edge]
+
+- name: Validate the otelbox edge client certificate overlay before deployment
+  ansible.builtin.command:
+    argv:
+      - "{{ role_path }}/../../scripts/otelbox-edge-cert-check.sh"
+      - "{{ role_path }}/local/.config/otelbox/edge/client/client.crt"
+      - "{{ role_path }}/local/.config/otelbox/edge/client/client.key"
+  changed_when: false
+  check_mode: false
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - devbox_local_overlay_dir.stat.exists
+    - (devbox_local_filetree_items | default([])
+       | selectattr('path', 'in', [
+           '.config/otelbox/edge/client/client.crt',
+           '.config/otelbox/edge/client/client.key'
+         ])
+       | selectattr('state', 'equalto', 'file')
+       | list
+       | length) == 2
+  tags: [configs, local, otel, otelbox-edge]
+
 - name: Create directories from local overlay
   ansible.builtin.file:
     path: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
@@ -535,7 +575,108 @@
     - item.state == 'file'
     - not item.path.endswith('.j2')
     - not item.path.startswith('host_state/')
+    - item.path != '.config/otelbox/edge/client/client.crt'
+    - item.path != '.config/otelbox/edge/client/client.key'
   tags: [configs, local]
+
+- name: Deploy validated otelbox edge client certificate
+  ansible.builtin.copy:
+    src: "{{ role_path }}/local/{{ item.path }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
+    mode: "0644"
+  loop: "{{ devbox_local_filetree_items | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: devbox_otelbox_edge_client_certificate_deployed
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - devbox_local_overlay_dir.stat.exists
+    - item.state == 'file'
+    - item.path == '.config/otelbox/edge/client/client.crt'
+  tags: [configs, local, otel, otelbox-edge]
+
+- name: Deploy private otelbox edge client key without diff
+  ansible.builtin.copy:
+    src: "{{ role_path }}/local/{{ item.path }}"
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/{{ item.path }}"
+    mode: "0600"
+  diff: false
+  loop: "{{ devbox_local_filetree_items | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: devbox_otelbox_edge_client_key_deployed
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - devbox_local_overlay_dir.stat.exists
+    - item.state == 'file'
+    - item.path == '.config/otelbox/edge/client/client.key'
+  tags: [configs, local, otel, otelbox-edge]
+
+- name: Reconcile absent otelbox edge client certificate files
+  ansible.builtin.file:
+    path: >-
+      {{ devbox_paths.dotfiles_root_dir
+         }}/.config/otelbox/edge/client/{{ item }}
+    state: absent
+  loop:
+    - client.crt
+    - client.key
+  loop_control:
+    label: ".config/otelbox/edge/client/{{ item }}"
+  register: devbox_otelbox_edge_client_files_removed
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - devbox_local_overlay_dir.stat.exists
+    - (devbox_local_filetree_items | default([])
+       | selectattr(
+           'path',
+           'equalto',
+           '.config/otelbox/edge/client/' ~ item
+         )
+       | selectattr('state', 'equalto', 'file')
+       | list
+       | length) == 0
+  tags: [configs, local, otel, otelbox-edge]
+
+- name: Record otelbox edge client material changes
+  ansible.builtin.set_fact:
+    devbox_otelbox_edge_client_material_changed: >-
+      {{
+        (devbox_otelbox_edge_client_certificate_deployed | default({})).get('changed', false)
+        or (devbox_otelbox_edge_client_key_deployed | default({})).get('changed', false)
+        or (devbox_otelbox_edge_client_files_removed | default({})).get('changed', false)
+      }}
+  when: ansible_facts['os_family'] == 'Darwin'
+  tags: [configs, local, otel, otelbox-edge]
+
+- name: Check otelbox edge status after client material changes
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge"
+  register: devbox_otelbox_edge_client_material_agent
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - devbox_otelbox_edge_client_material_changed | bool
+  tags: [configs, local, otel, otelbox-edge]
+
+- name: Restart otelbox edge after client material changes
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - kickstart
+      - -k
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge"
+  changed_when: true
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - devbox_otelbox_edge_client_material_changed | bool
+    - (devbox_otelbox_edge_client_material_agent.rc | default(1)) == 0
+  tags: [configs, local, otel, otelbox-edge]
 
 - name: Render local overlay templates
   ansible.builtin.template:
@@ -551,3 +692,5 @@
     - item.state == 'file'
     - item.path.endswith('.j2')
     - not item.path.startswith('host_state/')
+    - item.path != '.config/otelbox/edge/client/client.crt.j2'
+    - item.path != '.config/otelbox/edge/client/client.key.j2'

@@ -4,7 +4,7 @@
 
 personality = "pragmatic"
 model = "gpt-5.6-sol"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 service_tier = "default"
 sandbox_mode = "workspace-write"
 
@@ -26,41 +26,63 @@ metrics_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 matcher = ".*"
 [[hooks.PreToolUse.hooks]]
 type = "command"
-command = "/usr/bin/env python3 {{ lookup('env', 'HOME') }}/.codex/bin/universal_logger.py PreToolUse"
+command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PreToolUse"
 
 [[hooks.PostToolUse]]
 matcher = ".*"
 [[hooks.PostToolUse.hooks]]
 type = "command"
-command = "/usr/bin/env python3 {{ lookup('env', 'HOME') }}/.codex/bin/universal_logger.py PostToolUse"
+command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PostToolUse"
 async = true
 
 [[hooks.PreCompact]]
 [[hooks.PreCompact.hooks]]
 type = "command"
-command = "/usr/bin/env python3 {{ lookup('env', 'HOME') }}/.codex/bin/universal_logger.py PreCompact"
+command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PreCompact"
 
 [[hooks.Stop]]
 [[hooks.Stop.hooks]]
 type = "command"
-command = "/usr/bin/env python3 {{ lookup('env', 'HOME') }}/.codex/bin/universal_logger.py Stop"
+command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py Stop"
 
 [[hooks.SessionStart]]
 [[hooks.SessionStart.hooks]]
 type = "command"
-command = "/usr/bin/env python3 {{ lookup('env', 'HOME') }}/.codex/bin/universal_logger.py SessionStart"
+command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py SessionStart"
 
 [[hooks.SessionEnd]]
 [[hooks.SessionEnd.hooks]]
 type = "command"
-command = "/usr/bin/env python3 {{ lookup('env', 'HOME') }}/.codex/bin/universal_logger.py SessionEnd"
+command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py SessionEnd"
 
-[[hooks.WorktreeCreate]]
-[[hooks.WorktreeCreate.hooks]]
-type = "command"
-command = "/usr/bin/env python3 {{ lookup('env', 'HOME') }}/.codex/bin/universal_logger.py WorktreeCreate"
+[plugins]
 
-[[hooks.WorktreeRemove]]
-[[hooks.WorktreeRemove.hooks]]
-type = "command"
-command = "/usr/bin/env python3 {{ lookup('env', 'HOME') }}/.codex/bin/universal_logger.py WorktreeRemove"
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."sites@openai-bundled"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."superpowers@openai-curated"]
+enabled = true
+
+[plugins."template-creator@openai-primary-runtime"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[tool_suggest]
+disabled_tools = [{ id = "github@openai-curated-remote", type = "plugin" }]

@@ -15,7 +15,7 @@ from ai_config import (
     plan_reconciliation,
     to_plain_value,
 )
-from ai_config.cli import load_manifest
+from ai_config.adapters import EngineKind, parse_engine_manifest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_codex" / ("config.ai-config.json")
@@ -26,7 +26,7 @@ FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "ai_config" / "codex"
 class TestCodexManifestCoverage:
     @pytest.fixture
     def manifest(self) -> FieldManifest:
-        return load_manifest(MANIFEST_PATH)
+        return parse_engine_manifest(EngineKind.CODEX, MANIFEST_PATH.read_bytes())
 
     @pytest.fixture
     def repository(self) -> SemanticSnapshot:
@@ -97,24 +97,63 @@ class TestCodexManifestCoverage:
 class TestCodexManifestClassification:
     @pytest.fixture
     def manifest(self) -> FieldManifest:
-        return load_manifest(MANIFEST_PATH)
+        runtime_key = "/Users/example/.codex/config.toml:session_start:0:0"
+        runtime = SemanticSnapshot.from_value(
+            {
+                "hooks": {
+                    "state": {
+                        runtime_key: {
+                            "enabled": True,
+                            "trusted_hash": "sha256:runtime",
+                        }
+                    }
+                }
+            }
+        )
+        return parse_engine_manifest(
+            EngineKind.CODEX,
+            MANIFEST_PATH.read_bytes(),
+            runtime_snapshots=(runtime,),
+        )
 
     @pytest.mark.parametrize(
         ("path", "expected_scope"),
         [
             (("features", "js_repl"), FieldScope.SHARED),
             (("hooks", "SessionStart"), FieldScope.SHARED),
+            (
+                (
+                    "hooks",
+                    "state",
+                    "/Users/example/.codex/config.toml:session_start:0:0",
+                    "trusted_hash",
+                ),
+                FieldScope.RUNTIME,
+            ),
             (("plugins", "example", "enabled"), FieldScope.SHARED),
-            (("marketplaces", "example", "enabled"), FieldScope.SHARED),
-            (("desktop", "analytics"), FieldScope.SHARED),
+            (("marketplaces", "example", "enabled"), FieldScope.RUNTIME),
+            (
+                ("marketplaces", "openai-bundled", "source"),
+                FieldScope.RUNTIME,
+            ),
+            (
+                ("marketplaces", "openai-bundled", "last_updated"),
+                FieldScope.RUNTIME,
+            ),
+            (("desktop", "analytics"), FieldScope.LOCAL_STATE),
             (("tui", "notifications"), FieldScope.SHARED),
+            (("tui", "model_availability_nux", "gpt-5.5"), FieldScope.RUNTIME),
             (("tool_suggest", "enabled"), FieldScope.SHARED),
             (("skills", "config", "example-skill", "enabled"), FieldScope.SHARED),
-            (("mcp_servers", "example", "command"), FieldScope.SHARED),
+            (("mcp_servers", "example", "command"), FieldScope.RUNTIME),
             (("projects", "/Users/example/project", "trust_level"), FieldScope.LOCAL_STATE),
             (("notify",), FieldScope.LOCAL_STATE),
             (("notice", "model_migrations", "gpt-example"), FieldScope.RUNTIME),
             (("notice", "unrecognised"), FieldScope.RUNTIME),
+            (("hooks", "state"), None),
+            (("hooks", "state", "dynamic"), None),
+            (("hooks", "state", "dynamic", "unexpected"), None),
+            (("hooks", "state", "dynamic", "enabled", "nested"), None),
             (("state", "opaque"), None),
         ],
     )
@@ -126,6 +165,31 @@ class TestCodexManifestClassification:
     ) -> None:
         assert manifest.scope_for(path) is expected_scope
 
+    @pytest.mark.parametrize("field", ["enabled", "trusted_hash"])
+    def test_hook_runtime_state_is_preserved(
+        self,
+        field: str,
+    ) -> None:
+        runtime_key = "/Users/example/.codex/config.toml:session_end:0:0"
+        live_value: object = True if field == "enabled" else "sha256:runtime"
+        live = SemanticSnapshot.from_value({"hooks": {"state": {runtime_key: {field: live_value}}}})
+        manifest = parse_engine_manifest(
+            EngineKind.CODEX,
+            MANIFEST_PATH.read_bytes(),
+            runtime_snapshots=(live,),
+        )
+        plan = plan_reconciliation(
+            base=SemanticSnapshot.from_value({}),
+            repo=SemanticSnapshot.from_value({}),
+            live=live,
+            manifest=manifest,
+        )
+        changes = {change.path: change for change in plan.changes}
+        path = ("hooks", "state", runtime_key, field)
+
+        assert changes[path].kind is ChangeKind.PRESERVE_LOCAL
+        assert changes[path].scope is FieldScope.RUNTIME
+
 
 class TestCodexManifestReconciliation:
     @pytest.fixture
@@ -134,7 +198,7 @@ class TestCodexManifestReconciliation:
             base=SemanticSnapshot.from_json_file(FIXTURE_ROOT / "base.json"),
             repo=SemanticSnapshot.from_json_file(FIXTURE_ROOT / "repo.json"),
             live=SemanticSnapshot.from_json_file(FIXTURE_ROOT / "live.json"),
-            manifest=load_manifest(MANIFEST_PATH),
+            manifest=parse_engine_manifest(EngineKind.CODEX, MANIFEST_PATH.read_bytes()),
         )
 
     @pytest.fixture
@@ -160,12 +224,9 @@ class TestCodexManifestReconciliation:
         "path",
         [
             ("plugins", "example", "enabled"),
-            ("marketplaces", "example", "enabled"),
-            ("desktop", "analytics"),
             ("tui", "notifications"),
             ("tool_suggest", "enabled"),
             ("skills", "config", "example-skill", "enabled"),
-            ("mcp_servers", "example", "command"),
         ],
     )
     def test_portable_live_changes_are_capture_live(
@@ -188,6 +249,7 @@ class TestCodexManifestReconciliation:
     @pytest.mark.parametrize(
         "path",
         [
+            ("desktop", "analytics"),
             ("projects", "/Users/example/Projects/machine-local", "trust_level"),
             ("notify",),
         ],
@@ -203,6 +265,16 @@ class TestCodexManifestReconciliation:
     @pytest.mark.parametrize(
         ("path", "expected_kind", "expected_scope"),
         [
+            (
+                ("marketplaces", "example", "enabled"),
+                ChangeKind.PRESERVE_LOCAL,
+                FieldScope.RUNTIME,
+            ),
+            (
+                ("mcp_servers", "example", "command"),
+                ChangeKind.PRESERVE_LOCAL,
+                FieldScope.RUNTIME,
+            ),
             (
                 ("notice", "model_migrations", "gpt-example-old"),
                 ChangeKind.PRESERVE_LOCAL,

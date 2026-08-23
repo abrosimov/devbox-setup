@@ -1,0 +1,46 @@
+{
+  "skill_name": "diagnose-and-repair",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "A VM smoke test reports networking, DNS, package, and service failures. Diagnose and fix the VM.",
+      "expected_output": "Runs a broad safe baseline, records and groups every failure, repairs all unblocked root causes in dependency order, and reruns the same smoke test until green or genuinely blocked.",
+      "expectations": [
+        "Collects the complete safe baseline before editing",
+        "Distinguishes root causes from duplicate or cascading symptoms",
+        "Plans and repairs every currently actionable row rather than only the first failure",
+        "Reruns the original broad smoke test before reporting completion"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The repository CI target stops on the first failed check. Find everything that is broken and fix it.",
+      "expected_output": "Discovers the target's independent canonical gates, runs each once to form a complete failure ledger, repairs the batch, and then reruns the original CI contract.",
+      "expectations": [
+        "Does not treat the first emitted error as the full inventory",
+        "Uses repository-owned gates instead of inventing disposable validation",
+        "Preserves a stable baseline command set across iterations",
+        "Tracks newly exposed and regressed failures during rebaseline"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "We have tried several patches for the same service failure and the long-running session is making no progress.",
+      "expected_output": "Stops blind retry, challenges the assumed layer and reproduction, and hands a compact evidence ledger to a fresh context when appropriate.",
+      "expectations": [
+        "Recognises two materially different failed attempts as stagnation",
+        "Changes the evidence or causal hypothesis instead of repeating the same command",
+        "Preserves the baseline and ledger when moving to a fresh agent or session"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Fix the known typo on line 12 of README.md and verify that line.",
+      "expected_output": "Performs the isolated edit and its single closure check without creating a diagnostic failure ledger.",
+      "expectations": [
+        "Does not add inventory and batch-planning overhead to a genuinely isolated defect",
+        "Still runs the narrow closure check requested by the user"
+      ]
+    }
+  ]
+}

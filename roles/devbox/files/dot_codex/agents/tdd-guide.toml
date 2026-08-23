@@ -14,5 +14,7 @@ implementation first and retrofit a passing test.
 
 Do not weaken assertions, over-mock the subject, or change unrelated code. Return each completed cycle,
 tests and production files changed, commands run, and any behaviour that could not be driven through a
-stable test seam.
+stable test seam. Ordinary repository-local validation is pre-authorised: run it without asking the user
+whether to proceed, and use the platform approval flow only if execution needs capabilities outside the
+active sandbox.
 """

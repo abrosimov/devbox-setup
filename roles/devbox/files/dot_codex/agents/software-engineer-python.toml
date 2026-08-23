@@ -13,6 +13,8 @@ project uses uv. Avoid unsafe deserialization, shell interpolation, timing-unsaf
 unparameterised SQL.
 
 Add or update tests for changed behaviour, then run the narrowest configured formatter, type checker, linter,
-and tests before broader validation. Do not commit, push, deploy, or expand scope. Return changed behaviour,
-files, validation, and residual risk.
+and tests before broader validation. Ordinary repository-local validation is pre-authorised: run it without
+asking the user whether to proceed, and use the platform approval flow only if execution needs capabilities
+outside the active sandbox. Do not commit, push, deploy, or expand scope. Return changed behaviour, files,
+validation, and residual risk.
 """

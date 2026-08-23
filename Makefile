@@ -40,6 +40,10 @@ define ai_config_push_guard
 	@echo "Capture or resolve reviewed changes:"
 	@echo '  scripts/ai-config reconcile $(1) --repo-root "$(CURDIR)" --home "$$HOME" --profile "$$MNEMOSYNE_PERISTASEOS" [--decisions FILE]'
 	@echo ""
+	@echo "For a first live-derived baseline with no existing state:"
+	@echo '  scripts/ai-config bootstrap $(1) --from-live'
+	@echo '  scripts/ai-config bootstrap $(1) --from-live --write --preview-token TOKEN'
+	@echo ""
 	@echo "Preview a subsequent non-interactive apply:"
 	@echo '  scripts/ai-config apply $(1) --repo-root "$(CURDIR)" --home "$$HOME" --profile "$$MNEMOSYNE_PERISTASEOS" --check'
 	@echo ""
@@ -196,6 +200,8 @@ help:
 	@echo "                         - apply deterministic changes that require no decision"
 	@echo "  scripts/ai-config reconcile ENGINE --repo-root REPO --home HOME --profile personal|work [--decisions FILE]"
 	@echo "                         - reconcile explicit repo/live decisions (primary interface)"
+	@echo "  scripts/ai-config bootstrap ENGINE --from-live [--write --preview-token TOKEN]"
+	@echo "                         - preview or write the exact reviewed live-derived baseline"
 	@echo "  make claude-diff      - compatibility alias for 'ai-config diff claude'"
 	@echo "  make claude-pull-review - compatibility alias for 'ai-config reconcile claude'"
 	@echo "  make claude-pull      - compatibility alias for claude-pull-review"

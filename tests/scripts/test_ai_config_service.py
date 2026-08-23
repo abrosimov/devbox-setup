@@ -18,17 +18,23 @@ from ai_config.bindings import (
 from ai_config.core import ChangeKind
 from ai_config.decisions import DecisionSet, DecisionSource, FieldDecision
 from ai_config.document import snapshot_mapping
+from ai_config.model import SemanticSnapshot
 from ai_config.resolution import OperationMode, ResolutionError
 from ai_config.service import (
+    BootstrapAction,
+    BootstrapError,
+    BootstrapResult,
     DecisionsRequiredError,
     OperationResult,
     UnknownFieldsError,
+    bootstrap_engine_from_live,
     operate_engine,
 )
 from ai_config.state import (
     BaseState,
     digest_manifest,
     load_base_state,
+    render_base_state,
     resolve_state_paths,
 )
 from ai_config.transaction import (
@@ -68,6 +74,18 @@ LOCAL_STATE_MANIFEST = """{
   ]
 }
 """
+BOOTSTRAP_MANIFEST = """{
+  "schema_version": 1,
+  "engine": "claude",
+  "fields": [
+    {"path": "shared", "scope": "shared"},
+    {"path": "repoOnly", "scope": "shared"},
+    {"path": "liveOnly", "scope": "shared"},
+    {"path": "machine", "scope": "local-state"},
+    {"path": "runtime", "scope": "runtime"}
+  ]
+}
+"""
 CODEX_PROFILE_MANIFEST = """{
   "schema_version": 1,
   "engine": "codex",
@@ -78,6 +96,14 @@ CODEX_PROFILE_MANIFEST = """{
       "scope": "environment",
       "binding": "profile:devbox_active_profile"
     }
+  ]
+}
+"""
+CODEX_HOOK_MANIFEST = """{
+  "schema_version": 1,
+  "engine": "codex",
+  "fields": [
+    {"path": "hooks", "scope": "shared"}
   ]
 }
 """
@@ -172,6 +198,25 @@ def operate(
         mode=mode,
         decisions=decisions,
         check=check,
+        providers=providers,
+    )
+
+
+def bootstrap(
+    tree: ServiceTree,
+    *,
+    write: bool,
+    preview_token: str | None = None,
+    providers: BindingProviders | None = None,
+) -> BootstrapResult:
+    return bootstrap_engine_from_live(
+        tree.engine,
+        repo_root=tree.repo_root,
+        home=tree.home,
+        state_root=tree.state_root,
+        profile="work",
+        write=write,
+        preview_token=preview_token,
         providers=providers,
     )
 
@@ -326,6 +371,174 @@ class TestApplyService:
         assert tree.paths.repository.read_bytes() == repository_before
         assert not tree.paths.live.exists()
         assert not tree.state_root.exists()
+
+
+class TestLiveBootstrapService:
+    @pytest.fixture
+    def tree(self, tmp_path: Path) -> ServiceTree:
+        return create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=(
+                '{"shared":"repo","repoOnly":true,'
+                '"machine":{"path":"repo"},"runtime":{"value":"repo"}}\n'
+            ),
+            manifest_source=BOOTSTRAP_MANIFEST,
+            live_source=(
+                '{"shared":"live","liveOnly":true,'
+                '"machine":{"path":"live"},"runtime":{"value":"live"}}\n'
+            ),
+        )
+
+    def test_preview_classifies_without_writing(self, tree: ServiceTree) -> None:
+        repository_before = tree.paths.repository.read_bytes()
+        live_before = tree.paths.live.read_bytes()
+
+        result = bootstrap(tree, write=False)
+
+        actions = {change.path: change.action for change in result.changes}
+        assert actions == {
+            ("liveOnly",): BootstrapAction.CAPTURE,
+            ("machine", "path"): BootstrapAction.PRESERVE_LOCAL,
+            ("repoOnly",): BootstrapAction.KEEP_REPO,
+            ("runtime", "value"): BootstrapAction.IGNORE_RUNTIME,
+            ("shared",): BootstrapAction.CAPTURE,
+        }
+        assert result.operation.check_mode is True
+        assert result.operation.written_paths == ()
+        assert tree.paths.repository.read_bytes() == repository_before
+        assert tree.paths.live.read_bytes() == live_before
+        assert not tree.state_root.exists()
+
+    def test_write_captures_live_and_retains_repo_only_values(
+        self,
+        tree: ServiceTree,
+    ) -> None:
+        preview = bootstrap(tree, write=False)
+
+        result = bootstrap(tree, write=True, preview_token=preview.preview_token)
+        state = load_tree_base(tree, EngineKind.CLAUDE)
+
+        assert result.operation.check_mode is False
+        assert result.operation.captured == 2
+        assert result.operation.applied == 0
+        assert read_json(tree.paths.repository) == {
+            "shared": "live",
+            "repoOnly": True,
+            "liveOnly": True,
+            "machine": {"path": "repo"},
+            "runtime": {"value": "repo"},
+        }
+        assert read_json(tree.paths.live) == {
+            "shared": "live",
+            "liveOnly": True,
+            "machine": {"path": "live"},
+            "runtime": {"value": "live"},
+        }
+        assert snapshot_mapping(state.snapshot) == {
+            "shared": "live",
+            "liveOnly": True,
+        }
+        follow_up = operate(tree, check=True)
+        assert follow_up.applied == 1
+        assert follow_up.captured == 0
+
+    def test_refuses_to_replace_an_existing_base(self, tree: ServiceTree) -> None:
+        preview = bootstrap(tree, write=False)
+        bootstrap(tree, write=True, preview_token=preview.preview_token)
+
+        with pytest.raises(BootstrapError):
+            bootstrap(tree, write=False)
+
+    def test_write_requires_a_reviewed_preview_token(self, tree: ServiceTree) -> None:
+        repository_before = tree.paths.repository.read_bytes()
+
+        with pytest.raises(BootstrapError):
+            bootstrap(tree, write=True)
+
+        assert tree.paths.repository.read_bytes() == repository_before
+        assert not tree.state_root.exists()
+
+    @pytest.mark.parametrize("changed_input", ["repository", "live", "manifest", "base"])
+    def test_write_rejects_file_input_changed_after_preview(
+        self,
+        tree: ServiceTree,
+        changed_input: str,
+    ) -> None:
+        preview = bootstrap(tree, write=False)
+        if changed_input == "base":
+            base_path = resolve_state_paths(
+                EngineKind.CLAUDE,
+                profile="work",
+                home=tree.home,
+                state_root=tree.state_root,
+            ).base
+            base_path.parent.mkdir(parents=True)
+            base_path.write_bytes(
+                render_base_state(
+                    BaseState(
+                        engine=EngineKind.CLAUDE,
+                        profile="work",
+                        manifest_digest=digest_manifest(tree.paths.manifest),
+                        snapshot=SemanticSnapshot.from_value({"shared": "live", "liveOnly": True}),
+                    )
+                )
+            )
+        else:
+            path = {
+                "repository": tree.paths.repository,
+                "live": tree.paths.live,
+                "manifest": tree.paths.manifest,
+            }[changed_input]
+            path.write_bytes(path.read_bytes() + b"\n")
+
+        with pytest.raises(BootstrapError):
+            bootstrap(tree, write=True, preview_token=preview.preview_token)
+
+    def test_write_rejects_binding_changed_after_preview(self, tmp_path: Path) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=(
+                '{"envValue":"${AI_CONFIG_ENV_VALUE}",'
+                '"secretValue":"${AI_CONFIG_KEYCHAIN_VALUE}"}\n'
+            ),
+            manifest_source=BINDINGS_MANIFEST,
+            live_source='{"envValue":"live","secretValue":"live-secret"}\n',
+        )
+        runner = RecordingCommandRunner(CommandResult(returncode=0, stdout="secret\n"))
+        preview_providers = BindingProviders(
+            profile="work",
+            environment={"AI_CONFIG_ENV_VALUE": "preview"},
+            command_runner=runner,
+        )
+        changed_providers = BindingProviders(
+            profile="work",
+            environment={"AI_CONFIG_ENV_VALUE": "changed"},
+            command_runner=runner,
+        )
+        preview = bootstrap(tree, write=False, providers=preview_providers)
+
+        with pytest.raises(BootstrapError):
+            bootstrap(
+                tree,
+                write=True,
+                preview_token=preview.preview_token,
+                providers=changed_providers,
+            )
+
+        assert not tree.state_root.exists()
+
+    def test_requires_an_existing_live_configuration(self, tmp_path: Path) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source='{"shared":"repo"}\n',
+            manifest_source=BOOTSTRAP_MANIFEST,
+        )
+
+        with pytest.raises(BootstrapError):
+            bootstrap(tree, write=False)
 
 
 class TestDecisionService:
@@ -522,6 +735,81 @@ class TestWriteSafety:
             "machine": {"path": "live-local"},
         }
         assert snapshot_mapping(state.snapshot) == {"setting": "repository-new"}
+
+    def test_codex_hook_runtime_state_is_preserved_while_definitions_apply(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        runtime_key = "/Users/example/.codex/config.toml:session_end:0:0"
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CODEX,
+            repository_source='[hooks]\ndefinition = "old"\n',
+            manifest_source=CODEX_HOOK_MANIFEST,
+            live_source=(
+                '[hooks]\ndefinition = "old"\n\n'
+                f'[hooks.state."{runtime_key}"]\n'
+                'enabled = true\ntrusted_hash = "sha256:runtime"\n'
+            ),
+        )
+        operate(tree)
+        tree.paths.repository.write_text(
+            '[hooks]\ndefinition = "repository-new"\n',
+            encoding="utf-8",
+        )
+
+        result = operate(tree)
+        live = tomllib.loads(tree.paths.live.read_text(encoding="utf-8"))
+        state = load_tree_base(tree, EngineKind.CODEX)
+
+        assert result.applied == 1
+        assert result.captured == 0
+        assert result.preserved == 2
+        assert live == {
+            "hooks": {
+                "definition": "repository-new",
+                "state": {
+                    runtime_key: {
+                        "enabled": True,
+                        "trusted_hash": "sha256:runtime",
+                    }
+                },
+            }
+        }
+        assert snapshot_mapping(state.snapshot) == {"hooks": {"definition": "repository-new"}}
+
+    @pytest.mark.parametrize(
+        ("live_source", "unknown_path"),
+        [
+            (
+                '[hooks]\ndefinition = "old"\n\n[hooks.state."dynamic"]\nunexpected = true\n',
+                ("hooks", "state", "dynamic", "unexpected"),
+            ),
+            (
+                '[hooks]\ndefinition = "old"\nstate = "malformed"\n',
+                ("hooks", "state"),
+            ),
+        ],
+    )
+    def test_codex_unknown_hook_state_blocks_writes(
+        self,
+        tmp_path: Path,
+        live_source: str,
+        unknown_path: tuple[str, ...],
+    ) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CODEX,
+            repository_source='[hooks]\ndefinition = "old"\n',
+            manifest_source=CODEX_HOOK_MANIFEST,
+            live_source=live_source,
+        )
+
+        with pytest.raises(UnknownFieldsError) as caught:
+            operate(tree)
+
+        assert caught.value.paths == (unknown_path,)
+        assert not tree.state_root.exists()
 
     def test_source_change_after_planning_aborts_base_initialisation(
         self,

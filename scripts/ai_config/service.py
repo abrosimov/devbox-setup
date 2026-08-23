@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import stat
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from .adapters import (
@@ -9,19 +12,27 @@ from .adapters import (
     EngineKind,
     EnginePaths,
     engine_adapter,
+    parse_engine_manifest,
     parse_snapshot,
     resolve_engine_paths,
 )
 from .bindings import BindingProviders, resolve_snapshot_bindings
-from .core import ChangeKind, FieldManifest, ReconciliationPlan, plan_reconciliation
+from .core import (
+    ChangeKind,
+    FieldManifest,
+    FieldScope,
+    MissingValue,
+    ReconciliationPlan,
+    plan_reconciliation,
+)
 from .document import (
+    copy_path,
     fingerprint_sensitive_fields,
     portable_projection,
     render_document,
     snapshot_mapping,
     validate_document,
 )
-from .manifest import parse_manifest
 from .model import FieldPath, SemanticSnapshot
 from .resolution import OperationMode, resolve_documents
 from .state import (
@@ -46,6 +57,10 @@ class OperationError(ValueError):
     pass
 
 
+class BootstrapError(OperationError):
+    pass
+
+
 class DecisionsRequiredError(OperationError):
     def __init__(self, inspection: EngineInspection, paths: tuple[FieldPath, ...]) -> None:
         self.inspection = inspection
@@ -60,6 +75,19 @@ class UnknownFieldsError(OperationError):
         self.paths = paths
         message = "unknown fields block configuration writes"
         super().__init__(message)
+
+
+class BootstrapAction(StrEnum):
+    CAPTURE = "capture"
+    KEEP_REPO = "keep-repo"
+    PRESERVE_LOCAL = "preserve-local"
+    IGNORE_RUNTIME = "ignore-runtime"
+
+
+@dataclass(frozen=True, slots=True)
+class BootstrapChange:
+    path: FieldPath
+    action: BootstrapAction
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +126,13 @@ class OperationResult:
 
 
 @dataclass(frozen=True, slots=True)
+class BootstrapResult:
+    changes: tuple[BootstrapChange, ...]
+    operation: OperationResult
+    preview_token: str
+
+
+@dataclass(frozen=True, slots=True)
 class _FormatValidator:
     adapter: EngineAdapterSpec
 
@@ -123,15 +158,13 @@ def inspect_engine(
         state_root=state_root,
     )
     manifest_source = paths.manifest.read_bytes()
-    manifest = parse_manifest(manifest_source)
-    if manifest.engine != engine.value:
+    declared_manifest = parse_engine_manifest(engine, manifest_source)
+    if declared_manifest.engine != engine.value:
         message = f"manifest engine does not match requested engine: {engine.value}"
         raise OperationError(message)
     current_manifest_digest = digest_manifest_source(manifest_source)
     repository_source = paths.repository.read_bytes()
     repository = parse_snapshot(repository_source, adapter.configuration_format)
-    active_providers = providers or BindingProviders.system(profile)
-    resolved_repository = resolve_snapshot_bindings(repository, manifest, active_providers)
     live_source = _read_optional_bytes(paths.live)
     live_exists = live_source is not None
     live = (
@@ -150,6 +183,14 @@ def inspect_engine(
         if base_source is not None
         else None
     )
+    runtime_snapshots = (live,) if base_state is None else (base_state.snapshot, live)
+    manifest = parse_engine_manifest(
+        engine,
+        manifest_source,
+        runtime_snapshots=runtime_snapshots,
+    )
+    active_providers = providers or BindingProviders.system(profile)
+    resolved_repository = resolve_snapshot_bindings(repository, manifest, active_providers)
     comparable_repository = fingerprint_sensitive_fields(resolved_repository, manifest)
     comparable_live = fingerprint_sensitive_fields(live, manifest)
     plan = plan_reconciliation(
@@ -199,6 +240,102 @@ def operate_engine(
         state_root=state_root,
         providers=providers,
     )
+    return _operate_inspection(
+        inspection,
+        mode=mode,
+        decisions=decisions,
+        check=check,
+        providers=providers,
+    )
+
+
+def bootstrap_engine_from_live(
+    engine: EngineKind,
+    *,
+    repo_root: Path,
+    home: Path,
+    profile: str,
+    write: bool,
+    preview_token: str | None = None,
+    state_root: Path | None = None,
+    providers: BindingProviders | None = None,
+) -> BootstrapResult:
+    inspection = inspect_engine(
+        engine,
+        repo_root=repo_root,
+        home=home,
+        profile=profile,
+        state_root=state_root,
+        providers=providers,
+    )
+    current_preview_token = _bootstrap_preview_token(inspection)
+    if write and preview_token is None:
+        message = "bootstrap --write requires the preview token from a reviewed preview"
+        raise BootstrapError(message)
+    if write and preview_token != current_preview_token:
+        message = "bootstrap inputs changed after preview; review a new preview before writing"
+        raise BootstrapError(message)
+    if inspection.base_source is not None:
+        message = "bootstrap requires an uninitialised engine state; base state already exists"
+        raise BootstrapError(message)
+    if not inspection.live_exists:
+        message = "live configuration is required for --from-live bootstrap"
+        raise BootstrapError(message)
+    unknown_paths = tuple(
+        change.path for change in inspection.plan.changes if change.kind is ChangeKind.UNKNOWN
+    )
+    if unknown_paths:
+        raise UnknownFieldsError(inspection, unknown_paths)
+    changes = _build_live_bootstrap_plan(inspection)
+    operation = _bootstrap_from_live(
+        inspection,
+        check=not write,
+        changes=changes,
+    )
+    return BootstrapResult(
+        changes=changes,
+        operation=operation,
+        preview_token=current_preview_token,
+    )
+
+
+def _bootstrap_preview_token(inspection: EngineInspection) -> str:
+    resolved_repository = json.dumps(
+        snapshot_mapping(inspection.resolved_repository),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode()
+    inputs = {
+        "schema_version": 1,
+        "engine": inspection.engine.value,
+        "profile": inspection.profile,
+        "repository_path": str(inspection.paths.repository.absolute()),
+        "live_path": str(inspection.paths.live.absolute()),
+        "manifest_path": str(inspection.paths.manifest.absolute()),
+        "base_path": str(inspection.state_paths.base.absolute()),
+        "repository": _source_digest(inspection.repository_source),
+        "live": _source_digest(inspection.live_source),
+        "manifest": _source_digest(inspection.manifest_source),
+        "base": _source_digest(inspection.base_source),
+        "resolved_repository": _source_digest(resolved_repository),
+    }
+    canonical = json.dumps(inputs, separators=(",", ":"), sort_keys=True).encode()
+    return f"sha256:{hashlib.sha256(canonical).hexdigest()}"
+
+
+def _source_digest(source: bytes | None) -> str | None:
+    return hashlib.sha256(source).hexdigest() if source is not None else None
+
+
+def _operate_inspection(
+    inspection: EngineInspection,
+    *,
+    mode: OperationMode,
+    decisions: DecisionSet,
+    check: bool,
+    providers: BindingProviders | None,
+) -> OperationResult:
     unknown_paths = tuple(
         change.path for change in inspection.plan.changes if change.kind is ChangeKind.UNKNOWN
     )
@@ -218,7 +355,7 @@ def operate_engine(
         raise DecisionsRequiredError(inspection, resolved.required_decisions)
 
     repository = SemanticSnapshot.from_value(resolved.repository)
-    active_providers = providers or BindingProviders.system(profile)
+    active_providers = providers or BindingProviders.system(inspection.profile)
     resolved_repository = resolve_snapshot_bindings(
         repository,
         inspection.manifest,
@@ -246,8 +383,8 @@ def operate_engine(
         or not _mode_matches(inspection.paths.live, inspection.adapter.live_mode)
     )
     base_state = BaseState(
-        engine=engine,
-        profile=profile,
+        engine=inspection.engine,
+        profile=inspection.profile,
         manifest_digest=inspection.manifest_digest,
         snapshot=live_portable,
     )
@@ -267,7 +404,7 @@ def operate_engine(
     expectations = _build_expectations(inspection, writes)
     if writes and not check:
         result = write_validated_files(
-            engine=engine.value,
+            engine=inspection.engine.value,
             state_directory=inspection.state_paths.root,
             writes=writes,
             expectations=expectations,
@@ -276,8 +413,8 @@ def operate_engine(
     else:
         written_paths = ()
     return OperationResult(
-        engine=engine,
-        profile=profile,
+        engine=inspection.engine,
+        profile=inspection.profile,
         plan=inspection.plan,
         changed=bool(writes),
         check_mode=check,
@@ -287,6 +424,125 @@ def operate_engine(
         state_initialised=inspection.base_state is None,
         written_paths=written_paths,
     )
+
+
+def _build_live_bootstrap_plan(inspection: EngineInspection) -> tuple[BootstrapChange, ...]:
+    changes: list[BootstrapChange] = []
+    for change in inspection.plan.changes:
+        if change.kind is ChangeKind.UNCHANGED:
+            continue
+        if change.kind is ChangeKind.PRESERVE_LOCAL:
+            action = (
+                BootstrapAction.IGNORE_RUNTIME
+                if change.scope is FieldScope.RUNTIME
+                else BootstrapAction.PRESERVE_LOCAL
+            )
+        elif change.kind is ChangeKind.APPLY_REPO:
+            action = BootstrapAction.KEEP_REPO
+        elif change.kind is ChangeKind.INITIALISATION_REQUIRED:
+            action = (
+                BootstrapAction.KEEP_REPO
+                if change.live is MissingValue.MISSING
+                else BootstrapAction.CAPTURE
+            )
+        else:
+            message = f"invalid change during live bootstrap: {change.kind.value}"
+            raise BootstrapError(message)
+        changes.append(BootstrapChange(path=change.path, action=action))
+    return tuple(changes)
+
+
+def _bootstrap_from_live(
+    inspection: EngineInspection,
+    *,
+    check: bool,
+    changes: tuple[BootstrapChange, ...],
+) -> OperationResult:
+    repository_configuration = snapshot_mapping(inspection.repository)
+    live_configuration = snapshot_mapping(inspection.live)
+    captured_paths = tuple(
+        change.path for change in changes if change.action is BootstrapAction.CAPTURE
+    )
+    for path in captured_paths:
+        copy_path(live_configuration, repository_configuration, path)
+    repository = SemanticSnapshot.from_value(repository_configuration)
+    live_portable = portable_projection(
+        fingerprint_sensitive_fields(inspection.live, inspection.manifest),
+        inspection.manifest,
+    )
+    base_state = BaseState(
+        engine=inspection.engine,
+        profile=inspection.profile,
+        manifest_digest=inspection.manifest_digest,
+        snapshot=live_portable,
+    )
+    repository_changed = repository != inspection.repository or not _mode_matches(
+        inspection.paths.repository,
+        inspection.adapter.repository_mode,
+    )
+    writes = _build_bootstrap_writes(
+        inspection=inspection,
+        repository=repository,
+        base_state=base_state,
+        repository_changed=repository_changed,
+    )
+    expectations = _build_expectations(inspection, writes)
+    if writes and not check:
+        result = write_validated_files(
+            engine=inspection.engine.value,
+            state_directory=inspection.state_paths.root,
+            writes=writes,
+            expectations=expectations,
+        )
+        written_paths = tuple(file.target for file in result.files if file.changed)
+    else:
+        written_paths = ()
+    return OperationResult(
+        engine=inspection.engine,
+        profile=inspection.profile,
+        plan=inspection.plan,
+        changed=bool(writes),
+        check_mode=check,
+        applied=0,
+        captured=len(captured_paths),
+        preserved=inspection.plan.count(ChangeKind.PRESERVE_LOCAL),
+        state_initialised=True,
+        written_paths=written_paths,
+    )
+
+
+def _build_bootstrap_writes(
+    *,
+    inspection: EngineInspection,
+    repository: SemanticSnapshot,
+    base_state: BaseState,
+    repository_changed: bool,
+) -> tuple[FileWrite, ...]:
+    writes: list[FileWrite] = []
+    if repository_changed:
+        writes.append(
+            FileWrite(
+                target=inspection.paths.repository,
+                candidate=render_document(
+                    snapshot_mapping(repository),
+                    inspection.adapter.configuration_format,
+                    source=inspection.repository_source,
+                ),
+                validate=_FormatValidator(inspection.adapter),
+                mode=inspection.adapter.repository_mode,
+                expected=inspection.repository_source,
+            )
+        )
+    writes.append(
+        FileWrite(
+            target=inspection.state_paths.base,
+            candidate=render_base_state(base_state),
+            validate=validate_base_state,
+            mode=0o600,
+            expected=None,
+        )
+    )
+    return tuple(writes)
 
 
 def _build_writes(

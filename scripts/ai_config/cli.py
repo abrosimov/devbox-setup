@@ -16,10 +16,13 @@ from .manifest import ManifestError, load_manifest
 from .model import SemanticSnapshot, SemanticValue, SnapshotError, to_plain_value
 from .resolution import OperationMode, ResolutionError
 from .service import (
+    BootstrapAction,
+    BootstrapResult,
     DecisionsRequiredError,
     EngineInspection,
     OperationResult,
     UnknownFieldsError,
+    bootstrap_engine_from_live,
     inspect_engine,
     operate_engine,
 )
@@ -41,6 +44,9 @@ class CommandArguments:
     profile: str
     decisions: Path | None
     check: bool
+    from_live: bool
+    write: bool
+    preview_token: str | None
     output_format: str
 
 
@@ -51,8 +57,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Inspect and reconcile repository-owned AI engine settings with one local home."
         ),
         epilog=(
-            "Start with 'ai-config diff ENGINE'. Use 'apply' for non-interactive "
-            "repository changes and 'reconcile' when a live change must be captured or resolved."
+            "Start with 'ai-config diff ENGINE'. Use 'bootstrap ENGINE --from-live' for a "
+            "first live-derived baseline, 'apply' for non-interactive repository changes, "
+            "and 'reconcile' when an existing baseline has a conflict."
         ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -120,6 +127,33 @@ def build_parser() -> argparse.ArgumentParser:
         help="Resolve and validate the operation without writing",
     )
     _add_output_options(reconcile_parser)
+    bootstrap_parser = subparsers.add_parser(
+        "bootstrap",
+        help="Create the first repository baseline from an existing live configuration",
+        description=(
+            "Preview a first-time live-to-repository bootstrap without writing. Portable live "
+            "values are captured, repository-only values are retained, and local/runtime state "
+            "is excluded. Re-run with --write and the emitted --preview-token after reviewing "
+            "the plan; bootstrap never modifies the live configuration."
+        ),
+    )
+    _add_engine_options(bootstrap_parser, engine_required=True)
+    bootstrap_parser.add_argument(
+        "--from-live",
+        action="store_true",
+        required=True,
+        help="Use the current live configuration as the initial portable baseline",
+    )
+    bootstrap_parser.add_argument(
+        "--write",
+        action="store_true",
+        help="Write the reviewed bootstrap plan; the default is a read-only preview",
+    )
+    bootstrap_parser.add_argument(
+        "--preview-token",
+        help="Token emitted by the exact bootstrap preview being approved for --write",
+    )
+    _add_output_options(bootstrap_parser)
     return parser
 
 
@@ -184,6 +218,8 @@ def main(arguments: list[str] | None = None) -> int:
     try:
         if command_arguments.command in {"status", "diff"}:
             return _run_read_only(command_arguments)
+        if command_arguments.command == "bootstrap":
+            return _run_bootstrap(command_arguments)
         return _run_operation(command_arguments)
     except (
         BindingResolutionError,
@@ -214,6 +250,9 @@ def _command_arguments(namespace: argparse.Namespace) -> CommandArguments:
         profile=cast("str", namespace.profile),
         decisions=cast("Path | None", getattr(namespace, "decisions", None)),
         check=cast("bool", getattr(namespace, "check", False)),
+        from_live=cast("bool", getattr(namespace, "from_live", False)),
+        write=cast("bool", getattr(namespace, "write", False)),
+        preview_token=cast("str | None", getattr(namespace, "preview_token", None)),
         output_format=cast("str", namespace.output_format),
     )
 
@@ -295,6 +334,27 @@ def _run_operation(arguments: CommandArguments) -> int:
         _print_unknown_fields(error, arguments.output_format)
         return 1
     _print_operation_result(result, arguments.output_format)
+    return 0
+
+
+def _run_bootstrap(arguments: CommandArguments) -> int:
+    if arguments.engine is None or not arguments.from_live:
+        message = "bootstrap requires an engine and --from-live"
+        raise ValueError(message)
+    try:
+        result = bootstrap_engine_from_live(
+            arguments.engine,
+            repo_root=arguments.repo_root,
+            home=arguments.home,
+            profile=arguments.profile,
+            state_root=arguments.state_root,
+            write=arguments.write,
+            preview_token=arguments.preview_token,
+        )
+    except UnknownFieldsError as error:
+        _print_unknown_fields(error, arguments.output_format)
+        return 1
+    _print_bootstrap_result(result, arguments.output_format, write=arguments.write)
     return 0
 
 
@@ -415,6 +475,30 @@ def _operation_json(result: OperationResult) -> dict[str, object]:
     }
 
 
+def _bootstrap_json(result: BootstrapResult, *, write: bool) -> dict[str, object]:
+    counts = {
+        action.value: sum(change.action is action for change in result.changes)
+        for action in BootstrapAction
+    }
+    operation = result.operation
+    return {
+        "schema_version": 1,
+        "engine": operation.engine.value,
+        "profile": operation.profile,
+        "source": "live",
+        "write": write,
+        "changed": operation.changed,
+        "check_mode": operation.check_mode,
+        "state_initialised": operation.state_initialised,
+        "preview_token": result.preview_token,
+        "counts": counts,
+        "changes": [
+            {"action": change.action.value, "path": list(change.path)} for change in result.changes
+        ],
+        "written_paths": [str(path) for path in operation.written_paths],
+    }
+
+
 def _print_operation_result(result: OperationResult, output_format: str) -> None:
     if output_format == "json":
         print(json.dumps(_operation_json(result), indent=2, sort_keys=True))
@@ -428,6 +512,34 @@ def _print_operation_result(result: OperationResult, output_format: str) -> None
         f"{result.engine.value}: {state} "
         f"applied={result.applied} captured={result.captured} preserved={result.preserved}"
     )
+
+
+def _print_bootstrap_result(
+    result: BootstrapResult,
+    output_format: str,
+    *,
+    write: bool,
+) -> None:
+    if output_format == "json":
+        print(json.dumps(_bootstrap_json(result, write=write), indent=2, sort_keys=True))
+        return
+    for change in result.changes:
+        print(f"{change.action.value}\t{'.'.join(change.path)}")
+    counts = " ".join(
+        f"{action.value}={sum(change.action is action for change in result.changes)}"
+        for action in BootstrapAction
+    )
+    state = "written" if write else "preview"
+    print(f"{result.operation.engine.value}: bootstrap {state} {counts}")
+    print(f"preview-token\t{result.preview_token}")
+    for path in result.operation.written_paths:
+        print(f"written\t{path}")
+    if not write:
+        print(
+            "No files were written. Re-run with --write --preview-token TOKEN after reviewing "
+            "this plan.",
+            file=sys.stderr,
+        )
 
 
 def _print_decisions_required(error: DecisionsRequiredError, output_format: str) -> None:

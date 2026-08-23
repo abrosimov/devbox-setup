@@ -1,0 +1,6 @@
+interface:
+  display_name: "Diagnose and Repair"
+  short_description: "Inventory, batch, repair, and rebaseline"
+  default_prompt: >-
+    Use $diagnose-and-repair to inventory all failures, repair the actionable batch,
+    and re-run the full baseline.

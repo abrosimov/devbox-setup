@@ -12,6 +12,8 @@ represent. Keep tests deterministic and isolated with unique resources, readines
 and reliable cleanup. Avoid mocks that erase the integration boundary.
 
 Do not modify production behaviour merely to make a test pass. Run the narrow integration target first,
-then the repository's relevant test gate. Return tests added, bugs exposed, dependencies used, commands run,
+then the repository's relevant test gate. Ordinary repository-local validation is pre-authorised: run it
+without asking the user whether to proceed, and use the platform approval flow only if execution needs
+capabilities outside the active sandbox. Return tests added, bugs exposed, dependencies used, commands run,
 and any environment or CI limitation.
 """

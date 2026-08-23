@@ -17,6 +17,24 @@ Ask a concise question only when an unresolved choice would materially change th
 repository or documentation checks cannot resolve it. Otherwise make the safest reversible
 assumption, state it when it matters, and continue.
 
+## Subagent delegation
+
+Use Codex custom agents for concrete, bounded work where a specialised context or independent parallel
+stream materially improves quality or speed. Prefer delegation for read-heavy exploration, planning,
+review, test analysis, and other work that can return a concise result to the main thread. Avoid parallel
+write-heavy agents that could edit the same files or depend on one another's unfinished changes.
+
+For non-routine implementation changes to `.go`, `.py`, `.ts`, or `.tsx` files, delegate ownership to the
+matching `software-engineer-go`, `software-engineer-python`, or `software-engineer-frontend` agent when
+subagent tools are available. Direct work is appropriate when the user asks for it, when editing agent,
+skill, or client configuration, or for mechanical formatting, comment removal, and dead-code cleanup.
+
+Choose the narrowest configured role for other delegated work, such as `implementation-planner`,
+`code-reviewer`, `unit-test-writer`, or the stack-specific integration-test agents. Give each agent an
+outcome, explicit scope or file ownership, constraints, and expected evidence; do not prescribe shell
+command transcripts or environment workarounds. The main thread remains responsible for user authority,
+integration, validation, and the final answer.
+
 ## Approval boundaries
 
 Obtain explicit confirmation before:
@@ -31,6 +49,28 @@ Obtain explicit confirmation before:
 
 Read-only inspection, reversible workspace edits requested by the user, and non-destructive local
 validation do not need an extra approval round.
+
+### Pre-authorised local validation
+
+A request to implement, fix, review, or diagnose code includes authority to run the ordinary
+non-destructive local validation needed to complete that request. Run repository-provided formatters,
+linters, type checkers, compilers, and tests without asking the user whether to proceed and without turning
+validation into an optional next step. This includes `goimports`, `golangci-lint`, `go test`, `go vet`, and
+`go build`; Ruff, Pyrefly, mypy, and pytest; ESLint, Prettier, TypeScript checks, and Vitest; and equivalent
+repository `make`, `task`, or package-manager targets.
+
+If the execution layer requires approval because a validation command needs capabilities outside the active
+sandbox, use the platform's approval mechanism directly and explain the concrete capability requested. Do
+not first ask a conversational permission question. Still obtain explicit confirmation before installing or
+upgrading dependencies, starting containers or persistent services, running migrations or destructive tests,
+accessing external systems, or performing validation with material cost or side effects.
+
+### Inventory-first diagnostic repair
+
+For non-trivial debugging, failing validation suites, and unhealthy VMs, containers, or services,
+load and follow the `diagnose-and-repair` skill. Establish the complete broad baseline before editing,
+repair every currently actionable failure in dependency order, then rerun the same baseline and repeat.
+Do not stop after fixing the first visible symptom or keep retrying the same failed approach.
 
 ## Evidence and uncertainty
 
@@ -68,6 +108,14 @@ ceremonially to routine work.
 - Do not suppress linters or tests to make a check pass.
 - Comments should explain durable reasons, constraints, or non-obvious safety properties rather than
   narrating the code.
+
+### Go formatting
+
+Always format changed Go source with `goimports -local <module-path>`, where `<module-path>` comes from the
+module directive in `go.mod`. Do not use `go fmt` or `gofmt`: they do not enforce the local-import grouping
+required by this configuration. Prefer the repository's own formatting command only when it preserves the
+same `goimports` policy, and limit formatting to the intended files unless the repository explicitly owns a
+broader formatting gate.
 
 ## Communication
 

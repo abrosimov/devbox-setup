@@ -9,12 +9,14 @@ in tests/scripts/test_otelbox_edge_*.py.
 from __future__ import annotations
 
 import plistlib
+import re
+import stat
 from pathlib import Path
 from typing import Any
 
 import pytest
 import yaml
-from jinja2 import StrictUndefined, Template
+from jinja2 import Environment, StrictUndefined, Template
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ROLE = REPO_ROOT / "roles/devbox"
@@ -22,6 +24,7 @@ EDGE_YAML = ROLE / "files/.config/otelbox/edge/edge.yaml"
 TASKS = ROLE / "tasks/darwin/install_otelbox_edge.yml"
 PLIST_TEMPLATE = ROLE / "templates/darwin/Library/LaunchAgents/local.otelbox-edge.plist.j2"
 PACKAGES = ROLE / "defaults/main/packages.yml"
+CERT_CHECKER = REPO_ROOT / "scripts/otelbox-edge-cert-check.sh"
 
 _edge: dict[str, Any] = yaml.safe_load(EDGE_YAML.read_text(encoding="utf-8"))
 _tasks: list[dict[str, Any]] = yaml.safe_load(TASKS.read_text(encoding="utf-8"))
@@ -91,6 +94,83 @@ def test_half_a_certificate_pair_fails_the_run(present: tuple[str, ...], expecte
 def test_half_a_certificate_pair_task_is_a_fail() -> None:
     assert "ansible.builtin.fail" in _HALF_PAIR_TASK
     assert "client.crt and client.key" in _HALF_PAIR_TASK["ansible.builtin.fail"]["msg"]
+
+
+def test_complete_certificate_pair_is_validated_before_cleanup() -> None:
+    validation = _task("validate the optional client certificate pair")
+    validation_index = _tasks.index(validation)
+    destructive_indices = [
+        index
+        for index, task in enumerate(_tasks)
+        if "stop " in task["name"] or "WAL" in task["name"]
+    ]
+
+    argv = validation["ansible.builtin.command"]["argv"]
+    assert argv[0].endswith("scripts/otelbox-edge-cert-check.sh")
+    assert argv[1:] == [
+        "{{ devbox_otelbox_edge_conf }}/client/client.crt",
+        "{{ devbox_otelbox_edge_conf }}/client/client.key",
+    ]
+    assert destructive_indices
+    assert all(validation_index < index for index in destructive_indices)
+    assert validation["check_mode"] is False
+
+
+def test_certificate_checker_is_executable() -> None:
+    assert CERT_CHECKER.stat().st_mode & stat.S_IXUSR
+
+
+def _render_boolean(expression: str, **context: object) -> str:
+    environment = Environment(undefined=StrictUndefined, autoescape=True)
+    environment.tests["match"] = lambda value, pattern: re.match(pattern, value) is not None
+    return environment.from_string(expression).render(**context)
+
+
+@pytest.mark.parametrize(
+    ("exists", "returncode", "version", "compatible", "incompatible"),
+    [
+        (1, 0, "otelcol-otelbox version 2.1.0", "True", "False"),
+        (1, 0, "otelcol-otelbox version 2.2.0", "True", "False"),
+        (1, 0, "otelcol-otelbox version 1.9.0", "False", "True"),
+        (1, 0, "unexpected output", "False", "False"),
+        (1, 1, "", "False", "False"),
+        (0, 1, "", "False", "False"),
+    ],
+)
+def test_existing_wal_compatibility_is_classified_explicitly(
+    exists: int,
+    returncode: int,
+    version: str,
+    compatible: str,
+    incompatible: str,
+) -> None:
+    facts = _task("classify the current managed binary")["ansible.builtin.set_fact"]
+    context = {
+        "devbox_otelbox_edge_existing_bin_stat": {"stat": {"exists": bool(exists)}},
+        "devbox_otelbox_edge_existing_version": {
+            "rc": returncode,
+            "stdout": version,
+        },
+        "devbox_packages": {"otelbox_edge": {"version": "2.2.0"}},
+    }
+
+    assert (
+        _render_boolean(facts["devbox_otelbox_edge_existing_is_compatible_v2"], **context)
+        == compatible
+    )
+    assert (
+        _render_boolean(
+            facts["devbox_otelbox_edge_existing_is_explicitly_incompatible"],
+            **context,
+        )
+        == incompatible
+    )
+
+
+def test_wal_cleanup_requires_explicit_incompatibility() -> None:
+    cleanup = _task("discard WAL from an incompatible managed collector")
+
+    assert cleanup["when"][-1] == ("devbox_otelbox_edge_existing_is_explicitly_incompatible | bool")
 
 
 def test_preflight_gate_ignores_the_client_certificate() -> None:

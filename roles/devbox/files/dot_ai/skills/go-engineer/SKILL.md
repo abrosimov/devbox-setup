@@ -70,9 +70,11 @@ go test -race ./...
 go vet ./...
 ```
 
-Use the repository's configured formatter. If it requires `goimports`, obtain the local import prefix from
-`go list -m` and use it as configured. Otherwise `gofmt` is the standard fallback. Run `golangci-lint` only
-when the repository configures or documents it; do not assume every Go project uses it.
+Always format changed Go source with `goimports -local <module-path>`, obtaining the module path from the
+module directive in `go.mod`. Use a repository-owned formatting command only when it preserves that policy.
+Do not use `go fmt` or `gofmt`, and do not format unrelated files merely because the formatter accepts a
+package-wide target. Run `golangci-lint` only when the repository configures or documents it; do not assume
+every Go project uses it.
 
 ## Completion
 

@@ -11,6 +11,8 @@ build constraint, toolchain, linker, or CGO/environment trouble. Make the smalle
 API redesign, broad dependency upgrades, formatting churn, or unrelated refactors.
 
 Use code-comments and lint-discipline where relevant. Run the narrow failing build first, then the smallest
-affected tests or repository build gate. Report the cause, files changed, commands run, and any platform or
+affected tests or repository build gate. Ordinary repository-local validation is pre-authorised: run it
+without asking the user whether to proceed, and use the platform approval flow only if execution needs
+capabilities outside the active sandbox. Report the cause, files changed, commands run, and any platform or
 toolchain limitation that remains.
 """

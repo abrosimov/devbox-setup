@@ -152,3 +152,148 @@ class TestOperationCli:
             state_root=state_root,
         ).base
         assert base.exists()
+
+
+class TestBootstrapCli:
+    def test_default_is_a_read_only_plan_then_write_initialises_state(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        repo_root, home, state_root = create_cli_tree(tmp_path, live_value="live")
+        repository = resolve_engine_paths(
+            EngineKind.CLAUDE,
+            repo_root=repo_root,
+            home=home,
+        ).repository
+        repository_before = repository.read_bytes()
+
+        preview = run_cli(
+            "bootstrap",
+            repo_root,
+            home,
+            state_root,
+            "--from-live",
+        )
+
+        preview_output = json_output(preview)
+        assert preview.returncode == 0
+        assert preview_output["write"] is False
+        assert preview_output["check_mode"] is True
+        assert preview_output["counts"] == {
+            "capture": 1,
+            "ignore-runtime": 0,
+            "keep-repo": 0,
+            "preserve-local": 0,
+        }
+        preview_token = preview_output["preview_token"]
+        assert isinstance(preview_token, str)
+        assert preview_token.startswith("sha256:")
+        assert repository.read_bytes() == repository_before
+        assert not state_root.exists()
+
+        written = run_cli(
+            "bootstrap",
+            repo_root,
+            home,
+            state_root,
+            "--from-live",
+            "--write",
+            "--preview-token",
+            preview_token,
+        )
+
+        written_output = json_output(written)
+        assert written.returncode == 0
+        assert written_output["write"] is True
+        assert written_output["check_mode"] is False
+        assert json.loads(repository.read_text(encoding="utf-8")) == {"setting": "live"}
+        base = resolve_state_paths(
+            EngineKind.CLAUDE,
+            profile="work",
+            home=home,
+            state_root=state_root,
+        ).base
+        assert base.exists()
+
+    def test_refuses_a_second_bootstrap(self, tmp_path: Path) -> None:
+        repo_root, home, state_root = create_cli_tree(tmp_path, live_value="live")
+        preview = run_cli(
+            "bootstrap",
+            repo_root,
+            home,
+            state_root,
+            "--from-live",
+        )
+        preview_token = json_output(preview)["preview_token"]
+        assert isinstance(preview_token, str)
+        first = run_cli(
+            "bootstrap",
+            repo_root,
+            home,
+            state_root,
+            "--from-live",
+            "--write",
+            "--preview-token",
+            preview_token,
+        )
+
+        second = run_cli(
+            "bootstrap",
+            repo_root,
+            home,
+            state_root,
+            "--from-live",
+        )
+
+        assert first.returncode == 0
+        assert second.returncode == 2
+        assert json_output(second)["error"] == "BootstrapError"
+
+    def test_write_without_preview_token_is_rejected(self, tmp_path: Path) -> None:
+        repo_root, home, state_root = create_cli_tree(tmp_path, live_value="live")
+
+        result = run_cli(
+            "bootstrap",
+            repo_root,
+            home,
+            state_root,
+            "--from-live",
+            "--write",
+        )
+
+        assert result.returncode == 2
+        assert json_output(result)["error"] == "BootstrapError"
+        assert not state_root.exists()
+
+    def test_write_rejects_live_changed_after_preview(self, tmp_path: Path) -> None:
+        repo_root, home, state_root = create_cli_tree(tmp_path, live_value="live")
+        preview = run_cli(
+            "bootstrap",
+            repo_root,
+            home,
+            state_root,
+            "--from-live",
+        )
+        preview_token = json_output(preview)["preview_token"]
+        assert isinstance(preview_token, str)
+        live = resolve_engine_paths(
+            EngineKind.CLAUDE,
+            repo_root=repo_root,
+            home=home,
+        ).live
+        live.write_text('{"setting": "changed"}\n', encoding="utf-8")
+
+        result = run_cli(
+            "bootstrap",
+            repo_root,
+            home,
+            state_root,
+            "--from-live",
+            "--write",
+            "--preview-token",
+            preview_token,
+        )
+
+        assert result.returncode == 2
+        assert json_output(result)["error"] == "BootstrapError"
+        assert not state_root.exists()

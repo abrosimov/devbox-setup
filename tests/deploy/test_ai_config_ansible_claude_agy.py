@@ -10,6 +10,9 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TASKS_PATH = REPO_ROOT / "roles/devbox/tasks/install_configs.yml"
 AGY_SETTINGS_PATH = REPO_ROOT / "roles/devbox/files/dot_agy/cli/settings.json.j2"
+CLAUDE_DEFAULTS_PATH = REPO_ROOT / "roles/devbox/defaults/main/claude.yml"
+CLAUDE_SETTINGS_PATH = REPO_ROOT / "roles/devbox/files/dot_claude/settings.json"
+AI_ROOT = REPO_ROOT / "roles/devbox/files/dot_ai"
 
 type Task = dict[str, object]
 
@@ -55,6 +58,29 @@ class TestClaudeSettingsWriter:
 
         assert "settings.json" not in copy_sources
 
+    def test_repository_settings_match_declared_plugin_state(self) -> None:
+        defaults = yaml.safe_load(CLAUDE_DEFAULTS_PATH.read_text(encoding="utf-8"))
+        settings = json.loads(CLAUDE_SETTINGS_PATH.read_text(encoding="utf-8"))
+        marketplaces = defaults["devbox_claude_plugin_marketplaces"]
+        plugins = defaults["devbox_claude_plugins"]
+
+        expected_marketplaces = {
+            marketplace["name"]: {"source": {"source": "github", "repo": marketplace["repo"]}}
+            for marketplace in marketplaces
+        }
+        expected_plugins = {
+            "@".join(
+                (
+                    plugin["name"],
+                    plugin.get("marketplace", "claude-plugins-official"),
+                )
+            ): True
+            for plugin in plugins
+        }
+
+        assert settings["extraKnownMarketplaces"] == expected_marketplaces
+        assert settings["enabledPlugins"] == expected_plugins
+
 
 class TestAgySettingsWriter:
     @pytest.fixture
@@ -78,6 +104,37 @@ class TestAgySettingsWriter:
             "permissions",
         }
         assert "trustedWorkspaces" not in settings
+
+
+class TestSharedDiagnosticProtocol:
+    @pytest.fixture
+    def tasks(self) -> tuple[Task, ...]:
+        return load_tasks()
+
+    def test_shared_skill_and_authority_reach_claude_and_agy(
+        self,
+        tasks: tuple[Task, ...],
+    ) -> None:
+        skill = AI_ROOT / "skills/diagnose-and-repair/SKILL.md"
+        authority = AI_ROOT / "USER_AUTHORITY_PROTOCOL.md"
+
+        assert skill.is_file()
+        assert "`diagnose-and-repair` skill" in authority.read_text(encoding="utf-8")
+
+        for task_name in (
+            "Sync shared AI directories (dot_ai) to Claude (one-way, --delete)",
+            "Sync shared AI directories (dot_ai) to Antigravity (one-way)",
+        ):
+            task = task_named(tasks, task_name)
+            assert task["loop"] == "{{ devbox_ai_managed_dirs }}"
+            assert "files/dot_ai/{{ item }}/" in json.dumps(task)
+
+        for task_name in (
+            "Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Claude",
+            "Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Antigravity",
+        ):
+            task = task_named(tasks, task_name)
+            assert "files/dot_ai/USER_AUTHORITY_PROTOCOL.md" in json.dumps(task)
 
 
 class TestAiConfigApplyTasks:

@@ -104,7 +104,15 @@ These rely on `kitten hints` and overlay clickable labels on terminal output.
 3. **Expected:** fuzzy file picker TUI opens
 4. Select a file → path pasted into command line
 
-## E. Cmd+Q custom kitten (after implementation)
+## E. Scrollback and command output
+
+| Test | Steps | Expected |
+|---|---|---|
+| Ctrl+Shift+G | Run `printf 'alpha\nbeta\n'`, then press `Ctrl+Shift+G` | A Neovim overlay opens with `alpha` and `beta` in a writable buffer |
+| Save command output | In that buffer, run `:w /tmp/kitty-last-output.txt`, then quit | The file contains the command output |
+| Ctrl+Shift+H | Produce more than one screen of output, then press `Ctrl+Shift+H` | Full scrollback opens in `bat` using its built-in pager |
+
+## F. Cmd+Q custom kitten (after implementation)
 
 | Test | Steps | Expected |
 |---|---|---|
@@ -113,7 +121,7 @@ These rely on `kitten hints` and overlay clickable labels on terminal output.
 | Busy multiple | Tab 2: claude, Tab 5: vim main.go, `Cmd+Q` | Prompt lists both with their commands |
 | Scope check | Two OS windows open, both with busy tabs | Only **current** OS window is affected. Other window untouched |
 
-## F. Session restore (after R1 implementation)
+## G. Session restore (after R1 implementation)
 
 | Test | Steps | Expected |
 |---|---|---|

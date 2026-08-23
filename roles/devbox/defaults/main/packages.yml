@@ -104,6 +104,7 @@ devbox_brew_secondary:
   - ast-grep       # Structural AST code search — used by Claude Code ast-grep skill
   # codex moved to devbox_brew_secondary_casks — it is cask-only upstream.
   - lima            # Linux VM (eBPF/bpftrace sandbox, perf-style observability)
+  - lima-additional-guestagents  # Guest agents for non-native Lima VM architectures
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
   - smudge/smudge/nightlight  # Night Shift CLI (tap: smudge/smudge)

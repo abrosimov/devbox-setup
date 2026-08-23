@@ -12,6 +12,8 @@ and isolated with scoped fixtures, unique resources, readiness checks, bounded t
 Avoid mocks that remove the database, network, queue, or service interaction under test.
 
 Do not alter production semantics merely to satisfy a test. Run tests through the repository's configured
-tooling, starting narrowly. Return tests added, bugs exposed, dependencies used, commands run, and any
-environment or CI limitation.
+tooling, starting narrowly. Ordinary repository-local validation is pre-authorised: run it without asking
+the user whether to proceed, and use the platform approval flow only if execution needs capabilities outside
+the active sandbox. Return tests added, bugs exposed, dependencies used, commands run, and any environment
+or CI limitation.
 """

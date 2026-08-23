@@ -122,6 +122,14 @@ def render_document(
         if source_configuration is not None:
             configuration = _preserve_mapping_order(source_configuration, configuration)
         return (json.dumps(configuration, ensure_ascii=False, indent=2) + "\n").encode()
+    if source is not None and source_configuration is not None:
+        preserved = _render_toml_preserving_roots(
+            configuration,
+            source=source,
+            source_configuration=source_configuration,
+        )
+        if preserved is not None:
+            return preserved
     return _render_toml(configuration).encode()
 
 
@@ -166,6 +174,178 @@ def _preserve_mapping_order(
         if key not in source:
             result[key] = desired_value
     return result
+
+
+def _render_toml_preserving_roots(
+    configuration: MutableConfiguration,
+    *,
+    source: bytes,
+    source_configuration: MutableConfiguration,
+) -> bytes | None:
+    changed_roots = _changed_toml_roots(source_configuration, configuration)
+    try:
+        lines = source.decode().splitlines(keepends=True)
+    except UnicodeDecodeError:
+        return None
+    kept, replaced_roots = _toml_lines_without_roots(
+        lines,
+        changed_roots,
+        configuration,
+    )
+    scalar_fragments, table_fragments = _toml_replacement_fragments(
+        configuration,
+        changed_roots - replaced_roots,
+    )
+    candidate_bytes = _assemble_toml(kept, scalar_fragments, table_fragments)
+    rendered_configuration = _load_source_configuration(
+        candidate_bytes,
+        ConfigurationFormat.TOML,
+    )
+    return candidate_bytes if rendered_configuration == configuration else None
+
+
+def _changed_toml_roots(
+    source: MutableConfiguration,
+    desired: MutableConfiguration,
+) -> set[str]:
+    return {
+        key
+        for key in source.keys() | desired.keys()
+        if source.get(key, MissingValue.MISSING) != desired.get(key, MissingValue.MISSING)
+    }
+
+
+def _toml_lines_without_roots(
+    lines: list[str],
+    changed_roots: set[str],
+    configuration: MutableConfiguration,
+) -> tuple[list[str], set[str]]:
+    kept: list[str] = []
+    replaced_roots: set[str] = set()
+    current_root: str | None = None
+    trailing_trivia: list[str] = []
+    skipped_assignment_lines = 0
+    for index, line in enumerate(lines):
+        if skipped_assignment_lines:
+            skipped_assignment_lines -= 1
+            continue
+        header_root = _toml_header_root(line)
+        if header_root is not None:
+            if current_root in changed_roots and header_root not in changed_roots:
+                kept.extend(trailing_trivia)
+            trailing_trivia.clear()
+            current_root = header_root
+        assignment_root = _toml_assignment_root(line) if current_root is None else None
+        if assignment_root is not None and assignment_root in changed_roots:
+            skipped_assignment_lines = (
+                _toml_assignment_span_length(lines[index:], assignment_root) - 1
+            )
+            if (
+                assignment_root in configuration
+                and not isinstance(configuration[assignment_root], dict)
+                and assignment_root not in replaced_roots
+            ):
+                replacement = _render_toml(
+                    {assignment_root: configuration[assignment_root]}
+                ).rstrip()
+                kept.append(f"{replacement}\n")
+                replaced_roots.add(assignment_root)
+            continue
+        if current_root in changed_roots:
+            if _is_toml_trivia(line):
+                trailing_trivia.append(line)
+            else:
+                trailing_trivia.clear()
+            continue
+        kept.append(line)
+    return kept, replaced_roots
+
+
+def _is_toml_trivia(line: str) -> bool:
+    stripped = line.strip()
+    return not stripped or stripped.startswith("#")
+
+
+def _toml_assignment_span_length(lines: list[str], root: str) -> int:
+    for length in range(1, len(lines) + 1):
+        try:
+            parsed = tomllib.loads("".join(lines[:length]))
+        except tomllib.TOMLDecodeError:
+            continue
+        if root in parsed:
+            return length
+    return 1
+
+
+def _toml_replacement_fragments(
+    configuration: MutableConfiguration,
+    changed_roots: set[str],
+) -> tuple[list[str], list[str]]:
+    scalar_fragments: list[str] = []
+    table_fragments: list[str] = []
+    for root in configuration:
+        if root not in changed_roots:
+            continue
+        fragment = _render_toml({root: configuration[root]}).rstrip()
+        if isinstance(configuration[root], dict):
+            table_fragments.append(fragment)
+        else:
+            scalar_fragments.append(fragment)
+    return scalar_fragments, table_fragments
+
+
+def _assemble_toml(
+    kept: list[str],
+    scalar_fragments: list[str],
+    table_fragments: list[str],
+) -> bytes:
+    first_table = next(
+        (index for index, line in enumerate(kept) if _toml_header_root(line) is not None),
+        len(kept),
+    )
+    if scalar_fragments:
+        while first_table > 0 and not kept[first_table - 1].strip():
+            kept.pop(first_table - 1)
+            first_table -= 1
+        insertion = [f"{fragment}\n" for fragment in scalar_fragments]
+        if first_table < len(kept):
+            insertion.append("\n")
+        kept[first_table:first_table] = insertion
+    candidate = "".join(kept).rstrip()
+    if table_fragments:
+        suffix = "\n\n".join(table_fragments)
+        candidate = f"{candidate}\n\n{suffix}" if candidate else suffix
+    return f"{candidate.rstrip()}\n".encode()
+
+
+def _toml_header_root(line: str) -> str | None:
+    stripped = line.lstrip()
+    if not stripped.startswith("["):
+        return None
+    array_table = stripped.startswith("[[")
+    closing = "]]" if array_table else "]"
+    start = 2 if array_table else 1
+    end = stripped.find(closing, start)
+    if end < 0:
+        return None
+    header = stripped[start:end].strip()
+    try:
+        parsed = tomllib.loads(f"[{header}]\n")
+    except tomllib.TOMLDecodeError:
+        return None
+    return next(iter(parsed), None)
+
+
+def _toml_assignment_root(line: str) -> str | None:
+    stripped = line.strip()
+    if not stripped or stripped.startswith("#") or "=" not in stripped:
+        return None
+    key = stripped.partition("=")[0].strip()
+    try:
+        parsed = tomllib.loads(f"{key} = 0\n")
+    except tomllib.TOMLDecodeError:
+        return None
+    return next(iter(parsed), None)
 
 
 def validate_document(candidate: bytes, configuration_format: ConfigurationFormat) -> None:

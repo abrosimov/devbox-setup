@@ -117,6 +117,25 @@
         and (devbox_otelbox_edge_existing_version.stdout | default('') | trim)
           == ('otelcol-otelbox version ' ~ devbox_packages.otelbox_edge.version)
       }}
+    devbox_otelbox_edge_existing_is_compatible_v2: >-
+      {{
+        devbox_otelbox_edge_existing_bin_stat.stat.exists | default(false)
+        and (devbox_otelbox_edge_existing_version.rc | default(1)) == 0
+        and ((devbox_otelbox_edge_existing_version.stdout
+              | default('') | trim)
+             is match('^otelcol-otelbox version 2[.]'))
+      }}
+    devbox_otelbox_edge_existing_is_explicitly_incompatible: >-
+      {{
+        devbox_otelbox_edge_existing_bin_stat.stat.exists | default(false)
+        and (devbox_otelbox_edge_existing_version.rc | default(1)) == 0
+        and ((devbox_otelbox_edge_existing_version.stdout
+              | default('') | trim)
+             is match('^otelcol-otelbox version [0-9]+[.]'))
+        and not ((devbox_otelbox_edge_existing_version.stdout
+                  | default('') | trim)
+                 is match('^otelcol-otelbox version 2[.]'))
+      }}
   when: devbox_packages.otelbox_edge.enabled | default(true)
   tags: [otel, otelbox-edge]
 
@@ -225,6 +244,22 @@
        | selectattr('stat.exists', 'defined')
        | selectattr('stat.exists')
        | list | length) == 1
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — validate the optional client certificate pair"
+  ansible.builtin.command:
+    argv:
+      - "{{ role_path }}/../../scripts/otelbox-edge-cert-check.sh"
+      - "{{ devbox_otelbox_edge_conf }}/client/client.crt"
+      - "{{ devbox_otelbox_edge_conf }}/client/client.key"
+  changed_when: false
+  check_mode: false
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - (devbox_otelbox_edge_client_pair.results
+       | selectattr('stat.exists', 'defined')
+       | selectattr('stat.exists')
+       | list | length) == 2
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — check the Keychain credential"
@@ -357,14 +392,14 @@
     - devbox_otelbox_edge_preflight_ready | bool
   tags: [otel, otelbox-edge]
 
-- name: "OpenTelemetry edge — discard the WAL left by an unpinned collector"
+- name: "OpenTelemetry edge — discard WAL from an incompatible managed collector"
   ansible.builtin.file:
     path: "{{ devbox_otelbox_edge_home }}/.local/state/otelbox/edge"
     state: absent
   when:
     - devbox_packages.otelbox_edge.enabled | default(true)
     - devbox_otelbox_edge_preflight_ready | bool
-    - not (devbox_otelbox_edge_existing_is_pinned | bool)
+    - devbox_otelbox_edge_existing_is_explicitly_incompatible | bool
   tags: [otel, otelbox-edge]
 
 - name: "OpenTelemetry edge — install the validated pinned binary"

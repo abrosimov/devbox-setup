@@ -63,11 +63,16 @@ from .model import (
 )
 from .resolution import OperationMode, ResolutionError, ResolvedDocuments, resolve_documents
 from .service import (
+    BootstrapAction,
+    BootstrapChange,
+    BootstrapError,
+    BootstrapResult,
     DecisionsRequiredError,
     EngineInspection,
     OperationError,
     OperationResult,
     UnknownFieldsError,
+    bootstrap_engine_from_live,
     inspect_engine,
     operate_engine,
 )
@@ -110,6 +115,10 @@ __all__ = [
     "BindingProvider",
     "BindingProviders",
     "BindingResolutionError",
+    "BootstrapAction",
+    "BootstrapChange",
+    "BootstrapError",
+    "BootstrapResult",
     "BytesValidator",
     "CandidateValidationError",
     "Change",
@@ -167,6 +176,7 @@ __all__ = [
     "TransactionStatus",
     "UnknownFieldsError",
     "assign_value",
+    "bootstrap_engine_from_live",
     "copy_path",
     "digest_manifest",
     "digest_manifest_source",

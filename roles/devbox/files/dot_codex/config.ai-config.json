@@ -49,15 +49,19 @@
     },
     {
       "path": "marketplaces",
-      "scope": "shared"
+      "scope": "runtime"
     },
     {
       "path": "desktop",
-      "scope": "shared"
+      "scope": "local-state"
     },
     {
       "path": "tui",
       "scope": "shared"
+    },
+    {
+      "path": "tui.model_availability_nux",
+      "scope": "runtime"
     },
     {
       "path": "tool_suggest",
@@ -69,7 +73,7 @@
     },
     {
       "path": "mcp_servers",
-      "scope": "shared"
+      "scope": "runtime"
     },
     {
       "path": "projects",

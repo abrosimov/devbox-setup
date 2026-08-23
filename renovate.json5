@@ -1,0 +1,76 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended"],
+
+  // Every built-in manager runs. In this repository that means, concretely:
+  // pyproject.toml + uv.lock at the root and under
+  // roles/devbox/files/dot_claude/bin/, requirements.yml (ansible-galaxy),
+  // .github/workflows/*.yml (github-actions), and the devcontainer scaffold in
+  // roles/devbox/files/dot_claude/templates/devcontainer/ (Dockerfile +
+  // devcontainer.json). The template is a scaffold rather than a live
+  // dependency, but its base image going stale is a real defect for every
+  // project generated from it, so it is deliberately left in scope.
+
+  // Nothing is proposed until a release has survived a week in the wild. This
+  // is the point of the whole configuration: the artefacts here are installed
+  // on a workstation by an unattended playbook run, so a bad release is found
+  // by the machine rather than by CI.
+  minimumReleaseAge: "7 days",
+
+  // Without this the age is advisory — Renovate opens the pull request straight
+  // away and merely marks the internal check as pending. `strict` withholds the
+  // branch and the pull request until the age is actually satisfied.
+  internalChecksFilter: "strict",
+
+  customManagers: [
+    {
+      // otelcol-otelbox is installed from its published GitHub release rather
+      // than from Homebrew, because the binary and the deployed edge profile
+      // move as one contract (see roles/devbox/files/.config/otelbox/edge/
+      // edge.yaml and install_otelbox_edge.yml, which validates the downloaded
+      // binary against the repository's profile before any destructive step).
+      //
+      // That choice is also what makes this tractable here: Renovate has no
+      // Homebrew datasource, and its `homebrew` manager reads Formula/*.rb
+      // only. A bare package name in devbox_brew_secondary would carry no
+      // version for Renovate to see. The explicit pin below does.
+      customType: "regex",
+      managerFilePatterns: ["/^roles\\/devbox\\/defaults\\/main\\/packages\\.yml$/"],
+
+      // Anchored on the otelbox_edge key so the lazy match cannot wander into
+      // the neighbouring kubectl pin, which has its own `version:` line.
+      matchStrings: [
+        "otelbox_edge:[\\s\\S]*?version:\\s+\"(?<currentValue>[^\"]+)\"",
+      ],
+      packageNameTemplate: "abrosimov/otelcol-otelbox",
+      datasourceTemplate: "github-releases",
+    },
+  ],
+
+  packageRules: [
+    {
+      // A major carries the breaking change by definition, so give it the far
+      // end of the window rather than the near one.
+      matchUpdateTypes: ["major"],
+      minimumReleaseAge: "14 days",
+    },
+    {
+      // A bump here is never just a version bump: the deployed profile in
+      // roles/devbox/files/.config/otelbox/edge/edge.yaml has to be reconciled
+      // with the new release's config/edge.yaml in the same change, and the
+      // playbook's `validate` step will refuse the pair otherwise. Never
+      // automerge, and say why in the pull request.
+      matchPackageNames: ["abrosimov/otelcol-otelbox"],
+
+      // Release tags are bare `v<version>`; the pin stores the version without
+      // the prefix, so strip it or every comparison reads as a change. This
+      // lives here rather than on the custom manager, which rejects the field.
+      extractVersion: "^v(?<version>.*)$",
+      automerge: false,
+      addLabels: ["otelbox", "needs-profile-reconciliation"],
+      prBodyNotes: [
+        "Reconcile `roles/devbox/files/.config/otelbox/edge/edge.yaml` with this release's `config/edge.yaml` before merging — the binary and the profile are one versioned contract, and `install_otelbox_edge.yml` validates them as a pair.",
+      ],
+    },
+  ],
+}

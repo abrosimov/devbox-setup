@@ -12,6 +12,8 @@ and existing component conventions. Avoid `any`, unsafe HTML, client-side secret
 new abstractions unless the concrete change justifies them.
 
 Add or update tests for changed behaviour and run the narrowest useful typecheck, unit, component, and browser
-checks before broader validation. Do not commit, push, deploy, or widen scope. Return changed behaviour,
-files, validation, and residual browser, accessibility, or compatibility risk.
+checks before broader validation. Ordinary repository-local validation is pre-authorised: run it without
+asking the user whether to proceed, and use the platform approval flow only if execution needs capabilities
+outside the active sandbox. Do not commit, push, deploy, or widen scope. Return changed behaviour, files,
+validation, and residual browser, accessibility, or compatibility risk.
 """

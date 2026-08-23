@@ -1,5 +1,9 @@
 # Dependabot configuration.
 #
+# Keep this fallback until Renovate is externally activated and observed
+# creating update pull requests for this repository; configuration alone is not
+# evidence of a working replacement.
+#
 # github-actions: keeps the SHA-pinned `uses:` refs in .github/workflows/ fresh.
 #   Dependabot updates both the commit SHA and the trailing "# vX.Y.Z" comment
 #   together, so the repo can satisfy the "pin to full-length commit SHA" policy

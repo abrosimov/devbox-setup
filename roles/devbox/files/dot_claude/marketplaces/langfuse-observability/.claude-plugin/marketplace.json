@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "langfuse-observability",
+  "description": "Devbox-locked Langfuse observability plugin for Claude Code",
+  "owner": {
+    "name": "devbox-setup"
+  },
+  "plugins": [
+    {
+      "name": "langfuse-observability",
+      "source": {
+        "source": "github",
+        "repo": "langfuse/claude-observability-plugin",
+        "ref": "main",
+        "sha": "d06829810cce8a8a4f486e0afebd155e95ab9517"
+      }
+    }
+  ]
+}

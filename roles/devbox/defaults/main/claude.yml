@@ -13,6 +13,7 @@ devbox_claude_managed_dirs:
   - schemas
   - bin
   - docs
+  - marketplaces
   - templates
   - output-styles
 
@@ -49,12 +50,18 @@ devbox_mcp_http_servers: []
 devbox_claude_plugin_marketplaces:
   - repo: anthropics/skills
     name: anthropic-agent-skills
+    declare_in_settings: true
+  - path: marketplaces/langfuse-observability
+    name: langfuse-observability
+    declare_in_settings: false
 
 devbox_claude_plugins:
   - name: example-skills
     marketplace: anthropic-agent-skills
   - name: document-skills
     marketplace: anthropic-agent-skills
+  - name: langfuse-observability
+    marketplace: langfuse-observability
   # LSP plugins — installed from official marketplace (pre-registered on macOS).
   # Binaries must be on PATH: gopls (go install), pyright (uv tool), typescript-language-server (npm).
   - name: gopls-lsp

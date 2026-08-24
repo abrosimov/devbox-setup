@@ -144,7 +144,7 @@ WARP proxy mode uses MASQUE, which enforces a roughly 10-second per-request limi
 
 ## OTLP Telemetry (otelbox edge)
 
-A durable local OpenTelemetry collector — Ansible-deployed, `launchd`-supervised, no brew — sinks agent telemetry at `127.0.0.1:4317` (gRPC) / `:4318` (HTTP), buffers it on disk across outages, and forwards to one remote gateway with `deployment.environment.name={profile}` stamped on every record.
+A durable local OpenTelemetry collector — Ansible-deployed, `launchd`-supervised, no brew — sinks agent telemetry at `127.0.0.1:4317` (gRPC) / `:4318` (HTTP), buffers it on disk across outages, and forwards to one remote gateway with `deployment.environment.name={profile}` stamped on every record. Langfuse transcript plugins use the separate traces-only listener at `127.0.0.1:14318/api/public/otel/v1/traces`; only that pipeline adds `otelbox.telemetry.class=llm`.
 
 Wired: Claude Code CLI (`OTEL_*` env in `~/.claude/settings.json`), Codex CLI/app (`[otel]` managed from `dot_codex`), and Antigravity through the `agy` wrapper's standard OpenTelemetry environment variables.
 
@@ -157,7 +157,7 @@ Version 2.x loads one self-contained `edge.yaml`. The binary and profile are upg
 | Path | Role |
 |------|------|
 | `~/.local/bin/otelcol-otelbox` | the pinned release asset, checksum-verified on download |
-| `roles/devbox/files/.config/otelbox/edge/edge.yaml` | self-contained v2.2 edge profile adapted from the published profile |
+| `roles/devbox/files/.config/otelbox/edge/edge.yaml` | self-contained v2.3 edge profile adapted from the published profile |
 | `~/.config/otelbox/edge/` | profile + wrapper + `endpoint.env`, as deployed |
 | `~/.config/otelbox/edge/client/` | optional client-certificate pair (mode 0700), deployed from the gitignored overlay |
 | `~/.local/state/otelbox/edge/` | the on-disk WAL (bbolt) |

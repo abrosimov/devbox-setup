@@ -62,6 +62,38 @@ def test_gateway_tls_stays_verified() -> None:
     assert _GATEWAY_TLS["insecure"] is False
 
 
+def test_langfuse_plugin_receiver_is_loopback_only_and_trace_only() -> None:
+    receiver = _edge["receivers"]["otlp/langfuse_plugins"]
+
+    assert set(receiver["protocols"]) == {"http"}
+    assert receiver["protocols"]["http"]["endpoint"] == "127.0.0.1:14318"
+    assert receiver["protocols"]["http"]["traces_url_path"] == ("/api/public/otel/v1/traces")
+
+
+def test_langfuse_plugin_pipeline_classifies_only_its_own_traces() -> None:
+    processor = _edge["processors"]["resource/langfuse_plugins"]
+    pipelines = _edge["service"]["pipelines"]
+
+    assert processor["attributes"] == [
+        {
+            "key": "otelbox.telemetry.class",
+            "value": "llm",
+            "action": "upsert",
+        }
+    ]
+    assert "resource/langfuse_plugins" not in pipelines["traces"]["processors"]
+    assert pipelines["traces/langfuse_plugins"] == {
+        "receivers": ["otlp/langfuse_plugins"],
+        "processors": [
+            "memory_limiter",
+            "resource_detection",
+            "resource/langfuse_plugins",
+            "redaction/secrets",
+        ],
+        "exporters": ["otlp_grpc/gateway"],
+    }
+
+
 def _client_pair(present: tuple[str, ...]) -> dict[str, Any]:
     return {
         "results": [
@@ -131,6 +163,7 @@ def _render_boolean(expression: str, **context: object) -> str:
     [
         (1, 0, "otelcol-otelbox version 2.1.0", "True", "False"),
         (1, 0, "otelcol-otelbox version 2.2.0", "True", "False"),
+        (1, 0, "otelcol-otelbox version 2.3.0", "True", "False"),
         (1, 0, "otelcol-otelbox version 1.9.0", "False", "True"),
         (1, 0, "unexpected output", "False", "False"),
         (1, 1, "", "False", "False"),
@@ -151,7 +184,7 @@ def test_existing_wal_compatibility_is_classified_explicitly(
             "rc": returncode,
             "stdout": version,
         },
-        "devbox_packages": {"otelbox_edge": {"version": "2.2.0"}},
+        "devbox_packages": {"otelbox_edge": {"version": _otelbox_defaults["version"]}},
     }
 
     assert (

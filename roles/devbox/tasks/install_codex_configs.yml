@@ -61,6 +61,13 @@
       - --json
   tags: [configs, codex]
 
+- name: Install Codex Langfuse runtime configuration
+  ansible.builtin.template:
+    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/langfuse.json.j2"
+    dest: "{{ devbox_codex_home }}/langfuse.json"
+    mode: "0600"
+  tags: [configs, ai, codex]
+
 - name: Install Codex global authority protocol
   ansible.builtin.copy:
     src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/AGENTS.md"
@@ -130,4 +137,186 @@
     recursive: true
     perms: true
   delegate_to: localhost
+  tags: [configs, ai, codex]
+
+- name: Find Codex CLI path
+  ansible.builtin.command: "command -v codex"
+  register: devbox_codex_cli_path
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [configs, ai, codex]
+
+- name: Inspect configured Codex plugin marketplaces
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - list
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  register: devbox_codex_marketplaces_before
+  when: devbox_codex_cli_path.rc == 0
+  changed_when: false
+  check_mode: false
+  tags: [configs, ai, codex]
+
+- name: Add pinned Codex plugin marketplaces
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - add
+      - "{{ item.repo }}"
+      - --ref
+      - "{{ item.ref }}"
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  loop: "{{ devbox_codex_plugin_marketplaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: devbox_codex_marketplaces_added
+  when:
+    - devbox_codex_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      item.name not in
+      (devbox_codex_marketplaces_before.stdout | from_json).marketplaces
+      | map(attribute='name') | list
+  changed_when: true
+  tags: [configs, ai, codex]
+
+- name: Verify configured Codex plugin marketplaces
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - list
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  register: devbox_codex_marketplaces_after
+  when: devbox_codex_cli_path.rc == 0
+  changed_when: false
+  check_mode: false
+  tags: [configs, ai, codex]
+
+- name: Inspect pinned Codex marketplace revisions
+  ansible.builtin.command:
+    argv:
+      - git
+      - -C
+      - >-
+        {{ ((devbox_codex_marketplaces_after.stdout | from_json).marketplaces
+             | selectattr('name', 'equalto', item.name) | first).root }}
+      - rev-parse
+      - HEAD
+  loop: "{{ devbox_codex_plugin_marketplaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: devbox_codex_marketplace_revisions
+  when:
+    - devbox_codex_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      item.name in
+      ((devbox_codex_marketplaces_after.stdout | from_json).marketplaces
+       | map(attribute='name') | list)
+  changed_when: false
+  tags: [configs, ai, codex]
+
+- name: Assert Codex marketplaces resolve to their pinned revisions
+  ansible.builtin.assert:
+    that:
+      - item.stdout == item.item.ref
+    fail_msg: >-
+      Codex marketplace {{ item.item.name }} resolved to {{ item.stdout }},
+      expected {{ item.item.ref }}
+  loop: "{{ devbox_codex_marketplace_revisions.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:
+    - not ansible_check_mode
+    - not (item.skipped | default(false))
+  tags: [configs, ai, codex]
+
+- name: Inspect available Codex plugins
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - list
+      - --available
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  register: devbox_codex_plugins_before
+  when: devbox_codex_cli_path.rc == 0
+  changed_when: false
+  check_mode: false
+  tags: [configs, ai, codex]
+
+- name: Install Codex plugins
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - add
+      - "{{ item.name }}@{{ item.marketplace }}"
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  loop: "{{ devbox_codex_plugins }}"
+  loop_control:
+    label: "{{ item.name }}@{{ item.marketplace }}"
+  register: devbox_codex_plugins_installed
+  when:
+    - devbox_codex_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      item.name ~ '@' ~ item.marketplace not in
+      ((devbox_codex_plugins_before.stdout | from_json).installed
+       | map(attribute='pluginId') | list)
+  changed_when: true
+  tags: [configs, ai, codex]
+
+- name: Verify installed Codex plugins
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - list
+      - --available
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  register: devbox_codex_plugins_after
+  when: devbox_codex_cli_path.rc == 0
+  changed_when: false
+  check_mode: false
+  tags: [configs, ai, codex]
+
+- name: Assert required Codex plugins are installed and enabled
+  ansible.builtin.assert:
+    that:
+      - >-
+        item.name ~ '@' ~ item.marketplace in
+        ((devbox_codex_plugins_after.stdout | from_json).installed
+         | selectattr('enabled', 'equalto', true)
+         | selectattr('version', 'equalto', item.version)
+         | map(attribute='pluginId') | list)
+    fail_msg: >-
+      Codex plugin {{ item.name }}@{{ item.marketplace }} version {{ item.version }}
+      is not installed and enabled
+  loop: "{{ devbox_codex_plugins }}"
+  loop_control:
+    label: "{{ item.name }}@{{ item.marketplace }}"
+  when:
+    - devbox_codex_cli_path.rc == 0
+    - not ansible_check_mode
   tags: [configs, ai, codex]

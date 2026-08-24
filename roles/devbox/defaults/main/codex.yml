@@ -52,3 +52,15 @@ devbox_codex_agents:
   - tdd-guide
   - technical-product-manager
   - unit-test-writer
+
+# Git-backed Codex plugin marketplaces are runtime state. Provisioning adds the
+# exact snapshot through the CLI while ai-config owns only portable enablement.
+devbox_codex_plugin_marketplaces:
+  - name: codex-observability-plugin
+    repo: langfuse/codex-observability-plugin
+    ref: 46e3936bf0d900c59a0706e0d77c2d41869ece00
+
+devbox_codex_plugins:
+  - name: tracing
+    marketplace: codex-observability-plugin
+    version: 0.1.0

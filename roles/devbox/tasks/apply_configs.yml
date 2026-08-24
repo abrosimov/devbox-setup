@@ -108,45 +108,210 @@
   failed_when: false
   tags: [configs, claude, mcp]
 
+- name: Inspect configured Claude Code plugin marketplaces
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - list
+      - --json
+  register: devbox_claude_marketplaces_before
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when: devbox_claude_cli_path.rc == 0
+  changed_when: false
+  check_mode: false
+  tags: [configs, claude]
+
 - name: Add Claude Code plugin marketplaces
-  ansible.builtin.command: >
-    {{ devbox_claude_cli_path.stdout }} plugin marketplace add {{ item.repo }}
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - add
+      - >-
+        {{ item.repo
+           if item.repo is defined
+           else ((lookup('env', 'HOME')
+                  if devbox_paths.dotfiles_root_dir == '~'
+                  else devbox_paths.dotfiles_root_dir)
+                 ~ '/.claude/' ~ item.path) }}
+      - --scope
+      - user
   loop: "{{ devbox_claude_plugin_marketplaces }}"
   loop_control:
     label: "{{ item.name }}"
+  register: devbox_claude_marketplaces_added
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when:
+    - devbox_claude_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      item.name not in
+      (devbox_claude_marketplaces_before.stdout | from_json
+       | map(attribute='name') | list)
+  changed_when: true
+  tags: [configs, claude]
+
+- name: Verify configured Claude Code plugin marketplaces
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - list
+      - --json
+  register: devbox_claude_marketplaces_after
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
   when: devbox_claude_cli_path.rc == 0
   changed_when: false
-  failed_when: false
+  check_mode: false
+  tags: [configs, claude]
+
+- name: Assert required Claude Code plugin marketplaces are configured
+  ansible.builtin.assert:
+    that:
+      - >-
+        item.name in
+        (devbox_claude_marketplaces_after.stdout | from_json
+         | map(attribute='name') | list)
+    fail_msg: "Claude Code plugin marketplace {{ item.name }} is not configured"
+  loop: "{{ devbox_claude_plugin_marketplaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - devbox_claude_cli_path.rc == 0
+    - not ansible_check_mode
+  tags: [configs, claude]
+
+- name: Inspect installed Claude Code plugins
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - list
+      - --json
+  register: devbox_claude_plugins_before
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when: devbox_claude_cli_path.rc == 0
+  changed_when: false
+  check_mode: false
   tags: [configs, claude]
 
 - name: Install Claude Code plugins (user scope)
-  ansible.builtin.command: >
-    {{ devbox_claude_cli_path.stdout }} plugin install
-    {% if item.marketplace is defined %}{{ item.name }}@{{ item.marketplace }}{% else %}{{ item.name }}{% endif %}
-    --scope user
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - install
+      - >-
+        {{ item.name ~ '@' ~ item.marketplace
+           if item.marketplace is defined else item.name }}
+      - --scope
+      - user
   loop: "{{ devbox_claude_plugins }}"
   loop_control:
     label: "{{ item.name }}"
+  register: devbox_claude_plugins_installed
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when:
+    - devbox_claude_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      (item.name ~ '@' ~ (item.marketplace | default('claude-plugins-official')))
+      not in
+      (devbox_claude_plugins_before.stdout | from_json
+       | map(attribute='id') | list)
+  changed_when: true
+  tags: [configs, claude]
+
+- name: Inspect Claude Code plugins after installation
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - list
+      - --json
+  register: devbox_claude_plugins_after_install
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
   when: devbox_claude_cli_path.rc == 0
   changed_when: false
-  failed_when: false
+  check_mode: false
   tags: [configs, claude]
 
 - name: Enable Claude Code plugins (user scope)
-  ansible.builtin.command: >
-    {{ devbox_claude_cli_path.stdout }} plugin enable {{ item.name }} --scope user
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - enable
+      - >-
+        {{ item.name ~ '@' ~ item.marketplace
+           if item.marketplace is defined else item.name }}
+      - --scope
+      - user
   loop: "{{ devbox_claude_plugins }}"
   loop_control:
     label: "{{ item.name }}"
+  register: devbox_claude_plugins_enabled
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when:
+    - devbox_claude_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      not (
+        devbox_claude_plugins_after_install.stdout | from_json
+        | selectattr(
+            'id', 'equalto',
+            item.name ~ '@' ~ (item.marketplace | default('claude-plugins-official'))
+          )
+        | map(attribute='enabled') | first | default(false)
+      )
+  changed_when: true
+  tags: [configs, claude]
+
+- name: Verify installed Claude Code plugins
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - list
+      - --json
+  register: devbox_claude_plugins_after
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
   when: devbox_claude_cli_path.rc == 0
   changed_when: false
-  failed_when: false
+  check_mode: false
+  tags: [configs, claude]
+
+- name: Assert required Claude Code plugins are installed and enabled
+  ansible.builtin.assert:
+    that:
+      - >-
+        item.name ~ '@' ~ (item.marketplace | default('claude-plugins-official'))
+        in
+        (devbox_claude_plugins_after.stdout | from_json
+         | selectattr('enabled', 'equalto', true)
+         | map(attribute='id') | list)
+    fail_msg: >-
+      Claude Code plugin
+      {{ item.name }}@{{ item.marketplace | default('claude-plugins-official') }}
+      is not installed and enabled
+  loop: "{{ devbox_claude_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - devbox_claude_cli_path.rc == 0
+    - not ansible_check_mode
   tags: [configs, claude]
 
 - name: Register Claude Code MCP servers - Docker (user scope)

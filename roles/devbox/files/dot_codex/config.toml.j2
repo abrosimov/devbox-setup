@@ -19,7 +19,7 @@ network_access = true
 environment = "{{ devbox_active_profile }}"
 log_user_prompt = true
 exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
-trace_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
+trace_exporter = "none"
 metrics_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 
 [[hooks.PreToolUse]]
@@ -82,6 +82,9 @@ enabled = true
 enabled = true
 
 [plugins."visualize@openai-bundled"]
+enabled = true
+
+[plugins."tracing@codex-observability-plugin"]
 enabled = true
 
 [tool_suggest]

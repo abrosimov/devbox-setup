@@ -76,7 +76,7 @@ class TestCodexManifestCoverage:
             (("sandbox_workspace_write", "network_access"), FieldScope.SHARED),
             (("otel", "log_user_prompt"), FieldScope.SHARED),
             (("otel", "exporter", "otlp-grpc", "endpoint"), FieldScope.SHARED),
-            (("otel", "trace_exporter", "otlp-grpc", "endpoint"), FieldScope.SHARED),
+            (("otel", "trace_exporter"), FieldScope.SHARED),
             (("otel", "metrics_exporter", "otlp-grpc", "endpoint"), FieldScope.SHARED),
             (("otel", "environment"), FieldScope.ENVIRONMENT),
         ],

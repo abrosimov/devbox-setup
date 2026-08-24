@@ -75,3 +75,12 @@ Use via `/techne-devcontainer init` command.
 ```bash
 make validate-claude  # Check cross-references between agents, skills, commands
 ```
+
+## Langfuse tracing plugin
+
+The local `marketplaces/langfuse-observability` catalog locks the upstream
+Claude observability plugin to a full Git commit. Provisioning installs that
+catalog at user scope and sends trace traffic only to
+`http://127.0.0.1:14318`, using non-secret sentinel credentials. Image capture
+is disabled because the local receiver accepts OTLP traces rather than the
+separate Langfuse media API.

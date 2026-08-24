@@ -23,7 +23,11 @@
     "OTEL_LOG_ASSISTANT_RESPONSES": "1",
     "OTEL_LOG_TOOL_DETAILS": "1",
     "OTEL_LOG_TOOL_CONTENT": "1",
-    "OTEL_LOG_RAW_API_BODIES": "1"
+    "OTEL_LOG_RAW_API_BODIES": "1",
+    "CC_LANGFUSE_BASE_URL": "http://127.0.0.1:14318",
+    "CC_LANGFUSE_PUBLIC_KEY": "otelbox-local-public",
+    "CC_LANGFUSE_SECRET_KEY": "otelbox-local-secret",
+    "CC_LANGFUSE_CAPTURE_IMAGES": "false"
   },
   "permissions": {
     "allow": [
@@ -400,13 +404,20 @@
     "pyright-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "example-skills@anthropic-agent-skills": true,
-    "document-skills@anthropic-agent-skills": true
+    "document-skills@anthropic-agent-skills": true,
+    "langfuse-observability@langfuse-observability": true
   },
   "extraKnownMarketplaces": {
     "anthropic-agent-skills": {
       "source": {
         "source": "github",
         "repo": "anthropics/skills"
+      }
+    },
+    "langfuse-observability": {
+      "source": {
+        "path": "/Users/kirillabrosimov/.claude/marketplaces/langfuse-observability",
+        "source": "directory"
       }
     }
   },

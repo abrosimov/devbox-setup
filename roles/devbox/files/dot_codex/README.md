@@ -12,8 +12,10 @@ Currently managed:
 - model, reasoning, service tier, personality, and sandbox mode;
 - `[features]` (`memories` and hooks; `js_repl` is deliberately not enabled);
 - `[sandbox_workspace_write]`;
-- `[otel]`, with the active devbox profile as the environment;
+- `[otel]`, with the active devbox profile as the environment, semantic log
+  export and metrics enabled, and noisy native Rust trace export disabled;
 - selected plugin declarations captured during bootstrap;
+- the SHA-pinned Langfuse tracing marketplace and loopback-only runtime config;
 - global working agreements in `AGENTS.md`;
 - all 28 Codex-native custom-agent adapters under `agents/*.toml`;
 - the allowlisted shared skills installed under `~/.agents/skills`, including
@@ -32,6 +34,20 @@ Intentionally not copied from a workstation:
 - plugin caches, marketplace timestamps, and ChatGPT app metadata;
 - MCP entries containing app-version-specific or machine-local paths;
 - history, logs, memories, state databases, and telemetry queues.
+
+## Langfuse tracing plugin
+
+Provisioning adds `langfuse/codex-observability-plugin` at the exact revision
+declared in `defaults/main/codex.yml`, installs
+`tracing@codex-observability-plugin`, and verifies the checked-out Git commit.
+The plugin sends OTLP/HTTP traces to `http://127.0.0.1:14318` with non-secret
+sentinel credentials; real Langfuse project credentials remain on the remote
+gateway.
+
+Codex hook trust is intentionally not automated. After initial installation or
+a plugin update, open `/hooks`, review the Langfuse `Stop` hook, and trust its
+current hash before expecting traces. A pin update must also account for the
+upstream plugin version because the cache path is versioned.
 
 ## First bootstrap
 

@@ -67,6 +67,7 @@ class TestClaudeSettingsWriter:
         expected_marketplaces = {
             marketplace["name"]: {"source": {"source": "github", "repo": marketplace["repo"]}}
             for marketplace in marketplaces
+            if marketplace.get("declare_in_settings", True)
         }
         expected_plugins = {
             "@".join(

@@ -27,7 +27,8 @@
     "CC_LANGFUSE_BASE_URL": "http://127.0.0.1:14318",
     "CC_LANGFUSE_PUBLIC_KEY": "otelbox-local-public",
     "CC_LANGFUSE_SECRET_KEY": "otelbox-local-secret",
-    "CC_LANGFUSE_CAPTURE_IMAGES": "false"
+    "CC_LANGFUSE_CAPTURE_IMAGES": "false",
+    "LANGFUSE_TRACING_ENVIRONMENT": "{{ devbox_active_profile }}"
   },
   "permissions": {
     "allow": [

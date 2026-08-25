@@ -15,6 +15,11 @@
       "scope": "shared"
     },
     {
+      "path": "env.LANGFUSE_TRACING_ENVIRONMENT",
+      "scope": "environment",
+      "binding": "profile:devbox_active_profile"
+    },
+    {
       "path": "extraKnownMarketplaces",
       "scope": "shared"
     },

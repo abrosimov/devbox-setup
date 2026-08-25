@@ -88,6 +88,7 @@ def test_claude_langfuse_runtime_is_loopback_only_and_media_free() -> None:
         "public", "secret"
     )
     assert environment["CC_LANGFUSE_CAPTURE_IMAGES"] == "false"
+    assert environment["LANGFUSE_TRACING_ENVIRONMENT"] == "{{ devbox_active_profile }}"
     assert not environment["CC_LANGFUSE_PUBLIC_KEY"].startswith("pk-lf-")
     assert not environment["CC_LANGFUSE_SECRET_KEY"].startswith("sk-lf-")
 

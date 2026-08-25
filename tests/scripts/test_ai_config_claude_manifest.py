@@ -5,12 +5,16 @@ from pathlib import Path
 
 import pytest
 from ai_config import (
+    BindingProvider,
+    BindingProviders,
     ChangeKind,
     FieldManifest,
     FieldScope,
     ReconciliationPlan,
     SemanticSnapshot,
     plan_reconciliation,
+    resolve_snapshot_bindings,
+    to_plain_value,
 )
 from ai_config.cli import load_manifest
 
@@ -34,7 +38,7 @@ class TestClaudeFieldManifest:
             manifest=manifest,
         )
 
-    def test_current_repository_settings_are_explicitly_shared(
+    def test_current_repository_settings_are_explicitly_classified(
         self,
         manifest: FieldManifest,
     ) -> None:
@@ -44,8 +48,37 @@ class TestClaudeFieldManifest:
             field.path: manifest.scope_for(field.path) for field in repository.semantic_fields()
         }
 
+        assert scopes.pop(("env", "LANGFUSE_TRACING_ENVIRONMENT")) is FieldScope.ENVIRONMENT
         assert scopes
         assert all(scope is FieldScope.SHARED for scope in scopes.values())
+
+    def test_langfuse_environment_uses_explicit_profile_binding(
+        self,
+        manifest: FieldManifest,
+    ) -> None:
+        settings = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+        rule = manifest.rule_for(("env", "LANGFUSE_TRACING_ENVIRONMENT"))
+
+        assert settings["env"]["LANGFUSE_TRACING_ENVIRONMENT"] == "{{ devbox_active_profile }}"
+        assert rule is not None
+        assert rule.binding is not None
+        assert rule.binding.provider is BindingProvider.PROFILE
+        assert rule.binding.key == "devbox_active_profile"
+
+    def test_langfuse_environment_resolves_active_profile(
+        self,
+        manifest: FieldManifest,
+    ) -> None:
+        repository = SemanticSnapshot.from_json_file(SETTINGS_PATH)
+
+        resolved = resolve_snapshot_bindings(
+            repository,
+            manifest,
+            BindingProviders(profile="personal", environment={}),
+        )
+        values = {field.path: to_plain_value(field.value) for field in resolved.semantic_fields()}
+
+        assert values[("env", "LANGFUSE_TRACING_ENVIRONMENT")] == "personal"
 
     def test_otel_resource_classification_is_shared(
         self,

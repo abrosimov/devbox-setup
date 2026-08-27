@@ -5,12 +5,13 @@ import subprocess
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
-from .core import BindingProvider, FieldBinding, FieldManifest
+from .core import BindingProvider, FieldBinding, FieldManifest, home_binding_suffix
 from .document import assign_value, snapshot_mapping
 from .model import SemanticSnapshot
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from pathlib import Path
 
 
 class BindingResolutionError(ValueError):
@@ -45,11 +46,12 @@ def run_command(arguments: tuple[str, ...]) -> CommandResult:
 class BindingProviders:
     profile: str
     environment: Mapping[str, str]
+    home: Path
     command_runner: CommandRunner = run_command
 
     @classmethod
-    def system(cls, profile: str) -> BindingProviders:
-        return cls(profile=profile, environment=os.environ)
+    def system(cls, profile: str, home: Path) -> BindingProviders:
+        return cls(profile=profile, environment=os.environ, home=home)
 
     def resolve(self, binding: FieldBinding) -> str:
         match binding.provider:
@@ -59,6 +61,8 @@ class BindingProviders:
                 return self._resolve_environment(binding)
             case BindingProvider.KEYCHAIN:
                 return self._resolve_keychain(binding)
+            case BindingProvider.HOME:
+                return self._resolve_home(binding)
 
     def _resolve_profile(self, binding: FieldBinding) -> str:
         if binding.key != "devbox_active_profile":
@@ -75,6 +79,9 @@ class BindingProviders:
             message = f"environment binding is unavailable: {binding.key}"
             raise BindingResolutionError(message)
         return value
+
+    def _resolve_home(self, binding: FieldBinding) -> str:
+        return str(self.home / home_binding_suffix(binding.key))
 
     def _resolve_keychain(self, binding: FieldBinding) -> str:
         service, separator, account = binding.key.partition("/")

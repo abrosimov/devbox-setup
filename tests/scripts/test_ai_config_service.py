@@ -5,7 +5,8 @@ import json
 import tomllib
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TYPE_CHECKING, cast
+from pathlib import Path
+from typing import cast
 
 import pytest
 from ai_config import service as service_module
@@ -15,7 +16,7 @@ from ai_config.bindings import (
     BindingResolutionError,
     CommandResult,
 )
-from ai_config.core import ChangeKind
+from ai_config.core import BindingProvider, ChangeKind, FieldBinding
 from ai_config.decisions import DecisionSet, DecisionSource, FieldDecision
 from ai_config.document import snapshot_mapping
 from ai_config.model import SemanticSnapshot
@@ -43,9 +44,6 @@ from ai_config.transaction import (
     FileWrite,
     MultiFileTransactionResult,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 SHARED_MANIFEST = """{
   "schema_version": 1,
@@ -125,6 +123,21 @@ BINDINGS_MANIFEST = """{
   ]
 }
 """
+MARKETPLACE_SUFFIX = ".claude/marketplaces/langfuse-observability"
+HOME_BINDING_MANIFEST = """{
+  "schema_version": 1,
+  "engine": "claude",
+  "fields": [
+    {"path": "model", "scope": "shared"},
+    {
+      "path": "marketplace.source",
+      "scope": "environment",
+      "binding": "home:.claude/marketplaces/langfuse-observability"
+    }
+  ]
+}
+"""
+HOME_BINDING_REPOSITORY = '{"marketplace": {"source": "{{ home }}"}, "model": "repository"}\n'
 NO_DECISIONS = DecisionSet(decisions=())
 
 
@@ -510,11 +523,13 @@ class TestLiveBootstrapService:
         preview_providers = BindingProviders(
             profile="work",
             environment={"AI_CONFIG_ENV_VALUE": "preview"},
+            home=tree.home,
             command_runner=runner,
         )
         changed_providers = BindingProviders(
             profile="work",
             environment={"AI_CONFIG_ENV_VALUE": "changed"},
+            home=tree.home,
             command_runner=runner,
         )
         preview = bootstrap(tree, write=False, providers=preview_providers)
@@ -864,7 +879,12 @@ class TestBindingsAndRedaction:
             manifest_source=CODEX_PROFILE_MANIFEST,
         )
         runner = RecordingCommandRunner(CommandResult(returncode=0, stdout="unused"))
-        providers = BindingProviders(profile="work", environment={}, command_runner=runner)
+        providers = BindingProviders(
+            profile="work",
+            environment={},
+            home=tree.home,
+            command_runner=runner,
+        )
 
         operate(tree, profile="work", providers=providers)
         state = load_tree_base(tree, EngineKind.CODEX)
@@ -900,6 +920,7 @@ class TestBindingsAndRedaction:
         providers = BindingProviders(
             profile="work",
             environment={"AI_CONFIG_ENV_VALUE": "environment-value"},
+            home=tree.home,
             command_runner=runner,
         )
 
@@ -969,6 +990,7 @@ class TestBindingsAndRedaction:
         providers = BindingProviders(
             profile="work",
             environment=environment,
+            home=tree.home,
             command_runner=runner,
         )
 
@@ -983,3 +1005,71 @@ class TestBindingsAndRedaction:
             assert runner.calls == []
         else:
             assert len(runner.calls) == 1
+
+
+class TestHomeBindings:
+    def test_system_providers_bind_the_target_home_not_the_process_environment(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("HOME", str(tmp_path / "process-home"))
+        target_home = tmp_path / "target-home"
+        binding = FieldBinding(provider=BindingProvider.HOME, key=MARKETPLACE_SUFFIX)
+
+        resolved = BindingProviders.system("work", target_home).resolve(binding)
+
+        assert resolved == f"{target_home}/.claude/marketplaces/langfuse-observability"
+        assert Path(resolved).is_absolute()
+        assert "process-home" not in resolved
+
+    def test_live_path_is_materialised_while_the_repository_declaration_is_preserved(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=HOME_BINDING_REPOSITORY,
+            manifest_source=HOME_BINDING_MANIFEST,
+            live_source=(
+                '{"marketplace": {"source": "/somebody/elses/home"}, "model": "repository"}\n'
+            ),
+        )
+        expected = f"{tree.home}/{MARKETPLACE_SUFFIX}"
+
+        operate(tree)
+        state = load_tree_base(tree, EngineKind.CLAUDE)
+
+        assert tree.paths.repository.read_text(encoding="utf-8") == HOME_BINDING_REPOSITORY
+        assert read_json(tree.paths.live) == {
+            "marketplace": {"source": expected},
+            "model": "repository",
+        }
+        assert snapshot_mapping(state.snapshot) == {
+            "marketplace": {"source": expected},
+            "model": "repository",
+        }
+
+    def test_bound_field_cannot_be_captured_from_live(self, tmp_path: Path) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=HOME_BINDING_REPOSITORY,
+            manifest_source=HOME_BINDING_MANIFEST,
+        )
+        operate(tree)
+        live_edit: dict[str, object] = {
+            "marketplace": {"source": "/locally/edited"},
+            "model": "repository",
+        }
+        write_json(tree.paths.live, live_edit)
+        decisions = DecisionSet(
+            decisions=(FieldDecision(path=("marketplace", "source"), source=DecisionSource.LIVE),),
+        )
+
+        with pytest.raises(ResolutionError):
+            operate(tree, mode=OperationMode.RECONCILE, decisions=decisions)
+
+        assert tree.paths.repository.read_text(encoding="utf-8") == HOME_BINDING_REPOSITORY
+        assert read_json(tree.paths.live) == live_edit

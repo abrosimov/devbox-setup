@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import PurePosixPath
 
 from .model import FieldPath, SemanticArray, SemanticSnapshot, SemanticValue
 
@@ -40,11 +41,35 @@ class BindingProvider(StrEnum):
     PROFILE = "profile"
     ENVIRONMENT = "env"
     KEYCHAIN = "keychain"
+    HOME = "home"
 
 
 class FieldStrategy(StrEnum):
     ATOMIC = "atomic"
     ORDERED_SET = "ordered-set"
+
+
+# Repository-document declaration convention only; the manifest binding, not this
+# sentinel, is what the resolver reads.
+HOME_BINDING_SENTINEL = "@home@"
+
+
+def home_binding_declaration(key: str) -> str:
+    return f"{HOME_BINDING_SENTINEL}/{home_binding_suffix(key)}"
+
+
+def home_binding_suffix(key: str) -> PurePosixPath:
+    suffix = PurePosixPath(key)
+    if suffix.is_absolute():
+        message = "home binding keys must be relative paths"
+        raise ManifestDefinitionError(message)
+    if not suffix.parts:
+        message = "home binding keys must name a path below the home directory"
+        raise ManifestDefinitionError(message)
+    if ".." in suffix.parts:
+        message = "home binding keys must not traverse above the home directory"
+        raise ManifestDefinitionError(message)
+    return suffix
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +81,8 @@ class FieldBinding:
         if not self.key:
             message = "field binding keys must not be empty"
             raise ManifestDefinitionError(message)
+        if self.provider is BindingProvider.HOME:
+            home_binding_suffix(self.key)
 
 
 @dataclass(frozen=True, slots=True)

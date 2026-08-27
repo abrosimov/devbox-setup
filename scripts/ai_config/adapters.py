@@ -32,6 +32,7 @@ class EnginePaths:
     repository: Path
     live: Path
     manifest: Path
+    home: Path
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +110,7 @@ def resolve_engine_paths(
         repository=repo_root / adapter.repository_relative_path,
         live=home / adapter.live_relative_path,
         manifest=repo_root / adapter.manifest_relative_path,
+        home=home,
     )
 
 

@@ -181,8 +181,17 @@ The implemented providers are:
 
 - `profile:devbox_active_profile`, resolved from the explicit CLI profile;
 - `env:NAME`, resolved from the process environment;
+- `home:RELATIVE/PATH`, resolved by joining the explicit `--home` root with the relative suffix. It
+  reads the target home the operation was given rather than the process environment, so `dev_mode`
+  runs against a debug root stay faithful. The suffix must stay below the root: absolute suffixes,
+  empty suffixes, and any `..` segment are rejected when the manifest is parsed;
 - `keychain:SERVICE/ACCOUNT`, resolved with macOS `security find-generic-password` using an argument
   vector rather than a shell.
+
+`home:` exists because bindings substitute a whole value and cannot interpolate a resolved value
+into a larger string. A host-specific path that must still be declared portably in the repository —
+such as a plugin marketplace directory shipped by this repository — therefore carries its fixed
+relative part in the binding key rather than in the document.
 
 Provider errors occur before writes. Keychain command output is used only as the resolved value;
 error messages do not include it. No current engine manifest declares a Keychain-backed field, so

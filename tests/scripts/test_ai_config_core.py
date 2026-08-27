@@ -135,6 +135,25 @@ class TestFieldManifest:
         with pytest.raises(ManifestDefinitionError):
             FieldRule(path=("token",), scope=FieldScope.ENVIRONMENT)
 
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "",
+            "/Users/someone/.claude/marketplaces/example",
+            ".",
+            "./",
+            "..",
+            "../.claude",
+            ".claude/../../.codex",
+        ],
+    )
+    def test_home_bindings_reject_keys_that_do_not_stay_below_the_home_directory(
+        self,
+        key: str,
+    ) -> None:
+        with pytest.raises(ManifestDefinitionError):
+            FieldBinding(provider=BindingProvider.HOME, key=key)
+
     def test_ordered_set_strategy_requires_shared_scope(self) -> None:
         with pytest.raises(ManifestDefinitionError):
             FieldRule(

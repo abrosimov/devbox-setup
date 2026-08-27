@@ -189,7 +189,7 @@ def inspect_engine(
         manifest_source,
         runtime_snapshots=runtime_snapshots,
     )
-    active_providers = providers or BindingProviders.system(profile)
+    active_providers = providers or BindingProviders.system(profile, paths.home)
     resolved_repository = resolve_snapshot_bindings(repository, manifest, active_providers)
     comparable_repository = fingerprint_sensitive_fields(resolved_repository, manifest)
     comparable_live = fingerprint_sensitive_fields(live, manifest)
@@ -355,7 +355,10 @@ def _operate_inspection(
         raise DecisionsRequiredError(inspection, resolved.required_decisions)
 
     repository = SemanticSnapshot.from_value(resolved.repository)
-    active_providers = providers or BindingProviders.system(inspection.profile)
+    active_providers = providers or BindingProviders.system(
+        inspection.profile,
+        inspection.paths.home,
+    )
     resolved_repository = resolve_snapshot_bindings(
         repository,
         inspection.manifest,

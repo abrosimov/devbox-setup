@@ -24,6 +24,11 @@
       "scope": "shared"
     },
     {
+      "path": "extraKnownMarketplaces.langfuse-observability.source.path",
+      "scope": "environment",
+      "binding": "home:.claude/marketplaces/langfuse-observability"
+    },
+    {
       "path": "model",
       "scope": "shared"
     },
@@ -55,7 +60,15 @@
       "scope": "shared"
     },
     {
+      "path": "skipWorkflowUsageWarning",
+      "scope": "runtime"
+    },
+    {
       "path": "statusLine",
+      "scope": "shared"
+    },
+    {
+      "path": "tui",
       "scope": "shared"
     }
   ]

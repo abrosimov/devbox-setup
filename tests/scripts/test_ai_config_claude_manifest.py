@@ -49,6 +49,13 @@ class TestClaudeFieldManifest:
         }
 
         assert scopes.pop(("env", "LANGFUSE_TRACING_ENVIRONMENT")) is FieldScope.ENVIRONMENT
+        marketplace_path = (
+            "extraKnownMarketplaces",
+            "langfuse-observability",
+            "source",
+            "path",
+        )
+        assert scopes.pop(marketplace_path) is FieldScope.ENVIRONMENT
         assert scopes
         assert all(scope is FieldScope.SHARED for scope in scopes.values())
 
@@ -68,13 +75,14 @@ class TestClaudeFieldManifest:
     def test_langfuse_environment_resolves_active_profile(
         self,
         manifest: FieldManifest,
+        tmp_path: Path,
     ) -> None:
         repository = SemanticSnapshot.from_json_file(SETTINGS_PATH)
 
         resolved = resolve_snapshot_bindings(
             repository,
             manifest,
-            BindingProviders(profile="personal", environment={}),
+            BindingProviders(profile="personal", environment={}, home=tmp_path),
         )
         values = {field.path: to_plain_value(field.value) for field in resolved.semantic_fields()}
 

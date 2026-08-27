@@ -55,7 +55,7 @@ function klocal-use --description "Point klocal and mlops-be at a specific insta
 
     # Update OI_PLATFORM_INSTALLER_ROOT in mlops-be .env files (all worktrees)
     if test -n "$installer_root"
-        set -l mlops_project ~/Work/mlops-be
+        set -l mlops_project "$AION_AUTOPOIESEON/mlops-be"
         if test -d $mlops_project
             for envfile in $mlops_project/*/.env
                 if test -f $envfile

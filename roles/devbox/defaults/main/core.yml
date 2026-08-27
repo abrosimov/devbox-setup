@@ -8,7 +8,12 @@ devbox_upgrade_mode: false
 # slot is missing the lookup falls back to the literal string `MISSING`, which
 # an assert task in main_darwin.yml catches before any consumer runs.
 devbox_user:
-  login: kabrosimov
+  # Derived from the invoking account rather than hardcoded: the same repository
+  # is deployed from two laptops whose login names differ. Consumed as
+  # `become_user` across apply_configs.yml and as the account name in
+  # prepare_user.yml. Override with `-e devbox_user_login_override=…` when the
+  # target account is not the one running the playbook.
+  login: "{{ devbox_user_login_override | default(lookup('env', 'USER'), true) }}"
   ssh_pass_phrase: >-
     {{ devbox_ssh_pass_phrase_override |
        default(lookup('pipe',

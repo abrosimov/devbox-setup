@@ -417,7 +417,7 @@
     },
     "langfuse-observability": {
       "source": {
-        "path": "/Users/kirillabrosimov/.claude/marketplaces/langfuse-observability",
+        "path": "@home@/.claude/marketplaces/langfuse-observability",
         "source": "directory"
       }
     }
@@ -540,5 +540,6 @@
     ]
   },
   "autoMemoryEnabled": false,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "tui": "fullscreen"
 }

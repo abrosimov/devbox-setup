@@ -1,0 +1,21 @@
+[project]
+name = "codex-hooks"
+version = "0.0.0"
+description = "Codex hook scripts and helpers — runtime environment for ~/.codex/bin/."
+# universal_logger.py is stdlib-only today, but the floor is load-bearing: it is
+# what makes the interpreter a pinned artefact rather than whatever `python3`
+# PATH happens to resolve. reconcile_config.py needs tomllib (3.11+).
+requires-python = ">=3.11"
+dependencies = []
+
+# Not a distributable package — the scripts in this directory are invoked by
+# absolute path from ~/.codex/config.toml as
+# `~/.codex/bin/.venv/bin/python ~/.codex/bin/<script>.py`. The directory is a
+# uv environment, not a Python package. Calling the venv interpreter directly
+# (rather than `uv run`) is deliberate: `uv run` would sync the dev group on
+# every hook invocation, which a `--no-dev` venv cannot satisfy.
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = ["pytest"]

@@ -47,21 +47,23 @@ devbox_mcp_http_servers: []
 # Claude Code plugins installed via `claude plugin` CLI.
 # Marketplaces are GitHub repos containing plugin manifests.
 # Plugins are installed from marketplaces by name.
+#
+# The Langfuse observability plugin used to be installed here. Its hook resolved
+# `langfuse>=4.0,<5` at invocation time through `uv run --script`, which puts the
+# environment under UV_CACHE_DIR (/tmp, so uv stays writable in the Bash sandbox)
+# where macOS tmp_cleaner erodes it after three days. The hook is now vendored at
+# files/dot_claude/bin/vendor/langfuse_hook.py, pinned in bin/uv.lock and invoked
+# from the same pre-materialised venv as every other hook. See bin/vendor/README.md.
 devbox_claude_plugin_marketplaces:
   - repo: anthropics/skills
     name: anthropic-agent-skills
     declare_in_settings: true
-  - path: marketplaces/langfuse-observability
-    name: langfuse-observability
-    declare_in_settings: false
 
 devbox_claude_plugins:
   - name: example-skills
     marketplace: anthropic-agent-skills
   - name: document-skills
     marketplace: anthropic-agent-skills
-  - name: langfuse-observability
-    marketplace: langfuse-observability
   # LSP plugins — installed from official marketplace (pre-registered on macOS).
   # Binaries must be on PATH: gopls (go install), pyright (uv tool), typescript-language-server (npm).
   - name: gopls-lsp

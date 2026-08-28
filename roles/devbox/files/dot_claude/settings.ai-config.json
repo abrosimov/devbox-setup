@@ -24,11 +24,6 @@
       "scope": "shared"
     },
     {
-      "path": "extraKnownMarketplaces.langfuse-observability.source.path",
-      "scope": "environment",
-      "binding": "home:.claude/marketplaces/langfuse-observability"
-    },
-    {
       "path": "model",
       "scope": "shared"
     },

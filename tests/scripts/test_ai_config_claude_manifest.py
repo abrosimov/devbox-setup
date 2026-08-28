@@ -49,13 +49,6 @@ class TestClaudeFieldManifest:
         }
 
         assert scopes.pop(("env", "LANGFUSE_TRACING_ENVIRONMENT")) is FieldScope.ENVIRONMENT
-        marketplace_path = (
-            "extraKnownMarketplaces",
-            "langfuse-observability",
-            "source",
-            "path",
-        )
-        assert scopes.pop(marketplace_path) is FieldScope.ENVIRONMENT
         assert scopes
         assert all(scope is FieldScope.SHARED for scope in scopes.values())
 

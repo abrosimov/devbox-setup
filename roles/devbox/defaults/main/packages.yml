@@ -69,6 +69,7 @@ devbox_brew_secondary:
   - tree-sitter-cli
   # orbstack moved to profile overrides (work uses orbstack, personal uses docker-desktop).
   - k9s
+  - skopeo        # Daemonless OCI image inspect/copy/sync between registries
   - fzf
   - tmux
   - pam-reattach   # Touch ID for sudo in tmux/kitty/screen; wired into sudo_local by configure_macos_basics.yml

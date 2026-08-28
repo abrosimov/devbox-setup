@@ -15,6 +15,7 @@ Checks:
   related-links        related: frontmatter entries resolve to existing skills/agents
   trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
   fpf-refs             FPF and NSTD ids cited by their skills resolve in bundled references
+  hook-hermeticity     hook commands run from the pinned venv, never resolving deps at call time
 
 Usage:
   validate-config.py                           # all checks, ~/.claude root
@@ -32,6 +33,7 @@ import json
 import re
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -909,6 +911,146 @@ def check_meta_pipeline(root: Path) -> tuple[list[str], list[str]]:
 # Registry & runner
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Hook hermeticity
+# ---------------------------------------------------------------------------
+
+# Tokens that make a hook resolve its dependencies at invocation time instead of
+# running from an environment materialised ahead of time by Ansible. `uv run
+# --script` is the shape that caused the langfuse outage: it builds a PEP 723
+# environment under UV_CACHE_DIR, which points into /tmp so uv stays writable in
+# the Bash sandbox — and macOS tmp_cleaner deletes files there once their atime
+# passes three days, leaving a half-installed environment uv will not rebuild.
+_RESOLVER_TOKENS = (
+    "uv run",
+    "uvx",
+    "uv tool run",
+    "uv pip",
+    "pip install",
+    "npx ",
+    "bunx ",
+    "pnpm dlx",
+)
+
+# Leaders that hand the hook to whatever interpreter PATH happens to resolve.
+# The pinned venv interpreter must be named explicitly instead.
+_AMBIENT_INTERPRETERS = re.compile(r"^(?:/usr/bin/env\s+)?(?:python|python3|node|ruby|perl)\b")
+
+
+def _iter_hook_commands(path: Path) -> Iterator[tuple[str, str]]:
+    """Yield (event, command) for every hook entry in a hooks.json document."""
+    try:
+        document = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return
+    events = document.get("hooks", document)
+    if not isinstance(events, dict):
+        return
+    for event, groups in events.items():
+        if not isinstance(groups, list):
+            continue
+        for group in groups:
+            for hook in (group or {}).get("hooks", []):
+                command = (hook or {}).get("command")
+                if isinstance(command, str) and command:
+                    yield event, command
+
+
+def _hermeticity_violation(command: str) -> str | None:
+    stripped = command.strip()
+    for token in _RESOLVER_TOKENS:
+        if token in stripped:
+            return f"resolves dependencies at invocation time via `{token.strip()}`"
+    if _AMBIENT_INTERPRETERS.match(stripped):
+        return "runs under an ambient interpreter from PATH rather than a pinned venv"
+    return None
+
+
+def default_plugin_cache() -> Path:
+    return Path.home() / ".claude" / "plugins" / "cache"
+
+
+def _iter_codex_hook_commands(path: Path) -> Iterator[tuple[str, str]]:
+    """Yield (event, command) for Codex hooks, declared in TOML rather than JSON.
+
+    The template carries no Jinja inside the hook tables, so it parses as plain
+    TOML — the sibling deploy tests rely on the same property.
+    """
+    try:
+        document = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return
+    events = document.get("hooks")
+    if not isinstance(events, dict):
+        return
+    for event, groups in events.items():
+        if not isinstance(groups, list):
+            continue
+        for group in groups:
+            for hook in (group or {}).get("hooks", []):
+                command = (hook or {}).get("command")
+                if isinstance(command, str) and command:
+                    yield event, command
+
+
+def check_hook_hermeticity(
+    root: Path,
+    plugin_cache: Path | None = None,
+    codex_root: Path | None = None,
+) -> tuple[list[str], list[str]]:
+    """Every hook must run from an environment materialised before invocation.
+
+    Repo-tracked hooks.json files are errors. Hooks contributed by installed
+    plugins are reported as warnings: they are machine state rather than repo
+    state, so failing on them would make the check non-deterministic in CI.
+    ``plugin_cache`` defaults to the live cache; pass an explicit path to scope
+    the machine-dependent half of the check.
+    """
+    errors = _scan_repo_hooks(root)
+    if codex_root is not None:
+        errors.extend(_scan_codex_hooks(codex_root))
+
+    plugin_cache = default_plugin_cache() if plugin_cache is None else plugin_cache
+    return errors, _scan_plugin_hooks(plugin_cache)
+
+
+def _scan_repo_hooks(root: Path) -> list[str]:
+    errors: list[str] = []
+    for hooks_file in sorted(root.rglob("hooks.json")):
+        relative = hooks_file.relative_to(root)
+        for event, command in _iter_hook_commands(hooks_file):
+            violation = _hermeticity_violation(command)
+            if violation:
+                errors.append(f"[HOOK_HERMETICITY] {relative} ({event}): {violation} — {command}")
+    return errors
+
+
+def _scan_codex_hooks(codex_root: Path) -> list[str]:
+    errors: list[str] = []
+    config = codex_root / "config.toml.j2"
+    for event, command in _iter_codex_hook_commands(config):
+        violation = _hermeticity_violation(command)
+        if violation:
+            errors.append(f"[HOOK_HERMETICITY] {config.name} ({event}): {violation} — {command}")
+    return errors
+
+
+def _scan_plugin_hooks(plugin_cache: Path) -> list[str]:
+    warnings: list[str] = []
+    if not plugin_cache.is_dir():
+        return warnings
+    for hooks_file in sorted(plugin_cache.glob("*/*/*/hooks/hooks.json")):
+        plugin = hooks_file.relative_to(plugin_cache).parts[0]
+        for event, command in _iter_hook_commands(hooks_file):
+            violation = _hermeticity_violation(command)
+            if violation:
+                warnings.append(
+                    f"[HOOK_HERMETICITY_PLUGIN] {plugin} ({event}): {violation} "
+                    f"— vendor it into bin/ (see bin/vendor/README.md) — {command}"
+                )
+    return warnings
+
+
 ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "agents": check_agents,
     "skills": check_skills,
@@ -923,6 +1065,7 @@ ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "related-links": check_related_links,
     "trigger-consistency": check_trigger_consistency,
     "fpf-refs": check_fpf_spec_refs,
+    "hook-hermeticity": check_hook_hermeticity,
 }
 
 _AI_OWNED_ENTRIES = ("agents", "skills", "commands", "USER_AUTHORITY_PROTOCOL.md")
@@ -953,7 +1096,11 @@ def validation_root(runtime_root: Path, ai_root: Path | None) -> Iterator[Path]:
         yield merged_root
 
 
-def run_checks(root: Path, checks: list[str] | None = None) -> dict:
+def run_checks(
+    root: Path,
+    checks: list[str] | None = None,
+    codex_root: Path | None = None,
+) -> dict:
     selected = checks or list(ALL_CHECKS.keys())
     all_errors: list[str] = []
     all_warnings: list[str] = []
@@ -963,7 +1110,12 @@ def run_checks(root: Path, checks: list[str] | None = None) -> dict:
         if fn is None:
             all_errors.append(f"[CONFIG] Unknown check: {name}")
             continue
-        errs, warns = fn(root)
+        # The hermeticity check spans both engines; every other check is scoped
+        # to the Claude tree and takes the root alone.
+        if name == "hook-hermeticity":
+            errs, warns = fn(root, codex_root=codex_root)
+        else:
+            errs, warns = fn(root)
         all_errors.extend(errs)
         all_warnings.extend(warns)
 
@@ -1054,6 +1206,12 @@ def main() -> None:
         help="Shared agents/skills/commands root when split from --root",
     )
     parser.add_argument(
+        "--codex-root",
+        type=Path,
+        default=None,
+        help="Codex config root (dot_codex/) — enables the hook-hermeticity check for Codex",
+    )
+    parser.add_argument(
         "--check",
         type=str,
         default=None,
@@ -1078,7 +1236,7 @@ def main() -> None:
             sys.exit(0)
 
         checks = [c.strip() for c in args.check.split(",")] if args.check else None
-        results = run_checks(merged_root, checks)
+        results = run_checks(merged_root, checks, codex_root=args.codex_root)
 
     if args.json_output:
         print(json.dumps(results, indent=2))

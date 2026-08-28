@@ -26,34 +26,34 @@ metrics_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 matcher = ".*"
 [[hooks.PreToolUse.hooks]]
 type = "command"
-command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PreToolUse"
+command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreToolUse"
 
 [[hooks.PostToolUse]]
 matcher = ".*"
 [[hooks.PostToolUse.hooks]]
 type = "command"
-command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PostToolUse"
+command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PostToolUse"
 async = true
 
 [[hooks.PreCompact]]
 [[hooks.PreCompact.hooks]]
 type = "command"
-command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PreCompact"
+command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreCompact"
 
 [[hooks.Stop]]
 [[hooks.Stop.hooks]]
 type = "command"
-command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py Stop"
+command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop"
 
 [[hooks.SessionStart]]
 [[hooks.SessionStart.hooks]]
 type = "command"
-command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py SessionStart"
+command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionStart"
 
 [[hooks.SessionEnd]]
 [[hooks.SessionEnd.hooks]]
 type = "command"
-command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py SessionEnd"
+command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionEnd"
 
 [plugins]
 

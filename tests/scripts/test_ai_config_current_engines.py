@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MARKETPLACE_KEY = ".claude/marketplaces/langfuse-observability"
+HOME_BOUND_PATH = "syntheticHomeBoundField"
 
 
 def sentinel_declarations(repository: SemanticSnapshot) -> dict[FieldPath, str]:
@@ -142,10 +144,43 @@ def test_current_repository_home_declarations_match_their_manifest_bindings(
     assert declared == expected
 
 
-def test_home_declaration_guard_is_not_vacuous() -> None:
-    expectations = [engine_declarations(engine, REPO_ROOT)[1] for engine in EngineKind]
+def _add_home_bound_field(repo_root: Path, engine: EngineKind, declaration: str) -> None:
+    """Give a copied Claude document and manifest one HOME-bound field."""
+    adapter = engine_adapter(engine)
 
-    assert any(expectations)
+    manifest_path = repo_root / adapter.manifest_relative_path
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["fields"].append(
+        {
+            "path": HOME_BOUND_PATH,
+            "scope": "environment",
+            "binding": f"home:{MARKETPLACE_KEY}",
+        }
+    )
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+    document_path = repo_root / adapter.repository_relative_path
+    document = json.loads(document_path.read_text(encoding="utf-8"))
+    document[HOME_BOUND_PATH] = declaration
+    document_path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+
+
+def test_home_declaration_guard_matches_a_synthetic_home_bound_field(tmp_path: Path) -> None:
+    """No engine currently binds a field to $HOME, so exercise the guard synthetically.
+
+    The langfuse marketplace path used to be the only HOME-bound field. It went
+    away when the hook stopped being a plugin (see bin/vendor/README.md), which
+    would otherwise leave this mechanism with no coverage at all.
+    """
+    engine = EngineKind.CLAUDE
+    isolated_repo = tmp_path / "repository"
+    copy_engine_documents(engine, isolated_repo)
+    _add_home_bound_field(isolated_repo, engine, home_binding_declaration(MARKETPLACE_KEY))
+
+    declared, expected = engine_declarations(engine, isolated_repo)
+
+    assert declared == expected
+    assert declared
 
 
 def test_declaration_guard_trips_on_a_stale_placeholder_in_a_current_document(
@@ -154,14 +189,11 @@ def test_declaration_guard_trips_on_a_stale_placeholder_in_a_current_document(
     engine = EngineKind.CLAUDE
     isolated_repo = tmp_path / "repository"
     copy_engine_documents(engine, isolated_repo)
-    document = isolated_repo / engine_adapter(engine).repository_relative_path
-    current = document.read_text(encoding="utf-8")
-    stale = current.replace(
-        f"{HOME_BINDING_SENTINEL}/{MARKETPLACE_KEY}",
+    _add_home_bound_field(
+        isolated_repo,
+        engine,
         f"{HOME_BINDING_SENTINEL}/{MARKETPLACE_KEY}-renamed",
     )
-    assert stale != current
-    document.write_text(stale, encoding="utf-8")
 
     declared, expected = engine_declarations(engine, isolated_repo)
 

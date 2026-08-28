@@ -3,7 +3,11 @@ name = "claude-hooks"
 version = "0.0.0"
 description = "Claude Code hook scripts and helpers — runtime environment for ~/.claude/bin/."
 requires-python = ">=3.11"
-dependencies = ["bashlex"]
+# bashlex — bash_decision_gate.py.
+# langfuse — vendor/langfuse_hook.py (see vendor/README.md). Declared as a range
+# here and pinned exactly by uv.lock; upstream shipped it as PEP 723 inline
+# metadata resolved at hook-invocation time, which is what this replaces.
+dependencies = ["bashlex", "langfuse>=4.0,<5"]
 
 # Not a distributable package — the scripts in this directory are invoked by
 # absolute path from ~/.claude/hooks.json via `uv run --project ~/.claude/bin

@@ -88,6 +88,7 @@ $(COLLECTIONS_SENTINEL): requirements.yml
 AI_CONFIG           := scripts/ai-config
 CLAUDE_SRC          := roles/devbox/files/dot_claude
 AI_SRC              := roles/devbox/files/dot_ai
+CODEX_SRC           := roles/devbox/files/dot_codex
 SKILLS_DIR          := $(AI_SRC)/skills
 
 # Karabiner: the repo seeds the live file only when absent (Karabiner owns it at
@@ -325,8 +326,14 @@ lint-py: $(DEV_SENTINEL)
 	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py
 	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py
 
+# Pyrefly ignores `project-excludes` from pyproject.toml whenever files are named
+# explicitly on the command line, so the excludes have to be repeated as flags.
+# bin/vendor/ holds verbatim upstream code (see bin/vendor/README.md) — it is not
+# ours to annotate.
+PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.venv/**' --project-excludes '**/__pycache__/**'
+
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ scripts/ai_config_cli.py scripts/ai_config/ tests/scripts/test_ai_config*.py
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ scripts/ai_config_cli.py scripts/ai_config/ tests/scripts/test_ai_config*.py $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a
@@ -403,7 +410,7 @@ list-agents:
 	@ls -1 $(AI_SRC)/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | sort | nl -ba
 
 validate-claude:
-	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC)
+	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC) --codex-root $(CODEX_SRC)
 
 audit-budget:
 	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC) --budget

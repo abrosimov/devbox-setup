@@ -213,6 +213,14 @@
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Stop"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -271,6 +279,14 @@
           {
             "type": "command",
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionEnd"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
           }
         ]
       }

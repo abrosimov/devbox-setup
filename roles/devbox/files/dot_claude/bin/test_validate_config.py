@@ -11,8 +11,10 @@ warnings), including the boundary cases that must NOT be flagged.
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
+import pytest
 import validate_config as vc
 
 if TYPE_CHECKING:
@@ -463,3 +465,123 @@ def test_fpf_refs_unparsable_spec_errors(tmp_path: Path) -> None:
     errors, _ = vc.check_fpf_spec_refs(root)
     assert _codes(errors) == ["FPF_REFS"]
     assert "format changed" in errors[0]
+
+
+# ---------------------------------------------------------------------------
+# check_hook_hermeticity
+# ---------------------------------------------------------------------------
+
+
+def _build_hooks_root(tmp_path: Path, command: str) -> Path:
+    document = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": command}]}]}}
+    (tmp_path / "hooks.json").write_text(json.dumps(document), encoding="utf-8")
+    return tmp_path
+
+
+def _no_plugins(tmp_path: Path) -> Path:
+    """An absent plugin cache — keeps the check independent of machine state."""
+    return tmp_path / "absent-plugin-cache"
+
+
+_PINNED = "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
+
+
+def test_hermeticity_accepts_the_pinned_venv_interpreter(tmp_path: Path) -> None:
+    root = _build_hooks_root(tmp_path, _PINNED)
+    errors, warnings = vc.check_hook_hermeticity(root, _no_plugins(tmp_path))
+    assert errors == []
+    assert warnings == []
+
+
+def test_hermeticity_accepts_a_plain_executable(tmp_path: Path) -> None:
+    root = _build_hooks_root(tmp_path, "~/.claude/bin/worktree-create")
+    errors, _ = vc.check_hook_hermeticity(root, _no_plugins(tmp_path))
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'uv run --quiet --script "${CLAUDE_PLUGIN_ROOT}"/hooks/langfuse_hook.py',
+        "uvx ruff check .",
+        "npx some-hook",
+        "pip install thing && thing",
+    ],
+)
+def test_hermeticity_rejects_invocation_time_resolution(tmp_path: Path, command: str) -> None:
+    root = _build_hooks_root(tmp_path, command)
+    errors, _ = vc.check_hook_hermeticity(root, _no_plugins(tmp_path))
+    assert _codes(errors) == ["HOOK_HERMETICITY"]
+    assert "resolves dependencies at invocation time" in errors[0]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "python3 ~/.claude/bin/universal_logger.py Stop",
+        "/usr/bin/env python3 ~/.codex/bin/universal_logger.py Stop",
+        "node ~/.claude/bin/thing.mjs",
+    ],
+)
+def test_hermeticity_rejects_ambient_interpreters(tmp_path: Path, command: str) -> None:
+    root = _build_hooks_root(tmp_path, command)
+    errors, _ = vc.check_hook_hermeticity(root, _no_plugins(tmp_path))
+    assert _codes(errors) == ["HOOK_HERMETICITY"]
+    assert "ambient interpreter" in errors[0]
+
+
+def test_hermeticity_ignores_unparsable_documents(tmp_path: Path) -> None:
+    (tmp_path / "hooks.json").write_text("{not json", encoding="utf-8")
+    errors, warnings = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path))
+    assert errors == []
+    assert warnings == []
+
+
+def test_hermeticity_reports_every_event(tmp_path: Path) -> None:
+    document = {
+        "hooks": {
+            "Stop": [{"hooks": [{"type": "command", "command": "uv run --script x.py"}]}],
+            "SessionEnd": [{"hooks": [{"type": "command", "command": _PINNED}]}],
+        }
+    }
+    (tmp_path / "hooks.json").write_text(json.dumps(document), encoding="utf-8")
+    errors, _ = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path))
+    assert len(errors) == 1
+    assert "(Stop)" in errors[0]
+
+
+def _build_codex_root(tmp_path: Path, command: str) -> Path:
+    codex_root = tmp_path / "dot_codex"
+    codex_root.mkdir()
+    (codex_root / "config.toml.j2").write_text(
+        f'[[hooks.Stop]]\n[[hooks.Stop.hooks]]\ntype = "command"\ncommand = "{command}"\n',
+        encoding="utf-8",
+    )
+    return codex_root
+
+
+def test_hermeticity_accepts_the_codex_pinned_venv(tmp_path: Path) -> None:
+    codex_root = _build_codex_root(
+        tmp_path,
+        "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop",
+    )
+    errors, _ = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path), codex_root=codex_root)
+    assert errors == []
+
+
+def test_hermeticity_rejects_codex_ambient_interpreter(tmp_path: Path) -> None:
+    codex_root = _build_codex_root(
+        tmp_path,
+        "/usr/bin/env python3 ~/.codex/bin/universal_logger.py Stop",
+    )
+    errors, _ = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path), codex_root=codex_root)
+    assert _codes(errors) == ["HOOK_HERMETICITY"]
+    assert "config.toml.j2 (Stop)" in errors[0]
+
+
+def test_hermeticity_skips_codex_when_root_is_absent(tmp_path: Path) -> None:
+    errors, warnings = vc.check_hook_hermeticity(
+        tmp_path, _no_plugins(tmp_path), codex_root=tmp_path / "missing"
+    )
+    assert errors == []
+    assert warnings == []

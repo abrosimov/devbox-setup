@@ -11,11 +11,9 @@ from jinja2 import StrictUndefined, Template
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CLAUDE_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/claude.yml"
 CLAUDE_SETTINGS = REPO_ROOT / "roles/devbox/files/dot_claude/settings.json"
-CLAUDE_MARKETPLACE = (
-    REPO_ROOT
-    / "roles/devbox/files/dot_claude/marketplaces/langfuse-observability"
-    / ".claude-plugin/marketplace.json"
-)
+CLAUDE_HOOKS = REPO_ROOT / "roles/devbox/files/dot_claude/hooks.json"
+CLAUDE_BIN = REPO_ROOT / "roles/devbox/files/dot_claude/bin"
+VENDORED_HOOK = CLAUDE_BIN / "vendor/langfuse_hook.py"
 CLAUDE_TASKS = REPO_ROOT / "roles/devbox/tasks/apply_configs.yml"
 CODEX_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/codex.yml"
 CODEX_CONFIG = REPO_ROOT / "roles/devbox/files/dot_codex/config.toml.j2"
@@ -31,34 +29,41 @@ def _tasks_by_name(path: Path) -> dict[str, dict[str, object]]:
     return {task["name"]: task for task in tasks}
 
 
-def test_claude_lock_marketplace_uses_an_immutable_upstream_revision() -> None:
-    marketplace = json.loads(CLAUDE_MARKETPLACE.read_text(encoding="utf-8"))
-    plugin = marketplace["plugins"][0]
-    source = plugin["source"]
+def test_claude_langfuse_hook_is_vendored_rather_than_installed_as_a_plugin() -> None:
+    """Upstream ships the hook as `uv run --script` with PEP 723 inline metadata.
 
-    assert marketplace["name"] == "langfuse-observability"
-    assert plugin["name"] == "langfuse-observability"
-    assert source["source"] == "github"
-    assert source["repo"] == "langfuse/claude-observability-plugin"
-    assert source["ref"] == "main"
-    assert FULL_SHA.fullmatch(source["sha"])
-
-
-def test_claude_deploys_and_enables_the_locked_marketplace() -> None:
+    That resolves dependencies at invocation time into an environment under
+    UV_CACHE_DIR, which points into /tmp so uv stays writable inside the Bash
+    sandbox — where macOS tmp_cleaner erodes it after three days. The hook is
+    vendored instead; see roles/devbox/files/dot_claude/bin/vendor/README.md.
+    """
     defaults = yaml.safe_load(CLAUDE_DEFAULTS.read_text(encoding="utf-8"))
     settings = json.loads(CLAUDE_SETTINGS.read_text(encoding="utf-8"))
 
-    assert "marketplaces" in defaults["devbox_claude_managed_dirs"]
-    assert {
-        "path": "marketplaces/langfuse-observability",
-        "name": "langfuse-observability",
-        "declare_in_settings": False,
-    } in defaults["devbox_claude_plugin_marketplaces"]
-    assert {
-        "name": "langfuse-observability",
-        "marketplace": "langfuse-observability",
-    } in defaults["devbox_claude_plugins"]
-    assert settings["enabledPlugins"]["langfuse-observability@langfuse-observability"] is True
+    assert VENDORED_HOOK.is_file()
+    assert all(
+        entry["name"] != "langfuse-observability"
+        for entry in defaults["devbox_claude_plugin_marketplaces"]
+    )
+    assert all(
+        entry["name"] != "langfuse-observability" for entry in defaults["devbox_claude_plugins"]
+    )
+    assert "langfuse-observability@langfuse-observability" not in settings["enabledPlugins"]
+    assert "langfuse-observability" not in settings["extraKnownMarketplaces"]
+
+
+def test_claude_langfuse_hook_runs_from_the_pinned_bin_venv() -> None:
+    hooks = json.loads(CLAUDE_HOOKS.read_text(encoding="utf-8"))
+    project = tomllib.loads((CLAUDE_BIN / "pyproject.toml").read_text(encoding="utf-8"))
+    lock = (CLAUDE_BIN / "uv.lock").read_text(encoding="utf-8")
+
+    assert any(dep.startswith("langfuse") for dep in project["project"]["dependencies"])
+    assert 'name = "langfuse"' in lock
+
+    expected = "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
+    for event in ("Stop", "SessionEnd"):
+        commands = [hook["command"] for group in hooks["hooks"][event] for hook in group["hooks"]]
+        assert expected in commands
 
 
 def test_claude_provisioning_is_idempotent_and_fail_closed() -> None:
@@ -163,3 +168,34 @@ def test_repo_owned_langfuse_configuration_has_no_remote_ingestion_url() -> None
 
     assert all("cloud.langfuse.com" not in source for source in sources)
     assert all("/api/public/otel" not in source for source in sources)
+
+
+def test_codex_hooks_run_from_a_pinned_venv_rather_than_ambient_python() -> None:
+    """`/usr/bin/env python3` hands the hook to whatever PATH resolves first."""
+    config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
+    project = tomllib.loads(
+        (REPO_ROOT / "roles/devbox/files/dot_codex/bin/pyproject.toml").read_text(encoding="utf-8")
+    )
+
+    assert project["project"]["requires-python"] == ">=3.11"
+    assert (REPO_ROOT / "roles/devbox/files/dot_codex/bin/uv.lock").is_file()
+
+    commands = [
+        hook["command"]
+        for groups in config["hooks"].values()
+        for group in groups
+        for hook in group["hooks"]
+    ]
+    assert commands
+    assert all(command.startswith("~/.codex/bin/.venv/bin/python ") for command in commands)
+
+
+def test_codex_bin_sync_preserves_the_venv_it_bootstraps() -> None:
+    tasks = _tasks_by_name(CODEX_TASKS)
+    sync = tasks["Sync Codex bin directory"]
+    bootstrap = tasks["Bootstrap Codex hooks venv via uv sync"]
+
+    assert "--exclude=.venv" in sync["ansible.posix.synchronize"]["rsync_opts"]
+    assert sync["ansible.posix.synchronize"]["delete"] is True
+    assert "sync --frozen --no-dev" in bootstrap["ansible.builtin.command"]["cmd"]
+    assert bootstrap["ansible.builtin.command"]["chdir"].endswith("/bin")

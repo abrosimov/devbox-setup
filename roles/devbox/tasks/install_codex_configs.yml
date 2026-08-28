@@ -136,7 +136,35 @@
     delete: true
     recursive: true
     perms: true
+    rsync_opts:
+      - "--exclude=.DS_Store"
+      - "--exclude=__pycache__"
+      - "--exclude=.venv"
+      - "--exclude=.pytest_cache"
   delegate_to: localhost
+  tags: [configs, ai, codex]
+
+# The hooks in config.toml.j2 name this venv's interpreter directly rather than
+# `/usr/bin/env python3`, so the Python running them is a pinned artefact instead
+# of whatever PATH resolves. Mirrors Block 1b for .claude/bin in
+# install_configs.yml; the `.venv` rsync exclusion above keeps it across deploys.
+- name: Find uv path for Codex hooks venv
+  ansible.builtin.command: "command -v uv"
+  register: devbox_codex_uv_path
+  changed_when: false
+  check_mode: false
+  failed_when: devbox_codex_uv_path.rc != 0
+  tags: [configs, ai, codex]
+
+- name: Bootstrap Codex hooks venv via uv sync
+  ansible.builtin.command:
+    cmd: "{{ devbox_codex_uv_path.stdout }} sync --frozen --no-dev"
+    chdir: "{{ devbox_codex_home }}/bin"
+  register: devbox_codex_uv_sync
+  changed_when: >-
+    'Resolved' in (devbox_codex_uv_sync.stderr | default(''))
+    or 'Installed' in (devbox_codex_uv_sync.stderr | default(''))
+    or 'Prepared' in (devbox_codex_uv_sync.stderr | default(''))
   tags: [configs, ai, codex]
 
 - name: Find Codex CLI path

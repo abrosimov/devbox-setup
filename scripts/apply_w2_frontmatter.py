@@ -30,9 +30,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_ROOT = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude"
-DATA_TABLE = (
-    CLAUDE_ROOT / "future_projects" / "claude_tuning" / "w2_frontmatter_data.yaml"
-)
+DATA_TABLE = CLAUDE_ROOT / "future_projects" / "claude_tuning" / "w2_frontmatter_data.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -264,8 +262,7 @@ def main() -> None:
 
     action = "would change" if args.dry_run else "changed"
     print(
-        f"\n{action}: {changed}, skipped: {skipped}, errors: {errors} "
-        f"({len(patches)} total)",
+        f"\n{action}: {changed}, skipped: {skipped}, errors: {errors} ({len(patches)} total)",
         file=sys.stderr,
     )
     sys.exit(1 if errors else 0)

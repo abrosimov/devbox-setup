@@ -81,7 +81,7 @@ ignore = [
     # Todos and FIXMEs are legitimate, not lint warnings
     "FIX", "TD",
     # Sometimes a public function genuinely needs many arguments
-    "PLR0913",
+    "PLR0913", "PLR0917",
     # Long exception messages — fine for diagnostic CLIs
     "TRY003",
     # Magic values — sometimes the clearest expression of intent

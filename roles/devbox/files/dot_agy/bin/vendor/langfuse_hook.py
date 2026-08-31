@@ -1,0 +1,1 @@
+../../../dot_claude/bin/vendor/langfuse_hook.py

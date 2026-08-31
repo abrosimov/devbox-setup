@@ -55,6 +55,7 @@ extend-exclude = [
     "roles/devbox/files/dot_claude/plugins",
     # Verbatim upstream copies — not ours to restyle. See bin/vendor/README.md.
     "roles/devbox/files/dot_claude/bin/vendor",
+    "roles/devbox/files/dot_agy/bin/vendor",
     "roles/devbox/files/dot_ai/skills/example-skills",
     "roles/devbox/files/dot_ai/skills/document-skills",
     "roles/devbox/files/.config/nvim",
@@ -224,6 +225,7 @@ project-excludes = [
     "roles/devbox/files/dot_claude/plugins",
     # Verbatim upstream copies — not ours to restyle. See bin/vendor/README.md.
     "roles/devbox/files/dot_claude/bin/vendor",
+    "roles/devbox/files/dot_agy/bin/vendor",
     "roles/devbox/files/dot_ai/skills/example-skills",
     "roles/devbox/files/dot_ai/skills/document-skills",
 ]

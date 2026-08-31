@@ -19,6 +19,10 @@ CODEX_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/codex.yml"
 CODEX_CONFIG = REPO_ROOT / "roles/devbox/files/dot_codex/config.toml.j2"
 CODEX_LANGFUSE = REPO_ROOT / "roles/devbox/files/dot_codex/langfuse.json.j2"
 CODEX_TASKS = REPO_ROOT / "roles/devbox/tasks/install_codex_configs.yml"
+AGY_BIN = REPO_ROOT / "roles/devbox/files/dot_agy/bin"
+AGY_VENDORED_HOOK = AGY_BIN / "vendor/langfuse_hook.py"
+AGY_HOOKS = REPO_ROOT / "roles/devbox/files/dot_agy/config/hooks.json.j2"
+AGY_FISH = REPO_ROOT / "roles/devbox/files/.config/fish/functions/agy.fish"
 
 FULL_SHA = re.compile(r"[0-9a-f]{40}")
 LOOPBACK_URL = "http://127.0.0.1:14318"
@@ -164,6 +168,7 @@ def test_repo_owned_langfuse_configuration_has_no_remote_ingestion_url() -> None
     sources = (
         CLAUDE_SETTINGS.read_text(encoding="utf-8"),
         CODEX_LANGFUSE.read_text(encoding="utf-8"),
+        AGY_FISH.read_text(encoding="utf-8"),
     )
 
     assert all("cloud.langfuse.com" not in source for source in sources)
@@ -199,3 +204,54 @@ def test_codex_bin_sync_preserves_the_venv_it_bootstraps() -> None:
     assert sync["ansible.posix.synchronize"]["delete"] is True
     assert "sync --frozen --no-dev" in bootstrap["ansible.builtin.command"]["cmd"]
     assert bootstrap["ansible.builtin.command"]["chdir"].endswith("/bin")
+
+
+# ── Antigravity CLI (agy) ──────────────────────────────────────────────
+
+
+def test_agy_langfuse_hook_is_vendored_and_identical_to_claude() -> None:
+    """Agy uses an unmodified copy of the Claude langfuse hook."""
+    assert AGY_VENDORED_HOOK.is_file()
+    assert AGY_VENDORED_HOOK.read_bytes() == VENDORED_HOOK.read_bytes()
+
+
+def test_agy_langfuse_hook_runs_from_the_pinned_bin_venv() -> None:
+    rendered = Template(
+        AGY_HOOKS.read_text(encoding="utf-8"),
+        undefined=StrictUndefined,
+    ).render(lookup=lambda _plugin, _key: "/home/testuser")
+    hooks = json.loads(rendered)
+
+    project = tomllib.loads((AGY_BIN / "pyproject.toml").read_text(encoding="utf-8"))
+    lock = (AGY_BIN / "uv.lock").read_text(encoding="utf-8")
+
+    assert any(dep.startswith("langfuse") for dep in project["project"]["dependencies"])
+    assert 'name = "langfuse"' in lock
+
+    expected_suffix = "bin/.venv/bin/python"
+    expected_script = "bin/vendor/langfuse_hook.py"
+    hook_entry = hooks["langfuse_hook"]
+    assert hook_entry["event"] == "Stop"
+    assert hook_entry["enabled"] is True
+    assert expected_suffix in hook_entry["handler"]["command"]
+    assert expected_script in hook_entry["handler"]["command"]
+
+
+def test_agy_langfuse_env_vars_are_loopback_only() -> None:
+    fish = AGY_FISH.read_text(encoding="utf-8")
+
+    assert "CC_LANGFUSE_BASE_URL=http://127.0.0.1:14318" in fish
+    assert "CC_LANGFUSE_PUBLIC_KEY=otelbox-local-public" in fish
+    assert "CC_LANGFUSE_SECRET_KEY=otelbox-local-secret" in fish
+    assert "CC_LANGFUSE_CAPTURE_IMAGES=false" in fish
+    assert "CC_LANGFUSE_STATE_DIR=" in fish
+    assert ".gemini/antigravity-cli/state" in fish
+    assert "pk-lf-" not in fish
+    assert "sk-lf-" not in fish
+
+
+def test_agy_langfuse_state_dir_is_isolated_from_claude() -> None:
+    """Agy must not share state with Claude's ~/.claude/state/."""
+    fish = AGY_FISH.read_text(encoding="utf-8")
+    assert "CC_LANGFUSE_STATE_DIR=" in fish
+    assert ".claude/state" not in fish.split("CC_LANGFUSE_STATE_DIR=")[1].split()[0]

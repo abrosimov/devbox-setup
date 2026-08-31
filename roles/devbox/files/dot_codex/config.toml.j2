@@ -21,6 +21,7 @@ log_user_prompt = true
 exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 trace_exporter = "none"
 metrics_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
+resource_attributes = { "otelbox.telemetry.class" = "llm" }
 
 [[hooks.PreToolUse]]
 matcher = ".*"

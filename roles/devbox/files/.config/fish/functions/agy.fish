@@ -6,6 +6,7 @@ function agy --wraps agy
     env \
         OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
         OTEL_SERVICE_NAME=agy-$profile \
+        OTEL_RESOURCE_ATTRIBUTES=otelbox.telemetry.class=llm \
         CC_LANGFUSE_BASE_URL=http://127.0.0.1:14318 \
         CC_LANGFUSE_PUBLIC_KEY=otelbox-local-public \
         CC_LANGFUSE_SECRET_KEY=otelbox-local-secret \

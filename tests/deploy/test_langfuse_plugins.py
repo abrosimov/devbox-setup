@@ -175,6 +175,19 @@ def test_repo_owned_langfuse_configuration_has_no_remote_ingestion_url() -> None
     assert all("/api/public/otel" not in source for source in sources)
 
 
+def test_all_engines_stamp_otelbox_telemetry_class_llm() -> None:
+    """Every engine must tag its OTLP telemetry with otelbox.telemetry.class=llm
+    so the gateway can route LLM traces to Langfuse."""
+    claude_settings = json.loads(CLAUDE_SETTINGS.read_text(encoding="utf-8"))
+    assert claude_settings["env"]["OTEL_RESOURCE_ATTRIBUTES"] == "otelbox.telemetry.class=llm"
+
+    codex_config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
+    assert codex_config["otel"]["resource_attributes"]["otelbox.telemetry.class"] == "llm"
+
+    agy_fish = AGY_FISH.read_text(encoding="utf-8")
+    assert "OTEL_RESOURCE_ATTRIBUTES=otelbox.telemetry.class=llm" in agy_fish
+
+
 def test_codex_hooks_run_from_a_pinned_venv_rather_than_ambient_python() -> None:
     """`/usr/bin/env python3` hands the hook to whatever PATH resolves first."""
     config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))

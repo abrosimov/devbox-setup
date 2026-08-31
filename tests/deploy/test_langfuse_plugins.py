@@ -230,10 +230,10 @@ def test_codex_bin_sync_preserves_the_venv_it_bootstraps() -> None:
 # ── Antigravity CLI (agy) ──────────────────────────────────────────────
 
 
-def test_agy_langfuse_hook_is_vendored_and_identical_to_claude() -> None:
-    """Agy uses an unmodified copy of the Claude langfuse hook."""
-    assert AGY_VENDORED_HOOK.is_file()
-    assert AGY_VENDORED_HOOK.read_bytes() == VENDORED_HOOK.read_bytes()
+def test_agy_langfuse_hook_is_a_symlink_to_the_claude_vendored_copy() -> None:
+    """Agy reuses the Claude langfuse hook via a repo-internal symlink."""
+    assert AGY_VENDORED_HOOK.is_symlink()
+    assert AGY_VENDORED_HOOK.resolve() == VENDORED_HOOK.resolve()
 
 
 def test_agy_langfuse_hook_runs_from_the_pinned_bin_venv() -> None:

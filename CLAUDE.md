@@ -48,7 +48,9 @@ make secrets-init            # seed devbox-sudo + devbox-ssh-passphrase (idempot
 make sudo-reseed             # after macOS login password rotation
 make ssh-passphrase-reseed   # after SSH passphrase change or key regen
 
-# otelbox edge (durable local OTLP collector, Task Flow step 10)
+# otelbox edge (durable local OTLP collector, Task Flow step 12)
+# scripts/otelbox-edge-{config,test,cert-check}.py are thin wrappers over the
+# stdlib-only scripts/otelbox_edge/ package.
 make otelbox-edge-config     # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token|cert
 make otelbox-edge-test       # liveness + delivery smoke: binary, launchd service, :13133, :8888, OTLP round-trip
 
@@ -85,11 +87,12 @@ Everything lives in one role. No multi-role orchestration.
 4. `darwin/install_from_uv.yml` — Python tools via `uv tool` (variable-driven)
 5. `darwin/install_kubectl.yml` — pinned kubectl binary download
 6. `darwin/configure_macos_basics.yml` — codifies manual notes: Touch ID for sudo via `sudo_local`, `pmset disablesleep` for clamshell, `DevToolsSecurity --enable` for debugger access
-7. `install_configs.yml` — deploy shared AI/client configs and dotfiles (see below)
-8. `install_codex_configs.yml` — render `dot_codex/config.toml.j2`, merge its owned keys/tables into app-owned `~/.codex/config.toml`, install `dot_codex/AGENTS.md` plus native TOML agents, and deploy the compatible `dot_ai` skill subset to `~/.agents/skills/`
-9. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
-10. `prepare_user.yml` — shell, user-level setup
-11. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. It downloads the checksum-verified v2.1 release binary, deploys one self-contained `edge.yaml`, validates that exact pair and supervises it with `local.otelbox-edge`. The endpoint comes from the local overlay; the Keychain remains credential authority and the wrapper materialises v2.1's watched header in the private per-user temporary directory. Once v2.1 preflight passes, the task removes the legacy `otelcol-edge` binary, config, LaunchAgent and WAL. Homebrew remains a hard conflict. See `README.md` § OTLP Telemetry.
+7. `darwin/configure_pub_mode.yml` — pub mode: deploys the `pub-lease` controller to `~/.local/bin/` and installs the system-domain LaunchDaemon `local.pub-lease`, which reconciles the lease every 60 seconds. Gated on the profile actually installing the `cloudflare-warp` cask (personal only); the disabled path tears the whole thing down and restores any active lease. See `README.md` § Pub Mode.
+8. `install_configs.yml` — deploy shared AI/client configs and dotfiles (see below)
+9. `install_codex_configs.yml` — render `dot_codex/config.toml.j2`, merge its owned keys/tables into app-owned `~/.codex/config.toml`, install `dot_codex/AGENTS.md` plus native TOML agents, and deploy the compatible `dot_ai` skill subset to `~/.agents/skills/`
+10. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
+11. `prepare_user.yml` — shell, user-level setup
+12. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. It downloads the checksum-verified v2.1 release binary, deploys one self-contained `edge.yaml`, validates that exact pair and supervises it with `local.otelbox-edge`. The endpoint comes from the local overlay; the Keychain remains credential authority and the wrapper materialises v2.1's watched header in the private per-user temporary directory. Once v2.1 preflight passes, the task removes the legacy `otelcol-edge` binary, config, LaunchAgent and WAL. Homebrew remains a hard conflict. See `README.md` § OTLP Telemetry.
 
 ### Configuration Deployment (`install_configs.yml`)
 
@@ -99,7 +102,7 @@ Six deployment blocks, each using the most efficient method:
 2. **copy loop** — `.claude/` root files (CLAUDE.md, settings.json, hooks.json, config.md)
 3. **copy dir** — `kitty/`, `nvim/`, `fish/completions/`, `fish/functions/` as whole directories (no `--delete`, safe for local overlay). AeroSpace config is handled separately in **Block 3c**: `.config/aerospace/` (`aerospace.toml` + the `aerospace-layouts` dynamic-layout uv project) is one-way rsynced with `--delete` — repo is source of truth; the engine's runtime state lives under `~/.local/state/`, not here — excluding `.venv`/caches, then the project's `.venv` is materialised via `uv sync --frozen --no-dev` (mirroring Block 1b for `.claude/bin`) so the `aerospace.toml` layout keybindings can invoke the built console-script (`~/.config/aerospace/layouts/.venv/bin/aerospace-layouts`) by absolute path (`exec-and-forget` has no `uv` on PATH).
 4. **copy loop** — individual files (fish/config.fish, conf.d/aliases.fish, README.md)
-5. **template loop** — 6 `.j2` files rendered to their destinations (`.bashrc`, `.gemrc`, `.npmrc`, `.config/git/config`, 2 fish conf.d). `.config/git/config` is the XDG global git config, which git reads **in addition to** `~/.gitconfig` (the user's file is left untouched; where a key is set in both, `~/.gitconfig` wins). It carries behavioral settings only — branchless push/pull (`push.autoSetupRemote`, `pull.ff=only`), `rerere`, `core.hooksPath`, `jira.keyPosition`. Per-profile **identity** is layered on via `includeIf gitdir:` (`~/Projects` → personal, `~/Work` → work) pulling in `~/.config/git/identity-{personal,work}.gitconfig`, generated by `make git-identity` (`scripts/git-identity-gen.sh`) into the gitignored local overlay and deployed via Block 6. `make git-identity` is standalone; `git-identity-ensure` is an idempotent prerequisite of `personal`/`work`. A user's existing `[user]` in `~/.gitconfig` loads last and shadows these includes — remove it when adopting per-profile identity. The `core.hooksPath` points at `~/.config/git/hooks/`, deployed by Block 3b; its `prepare-commit-msg` (Jira-key injection) is a self-contained stdlib Python script — tested via `make test-git-hooks` (`tests/git_hooks/`).
+5. **template loop** — 6 `.j2` files rendered to their destinations (`.bashrc`, `.gemrc`, `.npmrc`, `.config/git/config`, 2 fish conf.d). `.config/git/config` is the XDG global git config, which git reads **in addition to** `~/.gitconfig` (the user's file is left untouched; where a key is set in both, `~/.gitconfig` wins). It carries behavioral settings only — branchless push/pull (`push.autoSetupRemote`, `pull.ff=only`), `rerere`, `core.hooksPath`, `jira.keyPosition`. Per-profile **identity** is layered on via `includeIf gitdir:` (`~/Projects` → personal, `~/Work` → work) pulling in `~/.config/git/identity-{personal,work}.gitconfig`, generated by `make git-identity` (`scripts/git-identity-gen.py`) into the gitignored local overlay and deployed via Block 6. `make git-identity` is standalone; `git-identity-ensure` is an idempotent prerequisite of `personal`/`work`. A user's existing `[user]` in `~/.gitconfig` loads last and shadows these includes — remove it when adopting per-profile identity. The `core.hooksPath` points at `~/.config/git/hooks/`, deployed by Block 3b; its `prepare-commit-msg` (Jira-key injection) is a self-contained stdlib Python script — tested via `make test-git-hooks` (`tests/git_hooks/`).
 6. **local overlay** — `roles/devbox/local/` (gitignored) deployed last via filetree. Laptop-only configs override repo files.
 
 Protected files: `_init_env_confidential.fish` is copied only if absent (`force: false`).

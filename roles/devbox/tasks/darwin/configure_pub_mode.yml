@@ -1,0 +1,413 @@
+---
+- name: "Pub mode — resolve deployment root"
+  ansible.builtin.set_fact:
+    devbox_pub_python_path: /usr/bin/python3
+    devbox_pub_home: >-
+      {{ lookup('env', 'HOME')
+         if devbox_paths.dotfiles_root_dir == '~'
+         else (devbox_paths.dotfiles_root_dir
+               if devbox_paths.dotfiles_root_dir.startswith('/')
+               else role_path ~ '/../../' ~ devbox_paths.dotfiles_root_dir) }}
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — inspect Python runtime"
+  ansible.builtin.stat:
+    path: "{{ devbox_pub_python_path }}"
+  register: devbox_pub_python
+  when: devbox_pub_mode_enabled | bool
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — require Python runtime"
+  ansible.builtin.assert:
+    that:
+      - devbox_pub_python.stat.exists
+      - devbox_pub_python.stat.executable
+    fail_msg: >-
+      Pub mode requires an executable {{ devbox_pub_python_path }} from the
+      macOS Command Line Tools.
+  when: devbox_pub_mode_enabled | bool
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — verify Python runtime version"
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_pub_python_path }}"
+      - -c
+      - "import sys; raise SystemExit(sys.version_info < (3, 9))"
+  changed_when: false
+  check_mode: false
+  when: devbox_pub_mode_enabled | bool
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — resolve supervisor path"
+  ansible.builtin.set_fact:
+    devbox_pub_plist_path: >-
+      {{ devbox_pub_home ~ '/Library/LaunchDaemons/local.pub-lease.plist'
+         if dev_mode | default(false) | bool
+         else '/Library/LaunchDaemons/local.pub-lease.plist' }}
+    devbox_pub_staging_dir: >-
+      {{ devbox_pub_home ~ '/Library/Application Support/devbox'
+         if dev_mode | default(false) | bool
+         else '/Library/Application Support/devbox' }}
+    devbox_pub_candidate_plist_path: >-
+      {{ devbox_pub_home ~ '/Library/Application Support/devbox/local.pub-lease.plist.candidate'
+         if dev_mode | default(false) | bool
+         else '/Library/Application Support/devbox/local.pub-lease.plist.candidate' }}
+    devbox_pub_legacy_candidate_plist_path: >-
+      {{ devbox_pub_home ~ '/Library/LaunchDaemons/.local.pub-lease.plist.candidate'
+         if dev_mode | default(false) | bool
+         else '/Library/LaunchDaemons/.local.pub-lease.plist.candidate' }}
+    devbox_pub_reload_marker_path: >-
+      {{ devbox_pub_home ~ '/Library/LaunchDaemons/.local.pub-lease-reload-required'
+         if dev_mode | default(false) | bool
+         else '/Library/LaunchDaemons/.local.pub-lease-reload-required' }}
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — ensure runtime directories exist"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ devbox_pub_home }}/.local/bin"
+    - "{{ devbox_pub_home }}/Library/Logs"
+  when: devbox_pub_mode_enabled | bool
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — ensure debug supervisor directory exists"
+  ansible.builtin.file:
+    path: "{{ devbox_pub_home }}/Library/LaunchDaemons"
+    state: directory
+    mode: "0755"
+  when:
+    - devbox_pub_mode_enabled | bool
+    - dev_mode | default(false) | bool
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — ensure lease state directory exists"
+  ansible.builtin.file:
+    path: "{{ devbox_pub_home }}/.local/state/pub-lease"
+    state: directory
+    mode: "0700"
+  when:
+    - not (devbox_pub_mode_enabled | bool)
+    - not (dev_mode | default(false) | bool)
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — block activation during teardown"
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ devbox_pub_home }}/.local/state/pub-lease/disabled"
+    force: false
+    mode: "0600"
+  when:
+    - not (devbox_pub_mode_enabled | bool)
+    - not (dev_mode | default(false) | bool)
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — allow activation when managed"
+  ansible.builtin.file:
+    path: "{{ devbox_pub_home }}/.local/state/pub-lease/disabled"
+    state: absent
+  when: devbox_pub_mode_enabled | bool
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — deploy lease controller"
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/.local/bin/pub-lease.py"
+    dest: "{{ devbox_pub_home }}/.local/bin/pub-lease"
+    mode: "0755"
+    validate: "{{ devbox_pub_python_path }} -m py_compile %s"
+  when: devbox_pub_mode_enabled | bool
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — ensure supervisor staging directory exists"
+  ansible.builtin.file:
+    path: "{{ devbox_pub_staging_dir }}"
+    state: directory
+    owner: "{{ omit if dev_mode | default(false) | bool else 'root' }}"
+    group: "{{ omit if dev_mode | default(false) | bool else 'wheel' }}"
+    mode: "0700"
+  when: devbox_pub_mode_enabled | bool
+  become: "{{ not (dev_mode | default(false) | bool) }}"
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — render expiry LaunchDaemon candidate"
+  ansible.builtin.template:
+    src: darwin/Library/LaunchDaemons/local.pub-lease.plist.j2
+    dest: "{{ devbox_pub_candidate_plist_path }}"
+    owner: "{{ omit if dev_mode | default(false) | bool else 'root' }}"
+    group: "{{ omit if dev_mode | default(false) | bool else 'wheel' }}"
+    mode: "0600"
+  when: devbox_pub_mode_enabled | bool
+  become: "{{ not (dev_mode | default(false) | bool) }}"
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — check expiry LaunchDaemon candidate"
+  ansible.builtin.stat:
+    path: "{{ devbox_pub_candidate_plist_path }}"
+  register: devbox_pub_candidate_plist
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not ansible_check_mode
+  become: "{{ not (dev_mode | default(false) | bool) }}"
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — check installed expiry LaunchDaemon plist"
+  ansible.builtin.stat:
+    path: "{{ devbox_pub_plist_path }}"
+  register: devbox_pub_installed_plist
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not (dev_mode | default(false) | bool)
+  become: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — persist pending LaunchDaemon reload"
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ devbox_pub_reload_marker_path }}"
+    force: false
+    owner: root
+    group: wheel
+    mode: "0600"
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not (dev_mode | default(false) | bool)
+    - not ansible_check_mode
+    - >-
+      not (devbox_pub_installed_plist.stat.exists | default(false))
+      or devbox_pub_installed_plist.stat.checksum
+         != devbox_pub_candidate_plist.stat.checksum
+  become: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — deploy expiry LaunchDaemon"
+  ansible.builtin.copy:
+    src: "{{ devbox_pub_candidate_plist_path }}"
+    dest: "{{ devbox_pub_plist_path }}"
+    remote_src: true
+    owner: "{{ omit if dev_mode | default(false) | bool else 'root' }}"
+    group: "{{ omit if dev_mode | default(false) | bool else 'wheel' }}"
+    mode: "0644"
+  register: devbox_pub_launchagent
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not ansible_check_mode
+  become: "{{ not (dev_mode | default(false) | bool) }}"
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — check pending LaunchDaemon reload"
+  ansible.builtin.stat:
+    path: "{{ devbox_pub_reload_marker_path }}"
+  register: devbox_pub_reload_required
+  when: not (dev_mode | default(false) | bool)
+  become: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — check expiry LaunchDaemon status"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "system/local.pub-lease"
+  register: devbox_pub_launchagent_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: not (dev_mode | default(false) | bool)
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — check legacy GUI expiry LaunchAgent status"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "gui/{{ ansible_facts['user_uid'] }}/local.pub-lease"
+  register: devbox_pub_legacy_launchagent_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: not (dev_mode | default(false) | bool)
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — bootout changed expiry LaunchDaemon"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "system/local.pub-lease"
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not (dev_mode | default(false) | bool)
+    - devbox_pub_reload_required.stat.exists | default(false)
+    - (devbox_pub_launchagent_status.rc | default(1)) == 0
+  changed_when: true
+  become: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — bootstrap expiry LaunchDaemon"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootstrap
+      - "system"
+      - "{{ devbox_pub_plist_path }}"
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not (dev_mode | default(false) | bool)
+    - >-
+      devbox_pub_reload_required.stat.exists | default(false)
+      or (devbox_pub_launchagent_status.rc | default(1)) != 0
+  changed_when: true
+  become: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — clear completed LaunchDaemon reload"
+  ansible.builtin.file:
+    path: "{{ devbox_pub_reload_marker_path }}"
+    state: absent
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not (dev_mode | default(false) | bool)
+  become: true
+  tags: [macos, pub, launchagent]
+
+# The candidate is only needed within one run, to checksum against the installed
+# plist. The reload marker — not the candidate — is what carries a crash across
+# runs, so the candidate is dropped as soon as the supervisor is in place.
+- name: "Pub mode — remove staged and legacy LaunchDaemon candidates"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ devbox_pub_candidate_plist_path }}"
+    - "{{ devbox_pub_legacy_candidate_plist_path }}"
+  when: devbox_pub_mode_enabled | bool
+  become: "{{ not (dev_mode | default(false) | bool) }}"
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — bootout legacy GUI expiry LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "gui/{{ ansible_facts['user_uid'] }}/local.pub-lease"
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not (dev_mode | default(false) | bool)
+    - (devbox_pub_legacy_launchagent_status.rc | default(1)) == 0
+  changed_when: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — remove migrated GUI LaunchAgent plist"
+  ansible.builtin.file:
+    path: "{{ devbox_pub_home }}/Library/LaunchAgents/local.pub-lease.plist"
+    state: absent
+  when: devbox_pub_mode_enabled | bool
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — check disabled controller"
+  ansible.builtin.stat:
+    path: "{{ devbox_pub_home }}/.local/bin/pub-lease"
+  register: devbox_pub_controller
+  when:
+    - not (devbox_pub_mode_enabled | bool)
+    - not (dev_mode | default(false) | bool)
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — inspect pending recovery metadata"
+  ansible.builtin.stat:
+    path: "{{ devbox_pub_home }}/.local/state/pub-lease/{{ item }}"
+  loop:
+    - lease.json
+    - recovery.json
+  register: devbox_pub_recovery_metadata
+  when:
+    - not (devbox_pub_mode_enabled | bool)
+    - not (dev_mode | default(false) | bool)
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — require controller for pending recovery"
+  ansible.builtin.assert:
+    that:
+      - >-
+        (devbox_pub_controller.stat.exists | default(false))
+        or
+        (devbox_pub_recovery_metadata.results
+         | default([])
+         | selectattr('stat.exists', 'defined')
+         | selectattr('stat.exists')
+         | list
+         | length) == 0
+    fail_msg: >-
+      Pub mode recovery metadata exists, but
+      {{ devbox_pub_home }}/.local/bin/pub-lease is missing. Refusing to remove
+      the supervisor because the previous WARP state cannot be restored.
+  when:
+    - not (devbox_pub_mode_enabled | bool)
+    - not (dev_mode | default(false) | bool)
+  tags: [macos, pub, launchagent]
+
+# The supervisors are booted out before the restore because the LaunchDaemon
+# reconciles on a 60-second StartInterval. The controller's file lock only
+# serialises the two, so a reconcile that fires mid-teardown would simply queue
+# behind the interactive `off` and then re-enter once it completed — `reconcile`
+# never consults the `disabled` marker, only `on` does. Stopping the supervisor
+# first removes that window.
+- name: "Pub mode — bootout disabled expiry LaunchDaemon"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "system/local.pub-lease"
+  when:
+    - not (devbox_pub_mode_enabled | bool)
+    - not (dev_mode | default(false) | bool)
+    - (devbox_pub_launchagent_status.rc | default(1)) == 0
+  changed_when: true
+  become: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — bootout disabled legacy GUI expiry LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "gui/{{ ansible_facts['user_uid'] }}/local.pub-lease"
+  when:
+    - not (devbox_pub_mode_enabled | bool)
+    - not (dev_mode | default(false) | bool)
+    - (devbox_pub_legacy_launchagent_status.rc | default(1)) == 0
+  changed_when: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — restore active lease before removal"
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_pub_home }}/.local/bin/pub-lease"
+      - "off"
+  environment:
+    HOME: "{{ devbox_pub_home }}"
+  register: devbox_pub_teardown
+  when:
+    - not (devbox_pub_mode_enabled | bool)
+    - not (dev_mode | default(false) | bool)
+    - devbox_pub_controller.stat.exists | default(false)
+  changed_when: "'already OFF' not in devbox_pub_teardown.stdout"
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — remove disabled controller and supervisors"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ devbox_pub_plist_path }}"
+    - "{{ devbox_pub_home }}/Library/LaunchAgents/local.pub-lease.plist"
+    - "{{ devbox_pub_home }}/.local/bin/pub-lease"
+    - "{{ devbox_pub_reload_marker_path }}"
+    - "{{ devbox_pub_candidate_plist_path }}"
+    - "{{ devbox_pub_legacy_candidate_plist_path }}"
+  when: not (devbox_pub_mode_enabled | bool)
+  become: "{{ not (dev_mode | default(false) | bool) }}"
+  tags: [macos, pub, launchagent]

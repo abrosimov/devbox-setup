@@ -428,10 +428,17 @@
     - .config/fish/conf.d/aliases.fish
     - .config/fish/conf.d/tide_items.fish
     - .config/fish/conf.d/fnm.fish
+    - .config/fish/conf.d/pub_proxy_migration.fish
     - .node-version
     - README.md
   loop_control:
     label: "{{ item }}"
+  tags: [configs, dotfiles]
+
+- name: Remove retired pub proxy guard
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.config/fish/conf.d/pub_guard.fish"
+    state: absent
   tags: [configs, dotfiles]
 
 - name: Deploy confidential config (skip if exists)
@@ -529,7 +536,8 @@
 - name: Validate the otelbox edge client certificate overlay before deployment
   ansible.builtin.command:
     argv:
-      - "{{ role_path }}/../../scripts/otelbox-edge-cert-check.sh"
+      - "{{ ansible_playbook_python }}"
+      - "{{ role_path }}/../../scripts/otelbox-edge-cert-check.py"
       - "{{ role_path }}/local/.config/otelbox/edge/client/client.crt"
       - "{{ role_path }}/local/.config/otelbox/edge/client/client.key"
   changed_when: false

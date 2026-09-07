@@ -249,7 +249,8 @@
 - name: "OpenTelemetry edge — validate the optional client certificate pair"
   ansible.builtin.command:
     argv:
-      - "{{ role_path }}/../../scripts/otelbox-edge-cert-check.sh"
+      - "{{ ansible_playbook_python }}"
+      - "{{ role_path }}/../../scripts/otelbox-edge-cert-check.py"
       - "{{ devbox_otelbox_edge_conf }}/client/client.crt"
       - "{{ devbox_otelbox_edge_conf }}/client/client.key"
   changed_when: false

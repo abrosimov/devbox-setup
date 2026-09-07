@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "phase": "active",
+  "lease_id": "bash-active-lease",
+  "started_at": 1000000,
+  "expires_at": 1021600,
+  "boot_session": "boot-a",
+  "previous_mode": "proxy",
+  "previous_connected": false,
+  "expected_mode": "tunnel_only"
+}

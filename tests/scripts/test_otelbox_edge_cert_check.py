@@ -3,12 +3,14 @@ from __future__ import annotations
 import os
 import subprocess
 from dataclasses import dataclass
+from io import StringIO
 from pathlib import Path
 
 import pytest
+from otelbox_edge import cert_check
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CHECKER = REPO_ROOT / "scripts/otelbox-edge-cert-check.sh"
+CHECKER = REPO_ROOT / "scripts/otelbox-edge-cert-check.py"
 
 
 @dataclass(frozen=True)
@@ -64,34 +66,61 @@ def pair(tmp_path: Path) -> CertificatePair:
     return _generate_pair(tmp_path, "client")
 
 
-def test_valid_pair_passes(pair: CertificatePair) -> None:
-    result = _run(pair.cert, pair.key)
+class TestCertificateChecker:
+    def test_valid_pair_is_silent(self, pair: CertificatePair) -> None:
+        result = _run(pair.cert, pair.key)
 
-    assert result.returncode == 0, result.stderr
+        assert result.returncode == 0
+        assert result.stdout == ""
+        assert result.stderr == ""
 
+    def test_mismatched_pair_exits_78(self, tmp_path: Path) -> None:
+        first = _generate_pair(tmp_path, "first")
+        second = _generate_pair(tmp_path, "second")
 
-def test_mismatched_pair_fails(tmp_path: Path) -> None:
-    first = _generate_pair(tmp_path, "first")
-    second = _generate_pair(tmp_path, "second")
+        result = _run(first.cert, second.key)
 
-    result = _run(first.cert, second.key)
+        assert result.returncode == 78
+        assert "do not match" in result.stderr
 
-    assert result.returncode == 78
-    assert "do not match" in result.stderr
+    @pytest.mark.parametrize("broken", ["certificate", "key"])
+    def test_malformed_material_exits_78(self, pair: CertificatePair, broken: str) -> None:
+        path = pair.cert if broken == "certificate" else pair.key
+        path.write_text("not PEM\n", encoding="utf-8")
 
+        result = _run(pair.cert, pair.key)
 
-@pytest.mark.parametrize("broken", ["certificate", "key"])
-def test_malformed_material_fails(pair: CertificatePair, broken: str) -> None:
-    path = pair.cert if broken == "certificate" else pair.key
-    path.write_text("not PEM\n", encoding="utf-8")
+        assert result.returncode == 78
 
-    result = _run(pair.cert, pair.key)
+    def test_missing_file_exits_78(self, pair: CertificatePair, tmp_path: Path) -> None:
+        result = _run(pair.cert, tmp_path / "missing.key")
 
-    assert result.returncode == 78
+        assert result.returncode == 78
+        assert "missing or unreadable" in result.stderr
 
+    @pytest.mark.parametrize("arguments", [[], ["one"], ["one", "two", "three"]])
+    def test_bad_arity_exits_64(self, arguments: list[str]) -> None:
+        result = subprocess.run(
+            [str(CHECKER), *arguments],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
 
-def test_missing_file_fails(pair: CertificatePair, tmp_path: Path) -> None:
-    result = _run(pair.cert, tmp_path / "missing.key")
+        assert result.returncode == 64
+        assert result.stderr == "usage: otelbox-edge-cert-check.py CERT_FILE KEY_FILE\n"
 
-    assert result.returncode == 78
-    assert "missing or unreadable" in result.stderr
+    def test_missing_openssl_exits_69(
+        self, pair: CertificatePair, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        stderr = StringIO()
+        monkeypatch.setattr(cert_check, "resolve_openssl", lambda _environment: None)
+
+        result = cert_check.main(
+            [str(pair.cert), str(pair.key)],
+            environment={"PATH": ""},
+            stderr=stderr,
+        )
+
+        assert result == 69
+        assert stderr.getvalue() == "otelbox-edge-cert-check: no usable openssl\n"

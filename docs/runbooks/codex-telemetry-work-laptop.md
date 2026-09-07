@@ -175,7 +175,7 @@ awk -F= '/^OTELBOX_UPSTREAM_ENDPOINT=/{print $2}' \
 security find-generic-password -a "$USER" -s otelbox-edge-token \
   >/dev/null && echo token-present
 
-scripts/otelbox-edge-cert-check.sh \
+scripts/otelbox-edge-cert-check.py \
   ~/.config/otelbox/edge/client/client.crt \
   ~/.config/otelbox/edge/client/client.key
 
@@ -388,8 +388,8 @@ complete configuration files, or an unreviewed environment dump.
 - [OpenAI Advanced Configuration: profiles and observability](https://learn.chatgpt.com/docs/config-file/config-advanced)
 - [OpenAI Configuration Reference: `otel.*` keys](https://learn.chatgpt.com/docs/config-file/config-reference)
 - [devbox otelbox edge overview](../../README.md#otlp-telemetry-otelbox-edge)
-- [edge smoke implementation](../../scripts/otelbox-edge-test.sh)
-- [certificate/key validation](../../scripts/otelbox-edge-cert-check.sh)
+- [edge smoke implementation](../../scripts/otelbox-edge-test.py)
+- [certificate/key validation](../../scripts/otelbox-edge-cert-check.py)
 - [managed Codex configuration](../../roles/devbox/files/dot_codex/config.toml.j2)
 - [managed Langfuse plugin configuration](../../roles/devbox/files/dot_codex/langfuse.json.j2)
 - [edge collector profile](../../roles/devbox/files/.config/otelbox/edge/edge.yaml)

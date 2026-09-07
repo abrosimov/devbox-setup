@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.pub-lease</string>
+
+    <key>UserName</key>
+    <string>{{ ansible_facts['user_id'] }}</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>exec "$1" "$2" reconcile &gt;&gt;"$3" 2&gt;&amp;1</string>
+        <string>pub-lease-launcher</string>
+        <string>{{ devbox_pub_python_path }}</string>
+        <string>{{ devbox_pub_home }}/.local/bin/pub-lease</string>
+        <string>{{ devbox_pub_home }}/Library/Logs/pub-lease.log</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{ devbox_pub_home }}</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>PUB_LEASE_LOG_FILE</key>
+        <string>{{ devbox_pub_home }}/Library/Logs/pub-lease.log</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartInterval</key>
+    <integer>60</integer>
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

@@ -101,6 +101,9 @@ jobs:
       - name: Git hook tests
         run: make test-git-hooks
 
+      - name: Script tests
+        run: make test-scripts
+
       - name: Dotfile-deploy structure tests
         run: make test-deploy
 

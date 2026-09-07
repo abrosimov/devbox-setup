@@ -76,6 +76,16 @@
     name: codex-app
     state: absent
 
+# Migration cleanup: pub mode used to run a local `gost` HTTP-to-SOCKS bridge
+# on 127.0.0.1:8080; it now uses WARP's `tunnel_only` mode and never starts a
+# bridge, so the formula is dead weight. `state: present` never removes a
+# package dropped from devbox_brew_secondary, so strip it here. No-op once
+# removed.
+- name: "Remove superseded gost formula (pub mode now uses WARP tunnel_only)"
+  community.general.homebrew:
+    name: gost
+    state: absent
+
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
     name: "{{ devbox_brew_secondary_casks + devbox_extra_brew_casks }}"

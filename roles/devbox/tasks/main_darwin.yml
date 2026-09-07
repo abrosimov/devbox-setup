@@ -41,6 +41,16 @@
   ansible.builtin.include_tasks: darwin/install_kubectl.yml
 - name: "Configure macOS basics (Touch ID for sudo, clamshell, dev mode)"
   ansible.builtin.include_tasks: darwin/configure_macos_basics.yml
+- name: "Configure expiring WARP pub mode"
+  ansible.builtin.include_tasks: darwin/configure_pub_mode.yml
+  vars:
+    devbox_pub_mode_enabled: >-
+      {{
+        not (dev_mode | default(false) | bool)
+        and 'cloudflare-warp' in
+        ((devbox_brew_secondary_casks_no_binaries | default([]))
+        + (devbox_extra_brew_casks_no_binaries | default([])))
+      }}
 - name: "Configure macOS defaults (UI prefs, Night Shift)"
   ansible.builtin.include_tasks: darwin/configure_macos_defaults.yml
 - name: "Configure Spotlight global hotkeys (release Cmd+Space for Raycast)"

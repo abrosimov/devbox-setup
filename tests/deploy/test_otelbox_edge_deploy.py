@@ -24,7 +24,7 @@ EDGE_YAML = ROLE / "files/.config/otelbox/edge/edge.yaml"
 TASKS = ROLE / "tasks/darwin/install_otelbox_edge.yml"
 PLIST_TEMPLATE = ROLE / "templates/darwin/Library/LaunchAgents/local.otelbox-edge.plist.j2"
 PACKAGES = ROLE / "defaults/main/packages.yml"
-CERT_CHECKER = REPO_ROOT / "scripts/otelbox-edge-cert-check.sh"
+CERT_CHECKER = REPO_ROOT / "scripts/otelbox-edge-cert-check.py"
 
 _edge: dict[str, Any] = yaml.safe_load(EDGE_YAML.read_text(encoding="utf-8"))
 _tasks: list[dict[str, Any]] = yaml.safe_load(TASKS.read_text(encoding="utf-8"))
@@ -138,8 +138,11 @@ def test_complete_certificate_pair_is_validated_before_cleanup() -> None:
     ]
 
     argv = validation["ansible.builtin.command"]["argv"]
-    assert argv[0].endswith("scripts/otelbox-edge-cert-check.sh")
-    assert argv[1:] == [
+    assert argv[:2] == [
+        "{{ ansible_playbook_python }}",
+        "{{ role_path }}/../../scripts/otelbox-edge-cert-check.py",
+    ]
+    assert argv[2:] == [
         "{{ devbox_otelbox_edge_conf }}/client/client.crt",
         "{{ devbox_otelbox_edge_conf }}/client/client.key",
     ]

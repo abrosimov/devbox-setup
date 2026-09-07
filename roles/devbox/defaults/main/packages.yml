@@ -93,6 +93,7 @@ devbox_brew_secondary:
   - yq             # YAML/JSON/XML processor (like jq for YAML)
   - hadolint       # Dockerfile linter — used by post_edit_lint.py
   - swi-prolog     # Prolog runtime — includes built-in LSP support
+  - swiftly        # Official Swift toolchain installer and version manager
   - swift-format   # Apple's official Swift code formatter
   - cmake          # C/C++ build system
   - bazelisk       # Bazel version manager (installs as `bazel`)
@@ -109,7 +110,6 @@ devbox_brew_secondary:
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
   - smudge/smudge/nightlight  # Night Shift CLI (tap: smudge/smudge)
-  - gost            # GO Simple Tunnel — HTTP-to-SOCKS bridge used by `pub` mode
   - grafana/grafana/gcx  # Grafana CLI — PromQL/LogQL/Tempo queries via Grafana datasources
   - mongosh                 # MongoDB shell (homebrew/core — was mongodb/brew, moved upstream 2026)
   - hashicorp/tap/vault     # HashiCorp Vault CLI (tap: hashicorp/tap)

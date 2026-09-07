@@ -253,11 +253,11 @@ ssh-passphrase-reseed:
 # certificate, and regenerating one invalidates what the gateway front end
 # already trusts.
 otelbox-edge-config:
-	@./scripts/otelbox-edge-config.sh $(if $(ONLY),--only $(ONLY))
+	@./scripts/otelbox-edge-config.py $(if $(ONLY),--only $(ONLY))
 
 # Liveness + delivery smoke for the otelbox edge collector — run after `make personal`.
 otelbox-edge-test:
-	@./scripts/otelbox-edge-test.sh
+	@./scripts/otelbox-edge-test.py
 
 dev:
 	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
@@ -277,12 +277,12 @@ git-identity-ensure:
 work: PROFILE = work
 work: git-identity-ensure
 	$(MAKE) run PROFILE=work V=$(V)
-	@./scripts/otelbox-edge-test.sh || true
+	@./scripts/otelbox-edge-test.py || true
 
 personal: PROFILE = personal
 personal: git-identity-ensure
 	$(MAKE) run PROFILE=personal V=$(V)
-	@./scripts/otelbox-edge-test.sh || true
+	@./scripts/otelbox-edge-test.py || true
 
 dev-work:
 	$(MAKE) run PROFILE=work EXTRA_VARS='-e dev_mode=true' V=$(V)
@@ -323,8 +323,8 @@ lint-yaml: $(DEV_SENTINEL)
 # those.
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ scripts/ai_config_cli.py scripts/ai_config/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py
 
 # Pyrefly ignores `project-excludes` from pyproject.toml whenever files are named
 # explicitly on the command line, so the excludes have to be repeated as flags.
@@ -333,7 +333,7 @@ lint-py: $(DEV_SENTINEL)
 PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.venv/**' --project-excludes '**/__pycache__/**'
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ scripts/ai_config_cli.py scripts/ai_config/ tests/scripts/test_ai_config*.py $(PYREFLY_EXCLUDES)
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a
@@ -368,7 +368,7 @@ test-claude-hooks: ## Pytest under bin/'s own uv project (mirrors deployed venv)
 	@uv run --project roles/devbox/files/dot_claude/bin \
 	  pytest roles/devbox/files/dot_claude/bin
 
-qa: lint-py typecheck test test-integration test-ai-config test-deploy ## Full Python quality gate
+qa: lint-py typecheck test test-integration test-ai-config test-scripts test-deploy ## Full Python quality gate
 
 regenerate-fixtures: $(DEV_SENTINEL) ## Re-extract recorded fixtures + regenerate synthetic ones
 	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/extract_fixtures.py --max-per-bucket 50

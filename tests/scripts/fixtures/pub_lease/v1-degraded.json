@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "phase": "active",
+  "lease_id": "v1-degraded-lease",
+  "started_at": 1000000,
+  "expires_at": 1021600,
+  "boot_session": "boot-a",
+  "previous_mode": "proxy",
+  "previous_status": "Unable to connect",
+  "previous_connected": false,
+  "expected_mode": "tunnel_only"
+}

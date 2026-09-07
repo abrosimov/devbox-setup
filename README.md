@@ -111,36 +111,43 @@ Keybindings and usage for each tool:
 
 ## Pub Mode
 
-Optional tunnel for running Claude Code on untrusted wifi where a middlebox resets TCP on HTTP uploads larger than roughly 1.4 KB (`ECONNRESET`). At home or in the office, leave it off — `claude` goes direct (no proxy variables exist in the resting state).
+Temporary system-level WARP tunnel for untrusted wifi where a middlebox disrupts Claude Code traffic. It uses WARP's `tunnel_only` mode: IP traffic follows the WARP tunnel while DNS continues to use the existing system configuration. IP/CIDR Split Tunnel exclusions still apply; domain-based Split Tunnels and Local Domain Fallback do not apply in Traffic-only mode.
 
-Chain when enabled:
-
-```
-claude  ->  http://127.0.0.1:8080 (gost)  ->  socks5://127.0.0.1:40000 (WARP)  ->  Cloudflare  ->  Anthropic
-```
-
-WARP runs in proxy mode (no system DNS or route changes), with a local `gost` HTTP-to-SOCKS bridge fronting it because Claude Code honours `HTTP(S)_PROXY` only, not SOCKS. The bridge binds `127.0.0.1` explicitly so it is never exposed to the untrusted network.
+Pub mode does not set application proxy variables or run a `gost` bridge. Local services such as the OTLP collector at `127.0.0.1:4317` therefore remain direct rather than being sent through a loopback HTTP proxy.
 
 ### Usage
 
 When `claude` breaks on bad wifi:
 
 ```fish
-pub on       # Connect WARP + start the loopback-bound gost bridge
-             # + export HTTPS_PROXY / HTTP_PROXY (and lowercase twins) as universal fish vars.
-             # Restart your claude sessions to pick up the proxy.
-
-pub off      # Erase the proxy vars + stop the bridge + disconnect WARP.
-             # Restart your claude sessions to drop the proxy.
-
-pub status   # warp-cli status, bridge up/down, current HTTPS_PROXY value.
+pub on       # Start a WARP lease, or re-home an existing one onto this network.
+pub off      # End the lease early and restore the previous WARP state.
+pub status   # Show WARP state and the remaining lease time.
 ```
 
-`pub on` sets the proxy variables as **universal fish variables** (`set -Ux`), so every fish session and every child process inherits them in one shot. That's why already-running `claude` sessions need a manual restart — they read env once at startup.
+The lease is machine-wide rather than tied to one fish session. A LaunchDaemon registered in the system domain runs the controller as the owning user and reconciles it every minute, including after the terminal which enabled it exits and after GUI logout. Sleep time counts towards both the renewal window and the twelve-hour ceiling below — `launchd` misses a `StartInterval` firing while the system sleeps, so a lease that outlived its window closes on the first reconcile after the lid opens. A reboot ends the lease and restores the captured WARP mode and connection state when the daemon next runs.
 
-### Caveat
+The lease only renews while the machine stays on the network it was taken out on. Each reconcile derives a network signature — a SHA-256 over the default route's router address and the gateway's ARP hardware address, read locally through `/usr/sbin/scutil` and `/usr/sbin/arp` with no root, no Location Services and no network request. macOS redacts the SSID from unprivileged callers, so the gateway is what identifies the network; the primary interface only locates the route and its ARP entry, so moving between wifi and a dock behind the same router stays the same network. A matching signature extends the lease to thirty minutes from that moment and never past a twelve-hour ceiling fixed at activation. A different signature is tolerated once and closes the lease on the second consecutive reconcile, roughly two minutes after leaving. A signature that cannot be read at all — asleep, link down, mid-DHCP — neither renews the lease nor counts against it, so the lease ages out on its own expiry rather than being dropped during a wifi roam. `pub on` re-homes an existing lease onto the current network without moving the ceiling; once the ceiling is reached the lease closes, and a deliberate `pub on` starts a new one.
 
-WARP proxy mode uses MASQUE, which enforces a roughly 10-second per-request limit. Long-running Claude responses that drop mid-stream are the chain timing out, not the `pub` toggle itself. Disable `pub` for long-form work when you're on a trusted network.
+Transitions nobody typed are announced. When the reconciler closes a lease itself — expiry, the twelve-hour ceiling, a network change or a reboot — completes an interrupted restoration, or loses ownership to a manual mode change or to WARP policy, it posts a macOS notification through `launchctl asuser`, the documented bridge from the system-domain job into the GUI session that owns Notification Centre. Delivery is best effort: a notification that cannot be posted is a silent no-op and never changes the outcome of a lease operation. An operation whose stderr is a terminal posts nothing, because the same line is already on screen; an uneventful reconcile posts nothing at all.
+
+Every new interactive fish shell prints one line whenever `~/.local/state/pub-lease/lease.json` exists, naming the phase the file actually records: active with the time remaining, activating, restoring, expired and awaiting the reconciler, or present but unreadable. The file's mere existence is not read as "the tunnel is on". The line parses the lease directly and never runs `pub-lease status` or `warp-cli`, whose two WARP daemon probes are far too expensive for every shell.
+
+The controller is a self-contained Python 3.9+ standard-library program. The playbook verifies the macOS Command Line Tools interpreter before deploying or reloading the LaunchDaemon; no project virtual environment or third-party Python package is required at runtime.
+
+A normal Ansible run for a profile that no longer manages Cloudflare WARP blocks new activations, boots out both the current LaunchDaemon and any legacy GUI LaunchAgent, restores any active lease, then removes their plist and the controller executable. The supervisor stops before the restoration so the sixty-second reconciler cannot re-enter halfway through it. If restoration fails, the supervisor, controller, and recovery metadata are retained for retry. Re-enabling the managed profile removes the block before deployment. Dev mode only reconciles its isolated debug tree and never changes the live supervisor or WARP state.
+
+The controller keeps an immutable recovery snapshot beside its working lease metadata. If only the working file is damaged, `pub off` and the LaunchDaemon restore from that snapshot. If both files are unreadable, `pub off --force` disconnects an owned `tunnel_only` tunnel and quarantines the metadata, but deliberately does not guess the lost previous WARP mode.
+
+Changing the WARP mode manually ends controller ownership and leaves the selected mode unchanged. A manual disconnect in `tunnel_only` pauses the tunnel without discarding the restoration snapshot; `pub on` reconnects it and `pub off` still restores the original state.
+
+`pub on` captures the pre-lease connection state as the restoration intent. A `Connecting` status is given ten seconds to settle first. `Connected` and `Disconnected` are restored exactly; a degraded state (`Unable to connect`, or still `Connecting` after that budget) is reported on activation and later restored best-effort — the controller aims to reconnect but ends the lease even if the network still refuses, the reconnection is rejected outright, or the resulting status cannot be read, rather than holding `tunnel_only` open forever. Restoring the mode itself, and confirming it afterwards, stays strict for every intent. `Registration Missing` and any status the controller does not recognise are refused outright.
+
+`pub on` refuses to start while WARP forbids mode switching — the controller asks `warp-cli settings mode-switch-allowed` and reads a bare `true` as unlocked and a bare `false` as locked — because it could not guarantee restoration. Any other answer is an unreadable probe rather than a locked policy: the lease is retained, WARP is left alone and the operation fails, because a probe that cannot be classified must never be allowed to discard the only record of the mode to restore. If the policy really is locked during an active lease, the controller treats the policy as the new owner, leaves WARP unchanged, and removes its lease metadata instead of retrying forever. It leaves an advisory note behind, so a later `pub off` or `pub status` reports the mode that preceded the dropped lease and the mode WARP was actually left in — both read at the moment the lease was dropped, since an administrator may already have moved it — instead of claiming the mode is already off; nothing restores from that note. WARP's derived `always_on` setting reflects the current connection toggle and does not transfer ownership.
+
+Interactive `pub on` and `pub off` operations wait up to ten seconds for another pub operation to release the controller lock, then report `another pub operation is already running` and exit 75 (`EX_TEMPFAIL`); the background reconciler does not wait. Activation makes up to twenty-five status probes and interactive restoration up to twenty, printing progress on stderr only when it is a terminal — stdout carries the result alone, so scripted callers can match it. Background restoration makes up to sixty probes in silence and retries on the next one-minute reconcile. Every `warp-cli` invocation has its own five-second timeout, so a stalled client cannot hold the controller lock indefinitely. The controller rotates `~/Library/Logs/pub-lease.log` after it grows beyond 1 MiB, retaining one `.1` copy. Quarantined metadata is retained for at least seven days and removed by a later locked operation.
+
+The first interactive shell after this upgrade removes every universal proxy variable still pointing to the legacy `127.0.0.1:8080` endpoint, then disables that migration permanently. Unrelated proxy settings are preserved. A `gost` process left by an already-running old shell is no longer used; close that shell or restart the machine to retire it.
 
 ## OTLP Telemetry (otelbox edge)
 
@@ -152,7 +159,7 @@ Wired: Claude Code CLI (`OTEL_*` env in `~/.claude/settings.json`), Codex CLI/ap
 
 Nothing is built here. The binary is the published [`abrosimov/otelcol-otelbox`](https://github.com/abrosimov/otelcol-otelbox) artefact — one collector serving the workstation `edge` and the server roles deployed by `remote_server_setup`. That repository owns the component set, release pipeline and reference profiles; this one owns the deployed edge profile, secrets, supervisor and machine-local values.
 
-Version 2.x loads one self-contained `edge.yaml`. The binary and profile are upgraded together; v1 `base.yaml` layering is deliberately unsupported. The pin lives in `devbox_packages.otelbox_edge.version` and nowhere else — `otelbox-edge-test.sh` reads it from there rather than repeating the literal.
+Version 2.x loads one self-contained `edge.yaml`. The binary and profile are upgraded together; v1 `base.yaml` layering is deliberately unsupported. The pin lives in `devbox_packages.otelbox_edge.version` and nowhere else — `otelbox-edge-test.py` reads it from there rather than repeating the literal.
 
 | Path | Role |
 |------|------|
@@ -174,6 +181,12 @@ Three values are not tracked in the repository. All are set by `make otelbox-edg
 - **Endpoint** (non-secret) — written to the gitignored overlay `roles/devbox/local/.config/otelbox/edge/endpoint.env` and live to `~/.config/otelbox/edge/endpoint.env`. Format: `OTELBOX_UPSTREAM_ENDPOINT=otel.example.com:443` — `host:port`, no scheme. The name is matched exactly by both the wrapper and the playbook's preflight; the v1 `OTELBOX_EDGE_ENDPOINT` is rejected.
 - **Ingestion key** (secret) — stored in the login Keychain slot `otelbox-edge-token`. The wrapper materialises the complete `Bearer <token>` header as a mode-0600 file below macOS's per-user temporary directory because the collector watches a credential file for live rotation; the Keychain remains authoritative.
 - **Client certificate** (optional, secret half) — an EC P-256 self-signed leaf generated *on this machine* by `ONLY=cert`, valid 825 days (`OTELBOX_CERT_DAYS` overrides). Both halves land in the gitignored overlay `roles/devbox/local/.config/otelbox/edge/client/` and live in `~/.config/otelbox/edge/client/`; Ansible's overlay copy preserves modes, so the key stays 0600 inside a 0700 directory. The private key is never sent anywhere — only `client.crt` is meant to travel to whoever configures the gateway front end, the same shape as an SSH public key.
+
+The three repository utilities are self-contained Python 3.9+ programs and use
+only the standard library. They run with the system interpreter; the project
+virtual environment is not a runtime dependency. External macOS commands are
+still used only at their operating-system boundaries (`security`, `scutil`,
+`launchctl`, and `openssl`).
 
 None is required for the playbook to succeed: without `endpoint.env` the service is not started and the run reports why, and without a certificate the bearer token simply remains the only credential. Exactly *one* half of a certificate pair is a hard error — `configtls` rejects a lone `cert_file` or `key_file`, so both the playbook and the wrapper refuse it rather than letting the collector fail at start.
 

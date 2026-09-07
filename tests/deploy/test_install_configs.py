@@ -106,7 +106,10 @@ def test_otelbox_client_overlay_is_validated_before_live_mutation() -> None:
     command = validation["ansible.builtin.command"]
 
     assert validation["check_mode"] is False
-    assert command["argv"][0].endswith("scripts/otelbox-edge-cert-check.sh")
+    assert command["argv"][:2] == [
+        "{{ ansible_playbook_python }}",
+        "{{ role_path }}/../../scripts/otelbox-edge-cert-check.py",
+    ]
     assert mutation_indices
     assert all(validation_index < index for index in mutation_indices)
 

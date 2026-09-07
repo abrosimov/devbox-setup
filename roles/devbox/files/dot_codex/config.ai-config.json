@@ -35,6 +35,10 @@
       "scope": "shared"
     },
     {
+      "path": "shell_environment_policy",
+      "scope": "local-state"
+    },
+    {
       "path": "otel",
       "scope": "shared"
     },

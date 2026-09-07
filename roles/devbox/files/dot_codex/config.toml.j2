@@ -3,14 +3,11 @@
 # preserving manifest-classified machine-local and runtime state.
 
 personality = "pragmatic"
-model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model = "gpt-6-astra"
+model_reasoning_effort = "medium"
 service_tier = "default"
 sandbox_mode = "workspace-write"
 
-[features]
-memories = true
-hooks = true
 
 [sandbox_workspace_write]
 network_access = true
@@ -22,42 +19,29 @@ exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 trace_exporter = "none"
 metrics_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 
-[[hooks.PreToolUse]]
-matcher = ".*"
-[[hooks.PreToolUse.hooks]]
-type = "command"
-command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreToolUse"
 
-[[hooks.PostToolUse]]
-matcher = ".*"
-[[hooks.PostToolUse.hooks]]
-type = "command"
-command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PostToolUse"
-async = true
+[tool_suggest]
+disabled_tools = [{ id = "github@openai-curated-remote", type = "plugin" }]
 
-[[hooks.PreCompact]]
-[[hooks.PreCompact.hooks]]
-type = "command"
-command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreCompact"
+[features]
+hooks = true
+js_repl = false
+memories = true
 
-[[hooks.Stop]]
-[[hooks.Stop.hooks]]
-type = "command"
-command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop"
-
-[[hooks.SessionStart]]
-[[hooks.SessionStart.hooks]]
-type = "command"
-command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionStart"
-
-[[hooks.SessionEnd]]
-[[hooks.SessionEnd.hooks]]
-type = "command"
-command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionEnd"
+[hooks]
+PostToolUse = [{ hooks = [{ async = true, command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PostToolUse", type = "command" }], matcher = ".*" }]
+PreCompact = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PreCompact", type = "command" }] }]
+PreToolUse = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PreToolUse", type = "command" }], matcher = ".*" }]
+SessionEnd = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py SessionEnd", type = "command" }] }]
+SessionStart = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py SessionStart", type = "command" }] }]
+Stop = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py Stop", type = "command" }] }]
 
 [plugins]
 
 [plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."codex-app-tools@openai-bundled"]
 enabled = true
 
 [plugins."documents@openai-primary-runtime"]
@@ -81,11 +65,8 @@ enabled = true
 [plugins."template-creator@openai-primary-runtime"]
 enabled = true
 
-[plugins."visualize@openai-bundled"]
-enabled = true
-
 [plugins."tracing@codex-observability-plugin"]
 enabled = true
 
-[tool_suggest]
-disabled_tools = [{ id = "github@openai-curated-remote", type = "plugin" }]
+[plugins."visualize@openai-bundled"]
+enabled = true

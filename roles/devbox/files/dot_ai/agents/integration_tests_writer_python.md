@@ -73,6 +73,7 @@ If no plan exists, proceed with normal test discovery from git diff.
 # conftest.py
 import pytest
 
+
 def pytest_configure(config):
     config.addinivalue_line("markers", "integration: integration tests (require Docker)")
 ```
@@ -87,16 +88,19 @@ from testcontainers.postgres import PostgresContainer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+
 @pytest.fixture(scope="session")
 def postgres_container():
     with PostgresContainer("postgres:16-alpine") as pg:
         yield pg
+
 
 @pytest.fixture(scope="session")
 def engine(postgres_container):
     engine = create_engine(postgres_container.get_connection_url())
     Base.metadata.create_all(engine)
     return engine
+
 
 @pytest.fixture
 def db_session(engine):
@@ -143,22 +147,27 @@ class TestUserRepository:
 import pytest
 from httpx import AsyncClient
 
+
 @pytest.fixture
 async def app_with_db(engine):
     """Create FastAPI app with real database."""
     app = create_app(database_url=engine.url)
     yield app
 
+
 @pytest.fixture
 async def client(app_with_db):
     async with AsyncClient(app=app_with_db, base_url="http://test") as ac:
         yield ac
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_create_and_get_user(client: AsyncClient) -> None:
     # Create
-    response = await client.post("/api/v1/users", json={"email": "test@example.com", "name": "Test"})
+    response = await client.post(
+        "/api/v1/users", json={"email": "test@example.com", "name": "Test"}
+    )
     assert response.status_code == 201
     user_id = response.json()["id"]
 
@@ -173,6 +182,7 @@ async def test_create_and_get_user(client: AsyncClient) -> None:
 ```python
 from factory.alchemy import SQLAlchemyModelFactory
 
+
 class UserFactory(SQLAlchemyModelFactory):
     class Meta:
         model = User
@@ -180,6 +190,7 @@ class UserFactory(SQLAlchemyModelFactory):
 
     email = factory.LazyAttribute(lambda o: f"{o.name.lower()}@example.com")
     name = factory.Faker("name")
+
 
 # In tests
 def test_list_users(db_session: Session) -> None:

@@ -3,7 +3,7 @@ name = "agy-hooks"
 version = "0.0.0"
 description = "Antigravity CLI hook scripts and helpers — runtime environment for ~/.gemini/antigravity-cli/bin/."
 requires-python = ">=3.11"
-dependencies = ["bashlex"]
+dependencies = ["bashlex", "langfuse>=4.0,<5"]
 
 # Not a distributable package — the scripts in this directory are invoked by
 # absolute path from ~/.gemini/antigravity-cli/hooks.json via `uv run --project ~/.gemini/antigravity-cli/bin

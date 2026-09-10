@@ -18,6 +18,8 @@ log_user_prompt = true
 exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
 trace_exporter = "none"
 metrics_exporter = { otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }
+# Waiting on openai/codex#30987 — silently ignored until resource_attributes lands.
+resource_attributes = { "otelbox.telemetry.class" = "llm" }
 
 
 [tool_suggest]
@@ -29,12 +31,12 @@ js_repl = false
 memories = true
 
 [hooks]
-PostToolUse = [{ hooks = [{ async = true, command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PostToolUse", type = "command" }], matcher = ".*" }]
-PreCompact = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PreCompact", type = "command" }] }]
-PreToolUse = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py PreToolUse", type = "command" }], matcher = ".*" }]
-SessionEnd = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py SessionEnd", type = "command" }] }]
-SessionStart = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py SessionStart", type = "command" }] }]
-Stop = [{ hooks = [{ command = "/usr/bin/env python3 ~/.codex/bin/universal_logger.py Stop", type = "command" }] }]
+PostToolUse = [{ hooks = [{ async = true, command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PostToolUse", type = "command" }], matcher = ".*" }]
+PreCompact = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreCompact", type = "command" }] }]
+PreToolUse = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreToolUse", type = "command" }], matcher = ".*" }]
+SessionEnd = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionEnd", type = "command" }] }]
+SessionStart = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionStart", type = "command" }] }]
+Stop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop", type = "command" }] }]
 
 [plugins]
 

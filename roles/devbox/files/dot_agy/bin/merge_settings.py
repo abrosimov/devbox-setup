@@ -3,6 +3,7 @@ import json
 import sys
 from pathlib import Path
 
+
 def merge(base, overrides):
     for k, v in overrides.items():
         if isinstance(v, dict) and k in base and isinstance(base[k], dict):
@@ -12,6 +13,7 @@ def merge(base, overrides):
             base[k] = base[k] + [x for x in v if x not in base[k]]
         else:
             base[k] = v
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

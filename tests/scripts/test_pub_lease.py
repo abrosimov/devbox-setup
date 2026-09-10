@@ -1270,8 +1270,10 @@ class TestPubLeaseNotifications:
         assert harness.run("reconcile").returncode == 0
 
         assert harness.notifier.messages == [
-            "lease ownership lost to WARP policy (switch_locked); WARP left unchanged "
-            "(mode=tunnel_only, status=Connected)"
+            (
+                "lease ownership lost to WARP policy (switch_locked); WARP left unchanged "
+                "(mode=tunnel_only, status=Connected)"
+            )
         ]
 
     def test_an_uneventful_tick_notifies_nothing(self, harness: Harness) -> None:

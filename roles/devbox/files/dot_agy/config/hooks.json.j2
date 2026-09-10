@@ -127,6 +127,14 @@
     },
     "enabled": true
   },
+  "langfuse_hook": {
+    "event": "Stop",
+    "handler": {
+      "type": "command",
+      "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/vendor/langfuse_hook.py"
+    },
+    "enabled": true
+  },
   "pre_compact_mask": {
     "event": "PreCompact",
     "handler": {

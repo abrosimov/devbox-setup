@@ -25,7 +25,7 @@ class ScalarKind(StrEnum):
 @dataclass(frozen=True, slots=True)
 class SemanticScalar:
     kind: ScalarKind
-    value: None | bool | int | float | str
+    value: bool | int | float | str | None
 
 
 @dataclass(frozen=True, slots=True)

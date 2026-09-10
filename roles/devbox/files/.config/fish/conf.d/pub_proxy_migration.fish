@@ -1,6 +1,6 @@
 # pub_proxy_migration.fish — one-shot removal of the universal HTTP(S)_PROXY
 # variables left behind by the retired `gost` bridge, which listened on
-# 127.0.0.1:8080. Pub mode now uses WARP `tunnel_only` and sets no proxy at all,
+# 127.0.0.1:8080. Pub mode now uses WARP `warp+doh` and sets no proxy at all,
 # so those universals only point at a dead endpoint.
 #
 # Only run in interactive shells to keep script/subshell startup cheap and to

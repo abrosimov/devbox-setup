@@ -128,6 +128,14 @@ endif
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
 
+.PHONY: pub-preflight pub-e2e
+
+pub-preflight:
+	@/usr/bin/python3 scripts/pub-mode-test.py
+
+pub-e2e:
+	@/usr/bin/python3 scripts/pub-mode-test.py --live
+
 help:
 	@echo ""
 	@echo "Usage:"
@@ -138,6 +146,8 @@ help:
 	@echo "  make check-personal   - dry-run with personal profile"
 	@echo "  make check-work       - dry-run with work profile"
 	@echo "  make check-dev        - dry-run in dev_mode (test vault)"
+	@echo "  make pub-preflight    - read-only WARP, Docker DNS and connectivity checks"
+	@echo "  make pub-e2e          - live candidate pub on/off and restoration test"
 	@echo ""
 	@echo "Developer-mode (auto-bootstraps .venv via uv on first run):"
 	@echo "  make lint             - run all linters: yaml, py, ansible, type-check"
@@ -323,8 +333,8 @@ lint-yaml: $(DEV_SENTINEL)
 # those.
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py
 
 # Pyrefly ignores `project-excludes` from pyproject.toml whenever files are named
 # explicitly on the command line, so the excludes have to be repeated as flags.
@@ -333,7 +343,7 @@ lint-py: $(DEV_SENTINEL)
 PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.venv/**' --project-excludes '**/__pycache__/**'
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py $(PYREFLY_EXCLUDES)
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a

@@ -27,12 +27,13 @@ if TYPE_CHECKING:
 LEASE_SECONDS = 1_800
 MAX_LEASE_SECONDS = 43_200
 NETWORK_MISS_LIMIT = 2
-EXPECTED_MODE = "tunnel_only"
+EXPECTED_MODE = "warp+doh"
+LEASE_MODES = frozenset({"tunnel_only", EXPECTED_MODE})
 INTERACTIVE_LOCK_TIMEOUT = 10.0
 WARP_COMMAND_TIMEOUT = 5.0
 LOG_MAX_BYTES = 1_048_576
 INVALID_RETENTION_SECONDS = 7 * 24 * 60 * 60
-SUPPORTED_MODES = frozenset({"warp", "doh", "warp+doh", "dot", "warp+dot", "proxy", EXPECTED_MODE})
+SUPPORTED_MODES = frozenset({"warp", "doh", "dot", "warp+dot", "proxy"}) | LEASE_MODES
 
 STATUS_CONNECTED = "Connected"
 STATUS_DISCONNECTED = "Disconnected"
@@ -113,6 +114,48 @@ class NetworkPort(Protocol):
     def signature(self) -> str | None: ...
 
 
+class ReadinessPort(Protocol):
+    def failure(self) -> str | None: ...
+
+
+@dataclass(frozen=True)
+class HTTPSReadiness:
+    executable: str = "/usr/bin/curl"
+
+    def failure(self) -> str | None:
+        try:
+            result = subprocess.run(
+                [
+                    self.executable,
+                    "-q",
+                    "--noproxy",
+                    "*",
+                    "--head",
+                    "--silent",
+                    "--show-error",
+                    "--output",
+                    os.devnull,
+                    "--connect-timeout",
+                    "5",
+                    "--max-time",
+                    "10",
+                    "https://api.anthropic.com/",
+                ],
+                capture_output=True,
+                check=False,
+                timeout=12,
+            )
+        except subprocess.TimeoutExpired:
+            return "DNS/HTTPS readiness check timed out"
+        except OSError:
+            return "could not run DNS/HTTPS readiness check"
+        if result.returncode == 6:
+            return "system DNS could not resolve api.anthropic.com"
+        if result.returncode != 0:
+            return f"HTTPS readiness check failed (curl exit {result.returncode})"
+        return None
+
+
 class NotifierPort(Protocol):
     def notify(self, message: str) -> None: ...
 
@@ -166,7 +209,9 @@ class LeaseState:
             raise StateError
         if not isinstance(boot_session, str) or not isinstance(previous_mode, str):
             raise StateError
-        if type(previous_connected) is not bool or expected_mode != EXPECTED_MODE:
+        if type(previous_connected) is not bool:
+            raise StateError
+        if not isinstance(expected_mode, str) or expected_mode not in LEASE_MODES:
             raise StateError
         return cls(
             version=version,
@@ -177,7 +222,7 @@ class LeaseState:
             boot_session=boot_session,
             previous_mode=previous_mode,
             previous_status=_restore_status(fields, previous_connected=previous_connected),
-            expected_mode=EXPECTED_MODE,
+            expected_mode=expected_mode,
             network_signature=_network_signature(fields),
             network_misses=_network_misses(fields),
             hard_expires_at=_hard_expiry(fields, started_at=validated_started_at),
@@ -430,6 +475,7 @@ class WarpClient:
         self.sleeper = sleeper
         self.poll_interval = poll_interval
         self.timeout = timeout
+        self.connection_failure: str | None = None
 
     def mode(self) -> str:
         settings = self._settings()
@@ -439,10 +485,20 @@ class WarpClient:
         return mode
 
     def status(self) -> str:
+        self.connection_failure = None
         payload = self._json_command("status")
         status = payload.get("status")
         if not isinstance(status, str) or not status:
             raise WarpError
+        reason = payload.get("reason")
+        if (
+            status == STATUS_UNABLE_TO_CONNECT
+            and isinstance(reason, dict)
+            and "Port53Bound" in reason
+        ):
+            self.connection_failure = (
+                "WARP DNS could not start: local port 53 is already in use (Port53Bound)"
+            )
         return status
 
     def policy_lock(self) -> str:
@@ -466,9 +522,10 @@ class WarpClient:
         self._command("disconnect")
 
     def wait_for_status(self, expected: str, *, attempts: int, tick: Callable[[], None]) -> bool:
-        return (
-            self._poll(lambda status: status == expected, attempts=attempts, tick=tick) is not None
-        )
+        status = self._poll(lambda status: status == expected, attempts=attempts, tick=tick)
+        if status is None and expected == STATUS_CONNECTED and self.connection_failure is not None:
+            raise WarpError(self.connection_failure)
+        return status is not None
 
     def settle_status(self, *, attempts: int, tick: Callable[[], None]) -> str:
         settled = self._poll(
@@ -708,6 +765,7 @@ class Controller:
         network: NetworkPort,
         notifier: NotifierPort,
         *,
+        readiness: ReadinessPort,
         clock: Callable[[], int],
         boot_session: Callable[[], str],
         stdout: TextIO = sys.stdout,
@@ -718,6 +776,7 @@ class Controller:
         self.warp = warp
         self.network = network
         self.notifier = notifier
+        self.readiness = readiness
         self.clock = clock
         self.boot_session = boot_session
         self.stdout = stdout
@@ -742,11 +801,15 @@ class Controller:
         return self._activate(*context)
 
     def _renew(self, now: int, boot_id: str) -> int:
-        if not self._ensure_tunnel_ready():
-            return self._fail("WARP tunnel did not become ready; lease was not renewed")
         state = self.store.load_lease()
         if state is None:
             return self._fail("invalid lease state and recovery snapshot")
+        if state.expected_mode != EXPECTED_MODE:
+            if not self._restore_previous_state(INTERACTIVE_RESTORE_WAIT):
+                return self._fail("legacy lease restoration failed; migration will retry")
+            return self._activate(now, boot_id, prior=state)
+        if not self._ensure_tunnel_ready():
+            return self._readiness_failed()
         # Re-homing is deliberate: pub on at a different pub adopts that network rather than
         # failing its own signature check on the next reconcile. An existing ceiling does not move.
         renewed = replace(
@@ -773,7 +836,7 @@ class Controller:
         print(f"pub mode renewed until {_format_epoch(renewed.expires_at)}", file=self.stdout)
         return 0
 
-    def _activate(self, now: int, boot_id: str) -> int:
+    def _activate(self, now: int, boot_id: str, *, prior: LeaseState | None = None) -> int:
         previous = self._previous_warp_state()
         if previous is None:
             return 1
@@ -792,6 +855,16 @@ class Controller:
             expected_mode=EXPECTED_MODE,
             hard_expires_at=now + MAX_LEASE_SECONDS,
         )
+        if prior is not None:
+            state = replace(
+                state,
+                lease_id=prior.lease_id,
+                previous_mode=prior.previous_mode,
+                previous_status=prior.previous_status,
+                expires_at=_renewed_expiry(prior, now),
+                hard_expires_at=prior.hard_expires_at or now + MAX_LEASE_SECONDS,
+                extras=prior.extras,
+            )
         # The recovery snapshot must exist on disk before any WARP mutation; a crash mid-transition
         # would otherwise lose the previous mode forever.
         try:
@@ -800,10 +873,7 @@ class Controller:
         except (OSError, StateError, TypeError, ValueError):
             return self._fail("could not save activation metadata; WARP left unchanged")
         if not self._ensure_tunnel_ready():
-            self._restore_previous_state(INTERACTIVE_RESTORE_WAIT)
-            return self._fail(
-                "WARP tunnel did not become ready; previous state restoration attempted"
-            )
+            return self._readiness_failed()
         try:
             # Captured with the tunnel already up, so it is comparable with what every later
             # reconcile reads; a signature taken before the mode change would not be.
@@ -923,7 +993,7 @@ class Controller:
             return ReconcileOutcome.FAILED
         # A manual mode change ends ownership; a manual disconnect only pauses the tunnel, so the
         # expected mode still counts as owned and the restoration snapshot is kept.
-        owns_mode = current_mode == EXPECTED_MODE or (
+        owns_mode = current_mode == state.expected_mode or (
             state.phase == "restoring" and current_mode == state.previous_mode
         )
         if owns_mode:
@@ -1018,10 +1088,23 @@ class Controller:
                 STATUS_CONNECTED, ACTIVATION_WAIT, "waiting for the WARP tunnel"
             ):
                 return False
-            return self.warp.mode() == EXPECTED_MODE
+            if self.warp.mode() != EXPECTED_MODE:
+                return False
         except WarpError as error:
             self._remember_warp_failure(error)
             return False
+        failure = self.readiness.failure()
+        if failure is not None:
+            self._fail(failure)
+            return False
+        return True
+
+    def _readiness_failed(self) -> int:
+        restored = self._restore_previous_state(INTERACTIVE_RESTORE_WAIT)
+        outcome = (
+            "previous state restored" if restored else "restoration pending; recovery retained"
+        )
+        return self._fail(f"WARP tunnel did not become ready; {outcome}")
 
     def _restore_previous_state(self, budget: WaitBudget) -> bool:
         state = self.store.load_lease()
@@ -1076,7 +1159,7 @@ class Controller:
         # With both metadata files unreadable the previous mode is unknown, so stop the tunnel but
         # restore nothing — guessing a mode is worse than leaving the user to set one.
         try:
-            if self.warp.mode() == EXPECTED_MODE:
+            if self.warp.mode() in LEASE_MODES:
                 self.warp.disconnect()
                 if not self._wait_for_status(
                     STATUS_DISCONNECTED,
@@ -1379,6 +1462,7 @@ def _controller_from_environment(
         WarpClient(warp_path, poll_interval=poll_interval),
         _network_from_environment(environment),
         CommandNotifier.from_environment(environment),
+        readiness=HTTPSReadiness(environment.get("PUB_CURL", "/usr/bin/curl")),
         clock=lambda: now,
         boot_session=boot_session,
         stdout=stdout,

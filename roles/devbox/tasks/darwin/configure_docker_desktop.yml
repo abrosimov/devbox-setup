@@ -1,0 +1,113 @@
+---
+- name: "Docker Desktop — require an isolated development root"
+  ansible.builtin.assert:
+    that:
+      - (devbox_paths.dotfiles_root_dir | expanduser | realpath) != ansible_facts['env']['HOME']
+      - (devbox_paths.dotfiles_root_dir | expanduser | realpath) != '/'
+    fail_msg: Development mode requires an isolated dotfiles_root_dir outside the live home.
+  when: dev_mode | default(false) | bool
+
+- name: "Docker Desktop — locate existing settings"
+  ansible.builtin.set_fact:
+    devbox_docker_settings_path: >-
+      {{ ((devbox_paths.dotfiles_root_dir | expanduser | realpath) if (dev_mode | default(false) | bool)
+          else ansible_facts['env']['HOME']) }}/Library/Group Containers/group.com.docker/settings-store.json
+
+- name: "Docker Desktop — inspect settings file"
+  ansible.builtin.stat:
+    path: "{{ devbox_docker_settings_path }}"
+  register: devbox_docker_settings_stat
+
+- name: "Docker Desktop — report uninitialised settings"
+  ansible.builtin.debug:
+    msg: >-
+      Docker Desktop settings do not exist. Launch Docker Desktop once, complete
+      initialisation, then re-run this playbook. KernelForUDP has not been configured.
+  when: not devbox_docker_settings_stat.stat.exists
+
+- name: "Docker Desktop — configure WARP-compatible UDP networking"
+  when: devbox_docker_settings_stat.stat.exists
+  block:
+    - name: "Docker Desktop — read initial settings"
+      ansible.builtin.slurp:
+        src: "{{ devbox_docker_settings_path }}"
+      register: devbox_docker_initial
+      no_log: true
+
+    - name: "Docker Desktop — validate initial settings object"
+      ansible.builtin.assert:
+        that: (devbox_docker_initial.content | b64decode | from_json) is mapping
+        fail_msg: Docker Desktop settings must be a JSON object.
+      no_log: true
+
+    - name: "Docker Desktop — determine whether UDP setting needs changing"
+      ansible.builtin.set_fact:
+        devbox_docker_udp_change: >-
+          {{ (devbox_docker_initial.content | b64decode | from_json).get('KernelForUDP') is not sameas false }}
+      no_log: true
+
+    - name: "Docker Desktop — report prospective UDP setting change"
+      ansible.builtin.debug:
+        msg: Docker Desktop KernelForUDP will be set to false; a running Desktop will restart.
+      changed_when: true
+      when:
+        - ansible_check_mode
+        - devbox_docker_udp_change | bool
+
+    - name: "Docker Desktop — merge UDP setting while Desktop is stopped"
+      when:
+        - not ansible_check_mode
+        - devbox_docker_udp_change | bool
+      block:
+        - name: "Docker Desktop — inspect running state"
+          ansible.builtin.command:
+            argv: "{{ devbox_docker_process_argv | default(['/bin/ps', '-axo', 'comm=']) }}"
+          register: devbox_docker_processes
+          changed_when: false
+          when: not (dev_mode | default(false) | bool)
+          no_log: true
+
+        - name: "Docker Desktop — record whether restart is required"
+          ansible.builtin.set_fact:
+            devbox_docker_restart: >-
+              {{ not (dev_mode | default(false) | bool)
+                 and '/Applications/Docker.app/Contents/MacOS/com.docker.backend'
+                     in (devbox_docker_processes.stdout_lines | map('trim') | list) }}
+
+        - name: "Docker Desktop — stop before changing settings"
+          ansible.builtin.command:
+            argv: [docker, desktop, stop, --timeout, '60']
+          changed_when: true
+          when: devbox_docker_restart | bool
+
+        - name: "Docker Desktop — preserve prior running state across settings update"
+          block:
+            # Desktop can persist newer settings during shutdown.
+            - name: "Docker Desktop — read final settings after shutdown"
+              ansible.builtin.slurp:
+                src: "{{ devbox_docker_settings_path }}"
+              register: devbox_docker_final
+              no_log: true
+
+            - name: "Docker Desktop — validate final settings object"
+              ansible.builtin.assert:
+                that: (devbox_docker_final.content | b64decode | from_json) is mapping
+                fail_msg: Docker Desktop settings must be a JSON object.
+              no_log: true
+
+            - name: "Docker Desktop — disable kernel UDP networking"
+              ansible.builtin.copy:
+                content: >-
+                  {{ (devbox_docker_final.content | b64decode | from_json)
+                     | combine({'KernelForUDP': false}) | to_nice_json }}
+                dest: "{{ devbox_docker_settings_path }}"
+                mode: "0600"
+              no_log: true
+              diff: false
+
+          always:
+            - name: "Docker Desktop — restore running state"
+              ansible.builtin.command:
+                argv: [docker, desktop, start, --timeout, '60']
+              changed_when: true
+              when: devbox_docker_restart | bool

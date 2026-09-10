@@ -41,6 +41,12 @@
   ansible.builtin.include_tasks: darwin/install_kubectl.yml
 - name: "Configure macOS basics (Touch ID for sudo, clamshell, dev mode)"
   ansible.builtin.include_tasks: darwin/configure_macos_basics.yml
+- name: "Configure Docker Desktop UDP networking for WARP"
+  ansible.builtin.include_tasks: darwin/configure_docker_desktop.yml
+  when: >-
+    'docker-desktop' in
+    ((devbox_brew_secondary_casks_no_binaries | default([]))
+    + (devbox_extra_brew_casks_no_binaries | default([])))
 - name: "Configure expiring WARP pub mode"
   ansible.builtin.include_tasks: darwin/configure_pub_mode.yml
   vars:

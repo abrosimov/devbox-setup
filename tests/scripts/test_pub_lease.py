@@ -141,6 +141,16 @@ class AtomicWriteError(OSError):
     pass
 
 
+@dataclass
+class FakeReadiness:
+    error: str | None = None
+    calls: int = 0
+
+    def failure(self) -> str | None:
+        self.calls += 1
+        return self.error
+
+
 class Harness:
     def __init__(self, root: Path) -> None:
         self.paths = pub_lease.StatePaths(root / "lease-state", root / "pub-lease.log")
@@ -148,6 +158,7 @@ class Harness:
         self.warp = FakeWarp()
         self.network = FakeNetwork()
         self.notifier = FakeNotifier()
+        self.readiness = FakeReadiness()
         self.now = 1_000_000
         self.boot_session = "boot-a"
         self.interactive = True
@@ -160,6 +171,7 @@ class Harness:
             self.warp,
             self.network,
             self.notifier,
+            readiness=self.readiness,
             clock=lambda: self.now,
             boot_session=lambda: self.boot_session,
             stdout=stdout,
@@ -221,10 +233,60 @@ class TestPubLeaseLifecycle:
         assert state.previous_status == "Disconnected"
         assert state.previous_connected is False
         assert ("wait", "Connected", "25") in harness.warp.calls
-        assert harness.warp.current_mode == "tunnel_only"
+        assert harness.warp.current_mode == "warp+doh"
         assert harness.warp.current_status == "Connected"
         assert harness.paths.lease.stat().st_mode & 0o777 == 0o600
         assert harness.paths.recovery.stat().st_mode & 0o777 == 0o600
+
+    @pytest.mark.parametrize("renew", [False, True])
+    @pytest.mark.parametrize("failure", ["system DNS unavailable", "HTTPS unavailable"])
+    def test_readiness_failure_restores_previous_state(self, harness, renew, failure):
+        if renew:
+            assert harness.run("on").returncode == 0
+        harness.readiness.error = failure
+
+        result = harness.run("on")
+
+        assert result.returncode == 1
+        assert failure in result.stderr
+        assert "previous state restored" in result.stderr
+        assert "ON" not in result.stdout
+        assert harness.warp.current_mode == "proxy"
+        assert harness.warp.current_status == "Disconnected"
+        assert not harness.store.metadata_exists()
+
+    def test_readiness_failure_retains_metadata_until_rollback_succeeds(self, harness):
+        harness.readiness.error = "system DNS unavailable"
+        harness.warp.fail_once.append("set-mode:proxy")
+
+        result = harness.run("on")
+
+        assert result.returncode == 1
+        assert "restoration pending; recovery retained" in result.stderr
+        assert harness.lease().phase == "restoring"
+        assert harness.store.load_recovery().previous_mode == "proxy"
+        assert harness.run("reconcile").returncode == 0
+        assert harness.warp.current_mode == "proxy"
+        assert not harness.store.metadata_exists()
+
+    def test_only_explicit_on_checks_readiness(self, harness):
+        assert harness.run("on").returncode == 0
+        assert harness.run("on").returncode == 0
+        assert harness.readiness.calls == 2
+        harness.readiness.error = "unavailable"
+        assert harness.run("status").returncode == 0
+        assert harness.run("reconcile").returncode == 0
+        assert harness.run("off").returncode == 0
+        assert harness.readiness.calls == 2
+
+    def test_tunnel_only_is_supported_as_a_previous_mode(self, harness):
+        harness.warp.current_mode = "tunnel_only"
+        harness.warp.current_status = "Connected"
+        assert harness.run("on").returncode == 0
+        assert harness.warp.current_mode == "warp+doh"
+        assert harness.run("off").returncode == 0
+        assert harness.warp.current_mode == "tunnel_only"
+        assert harness.warp.current_status == "Connected"
 
     def test_on_refuses_disabled_controller_without_warp_calls(self, harness: Harness) -> None:
         harness.paths.directory.mkdir(parents=True)
@@ -300,7 +362,7 @@ class TestPubLeaseLifecycle:
         harness.warp.current_status = "Unable to connect"
         assert harness.run("on").returncode == 0
         harness.warp.fail_once.append("connect")
-        harness.warp.mode_queue = ["tunnel_only", "warp"]
+        harness.warp.mode_queue = ["warp+doh", "warp"]
 
         result = harness.run("off")
 
@@ -330,7 +392,7 @@ class TestPubLeaseLifecycle:
         result = harness.run("on")
 
         assert result.returncode == 1
-        assert "restoration attempted" in result.stderr
+        assert "previous state restored" in result.stderr
         assert ("disconnect",) not in harness.warp.calls
         assert harness.warp.current_mode == "proxy"
         assert not harness.store.metadata_exists()
@@ -405,7 +467,7 @@ class TestPubLeaseLifecycle:
         result = harness.run("status")
 
         assert result.returncode == 0
-        assert "WARP: mode=tunnel_only, status=Connected" in result.stdout
+        assert "WARP: mode=warp+doh, status=Connected" in result.stdout
         assert "remaining=0h30m" in result.stdout
         assert harness.paths.lease.read_bytes() == lease
         assert harness.paths.recovery.read_bytes() == recovery
@@ -458,7 +520,7 @@ class TestPubLeaseLifecycle:
         assert f"status={status}" in result.stderr
         assert harness.lease().previous_status == status
         assert harness.lease().previous_connected is False
-        assert harness.warp.current_mode == "tunnel_only"
+        assert harness.warp.current_mode == "warp+doh"
 
 
 class TestPubLeaseOwnership:
@@ -483,7 +545,7 @@ class TestPubLeaseOwnership:
 
         assert result.returncode == 0
         assert "ownership lost to WARP policy" in result.stderr
-        assert harness.warp.current_mode == "tunnel_only"
+        assert harness.warp.current_mode == "warp+doh"
         assert not harness.store.metadata_exists()
 
     def test_policy_drop_leaves_an_advisory_breadcrumb_for_off_and_status(
@@ -503,7 +565,7 @@ class TestPubLeaseOwnership:
         assert first_off.returncode == 0
         assert first_off.stdout == reported.stdout.splitlines()[1] + "\n"
         assert second_off.stdout == "pub mode is already OFF\n"
-        assert harness.warp.current_mode == "tunnel_only"
+        assert harness.warp.current_mode == "warp+doh"
 
     @pytest.mark.parametrize(
         ("phase", "observed_mode"),
@@ -606,7 +668,7 @@ class TestPubLeaseNetworkRenewal:
             assert harness.lease().expires_at == harness.now + LEASE_SECONDS
             assert harness.lease().hard_expires_at == hard_expires_at
 
-        assert harness.warp.current_mode == "tunnel_only"
+        assert harness.warp.current_mode == "warp+doh"
 
     def test_renewal_is_clamped_to_the_hard_ceiling(self, harness: Harness) -> None:
         _copy_fixture("v1-active-capped.json", harness.paths.lease)
@@ -631,7 +693,7 @@ class TestPubLeaseNetworkRenewal:
         assert result.returncode == 0
         assert harness.lease().network_misses == 1
         assert harness.lease().expires_at == expires_at
-        assert harness.warp.current_mode == "tunnel_only"
+        assert harness.warp.current_mode == "warp+doh"
 
     def test_a_second_signature_mismatch_closes_the_lease_and_restores_warp(
         self, harness: Harness
@@ -658,7 +720,7 @@ class TestPubLeaseNetworkRenewal:
         assert harness.run("reconcile").returncode == 0
 
         assert harness.lease().network_misses == 0
-        assert harness.warp.current_mode == "tunnel_only"
+        assert harness.warp.current_mode == "warp+doh"
 
     def test_an_unobtainable_signature_neither_renews_nor_counts_a_miss(
         self, harness: Harness
@@ -788,6 +850,58 @@ class TestPubLeaseNetworkRenewal:
 
 
 class TestPubLeaseStateCompatibility:
+    def test_legacy_on_migrates_without_losing_restore_intent_or_ceiling(self, harness):
+        _copy_fixture("v1-active-signature.json", harness.paths.lease)
+        original = harness.lease()
+        harness.warp.current_mode = "tunnel_only"
+        harness.warp.current_status = "Connected"
+        harness.now += 60
+
+        result = harness.run("on")
+
+        assert result.returncode == 0
+        state = harness.lease()
+        assert state.expected_mode == "warp+doh"
+        assert state.lease_id == original.lease_id
+        assert state.hard_expires_at == original.hard_expires_at
+        assert state.previous_mode == original.previous_mode
+        assert state.previous_status == original.previous_status
+        assert harness.store.load_recovery().expected_mode == "warp+doh"
+        assert harness.warp.calls.index(("set-mode", "proxy")) < harness.warp.calls.index(
+            ("set-mode", "warp+doh")
+        )
+        assert harness.run("off").returncode == 0
+        assert harness.warp.current_mode == "proxy"
+        assert harness.warp.current_status == "Disconnected"
+
+    def test_legacy_migration_retains_recovery_when_restore_fails(self, harness):
+        _copy_fixture("v1-active.json", harness.paths.lease)
+        harness.warp.current_mode = "tunnel_only"
+        harness.warp.current_status = "Connected"
+        harness.warp.fail_once.append("set-mode:proxy")
+
+        result = harness.run("on")
+
+        assert result.returncode == 1
+        assert harness.lease().expected_mode == "tunnel_only"
+        assert harness.store.load_recovery().previous_mode == "proxy"
+        assert ("set-mode", "warp+doh") not in harness.warp.calls
+        assert harness.run("reconcile").returncode == 0
+        assert harness.warp.current_mode == "proxy"
+
+    def test_legacy_migration_readiness_failure_restores_original_mode(self, harness):
+        _copy_fixture("v1-active.json", harness.paths.lease)
+        harness.warp.current_mode = "tunnel_only"
+        harness.warp.current_status = "Connected"
+        harness.readiness.error = "system DNS unavailable"
+
+        result = harness.run("on")
+
+        assert result.returncode == 1
+        assert harness.warp.current_mode == "proxy"
+        assert harness.warp.current_status == "Disconnected"
+        assert not harness.store.metadata_exists()
+
     @pytest.mark.parametrize(
         ("fixture_name", "phase"),
         [
@@ -996,7 +1110,7 @@ class TestPubLeaseStateCompatibility:
             and (.previous_connected | type == "boolean")
             and (.previous_status | type == "string" and length > 0)
             and (.previous_status == "Connected") == .previous_connected
-            and .expected_mode == "tunnel_only"
+            and .expected_mode == "warp+doh"
         """
 
         result = subprocess.run(
@@ -1007,6 +1121,59 @@ class TestPubLeaseStateCompatibility:
         )
 
         assert result.returncode == 0, result.stderr
+
+
+class TestHTTPSReadiness:
+    @pytest.mark.parametrize("exit_code", [0, 6, 7, 28, 35, 60])
+    def test_bounded_proxy_free_head_request_reports_transport_failures(self, tmp_path, exit_code):
+        executable = tmp_path / "curl"
+        recorded = tmp_path / "arguments.json"
+        executable.write_text(
+            f"#!{sys.executable}\n"
+            "import json, sys\n"
+            "from pathlib import Path\n"
+            f"Path({str(recorded)!r}).write_text(json.dumps(sys.argv[1:]))\n"
+            f"raise SystemExit({exit_code})\n",
+            encoding="utf-8",
+        )
+        executable.chmod(0o755)
+
+        result = pub_lease.HTTPSReadiness(str(executable)).failure()
+
+        assert json.loads(recorded.read_text()) == [
+            "-q",
+            "--noproxy",
+            "*",
+            "--head",
+            "--silent",
+            "--show-error",
+            "--output",
+            os.devnull,
+            "--connect-timeout",
+            "5",
+            "--max-time",
+            "10",
+            "https://api.anthropic.com/",
+        ]
+        if exit_code == 0:
+            assert result is None
+        elif exit_code == 6:
+            assert result == "system DNS could not resolve api.anthropic.com"
+        else:
+            assert result == f"HTTPS readiness check failed (curl exit {exit_code})"
+
+    def test_outer_timeout_covers_a_stuck_resolver(self, monkeypatch):
+        def timeout(command, **kwargs):
+            assert kwargs["timeout"] == 12
+            raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+        monkeypatch.setattr(pub_lease.subprocess, "run", timeout)
+        assert pub_lease.HTTPSReadiness().failure() == "DNS/HTTPS readiness check timed out"
+
+    def test_missing_executable_is_a_readiness_failure(self, tmp_path):
+        assert pub_lease.HTTPSReadiness(str(tmp_path / "absent")).failure() == (
+            "could not run DNS/HTTPS readiness check"
+        )
 
 
 class TestPubLeaseRecoveryAndMaintenance:
@@ -1150,7 +1317,7 @@ class TestPubLeaseFailures:
         result = harness.run("on")
 
         assert result.returncode == 1
-        assert "restoration attempted" in result.stderr
+        assert "previous state restored" in result.stderr
         assert harness.warp.current_mode == "proxy"
         assert harness.warp.current_status == "Disconnected"
         assert not harness.store.metadata_exists()
@@ -1272,7 +1439,7 @@ class TestPubLeaseNotifications:
         assert harness.notifier.messages == [
             (
                 "lease ownership lost to WARP policy (switch_locked); WARP left unchanged "
-                "(mode=tunnel_only, status=Connected)"
+                "(mode=warp+doh, status=Connected)"
             )
         ]
 
@@ -1645,11 +1812,14 @@ if arguments == ["settings", "mode-switch-allowed"]:
 elif arguments == ["settings"]:
     print(json.dumps({{"settings": {{"operation_mode": state["mode"]}}}}))
 elif arguments == ["status"]:
-    print(json.dumps({{"status": state["status"]}}))
+    print(json.dumps({{"status": state["status"], "reason": state.get("reason")}}))
 elif arguments[0:1] == ["mode"]:
     state["mode"] = arguments[1]
 elif arguments == ["connect"]:
     state["status"] = "Connected"
+    if "FAKE_WARP_CONNECT_REASON" in os.environ:
+        state["status"] = "Unable to connect"
+        state["reason"] = json.loads(os.environ["FAKE_WARP_CONNECT_REASON"])
 elif arguments == ["disconnect"]:
     state["status"] = "Disconnected"
 else:
@@ -1672,6 +1842,7 @@ def cli_environment(tmp_path: Path) -> dict[str, str]:
         {
             "HOME": str(tmp_path / "home"),
             "PUB_WARP_CLI": str(warp),
+            "PUB_CURL": "/usr/bin/true",
             # Without an override the CLI would post a real macOS notification from the test suite.
             "PUB_NOTIFY_COMMAND": str(
                 _write_notify_recorder(tmp_path / "notify", tmp_path / "notified")
@@ -1699,6 +1870,28 @@ def _run_cli(environment: dict[str, str], *arguments: str) -> subprocess.Complet
 
 
 class TestPubLeaseCliParity:
+    @pytest.mark.parametrize("reason_key", ["Port53Bound", "UnknownFailure"])
+    def test_connection_failure_reports_only_known_reason_and_restores(
+        self, cli_environment, reason_key
+    ):
+        environment = dict(
+            cli_environment,
+            FAKE_WARP_CONNECT_REASON=json.dumps({reason_key: "PRIVATE-DETAIL"}),
+        )
+
+        result = _run_cli(environment, "on")
+
+        assert result.returncode == 1
+        assert "previous state restored" in result.stderr
+        assert "PRIVATE-DETAIL" not in result.stderr
+        assert "UnknownFailure" not in result.stderr
+        if reason_key == "Port53Bound":
+            assert "local port 53 is already in use (Port53Bound)" in result.stderr
+        state = json.loads(Path(environment["FAKE_WARP_STATE"]).read_text())
+        assert state["mode"] == "proxy"
+        assert state["status"] == "Disconnected"
+        assert not (Path(environment["PUB_LEASE_STATE_DIR"]) / "lease.json").exists()
+
     def test_executable_cli_runs_on_status_and_off(self, cli_environment: dict[str, str]) -> None:
         results = [
             subprocess.run(

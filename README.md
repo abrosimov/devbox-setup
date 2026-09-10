@@ -111,7 +111,34 @@ Keybindings and usage for each tool:
 
 ## Pub Mode
 
-Temporary system-level WARP tunnel for untrusted wifi where a middlebox disrupts Claude Code traffic. It uses WARP's `tunnel_only` mode: IP traffic follows the WARP tunnel while DNS continues to use the existing system configuration. IP/CIDR Split Tunnel exclusions still apply; domain-based Split Tunnels and Local Domain Fallback do not apply in Traffic-only mode.
+### Why pub exists
+
+Pub was created to work around Claude Code connectivity failures on a particular wifi network. The original network fault was not established; interference by a middlebox is a hypothesis, not a confirmed diagnosis. The requirement is a temporary alternative network path, with automatic restoration after leaving that network or reaching the time limit, so the workaround does not become a permanent VPN setting.
+
+Pub controls Cloudflare WARP; it does not implement a VPN. The tunnel affects the machine, not just Claude. Claude is the original use case and the current connectivity probe target, but pub does not need Claude credentials or install Claude. It cannot guarantee that every application or existing connection survives a network change.
+
+The current `warp+doh` mode sends IP traffic through WARP and lets WARP handle DNS over HTTPS. This addresses a subsequently observed fault: `tunnel_only` left the original network's DNS servers configured, but they stopped answering through the tunnel. IP connectivity and an HTTPS request with an explicit destination IP still worked. Docker's kernel UDP networking then exposed a separate local DNS-port conflict; its fix is described below.
+
+For the source map, preserved contracts and release checks needed to distribute pub independently, see [Pub: purpose and package extraction](docs/design/pub-package-extraction.md). Extraction is planned after validation of the current change; no standalone package is available yet.
+
+### Connectivity and verification
+
+`pub on` verifies system DNS resolution and an HTTPS response from `api.anthropic.com` before reporting success. A failed check triggers restoration of the captured WARP state. Existing `tunnel_only` leases remain restorable; an explicit `pub on` upgrades them to `warp+doh` while preserving their original restoration intent and twelve-hour ceiling.
+
+`Port53Bound` means WARP cannot start its local DNS proxy because another service owns port 53. On macOS, Docker's kernel networking for UDP can make `mDNSResponder` occupy that port. Disable that Docker option and apply its restart at a suitable time; pub does not stop Docker or system DNS services. See [Cloudflare's DNS proxy troubleshooting](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/troubleshooting/client-errors/#cf_dns_proxy_failure).
+
+In Docker Desktop, open **Settings → Resources → Network**, clear **Use kernel networking for UDP**, then apply and restart. The personal playbook also merges `KernelForUDP: false` into the existing `settings-store.json` before deploying pub. It stops a running Desktop before the merge and restarts it afterwards, interrupting its containers; an already compliant configuration causes no restart. Other preferences are preserved. The work profile uses OrbStack and does not run this task. If Docker has never been launched, initialise it once and rerun the playbook; no partial first-run configuration is created.
+
+Before deploying changes with `make personal` or `make work`, run these checks on the Mac that uses WARP:
+
+```sh
+make pub-preflight
+make pub-e2e
+```
+
+`pub-preflight` leaves network settings unchanged and checks Docker's UDP setting when present, local port 53, WARP policy/state and DNS/HTTPS reachability. `pub-e2e` temporarily runs the repository's candidate controller against real WARP, checks connectivity with pub enabled, then verifies that `off` restores the original mode, connection state and connectivity. It refuses an existing lease and requires a loaded supervisor whose installed controller can recover `warp+doh` leases; this compatibility update is a one-time prerequisite for testing the first migration. Failures return a non-zero exit code. These commands are explicit rather than automatic deployment prerequisites because the live test switches the machine's network. They do not apply to a work machine without WARP.
+
+Mocked controller tests and isolated Ansible deployment tests run through `make test-scripts test-deploy`; the live gate catches host DNS conflicts that those tests cannot reproduce. Its HTTPS probe checks transport availability, not an authenticated Claude conversation, and results apply to the current network and host configuration.
 
 Pub mode does not set application proxy variables or run a `gost` bridge. Local services such as the OTLP collector at `127.0.0.1:4317` therefore remain direct rather than being sent through a loopback HTTP proxy.
 
@@ -137,11 +164,11 @@ The controller is a self-contained Python 3.9+ standard-library program. The pla
 
 A normal Ansible run for a profile that no longer manages Cloudflare WARP blocks new activations, boots out both the current LaunchDaemon and any legacy GUI LaunchAgent, restores any active lease, then removes their plist and the controller executable. The supervisor stops before the restoration so the sixty-second reconciler cannot re-enter halfway through it. If restoration fails, the supervisor, controller, and recovery metadata are retained for retry. Re-enabling the managed profile removes the block before deployment. Dev mode only reconciles its isolated debug tree and never changes the live supervisor or WARP state.
 
-The controller keeps an immutable recovery snapshot beside its working lease metadata. If only the working file is damaged, `pub off` and the LaunchDaemon restore from that snapshot. If both files are unreadable, `pub off --force` disconnects an owned `tunnel_only` tunnel and quarantines the metadata, but deliberately does not guess the lost previous WARP mode.
+The controller keeps an immutable recovery snapshot beside its working lease metadata. If only the working file is damaged, `pub off` and the LaunchDaemon restore from that snapshot. If both files are unreadable, `pub off --force` disconnects a recognised pub tunnel and quarantines the metadata, but deliberately does not guess the lost previous WARP mode.
 
-Changing the WARP mode manually ends controller ownership and leaves the selected mode unchanged. A manual disconnect in `tunnel_only` pauses the tunnel without discarding the restoration snapshot; `pub on` reconnects it and `pub off` still restores the original state.
+Changing the WARP mode manually ends controller ownership and leaves the selected mode unchanged. A manual disconnect in the lease mode pauses the tunnel without discarding the restoration snapshot; `pub on` reconnects it and `pub off` still restores the original state.
 
-`pub on` captures the pre-lease connection state as the restoration intent. A `Connecting` status is given ten seconds to settle first. `Connected` and `Disconnected` are restored exactly; a degraded state (`Unable to connect`, or still `Connecting` after that budget) is reported on activation and later restored best-effort — the controller aims to reconnect but ends the lease even if the network still refuses, the reconnection is rejected outright, or the resulting status cannot be read, rather than holding `tunnel_only` open forever. Restoring the mode itself, and confirming it afterwards, stays strict for every intent. `Registration Missing` and any status the controller does not recognise are refused outright.
+`pub on` captures the pre-lease connection state as the restoration intent. A `Connecting` status is given ten seconds to settle first. `Connected` and `Disconnected` are restored exactly; a degraded state (`Unable to connect`, or still `Connecting` after that budget) is reported on activation and later restored best-effort — the controller aims to reconnect but ends the lease even if the network still refuses, the reconnection is rejected outright, or the resulting status cannot be read, rather than holding the pub tunnel open forever. Restoring the mode itself, and confirming it afterwards, stays strict for every intent. `Registration Missing` and any status the controller does not recognise are refused outright.
 
 `pub on` refuses to start while WARP forbids mode switching — the controller asks `warp-cli settings mode-switch-allowed` and reads a bare `true` as unlocked and a bare `false` as locked — because it could not guarantee restoration. Any other answer is an unreadable probe rather than a locked policy: the lease is retained, WARP is left alone and the operation fails, because a probe that cannot be classified must never be allowed to discard the only record of the mode to restore. If the policy really is locked during an active lease, the controller treats the policy as the new owner, leaves WARP unchanged, and removes its lease metadata instead of retrying forever. It leaves an advisory note behind, so a later `pub off` or `pub status` reports the mode that preceded the dropped lease and the mode WARP was actually left in — both read at the moment the lease was dropped, since an administrator may already have moved it — instead of claiming the mode is already off; nothing restores from that note. WARP's derived `always_on` setting reflects the current connection toggle and does not transfer ownership.
 

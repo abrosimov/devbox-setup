@@ -16,9 +16,13 @@ Resolve these paths relative to this `SKILL.md`:
 - `references/FPF-Spec.md` — FPF Core, owning `A.*` through `G.*` ids.
 - `references/Narrativization-and-Narrative-Studies-Principles-Framework.md` — the companion NSTD
   framework. Use it through the sibling `narrative-thinking` skill.
+- [Bundle index](references/bundle-index.md) — Engineering DPF Suite domain selection, upstream
+  introductions and snapshot provenance. Use a domain framework when the question requires its
+  methods; its pattern identifiers belong to that document, not to FPF Core.
 
-Both documents are large. Never load either file in full. Search by stable section id, enumerate the
-matching section's headings, then read only the relevant range. Titles, line numbers, slot numbers,
+These documents are large. Never load a complete framework or the whole bundle. Search by section
+id within the selected document, enumerate the matching section's headings, then read only the
+relevant range. Titles, line numbers, slot numbers,
 and document size may change between editions.
 
 For example, locate a pattern and enumerate its slots with targeted searches equivalent to:
@@ -37,6 +41,8 @@ Use the `:End` heading as the pattern boundary. Search for a distinctive slot ti
    factual lookup, or a decision whose frame and criteria are already explicit.
 2. Identify the current situation and choose one Practical-Use Card from the index below. If two
    cards appear plausible, compare their promised first results before opening either pattern.
+   For a domain method, use the bundle index and Suite Reference to select the relevant DPF instead.
+   Check the selected pattern's problem frame before applying its solution and checklist.
 3. Open only the direct branch whose stated condition is current. Read its `Solution` and, when the
    answer will be relied on, its `Conformance Checklist`.
 4. Combine the selected pattern with repository, source, or user evidence. FPF never substitutes

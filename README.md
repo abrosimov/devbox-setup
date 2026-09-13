@@ -36,6 +36,7 @@ A profile is mandatory: bare `make run` / `make dev` / `make check` fail with `P
 | `make lint` | Syntax-check + ansible-lint + semantics + typecheck |
 | `make lint-ansible-semantics` | Static catch for set_fact intra-task self-references |
 | `make validate-claude` | Validate agent/skill cross-references |
+| `make sync-upstream-docs` | Refresh the [FPF, Narrative and Engineering DPF bundle](roles/devbox/files/dot_ai/skills/fpf-thinking/references/bundle-index.md) from one upstream commit; use `ARGS='--check'` for a read-only comparison |
 | `make otelbox-edge-config` | Set the edge collector's remote endpoint + ingestion token (`ONLY=endpoint\|token`) |
 | `make otelbox-edge-test` | Liveness + delivery smoke for the edge collector (also runs after `make personal`/`work`) |
 

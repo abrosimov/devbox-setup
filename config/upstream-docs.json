@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "repository": "ailev/FPF",
+  "ref": "main",
+  "files": [
+    {
+      "source": "Engineering DPF Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/DEVELOPMENT-OPPORTUNITY-CONSTRUCTION-AND-DEVELOPMENT-DIRECTION-ADVISING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/DEVELOPMENT-OPPORTUNITY-CONSTRUCTION-AND-DEVELOPMENT-DIRECTION-ADVISING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/ENGINEERING-DPF-SUITE-REFERENCE.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/ENGINEERING-DPF-SUITE-REFERENCE.md"
+    },
+    {
+      "source": "Engineering DPF Suite/EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/LICENSE",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/LICENSE"
+    },
+    {
+      "source": "Engineering DPF Suite/LICENSING.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/LICENSING.md"
+    },
+    {
+      "source": "Engineering DPF Suite/MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/MUSIC-AND-DANCE-PRACTICE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/MUSIC-AND-DANCE-PRACTICE-ENGINEERING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/ORGANIZATION-ADMINISTRATION-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/ORGANIZATION-ADMINISTRATION-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/PROBLEM-STRUCTURING-AND-DECISION-SUPPORT-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/PROBLEM-STRUCTURING-AND-DECISION-SUPPORT-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/README.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/README.md"
+    },
+    {
+      "source": "Engineering DPF Suite/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/SEMANTIC-INTEGRATION-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/SEMANTIC-INTEGRATION-ENGINEERING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/STRATEGY-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/STRATEGY-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md"
+    },
+    {
+      "source": "FPF-Spec.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md"
+    },
+    {
+      "source": "LICENSE",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/LICENSE"
+    },
+    {
+      "source": "LICENSING.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/LICENSING.md"
+    },
+    {
+      "source": "Narrativization-and-Narrative-Studies-Principles-Framework.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Narrativization-and-Narrative-Studies-Principles-Framework.md"
+    },
+    {
+      "source": "Readme.md",
+      "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Readme.md"
+    }
+  ]
+}

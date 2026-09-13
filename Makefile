@@ -196,7 +196,7 @@ help:
 	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
 	@echo "  make local-push       - deploy only gitignored local/ overlay (surgical; already included in dotfiles-push)"
 	@echo "  make macos-defaults   - re-apply Touch ID / pmset / DevToolsSecurity (sudo required)"
-	@echo "  make sync-upstream-docs - pull fresh FPF-Spec.md + Narrative doc from ailev/FPF@main and reset drift state"
+	@echo "  make sync-upstream-docs - sync the pinned FPF, Narrative and Engineering DPF bundle (ARGS=--check for preview)"
 	@echo ""
 	@echo "Test / introspection:"
 	@echo "  make validate-configs - run all repo-config validation (json + fish + nvim)"
@@ -334,8 +334,8 @@ lint-yaml: $(DEV_SENTINEL)
 # those.
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
 
 # Pyrefly ignores `project-excludes` from pyproject.toml whenever files are named
 # explicitly on the command line, so the excludes have to be repeated as flags.
@@ -344,7 +344,7 @@ lint-py: $(DEV_SENTINEL)
 PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.venv/**' --project-excludes '**/__pycache__/**'
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py $(PYREFLY_EXCLUDES)
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a
@@ -693,30 +693,8 @@ macos-defaults: $(COLLECTIONS_SENTINEL) secrets-ready
 	 ./scripts/with_sudo_keepalive.sh \
 	    ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
 
-# Pull fresh copies of the upstream FPF spec and companion Narrative doc into
-# the shared fpf-thinking reference bundle and reset the drift state file used
-# by the statusline / tide
-# badge. Run when the badge (or curiosity) tells you the vendored copy lags
-# upstream. Atomic per file (temp → mv); drift state resets only after both
-# curls succeed.
-FPF_LOCAL     := roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md
-FPF_UPSTREAM  := https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md
-NARR_LOCAL    := roles/devbox/files/dot_ai/skills/fpf-thinking/references/Narrativization-and-Narrative-Studies-Principles-Framework.md
-NARR_UPSTREAM := https://raw.githubusercontent.com/ailev/FPF/main/Narrativization-and-Narrative-Studies-Principles-Framework.md
-FPF_STATE     := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/fpf-drift
-NARR_STATE    := $(if $(XDG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/devbox-setup/narrative-drift
-
 sync-upstream-docs:
-	@tmp=$$(mktemp) && \
-		curl -sfSL --max-time 15 $(FPF_UPSTREAM) -o $$tmp && \
-		mv $$tmp $(FPF_LOCAL) && \
-		echo "Synced $(notdir $(FPF_LOCAL))"
-	@tmp=$$(mktemp) && \
-		curl -sfSL --max-time 15 $(NARR_UPSTREAM) -o $$tmp && \
-		mv $$tmp $(NARR_LOCAL) && \
-		echo "Synced $(notdir $(NARR_LOCAL))"
-	@mkdir -p $(dir $(FPF_STATE)) && echo 0 > $(FPF_STATE) && echo 0 > $(NARR_STATE) && \
-		echo "Drift state reset"
+	@$(VALIDATE_PYTHON) scripts/sync-upstream-docs.py --repo-root "$(CURDIR)" $(ARGS)
 
 validate-configs: test-json test-fish test-nvim ## Validate repo configs (JSON, fish, nvim)
 	@echo "All config validations passed."

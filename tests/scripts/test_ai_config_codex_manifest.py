@@ -66,7 +66,7 @@ class TestCodexManifestCoverage:
         ("path", "expected_scope"),
         [
             (("personality",), FieldScope.SHARED),
-            (("model",), FieldScope.SHARED),
+            (("model",), FieldScope.PREFERENCE),
             (("model_reasoning_effort",), FieldScope.PREFERENCE),
             (("service_tier",), FieldScope.SHARED),
             (("sandbox_mode",), FieldScope.SHARED),
@@ -208,7 +208,6 @@ class TestCodexManifestReconciliation:
     @pytest.mark.parametrize(
         "path",
         [
-            ("model",),
             ("features", "memories"),
         ],
     )

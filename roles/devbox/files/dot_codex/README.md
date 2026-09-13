@@ -9,7 +9,7 @@ truth for the portable projection after initialisation.
 
 Currently managed:
 
-- model, service tier, personality, and sandbox mode;
+- service tier, personality, and sandbox mode;
 - `[features]` (`memories` and hooks; `js_repl` is deliberately not enabled);
 - `[sandbox_workspace_write]`;
 - `[otel]`, with the active devbox profile as the environment, semantic log
@@ -22,17 +22,20 @@ Currently managed:
   the self-contained FPF/NSTD reference package and the inventory-first
   `diagnose-and-repair` workflow.
 
-`model_reasoning_effort` has `preference` scope: an existing local value is
-preserved, and the repository default (`medium`) is applied only when the field
-is absent. Apply, reconcile, and live bootstrap never capture this preference
+`model` and `model_reasoning_effort` have `preference` scope: existing local values
+are preserved, and repository defaults (`gpt-5.6-sol` and `medium`) are applied only
+when the respective field is absent. Switch to Astra locally when needed; later
+apply or reconcile operations preserve that choice. Apply, reconcile, and live
+bootstrap never capture these preferences
 into the repository or portable baseline. Changing the repository default affects
 only configurations without a local value. Validation requires a non-empty string;
 supported values and model compatibility remain the Codex client's responsibility.
 This concerns the user config file; native profile or session overrides can still
 change the effective value.
 
-Existing baselines migrate only from the exact previous Codex manifest to this
-manifest, removing reasoning effort while retaining all other baseline fields.
+Existing baselines migrate from either exact previous Codex manifest: the original
+shared model/reasoning version or the reasoning-preference version. Each migration
+removes only newly demoted preference fields and retains all other baseline fields.
 Other manifest digest changes retain the existing reinitialisation behaviour.
 
 `AGENTS.md` routes bounded implementation, planning, review, and test work to

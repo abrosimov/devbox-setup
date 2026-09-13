@@ -172,7 +172,10 @@ class TestEngineAdapterParsing:
         )
         model_change = next(change for change in plan.changes if change.path == ("model",))
 
-        assert model_change.kind is ChangeKind.APPLY_REPO
+        expected = (
+            ChangeKind.PRESERVE_LOCAL if engine is EngineKind.CODEX else ChangeKind.APPLY_REPO
+        )
+        assert model_change.kind is expected
 
     def test_codex_keeps_quoted_jinja_as_environment_value(self, tmp_path: Path) -> None:
         source_path = REPO_ROOT / "roles/devbox/files/dot_codex/config.toml.j2"

@@ -2,7 +2,7 @@
 
 Research date: 10 September 2026. Repository evidence: `8553b576f060209a729e1062c0a7ce5fefb99f25`. Status: research and proposed design, not an accepted migration or an implemented contract. No application settings were changed for this study.
 
-Implementation follow-up, 12 September 2026: the [Codex configuration guide](../../roles/devbox/files/dot_codex/README.md) describes the first bounded preference migration for reasoning effort. The inventory and proposals below remain the September 10 research snapshot; the full composition architecture and ownership of other fields have not been implemented by that pilot.
+Implementation follow-up, 13 September 2026: the [Codex configuration guide](../../roles/devbox/files/dot_codex/README.md) describes bounded preference migrations for reasoning effort and model selection. The inventory and proposals below remain the September 10 research snapshot; the full composition architecture and ownership of other fields have not been implemented by that pilot.
 
 ## Finding and recommendation
 

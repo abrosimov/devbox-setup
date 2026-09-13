@@ -8,7 +8,7 @@
     },
     {
       "path": "model",
-      "scope": "preference"
+      "scope": "shared"
     },
     {
       "path": "model_reasoning_effort",

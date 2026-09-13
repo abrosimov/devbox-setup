@@ -37,6 +37,7 @@ from ai_config.state import (
     digest_manifest,
     digest_manifest_source,
     load_base_state,
+    parse_base_state,
     render_base_state,
     resolve_state_paths,
 )
@@ -1080,17 +1081,59 @@ class TestHomeBindings:
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "roles/devbox/files/dot_codex/config.ai-config.json"
 OLD_MANIFEST = Path(__file__).parent / "fixtures/ai_config/codex/pre-preference-manifest.json"
+REASONING_MANIFEST = OLD_MANIFEST.with_name("reasoning-preference-manifest.json")
 
 
 class TestPreferenceOperations:
-    def test_migration_only_persists_once(self, tree):
+    @pytest.mark.parametrize("live_model", [None, "gpt-6-astra"])
+    def test_model_bootstrap_preserves_source_and_defers_missing_default(self, tree, live_model):
+        tree.paths.repository.write_text('model = "gpt-5.6-sol"\n')
+        tree.paths.live.parent.mkdir(parents=True)
+        tree.paths.live.write_text(f'model = "{live_model}"\n' if live_model else "")
+        source_before = tree.paths.repository.read_bytes()
+        live_before = tree.paths.live.read_bytes()
+        preview = bootstrap(tree, write=False)
+        choice = next(change for change in preview.changes if change.path == ("model",))
+        assert choice.action is (
+            BootstrapAction.PRESERVE_LOCAL if live_model else BootstrapAction.KEEP_REPO
+        )
+        bootstrap(tree, write=True, preview_token=preview.preview_token)
+        assert tree.paths.repository.read_bytes() == source_before
+        assert tree.paths.live.read_bytes() == live_before
+        operate(tree)
+        assert tomllib.loads(tree.paths.live.read_text())["model"] == (live_model or "gpt-5.6-sol")
+
+    @pytest.mark.parametrize("model", ["gpt-5.6-sol", "gpt-6-astra"])
+    def test_local_model_survives_repeated_apply_and_reconcile(self, tree, model):
+        tree.paths.repository.write_text('model = "gpt-5.6-sol"\n')
+        tree.paths.live.parent.mkdir(parents=True)
+        tree.paths.live.write_text(f'model = "{model}"\n')
+        original = tree.paths.repository.read_bytes()
+        for mode in (OperationMode.APPLY, OperationMode.RECONCILE, OperationMode.APPLY):
+            result = operate(tree, mode=mode)
+            assert result.captured == 0
+            assert tomllib.loads(tree.paths.live.read_text())["model"] == model
+            assert tree.paths.repository.read_bytes() == original
+        assert not operate(tree).changed
+
+    def test_fresh_model_uses_actual_repository_sol_default(self, tree):
+        source = (MANIFEST.parent / "config.toml.j2").read_bytes()
+        tree.paths.repository.write_bytes(source)
+        operate(tree)
+        assert tomllib.loads(tree.paths.live.read_text())["model"] == "gpt-5.6-sol"
+        assert tree.paths.repository.read_bytes() == source
+
+    @pytest.mark.parametrize("previous_manifest", [OLD_MANIFEST, REASONING_MANIFEST])
+    def test_migration_only_persists_once(self, tree, previous_manifest):
         operate(tree)
         paths = resolve_state_paths(
             EngineKind.CODEX, profile="work", home=tree.home, state_root=tree.state_root
         )
         state = json.loads(paths.base.read_bytes())
-        state["manifest_digest"] = digest_manifest_source(OLD_MANIFEST.read_bytes())
-        state["snapshot"]["model_reasoning_effort"] = "medium"
+        state["manifest_digest"] = digest_manifest_source(previous_manifest.read_bytes())
+        state["snapshot"]["model"] = "gpt-6-astra"
+        if previous_manifest == OLD_MANIFEST:
+            state["snapshot"]["model_reasoning_effort"] = "medium"
         paths.base.write_text(json.dumps(state))
         live_before = tree.paths.live.read_bytes()
         repo_before = tree.paths.repository.read_bytes()
@@ -1107,7 +1150,7 @@ class TestPreferenceOperations:
         return create_tree(
             tmp_path,
             EngineKind.CODEX,
-            repository_source='model = "old"\nmodel_reasoning_effort = "medium"\n',
+            repository_source='service_tier = "old"\nmodel_reasoning_effort = "medium"\n',
             manifest_source=MANIFEST.read_text(),
         )
 
@@ -1118,27 +1161,37 @@ class TestPreferenceOperations:
         assert not operate(tree).changed
         assert tree.paths.repository.read_bytes() == original
 
-    @pytest.mark.parametrize("old_digest", [False, True])
-    def test_preserves_choice_applies_other_update_and_excludes_baseline(self, tree, old_digest):
+    @pytest.mark.parametrize("previous_manifest", [None, OLD_MANIFEST, REASONING_MANIFEST])
+    def test_preserves_choice_applies_other_update_and_excludes_baseline(
+        self, tree, previous_manifest
+    ):
         operate(tree)
         paths = resolve_state_paths(
             EngineKind.CODEX, profile="work", home=tree.home, state_root=tree.state_root
         )
-        if old_digest:
+        if previous_manifest is not None:
             paths.base.write_bytes(
                 render_base_state(
                     BaseState(
                         engine=EngineKind.CODEX,
                         profile="work",
-                        manifest_digest=digest_manifest_source(OLD_MANIFEST.read_bytes()),
+                        manifest_digest=digest_manifest_source(previous_manifest.read_bytes()),
                         snapshot=SemanticSnapshot.from_value(
-                            {"model": "old", "model_reasoning_effort": "medium"}
+                            {
+                                "service_tier": "old",
+                                "model": "gpt-6-astra",
+                                "model_reasoning_effort": "medium",
+                            }
                         ),
                     )
                 )
             )
-        tree.paths.live.write_text('model = "old"\nmodel_reasoning_effort = "high"\n')
-        tree.paths.repository.write_text('model = "new"\nmodel_reasoning_effort = "low"\n')
+        tree.paths.live.write_text(
+            'service_tier = "old"\nmodel = "gpt-5.6-sol"\nmodel_reasoning_effort = "max"\n'
+        )
+        tree.paths.repository.write_text(
+            'service_tier = "new"\nmodel = "gpt-6-astra"\nmodel_reasoning_effort = "low"\n'
+        )
         original = tree.paths.repository.read_bytes()
         base_before = paths.base.read_bytes()
         live_before = tree.paths.live.read_bytes()
@@ -1148,13 +1201,15 @@ class TestPreferenceOperations:
         result = operate(tree)
         assert result.captured == 0
         live = tomllib.loads(tree.paths.live.read_text())
-        assert live["model"] == "new"
-        assert live["model_reasoning_effort"] == "high"
+        assert live["service_tier"] == "new"
+        assert live["model"] == "gpt-5.6-sol"
+        assert live["model_reasoning_effort"] == "max"
+        assert "model" not in json.loads(paths.base.read_text())["snapshot"]
         assert "model_reasoning_effort" not in json.loads(paths.base.read_text())["snapshot"]
         assert tree.paths.repository.read_bytes() == original
         assert not operate(tree).changed
 
-    @pytest.mark.parametrize("baseline", ["current", "previous", "unknown"])
+    @pytest.mark.parametrize("baseline", ["current", "previous", "reasoning", "unknown"])
     def test_other_conflict_or_unrecognised_digest_blocks_without_writes(self, tree, baseline):
         operate(tree)
         paths = resolve_state_paths(
@@ -1165,11 +1220,15 @@ class TestPreferenceOperations:
             state["manifest_digest"] = (
                 digest_manifest_source(OLD_MANIFEST.read_bytes())
                 if baseline == "previous"
+                else digest_manifest_source(REASONING_MANIFEST.read_bytes())
+                if baseline == "reasoning"
                 else "unknown"
             )
             paths.base.write_text(json.dumps(state))
-        tree.paths.live.write_text('model = "local"\nmodel_reasoning_effort = "high"\n')
-        tree.paths.repository.write_text('model = "new"\nmodel_reasoning_effort = "medium"\n')
+        tree.paths.live.write_text('service_tier = "local"\nmodel_reasoning_effort = "high"\n')
+        tree.paths.repository.write_text(
+            'service_tier = "new"\nmodel_reasoning_effort = "medium"\n'
+        )
         before = [
             path.read_bytes() for path in (paths.base, tree.paths.live, tree.paths.repository)
         ]
@@ -1184,7 +1243,7 @@ class TestPreferenceOperations:
     def test_invalid_preference_type_rejected_before_writes(self, tree, value, source):
         tree.paths.live.parent.mkdir(parents=True)
         target = tree.paths.live if source == "live" else tree.paths.repository
-        target.write_text(f'model = "old"\nmodel_reasoning_effort = {value}\n')
+        target.write_text(f'service_tier = "old"\nmodel_reasoning_effort = {value}\n')
         before = target.read_bytes()
         with pytest.raises(ManifestDefinitionError):
             operate(tree)
@@ -1220,9 +1279,9 @@ class TestPreferenceOperations:
     @pytest.mark.parametrize("default_present", [False, True])
     def test_bootstrap_and_reconcile_never_capture_preference(self, tree, default_present):
         if not default_present:
-            tree.paths.repository.write_text('model = "old"\n')
+            tree.paths.repository.write_text('service_tier = "old"\n')
         tree.paths.live.parent.mkdir(parents=True)
-        tree.paths.live.write_text('model = "old"\nmodel_reasoning_effort = "high"\n')
+        tree.paths.live.write_text('service_tier = "old"\nmodel_reasoning_effort = "high"\n')
         original = tree.paths.repository.read_bytes()
         preview = bootstrap(tree, write=False)
         preference = next(
@@ -1246,14 +1305,14 @@ class TestPreferenceOperations:
         }
 
     def test_absent_preference_remains_absent(self, tree):
-        tree.paths.repository.write_text('model = "old"\n')
+        tree.paths.repository.write_text('service_tier = "old"\n')
         operate(tree)
         assert "model_reasoning_effort" not in tomllib.loads(tree.paths.live.read_text())
         assert not operate(tree).changed
 
     def test_bootstrap_without_live_preference_keeps_default_for_next_apply(self, tree):
         tree.paths.live.parent.mkdir(parents=True)
-        tree.paths.live.write_text('model = "old"\n')
+        tree.paths.live.write_text('service_tier = "old"\n')
         original = tree.paths.repository.read_bytes()
         live_before = tree.paths.live.read_bytes()
         preview = bootstrap(tree, write=False)
@@ -1267,10 +1326,41 @@ class TestPreferenceOperations:
         operate(tree)
         assert tomllib.loads(tree.paths.live.read_text())["model_reasoning_effort"] == "medium"
 
-    def test_recognised_migration_changes_only_preference_scope(self):
-        old = json.loads(OLD_MANIFEST.read_bytes())
-        new = json.loads(MANIFEST.read_bytes())
-        rule = next(rule for rule in old["fields"] if rule["path"] == "model_reasoning_effort")
-        assert rule["scope"] == "shared"
-        rule["scope"] = "preference"
+    @pytest.mark.parametrize(
+        ("source", "target", "demoted"),
+        [
+            (OLD_MANIFEST, REASONING_MANIFEST, ("model_reasoning_effort",)),
+            (OLD_MANIFEST, MANIFEST, ("model", "model_reasoning_effort")),
+            (REASONING_MANIFEST, MANIFEST, ("model",)),
+        ],
+    )
+    def test_recognised_migration_changes_only_preference_scope(self, source, target, demoted):
+        old = json.loads(source.read_bytes())
+        new = json.loads(target.read_bytes())
+        for field_name in demoted:
+            rule = next(rule for rule in old["fields"] if rule["path"] == field_name)
+            assert rule["scope"] == "shared"
+            rule["scope"] = "preference"
         assert old == new
+        snapshot = {
+            "model": "gpt-6-astra",
+            "model_reasoning_effort": "high",
+            "service_tier": "default",
+            "features": {"hooks": True},
+        }
+        state = BaseState(
+            engine=EngineKind.CODEX,
+            profile="work",
+            manifest_digest=digest_manifest_source(source.read_bytes()),
+            snapshot=SemanticSnapshot.from_value(snapshot),
+        )
+        migrated = parse_base_state(
+            render_base_state(state),
+            engine=EngineKind.CODEX,
+            profile="work",
+            manifest_digest=digest_manifest_source(target.read_bytes()),
+        )
+        assert migrated is not None
+        assert snapshot_mapping(migrated.snapshot) == {
+            key: value for key, value in snapshot.items() if key not in demoted
+        }

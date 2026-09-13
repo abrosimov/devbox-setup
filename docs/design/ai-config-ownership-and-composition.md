@@ -2,6 +2,8 @@
 
 Research date: 10 September 2026. Repository evidence: `8553b576f060209a729e1062c0a7ce5fefb99f25`. Status: research and proposed design, not an accepted migration or an implemented contract. No application settings were changed for this study.
 
+Implementation follow-up, 12 September 2026: the [Codex configuration guide](../../roles/devbox/files/dot_codex/README.md) describes the first bounded preference migration for reasoning effort. The inventory and proposals below remain the September 10 research snapshot; the full composition architecture and ownership of other fields have not been implemented by that pilot.
+
 ## Finding and recommendation
 
 The recurring reconciliation is partly a consequence of the current contract. `shared` means a value can travel in either direction through a three-way merge. It does not mean that the repository owns the value. An application changing a shared preference therefore creates legitimate capture work, and deployment refuses to choose on the user's behalf. More templates alone would leave that behaviour intact.

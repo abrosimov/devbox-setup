@@ -251,6 +251,7 @@
   ansible.posix.synchronize:
     src: "{{ role_path }}/files/dot_agy/bin/"
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/antigravity-cli/bin/"
+    copy_links: true
     delete: true
     recursive: true
     perms: true

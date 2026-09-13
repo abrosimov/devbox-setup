@@ -58,6 +58,7 @@ endef
 DEV_VENV     := .venv
 DEV_BIN      := $(DEV_VENV)/bin
 DEV_SENTINEL := $(DEV_VENV)/.devbox-installed
+VALIDATE_PYTHON ?= $(if $(wildcard $(DEV_BIN)/python),$(DEV_BIN)/python,python3)
 
 $(DEV_SENTINEL): pyproject.toml
 	@command -v uv >/dev/null 2>&1 || { \
@@ -420,10 +421,10 @@ list-agents:
 	@ls -1 $(AI_SRC)/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | sort | nl -ba
 
 validate-claude:
-	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC) --codex-root $(CODEX_SRC)
+	@$(VALIDATE_PYTHON) $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC) --codex-root $(CODEX_SRC)
 
 audit-budget:
-	@python3 $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC) --budget
+	@$(VALIDATE_PYTHON) $(CLAUDE_SRC)/bin/validate_config.py --root $(CLAUDE_SRC) --ai-root $(AI_SRC) --budget
 
 # Rules-budget instrumentation (RI1): count rule-like statements across
 # skills, agents, commands, and UAP. Baseline for W2-W5 tuning decisions.
@@ -533,7 +534,7 @@ untap-stale:
 
 validate-skills:
 	@echo "Validating skill eval files..."
-	@python3 $(CLAUDE_SRC)/bin/validate_skill_evals.py $(SKILLS_DIR)
+	@$(VALIDATE_PYTHON) $(CLAUDE_SRC)/bin/validate_skill_evals.py $(SKILLS_DIR)
 
 # Anthropic skill-creator scripts (installed via claude-plugins-official)
 EVAL_SCRIPTS := $(shell ls -d ~/.claude/plugins/cache/anthropic-agent-skills/example-skills/*/skills/skill-creator/scripts 2>/dev/null | head -1)

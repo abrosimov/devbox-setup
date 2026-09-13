@@ -5,11 +5,19 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import PurePosixPath
 
-from .model import FieldPath, SemanticArray, SemanticSnapshot, SemanticValue
+from .model import (
+    FieldPath,
+    SemanticArray,
+    SemanticObject,
+    SemanticScalar,
+    SemanticSnapshot,
+    SemanticValue,
+)
 
 
 class FieldScope(StrEnum):
     SHARED = "shared"
+    PREFERENCE = "preference"
     ENVIRONMENT = "environment"
     LOCAL_STATE = "local-state"
     RUNTIME = "runtime"
@@ -182,6 +190,8 @@ def plan_reconciliation(
     live: SemanticSnapshot,
     manifest: FieldManifest,
 ) -> ReconciliationPlan:
+    for snapshot in (repo, live):
+        _validate_preferences(snapshot, manifest)
     base_fields = _field_values(base)
     repo_fields = _field_values(repo)
     live_fields = _field_values(live)
@@ -198,6 +208,26 @@ def plan_reconciliation(
         for path in paths
     )
     return ReconciliationPlan(changes=changes)
+
+
+def _validate_preferences(snapshot: SemanticSnapshot, manifest: FieldManifest) -> None:
+    for rule in manifest.rules:
+        if rule.scope is not FieldScope.PREFERENCE:
+            continue
+        value: FieldValue = snapshot.root
+        for segment in rule.path:
+            value = (
+                dict(value.fields).get(segment, MissingValue.MISSING)
+                if isinstance(value, SemanticObject)
+                else MissingValue.MISSING
+            )
+        if value is not MissingValue.MISSING and (
+            not isinstance(value, SemanticScalar)
+            or not isinstance(value.value, str)
+            or not value.value.strip()
+        ):
+            message = "preference fields must be non-empty strings at their declared path"
+            raise ManifestDefinitionError(message)
 
 
 def _field_values(snapshot: SemanticSnapshot | None) -> dict[FieldPath, SemanticValue]:
@@ -220,6 +250,14 @@ def _plan_field(
         kind = ChangeKind.UNKNOWN
     elif scope in {FieldScope.LOCAL_STATE, FieldScope.RUNTIME}:
         kind = ChangeKind.PRESERVE_LOCAL
+    elif scope is FieldScope.PREFERENCE:
+        kind = (
+            ChangeKind.PRESERVE_LOCAL
+            if live is not MissingValue.MISSING
+            else ChangeKind.UNCHANGED
+            if repo is MissingValue.MISSING
+            else ChangeKind.APPLY_REPO
+        )
     elif repo == live:
         kind = ChangeKind.UNCHANGED
     elif rule is not None and rule.binding is not None:

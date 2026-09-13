@@ -16,7 +16,7 @@ from ai_config.bindings import (
     BindingResolutionError,
     CommandResult,
 )
-from ai_config.core import BindingProvider, ChangeKind, FieldBinding
+from ai_config.core import BindingProvider, ChangeKind, FieldBinding, ManifestDefinitionError
 from ai_config.decisions import DecisionSet, DecisionSource, FieldDecision
 from ai_config.document import snapshot_mapping
 from ai_config.model import SemanticSnapshot
@@ -29,11 +29,13 @@ from ai_config.service import (
     OperationResult,
     UnknownFieldsError,
     bootstrap_engine_from_live,
+    inspect_engine,
     operate_engine,
 )
 from ai_config.state import (
     BaseState,
     digest_manifest,
+    digest_manifest_source,
     load_base_state,
     render_base_state,
     resolve_state_paths,
@@ -1073,3 +1075,202 @@ class TestHomeBindings:
 
         assert tree.paths.repository.read_text(encoding="utf-8") == HOME_BINDING_REPOSITORY
         assert read_json(tree.paths.live) == live_edit
+
+
+ROOT = Path(__file__).resolve().parents[2]
+MANIFEST = ROOT / "roles/devbox/files/dot_codex/config.ai-config.json"
+OLD_MANIFEST = Path(__file__).parent / "fixtures/ai_config/codex/pre-preference-manifest.json"
+
+
+class TestPreferenceOperations:
+    def test_migration_only_persists_once(self, tree):
+        operate(tree)
+        paths = resolve_state_paths(
+            EngineKind.CODEX, profile="work", home=tree.home, state_root=tree.state_root
+        )
+        state = json.loads(paths.base.read_bytes())
+        state["manifest_digest"] = digest_manifest_source(OLD_MANIFEST.read_bytes())
+        state["snapshot"]["model_reasoning_effort"] = "medium"
+        paths.base.write_text(json.dumps(state))
+        live_before = tree.paths.live.read_bytes()
+        repo_before = tree.paths.repository.read_bytes()
+        assert operate(tree).written_paths == (paths.base,)
+        assert json.loads(paths.base.read_bytes())["manifest_digest"] == digest_manifest(
+            tree.paths.manifest
+        )
+        assert tree.paths.live.read_bytes() == live_before
+        assert tree.paths.repository.read_bytes() == repo_before
+        assert not operate(tree).changed
+
+    @pytest.fixture
+    def tree(self, tmp_path):
+        return create_tree(
+            tmp_path,
+            EngineKind.CODEX,
+            repository_source='model = "old"\nmodel_reasoning_effort = "medium"\n',
+            manifest_source=MANIFEST.read_text(),
+        )
+
+    def test_first_install_default_and_repeated_apply(self, tree):
+        original = tree.paths.repository.read_bytes()
+        operate(tree)
+        assert tomllib.loads(tree.paths.live.read_text())["model_reasoning_effort"] == "medium"
+        assert not operate(tree).changed
+        assert tree.paths.repository.read_bytes() == original
+
+    @pytest.mark.parametrize("old_digest", [False, True])
+    def test_preserves_choice_applies_other_update_and_excludes_baseline(self, tree, old_digest):
+        operate(tree)
+        paths = resolve_state_paths(
+            EngineKind.CODEX, profile="work", home=tree.home, state_root=tree.state_root
+        )
+        if old_digest:
+            paths.base.write_bytes(
+                render_base_state(
+                    BaseState(
+                        engine=EngineKind.CODEX,
+                        profile="work",
+                        manifest_digest=digest_manifest_source(OLD_MANIFEST.read_bytes()),
+                        snapshot=SemanticSnapshot.from_value(
+                            {"model": "old", "model_reasoning_effort": "medium"}
+                        ),
+                    )
+                )
+            )
+        tree.paths.live.write_text('model = "old"\nmodel_reasoning_effort = "high"\n')
+        tree.paths.repository.write_text('model = "new"\nmodel_reasoning_effort = "low"\n')
+        original = tree.paths.repository.read_bytes()
+        base_before = paths.base.read_bytes()
+        live_before = tree.paths.live.read_bytes()
+        assert operate(tree, check=True).changed
+        assert paths.base.read_bytes() == base_before
+        assert tree.paths.live.read_bytes() == live_before
+        result = operate(tree)
+        assert result.captured == 0
+        live = tomllib.loads(tree.paths.live.read_text())
+        assert live["model"] == "new"
+        assert live["model_reasoning_effort"] == "high"
+        assert "model_reasoning_effort" not in json.loads(paths.base.read_text())["snapshot"]
+        assert tree.paths.repository.read_bytes() == original
+        assert not operate(tree).changed
+
+    @pytest.mark.parametrize("baseline", ["current", "previous", "unknown"])
+    def test_other_conflict_or_unrecognised_digest_blocks_without_writes(self, tree, baseline):
+        operate(tree)
+        paths = resolve_state_paths(
+            EngineKind.CODEX, profile="work", home=tree.home, state_root=tree.state_root
+        )
+        if baseline != "current":
+            state = json.loads(paths.base.read_text())
+            state["manifest_digest"] = (
+                digest_manifest_source(OLD_MANIFEST.read_bytes())
+                if baseline == "previous"
+                else "unknown"
+            )
+            paths.base.write_text(json.dumps(state))
+        tree.paths.live.write_text('model = "local"\nmodel_reasoning_effort = "high"\n')
+        tree.paths.repository.write_text('model = "new"\nmodel_reasoning_effort = "medium"\n')
+        before = [
+            path.read_bytes() for path in (paths.base, tree.paths.live, tree.paths.repository)
+        ]
+        with pytest.raises(DecisionsRequiredError):
+            operate(tree)
+        assert [
+            path.read_bytes() for path in (paths.base, tree.paths.live, tree.paths.repository)
+        ] == before
+
+    @pytest.mark.parametrize("value", ["true", "42", "[]", "{}", '""', '{nested = "high"}'])
+    @pytest.mark.parametrize("source", ["live", "repository"])
+    def test_invalid_preference_type_rejected_before_writes(self, tree, value, source):
+        tree.paths.live.parent.mkdir(parents=True)
+        target = tree.paths.live if source == "live" else tree.paths.repository
+        target.write_text(f'model = "old"\nmodel_reasoning_effort = {value}\n')
+        before = target.read_bytes()
+        with pytest.raises(ManifestDefinitionError):
+            operate(tree)
+        assert target.read_bytes() == before
+
+    def test_preference_object_cannot_hide_under_local_child_rule(self, tree):
+        manifest = json.loads(tree.paths.manifest.read_bytes())
+        manifest["fields"].append({"path": "model_reasoning_effort.nested", "scope": "local-state"})
+        tree.paths.manifest.write_text(json.dumps(manifest))
+        tree.paths.live.parent.mkdir(parents=True)
+        tree.paths.live.write_text('model_reasoning_effort = {nested = "high"}\n')
+        with pytest.raises(ManifestDefinitionError):
+            operate(tree)
+
+    def test_previous_digest_does_not_migrate_to_unrecognised_target(self, tree):
+        operate(tree)
+        paths = resolve_state_paths(
+            EngineKind.CODEX, profile="work", home=tree.home, state_root=tree.state_root
+        )
+        state = json.loads(paths.base.read_bytes())
+        state["manifest_digest"] = digest_manifest_source(OLD_MANIFEST.read_bytes())
+        paths.base.write_text(json.dumps(state))
+        tree.paths.manifest.write_bytes(tree.paths.manifest.read_bytes() + b"\n")
+        inspection = inspect_engine(
+            tree.engine,
+            repo_root=tree.repo_root,
+            home=tree.home,
+            state_root=tree.state_root,
+            profile="work",
+        )
+        assert inspection.base_state is None
+
+    @pytest.mark.parametrize("default_present", [False, True])
+    def test_bootstrap_and_reconcile_never_capture_preference(self, tree, default_present):
+        if not default_present:
+            tree.paths.repository.write_text('model = "old"\n')
+        tree.paths.live.parent.mkdir(parents=True)
+        tree.paths.live.write_text('model = "old"\nmodel_reasoning_effort = "high"\n')
+        original = tree.paths.repository.read_bytes()
+        preview = bootstrap(tree, write=False)
+        preference = next(
+            change for change in preview.changes if change.path == ("model_reasoning_effort",)
+        )
+        assert preference.action is BootstrapAction.PRESERVE_LOCAL
+        bootstrap(tree, write=True, preview_token=preview.preview_token)
+        assert tree.paths.repository.read_bytes() == original
+        assert operate(tree, mode=OperationMode.RECONCILE).captured == 0
+        assert tree.paths.repository.read_bytes() == original
+        inspection = inspect_engine(
+            tree.engine,
+            repo_root=tree.repo_root,
+            home=tree.home,
+            state_root=tree.state_root,
+            profile="work",
+        )
+        assert inspection.base_state is not None
+        assert ("model_reasoning_effort",) not in {
+            field.path for field in inspection.base_state.snapshot.semantic_fields()
+        }
+
+    def test_absent_preference_remains_absent(self, tree):
+        tree.paths.repository.write_text('model = "old"\n')
+        operate(tree)
+        assert "model_reasoning_effort" not in tomllib.loads(tree.paths.live.read_text())
+        assert not operate(tree).changed
+
+    def test_bootstrap_without_live_preference_keeps_default_for_next_apply(self, tree):
+        tree.paths.live.parent.mkdir(parents=True)
+        tree.paths.live.write_text('model = "old"\n')
+        original = tree.paths.repository.read_bytes()
+        live_before = tree.paths.live.read_bytes()
+        preview = bootstrap(tree, write=False)
+        preference = next(
+            change for change in preview.changes if change.path == ("model_reasoning_effort",)
+        )
+        assert preference.action is BootstrapAction.KEEP_REPO
+        bootstrap(tree, write=True, preview_token=preview.preview_token)
+        assert tree.paths.repository.read_bytes() == original
+        assert tree.paths.live.read_bytes() == live_before
+        operate(tree)
+        assert tomllib.loads(tree.paths.live.read_text())["model_reasoning_effort"] == "medium"
+
+    def test_recognised_migration_changes_only_preference_scope(self):
+        old = json.loads(OLD_MANIFEST.read_bytes())
+        new = json.loads(MANIFEST.read_bytes())
+        rule = next(rule for rule in old["fields"] if rule["path"] == "model_reasoning_effort")
+        assert rule["scope"] == "shared"
+        rule["scope"] = "preference"
+        assert old == new

@@ -7,8 +7,9 @@ in the root `pyproject.toml`) so that upstream diffs stay reviewable byte-for-by
 ## `langfuse_hook.py`
 
 A symlink to `../../../dot_claude/bin/vendor/langfuse_hook.py` — one vendored copy,
-two consumers. `ansible.posix.synchronize` resolves symlinks on deploy, so the target
-machine receives a regular file.
+two consumers. The AGY bin synchronisation task explicitly sets `copy_links: true`
+to dereference repository symlinks on deployment. The target machine receives a
+regular file because the repository's relative source layout is not installed.
 
 | | |
 |---|---|

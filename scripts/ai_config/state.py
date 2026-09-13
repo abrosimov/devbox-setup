@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from .document import snapshot_mapping
+from .document import remove_value, snapshot_mapping
 from .model import SemanticSnapshot, SnapshotError
 
 if TYPE_CHECKING:
@@ -16,6 +16,12 @@ if TYPE_CHECKING:
 
 STATE_SCHEMA_VERSION = 1
 _PROFILE_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
+# This exact manifest transition changes only reasoning effort ownership. Keeping
+# the remaining baseline avoids treating unrelated live edits as an initial state.
+_CODEX_PREFERENCE_MIGRATION = (
+    "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411",
+    "e3c3c98f6bf7b950a3c2e827844d0755601f9a0e7c9de23a2d69de0e7e77a6ea",
+)
 
 
 class StateError(ValueError):
@@ -127,10 +133,14 @@ def parse_base_state(
     except SnapshotError as error:
         message = "base state snapshot is invalid"
         raise StateError(message) from error
+    if record.get("manifest_digest") != manifest_digest:
+        configuration = snapshot_mapping(snapshot)
+        remove_value(configuration, ("model_reasoning_effort",))
+        snapshot = SemanticSnapshot.from_value(configuration)
     return BaseState(
         engine=engine,
         profile=profile,
-        manifest_digest=manifest_digest,
+        manifest_digest=cast("str", record["manifest_digest"]),
         snapshot=snapshot,
     )
 
@@ -178,7 +188,10 @@ def _metadata_matches(
     if record.get("profile") != profile:
         message = "base state belongs to another profile"
         raise StateError(message)
-    return record.get("manifest_digest") == manifest_digest
+    return record.get("manifest_digest") == manifest_digest or (
+        engine.value == "codex"
+        and (record.get("manifest_digest"), manifest_digest) == _CODEX_PREFERENCE_MIGRATION
+    )
 
 
 def _supported_schema(value: object) -> bool:

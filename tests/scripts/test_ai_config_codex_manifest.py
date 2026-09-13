@@ -67,7 +67,7 @@ class TestCodexManifestCoverage:
         [
             (("personality",), FieldScope.SHARED),
             (("model",), FieldScope.SHARED),
-            (("model_reasoning_effort",), FieldScope.SHARED),
+            (("model_reasoning_effort",), FieldScope.PREFERENCE),
             (("service_tier",), FieldScope.SHARED),
             (("sandbox_mode",), FieldScope.SHARED),
             (("features", "memories"), FieldScope.SHARED),

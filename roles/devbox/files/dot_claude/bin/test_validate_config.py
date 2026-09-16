@@ -474,7 +474,7 @@ def test_fpf_refs_unparsable_spec_errors(tmp_path: Path) -> None:
 
 def _build_hooks_root(tmp_path: Path, command: str) -> Path:
     document = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": command}]}]}}
-    (tmp_path / "hooks.json").write_text(json.dumps(document), encoding="utf-8")
+    (tmp_path / "settings.json").write_text(json.dumps(document), encoding="utf-8")
     return tmp_path
 
 
@@ -531,7 +531,7 @@ def test_hermeticity_rejects_ambient_interpreters(tmp_path: Path, command: str) 
 
 
 def test_hermeticity_ignores_unparsable_documents(tmp_path: Path) -> None:
-    (tmp_path / "hooks.json").write_text("{not json", encoding="utf-8")
+    (tmp_path / "settings.json").write_text("{not json", encoding="utf-8")
     errors, warnings = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path))
     assert errors == []
     assert warnings == []
@@ -544,10 +544,19 @@ def test_hermeticity_reports_every_event(tmp_path: Path) -> None:
             "SessionEnd": [{"hooks": [{"type": "command", "command": _PINNED}]}],
         }
     }
-    (tmp_path / "hooks.json").write_text(json.dumps(document), encoding="utf-8")
+    (tmp_path / "settings.json").write_text(json.dumps(document), encoding="utf-8")
     errors, _ = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path))
     assert len(errors) == 1
     assert "(Stop)" in errors[0]
+
+
+def test_hermeticity_ignores_a_standalone_hooks_json(tmp_path: Path) -> None:
+    # Claude Code never loads user hooks from a bare hooks.json, so a violation
+    # parked there is not a live risk — and reporting it would imply the file runs.
+    document = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "uv run x.py"}]}]}}
+    (tmp_path / "hooks.json").write_text(json.dumps(document), encoding="utf-8")
+    errors, _ = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path))
+    assert errors == []
 
 
 def _build_codex_root(tmp_path: Path, command: str) -> Path:
@@ -585,3 +594,120 @@ def test_hermeticity_skips_codex_when_root_is_absent(tmp_path: Path) -> None:
     )
     assert errors == []
     assert warnings == []
+
+
+# ---------------------------------------------------------------------------
+# check_hook_events
+# ---------------------------------------------------------------------------
+
+
+def _logger(event: str) -> str:
+    return f"~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py {event}"
+
+
+def _write_hooks(tmp_path: Path, events: dict[str, list]) -> Path:
+    (tmp_path / "settings.json").write_text(json.dumps({"hooks": events}), encoding="utf-8")
+    return tmp_path
+
+
+def _full_coverage(overrides: dict[str, list] | None = None) -> dict[str, list]:
+    """Every canonical event wired to its own logger, so only overrides differ."""
+    events = {
+        event: [{"hooks": [{"type": "command", "command": _logger(event)}]}]
+        for event in vc._CLAUDE_HOOK_EVENTS
+    }
+    events.update(overrides or {})
+    return events
+
+
+def test_hook_events_accepts_full_canonical_coverage(tmp_path: Path) -> None:
+    root = _write_hooks(tmp_path, _full_coverage())
+    errors, warnings = vc.check_hook_events(root)
+    assert errors == []
+    assert warnings == []
+
+
+def test_hook_events_rejects_unknown_event(tmp_path: Path) -> None:
+    root = _write_hooks(
+        tmp_path,
+        _full_coverage({"PreTolUse": [{"hooks": [{"type": "command", "command": _logger("x")}]}]}),
+    )
+    errors, _ = vc.check_hook_events(root)
+    assert _codes(errors) == ["HOOK_EVENT", "HOOK_EVENT"]
+    assert "unknown hook event `PreTolUse`" in errors[0]
+
+
+def test_hook_events_reports_unknown_event_once_per_group(tmp_path: Path) -> None:
+    root = _write_hooks(
+        tmp_path,
+        {
+            "Bogus": [
+                {"hooks": [{"type": "command", "command": "~/.claude/bin/a"}]},
+                {"hooks": [{"type": "command", "command": "~/.claude/bin/b"}]},
+            ]
+        },
+    )
+    errors, _ = vc.check_hook_events(root)
+    assert len(errors) == 1
+
+
+def test_hook_events_rejects_logger_argv_mismatch(tmp_path: Path) -> None:
+    root = _write_hooks(
+        tmp_path,
+        _full_coverage(
+            {"Stop": [{"hooks": [{"type": "command", "command": _logger("SessionEnd")}]}]}
+        ),
+    )
+    errors, _ = vc.check_hook_events(root)
+    assert _codes(errors) == ["HOOK_EVENT"]
+    assert "logger records this as `SessionEnd`" in errors[0]
+
+
+def test_hook_events_rejects_logger_without_argv(tmp_path: Path) -> None:
+    command = "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py"
+    root = _write_hooks(
+        tmp_path,
+        _full_coverage({"Stop": [{"hooks": [{"type": "command", "command": command}]}]}),
+    )
+    errors, _ = vc.check_hook_events(root)
+    assert "<missing>" in errors[0]
+
+
+def test_hook_events_ignores_non_logger_commands(tmp_path: Path) -> None:
+    root = _write_hooks(
+        tmp_path,
+        _full_coverage(
+            {
+                "Stop": [
+                    {
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/x.py",
+                            },
+                            {"type": "command", "command": _logger("Stop")},
+                        ]
+                    }
+                ]
+            }
+        ),
+    )
+    errors, _ = vc.check_hook_events(root)
+    assert errors == []
+
+
+def test_hook_events_warns_on_coverage_gap(tmp_path: Path) -> None:
+    root = _write_hooks(
+        tmp_path,
+        {"Stop": [{"hooks": [{"type": "command", "command": _logger("Stop")}]}]},
+    )
+    errors, warnings = vc.check_hook_events(root)
+    assert errors == []
+    assert len(warnings) == len(vc._CLAUDE_HOOK_EVENTS) - 1
+    assert all("HOOK_EVENT_COVERAGE" in warning for warning in warnings)
+
+
+def test_hook_events_ignores_unparsable_documents(tmp_path: Path) -> None:
+    (tmp_path / "settings.json").write_text("{not json", encoding="utf-8")
+    errors, _ = vc.check_hook_events(tmp_path)
+    assert errors == []

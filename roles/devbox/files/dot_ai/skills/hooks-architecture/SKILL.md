@@ -1,696 +1,320 @@
 ---
 name: hooks-architecture
 description: >
-  Claude Code hooks system architecture and patterns. Use when configuring hooks,
-  writing hook scripts, or debugging hook behaviour. Also use when working with
-  PreToolUse, PostToolUse, PreCompact, or Stop lifecycle events.
+  Claude Code hooks: the settings.json hooks block, lifecycle events, matchers,
+  exit codes, and JSON output. Use when configuring hooks, writing hook scripts,
+  or debugging why a hook does not fire.
 problem: "Claude Code hook scripts get authored ad hoc without a shared taxonomy of lifecycle events, exit codes, and blocking rules."
 related: []
 ---
 
 # Hooks Architecture
 
-## Hook Event Types
+Grounded in the upstream reference: https://code.claude.com/docs/en/hooks
 
-Hooks intercept Claude Code lifecycle events.
+## Where Hooks Live
 
-| Event | When | Can Block | Use Case |
-|-------|------|-----------|----------|
-| **PreToolUse** | Before tool execution | Yes (exit 2) | Guard against destructive actions |
-| **PostToolUse** | After tool execution | No | Format, lint, typecheck after edits |
-| **PreCompact** | Before context compaction | No | Save session state |
-| **SessionStart** | Session begins | No | Load project context |
-| **SessionEnd** | Session ends | No | Save session state |
-| **Notification** | Notification sent | No | Log notifications |
-| **Stop** | Agent stops | Yes (additionalContext) | Verify work before completion |
+Hooks are declared under the top-level `hooks` key of a **settings** file. Claude Code
+reads them from these locations only:
 
-### PreToolUse
+| Location | Scope |
+|----------|-------|
+| `~/.claude/settings.json` | All projects |
+| `.claude/settings.json` | Single project |
+| `.claude/settings.local.json` | Single project, gitignored |
+| Managed policy settings | Organisation-wide |
+| A plugin's `hooks/hooks.json` | While the plugin is enabled |
+| Skill and subagent frontmatter | While that skill/subagent is active |
 
-Runs before tool execution. Can block with `exit 2`.
+**A standalone `~/.claude/hooks.json` is not one of them.** Claude Code never reads such a
+file — no parse error, no warning, the hooks simply never fire. In this repository
+the hooks live in `roles/devbox/files/dot_claude/settings.json`, deployed by
+`scripts/ai-config apply claude` against the ownership manifest `settings.ai-config.json`.
+Any new top-level settings key must be declared in that manifest or the reconciler drops it.
 
-**Example**: Prevent destructive git commands
-```bash
-#!/usr/bin/env bash
-# bin/guard-git-force-push
-
-if [[ "$CC_BASH_COMMAND" =~ "git push --force" ]]; then
-    echo "ERROR: Force push blocked. Use --force-with-lease instead."
-    exit 2  # Block tool execution
-fi
-
-exit 0  # Allow tool execution
-```
-
-**hooks.json**:
-```json
-{
-  "preToolUse": [
-    {
-      "matcher": "Bash",
-      "hooks": [
-        {
-          "command": "guard-git-force-push",
-          "timeout": 5000
-        }
-      ]
-    }
-  ]
-}
-```
-
-**Exit codes**:
-- `0`: Allow tool execution
-- `2`: Block tool execution (error shown to Claude)
-- Other: Hook failure (doesn't block tool)
-
-### PostToolUse
-
-Runs after tool execution. Cannot block.
-
-**Example**: Format files after edit
-```bash
-#!/usr/bin/env bash
-# bin/post-edit-format
-
-if [[ "$CC_TOOL_NAME" == "Edit" || "$CC_TOOL_NAME" == "Write" ]]; then
-    # Extract file path from tool input
-    file_path=$(echo "$CC_TOOL_INPUT" | jq -r '.file_path')
-
-    if [[ "$file_path" =~ \.go$ ]]; then
-        goimports -local $(head -1 go.mod | awk '{print $2}') -w "$file_path"
-    elif [[ "$file_path" =~ \.py$ ]]; then
-        ruff format "$file_path"
-    fi
-fi
-
-exit 0
-```
-
-**hooks.json**:
-```json
-{
-  "postToolUse": [
-    {
-      "matcher": "Edit|Write",
-      "hooks": [
-        {
-          "command": "post-edit-format",
-          "async": true,
-          "timeout": 10000
-        }
-      ]
-    }
-  ]
-}
-```
-
-**async**: Runs in background (doesn't block next tool call).
-
-### additionalContext Output
-
-Any hook can output JSON with `additionalContext` to inject information into the agent's next turn:
-
-```javascript
-// stdout JSON — agent sees this in its next turn
-process.stdout.write(JSON.stringify({
-  additionalContext: "[lint] ruff issues in main.py:\nmain.py:42: F401 unused import\nFix these lint issues before proceeding."
-}));
-```
-
-**Key difference from stderr**: `stderr` output is only visible in terminal logs. `additionalContext` is injected into the agent's conversation context — the agent MUST see and respond to it.
-
-**Use for**: lint results, typecheck errors, verification gates — anything the agent needs to act on.
-
-### PreCompact
-
-Runs before context compaction (when conversation grows too large).
-
-**Example**: Save session state
-```bash
-#!/usr/bin/env bash
-# bin/session_save.py (illustrative example — actual implementation is Python)
-
-# Save git status, modified files, current branch
-git status --short > ~/.claude/sessions/$SESSION_ID/git_status.txt
-git branch --show-current > ~/.claude/sessions/$SESSION_ID/branch.txt
-
-exit 0
-```
-
-**hooks.json**:
-```json
-{
-  "preCompact": [
-    {
-      "hooks": [
-        {
-          "command": "session-save",
-          "timeout": 5000
-        }
-      ]
-    }
-  ]
-}
-```
-
-### SessionStart/SessionEnd
-
-**SessionStart**: Runs when session begins.
-
-**Example**: Load project-specific context
-```bash
-#!/usr/bin/env bash
-# bin/session-start
-
-# Print project README to context
-if [[ -f README.md ]]; then
-    echo "Project context loaded from README.md"
-fi
-
-exit 0
-```
-
-**SessionEnd**: Runs when session ends.
-
-**Example**: Clean up temporary files
-```bash
-#!/usr/bin/env bash
-# bin/session-end
-
-# Remove temporary session files
-rm -rf "$TMPDIR/claude-session-$SESSION_ID"
-
-exit 0
-```
-
-### Notification
-
-Runs when notification is sent.
-
-**Example**: Log notifications
-```bash
-#!/usr/bin/env bash
-# bin/log-notification
-
-echo "$(date): Notification sent" >> ~/.claude/notifications.log
-
-exit 0
-```
-
-### Stop
-
-Runs when agent is about to finish. Can force continuation via `additionalContext` output.
-
-**Input JSON**: `{ "session_id": "...", "stop_hook_active": true|false }`
-
-- `stop_hook_active: false` — normal stop, hook can verify and force continuation
-- `stop_hook_active: true` — this stop was triggered AFTER a previous hook forced continuation. **Must exit 0** to prevent infinite loops.
-
-**Output**: JSON to stdout with `additionalContext` forces agent to continue (not stop).
-
-**Example**: Verify lint-clean before completion
-```javascript
-#!/usr/bin/env node
-// bin/stop_lint_gate.py (illustrative example — actual implementation is Python)
-
-const data = JSON.parse(input);
-
-// CRITICAL: prevent infinite loop
-if (data.stop_hook_active) {
-  process.exit(0); // allow stop
-}
-
-// ... run linters on modified files ...
-
-if (issues.length > 0) {
-  // Force agent to continue and fix issues
-  process.stdout.write(JSON.stringify({
-    additionalContext: `Lint issues found:\n${issues.join("\n")}\nFix before completing.`
-  }));
-}
-process.exit(0);
-```
-
-## Hook Configuration
-
-### hooks.json Structure
+Shape:
 
 ```json
 {
-  "preToolUse": [
-    {
-      "matcher": "Bash|Edit|Write",  // Tool name pattern (regex)
-      "hooks": [
-        {
-          "command": "hook-script-name",  // Script in ~/.claude/bin/
-          "timeout": 5000,                 // Milliseconds (default: 30000)
-          "async": false,                  // Run in background (default: false)
-          "once": false                    // Run only once per session (default: false)
-        }
-      ]
-    }
-  ],
-  "postToolUse": [...],
-  "preCompact": [...],
-  "sessionStart": [...],
-  "sessionEnd": [...],
-  "notification": [...],
-  "stop": [...]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/bash_decision_gate.py"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
-### Matcher Patterns
+Event names are PascalCase and must match what **the installed version** dispatches.
+Claude Code validates the `hooks` block and complains about a key it does not know, so
+an event lifted from the published reference but absent from the running release breaks
+the whole file rather than failing quietly. Check the binary, not the docs table:
 
-Regular expression matching tool names.
+```
+strings ~/.local/share/claude/versions/<version> | grep -oE '\b<EventName>\b' | head
+```
 
-**Examples**:
-- `"Bash"` — matches only Bash tool
-- `"Edit|Write"` — matches Edit or Write
-- `".*"` — matches all tools
-- `"^Edit$"` — exact match (Edit, not NotebookEdit)
+`make validate-claude` enforces the list via the `hook-events` check; re-derive that enum
+in `bin/validate_config.py` after upgrading Claude Code.
 
-### Hook Array
+## Event Catalogue
 
-Multiple hooks can run for one event (executed in order).
+Verified against 2.1.246 — 31 events. Newer releases add more (`PreModelSwitch` and
+`PostModelSwitch` are documented upstream but not dispatched by 2.1.246).
+"Blocks" means exit code 2 (or a JSON decision) stops the action.
+
+| Event | Matcher matches | Blocks |
+|-------|-----------------|--------|
+| `SessionStart` | `startup\|resume\|clear\|compact\|fork` | no |
+| `SessionEnd` | `clear\|resume\|logout\|prompt_input_exit\|other` | no |
+| `Setup` | `init\|maintenance` | no |
+| `UserPromptSubmit` | — | yes |
+| `UserPromptExpansion` | command names | yes |
+| `PreToolUse` | tool names | yes |
+| `PermissionRequest` | tool names | via JSON `decision` |
+| `PermissionDenied` | tool names | no |
+| `PostToolUse` | tool names | no |
+| `PostToolUseFailure` | tool names | no |
+| `PostToolBatch` | — | no |
+| `Notification` | notification type | no |
+| `MessageDisplay` | — | no |
+| `SubagentStart` | agent type | no |
+| `SubagentStop` | agent type | yes |
+| `TaskCreated` / `TaskCompleted` | — | no |
+| `Stop` | — | yes |
+| `StopFailure` | error type (`rate_limit`, `overloaded`, …) | no |
+| `TeammateIdle` | — | no |
+| `InstructionsLoaded` | `session_start\|nested_traversal\|path_glob_match\|include\|compact` | no |
+| `ConfigChange` | `user_settings\|project_settings\|local_settings\|policy_settings\|skills` | no |
+| `CwdChanged` | — | no |
+| `DirectoryAdded` | `slash_command\|register_repo_root` | no |
+| `FileChanged` | literal filenames | no |
+| `WorktreeCreate` / `WorktreeRemove` | — | any non-zero exit aborts |
+| `PreCompact` / `PostCompact` | `manual\|auto` | no |
+| `Elicitation` / `ElicitationResult` | MCP server names | no |
+
+Matchers are regular expressions. `"Bash"`, `"Edit|Write"`, `".*"`, `"^Edit$"` (exact —
+excludes `NotebookEdit`). Omitting `matcher` on a matcher-capable event runs the hook
+unconditionally. Events with no matcher column entry take no `matcher` at all.
+
+## Hook Entry Schema
+
+`type` is required. The rest depends on it.
+
+| Field | Applies to | Meaning |
+|-------|-----------|---------|
+| `type` | all | `command`, `http`, `mcp_tool`, `prompt`, or `agent` |
+| `if` | tool events | Permission-rule filter, e.g. `"Bash(git *)"`, `"Edit(*.ts)"` |
+| `timeout` | all | **Seconds.** Default 600 for `command`/`http`/`mcp_tool`, 30 for `prompt`, 60 for `agent`. Capped at 30 on `UserPromptSubmit` and at 10 on `MessageDisplay`. Not enforced when `async` is set |
+| `statusMessage` | all | Custom spinner text while the hook runs |
+| `once` | all | Removes the hook after one successful run — **honoured only in skill frontmatter**, ignored in settings files and agent frontmatter |
+| `command` | command | Shell command. Without `args` the string goes to the shell as-is; with `args` it is resolved on `PATH` and spawned directly, no shell |
+| `args` | command | Argument vector for exec form; each element is one argument verbatim |
+| `async` | command | Run in the background without blocking. `timeout` is not enforced |
+| `asyncRewake` | command | Background, but exit 2 wakes Claude and shows the hook's stderr as a system reminder |
+| `shell` | command | `bash` or `powershell` |
+| `url`, `headers`, `allowedEnvVars` | http | POST target; header values interpolate only env vars listed in `allowedEnvVars` |
+| `server`, `tool`, `input` | mcp_tool | MCP server and tool to invoke; `input` supports `${path}` substitution from the hook's JSON input |
+| `prompt`, `model` | prompt, agent | Prompt text with `$ARGUMENTS` standing for the hook input JSON |
+
+`prompt` and `agent` hooks are implemented, not aspirational — use them when the decision
+needs judgement rather than a pattern match.
+
+## Input Contract
+
+Command hooks receive a JSON object **on stdin**. Fields present on every event:
 
 ```json
 {
-  "postToolUse": [
-    {
-      "matcher": "Edit|Write",
-      "hooks": [
-        {"command": "post-edit-format", "async": true},
-        {"command": "post-edit-typecheck", "async": true},
-        {"command": "post-edit-lint"}
-      ]
-    }
-  ]
+  "session_id": "abc123",
+  "prompt_id": "550e8400-e29b-41d4-a716-446655440000",
+  "transcript_path": "/home/user/.claude/projects/.../transcript.jsonl",
+  "cwd": "/home/user/my-project",
+  "scratchpad_dir": "/tmp/claude-1000/.../scratchpad",
+  "permission_mode": "default",
+  "effort": { "level": "high" },
+  "hook_event_name": "PreToolUse"
 }
 ```
 
-**Order matters**: Format → typecheck → lint.
+`agent_id` and `agent_type` appear inside a subagent. Each event adds its own fields —
+`PreToolUse` adds `tool_name`, `tool_input`, `tool_use_id`; `Stop` adds
+`stop_hook_active`; `FileChanged` adds `file_path` and `change_type`.
 
-### Timeout
+**Read stdin. Do not reach for environment variables to learn about the tool call** —
+there are no `CC_TOOL_NAME`, `CC_TOOL_INPUT`, `CC_BASH_COMMAND`, or `TOOL_COUNT`
+variables. The documented environment is small:
 
-Maximum execution time in milliseconds.
+| Variable | Meaning |
+|----------|---------|
+| `CLAUDE_PROJECT_DIR` | Project root where the session started |
+| `CLAUDE_PLUGIN_ROOT` | Plugin installation directory (plugin hooks) |
+| `CLAUDE_PLUGIN_DATA` | Plugin persistent data directory |
+| `CLAUDE_CODE_REMOTE` | `"true"` in remote web environments, unset locally |
+| `CLAUDE_EFFORT` | Current effort level |
+| `CLAUDE_PLUGIN_OPTION_<KEY>` | Plugin configuration values |
 
-```json
-{
-  "command": "slow-hook",
-  "timeout": 60000  // 60 seconds
-}
+`OTEL_*` exporter variables are scrubbed from hook subprocesses by default.
+
+## Output Contract
+
+### Exit codes
+
+| Code | stdout | stderr | Effect |
+|------|--------|--------|--------|
+| `0` | Parsed as JSON when it starts with `{` and ends with `}`, else plain text | Debug log only — Claude never sees it | Success. On `UserPromptSubmit`, `UserPromptExpansion` and `SessionStart`, plain-text stdout becomes context Claude sees |
+| `2` | Valid JSON fields are still read | Used as the blocking message when the JSON carries no reason | Blocks on blocking-capable events. Even `permissionDecision: "allow"` cannot override it |
+| other | Parsed as JSON if it parses | First line shown in a `<hook name> hook error` notice | Non-blocking on most events; aborts `WorktreeCreate`/`WorktreeRemove` |
+
+Exit 1 is a plain failure, not a policy block — use exit 2 to enforce policy.
+
+On timeout the hook is cancelled and its output discarded, so no decision takes effect.
+A `PreToolUse` timeout does not block; the call proceeds through the normal permission flow.
+
+### JSON output
+
+Top-level fields, valid on any event: `continue`, `stopReason`, `suppressOutput`,
+`systemMessage` (shown to Claude as a system reminder), `terminalSequence` (ANSI escapes
+for a bell, window title, or desktop notification), and `hookSpecificOutput`.
+
+`hookSpecificOutput` always carries `hookEventName` plus the event's own fields:
+
+| Event | Fields |
+|-------|--------|
+| `PreToolUse` | `permissionDecision` (`allow`/`deny`/`ask`), `permissionDecisionReason`, `updatedInput` |
+| `PostToolUse`, `PostToolUseFailure` | `additionalContext` |
+| `Stop`, `SubagentStop` | `additionalContext` |
+| `PermissionRequest` | `decision` (`allow`/`deny`/`ask`) — exit 2 is not honoured here |
+| `PermissionDenied` | `retry` |
+| `UserPromptSubmit` | `updatedPrompt` |
+| `UserPromptExpansion` | `expandedPrompt` |
+
+The remaining events — `PreCompact`, `PostCompact`, `Notification`, `MessageDisplay`,
+`ConfigChange`, `InstructionsLoaded`, `CwdChanged`, `FileChanged`, `DirectoryAdded`,
+`TaskCreated`, `TaskCompleted`, `TeammateIdle`, `StopFailure`, worktree events — discard
+`hookSpecificOutput`; only `systemMessage` and `terminalSequence` survive.
+
+`additionalContext` and `systemMessage` are the only ways to put text in front of Claude.
+Anything written to stderr on exit 0 reaches the debug log and nowhere else.
+
+## Repository Conventions
+
+**Pinned interpreter.** Every hook command names the deployed venv's interpreter outright:
+
+```
+~/.claude/bin/.venv/bin/python ~/.claude/bin/<script>.py
 ```
 
-**Default**: 30000 (30 seconds).
+Never `uv run`, `uvx`, `npx`, or a bare `python3`. Those resolve dependencies at
+invocation time into a cache under `/tmp`, which macOS erodes by atime after three days,
+leaving a half-installed environment that fails on every tool call. The
+`hook-hermeticity` check in `validate_config.py` fails the build on any such command.
 
-**Exceeded**: Hook killed, error logged (doesn't block tool in PostToolUse).
+**Ordering.** Hooks in one group run in order; groups run in declaration order. Put
+blocking guards first and observers last, so a logger records the outcome the guards
+settled on rather than the state before them.
 
-### Async
-
-Run in background (PostToolUse only).
-
-```json
-{
-  "command": "post-edit-format",
-  "async": true  // Doesn't block next tool call
-}
-```
-
-**When to use**: Slow operations (format, lint, typecheck) that don't need to block.
-
-**When NOT to use**: PreToolUse (blocking is the point).
-
-### Once
-
-Run only once per session.
-
-```json
-{
-  "command": "session-init",
-  "once": true  // Only runs on first trigger
-}
-```
-
-**Use case**: Expensive setup (load configuration, initialise cache).
-
-## Hook Types
-
-### Command Hooks
-
-Shell command with environment variables.
-
-```json
-{
-  "command": "my-hook-script"
-}
-```
-
-**Looks for**: `~/.claude/bin/my-hook-script` (must be executable).
-
-**Environment variables**:
-- `$CC_TOOL_NAME`: Tool name (e.g., "Bash", "Edit")
-- `$CC_TOOL_INPUT`: Tool input JSON (e.g., `{"file_path": "/path/to/file"}`)
-- `$CC_BASH_COMMAND`: Bash command (only for Bash tool)
-- `$TOOL_COUNT`: Total tool calls in session
-- `$SESSION_ID`: Unique session identifier
-
-**Example**:
-```bash
-#!/usr/bin/env bash
-# bin/debug-hook
-
-echo "Tool: $CC_TOOL_NAME"
-echo "Input: $CC_TOOL_INPUT"
-echo "Tool count: $TOOL_COUNT"
-
-exit 0
-```
-
-### Prompt Hooks
-
-LLM evaluation (not yet implemented in hooks.json, but conceptually available).
-
-**Concept**: Pass tool input to LLM, decide whether to block.
-
-```json
-{
-  "type": "prompt",
-  "prompt": "Is this Bash command safe to run? Command: {{CC_BASH_COMMAND}}"
-}
-```
-
-**Use case**: Complex safety checks (e.g., "does this SQL query drop tables?").
-
-### Agent Hooks
-
-Agentic verification (not yet implemented, future feature).
-
-**Concept**: Spawn agent to verify action.
-
-```json
-{
-  "type": "agent",
-  "agent": "security-reviewer",
-  "prompt": "Review this code change for security issues"
-}
-```
-
-## Environment Variables
-
-### Available in All Hooks
-
-| Variable | Value | Example |
-|----------|-------|---------|
-| `$CC_TOOL_NAME` | Tool name | `"Bash"`, `"Edit"`, `"Write"` |
-| `$CC_TOOL_INPUT` | Tool input (JSON) | `{"file_path": "/path/to/file", "old_string": "...", "new_string": "..."}` |
-| `$TOOL_COUNT` | Total tool calls | `42` |
-| `$SESSION_ID` | Unique session ID | `abc123` |
-
-### Bash Tool Only
-
-| Variable | Value | Example |
-|----------|-------|---------|
-| `$CC_BASH_COMMAND` | Command string | `git commit -m "message"` |
-
-### Extracting from JSON
-
-Use `jq` to parse `$CC_TOOL_INPUT`:
-
-```bash
-#!/usr/bin/env bash
-# bin/extract-file-path
-
-file_path=$(echo "$CC_TOOL_INPUT" | jq -r '.file_path')
-echo "Editing: $file_path"
-
-exit 0
-```
+**Logging.** `universal_logger.py <EventName>` is registered on all 33 events. It takes
+the event name as `argv[1]`; the `hook-events` check fails the build when that argument
+disagrees with the key it is registered under, because the log would otherwise attribute
+events to the wrong name.
 
 ## Patterns
 
-### Guard Hooks (PreToolUse)
+### Guard (PreToolUse)
 
-Block destructive actions.
+Block by JSON decision rather than exit code — the reason then reaches the user verbatim.
 
-**Example**: Prevent committing secrets
-```bash
-#!/usr/bin/env bash
-# bin/guard-secrets
+```python
+payload = json.load(sys.stdin)
+command = payload.get("tool_input", {}).get("command", "")
 
-if [[ "$CC_BASH_COMMAND" =~ "git commit" ]]; then
-    # Check staged files for secrets
-    if git diff --cached | grep -E 'AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{36}'; then
-        echo "ERROR: Secret detected in staged files"
-        exit 2  # Block commit
-    fi
-fi
-
-exit 0
-```
-
-**Example**: Prevent large file commits
-```bash
-#!/usr/bin/env bash
-# bin/guard-large-files
-
-if [[ "$CC_BASH_COMMAND" =~ "git add" ]]; then
-    # Check for files >5MB
-    if find . -type f -size +5M | grep -q .; then
-        echo "ERROR: Large file detected (>5MB)"
-        exit 2  # Block add
-    fi
-fi
-
-exit 0
-```
-
-### Format-on-Save (PostToolUse)
-
-Auto-format files after edit.
-
-```bash
-#!/usr/bin/env bash
-# bin/post-edit-format
-
-if [[ "$CC_TOOL_NAME" != "Edit" && "$CC_TOOL_NAME" != "Write" ]]; then
-    exit 0  # Only run for Edit/Write
-fi
-
-file_path=$(echo "$CC_TOOL_INPUT" | jq -r '.file_path')
-
-case "$file_path" in
-    *.go)
-        goimports -local $(head -1 go.mod | awk '{print $2}') -w "$file_path"
-        ;;
-    *.py)
-        ruff format "$file_path"
-        ;;
-    *.ts|*.tsx|*.js|*.jsx)
-        prettier --write "$file_path"
-        ;;
-esac
-
-exit 0
-```
-
-**hooks.json**:
-```json
-{
-  "postToolUse": [
-    {
-      "matcher": "Edit|Write",
-      "hooks": [
+if DESTRUCTIVE.search(command):
+    json.dump(
         {
-          "command": "post-edit-format",
-          "async": true
-        }
-      ]
-    }
-  ]
-}
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": "Force-push blocked; use --force-with-lease.",
+            }
+        },
+        sys.stdout,
+    )
+sys.exit(0)
 ```
 
-### Checkpoint Suggestion (PostToolUse)
+Live example: `bin/bash_decision_gate.py`.
 
-Suggest summarising state into MEMORY.md after N tool calls.
+### Post-edit check (PostToolUse)
 
-```bash
-#!/usr/bin/env bash
-# bin/suggest_checkpoint.py (illustrative example — actual implementation is Python)
+Cannot block. Report findings through `additionalContext` so Claude has to answer for them.
 
-# Suggest summarising progress every 50 tool calls
-if (( TOOL_COUNT % 50 == 0 )); then
-    echo "SUGGESTION: Summarise current progress into MEMORY.md before compaction"
-fi
-
-exit 0
-```
-
-**hooks.json**:
-```json
-{
-  "postToolUse": [
-    {
-      "matcher": ".*",
-      "hooks": [
+```python
+if issues:
+    json.dump(
         {
-          "command": "suggest-checkpoint",
-          "async": true
-        }
-      ]
-    }
-  ]
-}
+            "hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": f"Lint issues:\n{issues}\nFix before continuing.",
+            }
+        },
+        sys.stdout,
+    )
 ```
 
-### Session State Preservation (PreCompact, SessionEnd)
+Live examples: `bin/post_edit_lint.py`, `bin/post_edit_typecheck.py`.
 
-Save state before compaction or session end.
+### Completion gate (Stop)
 
-```bash
-#!/usr/bin/env bash
-# bin/session_save.py (illustrative example — actual implementation is Python)
+`Stop` fires again after a hook forces continuation. Honour `stop_hook_active` or the
+session loops forever.
 
-session_dir="$HOME/.claude/sessions/$SESSION_ID"
-mkdir -p "$session_dir"
-
-# Save git state
-git status --short > "$session_dir/git_status.txt"
-git branch --show-current > "$session_dir/branch.txt"
-git log -1 --format="%H %s" > "$session_dir/last_commit.txt"
-
-# Save modified files
-git diff --name-only > "$session_dir/modified_files.txt"
-
-# Save session metadata
-cat > "$session_dir/metadata.json" <<EOF
-{
-  "tool_count": $TOOL_COUNT,
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "cwd": "$(pwd)"
-}
-EOF
-
-exit 0
+```python
+payload = json.load(sys.stdin)
+if payload.get("stop_hook_active"):
+    sys.exit(0)  # second pass — let the agent stop
 ```
 
-**hooks.json**:
-```json
-{
-  "preCompact": [
-    {
-      "hooks": [
-        {
-          "command": "session-save",
-          "timeout": 10000
-        }
-      ]
-    }
-  ],
-  "sessionEnd": [
-    {
-      "hooks": [
-        {
-          "command": "session-save",
-          "timeout": 10000
-        }
-      ]
-    }
-  ]
-}
-```
+Live example: `bin/stop_lint_gate.py`.
+
+### Background observer
+
+Anything that only records — loggers, telemetry, checkpoint hints — takes `async: true`
+so it never sits in the tool-call path. Combine with `asyncRewake` only when the
+background result must actually interrupt Claude.
 
 ## Anti-Patterns
 
-### Synchronous Hooks That Are Slow
+**Treating `timeout` as milliseconds.** `"timeout": 5000` is 83 minutes, not 5 seconds.
 
-**Problem**: Blocks Claude Code pipeline.
+**Expecting `once` to work in settings.json.** It is honoured only in skill frontmatter;
+elsewhere the hook runs every time regardless.
 
-```json
-// BAD: Slow synchronous hook
-{
-  "command": "run-all-tests",  // Takes 30 seconds
-  "async": false
-}
-```
+**Reading tool details from the environment.** The tool name and input arrive on stdin.
+A hook that keys off `$CC_TOOL_NAME` sees an empty string and silently does nothing.
 
-**Solution**: Make it async or move to separate workflow.
+**Exit 1 to block.** Non-blocking on most events. Use exit 2, or a JSON decision.
 
-```json
-// GOOD: Async hook
-{
-  "command": "run-all-tests",
-  "async": true
-}
-```
+**Slow synchronous PreToolUse hooks.** They sit in front of every matching tool call.
+Keep them well under a second, or make them `async` and accept that they cannot block.
 
-### Hooks That Modify Files in PreToolUse
+**Mutating the target file in PreToolUse.** The tool then operates on content that no
+longer matches what Claude decided to write. Do it in PostToolUse.
 
-**Problem**: Confuses the tool (file changed before tool runs).
+**Blocking unconditionally.** A guard that exits 2 on every invocation disables the tool.
+Gate on a matched pattern and exit 0 otherwise.
 
-```bash
-#!/usr/bin/env bash
-# BAD: Modifies file in PreToolUse
+## Validation
 
-file_path=$(echo "$CC_TOOL_INPUT" | jq -r '.file_path')
-goimports -w "$file_path"  # Changes file before Edit tool runs
-
-exit 0
-```
-
-**Solution**: Move to PostToolUse.
-
-### Hooks Without Timeout
-
-**Problem**: Can hang forever.
-
-```json
-// BAD: No timeout (default 30s may not be enough)
-{
-  "command": "slow-operation"
-}
-```
-
-**Solution**: Set explicit timeout.
-
-```json
-// GOOD: Explicit timeout
-{
-  "command": "slow-operation",
-  "timeout": 120000  // 2 minutes
-}
-```
-
-### Hooks That Always Exit 2
-
-**Problem**: Blocks all tool calls.
-
-```bash
-#!/usr/bin/env bash
-# BAD: Always blocks
-
-exit 2  # Blocks every tool call
-```
-
-**Solution**: Add conditional logic.
-
-```bash
-#!/usr/bin/env bash
-# GOOD: Conditional blocking
-
-if [[ "$CC_BASH_COMMAND" =~ "rm -rf /" ]]; then
-    exit 2  # Block only dangerous commands
-fi
-
-exit 0
-```
-
-## Best Practises
-
-1. **Fast PreToolUse hooks**: <100ms (blocks Claude Code)
-2. **Async PostToolUse hooks**: Use async for slow operations (format, lint)
-3. **Explicit timeouts**: Set timeout for all hooks (avoid hangs)
-4. **Conditional blocking**: Only block truly dangerous actions (PreToolUse exit 2)
-5. **Error handling**: Hooks should not crash (catch errors, exit gracefully)
-6. **Logging**: Log to file (not stdout) for debugging
-7. **Test hooks**: Run manually with env vars set (test blocking, timeout, async)
+- `make validate-claude` — `hook-events` (canonical event names, logger argv agreement,
+  coverage warnings) and `hook-hermeticity` (pinned interpreter, repo and plugin hooks).
+- `make test-claude-hooks` — the `bin/` suite under the deployed-venv shape.
+- `/hooks` in a live session lists what Claude Code actually loaded. If a hook you wrote
+  is missing there, it is in the wrong file — check the locations table above.

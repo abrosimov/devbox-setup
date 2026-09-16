@@ -45,7 +45,7 @@ Slash commands for common workflows:
 
 ## Hooks
 
-Pre/post tool-call guards in `hooks.json`:
+Pre/post tool-call guards in the `hooks` block of `settings.json`:
 
 - Sandbox enforcement
 - Format-on-save triggers

@@ -3,9 +3,9 @@
 Builds a hardened ``env`` (deterministic ``$HOME``, ``$TMPDIR``, ``$PATH``,
 masked sandbox-specific variables) and invokes the script. When a sibling
 ``.venv/bin/python`` exists next to the script, the runner uses it directly
-to mirror how the script is launched in production (where ``hooks.json``
-spawns ``uv run --project ~/.claude/bin python <script>``, which resolves to
-the same ``.venv/bin/python``). Falls back to executing the script via its
+to mirror how the script is launched in production (where the ``hooks`` block
+of ``settings.json`` names ``~/.claude/bin/.venv/bin/python <script>``, that
+same interpreter). Falls back to executing the script via its
 shebang when no venv is present.
 
 If the path is not executable, the return result carries

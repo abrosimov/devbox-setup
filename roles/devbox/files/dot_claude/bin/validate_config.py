@@ -16,6 +16,7 @@ Checks:
   trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
   fpf-refs             FPF and NSTD ids cited by their skills resolve in bundled references
   hook-hermeticity     hook commands run from the pinned venv, never resolving deps at call time
+  hook-events          settings.json hook events are real Claude Code events; logger argv matches
 
 Usage:
   validate-config.py                           # all checks, ~/.claude root
@@ -938,7 +939,12 @@ _AMBIENT_INTERPRETERS = re.compile(r"^(?:/usr/bin/env\s+)?(?:python|python3|node
 
 
 def _iter_hook_commands(path: Path) -> Iterator[tuple[str, str]]:
-    """Yield (event, command) for every hook entry in a hooks.json document."""
+    """Yield (event, command) for every hook entry in a hook-bearing document.
+
+    Handles both shapes: a settings.json carrying a top-level ``hooks`` key
+    (where Claude Code actually reads user hooks from) and a plugin's bare
+    hooks/hooks.json, whose root object is the event map itself.
+    """
     try:
         document = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
@@ -1014,9 +1020,21 @@ def check_hook_hermeticity(
     return errors, _scan_plugin_hooks(plugin_cache)
 
 
+def _repo_hook_files(root: Path) -> list[Path]:
+    """The repo-tracked documents Claude Code reads user hooks from.
+
+    Only the settings files count. A standalone ``hooks.json`` is not a location
+    Claude Code loads user hooks from — it is a plugin-only shape — so scanning
+    one would report a clean bill of health for a file that never executes.
+    """
+    return [
+        path for name in ("settings.json", "settings.local.json") if (path := root / name).is_file()
+    ]
+
+
 def _scan_repo_hooks(root: Path) -> list[str]:
     errors: list[str] = []
-    for hooks_file in sorted(root.rglob("hooks.json")):
+    for hooks_file in _repo_hook_files(root):
         relative = hooks_file.relative_to(root)
         for event, command in _iter_hook_commands(hooks_file):
             violation = _hermeticity_violation(command)
@@ -1051,6 +1069,108 @@ def _scan_plugin_hooks(plugin_cache: Path) -> list[str]:
     return warnings
 
 
+# ---------------------------------------------------------------------------
+# Hook event names
+# ---------------------------------------------------------------------------
+
+# The hook events this machine's Claude Code actually dispatches, verified against
+# the installed binary rather than the published reference: the docs describe the
+# newest release, and settings.json is rejected wholesale when it names an event the
+# running version does not know (that is how PreModelSwitch/PostModelSwitch, absent
+# from 2.1.246, got caught). Re-derive after an upgrade with
+#   strings ~/.local/share/claude/versions/<version> | grep -oE '\bPreToolUse\b|...'
+# rather than by copying the documentation table.
+_CLAUDE_HOOK_EVENTS = frozenset(
+    {
+        "SessionStart",
+        "Setup",
+        "UserPromptSubmit",
+        "UserPromptExpansion",
+        "PreToolUse",
+        "PermissionRequest",
+        "PermissionDenied",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "PostToolBatch",
+        "Notification",
+        "MessageDisplay",
+        "SubagentStart",
+        "SubagentStop",
+        "TaskCreated",
+        "TaskCompleted",
+        "Stop",
+        "StopFailure",
+        "TeammateIdle",
+        "InstructionsLoaded",
+        "ConfigChange",
+        "CwdChanged",
+        "DirectoryAdded",
+        "FileChanged",
+        "WorktreeCreate",
+        "WorktreeRemove",
+        "PreCompact",
+        "PostCompact",
+        "Elicitation",
+        "ElicitationResult",
+        "SessionEnd",
+    }
+)
+
+_LOGGER_SCRIPT = "universal_logger.py"
+
+
+def _logged_event(command: str) -> str | None:
+    """The event name a universal_logger.py invocation passes as argv[1]."""
+    tokens = command.split()
+    for index, token in enumerate(tokens):
+        if token.endswith(_LOGGER_SCRIPT):
+            return tokens[index + 1] if index + 1 < len(tokens) else ""
+    return None
+
+
+def check_hook_events(root: Path) -> tuple[list[str], list[str]]:
+    """Event keys under settings.json `hooks` name real Claude Code hook events.
+
+    Two failure modes, both silent at runtime: an unrecognised event key (the
+    hook never fires) and a universal_logger.py invocation whose argv[1] does
+    not match the key it is registered under (the event is logged under the
+    wrong name). Coverage gaps are warnings rather than errors — not every event
+    warrants a hook, and upstream may add events faster than this enum tracks.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    for hooks_file in _repo_hook_files(root):
+        relative = hooks_file.relative_to(root)
+        declared: set[str] = set()
+        logged: set[str] = set()
+
+        for event, command in _iter_hook_commands(hooks_file):
+            if event not in declared:
+                declared.add(event)
+                if event not in _CLAUDE_HOOK_EVENTS:
+                    errors.append(
+                        f"[HOOK_EVENT] {relative}: unknown hook event `{event}` — "
+                        f"the hook will never fire"
+                    )
+            argv_event = _logged_event(command)
+            if argv_event is None:
+                continue
+            logged.add(event)
+            if argv_event != event:
+                errors.append(
+                    f"[HOOK_EVENT] {relative} ({event}): logger records this as "
+                    f"`{argv_event or '<missing>'}` — argv[1] must match the event key"
+                )
+
+        warnings.extend(
+            f"[HOOK_EVENT_COVERAGE] {relative}: `{event}` is not logged"
+            for event in sorted(_CLAUDE_HOOK_EVENTS - logged)
+        )
+
+    return errors, warnings
+
+
 ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "agents": check_agents,
     "skills": check_skills,
@@ -1066,6 +1186,7 @@ ALL_CHECKS: dict[str, Callable[..., Any]] = {
     "trigger-consistency": check_trigger_consistency,
     "fpf-refs": check_fpf_spec_refs,
     "hook-hermeticity": check_hook_hermeticity,
+    "hook-events": check_hook_events,
 }
 
 _AI_OWNED_ENTRIES = ("agents", "skills", "commands", "USER_AUTHORITY_PROTOCOL.md")

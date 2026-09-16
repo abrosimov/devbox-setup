@@ -313,4 +313,4 @@ Action: [Fix blocking and re-review] or [Ready to proceed]
 
 ## Compaction Survival
 
-The `pre_compact_mask` hook (in `hooks.json`) automatically captures branch, modified files, and key context before compaction. After compaction, the preserved context helps the next agent resume work without re-reading the entire codebase.
+The `pre_compact_mask` hook (in the `hooks` block of `settings.json`) automatically captures branch, modified files, and key context before compaction. After compaction, the preserved context helps the next agent resume work without re-reading the entire codebase.

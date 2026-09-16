@@ -2,8 +2,8 @@
 name: editing-claude-config
 description: >
   Context-optimisation patterns for editing Claude Code configuration under
-  `roles/devbox/files/dot_claude/` (agents, skills, commands, hooks.json,
-  settings.json, schemas, bin, templates). Use when reading or editing any
+  `roles/devbox/files/dot_claude/` (agents, skills, commands, settings.json
+  and its hooks block, schemas, bin, templates). Use when reading or editing any
   file under that path, when working inside `~/.claude/` directly, or when
   the conversation involves modifying Claude Code's own agent/skill/command
   definitions. Keeps the main conversation context lean by deferring deep

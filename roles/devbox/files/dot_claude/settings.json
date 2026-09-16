@@ -396,6 +396,588 @@
     ],
     "defaultMode": "auto"
   },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_bash_toolchain_guard.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_tmpdir_guard.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/bash_decision_gate.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_bash_boundary_wrap.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_tmpdir_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_lint_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_lint_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_write_completion_gate.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_write_existing_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreToolUse"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/suggest_checkpoint.py",
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_lint.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_typecheck.py",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_lint.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_typecheck.py",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostToolUse",
+            "async": true
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py UserPromptSubmit",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_format.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_lint_gate.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Stop"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_save.py"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_compact_mask.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreCompact"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_prepare_python.py",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionStart"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_save.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionEnd"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/worktree-create",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py WorktreeCreate"
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/worktree-remove",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py WorktreeRemove"
+          }
+        ]
+      }
+    ],
+    "Setup": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Setup"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "UserPromptExpansion": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py UserPromptExpansion"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PermissionRequest"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PermissionDenied"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostToolUseFailure",
+            "async": true
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "PostToolBatch": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostToolBatch",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Notification"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "MessageDisplay": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py MessageDisplay",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SubagentStart"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SubagentStop"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TaskCreated"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TaskCompleted"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py StopFailure"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TeammateIdle"
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py InstructionsLoaded",
+            "async": true
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py ConfigChange"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "CwdChanged": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py CwdChanged",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "DirectoryAdded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py DirectoryAdded"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "FileChanged": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py FileChanged",
+            "async": true
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostCompact"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "Elicitation": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Elicitation"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "ElicitationResult": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py ElicitationResult"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
     "command": "~/.claude/bin/statusline.py"

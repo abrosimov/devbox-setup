@@ -86,7 +86,7 @@ _STOP_CODES: Final = frozenset({0, 2})
 _PRE_COMPACT_CODES: Final = frozenset({0})
 
 
-# All hooks listed in hooks.json that read stdin from Claude Code. Lifecycles
+# All hooks in the settings.json `hooks` block that read stdin from Claude Code. Lifecycles
 # match fixture bucket names (test_integration/fixtures/<lifecycle>/). Scripts
 # that fan out across multiple lifecycles (pre_tmpdir_guard runs on both Bash
 # and Write matchers) get one IntegrationTarget per lifecycle.

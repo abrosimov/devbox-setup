@@ -131,7 +131,7 @@ Halt immediately and request confirmation if you would:
 - Write to a file you have not previously read
 - Skip a pre-commit hook (`--no-verify`) or signing (`--no-gpg-sign`)
 
-These are categorical. There are no exceptions. Hooks in `hooks.json` (via `bin/bash_decision_gate.py`) block all the destructive shell actions above through Phase-1 deny rules. Out-of-scope edits and unread-file writes depend on conversation state and remain prompt-only.
+These are categorical. There are no exceptions. Hooks in the `hooks` block of `settings.json` (via `bin/bash_decision_gate.py`) block all the destructive shell actions above through Phase-1 deny rules. Out-of-scope edits and unread-file writes depend on conversation state and remain prompt-only.
 
 ### Before Any Implementation
 

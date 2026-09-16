@@ -32,12 +32,18 @@ js_repl = false
 memories = true
 
 [hooks]
+Interrupt = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Interrupt", type = "command" }] }]
+PermissionRequest = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PermissionRequest", type = "command" }] }]
+PostCompact = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PostCompact", type = "command" }] }]
 PostToolUse = [{ hooks = [{ async = true, command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PostToolUse", type = "command" }], matcher = ".*" }]
 PreCompact = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreCompact", type = "command" }] }]
 PreToolUse = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreToolUse", type = "command" }], matcher = ".*" }]
 SessionEnd = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionEnd", type = "command" }] }]
 SessionStart = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionStart", type = "command" }] }]
 Stop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop", type = "command" }] }]
+SubagentStart = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SubagentStart", type = "command" }] }]
+SubagentStop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SubagentStop", type = "command" }] }]
+UserPromptSubmit = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py UserPromptSubmit", type = "command" }] }]
 
 [plugins]
 

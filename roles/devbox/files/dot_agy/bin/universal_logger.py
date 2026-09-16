@@ -4,11 +4,11 @@ Universal event logger for Claude Code and Antigravity CLI.
 Logs all hook events (PreToolUse, PostToolUse, etc.) as JSONL.
 """
 
-import sys
-import json
-import os
 import datetime
 import fcntl
+import json
+import os
+import sys
 from pathlib import Path
 
 
@@ -65,6 +65,11 @@ def main() -> None:
                 f.write(json.dumps(log_entry) + "\n")
         finally:
             fcntl.flock(lck, fcntl.LOCK_UN)
+
+    # Antigravity requires every hook to answer with a JSON object on stdout.
+    # An empty object carries no decision, no injected steps and no termination
+    # behaviour, so the loop proceeds exactly as it would without this hook.
+    sys.stdout.write("{}")
 
     sys.exit(0)
 

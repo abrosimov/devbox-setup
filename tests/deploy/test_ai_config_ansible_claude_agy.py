@@ -33,15 +33,14 @@ class TestClaudeSettingsWriter:
     def tasks(self) -> tuple[Task, ...]:
         return load_tasks()
 
-    def test_root_copy_keeps_hooks_and_config_only(self, tasks: tuple[Task, ...]) -> None:
+    def test_root_copy_keeps_config_only(self, tasks: tuple[Task, ...]) -> None:
+        # hooks.json is deliberately absent: Claude Code loads user hooks from
+        # settings.json, so copying a standalone hooks.json deployed dead config.
         task = task_named(tasks, "Deploy .claude root files")
         loop = task["loop"]
 
         assert isinstance(loop, list)
-        assert loop == [
-            {"src": "hooks.json", "dest": "hooks.json"},
-            {"src": "config.md", "dest": "config.md"},
-        ]
+        assert loop == [{"src": "config.md", "dest": "config.md"}]
 
     def test_wholesale_settings_copy_is_absent(self, tasks: tuple[Task, ...]) -> None:
         copy_sources: list[str] = []

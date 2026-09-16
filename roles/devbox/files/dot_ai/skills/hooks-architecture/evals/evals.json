@@ -4,11 +4,12 @@
     {
       "id": 1,
       "prompt": "How do I create a PreToolUse hook that blocks dangerous git commands?",
-      "expected_output": "Explains PreToolUse hook with exit 2 for blocking, correct hooks.json config",
+      "expected_output": "Explains PreToolUse blocking via exit 2 or a permissionDecision JSON verdict, with the hook declared in the settings.json hooks block",
       "expectations": [
-        "Shows exit 2 for blocking",
-        "Shows correct hooks.json structure with matcher",
-        "Provides a working example script"
+        "Shows exit 2, or hookSpecificOutput.permissionDecision set to deny, for blocking",
+        "Places the hook under the `hooks` key of settings.json, not a standalone hooks.json",
+        "Uses the PascalCase event name PreToolUse with a matcher",
+        "Provides a working example script that reads the tool call from stdin JSON"
       ]
     },
     {
@@ -18,7 +19,7 @@
       "expectations": [
         "Uses PostToolUse with matcher for Edit/Write",
         "Sets async: true for non-blocking execution",
-        "Outputs results via additionalContext (not stderr) so agent sees them"
+        "Outputs results via hookSpecificOutput.additionalContext (not stderr) so agent sees them"
       ]
     },
     {

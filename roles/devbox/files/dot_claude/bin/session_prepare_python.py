@@ -16,7 +16,7 @@ Rules of engagement:
 * Never fails the session — all errors degrade to an advisory message.
 * Uses ``--frozen`` in sync mode so the lockfile is never mutated by a hook.
 
-Wired to ``SessionStart`` (matchers ``startup|resume``) in hooks.json; the
+Wired to ``SessionStart`` (matchers ``startup|resume``) in settings.json; the
 outer timeout there is 15s, which bounds ``UV_TIMEOUT_SEC`` below.
 """
 

@@ -24,8 +24,7 @@ The user commits manually after each agent run; commands do not auto-commit.
 ```
 .claude/
 ├── CLAUDE.md              # User Authority Protocol (global rules)
-├── settings.json          # Claude Code permissions and settings
-├── hooks.json             # Pre/post tool-use hooks (hard enforcement)
+├── settings.json          # Permissions, settings, and the `hooks` block (hard enforcement)
 ├── agents/                # Specialized agent definitions
 │   ├── software_engineer_*.md
 │   ├── unit_tests_writer_*.md
@@ -293,7 +292,7 @@ Each worktree gets its own Claude Code session. `proj wt add` automatically:
 - Creates the branch from the default branch (or specified base via `--from`)
 - Tracks existing remote branches when available
 
-The `WorktreeCreate` hook in `hooks.json` delegates to `proj wt`, so `claude --worktree <name>` also follows this layout.
+The `WorktreeCreate` hook in `settings.json` delegates to `proj wt`, so `claude --worktree <name>` also follows this layout.
 
 ### Parallel Workflow Example
 

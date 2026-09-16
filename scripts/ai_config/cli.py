@@ -6,14 +6,14 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from .adapters import EngineKind, load_engine_plan
 from .bindings import BindingResolutionError
-from .core import Change, MissingValue, ReconciliationPlan, plan_reconciliation
+from .core import Change, ChangeKind, MissingValue, ReconciliationPlan, plan_reconciliation
 from .decisions import DecisionSet, DecisionSource, FieldDecision, load_decisions
 from .manifest import ManifestError, load_manifest
-from .model import SemanticSnapshot, SemanticValue, SnapshotError, to_plain_value
+from .model import FieldPath, SemanticSnapshot, SemanticValue, SnapshotError, to_plain_value
 from .resolution import OperationMode, ResolutionError
 from .service import (
     BootstrapAction,
@@ -28,6 +28,9 @@ from .service import (
 )
 from .state import StateError
 from .transaction import TransactionError
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping, Sequence
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,7 +115,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Resolve live changes and conflicts with explicit decisions",
         description=(
             "Reconcile changes using a decisions file, or prompt for each required decision "
-            "when stdin is an interactive terminal."
+            "when stdin is an interactive terminal. At the prompt, 'repo!' or 'live!' settles "
+            "every remaining change of the same kind in one answer."
         ),
     )
     _add_engine_options(reconcile_parser, engine_required=True)
@@ -378,22 +382,66 @@ def _operate(
     )
 
 
-def _prompt_decisions(error: DecisionsRequiredError) -> DecisionSet:
+# Suffixing an answer settles every remaining change of the SAME kind. Scoping the
+# sweep to one kind is the point: adding a container field such as `hooks` plans one
+# initialisation-required change per child, and answering those thirty-odd prompts by
+# hand is pure friction — but a genuine conflict further down the list still deserves
+# its own answer rather than being carried along by a bulk keystroke.
+_BULK_SUFFIX = "!"
+
+
+def _parse_answer(answer: str) -> tuple[DecisionSource, bool]:
+    """Return the chosen source and whether it applies to the rest of its kind."""
+    bulk = answer.endswith(_BULK_SUFFIX)
+    return DecisionSource(answer.removesuffix(_BULK_SUFFIX)), bulk
+
+
+def collect_decisions(
+    paths: Sequence[FieldPath],
+    changes: Mapping[FieldPath, Change],
+    ask: Callable[[str], str],
+    notify: Callable[[str], None],
+) -> DecisionSet:
+    """Turn answers into one decision per path, honouring the bulk '!' suffix.
+
+    ``ask`` receives the prompt and returns the raw answer; ``notify`` receives
+    operator-facing notes. Keeping both injectable leaves this loop free of I/O.
+    """
     decisions: list[FieldDecision] = []
-    changes = {change.path: change for change in error.inspection.plan.changes}
-    for path in error.paths:
+    settled: dict[ChangeKind, DecisionSource] = {}
+    for index, path in enumerate(paths):
         change = changes[path]
+        already = settled.get(change.kind)
+        if already is not None:
+            decisions.append(FieldDecision(path=path, source=already))
+            continue
         prompt = f"{'.'.join(path)} ({change.kind.value}) [repo/live]: "
         while True:
-            answer = input(prompt).strip().lower()
             try:
-                source = DecisionSource(answer)
+                source, applies_to_rest = _parse_answer(ask(prompt).strip().lower())
             except ValueError:
-                print("Enter 'repo' or 'live'.", file=sys.stderr)
+                notify("Enter 'repo' or 'live', optionally suffixed with '!'.")
                 continue
+            if applies_to_rest:
+                settled[change.kind] = source
+                rest = sum(1 for other in paths[index + 1 :] if changes[other].kind is change.kind)
+                notify(f"  {source.value} applied to {rest} further {change.kind.value} change(s)")
             decisions.append(FieldDecision(path=path, source=source))
             break
     return DecisionSet(tuple(decisions))
+
+
+def _prompt_decisions(error: DecisionsRequiredError) -> DecisionSet:
+    def notify(message: str) -> None:
+        print(message, file=sys.stderr)
+
+    notify("Answer 'repo' or 'live'; append '!' to settle every remaining change of that kind.")
+    return collect_decisions(
+        tuple(error.paths),
+        {change.path: change for change in error.inspection.plan.changes},
+        input,
+        notify,
+    )
 
 
 def _status_json(

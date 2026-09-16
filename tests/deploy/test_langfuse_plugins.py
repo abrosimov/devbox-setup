@@ -11,7 +11,7 @@ from jinja2 import StrictUndefined, Template
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CLAUDE_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/claude.yml"
 CLAUDE_SETTINGS = REPO_ROOT / "roles/devbox/files/dot_claude/settings.json"
-CLAUDE_HOOKS = REPO_ROOT / "roles/devbox/files/dot_claude/hooks.json"
+CLAUDE_HOOKS = CLAUDE_SETTINGS
 CLAUDE_BIN = REPO_ROOT / "roles/devbox/files/dot_claude/bin"
 VENDORED_HOOK = CLAUDE_BIN / "vendor/langfuse_hook.py"
 CLAUDE_TASKS = REPO_ROOT / "roles/devbox/tasks/apply_configs.yml"
@@ -252,10 +252,13 @@ def test_agy_langfuse_hook_runs_from_the_pinned_bin_venv() -> None:
     expected_suffix = "bin/.venv/bin/python"
     expected_script = "bin/vendor/langfuse_hook.py"
     hook_entry = hooks["langfuse_hook"]
-    assert hook_entry["event"] == "Stop"
-    assert hook_entry["enabled"] is True
-    assert expected_suffix in hook_entry["handler"]["command"]
-    assert expected_script in hook_entry["handler"]["command"]
+    # `Stop` is a flat event: a list of handler objects, no matcher wrapper.
+    (handler,) = hook_entry["Stop"]
+    assert expected_suffix in handler["command"]
+    assert expected_script in handler["command"]
+    # Held off until the hook's stdout is ported from Claude's schema to
+    # Antigravity's camelCase decision contract.
+    assert hook_entry["enabled"] is False
 
 
 def test_agy_langfuse_env_vars_are_loopback_only() -> None:

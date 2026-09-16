@@ -24,6 +24,10 @@
       "scope": "shared"
     },
     {
+      "path": "hooks",
+      "scope": "shared"
+    },
+    {
       "path": "model",
       "scope": "shared"
     },

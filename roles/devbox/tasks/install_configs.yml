@@ -64,9 +64,10 @@
 # Block 1b: Claude hooks runtime venv
 # The scripts under .claude/bin/ declare their dependencies (notably bashlex
 # for bash_decision_gate.py) in bin/pyproject.toml. We materialise an
-# isolated .venv next to them via `uv sync --frozen`. hooks.json invokes
-# each script as `uv run --project ~/.claude/bin python ~/.claude/bin/<x>.py`
-# which resolves to that same .venv. --no-dev excludes pytest/hypothesis
+# isolated .venv next to them via `uv sync --frozen`. The `hooks` block in
+# settings.json invokes each script as
+# `~/.claude/bin/.venv/bin/python ~/.claude/bin/<x>.py`, which is that same
+# .venv's interpreter. --no-dev excludes pytest/hypothesis
 # from the deployed venv — those are dev-only and live in the repo for
 # `make test-claude-hooks`.
 # Runs in both the full playbook and the slim `make claude-push` flow,
@@ -103,7 +104,6 @@
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item.dest }}"
     mode: "0644"
   loop:
-    - { src: hooks.json, dest: hooks.json }
     - { src: config.md, dest: config.md }
   loop_control:
     label: ".claude/{{ item.dest }}"

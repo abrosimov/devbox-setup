@@ -54,6 +54,11 @@ make ssh-passphrase-reseed   # after SSH passphrase change or key regen
 make otelbox-edge-config     # set remote endpoint (local overlay) + ingestion token (keychain); ONLY=endpoint|token|cert
 make otelbox-edge-test       # liveness + delivery smoke: binary, launchd service, :13133, :8888, OTLP round-trip
 
+# Weekly drive backup (packages/drive-backup — standalone uv project, own lock/tests)
+make drive-backup-push       # (re)install project + LaunchAgent from the local overlay config
+make drive-backup-now        # launchctl kickstart the agent; log in ~/Library/Logs/drive-backup.log
+make test-drive-backup       # package pytest + ruff + pyrefly (strict) + example-config check
+
 # Claude config back-propagation (root files only — subdirs are symlinked)
 make claude-diff     # show drift between deployed ~/.claude and repo
 make claude-pull     # copy changed root files back from ~/.claude to repo
@@ -93,6 +98,7 @@ Everything lives in one role. No multi-role orchestration.
 10. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
 11. `prepare_user.yml` — shell, user-level setup
 12. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. It downloads the checksum-verified v2.1 release binary, deploys one self-contained `edge.yaml`, validates that exact pair and supervises it with `local.otelbox-edge`. The endpoint comes from the local overlay; the Keychain remains credential authority and the wrapper materialises v2.1's watched header in the private per-user temporary directory. Once v2.1 preflight passes, the task removes the legacy `otelcol-edge` binary, config, LaunchAgent and WAL. Homebrew remains a hard conflict. See `README.md` § OTLP Telemetry.
+13. `darwin/configure_drive_backup.yml` — weekly drive backup. Switched on by the local-overlay config `~/.config/drive-backup/config.toml` (example: `files/.config/drive-backup/config.toml.example`): rsyncs the standalone uv project `packages/drive-backup/` to `~/.local/share/drive-backup/`, runs `uv sync --frozen --no-default-groups`, validates the config with `drive-backup check-config`, and (re)bootstraps the `local.drive-backup` LaunchAgent (`StartCalendarInterval` Saturday 03:00). Without the config it boots the agent out and removes it. See `README.md` § Drive Backup.
 
 ### Configuration Deployment (`install_configs.yml`)
 

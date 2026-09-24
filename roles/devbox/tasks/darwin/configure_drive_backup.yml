@@ -1,0 +1,154 @@
+---
+# Weekly drive backup: the packages/drive-backup uv project plus the
+# `local.drive-backup` LaunchAgent that runs it (Friday→Saturday night).
+#
+# The switch is the local-overlay config ~/.config/drive-backup/config.toml
+# (deployed by Block 6 of install_configs.yml, which runs earlier). Present →
+# sync the project to ~/.local/share/drive-backup/, materialise its venv with
+# `uv sync --frozen`, validate the config and (re)bootstrap the agent. Absent →
+# boot the agent out and remove it and the project, so a machine without a
+# config never pushes anything.
+
+- name: "Drive backup — resolve paths"
+  ansible.builtin.set_fact:
+    devbox_drive_backup_config: "{{ ansible_facts['env']['HOME'] }}/.config/drive-backup/config.toml"
+    devbox_drive_backup_app_dir: "{{ ansible_facts['env']['HOME'] }}/.local/share/drive-backup"
+    devbox_drive_backup_plist: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.drive-backup.plist"
+    devbox_drive_backup_service: "gui/{{ ansible_facts['user_uid'] }}/local.drive-backup"
+    devbox_drive_backup_workspace: "{{ devbox_projects_dir | replace('$HOME', ansible_facts['env']['HOME']) }}"
+  tags: [drive-backup, launchagent]
+
+- name: "Drive backup — look for the local config"
+  ansible.builtin.stat:
+    path: "{{ devbox_drive_backup_config }}"
+  register: devbox_drive_backup_config_stat
+  tags: [drive-backup, launchagent]
+
+- name: "Drive backup — check LaunchAgent bootstrap status"
+  ansible.builtin.command:
+    argv: [/bin/launchctl, print, "{{ devbox_drive_backup_service }}"]
+  register: devbox_drive_backup_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [drive-backup, launchagent]
+
+# --- disabled: no config → tear down ------------------------------------------
+
+- name: "Drive backup — tear down (no local config)"
+  when: not devbox_drive_backup_config_stat.stat.exists
+  tags: [drive-backup, launchagent]
+  block:
+    - name: "Drive backup — bootout LaunchAgent"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootout, "{{ devbox_drive_backup_service }}"]
+      when: devbox_drive_backup_status.rc == 0
+      changed_when: true
+
+    - name: "Drive backup — remove LaunchAgent plist and project"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ devbox_drive_backup_plist }}"
+        - "{{ devbox_drive_backup_app_dir }}"
+
+    - name: "Drive backup — report disabled"
+      ansible.builtin.debug:
+        msg: >-
+          drive-backup not configured: add
+          roles/devbox/local/.config/drive-backup/config.toml (see
+          roles/devbox/files/.config/drive-backup/config.toml.example) to enable.
+
+# --- enabled -------------------------------------------------------------------
+
+- name: "Drive backup — install and schedule"
+  when: devbox_drive_backup_config_stat.stat.exists
+  tags: [drive-backup, launchagent]
+  block:
+    - name: "Drive backup — ensure directories exist"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ devbox_drive_backup_app_dir }}"
+        - "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents"
+        - "{{ ansible_facts['env']['HOME'] }}/Library/Logs"
+
+    # One-way with --delete: the repo is the only source of truth for the
+    # project; the venv is rebuilt from uv.lock below.
+    - name: "Drive backup — sync the uv project"
+      ansible.posix.synchronize:
+        src: "{{ role_path }}/../../packages/drive-backup/"
+        dest: "{{ devbox_drive_backup_app_dir }}/"
+        delete: true
+        recursive: true
+        rsync_opts:
+          - "--exclude=.DS_Store"
+          - "--exclude=.venv"
+          - "--exclude=__pycache__"
+          - "--exclude=.pytest_cache"
+          - "--exclude=.ruff_cache"
+      delegate_to: localhost
+
+    - name: "Drive backup — find uv"
+      ansible.builtin.command: "command -v uv"
+      environment:
+        PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['HOME'] }}/.local/bin:{{ ansible_facts['env']['PATH'] }}"
+      register: devbox_drive_backup_uv
+      changed_when: false
+      check_mode: false
+
+    # --no-default-groups: runtime only (the project's default groups are the
+    # dev/lint tooling).
+    - name: "Drive backup — materialise the venv"
+      ansible.builtin.command:
+        cmd: "{{ devbox_drive_backup_uv.stdout }} sync --frozen --no-default-groups"
+        chdir: "{{ devbox_drive_backup_app_dir }}"
+      register: devbox_drive_backup_uv_sync
+      changed_when: >-
+        'Installed' in (devbox_drive_backup_uv_sync.stderr | default(''))
+        or 'Uninstalled' in (devbox_drive_backup_uv_sync.stderr | default(''))
+
+    # Fail the playbook, not the first Saturday night, on a broken config.
+    - name: "Drive backup — validate the config"
+      ansible.builtin.command:
+        argv:
+          - "{{ devbox_drive_backup_app_dir }}/.venv/bin/drive-backup"
+          - check-config
+      environment:
+        MNEMOSYNE_PERISTASEOS: "{{ devbox_active_profile }}"
+        AION_AUTOPOIESEON: "{{ devbox_drive_backup_workspace }}"
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: "Drive backup — deploy LaunchAgent plist"
+      ansible.builtin.template:
+        src: darwin/Library/LaunchAgents/local.drive-backup.plist.j2
+        dest: "{{ devbox_drive_backup_plist }}"
+        mode: "0644"
+      register: devbox_drive_backup_plist_result
+
+    # bootstrap fails on an already-loaded service; a changed plist needs a
+    # bootout first to be picked up.
+    - name: "Drive backup — bootout LaunchAgent (plist changed)"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootout, "{{ devbox_drive_backup_service }}"]
+      when:
+        - devbox_drive_backup_plist_result.changed
+        - devbox_drive_backup_status.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "Drive backup — bootstrap LaunchAgent"
+      ansible.builtin.command:
+        argv:
+          - /bin/launchctl
+          - bootstrap
+          - "gui/{{ ansible_facts['user_uid'] }}"
+          - "{{ devbox_drive_backup_plist }}"
+      when: >-
+        devbox_drive_backup_plist_result.changed
+        or devbox_drive_backup_status.rc != 0
+      changed_when: true

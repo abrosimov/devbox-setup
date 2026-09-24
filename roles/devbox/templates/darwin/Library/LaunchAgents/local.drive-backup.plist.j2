@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed by devbox (roles/devbox/templates/darwin/Library/LaunchAgents/local.drive-backup.plist.j2).
+  Weekly `drive-backup run` (packages/drive-backup): archives the directories listed
+  in ~/.config/drive-backup/config.toml into the drive repository, commits, pushes.
+
+  StartCalendarInterval rather than cron: launchd runs a slot missed while the Mac
+  slept on the next wake. A gui-domain agent also inherits the login ssh-agent
+  socket, which `git push` needs. The shell rc is not sourced here, so the two
+  devbox env vars the tool reads are rendered in explicitly.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.drive-backup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ devbox_drive_backup_app_dir }}/.venv/bin/drive-backup</string>
+        <string>run</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>MNEMOSYNE_PERISTASEOS</key>
+        <string>{{ devbox_active_profile }}</string>
+        <key>AION_AUTOPOIESEON</key>
+        <string>{{ devbox_drive_backup_workspace }}</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>{{ devbox_drive_backup.schedule.weekday }}</integer>
+        <key>Hour</key>
+        <integer>{{ devbox_drive_backup.schedule.hour }}</integer>
+        <key>Minute</key>
+        <integer>{{ devbox_drive_backup.schedule.minute }}</integer>
+    </dict>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>LowPriorityIO</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/drive-backup.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/drive-backup.log</string>
+</dict>
+</plist>

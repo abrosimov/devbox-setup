@@ -216,7 +216,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bashlex" },
-    { name = "langfuse", specifier = ">=4.0,<5" },
+    { name = "langfuse", specifier = ">=4.7,<5" },
 ]
 
 [package.metadata.requires-dev]

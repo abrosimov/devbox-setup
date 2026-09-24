@@ -7,6 +7,7 @@ name: CI
 # Deliberately NOT run here:
 #   - test-nvim     : downloads lazy.nvim plugins at runtime (slow, flaky)
 #   - eval-skills   : needs the `claude` CLI + Anthropic API (cost, secrets)
+#   - test-live     : installs real engine CLIs; see live-engines.yml
 #   - the operator flow (make personal/work) : provisions a real machine
 
 on:
@@ -106,6 +107,14 @@ jobs:
 
       - name: Dotfile-deploy structure tests
         run: make test-deploy
+
+      # The hermetic half of tests/live/: the throwaway-home guard that keeps the
+      # engine tests off the operator's real ~/.claude, and the guard that stops a
+      # CI runner skipping an engine it was told to exercise. Neither needs a
+      # binary, so unlike the engine tests themselves (see live-engines.yml) they
+      # are not optional here.
+      - name: Live-suite guards
+        run: make test-live-guard
 
       - name: Bash script syntax check
         run: make test-bash

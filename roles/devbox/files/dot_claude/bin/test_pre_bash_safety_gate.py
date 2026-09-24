@@ -573,6 +573,48 @@ def test_allows_branch_list() -> None:
     assert not gate.evaluate_phase1_legacy("git branch").blocked
 
 
+# --- git stash --------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git stash",
+        "git stash push -m wip",
+        "git stash pop",
+        "git stash apply",
+        "git stash drop",
+        "git stash list",
+        "git stash show -p stash@{0}",
+        "git -C /repo stash",
+        "git -c core.pager=cat stash save",
+        "git rebase --autostash main",
+        "git pull --autostash",
+        "git merge --autostash feature/x",
+        "git -c rebase.autoStash=true rebase main",
+        "git -c rebase.autoStash rebase main",
+        "git -crebase.autoStash rebase main",
+    ],
+)
+def test_blocks_git_stash(cmd: str) -> None:
+    d = gate.evaluate_phase1_legacy(cmd)
+    assert d.blocked, cmd
+    assert d.rule_name == "git-stash", cmd
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git rebase --no-autostash main",
+        "git -c rebase.autoStash=false rebase main",
+        "git log --grep=stash",
+        "git diff",
+    ],
+)
+def test_allows_non_stash_git(cmd: str) -> None:
+    assert not gate.evaluate_phase1_legacy(cmd).blocked, cmd
+
+
 # --- destructive SQL --------------------------------------------------------
 
 

@@ -123,7 +123,6 @@ BASE_ALLOW: Final[list[str]] = [
     "Bash(git ls-files)",
     "Bash(git ls-tree *)",
     "Bash(git rev-parse *)",
-    "Bash(git stash *)",
     "Bash(git checkout -b *)",
     "Bash(git switch *)",
     "Bash(git remote *)",

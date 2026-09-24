@@ -107,15 +107,6 @@ def has_uncommitted_changes() -> bool:
     return not proc.run_cmd(["git", "diff", "--cached", "--quiet"], timeout=10).success
 
 
-def stash_changes(label: str) -> bool:
-    result = proc.run_cmd(["git", "stash", "push", "-m", label], timeout=15)
-    return result.success
-
-
-def stash_pop() -> None:
-    proc.run_cmd(["git", "stash", "pop"], timeout=15)
-
-
 def switch_branch(name: str) -> bool:
     return proc.run_cmd(["git", "switch", name], timeout=15).success
 
@@ -124,11 +115,9 @@ def merge_ff(source: str) -> proc.CmdResult:
     return proc.run_cmd(["git", "merge", "--ff-only", source], timeout=60)
 
 
-def restore(original: str, *, stashed: bool) -> None:
+def restore(original: str) -> None:
     if original:
         proc.run_cmd(["git", "switch", original], timeout=15)
-    if stashed:
-        stash_pop()
 
 
 def _validate_args(parsed: ParsedArgs | ParseFailure, integration: str) -> int | tuple[str, str]:
@@ -196,17 +185,21 @@ def run(argv: list[str]) -> int:
         sys.stdout.write(f"Nothing to merge: '{source}' is already in '{target}'.\n")
         return 0
 
-    original = current_branch()
-    stashed = False
+    # No auto-stash: git stash is denied everywhere in this toolchain, and a
+    # helper that stashes silently just moves the hazard out of sight.
     if has_uncommitted_changes():
-        sys.stdout.write("Stashing uncommitted changes...\n")
-        if stash_changes(f"git-safe-merge: auto-stash before merging {source} into {target}"):
-            stashed = True
+        sys.stderr.write(
+            "BLOCKED: Working tree has uncommitted changes.\n"
+            "Commit them (or ask the user what to do with them) before merging. "
+            "Do not stash.\n",
+        )
+        return 1
 
+    original = current_branch()
     try:
         return _perform_merge(source, target)
     finally:
-        restore(original, stashed=stashed)
+        restore(original)
 
 
 def main(argv: list[str] | None = None) -> int:

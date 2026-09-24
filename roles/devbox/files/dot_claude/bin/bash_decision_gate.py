@@ -122,6 +122,19 @@ SQL_DESTRUCTIVE_RE: Final[re.Pattern[str]] = re.compile(
     re.IGNORECASE,
 )
 
+# git's own global options (those accepted before the subcommand) that consume
+# the next argv element — needed to find the real subcommand in `git -C /repo stash`.
+GIT_GLOBAL_VALUE_OPTS: Final[frozenset[str]] = frozenset(
+    {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env"},
+)
+
+# `<section>.autostash` in a `git -c key[=value]` payload. A bare key means true.
+GIT_AUTOSTASH_CONFIG_RE: Final[re.Pattern[str]] = re.compile(
+    r"(?:^|\.)autostash(?:=(?P<value>.*))?$",
+    re.IGNORECASE,
+)
+GIT_CONFIG_TRUE_VALUES: Final[frozenset[str]] = frozenset({"true", "1", "yes", "on"})
+
 
 # ============================================================
 # CONSTANTS — Phase 2 (AST analysis)
@@ -609,6 +622,59 @@ def rule_branch_force_delete(ctx: Ctx) -> str | None:
     return None
 
 
+def _git_subcommand(argv: list[str]) -> str | None:
+    """First non-option token after ``git``, skipping git's global options.
+
+    ``git -C /repo -c foo.bar=1 stash push`` → ``stash``.
+    """
+    i = 1
+    while i < len(argv):
+        arg = argv[i]
+        if arg in GIT_GLOBAL_VALUE_OPTS:
+            i += 2
+            continue
+        if arg.startswith("-"):
+            i += 1
+            continue
+        return arg
+    return None
+
+
+def _git_config_payloads(argv: list[str]) -> Iterator[str]:
+    """Values passed via ``git -c <key>[=<value>]`` in either spelling."""
+    for i, arg in enumerate(argv):
+        if arg == "-c" and i + 1 < len(argv):
+            yield argv[i + 1]
+        elif arg.startswith("-c") and not arg.startswith("--") and len(arg) > 2:
+            yield arg[2:]
+
+
+def rule_git_stash(ctx: Ctx) -> str | None:
+    # Hard deny, every form — including read-only `git stash list`. Stashes hide
+    # work in a place nobody reviews: an agent that stashes to "clean the tree"
+    # routinely never pops it, and the next branch switch buries it for good.
+    # `--autostash` on rebase/merge/pull is the same hazard wearing a flag.
+    if _tool(ctx.argv) != "git":
+        return None
+    msg = (
+        "git stash is denied in every form (including list/show and "
+        "--autostash). Stashed work goes unreviewed and gets lost. Commit to a "
+        "WIP commit or a scratch branch instead, or ask the user."
+    )
+    if _git_subcommand(ctx.argv) == "stash":
+        return msg
+    if "--autostash" in ctx.argv[1:]:
+        return msg
+    for payload in _git_config_payloads(ctx.argv[1:]):
+        m = GIT_AUTOSTASH_CONFIG_RE.search(payload)
+        if m is None:
+            continue
+        value = m.group("value")
+        if value is None or value.strip().lower() in GIT_CONFIG_TRUE_VALUES:
+            return msg
+    return None
+
+
 def rule_destructive_sql(ctx: Ctx) -> str | None:
     tool = _tool(ctx.argv)
     if tool not in SQL_TOOL_NAMES:
@@ -628,6 +694,9 @@ RuleFn = Callable[[Ctx], str | None]
 
 PHASE1_RULES: Final[list[tuple[str, RuleFn]]] = [
     ("heredoc", rule_heredoc),
+    # Before the branch-scoped git rules: `git merge --autostash` on main must
+    # report the stash hazard, not the (also true) "cannot merge into main".
+    ("git-stash", rule_git_stash),
     ("commit-on-main", rule_commit_on_main),
     ("merge-on-main", rule_merge_on_main),
     ("force-push", rule_force_push),

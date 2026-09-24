@@ -1,5 +1,6 @@
 devbox_projects_dir: "$HOME/Work"
 devbox_active_profile: "work"
+devbox_langfuse_user_id: "kirill@work"
 
 # Profile-specific extras (concatenated with base lists in task files).
 devbox_extra_brew:

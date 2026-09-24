@@ -474,7 +474,7 @@ def test_fpf_refs_unparsable_spec_errors(tmp_path: Path) -> None:
 
 def _build_hooks_root(tmp_path: Path, command: str) -> Path:
     document = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": command}]}]}}
-    (tmp_path / "settings.json").write_text(json.dumps(document), encoding="utf-8")
+    (tmp_path / "settings.json.j2").write_text(json.dumps(document), encoding="utf-8")
     return tmp_path
 
 
@@ -531,7 +531,7 @@ def test_hermeticity_rejects_ambient_interpreters(tmp_path: Path, command: str) 
 
 
 def test_hermeticity_ignores_unparsable_documents(tmp_path: Path) -> None:
-    (tmp_path / "settings.json").write_text("{not json", encoding="utf-8")
+    (tmp_path / "settings.json.j2").write_text("{not json", encoding="utf-8")
     errors, warnings = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path))
     assert errors == []
     assert warnings == []
@@ -544,7 +544,7 @@ def test_hermeticity_reports_every_event(tmp_path: Path) -> None:
             "SessionEnd": [{"hooks": [{"type": "command", "command": _PINNED}]}],
         }
     }
-    (tmp_path / "settings.json").write_text(json.dumps(document), encoding="utf-8")
+    (tmp_path / "settings.json.j2").write_text(json.dumps(document), encoding="utf-8")
     errors, _ = vc.check_hook_hermeticity(tmp_path, _no_plugins(tmp_path))
     assert len(errors) == 1
     assert "(Stop)" in errors[0]
@@ -606,7 +606,7 @@ def _logger(event: str) -> str:
 
 
 def _write_hooks(tmp_path: Path, events: dict[str, list]) -> Path:
-    (tmp_path / "settings.json").write_text(json.dumps({"hooks": events}), encoding="utf-8")
+    (tmp_path / "settings.json.j2").write_text(json.dumps({"hooks": events}), encoding="utf-8")
     return tmp_path
 
 
@@ -708,6 +708,6 @@ def test_hook_events_warns_on_coverage_gap(tmp_path: Path) -> None:
 
 
 def test_hook_events_ignores_unparsable_documents(tmp_path: Path) -> None:
-    (tmp_path / "settings.json").write_text("{not json", encoding="utf-8")
+    (tmp_path / "settings.json.j2").write_text("{not json", encoding="utf-8")
     errors, _ = vc.check_hook_events(tmp_path)
     assert errors == []

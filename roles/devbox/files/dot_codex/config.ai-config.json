@@ -43,11 +43,6 @@
       "scope": "shared"
     },
     {
-      "path": "otel.environment",
-      "scope": "environment",
-      "binding": "profile:devbox_active_profile"
-    },
-    {
       "path": "plugins",
       "scope": "shared"
     },

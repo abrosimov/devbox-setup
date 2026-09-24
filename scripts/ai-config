@@ -5,8 +5,13 @@ script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 repo_root="$(dirname -- "$script_dir")"
 entrypoint="$script_dir/ai_config_cli.py"
 
+# Rendering the repository source needs Jinja2, and its variables come from the
+# role defaults and the profile overlay, which needs a YAML parser. The dev venv
+# already carries both; the operator path has no venv, so uv supplies them.
 if [[ -x "$repo_root/.venv/bin/python" ]]; then
   exec "$repo_root/.venv/bin/python" "$entrypoint" "$@"
 fi
 
-exec uv run --no-project --python '>=3.12' "$entrypoint" "$@"
+exec uv run --no-project --python '>=3.12' \
+  --with 'jinja2>=3.1' --with 'pyyaml>=6' \
+  "$entrypoint" "$@"

@@ -28,8 +28,13 @@ dev = [
     "hypothesis>=6.158.0",
     # Already present transitively via ansible-core; declared directly because
     # tests/deploy/test_otelbox_edge_deploy.py renders the LaunchAgent template and
-    # evaluates a task's `when` expression rather than string-matching them.
+    # evaluates a task's `when` expression rather than string-matching them, and
+    # because scripts/ai_config/templating.py renders each engine's repository
+    # source against the role defaults plus the selected profile overlay. The
+    # operator path has no dev venv and gets both from `uv run --with`, so any
+    # change here must be mirrored in scripts/ai-config.
     "jinja2>=3.1",
+    "pyyaml>=6",
     # Runtime dep of roles/devbox/files/dot_claude/bin/bash_decision_gate.py.
     # Pinned authoritatively in bin/pyproject.toml + bin/uv.lock for the
     # deployed venv; mirrored here so the root dev venv (used by `make test`
@@ -135,6 +140,13 @@ ignore = [
     "EXE001",      # Shebang present but file not executable — handled by deploy
     "E402",        # sys.path.insert hack before imports is the shared-lib pattern
 ]
+# The session-log miner's lexicons match Russian user corrections and assumption
+# phrasing verbatim ("нет", "я не просил", "видимо", ...). RUF001 fires on the
+# Cyrillic letters inside those regex literals; they are the data being matched,
+# not accidental homoglyphs. Same rationale as bash_decision_gate.py below.
+"scripts/claude_log_mining/classify.py" = [
+    "RUF001",      # intentional Cyrillic in the Russian-language match lexicons
+]
 # bash_decision_gate.py is the security-critical Bash PreToolUse gate. Its
 # command-shape dispatchers (walk_commands, check_audit_dir, check_shell_inline_exec,
 # _is_write_command, _write_path_args) are branchy by nature — one branch per shell
@@ -236,6 +248,13 @@ search-path = [
     "roles/devbox/files/dot_claude/bin",
     "roles/devbox/files/dot_ai/skills/techne-fewer-permission-prompts/scripts",
     "scripts",
+    # tests/scripts/ is a flat directory too: the miner tests import the shared
+    # record-builder helper (claude_log_mining_fixtures) as a sibling, the way
+    # pytest's rootdir insertion resolves it at run time.
+    "tests/scripts",
+    # tests/live/ follows the same shape: the engine tests import throwaway,
+    # generation and conftest as siblings.
+    "tests/live",
 ]
 
 # kittens.tui.* is only resolvable at runtime inside kitty itself. The path is
@@ -363,4 +382,8 @@ addopts = "-ra --strict-markers --strict-config"
 markers = [
     "slow: tests that take longer than 1s",
     "integration: subprocess-based integration tests (slower)",
+    # tests/live/ drives real claude/codex/agy binaries against a throwaway home.
+    # tests/live/conftest.py refuses to collect them unless DEVBOX_LIVE_ENGINE_TESTS=1,
+    # so `make test`, `make qa` and a bare `pytest` stay hermetic. See `make test-live`.
+    "live: engine tests that spawn an installed AI CLI (opt-in, needs real binaries)",
 ]

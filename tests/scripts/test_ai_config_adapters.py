@@ -17,10 +17,12 @@ from ai_config import (
     MissingValue,
     ReconciliationPlan,
     SnapshotError,
+    TemplateError,
     load_engine_plan,
     resolve_engine_paths,
     to_plain_value,
 )
+from ai_config_fixtures import copy_template_variables
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -76,7 +78,7 @@ class TestEnginePathResolution:
         [
             (
                 EngineKind.CLAUDE,
-                "roles/devbox/files/dot_claude/settings.json",
+                "roles/devbox/files/dot_claude/settings.json.j2",
                 ".claude/settings.json",
                 "roles/devbox/files/dot_claude/settings.ai-config.json",
             ),
@@ -168,6 +170,7 @@ class TestEngineAdapterParsing:
             engine,
             repo_root=tree.repo_root,
             home=tree.home,
+            profile="personal",
             base_path=tree.base_path,
         )
         model_change = next(change for change in plan.changes if change.path == ("model",))
@@ -177,25 +180,69 @@ class TestEngineAdapterParsing:
         )
         assert model_change.kind is expected
 
-    def test_codex_keeps_quoted_jinja_as_environment_value(self, tmp_path: Path) -> None:
+    def test_codex_environment_renders_the_profile_and_is_marked_templated(
+        self,
+        tmp_path: Path,
+    ) -> None:
         source_path = REPO_ROOT / "roles/devbox/files/dot_codex/config.toml.j2"
         source = source_path.read_text(encoding="utf-8")
         tree = build_engine_tree(tmp_path, EngineKind.CODEX, source, source, None)
+        copy_template_variables(tree.repo_root)
 
         plan = load_engine_plan(
             EngineKind.CODEX,
             repo_root=tree.repo_root,
             home=tree.home,
+            profile="work",
             base_path=None,
         )
         environment = next(
             change for change in plan.changes if change.path == ("otel", "environment")
         )
 
-        assert environment.kind is ChangeKind.UNCHANGED
-        assert environment.scope is FieldScope.ENVIRONMENT
+        assert environment.templated is True
+        assert environment.kind is ChangeKind.APPLY_REPO
+        assert environment.scope is FieldScope.SHARED
         assert environment.repo is not MissingValue.MISSING
-        assert to_plain_value(environment.repo) == "{{ devbox_active_profile }}"
+        assert to_plain_value(environment.repo) == "work"
+
+    def test_an_unknown_template_variable_stops_the_plan(self, tmp_path: Path) -> None:
+        tree = build_engine_tree(
+            tmp_path,
+            EngineKind.AGY,
+            json.dumps({"model": "{{ devbox_absent_variable }}"}),
+            json.dumps({"model": "live"}),
+            None,
+        )
+        copy_template_variables(tree.repo_root)
+
+        with pytest.raises(TemplateError, match="devbox_absent_variable"):
+            load_engine_plan(
+                EngineKind.AGY,
+                repo_root=tree.repo_root,
+                home=tree.home,
+                profile="personal",
+                base_path=None,
+            )
+
+    def test_a_profile_without_variables_stops_the_plan(self, tmp_path: Path) -> None:
+        tree = build_engine_tree(
+            tmp_path,
+            EngineKind.AGY,
+            json.dumps({"model": "repository"}),
+            json.dumps({"model": "live"}),
+            None,
+        )
+        copy_template_variables(tree.repo_root)
+
+        with pytest.raises(TemplateError, match="no variables for profile"):
+            load_engine_plan(
+                EngineKind.AGY,
+                repo_root=tree.repo_root,
+                home=tree.home,
+                profile="absent",
+                base_path=None,
+            )
 
     @pytest.mark.parametrize(
         ("engine", "repository_source", "live_source"),
@@ -226,6 +273,7 @@ class TestEngineAdapterParsing:
                 engine,
                 repo_root=tree.repo_root,
                 home=tree.home,
+                profile="personal",
                 base_path=tree.base_path,
             )
 
@@ -243,6 +291,7 @@ class TestEngineAdapterParsing:
                 EngineKind.CODEX,
                 repo_root=tree.repo_root,
                 home=tree.home,
+                profile="personal",
                 base_path=tree.base_path,
             )
 
@@ -289,6 +338,7 @@ class TestEngineAdapterReadOnlyContract:
             engine,
             repo_root=tree.repo_root,
             home=tree.home,
+            profile="personal",
             base_path=tree.base_path,
         )
 

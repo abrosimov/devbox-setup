@@ -5,23 +5,37 @@ from pathlib import Path
 
 import pytest
 from ai_config import (
-    BindingProvider,
-    BindingProviders,
     ChangeKind,
+    ConfigurationFormat,
     FieldManifest,
     FieldScope,
     ReconciliationPlan,
+    RepositoryDocument,
     SemanticSnapshot,
+    build_repository_document,
+    load_template_variables,
     plan_reconciliation,
-    resolve_snapshot_bindings,
     to_plain_value,
 )
 from ai_config.cli import load_manifest
+from ai_config_fixtures import REPO_ROOT
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "settings.ai-config.json"
-SETTINGS_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "settings.json"
+SETTINGS_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "settings.json.j2"
 FIXTURES_PATH = Path(__file__).parent / "fixtures" / "ai_config" / "claude"
+
+PROFILE_TEMPLATED_PATHS = {
+    ("env", "LANGFUSE_TRACING_ENVIRONMENT"),
+    ("env", "LANGFUSE_USER_ID"),
+}
+
+
+def repository_document(profile: str) -> RepositoryDocument:
+    return build_repository_document(
+        SETTINGS_PATH.read_bytes(),
+        ConfigurationFormat.JSON,
+        load_template_variables(REPO_ROOT, profile),
+    )
 
 
 class TestClaudeFieldManifest:
@@ -42,44 +56,41 @@ class TestClaudeFieldManifest:
         self,
         manifest: FieldManifest,
     ) -> None:
-        repository = SemanticSnapshot.from_json_file(SETTINGS_PATH)
+        rendered = repository_document("personal").rendered
 
         scopes = {
-            field.path: manifest.scope_for(field.path) for field in repository.semantic_fields()
+            field.path: manifest.scope_for(field.path) for field in rendered.semantic_fields()
         }
 
-        assert scopes.pop(("env", "LANGFUSE_TRACING_ENVIRONMENT")) is FieldScope.ENVIRONMENT
         assert scopes
         assert all(scope is FieldScope.SHARED for scope in scopes.values())
 
-    def test_langfuse_environment_uses_explicit_profile_binding(
+    @pytest.mark.parametrize(
+        ("profile", "expected_environment", "expected_user"),
+        [
+            ("personal", "personal", "abrosimov.k.a@gmail.com"),
+            ("work", "work", "kirill@work"),
+        ],
+    )
+    def test_langfuse_identity_renders_from_the_selected_profile(
         self,
-        manifest: FieldManifest,
+        profile: str,
+        expected_environment: str,
+        expected_user: str,
     ) -> None:
         settings = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-        rule = manifest.rule_for(("env", "LANGFUSE_TRACING_ENVIRONMENT"))
+        rendered = repository_document(profile).rendered
+        values = {field.path: to_plain_value(field.value) for field in rendered.semantic_fields()}
 
         assert settings["env"]["LANGFUSE_TRACING_ENVIRONMENT"] == "{{ devbox_active_profile }}"
-        assert rule is not None
-        assert rule.binding is not None
-        assert rule.binding.provider is BindingProvider.PROFILE
-        assert rule.binding.key == "devbox_active_profile"
+        assert settings["env"]["LANGFUSE_USER_ID"] == "{{ devbox_langfuse_user_id }}"
+        assert values[("env", "LANGFUSE_TRACING_ENVIRONMENT")] == expected_environment
+        assert values[("env", "LANGFUSE_USER_ID")] == expected_user
 
-    def test_langfuse_environment_resolves_active_profile(
-        self,
-        manifest: FieldManifest,
-        tmp_path: Path,
-    ) -> None:
-        repository = SemanticSnapshot.from_json_file(SETTINGS_PATH)
+    def test_only_the_profile_dependent_settings_are_templated(self) -> None:
+        document = repository_document("personal")
 
-        resolved = resolve_snapshot_bindings(
-            repository,
-            manifest,
-            BindingProviders(profile="personal", environment={}, home=tmp_path),
-        )
-        values = {field.path: to_plain_value(field.value) for field in resolved.semantic_fields()}
-
-        assert values[("env", "LANGFUSE_TRACING_ENVIRONMENT")] == "personal"
+        assert document.templated_paths == PROFILE_TEMPLATED_PATHS
 
     def test_otel_resource_classification_is_shared(
         self,
@@ -89,6 +100,18 @@ class TestClaudeFieldManifest:
 
         assert settings["env"]["OTEL_RESOURCE_ATTRIBUTES"] == ("otelbox.telemetry.class=llm")
         assert manifest.scope_for(("env", "OTEL_RESOURCE_ATTRIBUTES")) is FieldScope.SHARED
+
+    def test_no_manifest_rule_resolves_a_profile_value_through_a_binding(
+        self,
+        manifest: FieldManifest,
+    ) -> None:
+        """Profile values reach the live file by rendering, never by binding.
+
+        A binding materialises its value at apply time and is deliberately not
+        written back, so a reintroduced one would make a profile value portable
+        again without the templated-path guard noticing.
+        """
+        assert [rule.path for rule in manifest.rules if rule.binding is not None] == []
 
     @pytest.mark.parametrize(
         "path",

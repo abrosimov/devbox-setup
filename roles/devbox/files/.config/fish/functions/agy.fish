@@ -3,6 +3,13 @@ function agy --wraps agy
     if test -z "$profile"
         set profile "default"
     end
+    # LANGFUSE_USER_ID is quoted below: unquoted, an unset variable expands to
+    # nothing and the assignment vanishes from argv, shifting `command` along.
+    #
+    # CC_LANGFUSE_TRACE_TAGS carries the engine identity. The vendored hook is
+    # shared with Claude Code and hardcodes the "claude-code" tag regardless of
+    # who invoked it, so without this tag agy and Claude Code traces are
+    # indistinguishable in Langfuse.
     env \
         OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
         OTEL_SERVICE_NAME=agy-$profile \
@@ -12,6 +19,8 @@ function agy --wraps agy
         CC_LANGFUSE_SECRET_KEY=otelbox-local-secret \
         CC_LANGFUSE_CAPTURE_IMAGES=false \
         CC_LANGFUSE_STATE_DIR=$HOME/.gemini/antigravity-cli/state \
+        CC_LANGFUSE_TRACE_TAGS='["engine:agy"]' \
         LANGFUSE_TRACING_ENVIRONMENT=$profile \
+        LANGFUSE_USER_ID="$LANGFUSE_USER_ID" \
         command agy $argv
 end

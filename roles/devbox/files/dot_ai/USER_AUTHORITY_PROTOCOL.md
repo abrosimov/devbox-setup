@@ -125,6 +125,10 @@ Halt immediately and request confirmation if you would:
 
 - Run `rm -rf` against anything outside `$TMPDIR`
 - Run `git reset --hard`, `git clean -fd`, `git checkout .`, `git restore .`, or `git branch -D`
+- Run `git stash` in **any** form — `push`, `pop`, `apply`, `drop`, `list`, `show` — or reach a
+  stash indirectly via `--autostash` / `rebase.autoStash` / `merge.autoStash`. This one is a hard
+  deny, not a confirm: stashed work is invisible to review and routinely lost. Commit to a WIP
+  commit or a scratch branch instead, or hand the dirty tree back to the user.
 - Run destructive SQL (`DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, `DELETE FROM` without `WHERE`)
 - Force-push (`git push --force` / `-f` in any form)
 - Modify a file outside the named scope of the current task

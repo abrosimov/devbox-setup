@@ -7,12 +7,14 @@ requires-python = ">=3.11"
 # langfuse — vendor/langfuse_hook.py (see vendor/README.md). Declared as a range
 # here and pinned exactly by uv.lock; upstream shipped it as PEP 723 inline
 # metadata resolved at hook-invocation time, which is what this replaces.
-dependencies = ["bashlex", "langfuse>=4.0,<5"]
+dependencies = ["bashlex", "langfuse>=4.7,<5"]
 
 # Not a distributable package — the scripts in this directory are invoked by
-# absolute path from ~/.claude/hooks.json via `uv run --project ~/.claude/bin
-# python ~/.claude/bin/<script>.py`. The directory is a uv environment, not a
-# Python package.
+# absolute path from the `hooks` block of ~/.claude/settings.json as
+# `~/.claude/bin/.venv/bin/python ~/.claude/bin/<script>.py`. The directory is a
+# uv environment, not a Python package. Calling the venv interpreter directly
+# (rather than `uv run`) is deliberate: `uv run` would sync the dev group on
+# every hook invocation, which a `--no-dev` venv cannot satisfy.
 [tool.uv]
 package = false
 

@@ -28,7 +28,7 @@ reads them from these locations only:
 
 **A standalone `~/.claude/hooks.json` is not one of them.** Claude Code never reads such a
 file — no parse error, no warning, the hooks simply never fire. In this repository
-the hooks live in `roles/devbox/files/dot_claude/settings.json`, deployed by
+the hooks live in `roles/devbox/files/dot_claude/settings.json.j2`, deployed by
 `scripts/ai-config apply claude` against the ownership manifest `settings.ai-config.json`.
 Any new top-level settings key must be declared in that manifest or the reconciler drops it.
 

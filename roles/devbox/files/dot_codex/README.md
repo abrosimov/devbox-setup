@@ -16,6 +16,7 @@ Currently managed:
   export and metrics enabled, and noisy native Rust trace export disabled;
 - selected plugin declarations captured during bootstrap;
 - the SHA-pinned Langfuse tracing marketplace and loopback-only runtime config;
+- hook trust for the hooks declared here and for pinned plugins (see below);
 - global working agreements in `AGENTS.md`;
 - all 28 Codex-native custom-agent adapters under `agents/*.toml`;
 - the allowlisted shared skills installed under `~/.agents/skills`, including
@@ -60,10 +61,60 @@ The plugin sends OTLP/HTTP traces to `http://127.0.0.1:14318` with non-secret
 sentinel credentials; real Langfuse project credentials remain on the remote
 gateway.
 
-Codex hook trust is intentionally not automated. After initial installation or
-a plugin update, open `/hooks`, review the Langfuse `Stop` hook, and trust its
-current hash before expecting traces. A pin update must also account for the
-upstream plugin version because the cache path is versioned.
+A pin update must also account for the upstream plugin version because the cache
+path is versioned. The plugin's hooks are trusted by the step below.
+
+## Hook trust
+
+Codex runs a hook only when it is enabled *and* its recorded `trusted_hash`
+matches the hash Codex recomputes from the live definition. A mismatch resolves
+to trust status `Modified` and the hook is dropped from the dispatch list — no
+error, no log line. A fresh machine, or any edit to a hook command, therefore
+disables every hook this repository provisions until a human grants trust in the
+`/hooks` TUI. This is how Langfuse traces from Codex went missing.
+
+`scripts/codex-hook-trust.py` (over the stdlib-only `scripts/codex_hook_trust/`
+package) closes that gap as the last step of `install_codex_configs.yml`. It
+drives `codex app-server` over JSON-RPC: `hooks/list` reports each discovered
+hook's `currentHash` and `trustStatus`, and `config/batchWrite` upserts
+`hooks.state."<key>".trusted_hash` into `~/.codex/config.toml`. The hash is read
+back from the same binary that later verifies it rather than recomputed here, so
+the scheme survives upstream changes to the hashing shape.
+
+Only hooks this repository declares are eligible:
+
+- command hooks whose event and command appear in `config.toml.j2`'s `[hooks]`
+  block and whose `sourcePath` is the live `config.toml`;
+- hooks belonging to a plugin passed via `--plugin`, which Ansible derives from
+  `devbox_codex_plugins`.
+
+Anything else is **refused** and fails the play — blanket-trusting whatever
+`hooks/list` returns would auto-trust any hook that got injected. A hook the
+repository declares but `hooks/list` never reports also fails the play: the
+configuration that should carry it is not in effect. A trusted-but-disabled hook
+is reported on stderr and left alone; disabling is a deliberate act in the TUI,
+granting trust is not.
+
+**A running Codex session caches its configuration.** Newly granted trust takes
+effect for the *next* Codex process only — quit and relaunch (or start a new
+`codex` invocation) before expecting the hooks to fire.
+
+To audit without writing:
+
+```sh
+scripts/codex-hook-trust.py --check --fail-on-drift \
+  --plugin tracing@codex-observability-plugin
+```
+
+`--check` alone reports drift and exits `0`; `--fail-on-drift` turns pending
+trust into a non-zero exit for a periodic gate. Exit codes follow `sysexits`:
+`64` bad invocation, `69` no reachable app-server, `76` unrecognised protocol
+shape, `78` a trust state the repository refuses to accept.
+
+`hooks.state` stays out of ai-config's way: the Codex adapter classifies
+`hooks.state.<key>.{enabled,trusted_hash}` as `runtime` scope and blocks every
+other path under `hooks.state`, so `ai-config apply codex` preserves granted
+trust verbatim while still owning the `[hooks]` definitions above it.
 
 ## First bootstrap
 

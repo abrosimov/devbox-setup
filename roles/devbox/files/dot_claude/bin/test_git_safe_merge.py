@@ -246,7 +246,7 @@ def test_run_uses_custom_integration_branch(monkeypatch: pytest.MonkeyPatch) -> 
     assert "integration" in out.getvalue()
 
 
-def test_run_stashes_uncommitted(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_refuses_uncommitted_changes(monkeypatch: pytest.MonkeyPatch) -> None:
     calls = _setup(
         monkeypatch,
         {
@@ -258,18 +258,11 @@ def test_run_stashes_uncommitted(monkeypatch: pytest.MonkeyPatch) -> None:
             "git branch --show-current": _ok("feature/x\n"),
             "git diff --quiet": _err(),
             "git diff --cached --quiet": _ok(),
-            "git stash push": _ok(),
-            "git switch build/stable": _ok(),
-            "git merge --ff-only feature/x": _ok(),
-            "git switch feature/x": _ok(),
-            "git stash pop": _ok(),
         },
     )
-    out = io.StringIO()
-    monkeypatch.setattr(sys, "stdout", out)
-    assert gsm.run(["feature/x"]) == 0
-    assert "Stashing uncommitted changes" in out.getvalue()
-    stash_pushes = [c for c in calls if c[:3] == ["git", "stash", "push"]]
-    assert stash_pushes
-    stash_pops = [c for c in calls if c[:3] == ["git", "stash", "pop"]]
-    assert stash_pops
+    err = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", err)
+    assert gsm.run(["feature/x"]) == 1
+    assert "uncommitted changes" in err.getvalue()
+    assert not [c for c in calls if c[:2] == ["git", "stash"]]
+    assert not [c for c in calls if c[:2] == ["git", "merge"]]

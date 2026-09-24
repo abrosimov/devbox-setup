@@ -8,7 +8,14 @@ from pathlib import Path
 
 from .core import FieldManifest, FieldRule, FieldScope, ReconciliationPlan, plan_reconciliation
 from .manifest import parse_manifest
-from .model import SemanticSnapshot, SnapshotError
+from .model import FieldPath, SemanticSnapshot, SnapshotError
+from .templating import (
+    TemplateVariables,
+    divergent_paths,
+    load_template_variables,
+    probe_variables,
+    render_source,
+)
 
 type RuntimeRuleBuilder = Callable[
     [tuple[SemanticSnapshot, ...]],
@@ -33,6 +40,14 @@ class EnginePaths:
     live: Path
     manifest: Path
     home: Path
+
+
+@dataclass(frozen=True, slots=True)
+class RepositoryDocument:
+    source: bytes
+    snapshot: SemanticSnapshot
+    rendered: SemanticSnapshot
+    templated_paths: frozenset[FieldPath]
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,7 +80,7 @@ def _codex_hook_state_rules(
 _CLAUDE_ADAPTER = EngineAdapterSpec(
     engine=EngineKind.CLAUDE,
     configuration_format=ConfigurationFormat.JSON,
-    repository_relative_path=Path("roles/devbox/files/dot_claude/settings.json"),
+    repository_relative_path=Path("roles/devbox/files/dot_claude/settings.json.j2"),
     live_relative_path=Path(".claude/settings.json"),
     manifest_relative_path=Path("roles/devbox/files/dot_claude/settings.ai-config.json"),
 )
@@ -119,12 +134,17 @@ def load_engine_plan(
     *,
     repo_root: Path,
     home: Path,
+    profile: str,
     base_path: Path | None,
 ) -> ReconciliationPlan:
     adapter = engine_adapter(engine)
     paths = resolve_engine_paths(engine, repo_root=repo_root, home=home)
     base = SemanticSnapshot.from_json_file(base_path) if base_path is not None else None
-    repository = load_snapshot(paths.repository, adapter.configuration_format)
+    repository = load_repository_document(
+        paths.repository,
+        adapter.configuration_format,
+        load_template_variables(repo_root, profile),
+    )
     live = load_snapshot(paths.live, adapter.configuration_format)
     runtime_snapshots = (live,) if base is None else (base, live)
     manifest = parse_engine_manifest(
@@ -132,7 +152,59 @@ def load_engine_plan(
         paths.manifest.read_bytes(),
         runtime_snapshots=runtime_snapshots,
     )
-    return plan_reconciliation(base=base, repo=repository, live=live, manifest=manifest)
+    return plan_reconciliation(
+        base=base,
+        repo=repository.rendered,
+        live=live,
+        manifest=manifest,
+        templated_paths=repository.templated_paths,
+    )
+
+
+def load_repository_document(
+    path: Path,
+    configuration_format: ConfigurationFormat,
+    variables: TemplateVariables,
+) -> RepositoryDocument:
+    try:
+        source = path.read_bytes()
+    except OSError as error:
+        message = f"cannot read configuration: {path}"
+        raise SnapshotError(message) from error
+    return build_repository_document(source, configuration_format, variables)
+
+
+def build_repository_document(
+    source: bytes,
+    configuration_format: ConfigurationFormat,
+    variables: TemplateVariables,
+) -> RepositoryDocument:
+    """Parse a repository source both unrendered and rendered.
+
+    The unrendered snapshot is the write-back base — capturing a live value edits
+    that structure, so template expressions elsewhere in the document survive
+    verbatim. It therefore has to stay parseable, which confines Jinja to value
+    positions.
+
+    A leaf counts as templated when either comparison sees it move. Rendering
+    against probe values catches everything a variable reaches, including a value
+    only partly templated or one that only one of the two renders produces.
+    Comparing against the unrendered document additionally catches an expression
+    that no variable reaches, such as a filter over literals, which renders to the
+    same text under both contexts.
+    """
+    snapshot = parse_snapshot(source, configuration_format)
+    rendered = parse_snapshot(render_source(source, variables), configuration_format)
+    probe = parse_snapshot(
+        render_source(source, probe_variables(variables)),
+        configuration_format,
+    )
+    return RepositoryDocument(
+        source=source,
+        snapshot=snapshot,
+        rendered=rendered,
+        templated_paths=divergent_paths(rendered, probe) | divergent_paths(rendered, snapshot),
+    )
 
 
 def parse_engine_manifest(

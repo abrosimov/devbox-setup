@@ -348,3 +348,36 @@
     - devbox_codex_cli_path.rc == 0
     - not ansible_check_mode
   tags: [configs, ai, codex]
+
+# Codex silently drops any hook whose recorded trusted_hash does not match the one
+# it recomputes from the live definition, so a fresh machine disables every hook we
+# provision until a human visits /hooks. Runs last: the reconcile above and the
+# plugin installs both change what hooks/list reports. See dot_codex/README.md.
+- name: Grant Codex hook trust for repository-declared hooks
+  ansible.builtin.command:
+    argv: >-
+      {{ devbox_codex_hook_trust_argv
+         + (['--check'] if ansible_check_mode else []) }}
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  register: devbox_codex_hook_trust
+  changed_when: >-
+    devbox_codex_hook_trust.rc == 0
+    and (devbox_codex_hook_trust.stdout | from_json).changed
+  failed_when: devbox_codex_hook_trust.rc != 0
+  check_mode: false
+  when: devbox_codex_cli_path.rc == 0
+  vars:
+    devbox_codex_hook_trust_plugin_ids: >-
+      {{ devbox_codex_plugins
+         | map(attribute='name')
+         | zip(devbox_codex_plugins | map(attribute='marketplace'))
+         | map('join', '@')
+         | list }}
+    devbox_codex_hook_trust_argv: >-
+      {{ [devbox_codex_repo_root ~ '/scripts/codex-hook-trust.py',
+          '--repo-root', devbox_codex_repo_root,
+          '--codex-home', devbox_codex_home,
+          '--json']
+         + (['--plugin'] | product(devbox_codex_hook_trust_plugin_ids) | flatten) }}
+  tags: [configs, ai, codex]

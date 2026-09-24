@@ -12,6 +12,7 @@ from .adapters import (
     EngineKind,
     EnginePaths,
     engine_adapter,
+    load_repository_document,
     parse_engine_manifest,
     parse_snapshot,
     resolve_engine_paths,
@@ -28,6 +29,7 @@ from .core import (
 from .document import (
     copy_path,
     fingerprint_sensitive_fields,
+    overlay_paths,
     portable_projection,
     render_document,
     snapshot_mapping,
@@ -44,6 +46,7 @@ from .state import (
     resolve_state_paths,
     validate_base_state,
 )
+from .templating import load_template_variables
 from .transaction import FileExpectation, FileWrite, write_validated_files
 
 if TYPE_CHECKING:
@@ -101,6 +104,8 @@ class EngineInspection:
     manifest_digest: str
     repository: SemanticSnapshot
     repository_source: bytes
+    rendered_repository: SemanticSnapshot
+    templated_paths: frozenset[FieldPath]
     resolved_repository: SemanticSnapshot
     live: SemanticSnapshot
     live_source: bytes | None
@@ -163,8 +168,11 @@ def inspect_engine(
         message = f"manifest engine does not match requested engine: {engine.value}"
         raise OperationError(message)
     current_manifest_digest = digest_manifest_source(manifest_source)
-    repository_source = paths.repository.read_bytes()
-    repository = parse_snapshot(repository_source, adapter.configuration_format)
+    document = load_repository_document(
+        paths.repository,
+        adapter.configuration_format,
+        load_template_variables(repo_root, profile),
+    )
     live_source = _read_optional_bytes(paths.live)
     live_exists = live_source is not None
     live = (
@@ -189,8 +197,8 @@ def inspect_engine(
         manifest_source,
         runtime_snapshots=runtime_snapshots,
     )
-    active_providers = providers or BindingProviders.system(profile, paths.home)
-    resolved_repository = resolve_snapshot_bindings(repository, manifest, active_providers)
+    active_providers = providers or BindingProviders(home=paths.home)
+    resolved_repository = resolve_snapshot_bindings(document.rendered, manifest, active_providers)
     comparable_repository = fingerprint_sensitive_fields(resolved_repository, manifest)
     comparable_live = fingerprint_sensitive_fields(live, manifest)
     plan = plan_reconciliation(
@@ -198,6 +206,7 @@ def inspect_engine(
         repo=comparable_repository,
         live=comparable_live,
         manifest=manifest,
+        templated_paths=document.templated_paths,
     )
     return EngineInspection(
         engine=engine,
@@ -207,8 +216,10 @@ def inspect_engine(
         state_paths=state_paths,
         manifest=manifest,
         manifest_digest=current_manifest_digest,
-        repository=repository,
-        repository_source=repository_source,
+        repository=document.snapshot,
+        repository_source=document.source,
+        rendered_repository=document.rendered,
+        templated_paths=document.templated_paths,
         resolved_repository=resolved_repository,
         live=live,
         live_source=live_source,
@@ -355,12 +366,9 @@ def _operate_inspection(
         raise DecisionsRequiredError(inspection, resolved.required_decisions)
 
     repository = SemanticSnapshot.from_value(resolved.repository)
-    active_providers = providers or BindingProviders.system(
-        inspection.profile,
-        inspection.paths.home,
-    )
+    active_providers = providers or BindingProviders(home=inspection.paths.home)
     resolved_repository = resolve_snapshot_bindings(
-        repository,
+        _rendered_projection(repository, inspection),
         inspection.manifest,
         active_providers,
     )
@@ -427,6 +435,25 @@ def _operate_inspection(
         state_initialised=inspection.base_state is None,
         written_paths=written_paths,
     )
+
+
+def _rendered_projection(
+    repository: SemanticSnapshot,
+    inspection: EngineInspection,
+) -> SemanticSnapshot:
+    """Re-render the post-resolution repository document without re-templating it.
+
+    ``repository`` carries the unrendered source plus whatever was captured from
+    live. Captures can never touch a templated leaf, so replaying the original
+    render over exactly those leaves reproduces the full render.
+    """
+    configuration = snapshot_mapping(repository)
+    overlay_paths(
+        snapshot_mapping(inspection.rendered_repository),
+        configuration,
+        inspection.templated_paths,
+    )
+    return SemanticSnapshot.from_value(configuration)
 
 
 def _build_live_bootstrap_plan(inspection: EngineInspection) -> tuple[BootstrapChange, ...]:

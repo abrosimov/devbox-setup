@@ -4,11 +4,11 @@ import hashlib
 import json
 import tomllib
 from dataclasses import dataclass, field
-from enum import StrEnum
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
+import yaml
 from ai_config import service as service_module
 from ai_config.adapters import EngineKind, EnginePaths, resolve_engine_paths
 from ai_config.bindings import (
@@ -47,6 +47,10 @@ from ai_config.transaction import (
     FileWrite,
     MultiFileTransactionResult,
 )
+from ai_config_fixtures import copy_template_variables
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 SHARED_MANIFEST = """{
   "schema_version": 1,
@@ -92,11 +96,7 @@ CODEX_PROFILE_MANIFEST = """{
   "engine": "codex",
   "fields": [
     {"path": "model", "scope": "shared"},
-    {
-      "path": "otel.environment",
-      "scope": "environment",
-      "binding": "profile:devbox_active_profile"
-    }
+    {"path": "otel", "scope": "shared"}
   ]
 }
 """
@@ -112,11 +112,7 @@ BINDINGS_MANIFEST = """{
   "schema_version": 1,
   "engine": "claude",
   "fields": [
-    {
-      "path": "envValue",
-      "scope": "environment",
-      "binding": "env:AI_CONFIG_ENV_VALUE"
-    },
+    {"path": "renderedValue", "scope": "shared"},
     {
       "path": "secretValue",
       "scope": "environment",
@@ -126,6 +122,10 @@ BINDINGS_MANIFEST = """{
   ]
 }
 """
+BINDINGS_REPOSITORY = (
+    '{"renderedValue": "{{ devbox_rendered_value }}",'
+    ' "secretValue": "${AI_CONFIG_KEYCHAIN_VALUE}"}\n'
+)
 MARKETPLACE_SUFFIX = ".claude/marketplaces/langfuse-observability"
 HOME_BINDING_MANIFEST = """{
   "schema_version": 1,
@@ -140,13 +140,11 @@ HOME_BINDING_MANIFEST = """{
   ]
 }
 """
-HOME_BINDING_REPOSITORY = '{"marketplace": {"source": "{{ home }}"}, "model": "repository"}\n'
+HOME_BINDING_REPOSITORY = (
+    '{"marketplace": {"source": "@home@/.claude/marketplaces/langfuse-observability"},'
+    ' "model": "repository"}\n'
+)
 NO_DECISIONS = DecisionSet(decisions=())
-
-
-class BindingFailure(StrEnum):
-    ENVIRONMENT = "environment"
-    KEYCHAIN = "keychain"
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,6 +173,8 @@ def create_tree(
     repository_source: str,
     manifest_source: str,
     live_source: str | None = None,
+    variables: Mapping[str, object] | None = None,
+    profile: str = "work",
 ) -> ServiceTree:
     repo_root = tmp_path / "repository"
     home = tmp_path / "home"
@@ -184,6 +184,10 @@ def create_tree(
         path.parent.mkdir(parents=True, exist_ok=True)
     paths.repository.write_text(repository_source, encoding="utf-8")
     paths.manifest.write_text(manifest_source, encoding="utf-8")
+    if variables is not None:
+        overlay = repo_root / "profiles" / f"{profile}.yml"
+        overlay.parent.mkdir(parents=True, exist_ok=True)
+        overlay.write_text(yaml.safe_dump(dict(variables)), encoding="utf-8")
     if live_source is not None:
         paths.live.parent.mkdir(parents=True, exist_ok=True)
         paths.live.write_text(live_source, encoding="utf-8")
@@ -515,25 +519,22 @@ class TestLiveBootstrapService:
         tree = create_tree(
             tmp_path,
             EngineKind.CLAUDE,
-            repository_source=(
-                '{"envValue":"${AI_CONFIG_ENV_VALUE}",'
-                '"secretValue":"${AI_CONFIG_KEYCHAIN_VALUE}"}\n'
-            ),
+            repository_source=BINDINGS_REPOSITORY,
             manifest_source=BINDINGS_MANIFEST,
-            live_source='{"envValue":"live","secretValue":"live-secret"}\n',
+            live_source='{"renderedValue":"live","secretValue":"live-secret"}\n',
+            variables={"devbox_rendered_value": "rendered"},
         )
-        runner = RecordingCommandRunner(CommandResult(returncode=0, stdout="secret\n"))
         preview_providers = BindingProviders(
-            profile="work",
-            environment={"AI_CONFIG_ENV_VALUE": "preview"},
             home=tree.home,
-            command_runner=runner,
+            command_runner=RecordingCommandRunner(
+                CommandResult(returncode=0, stdout="preview-secret\n"),
+            ),
         )
         changed_providers = BindingProviders(
-            profile="work",
-            environment={"AI_CONFIG_ENV_VALUE": "changed"},
             home=tree.home,
-            command_runner=runner,
+            command_runner=RecordingCommandRunner(
+                CommandResult(returncode=0, stdout="changed-secret\n"),
+            ),
         )
         preview = bootstrap(tree, write=False, providers=preview_providers)
 
@@ -868,7 +869,7 @@ class TestWriteSafety:
 
 
 class TestBindingsAndRedaction:
-    def test_codex_profile_binding_preserves_declaration_and_materialises_live(
+    def test_codex_profile_template_preserves_declaration_and_materialises_live(
         self,
         tmp_path: Path,
     ) -> None:
@@ -880,14 +881,10 @@ class TestBindingsAndRedaction:
             EngineKind.CODEX,
             repository_source=repository_source,
             manifest_source=CODEX_PROFILE_MANIFEST,
+            variables={"devbox_active_profile": "work"},
         )
         runner = RecordingCommandRunner(CommandResult(returncode=0, stdout="unused"))
-        providers = BindingProviders(
-            profile="work",
-            environment={},
-            home=tree.home,
-            command_runner=runner,
-        )
+        providers = BindingProviders(home=tree.home, command_runner=runner)
 
         operate(tree, profile="work", providers=providers)
         state = load_tree_base(tree, EngineKind.CODEX)
@@ -903,29 +900,22 @@ class TestBindingsAndRedaction:
         }
         assert runner.calls == []
 
-    def test_environment_and_keychain_bindings_use_injected_providers_and_fingerprint_secret(
+    def test_rendering_and_keychain_binding_keep_both_declarations_and_hide_the_secret(
         self,
         tmp_path: Path,
     ) -> None:
         sensitive_value = "keychain-sensitive-value"
-        repository_source = (
-            '{"envValue": "${AI_CONFIG_ENV_VALUE}", "secretValue": "${AI_CONFIG_KEYCHAIN_VALUE}"}\n'
-        )
         tree = create_tree(
             tmp_path,
             EngineKind.CLAUDE,
-            repository_source=repository_source,
+            repository_source=BINDINGS_REPOSITORY,
             manifest_source=BINDINGS_MANIFEST,
+            variables={"devbox_rendered_value": "rendered-value"},
         )
         runner = RecordingCommandRunner(
             CommandResult(returncode=0, stdout=f"{sensitive_value}\n"),
         )
-        providers = BindingProviders(
-            profile="work",
-            environment={"AI_CONFIG_ENV_VALUE": "environment-value"},
-            home=tree.home,
-            command_runner=runner,
-        )
+        providers = BindingProviders(home=tree.home, command_runner=runner)
 
         result = operate(tree, providers=providers)
         state = load_tree_base(tree, EngineKind.CLAUDE)
@@ -936,13 +926,13 @@ class TestBindingsAndRedaction:
             state_root=tree.state_root,
         ).base.read_bytes()
 
-        assert tree.paths.repository.read_text(encoding="utf-8") == repository_source
+        assert tree.paths.repository.read_text(encoding="utf-8") == BINDINGS_REPOSITORY
         assert read_json(tree.paths.live) == {
-            "envValue": "environment-value",
+            "renderedValue": "rendered-value",
             "secretValue": sensitive_value,
         }
         assert snapshot_mapping(state.snapshot) == {
-            "envValue": "environment-value",
+            "renderedValue": "rendered-value",
             "secretValue": secret_fingerprint(sensitive_value),
         }
         assert sensitive_value.encode() not in base_bytes
@@ -960,54 +950,28 @@ class TestBindingsAndRedaction:
         assert runner.calls
         assert all(arguments == expected_arguments for arguments in runner.calls)
 
-    @pytest.mark.parametrize(
-        "failure",
-        [BindingFailure.ENVIRONMENT, BindingFailure.KEYCHAIN],
-    )
-    def test_binding_failure_is_redacted_and_does_not_write(
-        self,
-        tmp_path: Path,
-        failure: BindingFailure,
-    ) -> None:
-        repository_source = (
-            '{"envValue": "${AI_CONFIG_ENV_VALUE}", "secretValue": "${AI_CONFIG_KEYCHAIN_VALUE}"}\n'
-        )
+    def test_binding_failure_is_redacted_and_does_not_write(self, tmp_path: Path) -> None:
         tree = create_tree(
             tmp_path,
             EngineKind.CLAUDE,
-            repository_source=repository_source,
+            repository_source=BINDINGS_REPOSITORY,
             manifest_source=BINDINGS_MANIFEST,
+            variables={"devbox_rendered_value": "rendered-value"},
         )
         command_output = "provider-sensitive-output"
         runner = RecordingCommandRunner(
-            CommandResult(
-                returncode=1 if failure is BindingFailure.KEYCHAIN else 0,
-                stdout=command_output,
-            ),
+            CommandResult(returncode=1, stdout=command_output),
         )
-        environment = (
-            {}
-            if failure is BindingFailure.ENVIRONMENT
-            else {"AI_CONFIG_ENV_VALUE": "environment-value"}
-        )
-        providers = BindingProviders(
-            profile="work",
-            environment=environment,
-            home=tree.home,
-            command_runner=runner,
-        )
+        providers = BindingProviders(home=tree.home, command_runner=runner)
 
         with pytest.raises(BindingResolutionError) as caught:
             operate(tree, providers=providers)
 
         assert command_output not in str(caught.value)
-        assert tree.paths.repository.read_text(encoding="utf-8") == repository_source
+        assert tree.paths.repository.read_text(encoding="utf-8") == BINDINGS_REPOSITORY
         assert not tree.paths.live.exists()
         assert not tree.state_root.exists()
-        if failure is BindingFailure.ENVIRONMENT:
-            assert runner.calls == []
-        else:
-            assert len(runner.calls) == 1
+        assert len(runner.calls) == 1
 
 
 class TestHomeBindings:
@@ -1020,7 +984,7 @@ class TestHomeBindings:
         target_home = tmp_path / "target-home"
         binding = FieldBinding(provider=BindingProvider.HOME, key=MARKETPLACE_SUFFIX)
 
-        resolved = BindingProviders.system("work", target_home).resolve(binding)
+        resolved = BindingProviders(home=target_home).resolve(binding)
 
         assert resolved == f"{target_home}/.claude/marketplaces/langfuse-observability"
         assert Path(resolved).is_absolute()
@@ -1119,6 +1083,7 @@ class TestPreferenceOperations:
     def test_fresh_model_uses_actual_repository_sol_default(self, tree):
         source = (MANIFEST.parent / "config.toml.j2").read_bytes()
         tree.paths.repository.write_bytes(source)
+        copy_template_variables(tree.repo_root)
         operate(tree)
         assert tomllib.loads(tree.paths.live.read_text())["model"] == "gpt-5.6-sol"
         assert tree.paths.repository.read_bytes() == source
@@ -1341,6 +1306,13 @@ class TestPreferenceOperations:
             rule = next(rule for rule in old["fields"] if rule["path"] == field_name)
             assert rule["scope"] == "shared"
             rule["scope"] = "preference"
+        # otel.environment also left the manifest on the way to the current one:
+        # the value is a Jinja expression in config.toml.j2 now, and provenance
+        # comes from the render. It carries no preference semantics, so the
+        # migration still only has preference scope to reconcile.
+        removed = [rule for rule in old["fields"] if rule["path"] == "otel.environment"]
+        if removed and not any(rule["path"] == "otel.environment" for rule in new["fields"]):
+            old["fields"].remove(removed[0])
         assert old == new
         snapshot = {
             "model": "gpt-6-astra",

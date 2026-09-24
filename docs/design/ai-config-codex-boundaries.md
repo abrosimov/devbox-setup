@@ -1,5 +1,18 @@
 # Codex configuration boundaries
 
+## Delta, 21 September 2026 — rendering replaced the profile binding
+
+The conclusions below stand; three recorded facts about the ai-config side do not.
+
+1. **`config.toml.j2` is now rendered by `scripts/ai-config`**, against `roles/devbox/defaults/main/*.yml` overlaid by `profiles/<profile>.yml` and with `StrictUndefined`, before the document is compared with the live file. The rendering happens in the reconciler rather than in Ansible so the playbook path and a hand-run `scripts/ai-config diff codex` cannot diverge.
+2. **The `otel.environment` manifest rule is gone** (the ledger below is now 21 rules, not 22). `profile:devbox_active_profile` no longer exists as a binding provider, nor does the `env:` provider; `otel.environment` is covered by the broad `otel` shared rule and its value is ordinary Jinja. The Keychain and home providers remain — a secret or a machine path must never be materialised into a rendered artefact.
+3. **"Retain explicit environment binding" is superseded by provenance.** A leaf produced by a template expression is recognised structurally — the source is rendered twice, once against the real variables and once against type-preserving probes, and every leaf whose value differs is templated — and is classified `apply-repo` before the base-state, capture and ordered-set branches can reach it. The TOML side of that invariant is covered in `tests/scripts/test_ai_config_templating.py`.
+4. **`hooks.state` is unaffected.** It is still blocked from inherited rules and still derives runtime rules from observed snapshots; provenance classifies nothing and cannot make an undeclared path portable.
+
+One constraint this adds to the template: because the *unrendered* document is the write-back base for a capture, it must stay parseable as TOML. Jinja therefore has to sit inside quoted values, never spanning a key or a table header. `_CODEX_MODEL_AND_REASONING_PREFERENCES` in `scripts/ai_config/state.py` moved with the manifest digest.
+
+## Original assessment
+
 Read-only assessment, 10 September 2026. No configuration changes, installations, client sessions, or remote application writes were performed. `codex --version` reported `codex-cli 0.153.4` from `/opt/homebrew/bin/codex`; it also warned that PATH aliases could not be created because the operation was not permitted. This is CLI version evidence, not a check of the desktop app's or IDE's bundled runtime.
 
 ## Verified native boundaries
@@ -22,7 +35,7 @@ Read-only assessment, 10 September 2026. No configuration changes, installations
 
 ## Complete manifest ledger
 
-M = `roles/devbox/files/dot_codex/config.ai-config.json`; T = `roles/devbox/files/dot_codex/config.toml.j2`. All 22 manifest rules are enumerated below. Present means the current template supplies a value. Proposed ownership is a design candidate, not an accepted user decision; in particular, model and reasoning may remain fixed if the user wants them fixed.
+M = `roles/devbox/files/dot_codex/config.ai-config.json`; T = `roles/devbox/files/dot_codex/config.toml.j2`. All 21 manifest rules are enumerated below. Present means the current template supplies a value. Proposed ownership is a design candidate, not an accepted user decision; in particular, model and reasoning may remain fixed if the user wants them fixed.
 
 | Rule | Recorded scope / M line | Present / T line | Existing or native writer boundary | Ownership candidate, requiring acceptance |
 | --- | --- | --- | --- | --- |
@@ -36,18 +49,18 @@ M = `roles/devbox/files/dot_codex/config.ai-config.json`; T = `roles/devbox/file
 | `sandbox_workspace_write` | shared / 34 | network_access=true / 12–13 | broad subtree can include machine paths and session permissions | split portable flags from local writable roots if those appear |
 | `shell_environment_policy` | local-state / 38 | absent | host environment/security configuration | leave native/local; never infer values from another host |
 | `otel` | shared / 42 | six fields / 15–22 | ai-config; user-level host integration | repository-owned integration, with parameterised host/environment values |
-| `otel.environment` | environment / 46–48 | devbox_active_profile / 16 | Ansible profile binding | retain explicit environment binding |
-| `plugins` | shared / 51 | eleven enabled declarations / 41–74 | ai-config declarations plus native plugin commands/UI | portable desired plugin list and native enablement can collide; choose writer per plugin/field |
-| `marketplaces` | runtime / 55 | absent | native marketplace commands invoked by provisioning | native materialisation; desired pins belong to Ansible data |
-| `desktop` | local-state / 59 | absent | desktop preference controls | native/local |
-| `tui` | shared / 63 | absent | native appearance controls can save preferences | classify desired portable appearance separately if needed |
-| `tui.model_availability_nux` | runtime / 67 | absent | native onboarding state | native/runtime |
-| `tool_suggest` | shared / 71 | disabled_tools array / 25–26 | ai-config; UI writer not established in this inspection | repository desired suppression list or native preference; explicit decision |
-| `skills.config` | shared / 75 | absent | native skills/config/write and path enablement | native path state unless a portable identifier/path binding is defined |
-| `mcp_servers` | runtime / 79 | absent | native MCP/app setup; may contain local executable and callback paths | native/runtime for current setup; portable named servers could be separately owned if requested |
-| `projects` | local-state / 83 | absent | native project trust and machine paths | native/local |
-| `notify` | local-state / 87 | absent | machine notification commands; exact local writer unverified | native/local |
-| `notice` | runtime / 91 | absent | native notices/onboarding | native/runtime |
+| `otel.environment` | *(no rule; covered by `otel`)* | `{{ devbox_active_profile }}` / 17 | rendered by ai-config from the selected profile | keep the expression in the source; provenance stops a live value replacing it |
+| `plugins` | shared / 46 | eleven enabled declarations / 41–74 | ai-config declarations plus native plugin commands/UI | portable desired plugin list and native enablement can collide; choose writer per plugin/field |
+| `marketplaces` | runtime / 50 | absent | native marketplace commands invoked by provisioning | native materialisation; desired pins belong to Ansible data |
+| `desktop` | local-state / 54 | absent | desktop preference controls | native/local |
+| `tui` | shared / 58 | absent | native appearance controls can save preferences | classify desired portable appearance separately if needed |
+| `tui.model_availability_nux` | runtime / 62 | absent | native onboarding state | native/runtime |
+| `tool_suggest` | shared / 66 | disabled_tools array / 25–26 | ai-config; UI writer not established in this inspection | repository desired suppression list or native preference; explicit decision |
+| `skills.config` | shared / 70 | absent | native skills/config/write and path enablement | native path state unless a portable identifier/path binding is defined |
+| `mcp_servers` | runtime / 74 | absent | native MCP/app setup; may contain local executable and callback paths | native/runtime for current setup; portable named servers could be separately owned if requested |
+| `projects` | local-state / 78 | absent | native project trust and machine paths | native/local |
+| `notify` | local-state / 82 | absent | machine notification commands; exact local writer unverified | native/local |
+| `notice` | runtime / 86 | absent | native notices/onboarding | native/runtime |
 
 Manifest scope is actual repository policy, not proof of the vendor's sole writer. Longest matching prefix wins (`scripts/ai_config/core.py:127–147`), so broad shared tables cover future descendants unless an explicit exception applies. Unclassified fields stay unclassified rather than automatically portable (tests: `tests/scripts/test_ai_config_codex_manifest.py:286–294`).
 
@@ -62,7 +75,7 @@ The template has exactly 11 top-level keys: the five scalar rows `personality`, 
 All current child fields:
 
 - `sandbox_workspace_write.network_access=true` (T12–13).
-- `otel.environment`, `log_user_prompt=true`, `exporter.otlp-grpc.endpoint=http://127.0.0.1:4317`, `trace_exporter=none`, `metrics_exporter.otlp-grpc.endpoint` at the same loopback endpoint, and `resource_attributes[otelbox.telemetry.class]=llm` (T15–22). T21 records an unresolved upstream dependency for resource attributes; do not present that attribute as proven effective.
+- `otel.environment` (the Jinja expression `{{ devbox_active_profile }}`, rendered at apply time), `log_user_prompt=true`, `exporter.otlp-grpc.endpoint=http://127.0.0.1:4317`, `trace_exporter=none`, `metrics_exporter.otlp-grpc.endpoint` at the same loopback endpoint, and `resource_attributes[otelbox.telemetry.class]=llm` (T15–22). T21 records an unresolved upstream dependency for resource attributes; do not present that attribute as proven effective.
 - `tool_suggest.disabled_tools`: one `{id=github@openai-curated-remote,type=plugin}` item (T25–26).
 - `features.hooks=true`, `features.js_repl=false`, `features.memories=true` (T28–31).
 - Hook events: `PostToolUse`, `PreCompact`, `PreToolUse`, `SessionEnd`, `SessionStart`, `Stop`. Each calls `~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py <event>`; all handlers are command hooks, PostToolUse is asynchronous, and Pre/PostToolUse have `.*` matchers (T33–39).
@@ -94,4 +107,4 @@ Keep `.codex/config.toml` native writable state separate from repo assets in `.c
 Return to the [ownership and composition study](ai-config-ownership-and-composition.md). Source labels use repository-relative paths; `ai_config/` abbreviates `scripts/ai_config/`. Line numbers refer to commit `8553b576f060209a729e1062c0a7ce5fefb99f25`.
 
 - [Reconciler modules](../../scripts/ai_config/) and [behavioural tests](../../tests/scripts/).
-- [Codex manifest](../../roles/devbox/files/dot_codex/config.ai-config.json), [source](../../roles/devbox/files/dot_codex/config.toml.j2), [assets](../../roles/devbox/files/dot_codex/) and [deployment](../../roles/devbox/tasks/install_codex_configs.yml).
+- [Codex manifest](../../roles/devbox/files/dot_codex/config.ai-config.json), [source](../../roles/devbox/files/dot_codex/config.toml.j2), [templating](../../scripts/ai_config/templating.py), [assets](../../roles/devbox/files/dot_codex/) and [deployment](../../roles/devbox/tasks/install_codex_configs.yml).

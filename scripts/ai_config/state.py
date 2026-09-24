@@ -20,8 +20,11 @@ _CODEX_SHARED_MODEL_AND_REASONING = (
     "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411"
 )
 _CODEX_REASONING_PREFERENCE = "e3c3c98f6bf7b950a3c2e827844d0755601f9a0e7c9de23a2d69de0e7e77a6ea"
+# Tracks the current codex manifest. It moved when otel.environment lost its
+# profile binding: the value is now Jinja in config.toml.j2, and a templated leaf
+# is recognised from the rendered document rather than from a manifest rule.
 _CODEX_MODEL_AND_REASONING_PREFERENCES = (
-    "37737a8fa97d04d5fa796b3faf7c2df3ce20b445f139582abd60c978301e39ec"
+    "f6de9f0d247548b2dfb5c991c5a2db8424c16d71751633c81c03ea823d612f61"
 )
 # Exact manifest transitions preserve unrelated baseline history, so preference
 # demotion cannot turn existing live edits into a fresh initialisation.

@@ -39,6 +39,14 @@ devbox_projects_dir: "$HOME/Projects"
 # re-running the full personal/work playbook.
 devbox_active_profile: "unknown"
 
+# Langfuse `user_id`, overridden in profiles/{personal,work}.yml. Several engines
+# write into one Langfuse project and each stamps its own identity unless given a
+# shared one, which makes a single session show as several users. Reaches the
+# engine settings as a Jinja expression that scripts/ai-config renders from this
+# file plus the profile overlay, and the shell wrappers through LANGFUSE_USER_ID
+# in devbox_shell.env (shell.yml).
+devbox_langfuse_user_id: "unknown"
+
 # Profile extension points — overridden in profiles/*.yml.
 # Lists are concatenated with base lists in task files via `+`.
 devbox_extra_brew: []

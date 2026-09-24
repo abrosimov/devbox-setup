@@ -305,6 +305,7 @@ def _build_explicit_plan(arguments: CommandArguments) -> ReconciliationPlan:
             arguments.engine,
             repo_root=arguments.repo_root,
             home=arguments.home,
+            profile=arguments.profile,
             base_path=arguments.base,
         )
     if arguments.repo is None or arguments.live is None or arguments.manifest is None:
@@ -494,6 +495,7 @@ def _change_json(change: Change) -> dict[str, object]:
         "path": list(change.path),
         "kind": change.kind.value,
         "scope": change.scope.value if change.scope is not None else None,
+        "templated": change.templated,
         **values,
     }
 
@@ -651,4 +653,7 @@ def _print_status(plan: ReconciliationPlan, *, state_missing: bool) -> None:
 def _print_diff(plan: ReconciliationPlan) -> None:
     for change in plan.changes:
         path = ".".join(change.path)
-        print(f"{change.kind.value}\t{path}")
+        # Naming the provenance is the whole report for a templated path: the
+        # live value is about to be overwritten and will not reach the source.
+        origin = "\ttemplated" if change.templated else ""
+        print(f"{change.kind.value}\t{path}{origin}")

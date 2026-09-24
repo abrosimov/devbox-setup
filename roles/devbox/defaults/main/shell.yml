@@ -54,6 +54,12 @@ devbox_shell:
     - { name: AION_AUTOPOIESEON, value: "{{ devbox_projects_dir }}" }
     - { name: PROJECTS_DIR, value: "{{ devbox_projects_dir }}" }
 
+    # Shared Langfuse identity. agy.fish reads it from here because that function
+    # is copied rather than templated. `scripts/ai-config` does not: it renders
+    # devbox_langfuse_user_id straight from this file and the profile overlay, so
+    # a stale shell cannot change what it deploys.
+    - { name: LANGFUSE_USER_ID, value: "{{ devbox_langfuse_user_id }}" }
+
   path_prepend:
     - "$HOME/bin"
     - "$HOME/.local/bin"

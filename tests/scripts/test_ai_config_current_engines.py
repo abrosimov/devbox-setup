@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -9,10 +8,11 @@ import pytest
 from ai_config.adapters import (
     EngineKind,
     engine_adapter,
-    load_snapshot,
+    load_repository_document,
     parse_engine_manifest,
     resolve_engine_paths,
 )
+from ai_config.bindings import BindingProviders
 from ai_config.core import (
     HOME_BINDING_SENTINEL,
     BindingProvider,
@@ -26,6 +26,8 @@ from ai_config.decisions import DecisionSet
 from ai_config.model import SemanticSnapshot, to_plain_value
 from ai_config.resolution import OperationMode
 from ai_config.service import inspect_engine, operate_engine
+from ai_config.templating import load_template_variables
+from ai_config_fixtures import copy_engine_documents
 
 if TYPE_CHECKING:
     from ai_config.model import FieldPath
@@ -74,19 +76,12 @@ def engine_declarations(
         engine,
         (repo_root / adapter.manifest_relative_path).read_bytes(),
     )
-    repository = load_snapshot(
+    repository = load_repository_document(
         repo_root / adapter.repository_relative_path,
         adapter.configuration_format,
+        load_template_variables(repo_root, "personal"),
     )
-    return sentinel_declarations(repository), home_binding_declarations(manifest)
-
-
-def copy_engine_documents(engine: EngineKind, repo_root: Path) -> None:
-    adapter = engine_adapter(engine)
-    for relative_path in (adapter.repository_relative_path, adapter.manifest_relative_path):
-        destination = repo_root / relative_path
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(REPO_ROOT / relative_path, destination)
+    return sentinel_declarations(repository.snapshot), home_binding_declarations(manifest)
 
 
 @pytest.mark.parametrize("engine", tuple(EngineKind))
@@ -98,6 +93,7 @@ def test_current_repository_documents_apply_and_converge_in_an_isolated_home(
     isolated_home = tmp_path / "home"
     state_root = tmp_path / "state"
     copy_engine_documents(engine, isolated_repo)
+    providers = BindingProviders(home=isolated_home)
 
     first = operate_engine(
         engine,
@@ -108,6 +104,7 @@ def test_current_repository_documents_apply_and_converge_in_an_isolated_home(
         mode=OperationMode.APPLY,
         decisions=DecisionSet(()),
         check=False,
+        providers=providers,
     )
     second = operate_engine(
         engine,
@@ -118,6 +115,7 @@ def test_current_repository_documents_apply_and_converge_in_an_isolated_home(
         mode=OperationMode.APPLY,
         decisions=DecisionSet(()),
         check=False,
+        providers=providers,
     )
     inspection = inspect_engine(
         engine,
@@ -125,6 +123,7 @@ def test_current_repository_documents_apply_and_converge_in_an_isolated_home(
         home=isolated_home,
         profile="personal",
         state_root=state_root,
+        providers=providers,
     )
     paths = resolve_engine_paths(engine, repo_root=isolated_repo, home=isolated_home)
 

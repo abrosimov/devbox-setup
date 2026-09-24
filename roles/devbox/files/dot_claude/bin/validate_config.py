@@ -6,7 +6,7 @@ Checks:
   skills               Skill frontmatter fields, name/directory match
   commands             Command frontmatter fields, techne- filename prefix
   command-refs         techne- namespace integrity (dangling refs, bare invocations)
-  json                 JSON validity for schemas/, hooks.json, settings.json
+  json                 JSON validity for schemas/, hooks.json, settings.json.j2
   references           Broken markdown links in agent files
   stale                Old-style doc references, formatting issues
   grounding            Builder skill grounding reference files
@@ -16,7 +16,7 @@ Checks:
   trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
   fpf-refs             FPF and NSTD ids cited by their skills resolve in bundled references
   hook-hermeticity     hook commands run from the pinned venv, never resolving deps at call time
-  hook-events          settings.json hook events are real Claude Code events; logger argv matches
+  hook-events          settings.json.j2 hook events are real Claude Code events; logger argv matches
 
 Usage:
   validate-config.py                           # all checks, ~/.claude root
@@ -328,7 +328,10 @@ def check_json_files(root: Path) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
 
-    for name in ("settings.json", "hooks.json"):
+    # settings.json.j2 is a Jinja template, but every expression sits inside a
+    # string value, so it stays valid JSON unrendered — which is also what
+    # scripts/ai-config relies on to write captured values back into it.
+    for name in ("settings.json.j2", "hooks.json"):
         path = root / name
         if path.exists():
             try:
@@ -941,7 +944,7 @@ _AMBIENT_INTERPRETERS = re.compile(r"^(?:/usr/bin/env\s+)?(?:python|python3|node
 def _iter_hook_commands(path: Path) -> Iterator[tuple[str, str]]:
     """Yield (event, command) for every hook entry in a hook-bearing document.
 
-    Handles both shapes: a settings.json carrying a top-level ``hooks`` key
+    Handles both shapes: a settings document carrying a top-level ``hooks`` key
     (where Claude Code actually reads user hooks from) and a plugin's bare
     hooks/hooks.json, whose root object is the event map itself.
     """
@@ -1028,7 +1031,9 @@ def _repo_hook_files(root: Path) -> list[Path]:
     one would report a clean bill of health for a file that never executes.
     """
     return [
-        path for name in ("settings.json", "settings.local.json") if (path := root / name).is_file()
+        path
+        for name in ("settings.json.j2", "settings.local.json")
+        if (path := root / name).is_file()
     ]
 
 
@@ -1075,7 +1080,7 @@ def _scan_plugin_hooks(plugin_cache: Path) -> list[str]:
 
 # The hook events this machine's Claude Code actually dispatches, verified against
 # the installed binary rather than the published reference: the docs describe the
-# newest release, and settings.json is rejected wholesale when it names an event the
+# newest release, and the settings document is rejected wholesale when it names an event the
 # running version does not know (that is how PreModelSwitch/PostModelSwitch, absent
 # from 2.1.246, got caught). Re-derive after an upgrade with
 #   strings ~/.local/share/claude/versions/<version> | grep -oE '\bPreToolUse\b|...'
@@ -1129,7 +1134,7 @@ def _logged_event(command: str) -> str | None:
 
 
 def check_hook_events(root: Path) -> tuple[list[str], list[str]]:
-    """Event keys under settings.json `hooks` name real Claude Code hook events.
+    """Event keys under the settings `hooks` table name real Claude Code hook events.
 
     Two failure modes, both silent at runtime: an unrecognised event key (the
     hook never fires) and a universal_logger.py invocation whose argv[1] does

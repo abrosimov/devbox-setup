@@ -1,0 +1,113 @@
+name: live-engines
+
+# Runs tests/live/ against the real claude, codex and agy binaries: generate this
+# repository's configuration into a throwaway home, start the engine against it,
+# and assert the engine observably honoured it. None of these tests needs an
+# account or a reachable API, so the only question per engine is installation.
+#
+# Why a separate workflow from ci.yml: this one installs three third-party CLIs
+# from three different channels and is therefore slower and more exposed to
+# upstream outages than a lint-and-unit-test job should be. ci.yml still runs the
+# hermetic half (`make test-live-guard`), which has no binary dependency.
+#
+# What actually gets exercised here, per engine:
+#   claude — npm, `@anthropic-ai/claude-code`. Linux is a supported target.
+#   codex  — npm, `@openai/codex`. Linux is a supported target; needs Node 22+.
+#   agy    — best effort. The repository installs it from a macOS-only Homebrew
+#            cask (`antigravity-cli`), and its only Linux channel is Google's
+#            unpinned `install.sh`, which publishes no checksum manifest and no
+#            version flag. So CI exercises a different distribution channel from
+#            production, and a failure to install it is not this repository's
+#            bug. Hence `continue-on-error` on the install and agy's absence from
+#            ENGINES below: if it lands, its tests run; if not, they skip with a
+#            named reason and the job summary says which happened.
+#
+# ENGINES is the anti-silent-green mechanism. `make test-live` turns a skip of a
+# named engine into a failure, so a runner whose npm install quietly produced
+# nothing fails here rather than reporting green over an all-skipped suite.
+
+on:
+  schedule:
+    # Weekly, Monday 07:00 UTC — an hour after brew-audit, so a bad Monday is
+    # two separate job failures rather than one confusing pile.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "tests/live/**"
+      - "roles/devbox/files/dot_claude/settings.json.j2"
+      - "roles/devbox/files/dot_codex/config.toml.j2"
+      - "roles/devbox/files/dot_agy/cli/settings.json.j2"
+      - "roles/devbox/files/dot_agy/config/hooks.json.j2"
+      - "scripts/ai_config/**"
+      - "scripts/ai-config"
+      - "scripts/codex_hook_trust/**"
+      - "scripts/codex-hook-trust.py"
+      - ".github/workflows/live-engines.yml"
+      - "Makefile"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-engines-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Every engine this job installs from a channel it controls. agy is absent on
+  # purpose — see the header.
+  ENGINES: claude,codex
+
+jobs:
+  live:
+    name: Engines honour the generated configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      # The codex npm package refuses to run on Node 20, which is what the
+      # ubuntu-latest image ships.
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: Install claude and codex
+        run: npm install -g @anthropic-ai/claude-code @openai/codex
+
+      - name: Install agy (best effort — see workflow header)
+        id: agy
+        continue-on-error: true
+        run: |
+          curl -fsSL https://antigravity.google/cli/install.sh | bash
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+
+      - name: Report which engines this runner has
+        run: |
+          {
+            echo "### Engines available to tests/live/"
+            echo
+            echo "| engine | version | required |"
+            echo "| --- | --- | --- |"
+            for engine in claude codex agy; do
+              version="$("$engine" --version 2>/dev/null | tail -1)" || version=""
+              case ",${ENGINES}," in
+                *",${engine},"*) required="yes — a skip fails this job" ;;
+                *) required="no — skips are reported, not failed" ;;
+              esac
+              echo "| ${engine} | ${version:-**not installed**} | ${required} |"
+            done
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      # Skips are printed by pytest's -ra summary with the reason each engine gave.
+      # A skip of an engine named in ENGINES is a failure, not a skip.
+      - name: make test-live
+        run: make test-live ENGINES="${ENGINES}"

@@ -5,19 +5,21 @@ from pathlib import Path
 
 import pytest
 from ai_config import (
-    BindingProvider,
     Change,
     ChangeKind,
+    ConfigurationFormat,
     FieldManifest,
     FieldScope,
     ReconciliationPlan,
     SemanticSnapshot,
+    build_repository_document,
+    load_template_variables,
     plan_reconciliation,
     to_plain_value,
 )
 from ai_config.adapters import EngineKind, parse_engine_manifest
+from ai_config_fixtures import REPO_ROOT
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_codex" / ("config.ai-config.json")
 CONFIG_TEMPLATE_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_codex" / ("config.toml.j2")
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "ai_config" / "codex"
@@ -33,21 +35,35 @@ class TestCodexManifestCoverage:
         source = CONFIG_TEMPLATE_PATH.read_text(encoding="utf-8")
         return SemanticSnapshot.from_value(tomllib.loads(source))
 
-    def test_current_template_parses_with_quoted_profile_placeholder(
+    def test_unrendered_template_parses_with_a_quoted_profile_placeholder(
         self,
         repository: SemanticSnapshot,
     ) -> None:
+        """Only the unrendered document can absorb a captured value.
+
+        Its structure is what a capture edits, so Jinja has to stay inside a
+        quoted TOML value rather than spanning keys or tables.
+        """
         values = {field.path: to_plain_value(field.value) for field in repository.semantic_fields()}
 
         assert values[("otel", "environment")] == "{{ devbox_active_profile }}"
 
-    def test_environment_uses_explicit_profile_binding(self, manifest: FieldManifest) -> None:
-        rule = manifest.rule_for(("otel", "environment"))
+    @pytest.mark.parametrize("profile", ["personal", "work"])
+    def test_environment_renders_the_selected_profile_and_is_the_only_templated_path(
+        self,
+        profile: str,
+    ) -> None:
+        document = build_repository_document(
+            CONFIG_TEMPLATE_PATH.read_bytes(),
+            ConfigurationFormat.TOML,
+            load_template_variables(REPO_ROOT, profile),
+        )
+        values = {
+            field.path: to_plain_value(field.value) for field in document.rendered.semantic_fields()
+        }
 
-        assert rule is not None
-        assert rule.binding is not None
-        assert rule.binding.provider is BindingProvider.PROFILE
-        assert rule.binding.key == "devbox_active_profile"
+        assert document.templated_paths == {("otel", "environment")}
+        assert values[("otel", "environment")] == profile
 
     def test_every_current_repository_field_is_classified(
         self,
@@ -78,7 +94,7 @@ class TestCodexManifestCoverage:
             (("otel", "exporter", "otlp-grpc", "endpoint"), FieldScope.SHARED),
             (("otel", "trace_exporter"), FieldScope.SHARED),
             (("otel", "metrics_exporter", "otlp-grpc", "endpoint"), FieldScope.SHARED),
-            (("otel", "environment"), FieldScope.ENVIRONMENT),
+            (("otel", "environment"), FieldScope.SHARED),
         ],
     )
     def test_current_repository_field_scope(
@@ -236,14 +252,38 @@ class TestCodexManifestReconciliation:
         assert changes[path].kind is ChangeKind.CAPTURE_LIVE
         assert changes[path].scope is FieldScope.SHARED
 
-    def test_bound_environment_change_applies_repository(
-        self,
-        changes: dict[tuple[str, ...], Change],
-    ) -> None:
-        path = ("otel", "environment")
+    def test_templated_environment_applies_repository_instead_of_capturing_live(self) -> None:
+        """Same fixture, same divergence, opposite outcome from the templated flag.
 
-        assert changes[path].kind is ChangeKind.APPLY_REPO
-        assert changes[path].scope is FieldScope.ENVIRONMENT
+        Without it the live value would be captured into the TOML source, which
+        would replace `{{ devbox_active_profile }}` with one profile's name.
+        """
+        path = ("otel", "environment")
+        manifest = parse_engine_manifest(EngineKind.CODEX, MANIFEST_PATH.read_bytes())
+        converged = SemanticSnapshot.from_value({"otel": {"environment": "personal"}})
+        live = SemanticSnapshot.from_value({"otel": {"environment": "hand-edited"}})
+
+        literal = plan_reconciliation(
+            base=converged,
+            repo=converged,
+            live=live,
+            manifest=manifest,
+        )
+        templated = plan_reconciliation(
+            base=converged,
+            repo=converged,
+            live=live,
+            manifest=manifest,
+            templated_paths=frozenset({path}),
+        )
+
+        literal_change = next(change for change in literal.changes if change.path == path)
+        templated_change = next(change for change in templated.changes if change.path == path)
+        assert literal_change.kind is ChangeKind.CAPTURE_LIVE
+        assert literal_change.templated is False
+        assert templated_change.kind is ChangeKind.APPLY_REPO
+        assert templated_change.templated is True
+        assert templated_change.scope is FieldScope.SHARED
 
     @pytest.mark.parametrize(
         "path",

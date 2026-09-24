@@ -126,7 +126,7 @@ class TestFieldManifest:
             FieldRule(path=path, scope=FieldScope.SHARED)
 
     def test_bindings_are_limited_to_environment_fields(self) -> None:
-        binding = FieldBinding(provider=BindingProvider.ENVIRONMENT, key="API_TOKEN")
+        binding = FieldBinding(provider=BindingProvider.KEYCHAIN, key="service/account")
 
         with pytest.raises(ManifestDefinitionError):
             FieldRule(path=("token",), scope=FieldScope.SHARED, binding=binding)
@@ -284,23 +284,97 @@ class TestThreeWayPlanner:
         manifest = FieldManifest(
             rules=(
                 FieldRule(
-                    path=("environment",),
+                    path=("token",),
                     scope=FieldScope.ENVIRONMENT,
                     binding=FieldBinding(
-                        provider=BindingProvider.PROFILE,
-                        key="devbox_active_profile",
+                        provider=BindingProvider.KEYCHAIN,
+                        key="devbox-example/account",
                     ),
                 ),
             )
         )
         plan = plan_reconciliation(
-            base=snapshot({"environment": "personal"}),
-            repo=snapshot({"environment": "work"}),
-            live=snapshot({"environment": "locally-edited"}),
+            base=snapshot({"token": "placeholder"}),
+            repo=snapshot({"token": "placeholder"}),
+            live=snapshot({"token": "locally-edited"}),
             manifest=manifest,
         )
 
         assert plan.changes[0].kind is ChangeKind.APPLY_REPO
+
+    @pytest.mark.parametrize(
+        ("base_value", "repo_value", "live_value"),
+        [
+            ("personal", "personal", "hand-edited"),
+            ("personal", "work", "hand-edited"),
+        ],
+    )
+    def test_templated_field_is_always_applied_from_the_rendered_repository(
+        self,
+        base_value: str,
+        repo_value: str,
+        live_value: str,
+    ) -> None:
+        """Every three-way shape that would otherwise write to the source.
+
+        base == repo reaches capture-live and base != repo reaches conflict;
+        both would put the live value where a Jinja expression stands.
+        """
+        plan = plan_reconciliation(
+            base=snapshot({"value": base_value}),
+            repo=snapshot({"value": repo_value}),
+            live=snapshot({"value": live_value}),
+            manifest=single_rule(FieldScope.SHARED),
+            templated_paths=frozenset({("value",)}),
+        )
+
+        assert plan.changes[0].kind is ChangeKind.APPLY_REPO
+        assert plan.changes[0].templated is True
+
+    def test_templated_ordered_set_is_applied_rather_than_merged(self) -> None:
+        """A merge writes its result into the source as well as into live."""
+        manifest = FieldManifest(
+            rules=(
+                FieldRule(
+                    path=("permissions",),
+                    scope=FieldScope.SHARED,
+                    strategy=FieldStrategy.ORDERED_SET,
+                ),
+            )
+        )
+        plan = plan_reconciliation(
+            base=snapshot({"permissions": ["personal"]}),
+            repo=snapshot({"permissions": ["personal"]}),
+            live=snapshot({"permissions": ["personal", "added-live"]}),
+            manifest=manifest,
+            templated_paths=frozenset({("permissions",)}),
+        )
+
+        assert plan.changes[0].kind is ChangeKind.APPLY_REPO
+        assert plan.changes[0].merged is None
+
+    def test_templated_field_without_divergence_stays_unchanged(self) -> None:
+        plan = plan_reconciliation(
+            base=snapshot({"value": "personal"}),
+            repo=snapshot({"value": "personal"}),
+            live=snapshot({"value": "personal"}),
+            manifest=single_rule(FieldScope.SHARED),
+            templated_paths=frozenset({("value",)}),
+        )
+
+        assert plan.changes[0].kind is ChangeKind.UNCHANGED
+
+    def test_a_templated_field_with_no_manifest_rule_stays_unknown(self) -> None:
+        """Provenance does not classify: an undeclared key still blocks writes."""
+        plan = plan_reconciliation(
+            base=snapshot({}),
+            repo=snapshot({"value": "personal"}),
+            live=snapshot({"value": "hand-edited"}),
+            manifest=FieldManifest(rules=()),
+            templated_paths=frozenset({("value",)}),
+        )
+
+        assert plan.changes[0].kind is ChangeKind.UNKNOWN
 
     def test_changes_are_sorted_and_counted_by_kind(self) -> None:
         plan = plan_reconciliation(
@@ -467,7 +541,7 @@ class TestReadOnlyCli:
     ) -> None:
         repo_root = tmp_path / "repository"
         home = tmp_path / "home"
-        repository = repo_root / "roles/devbox/files/dot_claude/settings.json"
+        repository = repo_root / "roles/devbox/files/dot_claude/settings.json.j2"
         manifest = repo_root / "roles/devbox/files/dot_claude/settings.ai-config.json"
         live = home / ".claude/settings.json"
         for path in (repository, manifest, live):
@@ -563,7 +637,7 @@ class TestReadOnlyCli:
                         {
                             "path": "token",
                             "scope": "environment",
-                            "binding": "env:API_TOKEN",
+                            "binding": "keychain:devbox-example/account",
                             "secret": True,
                         }
                     ]

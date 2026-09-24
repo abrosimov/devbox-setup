@@ -11,7 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 TASKS_PATH = REPO_ROOT / "roles/devbox/tasks/install_configs.yml"
 AGY_SETTINGS_PATH = REPO_ROOT / "roles/devbox/files/dot_agy/cli/settings.json.j2"
 CLAUDE_DEFAULTS_PATH = REPO_ROOT / "roles/devbox/defaults/main/claude.yml"
-CLAUDE_SETTINGS_PATH = REPO_ROOT / "roles/devbox/files/dot_claude/settings.json"
+CLAUDE_SETTINGS_PATH = REPO_ROOT / "roles/devbox/files/dot_claude/settings.json.j2"
 AI_ROOT = REPO_ROOT / "roles/devbox/files/dot_ai"
 
 type Task = dict[str, object]
@@ -56,6 +56,20 @@ class TestClaudeSettingsWriter:
                     copy_sources.append(source)
 
         assert "settings.json" not in copy_sources
+
+    def test_reconcile_task_passes_no_environment_to_the_reconciler(
+        self,
+        tasks: tuple[Task, ...],
+    ) -> None:
+        """An `environment:` here would make the playbook and `make claude-diff` differ.
+
+        The reconciler resolves per-profile values from the repository, so the
+        two invocations render the same document. Feeding the playbook run an
+        extra variable the standalone run cannot see brings the divergence back.
+        """
+        task = task_named(tasks, "Reconcile Claude settings")
+
+        assert "environment" not in task
 
     def test_repository_settings_match_declared_plugin_state(self) -> None:
         defaults = yaml.safe_load(CLAUDE_DEFAULTS_PATH.read_text(encoding="utf-8"))

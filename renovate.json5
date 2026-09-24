@@ -1,6 +1,15 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: ["config:recommended"],
+
+  // The shared preset carries the cross-repository policy: a seven-day
+  // quarantine with the two options that make it binding, fourteen days on a
+  // major, per-ecosystem grouping, both vulnerability channels, and automerge
+  // on everything that is not a decision. That quarantine is what this
+  // repository most needs from it — the artefacts here are installed on a
+  // workstation by an unattended playbook run, so a bad release has to be
+  // found by somebody else's machine rather than by ours. Only what is
+  // specific to this repository is restated below.
+  extends: ["github>abrosimov/renovate-config#v1.0.0"],
 
   // Every built-in manager runs. In this repository that means, concretely:
   // pyproject.toml + uv.lock at the root and under
@@ -10,17 +19,6 @@
   // devcontainer.json). The template is a scaffold rather than a live
   // dependency, but its base image going stale is a real defect for every
   // project generated from it, so it is deliberately left in scope.
-
-  // Nothing is proposed until a release has survived a week in the wild. This
-  // is the point of the whole configuration: the artefacts here are installed
-  // on a workstation by an unattended playbook run, so a bad release is found
-  // by the machine rather than by CI.
-  minimumReleaseAge: "7 days",
-
-  // Without this the age is advisory — Renovate opens the pull request straight
-  // away and merely marks the internal check as pending. `strict` withholds the
-  // branch and the pull request until the age is actually satisfied.
-  internalChecksFilter: "strict",
 
   customManagers: [
     {
@@ -48,12 +46,6 @@
   ],
 
   packageRules: [
-    {
-      // A major carries the breaking change by definition, so give it the far
-      // end of the window rather than the near one.
-      matchUpdateTypes: ["major"],
-      minimumReleaseAge: "14 days",
-    },
     {
       // A bump here is never just a version bump: the deployed profile in
       // roles/devbox/files/.config/otelbox/edge/edge.yaml has to be reconciled

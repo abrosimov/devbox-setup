@@ -2,8 +2,9 @@
 # Managed .claude subdirectories. Each is rsynced one-way from the repo to
 # ~/.claude/<dir>/ with --delete scoped to that subdir, so host-side scratch
 # state under ~/.claude/ (projects/, plans/, memory/, plugins/, ...) is untouched.
-# Root files (CLAUDE.md, config.md) are copied separately; settings.json — which
-# carries the hooks block — is reconciled via `scripts/ai-config apply claude`.
+# Root files (CLAUDE.md, config.md) are copied separately; settings.json.j2 — which
+# carries the hooks block — is rendered and reconciled by
+# `scripts/ai-config apply claude`.
 # future_projects/ is intentionally absent: it is a host-only working area.
 devbox_ai_managed_dirs:
   - agents

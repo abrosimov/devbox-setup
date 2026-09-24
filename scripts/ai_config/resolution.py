@@ -82,11 +82,7 @@ def resolve_documents(
             copy_path(resolved_repository_configuration, live_configuration, change.path)
             applied.append(change.path)
             continue
-        rule = manifest.rule_for(change.path)
-        if rule is not None and (rule.binding is not None or rule.secret):
-            message = "bound or secret fields cannot be captured from live configuration"
-            raise ResolutionError(message)
-        copy_path(live_configuration, repository_configuration, change.path)
+        _capture_from_live(change, manifest, live_configuration, repository_configuration)
         captured.append(change.path)
 
     extra_decisions = {
@@ -103,6 +99,29 @@ def resolve_documents(
         required_decisions=tuple(required),
         unknown_paths=tuple(unknown),
     )
+
+
+def _capture_from_live(
+    change: Change,
+    manifest: FieldManifest,
+    live: MutableConfiguration,
+    repository: MutableConfiguration,
+) -> None:
+    """Move one live value into the repository document.
+
+    Both guards are unreachable while _plan_field routes templated and bound
+    paths to apply-repo. They stay here because this is the single point where a
+    resolved value could enter a portable source declaration, so a later
+    classification change cannot open that route silently.
+    """
+    if change.templated:
+        message = "templated fields cannot be captured from live configuration"
+        raise ResolutionError(message)
+    rule = manifest.rule_for(change.path)
+    if rule is not None and (rule.binding is not None or rule.secret):
+        message = "bound or secret fields cannot be captured from live configuration"
+        raise ResolutionError(message)
+    copy_path(live, repository, change.path)
 
 
 def _apply_merged_change(

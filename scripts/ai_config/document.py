@@ -4,11 +4,14 @@ import hashlib
 import json
 import re
 import tomllib
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from .adapters import ConfigurationFormat
 from .core import FieldManifest, FieldScope, MissingValue
 from .model import FieldPath, SemanticSnapshot, SnapshotError, to_plain_value
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 type MutableConfiguration = dict[str, object]
 
@@ -73,6 +76,15 @@ def copy_path(
         remove_value(destination, path)
     else:
         assign_value(destination, path, value)
+
+
+def overlay_paths(
+    source: MutableConfiguration,
+    destination: MutableConfiguration,
+    paths: Iterable[FieldPath],
+) -> None:
+    for path in paths:
+        copy_path(source, destination, path)
 
 
 def portable_projection(

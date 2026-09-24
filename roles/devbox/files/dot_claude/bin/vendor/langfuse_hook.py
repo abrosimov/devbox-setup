@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#   "langfuse>=4.0,<5",
+#   "langfuse>=4.7,<5",
 # ]
 # ///
 """
@@ -40,13 +40,65 @@ DEBUG = _opt("CC_LANGFUSE_DEBUG").lower() == "true"
 SKILL_TAGS = (_opt("CC_LANGFUSE_SKILL_TAGS") or "true").lower() == "true"
 CAPTURE_SKILL_CONTENT = _opt("CC_LANGFUSE_CAPTURE_SKILL_CONTENT").lower() == "true"
 CAPTURE_IMAGES = (_opt("CC_LANGFUSE_CAPTURE_IMAGES") or "true").lower() == "true"
+OPERATOR_TAGS_VAR = "CC_LANGFUSE_TRACE_TAGS"
 try:
     MAX_CHARS = int(_opt("CC_LANGFUSE_MAX_CHARS") or "20000")
 except ValueError:
     MAX_CHARS = 20000
 
+MAX_OPERATOR_TAGS = 20
+MAX_OPERATOR_TAG_CHARS = 200
+
 # Bound for unresolved task notifications kept in the state file between runs.
 MAX_PENDING_TASK_NOTIFICATIONS = 50
+INTERRUPTED_TURN_MARKER = "[Request interrupted by user]"
+
+def parse_operator_tags(raw: str) -> Tuple[List[str], str]:
+    """Parse caller tags from a JSON array or a comma-separated list.
+
+    Returns the tags and a warning naming what was dropped. Bad input yields no
+    tags and a warning, never an exception: telemetry stays best-effort.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return [], ""
+    notes: List[str] = []
+    values: List[Any]
+    if raw.startswith("{"):
+        return [], f"{OPERATOR_TAGS_VAR}: ignored, JSON is not an array"
+    if raw.startswith("["):
+        try:
+            parsed = json.loads(raw)
+        except ValueError:
+            return [], f"{OPERATOR_TAGS_VAR}: ignored, not valid JSON"
+        if not isinstance(parsed, list):
+            return [], f"{OPERATOR_TAGS_VAR}: ignored, JSON is not an array"
+        values = parsed
+    else:
+        values = raw.split(",")
+
+    tags: List[str] = []
+    for value in values:
+        if not isinstance(value, (str, int, float, bool)):
+            notes.append("non-scalar entries")
+            continue
+        tag = str(value).strip()
+        if not tag:
+            continue
+        if len(tag) > MAX_OPERATOR_TAG_CHARS:
+            notes.append(f"entries over {MAX_OPERATOR_TAG_CHARS} characters")
+            continue
+        if tag in tags:
+            continue
+        tags.append(tag)
+
+    if len(tags) > MAX_OPERATOR_TAGS:
+        notes.append(f"everything past the first {MAX_OPERATOR_TAGS}")
+        tags = tags[:MAX_OPERATOR_TAGS]
+    warning = f"{OPERATOR_TAGS_VAR}: dropped {', '.join(dict.fromkeys(notes))}" if notes else ""
+    return tags, warning
+
+OPERATOR_TAGS, _OPERATOR_TAGS_WARNING = parse_operator_tags(_opt(OPERATOR_TAGS_VAR))
 
 
 # ----------------- Paths -----------------
@@ -398,6 +450,10 @@ def is_session_end_hook_payload(payload: Dict[str, Any]) -> bool:
 
 
 # ----------------- State file concurrency control -----------------
+def get_session_lock_path(key: str) -> Path:
+    return STATE_DIR / f"langfuse_state.{key[:16]}.lock"
+
+
 class FileLock:
     def __init__(self, path: Path, timeout_s: float = 2.0):
         self.path = path
@@ -523,6 +579,23 @@ def update_session_state(global_state: Dict[str, Any], key: str, session_state: 
         "updated": datetime.now(timezone.utc).isoformat(),
     }
 
+def sweep_stale_session_locks(state: Dict[str, Any], cutoff: datetime) -> None:
+    live = {k[:16] for k in state if isinstance(k, str)}
+    try:
+        locks = list(STATE_DIR.glob("langfuse_state.*.lock"))
+    except OSError:
+        return
+    for lock in locks:
+        stem = lock.name[len("langfuse_state."):-len(".lock")]
+        if len(stem) != 16 or stem in live:
+            continue
+        try:
+            if lock.stat().st_mtime < cutoff.timestamp():
+                lock.unlink()
+        except OSError:
+            pass
+
+
 def save_hook_state(state: Dict[str, Any]) -> None:
     try:
         # Drop session entries older than 30 days to keep the file bounded.
@@ -540,6 +613,7 @@ def save_hook_state(state: Dict[str, Any]) -> None:
                 continue
             if ts < cutoff:
                 del state[k]
+        sweep_stale_session_locks(state, cutoff)
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         tmp = STATE_FILE.with_suffix(".tmp")
         tmp.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
@@ -589,6 +663,31 @@ def get_model(row: Dict[str, Any]) -> str:
         return m.get("model") or "claude"
     return "claude"
 
+CACHE_WRITE_TTL_KEYS = (
+    ("ephemeral_5m_input_tokens", "input_cache_creation_5m"),
+    ("ephemeral_1h_input_tokens", "input_cache_creation_1h"),
+)
+
+def get_cache_write_details(usage: Dict[str, Any]) -> Dict[str, int]:
+    """Map cache-write tokens onto the price key for each lifetime.
+
+    The flat total says nothing about the lifetime, so it is priced at the
+    cheaper rate. Use it only when the message omits the split.
+    """
+    details: Dict[str, int] = {}
+    split = usage.get("cache_creation")
+    if isinstance(split, dict):
+        for src, dst in CACHE_WRITE_TTL_KEYS:
+            v = split.get(src)
+            if isinstance(v, int) and v > 0:
+                details[dst] = v
+    if details:
+        return details
+    v = usage.get("cache_creation_input_tokens")
+    if isinstance(v, int) and v > 0:
+        return {"cache_creation_input_tokens": v}
+    return {}
+
 def get_usage_details_from_row(row: Dict[str, Any]) -> Optional[Dict[str, int]]:
     """Extract Anthropic token usage from an assistant message, if present."""
     m = row.get("message")
@@ -602,11 +701,11 @@ def get_usage_details_from_row(row: Dict[str, Any]) -> Optional[Dict[str, int]]:
         ("input_tokens", "input"),
         ("output_tokens", "output"),
         ("cache_read_input_tokens", "cache_read_input_tokens"),
-        ("cache_creation_input_tokens", "cache_creation_input_tokens"),
     ):
         v = u.get(src)
         if isinstance(v, int) and v > 0:
             details[dst] = v
+    details.update(get_cache_write_details(u))
     return details or None
 
 def get_speed_from_row(row: Dict[str, Any]) -> Optional[str]:
@@ -693,6 +792,40 @@ def truncate_text(s: str, max_chars: int = MAX_CHARS) -> Tuple[str, Dict[str, An
         return s, {"truncated": False, "orig_len": orig_len}
     head = s[:max_chars]
     return head, {"truncated": True, "orig_len": orig_len, "kept_len": len(head), "sha256": hashlib.sha256(s.encode("utf-8")).hexdigest()}
+
+def build_status_message(value: Any, fallback: str) -> str:
+    """Render content as an observation status message."""
+    text = extract_text_from_content(value).strip()
+    if not text and value:
+        try:
+            text = json.dumps(value, ensure_ascii=False)
+        except (TypeError, ValueError):
+            text = str(value)
+        text = text.strip()
+    return text or fallback
+
+def is_interrupted_turn_row(row: Dict[str, Any]) -> bool:
+    """Report the marker row that ends a turn the user stopped.
+
+    The longer "for tool use" marker denies one tool and does not match, so a
+    turn that continues after a denied tool keeps its default level.
+    """
+    if get_user_or_assistant_role_from_row(row) != "user":
+        return False
+    text = extract_text_from_content(get_content_from_row(row)).lstrip()
+    return text.startswith(INTERRUPTED_TURN_MARKER)
+
+def get_api_error_status(row: Dict[str, Any]) -> Optional[Tuple[str, str]]:
+    """Report the level for a synthetic row that carries an API failure."""
+    if row.get("isApiErrorMessage") is not True:
+        return None
+    return "ERROR", build_status_message(get_content_from_row(row), "Claude API request failed")
+
+def get_status_kwargs(status: Optional[Tuple[str, str]]) -> Dict[str, Any]:
+    if status is None:
+        return {}
+    level, status_message = status
+    return {"level": level, "status_message": status_message}
 
 def get_tool_use_blocks(content: Any) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
@@ -971,7 +1104,10 @@ def get_async_launch_flag_from_row(row: Dict[str, Any]) -> Optional[bool]:
     tool_use_result = row.get("toolUseResult")
     if not isinstance(tool_use_result, dict):
         return None
-    return tool_use_result.get("status") == "async_launched" or tool_use_result.get("isAsync") is True
+    # A teammate launch is async too: its result never carries the final output.
+    if tool_use_result.get("status") in ("async_launched", "teammate_spawned"):
+        return True
+    return tool_use_result.get("isAsync") is True
 
 def get_workflow_launch_marker_from_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Read the structured Workflow launch marker from a tool_result row.
@@ -1112,6 +1248,13 @@ def add_injected_context_row(row: Dict[str, Any], state: TurnAssemblyState) -> b
             state.current_rows.append(row)
     return True
 
+def add_interrupted_turn_row(row: Dict[str, Any], state: TurnAssemblyState) -> bool:
+    """Keep the interrupt marker in the turn it ended."""
+    if state.current_turn_user_row is None or not is_interrupted_turn_row(row):
+        return False
+    state.current_rows.append(row)
+    return True
+
 def add_tool_result_row(row: Dict[str, Any], state: TurnAssemblyState) -> bool:
     # tool_result rows show up as role=user with content blocks of type tool_result.
     if not is_tool_result(row):
@@ -1128,6 +1271,8 @@ def add_tool_result_row(row: Dict[str, Any], state: TurnAssemblyState) -> bool:
                 "content": tool_result_block.get("content"),
                 "timestamp": row_timestamp,
             }
+            if isinstance(tool_result_block.get("is_error"), bool):
+                tool_result_entry["is_error"] = tool_result_block["is_error"]
             if is_async_launch is not None:
                 tool_result_entry["is_async_launch"] = is_async_launch
             if workflow_launch_marker is not None:
@@ -1291,6 +1436,9 @@ def assemble_turns(
         if add_task_notification_row(row, state, task_id_to_tool_use_id, closed_turns=turns):
             continue
 
+        if add_interrupted_turn_row(row, state):
+            continue
+
         role = get_user_or_assistant_role_from_row(row)
 
         if role == "user":
@@ -1360,15 +1508,71 @@ def assign_turn_numbers(turns: List[Turn], trailing_turn: Optional[Turn],
             next_turn_number += 1
 
 
+def is_row_from_another_session(row: Dict[str, Any], session_id: str) -> bool:
+    """True if the row is not from the current session."""
+    row_session_id = row.get("sessionId")
+    return (
+        isinstance(row_session_id, str)
+        and bool(row_session_id)
+        and row_session_id != session_id
+    )
+
+
+def transcript_file_belongs_to_session(transcript_path: Path, session_id: str) -> bool:
+    """True if the transcript file has the name of the current session.
+
+    Claude Code gives each transcript file the name of its session id. A
+    different name shows that the payload and the rows do not agree.
+    """
+    return transcript_path.stem == session_id
+
+
+def drop_rows_copied_from_another_session(
+    rows: List[Dict[str, Any]],
+    session_id: str,
+    session_state: SessionState,
+    task_id_to_tool_use_id: Optional[Dict[str, str]] = None,
+) -> List[Dict[str, Any]]:
+    """Remove the rows that a fork copied from its original session.
+
+    The original session exported these turns before. The number of the removed
+    turns increases the turn count. Then the later turns keep unique numbers.
+    """
+    copied = [row for row in rows if is_row_from_another_session(row, session_id)]
+    if not copied:
+        return rows
+
+    copied_turns = len(build_turns(copied, task_id_to_tool_use_id))
+    session_state.turn_count = max(session_state.turn_count, copied_turns)
+    info(
+        f"Skipped {len(copied)} row(s) of history copied from another session "
+        f"({copied_turns} turn(s) already exported by it)"
+    )
+    return [row for row in rows if not is_row_from_another_session(row, session_id)]
+
+
 def get_new_turns_from_transcript(
     transcript_path: Path,
     session_state: SessionState,
     subagent_transcripts_by_tool_use_id: Optional[Dict[str, Dict[str, Any]]] = None,
     *,
     flush_deferred_agent_turns: bool = False,
+    session_id: Optional[str] = None,
 ) -> Tuple[List[Turn], SessionState]:
     rows, session_state = read_new_jsonl(transcript_path, session_state)
     task_id_to_tool_use_id = get_task_id_to_tool_use_id(subagent_transcripts_by_tool_use_id)
+
+    if session_id and rows:
+        if transcript_file_belongs_to_session(transcript_path, session_id):
+            rows = drop_rows_copied_from_another_session(
+                rows, session_id, session_state, task_id_to_tool_use_id
+            )
+        else:
+            # Keeping duplicates as fallback.
+            debug(
+                f"transcript {transcript_path.name} is not named after session "
+                f"{session_id}; not checking for copied history"
+            )
 
     # Re-attach the trailing open turn from the previous run. Stop fires
     # multiple times within one logical turn, so a batch can begin with
@@ -1432,27 +1636,77 @@ def resolve_agent_jsonl_and_id(meta_path: Path) -> Optional[Tuple[Path, str]]:
         agent_id = agent_id[len("agent-"):]
     return jsonl_path, agent_id
 
+def get_agent_launch_tool_use_ids_by_name(transcript_path: Path) -> Dict[str, str]:
+    """Map each agent name to the tool_use id of its launch.
+    The function streams the full transcript. It removes ambiguous names."""
+    mapping: Dict[str, str] = {}
+    ambiguous: set = set()
+    try:
+        with transcript_path.open(encoding="utf-8") as lines:
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except Exception:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                for tool_use in get_tool_use_blocks(get_content_from_row(row)):
+                    tool_use_id = str(tool_use.get("id") or "")
+                    tool_input = tool_use.get("input")
+                    if tool_use.get("name") not in ("Agent", "Task") or not tool_use_id:
+                        continue
+                    name = tool_input.get("name") if isinstance(tool_input, dict) else None
+                    if not isinstance(name, str) or not name:
+                        continue
+                    if mapping.get(name, tool_use_id) != tool_use_id:
+                        ambiguous.add(name)
+                    mapping[name] = tool_use_id
+    except Exception:
+        return {}
+    return {name: tool_use_id for name, tool_use_id in mapping.items() if name not in ambiguous}
+
 def get_subagent_transcripts_by_tool_use_id(transcript_path: Path) -> Dict[str, Dict[str, Any]]:
     """Map launching Agent/Task tool_use ids to their subagent transcripts."""
     subagent_dir = transcript_path.with_suffix("") / "subagents"
     if not subagent_dir.is_dir():
         return {}
 
+    # Build the fallback map only when a meta has no toolUseId.
+    fallback_tool_use_ids: Optional[Dict[str, str]] = None
+    claimed_twice: set = set()
     subagent_transcripts_by_tool_use_id: Dict[str, Dict[str, Any]] = {}
-    for meta_path in subagent_dir.glob("*.meta.json"):
+    for meta_path in sorted(subagent_dir.glob("*.meta.json")):
         try:
             metadata = json.loads(meta_path.read_text(encoding="utf-8"))
         except Exception:
             continue
-
-        tool_use_id = metadata.get("toolUseId")
-        if not isinstance(tool_use_id, str) or not tool_use_id:
+        if not isinstance(metadata, dict):
             continue
 
         resolved = resolve_agent_jsonl_and_id(meta_path)
         if resolved is None:
             continue
         jsonl_path, agent_id = resolved
+
+        tool_use_id = metadata.get("toolUseId")
+        if not isinstance(tool_use_id, str) or not tool_use_id:
+            if fallback_tool_use_ids is None:
+                fallback_tool_use_ids = get_agent_launch_tool_use_ids_by_name(transcript_path)
+            # A teammate meta carries the launch input.name.
+            name = metadata.get("name")
+            tool_use_id = fallback_tool_use_ids.get(name) if isinstance(name, str) else None
+        if not tool_use_id:
+            info(f"subagent transcript not attributable to a launching tool_use, skipping: {meta_path}")
+            continue
+        if tool_use_id in claimed_twice or tool_use_id in subagent_transcripts_by_tool_use_id:
+            # Two metas claim one launch -> Drop both.
+            claimed_twice.add(tool_use_id)
+            subagent_transcripts_by_tool_use_id.pop(tool_use_id, None)
+            info(f"multiple subagent metas claim tool_use {tool_use_id}, skipping: {meta_path}")
+            continue
 
         subagent_transcripts_by_tool_use_id[tool_use_id] = {
             "path": jsonl_path,
@@ -1691,7 +1945,7 @@ def _start_backdated(langfuse: Langfuse, *, name: str, as_type: str,
         raise RuntimeError(
             f"Langfuse SDK {sdk_version} is missing _otel_tracer or "
             f"_create_observation_from_otel_span. This hook targets SDK 4.x; "
-            f"pin with `pip install \"langfuse>=4.0,<5\"` or update the hook script."
+            f"pin with `pip install \"langfuse>=4.7,<5\"` or update the hook script."
         )
     start_ns = to_otel_nanoseconds(start_time)
     if parent_otel_span is not None:
@@ -1786,6 +2040,7 @@ def get_trace_tags(
     if SKILL_TAGS:
         tags += collect_skill_tags(turn)
         tags += collect_subagent_skill_tags(turn, subagent_transcripts_by_tool_use_id)
+    tags += [tag for tag in OPERATOR_TAGS if tag not in tags]
     return tags
 
 # ---- Generation payloads ----
@@ -1805,19 +2060,133 @@ def build_generation_input(
         return {"role": "tool", "tool_results": tool_results}
     return None
 
-def build_generation_output(assistant_text: str, tool_uses: List[Dict[str, Any]]) -> Dict[str, Any]:
+def build_thinking_parts(content: Any) -> Tuple[List[Dict[str, str]], List[Dict[str, Any]]]:
+    """Make ChatML thinking parts from the thinking blocks of an assistant message.
+
+    Langfuse renders these parts as thinking blocks. A block without text
+    holds no reasoning, so this function skips it.
+    """
+    parts: List[Dict[str, str]] = []
+    metas: List[Dict[str, Any]] = []
+    if not isinstance(content, list):
+        return parts, metas
+    for block in content:
+        if not isinstance(block, dict) or block.get("type") != "thinking":
+            continue
+        thinking_raw = block.get("thinking")
+        if not isinstance(thinking_raw, str) or not thinking_raw.strip():
+            continue
+        thinking_text, thinking_meta = truncate_text(thinking_raw)
+        parts.append({"type": "thinking", "content": thinking_text})
+        metas.append(thinking_meta)
+    return parts, metas
+
+def build_generation_output(assistant_text: str, tool_uses: List[Dict[str, Any]],
+                            thinking_parts: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
     output: Dict[str, Any] = {"role": "assistant"}
     if assistant_text:
         output["content"] = assistant_text
+    if thinking_parts:
+        output["thinking"] = thinking_parts
     if tool_uses:
+        # Langfuse renders tool calls only in this nested shape. A flat
+        # id and name pair stays raw JSON in the trace UI.
         output["tool_calls"] = [
             {
                 "id": tool_use.get("id"),
-                "name": tool_use.get("name"),
+                "type": "function",
+                "function": {"name": tool_use.get("name")},
             }
             for tool_use in tool_uses
         ]
     return output
+
+
+# ---- Generation input history ----
+def build_user_history_content(user_row: Dict[str, Any]) -> Any:
+    """The user message for the history: text, plus the images of that turn.
+
+    Each image stays at the position where it entered the conversation, so
+    the history shows it the way the model received it.
+    """
+    user_content = get_content_from_row(user_row)
+    user_text, _ = truncate_text(extract_text_from_content(user_content))
+    user_media = [
+        media for media in (media_from_image_block(block) for block in get_image_blocks(user_content))
+        if media is not None
+    ]
+    return [user_text, *user_media] if user_media else user_text
+
+
+def build_turn_history_messages(turn: Turn) -> List[Dict[str, Any]]:
+    """The ChatML view of one turn, in the shape of the live generation payloads.
+
+    Order: user message, then for each assistant step the generation output
+    and one tool message with the step results. An async result appears at
+    its launch step with the final output, not at its arrival time.
+    """
+    messages: List[Dict[str, Any]] = [
+        {"role": "user", "content": build_user_history_content(turn.user_msg)}
+    ]
+    for assistant_message in turn.assistant_msgs:
+        assistant_text, _ = truncate_text(
+            extract_text_from_content(get_content_from_row(assistant_message))
+        )
+        tool_uses = get_tool_use_blocks(get_content_from_row(assistant_message))
+        messages.append(build_generation_output(assistant_text, tool_uses))
+        tool_results: List[Dict[str, Any]] = []
+        for tool_use in tool_uses:
+            entry = turn.tool_results_by_id.get(str(tool_use.get("id") or ""))
+            if entry is None:
+                continue
+            result = get_tool_result_for_observation(entry)
+            output = result.final_output if result.final_output is not None else result.output
+            tool_results.append({
+                "tool_use_id": tool_use.get("id"),
+                "tool_name": tool_use.get("name"),
+                "output": output,
+            })
+        if tool_results:
+            messages.append({"role": "tool", "tool_results": tool_results})
+    return messages
+
+
+@dataclass
+class SessionHistory:
+    """Flat ChatML view of the whole transcript, with one index per turn."""
+    messages: List[Dict[str, Any]] = field(default_factory=list)
+    start_index_by_user_row_uuid: Dict[str, int] = field(default_factory=dict)
+
+    def prefix_for_turn(self, user_row_uuid: Any) -> Optional[List[Dict[str, Any]]]:
+        """All messages before the given turn, or None when the turn is unknown."""
+        if not isinstance(user_row_uuid, str) or not user_row_uuid:
+            return None
+        start_index = self.start_index_by_user_row_uuid.get(user_row_uuid)
+        if start_index is None:
+            return None
+        return self.messages[:start_index]
+
+
+def build_session_history(
+    transcript_path: Path,
+    task_id_to_tool_use_id: Optional[Dict[str, str]] = None,
+) -> Optional[SessionHistory]:
+    """Rebuild the conversation of the whole transcript file as ChatML.
+
+    Reads from byte 0 on purpose: the emission offset only tracks what was
+    exported, while a generation input needs every earlier message.
+    """
+    rows = read_subagent_jsonl(transcript_path)
+    if not rows:
+        return None
+    history = SessionHistory()
+    for turn in build_turns(rows, task_id_to_tool_use_id):
+        user_row_uuid = turn.user_msg.get("uuid")
+        if isinstance(user_row_uuid, str) and user_row_uuid:
+            history.start_index_by_user_row_uuid.setdefault(user_row_uuid, len(history.messages))
+        history.messages.extend(build_turn_history_messages(turn))
+    return history
+
 
 # ---- Tool observations ----
 @dataclass
@@ -1827,6 +2196,7 @@ class ToolResultForObservation:
     result_timestamp: Optional[datetime] = None
     final_output: Any = None
     final_result_timestamp: Optional[datetime] = None
+    status: Optional[Tuple[str, str]] = None
 
 @dataclass
 class EmittedSingleToolObservation:
@@ -1881,6 +2251,9 @@ def get_tool_result_for_observation(tool_result_entry: Any) -> ToolResultForObse
 
     output, output_meta = render_tool_result_content(tool_result_entry.get("content"))
     result_timestamp = parse_timestamp(tool_result_entry.get("timestamp"))
+    status: Optional[Tuple[str, str]] = None
+    if tool_result_entry.get("is_error") is True:
+        status = "ERROR", build_status_message(tool_result_entry.get("content"), "Tool call failed")
 
     final_output_raw = tool_result_entry.get("final_content")
     if final_output_raw is None:
@@ -1888,6 +2261,7 @@ def get_tool_result_for_observation(tool_result_entry: Any) -> ToolResultForObse
             output=output,
             output_meta=output_meta,
             result_timestamp=result_timestamp,
+            status=status,
         )
 
     final_output, _ = render_tool_result_content(final_output_raw)
@@ -1898,6 +2272,7 @@ def get_tool_result_for_observation(tool_result_entry: Any) -> ToolResultForObse
         result_timestamp=result_timestamp,
         final_output=final_output,
         final_result_timestamp=final_result_timestamp,
+        status=status,
     )
 
 def get_short_transcript_path_for_metadata(path: Any) -> Optional[str]:
@@ -2028,6 +2403,7 @@ def emit_single_tool_observation(
             parent_otel_span=parent_otel_span,
             input=tool_input,
             metadata=tool_metadata,
+            **get_status_kwargs(tool_result.status),
         )
         tool_span.update(output=tool_output)
 
@@ -2236,9 +2612,10 @@ def build_generation_kwargs(
     previous_tool_results: List[Dict[str, Any]],
     ready_async_tool_results: List[Dict[str, Any]],
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    assistant_text_raw = extract_text_from_content(get_content_from_row(assistant_message))
-    assistant_text, assistant_text_meta = truncate_text(assistant_text_raw)
-    tool_uses = get_tool_use_blocks(get_content_from_row(assistant_message))
+    assistant_content = get_content_from_row(assistant_message)
+    assistant_text, assistant_text_meta = truncate_text(extract_text_from_content(assistant_content))
+    tool_uses = get_tool_use_blocks(assistant_content)
+    thinking_parts, thinking_metas = build_thinking_parts(assistant_content)
 
     speed = get_speed_from_row(assistant_message)
 
@@ -2250,18 +2627,21 @@ def build_generation_kwargs(
             previous_tool_results,
             ready_async_tool_results,
         ),
-        output=build_generation_output(assistant_text, tool_uses),
+        output=build_generation_output(assistant_text, tool_uses, thinking_parts),
         metadata={
             "assistant_index": assistant_index,
             "assistant_text": assistant_text_meta,
             "tool_count": len(tool_uses),
         },
     )
+    if thinking_metas:
+        generation_kwargs["metadata"]["thinking"] = thinking_metas
     if speed is not None:
         generation_kwargs["metadata"]["speed"] = speed
     usage_details = get_usage_details_from_row(assistant_message)
     if usage_details is not None:
         generation_kwargs["usage_details"] = usage_details
+    generation_kwargs.update(get_status_kwargs(get_api_error_status(assistant_message)))
     return generation_kwargs, tool_uses
 
 def emit_generation_observation(
@@ -2285,16 +2665,30 @@ def emit_turn_observations(langfuse: Langfuse, parent_otel_span: Any, turn: Turn
                            generation_name: str = "LLM Call",
                            subagent_transcripts_by_tool_use_id: Optional[Dict[str, Dict[str, Any]]] = None,
                            cursor: Optional[EmissionCursor] = None,
-                           workflow_agent_transcripts_by_run_id: Optional[WorkflowAgentTranscriptsByRunId] = None) -> Optional[datetime]:
+                           workflow_agent_transcripts_by_run_id: Optional[WorkflowAgentTranscriptsByRunId] = None,
+                           history_prefix: Optional[List[Dict[str, Any]]] = None) -> Optional[datetime]:
     """Emit a turn's generations and tool observations under an existing span.
 
     The full turn is always walked so cross-observation context (generation
     inputs from previous tool results, timestamps) stays correct; the cursor
     only gates which spans are actually created. Without a cursor everything
     is emitted (one-shot behavior).
+
+    With history_prefix set, each generation input is the conversation up to
+    that point: the prefix, this turn's user message, and the earlier steps
+    of this turn. Callers pass None when the history is not available,
+    and the inputs then keep the delta form.
     """
     cursor = cursor if cursor is not None else fresh_cursor()
     user_text, _ = truncate_text(extract_text_from_content(get_content_from_row(turn.user_msg)))
+    history_messages: Optional[List[Dict[str, Any]]] = None
+    if history_prefix is not None:
+        history_messages = list(history_prefix)
+        # Same shape as in build_turn_history_messages, so this turn sees its
+        # own images the way later turns see them in the history.
+        history_messages.append(
+            {"role": "user", "content": build_user_history_content(turn.user_msg)}
+        )
     previous_timestamp = start_timestamp
     previous_tool_results: List[Dict[str, Any]] = []
     pending_async_tool_results: List[Dict[str, Any]] = []
@@ -2334,6 +2728,11 @@ def emit_turn_observations(langfuse: Langfuse, parent_otel_span: Any, turn: Turn
             )
             previous_timestamp = _get_latest_timestamp(previous_timestamp, ready_async_result_timestamp)
 
+        if history_messages is not None and ready_async_tool_results:
+            history_messages.append({
+                "role": "tool",
+                "tool_results": [result["tool_result"] for result in ready_async_tool_results],
+            })
         generation_kwargs, tool_uses = build_generation_kwargs(
             assistant_index,
             assistant_message,
@@ -2341,11 +2740,15 @@ def emit_turn_observations(langfuse: Langfuse, parent_otel_span: Any, turn: Turn
             previous_tool_results,
             ready_async_tool_results,
         )
+        if history_messages is not None:
+            generation_kwargs["input"] = list(history_messages)
+            generation_kwargs["metadata"]["history"] = {"messages": len(history_messages)}
         generation_start_timestamp = previous_timestamp or assistant_timestamp
         # A generation is only complete when its emitted form cannot change
-        # anymore: (a) every tool_use of this message has its result (end
-        # time), (b) no earlier async launch is unresolved (a late
-        # notification would retroactively join this generation's input).
+        # anymore and its tool spans can ship with it: (a) every tool_use of
+        # this message has its result (the tool span end), (b) no earlier
+        # async launch is unresolved (a late notification would retroactively
+        # join this generation's input).
         # The trailing message needs no extra guard: Stop only fires after a
         # response is fully written, and no message.id ever grows across a
         # Stop boundary (0 cases across all local transcripts).
@@ -2392,18 +2795,17 @@ def emit_turn_observations(langfuse: Langfuse, parent_otel_span: Any, turn: Turn
             emitted_tools.latest_end_timestamp,
         )
 
-        generation_end_timestamp = (
-            max(emitted_tools.result_timestamps)
-            if emitted_tools.result_timestamps
-            else assistant_timestamp
+        generation_end_timestamp = _get_latest_timestamp(
+            assistant_timestamp or previous_timestamp,
+            generation_start_timestamp,
         )
         if generation_span is not None:
-            generation_span.end(
-                end_time=to_otel_nanoseconds(
-                    generation_end_timestamp or assistant_timestamp or previous_timestamp
-                )
-            )
-        latest_end_timestamp = _get_latest_timestamp(latest_end_timestamp, generation_end_timestamp)
+            generation_span.end(end_time=to_otel_nanoseconds(generation_end_timestamp))
+        latest_end_timestamp = _get_latest_timestamp(
+            latest_end_timestamp,
+            generation_end_timestamp,
+            *emitted_tools.result_timestamps,
+        )
 
         for tool_use in tool_uses:
             entry = turn.tool_results_by_id.get(str(tool_use.get("id") or ""))
@@ -2411,6 +2813,14 @@ def emit_turn_observations(langfuse: Langfuse, parent_otel_span: Any, turn: Turn
                 not isinstance(entry, dict) or entry.get("final_content") is None
             ):
                 unresolved_async_launch_seen = True
+
+        if history_messages is not None:
+            history_messages.append(generation_kwargs["output"])
+            if emitted_tools.tool_results:
+                history_messages.append({
+                    "role": "tool",
+                    "tool_results": emitted_tools.tool_results,
+                })
 
         previous_tool_results = emitted_tools.tool_results
         if emitted_tools.result_timestamps:
@@ -2530,10 +2940,14 @@ def emit_subagent_observations(langfuse: Langfuse, parent_otel_span: Any,
         parent_otel_span=parent_otel_span,
         input={"role": "user", "content": subagent_input_text},
         metadata=subagent_metadata,
+        **get_status_kwargs(get_worst_turn_status(turns)),
     )
 
     latest_end_timestamp = subagent_start_timestamp
     previous_start_timestamp = subagent_start_timestamp
+    # The agent transcript is complete on disk, so history accumulates
+    # across its turns the same way as in the main conversation.
+    subagent_history: List[Dict[str, Any]] = []
     for turn in turns:
         latest_turn_timestamp = emit_turn_observations(
             langfuse,
@@ -2542,7 +2956,9 @@ def emit_subagent_observations(langfuse: Langfuse, parent_otel_span: Any,
             previous_start_timestamp,
             generation_name=generation_name,
             subagent_transcripts_by_tool_use_id=None,
+            history_prefix=list(subagent_history),
         )
+        subagent_history.extend(build_turn_history_messages(turn))
         latest_end_timestamp = _get_latest_timestamp(latest_end_timestamp, latest_turn_timestamp)
         if latest_turn_timestamp is not None:
             previous_start_timestamp = latest_turn_timestamp
@@ -2560,7 +2976,7 @@ def read_subagent_jsonl(path: Path) -> Optional[List[Dict[str, Any]]]:
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except Exception as e:
-        info(f"subagent transcript read failed ({path}): {type(e).__name__}: {e}")
+        info(f"transcript read failed ({path}): {type(e).__name__}: {e}")
         return None
 
     rows: List[Dict[str, Any]] = []
@@ -2571,19 +2987,45 @@ def read_subagent_jsonl(path: Path) -> Optional[List[Dict[str, Any]]]:
         try:
             row = json.loads(line)
         except Exception as e:
-            info(f"subagent transcript line skipped ({path}:{line_number}): {type(e).__name__}: {e}")
+            info(f"transcript line skipped ({path}:{line_number}): {type(e).__name__}: {e}")
             continue
         if not isinstance(row, dict):
-            info(f"subagent transcript line skipped ({path}:{line_number}): expected JSON object")
+            info(f"transcript line skipped ({path}:{line_number}): expected JSON object")
             continue
         rows.append(row)
     return rows
 
+def get_turn_status(turn: Turn) -> Optional[Tuple[str, str]]:
+    """Report the level for the turn as a whole.
+
+    A failure that ends the turn outranks an interrupt. An API failure the turn
+    recovered from stays on its own generation and leaves the turn at default.
+    """
+    if turn.assistant_msgs:
+        terminal_api_error = get_api_error_status(turn.assistant_msgs[-1])
+        if terminal_api_error is not None:
+            return terminal_api_error
+    if any(is_interrupted_turn_row(row) for row in turn.rows):
+        return "WARNING", "Turn interrupted by user"
+    return None
+
+def get_worst_turn_status(turns: List[Turn]) -> Optional[Tuple[str, str]]:
+    """Report the most severe level across turns, ERROR before WARNING."""
+    statuses = [status for status in map(get_turn_status, turns) if status is not None]
+    for level in ("ERROR", "WARNING"):
+        for status in statuses:
+            if status[0] == level:
+                return status
+    return None
+
 def get_turn_end_timestamp(turn: Turn) -> Optional[datetime]:
     last_assistant_timestamp = parse_timestamp(turn.assistant_msgs[-1]) if turn.assistant_msgs else None
+    interrupt_timestamps = [
+        parse_timestamp(row) for row in turn.rows if is_interrupted_turn_row(row)
+    ]
     candidate_end_timestamps = [
         timestamp
-        for timestamp in [last_assistant_timestamp]
+        for timestamp in [last_assistant_timestamp, *interrupt_timestamps]
         if timestamp is not None
     ]
     for tool_result_entry in turn.tool_results_by_id.values():
@@ -2613,6 +3055,8 @@ def build_trace_metadata(
         value = turn.user_msg.get(src_key)
         if isinstance(value, str) and value:
             trace_metadata[dst_key] = value
+            if src_key == "cwd":
+                trace_metadata["project"] = Path(value).name
     return trace_metadata
 
 def is_valid_span_id_hex(span_id: Any) -> bool:
@@ -2682,12 +3126,10 @@ def open_turn_root_span(langfuse: Langfuse, session_id: str, turn_num: int, turn
     trace id derived from seed and turn number; otherwise the
     session:user-row-uuid carrier pins the trace id.
     """
-    user_content = get_content_from_row(turn.user_msg)
-    user_text, user_text_meta = truncate_text(extract_text_from_content(user_content))
-    # Pasted images attach only to the turn's root input, so each image
-    # uploads once, not once for each LLM call in the turn.
-    user_media = [m for m in (media_from_image_block(b) for b in get_image_blocks(user_content)) if m is not None]
-    turn_input: Any = [user_text, *user_media] if user_media else user_text
+    _, user_text_meta = truncate_text(extract_text_from_content(get_content_from_row(turn.user_msg)))
+    # The root keeps this turn's question only, so the trace list stays
+    # scannable; the conversation history lives on the LLM call inputs.
+    root_input = {"role": "user", "content": build_user_history_content(turn.user_msg)}
     trace_metadata = build_trace_metadata(session_id, turn_num, turn, transcript_path, user_text_meta)
     if parent_context is not None:
         parent_trace_id, parent_span_id = parent_context
@@ -2701,8 +3143,9 @@ def open_turn_root_span(langfuse: Langfuse, session_id: str, turn_num: int, turn
             forced_trace_id=parent_trace_id,
             forced_parent_span_id=parent_span_id,
             as_root=False,
-            input={"role": "user", "content": turn_input},
+            input=root_input,
             metadata=trace_metadata,
+            **get_status_kwargs(get_turn_status(turn)),
         )
     # Opt-in deterministic trace ids: fail open to the carrier-derived id.
     forced_trace_id: Optional[str] = None
@@ -2719,8 +3162,9 @@ def open_turn_root_span(langfuse: Langfuse, session_id: str, turn_num: int, turn
         parent_otel_span=None if forced_trace_id else remote_parent(langfuse, session_id, turn.user_msg.get("uuid")),
         forced_trace_id=forced_trace_id,
         as_root=True,
-        input={"role": "user", "content": turn_input},
+        input=root_input,
         metadata=trace_metadata,
+        **get_status_kwargs(get_turn_status(turn)),
     )
 
 
@@ -2748,7 +3192,8 @@ def emit_turn(langfuse: Langfuse, session_id: str, turn_num: int,
               close: bool = True,
               trace_seed: Optional[str] = None,
               parent_context: Optional[Tuple[str, str]] = None,
-              workflow_agent_transcripts_by_run_id: Optional[WorkflowAgentTranscriptsByRunId] = None) -> Dict[str, Any]:
+              workflow_agent_transcripts_by_run_id: Optional[WorkflowAgentTranscriptsByRunId] = None,
+              history_prefix: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """Emit a turn, resuming from prior firings' progress.
 
     With no progress and close=True this is the classic one-shot emission.
@@ -2807,6 +3252,7 @@ def emit_turn(langfuse: Langfuse, session_id: str, turn_num: int,
             subagent_transcripts_by_tool_use_id=subagent_transcripts_by_tool_use_id,
             cursor=cursor,
             workflow_agent_transcripts_by_run_id=workflow_agent_transcripts_by_run_id,
+            history_prefix=history_prefix,
         )
         if trace_span is not None:
             # The root exports exactly once: end time and output are the
@@ -2840,6 +3286,7 @@ def emit_and_close_ready_turns(
     trace_seed: Optional[str] = None,
     parent_context: Optional[Tuple[str, str]] = None,
     workflow_agent_transcripts_by_run_id: Optional[WorkflowAgentTranscriptsByRunId] = None,
+    session_history: Optional[SessionHistory] = None,
 ) -> int:
     emitted = 0
     # Turns without a user-row uuid bypass assign_turn_numbers; seed their
@@ -2871,6 +3318,11 @@ def emit_and_close_ready_turns(
                 trace_seed=trace_seed,
                 parent_context=parent_context,
                 workflow_agent_transcripts_by_run_id=workflow_agent_transcripts_by_run_id,
+                history_prefix=(
+                    session_history.prefix_for_turn(turn.user_msg.get("uuid"))
+                    if session_history is not None
+                    else None
+                ),
             )
         except Exception as e:
             # Log at INFO so SDK incompatibilities (and other emit failures)
@@ -2891,6 +3343,7 @@ def emit_ready_observations_of_open_turn(
     trace_seed: Optional[str] = None,
     parent_context: Optional[Tuple[str, str]] = None,
     workflow_agent_transcripts_by_run_id: Optional[WorkflowAgentTranscriptsByRunId] = None,
+    session_history: Optional[SessionHistory] = None,
 ) -> None:
     """Emit the held open turn once its async activity is provably resolved.
 
@@ -2935,6 +3388,11 @@ def emit_ready_observations_of_open_turn(
             trace_seed=trace_seed,
             parent_context=parent_context,
             workflow_agent_transcripts_by_run_id=workflow_agent_transcripts_by_run_id,
+            history_prefix=(
+                session_history.prefix_for_turn(user_row_uuid)
+                if session_history is not None
+                else None
+            ),
         )
         session_state.turn_progress[user_row_uuid] = progress
     except Exception as e:
@@ -2948,9 +3406,11 @@ def emit_new_turns_from_transcript(
     *,
     flush_deferred_agent_turns: bool = False,
 ) -> int:
-    with FileLock(LOCK_FILE):
-        state = load_hook_state()
-        key = get_session_state_key(session_id, str(transcript_path))
+    key = get_session_state_key(session_id, str(transcript_path))
+
+    with FileLock(get_session_lock_path(key)):
+        with FileLock(LOCK_FILE):
+            state = load_hook_state()
         session_state = get_session_state(state, key)
 
         subagent_transcripts_by_tool_use_id = get_subagent_transcripts_by_tool_use_id(transcript_path)
@@ -2964,7 +3424,16 @@ def emit_new_turns_from_transcript(
             session_state,
             subagent_transcripts_by_tool_use_id,
             flush_deferred_agent_turns=flush_deferred_agent_turns,
+            session_id=session_id,
         )
+
+        # One full-file pass per firing serves every turn emitted below.
+        session_history = None
+        if turns or session_state.open_turn:
+            session_history = build_session_history(
+                transcript_path,
+                get_task_id_to_tool_use_id(subagent_transcripts_by_tool_use_id),
+            )
 
         emitted = 0
         if turns:
@@ -2984,6 +3453,7 @@ def emit_new_turns_from_transcript(
                 trace_seed=config.trace_seed,
                 parent_context=config.parent_context,
                 workflow_agent_transcripts_by_run_id=workflow_agent_transcripts_by_run_id,
+                session_history=session_history,
             )
 
         session_state.turn_count += emitted
@@ -3002,13 +3472,16 @@ def emit_new_turns_from_transcript(
             trace_seed=config.trace_seed,
             parent_context=config.parent_context,
             workflow_agent_transcripts_by_run_id=workflow_agent_transcripts_by_run_id,
+            session_history=session_history,
         )
 
         # Known limitation (accepted, like the crash-between-emit-and-save
         # duplicate window): progress is persisted before the SDK flush in
         # main(); a dropped flush leaves emitted_keys pointing at spans that
         # never reached the server.
-        save_session_state(state, key, session_state)
+        with FileLock(LOCK_FILE):
+            state = load_hook_state()
+            save_session_state(state, key, session_state)
 
     return emitted
 
@@ -3040,10 +3513,12 @@ def main() -> int:
 
     if _STATE_DIR_WARNING:
         info(_STATE_DIR_WARNING)
+    if _OPERATOR_TAGS_WARNING:
+        info(_OPERATOR_TAGS_WARNING)
 
     config = get_langfuse_config()
     if config is None:
-        debug("No LANGFUSE_PUBLIC_KEY/SECRET_KEY in environment; nothing to do")
+        log_missing_langfuse_config()
         return 0
 
     payload = read_hook_payload()
@@ -3072,7 +3547,7 @@ def main() -> int:
         return 0
 
     except TimeoutError as e:
-        debug(f"lock timeout, skipping: {e}")
+        info(f"lock timeout, skipping: {e}")
         return 0
 
     except Exception as e:

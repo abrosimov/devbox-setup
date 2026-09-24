@@ -28,7 +28,10 @@
     "CC_LANGFUSE_PUBLIC_KEY": "otelbox-local-public",
     "CC_LANGFUSE_SECRET_KEY": "otelbox-local-secret",
     "CC_LANGFUSE_CAPTURE_IMAGES": "false",
-    "LANGFUSE_TRACING_ENVIRONMENT": "{{ devbox_active_profile }}"
+    "CC_LANGFUSE_DEBUG": "true",
+    "CC_LANGFUSE_TRACE_TAGS": "[\"engine:claude-code\"]",
+    "LANGFUSE_TRACING_ENVIRONMENT": "{{ devbox_active_profile }}",
+    "LANGFUSE_USER_ID": "{{ devbox_langfuse_user_id }}"
   },
   "permissions": {
     "allow": [
@@ -166,7 +169,6 @@
       "Bash(git fsck *)",
       "Bash(git count-objects *)",
       "Bash(git submodule status *)",
-      "Bash(git stash *)",
       "Bash(git checkout -b *)",
       "Bash(git switch *)",
       "Bash(git restore --staged *)",
@@ -339,6 +341,10 @@
       "Bash(git mv *)",
       "Bash(git clean *)",
       "Bash(git checkout -- *)",
+      "Bash(git stash)",
+      "Bash(git stash *)",
+      "Bash(git merge --autostash*)",
+      "Bash(git pull --autostash*)",
       "Bash(git -C * push --force *)",
       "Bash(git -C * push --force-with-lease *)",
       "Bash(git -C * push -f *)",
@@ -365,6 +371,10 @@
       "Bash(git -C * mv *)",
       "Bash(git -C * clean *)",
       "Bash(git -C * checkout -- *)",
+      "Bash(git -C * stash)",
+      "Bash(git -C * stash *)",
+      "Bash(git -C * merge --autostash*)",
+      "Bash(git -C * pull --autostash*)",
       "Bash(cat *>*)",
       "Bash(echo *>*)",
       "Bash(kill *)",
@@ -669,6 +679,16 @@
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionStart"
           }
         ]
+      },
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py",
+            "timeout": 60
+          }
+        ]
       }
     ],
     "SessionEnd": [
@@ -692,7 +712,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py",
+            "timeout": 60
           }
         ]
       }

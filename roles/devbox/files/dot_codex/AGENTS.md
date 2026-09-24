@@ -50,6 +50,14 @@ Obtain explicit confirmation before:
 Read-only inspection, reversible workspace edits requested by the user, and non-destructive local
 validation do not need an extra approval round.
 
+### Never run `git stash`
+
+`git stash` is prohibited in every form — `push`, `pop`, `apply`, `drop`, `list`, `show` — as is
+reaching a stash indirectly through `--autostash` or the `rebase.autoStash` / `merge.autoStash`
+configuration. This is a categorical deny, not a confirmation gate: stashed work is invisible to
+review and is routinely lost on the next branch switch. When the working tree is dirty and in the
+way, make a WIP commit on the current or a scratch branch, or hand the situation back to the user.
+
 ### Pre-authorised local validation
 
 A request to implement, fix, review, or diagnose code includes authority to run the ordinary

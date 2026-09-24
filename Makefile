@@ -124,8 +124,9 @@ endif
        audit audit-brew audit-brewfile audit-taps untap-stale \
        claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults \
-       sync-upstream-docs \
+       sync-upstream-docs mine-claude-logs \
        test test-integration test-ai-config test-deploy test-claude-hooks test-git-hooks test-scripts test-otelbox test-nvim test-fish test-json test-bash \
+       test-live test-live-guard \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -165,6 +166,10 @@ help:
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
 	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
 	@echo "  make test-otelbox     - pytest for the otelbox edge contract (wrapper, preflight, version pin)"
+	@echo "  make test-live-guard  - pytest for the guards around test-live (hermetic)"
+	@echo "  make test-live        - pytest against real claude/codex/agy binaries (opt-in, needs the CLIs)"
+	@echo "                          ENGINES='claude,codex' turns a skip of those engines into a failure"
+	@echo "  make mine-claude-logs - mine session transcripts into research_on_claude_behaviour/data"
 	@echo "  make qa               - lint + typecheck + unit, integration, ai-config, and deploy tests"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
@@ -329,13 +334,13 @@ lint-yaml: $(DEV_SENTINEL)
 # roles/devbox/files/dot_claude/future_projects/ruff_strict_migration.md.
 # The formatter is likewise enforced: it is deterministic and auto-fixable.
 #
-# Scope: the client/shared AI trees plus deploy tests. Other Python files in the
+# Scope: the client/shared AI trees plus deploy and live tests. Other Python files in the
 # repo (.config/kitty/) are not project code; pyrefly's project-includes handles
 # those.
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/deploy/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/deploy/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/deploy/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
 
 # Pyrefly ignores `project-excludes` from pyproject.toml whenever files are named
 # explicitly on the command line, so the excludes have to be repeated as flags.
@@ -344,7 +349,7 @@ lint-py: $(DEV_SENTINEL)
 PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.venv/**' --project-excludes '**/__pycache__/**'
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py $(PYREFLY_EXCLUDES)
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py scripts/mine-claude-logs.py scripts/claude_log_mining/ tests/scripts/test_claude_log_mining_*.py tests/scripts/claude_log_mining_fixtures.py $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a
@@ -367,7 +372,7 @@ test-git-hooks: $(DEV_SENTINEL) ## Pytest for the global git hooks (prepare-comm
 test-scripts: $(DEV_SENTINEL) ## Pytest for scripts/ (git-identity-gen.py and friends)
 	@$(DEV_BIN)/pytest tests/scripts -q
 
-test-deploy: $(DEV_SENTINEL) ## Pytest for dotfile-deploy structure (guards karabiner assets deploy in install_configs.yml)
+test-deploy: $(DEV_SENTINEL) ## Pytest for dotfile-deploy structure (karabiner assets, hook interpreters, …)
 	@$(DEV_BIN)/pytest tests/deploy -q
 
 # Isolated check against the deployed-shape venv: same uv sync --frozen that
@@ -379,7 +384,29 @@ test-claude-hooks: ## Pytest under bin/'s own uv project (mirrors deployed venv)
 	@uv run --project roles/devbox/files/dot_claude/bin \
 	  pytest roles/devbox/files/dot_claude/bin
 
-qa: lint-py typecheck test test-integration test-ai-config test-scripts test-deploy ## Full Python quality gate
+# The guards around tests/live/ are the two things in that suite that must never
+# silently stop working — the throwaway home, and the refusal to skip an engine
+# CI declared — so they run hermetically with `qa` rather than only behind the
+# opt-in `test-live` target. No file list: tests/live/conftest.py already hides
+# the engine tests unless DEVBOX_LIVE_ENGINE_TESTS is set, so this collects
+# exactly the hermetic ones and keeps collecting any that are added later.
+test-live-guard: $(DEV_SENTINEL) ## Pytest for the throwaway-home and engine guards (hermetic)
+	@$(DEV_BIN)/pytest tests/live -q
+
+# Opt-in: spawns the installed claude / codex / agy binaries against a throwaway
+# home and asserts each engine actually honours the configuration this repository
+# generates for it. Needs the CLIs on PATH and a regular terminal, like
+# `make eval-skills`. Missing binaries skip rather than fail; no engine here needs
+# an account or a reachable API.
+#
+# ENGINES names the engines the caller installed on purpose — CI does — and turns
+# every skip for one of them into a failure, so a runner whose install silently
+# produced nothing cannot report green over nothing exercised.
+test-live: $(DEV_SENTINEL) ## Pytest against real engine binaries (opt-in, needs claude/codex/agy)
+	@DEVBOX_LIVE_ENGINE_TESTS=1 DEVBOX_LIVE_REQUIRE_ENGINES="$(ENGINES)" \
+	  $(DEV_BIN)/pytest tests/live -m live -v
+
+qa: lint-py typecheck test test-integration test-ai-config test-scripts test-deploy test-live-guard ## Full Python quality gate
 
 regenerate-fixtures: $(DEV_SENTINEL) ## Re-extract recorded fixtures + regenerate synthetic ones
 	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/extract_fixtures.py --max-per-bucket 50
@@ -696,13 +723,20 @@ macos-defaults: $(COLLECTIONS_SENTINEL) secrets-ready
 sync-upstream-docs:
 	@$(VALIDATE_PYTHON) scripts/sync-upstream-docs.py --repo-root "$(CURDIR)" $(ARGS)
 
+# Stdlib-only, so it runs on bare python3 without materialising the dev venv.
+mine-claude-logs: ## Mine Claude session transcripts into research_on_claude_behaviour/data
+	@$(VALIDATE_PYTHON) scripts/mine-claude-logs.py $(ARGS)
+
 validate-configs: test-json test-fish test-nvim ## Validate repo configs (JSON, fish, nvim)
 	@echo "All config validations passed."
 
+# settings.json.j2 is in scope deliberately. scripts/ai-config writes captured
+# live values back into the UNRENDERED document, so every Jinja expression has to
+# stay inside a quoted JSON value — which is exactly what jq checks here.
 test-json:
 	@echo "Validating JSON files..."
 	@fail=0; \
-	for f in $$(find $(CLAUDE_SRC) -name '*.json' -not -path '*/local/*'); do \
+	for f in $$(find $(CLAUDE_SRC) \( -name '*.json' -o -name '*.json.j2' \) -not -path '*/local/*'); do \
 		jq . "$$f" > /dev/null 2>&1 || { echo "  FAIL: $$f"; fail=1; }; \
 	done; \
 	[ $$fail -eq 0 ] && echo "  OK: all JSON files valid" || exit 1

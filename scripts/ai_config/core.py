@@ -18,6 +18,9 @@ from .model import (
 class FieldScope(StrEnum):
     SHARED = "shared"
     PREFERENCE = "preference"
+    # Portable like SHARED, but the source declares a placeholder that a binding
+    # resolves from a machine-local store at apply time. Profile-dependent values
+    # are no longer expressed this way — they are Jinja in the source document.
     ENVIRONMENT = "environment"
     LOCAL_STATE = "local-state"
     RUNTIME = "runtime"
@@ -46,8 +49,6 @@ class ManifestDefinitionError(ValueError):
 
 
 class BindingProvider(StrEnum):
-    PROFILE = "profile"
-    ENVIRONMENT = "env"
     KEYCHAIN = "keychain"
     HOME = "home"
 
@@ -165,6 +166,7 @@ class Change:
     live: FieldValue
     sensitive: bool
     merged: FieldValue | None = None
+    templated: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,6 +191,7 @@ def plan_reconciliation(
     repo: SemanticSnapshot,
     live: SemanticSnapshot,
     manifest: FieldManifest,
+    templated_paths: frozenset[FieldPath] = frozenset(),
 ) -> ReconciliationPlan:
     for snapshot in (repo, live):
         _validate_preferences(snapshot, manifest)
@@ -204,6 +207,7 @@ def plan_reconciliation(
             repo=repo_fields.get(path, MissingValue.MISSING),
             live=live_fields.get(path, MissingValue.MISSING),
             rule=manifest.rule_for(path),
+            templated=path in templated_paths,
         )
         for path in paths
     )
@@ -244,6 +248,7 @@ def _plan_field(
     repo: FieldValue,
     live: FieldValue,
     rule: FieldRule | None,
+    templated: bool,
 ) -> Change:
     scope = rule.scope if rule is not None else None
     if scope is None:
@@ -260,7 +265,12 @@ def _plan_field(
         )
     elif repo == live:
         kind = ChangeKind.UNCHANGED
-    elif rule is not None and rule.binding is not None:
+    elif templated or (rule is not None and rule.binding is not None):
+        # The source holds a template expression or a binding placeholder, never
+        # a value the live document could replace. Deciding here, ahead of the
+        # base-state and ordered-set branches, keeps every write-back route —
+        # capture, conflict resolution, initialisation, ordered-set merge — out
+        # of reach of a resolved value.
         kind = ChangeKind.APPLY_REPO
     elif not base_present:
         kind = ChangeKind.INITIALISATION_REQUIRED
@@ -290,6 +300,7 @@ def _plan_field(
         repo=repo,
         live=live,
         sensitive=rule.secret if rule is not None else False,
+        templated=templated,
     )
 
 

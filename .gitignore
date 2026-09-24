@@ -26,3 +26,7 @@ __pycache__/
 .pytest_cache/
 .hypothesis/
 claude_improvements/.obsidian/workspace.json
+
+# Unredacted session-log excerpts, written only under --with-full-excerpts.
+# The miner also drops a self-ignoring .gitignore there; this is the belt.
+research_on_claude_behaviour/data/excerpts/

@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import tomllib
 from pathlib import Path
 
 import yaml
+from ansible.plugins.filter.core import FilterModule as CoreFilters
+from ansible.plugins.filter.mathstuff import FilterModule as MathFilters
 from jinja2 import StrictUndefined, Template
+from jinja2.nativetypes import NativeEnvironment
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CLAUDE_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/claude.yml"
-CLAUDE_SETTINGS = REPO_ROOT / "roles/devbox/files/dot_claude/settings.json"
+CLAUDE_SETTINGS = REPO_ROOT / "roles/devbox/files/dot_claude/settings.json.j2"
 CLAUDE_HOOKS = CLAUDE_SETTINGS
 CLAUDE_BIN = REPO_ROOT / "roles/devbox/files/dot_claude/bin"
 VENDORED_HOOK = CLAUDE_BIN / "vendor/langfuse_hook.py"
@@ -130,7 +134,7 @@ def test_codex_native_trace_export_is_disabled_without_disabling_logs_or_metrics
     assert telemetry["log_user_prompt"] is True
 
 
-def test_codex_provisioning_installs_the_pin_without_bypassing_hook_trust() -> None:
+def test_codex_provisioning_installs_the_pin() -> None:
     tasks = _tasks_by_name(CODEX_TASKS)
     runtime = tasks["Install Codex Langfuse runtime configuration"]
     add = tasks["Add pinned Codex plugin marketplaces"]
@@ -143,14 +147,88 @@ def test_codex_provisioning_installs_the_pin_without_bypassing_hook_trust() -> N
     assert "not ansible_check_mode" in add["when"]
     assert "rev-parse" in inspect_revision["ansible.builtin.command"]["argv"]
     assert "not ansible_check_mode" in install["when"]
-    assert "hook trust" not in CODEX_TASKS.read_text(encoding="utf-8").lower()
+
+
+def test_no_repo_path_bypasses_codex_hook_trust_verification() -> None:
+    """Codex has a `--dangerously-bypass-hook-trust` escape hatch. Using it would
+    run every discovered hook unverified, including any a third party injected."""
+    tracked = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout.split("\0")
+    this_file = str(Path(__file__).resolve().relative_to(REPO_ROOT))
+    offenders = [
+        name
+        for name in tracked
+        if name
+        and name != this_file
+        and (REPO_ROOT / name).is_file()
+        and "dangerously-bypass-hook-trust"
+        in (REPO_ROOT / name).read_bytes().decode(errors="replace")
+    ]
+
+    assert offenders == []
+
+
+def test_codex_hook_trust_is_granted_from_an_explicit_allowlist() -> None:
+    tasks = _tasks_by_name(CODEX_TASKS)
+    trust = tasks["Grant Codex hook trust for repository-declared hooks"]
+    command = trust["ansible.builtin.command"]["argv"]
+    argv = trust["vars"]["devbox_codex_hook_trust_argv"]
+    names = list(_tasks_by_name(CODEX_TASKS))
+
+    assert "scripts/codex-hook-trust.py" in argv
+    assert "'--plugin'" in argv
+    assert "devbox_codex_plugins" in trust["vars"]["devbox_codex_hook_trust_plugin_ids"]
+    assert "'--check'" in command
+    assert "ansible_check_mode" in command
+    assert trust["failed_when"] == "devbox_codex_hook_trust.rc != 0"
+    assert "CODEX_HOME" in trust["environment"]
+    # The reconcile and the plugin installs both change what `hooks/list` reports.
+    assert names.index("Grant Codex hook trust for repository-declared hooks") > names.index(
+        "Assert required Codex plugins are installed and enabled"
+    )
+
+
+def test_codex_hook_trust_argv_renders_one_plugin_option_per_pinned_plugin() -> None:
+    """The argv is built by a Jinja expression whose only other failure mode is a
+    mid-playbook template error, long after the packages are installed."""
+    trust = _tasks_by_name(CODEX_TASKS)["Grant Codex hook trust for repository-declared hooks"]
+    defaults = yaml.safe_load(CODEX_DEFAULTS.read_text(encoding="utf-8"))
+    environment = NativeEnvironment(undefined=StrictUndefined, autoescape=False)
+    environment.filters.update(MathFilters().filters())
+    environment.filters.update(CoreFilters().filters())
+    context = {
+        "devbox_codex_plugins": defaults["devbox_codex_plugins"],
+        "devbox_codex_repo_root": "/repo",
+        "devbox_codex_home": "/home/user/.codex",
+    }
+    context["devbox_codex_hook_trust_plugin_ids"] = environment.from_string(
+        trust["vars"]["devbox_codex_hook_trust_plugin_ids"]
+    ).render(**context)
+
+    argv = environment.from_string(trust["vars"]["devbox_codex_hook_trust_argv"]).render(**context)
+
+    assert argv == [
+        "/repo/scripts/codex-hook-trust.py",
+        "--repo-root",
+        "/repo",
+        "--codex-home",
+        "/home/user/.codex",
+        "--json",
+        "--plugin",
+        "tracing@codex-observability-plugin",
+    ]
 
 
 def test_codex_langfuse_runtime_uses_only_dummy_loopback_credentials() -> None:
     rendered = Template(
         CODEX_LANGFUSE.read_text(encoding="utf-8"),
         undefined=StrictUndefined,
-    ).render(devbox_active_profile="personal")
+    ).render(devbox_active_profile="personal", devbox_langfuse_user_id="someone@example.com")
     config = json.loads(rendered)
 
     assert config["enabled"] is True
@@ -162,6 +240,24 @@ def test_codex_langfuse_runtime_uses_only_dummy_loopback_credentials() -> None:
     assert config["fail_on_error"] is False
     assert not config["public_key"].startswith("pk-lf-")
     assert not config["secret_key"].startswith("sk-lf-")
+
+
+def test_codex_langfuse_traces_are_attributed_to_the_profile_owner() -> None:
+    """Without `user_id` the plugin falls back to the JWT in `auth.json`, which is
+    absent for API-key auth — traces then land unattributed."""
+    rendered = Template(
+        CODEX_LANGFUSE.read_text(encoding="utf-8"),
+        undefined=StrictUndefined,
+    ).render(devbox_active_profile="work", devbox_langfuse_user_id="someone@example.com")
+    config = json.loads(rendered)
+    profiles = {
+        name: yaml.safe_load((REPO_ROOT / "profiles" / f"{name}.yml").read_text(encoding="utf-8"))
+        for name in ("personal", "work")
+    }
+
+    assert config["user_id"] == "someone@example.com"
+    assert config["tags"] == ["codex"]
+    assert all(profile["devbox_langfuse_user_id"] for profile in profiles.values())
 
 
 def test_repo_owned_langfuse_configuration_has_no_remote_ingestion_url() -> None:

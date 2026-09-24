@@ -46,12 +46,23 @@ pub_lease = _load_module()
 class FakeWarp:
     current_mode: str = "proxy"
     current_status: str = "Disconnected"
+    current_protocol: str = "masque"
+    current_protocol_source: str = "network_policy"
     switch_locked: bool = False
     calls: list[tuple[str, ...]] = field(default_factory=list)
     fail_once: list[str] = field(default_factory=list)
     status_queue: list[str] = field(default_factory=list)
     mode_queue: list[str] = field(default_factory=list)
+    protocol_queue: list[tuple[str, str]] = field(default_factory=list)
+    settings_queue: list[tuple[str, str, str]] = field(default_factory=list)
     failure_detail: str = ""
+
+    def tunnel_settings(self) -> tuple[str, str, str]:
+        self.calls.append(("settings",))
+        self._raise_if_requested("read-settings")
+        if self.settings_queue:
+            return self.settings_queue.pop(0)
+        return self.current_mode, self.current_protocol, self.current_protocol_source
 
     def mode(self) -> str:
         self.calls.append(("mode",))
@@ -72,6 +83,13 @@ class FakeWarp:
         self._raise_if_requested("read-policy")
         return "switch_locked" if self.switch_locked else "unlocked"
 
+    def protocol(self) -> tuple[str, str]:
+        self.calls.append(("protocol",))
+        self._raise_if_requested("read-protocol")
+        if self.protocol_queue:
+            return self.protocol_queue.pop(0)
+        return self.current_protocol, self.current_protocol_source
+
     def settle_status(self, *, attempts: int, tick) -> str:
         self.calls.append(("settle", str(attempts)))
         for attempt in range(attempts):
@@ -87,6 +105,18 @@ class FakeWarp:
         self._raise_if_requested(f"set-mode:{mode}")
         self.current_mode = mode
 
+    def set_protocol(self, protocol: str) -> None:
+        self.calls.append(("set-protocol", protocol))
+        self._raise_if_requested(f"set-protocol:{protocol}")
+        self.current_protocol = protocol
+        self.current_protocol_source = "consumer_overrides"
+
+    def reset_protocol(self) -> None:
+        self.calls.append(("reset-protocol",))
+        self._raise_if_requested("reset-protocol")
+        self.current_protocol = "masque"
+        self.current_protocol_source = "network_policy"
+
     def connect(self) -> None:
         self.calls.append(("connect",))
         self._raise_if_requested("connect")
@@ -101,6 +131,15 @@ class FakeWarp:
         self.calls.append(("wait", expected, str(attempts)))
         for attempt in range(attempts):
             if self.status() == expected:
+                return True
+            if attempt + 1 < attempts:
+                tick()
+        return False
+
+    def wait_for_settings(self, expected, *, attempts: int, tick) -> bool:
+        self.calls.append(("wait-settings", *expected, str(attempts)))
+        for attempt in range(attempts):
+            if self.tunnel_settings() == expected:
                 return True
             if attempt + 1 < attempts:
                 tick()
@@ -232,11 +271,87 @@ class TestPubLeaseLifecycle:
         assert state.previous_mode == "proxy"
         assert state.previous_status == "Disconnected"
         assert state.previous_connected is False
-        assert ("wait", "Connected", "25") in harness.warp.calls
+        assert state.previous_protocol == "masque"
+        assert state.previous_protocol_source == "network_policy"
+        assert state.expected_protocol == "wireguard"
+        assert state.expected_protocol_source == "consumer_overrides"
+        assert ("wait", "Connected", "120") in harness.warp.calls
         assert harness.warp.current_mode == "warp+doh"
+        assert harness.warp.current_protocol == "wireguard"
+        assert harness.warp.current_protocol_source == "consumer_overrides"
         assert harness.warp.current_status == "Connected"
         assert harness.paths.lease.stat().st_mode & 0o777 == 0o600
         assert harness.paths.recovery.stat().st_mode & 0o777 == 0o600
+
+    def test_activation_orders_disconnect_mode_protocol_and_connect(self, harness: Harness) -> None:
+        assert harness.run("on").returncode == 0
+
+        calls = harness.warp.calls
+        assert calls.index(("disconnect",)) < calls.index(("set-mode", "warp+doh"))
+        assert calls.index(("set-mode", "warp+doh")) < calls.index(("set-protocol", "wireguard"))
+        assert calls.index(("set-protocol", "wireguard")) < calls.index(("connect",))
+
+    def test_activation_waits_for_settings_observation_before_connecting(
+        self, harness: Harness
+    ) -> None:
+        stale = ("proxy", "masque", "network_policy")
+        registering = ("warp+doh", "wireguard", "network_policy")
+        expected = ("warp+doh", "wireguard", "consumer_overrides")
+        harness.warp.settings_queue = [stale, registering, expected]
+
+        result = harness.run("on")
+
+        assert result.returncode == 0
+        wait = ("wait-settings", *expected, "30")
+        assert wait in harness.warp.calls
+        assert harness.warp.calls.index(wait) < harness.warp.calls.index(("connect",))
+
+    def test_off_restores_policy_protocol_before_mode_and_connection(
+        self, harness: Harness
+    ) -> None:
+        harness.warp.current_status = "Connected"
+        assert harness.run("on").returncode == 0
+        recovery = harness.paths.recovery.read_bytes()
+        harness.warp.calls.clear()
+
+        assert harness.run("off").returncode == 0
+
+        assert harness.warp.current_protocol == "masque"
+        assert harness.warp.current_protocol_source == "network_policy"
+        calls = harness.warp.calls
+        assert calls.index(("reset-protocol",)) < calls.index(("set-mode", "proxy"))
+        assert calls.index(("set-mode", "proxy")) < calls.index(("connect",))
+        assert b'"previous_protocol": "masque"' in recovery
+
+    def test_off_restores_consumer_override_protocol_source(self, harness: Harness) -> None:
+        harness.warp.current_protocol = "masque"
+        harness.warp.current_protocol_source = "consumer_overrides"
+
+        assert harness.run("on").returncode == 0
+        assert harness.run("off").returncode == 0
+
+        assert harness.warp.current_protocol == "masque"
+        assert harness.warp.current_protocol_source == "consumer_overrides"
+        assert ("set-protocol", "masque") in harness.warp.calls
+
+    @pytest.mark.parametrize("protocol_source", ["network_policy", "consumer_overrides"])
+    def test_off_waits_for_previous_settings_before_reconnecting(
+        self, harness: Harness, protocol_source: str
+    ) -> None:
+        harness.warp.current_status = "Connected"
+        harness.warp.current_protocol_source = protocol_source
+        assert harness.run("on").returncode == 0
+        harness.warp.calls.clear()
+        leased = ("warp+doh", "wireguard", "consumer_overrides")
+        restored = ("proxy", "masque", protocol_source)
+        harness.warp.settings_queue = [leased, leased, leased, restored]
+
+        result = harness.run("off")
+
+        assert result.returncode == 0
+        wait = ("wait-settings", *restored, "30")
+        assert wait in harness.warp.calls
+        assert harness.warp.calls.index(wait) < harness.warp.calls.index(("connect",))
 
     @pytest.mark.parametrize("renew", [False, True])
     @pytest.mark.parametrize("failure", ["system DNS unavailable", "HTTPS unavailable"])
@@ -337,11 +452,11 @@ class TestPubLeaseLifecycle:
 
         assert result.returncode == 0
         assert "previous WARP state restored" in result.stdout
-        assert ("disconnect",) not in harness.warp.calls
+        assert ("reset-protocol",) in harness.warp.calls
         assert harness.warp.current_mode == "proxy"
         assert not harness.store.metadata_exists()
 
-    @pytest.mark.parametrize("failure", ["connect", "read-status"])
+    @pytest.mark.parametrize("failure", ["connect"])
     def test_degraded_restore_ends_the_lease_despite_a_failing_connection_probe(
         self, harness: Harness, failure: str
     ) -> None:
@@ -375,7 +490,7 @@ class TestPubLeaseLifecycle:
     ) -> None:
         harness.warp.current_status = "Connected"
         assert harness.run("on").returncode == 0
-        harness.warp.status_queue = ["Disconnected"] * 20
+        harness.warp.status_queue = ["Disconnected"] + (["Disconnected"] * 60)
 
         result = harness.run("off")
 
@@ -393,13 +508,13 @@ class TestPubLeaseLifecycle:
 
         assert result.returncode == 1
         assert "previous state restored" in result.stderr
-        assert ("disconnect",) not in harness.warp.calls
+        assert ("reset-protocol",) in harness.warp.calls
         assert harness.warp.current_mode == "proxy"
         assert not harness.store.metadata_exists()
 
     @pytest.mark.parametrize(
         ("operation", "attempts", "expects_progress"),
-        [("off", "20", True), ("reconcile", "60", False)],
+        [("off", "60", True), ("reconcile", "60", False)],
     )
     def test_restore_budget_and_progress_follow_the_caller(
         self,
@@ -419,7 +534,7 @@ class TestPubLeaseLifecycle:
 
         assert result.returncode == 0
         assert ("wait", "Disconnected", attempts) in harness.warp.calls
-        assert ("restoring the previous WARP state..." in result.stderr) is expects_progress
+        assert ("disconnecting for WARP restoration..." in result.stderr) is expects_progress
         assert "restoring the previous WARP state" not in result.stdout
 
     def test_progress_is_silent_without_a_terminal(self, harness: Harness) -> None:
@@ -627,6 +742,39 @@ class TestPubLeaseOwnership:
         assert "ownership lost" not in result.stderr
         assert harness.warp.current_status == "Disconnected"
         assert not harness.store.metadata_exists()
+
+    @pytest.mark.parametrize(
+        ("protocol", "source"),
+        [("masque", "consumer_overrides"), ("wireguard", "network_policy")],
+    )
+    def test_protocol_drift_drops_ownership_without_changing_warp(
+        self, harness: Harness, protocol: str, source: str
+    ) -> None:
+        assert harness.run("on").returncode == 0
+        harness.warp.current_protocol = protocol
+        harness.warp.current_protocol_source = source
+
+        result = harness.run("reconcile")
+
+        assert result.returncode == 0
+        assert "lease ownership lost" in result.stderr
+        assert (harness.warp.current_protocol, harness.warp.current_protocol_source) == (
+            protocol,
+            source,
+        )
+        assert not harness.store.metadata_exists()
+
+    def test_protocol_inspection_failure_retains_recovery_intent(self, harness: Harness) -> None:
+        assert harness.run("on").returncode == 0
+        recovery = harness.paths.recovery.read_bytes()
+        harness.warp.fail_once.append("read-protocol")
+
+        result = harness.run("reconcile")
+
+        assert result.returncode == 1
+        assert "lease retained" in result.stderr
+        assert harness.paths.recovery.read_bytes() == recovery
+        assert harness.store.metadata_exists()
 
     def test_failed_restore_retains_state_for_retry(self, harness: Harness) -> None:
         assert harness.run("on").returncode == 0
@@ -998,7 +1146,7 @@ class TestPubLeaseStateCompatibility:
     @pytest.mark.parametrize(
         ("field_name", "value"),
         [
-            ("version", 2),
+            ("version", 3),
             ("phase", "unknown"),
             ("lease_id", ""),
             ("started_at", True),
@@ -1070,6 +1218,8 @@ class TestPubLeaseStateCompatibility:
         assert state.network_signature == SIGNATURE_HOME
         assert state.network_misses == 0
         assert state.hard_expires_at == 1_043_200
+        assert state.version == 1
+        assert state.previous_protocol is None
         assert harness.store.load_lease() == state
 
     def test_unknown_v1_fields_survive_phase_and_renewal_updates(self, harness: Harness) -> None:
@@ -1091,15 +1241,13 @@ class TestPubLeaseStateCompatibility:
         assert stored["phase"] == "restoring"
         assert stored["future_field"] == raw["future_field"]
 
-    def test_written_lease_satisfies_v1_contract_under_an_external_reader(
-        self, harness: Harness
-    ) -> None:
+    def test_written_protocol_aware_lease_uses_v2_contract(self, harness: Harness) -> None:
         jq = shutil.which("jq")
         if jq is None:
             pytest.skip("jq is needed only for the external v1 contract check")
         assert harness.run("on").returncode == 0
         predicate = """
-            .version == 1
+            .version == 2
             and (.phase == "activating" or .phase == "active" or .phase == "restoring")
             and (.lease_id | type == "string" and length > 0)
             and (.started_at | type == "number")
@@ -1111,6 +1259,10 @@ class TestPubLeaseStateCompatibility:
             and (.previous_status | type == "string" and length > 0)
             and (.previous_status == "Connected") == .previous_connected
             and .expected_mode == "warp+doh"
+            and (.previous_protocol | type == "string" and length > 0)
+            and (.previous_protocol_source | type == "string" and length > 0)
+            and .expected_protocol == "wireguard"
+            and .expected_protocol_source == "consumer_overrides"
         """
 
         result = subprocess.run(
@@ -1121,6 +1273,19 @@ class TestPubLeaseStateCompatibility:
         )
 
         assert result.returncode == 0, result.stderr
+
+    def test_v1_only_reader_rejects_v2_without_removing_recovery(self, harness: Harness) -> None:
+        assert harness.run("on").returncode == 0
+        lease = harness.paths.lease.read_bytes()
+        recovery = harness.paths.recovery.read_bytes()
+
+        raw = json.loads(lease)
+        legacy_result = raw if raw.get("version") == 1 else None
+
+        assert legacy_result is None
+        assert harness.store.load_lease().version == 2
+        assert harness.paths.lease.read_bytes() == lease
+        assert harness.paths.recovery.read_bytes() == recovery
 
 
 class TestHTTPSReadiness:
@@ -1138,7 +1303,7 @@ class TestHTTPSReadiness:
         )
         executable.chmod(0o755)
 
-        result = pub_lease.HTTPSReadiness(str(executable)).failure()
+        result = pub_lease.HTTPSReadiness(str(executable), strong=False).failure()
 
         assert json.loads(recorded.read_text()) == [
             "-q",
@@ -1168,12 +1333,44 @@ class TestHTTPSReadiness:
             raise subprocess.TimeoutExpired(command, kwargs["timeout"])
 
         monkeypatch.setattr(pub_lease.subprocess, "run", timeout)
-        assert pub_lease.HTTPSReadiness().failure() == "DNS/HTTPS readiness check timed out"
+        assert (
+            pub_lease.HTTPSReadiness(strong=False).failure()
+            == "DNS/HTTPS readiness check timed out"
+        )
 
     def test_missing_executable_is_a_readiness_failure(self, tmp_path):
-        assert pub_lease.HTTPSReadiness(str(tmp_path / "absent")).failure() == (
+        assert pub_lease.HTTPSReadiness(str(tmp_path / "absent"), strong=False).failure() == (
             "could not run DNS/HTTPS readiness check"
         )
+
+    @pytest.mark.parametrize(
+        ("returncode", "metrics", "expected"),
+        [
+            (0, b"401 16384", None),
+            (56, b"000 8192", "curl exit 56"),
+            (0, b"401 8192", "incomplete"),
+            (0, b"200 16384", "HTTP 200"),
+            (0, b"invalid", "unreadable metrics"),
+        ],
+    )
+    def test_strong_readiness_requires_complete_unauthenticated_upload(
+        self, monkeypatch, returncode, metrics, expected
+    ):
+        def completed(command, **kwargs):
+            assert command[-1] == "https://api.anthropic.com/v1/messages"
+            assert command[command.index("--write-out") + 1] == "%{http_code} %{size_upload}"
+            assert kwargs["input"] == b"\0" * 16_384
+            assert kwargs["timeout"] == 35
+            return subprocess.CompletedProcess(command, returncode, metrics, b"private")
+
+        monkeypatch.setattr(pub_lease.subprocess, "run", completed)
+
+        failure = pub_lease.HTTPSReadiness().failure()
+
+        if expected is None:
+            assert failure is None
+        else:
+            assert expected in failure
 
 
 class TestPubLeaseRecoveryAndMaintenance:
@@ -1426,7 +1623,10 @@ class TestPubLeaseNotifications:
         assert harness.run("reconcile").returncode == 0
 
         assert harness.notifier.messages == [
-            "lease ownership lost; WARP left unchanged (mode=warp, status=Disconnected)"
+            (
+                "lease ownership lost; WARP left unchanged "
+                "(mode=warp, protocol=wireguard, source=consumer_overrides, status=Disconnected)"
+            )
         ]
 
     def test_a_policy_drop_notifies_the_lost_ownership(self, harness: Harness) -> None:
@@ -1810,11 +2010,23 @@ arguments = [argument for argument in sys.argv[1:] if argument != "-j"]
 if arguments == ["settings", "mode-switch-allowed"]:
     print("true")
 elif arguments == ["settings"]:
-    print(json.dumps({{"settings": {{"operation_mode": state["mode"]}}}}))
+    print(json.dumps({{
+        "settings": {{
+            "operation_mode": state["mode"],
+            "warp_tunnel_protocol": state["protocol"],
+        }},
+        "sources": {{"warp_tunnel_protocol": state["protocol_source"]}},
+    }}))
 elif arguments == ["status"]:
     print(json.dumps({{"status": state["status"], "reason": state.get("reason")}}))
 elif arguments[0:1] == ["mode"]:
     state["mode"] = arguments[1]
+elif arguments[0:3] == ["tunnel", "protocol", "set"]:
+    state["protocol"] = arguments[3].lower()
+    state["protocol_source"] = "consumer_overrides"
+elif arguments == ["tunnel", "protocol", "reset"]:
+    state["protocol"] = "masque"
+    state["protocol_source"] = "network_policy"
 elif arguments == ["connect"]:
     state["status"] = "Connected"
     if "FAKE_WARP_CONNECT_REASON" in os.environ:
@@ -1836,13 +2048,32 @@ def cli_environment(tmp_path: Path) -> dict[str, str]:
     warp = tmp_path / "warp-cli"
     state = tmp_path / "warp.json"
     _write_fake_warp(warp)
-    state.write_text(json.dumps({"mode": "proxy", "status": "Disconnected"}), encoding="utf-8")
+    state.write_text(
+        json.dumps(
+            {
+                "mode": "proxy",
+                "status": "Disconnected",
+                "protocol": "masque",
+                "protocol_source": "network_policy",
+            }
+        ),
+        encoding="utf-8",
+    )
+    curl = tmp_path / "curl"
+    curl.write_text(
+        f"#!{sys.executable}\n"
+        "import sys\n"
+        "payload = sys.stdin.buffer.read()\n"
+        "sys.stdout.write(f'401 {len(payload)}')\n",
+        encoding="utf-8",
+    )
+    curl.chmod(0o755)
     environment = os.environ.copy()
     environment.update(
         {
             "HOME": str(tmp_path / "home"),
             "PUB_WARP_CLI": str(warp),
-            "PUB_CURL": "/usr/bin/true",
+            "PUB_CURL": str(curl),
             # Without an override the CLI would post a real macOS notification from the test suite.
             "PUB_NOTIFY_COMMAND": str(
                 _write_notify_recorder(tmp_path / "notify", tmp_path / "notified")

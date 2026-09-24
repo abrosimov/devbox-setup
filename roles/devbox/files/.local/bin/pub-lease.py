@@ -28,12 +28,18 @@ LEASE_SECONDS = 1_800
 MAX_LEASE_SECONDS = 43_200
 NETWORK_MISS_LIMIT = 2
 EXPECTED_MODE = "warp+doh"
+EXPECTED_PROTOCOL = "wireguard"
+EXPECTED_PROTOCOL_SOURCE = "consumer_overrides"
+LEGACY_STATE_VERSION = 1
+CURRENT_STATE_VERSION = 2
 LEASE_MODES = frozenset({"tunnel_only", EXPECTED_MODE})
 INTERACTIVE_LOCK_TIMEOUT = 10.0
 WARP_COMMAND_TIMEOUT = 5.0
 LOG_MAX_BYTES = 1_048_576
 INVALID_RETENTION_SECONDS = 7 * 24 * 60 * 60
 SUPPORTED_MODES = frozenset({"warp", "doh", "dot", "warp+dot", "proxy"}) | LEASE_MODES
+SUPPORTED_PROTOCOLS = frozenset({"masque", "wireguard"})
+SUPPORTED_PROTOCOL_SOURCES = frozenset({EXPECTED_PROTOCOL_SOURCE, "network_policy"})
 
 STATUS_CONNECTED = "Connected"
 STATUS_DISCONNECTED = "Disconnected"
@@ -83,21 +89,30 @@ class WaitBudget:
     progress: bool
 
 
-ACTIVATION_WAIT = WaitBudget(attempts=25, progress=True)
-INTERACTIVE_RESTORE_WAIT = WaitBudget(attempts=20, progress=True)
+ACTIVATION_WAIT = WaitBudget(attempts=120, progress=True)
+INTERACTIVE_RESTORE_WAIT = WaitBudget(attempts=60, progress=True)
 # The reconciler retries every 60s, so it can afford to block; an interactive caller cannot.
 RECONCILER_RESTORE_WAIT = WaitBudget(attempts=60, progress=False)
+SETTINGS_APPLY_WAIT = WaitBudget(attempts=30, progress=True)
 SETTLE_WAIT = WaitBudget(attempts=10, progress=True)
 
 
 class WarpPort(Protocol):
+    def tunnel_settings(self) -> tuple[str, str, str]: ...
+
     def mode(self) -> str: ...
 
     def status(self) -> str: ...
 
     def policy_lock(self) -> str: ...
 
+    def protocol(self) -> tuple[str, str]: ...
+
     def set_mode(self, mode: str) -> None: ...
+
+    def set_protocol(self, protocol: str) -> None: ...
+
+    def reset_protocol(self) -> None: ...
 
     def connect(self) -> None: ...
 
@@ -105,6 +120,14 @@ class WarpPort(Protocol):
 
     def wait_for_status(
         self, expected: str, *, attempts: int, tick: Callable[[], None]
+    ) -> bool: ...
+
+    def wait_for_settings(
+        self,
+        expected: tuple[str, str, str],
+        *,
+        attempts: int,
+        tick: Callable[[], None],
     ) -> bool: ...
 
     def settle_status(self, *, attempts: int, tick: Callable[[], None]) -> str: ...
@@ -121,8 +144,12 @@ class ReadinessPort(Protocol):
 @dataclass(frozen=True)
 class HTTPSReadiness:
     executable: str = "/usr/bin/curl"
+    strong: bool = True
 
     def failure(self) -> str | None:
+        return self._post_failure() if self.strong else self._head_failure()
+
+    def _head_failure(self) -> str | None:
         try:
             result = subprocess.run(
                 [
@@ -155,6 +182,67 @@ class HTTPSReadiness:
             return f"HTTPS readiness check failed (curl exit {result.returncode})"
         return None
 
+    def _post_failure(self) -> str | None:
+        payload_size = 16_384
+        try:
+            result = subprocess.run(
+                [
+                    self.executable,
+                    "-q",
+                    "--noproxy",
+                    "*",
+                    "--http1.1",
+                    "--silent",
+                    "--show-error",
+                    "--output",
+                    os.devnull,
+                    "--connect-timeout",
+                    "10",
+                    "--max-time",
+                    "30",
+                    "--request",
+                    "POST",
+                    "--header",
+                    "content-type: application/json",
+                    "--header",
+                    "anthropic-version: 2023-06-01",
+                    "--data-binary",
+                    "@-",
+                    "--write-out",
+                    "%{http_code} %{size_upload}",
+                    "https://api.anthropic.com/v1/messages",
+                ],
+                input=b"\0" * payload_size,
+                capture_output=True,
+                check=False,
+                timeout=35,
+            )
+        except subprocess.TimeoutExpired:
+            return "Anthropic upload readiness check timed out"
+        except OSError:
+            return "could not run Anthropic upload readiness check"
+        return _upload_result_failure(result, payload_size)
+
+
+def _upload_result_failure(
+    result: subprocess.CompletedProcess[bytes], payload_size: int
+) -> str | None:
+    if result.returncode == 6:
+        return "system DNS could not resolve api.anthropic.com"
+    if result.returncode != 0:
+        return f"Anthropic upload readiness check failed (curl exit {result.returncode})"
+    try:
+        status_text, uploaded_text = result.stdout.decode("ascii").strip().split()
+        status = int(status_text)
+        uploaded = int(float(uploaded_text))
+    except (UnicodeError, ValueError):
+        return "Anthropic upload readiness check returned unreadable metrics"
+    if status != 401:
+        return f"Anthropic upload readiness check returned HTTP {status}, expected 401"
+    if uploaded != payload_size:
+        return f"Anthropic upload readiness check was incomplete ({uploaded}/{payload_size} bytes)"
+    return None
+
 
 class NotifierPort(Protocol):
     def notify(self, message: str) -> None: ...
@@ -171,6 +259,10 @@ class LeaseState:
     previous_mode: str
     previous_status: str
     expected_mode: str
+    previous_protocol: str | None = None
+    previous_protocol_source: str | None = None
+    expected_protocol: str | None = None
+    expected_protocol_source: str | None = None
     network_signature: str | None = None
     network_misses: int = 0
     hard_expires_at: float | None = None
@@ -185,7 +277,7 @@ class LeaseState:
         if not isinstance(value, dict):
             raise StateError
         fields = cast("dict[str, object]", value)
-        version = fields.get("version")
+        version = _state_version(fields.get("version"))
         phase = fields.get("phase")
         lease_id = fields.get("lease_id")
         started_at = fields.get("started_at")
@@ -195,8 +287,6 @@ class LeaseState:
         previous_connected = fields.get("previous_connected")
         expected_mode = fields.get("expected_mode")
 
-        if type(version) is not int or version != 1:
-            raise StateError
         if not isinstance(phase, str) or phase not in {"activating", "active", "restoring"}:
             raise StateError
         if not isinstance(lease_id, str) or not lease_id:
@@ -213,6 +303,8 @@ class LeaseState:
             raise StateError
         if not isinstance(expected_mode, str) or expected_mode not in LEASE_MODES:
             raise StateError
+        protocol_state = _protocol_state(fields)
+        _validate_protocol_schema(version, protocol_state)
         return cls(
             version=version,
             phase=phase,
@@ -223,6 +315,10 @@ class LeaseState:
             previous_mode=previous_mode,
             previous_status=_restore_status(fields, previous_connected=previous_connected),
             expected_mode=expected_mode,
+            previous_protocol=protocol_state[0],
+            previous_protocol_source=protocol_state[1],
+            expected_protocol=protocol_state[2],
+            expected_protocol_source=protocol_state[3],
             network_signature=_network_signature(fields),
             network_misses=_network_misses(fields),
             hard_expires_at=_hard_expiry(fields, started_at=validated_started_at),
@@ -243,6 +339,10 @@ class LeaseState:
                 "previous_status": self.previous_status,
                 "previous_connected": self.previous_connected,
                 "expected_mode": self.expected_mode,
+                "previous_protocol": self.previous_protocol,
+                "previous_protocol_source": self.previous_protocol_source,
+                "expected_protocol": self.expected_protocol,
+                "expected_protocol_source": self.expected_protocol_source,
                 "network_signature": self.network_signature,
                 "network_misses": self.network_misses,
                 "hard_expires_at": self.hard_expires_at,
@@ -301,6 +401,49 @@ def _hard_expiry(fields: dict[str, object], *, started_at: float) -> float | Non
     return expiry
 
 
+def _protocol_state(
+    fields: dict[str, object],
+) -> tuple[str | None, str | None, str | None, str | None]:
+    names = (
+        "previous_protocol",
+        "previous_protocol_source",
+        "expected_protocol",
+        "expected_protocol_source",
+    )
+    values = tuple(fields.get(name) for name in names)
+    if all(value is None for value in values):
+        return None, None, None, None
+    if not all(isinstance(value, str) for value in values):
+        raise StateError
+    previous, previous_source, expected, expected_source = cast("tuple[str, str, str, str]", values)
+    if previous not in SUPPORTED_PROTOCOLS or expected not in SUPPORTED_PROTOCOLS:
+        raise StateError
+    if (
+        previous_source not in SUPPORTED_PROTOCOL_SOURCES
+        or expected_source != EXPECTED_PROTOCOL_SOURCE
+        or expected != EXPECTED_PROTOCOL
+    ):
+        raise StateError
+    return previous, previous_source, expected, expected_source
+
+
+def _state_version(value: object) -> int:
+    if type(value) is not int or value not in {LEGACY_STATE_VERSION, CURRENT_STATE_VERSION}:
+        raise StateError
+    return value
+
+
+def _validate_protocol_schema(
+    version: int,
+    protocol_state: tuple[str | None, str | None, str | None, str | None],
+) -> None:
+    has_protocol_state = protocol_state[0] is not None
+    if (version == LEGACY_STATE_VERSION and has_protocol_state) or (
+        version == CURRENT_STATE_VERSION and not has_protocol_state
+    ):
+        raise StateError
+
+
 _DIGEST_LENGTH = 64
 _HEX_DIGITS = frozenset("0123456789abcdef")
 
@@ -316,6 +459,10 @@ _STATE_FIELDS = frozenset(
         "previous_status",
         "previous_connected",
         "expected_mode",
+        "previous_protocol",
+        "previous_protocol_source",
+        "expected_protocol",
+        "expected_protocol_source",
         "network_signature",
         "network_misses",
         "hard_expires_at",
@@ -476,13 +623,33 @@ class WarpClient:
         self.poll_interval = poll_interval
         self.timeout = timeout
         self.connection_failure: str | None = None
+        self.last_status = "unknown"
+        self.last_reason = "unavailable"
+
+    def tunnel_settings(self) -> tuple[str, str, str]:
+        payload = self._json_command("settings")
+        settings = payload.get("settings")
+        sources = payload.get("sources")
+        if not isinstance(settings, dict) or not isinstance(sources, dict):
+            detail = "WARP tunnel settings are unavailable"
+            raise WarpError(detail)
+        mode = settings.get("operation_mode")
+        protocol = settings.get("warp_tunnel_protocol")
+        source = sources.get("warp_tunnel_protocol")
+        if (
+            not isinstance(mode, str)
+            or not mode
+            or not isinstance(protocol, str)
+            or not protocol
+            or not isinstance(source, str)
+            or not source
+        ):
+            detail = "WARP tunnel settings are unavailable"
+            raise WarpError(detail)
+        return mode, protocol.lower(), source
 
     def mode(self) -> str:
-        settings = self._settings()
-        mode = settings.get("operation_mode")
-        if not isinstance(mode, str) or not mode:
-            raise WarpError
-        return mode
+        return self.tunnel_settings()[0]
 
     def status(self) -> str:
         self.connection_failure = None
@@ -490,12 +657,11 @@ class WarpClient:
         status = payload.get("status")
         if not isinstance(status, str) or not status:
             raise WarpError
+        self.last_status = status if status in KNOWN_STATUSES else "unknown"
         reason = payload.get("reason")
-        if (
-            status == STATUS_UNABLE_TO_CONNECT
-            and isinstance(reason, dict)
-            and "Port53Bound" in reason
-        ):
+        reason_name = _safe_warp_reason(reason)
+        self.last_reason = reason_name
+        if status == STATUS_UNABLE_TO_CONNECT and reason_name == "Port53Bound":
             self.connection_failure = (
                 "WARP DNS could not start: local port 53 is already in use (Port53Bound)"
             )
@@ -512,8 +678,24 @@ class WarpClient:
         detail = f"unreadable mode-switch policy: {_sanitised_output(answer)}"
         raise WarpError(detail)
 
+    def protocol(self) -> tuple[str, str]:
+        _, protocol, source = self.tunnel_settings()
+        return protocol, source
+
     def set_mode(self, mode: str) -> None:
         self._command("mode", mode)
+
+    def set_protocol(self, protocol: str) -> None:
+        names = {"masque": "MASQUE", "wireguard": "WireGuard"}
+        try:
+            name = names[protocol]
+        except KeyError as error:
+            detail = "unsupported WARP tunnel protocol"
+            raise WarpError(detail) from error
+        self._command("tunnel", "protocol", "set", name)
+
+    def reset_protocol(self) -> None:
+        self._command("tunnel", "protocol", "reset")
 
     def connect(self) -> None:
         self._command("connect")
@@ -526,6 +708,28 @@ class WarpClient:
         if status is None and expected == STATUS_CONNECTED and self.connection_failure is not None:
             raise WarpError(self.connection_failure)
         return status is not None
+
+    def wait_for_settings(
+        self,
+        expected: tuple[str, str, str],
+        *,
+        attempts: int,
+        tick: Callable[[], None],
+    ) -> bool:
+        last_error: WarpError | None = None
+        for attempt in range(attempts):
+            try:
+                last_error = None
+                if self.tunnel_settings() == expected:
+                    return True
+            except WarpError as error:
+                last_error = error
+            if attempt + 1 < attempts:
+                tick()
+                self.sleeper(self.poll_interval)
+        if last_error is not None:
+            raise last_error
+        return False
 
     def settle_status(self, *, attempts: int, tick: Callable[[], None]) -> str:
         settled = self._poll(
@@ -556,14 +760,11 @@ class WarpClient:
                 self.sleeper(self.poll_interval)
         if last_error is not None:
             raise last_error
+        if self.last_status != "unknown" and self.connection_failure is None:
+            self.connection_failure = (
+                f"last WARP status={self.last_status}, reason={self.last_reason}"
+            )
         return None
-
-    def _settings(self) -> dict[str, object]:
-        payload = self._json_command("settings")
-        settings = payload.get("settings")
-        if not isinstance(settings, dict):
-            raise WarpError
-        return cast("dict[str, object]", settings)
 
     def _json_command(self, command: str) -> dict[str, object]:
         result = self._run("-j", command)
@@ -596,6 +797,28 @@ class WarpClient:
         if result.returncode != 0:
             raise WarpError(_sanitised_output(result.stderr))
         return result
+
+
+_SAFE_WARP_REASONS = frozenset(
+    {
+        "CheckingNetwork",
+        "ConnectivityCheckFailed",
+        "NetworkHealthy",
+        "PerformingConnectivityChecks",
+        "PerformingHappyEyeballs",
+        "Port53Bound",
+    }
+)
+
+
+def _safe_warp_reason(value: object) -> str:
+    if isinstance(value, str) and value in _SAFE_WARP_REASONS:
+        return value
+    if isinstance(value, dict):
+        matches = sorted(str(key) for key in value if key in _SAFE_WARP_REASONS)
+        if matches:
+            return ",".join(matches)
+    return "unavailable"
 
 
 class SystemNetwork:
@@ -804,7 +1027,7 @@ class Controller:
         state = self.store.load_lease()
         if state is None:
             return self._fail("invalid lease state and recovery snapshot")
-        if state.expected_mode != EXPECTED_MODE:
+        if state.expected_mode != EXPECTED_MODE or state.expected_protocol is None:
             if not self._restore_previous_state(INTERACTIVE_RESTORE_WAIT):
                 return self._fail("legacy lease restoration failed; migration will retry")
             return self._activate(now, boot_id, prior=state)
@@ -840,11 +1063,11 @@ class Controller:
         previous = self._previous_warp_state()
         if previous is None:
             return 1
-        previous_mode, previous_status = previous
+        previous_mode, previous_status, previous_protocol, previous_protocol_source = previous
         self.store.clear_policy_notice()
 
         state = LeaseState(
-            version=1,
+            version=CURRENT_STATE_VERSION,
             phase="activating",
             lease_id=str(uuid.uuid4()),
             started_at=now,
@@ -853,6 +1076,10 @@ class Controller:
             previous_mode=previous_mode,
             previous_status=previous_status,
             expected_mode=EXPECTED_MODE,
+            previous_protocol=previous_protocol,
+            previous_protocol_source=previous_protocol_source,
+            expected_protocol=EXPECTED_PROTOCOL,
+            expected_protocol_source=EXPECTED_PROTOCOL_SOURCE,
             hard_expires_at=now + MAX_LEASE_SECONDS,
         )
         if prior is not None:
@@ -861,6 +1088,8 @@ class Controller:
                 lease_id=prior.lease_id,
                 previous_mode=prior.previous_mode,
                 previous_status=prior.previous_status,
+                previous_protocol=previous_protocol,
+                previous_protocol_source=previous_protocol_source,
                 expires_at=_renewed_expiry(prior, now),
                 hard_expires_at=prior.hard_expires_at or now + MAX_LEASE_SECONDS,
                 extras=prior.extras,
@@ -987,21 +1216,33 @@ class Controller:
     def _inspect_mode_ownership(self, state: LeaseState) -> ReconcileOutcome:
         try:
             current_mode = self.warp.mode()
+            current_protocol = self.warp.protocol() if state.expected_protocol is not None else None
         except WarpError as error:
             self._remember_warp_failure(error)
             self._fail("could not inspect WARP state; lease retained")
             return ReconcileOutcome.FAILED
         # A manual mode change ends ownership; a manual disconnect only pauses the tunnel, so the
         # expected mode still counts as owned and the restoration snapshot is kept.
+        transitional = state.phase in {"activating", "restoring"}
         owns_mode = current_mode == state.expected_mode or (
-            state.phase == "restoring" and current_mode == state.previous_mode
+            transitional and current_mode == state.previous_mode
         )
-        if owns_mode:
+        expected_protocol = (state.expected_protocol, state.expected_protocol_source)
+        previous_protocol = (state.previous_protocol, state.previous_protocol_source)
+        owns_protocol = (
+            current_protocol is None
+            or current_protocol == expected_protocol
+            or (transitional and current_protocol == previous_protocol)
+        )
+        if owns_mode and owns_protocol:
             return ReconcileOutcome.UNCHANGED
         self.store.delete_metadata()
+        protocol_detail = ""
+        if current_protocol is not None:
+            protocol_detail = f", protocol={current_protocol[0]}, source={current_protocol[1]}"
         self._announce(
             "lease ownership lost; WARP left unchanged "
-            f"(mode={self._mode_or_unknown()}, status={self._status_or_unknown()})",
+            f"(mode={current_mode}{protocol_detail}, status={self._status_or_unknown()})",
             self.stderr,
         )
         return ReconcileOutcome.OWNERSHIP_LOST
@@ -1082,13 +1323,14 @@ class Controller:
 
     def _ensure_tunnel_ready(self) -> bool:
         try:
-            self.warp.set_mode(EXPECTED_MODE)
+            if not self._prepare_tunnel():
+                return False
             self.warp.connect()
             if not self._wait_for_status(
                 STATUS_CONNECTED, ACTIVATION_WAIT, "waiting for the WARP tunnel"
             ):
                 return False
-            if self.warp.mode() != EXPECTED_MODE:
+            if not self._tunnel_matches_expected():
                 return False
         except WarpError as error:
             self._remember_warp_failure(error)
@@ -1098,6 +1340,35 @@ class Controller:
             self._fail(failure)
             return False
         return True
+
+    def _prepare_tunnel(self) -> bool:
+        if self._tunnel_matches_expected():
+            return True
+        self.warp.disconnect()
+        if not self._wait_for_status(
+            STATUS_DISCONNECTED,
+            INTERACTIVE_RESTORE_WAIT,
+            "leaving the previous WARP mode",
+        ):
+            return False
+        self.warp.set_mode(EXPECTED_MODE)
+        self.warp.set_protocol(EXPECTED_PROTOCOL)
+        progress = self._progress("waiting for WARP settings to apply", SETTINGS_APPLY_WAIT)
+        try:
+            return self.warp.wait_for_settings(
+                (EXPECTED_MODE, EXPECTED_PROTOCOL, EXPECTED_PROTOCOL_SOURCE),
+                attempts=SETTINGS_APPLY_WAIT.attempts,
+                tick=progress.tick,
+            )
+        finally:
+            progress.finish()
+
+    def _tunnel_matches_expected(self) -> bool:
+        return self.warp.tunnel_settings() == (
+            EXPECTED_MODE,
+            EXPECTED_PROTOCOL,
+            EXPECTED_PROTOCOL_SOURCE,
+        )
 
     def _readiness_failed(self) -> int:
         restored = self._restore_previous_state(INTERACTIVE_RESTORE_WAIT)
@@ -1114,19 +1385,59 @@ class Controller:
             self._fail(f"saved WARP mode is unsupported: {state.previous_mode}")
             return False
         try:
-            self.store.write_lease(replace(state, phase="restoring"))
-            self.warp.set_mode(state.previous_mode)
-            if not self._restore_connection(state.previous_status, budget):
-                return False
-            if self.warp.mode() != state.previous_mode:
-                return False
-            self.store.delete_metadata()
+            restored = self._perform_restore(state, budget)
         except (OSError, StateError, TypeError, ValueError, WarpError) as error:
             if isinstance(error, WarpError):
                 self._remember_warp_failure(error)
             return False
-        else:
-            return True
+        return restored
+
+    def _perform_restore(self, state: LeaseState, budget: WaitBudget) -> bool:
+        self.store.write_lease(replace(state, phase="restoring"))
+        if state.previous_protocol is not None:
+            self.warp.disconnect()
+            if not self._wait_for_status(
+                STATUS_DISCONNECTED, budget, "disconnecting for WARP restoration"
+            ):
+                return False
+            self._restore_protocol(state)
+        self.warp.set_mode(state.previous_mode)
+        if state.previous_protocol is not None and not self._wait_for_settings(
+            (
+                state.previous_mode,
+                state.previous_protocol,
+                cast("str", state.previous_protocol_source),
+            ),
+            SETTINGS_APPLY_WAIT,
+            "waiting for previous WARP settings to apply",
+        ):
+            return False
+        if not self._restore_connection(state.previous_status, budget):
+            return False
+        if not self._restored_state_matches(state):
+            return False
+        self.store.delete_metadata()
+        return True
+
+    def _restored_state_matches(self, state: LeaseState) -> bool:
+        if self.warp.mode() != state.previous_mode:
+            return False
+        return state.previous_protocol is None or self.warp.protocol() == (
+            state.previous_protocol,
+            state.previous_protocol_source,
+        )
+
+    def _restore_protocol(self, state: LeaseState) -> None:
+        if state.previous_protocol_source == "network_policy":
+            self.warp.reset_protocol()
+            return
+        if (
+            state.previous_protocol_source == EXPECTED_PROTOCOL_SOURCE
+            and state.previous_protocol is not None
+        ):
+            self.warp.set_protocol(state.previous_protocol)
+            return
+        raise StateError
 
     def _restore_connection(self, previous_status: str, budget: WaitBudget) -> bool:
         activity = "restoring the previous WARP state"
@@ -1148,6 +1459,22 @@ class Controller:
         progress = self._progress(activity, budget)
         try:
             return self.warp.wait_for_status(expected, attempts=budget.attempts, tick=progress.tick)
+        finally:
+            progress.finish()
+
+    def _wait_for_settings(
+        self,
+        expected: tuple[str, str, str],
+        budget: WaitBudget,
+        activity: str,
+    ) -> bool:
+        progress = self._progress(activity, budget)
+        try:
+            return self.warp.wait_for_settings(
+                expected,
+                attempts=budget.attempts,
+                tick=progress.tick,
+            )
         finally:
             progress.finish()
 
@@ -1243,7 +1570,15 @@ class Controller:
             return False
         return True
 
-    def _previous_warp_state(self) -> tuple[str, str] | None:
+    def _previous_warp_state(self) -> tuple[str, str, str, str] | None:
+        previous_mode = self._previous_mode()
+        previous_status = self._previous_status()
+        previous_protocol = self._previous_protocol()
+        if previous_mode is None or previous_status is None or previous_protocol is None:
+            return None
+        return previous_mode, previous_status, *previous_protocol
+
+    def _previous_mode(self) -> str | None:
         try:
             previous_mode = self.warp.mode()
         except WarpError as error:
@@ -1253,6 +1588,9 @@ class Controller:
         if previous_mode not in SUPPORTED_MODES:
             self._fail(f"current WARP mode is unsupported: {previous_mode}")
             return None
+        return previous_mode
+
+    def _previous_status(self) -> str | None:
         previous_status = self._settled_warp_status()
         if previous_status is None:
             return None
@@ -1264,7 +1602,22 @@ class Controller:
             return None
         if previous_status in DEGRADED_STATUSES:
             self._warn_degraded_previous_state(previous_status)
-        return previous_mode, previous_status
+        return previous_status
+
+    def _previous_protocol(self) -> tuple[str, str] | None:
+        try:
+            previous_protocol, previous_protocol_source = self.warp.protocol()
+        except WarpError as error:
+            self._remember_warp_failure(error)
+            self._fail("could not read WARP tunnel protocol")
+            return None
+        if previous_protocol not in SUPPORTED_PROTOCOLS:
+            self._fail(f"current WARP tunnel protocol is unsupported: {previous_protocol}")
+            return None
+        if previous_protocol_source not in SUPPORTED_PROTOCOL_SOURCES:
+            self._fail("current WARP tunnel protocol source is unsupported")
+            return None
+        return previous_protocol, previous_protocol_source
 
     def _settled_warp_status(self) -> str | None:
         try:

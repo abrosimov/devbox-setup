@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +22,9 @@ class Commands:
     def __init__(self):
         self.mode = "proxy"
         self.status = "Disconnected"
+        self.protocol = "masque"
+        self.protocol_source = "network_policy"
+        self.settings_queue = []
         self.calls = []
         self.curl_calls = 0
         self.fail_curl_at = 0
@@ -28,7 +32,7 @@ class Commands:
         self.fail_restore = False
 
     def run(self, command, **kwargs):
-        assert 0 < kwargs["timeout"] <= 15
+        assert 0 < kwargs["timeout"] <= (35 if Path(command[0]).name == "curl" else 15)
         self.calls.append(command)
         executable = Path(command[0]).name
         arguments = [argument for argument in command[1:] if argument != "-j"]
@@ -37,6 +41,8 @@ class Commands:
         if executable == "curl":
             self.curl_calls += 1
             code = 6 if self.curl_calls == self.fail_curl_at else 0
+            if "input" in kwargs:
+                output = b"401 16384"
         elif executable == "sysctl":
             output = "boot-a"
         elif executable == "warp-cli":
@@ -47,7 +53,23 @@ class Commands:
 
     def warp(self, arguments):
         if arguments == ["settings"]:
-            return json.dumps({"settings": {"operation_mode": self.mode}}), 0
+            mode, protocol, protocol_source = (
+                self.settings_queue.pop(0)
+                if self.settings_queue
+                else (self.mode, self.protocol, self.protocol_source)
+            )
+            return (
+                json.dumps(
+                    {
+                        "settings": {
+                            "operation_mode": mode,
+                            "warp_tunnel_protocol": protocol,
+                        },
+                        "sources": {"warp_tunnel_protocol": protocol_source},
+                    }
+                ),
+                0,
+            )
         if arguments == ["status"]:
             return json.dumps({"status": self.status}), 0
         if arguments == ["settings", "mode-switch-allowed"]:
@@ -56,6 +78,8 @@ class Commands:
             if self.fail_restore and arguments[1] == "proxy":
                 return "", 1
             self.mode = arguments[1]
+        elif arguments[:2] == ["tunnel", "protocol"]:
+            self.change_protocol(arguments)
         elif arguments == ["connect"]:
             self.status = "Connected"
             if self.interrupt_connect:
@@ -65,6 +89,16 @@ class Commands:
         else:
             raise AssertionError(arguments)
         return "", 0
+
+    def change_protocol(self, arguments):
+        if arguments[:3] == ["tunnel", "protocol", "set"]:
+            self.protocol = arguments[3].lower()
+            self.protocol_source = "consumer_overrides"
+        elif arguments == ["tunnel", "protocol", "reset"]:
+            self.protocol = "masque"
+            self.protocol_source = "network_policy"
+        else:
+            raise AssertionError(arguments)
 
 
 @pytest.fixture
@@ -89,7 +123,7 @@ class TestRuntimeGate:
 
     def test_preflight_does_not_mutate_warp_or_create_state(self, runtime):
         gate, commands = runtime
-        assert gate.baseline() == ("proxy", "Disconnected")
+        assert gate.baseline() == ("proxy", "Disconnected", "masque", "network_policy")
         assert not gate.store.paths.directory.exists()
         assert commands.mode == "proxy"
         assert commands.curl_calls == 1
@@ -99,8 +133,11 @@ class TestRuntimeGate:
         gate.live()
         assert commands.mode == "proxy"
         assert commands.status == "Disconnected"
-        assert commands.curl_calls == 4
+        assert commands.protocol == "masque"
+        assert commands.protocol_source == "network_policy"
+        assert commands.curl_calls == 3
         assert not gate.store.metadata_exists()
+        assert not gate.standard_store.metadata_exists()
 
     @pytest.mark.parametrize("fail_at", [1, 2, 3])
     def test_dns_failure_prevents_success_and_restores_if_needed(self, runtime, fail_at):
@@ -110,6 +147,7 @@ class TestRuntimeGate:
             gate.live()
         assert commands.mode == "proxy"
         assert commands.status == "Disconnected"
+        assert commands.protocol == "masque"
         assert not gate.store.metadata_exists()
         if fail_at == 1:
             assert not any("mode" in command[1:] for command in commands.calls)
@@ -122,6 +160,7 @@ class TestRuntimeGate:
         assert commands.mode == "proxy"
         assert commands.status == "Disconnected"
         assert not gate.store.metadata_exists()
+        assert (gate.store.paths.directory / "rollback.json").exists()
 
     def test_failed_restore_retains_real_recovery_metadata(self, runtime):
         gate, commands = runtime
@@ -130,6 +169,142 @@ class TestRuntimeGate:
             gate.live()
         assert gate.store.paths.recovery.exists()
         assert gate.store.load_lease().phase == "restoring"
+        assert (gate.store.paths.directory / "rollback.json").exists()
+
+    @pytest.mark.parametrize("protocol_source", ["network_policy", "consumer_overrides"])
+    def test_guardian_waits_for_settings_then_restores_with_head_only(
+        self, runtime, protocol_source
+    ):
+        gate, commands = runtime
+        commands.mode = "warp+doh"
+        commands.status = "Connected"
+        commands.protocol = "wireguard"
+        commands.protocol_source = "consumer_overrides"
+        expected = ("proxy", "masque", protocol_source)
+        commands.settings_queue = [
+            ("warp+doh", "wireguard", "consumer_overrides"),
+            expected,
+        ]
+
+        gate_module.restore_snapshot(
+            gate.module,
+            ("proxy", "Connected", "masque", protocol_source),
+        )
+
+        assert (commands.mode, commands.status) == ("proxy", "Connected")
+        assert (commands.protocol, commands.protocol_source) == ("masque", protocol_source)
+        curl = [call for call in commands.calls if Path(call[0]).name == "curl"]
+        assert len(curl) == 1
+        assert "--head" in curl[0]
+        assert "--data-binary" not in curl[0]
+
+    def test_restart_recovers_stale_run_before_removing_rollback(self, runtime):
+        gate, commands = runtime
+        home = gate.standard_store.paths.directory.parents[2]
+        root = home / ".local/state/pub-mode-test"
+        stale = root / "run.stale"
+        rollback = stale / "rollback.json"
+        gate_module.write_snapshot(
+            rollback,
+            ("proxy", "Connected", "masque", "network_policy"),
+        )
+        commands.mode = "warp+doh"
+        commands.status = "Connected"
+        commands.protocol = "wireguard"
+        commands.protocol_source = "consumer_overrides"
+
+        gate_module.recover_stale_runs(home, gate.module, root)
+
+        assert (commands.mode, commands.status) == ("proxy", "Connected")
+        assert (commands.protocol, commands.protocol_source) == ("masque", "network_policy")
+        assert not stale.exists()
+
+    def test_failed_stale_recovery_retains_directory_and_marker(self, runtime):
+        gate, commands = runtime
+        home = gate.standard_store.paths.directory.parents[2]
+        root = home / ".local/state/pub-mode-test"
+        stale = root / "run.stale"
+        rollback = stale / "rollback.json"
+        gate_module.write_snapshot(
+            rollback,
+            ("proxy", "Connected", "masque", "network_policy"),
+        )
+        commands.mode = "warp+doh"
+        commands.status = "Connected"
+        commands.protocol = "wireguard"
+        commands.protocol_source = "consumer_overrides"
+        commands.fail_restore = True
+
+        with pytest.raises(RuntimeError):
+            gate_module.recover_stale_runs(home, gate.module, root)
+
+        assert rollback.exists()
+        assert stale.exists()
+
+    def test_disabled_marker_does_not_block_stale_recovery(self, runtime):
+        gate, commands = runtime
+        home = gate.standard_store.paths.directory.parents[2]
+        gate.standard_store.paths.directory.mkdir(parents=True)
+        gate.standard_store.paths.disabled.touch()
+        root = home / ".local/state/pub-mode-test"
+        stale = root / "run.stale"
+        rollback = stale / "rollback.json"
+        gate_module.write_snapshot(
+            rollback,
+            ("proxy", "Connected", "masque", "network_policy"),
+        )
+        commands.mode = "warp+doh"
+        commands.status = "Connected"
+        commands.protocol = "wireguard"
+        commands.protocol_source = "consumer_overrides"
+
+        gate_module.recover_stale_runs(home, gate.module, root)
+
+        assert gate.standard_store.paths.disabled.exists()
+        assert not stale.exists()
+        assert (commands.mode, commands.status) == ("proxy", "Connected")
+
+    def test_guardian_recovers_stale_run_before_prerequisite_failure(self, runtime, monkeypatch):
+        gate, commands = runtime
+        home = gate.standard_store.paths.directory.parents[2]
+        root = home / ".local/state/pub-mode-test"
+        stale = root / "run.stale"
+        gate_module.write_snapshot(
+            stale / "rollback.json",
+            ("proxy", "Connected", "masque", "network_policy"),
+        )
+        commands.mode = "warp+doh"
+        commands.status = "Connected"
+        commands.protocol = "wireguard"
+        commands.protocol_source = "consumer_overrides"
+
+        def missing_prerequisite(_home, *, live=False):
+            assert live is True
+            message = "missing prerequisite"
+            raise gate_module.GateError(message)
+
+        monkeypatch.setattr(gate_module, "check_environment", missing_prerequisite)
+
+        with pytest.raises(gate_module.GateError, match="missing prerequisite"):
+            gate_module.guardian(home)
+
+        assert not stale.exists()
+        assert (commands.mode, commands.status) == ("proxy", "Connected")
+
+    def test_guardian_restoration_has_an_overall_deadline(self, runtime, monkeypatch):
+        gate, _commands = runtime
+
+        def never_returns(_module, _snapshot):
+            signal.pause()
+
+        monkeypatch.setattr(gate_module, "restore_snapshot", never_returns)
+
+        with pytest.raises(gate_module.GateError, match="exceeded"):
+            gate_module.restore_with_deadline(
+                gate.module,
+                ("proxy", "Connected", "masque", "network_policy"),
+                timeout=0.01,
+            )
 
     @pytest.mark.parametrize("filename", ["lease.json", "recovery.json", "disabled"])
     def test_existing_state_is_never_touched(self, runtime, filename):
@@ -140,6 +315,20 @@ class TestRuntimeGate:
         with pytest.raises(gate_module.GateError):
             gate.live()
         assert path.read_text() == "user-owned"
+        assert commands.calls == []
+
+    @pytest.mark.parametrize("filename", ["lease.json", "recovery.json", "disabled"])
+    def test_active_standard_state_is_never_used_for_candidate_metadata(self, runtime, filename):
+        gate, commands = runtime
+        gate.standard_store.paths.directory.mkdir(parents=True)
+        path = gate.standard_store.paths.directory / filename
+        path.write_text("standard-user-owned", encoding="utf-8")
+
+        with pytest.raises(gate_module.GateError):
+            gate.live()
+
+        assert path.read_text() == "standard-user-owned"
+        assert not gate.store.metadata_exists()
         assert commands.calls == []
 
     def test_connection_must_be_stable_before_mutation(self, runtime):
@@ -199,7 +388,7 @@ class TestPrerequisites:
     def test_live_requires_bootstrap_controller(self, machine):
         with pytest.raises(gate_module.GateError) as error:
             gate_module.check_environment(machine, live=True)
-        assert "bootstrap" in str(error.value)
+        assert "supervisor" in str(error.value)
 
     def test_reports_docker_and_both_port_failures_together(self, machine, monkeypatch):
         settings = machine / "Library/Group Containers/group.com.docker/settings-store.json"

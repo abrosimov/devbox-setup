@@ -93,7 +93,7 @@ def _add_entry(tar: tarfile.TarFile, src: Path, arcname: str, result: ArchiveRes
         with src.open("rb") as fh:
             info = tar.gettarinfo(arcname=arcname, fileobj=fh)
             reader = ExactSizeReader(fh, info.size)
-            tar.addfile(info, reader)  # type: ignore[arg-type]
+            tar.addfile(info, reader)
     except FileNotFoundError:
         result.warnings.append(f"vanished: {src}")
         return
@@ -119,7 +119,7 @@ def write_archive(spec: DirSpec, dest: Path, level: int) -> ArchiveResult:
     try:
         with (
             zstd.ZstdFile(partial, "wb", level=level) as zf,
-            tarfile.open(fileobj=zf, mode="w|", format=tarfile.PAX_FORMAT) as tar,  # type: ignore[arg-type]
+            tarfile.open(fileobj=zf, mode="w|", format=tarfile.PAX_FORMAT) as tar,
         ):
             tar.addfile(tar.gettarinfo(str(spec.path), root))
             for src, rel in _walk(spec, result):

@@ -57,7 +57,7 @@ make otelbox-edge-test       # liveness + delivery smoke: binary, launchd servic
 # Weekly drive backup (packages/drive-backup — standalone uv project, own lock/tests)
 make drive-backup-push       # (re)install project + LaunchAgent from the local overlay config
 make drive-backup-now        # launchctl kickstart the agent; log in ~/Library/Logs/drive-backup.log
-make test-drive-backup       # package pytest + ruff + pyright + example-config check
+make test-drive-backup       # package pytest + ruff + pyrefly (strict) + example-config check
 
 # Claude config back-propagation (root files only — subdirs are symlinked)
 make claude-diff     # show drift between deployed ~/.claude and repo

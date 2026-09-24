@@ -8,7 +8,8 @@ import sys
 
 
 def notify(title: str, message: str) -> None:
-    if sys.platform != "darwin" or not (osascript := shutil.which("osascript")):
+    osascript = shutil.which("osascript") if sys.platform == "darwin" else None
+    if osascript is None:
         return
 
     # AppleScript string literals escape backslash and double quote only.

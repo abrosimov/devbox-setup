@@ -129,7 +129,7 @@ class Backup:
         while pending:
             waiting: list[DirSpec] = []
             for spec in pending:
-                busy = self._busy(spec) if self.options.defer else []
+                busy: list[str] = self._busy(spec) if self.options.defer else []
                 if busy:
                     log.info("%s is in use, deferring: %s", spec.name, "; ".join(busy))
                     waiting.append(spec)

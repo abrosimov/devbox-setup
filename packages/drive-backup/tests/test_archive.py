@@ -12,7 +12,7 @@ from drive_backup.config import DirSpec
 
 
 def _members(path: Path) -> dict[str, tarfile.TarInfo]:
-    with zstd.ZstdFile(path) as zf, tarfile.open(fileobj=zf, mode="r|") as tar:  # type: ignore[arg-type]
+    with zstd.ZstdFile(path) as zf, tarfile.open(fileobj=zf, mode="r|") as tar:
         return {m.name: m for m in tar}
 
 
@@ -36,7 +36,7 @@ def test_extracts_to_identical_content(source: Path, tmp_path: Path) -> None:
     dest = tmp_path / "a.tar.zst"
     write_archive(DirSpec(name="claude", path=source), dest, level=1)
     out = tmp_path / "x"
-    with zstd.ZstdFile(dest) as zf, tarfile.open(fileobj=zf, mode="r|") as tar:  # type: ignore[arg-type]
+    with zstd.ZstdFile(dest) as zf, tarfile.open(fileobj=zf, mode="r|") as tar:
         tar.extractall(out, filter="data")
     assert (out / ".claude/projects/p1/s.jsonl").read_text() == '{"a": 1}\n' * 100
 

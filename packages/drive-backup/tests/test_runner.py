@@ -190,7 +190,7 @@ def test_push_race_is_rebased(repo: Path, remote: Path, source: Path, tmp_path: 
         git(other, "commit", "-qm", "personal")
         git(other, "push", "-q")
 
-    backup.git.pull = pull_then_race  # type: ignore[method-assign]
+    backup.git.pull = pull_then_race
     assert backup.run(io.StringIO()).ok
     files = git(remote, "ls-tree", "-r", "--name-only", "master").splitlines()
     assert {"personal.txt", "2026-09/work_claude_2026-09-26.tar.zst"} <= set(files)

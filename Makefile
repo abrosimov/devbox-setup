@@ -165,7 +165,7 @@ help:
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
 	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
 	@echo "  make test-otelbox     - pytest for the otelbox edge contract (wrapper, preflight, version pin)"
-	@echo "  make test-drive-backup - drive-backup package: pytest, ruff, pyright, example config"
+	@echo "  make test-drive-backup - drive-backup package: pytest, ruff, pyrefly, example config"
 	@echo "  make qa               - lint + typecheck + unit, integration, ai-config, and deploy tests"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
@@ -374,15 +374,15 @@ test-deploy: $(DEV_SENTINEL) ## Pytest for dotfile-deploy structure (guards kara
 	@$(DEV_BIN)/pytest tests/deploy -q
 
 # packages/drive-backup is a standalone uv project (own uv.lock, Python 3.14,
-# own ruff/pyright config) meant to be liftable into its own repository, so it is
+# own ruff/pyrefly config) meant to be liftable into its own repository, so it is
 # checked with its own toolchain rather than the root dev venv. The example config
 # is validated with the same `check-config` the playbook runs against the real one.
 DRIVE_BACKUP_PKG := packages/drive-backup
-test-drive-backup: ## drive-backup package: pytest, ruff, pyright, example config
+test-drive-backup: ## drive-backup package: pytest, ruff, pyrefly, example config
 	@cd $(DRIVE_BACKUP_PKG) && uv sync --frozen --quiet
 	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen pytest -q
 	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen ruff check . && uv run --frozen ruff format --check .
-	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen pyright
+	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen pyrefly check
 	@AION_AUTOPOIESEON=/nonexistent/aion $(DRIVE_BACKUP_PKG)/.venv/bin/drive-backup \
 	  --config roles/devbox/files/.config/drive-backup/config.toml.example check-config >/dev/null
 

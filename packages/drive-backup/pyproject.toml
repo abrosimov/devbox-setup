@@ -20,7 +20,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = ["pytest>=8.0"]
-lint = ["ruff>=0.15", "pyright>=1.1.400"]
+lint = ["ruff>=0.15", "pyrefly>=1.3.0"]
 
 [tool.uv]
 default-groups = ["dev", "lint"]
@@ -44,10 +44,28 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 
-[tool.pyright]
-include = ["src", "tests"]
-pythonVersion = "3.14"
-typeCheckingMode = "strict"
+# Same strict rule set the repo applies to its fully typed code (root pyproject,
+# scripts/ai_config/** sub-config). Here it is project-wide, so the strict preset
+# can be used as the base rather than mirrored rule by rule.
+[tool.pyrefly]
+python-version = "3.14"
+project-includes = ["src", "tests"]
+# `.` makes the tests package (and its relative conftest import) resolvable.
+search-path = ["src", "."]
+project-excludes = ["**/.venv/**", "**/__pycache__/**"]
+preset = "strict"
+check-unannotated-defs = true
+infer-return-types = "checked"
+strict-callable-subtyping = true
+
+[tool.pyrefly.errors]
+implicit-any = true
+implicit-any-parameter = true
+unannotated-return = true
+bad-override = true
+unbound-name = true
+missing-override-decorator = true
+unused-ignore = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

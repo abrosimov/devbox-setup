@@ -105,6 +105,9 @@ jobs:
       - name: Script tests
         run: make test-scripts
 
+      - name: drive-backup package tests
+        run: make test-drive-backup
+
       - name: Dotfile-deploy structure tests
         run: make test-deploy
 

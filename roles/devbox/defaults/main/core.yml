@@ -47,6 +47,16 @@ devbox_active_profile: "unknown"
 # in devbox_shell.env (shell.yml).
 devbox_langfuse_user_id: "unknown"
 
+# Weekly drive backup (packages/drive-backup, darwin/configure_drive_backup.yml).
+# Switched on by the local-overlay config ~/.config/drive-backup/config.toml —
+# see roles/devbox/files/.config/drive-backup/config.toml.example. launchd
+# Weekday: 0/7 = Sunday, so 6 at 03:00 is the Friday→Saturday night.
+devbox_drive_backup:
+  schedule:
+    weekday: 6
+    hour: 3
+    minute: 0
+
 # Profile extension points — overridden in profiles/*.yml.
 # Lists are concatenated with base lists in task files via `+`.
 devbox_extra_brew: []

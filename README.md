@@ -275,6 +275,26 @@ OTELBOX_TUNNEL_HOST=user@telemetry.example.com
 
 Ports default to `18080` (SigNoz) and `28080` (ClickStack) and only need overriding if the server-side loopback publications change.
 
+## Drive Backup
+
+A weekly LaunchAgent (`local.drive-backup`, Friday→Saturday night at 03:00) archives a set of directories — `~/.claude`, `~/.codex`, `~/.gemini`, plus any under `$AION_AUTOPOIESEON` — into the `drive` repository at `$AION_AUTOPOIESEON/drive/base`, then commits and pushes. The tool is the standalone uv project [`packages/drive-backup`](packages/drive-backup/README.md) (stdlib-only, Python 3.14), kept self-contained so it can move to its own repository.
+
+**Switch it on per machine** by putting the list of directories in the local overlay; the playbook installs the agent only when this file exists, and removes it when it does not:
+
+```sh
+cp roles/devbox/files/.config/drive-backup/config.toml.example \
+   roles/devbox/local/.config/drive-backup/config.toml
+$EDITOR roles/devbox/local/.config/drive-backup/config.toml
+make drive-backup-push     # or a full make personal / make work
+make drive-backup-now      # optional: run once now; tail -f ~/Library/Logs/drive-backup.log
+```
+
+Layout in the repository: `<YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst`, with the profile from `$MNEMOSYNE_PERISTASEOS`. Each run also commits `<YYYY-MM>/<profile>_backup_<YYYY-MM-DD>.log`, including runs that fail, so failures are visible from any clone. Only a failure that leaves no usable repository (missing, dirty, detached) stays local, in `~/Library/Logs/drive-backup.log`, with a desktop notification. Old archives are never deleted by the tool.
+
+A directory with `busy` processes configured (e.g. a live `claude` session) is deferred and re-checked every 15 minutes for up to 3 hours, then archived anyway. The files are copied as they are at that moment, and the log records this as a warning.
+
+Prerequisites in the drive repository: `*.tar.zst` must be LFS-tracked (`*.tar.zst filter=lfs diff=lfs merge=lfs -text` in `.gitattributes`), and the LFS filters must be configured (`git lfs install`). The tool refuses to commit an archive that would bypass LFS. It runs git with `core.hooksPath=/dev/null` and uploads LFS objects itself with `git lfs push`, so the global hooks path set up by this repository doesn't block uploads.
+
 ## Testing
 
 ```bash

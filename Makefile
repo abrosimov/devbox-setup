@@ -123,9 +123,9 @@ endif
        list-skills list-agents audit-budget \
        audit audit-brew audit-brewfile audit-taps untap-stale \
        claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
-       dotfiles-push shell-push mcp-sync local-push macos-defaults \
+       dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now \
        sync-upstream-docs \
-       test test-integration test-ai-config test-deploy test-claude-hooks test-git-hooks test-scripts test-otelbox test-nvim test-fish test-json test-bash \
+       test test-integration test-ai-config test-deploy test-claude-hooks test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -165,6 +165,7 @@ help:
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
 	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
 	@echo "  make test-otelbox     - pytest for the otelbox edge contract (wrapper, preflight, version pin)"
+	@echo "  make test-drive-backup - drive-backup package: pytest, ruff, pyright, example config"
 	@echo "  make qa               - lint + typecheck + unit, integration, ai-config, and deploy tests"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
@@ -174,6 +175,8 @@ help:
 	@echo "  make ssh-passphrase-reseed - reseed only the devbox-ssh-passphrase keychain slot"
 	@echo "  make otelbox-edge-config - set otelbox edge remote endpoint (overlay) + ingestion token (keychain); ONLY=endpoint|token|cert"
 	@echo "  make otelbox-edge-test - liveness smoke: binary, service, :13133, :8888, OTLP round-trip, delivery"
+	@echo "  make drive-backup-push - (re)install the weekly drive backup (uv project + LaunchAgent) from the local overlay config"
+	@echo "  make drive-backup-now  - run the drive backup now via launchd; log in ~/Library/Logs/drive-backup.log"
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
@@ -369,6 +372,19 @@ test-scripts: $(DEV_SENTINEL) ## Pytest for scripts/ (git-identity-gen.py and fr
 
 test-deploy: $(DEV_SENTINEL) ## Pytest for dotfile-deploy structure (guards karabiner assets deploy in install_configs.yml)
 	@$(DEV_BIN)/pytest tests/deploy -q
+
+# packages/drive-backup is a standalone uv project (own uv.lock, Python 3.14,
+# own ruff/pyright config) meant to be liftable into its own repository, so it is
+# checked with its own toolchain rather than the root dev venv. The example config
+# is validated with the same `check-config` the playbook runs against the real one.
+DRIVE_BACKUP_PKG := packages/drive-backup
+test-drive-backup: ## drive-backup package: pytest, ruff, pyright, example config
+	@cd $(DRIVE_BACKUP_PKG) && uv sync --frozen --quiet
+	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen pytest -q
+	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen ruff check . && uv run --frozen ruff format --check .
+	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen pyright
+	@AION_AUTOPOIESEON=/nonexistent/aion $(DRIVE_BACKUP_PKG)/.venv/bin/drive-backup \
+	  --config roles/devbox/files/.config/drive-backup/config.toml.example check-config >/dev/null
 
 # Isolated check against the deployed-shape venv: same uv sync --frozen that
 # Ansible runs in production, then pytest from bin/'s own dev group. Catches
@@ -681,6 +697,18 @@ mcp-sync: $(COLLECTIONS_SENTINEL)
 local-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local $(ACTIVE_OPTS) playbooks/local.yml
+
+# Fast-path: (re)install the weekly drive backup — packages/drive-backup + the
+# local.drive-backup LaunchAgent. Deploys the local overlay first: its
+# ~/.config/drive-backup/config.toml is the on/off switch. No sudo.
+drive-backup-push: $(COLLECTIONS_SENTINEL)
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local,drive-backup $(ACTIVE_OPTS) playbooks/drive_backup.yml
+
+# Run the backup now, through launchd, with exactly the scheduled environment.
+drive-backup-now:
+	@launchctl kickstart "gui/$$(id -u)/local.drive-backup"
+	@echo "Started. Follow: tail -f ~/Library/Logs/drive-backup.log"
 
 # Re-apply macOS basics: Touch ID for sudo, pmset disablesleep, DevToolsSecurity.
 # Reuses configure_macos_basics.yml under `macos`. Sudo IS required.

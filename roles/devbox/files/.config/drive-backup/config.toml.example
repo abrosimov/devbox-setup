@@ -1,0 +1,52 @@
+# Example ONLY — the real file is machine-local and gitignored.
+#
+# Put the real one in the local overlay so it deploys to
+# ~/.config/drive-backup/config.toml:
+#
+#   roles/devbox/local/.config/drive-backup/config.toml
+#
+# Its presence is the switch: with it, `make personal`/`make work` installs the
+# weekly `local.drive-backup` LaunchAgent (Friday→Saturday night); without it, the
+# playbook removes the agent. Check a draft with
+#   ~/.local/share/drive-backup/.venv/bin/drive-backup --config <file> check-config
+#
+# Paths: `~`, `$VARS`, or relative to $AION_AUTOPOIESEON. Archives land in
+# <repo_dir>/<YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst with the profile
+# taken from $MNEMOSYNE_PERISTASEOS. Full reference: packages/drive-backup/README.md.
+
+# repo_dir = "drive/base"     # default: $AION_AUTOPOIESEON/drive/base
+# zstd_level = 9
+
+# While a `busy` process is running, its directory is re-checked every
+# interval_minutes; after max_wait_minutes it is archived anyway.
+[defer]
+interval_minutes = 15
+max_wait_minutes = 180
+
+[[dir]]
+name = "claude"
+path = "~/.claude"
+busy = ["claude"]
+exclude = [
+    "bin/.venv",
+    "plugins/cache",
+    "shell-snapshots",
+    "statsig",
+    "**/__pycache__",
+]
+
+[[dir]]
+name = "codex"
+path = "~/.codex"
+busy = ["codex"]
+exclude = ["**/__pycache__", "bin/.venv"]
+
+[[dir]]
+name = "gemini"
+path = "~/.gemini"
+busy = ["gemini"]
+
+# [[dir]]
+# name = "notes"
+# path = "notes/obsidian"     # → $AION_AUTOPOIESEON/notes/obsidian
+# exclude = [".obsidian/workspace.json", ".trash"]

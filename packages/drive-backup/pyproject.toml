@@ -1,0 +1,54 @@
+[project]
+name = "drive-backup"
+version = "0.1.0"
+description = "Archive a set of directories into a git (LFS) repository, commit and push."
+readme = "README.md"
+requires-python = ">=3.14"
+# Runtime is stdlib-only: tomllib for the config, compression.zstd (3.14+) for the
+# archives, tarfile for the container, subprocess for git.
+dependencies = []
+
+# Self-contained uv project so it can move to its own repository unchanged. devbox
+# rsyncs it to ~/.local/share/drive-backup/ and materialises the venv with
+# `uv sync --frozen --no-dev`; the LaunchAgent runs .venv/bin/drive-backup directly.
+[project.scripts]
+drive-backup = "drive_backup.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+lint = ["ruff>=0.15", "pyright>=1.1.400"]
+
+[tool.uv]
+default-groups = ["dev", "lint"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP", "C4", "SIM", "RUF", "ANN", "S", "PTH", "RET", "PL"]
+ignore = [
+    "S603", "S607",  # git/ps/osascript are invoked with argv lists by design
+    "PLR2004",       # magic values
+    "PLR0913",       # dataclass-like constructors
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "S101", "S108", "PLR2004", "PLC0415"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.14"
+typeCheckingMode = "strict"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"

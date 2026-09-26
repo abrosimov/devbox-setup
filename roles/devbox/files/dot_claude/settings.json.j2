@@ -341,10 +341,6 @@
       "Bash(git mv *)",
       "Bash(git clean *)",
       "Bash(git checkout -- *)",
-      "Bash(git stash)",
-      "Bash(git stash *)",
-      "Bash(git merge --autostash*)",
-      "Bash(git pull --autostash*)",
       "Bash(git -C * push --force *)",
       "Bash(git -C * push --force-with-lease *)",
       "Bash(git -C * push -f *)",
@@ -371,10 +367,6 @@
       "Bash(git -C * mv *)",
       "Bash(git -C * clean *)",
       "Bash(git -C * checkout -- *)",
-      "Bash(git -C * stash)",
-      "Bash(git -C * stash *)",
-      "Bash(git -C * merge --autostash*)",
-      "Bash(git -C * pull --autostash*)",
       "Bash(cat *>*)",
       "Bash(echo *>*)",
       "Bash(kill *)",
@@ -402,110 +394,118 @@
       "Read(~/.aws/**)",
       "Read(~/.gnupg/**)",
       "mcp__atlassian__createJiraIssue",
-      "mcp__atlassian__createIssueLink"
+      "mcp__atlassian__createIssueLink",
+      "Bash(git stash)",
+      "Bash(git stash *)",
+      "Bash(git merge --autostash*)",
+      "Bash(git pull --autostash*)",
+      "Bash(git -C * stash)",
+      "Bash(git -C * stash *)",
+      "Bash(git -C * merge --autostash*)",
+      "Bash(git -C * pull --autostash*)"
     ],
     "defaultMode": "auto"
   },
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_bash_toolchain_guard.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_bash_toolchain_guard.py",
+            "type": "command"
           },
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_tmpdir_guard.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_tmpdir_guard.py",
+            "type": "command"
           },
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/bash_decision_gate.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/bash_decision_gate.py",
+            "type": "command"
           },
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_bash_boundary_wrap.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_bash_boundary_wrap.py",
+            "type": "command"
           }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_tmpdir_guard.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_lint_guard.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_lint_guard.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_write_completion_gate.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_write_existing_guard.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py"
-          }
-        ]
-      },
-      {
-        "matcher": "MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py"
-          }
-        ]
+        ],
+        "matcher": "Bash"
       },
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreToolUse"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_tmpdir_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_lint_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_lint_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_write_completion_gate.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_write_existing_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_plan_code_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "MultiEdit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreToolUse",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -515,72 +515,72 @@
       {
         "hooks": [
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/suggest_checkpoint.py",
-            "async": true
+            "type": "command"
           }
         ]
       },
       {
-        "matcher": "Edit",
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_lint.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_lint.py",
+            "type": "command"
           },
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_typecheck.py",
-            "async": true
+            "type": "command"
           },
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py",
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "Edit"
       },
       {
-        "matcher": "Write",
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_lint.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_lint.py",
+            "type": "command"
           },
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_typecheck.py",
-            "async": true
+            "type": "command"
           },
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py",
+            "type": "command"
           }
-        ]
-      },
-      {
-        "matcher": "MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
-          }
-        ]
-      },
-      {
-        "matcher": "NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py"
-          }
-        ]
+        ],
+        "matcher": "Write"
       },
       {
         "hooks": [
           {
-            "type": "command",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "MultiEdit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "NotebookEdit"
+      },
+      {
+        "hooks": [
+          {
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostToolUse",
-            "async": true
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -590,17 +590,17 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py",
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py UserPromptSubmit",
-            "timeout": 5
+            "timeout": 5,
+            "type": "command"
           }
         ]
       }
@@ -609,32 +609,32 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_format.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_format.py",
+            "type": "command"
           },
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_lint_gate.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_lint_gate.py",
+            "type": "command"
           },
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py",
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Stop"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Stop",
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py",
+            "type": "command"
           }
         ]
       }
@@ -643,77 +643,77 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_save.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_save.py",
+            "type": "command"
           },
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_compact_mask.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_compact_mask.py",
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreCompact"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreCompact",
+            "type": "command"
           }
         ]
       }
     ],
     "SessionStart": [
       {
-        "matcher": "startup|resume",
         "hooks": [
           {
-            "type": "command",
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_prepare_python.py",
-            "timeout": 15
+            "timeout": 15,
+            "type": "command"
+          }
+        ],
+        "matcher": "startup|resume"
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionStart",
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionStart"
-          }
-        ]
-      },
-      {
-        "matcher": "startup|resume",
-        "hooks": [
-          {
-            "type": "command",
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py",
-            "timeout": 60
+            "timeout": 60,
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "startup|resume"
       }
     ],
     "SessionEnd": [
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_save.py"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/session_save.py",
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionEnd"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SessionEnd",
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py",
-            "timeout": 60
+            "timeout": 60,
+            "type": "command"
           }
         ]
       }
@@ -722,17 +722,17 @@
       {
         "hooks": [
           {
-            "type": "command",
             "command": "~/.claude/bin/worktree-create",
-            "timeout": 30
+            "timeout": 30,
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py WorktreeCreate"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py WorktreeCreate",
+            "type": "command"
           }
         ]
       }
@@ -741,17 +741,17 @@
       {
         "hooks": [
           {
-            "type": "command",
             "command": "~/.claude/bin/worktree-remove",
-            "timeout": 15
+            "timeout": 15,
+            "type": "command"
           }
         ]
       },
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py WorktreeRemove"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py WorktreeRemove",
+            "type": "command"
           }
         ]
       }
@@ -760,8 +760,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Setup"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Setup",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -771,8 +771,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py UserPromptExpansion"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py UserPromptExpansion",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -782,8 +782,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PermissionRequest"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PermissionRequest",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -793,8 +793,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PermissionDenied"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PermissionDenied",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -804,9 +804,9 @@
       {
         "hooks": [
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostToolUseFailure",
-            "async": true
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -816,9 +816,9 @@
       {
         "hooks": [
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostToolBatch",
-            "async": true
+            "type": "command"
           }
         ]
       }
@@ -827,8 +827,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Notification"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Notification",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -838,9 +838,9 @@
       {
         "hooks": [
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py MessageDisplay",
-            "async": true
+            "type": "command"
           }
         ]
       }
@@ -849,8 +849,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SubagentStart"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SubagentStart",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -860,8 +860,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SubagentStop"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py SubagentStop",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -871,8 +871,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TaskCreated"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TaskCreated",
+            "type": "command"
           }
         ]
       }
@@ -881,8 +881,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TaskCompleted"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TaskCompleted",
+            "type": "command"
           }
         ]
       }
@@ -891,8 +891,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py StopFailure"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py StopFailure",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -902,8 +902,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TeammateIdle"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py TeammateIdle",
+            "type": "command"
           }
         ]
       }
@@ -912,9 +912,9 @@
       {
         "hooks": [
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py InstructionsLoaded",
-            "async": true
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -924,8 +924,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py ConfigChange"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py ConfigChange",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -935,9 +935,9 @@
       {
         "hooks": [
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py CwdChanged",
-            "async": true
+            "type": "command"
           }
         ]
       }
@@ -946,8 +946,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py DirectoryAdded"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py DirectoryAdded",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -957,9 +957,9 @@
       {
         "hooks": [
           {
-            "type": "command",
+            "async": true,
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py FileChanged",
-            "async": true
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -969,8 +969,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostCompact"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PostCompact",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -980,8 +980,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Elicitation"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py Elicitation",
+            "type": "command"
           }
         ],
         "matcher": ".*"
@@ -991,8 +991,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py ElicitationResult"
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py ElicitationResult",
+            "type": "command"
           }
         ],
         "matcher": ".*"

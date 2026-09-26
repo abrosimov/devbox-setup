@@ -9,8 +9,11 @@ from ai_config import (
     ConfigurationFormat,
     FieldManifest,
     FieldScope,
+    ManifestDefinitionError,
+    PreferenceValueType,
     ReconciliationPlan,
     RepositoryDocument,
+    SemanticScalar,
     SemanticSnapshot,
     build_repository_document,
     load_template_variables,
@@ -52,7 +55,7 @@ class TestClaudeFieldManifest:
             manifest=manifest,
         )
 
-    def test_current_repository_settings_are_explicitly_classified(
+    def test_current_repository_settings_have_expected_scopes(
         self,
         manifest: FieldManifest,
     ) -> None:
@@ -63,7 +66,74 @@ class TestClaudeFieldManifest:
         }
 
         assert scopes
-        assert all(scope is FieldScope.SHARED for scope in scopes.values())
+        assert {path for path, scope in scopes.items() if scope is FieldScope.PREFERENCE} == {
+            ("cleanupPeriodDays",)
+        }
+        assert all(
+            scope is FieldScope.SHARED
+            for path, scope in scopes.items()
+            if path != ("cleanupPeriodDays",)
+        )
+
+    def test_cleanup_period_default_is_ten_years(self, manifest: FieldManifest) -> None:
+        rendered = repository_document("personal").rendered
+        values = {field.path: to_plain_value(field.value) for field in rendered.semantic_fields()}
+
+        assert values[("cleanupPeriodDays",)] == 3650
+        rule = manifest.rule_for(("cleanupPeriodDays",))
+        assert rule is not None
+        assert rule.scope is FieldScope.PREFERENCE
+        assert rule.preference is not None
+        assert rule.preference.value_type is PreferenceValueType.INTEGER
+        assert rule.preference.minimum == 1
+
+    @pytest.mark.parametrize("local_value", [1, 30, 3650, 7300])
+    def test_existing_cleanup_period_is_preserved(
+        self,
+        manifest: FieldManifest,
+        local_value: int,
+    ) -> None:
+        plan = plan_reconciliation(
+            base=SemanticSnapshot.from_value({}),
+            repo=SemanticSnapshot.from_value({"cleanupPeriodDays": 3650}),
+            live=SemanticSnapshot.from_value({"cleanupPeriodDays": local_value}),
+            manifest=manifest,
+        )
+
+        change = next(change for change in plan.changes if change.path == ("cleanupPeriodDays",))
+        assert change.kind is ChangeKind.PRESERVE_LOCAL
+        assert change.scope is FieldScope.PREFERENCE
+
+    def test_missing_cleanup_period_gets_repository_default(self, manifest: FieldManifest) -> None:
+        plan = plan_reconciliation(
+            base=None,
+            repo=SemanticSnapshot.from_value({"cleanupPeriodDays": 3650}),
+            live=SemanticSnapshot.from_value({}),
+            manifest=manifest,
+        )
+
+        change = next(change for change in plan.changes if change.path == ("cleanupPeriodDays",))
+        assert change.kind is ChangeKind.APPLY_REPO
+        assert change.scope is FieldScope.PREFERENCE
+
+    @pytest.mark.parametrize("value", [True, 1.5, None, [], {}, "", "30", 0, -1])
+    @pytest.mark.parametrize("source", ["repository", "live"])
+    def test_cleanup_period_rejects_invalid_preference_types(
+        self,
+        manifest: FieldManifest,
+        value: object,
+        source: str,
+    ) -> None:
+        repository_value = value if source == "repository" else 3650
+        live_value = value if source == "live" else 3650
+
+        with pytest.raises(ManifestDefinitionError):
+            plan_reconciliation(
+                base=SemanticSnapshot.from_value({}),
+                repo=SemanticSnapshot.from_value({"cleanupPeriodDays": repository_value}),
+                live=SemanticSnapshot.from_value({"cleanupPeriodDays": live_value}),
+                manifest=manifest,
+            )
 
     @pytest.mark.parametrize(
         ("profile", "expected_environment", "expected_user"),
@@ -128,6 +198,23 @@ class TestClaudeFieldManifest:
         path: tuple[str, ...],
     ) -> None:
         assert manifest.scope_for(path) is FieldScope.SHARED
+
+    def test_dialog_expiry_is_a_local_preference(self, manifest: FieldManifest) -> None:
+        plan = plan_reconciliation(
+            base=SemanticSnapshot.from_value({}),
+            repo=SemanticSnapshot.from_value({}),
+            live=SemanticSnapshot.from_value({"dialogExpiry": "10m"}),
+            manifest=manifest,
+        )
+
+        assert manifest.scope_for(("dialogExpiry",)) is FieldScope.PREFERENCE
+        assert len(plan.changes) == 1
+        change = plan.changes[0]
+        assert change.path == ("dialogExpiry",)
+        assert change.kind is ChangeKind.PRESERVE_LOCAL
+        assert change.scope is FieldScope.PREFERENCE
+        assert isinstance(change.live, SemanticScalar)
+        assert change.live.value == "10m"
 
     @pytest.mark.parametrize(
         "path",

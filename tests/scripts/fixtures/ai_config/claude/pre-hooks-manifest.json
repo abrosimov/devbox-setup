@@ -7,18 +7,6 @@
       "scope": "shared"
     },
     {
-      "path": "cleanupPeriodDays",
-      "scope": "preference",
-      "preference": {
-        "type": "integer",
-        "minimum": 1
-      }
-    },
-    {
-      "path": "dialogExpiry",
-      "scope": "preference"
-    },
-    {
       "path": "enabledPlugins",
       "scope": "shared"
     },
@@ -27,11 +15,12 @@
       "scope": "shared"
     },
     {
-      "path": "extraKnownMarketplaces",
-      "scope": "shared"
+      "path": "env.LANGFUSE_TRACING_ENVIRONMENT",
+      "scope": "environment",
+      "binding": "profile:devbox_active_profile"
     },
     {
-      "path": "hooks",
+      "path": "extraKnownMarketplaces",
       "scope": "shared"
     },
     {

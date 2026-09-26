@@ -29,6 +29,8 @@ from .core import (
     FieldStrategy,
     ManifestDefinitionError,
     MissingValue,
+    PreferenceConstraint,
+    PreferenceValueType,
     ReconciliationPlan,
     plan_reconciliation,
 )
@@ -167,6 +169,8 @@ __all__ = [
     "OperationError",
     "OperationMode",
     "OperationResult",
+    "PreferenceConstraint",
+    "PreferenceValueType",
     "ReadBackValidationError",
     "ReconciliationPlan",
     "RepositoryDocument",

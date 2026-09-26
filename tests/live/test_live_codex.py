@@ -65,6 +65,11 @@ def inventory(generated: GeneratedCodex) -> HookInventory:
 def grant_trust(generated: GeneratedCodex, *extra: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [
+            "uv",
+            "run",
+            "--no-project",
+            "--python",
+            ">=3.12",
             str(HOOK_TRUST),
             "--repo-root",
             str(REPO_ROOT),

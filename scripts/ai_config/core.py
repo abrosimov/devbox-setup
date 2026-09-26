@@ -7,6 +7,7 @@ from pathlib import PurePosixPath
 
 from .model import (
     FieldPath,
+    ScalarKind,
     SemanticArray,
     SemanticObject,
     SemanticScalar,
@@ -58,6 +59,11 @@ class FieldStrategy(StrEnum):
     ORDERED_SET = "ordered-set"
 
 
+class PreferenceValueType(StrEnum):
+    STRING = "string"
+    INTEGER = "integer"
+
+
 # Repository-document declaration convention only; the manifest binding, not this
 # sentinel, is what the resolver reads.
 HOME_BINDING_SENTINEL = "@home@"
@@ -95,12 +101,29 @@ class FieldBinding:
 
 
 @dataclass(frozen=True, slots=True)
+class PreferenceConstraint:
+    value_type: PreferenceValueType = PreferenceValueType.STRING
+    minimum: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.minimum is not None and (
+            not isinstance(self.minimum, int) or isinstance(self.minimum, bool)
+        ):
+            message = "preference minimum must be a JSON integer"
+            raise ManifestDefinitionError(message)
+        if self.minimum is not None and self.value_type is not PreferenceValueType.INTEGER:
+            message = "preference minimum requires integer type"
+            raise ManifestDefinitionError(message)
+
+
+@dataclass(frozen=True, slots=True)
 class FieldRule:
     path: FieldPath
     scope: FieldScope
     binding: FieldBinding | None = None
     secret: bool = False
     strategy: FieldStrategy = FieldStrategy.ATOMIC
+    preference: PreferenceConstraint | None = None
 
     def __post_init__(self) -> None:
         if not self.path or any(not segment for segment in self.path):
@@ -117,6 +140,9 @@ class FieldRule:
             raise ManifestDefinitionError(message)
         if self.strategy is FieldStrategy.ORDERED_SET and self.scope is not FieldScope.SHARED:
             message = "ordered-set strategy requires shared scope"
+            raise ManifestDefinitionError(message)
+        if self.preference is not None and self.scope is not FieldScope.PREFERENCE:
+            message = "preference constraints require preference scope"
             raise ManifestDefinitionError(message)
 
 
@@ -225,12 +251,26 @@ def _validate_preferences(snapshot: SemanticSnapshot, manifest: FieldManifest) -
                 if isinstance(value, SemanticObject)
                 else MissingValue.MISSING
             )
-        if value is not MissingValue.MISSING and (
-            not isinstance(value, SemanticScalar)
-            or not isinstance(value.value, str)
-            or not value.value.strip()
-        ):
-            message = "preference fields must be non-empty strings at their declared path"
+        if value is MissingValue.MISSING:
+            continue
+        constraint = rule.preference or PreferenceConstraint()
+        if constraint.value_type is PreferenceValueType.STRING:
+            valid = (
+                isinstance(value, SemanticScalar)
+                and value.kind is ScalarKind.STRING
+                and isinstance(value.value, str)
+                and bool(value.value.strip())
+            )
+        else:
+            valid = (
+                isinstance(value, SemanticScalar)
+                and value.kind is ScalarKind.INTEGER
+                and isinstance(value.value, int)
+                and not isinstance(value.value, bool)
+                and (constraint.minimum is None or value.value >= constraint.minimum)
+            )
+        if not valid:
+            message = "preference field does not satisfy its declared constraint"
             raise ManifestDefinitionError(message)
 
 

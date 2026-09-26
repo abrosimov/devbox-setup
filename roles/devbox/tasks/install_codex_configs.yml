@@ -375,7 +375,8 @@
          | map('join', '@')
          | list }}
     devbox_codex_hook_trust_argv: >-
-      {{ [devbox_codex_repo_root ~ '/scripts/codex-hook-trust.py',
+      {{ ['uv', 'run', '--no-project', '--python', '>=3.12',
+          devbox_codex_repo_root ~ '/scripts/codex-hook-trust.py',
           '--repo-root', devbox_codex_repo_root,
           '--codex-home', devbox_codex_home,
           '--json']

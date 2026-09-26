@@ -16,6 +16,14 @@ if TYPE_CHECKING:
 
 STATE_SCHEMA_VERSION = 1
 _PROFILE_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
+_CLAUDE_PRE_HOOKS = "f0f3d3f991fbfdd194db632d3caf361936cf3d6897ce0a119be9a8c75ef04b0a"
+_CLAUDE_PRE_DIALOG_EXPIRY = "2163ecc657a375c1868944d2a2fd95785feaba574fd48d4c9d83de6f759fe929"
+_CLAUDE_DIALOG_EXPIRY_PREFERENCE = (
+    "414c0ec3547c4ce09d5b4c77b75caa11f09366e3b7aa6e0746e88bdb3957c3f8"
+)
+_CLAUDE_CLEANUP_PERIOD_PREFERENCE = (
+    "95dfe9607c1ae48e356d7452926cd1a8c0d8f0802dbe1f926ac9e10dc623ff9a"
+)
 _CODEX_SHARED_MODEL_AND_REASONING = (
     "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411"
 )
@@ -26,15 +34,23 @@ _CODEX_REASONING_PREFERENCE = "e3c3c98f6bf7b950a3c2e827844d0755601f9a0e7c9de23a2
 _CODEX_MODEL_AND_REASONING_PREFERENCES = (
     "f6de9f0d247548b2dfb5c991c5a2db8424c16d71751633c81c03ea823d612f61"
 )
-# Exact manifest transitions preserve unrelated baseline history, so preference
-# demotion cannot turn existing live edits into a fresh initialisation.
-_CODEX_PREFERENCE_MIGRATIONS = {
-    (_CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_PREFERENCE): ("model_reasoning_effort",),
-    (_CODEX_SHARED_MODEL_AND_REASONING, _CODEX_MODEL_AND_REASONING_PREFERENCES): (
+# Exact transitions retain baseline history without accepting unrelated manifests.
+_MANIFEST_MIGRATIONS = {
+    ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_CLEANUP_PERIOD_PREFERENCE): (),
+    ("claude", _CLAUDE_PRE_DIALOG_EXPIRY, _CLAUDE_CLEANUP_PERIOD_PREFERENCE): (),
+    (
+        "claude",
+        _CLAUDE_DIALOG_EXPIRY_PREFERENCE,
+        _CLAUDE_CLEANUP_PERIOD_PREFERENCE,
+    ): (),
+    ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_PREFERENCE): (
+        "model_reasoning_effort",
+    ),
+    ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_MODEL_AND_REASONING_PREFERENCES): (
         "model",
         "model_reasoning_effort",
     ),
-    (_CODEX_REASONING_PREFERENCE, _CODEX_MODEL_AND_REASONING_PREFERENCES): ("model",),
+    ("codex", _CODEX_REASONING_PREFERENCE, _CODEX_MODEL_AND_REASONING_PREFERENCES): ("model",),
 }
 
 
@@ -149,8 +165,8 @@ def parse_base_state(
         raise StateError(message) from error
     if record.get("manifest_digest") != manifest_digest:
         configuration = snapshot_mapping(snapshot)
-        transition = (cast("str", record["manifest_digest"]), manifest_digest)
-        for field in _CODEX_PREFERENCE_MIGRATIONS[transition]:
+        transition = (engine.value, cast("str", record["manifest_digest"]), manifest_digest)
+        for field in _MANIFEST_MIGRATIONS[transition]:
             remove_value(configuration, (field,))
         snapshot = SemanticSnapshot.from_value(configuration)
     return BaseState(
@@ -206,9 +222,8 @@ def _metadata_matches(
         raise StateError(message)
     previous_digest = record.get("manifest_digest")
     return previous_digest == manifest_digest or (
-        engine.value == "codex"
-        and isinstance(previous_digest, str)
-        and (previous_digest, manifest_digest) in _CODEX_PREFERENCE_MIGRATIONS
+        isinstance(previous_digest, str)
+        and (engine.value, previous_digest, manifest_digest) in _MANIFEST_MIGRATIONS
     )
 
 

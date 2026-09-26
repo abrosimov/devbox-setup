@@ -1046,6 +1046,96 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "roles/devbox/files/dot_codex/config.ai-config.json"
 OLD_MANIFEST = Path(__file__).parent / "fixtures/ai_config/codex/pre-preference-manifest.json"
 REASONING_MANIFEST = OLD_MANIFEST.with_name("reasoning-preference-manifest.json")
+CLAUDE_MANIFEST = ROOT / "roles/devbox/files/dot_claude/settings.ai-config.json"
+CLAUDE_PRE_HOOKS_MANIFEST = (
+    Path(__file__).parent / "fixtures/ai_config/claude/pre-hooks-manifest.json"
+)
+CLAUDE_DIALOG_EXPIRY_RULE = b"""    {
+      "path": "dialogExpiry",
+      "scope": "preference"
+    },
+"""
+CLAUDE_CLEANUP_PERIOD_RULE = b"""    {
+      "path": "cleanupPeriodDays",
+      "scope": "preference",
+      "preference": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+"""
+
+
+class TestClaudeManifestMigrations:
+    @pytest.mark.parametrize(
+        "source",
+        ["pre-hooks", "pre-dialog-expiry", "dialog-expiry-preference"],
+    )
+    def test_recognised_transition_preserves_baseline_history(self, source):
+        target_source = CLAUDE_MANIFEST.read_bytes()
+        source_bytes = {
+            "pre-hooks": CLAUDE_PRE_HOOKS_MANIFEST.read_bytes(),
+            "pre-dialog-expiry": target_source.replace(CLAUDE_CLEANUP_PERIOD_RULE, b"", 1).replace(
+                CLAUDE_DIALOG_EXPIRY_RULE,
+                b"",
+                1,
+            ),
+            "dialog-expiry-preference": target_source.replace(
+                CLAUDE_CLEANUP_PERIOD_RULE,
+                b"",
+                1,
+            ),
+        }[source]
+        expected_source_digest = {
+            "pre-hooks": "f0f3d3f991fbfdd194db632d3caf361936cf3d6897ce0a119be9a8c75ef04b0a",
+            "pre-dialog-expiry": (
+                "2163ecc657a375c1868944d2a2fd95785feaba574fd48d4c9d83de6f759fe929"
+            ),
+            "dialog-expiry-preference": (
+                "414c0ec3547c4ce09d5b4c77b75caa11f09366e3b7aa6e0746e88bdb3957c3f8"
+            ),
+        }[source]
+        snapshot = {
+            "env": {"LANGFUSE_TRACING_ENVIRONMENT": "personal"},
+            "permissions": {"allow": ["Read"]},
+        }
+        state = BaseState(
+            engine=EngineKind.CLAUDE,
+            profile="personal",
+            manifest_digest=digest_manifest_source(source_bytes),
+            snapshot=SemanticSnapshot.from_value(snapshot),
+        )
+
+        assert digest_manifest_source(source_bytes) == expected_source_digest
+        assert digest_manifest_source(target_source) == (
+            "95dfe9607c1ae48e356d7452926cd1a8c0d8f0802dbe1f926ac9e10dc623ff9a"
+        )
+        migrated = parse_base_state(
+            render_base_state(state),
+            engine=EngineKind.CLAUDE,
+            profile="personal",
+            manifest_digest=digest_manifest_source(target_source),
+        )
+        assert migrated is not None
+        assert snapshot_mapping(migrated.snapshot) == snapshot
+
+    def test_unrecognised_digest_is_refused(self):
+        target_source = CLAUDE_MANIFEST.read_bytes()
+        state = BaseState(
+            engine=EngineKind.CLAUDE,
+            profile="personal",
+            manifest_digest=digest_manifest_source(CLAUDE_PRE_HOOKS_MANIFEST.read_bytes() + b"\n"),
+            snapshot=SemanticSnapshot.from_value({"permissions": {"allow": ["Read"]}}),
+        )
+
+        migrated = parse_base_state(
+            render_base_state(state),
+            engine=EngineKind.CLAUDE,
+            profile="personal",
+            manifest_digest=digest_manifest_source(target_source),
+        )
+
+        assert migrated is None
 
 
 class TestPreferenceOperations:
@@ -1203,7 +1293,10 @@ class TestPreferenceOperations:
             path.read_bytes() for path in (paths.base, tree.paths.live, tree.paths.repository)
         ] == before
 
-    @pytest.mark.parametrize("value", ["true", "42", "[]", "{}", '""', '{nested = "high"}'])
+    @pytest.mark.parametrize(
+        "value",
+        ["true", "42", "4.2", "[]", "{}", '""', '{nested = "high"}'],
+    )
     @pytest.mark.parametrize("source", ["live", "repository"])
     def test_invalid_preference_type_rejected_before_writes(self, tree, value, source):
         tree.paths.live.parent.mkdir(parents=True)

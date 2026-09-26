@@ -11,6 +11,8 @@ from .core import (
     FieldScope,
     FieldStrategy,
     ManifestDefinitionError,
+    PreferenceConstraint,
+    PreferenceValueType,
 )
 
 if TYPE_CHECKING:
@@ -72,7 +74,7 @@ def _parse_rule(raw_rule: object) -> FieldRule:
         message = "manifest field rules must be objects"
         raise ManifestError(message)
     rule = cast("dict[object, object]", raw_rule)
-    allowed_keys = {"binding", "path", "scope", "secret", "strategy"}
+    allowed_keys = {"binding", "path", "preference", "scope", "secret", "strategy"}
     if not set(rule).issubset(allowed_keys):
         message = "manifest field rule contains unexpected fields"
         raise ManifestError(message)
@@ -81,6 +83,7 @@ def _parse_rule(raw_rule: object) -> FieldRule:
     raw_binding = rule.get("binding")
     raw_secret = rule.get("secret", False)
     raw_strategy = rule.get("strategy", FieldStrategy.ATOMIC.value)
+    raw_preference = rule.get("preference")
     path = _parse_path(raw_path)
     if not isinstance(raw_scope, str):
         message = "manifest field scope must be a string"
@@ -94,6 +97,7 @@ def _parse_rule(raw_rule: object) -> FieldRule:
         message = "manifest field secret flag must be a boolean"
         raise ManifestError(message)
     binding = _parse_binding(raw_binding)
+    preference = _parse_preference(raw_preference) if "preference" in rule else None
     if not isinstance(raw_strategy, str):
         message = "manifest field strategy must be a string"
         raise ManifestError(message)
@@ -108,7 +112,41 @@ def _parse_rule(raw_rule: object) -> FieldRule:
         binding=binding,
         secret=raw_secret,
         strategy=strategy,
+        preference=preference,
     )
+
+
+def _parse_preference(raw_preference: object) -> PreferenceConstraint:
+    if not isinstance(raw_preference, dict):
+        message = "manifest preference constraint must be an object"
+        raise ManifestError(message)
+    preference = cast("dict[object, object]", raw_preference)
+    allowed_keys = {"minimum", "type"}
+    if not set(preference).issubset(allowed_keys):
+        message = "manifest preference constraint contains unexpected fields"
+        raise ManifestError(message)
+    raw_type = preference.get("type")
+    if not isinstance(raw_type, str):
+        message = "manifest preference constraint type must be a string"
+        raise ManifestError(message)
+    try:
+        value_type = PreferenceValueType(raw_type)
+    except ValueError as error:
+        message = f"unknown preference constraint type: {raw_type}"
+        raise ManifestError(message) from error
+    raw_minimum = preference.get("minimum")
+    if "minimum" in preference and (
+        not isinstance(raw_minimum, int) or isinstance(raw_minimum, bool)
+    ):
+        message = "preference minimum must be a JSON integer"
+        raise ManifestError(message)
+    try:
+        return PreferenceConstraint(
+            value_type=value_type,
+            minimum=cast("int | None", raw_minimum),
+        )
+    except ManifestDefinitionError as error:
+        raise ManifestError(str(error)) from error
 
 
 def _parse_binding(raw_binding: object) -> FieldBinding | None:

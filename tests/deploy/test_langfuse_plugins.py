@@ -180,6 +180,8 @@ def test_codex_hook_trust_is_granted_from_an_explicit_allowlist() -> None:
     argv = trust["vars"]["devbox_codex_hook_trust_argv"]
     names = list(_tasks_by_name(CODEX_TASKS))
 
+    assert "'uv', 'run', '--no-project', '--python', '>=3.12'" in argv
+    assert ".venv" not in argv
     assert "scripts/codex-hook-trust.py" in argv
     assert "'--plugin'" in argv
     assert "devbox_codex_plugins" in trust["vars"]["devbox_codex_hook_trust_plugin_ids"]
@@ -213,6 +215,11 @@ def test_codex_hook_trust_argv_renders_one_plugin_option_per_pinned_plugin() -> 
     argv = environment.from_string(trust["vars"]["devbox_codex_hook_trust_argv"]).render(**context)
 
     assert argv == [
+        "uv",
+        "run",
+        "--no-project",
+        "--python",
+        ">=3.12",
         "/repo/scripts/codex-hook-trust.py",
         "--repo-root",
         "/repo",

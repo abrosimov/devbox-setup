@@ -14,9 +14,13 @@ from ai_config import (
     FieldScope,
     FieldStrategy,
     ManifestDefinitionError,
+    ManifestError,
+    PreferenceConstraint,
+    PreferenceValueType,
     SemanticArray,
     SemanticSnapshot,
     SnapshotError,
+    parse_manifest,
     plan_reconciliation,
     to_plain_value,
 )
@@ -161,6 +165,45 @@ class TestFieldManifest:
                 scope=FieldScope.LOCAL_STATE,
                 strategy=FieldStrategy.ORDERED_SET,
             )
+
+    def test_preference_constraint_requires_preference_scope(self) -> None:
+        with pytest.raises(ManifestDefinitionError):
+            FieldRule(
+                path=("value",),
+                scope=FieldScope.SHARED,
+                preference=PreferenceConstraint(value_type=PreferenceValueType.INTEGER),
+            )
+
+    @pytest.mark.parametrize(
+        "preference",
+        [
+            None,
+            [],
+            {},
+            {"type": "boolean"},
+            {"type": "integer", "minimum": True},
+            {"type": "integer", "minimum": None},
+            {"type": "integer", "minimum": 1.5},
+            {"type": "integer", "minimum": "1"},
+            {"type": "string", "minimum": 1},
+            {"type": "integer", "maximum": 10},
+        ],
+    )
+    def test_invalid_preference_constraint_is_rejected(self, preference: object) -> None:
+        source = json.dumps(
+            {
+                "fields": [
+                    {
+                        "path": "value",
+                        "scope": "preference",
+                        "preference": preference,
+                    }
+                ]
+            }
+        ).encode()
+
+        with pytest.raises(ManifestError):
+            parse_manifest(source)
 
 
 class TestThreeWayPlanner:

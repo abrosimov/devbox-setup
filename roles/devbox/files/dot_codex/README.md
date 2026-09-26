@@ -102,7 +102,8 @@ effect for the *next* Codex process only — quit and relaunch (or start a new
 To audit without writing:
 
 ```sh
-scripts/codex-hook-trust.py --check --fail-on-drift \
+uv run --no-project --python '>=3.12' scripts/codex-hook-trust.py \
+  --check --fail-on-drift \
   --plugin tracing@codex-observability-plugin
 ```
 

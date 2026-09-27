@@ -12,8 +12,7 @@ and `git-lfs` on `PATH`.
 
 ```bash
 drive-backup check-config            # validate, print the resolved plan
-drive-backup run                     # defer while sessions are live, archive, commit, push
-drive-backup run --no-defer          # archive now even if sessions are running
+drive-backup run                     # archive immediately, commit, push
 drive-backup run --no-push           # commit locally only
 drive-backup --config other.toml run
 ```
@@ -36,14 +35,9 @@ the lock.
 repo_dir = "drive/base"      # default; relative to $AION_AUTOPOIESEON
 zstd_level = 9               # 1..22
 
-[defer]
-interval_minutes = 15        # re-check live sessions this often
-max_wait_minutes = 180       # then archive anyway (logged as a warning)
-
 [[dir]]
 name = "claude"              # [a-z0-9-]; part of the archive file name
 path = "~/.claude"           # ~, $VARS, or relative to $AION_AUTOPOIESEON
-busy = ["claude"]            # process names that mean "still writing here"
 exclude = ["bin/.venv", "**/__pycache__"]
 ```
 
@@ -51,9 +45,9 @@ exclude = ["bin/.venv", "**/__pycache__"]
 `PurePath.full_match` semantics: `*` stays within one path segment, `**` spans any
 number. A pattern that matches a directory prunes the whole subtree.
 
-`busy` names are compared with the base name of a process's `argv[0]` and
-`argv[1]`, which covers both native CLIs (`claude`) and interpreter-launched ones
-(`node …/gemini`).
+Older configs may still contain per-directory `busy` lists and a top-level
+`[defer]` table. They are validated for compatibility but ignored; every run
+archives immediately.
 
 ## What a run does
 
@@ -63,9 +57,9 @@ number. A pattern that matches a directory prunes the whole subtree.
    If this fails, nothing is written; the error goes to stderr only.
 3. `git pull --ff-only` (with `GIT_LFS_SKIP_SMUDGE=1`: other machines' archives
    stay pointers).
-4. Archives each directory whose `busy` processes are gone; re-checks the rest every
-   `interval_minutes` until `max_wait_minutes`, then archives them anyway. Refuses
-   to write an archive whose path is not LFS-tracked.
+4. Immediately archives every configured directory as a fuzzy snapshot, without
+   inspecting running processes. Refuses to write an archive whose path is not
+   LFS-tracked.
 5. Commits the archives and the run log in one commit, uploads LFS objects
    explicitly (`git lfs push`), pushes, and on a non-fast-forward rebases and
    retries.
@@ -84,9 +78,11 @@ git lfs pull --include '2026-09/work_claude_2026-09-26.tar.zst'
 tar --zstd -xf 2026-09/work_claude_2026-09-26.tar.zst -C /tmp/restore
 ```
 
-Files that change while being read are stored as they were when their header was
-written; files that vanish or cannot be read are skipped. Each case is a warning in
-the log.
+Files that change while being read are stored at the size recorded in their tar
+header: growth is truncated without a warning, while shrinkage is zero-padded and
+logged. Files that vanish or cannot be read are skipped with a warning. A snapshot
+may therefore contain an incomplete application session, but one live process
+never delays or blocks the rest of the backup.
 
 All git commands run with `core.hooksPath=/dev/null`, so user-level hooks never
 touch backup commits.

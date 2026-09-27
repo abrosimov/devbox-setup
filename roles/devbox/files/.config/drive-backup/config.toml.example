@@ -17,16 +17,9 @@
 # repo_dir = "drive/base"     # default: $AION_AUTOPOIESEON/drive/base
 # zstd_level = 9
 
-# While a `busy` process is running, its directory is re-checked every
-# interval_minutes; after max_wait_minutes it is archived anyway.
-[defer]
-interval_minutes = 15
-max_wait_minutes = 180
-
 [[dir]]
 name = "claude"
 path = "~/.claude"
-busy = ["claude"]
 exclude = [
     "bin/.venv",
     "plugins/cache",
@@ -38,13 +31,11 @@ exclude = [
 [[dir]]
 name = "codex"
 path = "~/.codex"
-busy = ["codex"]
 exclude = ["**/__pycache__", "bin/.venv"]
 
 [[dir]]
 name = "gemini"
 path = "~/.gemini"
-busy = ["gemini"]
 
 # [[dir]]
 # name = "notes"

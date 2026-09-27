@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 import re
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import cast
 
@@ -26,6 +26,9 @@ DEFAULT_REPO_DIR = "drive/base"
 _TOKEN_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _UNSET_VAR_RE = re.compile(r"\$(\w+|\{[^}]*\})")
 
+# Legacy busy/[defer] values stay parse-only so existing machine-local configs
+# remain valid without reintroducing process observation or waiting into Config.
+
 
 class ConfigError(Exception):
     """The configuration file is missing, malformed or inconsistent."""
@@ -36,23 +39,15 @@ class DirSpec:
     name: str
     path: Path
     exclude: tuple[str, ...] = ()
-    busy: tuple[str, ...] = ()
 
     def is_excluded(self, rel: PurePosixPath) -> bool:
         return any(rel.full_match(pattern) for pattern in self.exclude)
 
 
 @dataclass(frozen=True)
-class DeferPolicy:
-    interval_minutes: int = 15
-    max_wait_minutes: int = 180
-
-
-@dataclass(frozen=True)
 class Config:
     repo_dir: Path
     dirs: tuple[DirSpec, ...]
-    defer: DeferPolicy = field(default_factory=DeferPolicy)
     zstd_level: int = 9
 
 
@@ -125,6 +120,7 @@ def _parse_dir(raw: object, index: int, env: dict[str, str]) -> DirSpec:
     _check_known(table, {"name", "path", "exclude", "busy"}, where)
     name = validate_token(f"{where} name", _get(table, "name", str, where))
     exclude = _str_list(table, "exclude", where)
+    _str_list(table, "busy", where)
     for pattern in exclude:
         if pattern.startswith("/") or ".." in PurePosixPath(pattern).parts:
             raise ConfigError(f"{where}: exclude {pattern!r} must be relative to the directory")
@@ -132,20 +128,16 @@ def _parse_dir(raw: object, index: int, env: dict[str, str]) -> DirSpec:
         name=name,
         path=resolve_path(_get(table, "path", str, where), env),
         exclude=exclude,
-        busy=_str_list(table, "busy", where),
     )
 
 
-def _parse_defer(raw: object) -> DeferPolicy:
+def _validate_legacy_defer(raw: object) -> None:
     table = _table(raw, "[defer]")
     _check_known(table, {"interval_minutes", "max_wait_minutes"}, "[defer]")
-    policy = DeferPolicy(
-        interval_minutes=_get(table, "interval_minutes", int, "[defer]", 15),
-        max_wait_minutes=_get(table, "max_wait_minutes", int, "[defer]", 180),
-    )
-    if policy.interval_minutes < 1 or policy.max_wait_minutes < 0:
+    interval = _get(table, "interval_minutes", int, "[defer]", 15)
+    max_wait = _get(table, "max_wait_minutes", int, "[defer]", 180)
+    if interval < 1 or max_wait < 0:
         raise ConfigError("[defer]: interval_minutes must be >= 1, max_wait_minutes >= 0")
-    return policy
 
 
 def _is_within(child: Path, parent: Path) -> bool:
@@ -154,6 +146,7 @@ def _is_within(child: Path, parent: Path) -> bool:
 
 def parse(data: Table, env: dict[str, str]) -> Config:
     _check_known(data, {"repo_dir", "zstd_level", "defer", "dir"}, "config")
+    _validate_legacy_defer(data.get("defer", {}))
     repo_dir = resolve_path(_get(data, "repo_dir", str, "config", DEFAULT_REPO_DIR), env)
     level = _get(data, "zstd_level", int, "config", 9)
     if not 1 <= level <= 22:
@@ -176,7 +169,6 @@ def parse(data: Table, env: dict[str, str]) -> Config:
     return Config(
         repo_dir=repo_dir,
         dirs=dirs,
-        defer=_parse_defer(data.get("defer", {})),
         zstd_level=level,
     )
 

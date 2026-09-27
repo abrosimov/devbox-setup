@@ -25,9 +25,7 @@ def _parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("run", help="archive, commit and push")
     run.add_argument("--profile", help=f"archive name prefix (default: ${config.PROFILE_ENV})")
-    run.add_argument(
-        "--no-defer", action="store_true", help="do not wait for live sessions to exit"
-    )
+    run.add_argument("--no-defer", action="store_true", help=argparse.SUPPRESS)
     run.add_argument("--no-push", action="store_true", help="commit locally, do not push")
 
     sub.add_parser("check-config", help="validate the config and print the resolved plan")
@@ -57,11 +55,8 @@ def _check_config(cfg: config.Config) -> int:
 
     print(f"repo_dir: {cfg.repo_dir}{mark(cfg.repo_dir)}")
     print(f"zstd_level: {cfg.zstd_level}")
-    print(f"defer: every {cfg.defer.interval_minutes}m, up to {cfg.defer.max_wait_minutes}m")
     for spec in cfg.dirs:
         print(f"- {spec.name}: {spec.path}{mark(spec.path)}")
-        if spec.busy:
-            print(f"    busy: {', '.join(spec.busy)}")
         for pattern in spec.exclude:
             print(f"    exclude: {pattern}")
     return EXIT_OK
@@ -78,7 +73,7 @@ def _run(cfg: config.Config, args: argparse.Namespace, env: dict[str, str]) -> i
     buffer = _setup_logging()
     try:
         with run_lock(_lock_path(env)):
-            options = RunOptions(profile=profile, defer=not args.no_defer, push=not args.no_push)
+            options = RunOptions(profile=profile, push=not args.no_push)
             report = Backup(cfg, options, GitRepo(cfg.repo_dir)).run(buffer)
     except LockedError as exc:
         logging.getLogger("drive_backup").warning("%s", exc)

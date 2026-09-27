@@ -291,7 +291,7 @@ make drive-backup-now      # optional: run once now; tail -f ~/Library/Logs/driv
 
 Layout in the repository: `<YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst`, with the profile from `$MNEMOSYNE_PERISTASEOS`. Each run also commits `<YYYY-MM>/<profile>_backup_<YYYY-MM-DD>.log`, including runs that fail, so failures are visible from any clone. Only a failure that leaves no usable repository (missing, dirty, detached) stays local, in `~/Library/Logs/drive-backup.log`, with a desktop notification. Old archives are never deleted by the tool.
 
-A directory with `busy` processes configured (e.g. a live `claude` session) is deferred and re-checked every 15 minutes for up to 3 hours, then archived anyway. The files are copied as they are at that moment, and the log records this as a warning.
+Every scheduled or manual run immediately archives every configured directory without inspecting running processes. These are fuzzy snapshots: a file that grows while being read is silently truncated to the size recorded in its tar header; a file that shrinks is zero-padded and logged; and a file that vanishes or cannot be read is skipped with a warning. An incomplete session is acceptable and never delays the rest of the backup.
 
 Prerequisites in the drive repository: `*.tar.zst` must be LFS-tracked (`*.tar.zst filter=lfs diff=lfs merge=lfs -text` in `.gitattributes`), and the LFS filters must be configured (`git lfs install`). The tool refuses to commit an archive that would bypass LFS. It runs git with `core.hooksPath=/dev/null` and uploads LFS objects itself with `git lfs push`, so the global hooks path set up by this repository doesn't block uploads.
 

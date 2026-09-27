@@ -1,4 +1,4 @@
-"""One backup run: lock, defer while sessions are live, archive, commit, push.
+"""One backup run: lock, archive, commit, push.
 
 Output layout inside the repository::
 
@@ -25,7 +25,6 @@ from pathlib import Path
 from .archive import ArchiveResult, write_archive
 from .config import Config, DirSpec
 from .gitrepo import GitError, GitRepo
-from .processes import ProcessLister, find_busy, list_processes
 
 log = logging.getLogger("drive_backup")
 
@@ -37,7 +36,6 @@ class LockedError(Exception):
 @dataclass
 class RunOptions:
     profile: str
-    defer: bool = True
     push: bool = True
 
 
@@ -46,15 +44,12 @@ class Runtime:
     """Side-effect seams; tests replace them."""
 
     now: Callable[[], datetime] = lambda: datetime.now().astimezone()
-    sleep: Callable[[float], None] = time.sleep
     monotonic: Callable[[], float] = time.monotonic
-    processes: ProcessLister = list_processes
 
 
 @dataclass
 class RunReport:
     archives: list[ArchiveResult] = field(default_factory=list[ArchiveResult])
-    forced: list[str] = field(default_factory=list[str])
     error: BaseException | None = None
 
     @property
@@ -118,36 +113,9 @@ class Backup:
         )
         report.archives.append(result)
 
-    def _busy(self, spec: DirSpec) -> list[str]:
-        procs = find_busy(spec.busy, self.rt.processes)
-        return [f"{p.pid} {p.args[:80]}" for p in procs]
-
     def archive_all(self, report: RunReport) -> None:
-        pending = list(self.config.dirs)
-        policy = self.config.defer
-        deadline = self.rt.monotonic() + policy.max_wait_minutes * 60
-        while pending:
-            waiting: list[DirSpec] = []
-            for spec in pending:
-                busy: list[str] = self._busy(spec) if self.options.defer else []
-                if busy:
-                    log.info("%s is in use, deferring: %s", spec.name, "; ".join(busy))
-                    waiting.append(spec)
-                else:
-                    self._archive(spec, report)
-            pending = waiting
-            if not pending:
-                return
-            remaining = deadline - self.rt.monotonic()
-            if remaining <= 0:
-                for spec in pending:
-                    log.warning(
-                        "%s still in use after deferral window; archiving anyway", spec.name
-                    )
-                    report.forced.append(spec.name)
-                    self._archive(spec, report)
-                return
-            self.rt.sleep(min(policy.interval_minutes * 60, remaining))
+        for spec in self.config.dirs:
+            self._archive(spec, report)
 
     # -- run -----------------------------------------------------------------------
 

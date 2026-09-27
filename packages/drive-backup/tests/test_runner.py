@@ -6,9 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from drive_backup.config import Config, DeferPolicy, DirSpec
+from drive_backup.config import Config, DirSpec, parse
 from drive_backup.gitrepo import GitRepo
-from drive_backup.processes import Process
 from drive_backup.runner import (
     Backup,
     LockedError,
@@ -27,34 +26,21 @@ NOW = datetime(2026, 9, 26, 3, 0, tzinfo=timezone(timedelta(hours=3)))
 class FakeClock:
     def __init__(self) -> None:
         self.t = 0.0
-        self.sleeps: list[float] = []
 
     def monotonic(self) -> float:
         return self.t
 
-    def sleep(self, seconds: float) -> None:
-        self.sleeps.append(seconds)
-        self.t += seconds
+
+def _runtime(clock: FakeClock) -> Runtime:
+    return Runtime(now=lambda: NOW, monotonic=clock.monotonic)
 
 
-def _runtime(clock: FakeClock, procs: list[list[Process]] | None = None) -> Runtime:
-    snapshots = iter(procs or [])
-    last: list[Process] = []
-
-    def lister() -> list[Process]:
-        nonlocal last
-        last = next(snapshots, last)
-        return last
-
-    return Runtime(now=lambda: NOW, sleep=clock.sleep, monotonic=clock.monotonic, processes=lister)
+def _config(repo: Path, *specs: DirSpec) -> Config:
+    return Config(repo_dir=repo, dirs=specs, zstd_level=1)
 
 
-def _config(repo: Path, *specs: DirSpec, defer: DeferPolicy | None = None) -> Config:
-    return Config(repo_dir=repo, dirs=specs, defer=defer or DeferPolicy(), zstd_level=1)
-
-
-def _run(cfg: Config, rt: Runtime, *, defer: bool = True, push: bool = True) -> RunReport:
-    options = RunOptions(profile="work", defer=defer, push=push)
+def _run(cfg: Config, rt: Runtime, *, push: bool = True) -> RunReport:
+    options = RunOptions(profile="work", push=push)
     backup = Backup(cfg, options, GitRepo(cfg.repo_dir, lfs=False), rt)
     return backup.run(io.StringIO("log line\n"))
 
@@ -99,46 +85,19 @@ def test_same_day_rerun_adds_suffixed_archive_and_appends_log(
     assert (repo / "2026-09/work_backup_2026-09-26.log").read_text().count("log line") == 2
 
 
-def test_busy_dir_is_deferred_until_sessions_exit(repo: Path, source: Path) -> None:
-    claude = Process(1, "claude")
-    clock = FakeClock()
-    rt = _runtime(clock, [[claude], [claude], []])
-    cfg = _config(
-        repo,
-        DirSpec("claude", source, busy=("claude",)),
-        defer=DeferPolicy(interval_minutes=10, max_wait_minutes=60),
+def test_legacy_deferral_config_archives_without_waiting(repo: Path, source: Path) -> None:
+    cfg = parse(
+        {
+            "repo_dir": str(repo),
+            "defer": {"interval_minutes": 15, "max_wait_minutes": 180},
+            "dir": [{"name": "claude", "path": str(source), "busy": ["python"]}],
+            "zstd_level": 1,
+        },
+        {},
     )
-    report = _run(cfg, rt)
+    report = _run(cfg, _runtime(FakeClock()), push=False)
     assert report.ok
-    assert clock.sleeps == [600, 600]
-    assert report.forced == []
-
-
-def test_busy_dir_is_forced_after_deadline(repo: Path, source: Path, tmp_path: Path) -> None:
-    free = tmp_path / "free"
-    free.mkdir()
-    clock = FakeClock()
-    rt = _runtime(clock, [[Process(1, "claude")]])
-    cfg = _config(
-        repo,
-        DirSpec("claude", source, busy=("claude",)),
-        DirSpec("free", free),
-        defer=DeferPolicy(interval_minutes=40, max_wait_minutes=60),
-    )
-    report = _run(cfg, rt)
-    assert report.ok
-    assert report.forced == ["claude"]
-    # The free dir is archived straight away; the wait is capped by the deadline.
-    assert [r.path.name.split("_")[1] for r in report.archives] == ["free", "claude"]
-    assert clock.sleeps == [2400, 1200]
-
-
-def test_no_defer_ignores_sessions(repo: Path, source: Path) -> None:
-    clock = FakeClock()
-    rt = _runtime(clock, [[Process(1, "claude")]])
-    cfg = _config(repo, DirSpec("claude", source, busy=("claude",)))
-    assert _run(cfg, rt, defer=False).ok
-    assert clock.sleeps == []
+    assert [result.path.name for result in report.archives] == ["work_claude_2026-09-26.tar.zst"]
 
 
 def test_failure_commits_log_and_completed_archives(

@@ -42,8 +42,6 @@ def test_defaults() -> None:
     cfg = parse(_cfg(), ENV)
     assert cfg.repo_dir == Path("/home/u/Work/drive/base")
     assert cfg.zstd_level == 9
-    assert cfg.defer.interval_minutes == 15
-    assert cfg.defer.max_wait_minutes == 180
 
 
 def test_full_dir_table() -> None:
@@ -51,13 +49,11 @@ def test_full_dir_table() -> None:
         {
             "repo_dir": "~/drive",
             "zstd_level": 3,
-            "defer": {"interval_minutes": 5, "max_wait_minutes": 0},
             "dir": [
                 {
                     "name": "claude",
                     "path": "~/.claude",
                     "exclude": ["bin/.venv"],
-                    "busy": ["claude"],
                 },
                 {"name": "notes", "path": "notes"},
             ],
@@ -66,9 +62,20 @@ def test_full_dir_table() -> None:
     )
     assert [d.name for d in cfg.dirs] == ["claude", "notes"]
     assert cfg.dirs[0].exclude == ("bin/.venv",)
-    assert cfg.dirs[0].busy == ("claude",)
     assert cfg.dirs[1].path == Path("/home/u/Work/notes")
-    assert cfg.defer.max_wait_minutes == 0
+
+
+def test_legacy_deferral_fields_are_validated_but_not_exposed() -> None:
+    cfg = parse(
+        {
+            "defer": {"interval_minutes": 5, "max_wait_minutes": 60},
+            "dir": [{"name": "claude", "path": "~/.claude", "busy": ["claude"]}],
+        },
+        ENV,
+    )
+    assert cfg.dirs == (DirSpec(name="claude", path=Path("/home/u/.claude")),)
+    assert not hasattr(cfg, "defer")
+    assert not hasattr(cfg.dirs[0], "busy")
 
 
 @pytest.mark.parametrize(
@@ -83,9 +90,12 @@ def test_full_dir_table() -> None:
         ({"dir": [{"name": "a", "path": "~/a"}, {"name": "a", "path": "~/b"}]}, "duplicate"),
         ({"dir": [{"name": "a", "path": "~/a", "exclude": "x"}]}, "must be list"),
         ({"dir": [{"name": "a", "path": "~/a", "exclude": ["../x"]}]}, "relative"),
+        ({"dir": [{"name": "a", "path": "~/a", "busy": "claude"}]}, "must be list"),
+        (_cfg(defer={"interval_minutes": 0}), "interval_minutes"),
+        (_cfg(defer={"max_wait_minutes": -1}), "max_wait_minutes"),
+        (_cfg(defer={"unknown": 1}), "unknown key"),
         (_cfg(zstd_level=0), "zstd_level"),
         (_cfg(zstd_level=True), "must be int"),
-        (_cfg(defer={"interval_minutes": 0}), "interval_minutes"),
         # The repository must not be archived into itself, in either direction.
         ({"repo_dir": "~/.claude/drive", "dir": [{"name": "c", "path": "~/.claude"}]}, "overlaps"),
         ({"repo_dir": "~", "dir": [{"name": "c", "path": "~/.claude"}]}, "overlaps"),

@@ -33,7 +33,7 @@ src = ["src"]
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "UP", "C4", "SIM", "RUF", "ANN", "S", "PTH", "RET", "PL"]
 ignore = [
-    "S603", "S607",  # git/ps/osascript are invoked with argv lists by design
+    "S603", "S607",  # git/osascript are invoked with argv lists by design
     "PLR2004",       # magic values
     "PLR0913",       # dataclass-like constructors
 ]

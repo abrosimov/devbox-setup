@@ -30,7 +30,7 @@ def _write(path: Path, text: str) -> Path:
 def test_check_config_prints_plan(env: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _write(
         env / ".config/drive-backup/config.toml",
-        '[[dir]]\nname = "claude"\npath = "~/.claude"\nbusy = ["claude"]\n',
+        '[[dir]]\nname = "claude"\npath = "~/.claude"\n',
     )
     assert cli.main(["check-config"]) == cli.EXIT_OK
     out = capsys.readouterr().out
@@ -56,3 +56,9 @@ def test_run_reports_failure(env: Path, monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("MNEMOSYNE_PERISTASEOS", "work")
     cfg = _write(env / "c.toml", '[[dir]]\nname = "c"\npath = "~/.c"\n')
     assert cli.main(["--config", str(cfg), "run"]) == cli.EXIT_FAILED
+
+
+def test_run_accepts_legacy_no_defer_option(env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MNEMOSYNE_PERISTASEOS", "work")
+    cfg = _write(env / "c.toml", '[[dir]]\nname = "c"\npath = "~/.c"\n')
+    assert cli.main(["--config", str(cfg), "run", "--no-defer"]) == cli.EXIT_FAILED

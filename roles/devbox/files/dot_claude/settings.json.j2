@@ -341,12 +341,14 @@
       "Bash(git checkout -- *)",
       "Bash(git -C * push --force *)",
       "Bash(git -C * push --force-with-lease *)",
+      "Bash(git -C * push -f *)",
       "Bash(git -C * push --mirror *)",
       "Bash(git -C * push --all *)",
       "Bash(git -C * push --delete *)",
       "Bash(git -C * push --tags *)",
       "Bash(git -C * push * main)",
       "Bash(git -C * push * master)",
+      "Bash(git -C * push * +*)",
       "Bash(git -C * push *:main)",
       "Bash(git -C * push *:master)",
       "Bash(git -C * push * HEAD:main)",
@@ -389,15 +391,7 @@
       "Read(~/.aws/**)",
       "Read(~/.gnupg/**)",
       "mcp__atlassian__createJiraIssue",
-      "mcp__atlassian__createIssueLink",
-      "Bash(git stash)",
-      "Bash(git stash *)",
-      "Bash(git merge --autostash*)",
-      "Bash(git pull --autostash*)",
-      "Bash(git -C * stash)",
-      "Bash(git -C * stash *)",
-      "Bash(git -C * merge --autostash*)",
-      "Bash(git -C * pull --autostash*)"
+      "mcp__atlassian__createIssueLink"
     ],
     "defaultMode": "auto"
   },
@@ -602,6 +596,7 @@
     ],
     "Stop": [
       {
+        "hooks": [
           {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py",
             "type": "command"

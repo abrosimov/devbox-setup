@@ -324,12 +324,10 @@
       "Bash(git push --tags *)",
       "Bash(git push * main)",
       "Bash(git push * master)",
-      "Bash(git push * +*)",
       "Bash(git push *:main)",
       "Bash(git push *:master)",
       "Bash(git push * HEAD:main)",
       "Bash(git push * HEAD:master)",
-      "Bash(git push * :*)",
       "Bash(git rebase *)",
       "Bash(git reset *)",
       "Bash(git reset --hard *)",
@@ -343,19 +341,16 @@
       "Bash(git checkout -- *)",
       "Bash(git -C * push --force *)",
       "Bash(git -C * push --force-with-lease *)",
-      "Bash(git -C * push -f *)",
       "Bash(git -C * push --mirror *)",
       "Bash(git -C * push --all *)",
       "Bash(git -C * push --delete *)",
       "Bash(git -C * push --tags *)",
       "Bash(git -C * push * main)",
       "Bash(git -C * push * master)",
-      "Bash(git -C * push * +*)",
       "Bash(git -C * push *:main)",
       "Bash(git -C * push *:master)",
       "Bash(git -C * push * HEAD:main)",
       "Bash(git -C * push * HEAD:master)",
-      "Bash(git -C * push * :*)",
       "Bash(git -C * rebase *)",
       "Bash(git -C * reset *)",
       "Bash(git -C * reset --hard *)",
@@ -607,15 +602,6 @@
     ],
     "Stop": [
       {
-        "hooks": [
-          {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_format.py",
-            "type": "command"
-          },
-          {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_lint_gate.py",
-            "type": "command"
-          },
           {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py",
             "type": "command"

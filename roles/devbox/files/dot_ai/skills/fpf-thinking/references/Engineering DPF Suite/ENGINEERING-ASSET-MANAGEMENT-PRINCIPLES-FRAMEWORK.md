@@ -3,7 +3,7 @@
 > A domain pattern language for making and revising value-oriented decisions about engineered assets over their lives, for one asset, an interacting asset System or a portfolio.
 
 - **Author:** Anatoly Levenchuk, with AI-assisted development and review
-- **Release:** 20 September 2026
+- **Release:** 27 September 2026
 - **Status:** Eternal alpha: the current Methods can be used for their stated asset questions and conditions; the framework continues to develop as practice, sources and evidence change.
 - **License:** Original framework content © 2026 Anatoly Levenchuk, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Third-party sources retain their own terms.
 - **Publication:** [FPF repository](https://github.com/ailev/FPF)
@@ -38,18 +38,18 @@ Search for the asset decision or result you need. Dependencies identify useful r
 
 | § | ID & Title | Status | Keywords & Search Queries | Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
-| 4 | [EAM.4 - Assess Demand and Service Need for Asset Decisions](#eam4---assess-demand-and-service-need-for-asset-decisions) | Stable | *Keywords:* demand, peak, scenario, forecast, service requirement. *Query:* "What service will be needed under the conditions that matter?" Separate demand evidence and forecasts from the mandated service. | [EAM.2](#eam2---relate-assets-to-strategy-services-and-required-capability), [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence); [OPS.1](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops1---identify-the-operating-system-commitments-and-flow-units) |
+| 4 | [EAM.4 - Assess Demand and Service Need for Asset Decisions](#eam4---assess-demand-and-service-need-for-asset-decisions) | Stable | *Keywords:* demand, components, drivers, coincident peak, scenario, forecast, service requirement. *Query:* "What service will be needed under the conditions that matter?" Construct compatible demand scenarios and distinguish their evidence from the mandated service. | [EAM.2](#eam2---relate-assets-to-strategy-services-and-required-capability), [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence); [OPS.1](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops1---identify-the-operating-system-commitments-and-flow-units) |
 | 5 | [EAM.5 - Assess Asset Condition and Performance](#eam5---assess-asset-condition-and-performance) | Stable | *Keywords:* condition, performance, diagnosis, exposure, forecast. *Query:* "What do observed condition and delivered performance support?" Return a qualified account for the asset decision. | [MNT.4](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt4---monitor-and-interpret-system-condition-for-maintenance), [MNT.6](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt6---diagnose-condition-and-choose-a-maintenance-response); [OPS.18](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops18---control-operating-quality-and-reliability); [EAM.3](#eam3---establish-the-asset-information-and-configuration-basis) |
-| 6 | [EAM.6 - Assess Asset Capacity, Resilience, and Interdependence](#eam6---assess-asset-capacity-resilience-and-interdependence) | Stable | *Keywords:* capacity, bottleneck, resilience, shared dependency, usable reserve. *Query:* "Can the assets support service during normal use and disturbance?" Compare required service with qualified available capability and fallback. | [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions), [EAM.5](#eam5---assess-asset-condition-and-performance); [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability), [OPS.11](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops11---coordinate-interacting-operating-structures) |
+| 6 | [EAM.6 - Assess Asset Capacity, Resilience, and Interdependence](#eam6---assess-asset-capacity-resilience-and-interdependence) | Stable | *Keywords:* capacity, bottleneck, resilience, shared dependency, usable reserve, recovery intervals. *Query:* "Can the assets support service during normal use and disturbance?" Derive lost contributions and follow available service and reserve through recovery. | [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions), [EAM.5](#eam5---assess-asset-condition-and-performance); [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability), [OPS.11](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops11---coordinate-interacting-operating-structures) |
 
 **Part C - Alternatives, Conflicts, Combinations, and Timing**
 
 | § | ID & Title | Status | Keywords & Search Queries | Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
 | 7 | [EAM.7 - Generate Ways to Supply an Asset-Dependent Service](#eam7---generate-ways-to-supply-an-asset-dependent-service) | Stable | *Keywords:* acquire, modify, lease, service option, functional alternative. *Query:* "Which acquisition or change can provide the needed contribution?" Generate comparable qualified alternatives with their whole burden. | [EAM.2](#eam2---relate-assets-to-strategy-services-and-required-capability), [EAM.3](#eam3---establish-the-asset-information-and-configuration-basis), [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence); [SYSE.5](SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md#syse5---develop-an-engineered-systems-functional-organization-and-bearer-alternatives) |
-| 8 | [EAM.8 - Generate Maintenance, Renewal, and Retirement Alternatives](#eam8---generate-maintenance-renewal-and-retirement-alternatives) | Stable | *Keywords:* continue, maintain, renew, replace, retire, residual value. *Query:* "Which continued-use or change option is worth considering?" Compare supported policies at a common service, horizon and cost basis. | [EAM.5](#eam5---assess-asset-condition-and-performance), [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict); [MNT.6](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt6---diagnose-condition-and-choose-a-maintenance-response); FPF [C.11](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal) |
+| 8 | [EAM.8 - Generate Maintenance, Renewal, and Retirement Alternatives](#eam8---generate-maintenance-renewal-and-retirement-alternatives) | Stable | *Keywords:* continue, maintain, renew, replace, retire, later intervention, horizon, residual value. *Query:* "Which continued-use or change option is worth considering?" Construct supported policies with dated consequences and a compatible ending premise. | [EAM.5](#eam5---assess-asset-condition-and-performance), [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict); [MNT.6](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt6---diagnose-condition-and-choose-a-maintenance-response), [MNT.7](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt7---coordinate-maintenance-intervention-and-continuing-operation); [FIN.6](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin6---value-capital-projects), [FIN.7](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin7---value-assets-and-the-corporation); FPF [C.11](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal) |
 | 9 | [EAM.9 - Compare Asset Alternatives and Reconcile Decisions When They Conflict](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) | Stable | *Keywords:* asset alternatives, lifetime consequences, conflicting choices, funding, service mandate, simultaneous work. *Query:* "Which asset alternative is supported, and what unresolved conflict remains?" Compare eligible asset alternatives and identify any conflicting service, funding or work condition and the decision needed to resolve it. | [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence), [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations), [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies), [EAM.12](#eam12---integrate-specialist-results-for-an-asset-recommendation-or-decision); FPF [C.32.MWA](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c32mwa---practice-architecture-synthesis-from-several-structures) |
-| 10 | [EAM.10 - Compare Engineered-Asset Portfolio Combinations](#eam10---compare-engineered-asset-portfolio-combinations) | Stable | *Keywords:* capital allocation, indivisible options, portfolio, combination. *Query:* "Which eligible asset combination should receive the allocation?" Compare complete programmes under the actual binding conditions. | [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service), [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives), [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict), [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies); FPF [C.11](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal) |
+| 10 | [EAM.10 - Compare Engineered-Asset Portfolio Combinations](#eam10---compare-engineered-asset-portfolio-combinations) | Stable | *Keywords:* capital allocation, indivisible options, portfolio, combination, shared work, joint consequences. *Query:* "Which eligible asset combination should receive the allocation?" Construct whole consequences and compare programmes under the dated binding conditions. | [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service), [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives), [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict), [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies); [FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations); FPF [C.11](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal) |
 | 11 | [EAM.11 - Time Asset Interventions and Manage Dependencies](#eam11---time-asset-interventions-and-manage-dependencies) | Stable | *Keywords:* whole outage, dependencies, calendar, preparation, contingency. *Query:* "Can the selected programme be completed while preserving service?" Construct a supported calendar or expose the limiting prerequisite. | [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence), [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict), [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations); [MNT.7](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt7---coordinate-maintenance-intervention-and-continuing-operation), [MNT.15](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt15---reconcile-simultaneous-maintenance-operation-and-support-work); [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability) |
 
 **Part D - Decisions, Outcomes, and Continuing Practice**
@@ -78,7 +78,7 @@ The CityWater amounts and conditions are constructed teaching inputs. The two fu
 - **Start with:** [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) for the policies; [EAM.1](#eam1---frame-the-engineered-assets-and-required-outcomes) if the comparison is unclear.
 - **Stop or return:** Sufficient advice can finish the inquiry. A shared resource constraint sends the policies to the programme comparison.
 
-The committee's value question differs from the maintenance question of which intervention supports continued functioning.
+The committee's value question differs from the maintenance question of which intervention supports continued functioning. If only a repair estimate is available, [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) first constructs the service policy: supported intervals, recurring duties, later work and ending. Its separate four-year example shows how an omitted year-three overhaul can reverse the comparison. A complete qualified policy can go directly to comparison.
 
 [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) uses the applicable condition and maintenance results to describe two complete policies: continued use with its initial intervention and recurring support, and replacement with integration and terminal value. [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) consumes those qualified alternatives and compares their consequences on the same basis.
 
@@ -99,6 +99,8 @@ The demand and capability comparison in [EAM.4](#eam4---assess-demand-and-servic
 Under the €8 million capital limit and the other supplied limits, [APP-EAM-02](#app-eam-02---the-same-asset-in-a-constrained-programme) finds the least-cost eligible programme: refurbish A and B, modify C, continue D. It uses €7 million capital, €0.50 million initial operating expenditure and €1.85 million annually; its present cost is €14.592 million. Replacing D as well would require €10 million capital. Leasing C instead makes D replacement affordable, but raises total present cost to €15.350 million. The individual D result therefore remains true under its own resource assumption, while the programme comparison favors continuation.
 
 [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) consumes the selected interventions and their whole outage durations. A on days 1–2, B on 3–4, C on 5–7 and D on day 8 fits the twelve-day window and the single team, restoring each asset before the next outage. It avoids the A/C and B/D overlaps that would breach the dry-window service minimum. Use [EAM.12](#eam12---integrate-specialist-results-for-an-asset-recommendation-or-decision) to send a programme recommendation with a supported calendar to the committee.
+
+If a demand driver or shared dependency changes, [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) and [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) reconstruct the affected service conditions before the same options are compared again. If work can share a real preparation or mobilization, [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) reconciles the whole consequences with the separate policies and [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) qualifies that arrangement. Its separate P+Q case changes a 4.0 estimate to 3.8 by paying for one mobilization; incompatible access windows remove that saving. These constructions are used when their premise is missing or changes.
 
 A changed limit returns to the affected choice. If the funding board raises capital to €10 million, retaining the other premises, replacing D joins the preferred programme. If only seven days remain, the eight-day arrangement fails: the declared alternatives instead permit A refurbishment, B replacement, C leased service and D continuation. If D's engineering qualification fails, remove continuation before comparing programmes; cost savings cannot restore it. Each changed case is worked through in the full application.
 
@@ -166,9 +168,9 @@ Use the detail that can change the answer. Existing evidence can be sufficient. 
 
 The sixteen contributions are related by the results they supply, rather than by one lifecycle diagram. Four publication parts help navigation; they are not stages.
 
-[EAM.1](#eam1---frame-the-engineered-assets-and-required-outcomes)–[EAM.3](#eam3---establish-the-asset-information-and-configuration-basis) establish what asset contribution is being decided and which information applies. [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions)–[EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) assess service need, actual condition and performance, and capability under the relevant dependencies. A clear existing result can enter directly into a later comparison; every use need not reconstruct those accounts.
+[EAM.1](#eam1---frame-the-engineered-assets-and-required-outcomes)–[EAM.3](#eam3---establish-the-asset-information-and-configuration-basis) establish what asset contribution is being decided and which information applies. [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions)–[EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) assess service need, actual condition and performance, and capability under the relevant dependencies. When the demand basis is missing, [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) constructs a scenario from compatible observations and explicit driver changes; [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) receives its quantity, location, period and conditions. For an interacting asset system, [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) derives lost contributions from shared dependencies and follows service and reserve through recovery intervals. A clear existing result can enter directly into a later comparison; every use need not reconstruct those accounts.
 
-[EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) and [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) generate materially different ways of obtaining or continuing the contribution. Acquisition, modification, maintenance, renewal, lease, changed use and withdrawal can compete at that scope. [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) resolves conflicts among proposed decisions; [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) compares the full combination where allocations and interactions matter. [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) establishes a complete feasible timing proposal using the requisite operating and maintenance results. A project ranking, capacity bound or sum of job durations cannot substitute for all three questions.
+[EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) and [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) generate materially different ways of obtaining or continuing the contribution. Acquisition, modification, maintenance, renewal, lease, changed use and withdrawal can compete at that scope. [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) connects the technically supported intervals of a continuing policy to its dated work, economic consequences and ending. [FIN.6](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin6---value-capital-projects) and [FIN.7](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin7---value-assets-and-the-corporation) supply financial construction and valuation where needed; their return must retain the same service policy, perspective, dates and assumptions. [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) resolves conflicts among proposed decisions; [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) compares the full combination where allocations and interactions matter. It distinguishes technical prerequisites, shared resource limits and joint consequences, reconstructing costs or benefits from the actual combined work. [FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations) supplies the financial interaction and dated funding comparison when needed. [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) establishes a complete feasible timing proposal using the requisite operating and maintenance results. A project ranking, capacity bound or sum of job durations cannot substitute for all three questions.
 
 [EAM.12](#eam12---integrate-specialist-results-for-an-asset-recommendation-or-decision) integrates the qualified inputs and distinguishes the advice requested from the asset decision actually made. [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) tests the retained plan against obtained outcomes and changed premises. The return may go to demand, configuration, engineering support, an option or its authority. There is no requirement to restart every earlier pattern.
 
@@ -206,7 +208,7 @@ Using the language adds some comparison and coordination burden. Its benefit is 
 
 The GFMAM Asset Management Landscape, third edition (2024), and IAM's *Asset Management — an Anatomy*, version 4 (2024), locate this work within broad professional asset-management practice. This framework turns selected concerns into explicit practitioner operations and examples; those publications do not establish the effectiveness of these particular Methods.
 
-Public ISO/TC 251 material locates the management-system relationship. NIST Handbook 135, 2025 edition, supplies an explicit economic comparison line for common horizons, remaining value and choice under funding constraints. Its federal application conditions are not imported into CityWater.
+Public ISO/TC 251 material locates the management-system relationship. NIST Handbook 135, 2025 edition, supplies dated cost and ending treatment, common horizons and choice under funding constraints. Its federal application conditions are not imported into CityWater. The water-planning guidance supplies the component and critical-period construction adapted in [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions); IAM's recovery treatment informs EAM.6. Corporate Finance supplies the developed cash, ending-valuation and joint-consequence operations used in [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) and EAM.10. Their qualified returns are identified below.
 
 General evidence, comparison, information and cultural distinctions remain with FPF. The references identify the specific contributions and receiving uses. Those source relations support reasoned use and refresh; a cited Method description still needs to yield a qualified result for an actual asset case.
 
@@ -453,37 +455,80 @@ The serious broader alternative is a maintained configuration baseline within an
 
 ### EAM.4:1 - Problem frame
 
-Use this pattern when an asset choice depends on how much service will be needed, where and when. Average demand fits current capability, but a seasonal peak, protected service group or changing use can make that conclusion misleading.
+Use this pattern when an asset choice depends on how much service will be needed, where and when. Average demand can fit current capability while a seasonal peak, protected service group or changing use makes an option inadequate.
 
-Begin with the service question and distinguish current commitments from forecasts. Return the demand scenarios and requirements needed to compare asset options. If an existing demand assessment answers the asset question, use it; no new forecast is needed.
+Begin with the service question and distinguish current commitments from forecasts. Return the demand scenarios and requirements needed to compare asset options. If an existing demand assessment answers the question at the relevant boundary and period, use it. Construct a new account when its missing basis could change the asset choice.
 
 ### EAM.4:2 - Problem
 
-Demand totals hide timing, location and service differences. Forecasts can be treated as commitments, while existing commitments can be dismissed as optional scenarios. A large forecast model can also obscure a simple known shortfall.
+Demand totals hide timing, location and service differences. Forecasts can be treated as commitments, while existing commitments can be dismissed as optional scenarios. Even plausible forecasts may conceal which observation, population or loss allowance produced the number. A large forecast model can also obscure a simple known shortfall.
 
 ### EAM.4:3 - Forces
 
-Underestimating demand can leave service inadequate; overestimating it can commit resources to unnecessary capacity. Better forecasts cost time and data work. Uncertainty matters through the options or claims it could change, not merely through the width of a reported interval.
+Underestimating demand can leave service inadequate; overestimating it can commit resources to unnecessary capacity. Better forecasts cost time and data work. Uncertainty matters through the options or claims it could change, not merely through the width of a reported interval. A useful component account must preserve the period and boundary in which its quantities can be combined.
 
 ### EAM.4:4 - Solution
 
-Identify the service result, recipients and relevant horizon. State the quantity and quality required, its timing and location, and the source and authority of any commitment. Use the operating account from [OPS.1](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops1---identify-the-operating-system-commitments-and-flow-units) when it already supplies those facts.
+#### EAM.4:4.1 - Fix the service question and reuse an adequate answer
 
-Recover present demand and the drivers of change. Separate measured use, unmet requests, committed future demand and forecasts. Check whether observed consumption was limited by rationing, failed service or inaccessible capacity; recorded delivery can understate actual need.
+Identify the service result, recipients and relevant horizon. State the quantity and quality required, its timing and location, and the source and authority of any commitment. [OPS.1](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops1---identify-the-operating-system-commitments-and-flow-units) can supply the operating service and commitment account.
 
-Choose scenarios that can change the asset decision. For a known seasonal commitment, compare its peak directly. For uncertain growth, use a justified range or scenarios and preserve their assumptions. Do not attach probabilities without a basis, or substitute a mean for a tail or protected-service requirement.
+Separate an authorized requirement from a forecast of use. A known seasonal commitment can be compared directly with the applicable capability. Further forecasting is useful when the choice depends on a missing or uncertain demand premise. Keep a protected-service or peak requirement explicit even when average consumption is lower.
 
-Translate demand into the required contribution at the asset boundary. Include losses, coincidence, storage and operating conditions only through applicable relationships. Several site peaks need not occur simultaneously; equally, a shared weather event can make demands coincide.
+#### EAM.4:4.2 - Construct an applicable observation basis
 
-Consider service or demand-management alternatives where they are feasible and within actual authority. State the affected users and consequences. A proposal to reduce a requirement remains a proposal until the responsible authority changes it.
+Choose the boundary at which demand will be compared with asset contribution. For a water district, distinguish water delivered to users from water entering the district: distribution losses make the quantities different. For a transport service, trips requested, passengers carried and vehicle movements likewise need a stated relation.
 
-Return a qualified demand account to [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) and EAM.7. If present evidence distinguishes the useful options, stop. Obtain more forecasting or measurement only when it can change the choice or warranted claim enough to justify its burden and delay.
+Recover present use, unmet requests and committed future use. Establish whether the observations cover the relevant users, place, period and operating conditions. Rationing, failure or inaccessible capacity can suppress recorded delivery. Obtain the missing need estimate or retain that uncertainty; relabeling observed delivery does not recover it.
+
+Separate components whose drivers or possible interventions differ. Household use, other use and losses may be useful for a water decision. Reconcile their sum with the total on the same boundary and interval. If they disagree, investigate the mismatch that could affect the choice. A residual between compatible inlet and customer measurements may estimate losses; an unexplained discrepancy between incompatible meters cannot be assigned that meaning.
+
+Keep the observation and its limitations available alongside the component account. More detailed segmentation is useful when it changes an option or the needed forecast. It is unnecessary merely to make the account larger.
+
+#### EAM.4:4.3 - Vary drivers and form coherent scenarios
+
+For each material change, explain how it affects a component: more users, different use per user, a new industrial commitment, changed losses or a shared environmental condition. Apply that change to the appropriate base. For example, a 10% increase in household use changes the household component, not automatically the district's losses and industrial use.
+
+Combine component values that can obtain together. Several site maxima can occur at different hours; weather can also make formerly separate peaks coincide. Where timing matters, construct a common-period profile or obtain the applicable specialist account. Preserve location, service class and quality conditions that a total could conceal.
+
+Form an unchanged-policy baseline before crediting a proposed demand-management measure. Describe a measure's affected users, expected effect, delivery conditions and cost as an alternative for EAM.7. Use its reduction only in the scenario where those conditions hold. A proposed service reduction remains subject to the relevant authority.
+
+Test the drivers that can change eligibility or preference. A justified range or a few explicit scenarios can be sufficient. If an option has 100 units of spare contribution, an uncertain additional demand spanning 90–170 leaves its adequacy unresolved; a range wholly above 100 establishes that this option cannot cover that demand range without another contribution. This threshold can identify a useful further inquiry. Give a scenario a probability only when evidence supports that interpretation.
+
+A more elaborate forecast is needed when an important dependency, changing population or response to price, weather or restrictions cannot be supported by the simple account. Ask the specialist for the demand at the required boundary and periods, the relevant driver combinations, uncertainty and limitations. The receiving asset decision still compares the returned result under those conditions.
+
+#### EAM.4:4.4 - Return the demand and the premise that could change it
+
+Compare the constructed demand with the contribution being considered, including losses, coincidence, storage and operating conditions through applicable relationships. Return quantity, recipients, location, period, drivers and uncertainty conditions to [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) and EAM.7. Keep the source of an authorized commitment distinguishable from the evidence for a forecast.
+
+Stop when the account distinguishes the useful options or identifies a specific unresolved premise. Obtain further forecasting or measurement when its attainable answer can change the choice or warranted claim enough to justify its burden and delay. When an observation changes a relied-on driver, [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) returns to this account and the affected capability or alternative; unchanged components can remain usable.
 
 ### EAM.4:5 - Archetypal Grounding
 
+#### EAM.4:5.1 - Use a supplied requirement
+
 In CityWater, North's dry-window minimum is 700 m³/h and its wet-season minimum is 1,100. Current usable capability is 1,000. An annual average of 800 would not establish adequacy for the wet season: the explicit deficit is 100 m³/h at that required time. Both shortlisted C arrangements add 200 and pass this quantity comparison under their supplied qualifications.
 
-Now suppose a new forecast suggests 1,250 in a later period. That forecast is not automatically a revised mandate. The practitioner reports that the current 1,200-capability option would fall short by 50 under this scenario and identifies which service or investment decision would use the forecast. A sufficiently credible and consequential scenario can warrant another option without inventing a new commitment.
+Now suppose a new forecast suggests 1,250 in a later period. That forecast is not automatically a revised mandate. The practitioner reports that the current 1,200-capability option would fall short by 50 under this scenario and identifies which service or investment decision would use it. A sufficiently credible and consequential scenario can warrant another option without inventing a new commitment.
+
+#### EAM.4:5.2 - Build the scenario from its components
+
+In a separate constructed district, Westbank, compatible observations of an unrestricted critical hour give 1,000 m³/h at the inlet: 600 for households, 300 for other users and 100 losses. The case supplies compatible measurement coverage and the loss estimate. Proposed usable capability at the same inlet is 1,200 m³/h; required quality is unchanged.
+
+| Component at the common critical hour | Observed base, m³/h | Scenario assumption | Scenario demand, m³/h |
+| --- | ---: | --- | ---: |
+| Household use | 600 | 10% more use on the same service basis | 660 |
+| Other use | 300 | No material change | 300 |
+| Losses | 100 | Qualified future estimate of 140 | 140 |
+| Total at the inlet | 1,000 | Sum of compatible components | 1,100 |
+
+The calculation is 600 × 1.10 + 300 + 140 = 1,100. It leaves 100 m³/h of contribution available within the proposed capability. A separately supported new industrial requirement of 150 during that same hour gives 1,250 and exceeds capability by 50. The industrial addition is counted once: it was absent from the 300 base.
+
+If the industrial maximum occurs at another hour, the practitioner obtains the other components for that hour before forming its total. Adding unrelated maxima would not establish the actual peak. If the original 1,000 observation was rationed, the unrestricted baseline first needs an applicable estimate of suppressed use.
+
+A proposed leakage measure may reduce the scenario's losses from 140 to 80. With the industrial addition, the total would then be 660 + 300 + 150 + 80 = 1,190. [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) can compare that measure with added supply, using its cost and evidence of achievable reduction. The ten-unit margin exists only while the assumed reduction, coincidence and other contributions remain supported. Treating the proposed 80 as the unchanged-policy loss estimate would hide the intervention that makes the option work.
+
+These values illustrate the construction. They neither reconstruct CityWater's supplied demand figures nor establish an empirical forecast for another district.
 
 ### EAM.4:6 - Bias-Annotation
 
@@ -491,31 +536,35 @@ Observed delivery favors users who currently receive service. Consider excluded 
 
 ### EAM.4:7 - Conformance Checklist
 
-Are commitments, observations and forecasts distinguishable? Are units, population, location and timing compatible with the asset capability? Does each selected scenario change a decision or claim, and is any probability supported?
+Can the reader recover the observation base and each material driver? Do component sums share a boundary and period, with suppressed use and coincidence addressed where they matter? Are the unchanged-policy baseline and proposed measures distinct? Are commitments, observations and forecasts distinguishable? Does each selected scenario change a decision or claim, and is any probability supported?
 
 ### EAM.4:8 - Common Anti-Patterns and How to Avoid Them
 
-Comparing average demand with peak capacity can answer the wrong question. Compare the required service at its actual window.
+Comparing average demand with peak capacity can answer the wrong question. Compare required service at its actual window.
 
 Using forecast demand as an authorized obligation silently changes the decision. Preserve the forecast's evidence and let the relevant authority decide any commitment.
 
+Crediting a proposed reduction in the baseline conceals the option needed to produce it. Keep its effect with its implementation conditions and burden.
+
 ### EAM.4:9 - Consequences
 
-Asset alternatives can be sized and timed against a visible need. Some expansion proposals become unnecessary, while a local or seasonal deficit becomes explicit. The account remains qualified by its demand drivers and does not guarantee future use.
+Asset alternatives can be sized and timed against a need whose construction is recoverable. Some expansion proposals become unnecessary, while a local or seasonal deficit becomes explicit. Changing one driver can reopen the affected scenario without rebuilding adequate observations. The account remains qualified by its assumptions and does not guarantee future use.
 
 ### EAM.4:10 - Architectural Rationale
 
-Demand is assessed before capacity is judged because capacity is relative to a receiving service. The pattern keeps forecasting and commitment separate, allowing both a direct deterministic comparison and a more elaborate inquiry when its decision value is real.
+Capacity is judged relative to a receiving service. [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) supplies the demand construction and its conditions; [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) determines what an asset arrangement can deliver, and [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) compares ways to close the gap. Keeping forecasts, commitments and proposed measures distinct supports both a direct known-requirement comparison and adaptation when the demand basis changes.
 
 ### EAM.4:11 - SoTA-Echoing
 
-For deciding whether the supplied demand can change an asset option, select the lightest supported temporal and spatial comparison that distinguishes the choices. Adopt [C.16](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c16---measurement--metrics-characterization-mmchr)'s measurement and uncertainty distinctions and adapt the receiving service account from OPS.1. The Solution therefore checks the relevant seasonal requirement directly when it is known, and adds a justified range or scenario for an uncertain driver. North's 1,100 m³/h requirement already exposes the 100 m³/h shortfall; forecasting an annual average more accurately would not answer that peak-service question.
+Choose the least burdensome supported comparison that distinguishes the asset options. [C.16](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c16---measurement--metrics-characterization-mmchr) supplies measurement and uncertainty distinctions; [OPS.1](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops1---identify-the-operating-system-commitments-and-flow-units) supplies the service and commitment account. North's known 1,100 m³/h requirement already exposes a 100 m³/h shortfall. A more accurate annual average would not resolve that peak-service question.
 
-A serious forecasting alternative is to build a component-based baseline and planned demand forecast, including normal, dry-year and critical-period scenarios. The Environment Agency, Natural Resources Wales and Ofwat's *Water resources planning guideline*, updated 16 June 2026, [sections 6.1 and 6.4.1](https://www.gov.uk/government/publications/water-resources-planning-guideline/water-resources-planning-guideline#section-6--developing-your-demand-forecast), supplies this technical comparator for water planning. It is useful when population, use, losses or weather-driven peaks could change the required investment. Adapt its separation of demand components and critical periods when those differences affect the asset answer. For the supplied shortfall, a new full forecast would require more data and estimation without changing the known comparison; the selected answer deliberately claims no longer-term demand adequacy. For the later 1,250 scenario, by contrast, establishing its basis may change the option because the shortlisted 1,200 capability would be insufficient. Reopen the method choice when an observation or credible driver invalidates the current range, a changed period reveals a consequential peak, or the decision needs the fuller forecast. This transfers a technical comparison, not England and Wales's planning obligations to the fictional case.
+The Environment Agency, Natural Resources Wales and Ofwat's *Water resources planning guideline*, updated 16 June 2026, [§§6.1 and 6.4.1–6.4.3](https://www.gov.uk/government/publications/water-resources-planning-guideline/water-resources-planning-guideline#section-6--developing-your-demand-forecast), develops component demand, the observed baseline, critical periods and assumptions before additional measures. EAM adapts that contribution in the component reconciliation and driver construction above. The Westbank case shows why a changed driver or proposed reduction changes the asset comparison. Its values and arithmetic are constructed here.
+
+A full specialist forecast is preferable when the relevant dependencies or uncertainty cannot be supported by that small construction. Request its result for the actual asset boundary and decision horizon. Reopen the method choice when new observations invalidate a driver or range, a changed period reveals a consequential peak, or the decision needs a fuller forecast. The water-planning source's jurisdictional duties and planning horizon remain with that source.
 
 ### EAM.4:12 - Relations
 
-[EAM.2](#eam2---relate-assets-to-strategy-services-and-required-capability) supplies the service contribution and its source. [OPS.1](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops1---identify-the-operating-system-commitments-and-flow-units) supplies operating commitments and populations. [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) compares capability and [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) develops alternatives. [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) revisits the account when observed demand or an adopted commitment changes.
+[EAM.2](#eam2---relate-assets-to-strategy-services-and-required-capability) supplies the service contribution and its source. [OPS.1](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops1---identify-the-operating-system-commitments-and-flow-units) supplies operating commitments and populations. [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) consumes the scenario's quantity, place, period and conditions to compare capability; [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) uses its gap and qualified demand-management possibilities to develop alternatives. [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) returns changed observations or commitments to the affected part of this account.
 
 ### EAM.4:End
 
@@ -603,11 +652,13 @@ A serious technical alternative, when the asset choice needs a life forecast, is
 
 Use this pattern when an asset option must meet demand through a particular arrangement, outage or disruption. The total installed rating appears sufficient, but the needed contribution depends on shared assets, access, timing or recovery.
 
-Begin with the service criterion and one applicable capacity bound. Return the supported capacity and consequence account, including the condition that makes a proposed option fail. A simple calculation can be sufficient.
+Begin with the service criterion and one applicable capacity bound. Return the supported capacity and consequence account, including the condition that makes a proposed option fail. A simple calculation can be sufficient. Develop the dependencies and recovery intervals when they determine what service remains available.
 
 ### EAM.6:2 - Problem
 
-Nominal ratings can be added even when the assets cannot supply the same service together. A fallback can be counted twice by dependent operations, and normal-load adequacy can be presented as resilience under any failure. Those errors make an apparently efficient option unusable when the relevant condition changes.
+Nominal ratings can be added even when the assets cannot supply the same service together. A fallback can rely on the same failed provider as the asset it is meant to replace. Normal-load adequacy and a successful isolated-outage calculation can then conceal loss of several contributions together.
+
+Recovery also changes the answer over time. Enough stored reserve for one interval may be exhausted before another asset becomes usable. A single final recovery time hides that intermediate service failure.
 
 ### EAM.6:3 - Forces
 
@@ -615,19 +666,43 @@ Reserve capability and recovery provisions cost resources while protecting a spe
 
 ### EAM.6:4 - Solution
 
-Recover demand, required service, configuration and horizon. Use [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability) or an applicable specialist result to distinguish nominal capability from usable contribution under those conditions. Keep the physical or service quantities and time units compatible.
+#### EAM.6:4.1 - Establish the contribution being tested
 
-Identify the actual dependencies that can reverse the answer: shared power, control, provider, access, storage or another asset contribution. State whether capabilities can really be combined. Use a simple load or supply bound before a detailed network model.
+Recover demand, required service, configuration and horizon. Keep quantities and time units compatible. [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) can supply scenario demand and its place, period and driver conditions; [EAM.5](#eam5---assess-asset-condition-and-performance) can supply the applicable condition concern. Use [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability) or a specialist result to distinguish nominal capability from usable contribution.
 
-Compare the current arrangement and each material alternative for normal use and the selected adverse conditions. Choose disruptions because their consequence matters: a named outage, loss of a common provider or a credible demand burst. Passing these scenarios establishes only their stated scope.
+State where the service must be delivered and which population or function it protects. An aggregate spare capacity elsewhere is useful only if the arrangement can deliver it where and when needed. Begin with a supply or load bound that the available inputs support.
 
-For each shortfall, calculate its amount and duration where the inputs support it. Relate usable reserve, buffer and recovery time to the required service. A buffer supports a specified deficit for a bounded interval; a plan for recovery is not evidence that it will occur within that interval.
+#### EAM.6:4.2 - Derive the disturbance from actual dependencies
 
-Compare changes to capability, demand, sequencing, fallback or recovery. Preserve costs and losses moved to other users. A shared standby unit cannot simultaneously be promised to incompatible uses. Obtain a qualified hydraulic, electrical, structural or stochastic result when that relationship determines the answer.
+Identify the asset contributions and the dependencies that can change the answer. Follow shared power, control, providers, access, storage or another asset's functioning to the service they enable. Explain which contributions cease, degrade or remain usable when a selected dependency is lost. Include a common dependency even when it crosses the portfolio's ownership boundary.
 
-Return the feasible envelope, failed scenario or precise missing result to the option and timing decisions. Stop when the receiving question is answered. Reopen on changed demand, dependencies, recovery support or operating conditions.
+Test a fallback against that same loss. A second pump on the failed feeder supplies no replacement flow until its needed power is restored. An alternative is independent of that feeder loss only when its power, control, connection and other necessary support remain usable under the stated scenario. This is a dependency claim for the named disturbance; a separate statistical independence claim needs its own evidence.
+
+Choose adverse conditions because their consequences can change the asset decision: a named outage, common-provider loss or credible demand burst. Use an existing qualified scenario where it matches. Preserve simultaneous calls on shared reserve; one standby contribution cannot be allocated twice to incompatible users.
+
+Compare material alternatives on the same disturbance and service criterion. An alternative may change the dependency itself, so recalculate the remaining contributions rather than carrying over the old consequence account.
+
+#### EAM.6:4.3 - Follow service through recovery
+
+Divide the disturbance into intervals at which demand, usable contribution or restoration changes. Use times to usable service, including the necessary access, work, testing and return conditions. A repair-completion estimate alone may omit the time before the contribution can actually be used.
+
+For each interval, compare required service with supported available contribution. Where an additive bound is applicable, the positive difference is the deficit. Multiply a constant deficit by the interval length to obtain the reserve volume or resource needed during it. Carry the remaining usable reserve forward; test both its deliverable rate and its remaining amount. Account for other users' simultaneous demands on it.
+
+Credit replenishment only when its route, rate, timing and operating conditions are supported. If flows or demand vary materially within an interval, refine the intervals or obtain an appropriate time-dependent result. A total-volume comparison alone cannot establish pressure, quality or other delivery conditions.
+
+The service requirement may include an allowed interruption, minimum contribution or restoration deadline. Apply that actual criterion to each interval. Report where and for how long it fails. Keep evidence for restoration timing separate from a proposed recovery plan: an unqualified time leaves the dependent conclusion conditional.
+
+#### EAM.6:4.4 - Compare remedies and return the conditions
+
+Compare additional capability, demand changes, sequencing, reserve, another fallback or changed recovery. Preserve burden and lost service moved to other users. An option that meets this scenario becomes a qualified candidate for the asset comparison, with its costs and remaining conditions.
+
+Obtain a hydraulic, electrical, structural or stochastic result when that relationship determines the answer. Specify the arrangement, disturbance, required service and intervals it must address. A supported specialist result can replace an inadequate simple bound without restarting unrelated parts of the assessment.
+
+Return the service envelope, failed scenario or precise missing result to [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service)–[EAM.10](#eam10---compare-engineered-asset-portfolio-combinations), and the relevant outage and recovery conditions to EAM.11. Stop when the receiving question is answered. Reopen on changed demand, dependencies, recovery support or operating conditions. Passing the selected scenarios supports only their stated scope.
 
 ### EAM.6:5 - Archetypal Grounding
+
+#### EAM.6:5.1 - A sufficient outage and buffer bound
 
 CityWater's North area has 1,000 m³/h usable capability before C is modified and needs 700 during the dry work window. Removing A's 200 leaves 800; removing C's 300 leaves 700. Each isolated outage passes the quantity bound. Removing both leaves 500, a 200 m³/h shortfall. Their individual feasibility therefore does not justify simultaneous work.
 
@@ -635,13 +710,33 @@ In an additional constructed variant, an independently qualified usable buffer c
 
 After the selected 200 m³/h addition, normal North capability is 1,200 against the wet minimum of 1,100. That comparison does not establish performance under every loss of station, power or control. Any such stronger claim needs its own applicable scenario or model.
 
+#### EAM.6:5.2 - Shared failure and different recovery intervals
+
+A separate constructed water system must continuously deliver 400 m³/h. Two units each supply a qualified 250 m³/h but share one feeder. An independent third source supplies 100 m³/h. Usable stored reserve is 300 m³, with delivery qualified for the deficits considered here. These are teaching inputs, not additional CityWater facts.
+
+A feeder loss removes both 250 contributions. One returns after one hour and the other after two. During the first hour, only 100 m³/h remains, so preserving service requires (400 − 100) × 1 = 300 m³. The reserve is exhausted at one hour. During the next hour, 250 + 100 = 350 m³/h leaves another 50 m³/h deficit. The arrangement fails the continuous-service requirement despite normal capability of 600 m³/h.
+
+Now consider a qualified additional 250 m³/h supply that can operate independently of this feeder loss and is usable after half an hour. Its support and connection are supplied as case premises.
+
+| Interval after loss | Available contribution, m³/h | Required reserve rate, m³/h | Required reserve volume, m³ |
+| --- | ---: | ---: | ---: |
+| 0–0.5 h | 100 | 300 | 150 |
+| 0.5–1 h | 350 | 50 | 25 |
+| 1–2 h | 600 | 0 | 0 |
+
+Before the first feeder-dependent unit returns, required reserve is 150 + 25 = 175 m³. The initial 300 therefore covers the stated intervals, leaving 125 m³; no replenishment is assumed. From one hour, the available contributions meet the 400 requirement. The added supply is a feasible response to this constructed scenario, to be compared with other supported remedies and their burden.
+
+If the added supply actually depends on the failed feeder, remove its contribution and the first conclusion returns: service fails after one hour. If it is independent but becomes usable only after 1.5 hours, the first hour exhausts storage and the next half-hour has a 50 m³/h deficit. Independence alone therefore does not establish timely service. Earlier availability, a further usable 25 m³ of reserve, a different restoration arrangement or another supported alternative could change that latter result.
+
+Use actual dependency and restoration evidence before relying on such a calculation. The case establishes neither the probability of feeder loss nor the hydraulic feasibility of an unexamined network. [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service)/.8 compare the supported remedy; [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) must retain its half-hour availability and restoration conditions in the time arrangement.
+
 ### EAM.6:6 - Bias-Annotation
 
 Average service can hide a severe local loss. Inspect the protected population or location used by the decision. Dependency data can also overrepresent documented technical links while omitting access, providers or decisions that affect real recovery.
 
 ### EAM.6:7 - Conformance Checklist
 
-Are demand and usable capability compared under the same conditions? Are shared dependencies and the selected adverse scenarios explicit? Does each reserve or recovery claim cover the required amount and duration, and is a stronger reliability claim kept within its evidence?
+Are demand and usable capability compared under the same conditions? Can the reader trace the selected dependency loss to the contributions that cease? Does the reserve remain available under that loss and concurrent use? Are its amount and rate sufficient in every relevant interval? What supports restoration timing, and what stronger claim would require another model?
 
 ### EAM.6:8 - Common Anti-Patterns and How to Avoid Them
 
@@ -649,23 +744,29 @@ Adding nameplate ratings can overstate joint capacity. Recover the actual combin
 
 Calling unused capacity “resilience” leaves the protected disturbance unknown. State the loss or demand scenario and test what remains deliverable.
 
+Using final restored capacity to cover an earlier deficit hides interrupted service. Follow the contributions and remaining reserve through the intervening intervals.
+
 ### EAM.6:9 - Consequences
 
-The practitioner can reject an infeasible combination or identify a proportionate recovery change before committing resources. The result remains conditional on its modeled service, dependencies and evidence; richer claims can require specialized analysis.
+The practitioner can reject an infeasible combination or identify a proportionate recovery change before committing resources. The account shows which dependency or restoration premise changes the result, so the affected alternative or timing can be reconsidered. It remains conditional on the modeled service, dependencies and evidence.
 
 ### EAM.6:10 - Architectural Rationale
 
-Capacity and resilience are assessed together because the same arrangement supplies both normal service and responses to disturbance. The distinction between a necessary bound and a sufficient supported scenario keeps simple reasoning useful without overstating it.
+The same arrangement supplies normal service and responses to disturbance. Recovering its dependencies constructs the scenario; interval comparisons establish its service consequences. [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability) and specialist models supply applicable capacity reasoning, while EAM relates that result to asset choices and recovery conditions. A necessary bound and a sufficient supported scenario have different reach.
 
 ### EAM.6:11 - SoTA-Echoing
 
-For deciding whether a named outage can preserve the required service, adopt [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability)'s qualified capacity/service comparison and first use a supply or duration bound whose inputs are applicable. The Solution selects the disruptions and dependencies that could reverse this answer. Under the constructed 400 m³ usable buffer and 200 m³/h deficit, two hours is the maximum supported interval; no more detailed model is needed to reject the three-hour proposal on those premises.
+For a named outage, first use [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability)'s qualified capacity/service reasoning and an applicable supply or duration bound. The constructed 400 m³ buffer and 200 m³/h deficit establish a two-hour limit, sufficient to reject the three-hour proposal.
 
-A serious alternative for a water-network question is extended-period hydraulic analysis, for example the method implemented in EPANET 2.2. The US EPA's [EPANET description, “Capabilities” and “Hydraulic Modeling”](https://www.epa.gov/water-research/epanet), identifies pressure, pipe flow, tank level and control behavior as modeled contributions. This is a technical comparator, not evidence about CityWater's network. Adapt that route when delivered flow, pressure, changing storage or control interaction remains consequential and unqualified. A total-volume bound cannot establish those relationships. The selected arithmetic is less work for the supplied failed-duration question, while deliberately yielding no hydraulic or probabilistic reliability result; its valid inputs still need the specialist support stated in the case. An available, applicable network result can be reused directly. Reopen the method choice when the buffer's usable delivery is disputed, controls or simultaneous demand alter the deficit, or the receiving decision needs a network or failure-probability claim beyond the supported scenarios. Use the appropriate specialist model for that actual question rather than treating either simple arithmetic or one software package as universally sufficient.
+[IAM Anatomy v4, §7.5.6, pp. 66–67](https://theiam.org/media/5615/iam-anatomy-version-4-final.pdf#page=66), relates disturbance to the extent and duration of service loss and recovery objectives. [GFMAM Landscape v3, §3.9](https://gfmam.org/sites/default/files/2024-06/GFMAM_AM_Landscape_v3.0_English_2024.pdf#page=45), distinguishes asset and organizational resilience. The dependency and recovery construction above adapts those concerns to an asset choice: the shared feeder removes two contributions, and the time at which independent supply becomes usable changes the answer. More normal capacity alone does not resolve either fact.
+
+For consequential water-network relationships, extended-period hydraulic analysis is a stronger alternative. The US EPA's [EPANET capabilities and hydraulic modeling description](https://www.epa.gov/water-research/epanet) covers pressure, flow, tank levels and controls. Obtain such a result when deliverability or changing network behavior remains unqualified. Reuse an applicable existing result where available.
+
+A supported simple bound is enough for the failed-duration question; dependency and interval reasoning is needed for the shared-loss question. Neither substitutes for an unresolved hydraulic relationship or failure-probability estimate. Reopen the choice of method when controls, demand, reserve delivery or restoration conditions change the answer beyond the current model's reach.
 
 ### EAM.6:12 - Relations
 
-[EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) supplies demand and [EAM.5](#eam5---assess-asset-condition-and-performance) the condition concern. [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service)–[EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) use capacity and consequence constraints; [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) uses the outage envelope. [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability) supplies qualified capacity reasoning, and [C.16](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c16---measurement--metrics-characterization-mmchr) supports compatible quantities and uncertainty.
+[EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) supplies demand and [EAM.5](#eam5---assess-asset-condition-and-performance) the condition concern. [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service)/.8 use a required contribution or recovery alternative; [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict)/.10 use the resulting service and dependency constraints. [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) consumes the interval-specific outage and recovery conditions. [OPS.10](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#ops10---qualify-operating-capacity-under-variability) supplies qualified capacity reasoning, and [C.16](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c16---measurement--metrics-characterization-mmchr) supports compatible quantities and uncertainty.
 
 ### EAM.6:End
 
@@ -761,7 +862,7 @@ Return a small set of supported or explicitly conditional alternatives, with the
 
 A repair estimate describes one intervention. It can omit years of energy, inspection, support and further work. A replacement estimate can omit commissioning, service interruption, exit cost or remaining value. Comparing those estimates as if they described the same service policy produces a misleading choice.
 
-Continued use can also become a fictitious zero-cost alternative when its required maintenance and fallback are omitted.
+Continued use can also become a fictitious zero-cost alternative when its required maintenance and fallback are omitted. Ending a spreadsheet after two years does not establish that the asset stops working then or that its remaining contribution is worthless.
 
 ### EAM.8:3 - Forces
 
@@ -769,19 +870,71 @@ Early replacement can reduce continuing burden but discard useful service life. 
 
 ### EAM.8:4 - Solution
 
+#### Establish the service that each policy must support
+
 Recover the required service, asset configuration and horizon. Use the relevant condition and diagnostic account to establish which maintained-use responses are supported. [MNT.4](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt4---monitor-and-interpret-system-condition-for-maintenance) supplies condition interpretation; [MNT.6](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt6---diagnose-condition-and-choose-a-maintenance-response) supplies the diagnosis and intervention recommendation. Their result must apply to this asset and proposed duty.
 
 Form policies rather than isolated job labels. A continued-use policy includes its initial intervention, recurring maintenance, permitted duty, contingency and exit conditions. A renewal policy states what capability or useful life it changes. Replacement includes the new asset's integration and the old asset's disposition. Repurposing names the different receiving use; withdrawal names how a still-required service will be supplied or the decision that ends that requirement.
 
+Lay out the period covered by each technical qualification. An initial repair supported for three years cannot by itself supply a four-year policy. Obtain the further intervention, replacement or service alternative that closes the remaining interval. Where condition determines the next work, state the observation and threshold that trigger it, the time needed to respond and how service remains supported while responding. A conditional forecast retains its duty and mechanism assumptions.
+
 Keep technical eligibility separate from preference. Label an option conditional when a decisive engineering, support or permission result is missing. A proposal can be worth discussing while that result is sought, but it cannot be treated as a feasible immediate act.
 
-Place the options on the same comparison basis. Identify initial and recurring expenditure, downtime or lost service, consequential risk, future support and terminal value. Keep historical expenditure separate from avoidable future cost. Explain which costs are already included so they are not counted twice.
+#### Construct the dated consequence account
 
-Preserve different technical lives at a common analysis horizon through a justified residual-value or continuing-service treatment. Use constant prices with a real discount rate, or a consistent current-price basis with its corresponding rate. A short payback or book value alone does not compare the alternatives' whole consequences. Compare the eligible policies using the applicable criterion described in EAM.9.
+For each policy, follow the work and use through time: initial preparation and integration, recurring operation and support, subsequent interventions, interruptions and temporary provision, and the intended ending. Attach each consequence to its cause and date. Include the whole intervention and return to service supplied by [MNT.7](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt7---coordinate-maintenance-intervention-and-continuing-operation); the time spent physically repairing equipment alone can understate the interruption. Carry the resulting work and service conditions into EAM.11.
 
-Retain the smallest alternative set that includes materially different feasible ways to meet the need. Obtain more diagnosis or costing only when an attainable answer could change eligibility, preference or the requested claim enough to justify its full burden. Return the set with the unsupported condition or observation that would reopen it.
+Then obtain the economic consequences of that same policy. [FIN.6](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin6---value-capital-projects) develops a dated incremental cash account: compare the proposed policy with its actual alternative, include changed operating and investment cash, and distinguish historical expenditure from future avoidable consequences. Identify the asset and configuration, receiving service, comparison perspective and date, price and discount-rate basis, relevant tax and financing treatment, and ending premise. Ask the finance supplier to return the amounts and dates, significant assumptions and unresolved limits. Its corporate-finance assumptions apply only where appropriate to the receiving case.
+
+A recurring service price may already include maintenance, response or replacement. Check those inclusions before adding separate allowances. Conversely, a required future overhaul is still a consequence when it falls outside the current capital request. Preserve unpriced service loss, safety, environmental or other material consequences for [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) instead of silently treating them as zero. A finance result values the stated policy; it does not establish that the policy can supply the service.
+
+#### Reconcile horizon and ending
+
+Place the alternatives on a common service and analysis horizon. If their technical lives differ, describe the further work needed to cover that horizon or obtain an applicable value of remaining service. A repeating replacement chain needs supported availability, duty and cost assumptions; extending an annuity factor cannot supply them.
+
+Distinguish the end of the study from the end of use. If the asset continues beyond the explicit account, obtain a remaining-value estimate consistent with that continuation and its further support needs. [FIN.7](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin7---value-assets-and-the-corporation) develops valuation under a stated continued-use or disposal premise. If the asset will actually be withdrawn, use realizable proceeds and the dated cost of disconnection, disposal, closure or replacement service as applicable. Book value alone supplies neither answer. Do not add liquidation proceeds for resources whose continuing use is already included in the terminal value.
+
+When only the explicit table endpoint moves, reconcile the value at the new endpoint with the same later payments and ending premise. The whole policy's present cost remains the same. If a supplied valuation disagrees, use [FIN.7](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin7---value-assets-and-the-corporation) to identify the changed cash, dates, rights or assumptions before relying on it.
+
+Use constant prices with a real discount rate, or a consistent current-price basis with its corresponding rate. Changing the required service horizon calls for reconsidering which interventions occur, which support still applies and what ending is being valued. If the service itself ends, reconsider withdrawal and other alternatives.
+
+#### Return comparable choices and their conditions
+
+Compare eligible policies using the applicable criterion in EAM.9. Return their service and configuration, dated work and consequences, ending premise, technical support and material conditions. [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) can then combine them without losing a later funding need or counting shared work twice.
+
+Retain the smallest alternative set that includes materially different feasible ways to meet the need. Obtain more diagnosis or costing only when an attainable answer could change eligibility, preference or the requested claim enough to justify its full burden. If [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) reports a changed duty, price or support result, revise the affected policy and its recipients; an unrelated qualified policy need not be reconstructed.
 
 ### EAM.8:5 - Archetypal Grounding
+
+#### Constructing a four-year policy
+
+Consider a separate constructed asset E supplying the same required service under two technically qualified policies. All amounts are constant-price €million; the comparison uses a 3% real rate, year-end cash and sufficient resources for either policy. Tax and financing differences are held equal. These assumptions do not supply rates or technical support for a real asset.
+
+Policy X retains E: initial work costs 0.40 and supports its duty through year three; a 0.90 overhaul at the end of year three supplies the further support needed for year four. Policy Y replaces E initially for 1.50 and has qualified support throughout the four years. The following account includes recurring operation and routine maintenance separately from the overhaul.
+
+| Consequence and date | Retain and overhaul X | Replace Y |
+| --- | ---: | ---: |
+| Initial work at year zero | 0.40 | 1.50 |
+| Recurring cost at each year end, years 1–4 | 0.30 | 0.15 |
+| Further work at the end of year three | 0.90 | 0 |
+| Value of continued use at the end of year four | 0.20 | 0.50 |
+
+The teaching qualifications include permitted eight-hour work windows and temporary service sufficient to preserve the requirement during initial work and X's later overhaul. The corresponding costs are included in the initial and overhaul amounts. That makes the policies service-comparable; omitting the later window or temporary provision would leave X conditional. No other material consequence distinguishes the eligible policies in this example.
+
+At 3%, the four-year annuity factor is 3.717098, the year-three discount factor 0.915142 and the year-four factor 0.888487. X's present cost is `0.40 + 0.30 × 3.717098 + 0.90 × 0.915142 − 0.20 × 0.888487 = 2.161060`. Y's is `1.50 + 0.15 × 3.717098 − 0.50 × 0.888487 = 1.613321`. Replacement has the lower comparable cost. Omitting the overhaul would report X as 1.337432 and reverse the recommendation while removing the work needed to support year four.
+
+Now move the end of the explicit cash table to year two, keeping both complete policies, the required service, the rate and all later amounts unchanged. Express the remaining year-three and year-four cash, including the stated year-four continuing value, as an equivalent net value at year two:
+
+- X: `V_X(2) = −(0.30 + 0.90)/1.03 + (0.20 − 0.30)/1.03² ≈ −1.259308`.
+- Y: `V_Y(2) = −0.15/1.03 + (0.50 − 0.15)/1.03² ≈ 0.184278`.
+
+These values represent the same remaining account on the cost-comparison basis. X's negative value means its later support payments exceed its discounted year-four continuing value. The common required service remains the same and its equal benefits are outside both cost accounts. The calculation does not estimate a sale price.
+
+Let `a₂ = 1/1.03 + 1/1.03²` and `d₂ = 1/1.03²`. Using unrounded values, the shortened explicit accounts give X: `0.40 + 0.30 × a₂ − V_X(2) × d₂ = 2.161060`; Y: `1.50 + 0.15 × a₂ − V_Y(2) × d₂ = 1.613321`. Replacement remains cheaper. Moving the table boundary has moved later consequences into the ending value; it has removed neither their cost nor their service obligations. A different supplied appraisal needs reconciliation of its changed assumptions before it can support a different recommendation.
+
+Actual withdrawal at year two is another case. If the authority ends the service and X incurs a net exit cost of 0.10 while Y yields net sale proceeds of 0.60, replace the continuing values with those consequences. Present costs are then 1.068300 and 1.221463. X is cheaper in this different case because the service requirement and exit consequences have changed. There is no year-three service obligation in this case. If the service remains required, withdrawal alone is incomplete: a qualified replacement service and its consequences must join the policy.
+
+#### Comparing the complete supplied policies for D
 
 For the constructed D case, both policies supply the same required service for five years under their stated engineering qualifications. Continued use needs €0.50 million initially as operating expenditure and €1.00 million at each year end, with zero terminal value. Replacement needs €3.00 million capital, €0.35 million each year and has €1.20 million terminal value. These are teaching inputs, not estimates for a real pump.
 
@@ -795,13 +948,15 @@ Retaining an asset can be favored because its purchase cost is remembered; repla
 
 ### EAM.8:7 - Conformance Checklist
 
-Does each alternative describe enough of its continuing policy to be compared? Are technical qualification, horizon, price basis and terminal treatment compatible? Can the recipient distinguish a supported option from a conditional proposal and identify what would change that distinction?
+Can the practitioner trace each policy from required service through supported intervals, later work and ending? Are its cash dates, unpriced consequences, horizon and valuation premise compatible? Can the recipient distinguish a supported option from a conditional proposal and identify what would change that distinction?
 
 ### EAM.8:8 - Common Anti-Patterns and How to Avoid Them
 
 Treating “do nothing” as free hides maintenance and service consequences. Write the actual continued-use policy.
 
 Treating a maintenance recommendation as the asset decision loses alternative service and lifetime-value questions. Preserve the recommendation and compare its policy with the other relevant options.
+
+Using a valuation for a different date or continuation can create a false change in preference. Reconcile the remaining cash and ending premise before comparing.
 
 ### EAM.8:9 - Consequences
 
@@ -813,11 +968,13 @@ This pattern joins maintained-functioning results to the asset-value question wi
 
 ### EAM.8:11 - SoTA-Echoing
 
-The NIST economic guidance named in the common source account supports consistent horizon and residual-value treatment; its federal rates and eligibility rules are not adopted. The comparison here uses explicit constructed inputs. A payback-only screen cannot replace the selected whole-policy comparison.
+NIST HB135e2025, chapter 4, develops the timing of initial, recurring, replacement and residual consequences on a common study period. That discipline supports the dated account here; its federal rates and programme rules are not adopted. A payback-only screen loses later support and the ending premise.
+
+[FIN.6](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin6---value-capital-projects) supplies the incremental financial construction, and [FIN.7](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin7---value-assets-and-the-corporation) supplies a valuation consistent with continued use or actual disposal. Use their developed treatment when financial construction or appraisal is needed; retain a sufficient qualified local answer when it already supplies the result. EAM connects those returns to the technically supported asset policy. The numerical cases demonstrate this conditional connection and do not estimate financial or engineering performance in practice.
 
 ### EAM.8:12 - Relations
 
-[EAM.3](#eam3---establish-the-asset-information-and-configuration-basis) and [EAM.5](#eam5---assess-asset-condition-and-performance) supply applicable asset and condition information. [MNT.6](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt6---diagnose-condition-and-choose-a-maintenance-response) supplies the maintenance recommendation. [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) supplies alternative ways of obtaining a changed service contribution; [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) compares the policies, [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) tests combinations and [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) tests timing. [C.11.DUA](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11dua---make-advice-and-evidence-demands-worth-their-burden) governs the worth of further inquiry.
+[EAM.3](#eam3---establish-the-asset-information-and-configuration-basis) and [EAM.5](#eam5---assess-asset-condition-and-performance) supply applicable asset and condition information. [MNT.6](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt6---diagnose-condition-and-choose-a-maintenance-response) supplies the maintenance recommendation and [MNT.7](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#mnt7---coordinate-maintenance-intervention-and-continuing-operation) the whole intervention and return. [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) supplies alternative ways of obtaining a changed service contribution. [FIN.6](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin6---value-capital-projects) and [FIN.7](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin7---value-assets-and-the-corporation) supply the dated financial account and qualified ending value; their perspective and conditions must match the asset policy. [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) compares the policies, [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) tests combinations and [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) tests timing. [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) returns changed premises. [C.11.DUA](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11dua---make-advice-and-evidence-demands-worth-their-burden) governs the worth of further inquiry.
 
 ### EAM.8:End
 
@@ -913,7 +1070,7 @@ The common NIST source supports compatible lifecycle-cost comparisons, while the
 
 ### EAM.10:1 - Problem frame
 
-Use this pattern when asset choices compete for shared funding, service, people, outages or other resources. Several individually attractive projects cannot all be performed, or choosing one changes the feasible alternatives for another.
+Use this pattern when asset choices compete for shared funding, service, people, outages or other resources. Several individually attractive projects cannot all be performed, choosing one changes the feasible alternatives for another, or performing them together changes their consequences.
 
 Begin with the actual combination question and its constraints. Return the preferred feasible combination, a justified non-dominated set or the precise condition that prevents one. An isolated single-asset comparison can remain in EAM.9.
 
@@ -921,27 +1078,68 @@ Begin with the actual combination question and its constraints. Return the prefe
 
 Ranking assets by condition or ranking projects by a benefit ratio can miss a better feasible combination. Options can be indivisible, mutually exclusive or dependent. A low-capital alternative at one station can release funding for a valuable option elsewhere, while separate project approval hides that interaction.
 
+Adding standalone costs can also count shared preparation twice or omit a cost caused by the combination. Calling the difference a portfolio saving without identifying its cause leaves the decision dependent on an unsupported discount.
+
 ### EAM.10:3 - Forces
 
 Shared allocation must preserve required service and actual technical eligibility while comparing value. A more complete model can reveal a better combination but costs effort and relies on input quality. Deferral can preserve flexibility or create unacceptable risk, depending on its supported policy.
 
 ### EAM.10:4 - Solution
 
-State the portfolio scope, requested result and horizon. Recover the alternatives and their eligibility from [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service)–EAM.9. Identify which choices are mutually exclusive, mandatory, optional or dependent, and why. An omitted asset can still matter through a shared service or resource.
+#### Define complete choices and different kinds of coupling
 
-Write the constraints at the whole-combination scope. Separate initial capital, initial operating expenditure and recurring operating envelopes where they are different decisions. Include shared-provider calendars, service conditions and technical dependencies. Do not count a resource twice or assume unused funding must be spent.
+State the portfolio scope, requested result and horizon. Recover the alternatives and their eligibility from [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service)–EAM.9. Identify which choices are mutually exclusive, mandatory, optional or dependent, and why. Include continued use or no new work when it is a qualified alternative. An omitted asset can still matter through a shared service or resource.
 
-Choose an analysis appropriate to the problem. Enumerate a small finite set. For a larger problem, use a qualified optimization or scenario method whose objective, constraints and assumptions represent the real alternatives. A mathematical optimum applies to that modeled set and basis, not every possible future option.
+Distinguish three questions about a proposed combination. A prerequisite or exclusion determines which selections can coexist: a new unit may need an enabling connection, while two replacements for the same role may be mutually exclusive. A shared resource limit constrains the work or use at a particular time: two eligible jobs may need the same crew or exceed an outage allowance. A joint consequence changes what happens when the choices are taken together: common mobilization may reduce cost, while simultaneous demand can require additional provision. One arrangement can create all three, but each needs its own evidence.
 
-Evaluate whole combinations, including costs or benefits that occur only together. For the CityWater shortlist, choose exactly one of two options for each of four stations; compare all sixteen. Reject combinations exceeding any applicable limit and check whether a feasible service-preserving schedule exists.
+For each material relation, identify the affected alternatives, its operating or engineering cause, the time and conditions under which it holds, and the resulting constraint or consequence. [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) supplies service and dependency conditions. A promised saving cannot make a combination technically eligible.
 
-Compare the eligible combinations using the actual value criteria. When required service and other eligibility conditions are equal, minimize their total present cost. Preserve non-dominated alternatives if material criteria do not have a justified common ranking.
+#### Construct the whole consequence account
 
-Show the preferred combination and the consequential alternatives it displaces. Test changes in funding, technical eligibility, demand or resources that could alter the result. More analysis is worthwhile only where it can improve the requested decision or justified claim at proportionate burden.
+Start from compatible policies on the same service boundary, perspective and horizon. If a policy omits later support or its ending, return to EAM.8. Then describe what work and service the combination actually entails. Identify shared preparation, enabling work, recurring operation, temporary service and ending consequences. Obtain amounts and dates for those actual operations.
 
-Return the supported portfolio recommendation to [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) and EAM.12. Reopen when a shared condition changes. A project that remains locally useful can be deferred for a qualified portfolio reason without being relabelled technically poor.
+Reconcile this whole account with the separate accounts. For costs on the same basis, `joint adjustment = whole-combination cost − sum of standalone costs`. A negative amount is a saving; a positive amount is an additional cost. Explain what causes it and when it occurs. Where effects differ by date, construct the dated differences first and obtain their financial value through [FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations) on the applicable basis. [FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations) develops this interaction comparison and dated funding constraints; its return must identify the combination, common baseline, perspective, amounts, dates and significant assumptions.
+
+Count each shared consequence once. If two estimates each contain the same mobilization, the combination that uses one mobilization retains one payment. If three jobs share it, reconstruct their common account; summing all three pairwise discounts could remove more mobilizations than were included. If sharing requires extra supervision or temporary service, include that cost too. An allocation of common cost among departments does not by itself create a saving in the whole payment.
+
+Keep unpriced consequences visible. Shared disruption can change a service or environmental result even when the expenditure sum is unchanged. Use [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict)'s actual criteria to compare those consequences; a cash adjustment cannot silently settle them. When the combination changes a demand or recovery premise, return that premise to [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) or [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) before relying on its qualification.
+
+#### Test constraints and compare the feasible combinations
+
+Write the constraints at the whole-combination scope. Separate initial capital, initial operating expenditure and recurring operating envelopes where they are different decisions. Include later commitments when they bind: the year-three overhaul in an [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) policy needs its funding, crew and service window at that time. A low initial outlay does not establish that later provision. Do not count a resource twice or assume unused funding must be spent.
+
+Enumerate a small finite set of indivisible choices. For the CityWater shortlist, choose exactly one of two options for each of four stations and compare all sixteen. For a different question, the feasible no-work, single and combined choices depend on what service is mandatory. Remove combinations excluded by a supported prerequisite, technical condition or resource limit, retaining the reason. Obtain a feasible service-preserving calendar through [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) where timing can defeat an otherwise eligible selection.
+
+For a larger problem, select an optimization or scenario method whose objective, choices, constraints and interactions represent the actual question. Specify what is selectable, which selections imply or exclude others, dated resource use and the joint effects. Model contingent actions with the information available when each action is chosen; the combination cannot assume different early choices for future outcomes that are not yet known. A mathematical optimum applies to the represented set and basis.
+
+Compare eligible combinations using the actual value criteria. When required service and other material consequences are equal, minimize total present cost. Otherwise preserve justified trade-offs or a non-dominated set. A cheaper programme that requires more scarce resources does not automatically dominate a dearer one.
+
+#### Explain the choice and the condition that could change it
+
+Show the preferred combination and the consequential alternatives it displaces. Test a changed funding limit, engineering qualification, demand driver, shared-work condition or resource date when it could alter the answer. Use coherent conditions across the combination; a common disruption cannot be favorable for one component and absent for another without grounds.
+
+Return the recommendation, the whole consequence account, feasibility conditions and the decision-changing uncertainty to [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) and EAM.12. [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) later returns observations to the premise they affect. If a missing shared-work fact can change the choice, obtain it only when its attainable answer warrants the inquiry's full burden. A project that remains locally useful can be deferred for a qualified portfolio reason without being relabelled technically poor.
 
 ### EAM.10:5 - Archetypal Grounding
+
+#### A shared operation changes the comparison
+
+Consider a separate constructed service requirement. Two interventions P and Q together and a different complete solution Z are both qualified to supply it over the same horizon. P or Q alone is insufficient. Their subsequent operating, ending and other material consequences are equal; all different costs are payable now in €million, and funding is sufficient for either whole solution. Thus their initial cost difference decides this bounded comparison.
+
+P costs 2.0, including 0.2 mobilization, and Q also costs 2.0 including 0.2. Z costs 3.9. The operating practitioner establishes that P and Q can be performed sequentially during one qualified visit, using one 0.2 mobilization. Required service remains supported during the work; the shared visit incurs no additional consequence outside the supplied account.
+
+| Whole choice | Separate estimate | Joint adjustment | Comparable cost |
+| --- | ---: | ---: | ---: |
+| P and Q with one mobilization | 4.0 | −0.2 | 3.8 |
+| Complete solution Z | 3.9 | 0 | 3.9 |
+
+The whole P+Q account is `1.8 + 1.8 + 0.2 = 3.8`. Adding the separate estimates would prefer Z at 3.9; the supported joint account prefers P+Q by 0.1. That result concerns one actual payment saved through a feasible work arrangement.
+
+Suppose incompatible access windows require two visits and two mobilizations. P+Q returns to 4.0 and Z becomes cheaper at 3.9. If instead the proposed shared visit fails the service condition, remove that arrangement as ineligible and compare any qualified two-visit arrangement with Z. Reducing its price cannot repair the lost service. [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) establishes which visit arrangement is feasible; [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) uses its consequences.
+
+The example does not infer a common saving for CityWater's separate station jobs. A proposed CityWater sharing arrangement would need its own work, service and financial account before altering the following result.
+
+#### The sixteen supplied CityWater combinations
 
 The common CityWater application supplies four two-option choices. Initial capital must not exceed €8 million, initial operating expenditure €0.60 million, annual operation €3 million and the available team/outage time twelve days. All amounts and eligibility results are constructed.
 
@@ -957,13 +1155,15 @@ A portfolio objective can conceal which users bear losses and which costs are le
 
 ### EAM.10:7 - Conformance Checklist
 
-Are all required choices and mutual exclusions represented? Does the selected combination meet every whole-set constraint and admit a feasible schedule? Are shared effects counted once? Can the recipient reproduce the preference and identify a condition that would reverse it?
+Are all required choices, prerequisites and exclusions represented? Does the selected combination meet the dated whole-set constraints and admit a feasible schedule? Can its joint effects be traced to actual work or use and counted once? Can the recipient reproduce the preference and identify a condition that would reverse it?
 
 ### EAM.10:8 - Common Anti-Patterns and How to Avoid Them
 
 Funding the highest-ranked items until money runs out can miss a feasible combination of different options. Evaluate the relevant combinations.
 
-Accepting each project separately does not establish the shared condition. Sum the actual demands and test their dependencies at portfolio scope.
+Accepting each project separately does not establish the shared condition. Construct the actual whole demands and consequences, then test their dependencies at portfolio scope.
+
+A generic synergy percentage hides which work or cash changes. Reconcile the whole account with the separate accounts and retain the conditions that make the difference possible.
 
 ### EAM.10:9 - Consequences
 
@@ -971,15 +1171,21 @@ The portfolio can deliver more useful service or value within actual constraints
 
 ### EAM.10:10 - Architectural Rationale
 
-The combination is the subject because shared constraints can change which option should be selected at each asset. This differs from both single-asset value comparison and maintenance scheduling. Enumeration is selected for small cases because the assumptions and omitted alternatives remain inspectable.
+The combination is the subject because shared constraints and joint consequences can change which option should be selected at each asset. This differs from both single-asset value comparison and maintenance scheduling. Enumeration is selected for small cases because the assumptions and omitted alternatives remain inspectable.
 
 ### EAM.10:11 - SoTA-Echoing
 
-The common economic source distinguishes independent project ranking from mutually exclusive and constrained choices. This pattern makes the relevant combination explicit. A general optimizer is an external technique whose modeled problem must still be justified; it is not a default substitute for the asset question.
+NIST HB135e2025, chapters 4, 7 and 8, supplies common-period costing, comparison of alternatives and programmes, and sensitivity reasoning. Those operations support the explicit consequence comparison; its federal rates and programme rules are outside this use.
+
+[FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations) develops whole incremental cash under interactions, dated constraints and service continuations. Its B+C example shows that a negative joint cash effect can reverse the allocation even when the combined initial funding remains feasible. Use that financial construction together with the actual engineering and operating conditions; financial interaction and physical feasibility answer different questions.
+
+Enumeration fits a small indivisible shortlist because every permissible combination and exclusion can be inspected. Independent ranking is defensible only when the relevant choices and consequences are independent and the allocation rule fits the constraints. [FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations)'s value-per-capital ranking requires divisible, linearly scalable investments and one initial capital limit; indivisibility, minimum scale, interactions or later funding needs can defeat it. These conditions do not hold merely because each asset has a score.
+
+An optimizer can help when enumerating a larger set becomes burdensome, provided the actual selection rules, interactions, dates and criteria can be represented. If a consequential relation remains unqualified, retain that uncertainty or obtain the missing result. Solver precision supplies no missing alternative or engineering support. A tutorial for a particular solver is unnecessary when the finite comparison already answers the asset question.
 
 ### EAM.10:12 - Relations
 
-[EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) supplies eligible compared options. [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) supplies service and dependency conditions; [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) establishes timing; [EAM.12](#eam12---integrate-specialist-results-for-an-asset-recommendation-or-decision) receives the recommendation for decision. [C.11](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal) supports multi-criterion comparison, and [C.11.DUA](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11dua---make-advice-and-evidence-demands-worth-their-burden) supports proportionate additional inquiry.
+[EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service)–[EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) supply supported policies and comparison criteria. [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) supplies applicable demand; [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) supplies service and dependency conditions. [FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations) supplies compatible joint financial consequences and dated funding comparison. [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) establishes timing; [EAM.12](#eam12---integrate-specialist-results-for-an-asset-recommendation-or-decision) receives the recommendation for decision; [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) returns changed premises. [C.11](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal) supports multi-criterion comparison, and [C.11.DUA](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11dua---make-advice-and-evidence-demands-worth-their-burden) supports proportionate additional inquiry.
 
 ### EAM.10:End
 
@@ -1502,6 +1708,12 @@ The comparison also gives a useful stop for inquiry. Holding the other inputs fi
 
 If the operator asks only about present condition or the intervention needed to maintain the already selected use, the maintenance practitioner can answer by supplying the applicable condition account or intervention recommendation. The operator receives that bounded maintenance answer. When the question is instead which asset option offers better value over this horizon, the EAM practitioner supplies the additional comparison even though there is only one asset.
 
+### When the complete policy is still missing
+
+The D comparison above starts from complete, supported policies. When a new request instead supplies only an initial repair price, [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) constructs the policy before [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict) compares it. In its separate asset E case, initial work supports three years but the service is required for four; the further overhaul, its window and temporary service belong to the alternative. Omitting that work reverses the apparent cost preference while leaving year four unsupported.
+
+[FIN.6](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin6---value-capital-projects) supplies the dated financial account for the stated technical policy, and [FIN.7](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin7---value-assets-and-the-corporation) supplies its ending valuation. Moving only the end of the explicit table to year two requires a value that represents the same later cash and ending premise; [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) shows that the whole present cost and preference remain unchanged. Ending the service at year two instead changes the required policy and uses actual exit consequences. A different supplied valuation must be reconciled to its changed assumptions before it can change the recommendation. If an observation later changes technical support or the ending premise, [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) returns the affected policy to [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) and the comparison. D's supplied five-year premises and the programme calculation below remain their own case.
+
 ## APP-EAM-02 - The same asset in a constrained programme
 
 CityWater's funding board has allocated 8 for initial capital, a separate 0.60 for initial operating expenditure and 3 for annual operation. The infrastructure committee is authorized to select the asset programme within those allocations; changing an allocation requires a decision by the funding board. The operating plan separately supplies twelve available team/outage days before the wet season. These allocations, authorities and operating conditions are constructed case premises. No later funding is assumed in this base comparison. Each station needs exactly one of its two qualified options. For this small problem, enumerate all sixteen combinations; do not rank individual condition scores or savings ratios.
@@ -1539,6 +1751,24 @@ Three separate changed-condition branches show the decision's sensitivity:
 
 The EAM team submits its programme recommendation to the infrastructure committee. The finance practitioner supplies cost estimates and an affordability assessment against the funding board's allocations; those allocations set the spending limits. The infrastructure committee selects and authorizes an asset programme that fits those limits and the water-delivery mandate. MNT and operating authorities subsequently determine the permissions and conditions for protected work and resumption. The team can deliver its supported recommendation before the committee decides; the team reports an authorized programme only after that decision is supplied.
 
+### When the demand basis changes
+
+The original sixteen combinations use the supplied North wet-season requirement of 1,100 m³/h. Suppose a later, separately qualified demand account gives 1,250 for a period the asset choice must cover. [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) establishes its component basis, coincidence and status as a forecast or commitment; its Westbank example shows that construction with separate teaching inputs. [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) then compares the new scenario with the 1,200 contribution supported by either current C option. The 50 m³/h gap means none of the sixteen existing combinations supplies that scenario. Re-ranking their costs cannot repair the missing service.
+
+Return to [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) for an additional supported contribution or a qualified demand-management alternative, then compare the resulting policies and combinations on the revised premises. A proposal to change the service obligation goes to its actual authority. The original programme calculation remains applicable to its original conditions. If later observations reveal the changed driver, [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) reopens this affected account and its option consequences.
+
+### When a shared dependency changes recovery
+
+A common dependency can require another option even when the normal-demand comparison passes. [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence)'s separate feeder example shows both units losing their contribution together, reserve exhaustion before full recovery, and an independent supply whose time to usable service changes the result. Its qualified recovery conditions become inputs to [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service)/.8's alternatives and [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies)'s calendar. A favourable price or available team does not restore the missing service.
+
+To apply that construction to CityWater, obtain the relevant dependency, deliverability, usable reserve and restoration account for its actual service boundaries. Compare the resulting options in [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict)/.10 and retain the relied-on recovery conditions in the recommendation. The original CityWater outage bounds remain useful for the situations they describe. If an observed restoration time or dependency changes, [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) returns to the affected capability, option and timing rather than treating the former programme as qualified for the new loss.
+
+### When shared work changes the consequences
+
+The sixteen rows above use their declared additive costs and whole-work times. They do not establish whether a different work arrangement could share a mobilization, require extra temporary service or change a later commitment. [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations)'s separate P+Q/Z case shows why that question matters: one qualified shared mobilization makes the joint solution cost 3.8 against the alternative's 3.9, while two required visits make it cost 4.0.
+
+For a proposed CityWater arrangement, [EAM.11](#eam11---time-asset-interventions-and-manage-dependencies) must establish its actual windows and whole work, and [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) its service conditions. [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) then reconstructs that combination's consequences; [FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations) supplies the financial return if joint cash or dated funding must be developed. Recompute the affected rows rather than applying a discount to all sixteen. If the change also affects demand, recovery or a continuing policy, return that premise to [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions), [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) or EAM.8. The existing capital, time and D-qualification branches remain valid on their stated premises.
+
 ### What subsequent outcomes and practice questions would mean
 
 The programme promises the qualified added service from C, continued supported use of D and the stated spending. Completion of the work alone establishes none of those whole-programme outcomes. [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) shows how an obtained variance changes a particular premise, without inferring a technical cause from cost alone.
@@ -1552,10 +1782,10 @@ The later practice examples are separately constructed continuations. [EAM.14](#
 | Source | Contribution used here | Applicable limit |
 | --- | --- | --- |
 | [GFMAM Asset Management Landscape, third edition, June 2024](https://gfmam.org/sites/default/files/2024-06/GFMAM_AM_Landscape_v3.0_English_2024.pdf) | Professional asset-management concerns, particularly value-oriented decisions, investment, lifecycle work and configuration. | A professional landscape does not validate this repertoire's effectiveness or prescribe its pattern boundaries. |
-| [IAM, Asset Management — an Anatomy, version 4, July 2024](https://theiam.org/media/5615/iam-anatomy-version-4-final.pdf) | Proportionate appraisal of costs, risk, benefits and time, including lifecycle decision work. | Its broad professional account supplies neither CityWater equipment qualifications nor universal numerical rules. |
+| [IAM, Asset Management — an Anatomy, version 4, July 2024](https://theiam.org/media/5615/iam-anatomy-version-4-final.pdf) | Proportionate appraisal of costs, risk, benefits and time; §7.5.6 supplies the service-loss and recovery comparison used in EAM.6. | EAM develops its own dependency and interval construction; the source does not qualify the case equipment or its recovery times. |
 | [ISO/TC 251 public ISO 55001 account](https://committee.iso.org/sites/tc251/home/projects/published/iso-55001.html) and [ISO 55000:2024 — Asset management — Vocabulary, overview and principles, catalogue entry](https://www.iso.org/standard/83053.html) | The ISO/TC 251 account provides management-system context; the separate ISO 55000 entry identifies its vocabulary, overview and principles publication. | Public descriptions and catalogue metadata only; this is not a clause-by-clause application or a conformity or certification claim. |
-| [NIST Handbook 135e2025, Life-Cycle Costing Manual for the Federal Energy Management Program](https://nvlpubs.nist.gov/nistpubs/hb/2025/NIST.HB.135e2025.pdf), chapters 4, 7 and 8 | Common-period treatment of remaining value, distinction between competing alternatives and programme selection, and sensitivity/break-even reasoning. | Federal rates, legal eligibility and financing rules do not govern the fictional utility. Its 3% real rate and values are constructed inputs. |
-| [Water resources planning guideline, updated 16 June 2026](https://www.gov.uk/government/publications/water-resources-planning-guideline/water-resources-planning-guideline), sections 6.1 and 6.4.1 | [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) compares component-based demand forecasting with a sufficient decision-specific demand account. | Technical comparator for water planning; its jurisdictional duties and planning horizon are not transferred to CityWater. |
+| [NIST Handbook 135e2025, Life-Cycle Costing Manual for the Federal Energy Management Program](https://nvlpubs.nist.gov/nistpubs/hb/2025/NIST.HB.135e2025.pdf), chapters 4, 7 and 8 | Dated initial, recurring, replacement and ending consequences on a common period; competing alternatives and programme selection; sensitivity/break-even reasoning. | Federal rates, legal eligibility and financing rules do not govern the fictional utility. Its 3% real rate and values are constructed inputs. |
+| [Water resources planning guideline, updated 16 June 2026](https://www.gov.uk/government/publications/water-resources-planning-guideline/water-resources-planning-guideline), sections 6.1 and 6.4.1–6.4.3 | [EAM.4](#eam4---assess-demand-and-service-need-for-asset-decisions) develops component reconciliation, driver changes and critical-period scenarios, with an unchanged-policy baseline distinguished from proposed measures. | The small construction and examples are EAM adaptations; specialist estimation, jurisdictional duties and the source's planning horizon retain their own conditions. |
 | [NIST/SEMATECH e-Handbook, section 8.4.2.3](https://www.itl.nist.gov/div898/handbook/apr/section4/apr423.htm) | [EAM.5](#eam5---assess-asset-condition-and-performance)'s degradation-model comparator and its assumptions. | An established statistical method, not a pump-specific diagnosis, threshold or life qualification. |
 | [US EPA, EPANET 2.2, hydraulic modeling capabilities](https://www.epa.gov/water-research/epanet) | [EAM.6](#eam6---assess-asset-capacity-resilience-and-interdependence) compares a sufficient capacity/duration bound with extended-period hydraulic analysis. | The software's capabilities supply no model or verified hydraulic result for CityWater. |
 | [Magenta Book, updated 15 May 2026](https://www.gov.uk/government/publications/the-magenta-book/magenta-book-central-government-guidance-on-evaluation-html), chapter 2 impact-evaluation approach comparison | [EAM.13](#eam13---track-realized-outcomes-and-reconsider-asset-plans) distinguishes a sufficient plan update from an inquiry into attributable effects. | Method and evidence comparator; no actual outcome or government evaluation obligation is asserted for CityWater. |
@@ -1576,6 +1806,7 @@ A description tells the reader how a result may be obtained. Before relying on a
 | [Systems Engineering](SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md), [SYSE.5](SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md#syse5---develop-an-engineered-systems-functional-organization-and-bearer-alternatives) and [SYSE.13](SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md#syse13---establish-configuration-identity-variants-and-effectivity) | A qualified functional/bearer alternative or configuration identity and effectivity basis. | [EAM.7](#eam7---generate-ways-to-supply-an-asset-dependent-service) and [EAM.3](#eam3---establish-the-asset-information-and-configuration-basis) use the particular option and unit correspondence. Intended allocation differs from realized capability; a changed interface or configuration reopens applicability. |
 | [Organization Change Engineering](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md), [OCE.9](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce9---realize-a-bounded-organization-capability-increment) | A tested, condition-qualified organizational ability to obtain a contribution, or the missing condition and next repair. | [EAM.14](#eam14---decide-whether-and-how-to-change-the-asset-management-system) uses the return when organizational responsibilities or decision rights must change, or agreed responsibilities must become workable. Match the intended result, participants, work, observation window, retained support and limits. Information correction stays with [EAM.3](#eam3---establish-the-asset-information-and-configuration-basis) and operating coordination within existing responsibilities with OPS. |
 | [Method Engineering](METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md), [ME.15](METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md#me15---maintain-method-variants-provenance-and-reuse) and [ME.17](METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md#me17---deliberately-continue-and-change-method-engineering-culture) | Reusable-variant/provenance guidance and applicable distinctions for Method-related cultural work. | [EAM.15](#eam15---decide-whether-and-how-to-change-engineering-asset-management-methods) and [EAM.16](#eam16---deliberately-continue-and-change-engineering-asset-management-culture) use the needed contribution. Preserve the difference between a proposed appraisal rule, its desk calculation and evidence of identified practitioners actually using its operations on stated occasions. Continued use needs evidence from the later occasions claimed. |
+| [Corporate Finance](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md), [FIN.6](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin6---value-capital-projects), [FIN.7](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin7---value-assets-and-the-corporation) and [FIN.9](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin9---compare-capital-investments-and-allocations) | A dated incremental financial account, valuation under the stated ending premise, and joint cash/funding comparison. | [EAM.8](#eam8---generate-maintenance-renewal-and-retirement-alternatives) matches asset/configuration, service policy, perspective, dates, price/rate and relevant tax/financing assumptions. [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) uses the whole combination and common baseline. A changed later intervention, horizon, ending, joint-work effect or funding date returns to the affected account. The financial result does not qualify engineering service. |
 | Responsible local service, engineering, finance and decision authorities | The required contribution, eligible policies, cost basis, funding allocation and actual scope of decision. | [EAM.2](#eam2---relate-assets-to-strategy-services-and-required-capability), [EAM.9](#eam9---compare-asset-alternatives-and-reconcile-decisions-when-they-conflict), [EAM.10](#eam10---compare-engineered-asset-portfolio-combinations) and [EAM.12](#eam12---integrate-specialist-results-for-an-asset-recommendation-or-decision) use those actual answers. A missing general textbook does not block a sufficient direct answer; a missing action-changing result remains explicit. |
 
 FPF [A.1.SCR](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#a1scr---finding-the-acting-or-changed-system) supports clear use of the actual subject and its descriptions. [A.6.F](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#a6f---function-and-functional-precision-restoration-rpr-function) and [A.10](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#a10---evidence-graph-referring-claim-bound-evidence-and-provenance-graph) support interpretation and evidence responsibility; [C.11](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal)/[C.11.DUA](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11dua---make-advice-and-evidence-demands-worth-their-burden) support comparison and useful inquiry; [C.16](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c16---measurement--metrics-characterization-mmchr) supports qualified measurement; [A.22](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#a22---structure-and-structural-views-struct-cal) supports selecting the relevant constituents, relations and constraints for a structural question; [C.32.MWA](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c32mwa---practice-architecture-synthesis-from-several-structures) supports simultaneous-work reasoning; B.1.5.EW helps recover how constituent actions enact encompassing work and which conditions must hold across that connection; [C.36](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c36---cultural-evolution-and-cultural-evolution-engineering) supports cultural continuation and change. Their general Methods remain at their own sources.

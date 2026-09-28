@@ -112,7 +112,7 @@ Search the Keywords & Search Queries column for the engineering difficulty, subj
 | :--- | :--- | :--- | :--- | :--- |
 | 42 | [SYSE.42 - Use a Selected Tool and Apply Its Result](#syse42---use-a-selected-tool-and-apply-its-result) | Candidate | *Keywords:* selected aid, input binding, calculator, invocation, uncertain effect, receiving use. *Queries:* "Did we apply the tool to the intended input?" "How does its result enter the task?" Bind, perform, qualify and use the selected contribution; recover uncertain effects under the actual interface. | C.38/C.11; A.15.7/.15.9; C.24; SYSE.26–28/.43/.46/.47/.52 |
 | 43 | [SYSE.43 - Maintain External Memory for Continuing Work](#syse43---maintain-external-memory-for-continuing-work) | Candidate | *Keywords:* worksheet, episode, provenance, conditional index, retrieval, reorganization, retirement. *Queries:* "Which relation did the record lose?" "Should these episodes share a summary?" Construct recording and retrieval, qualify reorganization against contrary experience and verify the receiving continuation. | A.15.8; ME.10; SYSE.42/.46/.47/.48/.52 |
-| 44 | [SYSE.44 - Divide and Recombine Work across Agents](#syse44---divide-and-recombine-work-across-agents) | Candidate | *Keywords:* participant brief, contribution, shared premise, dependency, integration, source error. *Queries:* "Does this division repay its handovers?" "Which return became stale?" Compare complete ways, prepare participant-specific material, reconcile returns and reopen affected dependencies. | A.15.9; C.38/C.11; SYSE.9/.18/.20/.46/.47 |
+| 44 | [SYSE.44 - Divide and Recombine Work across Agents](#syse44---divide-and-recombine-work-across-agents) | Stable | *Keywords:* participant brief, contribution, shared premise, dependency, integration, source error. *Queries:* "Does this division repay its handovers?" "Which return became stale?" Compare complete ways, prepare participant-specific material, reconcile returns and reopen affected dependencies. | A.15.9; C.38/C.11; SYSE.9/.18/.20/.46/.47 |
 | 45 | [SYSE.45 - Train an LLM Policy from Qualified Interaction Experience](#syse45---train-an-llm-policy-from-qualified-interaction-experience) | Candidate | *Keywords:* policy training, adapters, demonstrations, feedback, distillation, retained support. *Queries:* "Which stable contribution should the policy learn?" "What must remain externally available?" Qualify experience, choose the matching learning mechanism and compare the actual later configuration against the unchanged baseline. | CMP.7; E.23.CDI; SYSE.49/.46; SYSE.47 for a fixed-model alternative |
 | 46 | [SYSE.46 - Test an Agent and Its Support in Representative Work](#syse46---test-an-agent-and-its-support-in-representative-work) | Candidate | *Keywords:* performing arrangement, matched support regimes, selection, result use, restraint, burden, persistence. *Queries:* "Does support help, and does the agent choose it well?" "What changed in the whole task?" Obtain bounded evidence with input, action, return and use distinguished; test delay or shift for the reliance claimed. | SYSE.10/.4/.33/.49; A.15.8; E.23.CAE; HCD.12/.13 |
 | 47 | [SYSE.47 - Construct and Revise an Agent's Execution Procedure](#syse47---construct-and-revise-an-agents-execution-procedure) | Candidate | *Keywords:* operative sequence, consumed return, transition, written procedure, controller, recovery, stop. *Queries:* "Why does available material fail to advance the task?" "What sequence can this performer actually enact?" Connect supplied operations through usable inputs, progress, recovery and completion. | SYSE.25/.26–28/.40/.42–46/.48–52; ME.6/.7; MMP.8.SD/.17 |
@@ -11599,7 +11599,7 @@ A.15.8 recovers the continuation state and probes consequential support loss. SY
 ## SYSE.44 - Divide and Recombine Work across Agents
 
 > **Type:** Method pattern
-> **Status:** Candidate
+> **Status:** Stable
 
 ### SYSE.44:1 - Problem frame
 
@@ -11611,7 +11611,7 @@ Keep dependent steps in order: dividing 347 × 6 at each digit introduces carry 
 
 ### SYSE.44:2 - Problem
 
-Splitting a brief or prompt can remove the common premise that made its parts meaningful. Agents can then solve different versions of the problem, duplicate the same source error, or change shared state incompatibly. A final summarizer can conceal those differences instead of resolving them.
+Splitting a brief or prompt can remove the common premise that made its parts meaningful. Even with the same supplied material, participants may interpret a quantity differently or intend different next contributions. Agents can then solve different versions of the problem, duplicate the same source error, or change shared state incompatibly. A final summarizer can conceal those differences instead of resolving them.
 
 ### SYSE.44:3 - Forces
 
@@ -11630,6 +11630,8 @@ For the selected arrangement, state each contribution's receiving use, required 
 #### SYSE.44:4.2 - Construct usable contexts and effect boundaries
 
 Give each participant the common premise and source/configuration needed for the contribution, plus the relevant constraints of the whole. A human work brief and an LLM request must each preserve those meanings; their size and presentation need not be identical. Separate governing instructions from quoted source material. Preserve a route to the original when a summary could hide a decisive qualification.
+
+When a message or work product leaves consequential uncertainty about how that material is understood or what the participant intends to do next, use the [Reference's collaborator application](ENGINEERING-DPF-SUITE-REFERENCE.md#agent-collaborator-inference). Construct the alternatives that would change the explanation or division, then choose a small distinguishing return only when its value warrants the burden. Use the qualified result to clarify the needed meaning, revise the requested contribution or proceed with the supported arrangement. An unclear return leaves alternatives open; a supported action common to them can end the inquiry. Supplying a common brief alone establishes neither common understanding nor an accepted commitment. Keep ordinary settled collaboration lightweight.
 
 Make result dependencies explicit. A source interpretation can begin alongside an independent calculation only if the calculation's inputs are already settled. Otherwise obtain the prerequisite first or keep the dependent conclusion conditional.
 
@@ -11680,7 +11682,7 @@ Benchmarks with easily separable questions can exaggerate the benefit of paralle
 ### SYSE.44:7 - Conformance Checklist
 
 - The division is compared with one-performer completion for the same whole result, including preparation, dependency and joining costs.
-- Each participant receives the needed common premises, sources, boundaries and receiving use.
+- Each participant receives the needed common premises, sources, boundaries and receiving use; consequential uncertainty about interpretation or intended continuation is resolved enough for the selected action, or remains explicit.
 - Serial dependencies and conflicting effects remain explicit.
 - Returns retain their evidence and unsupported conditions.
 - Integration tests compatibility and common-source failure rather than counting agreement.
@@ -11710,7 +11712,7 @@ Adopt the comparison of task structure and coordination burden, and qualify the 
 
 ### SYSE.44:12 - Relations
 
-A.15.9 and SYSE.9 supply bounded requests and qualified use. SYSE.18 addresses independent governance; SYSE.20 addresses overlapping work. SYSE.42 executes needed calls, SYSE.43 supplies selected retained context, SYSE.47 builds routing, and SYSE.46 tests the configured result. C.38/C.11.CRC compare complete alternatives when changing the overall obtaining arrangement.
+A.15.9 and SYSE.9 supply bounded requests and qualified use. SYSE.18 addresses independent governance; SYSE.20 addresses overlapping work. SYSE.42 executes needed calls, SYSE.43 supplies selected retained context, SYSE.47 builds routing, and SYSE.46 tests the configured result. C.38/C.11.CRC compare complete alternatives when changing the overall obtaining arrangement. A.3.3.PI supplies the consequential hidden distinction and its revision; MMP.8.SD compares information-dependent continuations, with C.11.DUA judging inquiry burden. The Reference application connects those results to the participant's contribution; A.15.7 uses the qualified observation in the next action.
 
 ### SYSE.44:End
 

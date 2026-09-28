@@ -324,12 +324,10 @@
       "Bash(git push --tags *)",
       "Bash(git push * main)",
       "Bash(git push * master)",
-      "Bash(git push * +*)",
       "Bash(git push *:main)",
       "Bash(git push *:master)",
       "Bash(git push * HEAD:main)",
       "Bash(git push * HEAD:master)",
-      "Bash(git push * :*)",
       "Bash(git rebase *)",
       "Bash(git reset *)",
       "Bash(git reset --hard *)",
@@ -355,7 +353,6 @@
       "Bash(git -C * push *:master)",
       "Bash(git -C * push * HEAD:main)",
       "Bash(git -C * push * HEAD:master)",
-      "Bash(git -C * push * :*)",
       "Bash(git -C * rebase *)",
       "Bash(git -C * reset *)",
       "Bash(git -C * reset --hard *)",
@@ -394,15 +391,7 @@
       "Read(~/.aws/**)",
       "Read(~/.gnupg/**)",
       "mcp__atlassian__createJiraIssue",
-      "mcp__atlassian__createIssueLink",
-      "Bash(git stash)",
-      "Bash(git stash *)",
-      "Bash(git merge --autostash*)",
-      "Bash(git pull --autostash*)",
-      "Bash(git -C * stash)",
-      "Bash(git -C * stash *)",
-      "Bash(git -C * merge --autostash*)",
-      "Bash(git -C * pull --autostash*)"
+      "mcp__atlassian__createIssueLink"
     ],
     "defaultMode": "auto"
   },
@@ -608,14 +597,6 @@
     "Stop": [
       {
         "hooks": [
-          {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_format.py",
-            "type": "command"
-          },
-          {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_lint_gate.py",
-            "type": "command"
-          },
           {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py",
             "type": "command"

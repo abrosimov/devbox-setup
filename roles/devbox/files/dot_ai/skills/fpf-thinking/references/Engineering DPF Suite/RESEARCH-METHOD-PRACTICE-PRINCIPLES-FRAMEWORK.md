@@ -3,7 +3,7 @@
 > A research repertoire for qualifying a question, choosing and conducting a defensible inquiry, examining and returning its knowledge contribution, and retaining or improving the Methods that serve it.
 
 - **Author:** Anatoly Levenchuk, with AI-assisted development and review
-- **Version:** 20 September 2026
+- **Version:** 27 September 2026
 - **Status:** Eternal alpha: a working framework open to correction as methods, sources and uses change. This first edition supplies the complete RMP.1–RMP.9 repertoire, with direct entries, useful stops and research-specific Method improvement.
 - **License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) for original framework content; third-party material retains its own terms.
 - **Publication:** [FPF repository](https://github.com/ailev/FPF)
@@ -37,8 +37,8 @@ Use this Table of Contents to find a pattern from your actual question or a know
 
 | § | ID & Title | Status | Keywords & Search Queries | Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
-| 3 | [RMP.3 - Operationalize the Research Design without Replacing the Question](#rmp-3) |  | Which operational choices preserve the selected research question and criticism, and which missing or defeated premise requires a return? | compatible RMP.1/RMP.2 or supplied brief/design; qualified domain and practical-owner results; RMP.4 for actual trace |
-| 4 | [RMP.4 - Preserve a Criticism-Ready Research Trace](#rmp-4) |  | What can the actual research material support, and where do reconstruction, transformation, loss or restricted access prevent a named examination? | ongoing or inherited inquiry and receiving examination; surviving plans/records; RMP.1/RMP.2 returns and RMP.3 intentions when supplied; FPF A.10 and C.16 |
+| 3 | [RMP.3 - Operationalize the Research Design without Replacing the Question](#rmp-3) | Development preview | Which operational choices preserve the selected research question and criticism, and which missing or defeated premise requires a return? | compatible RMP.1/RMP.2 or supplied brief/design; qualified domain and practical-owner results; RMP.4 for actual trace |
+| 4 | [RMP.4 - Preserve a Criticism-Ready Research Trace](#rmp-4) | Development preview | What can the actual research material support, and where do reconstruction, transformation, loss or restricted access prevent a named examination? | ongoing or inherited inquiry and receiving examination; surviving plans/records; RMP.1/RMP.2 returns and RMP.3 intentions when supplied; FPF A.10 and C.16 |
 
 **Part III - Analyze Claims and Choose Credibility Work**
 
@@ -52,7 +52,7 @@ Use this Table of Contents to find a pattern from your actual question or a know
 | § | ID & Title | Status | Keywords & Search Queries | Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
 | 7 | [RMP.7 - Synthesize a Research Evidence Corpus](#rmp-7) |  | What does this evidence corpus establish, and which dependence, incompatible target or missing contribution limits the synthesis? | compatible supplied question, synthesis design, operations and actual trace; conditional RMP.1-RMP.6 returns; RMP.8 when wider revision or receiving reliance needs it |
-| 8 | [RMP.8 - Use Research Results to Retain or Revise an Episteme's Claims and Return Bounded Evidence](#rmp-8) |  | Which exact claim or model contribution should be retained or changed, and what bounded evidence does its actual recipient need? | actual analysis, criticism or synthesis from RMP.5-RMP.7 or direct input; FPF episteme and affected-use relations; receiving criteria and authority |
+| 8 | [RMP.8 - Use Research Results to Retain or Revise an Episteme's Claims and Return Bounded Evidence](#rmp-8) | Stable | Which exact claim or model contribution should be retained or changed, and what bounded evidence does its actual recipient need? | actual analysis, criticism or synthesis from RMP.5-RMP.7 or direct input; FPF episteme and affected-use relations; receiving criteria and authority |
 
 **Part V - Improve and Refresh Research Methods and Practice**
 
@@ -119,7 +119,7 @@ The [historical application](#app-rmp-03--factory-closure-historical-transfer-pr
 
 # Preface
 
-**Edition:** First edition, version 20 September 2026. The source-use account states the qualification dates and limits of the methodological contributions.
+**Edition:** First edition, version 27 September 2026. The source-use account states the qualification dates and limits of the methodological contributions.
 
 Research Method Practice can begin before a study or with supplied material and a claim. A current source answer may already be enough. Otherwise the practitioner may need a research-allocation answer, a question-preserving operational choice, an inspectable trace, an analysis of what the material supports, a useful credibility examination, a corpus answer, a precise knowledge revision or a decision about retaining or improving a research Method.
 
@@ -159,6 +159,8 @@ The same activity can sit on either side. A seal test can be routine qualificati
 A receiving question names why knowledge may matter. A ResearchQuestionBrief states the intended episteme change, current frame, bounded question, criticism demand and constraints. It distinguishes what the evidence must establish for an adequate answer from when the present work may finish with uncertainty, refusal or a missing-input return. A research design is a prospective strategy connecting that question to observations or sources and method-appropriate criticism. A protocol or operationalization map elaborates a design. Performed Work, records, analysis output, criticism, a warranted episteme change, publication, recognition, and actual downstream use are further distinct.
 
 RMP.1/RMP.2 supply the brief and current design disposition; RMP.3 supplies operational specification or an exact return; RMP.4 supplies the trace and its receiving limits; RMP.5 supplies the bounded claim and actual criticism; RMP.6 supplies the credibility choice and interprets an actual test return when one exists. RMP.7 supplies EvidenceSynthesis; RMP.8 supplies EpistemeChangeAndEvidenceReturn; RMP.9 supplies ResearchMethodPracticeRevision, including supported retention or a bounded correction. These names require the relevant content, not a new file for each result. A protocol remains an intention, and a trace represents only conduct supported by its records. Later conduct needs actual performance and its evidence. Domain claims need their qualified support, and the receiving practice retains study permission and its engineering, management, policy, regulatory or personal decision.
+
+A Method pattern is a knowledge account of a Method and its use: the recurring problem and its frame, forces, solution, grounds, cases, limits, consequences and relations belong to its content, including FPF's SoTA comparison. The section template, natural language, notation, file organization and publication location concern how that content is presented. A pattern language additionally organizes substantive relations among its contributions; a DPF is not merely a document format. One article can develop several related contributions, and one contribution can be explained in an article and in a pattern account without erasing the distinctions between their uses. [RMP.8:4.4.1](#rmp-method-publication) explains how to preserve the content and means needed to repeat or adapt it.
 
 ## RMP.Preface:5 - Criticism comes before method prestige
 
@@ -213,6 +215,8 @@ A synthesis preserves useful differences. Two reports from one study may add inf
 Use [RMP.8](#rmp-8) when that result or an individual analysis changes a wider claim, model or actual receiving use. Identify the same subject and conditions on both sides, retain the supported part and reconcile the affected dependent claims. A date for a decision does not by itself explain the later implementation. An unsupported field-transfer premise can invalidate a model's field prediction while leaving its laboratory relation usable.
 
 Return the current answer with the basis, uncertainty and limitation that changes reliance. Known consequential uses need the permitted correction through their responsible owner. A short linked explanation may suffice; neither an unused change form nor a general consumer register is required. A worthwhile new research possibility remains a separate question of attainable contribution and whole burden.
+
+For a contribution that includes a reusable Method, use [RMP.8's publication branch](#rmp-method-publication) to distinguish the supported knowledge from its article, pattern or framework presentation. Reconstructing a derivation, rerunning a calculation, obtaining new measurements and transferring the Method require different means and agreement criteria. The [calibration case](#rmp-calibration-publications) shows what remains unchanged across publications and what a shortened account must not lose.
 
 ## RMP.Preface:11 - Connect Method improvement and research consequences
 
@@ -2203,6 +2207,7 @@ These comparisons support different research traditions. Their combination here 
 ## RMP.8 - Use Research Results to Retain or Revise an Episteme's Claims and Return Bounded Evidence
 
 > **Type:** Research Method Practice practitioner method pattern
+> **Status:** Stable
 
 ### RMP.8:1 - Problem Frame
 
@@ -2212,7 +2217,7 @@ A new laboratory synthesis can support a seal comparison while leaving its field
 
 The result is an **EpistemeChangeAndEvidenceReturn**: the retained or changed knowledge contribution, its basis and limits, and the return needed by its actual use. A corrected sentence and short linked explanation can carry this result. A model with several dependent claims or a correction already relied on elsewhere may need a fuller account.
 
-An episteme here is the identified knowledge account being revised: for example a claim, model or interpretation. The Method concerns its asserted content. A changed filename or publication label does not identify what its recipient should now believe or rely on.
+An episteme here is the identified knowledge account being revised: for example a claim, model, interpretation or pattern describing a Method and its use. RMP.8 concerns the asserted content of that account. A changed filename or publication label does not identify what its recipient should now believe or rely on.
 
 Enter directly with a compatible supplied result from analysis, synthesis or criticism. An already sufficient RMP.5, RMP.6 or RMP.7 answer may finish at its own return. Use RMP.8 when a broader account or consequential receiving reliance needs reconciliation. The receiving practice supplies its decision criteria and authority; the same person can perform both contributions without merging them.
 
@@ -2233,6 +2238,7 @@ The practitioner needs to identify the warranted change, carry it through the re
 | Receiving use | Evidence can change a practical choice, while the choice also depends on values, constraints and authority outside the research result. |
 | Recoverability | Existing reliance may need the earlier statement and its correction, while every draft edit does not need a full change dossier. |
 | Disclosure | A recipient needs enough basis to judge reliance, while source rights, confidentiality and community authority constrain access. |
+| Presentation and content | Different publication forms can serve different readers, while a concise or familiar template can conceal a missing problem, rationale, operation or applicability condition. |
 | Further inquiry | A valuable unanswered question may justify work, while useful completion and unobtainable acquisition remain possible. |
 
 ### RMP.8:4 - Solution
@@ -2293,6 +2299,30 @@ Respect confidentiality, source rights, participant protection and applicable co
 
 The receiving practice then evaluates its available actions, values, constraints and authority. Research can narrow an action's evidential premise without selecting or authorizing that action.
 
+<a id="rmp-method-publication"></a>
+
+#### RMP.8:4.4.1 - Make a research Method contribution recoverable across publication forms
+
+Use this branch when the contribution includes a Method that another reader should understand, repeat, adapt or combine. First identify the knowledge contribution and the use to be supported; then choose how to present it.
+
+A practitioner Method pattern is an episteme about a Method and its use. Its content includes the recurring difficulty, the situation in which that difficulty matters, competing forces, the solution and its grounds, worked applications, limits, consequences and relations. FPF's SoTA-Echoing adds the comparison with the current best-known line and serious alternatives that can change the Method. These are substantive claims and explanations, not decorations around an operation list. Apply A.3.2 when claiming that an episteme is a U.MethodDescription; filling a pattern template does not establish that membership.
+
+Keep that content distinct from its publication form: the selected section template, natural language, notation, reading order, file arrangement, medium and place of publication. Translation or moving text between files may preserve the contribution; omitting a force that changes the choice of solution may not. A short entry can direct a reader to the developed account, but cannot supply an explanation that the account never contains.
+
+An article can present several connected claims and Methods, their construction, evidence and limits. Its contributions may be developed into one pattern, several related patterns, an amendment of an existing language, or another suitable knowledge product. A pattern language organizes substantive problem-solution relations; a DPF has its own field of practice, promised coverage and maintenance boundary. Neither is merely an article layout or a collection of files. Do not infer one article–one pattern or one article–one DPF. E.4.DPF selects the framework contribution when that architectural choice matters.
+
+For a pattern contribution, check the recurring problem–conditions–remedy relation as well as whether a suitably prepared recipient can reproduce its use. State what makes another situation an instance of that problem, which parts of the way of acting recur, which adaptations are permitted, what preparation and support are needed, and what result would count as successful use. Applying the Method again may produce a different artifact or numerical value while preserving its intended effect under the stated conditions. Recomputing one reported number alone does not establish this reusable reach. A correctly recognized limit is a useful boundary result; it is not a successful reproduction of the promised positive effect.
+
+For a Method contribution, make the following connections usable:
+
+1. **Recover the construction.** Explain the problem and frame, the objects and relations through which it is understood, the relevant forces and the resulting way of acting. Conceptual synthesis can combine, adapt or reinterpret already known Methods. Show both the horizontal organization—sequence, alternatives, feedback and returns—and the vertical relation between constituent actions and the larger Method where they change use. E.4.CM develops this composition; a bibliography of constituents does not establish their compatibility or supply missing joins.
+2. **State what another reader is to repeat.** Reconstructing a derivation, rerunning a computation on the same inputs, obtaining new measurements and applying the Method under changed conditions test different claims. Say what is held comparable, what changes, the result to compare and what agreement means. Exact equality may be warranted for a derivation or deterministic calculation; new measurements usually require a justified uncertainty or agreement criterion. Use RMP.6 for the relevant credibility decision and for interpretation of an actual return. The word “reproduction” alone does not choose the examination.
+3. **Provide the consequential means.** Supply or locate the definitions, assumptions, input preparation, reasoning, operations, data or material, comparison and interpretation needed for that examination. Specify versions, computational environment, randomization, calibration, timing or performer capability when a difference there can change the claim. For a reused Method, identify the usable source passage and the conditions supplied by it. A source title is insufficient when the reader still has to invent a missing operation. RMP.4 governs the actual trace; it cannot recover conduct for which no evidence survives.
+4. **Choose and connect the presentations.** An empirical article may separate question, Methods, results and interpretation; a theoretical or Methods article may center a construction and its argument; a protocol or Stage 1 Registered Report describes proposed work, while a later results report states what was actually done and obtained. Use the applicable venue and study-type reporting requirements. A pattern presentation organizes the same supported contribution around recurring use, including problem frame, forces, solution, cases, boundaries and SoTA. Preserve the reasoning and evidence needed for that use even when section names and order change.
+5. **Expose what is available and what remains untested.** Connect each presentation to the identifiable source contribution and the materials needed for its stated examination. State permitted access and consequential omissions. A protocol is not performed Work, an available artifact is not a successful rerun, and a repeatable calculation is not evidence for transfer of its model. Correct affected presentations and known receiving uses through 4.3–4.4 when their relied-on claims change.
+
+Use the smallest explanation and access arrangement that supports the receiving use. A theoretical contribution need not invent an empirical dataset; protected participant material need not be made public contrary to its conditions of use. Conversely, a disclosure restriction can leave a particular public examination unavailable. State that limit rather than presenting the publication format as evidence of reproducibility.
+
 #### RMP.8:4.5 - Finish the answer and select further inquiry only when warranted
 
 Finish when the identified account has the warranted retention or change and the return required by its actual use is supplied, or when a precise input or delivery limit has been returned. A broader unresolved question does not automatically hold this bounded result open.
@@ -2351,6 +2381,22 @@ A historical synthesis resolves a chronology but leaves a scientifically valuabl
 
 The historian returns the supported chronology and unresolved mechanism and selects no further study for the current allocation. The explanation remains valuable and incomplete. If an accessible archive later supplies material capable of discriminating the live alternatives, its contribution and burden can justify a new research choice. Neither an immediate commercial payoff nor an unused continuation form is a prerequisite for the present answer.
 
+<a id="rmp-calibration-publications"></a>
+
+#### RMP.8:5.6 - One calibration contribution, an article and a pattern
+
+Consider a constructed contribution using the instrument relation y = a + bx, where x is the reference temperature and y the displayed temperature, both in degrees Celsius. Assume a separate instrument characterization supports an affine relation over 0–20 °C under the named operating conditions. The contribution does not establish that premise by fitting two points.
+
+The reported reference pairs are (0, 2) and (20, 24). The reasoning gives b = (24 − 2)/(20 − 0) = 1.1 and a = 2; the correction is x = (y − 2)/1.1. A displayed 13 °C therefore gives 10 °C. A reader can reconstruct that derivation and recompute that result from the stated pairs. This repeats the calculation, not the original observations.
+
+An article can present the instrument problem, the characterization it relies on, the derivation, actual observation procedure and data, and the scope of the conclusion. A pattern for correcting readings would explain when offset and scale errors defeat use, when the affine frame is justified, the tension between a simple correction and an unmodeled nonlinear response, how to obtain qualified references and apply the correction, and what to do when an independent comparison disagrees. Its cases, consequences, relations and SoTA comparison remain content. Retitling the equation “Solution” does not supply those missing explanations.
+
+Now suppose the examination uses a newly obtained 10 °C reference and the instrument displays 13.2 °C. The corrected value is 10.1818… °C. Under a previously selected total agreement allowance of ±0.3 °C, with reference uncertainty included in that allowance, this observation agrees. That finding concerns this comparison; it does not establish every reading in the interval. RMP.6 retains the examination's actual scope.
+
+This distinction also makes the pattern's repeatability testable. The same correction rule applies to another qualified reading; its output changes with that input. Recomputing 10 °C from the original display of 13 °C repeats the reported calculation. Applying the rule to the new display of 13.2 °C gives 10.1818… °C; copying the earlier answer would fail to repeat the Method. Recognition of the qualified affine frame and access to its calibration basis remain necessary on each use.
+
+The pattern may be published in English and Russian, in separate files or in a single framework publication. Those choices need not change the calculation or its qualified frame. A shortened version that removes the 0–20 °C condition does change what a reader may infer. A proposed 40 °C application needs a new applicability basis; agreement at 10 °C cannot supply it. If a later investigation defeats the affine premise, RMP.8 preserves the arithmetic but revises the calibration claim in the article correction, affected pattern account and known receiving uses.
+
 ### RMP.8:6 - Bias-Annotation
 
 A short correction is easiest to demonstrate in an account with one identifiable recipient. Distributed reliance, conflicting editions and protected sources can require more recovery and communication. Scale that work to the actual consequence instead of assuming that every research result needs a universal recipient register.
@@ -2367,6 +2413,7 @@ Use these questions to examine the revised account and return:
 - Can the recipient recover the current answer, its basis, uncertainty and the limitation that changes reliance?
 - Has a known consequential receiving use received the permitted correction, or is the exact unfinished return visible?
 - Are obtained evidence, proposed inquiry and the receiver's decision authority distinct?
+- When a Method contribution is returned for repetition or adaptation, can its recipient recover the substantive problem-solution account, the relevant examination and its means, independently of the chosen publication layout and language?
 
 The working situation selects this Method. These questions examine the warranted content and actual return; recognizing a need for revision proves neither.
 
@@ -2375,6 +2422,7 @@ The working situation selects this Method. These questions examine the warranted
 | Failure | What changes in practice |
 | --- | --- |
 | A new label substitutes for a changed assertion. | Locate and amend the actual claim, assumption or explanatory relation. |
+| An article is converted into pattern headings and declared reproducible. | Preserve the substantive problem, frame, forces, construction, grounds and limits; provide the means for the named repetition and distinguish its actual result from mere availability. |
 | A decision date is used as proof about physical closure. | Match the event or distinguish the decision from its later implementation before drawing the causal conclusion. |
 | One failed premise erases the entire model. | Follow its actual dependencies, retaining supported parameters, observations and calculations within their remaining scope. |
 | An unqualified conclusion survives beside a caveat. | Make the conclusion itself carry the warranted scope and reconcile the dependent outputs. |
@@ -2403,7 +2451,9 @@ Keeping the research contribution separate from receiving authority permits a us
 
 **When is further inquiry worth obtaining?** The selected line compares attainable epistemic or practical contribution with whole burden and permits a bounded completed answer while uncertainty remains. The default of studying every open question can select unobtainable work; a rule requiring immediate operating payoff would discard valuable explanation. FPF C.11.DUA supplies the best-known-line candidate for this contribution/burden distinction, with RMP.2/RMP.6 supplying the actual research choice. **Adapt:** 4.5 and 5.5 preserve scientific value, shared resources, access and protection while keeping insufficient evidence distinct from no selected acquisition. This comparison costs judgment but avoids treating either resources or a proposal as evidence. Reopen when a worthwhile contribution becomes obtainable or an input changes a selection still needed.
 
-The external guidance contributes to bounded interpretation; it does not empirically validate this cross-domain revision Method. A failed actual use or stronger methodological source can require a local repair.
+**How can a reader repeat a published Method contribution?** The selected line couples a usable account of the Method to the particular examination and its obtainable materials. The tempting alternatives are to treat a paper's publication as sufficient for reproducibility, or to convert its steps into a pattern template while losing the problem, grounds and scope. Nature Portfolio's [reporting and availability policy](https://www.nature.com/ncomms/editorial-policies/reporting-standards) supplies a current publication-practice comparison: consequential design details and the access conditions for data, code, materials and protocols must be recoverable. The [Registered Reports description](https://www.cos.io/initiatives/registered-reports) supplies the specific distinction between assessment of proposed Methods and reporting obtained outcomes. **Adapt:** 4.4.1 and 5.6 connect those reporting concerns to RMP.4's actual trace, RMP.6's distinct credibility questions and FPF E.8's substantive pattern functions. The additional explanation serves the intended repetition or adaptation; it does not require every possible artifact for every inquiry. Neither reporting policy nor a complete template demonstrates a successful repetition. A missing consequential input, changed Method condition or failed actual comparison reopens the affected claim and presentation.
+
+The external guidance contributes to bounded interpretation and research reporting; it does not empirically validate this cross-domain revision Method. A failed actual use or stronger methodological source can require a local repair.
 
 ### RMP.8:12 - Relations
 
@@ -2412,6 +2462,7 @@ The external guidance contributes to bounded interpretation; it does not empiric
 - **FPF C.2.1, A.10 and A.10.1** supply the underlying episteme, evidence-use and affected-use relations. **C.11.DUA** supplies the general useful-evidence and obtainable-inquiry comparison.
 - **Receiving domain and practice Methods** supply action alternatives, values, safety, access, confidentiality and authority. A bounded research result informs those decisions.
 - **RMP.9 and Method Engineering** receive a distinct research-Method improvement difficulty through their actual available contributions.
+- **FPF E.8** supplies the substantive functions of a pattern account and their publication conventions; **E.4.CM** supplies development of a composite Method contribution. **E.4.DPF** governs whether those contributions warrant a new or revised DPF; article layout alone cannot answer that question.
 
 ### RMP.8:End
 
@@ -2978,7 +3029,7 @@ The complete accepted nine-pattern repertoire preserves direct entry and useful 
 
 ## Citation
 
-Levenchuk, Anatoly. *Research Method Practice Principles Framework — First Edition*. Version 20 September 2026. Developed and reviewed with AI assistance. [Publication](https://github.com/ailev/FPF).
+Levenchuk, Anatoly. *Research Method Practice Principles Framework — First Edition*. Version 27 September 2026. Developed and reviewed with AI assistance. [Publication](https://github.com/ailev/FPF).
 
 For a particular pattern, add its PatternID and title to this dated citation. The date identifies the cited version; the availability account identifies which bodies it supplies.
 

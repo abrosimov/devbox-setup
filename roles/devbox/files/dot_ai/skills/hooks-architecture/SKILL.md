@@ -282,7 +282,7 @@ if payload.get("stop_hook_active"):
     sys.exit(0)  # second pass — let the agent stop
 ```
 
-Live example: `bin/stop_lint_gate.py`.
+Live example: `bin/stop_quality.py`.
 
 ### Background observer
 

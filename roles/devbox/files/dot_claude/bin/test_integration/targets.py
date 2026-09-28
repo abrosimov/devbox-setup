@@ -87,20 +87,12 @@ _PRE_COMPACT_CODES: Final = frozenset({0})
 
 
 # All hooks in the settings.json `hooks` block that read stdin from Claude Code. Lifecycles
-# match fixture bucket names (test_integration/fixtures/<lifecycle>/). Scripts
-# that fan out across multiple lifecycles (pre_tmpdir_guard runs on both Bash
-# and Write matchers) get one IntegrationTarget per lifecycle.
+# match fixture bucket names (test_integration/fixtures/<lifecycle>/).
 INTEGRATION_TARGETS: tuple[IntegrationTarget, ...] = (
     # --- PreToolUse: Bash matcher chain ------------------------------------
     _target(
         "pre_bash_toolchain_guard.bash",
         "pre_bash_toolchain_guard.py",
-        "pre_tool_use_bash",
-        exit_codes=_PRE_TOOL_USE_CODES,
-    ),
-    _target(
-        "pre_tmpdir_guard.bash",
-        "pre_tmpdir_guard.py",
         "pre_tool_use_bash",
         exit_codes=_PRE_TOOL_USE_CODES,
     ),
@@ -118,12 +110,6 @@ INTEGRATION_TARGETS: tuple[IntegrationTarget, ...] = (
         exit_codes=_PRE_TOOL_USE_CODES,
     ),
     # --- PreToolUse: Write matcher chain -----------------------------------
-    _target(
-        "pre_tmpdir_guard.write",
-        "pre_tmpdir_guard.py",
-        "pre_tool_use_write",
-        exit_codes=_PRE_TOOL_USE_CODES,
-    ),
     _target(
         "pre_edit_lint_guard.write",
         "pre_edit_lint_guard.py",
@@ -214,18 +200,11 @@ INTEGRATION_TARGETS: tuple[IntegrationTarget, ...] = (
     ),
     # --- Stop --------------------------------------------------------------
     _target(
-        "stop_format",
-        "stop_format.py",
+        "stop_quality",
+        "stop_quality.py",
         "stop",
         exit_codes=_STOP_CODES,
-        max_timeout_seconds=30,
-    ),
-    _target(
-        "stop_lint_gate",
-        "stop_lint_gate.py",
-        "stop",
-        exit_codes=_STOP_CODES,
-        max_timeout_seconds=30,
+        max_timeout_seconds=60,
     ),
     # --- PreCompact --------------------------------------------------------
     _target(

@@ -648,7 +648,7 @@ If a test cannot meaningfully fail first (e.g., testing existing behaviour that 
 
 ## Pre-Flight Verification (SE Agents)
 
-Run build, test, and lint checks manually before completing. The `stop_lint_gate` and `stop_format` hooks enforce clean lint at task completion, so unresolved lint issues will block the Stop event regardless.
+Run build, test, and lint checks manually before completing. The `stop_quality` hook formats the Git change set and reports unresolved lint issues at task completion.
 
 ### Pre-Flight Report (REQUIRED OUTPUT)
 

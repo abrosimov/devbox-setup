@@ -404,10 +404,6 @@
             "type": "command"
           },
           {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_tmpdir_guard.py",
-            "type": "command"
-          },
-          {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/bash_decision_gate.py",
             "type": "command"
           },
@@ -417,15 +413,6 @@
           }
         ],
         "matcher": "Bash"
-      },
-      {
-        "hooks": [
-          {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_tmpdir_guard.py",
-            "type": "command"
-          }
-        ],
-        "matcher": "Write"
       },
       {
         "hooks": [
@@ -579,14 +566,6 @@
       {
         "hooks": [
           {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py UserPromptSubmit",
             "timeout": 5,
             "type": "command"
@@ -598,7 +577,8 @@
       {
         "hooks": [
           {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/proposal_discipline.py",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_quality.py",
+            "timeout": 60,
             "type": "command"
           }
         ]

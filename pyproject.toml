@@ -267,8 +267,7 @@ matches = "roles/devbox/files/.config/kitty/**"
 missing-import = false
 
 # Strict mode for the bin/ shared library. Scope is the new _claude_lib package
-# only — pre-existing scripts in bin/ (pre_bash_safety_gate.py, validate-config.py,
-# stop_format.py, …) carry legacy debt that will be cleaned up as part of the
+# only — other pre-existing scripts in bin/ carry legacy debt that will be cleaned up as part of the
 # Phase 2-5 migration (see plans/rosy-noodling-axolotl.md). Widening the glob to
 # bin/** before then would block the migration on unrelated drive-by fixes.
 #
@@ -324,7 +323,7 @@ unused-ignore = true
 # that replace the Node.js ones. Tests live alongside but follow the looser
 # bin/test_*.py per-file-ignore set from ruff (no return-type/annotation needed).
 [[tool.pyrefly.sub-config]]
-matches = "roles/devbox/files/dot_claude/bin/{pre_plan_code_guard,stop_lint_gate,pre_edit_lint_guard,pre_write_completion_gate,post_edit_lint,session_save,post_edit_typecheck,health_check,suggest_checkpoint}.py"
+matches = "roles/devbox/files/dot_claude/bin/{pre_plan_code_guard,stop_quality,pre_edit_lint_guard,pre_write_completion_gate,post_edit_lint,session_save,post_edit_typecheck,health_check,suggest_checkpoint}.py"
 [tool.pyrefly.sub-config.errors]
 implicit-any = true
 implicit-any-parameter = true
@@ -336,7 +335,7 @@ unbound-name = true
 # rule set as Phase 2. Tests live alongside but follow the looser bin/test_*.py
 # per-file-ignore set from ruff (no return-type/annotation needed).
 [[tool.pyrefly.sub-config]]
-matches = "roles/devbox/files/dot_claude/bin/{permission_auto_approve,pre_bash_toolchain_guard,pre_bash_boundary_wrap,pre_compact_mask,post_edit_cyrillic_guard,pre_tmpdir_guard,resolve_context,git_safe_commit,git_safe_merge,fpf_drift_check}.py"
+matches = "roles/devbox/files/dot_claude/bin/{permission_auto_approve,pre_bash_toolchain_guard,pre_bash_boundary_wrap,pre_compact_mask,post_edit_cyrillic_guard,resolve_context,git_safe_commit,git_safe_merge,fpf_drift_check}.py"
 [tool.pyrefly.sub-config.errors]
 implicit-any = true
 implicit-any-parameter = true

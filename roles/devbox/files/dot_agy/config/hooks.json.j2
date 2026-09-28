@@ -13,20 +13,6 @@
       }
     ]
   },
-  "pre_tmpdir_guard": {
-    "enabled": false,
-    "PreToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/pre_tmpdir_guard.py"
-          }
-        ]
-      }
-    ]
-  },
   "bash_decision_gate": {
     "enabled": false,
     "PreToolUse": [
@@ -167,30 +153,13 @@
       }
     ]
   },
-  "proposal_discipline": {
+  "stop_quality": {
     "enabled": false,
     "Stop": [
       {
         "type": "command",
-        "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/proposal_discipline.py"
-      }
-    ]
-  },
-  "stop_format": {
-    "enabled": false,
-    "Stop": [
-      {
-        "type": "command",
-        "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/stop_format.py"
-      }
-    ]
-  },
-  "stop_lint_gate": {
-    "enabled": false,
-    "Stop": [
-      {
-        "type": "command",
-        "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/stop_lint_gate.py"
+        "command": "{{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/.venv/bin/python {{ lookup('env', 'HOME') }}/.gemini/antigravity-cli/bin/stop_quality.py",
+        "timeout": 60
       }
     ]
   },

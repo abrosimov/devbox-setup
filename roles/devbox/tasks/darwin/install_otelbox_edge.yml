@@ -313,8 +313,8 @@
     OTELBOX_MEMORY_LIMIT_MIB: "400"
     OTELBOX_MEMORY_SPIKE_LIMIT_MIB: "80"
     OTELBOX_EXPORTER_CONSUMERS: "2"
-    OTELBOX_STORAGE_MAX_SIZE_BYTES: "6442450944"
-    OTELBOX_QUEUE_SIZE_BYTES: "4294967296"
+    OTELBOX_STORAGE_MAX_SIZE_BYTES: "17179869184"
+    OTELBOX_QUEUE_SIZE_BYTES: "12884901888"
   changed_when: false
   when:
     - devbox_packages.otelbox_edge.enabled | default(true)
@@ -527,6 +527,24 @@
     - devbox_packages.otelbox_edge.enabled | default(true)
     - devbox_otelbox_edge_ready | bool
     - devbox_otelbox_edge_plist.changed or devbox_otelbox_edge_agent_status.rc != 0
+  register: devbox_otelbox_edge_bootstrapped
+  changed_when: true
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge — start the freshly bootstrapped service"
+  # WARNING: on macOS 26 bootstrap loads the job but only pends its RunAtLoad /
+  # KeepAlive spawn as "speculative", and launchd may never honour it: the
+  # service stays loaded, not running, runs = 0. Without -k this starts it once
+  # and is a no-op if launchd already has.
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - kickstart
+      - "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge"
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_ready | bool
+    - devbox_otelbox_edge_bootstrapped is not skipped
   changed_when: true
   tags: [otel, otelbox-edge]
 

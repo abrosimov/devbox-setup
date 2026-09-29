@@ -259,6 +259,24 @@
     - >-
       devbox_pub_reload_required.stat.exists | default(false)
       or (devbox_pub_launchagent_status.rc | default(1)) != 0
+  register: devbox_pub_launchdaemon_bootstrapped
+  changed_when: true
+  become: true
+  tags: [macos, pub, launchagent]
+
+- name: "Pub mode — run the freshly bootstrapped LaunchDaemon"
+  # WARNING: on macOS 26 bootstrap only pends the RunAtLoad spawn as
+  # "speculative", leaving the lease unreconciled until the first StartInterval
+  # tick. Without -k this is a no-op if launchd already ran it.
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - kickstart
+      - "system/local.pub-lease"
+  when:
+    - devbox_pub_mode_enabled | bool
+    - not (dev_mode | default(false) | bool)
+    - devbox_pub_launchdaemon_bootstrapped is not skipped
   changed_when: true
   become: true
   tags: [macos, pub, launchagent]

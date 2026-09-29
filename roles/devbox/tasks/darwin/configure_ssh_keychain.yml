@@ -145,5 +145,19 @@
   when: >-
     devbox_ssh_launchagent.changed
     or devbox_ssh_launchagent_status.rc != 0
+  register: devbox_ssh_launchagent_bootstrapped
+  changed_when: true
+  tags: [ssh, keychain, launchagent]
+
+- name: "SSH keychain — run the freshly bootstrapped LaunchAgent"
+  # WARNING: on macOS 26 bootstrap only pends the RunAtLoad spawn as
+  # "speculative" and launchd may never honour it, so the keys would wait for
+  # the next login. Without -k this is a no-op if launchd already ran it.
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - kickstart
+      - "gui/{{ ansible_facts['user_uid'] }}/local.ssh-add-keychain"
+  when: devbox_ssh_launchagent_bootstrapped is not skipped
   changed_when: true
   tags: [ssh, keychain, launchagent]

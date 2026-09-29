@@ -34,10 +34,16 @@
         <string>2</string>
         <key>OTELBOX_AUTH_RETRY_INTERVAL</key>
         <string>1h</string>
+        <!--
+          Sized to hold a week-long gateway outage without loss: measured edge
+          output is ~48 MB/h on average (~8 GB/week round the clock), so 16 GiB
+          of WAL gives a 2x margin. Keep in step with the validate task in
+          install_otelbox_edge.yml.
+        -->
         <key>OTELBOX_STORAGE_MAX_SIZE_BYTES</key>
-        <string>6442450944</string>
+        <string>17179869184</string>
         <key>OTELBOX_QUEUE_SIZE_BYTES</key>
-        <string>4294967296</string>
+        <string>12884901888</string>
         <!--
           The gateway leg's wire codec. zstd is upstream's 2.x default and is
           safe only while both ends of the leg are this same binary: a gRPC codec

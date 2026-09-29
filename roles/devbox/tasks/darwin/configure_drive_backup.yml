@@ -125,7 +125,7 @@
 
     - name: "Drive backup — deploy LaunchAgent plist"
       ansible.builtin.template:
-        src: darwin/Library/LaunchAgents/local.drive-backup.plist.j2
+        src: "{{ role_path }}/templates/darwin/Library/LaunchAgents/local.drive-backup.plist.j2"
         dest: "{{ devbox_drive_backup_plist }}"
         mode: "0644"
       register: devbox_drive_backup_plist_result

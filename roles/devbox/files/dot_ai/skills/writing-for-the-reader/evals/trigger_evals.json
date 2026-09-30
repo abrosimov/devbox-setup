@@ -1,0 +1,10 @@
+[
+  {"query": "Ask me which of these three tooltip wordings to ship", "should_trigger": true},
+  {"query": "Write the final report for this session", "should_trigger": true},
+  {"query": "Give me options to choose between for the cache location", "should_trigger": true},
+  {"query": "Summarise what you changed and what I need to do next", "should_trigger": true},
+  {"query": "Explain what this config key does for the person reading the dashboard", "should_trigger": true},
+  {"query": "Write a REST API endpoint in Python with FastAPI", "should_trigger": false},
+  {"query": "Fix the failing Go unit test in parser_test.go", "should_trigger": false},
+  {"query": "Help me set up a Docker container for my database", "should_trigger": false}
+]

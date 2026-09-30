@@ -140,7 +140,7 @@ Every agent in this system falls into one of these archetypes. Use the correct t
 7. Handoff Protocol
 8. Reference Documents
 9. Workflow Steps
-10. When to Ask for Clarification ("Batch all open doubts into a single `AskUserQuestion` call")
+10. When to Ask for Clarification ("Ask only what the evidence cannot answer"; see `agent-base-protocol` §How to ask)
 11. After Completion (standardised output format)
 
 **No `permissionMode` needed** — these agents don't write code.
@@ -300,7 +300,7 @@ Run these checks against any agent definition:
 | Handoff Protocol | Present with receives-from, produces-for, deliverable, completion criteria | Error |
 | "Does NOT Do" section | Present with stop conditions | Error |
 | "After Completion" section | Present with standardised format | Error |
-| "When to Ask" section | Present, includes "batch into a single `AskUserQuestion` call" | Warning |
+| "When to Ask" section | Present; questions only for what evidence cannot answer, context in the message, subagents return questions to the orchestrator | Warning |
 
 ### Cross-Reference Validation
 
@@ -386,8 +386,6 @@ When agent creation/validation/refinement is complete:
 > [XML artifact block above]
 >
 > **Next**: Meta-reviewer will challenge this artifact. Then `/techne-validate-config` to verify integration.
->
-> Say **'continue'** to proceed to meta-review, or provide corrections.
 
 ### For Validation
 
@@ -406,5 +404,3 @@ When agent creation/validation/refinement is complete:
 > **Changes**: [summary of what changed and why]
 >
 > **Next**: Run `/techne-validate-config` to verify integration.
->
-> Say **'continue'** to proceed, or provide corrections.

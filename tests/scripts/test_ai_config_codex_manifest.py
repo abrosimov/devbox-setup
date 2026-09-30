@@ -81,7 +81,6 @@ class TestCodexManifestCoverage:
     @pytest.mark.parametrize(
         ("path", "expected_scope"),
         [
-            (("personality",), FieldScope.SHARED),
             (("model",), FieldScope.PREFERENCE),
             (("model_reasoning_effort",), FieldScope.PREFERENCE),
             (("service_tier",), FieldScope.SHARED),
@@ -108,6 +107,16 @@ class TestCodexManifestCoverage:
 
         assert path in repository_paths
         assert manifest.scope_for(path) is expected_scope
+
+    def test_retired_personality_stays_shared_so_apply_removes_the_live_value(
+        self,
+        manifest: FieldManifest,
+        repository: SemanticSnapshot,
+    ) -> None:
+        repository_paths = {field.path for field in repository.semantic_fields()}
+
+        assert ("personality",) not in repository_paths
+        assert manifest.scope_for(("personality",)) is FieldScope.SHARED
 
 
 class TestCodexManifestClassification:

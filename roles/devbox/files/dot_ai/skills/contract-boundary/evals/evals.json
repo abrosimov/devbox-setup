@@ -1,0 +1,55 @@
+{
+  "skill_name": "contract-boundary",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The dashboard fires the same metrics query from three panels. The backend has a result cache in internal/reading/prom/cache.go with a 5 minute TTL, so we don't need to de-duplicate on the frontend, right?",
+      "expected_output": "Agent declines to rely on the backend cache because the contract does not promise caching, proposes frontend de-duplication, and offers a contract change if caching must be guaranteed",
+      "expectations": [
+        "Does NOT justify the design from the backend cache file",
+        "States that the contract gives no caching guarantee",
+        "Proposes de-duplicating requests on the frontend",
+        "Offers to add Cache-Control or a documented guarantee to the spec"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I'm writing the React list view. Does the /orders endpoint return items sorted by created_at? Just check the Go handler's SQL.",
+      "expected_output": "Agent checks the API contract for an ordering guarantee rather than the SQL, and raises a contract gap if ordering is unstated",
+      "expectations": [
+        "Reads the OpenAPI spec or generated types, not the Go handler",
+        "Treats ordering as unguaranteed unless the contract states it",
+        "Produces or offers a contract-gap report with proposed contract text"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "There is no OpenAPI spec in this repo yet. Implement the frontend for the reports page against the Python backend.",
+      "expected_output": "Agent derives a spec once from the backend's public routes and types, asks for confirmation, then builds the frontend only against that spec",
+      "expectations": [
+        "Reads only public routes, handler signatures, and request/response types",
+        "Writes an explicit spec file (api_spec.yaml or proto)",
+        "Asks the user or API owner to confirm the spec before building on it"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review this frontend PR. The description says: 'No retry needed, the backend handler already retries Prometheus three times.'",
+      "expected_output": "Reviewer flags the justification as reliance on backend internals and asks for local handling or a contract change",
+      "expectations": [
+        "Flags the justification as a finding",
+        "Explains that backend retries are not part of the contract",
+        "Suggests local handling or a contract-gap report"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Add a new button to the settings page that toggles dark mode.",
+      "expected_output": "Agent implements the button without discussing API contracts",
+      "expectations": [
+        "Skill does not interfere with purely local UI work",
+        "No unnecessary mention of contract gaps"
+      ]
+    }
+  ]
+}

@@ -9,7 +9,7 @@ description: >
   asks to create notes for tickets, mentions Release-X.Y folders or the release
   inventory table, or runs `/release-sync`.
 problem: "Sprint state is re-pulled from Jira by hand each time, notes drift out of sync with ticket fields, and the same content gets copied into both the release index and the per-ticket note."
-related: [config, self-contained-options]
+related: [config, writing-for-the-reader]
 ---
 
 # Release inventory sync

@@ -77,7 +77,7 @@ The user commits manually after each agent run; commands do not auto-commit.
 |---------|-------------|-------------|
 | `/techne-domain-analysis` | Validate requirements, challenge assumptions | After spec, before planning |
 | `/techne-plan` | Create implementation plan from spec | Before implementation (complex tasks) |
-| `/techne-api-design` | Design API contracts (REST/OpenAPI or Protobuf/gRPC) | After planning, before backend implementation |
+| `/techne-api-design` | Design API contracts (REST/OpenAPI or Protobuf/gRPC) | After planning, before backend and frontend implementation (both sides build against the contract) |
 | `/techne-schema` | Design database schema with migrations | After planning, before/alongside backend implementation |
 | `/techne-design` | Create UI/UX design spec and design tokens | After spec/domain analysis, before frontend implementation |
 | `/techne-implement` | Run SE agent for current task | Start implementation |
@@ -200,7 +200,7 @@ Grounding references (cached Anthropic docs) are read at the start of every buil
 | **Any Go topic** | `software-engineer-go` | `/techne-implement` |
 | **Any Python topic** | `software-engineer-python` | `/techne-implement` |
 | **Any Frontend topic** (React, TypeScript, Next.js) | `software-engineer-frontend` | `/techne-implement` |
-| **Fullstack feature** | Backend SE + Frontend SE (sequential or parallel) | `/techne-implement` |
+| **Fullstack feature** | Backend SE + Frontend SE (sequential or parallel, both from the API contract); when run in parallel, the orchestrator reports once after both return (core §6) | `/techne-implement` |
 | Unit tests (any stack) | `unit-test-writer` | `/techne-test` |
 
 ### Exceptions (Answer Directly)
@@ -241,8 +241,10 @@ One Jira ticket can span multiple branches/worktrees:
 | Pattern | Example | Base Branch |
 |---------|---------|-------------|
 | **Independent** | backend + frontend (parallel worktrees) | Default branch |
-| **Chained** | db → backend → api → frontend | Previous branch via `--from` |
-| **Mixed** | backend from default, frontend from backend | Varies |
+| **Chained** | db → api → (backend ∥ frontend) | Previous branch via `--from`; backend and frontend both branch from the api branch |
+| **Mixed** | api from default, backend and frontend from api | Varies |
+
+Backend and frontend both follow the contract rather than each other, because the contract is the only synchronisation point between the two sides: neither reads or relies on the other's implementation, which changes without notice (core §7; see the `contract-boundary` skill).
 
 ### Git Safety Scripts
 
@@ -275,7 +277,7 @@ For working on multiple tasks simultaneously, use git worktrees via `proj wt`:
 
 ```bash
 proj wt add PROJ-123_backend                          # branch from default branch
-proj wt add PROJ-123_frontend --from PROJ-123_backend  # chain from another branch
+proj wt add PROJ-123_frontend --from PROJ-123_api      # chain from another branch
 proj wt ls                                             # list worktrees
 proj wt status                                         # show all with PR status
 proj wt rm PROJ-123_backend                            # remove after merge

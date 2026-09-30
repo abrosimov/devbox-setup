@@ -175,7 +175,7 @@ Commands do not have an auto-builder. Please review and edit manually.
 
 [Builder's summary of changes]
 
-**[Awaiting your decision]** — Say **'continue'** to fix next artifact, **'skip'** to skip this one, or **'stop'** to end fix mode.
+**Recommendation:** [the reply you recommend, with its reason]. Replies: **'continue'** to fix next artifact, **'skip'** to skip this one, or **'stop'** to end fix mode.
 ```
 
 </fix-routing>

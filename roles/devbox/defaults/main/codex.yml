@@ -4,7 +4,9 @@
 # Vendor-specific skills stay in dot_ai until they have a Codex adapter.
 devbox_codex_shared_skills:
   - code-comments
+  - contract-boundary
   - diagnose-and-repair
+  - diverge-synthesize-select
   - docker-validation
   - fpf-thinking
   - frontend-testing
@@ -18,7 +20,9 @@ devbox_codex_shared_skills:
   - python-monolith
   - python-testing
   - python-tooling
+  - response-templates
   - ui-design
+  - writing-for-the-reader
 
 # Codex-native custom agents. Their TOML files live in dot_codex because the
 # format, model inheritance, sandbox semantics, and prompt contract are

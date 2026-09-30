@@ -11,6 +11,11 @@ Prioritise correctness, security boundaries, backwards compatibility, concurrenc
 data loss, operational regressions, and missing or misleading tests. Apply relevant language-specific
 review and testing skills only for stacks present in the change.
 
+Where the change consumes or provides an API, treat reliance on the other side's internals as a finding:
+code, comments, or the engineer's justification that depend on its file paths, caches, query behaviour,
+or limits not stated in the contract. The fix is local handling or a contract change. See
+contract-boundary.
+
 Verify each suspected issue and actively look for counter-evidence. Do not report speculative risks as
 findings. Avoid style-only comments unless they hide a behavioural or maintenance defect.
 

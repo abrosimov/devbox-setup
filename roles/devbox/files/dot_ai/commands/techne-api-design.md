@@ -40,7 +40,38 @@ Check the project for existing API contracts:
 
 Pass the detected format to the agent.
 
-### 4. Run API Designer Agent
+### 4. Advocate Round (when the choice is architecture-level)
+
+An API contract is consumed by both frontend and backend and is expensive to change once published, so it often meets the threshold in `diverge-synthesize-select`. Run this step when the design introduces a new resource or service, changes an existing contract incompatibly, spans several resources, or the user asked for options; otherwise skip to step 5. The main conversation runs it because subagents cannot start subagents of their own (skill section "Advocates").
+
+1. Frame the contract decision in one sentence (for example "how clients page through and filter orders"), name the criteria, and pick 3–7 candidate shapes, each with an ID and a short name. Include the boring baseline — usually "extend the existing resources in the existing style".
+2. Launch one read-only advocate per candidate **in a single message**, using the `architect` agent type (it has read-only tools):
+
+```
+Task(
+  subagent_type: "architect",
+  model: "opus",
+  prompt: "ADVOCATE BRIEF — read-only; do not edit files or ask the user questions.
+
+Decision: {one sentence}
+Criteria: {list, e.g. minimal surface, consistency with existing contracts, evolvability, client ergonomics}
+API_FORMAT: {detected format}
+Your candidate: {OPT-n — name}
+Rival candidates: {OPT-x — name, ...}
+Sources: {plan.md / spec.md / domain_analysis.md paths, existing spec files}
+
+Make the strongest honest case for your candidate. Return candidates with trade-offs in this shape:
+- Mechanism: the resources, operations, and payload shape it implies
+- Strongest case: where it beats the rivals, with evidence (path:line or link)
+- Honest costs: what it makes harder for clients or servers, and when it loses
+- Combines with: which rival strengths it could absorb, and what would conflict"
+)
+```
+
+3. Wait for every advocate. Until the last one returns, any update is one line: "k of n done; waiting for: <names>".
+4. Pass all briefs to the API designer under `ADVOCATE BRIEFS`.
+
+### 5. Run API Designer Agent
 
 Use the `api-designer` agent.
 
@@ -50,11 +81,11 @@ Use the `api-designer` agent.
 Task(
   subagent_type: "api-designer",
   model: "opus",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, API_FORMAT={detected format}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, API_FORMAT={detected format}\n\nADVOCATE BRIEFS: {briefs from step 4, or 'none'}\n\n{task description}"
 )
 ```
 
-**Include in agent prompt**: `Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, API_FORMAT={detected format}`
+**Include in agent prompt**: `Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, API_FORMAT={detected format}`. When advocate briefs are present, the API designer weighs them as evidence and presents one decision card (T2 in `response-templates`) before writing the spec.
 
 The agent will:
 - Read existing documentation (plan, spec, domain analysis)
@@ -68,7 +99,7 @@ The agent will:
 
 **Important**: The API designer is intentionally opinionated about minimal API surface area and will challenge unnecessary complexity. This is by design.
 
-### 5. After Completion
+### 6. After Completion
 
 When API design is complete, present the summary.
 
@@ -76,5 +107,3 @@ When API design is complete, present the summary.
 > API design complete.
 >
 > **Next**: Run `/techne-implement` to begin backend implementation, or `/techne-design` for UI/UX design.
->
-> Say **'continue'** to proceed, or address any remaining open questions.

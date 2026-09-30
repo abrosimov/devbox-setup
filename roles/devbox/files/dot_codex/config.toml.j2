@@ -3,8 +3,7 @@
 # preserving manifest-classified machine-local and runtime state.
 # Model and reasoning effort are defaults because Codex persists local choices.
 
-personality = "pragmatic"
-model = "gpt-5.6-sol"
+model ="gpt-5.6-sol"
 model_reasoning_effort = "medium"
 service_tier = "default"
 sandbox_mode = "workspace-write"
@@ -40,7 +39,7 @@ PreCompact = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin
 PreToolUse = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreToolUse", type = "command" }], matcher = ".*" }]
 SessionEnd = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionEnd", type = "command" }] }]
 SessionStart = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionStart", type = "command" }] }]
-Stop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop", type = "command" }] }]
+Stop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop", type = "command" }] }, { hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/stop_user_actions_guard.py", type = "command" }] }]
 SubagentStart = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SubagentStart", type = "command" }] }]
 SubagentStop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SubagentStop", type = "command" }] }]
 UserPromptSubmit = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py UserPromptSubmit", type = "command" }] }]

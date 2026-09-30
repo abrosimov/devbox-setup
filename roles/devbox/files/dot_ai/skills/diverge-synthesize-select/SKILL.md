@@ -1,343 +1,175 @@
 ---
 name: diverge-synthesize-select
-description: Diverge-Synthesize-Select (DSS) protocol for generating diverse solution options, synthesising the best elements, and presenting structured choices. Use when exploring options, comparing approaches, or evaluating trade-offs. Not to be confused with `fpf-thinking` (problem framing) or `mcp-sequential-thinking` (step chains) — DSS generates explicit options and presents a structured choice.
+description: Diverge-Synthesize-Select (DSS) procedure for choosing between genuinely different approaches — generate 3–7 candidates including a boring baseline and a combination, weigh their trade-offs, and present a decision card with a recommendation. Use when a choice is irreversible, spans several files or components, crosses the named scope, has two or three outcome-changing unknowns, or when the user asks for options, alternatives, or solutions. Also covers parallel "advocate" agents for architecture-level decisions. Not to be confused with `fpf-thinking` (problem framing) or `mcp-sequential-thinking` (step chains).
 alwaysApply: false
-problem: "Wide-scope Tier 3 decisions collapse into first-solution answers without explicit divergence and synthesis discipline."
-related: [code-writing-protocols, fpf-thinking, mcp-sequential-thinking, structured-output]
+problem: "Consequential decisions collapse into the first workable idea instead of a real comparison of alternatives."
+related: [response-templates, fpf-thinking, mcp-sequential-thinking, structured-output, writing-for-the-reader]
 ---
 
-# Diverge-Synthesize-Select (DSS) Protocol
+# Diverge-Synthesize-Select (DSS)
 
-Systematic method for generating genuinely diverse alternatives, evaluating them against explicit criteria, synthesising compatible strengths, and presenting a structured choice to the user. Produces `dss_output.json` conforming to `schemas/dss_output.schema.json`.
+The first workable idea is rarely the best one, and a decision taken with two or more genuine
+alternatives on the table fails far less often than a yes/no decision. DSS is the procedure that
+turns "here is my plan" into "here are the real options, what each costs, and which I recommend".
+The output the user sees is a decision card (template T2 in the `response-templates` skill).
 
-## When to Use (Complexity Gate)
+## When to use it
 
-DSS activates ONLY for Tier 3 decisions with wide scope. Use the decision classification from `code-writing-protocols` skill:
+Show 3–7 candidates when any of these holds:
 
-| Decision Type | Action |
-|---|---|
-| Tier 1 (Routine) | Apply rule directly. Skip DSS. |
-| Tier 2 (Standard) | Quick 2-3 option comparison. Skip DSS. |
-| Tier 3 Narrow (single function, local pattern) | Use the existing lightweight Tier 3 protocol (5-7 approaches in `code-writing-protocols`). Skip DSS. |
-| Tier 3 Wide (architecture, API design, new patterns, multi-component) | **Activate full DSS.** |
+- the choice is irreversible or expensive to undo (public API, data model, wire format, migration);
+- it touches several files, components, or services;
+- it crosses the scope the user named;
+- the user asked for solutions, options, or alternatives;
+- two or three unknowns could change the outcome substantially.
 
-### Tier 3 Wide Indicators
+Otherwise pick a defensible default and say so in one line, for example: "Using the existing
+`retry` helper rather than a new backoff policy — it already covers this call site." The one-liner
+keeps the user informed without spending their attention on a choice that does not need them.
 
-- Affects 3+ components or packages
-- Introduces a new pattern not yet in the codebase
-- API/contract decision visible to consumers
-- Technology or framework selection
-- Reversing the decision requires significant rework
-- User explicitly asks for options (`/techne-options`, "explore alternatives", "what are our options")
+If the problem itself is still unclear (what the system is, where its boundary lies), frame it
+first with `fpf-thinking`; DSS assumes you know what you are choosing between.
 
----
+## Procedure
 
-## Phase 0: Calibrate N
+### 1. Frame
 
-Determine how many options to generate. Base N=5.
+Write the decision as one sentence, list the criteria that matter, and name the unknowns that
+could swing it. Start from these criteria and add domain ones (latency, security posture, cost)
+as the problem needs:
 
-### Sub-Factor Scoring
+| Criterion | Question |
+|-----------|----------|
+| Simplicity | Which adds the least new machinery? |
+| Consistency | Which fits the patterns already in the codebase? |
+| Reversibility | Which is cheapest to change later? |
+| Testability | Which is easiest to verify? |
 
-| Factor | Low | Medium | High |
-|--------|-----|--------|------|
-| **Reversibility** | Easy to change later (config, feature flag) | Moderate effort to change (internal refactor) | Costly to reverse (public API, data model, wire format) |
-| **Blast radius** | Single component | Multiple components in one service | Cross-service or user-facing |
-| **Novelty** | Well-understood problem, team has done before | Some unknowns, partial precedent | First time for team, no precedent in codebase |
-| **Ambiguity** | Requirements are clear | Some open questions | Requirements are actively debated |
+### 2. Find the axes before the candidates
 
-### Calibration Formula
+Identify two to four orthogonal dimensions along which solutions differ — for a cache, say,
+invalidation (TTL / event-driven), storage (in-process / distributed), and granularity (entity /
+query). Choosing axes first is what makes candidates structurally different rather than the same
+idea renamed. If you cannot find two meaningful axes, the decision is probably below the threshold:
+pick a default and say so.
+
+### 3. Diverge
 
-```
-N = 5 + count(sub_factors where level == "high")
-N = clamp(N, 5, 10)
-```
+Generate the candidates before judging any of them; early judgement anchors on the first idea.
 
-Record the calibration in the structured output:
+- Aim for 3–7. Use the lower end when one trigger holds and the upper end when the choice is
+  irreversible and several unknowns are in play. Seven well-separated candidates beat ten blurred
+  ones.
+- Include a **boring baseline**: the simplest thing that could work, often "extend what exists".
+  It is the yardstick every other candidate has to beat, and it often wins.
+- Include at least one candidate that challenges an assumption about how the problem "should" be
+  solved, when such a candidate is plausible.
+- Give each a stable ID paired with a short name: `OPT-1 — extend the job table`.
+- Merge candidates that sit at the same axis positions with the same trade-offs.
 
-```json
-{
-  "complexity": {
-    "tier": "tier_3_wide",
-    "n_options": 7,
-    "sub_factors": {
-      "reversibility": "high",
-      "blast_radius": "medium",
-      "novelty": "high",
-      "ambiguity": "low"
-    }
-  }
-}
-```
+### 4. Evaluate
 
----
-
-## Phase 1: Identify Strategy Axes
-
-**Before generating any options**, identify 2-5 orthogonal dimensions along which solutions can vary. This is the anti-superficial-diversity mechanism.
-
-### What Makes a Good Axis
-
-- **Orthogonal**: Changing position on one axis doesn't force a position on another
-- **Meaningful**: Different positions lead to genuinely different architectures or trade-offs
-- **Binary minimum**: Each axis has at least 2 distinct values
-
-### Examples
-
-| Problem | Axis 1 | Axis 2 | Axis 3 |
-|---------|--------|--------|--------|
-| Auth system | Session storage (server / client / hybrid) | Identity provider (built-in / external IdP) | Token format (JWT / opaque) |
-| Caching layer | Invalidation (TTL / event-driven / hybrid) | Storage (in-process / distributed) | Granularity (per-entity / per-query) |
-| Event processing | Delivery (sync / async / hybrid) | Ordering (strict / best-effort) | Consumer model (push / pull) |
-
-### Validation
-
-If fewer than 2 meaningful axes can be identified, the problem is likely Tier 3 Narrow. Fall back to the lightweight protocol in `code-writing-protocols`.
-
-Record axes:
-
-```json
-{
-  "strategy_axes": [
-    { "name": "session storage", "values": ["server-side", "client-side", "hybrid"] },
-    { "name": "identity provider", "values": ["built-in", "external IdP"] }
-  ]
-}
-```
-
----
-
-## Phase 2: Diverge
-
-Generate all N options BEFORE evaluating any. This prevents premature convergence.
-
-### Rules
-
-1. **No evaluation during generation** — list options without judging them
-2. **Axis coverage** — each option must occupy a different combination of axis positions. Two options at the same axis position get collapsed into one
-3. **Mandatory boring option** — at least one option tagged `boring` (simplest possible approach, per Prime Directive)
-4. **Mandatory unconventional option** — at least one option tagged `unconventional` (challenges assumptions about how the problem "should" be solved)
-5. **Collapse duplicates** — if two options are superficially different but structurally identical (same axis positions, same trade-offs), merge them
-
-### Format
-
-Each option gets exactly 3 lines maximum:
-
-```
-**OPT-1: [Name]** (boring)
-[One-sentence summary of the approach]
-Differentiator: [What makes this genuinely different]
-```
-
-Full list in a single block. No prose between options.
-
-### Output Structure
-
-```json
-{
-  "options": [
-    {
-      "id": "OPT-1",
-      "name": "Direct DB Queries",
-      "axis_position": { "session storage": "server-side", "identity provider": "built-in" },
-      "summary": "Store sessions in PostgreSQL, authenticate against local user table.",
-      "differentiator": "Zero external dependencies, simplest deployment.",
-      "tag": "boring"
-    }
-  ]
-}
-```
-
----
-
-## Phase 3: Evaluate
-
-### Standard Criteria (always apply)
-
-| Criterion | Weight | Question |
-|-----------|--------|----------|
-| **Simplicity** | high | Which adds least complexity? (Prime Directive) |
-| **Consistency** | high | Which matches existing codebase patterns? |
-| **Reversibility** | medium | Which is easiest to change later? |
-| **Testability** | medium | Which is easiest to test? |
-
-Add domain-specific criteria as needed (e.g., latency, throughput, security posture). Each additional criterion must have an explicit weight.
-
-### Evaluation Protocol
-
-1. **Shuffle evaluation order** — do not evaluate options in generation order (prevents anchor bias toward OPT-1)
-2. Score each option against each criterion: `strong`, `adequate`, `weak`
-3. **Eliminate** options that:
-   - Violate Prime Directive without strong justification
-   - Contradict codebase conventions without compelling reason
-   - Require changes outside current scope
-   - Have any `weak` score on a `high`-weight criterion
-4. **Select top 3** — highest overall scores after elimination
-
-### Output Structure
-
-```json
-{
-  "evaluation": {
-    "criteria": [
-      { "name": "simplicity", "weight": "high" },
-      { "name": "consistency", "weight": "high" },
-      { "name": "reversibility", "weight": "medium" },
-      { "name": "testability", "weight": "medium" }
-    ],
-    "eliminated": [
-      { "option_id": "OPT-3", "reason": "Weak on consistency — introduces pattern not used elsewhere" }
-    ],
-    "top_candidates": [
-      {
-        "option_id": "OPT-1",
-        "scores": { "simplicity": "strong", "consistency": "strong", "reversibility": "adequate", "testability": "strong" },
-        "strengths": ["Zero dependencies", "Matches existing patterns"],
-        "weaknesses": ["Doesn't scale past 10K concurrent sessions"]
-      }
-    ]
-  }
-}
-```
-
----
-
-## Phase 4: Synthesise
-
-Extract per-option strengths from the top 3 and check compatibility.
-
-### Synthesis Protocol
-
-1. List each top candidate's primary strength
-2. Check pairwise compatibility:
-   - Can strength A coexist with strength B architecturally?
-   - Do they require contradictory axis positions?
-3. If compatible: produce a synthesis option that combines the strengths
-4. If not compatible: document the conflicts and confirm the best individual option
-
-### Key Rule
-
-Synthesis is **additional**, not a replacement. The top 3 individual options remain valid choices. Synthesis is offered as a bonus option when strengths are genuinely combinable.
-
-### When Synthesis Is NOT Viable
-
-This is a valid and common outcome. Document why:
-
-```json
-{
-  "synthesis": {
-    "viable": false,
-    "description": "OPT-1's server-side sessions are architecturally incompatible with OPT-4's stateless JWT approach. No meaningful combination exists.",
-    "conflicts": ["Server-side session state contradicts stateless token design"]
-  }
-}
-```
-
-Do NOT force a Frankenstein hybrid just to have a synthesis option.
-
----
-
-## Phase 5: Present and Select
-
-### Presentation Format
-
-```markdown
-## DSS Analysis: [Problem Statement]
-
-### Strategy Axes
-| Axis | Values |
-|------|--------|
-| [name] | [value1], [value2], ... |
-
-### All Options (N generated, M after dedup)
-| ID | Name | Tag | Key Differentiator |
-|----|------|-----|--------------------|
-| OPT-1 | ... | boring | ... |
-| OPT-2 | ... | standard | ... |
-| ... | | | |
-
-### Top 3
-
-**OPT-X: [Name]**
-- Strengths: ...
-- Weaknesses: ...
-- Best when: [scenario]
-
-**OPT-Y: [Name]**
-- Strengths: ...
-- Weaknesses: ...
-- Best when: [scenario]
-
-**OPT-Z: [Name]**
-- Strengths: ...
-- Weaknesses: ...
-- Best when: [scenario]
-
-### Synthesis
-[Description of combined approach, or "Not viable because: ..."]
-
-### Recommendation
-**OPT-X** because [specific reasoning].
-
-**[Awaiting your decision]** — Pick an option number, pick the synthesis, describe a custom combination, say "more options", or say "different axes".
-```
-
-### User Response Handling
-
-| User Says | Action |
-|-----------|--------|
-| "OPT-3" / "option 3" / "3" | Record selection, proceed |
-| "synthesis" / "the combined one" | Record synthesis selection, proceed |
-| Custom combination description | Record as `choice: "custom"`, capture rationale |
-| "more options" | Generate N more along under-explored axis positions |
-| "different axes" | Re-run Phase 1 with user-suggested axes |
-| Follow-up question | Answer, keep waiting for selection |
-
----
-
-## Phase 6: Record Selection
-
-Write `dss_output.json` to `{PROJECT_DIR}/` conforming to `schemas/dss_output.schema.json`.
-
-```json
-{
-  "selected": {
-    "choice": "OPT-2",
-    "rationale": "Best balance of simplicity and scalability for current requirements.",
-    "decided_by": "user"
-  }
-}
-```
-
----
-
-## Context Window Protection
-
-### During Generation
-
-- Each option: 3 lines maximum (name, summary, differentiator)
-- No prose between options
-- Evaluation matrix: tabular, not narrative
-
-### After Selection
-
-- Only the chosen approach returns to the parent agent/conversation
-- Full option list and evaluation persist in `dss_output.json`
-- Other options are NOT carried forward in conversation context
-
-### Large Option Sets (N > 7)
-
-Present the all-options summary table (1 line each), then expand only the top 3. Do not expand eliminated options unless the user asks.
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Description | Prevention |
-|---|---|---|
-| **Superficial diversity** | Options differ only in naming or surface details, not structure | Strategy axes force orthogonal variation. Collapse duplicates. |
-| **Option theatre** | Generating options to justify a predetermined choice | Axes identified BEFORE options. Mandatory boring + unconventional tags. Shuffled evaluation. |
-| **Context bloat** | Expanding all N options in detail | 3-line cap per option. Only top 3 expanded. JSON for persistence. |
-| **Synthesis worship** | Forcing a hybrid when strengths are incompatible | Synthesis viability check. "Not viable" is a valid outcome. |
-| **Anchor bias** | First option gets disproportionate favour | Shuffled evaluation order. Boring option required (often not first). |
-| **Skipping the gate** | Using DSS for Tier 1/2 decisions | Complexity gate check. Tier 3 Narrow uses lightweight protocol. |
-| **Axis gaming** | Choosing axes that make a preferred option win | Axes must be identified before options. User can request "different axes". |
+Weigh the candidates in an order different from the one you generated them in, which dampens the
+pull of whichever came first. Score each criterion `strong`, `adequate`, or `weak`. A candidate
+that is weak on simplicity or consistency without a compelling reason, or that needs work outside
+the agreed scope, is marked `dropped: <reason>` — it keeps its ID so the user can see it was
+considered.
+
+### 5. Combine
+
+Look for strengths that can coexist: does the storage choice of one candidate fit the invalidation
+model of another? Offer at least one combination as its own candidate with a new ID, stating which
+IDs it draws from. When the strongest parts conflict, say what conflicts; a forced hybrid that
+inherits both sets of costs helps nobody.
+
+### 6. Present the decision card
+
+Use template T2 from `response-templates`. Its content, in order:
+
+1. The decision in one sentence and the criteria used.
+2. A table of candidates: ID and name, mechanism, pros, cons, combines-with. The boring baseline
+   and the combination are both in it; dropped candidates appear with their reason.
+3. **Synergies** — which pairings reinforce each other and why.
+4. **Trade-offs** — what you give up with each serious contender, in the reader's terms.
+5. **Recommendation** — one candidate and the reason it wins under the stated criteria, plus the
+   condition that would change your pick.
+
+Present candidates and their trade-offs, not a narration of how you thought about them. When you
+ask another agent for input, ask for "candidates with trade-offs"; requests to "show your reasoning"
+get refused by newer models and produce worse material anyway.
+
+Write the card so it stands alone: someone who reads only this message should understand every
+candidate without scrolling back (see `writing-for-the-reader`).
+
+### 7. Stop at the recommendation
+
+The recommendation is the natural end of the reply. The user's next message is the decision; you do
+not need a banner asking for it. If the decision needs input you cannot get, the reply's final
+"What I need from you" section says so, as the core protocol describes.
+
+## Follow-ups
+
+| The user says | You do |
+|---------------|--------|
+| An ID ("OPT-3", "the job table one") | Record the choice and proceed within the approval rules in force |
+| "The combination" or a custom mix | Record it with the IDs it draws from and a one-line rationale |
+| "More options" | Append new candidates with the next free IDs (OPT-8, OPT-9, …); earlier IDs keep their numbers |
+| "Different axes" | Generate a fresh set along the new axes with new IDs; mark superseded ones `dropped: replaced by new axes` |
+| A question | Answer it and restate only the candidates it affects, each ID with its name |
+
+IDs never get renumbered, reordered, or merged across turns — the user must be able to trust that
+`OPT-4` still means what it meant yesterday.
+
+## Persisted record
+
+When the calling command or workflow asks for a machine-readable record, write `dss_output.json` in
+the project directory, following the `dss_output` schema described in `structured-output`: problem
+statement, axes, candidates, evaluation, combination, and the selection (`decided_by: "pending"`
+until the user chooses). Only the chosen approach needs to travel onward in the conversation; the
+record keeps the rest.
+
+## Advocates: parallel agents for architecture-level decisions
+
+For architecture-level work — system design, API contracts, domain boundaries, competing
+interpretations of a domain — one mind generating every candidate tends to steelman its favourite
+and strawman the rest. Advocates fix that by giving each approach its own champion.
+
+**Who runs it.** The top-level session (the lead) orchestrates. In engines where a subagent cannot
+start further subagents, the command or main conversation that would otherwise launch the
+specialist launches the advocates instead, then hands their briefs to the specialist or synthesises
+them itself.
+
+**Steps.**
+
+1. Frame the decision and find the axes (steps 1–2 above), then pick 3–7 candidate approaches with
+   IDs and names, including the boring baseline.
+2. Launch one read-only advocate per candidate, all in the same batch so they run in parallel.
+   Each brief carries: the decision and criteria; the assigned candidate (ID and name); the names of
+   the rival candidates; the sources to read (spec, plan, relevant code paths); the scope
+   (read-only, no edits, no questions to the user); and the output format below.
+3. Wait until every advocate has returned. Until then, any update is one line:
+   "k of n done; waiting for: <names>". Reporting after only some have returned invites a decision
+   on half the evidence.
+4. Synthesise: check each brief's claims against the evidence it cites, discount unsupported ones,
+   build combinations from compatible strengths, and produce one decision card.
+
+**Advocate output format.** Ask for candidates with trade-offs, in this shape:
+
+- Mechanism — how the approach works here, concretely.
+- Strongest case — where it beats the rivals, with evidence (`path:line`, doc link).
+- Honest costs — what it makes harder, and the conditions under which it loses.
+- Combines with — which rival's strengths it could absorb, and what would conflict.
+
+Advocates argue for their candidate, but an advocate that hides costs weakens its own case: the lead
+weighs evidence, not enthusiasm.
+
+## Pitfalls
+
+| Pitfall | What prevents it |
+|---------|------------------|
+| Candidates differ only in naming | Axes chosen first; merge same-position candidates |
+| Options staged to justify a choice already made | Axes before candidates; boring baseline required; shuffled evaluation |
+| Every small choice becomes a menu | Threshold above; below it, a one-line default |
+| Forced hybrid | State the conflict when strengths do not combine |
+| Renumbered list after "more options" | Append with the next free IDs |
+| Partial report while advocates are still running | One status line until all have returned |

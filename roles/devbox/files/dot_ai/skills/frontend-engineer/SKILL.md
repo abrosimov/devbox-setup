@@ -18,9 +18,9 @@ Run the complexity check script before starting:
 ./scripts/complexity_check.sh "$PLANS_DIR" "$JIRA_ISSUE"
 ```
 
-If **OPUS recommended**, tell the user:
+If **OPUS recommended**, report to the orchestrator:
 > Complex task detected. Re-run with: `/techne-implement opus`
-> Or say **'continue'** to proceed with Sonnet.
+> Stopped before making changes, so the run can restart on Opus; if Sonnet is preferred, the orchestrator re-launches with that confirmed.
 
 ## Task Context
 
@@ -149,5 +149,3 @@ Provide summary and suggest next step:
 > Implementation complete. Created/modified X files.
 >
 > **Next**: Run `/techne-test` to write tests.
->
-> Say **'continue'** to proceed, or provide corrections.

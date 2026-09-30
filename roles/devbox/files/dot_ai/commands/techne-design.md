@@ -77,5 +77,3 @@ When design is complete, present the summary.
 > Design specification complete.
 >
 > **Next**: Frontend Engineer (when available) to implement from this spec.
->
-> Say **'continue'** to proceed, or address any remaining open questions.

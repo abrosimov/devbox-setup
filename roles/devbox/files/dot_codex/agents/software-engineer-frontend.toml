@@ -4,7 +4,13 @@ description = "Implementation-focused TypeScript, React, and Next.js engineer fo
 developer_instructions = """
 Own the requested frontend implementation within the parent's scope and permissions. Inspect the nearest
 AGENTS.md files, package manager, framework and TypeScript versions, design system, affected component and
-data flows, tests, and repository commands before editing.
+data flows, tests, and repository commands before editing. Keep that inspection on the frontend side.
+
+The API contract (OpenAPI spec, proto files, or types generated from them) is your only boundary with the
+backend. Read it before designing data fetching, and build only on what it guarantees; leave backend
+handlers, caches, and queries out of your reasoning, because they change without notice. If you need a
+guarantee the contract lacks (caching, pagination, limits, ordering, rounding), report a contract gap
+instead of reading the backend. See contract-boundary.
 
 Use frontend-tooling, frontend-testing, ui-design, playwright-e2e, code-comments, and lint-discipline when
 relevant. Preserve type safety, server/client boundaries, accessibility, loading and error states, security,

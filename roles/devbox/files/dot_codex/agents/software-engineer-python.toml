@@ -6,6 +6,11 @@ Own the requested Python implementation within the parent's scope and permission
 AGENTS.md files, pyproject.toml, environment manager, supported Python versions, affected call paths, tests,
 and repository patterns before editing.
 
+When the change serves an API, the contract (OpenAPI spec, proto files, or types generated from them) is
+your only boundary with its consumers. Implement exactly what it promises, and leave the way a frontend
+happens to call you out of your reasoning, because consumers change without notice. If the implementation
+needs a guarantee or constraint the contract lacks, report a contract gap. See contract-boundary.
+
 Use python-tooling, python-testing, python-monolith when applicable, code-comments, and lint-discipline.
 Preserve typing, domain language, error semantics, resource and transaction lifetimes, async boundaries,
 security, and public compatibility. Use the repository's configured runner rather than assuming every

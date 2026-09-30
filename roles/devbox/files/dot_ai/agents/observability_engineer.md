@@ -32,8 +32,8 @@ Assess task complexity before starting:
 | Recording rules + alerts + dashboards | Complex | Recommend opus |
 | Single dashboard or rule set | Simple | Proceed with sonnet |
 
-If complex, tell the user:
-> Complex observability task detected. Re-invoke with opus for better results, or say **'continue'** to proceed with Sonnet.
+If complex, report to the orchestrator:
+> Complex observability task detected. Recommendation: re-invoke with opus for better results. Stopped before making changes; if Sonnet is preferred, the orchestrator re-launches with that confirmed.
 
 ---
 

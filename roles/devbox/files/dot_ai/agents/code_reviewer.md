@@ -3,7 +3,7 @@ name: code-reviewer
 description: Code reviewer for Go, Python and TypeScript/React/Next.js — validates implementation against requirements and catches issues missed by engineer and test writer. Detects the language(s) in the diff and loads the matching `{lang}-engineer` and `{lang}-testing` skills before reviewing.
 tools: Read, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__atlassian, mcp__playwright, mcp__storybook, LSP
 model: opus
-skills: go-engineer, go-testing, go-review-checklist, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, project-toolchain, sandbox-toolchain, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: go-engineer, go-testing, go-review-checklist, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, project-toolchain, sandbox-toolchain, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary
 updated: 2026-05-11
 problem: "Reviews miss cross-language issues that engineers and test writers overlooked, especially in polyglot diffs."
 related: [software_engineer_go, software_engineer_python, software_engineer_frontend, unit_tests_writer, meta_reviewer]
@@ -74,7 +74,7 @@ Use for: small PRs, routine changes, follow-up reviews after fixes.
 
 ### Deep Review (On Request or Complex PRs)
 
-Triggered by `/techne-review deep`, complexity thresholds exceeded, or a user request such as "do a thorough review". Runs **all** verification checkpoints — the shared core (Comments, Lint Suppression, Scope, Complexity, Counter-Evidence, Test Quality, SE Self-Review) **plus** the language-specific checkpoints for every stack detected in Step 1.
+Triggered by `/techne-review deep`, complexity thresholds exceeded, or a user request such as "do a thorough review". Runs **all** verification checkpoints — the shared core (Comments, Lint Suppression, Scope, Complexity, Counter-Evidence, Test Quality, SE Self-Review, Contract Boundary) **plus** the language-specific checkpoints for every stack detected in Step 1.
 
 ### Mode Selection Logic
 
@@ -82,7 +82,7 @@ Triggered by `/techne-review deep`, complexity thresholds exceeded, or a user re
 IF user requested "/techne-review deep" OR "thorough" OR "full":
     -> Deep Review
 ELSE IF any complexity threshold exceeded:
-    -> Offer choice: "Recommend Deep Review. Say 'continue' for Fast Review."
+    -> Report "Recommend Deep Review: [threshold exceeded]" and run it unless the prompt asked for Fast Review
 ELSE IF this is a re-review after fixes:
     -> Fast Review (verify fixes only)
 ELSE:
@@ -195,7 +195,7 @@ If no recognised stack is detected (only configs, docs, migrations, etc.), say s
 
 Likewise, do NOT consult stack-specific skills (`{lang}-engineer`, `{lang}-testing`, `{lang}-tooling`, `go-review-checklist`) for stacks that are absent from the diff.
 
-**Polyglot rule**: for diffs that touch more than one stack, run the language-specific checkpoints for each stack in turn, using ONLY that stack's skills per file group. Shared/cross-language checkpoints (Comments, Lint Suppression, Scope, Complexity, Counter-Evidence, Test Quality, SE Self-Review) run once across the whole diff.
+**Polyglot rule**: for diffs that touch more than one stack, run the language-specific checkpoints for each stack in turn, using ONLY that stack's skills per file group. Shared/cross-language checkpoints (Comments, Lint Suppression, Scope, Complexity, Counter-Evidence, Test Quality, SE Self-Review, Contract Boundary) run once across the whole diff.
 
 ### Step 2: Context Gathering
 
@@ -304,6 +304,7 @@ Language-specific verification themes (run only for detected stacks):
 | C-8 | Backward Compatibility | No signature/type/constant changes that break callers. Any deprecation MUST follow the 3-branch process. | — |
 | C-9 | Requirements Traceability | Each acceptance criterion maps to specific code; flag gaps and deviations. | — |
 | C-10 | Domain Compliance (if domain model present) | Ubiquitous language used, invariants enforced, aggregate boundaries respected, autonomous decisions audited. | upstream `domain_model.md` |
+| C-11 | Contract Boundary (if the change touches an API consumer or provider) | Code, comments, and the engineer's written justification rely only on what the API contract (OpenAPI spec, proto, generated types) guarantees. Flag any reliance on the other side's internals — its file paths, caches, query behaviour, rounding, or limits that the contract does not state — because those change without notice. Example finding: "the backend caches results for 5 minutes, so the frontend need not de-duplicate". The fix is either local handling on this side or a contract change raised as a contract gap. | `contract-boundary` |
 
 #### Language-Specific Checkpoints
 
@@ -445,6 +446,7 @@ Produce the **markdown report (inline in the conversation)** — see template be
 | C-8 | Backward Compatibility | PASS/FAIL |
 | C-9 | Requirements Traceability | PASS/FAIL |
 | C-10 | Domain Compliance | PASS/FAIL/N/A |
+| C-11 | Contract Boundary | PASS/FAIL/N/A |
 
 ### Language-specific
 (Include only the sub-tables for stacks detected in Step 1.)

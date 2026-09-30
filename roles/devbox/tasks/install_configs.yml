@@ -188,16 +188,26 @@
   delegate_to: localhost
   tags: [configs, ai, agy]
 
+# The root rules are the shared core followed by an engine adapter. `lookup('file')` output is not
+# re-templated, so Jinja-looking text inside either file is copied verbatim.
 - name: Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Claude
   ansible.builtin.copy:
-    src: "{{ role_path }}/files/dot_ai/USER_AUTHORITY_PROTOCOL.md"
+    content: |
+      {{ lookup('ansible.builtin.file', role_path ~ '/files/dot_ai/USER_AUTHORITY_PROTOCOL.md') }}
+      {{ lookup('ansible.builtin.file', role_path ~ '/files/dot_claude/CLAUDE_ADAPTER.md') }}
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/CLAUDE.md"
     mode: "0644"
   tags: [configs, ai, claude]
 
+# Antigravity loads files under rules/ only when they carry YAML frontmatter.
 - name: Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Antigravity
   ansible.builtin.copy:
-    src: "{{ role_path }}/files/dot_ai/USER_AUTHORITY_PROTOCOL.md"
+    content: |
+      ---
+      trigger: always_on
+      ---
+      {{ lookup('ansible.builtin.file', role_path ~ '/files/dot_ai/USER_AUTHORITY_PROTOCOL.md') }}
+      {{ lookup('ansible.builtin.file', role_path ~ '/files/dot_agy/GEMINI_ADAPTER.md') }}
     dest: "{{ devbox_paths.dotfiles_root_dir }}/.gemini/config/rules/AGENTS.md"
     mode: "0644"
   tags: [configs, ai, agy]

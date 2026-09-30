@@ -129,7 +129,7 @@ Explicit boundaries with a stop condition:
 
 ### 6. When to Ask for Clarification
 
-Must include the rule: "Batch all open doubts into a single `AskUserQuestion` call" (defer to `CLAUDE.md` §Discipline Protocol — Inquiry).
+Include the rule "Ask only what the evidence cannot answer", pointing to `agent-base-protocol` §How to ask: each question carries its context and recommendation in the message, all live questions go together, and a subagent returns them to the orchestrator because it cannot reach the user.
 
 ### 7. After Completion
 
@@ -139,8 +139,6 @@ Standardised output format from `agent-communication` skill:
 > <One-line summary of what was done>
 >
 > **Next**: Run `<next-agent>` to <action>.
->
-> Say **'continue'** to proceed, or provide corrections.
 ```
 
 ---

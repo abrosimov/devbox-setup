@@ -1,0 +1,10 @@
+[
+  {"query": "Give me the options for caching product prices with their trade-offs", "should_trigger": true},
+  {"query": "Write the final report for this change and tell me what I have to do by hand", "should_trigger": true},
+  {"query": "I need to run several commands to rotate the staging token — prepare them for me", "should_trigger": true},
+  {"query": "We have twelve open items in this review; keep track of them across the next turns", "should_trigger": true},
+  {"query": "Compare three approaches for the migration and recommend one", "should_trigger": true},
+  {"query": "Fix the typo in the README heading", "should_trigger": false},
+  {"query": "Write a unit test for the parse_date function", "should_trigger": false},
+  {"query": "What does the --frozen flag do in uv sync?", "should_trigger": false}
+]

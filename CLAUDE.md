@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ansible-based developer workstation setup tool that automates installation and configuration of development tools, dotfiles, and system preferences. Supports macOS (Darwin) and Ubuntu Linux.
 
-**Key distinction**: `roles/devbox/files/dot_claude/` contains Claude-specific files deployed to `~/.claude/`; `dot_codex/` contains the portable Codex settings, global guidance, and native agents deployed under `~/.codex/`; and `dot_ai/` contains shared source material. The `USER_AUTHORITY_PROTOCOL.md` in `dot_ai/` is the Claude/Antigravity authority source, while Codex uses its adapted `dot_codex/AGENTS.md`; neither is this project's instruction file.
+**Key distinction**: `roles/devbox/files/dot_claude/` contains Claude-specific files deployed to `~/.claude/`; `dot_codex/` contains the portable Codex settings, global guidance, and native agents deployed under `~/.codex/`; and `dot_ai/` contains shared source material. The global rules every engine receives are a provider-neutral shared core (`dot_ai/USER_AUTHORITY_PROTOCOL.md`) followed by one engine adapter (`dot_claude/CLAUDE_ADAPTER.md`, `dot_codex/AGENTS.md`, `dot_agy/GEMINI_ADAPTER.md`), concatenated at deploy time; none of them is this project's instruction file.
 
 ## Commands
 
@@ -99,7 +99,7 @@ Everything lives in one role. No multi-role orchestration.
 6. `darwin/configure_macos_basics.yml` — codifies manual notes: Touch ID for sudo via `sudo_local`, `pmset disablesleep` for clamshell, `DevToolsSecurity --enable` for debugger access
 7. `darwin/configure_pub_mode.yml` — pub mode: deploys the `pub-lease` controller to `~/.local/bin/` and installs the system-domain LaunchDaemon `local.pub-lease`, which reconciles the lease every 60 seconds. Gated on the profile actually installing the `cloudflare-warp` cask (personal only); the disabled path tears the whole thing down and restores any active lease. See `README.md` § Pub Mode.
 8. `install_configs.yml` — deploy shared AI/client configs and dotfiles (see below)
-9. `install_codex_configs.yml` — reconcile `dot_codex/config.toml.j2` into app-owned `~/.codex/config.toml` via `scripts/ai-config apply codex` (which renders the template itself — see Block 2 below), install `dot_codex/AGENTS.md` plus native TOML agents, and deploy the compatible `dot_ai` skill subset to `~/.agents/skills/`. The final task grants Codex hook trust via `scripts/codex-hook-trust.py` (thin wrapper over the stdlib-only `scripts/codex_hook_trust/` package): it drives `codex app-server`'s `hooks/list` + `config/batchWrite` to write `hooks.state."<key>".trusted_hash`, scoped to an allowlist derived from this repo's `[hooks]` block and `devbox_codex_plugins`. Without it Codex silently drops every provisioned hook. See `dot_codex/README.md` § Hook trust.
+9. `install_codex_configs.yml` — reconcile `dot_codex/config.toml.j2` into app-owned `~/.codex/config.toml` via `scripts/ai-config apply codex` (which renders the template itself — see Block 2 below), install `~/.codex/AGENTS.md` (shared core + `dot_codex/AGENTS.md` adapter) plus native TOML agents, and deploy the compatible `dot_ai` skill subset to `~/.agents/skills/`. The final task grants Codex hook trust via `scripts/codex-hook-trust.py` (thin wrapper over the stdlib-only `scripts/codex_hook_trust/` package): it drives `codex app-server`'s `hooks/list` + `config/batchWrite` to write `hooks.state."<key>".trusted_hash`, scoped to an allowlist derived from this repo's `[hooks]` block and `devbox_codex_plugins`. Without it Codex silently drops every provisioned hook. See `dot_codex/README.md` § Hook trust.
 10. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
 11. `prepare_user.yml` — shell, user-level setup
 12. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. It downloads the checksum-verified v2.1 release binary, deploys one self-contained `edge.yaml`, validates that exact pair and supervises it with `local.otelbox-edge`. The endpoint comes from the local overlay; the Keychain remains credential authority and the wrapper materialises v2.1's watched header in the private per-user temporary directory. Once v2.1 preflight passes, the task removes the legacy `otelcol-edge` binary, config, LaunchAgent and WAL. Homebrew remains a hard conflict. See `README.md` § OTLP Telemetry.
@@ -172,14 +172,17 @@ Current per-profile differences:
 
 | Path | Purpose | Deployed To |
 |------|---------|-------------|
-| `dot_ai/USER_AUTHORITY_PROTOCOL.md` | Claude/Antigravity User Authority Protocol | `~/.claude/CLAUDE.md`, `~/.gemini/config/rules/AGENTS.md` |
-| `dot_codex/AGENTS.md` | Codex-adapted global working agreements | `~/.codex/AGENTS.md` |
+| `dot_ai/USER_AUTHORITY_PROTOCOL.md` | Shared core of the global rules (provider-neutral: understand before solving, options threshold, writing for the reader, end-of-turn user actions, stable lists, parallel agents, contract boundary) | First part of `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/config/rules/AGENTS.md` |
+| `dot_claude/CLAUDE_ADAPTER.md` | Claude adapter: approval policy, `AskUserQuestion`, background agents, `/techne-implement` pipeline, shell mechanics | Appended to the core as `~/.claude/CLAUDE.md` |
+| `dot_codex/AGENTS.md` | Codex adapter: action types, `wait_agent` loop, delegation, validation authority | Appended to the core as `~/.codex/AGENTS.md` |
+| `dot_agy/GEMINI_ADAPTER.md` | Antigravity adapter: approval, Planning mode, subagents, few-shot examples | Appended to the core (with `trigger: always_on` frontmatter) as `~/.gemini/config/rules/AGENTS.md` |
+| `bin/stop_user_actions_guard.py` | Blocking Stop hook: the "What I need from you" section must be last and hand over scripts, not multi-line shell (a self-contained copy lives in `dot_codex/bin/`) | `~/.claude/bin/`, `~/.codex/bin/` |
 | `settings.json.j2` | Default permissions (allow/deny); Jinja rendered by `scripts/ai-config` | `~/.claude/settings.json` |
 | `settings.json.j2` → `hooks` | Pre/post tool-call hooks, session lifecycle, logging | `~/.claude/settings.json` |
 | `dot_ai/agents/*.md` | Shared Markdown agent sources (28 agents) | `~/.claude/agents/`, `~/.gemini/config/agents/` |
 | `dot_codex/agents/*.toml` | All 28 Codex-native agent adapters | `~/.codex/agents/` |
 | `commands/techne-*.md` | Slash commands — 22, all `techne-` prefixed (`/techne-implement`, `/techne-test`, `/techne-plan`, etc.) | `~/.claude/commands/` |
-| `dot_ai/skills/*/SKILL.md` | Reusable knowledge modules (40 skills); Codex receives the compatible allowlist | `~/.claude/skills/`, `~/.gemini/config/skills/`, `~/.agents/skills/` |
+| `dot_ai/skills/*/SKILL.md` | Reusable knowledge modules (42 skills); Codex receives the compatible allowlist | `~/.claude/skills/`, `~/.gemini/config/skills/`, `~/.agents/skills/` |
 | `dot_ai/skills/fpf-thinking/references/` | Vendored FPF Core and companion NSTD specifications | Alongside each deployed `fpf-thinking` skill |
 | `schemas/*.json` | JSON Schema files (2: `se_output`, `dss_output`) for SE and DSS output validation | `~/.claude/schemas/` |
 | `bin/*` | Helper scripts (MCP wrappers, hooks, validation) | `~/.claude/bin/` |
@@ -201,7 +204,7 @@ Use via `/devcontainer init` (Claude Code command) or `claude-devcontainer init`
 
 When working in `roles/devbox/files/dot_claude/` and `dot_ai/` you are editing files that get deployed to `~/.claude/` and `~/.gemini/config/`. This is a distinct activity from editing the Ansible playbook itself:
 
-- **Deploy after editing**: managed subdirs are no longer symlinked. After changing agents/skills/commands/etc., run `make claude-push` to deploy via the slim `playbooks/claude.yml` (no sudo, no keychain lookup) — `~3-5s`. A full `make personal`/`make work` does the same work (Block 1 + Block 2 in `roles/devbox/tasks/install_configs.yml`) as part of the wider playbook.
+- **Deploy after editing**: `make claude-push` / `codex-push` / `agy-push` are deliberately blocked. Settings files (`settings.json`, `config.toml`, agy `settings.json`) go through `scripts/ai-config diff ENGINE` → `apply ENGINE --check` → `apply ENGINE`, or `reconcile ENGINE` when live changes need a decision. Markdown and scripts (root rules, agents, skills, commands, `bin/`) are deployed by the playbook: `make "$MNEMOSYNE_PERISTASEOS" EXTRA_VARS='--tags ai,claude,codex,agy'`, whose engine-tagged tasks also run `ai-config apply` non-interactively and fail if a decision is pending.
 - **Repo is the only source of truth**: Block 1 runs `ansible.posix.synchronize` with `--delete` per managed subdir, so any edits made directly under `~/.claude/agents/`, `skills/`, etc. are overwritten on next push. Host-only state (`projects/`, `plans/`, `memory/`, `plugins/`, ...) is never in scope of `--delete`.
 - **`settings.json.j2` changes** affect sandbox permissions, network allowlists, and tool approvals globally. It is a Jinja template rendered by `scripts/ai-config`; keep every expression inside a quoted JSON value, because the *unrendered* document is what a captured live value is written back into.
 - **`hooks` block in `settings.json.j2`** defines pre/post hooks for tool calls and session lifecycle (scripts in `bin/`). Claude Code reads user hooks only from the deployed `settings.json` / `settings.local.json` (and from a plugin's own `hooks/hooks.json`) — a standalone `~/.claude/hooks.json` is silently ignored, so never park hooks there.
@@ -212,7 +215,7 @@ When working in `roles/devbox/files/dot_claude/` and `dot_ai/` you are editing f
 - **`templates/` changes** affect devcontainer scaffolding for new projects
 - **Command naming — `techne-` prefix**: every file in `commands/` is named `techne-<name>.md` and invoked as `/techne-<name>`. The prefix is deliberate: bare names like `/focus`, `/plan`, `/status`, `/review`, `/verify` collide with Claude Code's built-in commands and bundled skills (the built-in/bundled one wins, shadowing the custom command). New commands MUST keep the `techne-` prefix, and any cross-reference to a command (in agents, skills, other commands, `bin/` hint text) MUST use the `/techne-<name>` form.
 - Run `make validate-claude` to check cross-references between agents, skills, and commands
-- The `USER_AUTHORITY_PROTOCOL.md` in `roles/devbox/files/dot_ai/` is deployed as `~/.claude/CLAUDE.md` and `~/.gemini/config/rules/AGENTS.md`; Codex uses the separately adapted `roles/devbox/files/dot_codex/AGENTS.md`
+- The global rules are the shared core `roles/devbox/files/dot_ai/USER_AUTHORITY_PROTOCOL.md` plus one adapter per engine, concatenated by the deploy tasks into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md` and `~/.gemini/config/rules/AGENTS.md`. Put provider-neutral behaviour in the core (with its reason) and tool names, approval policy and engine mechanics in the adapter; `tests/deploy/test_codex_assets.py` checks the assembly and the 32 KiB Codex budget
 
 ## Dependencies
 

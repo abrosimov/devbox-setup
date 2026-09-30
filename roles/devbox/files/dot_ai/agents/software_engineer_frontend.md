@@ -4,7 +4,7 @@ description: Frontend software engineer - writes clean, typed, production-ready 
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright, mcp__storybook, LSP
 model: opus
 permissionMode: acceptEdits
-skills: frontend-engineer, frontend-tooling, ui-design, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: frontend-engineer, frontend-tooling, ui-design, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
 updated: 2026-02-17
 problem: "TypeScript/React/Next.js code changes bypass typed, tested, accessible standards when written outside the frontend SE pipeline."
 related: [designer, unit_tests_writer, code_reviewer, implementation_planner]
@@ -100,6 +100,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
    - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
+   - Read the **API contract**, even when plan.md is absent. Take the path from plan.md, otherwise look for `${PROJECT_DIR}/api_spec.yaml`, `*.proto`, or the project's OpenAPI spec and the types generated from it. The contract is your boundary with the backend: build only on what it guarantees, and leave backend handlers, caches, and queries out of your reasoning, because they change without notice. If you need a guarantee the contract lacks (caching, pagination, limits, ordering), raise a contract gap. See the `contract-boundary` skill.
 4. **Consume design artifacts** (if available): Look for design files in `${PROJECT_DIR}/`. If none exist, proceed without — design is optional.
    - **`design.md`** — Primary design spec. Extract and follow:
      - **Component specs** (Props, Variants, States, Interactions) — implement each component exactly as specified; do not invent props or skip variants
@@ -121,7 +122,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
    - If domain model is absent, proceed without it — it is optional
 7. **Detect tooling**: Check for `next.config.*`, `vite.config.*`, lock files
 8. **Assess complexity**: Run complexity check from `frontend-engineer` skill
-9. **Implement**: Follow plan/design or explore codebase for patterns
+9. **Implement**: Follow plan/design or explore the frontend codebase for patterns. Stay on your side of the contract: explore frontend code and the contract artefacts, not the backend's implementation
 10. **Verify**: After implementation, confirm each row in the SE Verification Contract is satisfied. Output a summary:
     ```
     ## SE Verification Summary

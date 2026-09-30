@@ -3,7 +3,7 @@ name: technical-product-manager
 description: Technical product manager who transforms ideas into detailed product specifications through research, interactive user interviews, and iterative refinement.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
+skills: config, writing-for-the-reader, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
 updated: 2026-03-03
 problem: "Ideas skip the shape-up step and reach engineers as either wireframes or vague vibes, wasting cycles either way."
 related: [domain_expert, implementation_planner, designer]
@@ -268,7 +268,7 @@ Think step by step:
    - **Used by**: <Examples of who uses this approach>
 
    ### Recommendation
-   **Chosen**: <Option X>
+   **Chosen**: <Option X — name>
    **Rationale**: <Why this option fits our context best>
    **Trade-offs accepted**: <What we're giving up>
    ```
@@ -358,7 +358,7 @@ For each significant decision, briefly summarise:
 
 ### <Decision Area 1>
 **Chosen approach**: <What we're doing>
-**Alternatives considered**: <Option B>, <Option C>
+**Alternatives considered**: <Option B — name>, <Option C — name>
 **Why this approach**: <Brief rationale — link to research.md for details>
 
 ## Functional Requirements
@@ -584,8 +584,6 @@ Any items requiring further clarification before implementation.
 > Specification complete.
 >
 > **Next**: Run `implementation-planner` to create detailed implementation plan.
->
-> Say **'continue'** to proceed, or provide corrections to the spec.
 
 ---
 

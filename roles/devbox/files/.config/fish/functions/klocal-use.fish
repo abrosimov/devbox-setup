@@ -8,8 +8,8 @@ function klocal-use --description "Point klocal and mlops-be at a specific insta
         if test -L $symlink
             set -l real (realpath $symlink)
             echo "klocal    → $real"
-            # Derive installer root from kubeconfig path (strip /install/cluster-kubeconfig.yaml)
-            set -l root (string replace '/install/cluster-kubeconfig.yaml' '' $real)
+            # Derive installer root from kubeconfig path (strip /localcluster/cluster-kubeconfig.yaml)
+            set -l root (string replace '/localcluster/cluster-kubeconfig.yaml' '' $real)
             if test -d "$root"
                 echo "installer → $root"
             end
@@ -28,11 +28,11 @@ function klocal-use --description "Point klocal and mlops-be at a specific insta
     switch $arg
         case .
             set installer_root (pwd)
-            set target $installer_root/install/cluster-kubeconfig.yaml
+            set target $installer_root/localcluster/cluster-kubeconfig.yaml
         case '*'
             if test -d "$arg"
                 set installer_root $arg
-                set target $arg/install/cluster-kubeconfig.yaml
+                set target $arg/localcluster/cluster-kubeconfig.yaml
             else if test -f "$arg"
                 set target $arg
             else

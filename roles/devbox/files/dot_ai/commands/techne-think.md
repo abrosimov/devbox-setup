@@ -50,6 +50,36 @@ Based on the problem type, select the most appropriate agent:
 | "How should we design this?", architecture, trade-offs | `architect` | DRR, cross-scale consistency, evolutionary architecture |
 | Mixed / unclear | `domain-expert` | Default: sceptical analysis is safe starting point |
 
+### 3b. Advocate Round (architecture-level choices)
+
+Run this step when the route is `architect`, `domain-modeller`, or `domain-expert` **and** the problem is a choice between approaches that meets the threshold in `diverge-synthesize-select` (irreversible, several components, crosses the named scope, the user asked for options, or two or three unknowns could change the outcome). Pure framing or explanation questions skip it. The main conversation runs it because subagents cannot start subagents of their own (skill section "Advocates").
+
+1. Frame the choice in one sentence, name the criteria, and pick 3–7 candidate approaches, each with an ID and a short name, including the boring baseline.
+2. Launch one read-only advocate per candidate **in a single message** — `architect` agent type for technical candidates, `Plan` for domain interpretations or models:
+
+```
+Task(
+  subagent_type: "architect" | "Plan",
+  model: "opus",
+  prompt: "ADVOCATE BRIEF — read-only; do not edit files or ask the user questions.
+
+Decision: {one sentence}
+Criteria: {list}
+Your candidate: {OPT-n — name}
+Rival candidates: {OPT-x — name, ...}
+Sources: {relevant docs and code paths}
+
+Make the strongest honest case for your candidate. Return candidates with trade-offs in this shape:
+- Mechanism: how it works here, concretely
+- Strongest case: where it beats the rivals, with evidence (path:line or link)
+- Honest costs: what it makes harder and when it loses
+- Combines with: which rival strengths it could absorb, and what would conflict"
+)
+```
+
+3. Wait for every advocate. Until the last one returns, any update is one line: "k of n done; waiting for: <names>".
+4. Pass all briefs to the agent in step 4 under `ADVOCATE BRIEFS`.
+
 ### 4. Spawn the Agent
 
 **IMPORTANT**: Always pass `model: "opus"` explicitly.
@@ -64,6 +94,7 @@ Problem: {user's problem from $ARGUMENTS}
 
 ARTIFACT PATH: {determined in Step 2}
 SCOPE: {ticket | cross-cutting}
+ADVOCATE BRIEFS: {briefs from step 3b, or 'none'}
 
 INSTRUCTIONS:
 1. Read the `fpf-thinking` skill for the routing table and protocol
@@ -74,7 +105,7 @@ INSTRUCTIONS:
 6. Apply the FPF patterns to structure your analysis
 7. Respond in PLAIN LANGUAGE — no FPF terminology unless the user requests it
 8. Produce concrete artifacts (see fpf-thinking skill: Artifact Recipes)
-9. Present options as portfolios with trade-offs, not single answers
+9. When the problem is a choice that meets the `diverge-synthesize-select` threshold, present a decision card (T2 in `response-templates`), weighing any advocate briefs as evidence rather than verdicts; otherwise state a defensible default in one line
 
 ARTIFACT GENERATION:
 10. After completing analysis, write a human-readable artifact to ARTIFACT PATH

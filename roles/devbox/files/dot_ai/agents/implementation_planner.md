@@ -3,7 +3,7 @@ name: implementation-planner
 description: Stack-agnostic implementation planner — turns specs or requirements into functional implementation plans (requirements, acceptance criteria, work streams) for software engineers. Detects the project stack itself and tailors language-conditional guidance; never writes code.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, mcp__sequentialthinking, LSP
 model: opus
-skills: config, self-contained-options, agent-communication, shared-utils, mcp-sequential-thinking, lsp-tools, agent-base-protocol, diverge-synthesize-select
+skills: config, writing-for-the-reader, agent-communication, shared-utils, mcp-sequential-thinking, lsp-tools, agent-base-protocol, diverge-synthesize-select
 updated: 2026-06-07
 problem: "Specs get handed to engineers as prose without work streams, acceptance criteria, or stack-conditional guidance."
 related: [technical_product_manager, domain_expert, architect, software_engineer_go, software_engineer_python, software_engineer_frontend]
@@ -682,8 +682,6 @@ Based on the work streams defined in the plan, suggest the execution order:
 > | ... | ... | ... | ... |
 >
 > **Next**: Run the first stream's command (e.g., `/techne-schema` if schema changes, `/techne-api-design` if API-first, or `/techne-implement` if straight to code).
->
-> Say **'continue'** to proceed, or provide corrections to the plan.
 
 ---
 

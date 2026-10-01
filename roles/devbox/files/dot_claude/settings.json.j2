@@ -348,7 +348,6 @@
       "Bash(git -C * push --tags *)",
       "Bash(git -C * push * main)",
       "Bash(git -C * push * master)",
-      "Bash(git -C * push * +*)",
       "Bash(git -C * push *:main)",
       "Bash(git -C * push *:master)",
       "Bash(git -C * push * HEAD:main)",
@@ -579,6 +578,14 @@
           {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_quality.py",
             "timeout": 60,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/stop_user_actions_guard.py",
             "type": "command"
           }
         ]

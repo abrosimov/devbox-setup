@@ -1,0 +1,57 @@
+{
+  "skill_name": "writing-for-the-reader",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The Grafana panel tooltip Explanation.Formula currently says 'the increase of X in each interval'. Ask me whether to keep it or rewrite it.",
+      "expected_output": "Agent shows who reads the tooltip, what they see now, the rendered tooltip under each option, what the reader would conclude, and a recommendation, then asks only for the pick",
+      "expectations": [
+        "Names the reader (a dashboard user hovering over the panel)",
+        "Renders the current tooltip text and each candidate wording as the reader would see it",
+        "States what the reader would understand or do under each option",
+        "Gives a recommendation with a reason",
+        "Puts the previews in the message body, not only in the question tool's options"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We have been working on two goals this session: moving the metrics dump to staging and rotating the read-only DB password. The first is done, the second is blocked by vault permissions. Write the final report.",
+      "expected_output": "Final report leads with the outcome and re-introduces each goal by name, with identifiers explained",
+      "expectations": [
+        "First sentence states the outcome",
+        "Refers to each goal by its name, not as a bare 'goal 1' or 'goal 2'",
+        "Every file, path, or identifier mentioned is followed by a plain-language clause",
+        "Does not use 'as discussed' or 'see above'"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Tell me I need to reseed the sudo password in the keychain after my macOS password change.",
+      "expected_output": "Agent explains why, gives the exact command, and says how to verify",
+      "expectations": [
+        "Explains why the action is needed",
+        "Gives the exact command (make sudo-reseed) in a fenced block",
+        "Says how to verify the result"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Offer me options for isolating the Go build cache in the sandbox; earlier we called the preferred one '§3 sandbox cache'.",
+      "expected_output": "Option labels carry concrete identifiers and any ID is paired with a descriptive name",
+      "expectations": [
+        "No option label is a bare ID such as '§3 sandbox cache' or 'Option A'",
+        "Each label names a concrete identifier such as GOCACHE, a path, or a command",
+        "Each description reads standalone and does not refer to another option"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write a Python function that parses JSON from a file and returns the data",
+      "expected_output": "Agent writes the function normally; the skill does not add reader-first scaffolding to code",
+      "expectations": [
+        "Code is produced without question templates or rendered-preview sections",
+        "Skill does not interfere with ordinary coding tasks"
+      ]
+    }
+  ]
+}

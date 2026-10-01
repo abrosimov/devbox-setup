@@ -1,0 +1,10 @@
+[
+  {"query": "The backend caches this query for five minutes, so the frontend can call it as often as it likes, can't it?", "should_trigger": true},
+  {"query": "Implement the frontend for the orders page against api_spec.yaml", "should_trigger": true},
+  {"query": "There's no OpenAPI spec yet; build the React client for the Go service", "should_trigger": true},
+  {"query": "Does the list endpoint guarantee ordering? Check the backend SQL to see", "should_trigger": true},
+  {"query": "Write up a contract gap for the missing pagination limit in the proto", "should_trigger": true},
+  {"query": "Rename this local variable in the Python script", "should_trigger": false},
+  {"query": "Fix the flaky unit test in the date formatting helper", "should_trigger": false},
+  {"query": "Set up ESLint and Prettier for the new Next.js project", "should_trigger": false}
+]

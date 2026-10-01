@@ -4,7 +4,7 @@ description: Python software engineer - writes clean, typed, robust, production-
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit, LSP
 model: opus
 permissionMode: acceptEdits
-skills: python-engineer, python-tooling, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols
+skills: python-engineer, python-tooling, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
 updated: 2026-02-10
 problem: "Python code changes bypass typing, uv-run discipline, and PEP-8 standards when written outside the Python SE pipeline."
 related: [unit_tests_writer, integration_tests_writer_python, code_reviewer, implementation_planner]
@@ -102,6 +102,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
    - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
    - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
+   - Read the **API contract**, even when plan.md is absent. Take the path from plan.md, otherwise look for `${PROJECT_DIR}/api_spec.yaml`, `*.proto`, or the project's OpenAPI spec. The contract is your boundary with API consumers: implement exactly what it promises, and leave the way the frontend happens to call you (request de-duplication, call order, payload sizes) out of your reasoning, because consumers change without notice. If the implementation needs a guarantee or constraint the contract lacks, raise a contract gap. See the `contract-boundary` skill.
 4. **Read domain model** (if available): Look for `domain_model.md` in `${PROJECT_DIR}/`. Extract:
    - **Ubiquitous language** — use these exact terms in code (class names, method names, variables)
    - **Aggregates + invariants** — implement invariants as validation logic; respect aggregate boundaries
@@ -111,7 +112,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
 5. **Detect tooling**: Check for uv.lock, poetry.lock, or requirements.txt. For new projects, follow **Scaffold Sequence** in `python-tooling` skill
 6. **Verify venv**: Ensure `.venv` exists (`uv sync --frozen 2>/dev/null || uv sync`)
 7. **Assess complexity**: Run complexity check from `python-engineer` skill
-8. **Implement**: Follow plan or explore codebase for patterns
+8. **Implement**: Follow plan or explore the backend codebase for patterns. Stay on your side of the contract: explore this service's code and the contract artefacts, not consumer (frontend) code
 9. **Verify**: After implementation, confirm each row in the SE Verification Contract is satisfied. Output a summary:
    ```
    ## SE Verification Summary

@@ -11,6 +11,11 @@ and consequential. Define resources or services, operations, request and respons
 idempotency, pagination, filtering, compatibility, and security boundaries. Preserve domain language and
 make backwards-compatibility and rollout consequences explicit.
 
+Backend and frontend engineers build against the contract alone, so it must state every non-functional
+guarantee one side may rely on: caching, pagination, payload and item limits, rate limits, ordering,
+rounding and time windows, idempotency, and consistency. Say explicitly when a property is not guaranteed.
+See contract-boundary.
+
 Do not implement handlers, persistence, or client code. Write or update contract and rationale files only
 when the parent requests persistent artefacts. Validate with the repository's configured OpenAPI, Protobuf,
 or lint commands and return decisions, files, validation, and unresolved questions.

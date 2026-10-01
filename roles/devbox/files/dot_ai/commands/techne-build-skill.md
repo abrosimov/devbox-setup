@@ -131,7 +131,7 @@ For create/refine modes, present the builder's output to the user:
 
 [Builder's summary and XML artifact block]
 
-**[Awaiting your decision]** — Say **'continue'** to run meta-review, **'fix <instruction>'** to adjust, or **'skip-review'** to accept without meta-review.
+**Recommendation:** [the reply you recommend, with its reason]. Replies: **'continue'** to run meta-review, **'fix <instruction>'** to adjust, or **'skip-review'** to accept without meta-review.
 ```
 
 If user says 'skip-review', skip to step 5.
@@ -170,7 +170,7 @@ Present the meta-reviewer's findings:
 
 [Meta-reviewer's summary and verdict]
 
-**[Awaiting your decision]** — Say **'continue'** to run content review, **'fix'** to send back to builder, **'skip-content'** to accept without content review, or provide specific instructions.
+**Recommendation:** [the reply you recommend, with its reason]. Replies: **'continue'** to run content review, **'fix'** to send back to builder, **'skip-content'** to accept without content review, or provide specific instructions.
 ```
 
 If user says 'skip-content', skip to step 6.
@@ -209,7 +209,7 @@ Present the content reviewer's findings:
 
 [Content reviewer's summary and verdict]
 
-**[Awaiting your decision]** — Say **'approve'** to accept, **'fix'** to send back to builder, or provide specific instructions.
+**Recommendation:** [the reply you recommend, with its reason]. Replies: **'approve'** to accept, **'fix'** to send back to builder, or provide specific instructions.
 ```
 
 ### 6. After Completion

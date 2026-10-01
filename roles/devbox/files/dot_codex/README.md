@@ -9,7 +9,9 @@ truth for the portable projection after initialisation.
 
 Currently managed:
 
-- service tier, personality, and sandbox mode;
+- service tier and sandbox mode (`personality` is no longer set: Codex ignores
+  Friendly/Pragmatic overrides, so `ai-config apply codex` removes a live value
+  that matches the last applied baseline);
 - `[features]` (`memories` and hooks; `js_repl` is deliberately not enabled);
 - `[sandbox_workspace_write]`;
 - `[otel]`, with the active devbox profile as the environment, semantic log
@@ -17,6 +19,9 @@ Currently managed:
 - selected plugin declarations captured during bootstrap;
 - the SHA-pinned Langfuse tracing marketplace and loopback-only runtime config;
 - hook trust for the hooks declared here and for pinned plugins (see below);
+- the blocking `Stop` hook `bin/stop_user_actions_guard.py`, a byte-identical
+  copy of the Claude hook (a test enforces parity), which enforces the final
+  "What I need from you" section;
 - global working agreements in `AGENTS.md`;
 - all 28 Codex-native custom-agent adapters under `agents/*.toml`;
 - the allowlisted shared skills installed under `~/.agents/skills`, including

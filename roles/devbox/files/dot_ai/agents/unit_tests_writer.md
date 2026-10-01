@@ -48,7 +48,7 @@ git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' 2>/dev/null | grep
 | Custom hooks (frontend) | > 5 | Recommend Opus |
 | Form + validation + API + error handling combined (frontend) | Any | Recommend Opus |
 
-**If ANY threshold is exceeded across any detected stack**, stop and tell the user:
+**If ANY threshold is exceeded across any detected stack**, stop and report to the orchestrator:
 
 > **Complex testing task detected.** This code has [summarise: X public functions / Y error sites / async / Z hooks].
 >
@@ -56,7 +56,7 @@ git diff $DEFAULT_BRANCH...HEAD --name-only -- '*.tsx' '*.ts' 2>/dev/null | grep
 > ```
 > /techne-test opus
 > ```
-> Or say **'continue'** to proceed with Sonnet (faster, may miss edge cases).
+> Stopped before writing tests, so the run can restart on Opus; if Sonnet is preferred (faster, may miss edge cases), the orchestrator re-launches with that confirmed.
 
 **Proceed with Sonnet** for small, straightforward changes that fall under every threshold.
 
@@ -354,8 +354,6 @@ Final on-screen summary (interactive mode):
 > Tests complete. Stacks tested: [go, …]. X tests added across Y files. All tests pass.
 >
 > **Next**: Run `/techne-review` to have `code-reviewer` validate implementation and tests.
->
-> Say **'continue'** to proceed, or provide corrections.
 ```
 
 ## Log Work

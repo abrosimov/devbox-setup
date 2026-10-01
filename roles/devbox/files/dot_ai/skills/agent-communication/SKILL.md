@@ -86,71 +86,18 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 
 ## Completion Output Format
 
-When an agent completes its work:
+An agent's completion message is a result for whoever launched it, not a conversation with the user.
+
+- **Subagent (launched by an orchestrator):** report the result to the orchestrator — outcome first, then the evidence (files changed, checks run, open issues), then any decision card or questions it needs to put to the user. No prompt to the user such as "say 'continue'": the orchestrator waits until every agent it launched has returned and then gives the user one consolidated answer (core §6), so a per-agent hand-off would fragment that answer.
+- **Single-agent command run** (one `/techne-*` command, one agent): the final report follows template T1 in the `response-templates` skill and may end with one line naming the next command, because here the user does drive the order.
 
 ```markdown
-> <One-line summary of what was done>
->
-> **Next**: Run `<next-agent>` to <action>.
->
-> Say **'continue'** to proceed, or provide corrections.
+Implementation complete: 3 files changed in `internal/orders/` (validation of empty orders), `make test` passes.
+
+Next: `/techne-test` to write tests for the new validation path.
 ```
 
-#### Examples
-
-**Software Engineer:**
-```markdown
-> Implementation complete. Created/modified X files.
->
-> **Next**: Run `/techne-test` to write tests.
->
-> Say **'continue'** to proceed, or provide corrections.
-```
-
-**Test Writer:**
-```markdown
-> Tests complete. X test cases covering Y scenarios.
->
-> **Next**: Run `/techne-review` to review implementation and tests.
->
-> Say **'continue'** to proceed, or provide corrections.
-```
-
-**API Designer:**
-```markdown
-> API design complete. 4 resources, 12 endpoints defined.
->
-> **Next**: Run `/techne-implement` to begin backend implementation, or `/techne-design` for UI/UX design.
->
-> Say **'continue'** to proceed, or provide corrections.
-```
-
-**Designer (UI/UX):**
-```markdown
-> Design specification complete. 8 components specified, 42 tokens defined.
->
-> **Next**: Run `/techne-implement` to have `software-engineer-frontend` implement from this spec.
->
-> Say **'continue'** to proceed, or provide corrections.
-```
-
-**Code Reviewer (issues found):**
-```markdown
-> Review complete. Found X blocking, Y important, Z optional issues.
->
-> **Next**: Address blocking issues with `/techne-implement`, then re-run `/techne-review`.
->
-> Say **'fix'** to have SE address issues, or provide specific instructions.
-```
-
-**Code Reviewer (approved):**
-```markdown
-> Review complete. No blocking issues found.
->
-> **Next**: Ready to commit and create PR.
->
-> Say **'commit'** to proceed, or provide corrections.
-```
+Typical next commands: SE → `/techne-test`; Test Writer → `/techne-review`; API Designer → `/techne-implement` for backend and frontend (both read the contract); Designer → `/techne-implement` for `software-engineer-frontend`; Code Reviewer with blocking issues → `/techne-implement`, then `/techne-review` again; Code Reviewer with no blocking issues → ready to commit (the user commits).
 
 ---
 
@@ -168,59 +115,22 @@ Code reviewers and implementation planners always use opus — no downgrade logi
 
 ### User Escalation
 
-Stop and ask the user when:
+Escalate only what your own lookup cannot settle and what would change the result (core §1):
 
-1. **Ambiguous requirements** — Multiple valid interpretations
-2. **Trade-off decisions** — Significant impact either way
-3. **Scope questions** — Unclear what's in/out of scope
-4. **Blocking issues** — Cannot proceed without input
+1. **Ambiguous requirements** — readings that lead to different work
+2. **Decisions above the core §2 threshold** — irreversible, multi-component, scope-crossing, or with two or three unknowns that could change the outcome substantially
+3. **Scope questions** — the work would cross the named scope
+4. **Blocking issues** — cannot proceed without input
+
+Below that threshold, decide and state the choice in one line of the report.
 
 ### How to Ask Questions
 
-**CRITICAL: Batch all open doubts into a single `AskUserQuestion` call.** Do not drip-feed questions one at a time. See `CLAUDE.md` §Discipline Protocol — Inquiry for the binding rule.
-
-**Format:**
-```markdown
-[Context]: Working on [X], encountered [situation].
-
-Options:
-A) [Option] — [trade-off]
-B) [Option] — [trade-off]
-
-Recommendation: [A/B] because [reason].
-
-**[Awaiting your decision]**
-```
-
-**Example:**
-```markdown
-The `process_order` function can handle empty orders two ways:
-
-A) Reject with ValidationError — Explicit, prevents downstream issues
-B) Return empty result — Permissive, lets caller decide
-
-Recommendation: A because empty orders indicate upstream bugs.
-
-**[Awaiting your decision]**
-```
+The rules live in `agent-base-protocol` (§How to ask); the question template and bad/good examples are in the `writing-for-the-reader` skill, and the decision card is template T2 in `response-templates`. In short: every question carries its context and the rendered outcome of each option in the message itself, all live questions of a turn go together, and a subagent returns them to the orchestrator rather than asking the user.
 
 ## Approval Validation
 
-Before implementation, agents must verify explicit approval exists.
-
-### Valid Approval Phrases
-
-- "yes", "yep", "y", "go ahead", "proceed", "do it"
-- "approved", "looks good", "implement it"
-- "option 1" / "option 2" (explicit choice)
-- `/techne-implement` command
-
-### NOT Approval (Keep Waiting)
-
-- "interesting", "I see", "okay" (acknowledgment)
-- Follow-up questions
-- "let me think about it"
-- Silence
+Before implementation, agents verify that explicit approval exists. What counts as approval is engine policy and lives in the engine adapter (for Claude Code, the Approval policy section of the deployed `CLAUDE.md`); this skill does not restate the list, so the two cannot drift.
 
 ### Approval Check Format
 
@@ -246,8 +156,8 @@ Classify decisions before acting:
 | Tier | Type | Action |
 |------|------|--------|
 | 1 | Routine | Apply rule directly, no approval needed |
-| 2 | Standard | Quick consideration, check precedent, proceed |
-| 3 | Design | Full exploration (5-7 options), present to user |
+| 2 | Standard | Quick consideration, check precedent, proceed; state the choice in one line |
+| 3 | Design (core §2 threshold holds) | Explore, then show 3–7 candidates as the decision card (`response-templates` T2); a subagent returns the card to the orchestrator |
 
 ### Tier 1 Examples (Just Do It)
 - Apply formatting

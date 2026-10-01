@@ -66,9 +66,9 @@ Structured outputs include this metadata block:
 
 ### DSS — `dss_output.json`
 
-Written by the Diverge-Synthesize-Select protocol (invoked via `/techne-options` or when agents encounter Tier 3 Wide decisions). See `schemas/dss_output.schema.json` for the authoritative definition.
+Written by the Diverge-Synthesize-Select protocol (invoked via `/techne-options`, or when a decision meets the options threshold of core §2). See `schemas/dss_output.schema.json` for the authoritative definition.
 
-Top-level fields: `problem_statement`, `complexity` (tier, n_options, sub_factors), `strategy_axes` (2-5 orthogonal dimensions), `options` (N generated, each with axis position), `evaluation` (criteria, eliminated, top_candidates, synthesis), `selected` (choice, rationale, decided_by).
+Top-level fields: `problem_statement`, `complexity` (threshold_triggers, n_options 3–7, sub_factors), `strategy_axes` (2-5 orthogonal dimensions), `options` (the 3–7 candidates of the decision card, each with a tag, axis position, mechanism, pros, cons, and combines-with; at least one `baseline` and one `combination`), `evaluation` (criteria, eliminated, every surviving candidate scored with no top-N cap, synthesis with synergies and trade-offs), `recommendation` (option_id and reason — required, because the card always ends on one), `selected` (choice, rationale, decided_by; `pending` until the user picks).
 
 > **Downstream usage**: Implementation Planner and SE agents read `selected.choice` to know which approach was approved. Full option analysis persists in the JSON for audit.
 

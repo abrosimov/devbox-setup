@@ -3,11 +3,16 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CODEX_ROOT = REPO_ROOT / "roles/devbox/files/dot_codex"
 AI_ROOT = REPO_ROOT / "roles/devbox/files/dot_ai"
 CODEX_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/codex.yml"
 CODEX_TASKS = REPO_ROOT / "roles/devbox/tasks/install_codex_configs.yml"
+SHARED_TASKS = REPO_ROOT / "roles/devbox/tasks/install_configs.yml"
+CORE_AUTHORITY = AI_ROOT / "USER_AUTHORITY_PROTOCOL.md"
+CORE_LOOKUP = "/dot_ai/USER_AUTHORITY_PROTOCOL.md"
 
 EXPECTED_AGENTS = {
     "agent-builder",
@@ -107,11 +112,21 @@ def test_codex_prompts_do_not_leak_claude_protocol() -> None:
         assert marker not in combined
 
 
+def copy_content(tasks_path: Path, name: str) -> str:
+    tasks: object = yaml.safe_load(tasks_path.read_text(encoding="utf-8"))
+    assert isinstance(tasks, list)
+    task = next(task for task in tasks if isinstance(task, dict) and task.get("name") == name)
+    content = task["ansible.builtin.copy"]["content"]
+    assert isinstance(content, str)
+    return content
+
+
 def test_global_agents_file_fits_codex_instruction_budget() -> None:
-    authority = (CODEX_ROOT / "AGENTS.md").read_bytes()
+    authority = b"\n".join((CORE_AUTHORITY.read_bytes(), (CODEX_ROOT / "AGENTS.md").read_bytes()))
     assert len(authority) < 32 * 1024
     text = authority.decode()
-    assert "For explanation, review, diagnosis" in text
+    assert "For explanation, review, research" in text
+    assert "**diagnose** request" in text
     assert "For change, fix, build" in text
     assert "explicit confirmation" in text
     assert "fpf-thinking" in text
@@ -192,5 +207,19 @@ def test_codex_deploy_selects_fpf_skills_authority_and_agents() -> None:
     for agent in EXPECTED_AGENTS:
         assert f"  - {agent}\n" in defaults
 
-    assert "files/dot_codex/AGENTS.md" in tasks
+    authority = copy_content(CODEX_TASKS, "Install Codex global authority protocol")
+    assert authority.index(CORE_LOOKUP) < authority.index("/dot_codex/AGENTS.md")
     assert "files/dot_codex/agents/{{ item }}.toml" in tasks
+
+
+def test_claude_and_agy_root_rules_assemble_core_and_adapter() -> None:
+    claude = copy_content(
+        SHARED_TASKS, "Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Claude"
+    )
+    agy = copy_content(
+        SHARED_TASKS, "Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Antigravity"
+    )
+
+    assert claude.index(CORE_LOOKUP) < claude.index("/files/dot_claude/CLAUDE_ADAPTER.md")
+    assert agy.index(CORE_LOOKUP) < agy.index("/files/dot_agy/GEMINI_ADAPTER.md")
+    assert agy.startswith("---\ntrigger: always_on\n---\n")

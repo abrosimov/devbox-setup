@@ -1,0 +1,70 @@
+{
+  "skill_name": "response-templates",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Switch the nightly metrics dump to staging. By the way, does that affect the reporting dashboard? The staging token also needs rotating, which only I can do.",
+      "expected_output": "Final report in T1 order: outcome first, detail, the dashboard answer, then a last '## What I need from you' section with the token rotation",
+      "expectations": [
+        "First sentence states the outcome of the change",
+        "The dashboard question is answered after the supporting detail, not above it",
+        "'What I need from you' is the last ## section",
+        "The token item states what and why, gives an exact invocation, and says how to verify"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Prices change in the admin panel but the shop shows stale values for up to an hour. What are our options?",
+      "expected_output": "A T2 decision card with 3-7 candidates, a boring baseline, at least one combination, the five-column table, synergies, trade-offs, and a recommendation with reason",
+      "expectations": [
+        "Restates the problem in one line",
+        "Offers between 3 and 7 candidates including a boring baseline and at least one combination",
+        "Table has columns candidate, mechanism, pros, cons, combines with",
+        "Names synergies and trade-offs, then a recommendation with its reason",
+        "Presents candidates with trade-offs rather than narrating its reasoning"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The user must run five commands with sudo to grant database access. The repository root has no go.mod. Hand this over.",
+      "expected_output": "Writes a Python script under ai_written_scripts/<slug>/ with PEP 723 metadata, --dry-run, verification output and a test, and references it from the 'What I need from you' section",
+      "expectations": [
+        "Does not paste the five commands inline and does not write a shell script",
+        "Creates ai_written_scripts/<slug>/main.py with PEP 723 inline metadata and test_main.py",
+        "Script supports --dry-run, is idempotent, and ends by printing a verification result",
+        "Invocation shown as 'uv run ai_written_scripts/<slug>/main.py' plus how to run the test"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Same hand-over, but the repository root contains go.mod.",
+      "expected_output": "Writes main.go and main_test.go under ai_written_scripts/<slug>/ and gives 'go run ./ai_written_scripts/<slug>' as the invocation",
+      "expectations": [
+        "Chooses Go because the repository root has go.mod",
+        "Creates main.go and main_test.go in ai_written_scripts/<slug>/",
+        "Invocation is 'go run ./ai_written_scripts/<slug>' with a -dry-run option"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "We are reviewing nine checkout items over several turns. Drop item C3 because the provider is too expensive.",
+      "expected_output": "Updates the ledger at $TMPDIR/ledger-<topic>.md, marks C3 'dropped: <reason>' without renumbering, and closes with the status of open IDs",
+      "expectations": [
+        "C3 remains in the ledger marked 'dropped: provider cost' or similar",
+        "No other item is renumbered, reordered, or merged",
+        "Every ID mentioned is paired with its name",
+        "Reply ends with a one-line status of every open ID"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Rename the local variable tmp to buffer in utils.py",
+      "expected_output": "Makes the edit and replies briefly; skill does not interfere with a trivial change",
+      "expectations": [
+        "No decision card for a trivial, reversible choice",
+        "No 'What I need from you' section because the user has nothing to do",
+        "Skill does not interfere with the simple edit"
+      ]
+    }
+  ]
+}

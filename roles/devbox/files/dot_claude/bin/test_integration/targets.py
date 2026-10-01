@@ -206,6 +206,12 @@ INTEGRATION_TARGETS: tuple[IntegrationTarget, ...] = (
         exit_codes=_STOP_CODES,
         max_timeout_seconds=60,
     ),
+    _target(
+        "stop_user_actions_guard",
+        "stop_user_actions_guard.py",
+        "stop",
+        exit_codes=_STOP_CODES,
+    ),
     # --- PreCompact --------------------------------------------------------
     _target(
         "session_save",

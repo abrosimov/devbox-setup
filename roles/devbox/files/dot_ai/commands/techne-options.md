@@ -6,7 +6,7 @@ You are orchestrating a DSS (Diverge-Synthesize-Select) session for structured o
 
 ## What This Does
 
-Routes design problems to the appropriate thinking agent with the DSS protocol enabled. The agent generates genuinely diverse alternatives along orthogonal strategy axes, evaluates them, attempts synthesis, and presents structured choices.
+Routes design problems to the appropriate thinking agent with the DSS procedure enabled. The user asked for options, so the threshold in `diverge-synthesize-select` holds: the result is a decision card (T2 in `response-templates`) with 3–7 candidates, a boring baseline, at least one combination, synergies, trade-offs, and a recommendation. For architecture-level problems, one read-only advocate per candidate argues its case first, so every approach gets its best hearing rather than a strawman.
 
 ## Steps
 
@@ -50,7 +50,37 @@ Based on the problem type, select the most appropriate agent:
 | Implementation approach, work streams | `implementation-planner` | Stack-agnostic functional planning (detects Go/Python/frontend) |
 | Mixed / unclear | `architect` | Safe default for broad technical decisions |
 
-### 5. Spawn the Agent
+### 5. Advocate Round (architecture-level problems)
+
+Run this step when the route is `architect` or `domain-expert`; for `designer` and `implementation-planner`, go straight to step 6. The main conversation runs it because subagents cannot start subagents of their own. The `diverge-synthesize-select` skill, section "Advocates", describes the pattern.
+
+1. Frame the decision in one sentence, name the criteria, and pick 3–7 candidate approaches, each with an ID and a short name (`OPT-1 — extend the job table`). Include the boring baseline. Keep this light — a few reads at most; the advocates do the digging.
+2. Launch one advocate per candidate **in a single message**, so they run in parallel. Advocates are read-only: use the `architect` agent type for technical candidates and the `Plan` agent type for domain interpretations.
+
+```
+Task(
+  subagent_type: "architect" | "Plan",
+  model: "opus",
+  prompt: "ADVOCATE BRIEF — read-only; do not edit files or ask the user questions.
+
+Decision: {one sentence}
+Criteria: {list}
+Your candidate: {OPT-n — name}
+Rival candidates: {OPT-x — name, ...}
+Sources: {upstream docs from Step 3, relevant code paths}
+
+Make the strongest honest case for your candidate. Return candidates with trade-offs in this shape:
+- Mechanism: how it works here, concretely
+- Strongest case: where it beats the rivals, with evidence (path:line or link)
+- Honest costs: what it makes harder and when it loses
+- Combines with: which rival strengths it could absorb, and what would conflict"
+)
+```
+
+3. Wait for every advocate. Until the last one returns, any update is one line: "k of n done; waiting for: <names>".
+4. Pass all briefs to the specialist in step 6 under `ADVOCATE BRIEFS`.
+
+### 6. Spawn the Agent
 
 **IMPORTANT**: Always pass `model: "opus"` explicitly.
 
@@ -64,42 +94,19 @@ Problem: {user's problem from $ARGUMENTS}
 
 PROJECT_DIR: {determined in Step 2}
 EXISTING DOCS: {list of available upstream artifacts from Step 3}
+ADVOCATE BRIEFS: {briefs from Step 5, or 'none'}
 
 INSTRUCTIONS:
-1. Read the `diverge-synthesize-select` skill for the full DSS protocol
-2. If upstream docs exist (spec.md, domain_analysis.md, plan.md, design.md), read the relevant ones for context
-3. Execute the DSS protocol phases in order:
-   - Phase 0: Calibrate N (score sub-factors, compute option count)
-   - Phase 1: Identify strategy axes (2-5 orthogonal dimensions)
-   - Phase 2: Diverge (generate N options, 3 lines each, no evaluation)
-   - Phase 3: Evaluate (shuffle, score, eliminate, select top 3)
-   - Phase 4: Synthesise (check compatibility of top strengths)
-   - Phase 5: Present (strategy axes + all options summary + top 3 detailed + synthesis + recommendation)
-4. End with [Awaiting your decision] offering: pick option, pick synthesis, custom combo, 'more options', 'different axes'
-5. Write dss_output.json to PROJECT_DIR conforming to schemas/dss_output.schema.json (set decided_by: 'pending' until user selects)
+1. Follow the `diverge-synthesize-select` skill. The user asked for options, so the threshold holds.
+2. Read the upstream docs that matter for this problem.
+3. If advocate briefs are present, treat them as evidence rather than verdicts: check what they cite, keep their IDs and names, and add any strong missing candidate with the next free ID.
+4. Produce the decision card (T2 in `response-templates`): 3–7 candidates including a boring baseline and at least one combination; a table with mechanism, pros, cons, combines-with; synergies; trade-offs; a recommendation with its reason. End with the recommendation.
+5. Write dss_output.json to PROJECT_DIR (decided_by: 'pending' until the user selects).
 
-Return: { artifact_path: string, summary: string, recommendation: string }"
+Return: { artifact_path: string, decision_card: string, recommendation: string }"
 )
 ```
 
-### 6. Present Results and Offer Next Steps
+### 7. Present the Decision Card
 
-When the agent returns:
-
-1. Display the summary and recommendation
-2. Show where `dss_output.json` was saved
-3. Offer next steps:
-
-> **DSS analysis complete.** Artifact saved to `{artifact_path}`.
->
-> **Summary:** {summary}
->
-> **Recommendation:** {recommendation}
->
-> **Next steps:**
-> - Pick an option number to proceed
-> - Say **'synthesis'** to use the combined approach
-> - Describe a **custom combination**
-> - Say **'more options'** for additional alternatives
-> - Say **'different axes'** to re-explore with new dimensions
-> - Then use `/techne-plan` or `/techne-implement` to act on the chosen approach
+When the agent returns, show its decision card as it stands (every candidate ID with its name), mention in one line where `dss_output.json` was saved, and finish with the recommendation and its reason. That is the end of the reply: the user answers with an ID, a combination, "more options" (appended with the next free IDs, never renumbered), or "different axes", and then `/techne-plan` or `/techne-implement` acts on the choice.

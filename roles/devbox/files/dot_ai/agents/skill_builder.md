@@ -385,8 +385,6 @@ When producing artifacts (create/refine modes), emit this XML block after the ar
 > [XML artifact block above]
 >
 > **Next**: Meta-reviewer will challenge this artifact. Then update agent definitions and run `/techne-validate-config`.
->
-> Say **'continue'** to proceed to meta-review, or provide corrections.
 
 ### For Validation
 
@@ -408,5 +406,3 @@ When producing artifacts (create/refine modes), emit this XML block after the ar
 > **Orphaned skills**: [list or "none"]
 >
 > **Next**: Address findings or create new skills to fill gaps.
->
-> Say **'continue'** to proceed, or provide corrections.

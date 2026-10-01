@@ -68,11 +68,16 @@
     mode: "0600"
   tags: [configs, ai, codex]
 
+# Shared core followed by the Codex adapter; see the matching Claude and Antigravity tasks.
 - name: Install Codex global authority protocol
   ansible.builtin.copy:
-    src: "{{ devbox_codex_role_path | default(role_path) }}/files/dot_codex/AGENTS.md"
+    content: |
+      {{ lookup('ansible.builtin.file', codex_files_root ~ '/dot_ai/USER_AUTHORITY_PROTOCOL.md') }}
+      {{ lookup('ansible.builtin.file', codex_files_root ~ '/dot_codex/AGENTS.md') }}
     dest: "{{ devbox_codex_home }}/AGENTS.md"
     mode: "0600"
+  vars:
+    codex_files_root: "{{ devbox_codex_role_path | default(role_path) }}/files"
   tags: [configs, ai, codex]
 
 - name: Install Codex custom agents

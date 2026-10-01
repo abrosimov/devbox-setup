@@ -18,25 +18,14 @@ Shared decision-making and quality protocols for all code-writing agents (SE-go,
 
 **Before ANY code work, validate approval in the conversation context.**
 
-> **Canonical source:** `CLAUDE.md` §What Counts as Approval + §Approval-Required Triggers is authoritative. The lists below mirror it for convenience — if they ever diverge, the UAP wins.
+> **Canonical source:** what counts as approval is engine policy and lives in the engine adapter (for Claude Code, the Approval policy section of the deployed `CLAUDE.md`). This skill does not restate the phrase list, so the two cannot drift.
 
 ### Step 1: Scan Recent Messages
 
-Look for explicit approval in the last 2-3 user messages:
-
-✅ **Valid approval phrases**:
-- "yes", "yep", "y", "go ahead", "proceed", "do it"
-- "approved", "looks good", "implement it"
-- "option 1" / "option 2" (explicit choice after options presented)
-- `/techne-implement` command invocation
-
-❌ **NOT approval** (stop immediately):
-- Last message asked for analysis/proposal/options
-- Last message ended with "?"
-- User said "ultrathink", "analyze", "think about", "propose"
-- User said "interesting", "I see", "okay" (acknowledgment ≠ approval)
-- No explicit approval after presenting alternatives
-- Approval covered scope X; current action covers scope Y (different scope = new approval needed)
+Look for explicit approval, as the adapter defines it, in the last 2-3 user messages. These situations are not approval, whatever the wording:
+- The last message described a problem, asked a question, or asked for analysis, options, or a plan — the deliverable there is an assessment or the options, then stop (core §1)
+- No explicit pick after alternatives were presented
+- Approval covered scope X; the current action covers scope Y (different scope needs new approval)
 
 ### Step 2: If Approval NOT Found
 
@@ -116,42 +105,43 @@ Selection: B — matches existing convention
 
 ---
 
-### Tier 3: DESIGN (Full Exploration — 5-7 options)
-Decisions with architectural impact or significant trade-offs.
+### Tier 3: DESIGN (Full Exploration — 3-7 candidates shown to the user)
+A decision is Tier 3 when the core §2 threshold holds. Below the threshold it is Tier 2: decide yourself and state the choice in one line of the report.
 
-**Indicators:**
-- Affects multiple components
-- Trade-offs have real consequences
-- No clear "right answer"
-- Reversing decision is costly
-- User would want input
+**Indicators (core §2 threshold — any one is enough):**
+- The choice is irreversible or expensive to undo
+- It touches several files, components, or services
+- It crosses the scope the user named
+- The user asked for solutions or options
+- Two or three unknowns could change the outcome substantially
 
 **Examples:**
 - Pattern/architecture selection
 - API design (endpoints, request/response shape)
 - Error handling strategy (for a feature)
 - Interface definition
-- New struct design
+- New struct design that other components will depend on
 
-**Action:** MANDATORY full exploration before implementation. See "Tier 3 Exploration Protocol" below. For **wide-scope** Tier 3 decisions (architecture, API design, multi-component patterns), use the full DSS protocol from `diverge-synthesize-select` skill instead — it adds strategy-axis diversity, explicit synthesis, and complexity-calibrated option counts.
+**Action:** Complete the exploration below before implementing, because a design decision locked in on the first workable idea is the most expensive kind to reverse. For **wide-scope** Tier 3 decisions (architecture, API design, multi-component patterns), use the full DSS protocol from the `diverge-synthesize-select` skill — it adds strategy-axis diversity, explicit combinations, and the 3–7 candidate decision card.
 
 ---
 
 ## Tier 3: Design Decision Protocol
 
-**When a Tier 3 decision is identified, you MUST complete this protocol before implementing.**
+Complete this protocol before implementing a Tier 3 decision.
 
 ### Step 1: Problem Statement
-Write ONE sentence describing the core problem. If you cannot articulate it clearly, the problem is not understood — ask for clarification.
+Write one sentence describing the core problem. If you cannot articulate it clearly, the problem is not yet understood — return to the evidence before generating candidates.
 
-### Step 2: Generate 5-7 Distinct Approaches
+### Step 2: Generate 3-7 Distinct Approaches
 
 **Diversity check:** Before listing options, identify 2+ orthogonal strategy axes (dimensions along which solutions genuinely differ). If options only vary on surface details but occupy the same axis positions, collapse them and generate truly different alternatives. See `diverge-synthesize-select` skill for the full axis-based approach.
 
 **Rules:**
 - Each approach must be **genuinely different** (not variations of same idea)
-- Include at least one "simple/boring" option
-- Include at least one "unconventional" option
+- Include at least one "simple/boring" baseline
+- Include at least one combination of two other approaches
+- Include at least one "unconventional" option where one exists
 - Do NOT evaluate while generating — just list
 
 **Format:**
@@ -204,25 +194,11 @@ Eliminate approaches that:
 - [What we give up and why it is acceptable]
 ```
 
-### Step 6: Present to User
+### Step 6: Present the Decision Card
 
-For Tier 3 decisions, present top 2-3 approaches to user:
+Present every candidate that survived Step 4 — 3 to 7, with no "top 2-3" cap — as the decision card (template T2 in the `response-templates` skill): the boring baseline and at least one combination included, each candidate with its mechanism, pros, cons, and what it combines with, then the synergies, the trade-offs, and your recommendation with its reason. Showing the whole surviving set matters because the user often knows a constraint that makes a runner-up the right pick. Present candidates and trade-offs, not a narration of your reasoning. Each candidate must read on its own (see `writing-for-the-reader`).
 
-```
-I have analysed [N] approaches for [problem]. Top options:
-
-**Option A: [Name]**
-- Pros: ...
-- Cons: ...
-
-**Option B: [Name]**
-- Pros: ...
-- Cons: ...
-
-**Recommendation**: Option A because [specific reason].
-
-**[Awaiting your decision]** — Reply with your choice or ask questions.
-```
+An engineer running as a subagent cannot talk to the user: return the decision card to the orchestrator as your result and stop; the orchestrator presents it and relays the pick.
 
 ---
 
@@ -234,7 +210,7 @@ These rules prevent "lazy" first-solution thinking.
 Your first idea is statistically unlikely to be optimal. Treat it as a hypothesis to test, not a conclusion to implement.
 
 ### Rule 2: Simple Option Required
-Always include a "boring" option when exploring alternatives. Often the simplest approach is correct but gets overlooked because it feels unsatisfying.
+Include a "boring" option whenever you explore alternatives. Often the simplest approach is correct but gets overlooked because it feels unsatisfying.
 
 ### Rule 3: Devil's Advocate Pass
 After selecting an approach, spend effort trying to break it:
@@ -243,15 +219,16 @@ After selecting an approach, spend effort trying to break it:
 - What would make me regret this choice in 6 months?
 
 ### Rule 4: Pattern Check
-Before implementing ANY solution:
+Before implementing a solution:
 ```
 Is there an existing pattern in the codebase for this?
 - YES → Use it (unless fundamentally flawed)
-- NO → Am I creating a new pattern? (Tier 3 decision required)
+- NO → Am I creating a new pattern? If other components will follow it, the core §2
+  threshold holds (Tier 3); if it stays local, decide and state it in one line (Tier 2)
 ```
 
 ### Rule 5: Complexity Justification
-If your solution is more complex than the simplest option, you MUST justify:
+If your solution is more complex than the simplest option, write down why, because unjustified complexity is what reviewers and future readers pay for:
 ```
 Simplest option: [X]
 My solution: [Y]
@@ -289,25 +266,20 @@ Before adding code, ask:
 
 If you believe a requirement is unnecessary or over-engineered:
 
-1. **STOP implementation**
-2. Present counter-proposal to user:
+1. **Pause that part of the implementation** — building it first would spend effort on what may be dropped.
+2. Return the counter-proposal to the orchestrator as a decision card (template T2 in `response-templates`); it presents the card to the user together with the other agents' results. The plan's approach is the baseline candidate:
 
 ```
-⚠️ **Simplification Opportunity**
+**Simplification opportunity — [short name of the requirement]**
 
 The plan requests: [X]
-
 I believe this may be over-engineered because: [specific reason]
 
-**Simpler alternative**: [Y]
+- PLAN — [name of the plan's approach]: mechanism, pros, cons
+- SIMPLE — [name of the simpler alternative]: mechanism, pros, cons
+- [further candidates or a combination, when they exist]
 
-Trade-offs:
-- Plan approach: [pros/cons]
-- Simpler approach: [pros/cons]
-
-**Recommendation**: [Y] because [justification]
-
-**[Awaiting your decision]** — Reply with your choice.
+**Recommendation**: SIMPLE — [name], because [justification].
 ```
 
 ### Production Necessity: Narrow Definition
@@ -459,7 +431,7 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 - [ ] I understand WHY this needs to change (not just WHAT)
 
 **1.5. Ambiguity Surface**
-- [ ] I have written down the Restated-intent / Assumptions / Open-questions block from `CLAUDE.md` (or held it in mind for routine work)
+- [ ] I have restated the ask and listed the open questions that survived my own lookup (core §1; the engine adapter's first-reply rule), or held them in mind for routine work
 - [ ] For each assumption: "if the user meant the opposite, would I do anything different?" → if YES, this is an open question, not an assumption
 - [ ] All open questions are resolved (approval token, user answer, or explicit re-read of conversation that confirms)
 
@@ -474,7 +446,7 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 
 **4. Approach Selection**
 - [ ] Tier 2: I considered 2-3 alternatives
-- [ ] Tier 3: I completed the full exploration protocol (5-7 approaches)
+- [ ] Tier 3: I completed the full exploration protocol and presented (or returned to the orchestrator) a decision card with 3-7 candidates
 - [ ] I can explain why this beats alternatives
 
 ### Workaround Detection
@@ -489,15 +461,14 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 **If workaround detected:**
 1. **STOP** — do not implement the workaround
 2. Identify what is blocking the proper solution
-3. Present options to user:
+3. Return a decision card (template T2 in `response-templates`) to the orchestrator, which presents it to the user:
    ```
    The proper fix requires [X], which [reason it's blocked].
 
-   Options:
-   A) Proper fix: [describe] — requires [effort/changes]
-   B) Workaround: [describe] — trade-off is [technical debt]
+   - FIX — proper fix: [describe] — requires [effort/changes]
+   - WORKAROUND — [describe] — trade-off is [technical debt]
 
-   **[Awaiting your decision]**
+   **Recommendation**: FIX — proper fix, because [reason] (or WORKAROUND, with the reason the debt is acceptable).
    ```
 
 ---

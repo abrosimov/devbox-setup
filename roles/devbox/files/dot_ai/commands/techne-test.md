@@ -131,5 +131,3 @@ Present the agent's summary and suggested next step to the user.
 > Tests complete on branch `$BRANCH`. The user will commit manually.
 
 > **Next**: Run `/techne-review` to review all changes.
->
-> Say **'continue'** to proceed, or provide corrections.

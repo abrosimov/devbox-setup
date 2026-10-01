@@ -94,4 +94,4 @@ The agent will:
 ### 5. After Completion
 
 Present the agent's summary and suggested next step to the user.
-Wait for user to say 'continue' or provide corrections.
+End on the recommended next command; the user runs it or replies with corrections.

@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "dss_output.schema.json",
   "title": "DSS Output",
-  "description": "Structured output for the Diverge-Synthesize-Select protocol. Records problem statement, complexity calibration, strategy axes, generated options, evaluation, synthesis, and user selection.",
+  "description": "Structured output for the Diverge-Synthesize-Select protocol. Records the problem statement, why the options threshold held, strategy axes, the 3-7 candidates shown in the decision card (including a boring baseline and at least one combination), evaluation, recommendation, and user selection.",
   "type": "object",
-  "required": ["problem_statement", "complexity", "strategy_axes", "options", "evaluation", "selected"],
+  "required": ["problem_statement", "complexity", "strategy_axes", "options", "evaluation", "recommendation", "selected"],
   "properties": {
     "problem_statement": {
       "type": "string",
@@ -12,18 +12,23 @@
     },
     "complexity": {
       "type": "object",
-      "required": ["tier", "n_options", "sub_factors"],
+      "required": ["threshold_triggers", "n_options", "sub_factors"],
       "properties": {
-        "tier": {
-          "type": "string",
-          "enum": ["tier_3_narrow", "tier_3_wide"],
-          "description": "Tier 3 sub-classification that triggered DSS."
+        "threshold_triggers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["irreversible", "multi_component", "crosses_scope", "user_asked", "outcome_changing_unknowns"]
+          },
+          "description": "Which conditions of the options threshold held: irreversible or expensive to undo; touches several files, components, or services; crosses the named scope; the user asked for options; two or three unknowns could change the outcome substantially."
         },
         "n_options": {
           "type": "integer",
-          "minimum": 5,
-          "maximum": 10,
-          "description": "Calibrated number of options to generate (base 5, +1 per high sub-factor, capped at 10)."
+          "minimum": 3,
+          "maximum": 7,
+          "description": "Number of candidates generated and shown (3-7). Use the upper end when the choice is irreversible and several unknowns are in play."
         },
         "sub_factors": {
           "type": "object",
@@ -65,18 +70,29 @@
     "options": {
       "type": "array",
       "minItems": 3,
+      "maxItems": 7,
+      "allOf": [
+        { "contains": { "properties": { "tag": { "const": "baseline" } } } },
+        { "contains": { "properties": { "tag": { "const": "combination" } } } }
+      ],
+      "description": "Every candidate shown in the decision card. At least one boring baseline and at least one combination are required.",
       "items": {
         "type": "object",
-        "required": ["id", "name", "axis_position", "summary"],
+        "required": ["id", "name", "tag", "axis_position", "summary"],
         "properties": {
           "id": {
             "type": "string",
             "pattern": "^OPT-[0-9]+$",
-            "description": "Option identifier (e.g., OPT-1)."
+            "description": "Stable option identifier (e.g., OPT-1); always shown together with the name, never renumbered."
           },
           "name": {
             "type": "string",
             "description": "Short name for the option."
+          },
+          "tag": {
+            "type": "string",
+            "enum": ["baseline", "combination", "standard", "unconventional"],
+            "description": "Candidate category. 'baseline' is the simplest thing that could work; 'combination' merges strengths of other candidates."
           },
           "axis_position": {
             "type": "object",
@@ -85,16 +101,29 @@
           },
           "summary": {
             "type": "string",
-            "description": "One-sentence summary of the approach."
+            "description": "Mechanism: one-sentence summary of how the approach works."
           },
           "differentiator": {
             "type": "string",
             "description": "What makes this option genuinely different from others."
           },
-          "tag": {
-            "type": "string",
-            "enum": ["boring", "unconventional", "standard"],
-            "description": "Option category tag. At least one 'boring' and one 'unconventional' required across all options."
+          "pros": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "cons": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "combines_with": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Option IDs whose strengths this candidate could absorb."
+          },
+          "source_options": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "For a combination: the option IDs it draws from."
           }
         },
         "additionalProperties": false
@@ -102,7 +131,7 @@
     },
     "evaluation": {
       "type": "object",
-      "required": ["criteria", "top_candidates", "synthesis"],
+      "required": ["criteria", "candidates", "synthesis"],
       "properties": {
         "criteria": {
           "type": "array",
@@ -132,12 +161,13 @@
             },
             "additionalProperties": false
           },
-          "description": "Options eliminated and why."
+          "description": "Options dropped, each with its reason; they still appear in the decision card marked 'dropped: <reason>'."
         },
-        "top_candidates": {
+        "candidates": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 3,
+          "minItems": 1,
+          "maxItems": 7,
+          "description": "Every candidate that survived elimination, scored — no top-N cap, because the user may know a constraint that makes a runner-up the right pick.",
           "items": {
             "type": "object",
             "required": ["option_id", "scores", "strengths", "weaknesses"],
@@ -165,28 +195,41 @@
         },
         "synthesis": {
           "type": "object",
-          "required": ["viable", "description"],
+          "required": ["synergies", "trade_offs"],
           "properties": {
-            "viable": {
-              "type": "boolean",
-              "description": "Whether a synthesis of top candidates is viable."
-            },
-            "description": {
-              "type": "string",
-              "description": "Description of the synthesis option, or why synthesis is not viable."
-            },
-            "source_options": {
+            "synergies": {
               "type": "array",
               "items": { "type": "string" },
-              "description": "Option IDs whose strengths were combined (when viable)."
+              "description": "Which candidates reinforce each other and how."
+            },
+            "trade_offs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "What each direction gives up relative to the others."
             },
             "conflicts": {
               "type": "array",
               "items": { "type": "string" },
-              "description": "Incompatibilities that prevented synthesis (when not viable)."
+              "description": "Incompatibilities that rule out further combinations."
             }
           },
           "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "recommendation": {
+      "type": "object",
+      "required": ["option_id", "reason"],
+      "properties": {
+        "option_id": {
+          "type": "string",
+          "pattern": "^OPT-[0-9]+$",
+          "description": "The recommended candidate."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why it wins under the stated criteria, and what would change the recommendation."
         }
       },
       "additionalProperties": false
@@ -196,8 +239,8 @@
       "required": ["choice", "rationale", "decided_by"],
       "properties": {
         "choice": {
-          "type": "string",
-          "description": "Option ID or 'synthesis' or 'custom' or null (if awaiting decision)."
+          "type": ["string", "null"],
+          "description": "Option ID or 'custom', or null while the decision is pending."
         },
         "rationale": {
           "type": "string",

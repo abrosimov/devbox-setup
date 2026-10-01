@@ -94,8 +94,8 @@ Check for project markers (check ALL — a project may have multiple):
 **Fullstack routing** — when both backend and frontend markers exist:
 1. Check for `plan.md` at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md`
 2. If `plan.md` defines work streams, route to the agent specified in each stream
-3. If no work streams, ask user: "This is a fullstack project. Which part should I implement? (A) Backend, (B) Frontend, (C) Both sequentially"
-4. When running both, run backend first (it may produce API types/contracts the frontend needs), then frontend
+3. If no work streams and the request does not say which side, ask the user with a recommendation: "This is a fullstack project and plan.md names no work streams. Options: BE — backend only, FE — frontend only, BOTH — backend and frontend in parallel against the API contract. Recommendation: BOTH — in parallel, when the change touches the contract; otherwise the side the change lives on."
+4. When running both, the contract comes first. Locate the API contract (`api_spec.yaml`, `*.proto`, or the project's OpenAPI spec; path from `plan.md` if it names one). If none exists, run `/techne-api-design` first. Once the contract exists, backend and frontend may run in parallel, because each builds against the contract and neither reads the other's code (see the `contract-boundary` skill)
 
 ### 4. Determine Model
 
@@ -120,7 +120,7 @@ Based on detected stack:
 - **Go**: Use `software-engineer-go` agent
 - **Python**: Use `software-engineer-python` agent
 - **Frontend**: Use `software-engineer-frontend` agent
-- **Fullstack**: Run backend agent first, then frontend agent (or follow work stream order from plan)
+- **Fullstack**: Make sure the API contract exists (run `/techne-api-design` if not), then run the backend and frontend agents in parallel, each given the contract path (or follow work stream order from plan)
 
 **IMPORTANT**: When invoking the Task tool, include the `model` parameter:
 - If user specified model → use that model
@@ -135,22 +135,24 @@ Task(
 )
 ```
 
-**Fullstack example (sequential):**
+**Fullstack example (parallel, contract first):**
 ```
-# Step 1: Backend
+# Step 0: the contract exists (run /techne-api-design if it does not)
+
+# Step 1: Backend and frontend, launched together in one message
 Task(
   subagent_type: "software-engineer-{go|python}",
   model: "{determined_model}",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the BACKEND portion.\n\n{backend task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the BACKEND portion.\nAPI contract: {contract_path}. Implement exactly what it guarantees; do not rely on how the frontend calls you.\n\n{backend task description}"
 )
-
-# Step 2: Frontend (after backend completes)
 Task(
   subagent_type: "software-engineer-frontend",
   model: "{determined_model}",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the FRONTEND portion. Backend implementation is complete.\n\n{frontend task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the FRONTEND portion.\nAPI contract: {contract_path}. Build only on what it guarantees; raise a contract gap for anything missing.\n\n{frontend task description}"
 )
 ```
+
+Each prompt carries the contract path and its own task only. Leave out backend progress ("backend is complete") and backend file paths from the frontend prompt, and frontend details from the backend prompt: those invite reasoning from the other side's implementation, which the contract exists to replace.
 
 Each agent will:
 - Read the implementation plan if it exists
@@ -181,5 +183,3 @@ Present the agent's summary and suggested next step to the user.
 > Implementation complete on branch `$BRANCH`. The user will commit manually.
 
 > **Next**: Run `/techne-test` to write tests.
->
-> Say **'continue'** to proceed, or provide corrections.

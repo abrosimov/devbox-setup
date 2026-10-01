@@ -77,8 +77,8 @@ research predicted. Evidence: `~/Documents/freezes_and_unpredictable_behaviour.m
 ### Other parked items
 - **Named-workspace scheme** (names instead of 1-9; `workspace <name>` +
   force-assignment + Zen→ws1) — user wants it, its own session.
-- **`start-at-login = true`** — flip only once the environment satisfies the user
-  on all layouts (Kinesis at home, laptop screen). Currently `false`.
+- **`start-at-login = true`** — enabled on 2026-09-28 by user decision, including
+  with the current Python layout engine.
 - **Profiler + related ideas** — user has more; fresh session.
 
 ### Uncommitted changeset (NOT committed — user commits manually)

@@ -73,7 +73,8 @@ home-root `~/.aerospace.toml` for consistency with fish/kitty.
   re-applies on monitor connect/disconnect, so workspaces auto-redistribute).
 - `alt-space` toggles tiles⇄accordion; `alt-f` = in-workspace zoom (not macOS
   native fullscreen, which breaks tiling); `alt-shift-space` = float⇄tile.
-- `start-at-login = false` for now (launch manually while dialling in).
+- `start-at-login = true` as of 2026-09-28; AeroSpace is now the default window
+  manager for an interactive login session.
 - Zen browser pinned to ws 1 via `on-window-detected` (`app.zen-browser.zen`).
 - Gaps = **1px** (inner + outer), down from 6px — tight look; leaves a hair of
   room so JankyBorders' 4px outline doesn't fuse adjacent windows (2026-07-23).
@@ -171,9 +172,8 @@ deployed to `~/.config/borders/bordersrc`.
   (sumiInk3 / kitty `selection_background`). `width=4.0`, `style=round`.
 - Startup = **`brew services start borders`** (launchd), wired in
   `apply_configs.yml` via `community.general.homebrew_services` (Darwin-gated).
-  NOT AeroSpace's `after-startup-command`: AeroSpace runs `start-at-login=false`
-  with no after-startup hook, and borders works independently of the WM
-  (harmless when AeroSpace is off).
+  NOT AeroSpace's `after-startup-command`; keeping the services independent
+  also leaves borders available if AeroSpace is stopped manually.
 - Wiring: `install_configs.yml` Block 3 adds `.config/borders` to the
   ensure-parents loop; a dedicated 0755 copy task deploys `bordersrc` — it must
   be executable, borders execs it on startup.

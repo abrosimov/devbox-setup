@@ -73,8 +73,8 @@
 # --- macOS GUI-tool launchd services ---
 
 # JankyBorders runs as a per-user launchd service (state=present == started,
-# idempotent). AeroSpace has start-at-login=false and no after-startup-command,
-# so borders is brought up independently here rather than by the WM. Darwin-only:
+# idempotent). AeroSpace has no after-startup-command, so borders is brought up
+# independently here rather than by the WM. Darwin-only:
 # apply_configs.yml is shared with the Linux path, where there is no brew/borders.
 - name: Start JankyBorders as a launchd service
   community.general.homebrew_services:

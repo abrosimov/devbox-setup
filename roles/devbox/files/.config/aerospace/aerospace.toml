@@ -13,8 +13,8 @@
 # on empty workspaces persisting (no status bar enumerates them yet).
 config-version = 2
 
-# Off for now — launch AeroSpace manually while dialling in the config.
-start-at-login = false
+# AeroSpace is the default window manager for an interactive login session.
+start-at-login = true
 
 default-root-container-layout = 'tiles'
 # 'auto' => horizontal split on wide displays (laptop / clamshell), vertical on

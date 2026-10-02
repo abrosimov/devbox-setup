@@ -7,7 +7,8 @@ Docs: <https://nikitabobko.github.io/AeroSpace/guide>
 
 ## Launch
 
-`start-at-login = false` — launch manually while the config is being dialled in:
+`start-at-login = true` — AeroSpace starts automatically at login. To start or
+stop it manually while testing:
 
 ```bash
 open -a AeroSpace          # grant Accessibility on first run; it restarts itself

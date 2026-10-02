@@ -131,6 +131,66 @@ class TestBatching:
         assert {str(tmp_path / "a.py"), str(tmp_path / "b.py")} <= set(ruff_fix[0])
         assert {str(tmp_path / "a.ts"), str(tmp_path / "b.tsx")} <= set(prettier[0])
 
+    @pytest.mark.parametrize(
+        ("config_name", "config_text"),
+        [
+            ("pyproject.toml", "[tool.ruff]\n\n[tool.black]\ntarget-version = ['py310']\n"),
+            (
+                ".pre-commit-config.yaml",
+                "repos:\n  - repo: https://github.com/psf/black-pre-commit-mirror\n"
+                "    rev: 26.5.1\n",
+            ),
+        ],
+    )
+    def test_black_project_is_formatted_by_its_own_black_not_ruff_format(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        config_name: str,
+        config_text: str,
+    ) -> None:
+        (tmp_path / "pyproject.toml").touch()
+        (tmp_path / config_name).write_text(config_text, encoding="utf-8")
+        black = tmp_path / ".venv" / "bin" / "black"
+        black.parent.mkdir(parents=True)
+        black.touch()
+        source = tmp_path / "a.py"
+        source.touch()
+        calls: list[list[str]] = []
+
+        def run(command: list[str], **_kwargs: object) -> CmdResult:
+            calls.append(command)
+            return _ok()
+
+        monkeypatch.setattr(stop_quality.proc, "run_cmd", run)
+        stop_quality.format_changes(stop_quality.ChangeSet(root=tmp_path, files=(source,)))
+
+        assert [call[0] for call in calls] == ["ruff", str(black)]
+        assert calls[0][:3] == ["ruff", "check", "--fix"]
+        assert str(source) in calls[1]
+
+    def test_black_project_without_project_black_is_left_unformatted(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        (tmp_path / "pyproject.toml").write_text("[tool.black]\n", encoding="utf-8")
+        source = tmp_path / "a.py"
+        source.touch()
+        calls: list[list[str]] = []
+
+        def run(command: list[str], **_kwargs: object) -> CmdResult:
+            calls.append(command)
+            return _ok()
+
+        monkeypatch.setattr(stop_quality.proc, "run_cmd", run)
+        pipeline = stop_quality.format_changes(
+            stop_quality.ChangeSet(root=tmp_path, files=(source,))
+        )
+
+        assert [call[:2] for call in calls] == [["ruff", "check"]]
+        assert any("formatting was skipped" in advisory for advisory in pipeline.advisories)
+
     def test_checkers_receive_one_batch_per_project(
         self,
         monkeypatch: pytest.MonkeyPatch,

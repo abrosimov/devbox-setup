@@ -56,6 +56,11 @@ TYPESCRIPT_EXTENSIONS: Final[frozenset[str]] = frozenset({".ts", ".tsx"})
 GO_MODULE_RE: Final[re.Pattern[str]] = re.compile(r"^module\s+(\S+)", re.MULTILINE)
 MYPY_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(r"^\[tool\.mypy\]\s*$", re.MULTILINE)
 MYPY_SETUP_RE: Final[re.Pattern[str]] = re.compile(r"^\[mypy\]\s*$", re.MULTILINE)
+BLACK_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(r"^\[tool\.black\]\s*$", re.MULTILINE)
+BLACK_PRECOMMIT_RE: Final[re.Pattern[str]] = re.compile(
+    r"^\s*(?:-\s*)?repo:\s*\S*/psf/black(?:-pre-commit-mirror)?(?:\.git)?\s*$",
+    re.MULTILINE,
+)
 
 
 @dataclass(frozen=True)
@@ -298,6 +303,13 @@ def _format_go(changes: ChangeSet, pipeline: QualityPipeline) -> None:
         )
 
 
+def _uses_black(root: Path) -> bool:
+    return bool(
+        BLACK_PYPROJECT_RE.search(_read_text(root / "pyproject.toml"))
+        or BLACK_PRECOMMIT_RE.search(_read_text(root / ".pre-commit-config.yaml"))
+    )
+
+
 def _format_python(changes: ChangeSet, pipeline: QualityPipeline) -> None:
     groups = _group_by_root(
         changes.files,
@@ -314,6 +326,24 @@ def _format_python(changes: ChangeSet, pipeline: QualityPipeline) -> None:
             count=len(files),
             pipeline=pipeline,
         )
+        if _uses_black(root):
+            # ruff format and black disagree on layout, so a black project gets
+            # only its own pinned black; any other version would fight its CI.
+            black = root / ".venv" / "bin" / "black"
+            if not black.is_file():
+                pipeline.advisories.append(
+                    f"black ({root}): the project formats with black but {black} "
+                    "is missing, so formatting was skipped"
+                )
+                continue
+            _run_formatter(
+                [str(black), "--quiet", *file_args],
+                cwd=root,
+                label="black",
+                count=len(files),
+                pipeline=pipeline,
+            )
+            continue
         _run_formatter(
             ["ruff", "format", "--quiet", *file_args],
             cwd=root,

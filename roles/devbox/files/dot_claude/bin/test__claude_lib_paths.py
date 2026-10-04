@@ -83,7 +83,7 @@ def test_atomic_write_cleans_tmpfile_on_crash(
     target = tmp_path / "out.txt"
     sentinel = "simulated crash"
 
-    def boom(self: Path, _target: Path) -> None:  # noqa: ARG001
+    def boom(_self: Path, _target: Path) -> None:
         raise RuntimeError(sentinel)
 
     monkeypatch.setattr(Path, "replace", boom)

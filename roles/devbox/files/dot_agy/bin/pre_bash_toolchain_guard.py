@@ -115,6 +115,80 @@ ALLOW_EMPTY_COMMIT_RE: Final[re.Pattern[str]] = re.compile(
     r"\bgit\s+commit\b[^;|&]*\s--allow-empty\b",
 )
 
+# Removing a stale ignore is the opposite of adding one, and it is the direction
+# lint discipline wants — so the two spellings that do it are matched first and
+# exempt the whole command. The spellings differ by subcommand: `pyrefly suppress
+# --remove-unused[=KIND]` and `pyrefly check --remove-unused-ignores[=KIND]`.
+# Consequence of putting this first: a command that asks for both insertion and
+# removal in one go is exempted too. That combination is nobody's accident, and
+# the cost of getting it wrong the other way — a guard that is the reason stale
+# ignores accumulate — is far higher.
+PYREFLY_REMOVE_UNUSED_RE: Final[re.Pattern[str]] = re.compile(
+    r"\bpyrefly\b[^;|&]*\s--remove-unused(?:-ignores)?\b",
+)
+
+# `pyrefly suppress` exists only to insert `# pyrefly: ignore` comments en masse;
+# `pyrefly check --suppress-errors` is the same rewrite under a flag. Neither
+# leaves a shell-visible directive literal, so the file-writer heuristic in
+# bash_decision_gate cannot see them — the tool itself is the writer.
+# `\ssuppress(?:\s|$)` keeps the subcommand distinct from a path component such
+# as `tests/suppress/`.
+PYREFLY_SUPPRESS_RE: Final[re.Pattern[str]] = re.compile(
+    r"\bpyrefly\b[^;|&]*?(?:\ssuppress(?:\s|$)|\s--suppress-errors\b)",
+)
+
+# Each of these three has an exact `[tool.pyrefly]` equivalent in pyproject.toml.
+# As a committed key it is a reviewed statement that a named dependency ships no
+# type information; as a command-line flag it is an invisible per-invocation
+# bypass that makes a failing typecheck pass for one person and nobody else.
+PYREFLY_IMPORT_ANY_FLAGS_RE: Final[re.Pattern[str]] = re.compile(
+    r"\bpyrefly\b[^;|&]*\s--(?:replace-imports-with-any"
+    r"|replace-untyped-imports-with-any"
+    r"|ignore-missing-imports)\b",
+)
+
+# `--ignore <RULE>` stops the diagnostics of one named error kind ("Do not emit
+# diagnostics for this rule"); `--preset off` stops all of them at once. Both have
+# a committed `[tool.pyrefly]` equivalent, so the flag buys nothing but
+# invisibility. `--preset` is matched only for the value `off` — its other values
+# (`basic`, `legacy`, `default`, …) are an ordinary choice of base configuration
+# and blocking them would forbid tightening the checker ad hoc.
+# The `(?:=|\s|$)` tail on `--ignore` is load-bearing: `--ignore-missing-imports`
+# is PYREFLY_IMPORT_ANY_FLAGS_RE's business and `--remove-unused-ignores` is
+# allowed outright, so a looser pattern would claim both of them.
+# `-p` is matched alongside `--preset` because it is the same flag under its short
+# spelling; omitting it would leave the rule a formality.
+PYREFLY_SILENCE_FLAGS_RE: Final[re.Pattern[str]] = re.compile(
+    r"\bpyrefly\b[^;|&]*(?:"
+    r"\s--ignore(?:=|\s|$)"
+    r"|\s(?:--preset|-p)(?:=|\s+)off(?:\s|$)"
+    r")",
+)
+
+# A baseline file records the errors currently present and declares every one of
+# them tolerable; `--update-baseline` writes it, `--prune-baseline` maintains it.
+# The refusal names no alternative because the mechanism itself is refused — lint
+# is green or the error is fixed.
+# `--prune-baseline` is deliberately not exempted the way PYREFLY_REMOVE_UNUSED_RE
+# exempts `--remove-unused-ignores`, although both are described as cleanup. The
+# difference is what they clean: stale `# pyrefly: ignore` comments genuinely
+# exist in the tree and removing them is the direction lint discipline wants,
+# whereas a baseline file is an artefact this repository refuses to hold at all,
+# so there is nothing legitimate to prune.
+PYREFLY_BASELINE_FLAGS_RE: Final[re.Pattern[str]] = re.compile(
+    r"\bpyrefly\b[^;|&]*\s--(?:update|prune)-baseline\b",
+)
+
+# `--permissive-ignores` makes pyrefly honour the suppression comments of other
+# tools (`# pyright: ignore`, `# mypy: ignore-errors`, …). pyright and mypy have
+# been removed from this repository, so the only thing the flag can achieve is to
+# reanimate directives nobody has reviewed under the checker now in charge.
+# Matched in every spelling, including `--permissive-ignores=false`: the value is a
+# committed-config decision either way, and that is where the message sends it.
+PYREFLY_PERMISSIVE_IGNORES_RE: Final[re.Pattern[str]] = re.compile(
+    r"\bpyrefly\b[^;|&]*\s--permissive-ignores\b",
+)
+
 FORCE_FLAGS_RE: Final[re.Pattern[str]] = re.compile(
     r"("
     r"\bkill\s+-9\b"
@@ -300,6 +374,68 @@ def _check_skip_cache_flags(cmd: str) -> Block | None:
     return None
 
 
+def _check_pyrefly_suppress(cmd: str) -> Block | None:
+    if PYREFLY_REMOVE_UNUSED_RE.search(cmd):
+        return None
+    if not PYREFLY_SUPPRESS_RE.search(cmd):
+        return None
+    return Block(
+        "`pyrefly suppress` / `pyrefly check --suppress-errors` insert "
+        "`# pyrefly: ignore` comments across the source tree instead of fixing "
+        "the types they hide. Fix the reported errors, or escalate to the user. "
+        "Removing stale ignores is allowed: `pyrefly suppress --remove-unused` "
+        "and `pyrefly check --remove-unused-ignores`. See `lint-discipline`.",
+    )
+
+
+def _check_pyrefly_import_any(cmd: str) -> Block | None:
+    if not PYREFLY_IMPORT_ANY_FLAGS_RE.search(cmd):
+        return None
+    return Block(
+        "`--replace-imports-with-any` / `--replace-untyped-imports-with-any` / "
+        "`--ignore-missing-imports` suppress import errors ad hoc and leave "
+        "nothing for review. If a dependency genuinely ships no type "
+        "information, declare it in `[tool.pyrefly]` in pyproject.toml so the "
+        "decision is committed and visible — do not pass the flag.",
+    )
+
+
+def _check_pyrefly_silence_flags(cmd: str) -> Block | None:
+    if not PYREFLY_SILENCE_FLAGS_RE.search(cmd):
+        return None
+    return Block(
+        "`--ignore <RULE>` drops the diagnostics of one error kind and "
+        "`--preset off` drops every kind, for this invocation only. Declare the "
+        "decision where it can be reviewed: `[tool.pyrefly.errors] <kind> = "
+        'false`, or `preset = "..."` under `[tool.pyrefly]` in pyproject.toml. '
+        "Another `--preset` value stays allowed — only `off` is refused.",
+    )
+
+
+def _check_pyrefly_baseline(cmd: str) -> Block | None:
+    if not PYREFLY_BASELINE_FLAGS_RE.search(cmd):
+        return None
+    return Block(
+        "`--update-baseline` / `--prune-baseline` maintain a baseline file — a "
+        "recorded set of errors declared tolerable. There is no committed "
+        "spelling to offer instead: this repository keeps no baseline, so the "
+        "typecheck is green or the error is fixed. Fix the reported errors, or "
+        "escalate to the user. See `lint-discipline`.",
+    )
+
+
+def _check_pyrefly_permissive_ignores(cmd: str) -> Block | None:
+    if not PYREFLY_PERMISSIVE_IGNORES_RE.search(cmd):
+        return None
+    return Block(
+        "`--permissive-ignores` makes pyrefly honour other tools' suppression "
+        "comments (`# pyright: ignore`, `# mypy: ignore-errors`), reviving "
+        "directives left behind by checkers this repository no longer runs. Keep "
+        "`permissive-ignores = false` in `[tool.pyrefly]` and fix the errors the "
+        "flag would have hidden.",
+    )
+
+
 def _check_allow_empty_commit(cmd: str) -> Block | None:
     if ALLOW_EMPTY_COMMIT_RE.search(cmd):
         return Block(
@@ -468,6 +604,17 @@ def evaluate(cmd: str, start: Path) -> Block | None:
         _check_venv,
         _check_no_sync,
         _check_skip_cache_flags,
+        # Before _check_pyrefly in the context loop below: for `pyrefly suppress`
+        # in a uv project, "do not mass-insert ignores" is the message that
+        # matters, not "use `uv run pyrefly`".
+        _check_pyrefly_suppress,
+        # Before the silencing rule: `--ignore-missing-imports` has a message of
+        # its own, and this ordering is a second line of defence behind the
+        # `(?:=|\s|$)` tail that keeps PYREFLY_SILENCE_FLAGS_RE off it.
+        _check_pyrefly_import_any,
+        _check_pyrefly_silence_flags,
+        _check_pyrefly_baseline,
+        _check_pyrefly_permissive_ignores,
         _check_allow_empty_commit,
         _check_force_flags,
         _check_pytest_collect_only,

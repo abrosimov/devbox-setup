@@ -34,10 +34,28 @@ SUPPRESSION_PATTERNS: Final[tuple[SuppressionPattern, ...]] = (
     _sup(r"//\s*nolint", "Go", "//nolint"),
     _sup(r"# noqa", "Python", "# noqa"),
     _sup(r"# type:\s*ignore", "Python", "# type: ignore"),
+    # `\s*` after the colon covers both what pyrefly's own writer emits and what
+    # a human hand-writes, and the absent `[` covers the file-level blanket
+    # `ignore-errors` as well as the per-error bracketed form.
+    _sup(r"# pyrefly:\s*ignore", "Python", "# pyrefly: ignore"),
     _sup(r"@ts-ignore", "TypeScript", "@ts-ignore"),
     _sup(r"@ts-expect-error", "TypeScript", "@ts-expect-error"),
     _sup(r"eslint-disable", "TypeScript", "eslint-disable"),
     _sup(r"@SuppressWarnings", "Java", "@SuppressWarnings"),
+)
+
+# Every entry in SUPPRESSION_PATTERNS spells out verbatim the directive it
+# blocks, so this guard's own source and its own test are the only two files that
+# cannot be written while the guard watches them. Without this exemption the
+# pattern list is frozen: nobody could ever add a pattern to it again, and the
+# test could not pin one. Deliberately keyed on these two file names and nothing
+# wider — every other file in this directory, including the other guards, stays
+# covered.
+SELF_REFERENTIAL_FILES: Final[frozenset[str]] = frozenset(
+    {
+        "pre_edit_lint_guard.py",
+        "test_pre_edit_lint_guard.py",
+    }
 )
 
 _PY_ANY_IMPORT_RE: Final[re.Pattern[str]] = re.compile(
@@ -125,6 +143,10 @@ def file_extension(file_path: str) -> str:
     if not file_path:
         return ""
     return file_path.rsplit(".", 1)[-1].lower() if "." in file_path else ""
+
+
+def is_self_referential(file_path: str) -> bool:
+    return Path(file_path).name in SELF_REFERENTIAL_FILES
 
 
 def patterns_for_ext(ext: str) -> tuple[LazyTypePattern, ...]:
@@ -218,13 +240,15 @@ def main() -> int:
     if not new_text:
         return hooks.ALLOW
 
-    is_edit = tool_name == "Edit"
-    suppression_status = check_suppression(new_text, old_text, is_edit=is_edit)
-    if suppression_status != hooks.ALLOW:
-        return suppression_status
-
     file_path_value = tool_input_value.get("file_path", "")
     file_path = file_path_value if isinstance(file_path_value, str) else ""
+
+    is_edit = tool_name == "Edit"
+    if not is_self_referential(file_path):
+        suppression_status = check_suppression(new_text, old_text, is_edit=is_edit)
+        if suppression_status != hooks.ALLOW:
+            return suppression_status
+
     ext = file_extension(file_path)
     return check_lazy_types(new_text, old_text, ext, is_edit=is_edit)
 

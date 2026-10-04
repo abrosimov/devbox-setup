@@ -19,12 +19,8 @@ WORKING_STATE_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 
-def home_dir() -> Path:
-    return Path(os.environ.get("HOME") or os.environ.get("USERPROFILE") or "/tmp")  # noqa: S108
-
-
 def find_memory_dir(cwd: Path) -> Path | None:
-    claude_dir = home_dir() / ".claude" / "projects"
+    claude_dir = Path.home() / ".claude" / "projects"
     if not claude_dir.exists():
         return None
 

@@ -49,6 +49,42 @@ def test_detect_suppression_catches_eslint_disable() -> None:
     assert any(f.directive == "eslint-disable" for f in findings)
 
 
+def test_detect_suppression_catches_pyrefly_ignore() -> None:
+    # Verbatim output of `pyrefly suppress`: the space before the bracket is what
+    # the tool writes, so the pattern must not require `ignore[`.
+    findings = pre_edit_lint_guard.detect_suppression(
+        "    return None  # pyrefly: ignore [bad-return]",
+        "",
+        is_edit=False,
+    )
+    assert any(f.directive == "# pyrefly: ignore" for f in findings)
+
+
+def test_detect_suppression_catches_pyrefly_unspaced_and_blanket_forms() -> None:
+    # The hand-written unspaced variant and the file-level blanket are the two
+    # other shapes the same directive takes.
+    unspaced = pre_edit_lint_guard.detect_suppression(
+        "x = 1  # pyrefly:ignore[bad-assignment]",
+        "",
+        is_edit=False,
+    )
+    blanket = pre_edit_lint_guard.detect_suppression(
+        "# pyrefly: ignore-errors\n",
+        "",
+        is_edit=False,
+    )
+    assert any(f.directive == "# pyrefly: ignore" for f in unspaced)
+    assert any(f.directive == "# pyrefly: ignore" for f in blanket)
+
+
+def test_is_self_referential_covers_only_the_guard_and_its_test() -> None:
+    assert pre_edit_lint_guard.is_self_referential("/repo/bin/pre_edit_lint_guard.py")
+    assert pre_edit_lint_guard.is_self_referential("/repo/bin/test_pre_edit_lint_guard.py")
+    assert not pre_edit_lint_guard.is_self_referential("/repo/bin/bash_decision_gate.py")
+    assert not pre_edit_lint_guard.is_self_referential("/repo/bin/pre_bash_toolchain_guard.py")
+    assert not pre_edit_lint_guard.is_self_referential("")
+
+
 def test_detect_lazy_types_python_any() -> None:
     findings = pre_edit_lint_guard.detect_lazy_types("def f() -> Any: ...", "", "py", is_edit=False)
     assert findings
@@ -109,6 +145,76 @@ def test_main_blocks_suppression(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "Lint suppression" in err.getvalue()
 
 
+def test_main_allows_suppression_literal_in_the_guards_own_source(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A pattern entry necessarily contains the directive it blocks, so without
+    # the exemption the list could never gain another entry.
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO(
+            json.dumps(
+                {
+                    "tool_name": "Write",
+                    "tool_input": {
+                        "file_path": "/repo/bin/pre_edit_lint_guard.py",
+                        "content": '_sup(r"# pyrefly:\\s*ignore", "Python", "# pyrefly: ignore"),',
+                    },
+                }
+            )
+        ),
+    )
+    assert pre_edit_lint_guard.main() == 0
+
+
+def test_main_allows_suppression_literal_in_the_guards_own_test(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO(
+            json.dumps(
+                {
+                    "tool_name": "Write",
+                    "tool_input": {
+                        "file_path": "/repo/bin/test_pre_edit_lint_guard.py",
+                        "content": 'assert detect("x  # pyrefly: ignore [bad-return]")',
+                    },
+                }
+            )
+        ),
+    )
+    assert pre_edit_lint_guard.main() == 0
+
+
+def test_main_still_blocks_suppression_in_a_sibling_file(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The exemption is keyed on the two file names, not on the directory they
+    # live in: the guards alongside this one stay covered.
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO(
+            json.dumps(
+                {
+                    "tool_name": "Write",
+                    "tool_input": {
+                        "file_path": "/repo/bin/bash_decision_gate.py",
+                        "content": "x = 1  # pyrefly: ignore [bad-assignment]",
+                    },
+                }
+            )
+        ),
+    )
+    err = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", err)
+    assert pre_edit_lint_guard.main() == 2
+    assert "Lint suppression" in err.getvalue()
+
+
 def test_main_blocks_lazy_typing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         sys,
@@ -118,6 +224,32 @@ def test_main_blocks_lazy_typing(monkeypatch: pytest.MonkeyPatch) -> None:
                 {
                     "tool_name": "Write",
                     "tool_input": {"file_path": "/tmp/x.py", "content": "def f() -> Any: pass"},
+                }
+            )
+        ),
+    )
+    err = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", err)
+    assert pre_edit_lint_guard.main() == 2
+    assert "Lazy typing" in err.getvalue()
+
+
+def test_self_referential_exemption_does_not_cover_lazy_typing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Only the suppression check is exempted. Nothing about maintaining the
+    # pattern list requires the guard's own source to carry lazy annotations.
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO(
+            json.dumps(
+                {
+                    "tool_name": "Write",
+                    "tool_input": {
+                        "file_path": "/repo/bin/pre_edit_lint_guard.py",
+                        "content": "def f() -> Any: pass",
+                    },
                 }
             )
         ),
@@ -164,6 +296,9 @@ _safe_alphabet = st.characters(
             "# noqa: F401",
             "# type: ignore",
             "# type:ignore",
+            "# pyrefly: ignore [bad-return]",
+            "# pyrefly:ignore[bad-return]",
+            "# pyrefly: ignore-errors",
             "//nolint",
             "// nolint:errcheck",
             "@ts-ignore",

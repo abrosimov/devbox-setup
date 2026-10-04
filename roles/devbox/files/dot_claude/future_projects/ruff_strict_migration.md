@@ -34,7 +34,7 @@ precedent and were accepted as permanent, so `--exit-zero` was removed:
 |---------|-------|-----------|--------|
 | `RUF001` | `bash_decision_gate.py`, `proposal_discipline.py`, `test_proposal_discipline.py` | per-file-ignore (former) + inline `# noqa` (latter two) | Intentional Cyrillic in Russian-language deny messages / feedback regex / test fixtures — the characters are meaningful, not accidental homoglyphs, so they must not be "corrected". |
 | `C901`, `PLR0911`, `PLR0912` | `bash_decision_gate.py` | per-file-ignore | Security-critical Bash gate; the command-shape dispatchers are branchy by nature (one branch per shell command / redirect shape). Splitting them would fragment the safety logic and reduce reviewability. Behaviour is pinned by `test_bash_decision_gate.py`. |
-| `S105` | `bash_decision_gate.py` `_SECRET_DENY_REASON` | inline `# noqa` | False positive — the constant is a deny-reason message template, not a credential. |
+| `S105` | — | — | Resolved, no longer suppressed: the rule fired on the constant *name*, so `_SECRET_DENY_REASON` was renamed `_SENSITIVE_PATH_DENY_REASON`, which is both accurate and gives the rule nothing to match. |
 | `S110` | `bash_decision_gate.py` `log_miss` | inline `# noqa` | Telemetry write is best-effort and MUST NOT break the hook. |
 
 Migration complete: `--exit-zero` was removed from the `lint-py` target and the

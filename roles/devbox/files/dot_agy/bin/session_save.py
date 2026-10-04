@@ -19,12 +19,8 @@ WORKING_STATE_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 
-def home_dir() -> Path:
-    return Path(os.environ.get("HOME") or os.environ.get("USERPROFILE") or "/tmp")  # noqa: S108
-
-
 def find_memory_dir(cwd: Path) -> Path | None:
-    agy_dir = home_dir() / ".gemini/antigravity-cli" / "projects"
+    agy_dir = Path.home() / ".gemini/antigravity-cli" / "projects"
     if not agy_dir.exists():
         return None
 

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -33,8 +32,7 @@ def lang_from_filename(file_name: str) -> str | None:
 
 
 def verify_script_path() -> Path:
-    home = Path(os.environ.get("HOME") or os.environ.get("USERPROFILE") or "/tmp")  # noqa: S108
-    return home / ".claude" / "bin" / "verify-se-completion"
+    return Path.home() / ".claude" / "bin" / "verify-se-completion"
 
 
 def format_failures(parsed: dict[str, object]) -> str:

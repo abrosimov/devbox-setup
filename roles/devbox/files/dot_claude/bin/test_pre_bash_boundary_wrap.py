@@ -51,9 +51,10 @@ def test_does_not_wrap_command_containing_gh_substring() -> None:
 
 
 def test_build_wrap_uses_token_in_tag() -> None:
-    wrap = bw.build_wrap("gh pr view 1", "deadbeefcafebabe")
-    assert wrap.tag == "untrusted-content-deadbeefcafebabe"
-    assert wrap.token == "deadbeefcafebabe"  # noqa: S105
+    marker = "deadbeefcafebabe"
+    wrap = bw.build_wrap("gh pr view 1", marker)
+    assert wrap.tag == f"untrusted-content-{marker}"
+    assert wrap.token == marker
     assert wrap.tag in wrap.additional_context
 
 

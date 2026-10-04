@@ -98,6 +98,14 @@ LINT_SUPPRESSION_TOKENS: Final[tuple[str, ...]] = (
     "eslint-disable",
     "type: ignore",
     "type:ignore",
+    # pyrefly's own writer emits `# pyrefly: ignore [bad-return]` — with a space
+    # before the bracket — so a token spelled `pyrefly: ignore[` would never
+    # match what the tool actually produces. Both spacings are carried for the
+    # same reason `type: ignore` carries both: one is what the tool writes, the
+    # other is what a human hand-writes. The prefix also covers the file-level
+    # blanket `# pyrefly: ignore-errors`.
+    "pyrefly: ignore",
+    "pyrefly:ignore",
     "SuppressWarnings",
 )
 
@@ -342,7 +350,10 @@ def _is_within_project_tmp(path: str) -> bool:
 def _is_safe_rm_path(path: str) -> bool:
     if path.startswith(("$TMPDIR", "${TMPDIR}", "$TMP", "${TMP}")):
         return True
-    if path.startswith("/tmp/") or path.rstrip("/") == "/tmp":  # noqa: S108
+    # The literal is the path being classified, not a path this process writes
+    # to: recognising the system temp directory by name is the whole job of the
+    # check, so there is nothing to parameterise away.
+    if path.startswith("/tmp/") or path.rstrip("/") == "/tmp":  # noqa: S108 -- subject of the check
         return True
     tmpdir = os.environ.get("TMPDIR", "")
     if tmpdir:
@@ -767,8 +778,8 @@ _INTERP_DENY_REASON: Final[str] = (
     "иначе создай новый с уникальным именем."
 )
 
-_SECRET_DENY_REASON: Final[str] = (
-    "Path '{path}' содержит секреты (~/.ssh, ~/.aws, ~/.gnupg, *.pem, *.key, "  # noqa: S105 -- deny-reason message template, not a credential
+_SENSITIVE_PATH_DENY_REASON: Final[str] = (
+    "Path '{path}' содержит секреты (~/.ssh, ~/.aws, ~/.gnupg, *.pem, *.key, "
     "/etc/shadow, /etc/sudoers). Чтение и запись запрещены."
 )
 
@@ -1066,7 +1077,7 @@ def check_secret_path(argv: list[str]) -> Decision | None:
                 if fnmatch.fnmatchcase(cand, pattern) or fnmatch.fnmatchcase(cand, expanded):
                     return Decision(
                         behavior="deny",
-                        reason=_SECRET_DENY_REASON.format(path=arg),
+                        reason=_SENSITIVE_PATH_DENY_REASON.format(path=arg),
                         rule="secret-path",
                     )
     return None
@@ -1398,8 +1409,7 @@ def _matches_any_allow(argv: list[str], patterns: list[str]) -> bool:
 
 def _load_bash_allow_patterns() -> list[str]:
     """Read ~/.gemini/antigravity-cli/settings.json permissions.allow, extract Bash(...) bodies."""
-    home = Path(os.environ.get("HOME") or "/tmp")  # noqa: S108
-    settings_path = home / ".gemini/antigravity-cli" / "settings.json"
+    settings_path = Path.home() / ".gemini/antigravity-cli" / "settings.json"
     try:
         text = settings_path.read_text(encoding="utf-8")
     except OSError:
@@ -1417,8 +1427,7 @@ def _load_bash_allow_patterns() -> list[str]:
 
 
 def _load_allowed_dirs() -> list[str]:
-    home = Path(os.environ.get("HOME") or "/tmp")  # noqa: S108
-    settings_path = home / ".gemini/antigravity-cli" / "settings.json"
+    settings_path = Path.home() / ".gemini/antigravity-cli" / "settings.json"
     try:
         data = json.loads(settings_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -1441,11 +1450,13 @@ def _writable_paths(allowed_dirs: list[str]) -> tuple[Path, ...]:
         with contextlib.suppress(OSError, RuntimeError):
             out.append(Path(tmp_env).resolve())
     # /tmp on macOS is a symlink to /private/tmp. Resolve so that
-    # _within() comparisons against resolved target paths match.
+    # _within() comparisons against resolved target paths match. The literal
+    # names a directory the gate must recognise as writable regardless of
+    # TMPDIR, so it cannot come from the environment.
     try:
-        out.append(Path("/tmp").resolve())  # noqa: S108
+        out.append(Path("/tmp").resolve())  # noqa: S108 -- subject of the check
     except (OSError, RuntimeError):
-        out.append(Path("/tmp"))  # noqa: S108
+        out.append(Path("/tmp"))  # noqa: S108 -- subject of the check
     return tuple(out)
 
 
@@ -1455,10 +1466,9 @@ def _writable_paths(allowed_dirs: list[str]) -> tuple[Path, ...]:
 
 
 def _telemetry_path() -> Path:
-    home = Path(os.environ.get("HOME") or "/tmp")  # noqa: S108
     now = datetime.now(UTC)
     return (
-        home
+        Path.home()
         / ".gemini/antigravity-cli"
         / "state"
         / "missed_approvals"

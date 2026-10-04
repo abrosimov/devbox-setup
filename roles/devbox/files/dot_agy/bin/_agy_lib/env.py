@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 
 # Hook scripts run as child processes that inherit Antigravity CLI's environment.
@@ -10,13 +11,13 @@ from pathlib import Path
 # tool caches to $TMPDIR so they remain writable inside the sandbox.
 
 
-def _home() -> Path:
-    home = os.environ.get("HOME") or os.environ.get("USERPROFILE") or "/tmp"  # noqa: S108
-    return Path(home)
-
-
 def _tmpdir() -> Path:
-    return Path(os.environ.get("TMPDIR") or "/tmp")  # noqa: S108
+    # TMPDIR is read directly instead of leaving it to tempfile.gettempdir():
+    # gettempdir() caches its answer in a module global on the first call, so it
+    # would not follow a TMPDIR that the session sets afterwards. gettempdir()
+    # supplies the fallback because it checks each candidate directory for
+    # writability, which a bare "/tmp" literal cannot do.
+    return Path(os.environ.get("TMPDIR") or tempfile.gettempdir())
 
 
 def _extra_paths(home: Path) -> list[Path]:
@@ -33,7 +34,7 @@ def _extra_paths(home: Path) -> list[Path]:
 
 
 def harden_path() -> None:
-    home = _home()
+    home = Path.home()
     current = os.environ.get("PATH", "")
     current_dirs = set(current.split(":"))
     missing = [p for p in _extra_paths(home) if str(p) not in current_dirs and p.exists()]
@@ -65,7 +66,7 @@ def setup_node(tmp: Path) -> None:
 
 def setup() -> None:
     harden_path()
-    home = _home()
+    home = Path.home()
     tmp = _tmpdir()
     setup_go(home, tmp)
     setup_python(tmp)

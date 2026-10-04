@@ -6,7 +6,6 @@
     "ENABLE_LSP_TOOL": "1",
     "UV_CACHE_DIR": "/tmp/claude/uv-cache",
     "RUFF_CACHE_DIR": "/tmp/claude/ruff-cache",
-    "MYPY_CACHE_DIR": "/tmp/claude/mypy-cache",
     "PYTEST_CACHE_DIR": "/tmp/claude/pytest-cache",
     "GOCACHE": "/tmp/claude/go-build-cache",
     "GOMODCACHE": "/tmp/claude/go-mod-cache",
@@ -81,7 +80,6 @@
       "Bash(pytest *)",
       "Bash(pytest)",
       "Bash(ruff *)",
-      "Bash(mypy *)",
       "Bash(pylint *)",
       "Bash(python *)",
       "Bash(python3 *)",
@@ -307,7 +305,8 @@
       "Bash(claude *)",
       "Bash(ansible *)",
       "Bash(ansible-lint *)",
-      "Bash(ansible-playbook *)"
+      "Bash(ansible-playbook *)",
+      "Bash(pyrefly *)"
     ],
     "deny": [
       "Bash(rm *)",
@@ -973,7 +972,6 @@
   },
   "enabledPlugins": {
     "gopls-lsp@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "example-skills@anthropic-agent-skills": true,
     "document-skills@anthropic-agent-skills": true

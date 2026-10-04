@@ -83,7 +83,7 @@ _BASH_COMMAND_TEMPLATES: Final[tuple[str, ...]] = (
     "pip install requests",
     "python -m venv .venv",
     "pytest -k {}",
-    "mypy {}",
+    "pyrefly {}",
     "uv run pytest",
     "kubectl delete ns prod",
     "find / -name *.log",

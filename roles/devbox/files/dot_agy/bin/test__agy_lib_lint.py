@@ -7,7 +7,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import lint
+from _agy_lib import lint
 
 
 @pytest.mark.parametrize(

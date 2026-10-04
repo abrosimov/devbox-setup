@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import proc
+from _agy_lib import proc
 
 
 def test_run_cmd_success_captures_stdout() -> None:

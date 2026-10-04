@@ -10,7 +10,7 @@ from hypothesis import strategies as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import io_json
+from _agy_lib import io_json
 
 
 def test_load_json_reads_object(tmp_path: Path) -> None:

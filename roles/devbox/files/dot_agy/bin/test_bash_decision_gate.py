@@ -10,7 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bash_decision_gate as bdg
-from _claude_lib import hooks
+from _agy_lib import hooks
 
 # Fixed working directory used in tests; resolves to itself so cwd-relative
 # checks (write-escape) treat it as the workspace root.
@@ -193,7 +193,7 @@ def test_interp_inline_exec_denies(cmd: str) -> None:
     d = _eval(cmd)
     assert d.behavior == "deny"
     assert d.rule == "interp-inline-exec"
-    assert "claude_written_scripts" in (d.reason or "")
+    assert "agy_written_scripts" in (d.reason or "")
 
 
 @pytest.mark.parametrize("cmd", ['eval "$x"', "exec /bin/sh", "source ./script.sh", ". ./x.sh"])
@@ -284,19 +284,19 @@ def test_etc_passwd_is_not_secret() -> None:
 
 
 def test_rm_in_audit_dir_denies() -> None:
-    d = _eval("rm ./.claude/claude_written_scripts/old.py")
+    d = _eval(f"rm ./{bdg.AUDIT_DIR_REL}/old.py")
     assert d.behavior == "deny"
     assert d.rule == "audit-dir"
 
 
 def test_redirect_into_audit_dir_denies() -> None:
-    d = _eval("echo hi > ./.claude/claude_written_scripts/foo.sh")
+    d = _eval(f"echo hi > ./{bdg.AUDIT_DIR_REL}/foo.sh")
     assert d.behavior == "deny"
     assert d.rule == "audit-dir"
 
 
 def test_writing_new_file_to_audit_dir_via_tee_denies() -> None:
-    d = _eval("echo content | tee ./.claude/claude_written_scripts/x.sh")
+    d = _eval(f"echo content | tee ./{bdg.AUDIT_DIR_REL}/x.sh")
     assert d.behavior == "deny"
     assert d.rule == "audit-dir"
 
@@ -679,7 +679,7 @@ def test_main_unsafe_command_emits_deny_json_with_reason(
     assert "BLOCKED" in stderr
     payload = json.loads(stdout)
     assert payload["hookSpecificOutput"]["permissionDecision"] == "deny"
-    assert "claude_written_scripts" in payload["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "agy_written_scripts" in payload["hookSpecificOutput"]["permissionDecisionReason"]
 
 
 # ============================================================
@@ -692,8 +692,8 @@ def test_load_bash_allow_patterns_extracts_bash_entries(
     tmp_path: Path,
 ) -> None:
     fake_home = tmp_path / "home"
-    (fake_home / ".claude").mkdir(parents=True)
-    (fake_home / ".claude" / "settings.json").write_text(
+    (fake_home / ".gemini" / "antigravity-cli").mkdir(parents=True)
+    (fake_home / ".gemini" / "antigravity-cli" / "settings.json").write_text(
         json.dumps(
             {
                 "permissions": {
@@ -723,8 +723,8 @@ def test_load_allowed_dirs_returns_list(
     tmp_path: Path,
 ) -> None:
     fake_home = tmp_path / "home"
-    (fake_home / ".claude").mkdir(parents=True)
-    (fake_home / ".claude" / "settings.json").write_text(
+    (fake_home / ".gemini" / "antigravity-cli").mkdir(parents=True)
+    (fake_home / ".gemini" / "antigravity-cli" / "settings.json").write_text(
         json.dumps(
             {
                 "permissions": {

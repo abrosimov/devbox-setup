@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import hooks
+from _agy_lib import hooks
 
 if TYPE_CHECKING:
     import pytest

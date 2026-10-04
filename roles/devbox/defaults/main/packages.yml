@@ -202,7 +202,6 @@ devbox_packages:
   # Binary name matches tool name.
   uv_tools:
     - ruff
-    - mypy
     - ansible-lint
     - debugpy
     - keyring

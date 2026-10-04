@@ -100,14 +100,14 @@ Type hints and clear names are your documentation.
 
 ## Sandbox Cache Configuration
 
-Cache env vars (`UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR`) are set at session start via `settings.json` env block — they point at writable paths under `/tmp/claude/<tool>-cache/`.
+Cache env vars (`UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `PYTEST_CACHE_DIR`) are set at session start via `settings.json` env block — they point at writable paths under `/tmp/claude/<tool>-cache/`. Pyrefly has no on-disk cache directory to configure — it re-checks only changed modules in memory.
 
 **No manual prefix needed.** Just run commands directly:
 
 ```bash
 uv run pytest
 ruff check .
-mypy src/
+pyrefly check src/
 ```
 
 **Recovery on cache corruption** — the pattern is `<tool> cache clean`, never `<VAR>=/tmp/x` override:
@@ -115,7 +115,6 @@ mypy src/
 ```bash
 uv cache clean     # UV cache corruption (missing METADATA etc.)
 ruff clean         # ruff cache
-rm -rf "$MYPY_CACHE_DIR"  # mypy has no clean subcommand
 ```
 
 Then retry the original command. Inline `UV_CACHE_DIR=…` (or any cache-var) override is blocked by `pre-bash-toolchain-guard` — it hides the real issue and pollutes the session. See `sandbox-toolchain` skill for full toolchain-cache rules.

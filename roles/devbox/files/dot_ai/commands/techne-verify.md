@@ -81,12 +81,12 @@ go vet ./...
 
 **Python (uv):**
 ```bash
-uv run mypy --ignore-missing-imports $(git diff --name-only --diff-filter=d HEAD -- '*.py' | head -20) 2>&1
+uv run pyrefly check $(git diff --name-only --diff-filter=d HEAD -- '*.py' | head -20) 2>&1
 ```
 
 **Python (poetry):**
 ```bash
-poetry run mypy --ignore-missing-imports $(git diff --name-only --diff-filter=d HEAD -- '*.py' | head -20) 2>&1
+poetry run pyrefly check $(git diff --name-only --diff-filter=d HEAD -- '*.py' | head -20) 2>&1
 ```
 
 **Frontend (pnpm):**

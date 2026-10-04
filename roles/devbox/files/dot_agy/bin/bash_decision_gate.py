@@ -79,7 +79,7 @@ SAFE_RM_BASENAMES: Final[frozenset[str]] = frozenset(
         ".cache",
         ".pytest_cache",
         "__pycache__",
-        ".mypy_cache",
+        ".pyrefly_cache",
         ".ruff_cache",
         ".tox",
         ".parcel-cache",

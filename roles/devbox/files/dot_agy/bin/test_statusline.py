@@ -317,7 +317,7 @@ def test_trigger_fpf_refresh_no_script(monkeypatch: pytest.MonkeyPatch, tmp_path
 
 def test_trigger_fpf_refresh_invokes_popen(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
-    bin_dir = tmp_path / ".claude" / "bin"
+    bin_dir = tmp_path / ".gemini" / "antigravity-cli" / "bin"
     bin_dir.mkdir(parents=True)
     script = bin_dir / "fpf_drift_check.py"
     script.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
@@ -337,7 +337,7 @@ def test_trigger_fpf_refresh_swallows_oserror(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
-    bin_dir = tmp_path / ".claude" / "bin"
+    bin_dir = tmp_path / ".gemini" / "antigravity-cli" / "bin"
     bin_dir.mkdir(parents=True)
     script = bin_dir / "fpf_drift_check.py"
     script.write_text("#!/usr/bin/env python3\n", encoding="utf-8")

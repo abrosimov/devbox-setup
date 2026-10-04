@@ -144,7 +144,7 @@ def _parse_windows(payload: str) -> list[Window]:
                 window_id,
                 str(row.get("app-name", "")),
                 str(row.get("window-title", "")),
-                parent_layout=str(layout) if isinstance(layout, str) else None,
+                parent_layout=layout if isinstance(layout, str) else None,
             )
         )
     return windows

@@ -75,7 +75,7 @@ Enforcement: non-blocking PostToolUse hook `bin/post_edit_cyrillic_guard.py` war
 |--------|---------|-------|
 | Package manager | `uv` | pip directly, poetry, conda |
 | Format | `ruff format` | black, autopep8 |
-| Lint | `ruff check` + `pylint` + `mypy` | flake8 |
+| Lint | `ruff check` + `pylint` + `pyrefly` | flake8 |
 | New project | `uv init` | `python -m venv` |
 
 ---

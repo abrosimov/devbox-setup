@@ -20,7 +20,6 @@ def clean_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
         "GOMODCACHE",
         "UV_CACHE_DIR",
         "RUFF_CACHE_DIR",
-        "MYPY_CACHE_DIR",
         "NPM_CONFIG_CACHE",
     ):
         monkeypatch.delenv(var, raising=False)
@@ -44,7 +43,6 @@ def test_setup_sets_python_cache_under_tmpdir(clean_env: Path) -> None:
     tmp = clean_env / "tmp"
     assert Path(env.os.environ["UV_CACHE_DIR"]) == tmp / "uv-cache"
     assert Path(env.os.environ["RUFF_CACHE_DIR"]) == tmp / "ruff-cache"
-    assert Path(env.os.environ["MYPY_CACHE_DIR"]) == tmp / "mypy-cache"
 
 
 def test_setup_sets_npm_cache_under_tmpdir(clean_env: Path) -> None:

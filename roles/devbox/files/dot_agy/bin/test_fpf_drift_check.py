@@ -11,7 +11,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import fpf_drift_check as fdc
-from _claude_lib import proc
+from _agy_lib import proc
 
 if TYPE_CHECKING:
     import pytest

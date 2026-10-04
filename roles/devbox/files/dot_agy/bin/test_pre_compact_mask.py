@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import pre_compact_mask as pcm
-from _claude_lib import proc
+from _agy_lib import proc
 
 if TYPE_CHECKING:
     import pytest

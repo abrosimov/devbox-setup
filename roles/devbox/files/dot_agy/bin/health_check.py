@@ -38,7 +38,7 @@ TOOLS: Final[tuple[Tool, ...]] = (
     Tool("go", "important", "brew install go"),
     Tool("uv", "important", "brew install uv"),
     Tool("golangci-lint", "important", "brew install golangci-lint"),
-    Tool("mypy", "important", "uv tool install mypy"),
+    Tool("pyrefly", "important", "uv tool install pyrefly"),
     Tool("docker", "important", "brew install orbstack (or Docker Desktop)"),
     Tool("kubectl", "important", "brew install kubectl"),
     Tool("helm", "important", "brew install helm"),

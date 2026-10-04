@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import git_safe_merge as gsm
-from _claude_lib import proc
+from _agy_lib import proc
 
 if TYPE_CHECKING:
     import pytest
@@ -84,7 +84,7 @@ def _setup(
 
 
 def test_run_no_source_prints_usage(monkeypatch: pytest.MonkeyPatch) -> None:
-    _setup(monkeypatch, {"git config --get claude.integrationBranch": _err()})
+    _setup(monkeypatch, {"git config --get agy.integrationBranch": _err()})
     err = io.StringIO()
     monkeypatch.setattr(sys, "stderr", err)
     assert gsm.run([]) == 1
@@ -92,7 +92,7 @@ def test_run_no_source_prints_usage(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_run_blocks_merge_into_main(monkeypatch: pytest.MonkeyPatch) -> None:
-    _setup(monkeypatch, {"git config --get claude.integrationBranch": _err()})
+    _setup(monkeypatch, {"git config --get agy.integrationBranch": _err()})
     err = io.StringIO()
     monkeypatch.setattr(sys, "stderr", err)
     assert gsm.run(["feature/x", "--into", "main"]) == 1
@@ -100,7 +100,7 @@ def test_run_blocks_merge_into_main(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_run_blocks_merge_into_master(monkeypatch: pytest.MonkeyPatch) -> None:
-    _setup(monkeypatch, {"git config --get claude.integrationBranch": _err()})
+    _setup(monkeypatch, {"git config --get agy.integrationBranch": _err()})
     err = io.StringIO()
     monkeypatch.setattr(sys, "stderr", err)
     assert gsm.run(["feature/x", "--into", "master"]) == 1
@@ -111,7 +111,7 @@ def test_run_blocks_when_source_missing(monkeypatch: pytest.MonkeyPatch) -> None
     _setup(
         monkeypatch,
         {
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git rev-parse --verify feature/x": _err(),
         },
     )
@@ -125,7 +125,7 @@ def test_run_blocks_when_target_missing(monkeypatch: pytest.MonkeyPatch) -> None
     _setup(
         monkeypatch,
         {
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git rev-parse --verify feature/x": _ok(),
             "git rev-parse --verify build/stable": _err(),
         },
@@ -140,7 +140,7 @@ def test_run_nothing_to_merge(monkeypatch: pytest.MonkeyPatch) -> None:
     _setup(
         monkeypatch,
         {
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git rev-parse --verify feature/x": _ok(),
             "git rev-parse --verify build/stable": _ok(),
             "git merge-base feature/x build/stable": _ok("abc123\n"),
@@ -157,7 +157,7 @@ def test_run_successful_ff(monkeypatch: pytest.MonkeyPatch) -> None:
     _setup(
         monkeypatch,
         {
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git rev-parse --verify feature/x": _ok(),
             "git rev-parse --verify build/stable": _ok(),
             "git merge-base": _ok("abc\n"),
@@ -180,7 +180,7 @@ def test_run_ff_fails_diverged(monkeypatch: pytest.MonkeyPatch) -> None:
     _setup(
         monkeypatch,
         {
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git rev-parse --verify feature/x": _ok(),
             "git rev-parse --verify build/stable": _ok(),
             "git merge-base": _ok("abc\n"),
@@ -204,7 +204,7 @@ def test_run_uses_into_target_override(monkeypatch: pytest.MonkeyPatch) -> None:
     _setup(
         monkeypatch,
         {
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git rev-parse --verify feature/x": _ok(),
             "git rev-parse --verify develop": _ok(),
             "git merge-base": _ok("abc\n"),
@@ -227,7 +227,7 @@ def test_run_uses_custom_integration_branch(monkeypatch: pytest.MonkeyPatch) -> 
     _setup(
         monkeypatch,
         {
-            "git config --get claude.integrationBranch": _ok("integration\n"),
+            "git config --get agy.integrationBranch": _ok("integration\n"),
             "git rev-parse --verify feature/x": _ok(),
             "git rev-parse --verify integration": _ok(),
             "git merge-base": _ok("abc\n"),
@@ -250,7 +250,7 @@ def test_run_refuses_uncommitted_changes(monkeypatch: pytest.MonkeyPatch) -> Non
     calls = _setup(
         monkeypatch,
         {
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git rev-parse --verify feature/x": _ok(),
             "git rev-parse --verify build/stable": _ok(),
             "git merge-base": _ok("abc\n"),

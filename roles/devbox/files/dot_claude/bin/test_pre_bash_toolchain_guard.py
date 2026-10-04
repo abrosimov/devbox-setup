@@ -75,11 +75,11 @@ def test_allows_pytest_outside_project(tmp_path: Path) -> None:
     assert guard.evaluate("pytest", project) is None
 
 
-def test_blocks_bare_mypy_in_uv_project(tmp_path: Path) -> None:
+def test_blocks_bare_pyrefly_in_uv_project(tmp_path: Path) -> None:
     project = _project_with_marker(tmp_path, "uv.lock")
-    result = guard.evaluate("mypy src/", project)
+    result = guard.evaluate("pyrefly check src/", project)
     assert result is not None
-    assert "uv run mypy" in result.message
+    assert "uv run pyrefly" in result.message
 
 
 def test_blocks_bare_pylint_in_uv_project(tmp_path: Path) -> None:
@@ -305,9 +305,11 @@ def test_blocks_pytest_no_cacheprovider_long(tmp_path: Path) -> None:
     assert result is not None
 
 
-def test_blocks_mypy_no_incremental(tmp_path: Path) -> None:
-    result = guard.evaluate("uv run mypy --no-incremental src/", tmp_path)
-    assert result is not None
+def test_allows_uv_run_pyrefly(tmp_path: Path) -> None:
+    # `pyrefly check` has no cache or incrementality flag, so the skip-cache rule
+    # has no type-checker clause and must not invent one.
+    project = _project_with_marker(tmp_path, "uv.lock")
+    assert guard.evaluate("uv run pyrefly check src/", project) is None
 
 
 def test_blocks_ruff_no_cache(tmp_path: Path) -> None:
@@ -320,6 +322,101 @@ def test_blocks_pip_force_reinstall(tmp_path: Path) -> None:
     # specific and comes first for a clearer message.
     result = guard.evaluate("pip install --force-reinstall x", tmp_path)
     assert result is not None
+
+
+# --- pyrefly suppression surface ---
+
+
+def test_blocks_pyrefly_suppress_subcommand(tmp_path: Path) -> None:
+    result = guard.evaluate("uv run pyrefly suppress src/", tmp_path)
+    assert result is not None
+    assert "pyrefly suppress" in result.message
+
+
+def test_blocks_bare_pyrefly_suppress_without_paths(tmp_path: Path) -> None:
+    # No positional args — project-checking mode, the widest possible rewrite.
+    result = guard.evaluate("uv run pyrefly suppress", tmp_path)
+    assert result is not None
+
+
+def test_blocks_pyrefly_suppress_with_global_flag_before_subcommand(
+    tmp_path: Path,
+) -> None:
+    result = guard.evaluate("uv run pyrefly -v suppress src/", tmp_path)
+    assert result is not None
+
+
+def test_blocks_pyrefly_check_suppress_errors(tmp_path: Path) -> None:
+    result = guard.evaluate("uv run pyrefly check --suppress-errors src/", tmp_path)
+    assert result is not None
+    assert "suppress-errors" in result.message
+
+
+def test_pyrefly_suppress_message_wins_over_bare_invocation(tmp_path: Path) -> None:
+    # A bare `pyrefly` in a uv project also trips _check_pyrefly; the
+    # suppression message is the one that must surface.
+    project = _project_with_marker(tmp_path, "uv.lock")
+    result = guard.evaluate("pyrefly suppress src/", project)
+    assert result is not None
+    assert "uv run pyrefly" not in result.message
+    assert "lint-discipline" in result.message
+
+
+def test_allows_pyrefly_suppress_remove_unused(tmp_path: Path) -> None:
+    # Cleanup is the opposite of suppression and must never be blocked.
+    assert guard.evaluate("uv run pyrefly suppress --remove-unused", tmp_path) is None
+
+
+def test_allows_pyrefly_suppress_remove_unused_with_kind(tmp_path: Path) -> None:
+    assert guard.evaluate("uv run pyrefly suppress --remove-unused=all src/", tmp_path) is None
+
+
+def test_allows_pyrefly_check_remove_unused_ignores(tmp_path: Path) -> None:
+    # `check` spells the same cleanup differently from `suppress`.
+    assert guard.evaluate("uv run pyrefly check --remove-unused-ignores", tmp_path) is None
+
+
+def test_allows_pyrefly_check_remove_unused_ignores_with_kind(tmp_path: Path) -> None:
+    result = guard.evaluate("uv run pyrefly check --remove-unused-ignores=type src/", tmp_path)
+    assert result is None
+
+
+def test_allows_pyrefly_check_on_path_containing_suppress(tmp_path: Path) -> None:
+    # `suppress` as a path component is not the subcommand.
+    assert guard.evaluate("uv run pyrefly check tests/suppress/test_foo.py", tmp_path) is None
+
+
+def test_allows_plain_pyrefly_check(tmp_path: Path) -> None:
+    assert guard.evaluate("uv run pyrefly check src/", tmp_path) is None
+
+
+def test_blocks_pyrefly_replace_imports_with_any(tmp_path: Path) -> None:
+    result = guard.evaluate("uv run pyrefly check --replace-imports-with-any yaml src/", tmp_path)
+    assert result is not None
+    assert "pyproject.toml" in result.message
+
+
+def test_blocks_pyrefly_ignore_missing_imports(tmp_path: Path) -> None:
+    result = guard.evaluate("uv run pyrefly check --ignore-missing-imports deepeval", tmp_path)
+    assert result is not None
+    assert "tool.pyrefly" in result.message
+
+
+def test_blocks_pyrefly_replace_untyped_imports_with_any(tmp_path: Path) -> None:
+    # Same mechanism as the other two — leaving it out would leave the guard a
+    # one-flag hole.
+    result = guard.evaluate(
+        "uv run pyrefly check --replace-untyped-imports-with-any tenacity",
+        tmp_path,
+    )
+    assert result is not None
+
+
+def test_allows_import_any_keys_in_committed_config(tmp_path: Path) -> None:
+    # The flag names are blocked as command-line arguments only. Reading or
+    # grepping the committed `[tool.pyrefly]` keys that spell the same thing
+    # must stay allowed — that config is the sanctioned route.
+    assert guard.evaluate("grep -n replace-imports-with-any pyproject.toml", tmp_path) is None
 
 
 # --- git commit --allow-empty ---

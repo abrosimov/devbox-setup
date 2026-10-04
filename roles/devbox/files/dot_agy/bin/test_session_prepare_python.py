@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import session_prepare_python as spp
-from _claude_lib import proc
+from _agy_lib import proc
 
 if TYPE_CHECKING:
     import pytest
@@ -69,13 +69,13 @@ def test_load_sync_config_returns_none_when_missing(tmp_path: Path) -> None:
 
 
 def test_load_sync_config_returns_empty_dict_for_empty_file(tmp_path: Path) -> None:
-    _write(tmp_path / ".claude" / "sync.toml", "")
+    _write(tmp_path / ".gemini" / "antigravity-cli" / "sync.toml", "")
     assert spp._load_sync_config(tmp_path) == {}
 
 
 def test_load_sync_config_parses_valid_toml(tmp_path: Path) -> None:
     _write(
-        tmp_path / ".claude" / "sync.toml",
+        tmp_path / ".gemini" / "antigravity-cli" / "sync.toml",
         'groups = ["test"]\nextras = ["postgres"]\n',
     )
     assert spp._load_sync_config(tmp_path) == {
@@ -85,7 +85,7 @@ def test_load_sync_config_parses_valid_toml(tmp_path: Path) -> None:
 
 
 def test_load_sync_config_returns_empty_dict_on_invalid_toml(tmp_path: Path) -> None:
-    _write(tmp_path / ".claude" / "sync.toml", "not = = valid [[[")
+    _write(tmp_path / ".gemini" / "antigravity-cli" / "sync.toml", "not = = valid [[[")
     assert spp._load_sync_config(tmp_path) == {}
 
 
@@ -176,7 +176,7 @@ def test_detect_mode_lists_groups(tmp_path: Path) -> None:
     assert message is not None
     assert "dependency-groups: local, test" in message
     assert "do not invent flags silently" in message
-    assert ".claude/sync.toml" in message
+    assert ".gemini/antigravity-cli/sync.toml" in message
 
 
 def test_detect_mode_lists_extras(tmp_path: Path) -> None:
@@ -197,11 +197,11 @@ def test_detect_mode_lists_both_groups_and_extras(tmp_path: Path) -> None:
     assert "extras: postgres" in message
 
 
-def test_project_dir_prefers_claude_project_dir(
+def test_project_dir_prefers_agy_project_dir(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.setenv("AGY_PROJECT_DIR", str(tmp_path))
     resolved = spp._project_dir({"cwd": "/some/other/path"})
     assert resolved == tmp_path
 
@@ -210,7 +210,7 @@ def test_project_dir_falls_back_to_cwd_field(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("AGY_PROJECT_DIR", raising=False)
     resolved = spp._project_dir({"cwd": str(tmp_path)})
     assert resolved == tmp_path
 
@@ -218,7 +218,7 @@ def test_project_dir_falls_back_to_cwd_field(
 def test_project_dir_returns_none_when_no_signal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("AGY_PROJECT_DIR", raising=False)
     assert spp._project_dir({}) is None
 
 
@@ -227,7 +227,7 @@ def test_main_exits_silently_when_not_python_project(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.setenv("AGY_PROJECT_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
     assert spp.main() == 0
     captured = capsys.readouterr()
@@ -240,7 +240,7 @@ def test_main_exits_silently_when_no_optional_deps(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write(tmp_path / "pyproject.toml", '[project]\nname = "x"\n')
-    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.setenv("AGY_PROJECT_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
     assert spp.main() == 0
     captured = capsys.readouterr()
@@ -256,7 +256,7 @@ def test_main_detect_mode_emits_additional_context(
         tmp_path / "pyproject.toml",
         '[project]\nname = "x"\n\n[dependency-groups]\ndev = []\ntest = ["pytest"]\n',
     )
-    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.setenv("AGY_PROJECT_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
     assert spp.main() == 0
     payload = json.loads(capsys.readouterr().out)
@@ -270,8 +270,8 @@ def test_main_sync_mode_invokes_uv_and_reports(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write(tmp_path / "pyproject.toml", '[project]\nname = "x"\n')
-    _write(tmp_path / ".claude" / "sync.toml", 'groups = ["test"]\n')
-    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    _write(tmp_path / ".gemini" / "antigravity-cli" / "sync.toml", 'groups = ["test"]\n')
+    monkeypatch.setenv("AGY_PROJECT_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
 
     calls: list[list[str]] = []
@@ -295,8 +295,8 @@ def test_main_sync_mode_reports_failure_gracefully(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write(tmp_path / "pyproject.toml", '[project]\nname = "x"\n')
-    _write(tmp_path / ".claude" / "sync.toml", "")
-    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    _write(tmp_path / ".gemini" / "antigravity-cli" / "sync.toml", "")
+    monkeypatch.setenv("AGY_PROJECT_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
 
     def _fake_run(cmd: list[str] | str, **_: object) -> proc.CmdResult:
@@ -322,8 +322,8 @@ def test_main_sync_mode_reports_timeout_gracefully(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write(tmp_path / "pyproject.toml", '[project]\nname = "x"\n')
-    _write(tmp_path / ".claude" / "sync.toml", "")
-    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    _write(tmp_path / ".gemini" / "antigravity-cli" / "sync.toml", "")
+    monkeypatch.setenv("AGY_PROJECT_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
 
     def _fake_run(cmd: list[str] | str, **_: object) -> proc.CmdResult:

@@ -52,9 +52,11 @@ def setup_go(home: Path, tmp: Path) -> None:
 
 
 def setup_python(tmp: Path) -> None:
+    # No type-checker cache var: pyrefly exposes only PYREFLY_THREADS,
+    # PYREFLY_CONFIG, PYREFLY_COLOR and PYREFLY_VERBOSE, so its `.pyrefly_cache`
+    # cannot be relocated out of the project tree from the environment.
     os.environ.setdefault("UV_CACHE_DIR", str(tmp / "uv-cache"))
     os.environ.setdefault("RUFF_CACHE_DIR", str(tmp / "ruff-cache"))
-    os.environ.setdefault("MYPY_CACHE_DIR", str(tmp / "mypy-cache"))
 
 
 def setup_node(tmp: Path) -> None:

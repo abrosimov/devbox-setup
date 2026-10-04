@@ -173,10 +173,10 @@ def test_find_memory_dir_matches_normalised_cwd(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
-    project = tmp_path / ".claude" / "projects" / "-Users-foo-bar"
+    project = tmp_path / ".gemini" / "antigravity-cli" / "projects" / "-Users-foo-bar"
     (project / "memory").mkdir(parents=True)
     (project / "memory" / "MEMORY.md").write_text("# m", encoding="utf-8")
-    other = tmp_path / ".claude" / "projects" / "-Users-other"
+    other = tmp_path / ".gemini" / "antigravity-cli" / "projects" / "-Users-other"
     (other / "memory").mkdir(parents=True)
     (other / "memory" / "MEMORY.md").write_text("# m", encoding="utf-8")
 

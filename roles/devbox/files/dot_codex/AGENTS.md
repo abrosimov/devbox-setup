@@ -74,7 +74,7 @@ A request to implement, fix, review, or diagnose code includes authority to run 
 non-destructive local validation needed to complete that request. Run repository-provided formatters,
 linters, type checkers, compilers, and tests without asking the user whether to proceed and without turning
 validation into an optional next step. This includes `goimports`, `golangci-lint`, `go test`, `go vet`, and
-`go build`; Ruff, Pyrefly, mypy, and pytest; ESLint, Prettier, TypeScript checks, and Vitest; and equivalent
+`go build`; Ruff, Pyrefly, and pytest; ESLint, Prettier, TypeScript checks, and Vitest; and equivalent
 repository `make`, `task`, or package-manager targets.
 
 If the execution layer requires approval because a validation command needs capabilities outside the active

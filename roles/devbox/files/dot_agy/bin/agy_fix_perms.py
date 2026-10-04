@@ -81,7 +81,7 @@ BASE_ALLOW: Final[list[str]] = [
     "Bash(poetry run *)",
     "Bash(pytest *)",
     "Bash(ruff *)",
-    "Bash(mypy *)",
+    "Bash(pyrefly *)",
     "Bash(python *)",
     "Bash(python3 *)",
     "Bash(pip install *)",

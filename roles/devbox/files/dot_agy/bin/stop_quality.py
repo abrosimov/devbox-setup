@@ -54,8 +54,15 @@ TYPESCRIPT_MARKERS: Final[tuple[str, ...]] = ("tsconfig.json",)
 JAVASCRIPT_EXTENSIONS: Final[frozenset[str]] = frozenset({".js", ".jsx", ".ts", ".tsx"})
 TYPESCRIPT_EXTENSIONS: Final[frozenset[str]] = frozenset({".ts", ".tsx"})
 GO_MODULE_RE: Final[re.Pattern[str]] = re.compile(r"^module\s+(\S+)", re.MULTILINE)
-MYPY_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(r"^\[tool\.mypy\]\s*$", re.MULTILINE)
-MYPY_SETUP_RE: Final[re.Pattern[str]] = re.compile(r"^\[mypy\]\s*$", re.MULTILINE)
+PYREFLY_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(r"^\[tool\.pyrefly\]\s*$", re.MULTILINE)
+# pyrefly's default `full-text` format spans several lines per diagnostic;
+# `min-text` is one line per error and `--summary=none` removes the progress
+# bar and the error tally, so the advisory shown to the model stays compact.
+PYREFLY_OUTPUT_FLAGS: Final[tuple[str, ...]] = (
+    "--output-format",
+    "min-text",
+    "--summary=none",
+)
 
 
 @dataclass(frozen=True)
@@ -186,13 +193,13 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def _find_mypy_root(start: Path, boundary: Path) -> Path | None:
+def _find_pyrefly_root(start: Path, boundary: Path) -> Path | None:
+    # pyrefly reads only `pyrefly.toml` and `[tool.pyrefly]` in pyproject.toml,
+    # so there is no setup.cfg section to look for.
     for candidate in _ancestors_within(start, boundary):
-        if (candidate / "mypy.ini").is_file() or (candidate / ".mypy.ini").is_file():
+        if (candidate / "pyrefly.toml").is_file():
             return candidate
-        if MYPY_PYPROJECT_RE.search(_read_text(candidate / "pyproject.toml")):
-            return candidate
-        if MYPY_SETUP_RE.search(_read_text(candidate / "setup.cfg")):
+        if PYREFLY_PYPROJECT_RE.search(_read_text(candidate / "pyproject.toml")):
             return candidate
     return None
 
@@ -469,31 +476,27 @@ def _lint_python(changes: ChangeSet, pipeline: QualityPipeline) -> list[str]:
         if ruff_issue is not None:
             issues.append(ruff_issue)
 
-    mypy_groups = _group_by_finder(
+    pyrefly_groups = _group_by_finder(
         changes.files,
         frozenset({".py"}),
         changes.root,
-        _find_mypy_root,
+        _find_pyrefly_root,
     )
-    for root, files in mypy_groups.items():
+    for root, files in pyrefly_groups.items():
         file_args = [str(file_path) for file_path in files]
-        command = (
-            ["uv", "run", "mypy", *file_args]
-            if (root / "uv.lock").exists()
-            else [
-                "mypy",
-                *file_args,
-            ]
-        )
-        mypy_result = pipeline.run(
+        base = ["uv", "run", "pyrefly"] if (root / "uv.lock").exists() else ["pyrefly"]
+        command = [*base, "check", *PYREFLY_OUTPUT_FLAGS, *file_args]
+        pyrefly_result = pipeline.run(
             command,
             cwd=root,
             cap=CHECK_TIMEOUT,
-            label=f"mypy ({root})",
+            label=f"pyrefly ({root})",
         )
-        mypy_issue = _issue_from_result("mypy", mypy_result) if mypy_result is not None else None
-        if mypy_issue is not None:
-            issues.append(mypy_issue)
+        pyrefly_issue = (
+            _issue_from_result("pyrefly", pyrefly_result) if pyrefly_result is not None else None
+        )
+        if pyrefly_issue is not None:
+            issues.append(pyrefly_issue)
     return issues
 
 

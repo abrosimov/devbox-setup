@@ -37,7 +37,7 @@ def load_state(path: Path) -> State:
         if isinstance(value, dict):
             index = cast("dict[str, object]", value).get("layout_index")
             if isinstance(index, int):
-                parsed[str(name)] = index
+                parsed[name] = index
     return State(parsed)
 
 

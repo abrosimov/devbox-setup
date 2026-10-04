@@ -52,9 +52,11 @@ def setup_go(home: Path, tmp: Path) -> None:
 
 
 def setup_python(tmp: Path) -> None:
+    # pyrefly, the project's type checker, has no cache-directory environment
+    # variable (only PYREFLY_THREADS/CONFIG/COLOR/VERBOSE), so there is nothing
+    # to redirect for it here.
     os.environ.setdefault("UV_CACHE_DIR", str(tmp / "uv-cache"))
     os.environ.setdefault("RUFF_CACHE_DIR", str(tmp / "ruff-cache"))
-    os.environ.setdefault("MYPY_CACHE_DIR", str(tmp / "mypy-cache"))
 
 
 def setup_node(tmp: Path) -> None:

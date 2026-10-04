@@ -125,7 +125,7 @@ endif
        claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
        dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now \
        sync-upstream-docs mine-claude-logs \
-       test test-integration test-ai-config test-deploy test-claude-hooks test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
+       test test-integration test-ai-config test-deploy test-claude-hooks test-agy-hooks test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
        test-live test-live-guard \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
@@ -163,6 +163,7 @@ help:
 	@echo "  make test-ai-config   - pytest for the ai-config reconciler"
 	@echo "  make test-deploy      - pytest for deployment structure"
 	@echo "  make test-claude-hooks - pytest under bin/'s own uv project (deployed-venv shape)"
+	@echo "  make test-agy-hooks   - pytest under dot_agy/bin's own uv project (deployed-venv shape)"
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
 	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
 	@echo "  make test-otelbox     - pytest for the otelbox edge contract (wrapper, preflight, version pin)"
@@ -399,6 +400,14 @@ test-claude-hooks: ## Pytest under bin/'s own uv project (mirrors deployed venv)
 	@uv sync --project roles/devbox/files/dot_claude/bin --quiet
 	@uv run --project roles/devbox/files/dot_claude/bin \
 	  pytest roles/devbox/files/dot_claude/bin
+
+# Same isolation for the Antigravity hook tree, which carries its own uv project
+# and its own `_agy_lib`. The two trees share an ancestry but not a venv, so a
+# green `test-claude-hooks` says nothing about this one.
+test-agy-hooks: ## Pytest under dot_agy/bin's own uv project (deployed-venv shape)
+	@uv sync --project roles/devbox/files/dot_agy/bin --quiet
+	@uv run --project roles/devbox/files/dot_agy/bin \
+	  pytest roles/devbox/files/dot_agy/bin
 
 # The guards around tests/live/ are the two things in that suite that must never
 # silently stop working — the throwaway home, and the refusal to skip an engine

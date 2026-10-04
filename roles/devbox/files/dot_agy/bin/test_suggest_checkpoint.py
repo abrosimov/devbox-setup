@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 def test_state_path_uses_session_id(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
     path = suggest_checkpoint.state_path_for("abc")
-    assert path.name == "claude-checkpoint-abc"
+    assert path.name == "agy-checkpoint-abc"
     assert path.parent == tmp_path
 
 
@@ -102,7 +102,7 @@ def test_main_ignores_non_work_tools(
     monkeypatch.setattr(sys, "stdout", out)
     assert suggest_checkpoint.main() == 0
     assert out.getvalue() == ""
-    assert not (tmp_path / "claude-checkpoint-s1").exists()
+    assert not (tmp_path / "agy-checkpoint-s1").exists()
 
 
 def test_main_writes_state_for_work_tool(
@@ -125,7 +125,7 @@ def test_main_writes_state_for_work_tool(
     out = io.StringIO()
     monkeypatch.setattr(sys, "stdout", out)
     assert suggest_checkpoint.main() == 0
-    state_path = tmp_path / "claude-checkpoint-s2"
+    state_path = tmp_path / "agy-checkpoint-s2"
     assert state_path.exists()
     data = json.loads(state_path.read_text(encoding="utf-8"))
     assert data == {"count": 1, "lastSuggestion": 0}
@@ -137,7 +137,7 @@ def test_main_emits_suggestion_at_threshold(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
-    state_path = tmp_path / "claude-checkpoint-s3"
+    state_path = tmp_path / "agy-checkpoint-s3"
     state_path.write_text('{"count": 39, "lastSuggestion": 0}', encoding="utf-8")
     monkeypatch.setattr(
         sys,

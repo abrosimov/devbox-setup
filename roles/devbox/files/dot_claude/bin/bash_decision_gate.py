@@ -79,7 +79,7 @@ SAFE_RM_BASENAMES: Final[frozenset[str]] = frozenset(
         ".cache",
         ".pytest_cache",
         "__pycache__",
-        ".mypy_cache",
+        ".pyrefly_cache",
         ".ruff_cache",
         ".tox",
         ".parcel-cache",
@@ -98,6 +98,14 @@ LINT_SUPPRESSION_TOKENS: Final[tuple[str, ...]] = (
     "eslint-disable",
     "type: ignore",
     "type:ignore",
+    # pyrefly's own writer emits `# pyrefly: ignore [bad-return]` — with a space
+    # before the bracket — so a token spelled `pyrefly: ignore[` would never
+    # match what the tool actually produces. Both spacings are carried for the
+    # same reason `type: ignore` carries both: one is what the tool writes, the
+    # other is what a human hand-writes. The prefix also covers the file-level
+    # blanket `# pyrefly: ignore-errors`.
+    "pyrefly: ignore",
+    "pyrefly:ignore",
     "SuppressWarnings",
 )
 

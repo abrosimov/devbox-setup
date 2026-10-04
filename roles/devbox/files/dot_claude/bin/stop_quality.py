@@ -54,8 +54,17 @@ TYPESCRIPT_MARKERS: Final[tuple[str, ...]] = ("tsconfig.json",)
 JAVASCRIPT_EXTENSIONS: Final[frozenset[str]] = frozenset({".js", ".jsx", ".ts", ".tsx"})
 TYPESCRIPT_EXTENSIONS: Final[frozenset[str]] = frozenset({".ts", ".tsx"})
 GO_MODULE_RE: Final[re.Pattern[str]] = re.compile(r"^module\s+(\S+)", re.MULTILINE)
-MYPY_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(r"^\[tool\.mypy\]\s*$", re.MULTILINE)
-MYPY_SETUP_RE: Final[re.Pattern[str]] = re.compile(r"^\[mypy\]\s*$", re.MULTILINE)
+# Any header under `tool.pyrefly` counts, including `[tool.pyrefly.errors]` and
+# `[[tool.pyrefly.sub-config]]`: a project can configure pyrefly entirely through
+# subtables without ever writing the bare `[tool.pyrefly]` header.
+PYREFLY_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(
+    r"^\[\[?tool\.pyrefly[.\]]",
+    re.MULTILINE,
+)
+# pyrefly's default `full-text` format spends several lines and a source excerpt
+# per diagnostic; the stop message is injected into context, so it gets the
+# one-line-per-error form instead.
+PYREFLY_OUTPUT_FORMAT: Final[str] = "min-text"
 BLACK_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(r"^\[tool\.black\]\s*$", re.MULTILINE)
 BLACK_PRECOMMIT_RE: Final[re.Pattern[str]] = re.compile(
     r"^\s*(?:-\s*)?repo:\s*\S*/psf/black(?:-pre-commit-mirror)?(?:\.git)?\s*$",
@@ -191,13 +200,11 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def _find_mypy_root(start: Path, boundary: Path) -> Path | None:
+def _find_pyrefly_root(start: Path, boundary: Path) -> Path | None:
     for candidate in _ancestors_within(start, boundary):
-        if (candidate / "mypy.ini").is_file() or (candidate / ".mypy.ini").is_file():
+        if (candidate / "pyrefly.toml").is_file():
             return candidate
-        if MYPY_PYPROJECT_RE.search(_read_text(candidate / "pyproject.toml")):
-            return candidate
-        if MYPY_SETUP_RE.search(_read_text(candidate / "setup.cfg")):
+        if PYREFLY_PYPROJECT_RE.search(_read_text(candidate / "pyproject.toml")):
             return candidate
     return None
 
@@ -499,31 +506,32 @@ def _lint_python(changes: ChangeSet, pipeline: QualityPipeline) -> list[str]:
         if ruff_issue is not None:
             issues.append(ruff_issue)
 
-    mypy_groups = _group_by_finder(
+    pyrefly_groups = _group_by_finder(
         changes.files,
         frozenset({".py"}),
         changes.root,
-        _find_mypy_root,
+        _find_pyrefly_root,
     )
-    for root, files in mypy_groups.items():
-        file_args = [str(file_path) for file_path in files]
-        command = (
-            ["uv", "run", "mypy", *file_args]
-            if (root / "uv.lock").exists()
-            else [
-                "mypy",
-                *file_args,
-            ]
-        )
-        mypy_result = pipeline.run(
+    for root, files in pyrefly_groups.items():
+        check = [
+            "pyrefly",
+            "check",
+            "--output-format",
+            PYREFLY_OUTPUT_FORMAT,
+            *(str(file_path) for file_path in files),
+        ]
+        command = ["uv", "run", *check] if (root / "uv.lock").exists() else check
+        pyrefly_result = pipeline.run(
             command,
             cwd=root,
             cap=CHECK_TIMEOUT,
-            label=f"mypy ({root})",
+            label=f"pyrefly ({root})",
         )
-        mypy_issue = _issue_from_result("mypy", mypy_result) if mypy_result is not None else None
-        if mypy_issue is not None:
-            issues.append(mypy_issue)
+        pyrefly_issue = (
+            _issue_from_result("pyrefly", pyrefly_result) if pyrefly_result is not None else None
+        )
+        if pyrefly_issue is not None:
+            issues.append(pyrefly_issue)
     return issues
 
 

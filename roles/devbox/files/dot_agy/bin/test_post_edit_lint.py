@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import post_edit_lint
-from _claude_lib.proc import CmdResult
+from _agy_lib.proc import CmdResult
 
 if TYPE_CHECKING:
     import pytest

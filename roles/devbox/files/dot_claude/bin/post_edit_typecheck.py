@@ -9,10 +9,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _claude_lib import env, hooks, paths, proc
 
-PY_MARKERS: Final[tuple[str, ...]] = ("pyproject.toml", "mypy.ini", ".mypy.ini", "setup.cfg")
+PY_MARKERS: Final[tuple[str, ...]] = ("pyrefly.toml", "pyproject.toml")
 TS_MARKERS: Final[tuple[str, ...]] = ("tsconfig.json",)
 TYPECHECK_TIMEOUT: Final[int] = 30
 MAX_REPORTED_LINES: Final[int] = 10
+
+# pyrefly's default `full-text` format spans several lines per diagnostic with a
+# source excerpt; `min-text` is one line per error, which is what a bounded
+# additionalContext message can carry. Diagnostics go to stdout, prefixed with
+# `ERROR `; the `INFO <n> errors` summary and any config notice go to stderr.
+PYREFLY_OUTPUT_FORMAT: Final[str] = "min-text"
+PYREFLY_ERROR_PREFIX: Final[str] = "ERROR "
 
 
 def edited_file_path(data: dict[str, object]) -> Path | None:
@@ -28,19 +35,24 @@ def edited_file_path(data: dict[str, object]) -> Path | None:
     return candidate
 
 
-def mypy_report(file_path: Path) -> str | None:
+def pyrefly_report(file_path: Path) -> str | None:
     project_root = paths.find_project_root(file_path.parent, PY_MARKERS)
     if project_root is None:
         return None
+    check = ["pyrefly", "check", "--output-format", PYREFLY_OUTPUT_FORMAT, str(file_path)]
     use_uv = (project_root / "uv.lock").exists()
-    cmd = ["uv", "run", "mypy", str(file_path)] if use_uv else ["mypy", str(file_path)]
+    cmd = ["uv", "run", *check] if use_uv else check
     result = proc.run_cmd(cmd, cwd=project_root, timeout=TYPECHECK_TIMEOUT)
     if result.success:
         return None
     combined = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
     if not combined:
         return None
-    error_lines = [line for line in combined.splitlines() if ": error:" in line]
+    error_lines = [
+        line.removeprefix(PYREFLY_ERROR_PREFIX).strip()
+        for line in combined.splitlines()
+        if line.startswith(PYREFLY_ERROR_PREFIX)
+    ]
     if not error_lines:
         return None
     shown = error_lines[:MAX_REPORTED_LINES]
@@ -50,7 +62,7 @@ def mypy_report(file_path: Path) -> str | None:
         else ""
     )
     return (
-        f"[typecheck] mypy errors in {file_path.name}:\n"
+        f"[typecheck] pyrefly errors in {file_path.name}:\n"
         + "\n".join(shown)
         + suffix
         + "\nFix type errors — use proper types instead of Any."
@@ -91,7 +103,7 @@ def tsc_report(file_path: Path) -> str | None:
 def report_for(file_path: Path) -> str | None:
     ext = file_path.suffix.lower()
     if ext == ".py":
-        return mypy_report(file_path)
+        return pyrefly_report(file_path)
     if ext in {".ts", ".tsx"}:
         return tsc_report(file_path)
     return None

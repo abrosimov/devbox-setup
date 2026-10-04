@@ -16,13 +16,13 @@ Prefix ALL Python commands with `uv run`. No exceptions.
 
 ```
 uv run pytest          # not: pytest
-uv run mypy .          # not: mypy .
+uv run pyrefly check . # not: pyrefly check .
 uv run ruff check .    # not: ruff check .
 uv run python script.py  # not: python script.py
 uv add <package>       # not: pip install <package>
 ```
 
-**NEVER run bare `pytest`, `mypy`, `python`, `ruff`, or `pip install`.** The `pre_bash_toolchain_guard` hook will block them. If `poetry.lock` exists instead of `uv.lock`, substitute `poetry run` for `uv run`.
+**NEVER run bare `pytest`, `pyrefly`, `python`, `ruff`, or `pip install`.** The `pre_bash_toolchain_guard` hook will block them. If `poetry.lock` exists instead of `uv.lock`, substitute `poetry run` for `uv run`.
 
 ---
 
@@ -142,7 +142,7 @@ See `code-writing-protocols` skill — Pre-Flight Verification for hook enforcem
 | Test | `uv run pytest` |
 | Lint | `uv run ruff check .` |
 | Format | `uv run ruff format .` |
-| Types | `uv run mypy .` or `uv run pyright .` |
+| Types | `uv run pyrefly check .` |
 
 For poetry projects, substitute `poetry run` for `uv run`.
 

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import post_edit_typecheck
-from _claude_lib.proc import CmdResult
+from _agy_lib.proc import CmdResult
 
 if TYPE_CHECKING:
     import pytest
@@ -23,48 +23,91 @@ def _fail(stdout: str) -> CmdResult:
     return CmdResult(stdout=stdout, stderr="", returncode=1, timed_out=False)
 
 
-def test_mypy_report_returns_none_when_passes(
+def test_pyrefly_report_returns_none_when_passes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     target = tmp_path / "x.py"
     target.write_text("x: int = 1\n", encoding="utf-8")
     monkeypatch.setattr(post_edit_typecheck.proc, "run_cmd", lambda *_a, **_k: _ok())
-    assert post_edit_typecheck.mypy_report(target) is None
+    assert post_edit_typecheck.pyrefly_report(target) is None
 
 
-def test_mypy_report_filters_to_error_lines(
+def test_pyrefly_report_invokes_check_subcommand_with_one_line_format(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    (tmp_path / "uv.lock").write_text("", encoding="utf-8")
+    target = tmp_path / "x.py"
+    target.write_text("x: int = 1\n", encoding="utf-8")
+    captured: list[list[str]] = []
+
+    def _record(cmd: list[str], **_kwargs: object) -> CmdResult:
+        captured.append(cmd)
+        return _ok()
+
+    monkeypatch.setattr(post_edit_typecheck.proc, "run_cmd", _record)
+    assert post_edit_typecheck.pyrefly_report(target) is None
+    assert captured == [
+        [
+            "uv",
+            "run",
+            "pyrefly",
+            "check",
+            "--output-format",
+            "min-text",
+            "--summary=none",
+            str(target),
+        ]
+    ]
+
+
+def test_pyrefly_report_filters_to_error_lines(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     target = tmp_path / "x.py"
     target.write_text("x = 1\n", encoding="utf-8")
-    output = "x.py:1: note: skip\nx.py:2: error: bad type\nx.py:3: error: more\n"
+    # Verbatim `pyrefly check --output-format min-text` output, plus an INFO
+    # line of the kind `--summary=none` normally suppresses — the filter must
+    # keep only the ERROR lines either way.
+    output = (
+        " INFO 2 errors\n"
+        "ERROR x.py:2:12-13: Returned type `int` is not assignable to declared"
+        " return type `str` [bad-return]\n"
+        "ERROR x.py:5:10-17: `Literal['hello']` is not assignable to `int` [bad-assignment]\n"
+    )
     monkeypatch.setattr(post_edit_typecheck.proc, "run_cmd", lambda *_a, **_k: _fail(output))
-    report = post_edit_typecheck.mypy_report(target)
+    report = post_edit_typecheck.pyrefly_report(target)
     assert report is not None
-    assert "mypy errors in x.py" in report
-    assert "bad type" in report
-    assert "more" in report
-    assert "skip" not in report
+    assert "pyrefly errors in x.py" in report
+    assert "[bad-return]" in report
+    assert "[bad-assignment]" in report
+    assert "INFO" not in report
 
 
-def test_mypy_report_truncates_above_max(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_pyrefly_report_truncates_above_max(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     target = tmp_path / "x.py"
     target.write_text("x = 1\n", encoding="utf-8")
-    lines = "\n".join(f"x.py:{i}: error: bug {i}" for i in range(15))
+    lines = "\n".join(
+        f"ERROR x.py:{i}:1-5: Could not find name `n{i}` [unknown-name]" for i in range(15)
+    )
     monkeypatch.setattr(post_edit_typecheck.proc, "run_cmd", lambda *_a, **_k: _fail(lines))
-    report = post_edit_typecheck.mypy_report(target)
+    report = post_edit_typecheck.pyrefly_report(target)
     assert report is not None
     assert "and 5 more" in report
 
 
-def test_mypy_report_skips_without_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_pyrefly_report_skips_without_project(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     target = tmp_path / "x.py"
     target.write_text("x = 1\n", encoding="utf-8")
     monkeypatch.setattr(post_edit_typecheck.paths, "find_project_root", lambda *_a, **_k: None)
-    assert post_edit_typecheck.mypy_report(target) is None
+    assert post_edit_typecheck.pyrefly_report(target) is None
 
 
 def test_tsc_report_filters_to_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -95,7 +138,7 @@ def test_main_writes_when_report_present(
     target = tmp_path / "x.py"
     target.write_text("x = 1", encoding="utf-8")
     monkeypatch.setattr(
-        post_edit_typecheck, "report_for", lambda _p: "[typecheck] mypy errors in x.py:\nfoo"
+        post_edit_typecheck, "report_for", lambda _p: "[typecheck] pyrefly errors in x.py:\nfoo"
     )
     monkeypatch.setattr(
         sys,
@@ -112,7 +155,7 @@ def test_main_writes_when_report_present(
     monkeypatch.setattr(sys, "stdout", out)
     assert post_edit_typecheck.main() == 0
     payload = json.loads(out.getvalue())
-    assert "mypy errors" in payload["additionalContext"]
+    assert "pyrefly errors" in payload["additionalContext"]
 
 
 def test_main_silent_when_no_report(

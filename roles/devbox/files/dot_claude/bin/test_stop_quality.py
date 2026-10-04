@@ -137,8 +137,10 @@ class TestBatching:
             ("pyproject.toml", "[tool.ruff]\n\n[tool.black]\ntarget-version = ['py310']\n"),
             (
                 ".pre-commit-config.yaml",
-                "repos:\n  - repo: https://github.com/psf/black-pre-commit-mirror\n"
-                "    rev: 26.5.1\n",
+                (
+                    "repos:\n  - repo: https://github.com/psf/black-pre-commit-mirror\n"
+                    "    rev: 26.5.1\n"
+                ),
             ),
         ],
     )
@@ -198,7 +200,7 @@ class TestBatching:
     ) -> None:
         (tmp_path / "go.mod").write_text("module example.com/project\n", encoding="utf-8")
         (tmp_path / "pyproject.toml").write_text(
-            "[tool.ruff]\n[tool.mypy]\n",
+            "[tool.ruff]\n[tool.pyrefly]\n",
             encoding="utf-8",
         )
         (tmp_path / "uv.lock").write_text("", encoding="utf-8")
@@ -235,7 +237,7 @@ class TestBatching:
             ("dclint",),
             ("golangci-lint",),
             ("ruff", "check"),
-            ("uv", "run", "mypy"),
+            ("uv", "run", "pyrefly", "check"),
             ("npx", "eslint"),
             ("npx", "tsc"),
         )
@@ -255,7 +257,7 @@ class TestBatching:
         assert {str(tmp_path / "a.py"), str(tmp_path / "b.py")} <= set(ruff)
         assert {str(tmp_path / "a.ts"), str(tmp_path / "b.tsx")} <= set(eslint)
 
-    def test_ruff_only_python_project_does_not_activate_mypy(
+    def test_ruff_only_python_project_does_not_activate_pyrefly(
         self,
         monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
@@ -275,7 +277,7 @@ class TestBatching:
         assert stop_quality.lint_changes(changes) == []
         assert [call[:2] for call in calls] == [["ruff", "check"]]
 
-    def test_python_without_config_does_not_activate_mypy(
+    def test_python_without_config_does_not_activate_pyrefly(
         self,
         monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,

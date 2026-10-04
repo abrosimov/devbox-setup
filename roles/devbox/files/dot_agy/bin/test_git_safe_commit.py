@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import git_safe_commit as gsc
-from _claude_lib import proc
+from _agy_lib import proc
 
 if TYPE_CHECKING:
     import pytest
@@ -126,7 +126,7 @@ def test_run_blocks_on_main(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok("main\n"),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
         },
     )
     err = io.StringIO()
@@ -140,7 +140,7 @@ def test_run_blocks_on_integration(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok("build/stable\n"),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
         },
     )
     err = io.StringIO()
@@ -154,7 +154,7 @@ def test_run_blocks_on_custom_integration(monkeypatch: pytest.MonkeyPatch) -> No
         monkeypatch,
         {
             "git branch --show-current": _ok("integration\n"),
-            "git config --get claude.integrationBranch": _ok("integration\n"),
+            "git config --get agy.integrationBranch": _ok("integration\n"),
         },
     )
     err = io.StringIO()
@@ -168,7 +168,7 @@ def test_run_blocks_detached_head(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok(""),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
         },
     )
     err = io.StringIO()
@@ -182,7 +182,7 @@ def test_run_rejects_missing_message(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok("feature/x\n"),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
         },
     )
     err = io.StringIO()
@@ -196,7 +196,7 @@ def test_run_blocks_staged_secret(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok("feature/x\n"),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git add": _ok(),
             "git diff --cached --name-only": _ok(".env\n"),
         },
@@ -213,7 +213,7 @@ def test_run_nothing_to_commit(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok("feature/x\n"),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git add": _ok(),
             "git diff --cached --name-only": _ok(""),
             "git diff --cached --quiet": _ok(),
@@ -230,7 +230,7 @@ def test_run_successful_commit(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok("feature/x\n"),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git add": _ok(),
             "git diff --cached --name-only": _ok("src/main.py\n"),
             "git diff --cached --quiet": _err(),
@@ -248,7 +248,7 @@ def test_run_passes_files_to_git_add(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok("feature/x\n"),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git add": _ok(),
             "git diff --cached --name-only": _ok("src/a.py\n"),
             "git diff --cached --quiet": _err(),
@@ -267,7 +267,7 @@ def test_run_git_add_failure(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch,
         {
             "git branch --show-current": _ok("feature/x\n"),
-            "git config --get claude.integrationBranch": _err(),
+            "git config --get agy.integrationBranch": _err(),
             "git add": _err("conflict"),
         },
     )

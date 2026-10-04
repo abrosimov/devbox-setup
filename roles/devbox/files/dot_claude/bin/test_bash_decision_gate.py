@@ -174,6 +174,58 @@ def test_specific_push_rules_still_fire_before_generic() -> None:
 
 
 # ============================================================
+# Phase 1 — lint suppression written through the shell
+# ============================================================
+
+
+def test_pyrefly_emitted_comment_matches_a_suppression_token() -> None:
+    # Verbatim output of `pyrefly suppress` (1.3.0). The space between `ignore`
+    # and the bracket is the whole reason the token is not spelled
+    # `pyrefly: ignore[` — this pins that spacing fact.
+    emitted = "# pyrefly: ignore [bad-return]"
+    assert any(t in emitted for t in bdg.LINT_SUPPRESSION_TOKENS)
+
+
+def test_echo_pyrefly_ignore_into_file_denies() -> None:
+    d = _eval("echo '# pyrefly: ignore [bad-return]' >> src/main.py")
+    assert d.behavior == "deny"
+    assert d.rule == "lint-suppression-via-bash"
+
+
+def test_sed_pyrefly_ignore_spaced_bracket_denies() -> None:
+    d = _eval("sed -i 's|pass|pass  # pyrefly: ignore [bad-return]|' src/main.py")
+    assert d.behavior == "deny"
+    assert d.rule == "lint-suppression-via-bash"
+
+
+def test_sed_pyrefly_ignore_unspaced_bracket_denies() -> None:
+    # The form a human hand-writes — the unspaced variant, matching the
+    # precedent already set by the two mypy-era spellings in the token list.
+    d = _eval("sed -i 's|pass|pass  # pyrefly:ignore[bad-return]|' src/main.py")
+    assert d.behavior == "deny"
+    assert d.rule == "lint-suppression-via-bash"
+
+
+def test_pyrefly_blanket_ignore_errors_denies() -> None:
+    # File-level blanket; caught by the `pyrefly: ignore` prefix.
+    d = _eval("printf '# pyrefly: ignore-errors\\n' > src/generated.py")
+    assert d.behavior == "deny"
+    assert d.rule == "lint-suppression-via-bash"
+
+
+def test_grep_for_pyrefly_ignore_allows() -> None:
+    # Searching for existing suppressions writes nothing and stays allowed.
+    d = _eval("grep -rn 'pyrefly: ignore' src/")
+    assert d.behavior == "allow"
+
+
+def test_pyrefly_check_is_not_a_suppression() -> None:
+    # Running the type checker must never trip the suppression rule.
+    d = _eval("pyrefly check src/")
+    assert d.behavior != "deny"
+
+
+# ============================================================
 # Phase 2(a) — interpreter inline-exec
 # ============================================================
 

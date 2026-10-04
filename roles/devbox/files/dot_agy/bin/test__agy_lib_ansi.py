@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import ansi
+from _agy_lib import ansi
 
 
 def test_reset_sequence() -> None:

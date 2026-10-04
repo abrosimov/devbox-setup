@@ -67,7 +67,9 @@ devbox_claude_plugins:
   - name: document-skills
     marketplace: anthropic-agent-skills
   # LSP plugins — installed from official marketplace (pre-registered on macOS).
-  # Binaries must be on PATH: gopls (go install), pyright (uv tool), typescript-language-server (npm).
+  # Binaries must be on PATH: gopls (go install), typescript-language-server (npm).
+  # No Python LSP plugin here: pyrefly is the sole type checker (see
+  # devbox_packages.uv_tools in packages.yml) but has no LSP plugin yet — one is
+  # being built in a separate repository and will be wired in later.
   - name: gopls-lsp
-  - name: pyright-lsp
   - name: typescript-lsp

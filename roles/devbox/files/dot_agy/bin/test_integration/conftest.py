@@ -1,7 +1,7 @@
 """Pytest plumbing for the integration harness.
 
 Adds the parent ``bin/`` directory to ``sys.path`` so the harness can import
-``_claude_lib`` (used by anonymise/extract helpers) without relying on the
+``_agy_lib`` (used by anonymise/extract helpers) without relying on the
 package being installed.
 """
 

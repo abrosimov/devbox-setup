@@ -20,11 +20,12 @@ NPM_LOCK: Final[str] = "package-lock.json"
 
 PYTHON_SCRIPT_RE: Final[re.Pattern[str]] = re.compile(r"^python3?\s+(?!-)")
 
+# pyrefly, the project's type checker, is deliberately absent: it exposes no
+# cache-directory environment variable, so there is none to watch for.
 CACHE_WORKAROUND_VARS: Final[tuple[str, ...]] = (
     "UV_CACHE_DIR",
     "UV_TOOL_DIR",
     "RUFF_CACHE_DIR",
-    "MYPY_CACHE_DIR",
     "PYTEST_CACHE_DIR",
     "PIP_CACHE_DIR",
     "POETRY_CACHE_DIR",
@@ -98,11 +99,12 @@ NO_SYNC_RE: Final[re.Pattern[str]] = re.compile(
     r"\buv\s+run\b[^;|&]*\s--no-sync\b",
 )
 
+# No type-checker entry here: pyrefly has no cache- or incrementality-disabling
+# flag (`pyrefly check --help` offers none), so there is nothing to forbid.
 SKIP_CACHE_FLAGS_RE: Final[re.Pattern[str]] = re.compile(
     r"("
     r"\bpytest\b[^;|&]*\s-p\s+no:cacheprovider\b"
     r"|\bpytest\b[^;|&]*\s--no-cacheprovider\b"
-    r"|\bmypy\b[^;|&]*\s--no-incremental\b"
     r"|\bruff\b[^;|&]*\s--no-cache\b"
     r"|\bpip\s+install\b[^;|&]*\s--force-reinstall\b"
     r"|\bpip\s+install\b[^;|&]*\s--ignore-installed\b"
@@ -290,7 +292,7 @@ def _check_no_sync(cmd: str) -> Block | None:
 def _check_skip_cache_flags(cmd: str) -> Block | None:
     if SKIP_CACHE_FLAGS_RE.search(cmd):
         return Block(
-            "Skip-cache/skip-reinstall flags (`--no-cache`, `--no-incremental`, "
+            "Skip-cache/skip-reinstall flags (`--no-cache`, "
             "`--no-cacheprovider`, `--force-reinstall`, `--ignore-installed`) "
             "are workarounds. If cache is corrupt, run the tool's `cache clean`. "
             "If reinstall is needed, update the lockfile.",
@@ -348,10 +350,10 @@ def _check_pytest(cmd: str, start: Path) -> Block | None:
     return None
 
 
-def _check_mypy(cmd: str, start: Path) -> Block | None:
-    if not _starts_with(cmd, "mypy"):
+def _check_pyrefly(cmd: str, start: Path) -> Block | None:
+    if not _starts_with(cmd, "pyrefly"):
         return None
-    return _check_python_tool(cmd, "mypy", start)
+    return _check_python_tool(cmd, "pyrefly", start)
 
 
 def _check_pylint(cmd: str, start: Path) -> Block | None:
@@ -476,7 +478,7 @@ def evaluate(cmd: str, start: Path) -> Block | None:
     for context_check in (
         _check_uvx,
         _check_pytest,
-        _check_mypy,
+        _check_pyrefly,
         _check_pylint,
         _check_bare_python_script,
         _check_venv_direct,

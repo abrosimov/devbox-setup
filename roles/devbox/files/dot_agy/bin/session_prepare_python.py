@@ -155,7 +155,7 @@ def _detect_mode(project: Path, pyproject: Mapping[str, object]) -> str | None:
     lines.append(
         "By default `uv sync` installs only the `dev` group. Do NOT assume "
         "other groups/extras are present in `.venv/`. If a tool (pytest, "
-        "ruff, mypy, etc.) appears missing, either ask the user to "
+        "ruff, pyrefly, etc.) appears missing, either ask the user to "
         "`uv sync --group <name>` or invoke with `uv run --group <name> <cmd>` "
         "— do not invent flags silently. To auto-sync on every SessionStart, "
         "create `.gemini/antigravity-cli/sync.toml` in the project root."

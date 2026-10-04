@@ -189,8 +189,12 @@ how each possible mis-tiling maps back to a fix in `layouts/tile.py`.
 uv sync --all-groups
 uv run pytest
 uv run ruff check .
-uv run pyright
+uv run pyrefly check
 ```
+
+`pyrefly` is the repository's sole Python type checker. The `[tool.pyrefly]` config is
+the strict preset; test functions keep the `-> None` exemption that ruff's `ANN`
+per-file-ignore already grants them (`[[tool.pyrefly.sub-config]]`).
 
 Standalone uv project (own `uv.lock` / `.venv`), mirroring
 `roles/devbox/files/dot_claude/bin/`. Deployed to `~/.config/aerospace/layouts/` and

@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
   "tool_input": {
-    "command": "mypy =Fe",
+    "command": "pyrefly =Fe",
     "description": "=Fe"
   },
   "hook_event_name": "PreToolUse"

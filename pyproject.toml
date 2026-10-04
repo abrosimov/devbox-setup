@@ -38,7 +38,7 @@ dev = [
     # Runtime dep of roles/devbox/files/dot_claude/bin/bash_decision_gate.py.
     # Pinned authoritatively in bin/pyproject.toml + bin/uv.lock for the
     # deployed venv; mirrored here so the root dev venv (used by `make test`
-    # and Pyright LSP) can also resolve it.
+    # and `make typecheck`) can also resolve it.
     "bashlex",
 ]
 
@@ -187,37 +187,6 @@ quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
 line-ending = "lf"
-
-# ─── Pyright ─────────────────────────────────────────────────────────────────
-# Pyright is the type checker used by the editor harness (Read-tool Pyright
-# integration). It needs to be pointed at the uv-managed dev venv so it can
-# resolve dev-only deps (pytest, hypothesis, ansible-lint, ...).
-[tool.pyright]
-venvPath = "."
-venv = ".venv"
-
-# kittens.tui.* is only resolvable at runtime inside kitty itself. No installable
-# stub package exists, so silence missing-import for this directory only — keeps
-# real typos elsewhere visible.
-[[tool.pyright.executionEnvironments]]
-root = "roles/devbox/files/.config/kitty"
-reportMissingImports = "none"
-
-# bin/ scripts use a runtime sys.path.insert trick to find sibling modules
-# (`_claude_lib`, peer scripts under test) — Pyright needs extraPaths to mirror
-# this, otherwise siblings appear unresolved even though pyrefly and pytest
-# both accept them.
-[[tool.pyright.executionEnvironments]]
-root = "roles/devbox/files/dot_claude/bin"
-extraPaths = ["roles/devbox/files/dot_claude/bin"]
-
-# Integration harness lives under bin/test_integration/ and imports its
-# siblings as ``test_integration.X``. Pyright resolves this when ``bin/`` is on
-# the path, but spell out the test_integration execution environment explicitly
-# so the LSP picks it up even when opening files outside the harness directly.
-[[tool.pyright.executionEnvironments]]
-root = "roles/devbox/files/dot_claude/bin/test_integration"
-extraPaths = ["roles/devbox/files/dot_claude/bin"]
 
 # ─── Pyrefly ─────────────────────────────────────────────────────────────────
 # Meta's Python type-checker. Scoped explicitly to first-party scripts to avoid

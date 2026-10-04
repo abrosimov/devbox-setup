@@ -7,7 +7,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import paths
+from _agy_lib import paths
 
 
 def test_find_project_root_finds_marker_at_start(tmp_path: Path) -> None:

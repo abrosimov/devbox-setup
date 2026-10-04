@@ -75,11 +75,11 @@ def test_allows_pytest_outside_project(tmp_path: Path) -> None:
     assert guard.evaluate("pytest", project) is None
 
 
-def test_blocks_bare_mypy_in_uv_project(tmp_path: Path) -> None:
+def test_blocks_bare_pyrefly_in_uv_project(tmp_path: Path) -> None:
     project = _project_with_marker(tmp_path, "uv.lock")
-    result = guard.evaluate("mypy src/", project)
+    result = guard.evaluate("pyrefly check src/", project)
     assert result is not None
-    assert "uv run mypy" in result.message
+    assert "uv run pyrefly" in result.message
 
 
 def test_blocks_bare_pylint_in_uv_project(tmp_path: Path) -> None:
@@ -302,11 +302,6 @@ def test_blocks_pytest_no_cacheprovider(tmp_path: Path) -> None:
 
 def test_blocks_pytest_no_cacheprovider_long(tmp_path: Path) -> None:
     result = guard.evaluate("uv run pytest --no-cacheprovider", tmp_path)
-    assert result is not None
-
-
-def test_blocks_mypy_no_incremental(tmp_path: Path) -> None:
-    result = guard.evaluate("uv run mypy --no-incremental src/", tmp_path)
     assert result is not None
 
 

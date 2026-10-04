@@ -69,15 +69,15 @@ If cache errors occur, verify env is active: `env | grep -E 'GOCACHE|GOMODCACHE'
 
 Cross-compilation (`GOOS`, `GOARCH`) and `CGO_ENABLED` are legitimate build tuners and stay allowed. If the Go build fails, escalate to the user — do not reroute via env vars.
 
-### Python (uv, ruff, mypy)
+### Python (uv, ruff, pyrefly)
 
-Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist. `settings.json` env block sets `UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR` to `/tmp/claude/<tool>-cache/` at session start — inherited by every Bash call without command rewriting.
+Python toolchains cache to `~/.cache/` by default, which is outside the sandbox write allowlist. `settings.json` env block sets `UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `PYTEST_CACHE_DIR` to `/tmp/claude/<tool>-cache/` at session start — inherited by every Bash call without command rewriting. Pyrefly has no on-disk cache directory of its own, so it needs no entry here.
 
 No manual prefix needed — just run commands directly:
 ```bash
 uv run pytest
 ruff check .
-mypy src/
+pyrefly check src/
 ```
 
 **Never override cache env vars — in any form.** `pre_bash_toolchain_guard` blocks all three shapes:
@@ -85,19 +85,18 @@ mypy src/
 - explicit export: `export UV_CACHE_DIR=/tmp/x; uv sync`
 - standalone assignment then chain: `UV_CACHE_DIR=/tmp/x && uv sync`
 
-Watched vars: `UV_CACHE_DIR`, `UV_TOOL_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR`, `PIP_CACHE_DIR`, `POETRY_CACHE_DIR` (plus the Go, Node, Cargo siblings — see `CACHE_WORKAROUND_VARS` in the guard). `PYTHONPATH` is treated the same way — never patch `sys.path` at invocation time; configure `src`-layout in `pyproject.toml` or use `uv run`.
+Watched vars: `UV_CACHE_DIR`, `UV_TOOL_DIR`, `RUFF_CACHE_DIR`, `PYTEST_CACHE_DIR`, `PIP_CACHE_DIR`, `POETRY_CACHE_DIR` (plus the Go, Node, Cargo siblings — see `CACHE_WORKAROUND_VARS` in the guard). `PYTHONPATH` is treated the same way — never patch `sys.path` at invocation time; configure `src`-layout in `pyproject.toml` or use `uv run`.
 
 If you see a cache-corruption error (`Failed to install … METADATA: No such file`), the fix is:
 ```bash
 uv cache clean          # not `UV_CACHE_DIR=/tmp/x uv sync`
 ruff clean              # for ruff
-rm -rf "$MYPY_CACHE_DIR"  # mypy has no clean subcommand
 ```
 Then retry the original command.
 
 **Never `uvx <tool>` in a uv project.** `uvx` runs an isolated one-shot install and bypasses the project's uv env and `uv.lock`. In a uv project (detected by `uv.lock` in ancestry), the guard blocks `uvx`. Use `uv add <tool>` (or `uv add --dev`) plus `uv run <tool>` instead. If `uv run <tool>` fails — **escalate to the user; do not work around it with uvx.** `uvx` is fine for genuinely standalone one-shots outside any uv project (e.g. `uvx cookiecutter gh:foo/bar` in an empty scratch dir).
 
-If bare `python`/`pytest`/`mypy` fail, use the `uv run` prefix (enforced by `pre_bash_toolchain_guard` hook). Direct `.venv/bin/<tool>` and `PYTHONPATH=… python …` are also blocked — they bypass uv/poetry env management.
+If bare `python`/`pytest`/`pyrefly` fail, use the `uv run` prefix (enforced by `pre_bash_toolchain_guard` hook). Direct `.venv/bin/<tool>` and `PYTHONPATH=… python …` are also blocked — they bypass uv/poetry env management.
 
 ### Node (npm/pnpm)
 

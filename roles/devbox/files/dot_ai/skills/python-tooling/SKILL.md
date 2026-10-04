@@ -35,12 +35,12 @@ ls uv.lock pyproject.toml poetry.lock requirements.txt requirements-dev.txt 2>/d
 `pre_bash_toolchain_guard` blocks the following invocation shapes. If you hit one, the fix is **never** to bypass — escalate to the user or use the recommended form.
 
 - **`uvx <tool>` inside a uv project.** Runs an isolated one-shot install and bypasses `uv.lock`. Use `uv add <tool>` (or `uv add --dev`, `uv add --group lint`) and then `uv run <tool>`. If `uv run <tool>` fails, escalate — do not fall back to `uvx`. `uvx` remains fine outside any uv project for standalone one-shots (`uvx cookiecutter gh:foo/bar`).
-- **Cache env-var overrides (any form):** inline `UV_CACHE_DIR=/tmp/x uv sync`, `export UV_CACHE_DIR=…`, standalone `UV_CACHE_DIR=…;`. Also `UV_TOOL_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, `PYTEST_CACHE_DIR`, `PIP_CACHE_DIR`, `POETRY_CACHE_DIR`. Caches are auto-injected per-session; if corrupt, run `uv cache clean` (or the tool's own clean subcommand) and retry.
+- **Cache env-var overrides (any form):** inline `UV_CACHE_DIR=/tmp/x uv sync`, `export UV_CACHE_DIR=…`, standalone `UV_CACHE_DIR=…;`. Also `UV_TOOL_DIR`, `RUFF_CACHE_DIR`, `PYTEST_CACHE_DIR`, `PIP_CACHE_DIR`, `POETRY_CACHE_DIR`. Caches are auto-injected per-session; if corrupt, run `uv cache clean` (or the tool's own clean subcommand) and retry.
 - **`PYTHONPATH=… python …` (any form).** Bypasses uv/poetry env management. Configure `src`-layout / packages in `pyproject.toml` or use `uv run` instead.
 - **`pip install …` / `python -m pip …`.** Use `uv add` (or `poetry add`). Never `pip install` directly.
 - **`python -m venv …`.** uv creates and manages `.venv` automatically via `uv sync`.
 - **Direct `.venv/bin/<tool>` in uv/poetry project.** Use `uv run <tool>` (or `poetry run`).
-- **`uv run --no-sync`, `pytest --collect-only`, `pytest --no-cacheprovider`, `mypy --no-incremental`, `ruff --no-cache`, `pip install --force-reinstall`.** All are skip-verify workarounds; fix pyproject.toml or the underlying issue.
+- **`uv run --no-sync`, `pytest --collect-only`, `pytest --no-cacheprovider`, `ruff --no-cache`, `pip install --force-reinstall`.** All are skip-verify workarounds; fix pyproject.toml or the underlying issue.
 
 See `sandbox-toolchain` for the full list, the three blocked shapes (inline/export/standalone), and equivalent rules for Go (`GOTOOLCHAIN`, `GOSUMDB`, `GOPROXY`, `GOPRIVATE`, `GOINSECURE`, `GO111MODULE`, `GOWORK`, `GOVCS`, `GOFLAGS`, `GOEXPERIMENT`) and Node.
 
@@ -70,7 +70,7 @@ uv add requests pydantic  # example
 uv add --dev pytest pytest-mock pytest-cov
 
 # Lint dependencies
-uv add --group lint ruff pylint mypy
+uv add --group lint ruff pylint pyrefly
 ```
 
 ### Step 3: Configure pyproject.toml
@@ -90,7 +90,7 @@ Create empty `tests/__init__.py` and minimal `tests/conftest.py`.
 ```bash
 uv sync
 uv run pytest
-uv run mypy --strict src/
+uv run pyrefly check src/
 uv run ruff check .
 ```
 
@@ -127,7 +127,7 @@ dev = [
 lint = [
     "ruff>=0.8",
     "pylint>=3.0",
-    "mypy>=1.13",
+    "pyrefly>=1.3",
 ]
 
 [build-system]
@@ -155,15 +155,13 @@ ignore-patterns = ["test_.*\\.py"]
 [tool.pylint.messages_control]
 disable = ["C0114", "C0115", "C0116"]  # missing docstrings
 
-[tool.mypy]
-python_version = "3.11"
-strict = true
-warn_return_any = true
-disallow_untyped_defs = true
+[tool.pyrefly]
+python-version = "3.11"
+preset = "strict"
 
-[[tool.mypy.overrides]]
-module = ["tests.*"]
-disallow_untyped_defs = false
+[[sub-config]]
+matches = "tests/**"
+check-unannotated-defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

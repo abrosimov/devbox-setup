@@ -353,7 +353,7 @@ _BASH_COMMAND_TEMPLATES = (
     "pip install requests",
     "python -m venv .venv",
     "pytest -k {}",
-    "mypy {}",
+    "pyrefly {}",
     "uv run pytest",
     "kubectl delete ns prod",
     "find / -name *.log",

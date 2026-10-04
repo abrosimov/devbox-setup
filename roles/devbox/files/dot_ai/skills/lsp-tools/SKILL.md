@@ -200,12 +200,13 @@ LSP operation fails
 - `goToImplementation` is excellent for finding interface implementors
 - Does not work in files with `import "C"` under cross-platform constraints
 
-### Python (pyright)
+### Python (pyrefly)
 
-- Strong type analysis but NO CLI navigation (diagnostics only via CLI)
-- May need `PYRIGHT_MEMORY_LIMIT=4096` for large projects
-- Slow with huge `TypedDict` classes (combinatorial overload synthesis)
-- `hover` provides detailed type signatures including inferred types
+- Started as `pyrefly lsp` — speaks LSP over stdio, no flags
+- Rust-based checker and language server in one; stays fast on very large codebases
+- `goToDefinition`, `findReferences`, `documentSymbol`, `workspaceSymbol`, and `hover` are all supported; `findReferences` relies on background indexing, so the first call after startup may lag while the index builds
+- Rename, completion, and call hierarchy are not yet implemented — expect those LSP methods to return empty, not error
+- `hover` surfaces type info and docstrings; `goToDefinition` jumps from a `.pyi` stub to the `.py` implementation when both exist
 
 ### TypeScript (vtsls)
 

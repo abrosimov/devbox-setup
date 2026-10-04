@@ -28,7 +28,7 @@ Use for: small PRs, routine changes, follow-up reviews after fixes.
 
 | # | Go | Python | Frontend |
 |---|----|--------|----------|
-| F1 | `go build ./...` | `uv run mypy --strict` | `npx tsc --noEmit` |
+| F1 | `go build ./...` | `uv run pyrefly check` | `npx tsc --noEmit` |
 | F2 | `go test -race ./...` | `uv run pytest` | `npx vitest run` or `npm test` |
 | F3 | Error context wrapping | Exception chaining (`raise ... from`) | No `any` types / unsafe `as` |
 | F4 | No runtime `panic()` | No bare `except:` / `except Exception:` | Accessibility basics (no `<div onClick>`, all `<img>` have `alt`) |
@@ -591,7 +591,7 @@ Before completing the review, verify:
 
 **Pre-flight (per detected stack)**
 - [ ] Go: `go build ./...`, `go test -race ./...`, `golangci-lint run ./...`, `goimports -local <module> -w .`
-- [ ] Python: `uv run mypy --strict`, `uv run pytest`, `uv run ruff check`, `uv run ruff format --check`
+- [ ] Python: `uv run pyrefly check`, `uv run pytest`, `uv run ruff check`, `uv run ruff format --check`
 - [ ] Frontend: `npx tsc --noEmit`, `npx eslint .` (or `npx next lint`), `npx vitest run` (or `npm test`), `npx prettier --check .`
 
 **All applicable checkpoints completed**

@@ -39,7 +39,7 @@ In uv/poetry projects, these will FAIL (tool not on system PATH):
 | FORBIDDEN | Use Instead (uv) | Use Instead (poetry) |
 |-----------|-------------------|----------------------|
 | `pytest` | `uv run pytest` | `poetry run pytest` |
-| `mypy src/` | `uv run mypy src/` | `poetry run mypy src/` |
+| `pyrefly check src/` | `uv run pyrefly check src/` | `poetry run pyrefly check src/` |
 | `python script.py` | `uv run python script.py` | `poetry run python script.py` |
 | `ruff check .` | `uv run ruff check .` | `poetry run ruff check .` |
 | `pip install X` | `uv add X` | `poetry add X` |

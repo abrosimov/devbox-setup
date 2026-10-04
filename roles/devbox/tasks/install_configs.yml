@@ -91,6 +91,13 @@
     'Resolved' in (devbox_claude_uv_sync.stderr | default(''))
     or 'Installed' in (devbox_claude_uv_sync.stderr | default(''))
     or 'Prepared' in (devbox_claude_uv_sync.stderr | default(''))
+  # chdir resolves before check mode is consulted (ansible.builtin.command
+  # os.chdir()'s unconditionally), so a dry run into a directory the
+  # preceding (simulated) file/synchronize tasks never actually created
+  # would abort for real rather than skip. A dry run cannot predict the
+  # result of syncing into a directory that does not yet exist, so skipping
+  # is the truthful outcome.
+  when: not ansible_check_mode
   tags: [configs, claude, agy]
 
 # =============================================================================
@@ -281,6 +288,13 @@
     'Resolved' in (devbox_agy_uv_sync.stderr | default(''))
     or 'Installed' in (devbox_agy_uv_sync.stderr | default(''))
     or 'Prepared' in (devbox_agy_uv_sync.stderr | default(''))
+  # chdir resolves before check mode is consulted (ansible.builtin.command
+  # os.chdir()'s unconditionally), so a dry run into a directory the
+  # preceding (simulated) file/synchronize tasks never actually created
+  # would abort for real rather than skip. A dry run cannot predict the
+  # result of syncing into a directory that does not yet exist, so skipping
+  # is the truthful outcome.
+  when: not ansible_check_mode
   tags: [configs, agy]
 
 # =============================================================================
@@ -398,6 +412,13 @@
     'Resolved' in (devbox_aerospace_uv_sync.stderr | default(''))
     or 'Installed' in (devbox_aerospace_uv_sync.stderr | default(''))
     or 'Prepared' in (devbox_aerospace_uv_sync.stderr | default(''))
+  # chdir resolves before check mode is consulted (ansible.builtin.command
+  # os.chdir()'s unconditionally), so a dry run into a directory the
+  # preceding (simulated) synchronize task never actually created would
+  # abort for real rather than skip. A dry run cannot predict the result of
+  # syncing into a directory that does not yet exist, so skipping is the
+  # truthful outcome.
+  when: not ansible_check_mode
   tags: [configs, dotfiles]
 
 # =============================================================================

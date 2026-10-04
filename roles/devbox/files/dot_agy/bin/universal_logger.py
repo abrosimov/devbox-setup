@@ -4,6 +4,7 @@ Universal event logger for Claude Code and Antigravity CLI.
 Logs all hook events (PreToolUse, PostToolUse, etc.) as JSONL.
 """
 
+import contextlib
 import datetime
 import fcntl
 import json
@@ -36,7 +37,7 @@ def main() -> None:
         "event": event_name,
         "env": env_metadata,
         "payload": payload,
-        "cwd": os.getcwd(),
+        "cwd": str(Path.cwd()),
     }
 
     # Automatically determine the config root (.claude or .gemini/antigravity-cli)
@@ -52,14 +53,14 @@ def main() -> None:
         fcntl.flock(lck, fcntl.LOCK_EX)
         try:
             # Rotate log if it exceeds 500 MB
-            MAX_SIZE = 500 * 1024 * 1024
-            if log_file.exists() and log_file.stat().st_size >= MAX_SIZE:
+            max_size = 500 * 1024 * 1024
+            if log_file.exists() and log_file.stat().st_size >= max_size:
                 ts = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d_%H%M%S")
                 rotated_file = state_dir / f"hook_events.{ts}.jsonl"
-                try:
+                # A failed rotation must not cost the event: keep appending to the
+                # oversized log rather than aborting the hook.
+                with contextlib.suppress(OSError):
                     log_file.rename(rotated_file)
-                except OSError:
-                    pass  # Fallback gracefully if rename fails
 
             with log_file.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry) + "\n")

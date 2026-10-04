@@ -160,6 +160,27 @@ def test_otelbox_client_material_tasks_are_darwin_only(task_name: str) -> None:
     assert "ansible_facts['os_family'] == 'Darwin'" in conditions
 
 
+@pytest.mark.parametrize(
+    "task_name",
+    [
+        "Bootstrap Claude hooks venv via uv sync",
+        "Bootstrap Antigravity hooks venv via uv sync",
+        "Bootstrap AeroSpace layouts venv via uv sync",
+    ],
+)
+def test_uv_sync_bootstrap_skips_under_check_mode(task_name: str) -> None:
+    # ansible.builtin.command's chdir runs before the module consults
+    # check_mode (os.chdir() happens unconditionally ahead of the check_mode
+    # branch), so a dry run into a directory an earlier, merely-simulated
+    # file/synchronize task never actually created aborts for real instead
+    # of skipping. `creates:` cannot fix this, since it is evaluated after
+    # the chdir has already failed. `when: not ansible_check_mode` is the
+    # guard that keeps these three `--check` runs honest.
+    task = _task(task_name)
+
+    assert task["when"] == "not ansible_check_mode"
+
+
 def test_otelbox_client_reconciliation_requires_the_overlay() -> None:
     conditions = _task("Reconcile absent otelbox edge client certificate files")["when"]
 

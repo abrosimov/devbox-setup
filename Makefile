@@ -338,13 +338,15 @@ lint-yaml: $(DEV_SENTINEL)
 # roles/devbox/files/dot_claude/future_projects/ruff_strict_migration.md.
 # The formatter is likewise enforced: it is deterministic and auto-fixable.
 #
-# Scope: the client/shared AI trees plus deploy and live tests. Other Python files in the
-# repo (.config/kitty/) are not project code; pyrefly's project-includes handles
-# those.
+# Scope: the client/shared AI trees plus deploy and live tests. dot_agy is named as
+# bin/ rather than as a whole tree because that is where all of its Python lives — the
+# rest is TOML/Markdown config — matching the path `typecheck` already uses. Other
+# Python files in the repo (.config/kitty/) are not project code; pyrefly's
+# project-includes handles those.
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/deploy/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/deploy/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
+	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_agy/bin/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/deploy/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
+	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_agy/bin/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/deploy/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
 
 # Pyrefly ignores `project-excludes` from pyproject.toml whenever files are named
 # explicitly on the command line, so the excludes have to be repeated as flags.
@@ -353,7 +355,7 @@ lint-py: $(DEV_SENTINEL)
 PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.venv/**' --project-excludes '**/__pycache__/**'
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py scripts/mine-claude-logs.py scripts/claude_log_mining/ tests/scripts/test_claude_log_mining_*.py tests/scripts/claude_log_mining_fixtures.py $(PYREFLY_EXCLUDES)
+	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_agy/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py scripts/mine-claude-logs.py scripts/claude_log_mining/ tests/scripts/test_claude_log_mining_*.py tests/scripts/claude_log_mining_fixtures.py $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a
@@ -397,7 +399,7 @@ test-drive-backup: ## drive-backup package: pytest, ruff, pyrefly, example confi
 # drift between bin/uv.lock and the test suite (e.g. bashlex version skew)
 # that `make test` would miss because it uses the root dev venv.
 test-claude-hooks: ## Pytest under bin/'s own uv project (mirrors deployed venv)
-	@uv sync --project roles/devbox/files/dot_claude/bin --quiet
+	@uv sync --project roles/devbox/files/dot_claude/bin --frozen --quiet
 	@uv run --project roles/devbox/files/dot_claude/bin \
 	  pytest roles/devbox/files/dot_claude/bin
 
@@ -405,7 +407,7 @@ test-claude-hooks: ## Pytest under bin/'s own uv project (mirrors deployed venv)
 # and its own `_agy_lib`. The two trees share an ancestry but not a venv, so a
 # green `test-claude-hooks` says nothing about this one.
 test-agy-hooks: ## Pytest under dot_agy/bin's own uv project (deployed-venv shape)
-	@uv sync --project roles/devbox/files/dot_agy/bin --quiet
+	@uv sync --project roles/devbox/files/dot_agy/bin --frozen --quiet
 	@uv run --project roles/devbox/files/dot_agy/bin \
 	  pytest roles/devbox/files/dot_agy/bin
 
@@ -456,9 +458,19 @@ upgrade-work:
 upgrade-personal:
 	$(MAKE) run PROFILE=personal EXTRA_VARS='-e devbox_upgrade_mode=true' V=$(V)
 
+# Profile still has to resolve to something, even though dev mode already
+# redirects every destination to ../debug/dotfiles and overrides both secrets:
+# the Claude/agy settings-reconciliation tasks pass {{ devbox_active_profile }}
+# straight through to `scripts/ai-config --profile`, which needs a real
+# profiles/<name>.yml to look up. Recovering it from MNEMOSYNE_PERISTASEOS (the
+# same mechanism as dotfiles-push/shell-push/mcp-sync) matches how this target
+# is actually used — a quick dry-run during playbook iteration on a machine
+# that has already run `make personal`/`make work` once — without forcing a
+# profile pick on every invocation the way check-personal/check-work do.
 check-dev: $(COLLECTIONS_SENTINEL)
+	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook --check $(VERBOSE) \
+	ansible-playbook --check $(VERBOSE) $(ACTIVE_OPTS) \
 	    -e dev_mode=true \
 	    -e devbox_sudo_password_override=dev-mode \
 	    -e devbox_ssh_pass_phrase_override=dev-mode $(PLAYBOOK)

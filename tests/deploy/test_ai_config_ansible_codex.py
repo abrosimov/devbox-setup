@@ -117,3 +117,16 @@ class TestCodexAiConfigAnsibleContract:
             "Remove stale symlinks at managed Codex skill destinations",
             "Sync compatible shared skills to Codex",
         } <= names
+
+    def test_uv_sync_bootstrap_skips_under_check_mode(
+        self,
+        tasks: list[AnsibleTask],
+    ) -> None:
+        # ansible.builtin.command chdirs before it consults check_mode, so a dry
+        # run aborts for real when an earlier, merely-simulated task never
+        # created the directory. `creates:` cannot help, being evaluated after
+        # the failed chdir. The sibling tasks in install_configs.yml carry the
+        # same guard, pinned by tests/deploy/test_install_configs.py.
+        task = task_named(tasks, "Bootstrap Codex hooks venv via uv sync")
+
+        assert task["when"] == "not ansible_check_mode"

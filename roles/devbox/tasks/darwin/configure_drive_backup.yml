@@ -110,6 +110,9 @@
       changed_when: >-
         'Installed' in (devbox_drive_backup_uv_sync.stderr | default(''))
         or 'Uninstalled' in (devbox_drive_backup_uv_sync.stderr | default(''))
+      # ansible.builtin.command chdirs before it consults check_mode, so a dry
+      # run aborts for real when the rsync above has only been simulated.
+      when: not ansible_check_mode
 
     # Fail the playbook, not the first Saturday night, on a broken config.
     - name: "Drive backup — validate the config"

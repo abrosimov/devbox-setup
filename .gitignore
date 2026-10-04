@@ -3,6 +3,10 @@
 .claude/memory
 .claude/commands
 .claude/settings.local.json
+# Session audit trail: one-off scripts an agent ran, kept verbatim as a record.
+# `pre_bash_toolchain_guard` refuses to delete them, so they must not be
+# committable either, or every session leaves scratch probes in the history.
+.claude/claude_written_scripts/
 # Personal Claude Code state file. Lives at the user's $HOME normally; if it
 # ever appears anywhere inside the repo (e.g. accidental copy), refuse it —
 # contains OAuth tokens, project history, cached growth-book features.

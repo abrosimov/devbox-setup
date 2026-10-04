@@ -170,6 +170,11 @@
     'Resolved' in (devbox_codex_uv_sync.stderr | default(''))
     or 'Installed' in (devbox_codex_uv_sync.stderr | default(''))
     or 'Prepared' in (devbox_codex_uv_sync.stderr | default(''))
+  # ansible.builtin.command chdirs before it consults check_mode, so a dry run
+  # aborts here for real when an earlier, merely-simulated task never created
+  # the directory. A dry run cannot predict a sync into a directory that does
+  # not exist yet, so reporting the step as skipped is the truthful outcome.
+  when: not ansible_check_mode
   tags: [configs, ai, codex]
 
 - name: Find Codex CLI path

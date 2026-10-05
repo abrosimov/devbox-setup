@@ -6,7 +6,7 @@
 
 ADM helps administrators examine administrative requests, give justified refusals and provide usable results under the organization's rules. Its fifteen patterns also help improve the arrangements supporting this work by connecting organizational rules, participants, permissions, work and records. Establish any permission required for the action being taken; specialist decisions remain with the people authorized to make them.
 
-[First edition and source basis](#first-edition)
+[First edition and source basis](#admreference1---first-edition)
 
 # Table of Contents
 
@@ -56,7 +56,7 @@ ADM helps administrators examine administrative requests, give justified refusal
 
 | § | Publication unit | Use |
 | --- | --- | --- |
-| S | [Sources and direct returns](#sources-and-direct-returns) | Recover the applied instructions, source arguments and their limits. |
+| S | [ADM.Reference - Sources and direct returns](#sources-and-direct-returns) | Recover the applied instructions, source arguments and their limits. |
 
 # Organization Administration Readme
 
@@ -2655,7 +2655,9 @@ ADM.14–15 supply control and consequence questions; ADM.2–3 establish releva
 
 # Sources and direct returns
 
-## First edition
+<a id="first-edition"></a>
+
+## ADM.Reference:1 - First edition
 
 This is the first edition of the **Organization Administration Principles Framework**, with reference code **ADM** and fifteen patterns: ADM.1–11 and ADM.13–16. It offers prospective practitioner guidance for administrative conditions, cases and arrangements under the actual rules of the organization. Its constructed cases explain the instructions; claims about a particular service's effectiveness require that service's evidence.
 
@@ -2663,7 +2665,9 @@ Cite the framework name, release date and PatternID when the wording or source b
 
 Copyright © Anatoly Levenchuk. The original framework text and worked examples are licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). The [licensing notice](https://github.com/ailev/FPF/blob/main/LICENSING.md) states the scope and attribution terms. Referenced third-party works retain their own terms.
 
-### External source states and refresh
+<a id="external-source-states-and-refresh"></a>
+
+### ADM.Reference:1.1 - External source states and refresh
 
 Use the following source states when checking a source change or reconstructing this edition's basis. The applied-instruction table and source arguments below name the exact sections, contributions and limits used. The hashes identify the source texts used.
 
@@ -2686,7 +2690,9 @@ A changed source file calls for comparison of the relied-on sections. Unchanged 
 
 Revisit an affected pattern when a real use exposes an unclear action, a missed case, unsupported evidence or an excessive burden. Revisit the connected explanation when an individual result no longer supports the next question it promises to answer. A changed source meaning, organizational rule, population or operating condition reopens only the claims that depend on it. The relevant pattern's source return and stopping conditions identify the first place to work.
 
-## Applied framework instructions
+<a id="applied-framework-instructions"></a>
+
+## ADM.Reference:2 - Applied framework instructions
 
 The cited methods retain their own scope. Use the named contribution when it answers a live question; the citation is not a requirement to read every framework before handling a request.
 
@@ -2705,11 +2711,15 @@ The cited methods retain their own scope. Use the named contribution when it ans
 | [Systems Engineering][SYSE], SYSE.8–9 and SYSE.29 | SYSE.8 develops provider arrangements with distinct contributions and undertakings; SYSE.9 uses adequate expert results or qualifies worthwhile missing contributions. SYSE.29 supplies actual-use transition, coexistence, recovery and retirement. ADM.11, ADM.14 and ADM.16 connect these results to institutional conditions. |
 | [Method Engineering][ME], ME.15 and ME.17 §§0, 4.1 and 4.4 | ME.15 distinguishes actual method variants from changed descriptions, support or other governed objects. ME.17 governs Method Engineering practice. ADM.16:4.5 adapts its population, interval, independent-use, supported-continuation and selective-inquiry distinctions to administrative case handling, retaining their evidence limits. Direct ME.17 use concerns a Method Engineering culture question. |
 
-## Administrative and representation sources
+<a id="administrative-and-representation-sources"></a>
+
+## ADM.Reference:3 - Administrative and representation sources
 
 The following source arguments shaped the working distinctions. The constructed cases in this publication are applications of those distinctions with supplied facts; they are not reports of observed ADM deployments.
 
-### Administration laboratories and synthesis
+<a id="administration-laboratories-and-synthesis"></a>
+
+### ADM.Reference:3.1 - Administration laboratories and synthesis
 
 The dated laboratory transcripts and ADM-Lab synthesis are working source materials with no public full-text return supplied in this edition. The following accounts give their selected contributions, original locators and limits; the receiving ADM instructions are available in this publication.
 
@@ -2718,23 +2728,31 @@ The dated laboratory transcripts and ADM-Lab synthesis are working source materi
 - **Administration laboratory, 17 June 2023.** The transcript, especially 44:18–56:43 and 62:15–78:22, separates developing a service from using it and connects substantive judgments, execution and exception resolution. This supports the Preface's design/handling distinction, ADM.2's competent return and ADM.5–6's reusable instruction and exception resolution. ADM.11 and ADM.13–16 extend the corresponding provider, record, control and transition questions.
 - **ADM-Lab source pack v0.1, 15 July 2026.** The synthesis, especially §§13–21 and 23–27, qualifies the earlier discussions. Section 15 supports the same-subject/participant-account comparison; §§20.1–20.2 propose the T+N delay question and qualify speed by reliability and participant burden. ADM.15 uses OPS.15:4.2–4.3 to make the selected start, usable end, source and time uncertainty recoverable. This is a dependent synthesis and authorial clarification, not independent corroboration.
 
-### Enabling provision and decision accounts
+<a id="enabling-provision-and-decision-accounts"></a>
+
+### ADM.Reference:3.2 - Enabling provision and decision accounts
 
 The administrative contribution is to make the organizational condition support the participant's intended work and to examine the burden of obtaining that support. The accounting contribution is to choose an account that answers the operating decision while retaining accounts required for other purposes. ADM.1, ADM.9 and ADM.15 make the enabling result and participant burden explicit; [OPS.14–15][OPS] supply the financial comparison and observation methods used here.
 
-### Accounting representations and TameFlow
+<a id="accounting-representations-and-tameflow"></a>
+
+### ADM.Reference:3.3 - Accounting representations and TameFlow
 
 - **Partridge and colleagues, Thoroughly Modern Accounting: Shifting to a de re Conceptual Pattern for Debits and Credits, 2018.** Published in *Advances in Conceptual Modeling, ER 2018*, LNCS 11158, pp. 134–148; [public bibliographic record and abstract][PARTRIDGE-A], DOI 10.1007/978-3-030-01391-2_20. The consulted preprint, PDF pp. 9–10 and 13–14, figures 7–8, supports the comparison of participant-relative and common representations and transaction direction. ADM.4 and ADM.10 adapt the representational contribution after event identity is established, while fulfillment remains governed by the actual obligation. The record identifies the work; its full-text download is restricted.
 - **Partridge and colleagues, Ontology then Agentology, 2018.** The [paper][PARTRIDGE-B], especially PDF pp. 5–8, table 2 and figures 2–4, distinguishes the common represented subject from an actor's position and meaning. ADM.2 and ADM.4 retain the useful correspondence. The conceptual examples do not establish empirical superiority of one database or require adopting the complete source ontology.
 - **Tendon and Doiron, Tame your Work Flow, 2020; Tendon, The Book of TameFlow, version 17 January 2022.** The consulted 2020 book, chapters 6–8 and 21, and the consulted 2022 book, chapters 15–16 and chapter 17 pp. 267–276, supply historical operating arguments about readiness, commitment, financial contribution and recurring problems. ADM.11 and ADM.15–16 use the qualified OPS instructions rather than universal single-metric, fixed-cost or cultural-effect claims. [OPS.14–15][OPS] supply the financial comparison and observation methods used here. Public returns are the publisher's [Tame your Work Flow catalogue page](https://leanpub.com/workflow) and [The Book of TameFlow page](https://leanpub.com/tameflow). The first is retired from sale; the second presents the continuing edition. These pages identify the works; the chapter and page locators above refer to the consulted editions.
 
-### Using operational accounts
+<a id="using-operational-accounts"></a>
+
+### ADM.Reference:3.4 - Using operational accounts
 
 Use an account suited to the operating decision, relate workload and capacity to financial consequences, and refresh assumptions when the decision changes. Preserve other accounts for their respective purposes. [OPS.14–15][OPS] describe the corresponding comparison and observation methods.
 
 For ADM.15, use the relevant receipts, payments, time and participant burdens on the declared comparison basis. This qualified reuse supplies no universal monetary objective, no rule that all allocated cost is useless, and no general equivalence between ROI or ROMI and a customer-value-to-acquisition-cost ratio. A cash comparison uses its declared incremental receipts and payments; a broader investment or customer-value claim requires the applicable finance or accounting method.
 
-## Bounded current comparisons
+<a id="bounded-current-comparisons"></a>
+
+## ADM.Reference:4 - Bounded current comparisons
 
 [GOV.UK's Service Standard, point 2][GOVUK] supplies the whole-problem service comparison used in ADM.1 and ADM.11. Its user-problem boundary is useful here; it does not establish the authority, applicability or outcome of a local administrative service.
 
@@ -2750,7 +2768,7 @@ For ADM.15, use the relevant receipts, payments, time and participant burdens on
 
 [REL]: ../FPF-Spec.md#a6rel---relation-obtaining-and-individuation-distinguish-occurrences-when-needed
 [PER]: ../FPF-Spec.md#a28per---granted-permission-exercise-and-non-prohibition
-[MWA]: ../FPF-Spec.md#c32mwa---practice-architecture-synthesis-from-several-structures
+[MWA]: ../FPF-Spec.md#c32mwa---synthesize-an-architecture-account-of-methods-and-their-use
 [EW]: ../FPF-Spec.md#b15ew---recover-how-constituent-actions-enact-encompassing-work
 [OPS]: OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md
 [OCE]: ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md
@@ -2767,3 +2785,5 @@ For ADM.15, use the relevant receipts, payments, time and participant burdens on
 [ME]: METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md
 [ISO]: https://www.iso.org/standard/62542.html
 [SSC]: https://forschung.hs-ansbach.de/de/publikationen/1447-shared-service-centers-sscs-and-administrative-cost-reduction-a-systematic-review-and-research-agenda
+
+## ADM.Reference:End

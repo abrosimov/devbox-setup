@@ -1,14 +1,14 @@
 # Operations Management Principles Framework
 
-> A domain pattern language for admission, continuation, coordination, service, quality and improvement decisions in continuing operation.
+> A domain pattern language for admission, continuation, coordination, service, quality, improvement and performance decisions in continuing operation.
 
 - **Author:** Anatoly Levenchuk, with AI-assisted development and review
-- **Version:** 20 September 2026
+- **Version:** 2 October 2026
 - **Status:** Eternal alpha: the current Methods can be used for their stated operating questions and conditions; the framework continues to develop as practice and evidence change.
 - **License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) for original framework content; third-party material retains its own terms.
 - **Publication:** [FPF repository](https://github.com/ailev/FPF)
 
-Start with the [Readme](#operations-management-principles-framework-readme) for a working difficulty or the [Table of Contents](#table-of-contents) for a familiar question or PatternID. Open the smallest useful pattern, reuse current matching inputs and stop at its sufficient result. For references to this version, use the [Citation](#citation).
+Start with the [Readme](#operations-management-principles-framework-readme) for a working difficulty or the [Table of Contents](#table-of-contents) for a familiar question or PatternID. Open the smallest useful pattern, reuse current matching inputs and stop at its sufficient result. For references to this version, use the [Citation](#opsreference11---citation).
 
 # Table of Contents
 
@@ -22,8 +22,8 @@ Use the Readme for worked connections across several operating questions. Use th
 | :--- | :--- |
 | [Operations Management Principles Framework Readme](#operations-management-principles-framework-readme) | Connect readiness, capacity, commitments, service results and changes to operating practice; follow the consequences of a changed condition. |
 | [Preface](#preface) | Keep Work, actual structures, subjects, commitments and units distinct when interpreting views, records and accounts; identify when control relations change an operating decision. |
-| [Cross-Pattern Application](#cross-pattern-application) | Follow PumpWorks, public-hospital and AI-assisted cases through local coordination, human conditions, service commitments, operating consequences, accounts, Method improvement, quality responses, simultaneous Work and cultural continuation. |
-| [Framework Boundary and Refresh](#framework-boundary-and-refresh) | Check available packages, FPF dependency, sibling returns, source limits, representative cases, and edition boundary. |
+| [OPS.Application - Cross-Pattern Application](#cross-pattern-application) | Follow PumpWorks, public-hospital and AI-assisted cases through local coordination, human conditions, service commitments, operating consequences, accounts, Method improvement, quality responses, simultaneous Work and cultural continuation. |
+| [OPS.Reference - Framework Boundary and Refresh](#framework-boundary-and-refresh) | Check available packages, FPF dependency, sibling returns, source limits, representative cases, and edition boundary. |
 
 ## Part I — Bound the Operation and Select Coordination Views
 
@@ -96,13 +96,20 @@ Use the Readme for worked connections across several operating questions. Use th
 | 25 | [OPS.19 - Reconcile Simultaneous Operating Work Across Cases and Scales](#ops-19) |  | Which cross-scale reconfiguration, bounded continuation, or exact unresolved conflict preserves the simultaneous operating results that matter? | OPS.1, OPS.3; conditional OPS.11, OPS.12, OPS.15, OPS.17; FPF C.32.MWA, C.11 |
 | 26 | [OPS.20 - Deliberately Continue and Change Operations Culture](#ops-20) |  | How do practitioners in the named population transmit, independently enact, select, retain or lose an Operations practice, and what continuation, change or uncertainty does the evidence support? | OPS.16, OPS.17, OPS.19; FPF C.36; ME.17 |
 
+## Part X — Choose Operating Aims and Interpret Performance
+
+| § | ID & Title | Status | Keywords & Search Queries | Dependencies |
+| :--- | :--- | :--- | :--- | :--- |
+| 27 | [OPS.21 - Choose Operating Aims, Targets and Comparisons](#ops-21) | Stable | What useful improvement should this team pursue, and which target or comparison would make it meaningful? | conditional OPS.1, OPS.10, OPS.13, OPS.15, OPS.19, STR.5/.8, MA.1/.2/.5/.6, OCE.10 |
+| 28 | [OPS.22 - Interpret Operating Performance and Decide the Response](#ops-22) | Stable | What does this result mean given target difficulty, changed conditions and joint work, and what response follows? | conditional OPS.13, OPS.15, OPS.19, OPS.21, MA.7/.9, OCE.10; HCD.11 and CGOV.13 for distinct receiving questions |
+
 # Operations Management Principles Framework Readme
 
 ## Practical entries
 
 Operations Management connects decisions about continuing service: what may start, what a case needs next, what the available resources can support, what can be promised, and what must change when results fail. These decisions use different results. A capacity calculation can constrain admission; an incident can change priorities; a service promise can remain unresolved after a feasible schedule has been found.
 
-These selected examples show how to combine the methods around a current difficulty; they are not a catalogue or a boundary of the field. Enter where adequate inputs are available and stop at the result the decision needs. The Table of Contents gives direct access to OPS.1–OPS.20 and their nested methods. The [Preface](#preface), including its [conditions on a whole combination](#opspreface10---conditions-on-a-whole-combination), explains why individually useful operating moves can conflict when they use the same resources, authority or evidence.
+These selected examples show how to combine the methods around a current difficulty; they are not a catalogue or a boundary of the field. Enter where adequate inputs are available and stop at the result the decision needs. The Table of Contents gives direct access to OPS.1–OPS.22 and their nested methods. The [Preface](#preface), including its [conditions on a whole combination](#opspreface10---conditions-on-a-whole-combination), explains why individually useful operating moves can conflict when they use the same resources, authority or evidence.
 
 You can ask an assisting agent to explain a pattern or comment on your case in ordinary language, without framework jargon.
 
@@ -121,7 +128,7 @@ The numbers in these applications are constructed. Their professional premises a
 - **Stop or return:** Return changed feasibility to admission and affected commitments. A supported test-service plan does not supply field-release evidence or authority.
 
 1. **Keep the same subjects across the needed views.** [OPS.1 - Identify the Operating System, Commitments, and Flow Units](#ops-1) bounds the continuing control-service operation. [OPS.3 - Distinguish Operating Subjects, Cases, Queues, Resources, and Records](#ops-3) separates a release candidate, incident, rig request and test attempt. [OPS.2 - Select Work-Management Views and Coordination Methods](#ops-2) can use case, recurring-process and queueing views for their different questions. [OPS.4 - Keep Current Operating State Recoverable Across Participants](#ops-4) makes the relevant evidence, unresolved conditions and next decisions recoverable to the participants; they need not share one screen.
-2. **Establish readiness for the next action.** In the [PumpWorks application](#app-ops-01--pumpworks-continuing-control-service-operation), twelve matters appear on boards but only four are ready test packages. OPS.8 identifies what the test can use now. The test's future output is not its own prerequisite. If laboratory permission is current and the unresolved safety question concerns only field release, the test may proceed while release remains held. A safety condition that also governs testing changes that conclusion.
+2. **Establish readiness for the next action.** In the [PumpWorks application](#opsapplication1---app-ops-01--pumpworks-continuing-control-service-operation), twelve matters appear on boards but only four are ready test packages. OPS.8 identifies what the test can use now. The test's future output is not its own prerequisite. If laboratory permission is current and the unresolved safety question concerns only field release, the test may proceed while release remains held. A safety condition that also governs testing changes that conclusion.
 3. **Distinguish missing inputs from insufficient usable time.** Across forty rig-access hours, the example records twenty testing, four setup, four unavailable and twelve without eligible work. [OPS.9 - Diagnose and Treat the Current Operating Constraint](#ops-9) uses eligibility and service histories to distinguish late prerequisites from a resource deficit in the required window. The historical starvation does not settle the next window: [OPS.10 - Qualify Operating Capacity Under Variability](#ops-10) finds six usable rig-hours and four packages needing two consecutive hours each. All four require eight hours and cannot fit.
 4. **Make the adverse case and other demands part of the plan.** Suppose one planned package requires an immediate two-hour repeat and then passes, while the other planned packages pass first time. Two completions plus that repeat use six hours; three plus the repeat need eight. [OPS.12 - Protect Human Conditions in Operating Decisions](#ops-12) preserves the operator's required recovery and incident coverage after hour six. Extra rig access needs qualified relief as well as the resource owner's decision. The full application also compares advance funding and a later slot; an extra window alone does not make the whole extension feasible.
 5. **Use the combined result to decide starts and returns.** [OPS.19 - Reconcile Simultaneous Operating Work Across Cases and Scales](#ops-19) retains the feasible two-package plan, defers the third to its qualified later slot and keeps a competing trial closed in the same six-hour window. [OPS.5 - Admit Work and Limit Starts](#ops-5) gives each considered item its disposition. [OPS.7 - Manage Aging, Urgency, and Service Commitments](#ops-7) handles the affected local priority or existing promise under the appropriate authority. [OPS.11 - Coordinate Interacting Operating Structures](#ops-11) checks that access and evidence still concern the required interval and configuration.
@@ -140,7 +147,7 @@ If an extra window, qualified relief and the other required conditions later bec
 
 - **Stop or return:** Obtain the parties' decision on a changed promise. Internal replanning does not discharge an existing commitment; an unresolved professional condition remains with its responsible practitioner.
 
-1. **Use the resource that actually limits this service.** In the constructed [hospital application](#app-ops-02--public-hospital-emergency-flow-probe), two rooms each have four available hours, but one qualified team has four usable hours. Supplied clinical and operating assumptions require thirty minutes per routine visit, including turnover, and reserve one team-hour for the stated urgent-case scenario. OPS.10 therefore supports six routine visits in total, not sixteen from the room count.
+1. **Use the resource that actually limits this service.** In the constructed [hospital application](#opsapplication2---app-ops-02--public-hospital-emergency-flow-probe), two rooms each have four available hours, but one qualified team has four usable hours. Supplied clinical and operating assumptions require thirty minutes per routine visit, including turnover, and reserve one team-hour for the stated urgent-case scenario. OPS.10 therefore supports six routine visits in total, not sixteen from the room count.
 2. **Subtract what is already promised.** Two visits are committed and six additional visits are requested. The supported proposal is four additional routine visits under the stated reserve. Serving all six additional requests needs another qualified arrangement or an agreed later time. Eligibility, clinical priority and protected conditions remain supplied professional decisions.
 3. **Make the schedule usable for everyone who supplies it.** OPS.12 follows the support team's other duty and recovery. Where the supplied windows permit two groups of three visits, that arrangement can preserve both service and support duties. If the reserve changes from one to two team-hours, only four routine visits fit: after the two existing commitments, the additional offer falls to two. Return that changed resource result to OPS.13 before confirming the larger offer.
 4. **Use an account that retains unfinished obligations.** [OPS.15 - Build a Decision-Specific Operating Account](#ops-15) distinguishes the historical due-request cohort from completed visits. Twenty-seven timely, three late-completed and ten still-open requests give timely service of `27/40 = 67.5%`. The completed-only `27/30 = 90%` answers another question. Use the due-cohort result for overdue service, while the clinical evidence determines clinical action.
@@ -159,7 +166,7 @@ If an extra window, qualified relief and the other required conditions later bec
 
 - **Stop or return:** Retain the distinction between drafts, review decisions, accepted changes and authorized deployments. A settled resource bound can answer the current request without an additional model or experiment.
 
-1. **Follow generation to acceptance.** In the constructed [software application](#app-ops-03--ai-assisted-software-operation-probe), sixty drafts can be generated per day but qualified staffing supports six individual review decisions. Each accepted output needs its own decision. Ten accepted outputs tomorrow are therefore excluded under the current arrangement. Recent days with four to six accepted outputs do not supply a probability for tomorrow, or a guarantee that all six reviews will accept.
+1. **Follow generation to acceptance.** In the constructed [software application](#opsapplication3---app-ops-03--ai-assisted-software-operation-probe), sixty drafts can be generated per day but qualified staffing supports six individual review decisions. Each accepted output needs its own decision. Ten accepted outputs tomorrow are therefore excluded under the current arrangement. Recent days with four to six accepted outputs do not supply a probability for tomorrow, or a guarantee that all six reviews will accept.
 2. **Compare changes at the receiving result.** [OPS.17 - Compare and Refresh Operations Methods](#ops-17) compares limiting starts, obtaining qualified review capacity and changing preparation or acceptance. OPS.12 follows review, rework, interruptions and recovery; OPS.13 uses the resulting capacity and conditions to form a later or narrower offer. If the recipient accepts a review service instead of accepted output, make that changed result explicit.
 3. **Keep payment and service consequences together.** A separate constructed day in the application has four accepted outputs due. Both alternatives generate sixty charged drafts, use six reviews and pay the same salary of 240. The current alternative pays 60 for drafts and accepts four outputs: total payments 300. The cheaper-generation alternative pays 30 plus 10 for rework and accepts two: total 280. Its 20 payment reduction leaves two due outputs unaccepted. OPS.14 compares that service consequence before treating the lower generation price as an improvement.
 4. **Use deployed-service evidence for the deployed-service decision.** [OPS.18 - Control Operating Quality and Reliability](#ops-18) uses a separately defined population of one million eligible service requests with a 99.9% success objective. The permitted failure amount is 1,000; 1,500 unsuccessful requests consume 150% of it. Under the example's authorized response policy, discretionary feature releases pause while permitted urgent recovery and security work continue. Restart needs the agreed service evidence. Accepted code and a fresh reporting period do not establish restored service.
@@ -240,6 +247,16 @@ The [Foundational Thinking Suite Reference](https://github.com/ailev/FPF/blob/ma
 4. **Coordinate production and receiving support.** Count publication when the agreed publication result is delivered. If the service also includes explanation, practice or later application, OPS.11.1 includes their work, resources and completion conditions; OPS.10.1 compares the support demand with available capacity. A growing queue of requests for clarification may call for one material repair under HCD.19 rather than more publications. OPS.14 compares the consequential costs. Preserve a useful completed publication without claiming that it has already changed anyone's capability.
 
 The long applications add case-specific conditions and returns. Use the common Operations methods whose results the current decision needs, together with the qualified contributions of the relevant professional practice.
+
+### OPS-AIMS-AND-PERFORMANCE — Set a meaningful aim and interpret what follows
+
+- **Situation:** A target gives little guidance, a peer ranking hides different work, or a missed aim prompts judgement before the changed conditions and joint result are examined.
+- **Question:** What contribution is worth pursuing, how will it be compared, and what should the later result change?
+- **First useful result or blocker:** A meaningful aim and next action, or a reasoned operating assessment and authorized response with its actual limits.
+- **Start with:** [OPS.21](#ops-21) when the aim or comparison is missing; [OPS.22](#ops-22) when the result needs interpretation. Use an adequate supplied basis directly.
+- **Stop or return:** A target does not authorize a service promise or spending. Return a changed premise to the aim, forecast, provision, commitment or consequence rule it affects.
+
+In the [repair cooperative example](ENGINEERING-DPF-SUITE-REFERENCE.md#how-should-we-set-a-target-and-judge-a-miss-after-conditions-change), twelve known useful opportunities justify considering an ambition of twelve while bookings and warranted further demand support a forecast of eight. OPS.21 constructs that distinction and chooses what evidence would show a useful result. MA.5–6 preserve the outlook; the operating and financial methods expose staffing and cash conditions before OPS.13 establishes promises. When work becomes harder, OPS.13 and OPS.19 obtain an agreed response rather than merely lowering a number. OPS.22 then retains the factual miss, examines difficulty and shared consequences, and distinguishes the useful response from an unsupported team ranking. An effective change in the local review rule makes the adverse forecast usable for action; changing its label alone would leave the conflict intact.
 
 # Preface
 
@@ -402,12 +419,12 @@ The combined use makes an operating choice explainable: which result it protects
 
 The examples favor operations where cases, commitments, resource windows and result evidence can be recovered. Real operations can have incomplete records, unequal access to information and affected people whose burden is absent from the official account. OPS.12 asks those affected about displaced work and conditions; OPS.15 preserves missing observations and omitted populations. A manager's account alone can therefore be insufficient even when its arithmetic is correct. Retain disagreement and professional limits instead of treating missing information as zero burden or permission to proceed.
 
-The three constructed applications demonstrate the reasoning and its branches. They do not establish comparative effectiveness across domains, future service probabilities, clinical or engineering outcomes, causal superiority of a Method, or sustained population retention. A result that needs any of those claims requires evidence for that use. The [source and refresh account](#source-use-and-currentness) identifies what to reconsider when a professional premise changes.
+The three constructed applications demonstrate the reasoning and its branches. They do not establish comparative effectiveness across domains, future service probabilities, clinical or engineering outcomes, causal superiority of a Method, or sustained population retention. A result that needs any of those claims requires evidence for that use. The [source and refresh account](#opsreference4---source-use-and-currentness) identifies what to reconsider when a professional premise changes.
 
 ## OPS.Preface:15 - What this publication covers and leaves outside
 
 
-The patterns cover independently enterable questions about operating focus, views, subjects, current state, admission, continuation, priority, queues, constraints, capacity and structural coordination. They connect that work to affected people, supported promises, operating and financial consequences, useful accounts, bounded Method improvement, Method-repertoire selection, quality/reliability responses, reconciliation of simultaneous operating results, and deliberate cultural continuation.
+The patterns cover independently enterable questions about operating focus, views, subjects, current state, admission, continuation, priority, queues, constraints, capacity and structural coordination. They connect that work to affected people, supported promises, operating and financial consequences, useful accounts, bounded Method improvement, Method-repertoire selection, quality/reliability responses, reconciliation of simultaneous operating results, and deliberate cultural continuation. OPS.21–22 add the construction of meaningful operating aims and the interpretation of performance under changed conditions, while keeping service promises, capability assessments and reward decisions distinct.
 
 A plan or calculation does not establish performed Work, accepted service, a health effect, field release, Method identity, causal improvement or later use by a practitioner population. Those claims require their own evidence, conditions, authority and specialist results. The package table keeps the Operations questions distinct.
 
@@ -434,7 +451,7 @@ Recognition is cheap: enter when a practical decision cannot name its operating 
 
 Do not use OPS.1 merely to rename an already bounded operation, classify every object as a System, approve a strategy, design a product, authorize Work, or choose an improvement Method. If the current blocker is a product or asset change, organization change, one person's capability, finance, law, safety, or another specialist result, obtain that result and return only if it changes the operating focus.
 
-### OPS.1:0.1 - Working Distinctions
+#### OPS.1:0.1 - Working Distinctions
 
 | Name used here | Meaning |
 | --- | --- |
@@ -487,6 +504,8 @@ Limit the operating focus to what the current decision needs; identify the actua
 8. **Check the control branch.** If observation, decision, actuation, supervision, feedback, or rate separation can change coordination, record the control-relevant operating concern for `OPS.2`. Do not construct a control view or infer a feedback relation here.
 9. **Recover authority and evidence limits.** Name who may use the focus for which decision, what evidence supports it, what remains uncertain, and which missing fact blocks reliance.
 10. **Return, dispose, and reopen.** State the selected operating focus, rejected candidates, next pattern, truthful stop, and one observable change that reopens the boundary, commitment, subject, or unit. When a change reopens any focus field, list the known downstream views, accounts, policies, and later decisions that consumed that field; mark each `recheck`, `still usable`, or `return`, and give the decision-local reason. Leave an unrelated consumer intact.
+
+Use an existing workflow or service account when it already identifies the needed result, receiver, promise and return. Add only a missing distinction that can alter the current decision; selecting an operating focus need not create a new document.
 
 #### OPS.1:4.2 - Record the Result
 
@@ -577,20 +596,15 @@ Continuing operation is coordinated through actual Systems, Work, relations, com
 
 ### OPS.1:11 - SoTA-Echoing
 
-| Practice question | Selected current line and serious alternative | Defect overcome and governed loci | Source roles and limits | Reopen condition |
-| --- | --- | --- | --- | --- |
-| How should a practitioner establish the first operating focus before changing a board, policy, measure, or flow? | The selected current line is **subject-, commitment-, and decision-first**: bound the operating System or subject, continuing result, commitments, operating subjects, tracked units, authority, and evidence before selecting a management Method or representation. The serious default is **workflow- or school-first**: take an existing process, value-stream, backlog, board, or branded Method as the operation and its items as the units. | The default can optimize a representation or convenient count while the service, case, product, or commitment degrades. **Adapt:** `OPS.1:4.1` and `OPS.1:4.2` require a decision-bounded focus and consumer disposition; `OPS.1:5` demonstrates selection and local reopening; `OPS.1:7` checks that downstream consumers are rechecked without discarding unaffected results. **Reject:** a board, school, or source-local unit as the operating boundary by default. | FPF supplies System, relation, account and evidence distinctions. This pattern connects Work, Methods and the viewpoints needed for the operating decision. The Kanban Guide describes a bounded workflow. TameFlow and DEMO also examine commitments, hidden queues, interactions and coordination Work. Use these accounts to compare proposed operating boundaries. | Reopen if a stronger current comparison or repeated unlike use shows that a workflow-first entry preserves the same subject identity, commitments, specialist returns, downstream repair locality, and decision value at lower effort, or if a relied-on source changes one of those moves. |
+The decision is where to place the operating boundary before changing coordination. A capable incumbent is an explicit Definition of Workflow with meaningful start and finish, receiving stakeholders, policies, service expectations and flow observations. [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) supplies that bounded construction; it is not merely a board. TameFlow's preparation and commitment discussions add the recipient's useful package and the distinction between an option and committed work. OPS adopts those contributions rather than replacing them with a new preliminary form.
 
-The selected comparison is supported by the following bounded source roles and limits.
+Compare the same PumpWorks decision. A well-maintained release workflow can already identify its validation work, completion criteria, WIP and promised delivery. If that is the decision's whole reach, reuse it as the operating focus. If the question is whether the service can release R42 while continuing incident I73, however, finishing validation and restoring the field installation are different results. A single workflow may deliberately exclude the field receiver, the safety decision and provider-access commitments. Sections 4.1–4.2 add only the missing relation to those subjects and the participant who can answer it. The gain is a changed boundary and return: a completed lab package can be available while field restoration or release permission remains unresolved. Kanban can represent these distinctions too; OPS does not claim that its notation prevents them.
 
-Relate Methods, performed Work, resources and the structures selected for the operating question. Projects, processes, cases and queues can expose different features of that Work.
+For another use, consider a competent travel-office workflow whose finished item is an issued ticket. The receiver now needs arrival before a site-access window. OPS.1 asks whether the current promise is ticket issuance or a usable travel arrangement, and who supplies the access and timing conditions. The result may remain a bounded travel service with a returned access question, rather than expanding its responsibility to the success of the whole visit. If the existing workflow already captures that receiving use and return, nothing must be added.
 
-| Source line | Retained contribution | Use boundary |
-| --- | --- | --- |
-| Current FPF `A.1.SCR`, `A.6.REL`, `C.2.1`, and `A.10` | Conditional System recognition, obtaining relations, claim-bearing accounts, and evidence reliance. | FPF does not select the Operations result, commitments, domain units, intervention, or service consequence. |
-| [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) | Define a workflow and its Work items explicitly before using flow measures or active-item policies. | One minimal Kanban Method does not identify every operating System, case, commitment, physical subject, or suitable management view. |
-| TameFlow 2022 and its precursor, see the [source account](#source-use-and-currentness) | Distinguish optional demand from committed Work and make hidden queues, constraint, financial, interaction, and human-condition questions visible. | The four concerns do not create four transformation-flow kinds or one universal operating boundary. |
-| DEMO 2020/2024, see the [source account](#source-use-and-currentness) | Make production and coordination Work, commitments, parties, responsibility, and transaction structure visible. | DEMO constructs remain organization-specific source contributions and do not become FPF ontology or a complete Operations Method. |
+The additional burden is interviewing or consulting the affected receiver, establishing one missing subject/commitment correspondence, and maintaining it when conditions change. It is justified only if that distinction can change admission, continuation, a promise or an intervention. Duplicating the workflow's complete item history, drawing the whole enterprise or maintaining a second status account adds no such gain. This is why section 4.1 starts with a decision and section 4.2 permits a bounded return.
+
+FPF's `A.1.SCR`, `A.6.REL`, `C.2.1` and `A.10` govern System recognition, relations, accounts and evidence. The historical DEMO production/coordination distinction helps inspect commitments and participants; neither source selects the operating boundary or assigns local authority. The selected OPS synthesis is conditional, not evidence of comparative effectiveness. Reopen it when an omitted receiving relation changes a decision, or when the incumbent already preserves the same result and return at lower total maintenance cost.
 
 ### OPS.1:12 - Relations
 
@@ -620,7 +634,7 @@ Recognition is cheap: enter when practitioners disagree about “what kind of Wo
 
 Do not use OPS.2 to classify Work into a universal natural kind, infer performed Work from a plan, select a structure by diagram appearance, or prescribe one lifecycle. If the question concerns only the identity of an already selected structure, mathematical lens, or architecture view, use `A.22`, `C.29`, or `C.30.LCA` directly.
 
-### OPS.2:0.1 - Working Distinctions
+#### OPS.2:0.1 - Working Distinctions
 
 | Name used here | Meaning |
 | --- | --- |
@@ -669,11 +683,11 @@ Select views and coordination Methods from the operating questions they must ans
 2. **List the viewpoint questions.** Name each user, decision, subject, grain, horizon, and missing information. Separate planning, recurring execution, case continuation, aggregate waiting/capacity, and control questions.
 3. **Generate serious view candidates.** Include project or programme, process, case, queueing, and control-structure views only where their questions are current. Include the incumbent as the no-change option, and a simpler view when it is a plausible alternative.
 4. **Compare fit to the current Work.** Examine predictability, recurrence, subject identity, decision latency, runtime discretion, plannability, shared-resource coupling, exception frequency, evidence refresh, and authority. These are comparison prompts, not a universal scoring formula.
-5. **Select the coordination Method separately.** State which reusable coordination Method is used with each view, its applicability, burden, evidence, and stop. A notation, board, model, or view does not establish a Method.
+5. **Select the coordination Method separately.** Recover the actual rule or reusable way currently used: what fact permits a start or continuation, who applies it, what it orders, what evidence it needs and when it stops. Use `OPS.17:4.1`–`OPS.17:4.4` when a real alternative or combination must be chosen. Compare the incumbent with that alternative at the same operating decision and include application and maintenance effort. Retain the incumbent when adequate. A notation, board, model or view alone is not this rule.
 6. **Select actual structures independently.** Use `A.22` when a transformation-flow, queue/resource-dependency, commitment, event, case-state, control, or other actual structure changes the decision. A mathematical graph or diagram remains a representation.
 7. **Use the control branch conditionally.** When observation, decision, actuation, supervision, feedback, or rate separation changes coordination, use `A.22` and `C.30.LCA` to identify one selected control structure and recover the needed view. Use `B.2.5` only for an obtaining two-sided supervisor relation and `C.27.TA`, `C.27`, or `A.3.3` for the exact rate, temporal, or dynamics claim. Stop without a control view when no control relation changes the decision.
-8. **Compose views explicitly.** State subject correspondences, scope and grain, governing commitments, state correspondence, handoff or coexistence conditions, decision rights, update rules, conflicts, and stop conditions. Do not rely on a “hybrid” label.
-9. **Test with a changing case.** Ask what happens when new evidence defeats the plan, a case crosses a process boundary, queue delay changes a commitment, or control evidence arrives at a different rate. Repair only the affected view or correspondence.
+8. **Compose views explicitly.** State the shared subjects, relevant grain and horizon, state and evidence correspondence, governing commitments, receiving decisions, handoff and update rules. If Methods coexist, settle which rule governs a disputed permission, ordering, resource or stop decision; retain the other rule where its conditions still hold. Use the existing `OPS.17:4.4` composition result where current. An unresolved conflict returns to its authority; a “hybrid” label does not settle it.
+9. **Work one consequential change.** In a bounded replay, change an input that the selected rule actually uses, apply the resulting permitted action or stop, and identify the unaffected subwork. A new fact may retire one exception without changing the recurring procedure, the case identity or every view. Record what the next participant can still rely on.
 10. **Return and reopen.** Record selected and rejected views, coordination Methods, unresolved correspondences, next subject-account need, and one observation that reopens the decision.
 
 #### OPS.2:4.2 - Record the Result
@@ -695,9 +709,11 @@ The team stops asking whether Work “is” a project, process, or case. It asks
 
 ### OPS.2:5 - Archetypal Grounding — PumpWorks Mixed Operating Views
 
+#### OPS.2:5.1 - Identify the useful views
+
 `PumpWorks-ControlServiceOps` coordinates several unlike questions:
 
-| Current question | Selected view and Method contribution | Boundary |
+| Current question | Useful view | Boundary |
 | --- | --- | --- |
 | How should `FieldIncident-I73` continue after new field evidence? | Case view over the field installation, incident state, commitments, evidence, authority, and permissible next Work. | The ticket is a record; safety and product decisions retain their owners. |
 | How is release evidence repeatedly produced and checked? | Process view of the recurring validation Method and its input/result relations. | A process description does not establish that an occurrence happened or conformed. |
@@ -708,6 +724,18 @@ The team stops asking whether Work “is” a project, process, or case. It asks
 The views preserve correspondences to `ReleaseCandidate-R42`, `FieldIncident-I73`, `SafetyQuestion-S19`, `ProviderChange-P8`, the test rig, commitments, evidence results, and decisions. The incident case can request a validation-process occurrence; that occurrence can consume rig capacity; its evidence can inform the weekly release decision; a platform-migration project can change provider access. None of these relations makes the views one structure.
 
 The product-control structure has `FieldPumpInstallation-P4` as plant, `FieldTelemetryObserver-O4`, `DeployedController-C17`, and `FieldModeSupervisor-S1` only where their direct relations obtain. The operating-supervision structure has `ReleaseSupervisorTeam-S2` receive operating-state reports and return release, hold, rollback, or permitted-mode constraints to the operating System. The timing claims remain separate: sub-second product control, minute-to-hour field observation, daily incident triage, weekly release, and slower provider change. OPS.2 selects their use; it establishes no feedback closure, stability, safety, or authority.
+
+#### OPS.2:5.2 - Choose and combine actual coordination rules
+
+In a constructed 09:00–11:00 window, PumpWorks permits at most two active engineering work packages under its existing staffing and recovery policy. T8 is already running. Incident diagnosis I73-D and the older provider-preparation package P8-P are both ready and permitted; both would need engineer E18. I73 has a field-contact window closing at 11:00, while P8-P can wait until the afternoon without violating a promise. The recurring T8 validation procedure is adequate and remains unchanged.
+
+The incumbent rule starts the oldest ready package when a slot and performer are free. Its virtue is predictable order with little coordination. The incident rule allows a ready package to precede that order when a named response window would otherwise be lost, provided the incident lead authorizes the exception, the resource owner confirms it, displaced work remains feasible and the active limit is respected. These are supplied local rules, not universal properties of either a case view or Kanban.
+
+Using `OPS.17:4.2`–`OPS.17:4.4`, the coordinator compares the two rules at this decision. Starting the noninterruptible two-hour P8-P would remove E18 from the incident's remaining evidence-and-response interval. The exception instead starts I73-D, defers P8-P to an authorized afternoon review and leaves T8 running. Its extra cost is one bounded confirmation and a follow-up on the deferred package; it avoids no demonstrated cost outside this window. The composition says exactly: readiness and permission govern eligibility, the incident exception governs order among eligible packages, the two-package limit still governs starts, and validation controls its own safe completion. No extra active slot is created.
+
+At 09:50 the field contact becomes unavailable. The exception no longer justifies reserving E18 for live verification. The incident remains a case with a partial diagnostic result, but the live continuation returns for access and permission. T8's completed evidence and the independently permitted T9 validation remain usable; the coordinator reconsiders ready demand without reopening every view. `OPS.5:5.1`, `OPS.6:5.1` and `OPS.7:5.1` develop the admission, observation and commitment decisions for this same constructed matter. They can also be used independently.
+
+The lesson is not to install all five views. It is to keep the existing process where its rule fits and add the case, queue or commitment relation only for a decision it changes.
 
 Reopen the mode decision when a new subject cannot be related across views, a plan repeatedly fails after new facts, queue policy changes a commitment, a control relation becomes decisive, or maintaining one view costs more than the decision value it supplies.
 
@@ -757,20 +785,13 @@ Different views earn their place by changing a decision. Project, process, case,
 
 ### OPS.2:11 - SoTA-Echoing
 
-| Practice question | Selected current line and serious alternative | Defect overcome and governed loci | Source roles and limits | Reopen condition |
-| --- | --- | --- | --- | --- |
-| Which management views should coordinate one operation when project, process, case, queueing, and control questions coexist? | The selected current line is **question-relative multi-view selection with explicit subject, state, commitment, and decision correspondence**. The serious alternatives are one canonical project/process/case taxonomy and an ungoverned overlay of tool views. | A single view suppresses questions it cannot answer; an ungoverned overlay produces incompatible status, identity, and authority claims. **Adapt:** `OPS.2:4.1` selects each view from its question, `OPS.2:4.2` records correspondence and unresolved conflicts, `OPS.2:4.3` permits local addition or retirement, and `OPS.2:5` tests coexistence. **Reject:** treating a view name as the Work's ontological kind or combining views without a receiving decision. | Select each view of Work for its question, using FPF distinctions for actual structures, representations and control. CMMN, DCR, Kanban and layered-control sources address different case, workflow and control questions; compare their contributions for the views needed by the operation. | Reopen if a current integrated Method answers the unlike questions with no worse subject/state correspondence, authority clarity, repair locality, and application effort, or if repeated use changes a view's decision contribution or the minimum correspondence rule. |
+The question is how to coordinate evolving case work with recurring procedures and shared resources. A strong alternative already integrates them. [CMMN 1.1, §4.1 and §5.4.9](https://www.omg.org/spec/CMMN/1.1/PDF) supports runtime case planning, procedural subwork and authorized planning roles. An adaptive project arrangement can likewise revise its plan when facts change. Neither should be represented as an inflexible taxonomy.
 
-The selected comparison is supported by the following bounded source roles and limits.
+At PumpWorks, such an arrangement can retain T8's procedure while a case manager selects incident diagnosis. If its case file, resource policy and decision rights also settle the shared E18 allocation and preserve the field-contact window, use it unchanged. OPS adds no gain by displaying the same decision in more tools. The remaining question arises when the case manager's chosen action, the queue's oldest-ready rule and the resource owner's active limit produce incompatible starts. Sections 4.1.5 and 4.1.8 connect to OPS.17 to recover and compose the actual rules; section 5.2 makes the incident exception govern order without overriding eligibility or increasing the limit. The changed contact condition retires that exception while recurring validation survives.
 
-Project, process, case, queueing and issue-tracking descriptions can provide different views of the same Work. Select the views for their practical questions and preserve the correspondences needed to use their answers together.
+This synthesis costs rule recovery, agreement on the one disputed decision, mapping of the shared subject and evidence, and maintenance of that correspondence. It can be more expensive than using a capable integrated case model, especially when one owner already maintains all relevant policies. Its conditional gain is avoiding an unsupported cross-view action when those policies were separately governed. Stop adding views when their answers cannot change a decision; retire a duplicate view rather than paying its synchronization cost.
 
-| Source line | Retained contribution | Use boundary |
-| --- | --- | --- |
-| Current FPF `A.22`, `C.29`, `C.30.LCA`, `B.2.5`, `C.27.TA`, `C.27`, and `A.3.3` | Select actual structures and views, keep mathematical representations distinct, recover control relations, and govern rate/dynamics claims. | FPF does not choose the Operations questions, domain coordination Methods, commitments, or service consequences. |
-| [CMMN 1.1](https://www.omg.org/spec/CMMN/1.1/PDF) and [DCR](https://doi.org/10.4204/EPTCS.69.5) | Case planning, runtime discretion, declarative conditions, milestones, and responses can support continuation after new facts. | The specifications supply different case and constraint formalisms, not one complete Operations Method or universal case ontology. |
-| [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) | Define a workflow, Work items, states, active-item management, and flow measures for a bounded Kanban use. | Kanban is one Method that can coexist with project, case, control, or other views; it does not establish comparative dominance. |
-| Layered-control and LCA sources, see the [source account](#source-use-and-currentness) | Make observer, controller, plant, supervisor, observation, actuation, feedback, and unlike rates visible. | Current FPF owns the generic control structure and claim discipline; source labels establish neither operating Method nor stability or safety. |
+OPS adopts CMMN's coexistence of planned and discretionary work, and the DCR tradition's explicit conditions and responses, without claiming that either source automatically gives domain evidence or external authority. The [Kanban Guide](https://kanbanguides.org/the-kanban-guide/2025.5/) supplies the bounded flow-policy contribution. FPF `A.22`, `C.29`, `C.30.LCA` and the applicable temporal patterns govern selected structures, representations and control claims; a control view is still conditional. Reopen when the integrated incumbent already settles the same conflicts more simply, or a new case defeats a relied-on composition rule.
 
 ### OPS.2:12 - Relations
 
@@ -802,7 +823,7 @@ Recognition is cheap: enter when a record label, metric denominator, queue item,
 
 Do not use OPS.3 to model every object in the operation, redesign a database, declare an event log complete, infer a case from a ticket, or create a catch-all `operational object` kind. If an existing subject pattern already answers the identity or relation question, use it and record only the Operations correspondence needed here.
 
-### OPS.3:0.1 - Working Distinctions
+#### OPS.3:0.1 - Working Distinctions
 
 | Name used here | Meaning |
 | --- | --- |
@@ -853,10 +874,10 @@ Build the smallest operating-subject account that preserves exact identities, ob
 3. **Separate case, Work, and Work item.** Name the case subject and closure conditions; admit actual Work independently; define each coordination Work item by start, finish, subject/result relation, and receiving use.
 4. **Recover queue and buffer relations.** Name eligible item, queue or buffer, membership interval, order or protective purpose, policy, resource/service relation, and evidence. A drawn position creates none of these facts.
 5. **Recover resources through exact relations.** Distinguish the System, capability, material, information, access condition, or time from availability, access, allocation, support, consumption, or other obtaining relation. Preserve authority and human-condition questions.
-6. **Separate events, records, and state claims.** Identify the occurrence or changed subject; identify each record and carrier; state what claim it supports, source, time, uncertainty, and limit. Do not reconstruct Work from event order alone.
+6. **Separate events, records, and state claims.** Identify the occurrence or changed subject and the records supporting it. For a consequential time, distinguish occurrence, observation, receipt and later correction; recover the clock and field meaning actually used. A later upload does not move the occurrence or reset its waiting time. State the supported claim and its uncertainty. Event order alone does not establish performed Work.
 7. **Recover commitments and direct relations.** Use `A.6.REL` or the direct governor for each relied-on relation. Keep promise, obligation, fulfilment, responsibility, authority, assignment, and evidence distinct.
 8. **Apply the control branch only when selected.** Preserve actual Systems or holons and direct observation, actuation, reference, supervision, and feedback relations. Treat observer, controller, plant, and supervisor as relation-specific meanings. Use `B.2.5` only when both observation/report and returned influence/constraint sides obtain.
-9. **Reconcile records by subject and claim, not by row.** State correspondences, conflicts, missing joins, identity changes, currentness limits, and which source can support which decision. Keep unresolved claims visible.
+9. **Reconcile records by subject and claim, not by row.** When a relation or timestamp is disputed, identify the source that can settle that particular meaning and the person authorized to correct its account. Preserve the original observation and explain the correction. Recompute only the state, elapsed time, queue membership or other decision that used the defective relation. Keep an unresolved association unusable for that inference; do not guess a replacement. Retain independently supported claims and ongoing work. A correction to a record does not itself change permission or undo performed Work.
 10. **Stop at the smallest sufficient account.** Return exact subjects, direct relations, records, state claims, gaps, and reopen conditions to OPS.4. Leave unrelated objects outside.
 
 #### OPS.3:4.2 - Record the Result
@@ -869,7 +890,7 @@ Build the smallest operating-subject account that preserves exact identities, ob
 | queue, buffer, and resource relations | Participants, membership or access interval, purpose/policy, order or extent, direct relation, and evidence. |
 | events and records | Occurrences, claim-bearing records and carriers, source, scope, time, uncertainty, and non-admissible inferences. |
 | state and commitments | Qualified state claims, commitment relations, provenance, authority, conflicts, and currentness. |
-| control relations | Actual participant meanings and observation/actuation/reference/supervision/feedback relations, or an explicit `not current` result. |
+| control relations, when the control branch is selected | The actual participants and decision-bearing observation, actuation, reference or supervision relations. Omit this row for an account that makes no control claim. |
 | continuation | Account content supplied to OPS.4, explicit gaps, and observable reopen conditions. |
 
 #### OPS.3:4.3 - What Changes in Practice
@@ -889,6 +910,12 @@ The weekly release decision initially sees four cards and a rig calendar. OPS.3 
 | test-rig booking row | Queue membership of an exact eligible request for resource relation to `TestRig-2`, with interval, order/policy, access condition, and status evidence. | The booking row records planned access. Establish request eligibility, allocation authority, performed test Work, and test completion separately. |
 
 Records remain distinct: ticket, trace, source commit, build result, test result, service log, field-engineer report, telemetry record, and release decision each support bounded claims. A multi-object event record may relate one event to several subjects, but it does not identify those subjects with one case or prove the represented Work.
+
+Consider a later, constructed PumpWorks reconciliation. An imported test event L17 has been associated with both R41 and R42 because their records share a release folder. The board consequently removes R42's test request from the ready queue and reports “tested at 10:20.” That conclusion consumes two unsupported assumptions: that L17 tested R42, and that 10:20 is test completion rather than receipt of the message.
+
+The lab's signed execution record identifies the tested build as R41 and completion at 09:50; the intake trace identifies 10:20 as message receipt. The lab engineer confirms those meanings, and the authorized record maintainer replaces the false R42 association with the supported R41 association while retaining the original import and the correction's basis. R42's completion claim is withdrawn. After confirming that R42's independently established inputs and permission still hold, the scheduler restores its waiting eligibility and the priority justified by the current queue rule and original waiting history. Correction time does not restart its age or revoke work already permitted or performed on other requests. L17 supports the stated R41 test result, not R41's wider release or field condition.
+
+S19's unresolved safety question, I73's field observations and the independently permitted work on them remain as they were. The correction reaches OPS.4's R42 state and OPS.8's test population because those uses consumed the bad link; it does not invalidate the entire operating account. If the execution record cannot identify the tested build, neither R41 nor R42 acquires test completion from L17. Return the missing applicability result to the lab and keep any otherwise permissible work running. This small reconciliation is sufficient when those are the only affected uses; a full data-model migration would add cost without changing the decision.
 
 For the product-side control view, `FieldPumpInstallation-P4`, `FieldTelemetryObserver-O4`, `DeployedController-C17`, and `FieldModeSupervisor-S1` retain their relation-specific meanings. For operating supervision, `ReleaseSupervisorTeam-S2` is an admitted acting System only where supported and the two-sided report/constraint relation to `PumpWorks-ControlServiceOps` is recorded only if both sides obtain. The diagram, participants, relations, state claims, and operating account remain distinct.
 
@@ -941,19 +968,15 @@ Operations decisions act on subjects and obtaining relations, while coordination
 
 ### OPS.3:11 - SoTA-Echoing
 
-| Practice question | Selected current line and serious alternative | Defect overcome and governed loci | Source roles and limits | Reopen condition |
-| --- | --- | --- | --- | --- |
-| What is the smallest operating account that preserves decision-bearing subjects and relations across cases, queues, resources, events, and records? | The selected current line is **subject- and relation-first, multi-object where needed, with records and events retained as qualified evidence**. The serious default is **case-ID, ticket, schema, or event-log first**, where one recorded identifier or serialization becomes the operating subject. | The default creates false identities, denominators, completion claims, and causal or state inferences. **Adapt:** `OPS.3:4.1` recovers exact subjects and direct relations, `OPS.3:4.2` records representation and evidence limits, `OPS.3:4.3` localizes repair, and `OPS.3:5` tests several unlike subjects. **Reject:** record closure, event order, shared fields, or one case identifier as sufficient world-side state. | OCEL and object-centric process management are the best-known-line candidates for escaping one-case convergence in event data. CMMN and DCR are serious bounded case/constraint alternatives; DEMO contributes commitment and coordination distinctions; current FPF governs obtaining relations and claim-bearing accounts. These sources do not prove performed Work, current world state, causal effect, or one universal operating ontology. | Reopen if a stronger current account or repeated use preserves the same identities, direct relations, provenance, uncertainty, and local repair at lower effort, or if a source changes the minimum multi-object or record-use distinction. |
+The question is which subjects, relations and times must be recovered before an operating decision can trust its records. A capable object-centric account already relates events to several objects, retains histories and distinguishes relation meanings. OPS adapts that contribution. It does not compare multi-object analysis only with a badly used ticket identifier.
 
-The selected comparison is supported by the following bounded source roles and limits.
+[OCEL](https://www.ocel-standard.org/specification/overview/) supplies an exchange model for that account. The [2026 object-centric process management manifesto](https://publications.rwth-aachen.de/record/1036372/files/1036372.pdf), particularly §2.3 and §3, distinguishes execution data from their representations and identifies changing relations as a limitation of OCEL 2.0. The [2026 object-centric data-quality study](https://link.springer.com/article/10.1007/s44311-026-00043-x), “Relationship-based quality issues” and its practitioner cases, shows why a well-formed multi-object log can still have wrong or insufficiently qualified links and changing timestamp meanings. These are grounds for the correction in :4.1.6,9 and :5, not proof of its field effectiveness or a complete data-engineering method.
 
-| Source line | Retained contribution | Use boundary |
-| --- | --- | --- |
-| Current FPF `A.6.REL`, `C.2.1`, `B.2.5`, and direct subject patterns | Recover obtaining relation occurrences, claim-bearing epistemes, two-sided supervision relations, and subject-specific identity. | FPF does not choose Operations subjects, domain queues, records, service commitments, or intervention consequences. |
-| [CMMN 1.1](https://www.omg.org/spec/CMMN/1.1/PDF) and [DCR](https://doi.org/10.4204/EPTCS.69.5) | Preserve changing case facts, discretionary planning, milestones, and declarative condition/response relations. | A case plan or constraint model is not the case subject, performed Work, or complete Operations Method. |
-| [OCEL](https://www.ocel-standard.org/specification/overview/) and [object-centric process management](https://doi.org/10.3390/math11122691) | Relate events to several objects and retain object histories instead of forcing one case identifier. | OCEL 2.1 adds serializations to the OCEL 2.0 model; neither an event log nor an object link establishes the world-side operation, complete Work, or one universal case. |
-| DEMO 2020/2024, see the [source account](#source-use-and-currentness) | Distinguish production and coordination Work, transaction roles, commitments, responsibility, and result relations. | Source-local transaction constructs do not become general FPF relation kinds or a complete operating ontology. |
-| Integrated material, transaction, information, financial, and relation-specific network sources, see the [source account](#source-use-and-currentness) | Preserve several connected, non-isomorphic structures for one decision. | Shared nodes or proximity do not create one universal flow or network identity. |
+In the L17 choice, a competent data-quality procedure that already checks the build, timestamp meaning, correction provenance and affected consumers is sufficient. Use it unchanged. Where it repairs the log but leaves the operating consequence undecided, OPS adds the narrow return: withdraw the unsupported R42 completion, recompute only dependent membership and age, and retain the independently supported work. The extra cost is consulting the responsible source and following the faulty relation into its actual consumers. Recreating every object or copying all histories into a second account is unnecessary. An unresolved relation can block one inference without blocking the rest of the operation.
+
+Current FPF `A.6.REL` governs the direct relations relied on; distinguish relation occurrences only when the receiving use must tell repeated occurrences apart. `C.2.1` governs claim-bearing accounts and `B.2.5` the selected two-sided supervision relation. Subject-specific identity and specialist evidence remain with their direct governors. [CMMN 1.1](https://www.omg.org/spec/CMMN/1.1/PDF), [DCR](https://doi.org/10.4204/EPTCS.69.5) and DEMO's bounded commitment/coordination account retain their case-planning and relation contributions; none makes record closure proof of physical completion. Integrated network descriptions can retain unlike coupled relations without identifying their subjects.
+
+Reopen this choice when the record's meaning, relation history, clock, consumer or correction authority changes, or when the incumbent supplies the same bounded correction and operating return at lower effort. Use specialist data engineering for a larger migration; no universal Operations schema follows.
 
 ### OPS.3:12 - Relations
 
@@ -983,7 +1006,7 @@ Recognition is cheap: enter when a participant cannot resume, decide, or explain
 
 Do not use OPS.4 to build a generic dashboard, mandate transparency, create one shared mental model, replace specialist records, or declare state true because it is visible. If the current problem is a Work-performance configuration or recovery dependency after interruption or support loss, use `A.15.8` for that general question and keep the operation-specific state and commitments here.
 
-### OPS.4:0.1 - Working Distinctions
+#### OPS.4:0.1 - Working Distinctions
 
 | Name used here | Meaning |
 | --- | --- |
@@ -1036,7 +1059,7 @@ Maintain the smallest decision-specific account that lets named participants rec
 6. **Recover permissions and authority.** State who may read, write, annotate, accept, hold, release, or change each relied-on claim or decision. Keep assignment, capability, responsibility, permission, and authority separate.
 7. **State next decisions and permissible Work.** Name what is enabled, blocked, awaiting evidence, or returned to a specialist; include the condition and participant that can advance it.
 8. **Construct participant views.** Select the smallest representation for each action. Preserve subject identity and claim correspondence; show what the view omits and where claims conflict, and provide a return to the owning account. Do not require one screen.
-9. **Keep control views separate.** A selected FPF control view may expose observer, controller, plant, supervisor, observation, actuation, feedback, and rates. The account carries qualified operating claims about those subjects and relations; the view or loop picture establishes neither current state, feedback closure, rate adequacy, stability, safety, authority, nor an Operations Method.
+9. **Qualify a selected control view.** Relate its depicted observation and intervention to the actual participants, evidence and authority. Obtain stronger control claims, such as stability or rate adequacy, from their direct analysis; the picture cannot supply them.
 10. **Test interruption and handoff when current.** Use `A.15.8` for the general Work or WorkPlan performance-configuration question. Ask a representative next participant to recover the bounded question, current claims, evidence, disagreements, permissions, next Work, and stop without private memory.
 11. **Refresh, expire, and reopen.** State update sources, expected cadence or event, expiry rule, supersession and conflict handling, and the observation that reopens only the affected claim, view, or decision.
 
@@ -1072,11 +1095,15 @@ The weekly release decision uses a small account rather than one status board:
 
 The product-side control view separately represents `FieldTelemetryObserver-O4`, `DeployedController-C17`, plant `FieldPumpInstallation-P4`, `FieldModeSupervisor-S1`, and their direct relations where supported. The operating-supervision view separately represents reports from `PumpWorks-ControlServiceOps` and constraints returned by `ReleaseSupervisorTeam-S2`. The separately qualified temporal claims concern sub-second product control, minute-to-hour field observation, daily incident triage, weekly release, and slower provider change.
 
-The OPS.4 account may cite claims about those participants, relations, and rates. The control diagram does not establish their current state, two-sided feedback, stability, safety, release authority, or the account itself. A dashboard can display the release hold and missing `T9`; it does not create either fact.
-
 For a shift or model-session handoff, the next participant must recover the operating question, five subject claims above, evidence versions, unresolved conflicts, permissions, next permissible Work, and stop. If recovery requires private memory or an unrecorded chat, `A.15.8` returns the exact missing carrier, update/use relation, cue, or support condition. OPS.4 then repairs the operation-specific account claim or view.
 
 Reopen only the affected claim when new telemetry arrives, `T9` completes, safety authority returns a decision, provider access changes, a commitment is renegotiated, or a participant view can no longer support its action.
+
+#### OPS.4:5.1 - Recover after a late observation
+
+At 10:10 a participant receives a field report observed at 09:00. Its stated currentness window ended at 10:00. It cannot replace a 10:05 observation merely because it arrived later. The incident lead keeps the report as evidence about 09:00, marks the present field condition unknown where no current observation exists, and asks the field owner for a refresh. T1–T8's laboratory evidence remains valid for its separate tested configuration and claim.
+
+The next coordinator cannot open the raw field source. The handoff therefore includes the qualified claim, observation and receipt times, the source owner's reachable confirmation route and the unverified present condition. The receiver acknowledges that the live-field decision is blocked; read access to the shared document does not resolve it. If the maintained incident document already carries these facts and this handoff, it is the OPS.4 account—no parallel register is required.
 
 ### OPS.4:6 - Bias-Annotation
 
@@ -1100,7 +1127,7 @@ Reopen only the affected claim when new telemetry arrives, `T9` completes, safet
 - [ ] Read, write, annotate, accept, hold, release, responsibility, capability, and authority relations are not inferred from one another.
 - [ ] Next decisions and permissible Work name their enabling or blocking conditions.
 - [ ] Participant views preserve subject and claim correspondence, make omitted scope and claim conflicts visible, and provide a return to the owning account.
-- [ ] A control representation establishes none of current state, feedback closure, rate adequacy, stability, safety, authority, or Method.
+- [ ] Any selected control view returns to the actual observation/intervention relations and to the direct support for its stronger claims.
 - [ ] Refresh, expiry, supersession, handoff/recovery observation when current, and smallest reopen rules are explicit.
 
 ### OPS.4:8 - Common Anti-Patterns and How to Avoid Them
@@ -1127,19 +1154,13 @@ Shared attention is an operating achievement when participants can coordinate fr
 
 ### OPS.4:11 - SoTA-Echoing
 
-| Practice question | Selected current line and serious alternative | Defect overcome and governed loci | Source roles and limits | Reopen condition |
-| --- | --- | --- | --- | --- |
-| How should participants maintain shared attention to current operating state without treating visibility as truth, agreement, authority, or control? | The selected current line is a **small decision-specific account of qualified claims with provenance, uncertainty, permissions, conflicts, participant views, next action, and refresh**. The serious default is a **single real-time dashboard, latest record, or “single source of truth”** used as the shared state. | The default hides stale or incomparable claims, erases qualified disagreement and authority, and lets a display stand for world state or feedback closure. **Adapt:** `OPS.4:4.1` selects claims from participant actions, `OPS.4:4.2` returns a refreshable account, `OPS.4:4.3` permits honest conflict and local repair, and `OPS.4:5` tests handoff and recovery. **Reject:** common visibility or edit access as sufficient evidence, agreement, permission, or control. | Current FPF supplies the account, evidence, recovery, temporal, and control boundaries. Kanban is the official comparator for bounded workflow visibility; OCEL and object-centric work preserve several histories; DORA, harness, and loop sources supply fast-changing AI-assisted-operation cases; layered-control/LCA sources expose relation and rate distinctions. None establishes a universal shared-state carrier, authority model, or effectiveness result. | Reopen if a stronger current coordination account or repeated handoff case achieves the same provenance, conflict, authority, refresh, and recovery value with lower burden, or if a source changes the minimum claim content or account/control boundary. |
+The question is whether the next participant can act from a current, qualified operating account. A competent incumbent is SRE incident practice with separated responsibilities, a maintained live incident document, communications and an acknowledged handoff. [Google SRE, “Managing Incidents”](https://sre.google/sre-book/managing-incidents/) develops those mechanisms, including a usable document when the affected service cannot host it. OPS adopts this arrangement; a neglected dashboard is not the serious comparator.
 
-The selected comparison is supported by the following bounded source roles and limits.
+At PumpWorks, a good incident document can already identify I73, its commander, current actions and next handoff. When that account also distinguishes field-observation time from receipt time, laboratory evidence from current installation state, and release authority from document access, it suffices. Sections 4.1–4.3 ask for those distinctions only where they affect a recipient's action. The residual in section 5.1 is concrete: an expired field claim cannot supply the current evidence required for a live intervention, yet the laboratory results remain usable. A receiver lacking raw-source access needs an effective confirmation or an explicit blocker, not a second copy labelled current.
 
-| Source line | Retained contribution | Use boundary |
-| --- | --- | --- |
-| Current FPF `C.2.1`, `A.15.8`, `A.10`, `C.30.LCA`, and `C.27.TA` | Claim-bearing account focus, configuration/recovery testing, evidence use, control-view boundary, and temporal/currentness claims. | FPF supplies no Operations subject selection, service commitment, domain intervention, or release authority. |
-| [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) | Make workflow definition, Work items, active items, states, and flow measures visible for managing a bounded Kanban workflow. | Board visibility and measures do not establish world state, shared truth, every case, or a complete operating account. |
-| [OCEL](https://www.ocel-standard.org/specification/overview/) and [object-centric process management](https://doi.org/10.3390/math11122691) | Preserve several subject histories and event-object relations instead of forcing one case identifier. | Event records remain evidence with source and serialization limits; they do not establish current state or authority by themselves. |
-| DORA 2025, harness engineering, and loop engineering, see the [source account](#source-use-and-currentness) | Make context capacity, bounded concurrency, traceable episodes, evidence-gated stopping, integration burden, and human continuation needs visible in AI-assisted operation. | Fast-changing software/provider cases have short refresh horizons and establish no universal attention, memory, stopping, or effectiveness rule. |
-| Layered-control and LCA sources, see the [source account](#source-use-and-currentness) | Expose unlike observation, actuation, supervision, feedback, and rate relations in selected structures. | The source diagrams and labels are not the operating account, Operations Method, stability proof, safety result, or authority. |
+The extra work is qualifying the few decision-bearing claims, maintaining their different expiry conditions, and testing that the recipient can recover them. Frequent rechecking can itself consume scarce attention and delay response. Use the shortest refresh and handoff arrangement that preserves the decision, keep a qualified unknown instead of fabricating certainty, and reuse the incumbent's document and roles. If those provisions already exist, adding an OPS template would be pure maintenance burden.
+
+FPF `C.2.1`, `A.15.8`, `A.10` and `C.27.TA` supply account, recovery, evidence and temporal distinctions. [OCEL](https://www.ocel-standard.org/specification/overview/) and object-centric methods help retain different event-object histories, but a log cannot alone establish current state. Control relations matter only for an actual observation-and-intervention question. DORA and agent-runtime sources remain bounded software-use comparisons, not a general theory of attention. Reopen this selection when a stronger existing account gives the same recoverable decisions more cheaply, or a failed handoff exposes an omitted claim, permission or source-access condition.
 
 ### OPS.4:12 - Relations
 
@@ -1165,15 +1186,15 @@ The first useful result is one bounded admission account:
 
 > For eligible demand `D` serving operating result or commitment `R`, under criteria and non-negotiable conditions `K`, explicit-start limit `L`, deciding authority `A`, configuration and horizon `H`, each considered item is `admitted`, `deferred`, `rejected`, or `returned`; an admitted item has effective start conditions and an authorized starter where one exists; residual demand and the next review or return remain visible.
 
-Recognition is cheap: enter when one exact demand item needs a truthful “may enter now?” answer. Assurance is stronger: eligibility, admission, priority, permission, commitment, actual Work, result, safety, release, and service fulfilment each retain their own evidence and authority.
+Recognition asks whether this demand may enter now. Assurance establishes its admission criteria, start permission and effective bound; any later performance or fulfilment claim needs its own evidence.
 
 Do not use OPS.5 to design a queue or buffer policy, identify or exploit the current constraint, size capacity under variability, coordinate interacting structures, or make a whole-service commitment credible. Return those questions to `OPS.8`–`OPS.13` when their results are available, or to a qualified direct source. If the current problem is continuing an already admitted case after facts changed, use `OPS.6`. If age, dependency, risk, or consequence may revise priority or an existing commitment, use `OPS.7`.
 
-### OPS.5:0.1 - Working Distinctions
+#### OPS.5:0.1 - Working Distinctions
 
 | Name used here | Meaning |
 | --- | --- |
-| eligible demand | An exact demand item, such as a request, need, condition, case, or candidate Work item, that may be considered for current admission. Identify the demand claim and the subject it concerns separately. Eligibility is not admission, priority, permission, commitment, or Work. |
+| eligible demand | An exact demand item, such as a request, need, condition, case, or candidate Work item, that may be considered for current admission. Identify the demand claim and the subject it concerns separately. Eligibility makes it a candidate for this decision, not a permitted start. |
 | option or request | A possible demand item presented for consideration. Its presence in a list or account creates no right to admission. |
 | admission decision | A bounded decision about whether exact demand may enter the selected current coordination account under stated criteria, limits, horizon, and authority. |
 | admitted item | Eligible demand whose admission conditions obtain for the stated configuration and horizon. Admission permits a further start decision under its conditions; it does not establish start or result. |
@@ -1226,6 +1247,8 @@ For every item under consideration, state the demand subject, claimant or source
 
 Record the conditions that can change the admission decision. Test exact identity; relevant readiness and evidence; required authority or permission; intended receiving use; safety, legal, clinical, security, or other specialist returns; performer and access conditions; current commitments; and the capacity, resource access, bounded concurrency, or explicit-start limit that matters now.
 
+Judge readiness for the proposed consuming operation, not for every eventual use. `OPS.8:4.2` supplies receiver-ready work; `OPS.13:4.2` connects preparation to a promised result. Recover the applicable prerequisites and the person who can confirm them. Name the start bound's unit, interval and counting rule, including how safe stops and suspended work count. A supplied justified bound can be applied here; deriving its value is a capacity or policy question.
+
 Do not translate these into a universal score. Some conditions are mandatory, some admit qualified comparison, and some require a return to another owner.
 
 #### OPS.5:4.4 - Choose only where a real choice exists
@@ -1251,9 +1274,18 @@ State the admitted set, current explicit-start limit, unresolved or residual dem
 
 #### OPS.5:5.1 - PumpWorks controller service
 
-`PumpWorks-ControlServiceOps` considers `ReleaseCandidate-R42`, `FieldIncident-I73`, `SafetyQuestion-S19`, `ProviderChange-P8`, and competing test-rig requests while maintaining weekly evidenced-release commitments. The current account exposes missing test `T9`, a safety-return gap, provider-access conflict, release authority, service consequences, and the current rig-access relation.
+The following observations and permissions are constructed case inputs, not reported field performance. At 09:00, PumpWorks has an established limit of **two active engineering work packages** for the 09:00–11:00 window. The staffing owner has justified this bound from available performers and protected recovery work; OPS.5 applies it without deriving a universal WIP value. A package counts from actual start until completion or a documented safe stop. Waiting demand is not counted as active. T8 is already running with engineer E17 until its expected safe completion at 09:30, so one slot is free.
 
-OPS.5 keeps the items separate. It can admit bounded incident-diagnosis Work for `FieldIncident-I73` when identity, incident authority, evidence, performer, and access conditions obtain. It defers release continuation whose required `T9` evidence or rig access is absent. It returns `SafetyQuestion-S19` to the competent safety authority. A high rank, booked rig request, release candidate, or weekly horizon creates neither capacity, permission, Work, nor release. The first usable result is the item-by-item admission account and visible residual demand; the first honest blocker is the exact missing permission, evidence, access, or specialist return.
+| Proposed work | Obtaining conditions at 09:00 | Disposition and next action |
+| --- | --- | --- |
+| I73-D: inspect the captured incident logs | Exact installation and log identity confirmed; engineer E18 available; incident lead authorizes read-only diagnosis until 11:00; local copies and diagnostic procedure ready. | Admit I73-D under the incident-order exception in OPS.2:5.2. E18 starts at 09:05. With T8, there are now two active packages. No live setting change or release is permitted. |
+| R42-T9: final laboratory validation | Lab testing is permitted independently of field release, but the signed fixture check is missing and the rig is occupied by T8. | Defer until the fixture check and rig access obtain; recheck at 09:40. An empty active slot alone is insufficient. |
+| S19: resolve the safety question | The operating coordinator is not the safety authority. | Return the exact question and supporting material to the safety owner. Release remains blocked pending the safety decision; unrelated permitted diagnosis may continue. |
+| P8-P: provider preparation | Inputs and permission exist, but it competes for E18; the resource owner confirms an afternoon review can preserve its existing obligation. | Defer to 13:00 rather than silently remove it from demand. Reopen earlier if that obligation or E18's availability changes. |
+
+At 09:25 E18 safely completes the bounded log inspection, as developed in OPS.6:5.1. One active slot is freed, but the incident case is not resolved. At 09:30 T8 completes. At 09:40 the fixture owner supplies the missing signed check; the rig owner and E17 confirm access, and the coordinator admits R42-T9. E17 starts its permitted laboratory procedure. This is a new bounded admission, not permission for field release.
+
+At 09:50 the field contact becomes unavailable. The next live I73 verification is returned for restored access and matching permission rather than being counted as started. R42-T9's independent lab permission and fixture evidence still hold, so that Work continues. The admission return records the permitted starts separately from the supplied observations of actual starts, with the active count at each time, the still-open S19 and I73 returns, and P8-P's afternoon reconsideration. `OPS.7:5.1` shows the resulting promise decision.
 
 #### OPS.5:5.2 - Public-hospital emergency-care operation
 
@@ -1283,7 +1315,6 @@ A model score, available agent, free context window, generated patch, or schedul
 
 - [ ] The exact operating System, receiving result or commitment, configuration, and horizon are named.
 - [ ] Every considered demand item has an identity and proposed receiving use.
-- [ ] Eligibility, admission, priority, permission, commitment, Work, and result remain distinct.
 - [ ] Matching `OPS.2`, `OPS.3`, and `OPS.4` inputs are reused only where action-changing and current.
 - [ ] Admission criteria and non-negotiable conditions include relevant evidence, authority, permissions, access, specialist returns, and currentness.
 - [ ] The explicit-start limit is bounded to this use and is not presented as a universal queue, capacity, or constraint policy.
@@ -1302,7 +1333,7 @@ A model score, available agent, free context window, generated patch, or schedul
 | everything is “in progress” | Hidden starts erase residual demand and overload the operation. | Apply an explicit-start limit and give every item a disposition. |
 | availability implies capacity | A free slot, worker, rig, tool, or model is treated as a complete capability and access result. | Recover the exact performer, resource relation, capability, permission, and configuration. |
 | choose-first option set | An artificial score replaces mandatory conditions or direct rules. | Use the direct branch; compare only genuine admissible alternatives. |
-| admission by artifact | Ticket creation, assignment, plan, model output, or code generation becomes “Work started”. | Admit actual Work only from independent performance evidence. |
+| admission by artifact | Ticket creation, assignment, plan, model output, or code generation becomes “Work started”. | Establish whether Work occurred from independent performance evidence; decide admission and permission before the prospective start. |
 | rejection without return | Demand silently disappears or repeatedly re-enters. | Keep the reason, residual identity, owner, and retry condition. |
 | local rule claims the system | One start limit becomes a universal WIP, queue, capacity, or constraint Method. | Bound the result and return wider policy questions. |
 
@@ -1320,24 +1351,19 @@ The four dispositions prevent the false binary “start or lose”. Direct rules
 
 ### OPS.5:11 - SoTA-Echoing
 
-| Practice question | Selected current line and serious alternative | Defect overcome and governed loci | Source roles and limits | Reopen condition |
-| --- | --- | --- | --- | --- |
-| How should an operating System decide what may enter now without confusing priority, permission, commitment, and Work? | The selected line is a **bounded item-by-item admission account with explicit conditions, authority, starter relation, start limit, residual demand, and review**. The serious default is a **ranked backlog or workflow-state transition used as permission to start**. | The default hides mandatory conditions and residual demand and lets visibility or selection stand for authority and Work. **Adapt:** `OPS.5:4.1`–`OPS.5:4.6` reuse current inputs, separate truth states, apply direct rules or genuine comparison, and return four dispositions. **Reject:** universal backlog ontology, fixed WIP number, or local admission as proof of performance or service. | Current FPF `C.11` supplies bounded choice among already formed alternatives, not admission criteria or authority. The Kanban Guide supplies bounded Work-item, active-item, WIP, age, cycle-time, throughput, and explicit-policy concepts. TameFlow supplies the option-versus-committed-Work and hidden-demand concerns. Reinertsen supplies queue, delay, variability, feedback, and economic trade-off mechanisms. None supplies a universal Operations Method, start permission, or complete current capacity result. | Reopen if a stronger admission account preserves all truth states, residual demand, authority, start limits, and specialist returns with less burden, or if a source changes an action-bearing admission condition. |
+The question is which prepared work may start now. The serious comparator is competent policy-governed pull, not a ranked list masquerading as permission. The [Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) already provides explicit workflow policies and active-work control; TameFlow's preparation account adds useful-package readiness and distinguishes optional from committed demand. OPS adopts these contributions.
 
-The selected comparison is supported by these bounded source roles.
+Apply both approaches to section 5.1. A capable pull policy sees one free slot, keeps the WIP bound, applies the authorized incident exception and starts I73-D. It does not need OPS to discover that starting everything overloads the operation. The possible residual is narrower: the fixture readiness required for R42-T9 differs from the safety decision required for release, and the operating coordinator cannot manufacture the latter. Sections 4.3–4.6 distinguish those consuming uses, apply the existing bound and return S19 to its owner while retaining permissible work. If the incumbent's policies and records already do this, they are the adequate admission arrangement.
 
-| Source line | Retained contribution | Use boundary |
-| --- | --- | --- |
-| Current FPF [`C.11`](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal) | Choice, rejection, probe, and reroute among an already formed current OptionSet. | Supplies no domain criteria, permission, commitment, performed Work, or operating result. |
-| [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) | Bounded Work-item boundary, active-item management, WIP, throughput, Work-item age, cycle time, and explicit workflow policies. | Supplies no universal board, queue discipline, WIP value, service guarantee, or complete admission Method. |
-| TameFlow sources, see the [source account](#source-use-and-currentness) | Distinguish options from committed Work and expose hidden demand, commitment, interaction, financial, and human-condition concerns. | The backlog/buffer prescription and concern set are not universal kinds or comparative proof. |
-| Reinertsen, see the [source account](#source-use-and-currentness) | Queue, delay, batch, WIP, feedback, variability, and multivariable economic trade-offs. | Supplies no universal priority score, permanent optimum, local-utilization rule, authority, or Work evidence. |
+The addition costs a check of current prerequisites and permission, an exact return for a missing condition, and follow-up on deferred demand. Where eligibility rarely changes and one authority already covers the operation, a separate per-item OPS form costs more without altering starts. Reuse the existing policy and item record; do not duplicate its queue history. Where multiple authorities or prerequisites differ by action, that bounded work can prevent a ready-looking item from acquiring a permission it lacks. This is a conditional practical reason, not a measured claim that OPS outperforms pull.
+
+FPF `C.11` supplies comparison among genuine admissible alternatives; it neither sets the bound nor grants permission. Reinertsen's historical queue and economic mechanisms inform policy questions returned to OPS.8–OPS.10. No universal WIP value, service guarantee or proof of completed Work is imported. Reopen when the unit or counting rule, readiness, authority or protected capacity changes, or when the incumbent supplies the same dispositions with less total work.
 
 ### OPS.5:12 - Relations
 
 - `OPS.2` supplies a selected coordination-form decision where that form changes admission. `OPS.3` supplies exact operating subjects and direct relations. `OPS.4` supplies current claims, evidence, permissions, commitments, uncertainty, and gaps. None of those results admits demand by itself.
 - `C.11` governs comparison only when several live admissible alternatives require choice. `A.10` governs evidence reliance; `A.15.8` governs performance-configuration and recovery questions when they become the actual blocker.
-- `OPS.6` may consume the applicable admission and independently supported current permission for the same matter and conditions. An admission result may carry both; admission alone establishes neither permission, Work nor progression.
+- `OPS.6` consumes the applicable admission and independently supported current permission for the same matter and conditions; an admission account may carry both results.
 - `OPS.7` separately governs current priority or bounded commitment revision. `OPS.8`–`OPS.13` retain queue, buffer, constraint, capacity, interacting-structure, and wider commitment questions.
 - Clinical, safety, legal, privacy, security, finance, product release, capability, and other specialist practices retain their subjects, evidence, permission, authority, and conclusions.
 - Pattern order is not Work order. Practitioners may enter OPS.5 directly when matching current inputs already exist, repeat it as demand changes, or stop after its result.
@@ -1358,11 +1384,11 @@ The first useful result has one of two forms:
 >
 > **Blocker:** condition `K` is missing, stale, contradicted, unauthorized, unsafe, unsupported, or unavailable; owner or source `O` must supply the bounded result; safe fallback or stop is `F`; retry when `T` obtains.
 
-Recognition is cheap: enter when participants cannot choose or execute the next permissible Work in an admitted case from the current facts. Assurance is stronger: selected action, permission, responsible performer, actual Work, resulting evidence, and progressed case state each require separate support.
+Recognition concerns a next action left uncertain by current case facts. Before action, assurance establishes the needed permission and performance conditions. After action, any progression claim needs performance evidence and support for the reported state.
 
 Do not use OPS.6 to design one universal workflow or case lifecycle, reconstruct a reusable Method from event data, infer progress from a ticket, plan, model, trace, or record update, or revise priority merely because the case is old. Use `A.15.7` for the general situation-responsive next-action Method, `A.3.1.MR` when reusable Method recovery from several performances is the actual question, and `OPS.7` when temporal or consequence evidence can change priority or an existing commitment.
 
-### OPS.6:0.1 - Working Distinctions
+#### OPS.6:0.1 - Working Distinctions
 
 | Name used here | Meaning |
 | --- | --- |
@@ -1429,7 +1455,7 @@ State the selected next Work, responsible performer, permission and effective co
 
 #### OPS.6:4.6 - Admit performance and update state separately
 
-After the Work, recover direct performance evidence, the changed subject or result, failures and limits, and the claim each observation supports. Update the case-state claim only when the relevant Work and resulting evidence are independently adequate. If Work did not occur or evidence is insufficient, retain the earlier state claim under its stated limits and return the unmet condition. Never use a record update, successful invocation, generated artifact, or selected action as automatic progression evidence.
+After the Work, recover direct performance evidence, the changed subject or result, failures and limits, and the claim each observation supports. Update the case-state claim only when the relevant Work and resulting evidence are independently adequate. If Work did not occur or evidence is insufficient, retain only earlier claims whose support still holds and return the unmet condition. A contradicted or expired claim becomes unsupported or unknown; it is not restored merely because a new result is missing. Never use a record update, successful invocation, generated artifact, or selected action as automatic progression evidence.
 
 #### OPS.6:4.7 - Return one usable result
 
@@ -1438,15 +1464,21 @@ Return either:
 - an evidenced progressed case state, its evidence and limits, fulfilled or still-open obligations, and next return; or
 - the unmet condition, direct owner or source of the needed result, safe fallback or stop, and exact retry condition.
 
-State what remains outside: priority or commitment revision, queue and capacity policy, specialist judgement, release, safety, security, clinical outcome, legal permission, and other direct results.
+Return a required priority, commitment or policy decision to its Operations owner, and a specialist decision to the practice that can supply it. The continuation result does not inherit their authority.
 
 ### OPS.6:5 - Archetypal Grounding — Three Continuing-Case Replays
 
 #### OPS.6:5.1 - PumpWorks field incident
 
-`FieldIncident-I73` is an admitted continuing case under the current incident Method. The operation refreshes incident impact, deployed-controller and telemetry correspondence, missing test `T9`, rig access, provider conditions, safety return, release authority, and service commitments. The incident chooser, responsible diagnostic or validation performer, release and safety authorities, candidate Work, records, and case state remain distinct.
+Continue the constructed matter in OPS.5:5.1. At 09:05, incident I73 remains unresolved on installation P4. A field report describes intermittent pressure readings; neither their cause nor correction is known. The incident lead has authorized engineer E18 to inspect the identified captured logs until 11:00. The permission allows reading and diagnosis, not altering the deployed controller, declaring safety or releasing R42.
 
-If current permission and rig access support a bounded diagnostic replay, OPS.6 states that Work, performer, stop, fallback, and expected telemetry or test evidence. Report case progression only after the Work and evidence support a changed incident claim. If `T9`, rig access, safety return, provider permission, or current telemetry is absent, the result names that unmet condition and returns to its owner. A ticket move, agent run, recommendation, or code change does not by itself establish incident progression or release.
+The applicable diagnostic procedure says: compare the captured sensor and controller timestamps; if the discrepancy persists in the captured interval, retain the discrepancy claim and request live verification; if identity fails or the data are corrupt, stop and return to the log owner. This direct rule is sufficient—no alternative-ranking exercise is needed. The incident lead chooses the bounded continuation; E18 performs it. The expected evidence is the identified input, execution trace, comparison result and its time interval.
+
+The supplied observations are: E18 performed the comparison from 09:05 to 09:25; the retained trace identifies the P4 capture and comparison; a timestamp mismatch occurs in that capture; no live verification or controller change was performed. The defensible update is **“discrepancy established in the captured interval; live cause and present field condition unresolved.”** It is progress in diagnosis, not restoration of the installation. E18 returns the trace and this limited claim to the incident lead, closes I73-D at a safe stop and requests observational live verification in the 10:00–11:00 contact window. At 09:30 the field owner confirms access and the required permission for that bounded observation, without authorizing a setting change.
+
+At 09:50 the field contact withdraws availability. The lead cannot start live verification under the earlier access assumption. The result becomes a returned access-and-permission condition, with the field owner as recipient and confirmed contact plus matching permission as the retry condition. Offline analysis of the already authorized capture remains allowed. The separate R42-T9 lab procedure, fixture check and performer are unaffected and remain in use; its result at 10:10 can support only its laboratory criterion. The operation does not erase the captured discrepancy or assert a current safe field state from the lack of a new report.
+
+The next participant receives the bounded diagnostic result, the live-verification blocker, still-permitted work and the next useful contact action. OPS.7 uses those facts for priority and promise decisions without treating the diagnostic return as authority to change either.
 
 #### OPS.6:5.2 - Public-hospital clinical case
 
@@ -1477,13 +1509,11 @@ The continuation contract may authorize one bounded diagnostic, test, or repair 
 - [ ] The exact case subject, configuration, horizon, and served demand or commitment are named.
 - [ ] The required current permission is supported for the same matter and conditions; admission alone is not treated as that permission.
 - [ ] Current case state, domain Method, obligations, commitments, evidence, and exception are recovered.
-- [ ] The deciding System, responsible performer, permission, capability, assignment, and authority remain distinct.
-- [ ] Available actions, selected action, actual Work, records, evidence, and state claims remain distinct.
+- [ ] The authorized chooser and capable, assigned performer are identified; neither selection nor a record update is reported as performance or case change.
 - [ ] Direct mandatory or recognition branches are used when adequate.
 - [ ] `C.11` is used only when several admissible live actions genuinely require comparison.
 - [ ] The continuation contract names Work, performer, conditions, stop or fallback, expected evidence, refresh, and return.
 - [ ] Case progression is reported only after independently supported Work and adequate resulting evidence.
-- [ ] A plan, ticket, model output, episode, trace, or record update is not treated as progress by itself.
 - [ ] The result is either evidenced progression or an exact unmet-condition return with owner, fallback or stop, and retry.
 - [ ] Specialist and wider Operations results remain with their owners.
 
@@ -1513,23 +1543,17 @@ The two-result form is deliberate. An exact unmet condition with owner, safe fal
 
 ### OPS.6:11 - SoTA-Echoing
 
-| Practice question | Selected current line and serious alternative | Defect overcome and governed loci | Source roles and limits | Reopen condition |
-| --- | --- | --- | --- | --- |
-| How should an admitted continuing case choose and evidence its next permissible Work when facts or exceptions change? | The selected line is **situation-responsive steering inside the applicable domain Method, with separate permission, chooser, performer, Work, evidence, state update, stop, and return**. The serious default is a **workflow, case-plan, ticket, or automated loop transition used as the progression result**. | The default confuses representation with subject state and choice with performance. **Adapt:** `OPS.6:4.1`–`OPS.6:4.7` confirm permission, refresh action-changing facts, choose the least elaborate branch, specify performance, and admit state change only from evidence. **Reject:** one universal case lifecycle, record-to-Method inference, or agent output as progress. | Current FPF `A.15.7` supplies the general next-action steering Method and `C.11` bounded choice. CMMN contributes discretionary case planning and state representation; DCR contributes condition, response, inclusion, exclusion, marking, execution, and acceptance distinctions. DEMO contributes bounded commitment, coordination, and responsibility distinctions. DORA, harness, and loop sources contribute short-horizon evidence, bounded concurrency, traceable episodes, stops, integration burden, and human continuation. None supplies the case's domain state, authority, Work, progression evidence, release, or universal Operations Method. | Reopen if a stronger continuation account preserves the same permission, domain-Method, performer, performance, evidence, state, blocker, and return boundaries with less burden, or if a source changes the permissible-action or evidence contract. |
+The decision is how to continue a case after new facts while reporting a defensible result. A strong incumbent combines authorized case planning with outcome-aware execution. [CMMN 1.1, §4.1 and §5.4.9](https://www.omg.org/spec/CMMN/1.1/PDF) supplies runtime discretion, procedural subwork and planning authorization. Current [DCR robot documentation](https://documentation.dcr.design/documentation/dcr-robots/) distinguishes effect success, failure and timeout and the associated continuation. OPS adopts these useful mechanisms; competent executable case management is not just a ticket transition.
 
-The selected comparison is supported by these bounded source roles.
+In I73, such an arrangement can authorize log inspection, execute a diagnostic activity and route a failed or unavailable live verification. If its case contract already states the capture identity, evidence interval, external subject claim and receiving authority, it produces the same adequate continuation as OPS.6. A second contract would only add synchronization work. The residual arises when an engine's successful diagnostic activity is used as evidence that the physical installation is now restored. Sections 4.5–4.7 bind the operation's observation to its warranted subject-state claim: the capture shows a discrepancy; present field condition remains unresolved. Loss of contact stops the dependent action without invalidating independent laboratory work.
 
-| Source line | Retained contribution | Use boundary |
-| --- | --- | --- |
-| Current FPF [`A.15.7`](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#a157---situation-responsive-work-steering-and-next-action-selection) | Currentness, domain-Method limits, chooser, performer, authority, direct branch, comparison, probe, fallback, stop, and feedback for live next-action selection. | Supplies no case-specific permission, state, obligation, domain evidence, operating commitment, or progression result. |
-| Current FPF [`C.11`](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c11---decision-theory-decsn-cal) | Choice among several formed admissible alternatives and bounded probe-worthiness. | Does not generate permissible actions, authorize performance, or prove state change. |
-| CMMN 1.1 and the DCR source line, see the [source account](#source-use-and-currentness) | Discretionary planning, condition and response, inclusion and exclusion, marking, execution, and acceptance distinctions. | A notation, case file, model, or transition neither chooses, authorizes, performs, nor proves effective continuation. |
-| DEMO, see the [source account](#source-use-and-currentness) | Production/coordination Work, commitment, responsibility, and transaction distinctions. | Source-local roles do not assign authority or establish performance in another organization. |
-| DORA 2025, harness engineering, and loop-engineering sources, see the [source account](#source-use-and-currentness) | Context and tool capacity, bounded concurrency, traceable episodes, evidence-gated stopping, integration load, and human continuation. | Supply no universal AI operation, agenthood, model capability, release, security, safety, provider authority, or effectiveness result. |
+That addition costs the domain mapping from execution outcome to observation and subject claim, a check of current permission, and a return the next participant can use. It does not require a new case model or a probe whenever a direct procedure is sufficient. More detailed logging can delay a time-sensitive response; collect the evidence needed by the actual receiving decision, not every available event. The worked case illustrates the distinction and burden, not a measured superiority over CMMN or DCR.
+
+FPF `A.15.7` supplies situation-responsive steering and `C.11` the conditional comparison branch. DEMO helps distinguish production and coordination; software-runtime sources inform bounded automation and stopping. Their execution semantics, source-local roles and software evidence do not grant external domain authority. Reopen when the incumbent already preserves the same physical-subject and permission distinctions more cheaply, or changed evidence, permission or execution semantics defeats the current continuation.
 
 ### OPS.6:12 - Relations
 
-- `OPS.5` supplies admission and may record independently grounded start permission for the same matter and effective conditions. Admission alone establishes neither permission, Work nor case progression.
+- `OPS.5` supplies admission and may carry independently grounded start permission for the same matter and effective conditions.
 - `A.15.7` governs the general situation-responsive steering Method. `A.3.1.MR` separately governs candidate reusable Method recovery from several performances or other direct evidence.
 - `C.11` governs comparison only where several admissible live actions require choice. `A.10` governs evidence reliance; `A.15.8` governs the performance configuration or recovery dependency when that is current.
 - `OPS.7` may consume an evidenced progressed state or unmet condition only as evidence where it changes priority or an existing commitment. It does not inherit revision authority.
@@ -1555,11 +1579,11 @@ The first useful result is one bounded priority-and-commitment disposition:
 
 Name the Systems holding `A_P` and `A_C`; the same System may hold both. Record any missing required authority in blocker `N`.
 
-Recognition is cheap: enter when a temporal or consequence fact can reverse a current priority or commitment decision. Assurance is stronger: state, age, rate, trend, urgency, priority, queue rank, clinical triage, legal or safety permission, and commitment authority remain separate claims.
+Recognition asks whether delay can change this decision. Assurance needs the temporal evidence, consequence and the distinct authority for priority, promise revision and any specialist action.
 
 Do not use OPS.7 to sort every queue by age, create a universal urgency scale, identify the current constraint, size capacity, design service levels, perform clinical triage, authorize release, or establish a credible whole-service commitment account. Return those results to `OPS.8`–`OPS.13`, `OPS.18`, or their specialist owners. Use `C.27` only when the claim concerns intervention-sensitive rate, rhythm, recovery, or regime change; ordinary state, age, rate, or trend readings do not require it.
 
-### OPS.7:0.1 - Working Distinctions
+#### OPS.7:0.1 - Working Distinctions
 
 | Name used here | Meaning |
 | --- | --- |
@@ -1617,6 +1641,8 @@ State the defining event, clock, observation time, horizon, and conditions. Deci
 
 Recover only what can change this decision: promised service, dependency state, risk, consequence of further delay, reversibility, recovery burden, affected parties, evidence and uncertainty, current comparison basis, and any feasible probe that could still reverse the result. Name clinical, safety, legal, security, financial, or other specialist claims without replacing their owners.
 
+Relate the remaining useful interval to the whole response: detecting the change, reaching a decision, obtaining any required agreement, and performing or communicating the remedy. Use the supported response account in `OPS.13:4.4`–`OPS.13:4.5`; do not infer a feasible response from an alert alone.
+
 Age alone does not prove urgency. Express urgency as “delay can change `X` for decision `Y` under evidence `Z`”, or leave it unsupported.
 
 #### OPS.7:4.4 - Separate priority authority from commitment authority
@@ -1629,23 +1655,33 @@ For priority, preserve, raise, or lower it only when current evidence is suffici
 
 For the commitment, preserve it when support and conditions remain adequate; otherwise trigger authorized clarification, renegotiation, or withdrawal. When escalation or specialist return is needed, send the unresolved priority or commitment question to the participant with the relevant authority and state the decision expected from that participant. Include each unresolved question in the immediate coordination action or truthful blocker recorded in `OPS.7:4.6`.
 
+A proposal to revise a promise is not the revised promise. Keep the old obligation and its current risk visible while the required parties decide; record the effective agreement, refusal or unresolved response. If continued fulfilment is no longer possible, report that fact through the authorized relation without silently substituting a new date. Apply any existing withdrawal or emergency rule on its own authority.
+
 Use `C.11` only where several real admissible dispositions need comparison. A bounded probe is suitable only when it can change the disposition before the relevant horizon.
 
 #### OPS.7:4.6 - State immediate action, parties, horizon, and review
 
 Record the current priority disposition, commitment disposition when one changes, immediate coordination action or truthful blocker, affected parties, effective horizon, supporting evidence and uncertainty, and next review or reopen trigger. Notify or coordinate with affected parties through the established relation; this pattern does not invent notification authority or prove receipt.
 
+Choose the review time early enough that a discovered adverse condition can still receive a useful response. When supported durations are additive, subtract their total from the latest useful action time, then allow for uncertainty; when they overlap or vary, use the applicable response model instead. If no useful interval remains, act or return the blocker now rather than schedule a review after the consequence.
+
 #### OPS.7:4.7 - Return wider policy and specialist questions
 
-Do not convert the local result into queue rank, buffer or constraint policy, capacity, clinical triage, legal permission, safety acceptance, financial value, release authority, service design, or a credible whole-service commitment account. Return those questions to `OPS.8`–`OPS.13`, `OPS.18`, or the competent specialist practice.
+Return a shared queue, constraint, capacity or service-design question to `OPS.8`–`OPS.13`, and a quality/reliability response to `OPS.18`. Obtain clinical, legal, safety or release decisions from their competent owners; a local priority disposition supplies none of their authority.
 
 ### OPS.7:5 - Archetypal Grounding — Three Aging and Commitment Replays
 
 #### OPS.7:5.1 - PumpWorks incident and release horizon
 
-`FieldIncident-I73` has an exact age and current incident state; PumpWorks also has a weekly evidenced-release horizon, dependencies on test `T9`, rig access and a safety return, service consequences, reversibility, recovery burden, and distinct release and safety authorities. OPS.7 relates those facts to the existing commitments and to the coordination decision.
+Continue the constructed matter in OPS.5:5.1 and OPS.6:5.1. At 09:30, I73 is one hour old from its 08:30 opening, while R42 has awaited its final evidence for 36 hours. I73's age is lower, but the field representative is available from 10:00 to 11:00 and has confirmed the required permission for observational live verification; losing that contact would prevent the planned verification today. R42's current promise is an authorized evidenced-release package to the service recipient by 17:00, conditional on the stated safety and field checks. Lab validation alone cannot fulfil it.
 
-The result may raise the incident's current priority and trigger authorized clarification or renegotiation of the weekly release commitment, while naming the immediate diagnostic, access, or stakeholder coordination action. Incident age alone does not dictate rig queue rank. The weekly horizon does not create release permission. The local revision establishes no rig policy, current constraint, capacity, safety acceptance, release, or credible service-wide commitment account.
+The representative needs the decided response before contact closes at 11:00. For this incident, the supplied response estimate is 20 minutes for live verification, 10 for the authorized decision and 10 for communicating its result: 40 minutes in sequence. The latest review that leaves that response possible is 10:20. The incident lead chooses 10:00 to retain 20 minutes of margin for the stated uncertainty. This is a case-specific planning bound, not a probabilistic service guarantee. The priority authority gives the incident contact action precedence over the older provider-preparation package; the resource owner retains the active-work limit. This priority leaves R42-T9's independently permitted 09:40 laboratory start unchanged.
+
+At 09:50 the field representative reports loss of access, with the earliest supported replacement contact at 09:00 next day. The lead acts immediately instead of waiting for 10:00: live verification is blocked, the customer liaison sends a truthful partial-result notice by 10:00, and the service owner checks the consequence for R42. No unsupported field correction or fulfilment is reported. The 10:10 laboratory result still counts for its test, and the captured incident discrepancy remains established.
+
+The incident lead can change diagnostic priority but cannot change the customer's promise. At 10:05 the service owner, who has that authority, proposes delivery by 10:00 next day, on the supplied replacement-contact reservation, remaining safety decision and one-hour completion-and-return allowance confirmed by their owners. The recipient has not yet agreed: the old 17:00 obligation remains visible as at risk, and the proposed date is labelled a proposal. At 10:20 the authorized recipient explicitly accepts the changed conditional result and date; the service owner records the agreement and sends it to the affected performers. Only then is the commitment revised. A refusal would have left the old obligation and an unresolved authorized service decision, not licensed a local date edit.
+
+The return contains the priority actually applied, partial result and live-access blocker, effective revised promise, conditions still open and next review at 08:30 next day. The owners supply a ten-minute allowance to obtain current contact/permission confirmation and any already-produced safety result, ten minutes to decide and communicate which 09:00 work may start and whether the conditional 10:00 promise remains supportable, and ten minutes of contingency. Thus 08:30 + 10 + 10 + 10 minutes reaches 09:00. This is time to recover and use a qualified result, not an allowance for inventing a safety verdict. If the result or contact remains unavailable at 08:40, return that exact blocker while a service decision is still possible. A missing safety result blocks reliance on the release promise; observational work can continue when its own permission and inputs hold. Lost contact blocks live verification without erasing the completed laboratory result. A newly lost condition reopens the response immediately. P8-P retains its 13:00 reconsideration, and neither agreement nor priority grants field-release or safety authority.
 
 #### OPS.7:5.2 - Public-hospital waiting and deterioration
 
@@ -1683,8 +1719,7 @@ The authorized System may revise the issue's coordination priority or trigger an
 - [ ] Priority authority and commitment authority are separately established.
 - [ ] The current comparison basis and any useful probe are explicit.
 - [ ] Priority and commitment dispositions, immediate action or blocker, parties, horizon, evidence, and next review are recorded.
-- [ ] The local result is not presented as queue, capacity, constraint, service-design, assurance, or whole-service commitment result.
-- [ ] Specialist questions return to their direct owners.
+- [ ] Any wider policy, service or specialist question has a usable return to the participant who can answer it.
 
 ### OPS.7:8 - Common Anti-Patterns and How to Avoid Them
 
@@ -1702,7 +1737,7 @@ The authorized System may revise the issue's coordination priority or trigger an
 
 The operation gains a disciplined way to act before avoidable delay becomes failure while resisting automatic escalation. Practitioners can explain why priority changed, whether a bounded commitment changed, who held each authority, which parties are affected, and when the result must be reviewed.
 
-The cost is that age, urgency, rank, and promise can no longer be carried by one convenient score. Some cases return to queue, capacity, clinical, safety, legal, finance, release, or whole-service owners. The pattern establishes no optimal ordering, patient outcome, released change, fulfilled commitment, or operational effectiveness.
+The cost is obtaining the consequence and authority information that one convenient age score omits. Some cases must return to another decision owner before their priority or promise can change; actual fulfilment is observed later.
 
 ### OPS.7:10 - Rationale
 
@@ -1712,19 +1747,13 @@ The pattern is intentionally local. It can preserve or revise one current priori
 
 ### OPS.7:11 - SoTA-Echoing
 
-| Practice question | Selected current line and serious alternative | Defect overcome and governed loci | Source roles and limits | Reopen condition |
-| --- | --- | --- | --- | --- |
-| How should age and changing consequence inform current priority or an existing commitment without becoming automatic rank or authority? | The selected line is a **decision-relative temporal and commitment account with separate state, age, urgency, priority, authority, bounded commitment, immediate action, and review**. The serious default is an **age, deadline, or priority score used as universal queue rank and escalation authority**. | The default hides subject identity, unlike consequences, permission, and the local-versus-system boundary. **Adapt:** `OPS.7:4.1`–`OPS.7:4.7` qualify the temporal claim, relate it to consequences and commitments, separate authorities, decide bounded dispositions, and return wider policy. **Reject:** age as urgency, urgency as rank, or local revision as whole-service commitment. | Current FPF `C.27.TA` supplies temporal aspect, window, cadence, and currentness discipline; `C.27` governs intervention-sensitive rate, rhythm, recovery, and regime claims. The Kanban Guide supplies bounded Work-item age and flow measures. Reinertsen supplies delay and economic trade-off mechanisms. DEMO supplies bounded commitment and responsibility distinctions. None sets operating priority, queue rank, clinical triage, specialist permission, or whole-service commitment authority. | Reopen if a stronger current disposition preserves subject, temporal, consequence, authority, commitment, local/wider, and specialist-return boundaries with less burden, or if a source changes an action-bearing temporal or commitment relation. |
+The question is how a temporal change alters present action and an existing promise. Competent flow practice already compares consequences, not just age. The [Open Guide to Kanban, July 2025, prioritization appendix](https://kanbanguides.org/open-guide-to-kanban/2025.7/) discusses service classes, delay-cost rates, cumulative delay cost and opportunity cost, with cautions about uncertain estimates and reprioritizing started work. Reinertsen's historical economic-flow treatment and TameFlow's commitment and signal reasoning supply related mechanisms. OPS adopts that consequential comparison; it does not claim to invent urgency beyond oldest-first ranking.
 
-The selected comparison is supported by these bounded source roles.
+For section 5.1, a capable fixed-date or expedite policy can already prefer the younger incident because the field-contact opportunity expires. Both approaches can preserve the ongoing laboratory work rather than interrupt it. The residual OPS contribution is the connection between unlike clocks, the remaining whole response, and the distinct authority to change the promise. A local severity or queue decision cannot make the proposed next-day date effective. Sections 4.3–4.6 keep the 17:00 obligation visible until agreement and select a review early enough for action; the case shows the adverse change before that review and the actual agreement afterward.
 
-| Source line | Retained contribution | Use boundary |
-| --- | --- | --- |
-| Current FPF [`C.27.TA`](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c27ta---temporal-aspect-time-windows-rhythm-cadence-and-currentness) | Temporal subject, event, interval, horizon, window, cadence, and currentness discipline. | Supplies no Operations priority, queue rank, commitment, authority, or intervention. |
-| Current FPF [`C.27`](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c27---temporal-claim-adequacy-state-readings-temporal-trends-and-intervention-sensitive-change) | Discipline for intervention-sensitive effort, inertia, rate, rhythm, recovery, and regime claims. | Ordinary age and rate readings need not invoke it; it supplies no operating decision or causal result by itself. |
-| [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) | Bounded Work-item age, cycle time, throughput, WIP, active-item management, and explicit policy. | Supplies no universal priority rule, queue rank, service guarantee, or specialist authority. |
-| Reinertsen, see the [source account](#source-use-and-currentness) | Delay, queue, variability, feedback, batch, and economic trade-off mechanisms. | Supplies no universal cost-of-delay value, fixed score, permanent optimum, or local authority. |
-| DEMO, see the [source account](#source-use-and-currentness) | Bounded commitment, responsibility, production, and coordination distinctions. | Source-local transaction constructs do not assign authority, prove acceptance, or establish a service-wide commitment elsewhere. |
+If the incumbent service policy already records the response window, the affected recipients and effective agreement, use it unchanged. The additional burden otherwise is estimating the relevant response, obtaining the missing authorized decision and maintaining one current promise—not building a second priority scale. Those calls and confirmations consume time too; include them in feasibility and prefer a direct rule when it settles the matter. No precise score compensates for absent safety, clinical or legal authority.
+
+FPF `C.27.TA` qualifies event, interval and currentness claims; `C.27` applies only to a consequential intervention-sensitive temporal claim. DEMO's commitment distinctions help inspect parties and agreement without assigning their authority. OPS.13 supplies service-level support and response construction. Reopen when consequence, required response, parties or agreement conditions change, or an incumbent achieves the same action and truthful promise account at lower total effort. The constructed timing example establishes neither universal lead times nor comparative operating effectiveness.
 
 ### OPS.7:12 - Relations
 
@@ -1803,6 +1832,8 @@ Select only the protection needed for the operating question.
 
 For the selected arrangement, state the shortage or disturbance, the consequence of failure, who replenishes it, what consumes it, and what signal changes action. A customer's commitment has its own parties and conditions; it does not automatically put the item in a protective buffer.
 
+Do not infer continuing protection from the initial contents alone. Work backward from the next shortage: when must replenishment become eligible, how long do recognition, request, authorization, supply and receiving checks take, and what other work uses the same people or resources? Choose a trigger that leaves that whole response available. Distinguish material ordered, delivered and actually ready. A late-response signal must lead to a permitted alternative, such as a different supplier, protected capacity or an explicit service revision; changing the displayed buffer level supplies none of them.
+
 #### OPS.8:4.4 - Compare policies by their operating mechanism
 
 Compare the current policy with one material alternative before adding a more elaborate policy family.
@@ -1810,7 +1841,7 @@ Compare the current policy with one material alternative before adding a more el
 - If incomplete kits create downstream starvation, coordinate the missing inputs and release into the receiving service only when its kit is ready.
 - If excess starts congest the relevant operation, compare a whole-boundary release limit with the existing local limits. Count unfinished matters that crossed local board boundaries.
 - If a supported constraint needs protection, relate release and replenishment to its usable pace. Use OPS.9 when the constraint itself is uncertain.
-- If pooling is proposed, test service compatibility, routing, resource failures, priority and the service criterion that matters. Compare segregated service where pooling changes a protected class or failure exposure.
+- If pooling is proposed, test service compatibility, routing, resource failures, priority and the service criterion that matters. Also ask whether ownership, visibility of waiting work or interruption changes the performer's processing and checking behavior. Hold service quality and protected classes fixed when comparing those observations. Fixed service-time analysis remains useful when that premise is supported; otherwise price a bounded behavior-sensitive comparison before rollout.
 - If batch size is the lever, compare setup or transaction burden with waiting, holding, feedback and rework consequences. Transfer batch and processing batch may differ.
 
 Keep the end-to-end result and waiting origin fixed in the comparison. Reducing a downstream queue by holding demand just outside its measured boundary is not an end-to-end improvement.
@@ -1851,11 +1882,25 @@ A service has one qualified resource, consuming one unit of ready service load p
 
 Keeping only one unit leaves one open hour exposed in that scenario. Keeping four units adds no protection needed for the specified two-hour interruption, although another supported disturbance might justify it. If the replenishment gap can instead be four hours, the two-unit conclusion reopens. The result is a scenario-qualified policy choice; a service-probability claim would need a different basis.
 
+Make the continuing response concrete. In a two-hour planning scenario, each ready unit is a one-hour job. At hour 0, A and B are eligible; replenishment is authorized and requested before A starts. The rule requests the next two jobs when two unstarted jobs remain immediately before dispatch and no earlier request is outstanding. The supplier must make the next pair eligible by the time the current pair finishes, not merely report that it has been sent. Setup, receiving checks and access are included in that two-hour bound; they use separately available support, not the protected resource.
+
+The supplied trace is: A runs 0–1, B runs 1–2; C and D arrive and pass their receiving checks at 1.5. Although no unstarted job remains from 1 to 1.5, B is still running: there is no service starvation. At 2, C and D are ready, the earlier request is closed, and the next pair is requested before C starts. It becomes ready at 3.5; C and D run 2–3 and 3–4. This return demonstrates two cycles under the supplied trace. The observation burden is one request/acknowledgement and one eligibility confirmation per pair; an existing dispatch record can carry both.
+
+Now, at 1.25 the supplier reports that C and D cannot be ready before 2.5. The coordinator has no approved substitute. A and B still finish by 2; service then waits half an hour, and C cannot finish before 3.5. A promise of three completions by 3 is therefore at risk and needs the OPS.13 service decision. Neither early notification nor four names on a board fills the gap. For subsequent cycles, a supported 2.5-hour gap would require at least three one-hour jobs of initial coverage, earlier supply or another authorized response; their carrying and coordination cost must be compared. The earlier two-unit conclusion remains valid for its two-hour scenario only.
+
 #### OPS.8:5.3 - Patient waiting is not one interchangeable queue
 
 A hospital coordinator receives qualified clinical eligibility and priority for a particular resource class. The operating queue includes only cases that can use that service under those conditions. Patients awaiting a different clinical decision or capability remain visible in the wider waiting account.
 
 OPS.8 can coordinate the resource queue and readiness information. It does not supply the clinical eligibility, triage rule, consent or treatment decision. Pooling unlike service classes is not justified merely because the combined list is shorter.
+
+#### OPS.8:5.4 - Pooling can change how people serve the queue
+
+Consider two qualified diagnostic practitioners serving interchangeable routine requests for two hours. A separate protected urgent-service arrangement and the same diagnostic acceptance criteria remain unchanged. With two assigned requests each, the supplied dedicated-queue trace takes 60 minutes per request and completes four accepted results by hour 2. A fixed-rate pooling calculation predicts the same four, with potential benefit when the assignment becomes unbalanced.
+
+The proposed common queue removes each practitioner's visible pending count and makes assignment negotiation part of every pickup. In a constructed matched replay, each request now consumes 60 minutes of diagnosis plus 12 minutes of that coordination; checking is unchanged. Only two results finish by hour 2; all four finish by 2.4. The change has not provided four timely accepted results, even though the jobs remain compatible and total demand is unchanged. Do not rollout that policy for the four-result commitment. Retain the current arrangement, or test a pooled policy with explicit pickup ownership and visible pending load before claiming that it preserves the earlier rate.
+
+The comparison itself needs time: here 30 minutes to agree the comparable requests and quality check, and 10 minutes of independent observation per arrangement, in addition to the observed service work. Those supplied costs belong to the choice, as do transition and training if a revised pool is tried. In live use, preserve mix, staffing and quality, account for learning/carryover, and inspect whether the observed change supports the claimed cause. This constructed trace proves no general causal effect. When automated service has a stable rate and dispatch changes none of these behaviors, the fixed-rate model can be sufficient; do not impose an extra behavioral experiment without an action-changing premise.
 
 ### OPS.8:6 - Bias-Annotation
 
@@ -1907,6 +1952,8 @@ Protection and concurrency control are therefore selected by their effects, not 
 | How should local completion and downstream readiness be coordinated? **Adapt** whole-operation ready-supply and complete-kit reasoning. | Local column limits are cheaper but can miss joins; a complete-kit rule applied to the whole case can block useful investigation. Sections 4.1–4.4 and 5.1 instead bind readiness to the next service while retaining total waiting. The added input matching is justified when it changes dispatch or starvation. | Tendon, *The Book of TameFlow* (2022), complete-kit example and time-buffer discussion, printed pp. 135–137 and 141–143, is a mechanism candidate. [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) is the serious workflow-policy comparator. Neither establishes one policy for every operation. Reopen when the join, eligibility or receiving result changes. |
 | How much protection or batching is useful? **Adapt** disturbance-specific protection and the setup-versus-delay comparison. | Minimizing every queue or batch ignores the cost of shortage or repeated setup. Sections 4.3–4.5 and 5.2 require a purpose and supported scenario instead of a universal optimum. This costs an explicit consumption/replenishment account, not necessarily a full optimizer. | Tendon's time-buffer account and Reinertsen, *The Principles of Product Development Flow* (2009), E6–E9 and Figure 5-4, supply competing mechanism candidates. Their models do not establish a protection tail or transferable batch optimum. Reopen when setup, replenishment, feedback or shortage consequences change. |
 | Should eligible demand be pooled? **Adapt** model- and service-criterion-specific comparison. | Pooling can improve one mean measure while worsening a protected tail or class. Section 4.4 keeps the service criterion and failure assumptions explicit; no pool-all default is selected. | [Andradóttir, Ayhan and Down (2017)](https://doi.org/10.1016/j.ejor.2016.05.009) and [Cao et al. (2021)](https://doi.org/10.1287/opre.2019.1976) supply counterexamples under different modeled conditions. Their results do not prescribe a rig or clinical queue. Reopen for the actual routing, failure, abandonment or service-class change. |
+
+[Song, Armony and Roels (2024)](https://doi.org/10.1287/msom.2023.0202) report two online experiments in a healthcare-delivery context in which queue configuration, ownership and awareness of queue length interact with processing behavior. Their abstract supports questioning a fixed-service-time premise, not importing an effect size, clinical conclusion or dedicated-queue rule. Sections 4.4 and 5.4 adapt that question to a same-result comparison and include observation cost. Keep a capable pooling model when its behavioral assumptions fit; reopen when the arrangement changes attention, quality, ownership or the protected population.
 
 ### OPS.8:12 - Relations
 
@@ -2383,6 +2430,8 @@ Use the event sequence and the resource calendar together. A snapshot identifies
 
 If the result is delayed by many small waits, inspect cadence, handoff and decision timing across the path rather than forcing one scarce-resource answer.
 
+Choose the time question before choosing the bottleneck measure. Sustained accepted output, the first accepted result by a deadline and the elapsed wait of a particular case can have different useful treatments. For accumulated delay, sum the actual waits along the consequential path and identify which can be removed together without merely moving work into another queue. A nonlimiting resource can still govern a first-result deadline; a faster sustained pace need not produce that first result sooner.
+
 #### OPS.9:4.3 - State a mechanism and a rival
 
 Express the candidate explanation as a relation: “Under this demand and access pattern, the final test cannot process the required eligible load before the horizon,” or “Late prerequisite delivery leaves the booked rig without eligible packages.”
@@ -2403,6 +2452,8 @@ Select the basis appropriate to the claim and decision:
 For a probe, keep the same accepted-result criteria and record demand, mix, resource availability and consequential conditions. Shared queues or common providers can affect nominal comparison cases too. Use an appropriate time-blocked, matched or other justified comparison; a convenient before/after label does not remove interference or confounding.
 
 Current FPF C.16 governs the measurement chain and C.28 governs what causal use the basis supports. The operation still has to supply the actual measurement or probe, the professional premises and its observations.
+
+Compare a capable diagnostic method, not only a utilization ranking. Active-period analysis can expose shifting production bottlenecks from a qualified history of machine states; sensitivity analysis can compare throughput response under a validated model. Obtain their actual state definitions, time resolution, observation window and performance criterion before interpreting the result. Price instrumentation, event reconciliation, missing/censored intervals, implementation and validation, as well as continuing observation. A five-job feasibility bound may settle a fixed deadline without any of that apparatus. Repeated regime changes that make one aggregate ranking misleading can justify it. The diagnostic return identifies where to examine or probe a treatment; it does not by itself establish the effect of the proposed investment.
 
 #### OPS.9:4.5 - Compare treatments from the current arrangement
 
@@ -2457,6 +2508,32 @@ An operation automates a repeatable step and halves its touch time, but the same
 
 If cases repeatedly lack the evidence the acceptor needs, “hire more acceptors” and “complete evidence before presenting the case” are distinct treatments. The next result is the smallest justified comparison that separates those explanations. A model score or automation benchmark does not settle it.
 
+#### OPS.9:5.4 - The first result and sustained output choose different changes
+
+Three independent serial resources A, B and C take 3, 5 and 2 hours per job. Inputs are ready at 0; transfers are immediate; buffers and downstream acceptance do not restrict this constructed deterministic case. A job is accepted only after C. The first completion is at 10; subsequent completions are five hours apart, so the fifth is at 30.
+
+Two qualified arrangements are available before the window. An upstream fixture reduces A to 2 hours, leaving 5 and 2 elsewhere. Alternatively, moving qualified assistance from C to B produces durations 3, 4 and 4. Each has supplied permission and preserves the same accepted result; the move's slower C is part of its actual cost, not an omitted side effect.
+
+| Arrangement | First accepted result | Fifth accepted result | Preparation burden outside the service window |
+| --- | --- | --- | --- |
+| Current 3/5/2 | 10 | 30 | none |
+| Upstream fixture 2/5/2 | 9 | 29 | two qualified staff-hours, with a reversible fixture change |
+| Reassigned assistance 3/4/4 | 11 | 27 | three staff-hours of preparation and a changed C assignment |
+
+For one accepted result due by 9, select the fixture if its preparation can actually be supplied without displacing protected work. It changes the deadline result although B still limits the sustained pace. If the receiving requirement changes to five results by 28, that fixture is insufficient and the reassigned arrangement supplies a feasible alternative. Neither timing table is a financial ranking or a stochastic service guarantee.
+
+Accumulated waits can make another noncapacity treatment useful. Add four evidenced 15-minute handoff waits before acceptance of the first current job: it now finishes at 11. A coordinated handoff arrangement that removes those four waits returns completion to 10 without changing B's five-hour rate. If the required first-result deadline is 10 and the supplied coordination/cover burden is half a staff-hour outside the service window, this can be preferable to the two-hour fixture preparation. If a wait is instead required for a qualified acceptance observation, it is not removable by dispatch policy; retain it and redo the comparison. The useful intervention follows the actual path and permissible waits, not the label “nonconstraint.”
+
+#### OPS.9:5.5 - Choose diagnostic effort for a changing production regime
+
+The fixed five-job case in :5.2 needs durations, readiness and reserved calendars. Those inputs already prove that eight verifier-hours cannot supply ten required hours. A new continuous machine-state feed would not improve that conclusion. Reuse the bound and its feasible extension.
+
+A recurring production service instead alternates its limiting behavior. The question is where movable qualified assistance could help accepted output in each regime. A competent event-history account identifies jobs, accepted outputs and losses, but its weekly totals do not distinguish the shifting intervals. The supplied instrumentation can recover complete active intervals for machines A and B using a specialist-confirmed active/passive definition, including how blocking, starvation and unavailable states are classified. That definition, synchronized times and observed interval ends are prerequisites; a generic “busy” field is insufficient.
+
+In a small constructed diagnostic return, A's complete active interval is 0–6 and B's is 4–10, with no other active intervals in that ten-hour window. Both have six-hour durations. The active-period analysis returns A alone over 0–4, shared/shifting involvement over 4–6 and B alone over 6–10. Each is involved for six of ten hours; the two 60% figures include the same overlap and must not be normalized into a single winner. These are descriptive shares of this trace, not confidence levels or a forecast for next week.
+
+The analyst needs two hours to qualify and align the existing events, three to implement and check the duration-based analysis, and fifteen minutes per shift to examine missing states and the operating return. These are supplied local effort estimates. They are worth comparing with the cost of a permanent one-machine intervention and with a simpler manual replay if shifts are rare. Use the return to design a permitted regime-specific assistance probe and inspect accepted output, quality and interference. Do not buy permanent extra A capacity from an equal weekly total or from the diagnostic label alone. A model-based sensitivity study becomes the stronger supplier when a proposed finite change alters both machines and their buffers; it must represent that coupling and the relevant regime, rather than extrapolate a local derivative into the whole investment effect.
+
 ### OPS.9:6 - Bias-Annotation
 
 | Bias | How it misdirects treatment | Countermeasure |
@@ -2507,6 +2584,10 @@ Diagnosis and treatment belong together, but they are different conclusions. Kee
 | What should be treated when local speed does not improve accepted output? **Adapt** result-relative diagnosis followed by mechanism-specific treatment. | Constraint-focused improvement is useful, but a forced single-resource answer can miss many waits or incomplete inputs. Sections 4.1–4.3 and 5.1/5.3 preserve the accepted result and require a serious rival. The extra event discrimination is worthwhile when it can reverse treatment. | Tendon, *The Book of TameFlow* (2022), constraint and complete-kit reasoning, is a mechanism candidate. Reinertsen, *The Principles of Product Development Flow* (2009), E8's accumulated small waits, is the action-changing rival. Neither proves the current case's cause. Reopen for a different waiting mechanism or demand regime. |
 | How much evidence is enough before acting? **Adapt** the least burdensome bound, replay or admissible probe that can distinguish the live alternatives. | Pure utilization ranking is cheaper but cannot support the causal move; a complete optimizer or experiment is unnecessarily costly for some bounded decisions. Sections 4.4–4.6 and 5.2 separate infeasibility, feasible scenario and actual effect. | Current FPF C.16 and C.28 supply measurement and causal-use discipline; C.11.CRC supplies finite comparison. The professional operational data, probe and authority remain case inputs. Reopen when confounding, interference or consequence makes the selected basis insufficient. |
 | Should the former constraint keep receiving improvement effort? **Adopt** remeasurement of the accepted result and current arrangement after change. | A fixed improvement programme can keep optimizing a relation that no longer limits completion. Section 4.6 and the changed certification case make migration observable at modest extra comparison effort. | The constraint-refocusing line in Tendon and the changing-information reasoning in Reinertsen are compatible mechanism candidates, not guarantees of improvement. Reopen if the result, acceptance conditions or connected resources change. |
+
+The first-result/steady-pace distinction in :5.4 adapts the deterministic timing comparison in TameFlow (2022), printed p.92, and Reinertsen's E8 accumulated-wait argument. It rejects the stronger claim that only the sustained-throughput constraint can be worth improving: a finite deadline is a different receiving result, and removing waits has a real coordination cost.
+
+For the diagnostic choice in :4.4/:5.5, [Roser et al. (2021), §§2–3](https://doi.org/10.1007/978-3-030-85874-2_74), supplies a capable active-period method and duration-aware matrix construction. Its [author manuscript](https://research.chalmers.se/publication/526180/file/526180_Fulltext.pdf) makes state preparation and irregular timestamp handling explicit. OPS adapts its supplier return, not a universal bottleneck detector: state semantics and observation effort matter, and detected involvement is not the causal effect of a treatment. [Calvo (2026), §5](https://doi.org/10.1007/s00170-025-17322-9), compares throughput-oriented state, queue and sensitivity criteria under a serial-line model. It is a serious modeled alternative, not evidence that its steady-regime selection solves a finite deadline or arbitrary changing service. Reopen when the performance criterion, state coverage, coupling or regime makes the cheaper diagnosis insufficient.
 
 ### OPS.9:12 - Relations
 
@@ -3643,11 +3724,11 @@ C.32.MWA supplies practice-architecture synthesis. C.29 connects mathematical de
 
 ### OPS.12:1 - Problem frame
 
-**Use this when** an operating choice changes people's workload, exposure, attention, discretion, support or recovery. Typical situations include extending a service window, adding an urgent job, automating preparation, changing handovers or asking the same people to cover several services.
+**Use this when** an operating choice changes people's workload, exposure, attention, discretion, support or recovery. Typical situations include extending a service window, adding an urgent job, automating preparation, changing handovers or asking the same people to cover several services. It also applies when planning one's own work and the usable time depends on an ordinary recovery arrangement that has yet to be found.
 
 Begin with the affected work and the people who perform, receive and support it. Ask where the proposed gain creates additional work or removes a protected condition. The first useful result is an authorized operating intervention, or a bounded proposal awaiting the specific authority or evidence it needs, with its service effect and human consequences made explicit.
 
-Operations practitioners can change demand, schedules, task arrangements and support within their authority. This pattern governs those operating interventions. Health assessment, clinical judgment, capability development, employment conditions and organization design require their own qualified work when the choice depends on them. An ordinary schedule correction under established conditions can proceed without a general assessment of people's wellbeing.
+Operations practitioners can change demand, schedules, task arrangements and support within their authority. This pattern governs those operating interventions. Health assessment, clinical judgment, capability development, employment conditions and organization design require their own qualified work when the choice depends on them. An ordinary schedule correction under established conditions can proceed without a general assessment of people's wellbeing. When the missing input is an ordinary, personally chosen arrangement of work and rest, §4.3.1 explains how to obtain and reconsider it. A supplied protection or clinical conclusion is preserved within that work.
 
 In PumpWorks, an extra two hours of rig access is useful only if qualified people can cover it. Extending the same operator's work would consume protected recovery and the preparation for incident duty. The practical choice is qualified relief, a different service promise or another feasible arrangement.
 
@@ -3700,6 +3781,24 @@ Begin with alternatives that reduce unnecessary demands or change the operating 
 | A changed task exceeds current capability. | Change the task or support and obtain the needed capability-development result. | A training proposal must fit the actual learning need and available time. |
 
 Personal support can be valuable when it answers a real need. It is inadequate as the sole response to an operating arrangement that continues to violate a protected condition. Where a structural change to the organization is needed, formulate that change question and its required consequence comparison for the responsible practitioners.
+
+##### OPS.12:4.3.1 - Obtain an ordinary work-and-recovery arrangement when it is not yet known
+
+Use this branch when a person can see nominally free time but does not yet know what arrangement of work, rest and other activities is manageable for the intended work. The result is a provisional arrangement with evidence for its use and conditions for reconsideration. It is not an estimate of the person's maximum capacity. A person can use it for their own work; someone arranging others' work must preserve their discretion over private leisure and obtain only the information needed for the operating decision.
+
+**Recover a few relevant occasions.** Begin with the decision that is waiting: whether to add an evening session, retain an existing commitment or change when demanding work occurs. Use existing records or brief notes from occasions that expose that question. Recover actual starts and finishes, interruptions, remaining duties, rest or leisure that occurred, and the person's account before and after it. Include preparation, travel and any burden shifted to someone else. A short description such as “answered service messages through the intended break; restarted twice; left the review unfinished” can be more useful than a general energy score. Choose observation length from the variation that matters, such as ordinary days and days with late duty. Do not maintain a detailed time diary when a few observations already settle the decision.
+
+**Find what can change.** Separate an unavailable opportunity for recovery from an available activity that the person did not find helpful. If work keeps occupying the intended time, compare reducing or moving that work, changing the response arrangement or obtaining real cover. Asking for a better leisure activity leaves that conflict unresolved. Where a genuine choice remains, ask what the person seeks: quiet, relief from work-related demands, enjoyable movement, company, or an activity they choose for its own interest. Use familiar, accessible options and consider a new one when it offers a plausible benefit worth trying. These are reasons to form alternatives, not guaranteed effects of an activity. Intellectual work does not by itself prescribe physical leisure, and an active hobby can add effort rather than relieve it.
+
+**Construct one feasible change and its continuation.** Specify the proposed activity or work arrangement, an actual opportunity for it, the effort of preparing it, and the work that will be reduced, moved or left unpromised. Include affected household or service arrangements; another person's unagreed extra work is not free capacity. Compare the proposal with keeping the feasible current arrangement and with the serious alternative that changes the source of burden. Preserve supplied protection, clinical advice and other binding conditions. If no feasible trial fits, reduce the proposed commitment or seek the particular support or decision needed to make one possible. Do not fill an uncertain recovery need with new work while waiting for proof of harm.
+
+For a modest trial, choose the smallest change likely to answer the practical question. A person might reserve a familiar break before one kind of evening task, or move that task to an existing daytime window. Agree the occasions to try, what will be observed and when to reconsider. Prefer one material change when learning which change helps matters. If several changes must be made together, the observation concerns that whole arrangement; it does not identify the separate effect of each part.
+
+**Observe both the experience and the receiving work.** Check whether the opportunity and chosen activity actually occurred, whether the person found them restorative or otherwise worthwhile, and what happened in the relevant work: a completed usable result, repeated corrections, an interrupted attempt or work left for later. Keep these observations separate. Feeling better does not establish unchanged error rates or justify increasing workload. Rest and leisure may also be worthwhile without raising output. A missed trial is evidence about access or the arrangement, not evidence that the activity failed.
+
+**Revise the commitment at the reach of the evidence.** A workable trial can support continuing the same bounded arrangement under comparable conditions. It does not establish that the activity caused an improvement, supply a clinical conclusion or warrant adding more hours. Retain a margin for the uncertainty that matters. If recovery remains insufficient or work still fails, return to the relevant alternative: less demand, another timing or activity, better support, or inquiry into a different cause. Keep an established useful part while changing the failed one.
+
+Return the resulting actual work windows, retained recovery opportunities, remaining uncertainty and reconsideration condition to OPS.10 and OPS.10.2 before making a service or development commitment. If a needed conclusion concerns health, obtain it through the appropriate qualified practitioner; persistent difficulties need not be diagnosed from the diary. In particular, a known protection breach requires the response in §4.1 rather than completion of this trial. Reconsider when duty, household demands, access, task difficulty or the person's reported condition changes. Once the arrangement is adequate for the decision, stop unnecessary observation.
 
 #### OPS.12:4.4 - Compare the consequences by affected group
 
@@ -3755,6 +3854,20 @@ The practitioner compares limiting generated drafts to the acceptance rate, obta
 
 The observation follows accepted results, rework, interruptions and the readers' accounts over the chosen window. If fewer drafts leave service commitments unsupported, use OPS.13 to obtain the needed service decision from the responsible parties. Requiring readers to clear every generated draft by extending their work would recreate the original burden.
 
+#### OPS.12:5.4 - A person obtains usable work windows before promising them
+
+In this constructed case, a specialist sees eight apparently free hours: Monday and Wednesday 18:00–20:00 and Saturday and Sunday 10:00–12:00. They want to add development work and prepare a professional proposal. Current work and household commitments are otherwise arranged, but evening service messages often continue after 18:00. The person does not yet know whether the nominal evening windows support the new work.
+
+Brief records from the relevant evenings show two different problems: messages occupy part of the intended break, and uninterrupted evening attempts still involve repeated restarts. The person reports wanting time away from work before starting another task. Neither observation diagnoses the cause of fatigue. They are enough to reject promising all eight hours as new work.
+
+Within the current service agreement, the specialist can hand over unresolved messages before 18:00 and leave later routine messages for the next service window; urgent cover is already assigned elsewhere. This removes the spillover without silently dropping a service obligation. They compare two personal options: reserve the first evening hour for a familiar enjoyable walk or quiet reading, or leave evenings free, retain the existing weekend work and defer the new development commitment. The former preserves two short evening opportunities, but its usefulness is still to be tried. Travel and preparation fit the reserved hour; the choice creates no new household duty for another person.
+
+For the next comparable week the person chooses the first option. The reserved hour is a case-specific proposal, not a recommended recovery dose. Their four hours of planned work comprise a first attempt on Monday 19:00–20:00, feedback and correction on Wednesday 19:00–20:00, a fresh attempt on Saturday 10:00–11:00 and proposal preparation on Sunday 10:00–11:00. The needed feedback is available in its stated window. Two separate weekend hours remain unpromised. The apparent eight hours now contain two hours reserved for recovery, four hours of work and two hours of margin. The split margin cannot cover an operation requiring two continuous hours.
+
+The person notes whether the handover and chosen activity happened, their experience, and whether the planned work produced the specified usable result. Suppose the activities occurred and felt worthwhile, while Wednesday's correction still needed another half-hour when its window ended at 20:00. The one-hour duration assumed for correction was inadequate: satisfaction with the break cannot make the extra time available. The person retains the enjoyable activity, examines the correction task and uses OPS.10.2 to move or reduce the remaining work within actual available windows. A different observation in which the work fits supports continuing this same arrangement provisionally; neither observation establishes its general effectiveness.
+
+Now an additional household duty occupies Monday 19:00–20:00. The old arrangement no longer supplies that work hour. The person keeps the useful recovery choice where it remains available and reconstructs the remaining three work hours, or moves the missed attempt into a genuinely available weekend margin. If the needed feedback or order of work cannot fit, they defer the dependent proposal rather than compressing recovery automatically. This changed condition returns to scheduling and commitment, not to a conclusion that the person has lost capability.
+
 ### OPS.12:6 - Bias-Annotation
 
 People with little control over schedules may find it difficult to report a conflict, while a manager sees only completed output. Use an appropriate way to obtain their account and compare it with the work arrangement; silence is weak evidence that no burden exists.
@@ -3771,12 +3884,14 @@ A productivity measure also favors the group whose work it counts. Follow except
 | Alternatives change the relevant arrangement. | The comparison includes a source-level intervention or explains the specific result needed to create one. |
 | The choice preserves affected groups. | Service benefit and transferred burden are visible, and protected conditions are checked before preference. |
 | The action can be carried out and revised. | Authority, capability, communication, observations and stop or reversal conditions fit the chosen intervention. |
+| An unknown ordinary recovery arrangement has not been assumed. | Where this input matters, an available trial connects actual opportunities, the person's experience and relevant work results to a provisional commitment and its reconsideration. |
 
 ### OPS.12:8 - Common Anti-Patterns and How to Avoid Them
 
 | Misuse | Working repair |
 | --- | --- |
-| Treat unused calendar hours as available effort. | Recover actual duties, interruptions, required recovery and support for that time. |
+| Treat unused calendar hours as available effort. | Recover actual duties, interruptions, required recovery and support for that time; use §4.3.1 when the ordinary recovery arrangement is still unknown. |
+| Use feeling better as proof that more work can be promised. | Keep the person's experience and the actual work result distinct; revise the commitment only at the reach of the evidence. |
 | Average away the burden on the exception team. | Compare the material consequences for that team and the service it supplies. |
 | Wait for a wellbeing survey before correcting a known breached condition. | Take the permitted operating response from the established condition and seek any missing authority. |
 | Offer resilience training while leaving the incompatible assignment in place. | Repair demand, timing, duty or support; add learning work when an actual capability need calls for it. |
@@ -3784,7 +3899,7 @@ A productivity measure also favors the group whose work it counts. Follow except
 
 ### OPS.12:9 - Consequences
 
-Human conditions become explicit inputs to an operating choice. The service plan can use qualified relief, reduced demand or a different arrangement before hidden burden appears as delay, rework or loss of support.
+Human conditions become explicit inputs to an operating choice. The service plan can use qualified relief, reduced demand or a different arrangement before hidden burden appears as delay, rework or loss of support. For personal work with an unknown recovery arrangement, a bounded trial can supply a provisional basis for the next commitment instead of assuming that every empty hour is usable.
 
 A feasible intervention may reduce near-term completions or require additional resources. Participant inquiry and observation also consume time. Focusing on the actual choice and using existing evidence limits that effort while preserving necessary protection.
 
@@ -3802,13 +3917,17 @@ The practice question is how to improve service when the proposed change alters 
 
 The serious alternative is a broader organizational intervention where authority, contribution arrangements or recurring staffing allocation cause the conflict. OCE.13's consequence comparison helps when that is the actual subject. The local operating correction remains appropriate when it can resolve the problem within current authority at lower effort. Escalate the specific unresolved arrangement rather than making every schedule decision depend on organization redesign.
 
+For an unknown ordinary recovery arrangement, two research results limit the operating promise. [Albulescu and colleagues' 2022 meta-analysis of micro-breaks](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0272460) distinguishes reported vigor and fatigue from performance; the overall performance result did not establish a general benefit, and task differences matter. It does not supply a universal break duration or establish an appropriate off-work routine. [Kujanpää and Olafsen's 2024 daily-diary study](https://doi.org/10.1007/s10869-024-09978-z) distinguishes shaping recovery activities from the experiences people report. Its associations among Norwegian knowledge workers, measured by self-report, do not establish that prescribing a particular activity causes recovery or better task performance.
+
+Section 4.3.1 therefore uses accessible activities and personal preferences to construct a bounded operating trial, and keeps experience, actual opportunity and receiving-work results distinct. This is an operating synthesis, not a validated clinical intervention. The serious alternative of reserving a fixed generic break is simpler when its adequacy is already established for the work. When it is unknown, that rule leaves both fit and usable workload assumed. Conversely, a detailed personal experiment is unnecessary when removing an observed schedule conflict already settles the decision. The selected trial gains a revisable basis for the remaining choice at the cost of observation and delayed commitment; it does not promise an optimal regime.
+
 The case comparisons are constructed demonstrations, not effectiveness estimates. Reopen the selected intervention when a changed population, demand pattern, protection result or better-supported method changes its feasible consequences.
 
 ### OPS.12:12 - Relations
 
-OPS.5 and OPS.7 supply admission and priority choices whose human consequences may need examination. Use OPS.10 to qualify capacity and OPS.13 to establish a supported service commitment with the authorized parties when that is the receiving need. OPS.14 supplies decision-specific financial consequences, and OPS.15 can provide the necessary operating account.
+OPS.5 and OPS.7 supply admission and priority choices whose human consequences may need examination. Use OPS.10 to qualify capacity and OPS.10.2 to place remaining work in the actual available windows. The work and recovery arrangement obtained here supplies conditions for those calculations, not additional hours to count twice. Use OPS.13 to establish a supported service commitment with the authorized parties when that is the receiving need. OPS.14 supplies decision-specific financial consequences, and OPS.15 can provide the necessary operating account.
 
-OPS.18 governs the continuation or recovery action when quality and reliability are at risk. OPS.17 helps reconsider the method whose assumptions created recurring burden. OCE.13 applies when the subject is an organization change; a Human Capability Development method is needed when the unresolved result concerns capability development.
+OPS.18 governs the continuation or recovery action when quality and reliability are at risk. OPS.17 helps reconsider the method whose assumptions created recurring burden. OCE.13 applies when the subject is an organization change; a Human Capability Development method is needed when the unresolved result concerns capability development. HCD.7 and HCD.15 can use the resulting work windows, retained recovery and reconsideration conditions when arranging support or continuing development. A changed available window reopens that arrangement without itself establishing a change in the person's capability.
 
 FPF C.16 supports measurement whose basis matters to the decision. A.10 keeps evidence reach distinct from the claim being made. A.11.OP helps remove work that has no contribution to the current decision, required assurance or recovery.
 
@@ -3860,6 +3979,8 @@ Keep three statements distinguishable:
 
 Recover outstanding commitments, including work already admitted and obligations to other recipients that a new plan would displace. A newly requested target does not silently replace them. When an existing promise is wider than the currently supportable result, keep the unresolved part explicit.
 
+If the desired improvement or its comparison is still arbitrary, use [OPS.21](#ops-21) to construct a meaningful aim. An ambition can exceed the current expectation while exposing a worthwhile improvement question. Establish its actual service promise here only after the work, resources and parties support it.
+
 Ask what acceptance requires. A completed test attempt, a passed test with applicable evidence, the customer's acceptance of that evidence and an authorized product release can occur at different times and under different authorities.
 
 #### OPS.13:4.2 - Obtain the work, resource and dependency basis
@@ -3899,6 +4020,8 @@ Choose the observations and review point from how quickly the plan can become in
 Work backward from the last time a useful response can start. Include the delay before detecting the problem, conveying it to someone who can decide, making that decision and obtaining the remedy. Use OPS.10.2 when resource windows or other work affect the remedy's timing. For a response intended to preserve the promise, the whole detection-to-remedy sequence must fit the remaining usable window. If no such response fits, use the early information to compare another remedy or a service revision. A percentage of reserve consumed can help direct attention; it supplies neither a delay probability nor the resources needed to respond.
 
 Use this response timing to choose a periodic review, an event signal or both. A report of a consequential change can require action before a dashboard threshold is crossed. Where the current account supports continuation and no shared decision is needed, a status meeting need not interrupt the work. Preserve other purposes for meeting, such as learning or resolving an actual disagreement.
+
+Compare the whole observation-and-response arrangement. For periodic review, count the reviews, the conditions that can be missed between them and the resulting latest response. For an event policy, obtain coverage, delivery and acknowledgement behavior, false or repeated notifications, reset behavior and the capacity needed to triage them. Include setup, maintenance and interruption of other work. In a recurring event service, a qualified multiwindow burn-rate policy can distinguish fast serious loss from slower deterioration; it needs a meaningful eligible-event population and service-specific parameters. A sparse discrete delivery may be better served by a direct readiness check. Retain the cheaper adequate policy, and reopen it when alert load or response availability defeats its timing.
 
 When the basis changes, calculate the affected service consequence and contact the responsible parties while a useful choice remains. Preserve what can still be performed under existing authority. Use observed delivery and acceptance to determine which promised results were fulfilled, and retain any remaining obligation. A changed forecast records the new outlook.
 
@@ -3961,6 +4084,16 @@ Now change one fact: the recovery resource cannot start before ten. Recovery cou
 
 These times illustrate a constructed operating choice, not a measured service probability.
 
+#### OPS.13:5.6 - Compare the cost of obtaining a usable warning
+
+Keep :5.5's report, hour-14 deadline, two-hour recovery and four hours after input recovery. Consider ten daily repetitions with the same qualified resource windows. In this bounded planning comparison, an input failure is persistent until repaired and can arise only between 7 and 7.5. One readiness inspection completed at 7.5 finds it; communication and authorization then take at most fifteen minutes. Recovery starts by 7.75 and the report finishes by 13.75. This periodic policy is sufficient for these supplied conditions; detecting every failure as quickly as an event mechanism could is unnecessary for this promise.
+
+Each inspection costs three staff-minutes, or thirty over ten days. A capable alternative uses the service's existing event mechanism, checked to cover these failures and deliver an actionable warning within five minutes, with acknowledgement and escalation. Its adaptation takes 120 staff-minutes once, with qualified preparation time available before the ten-day service window; health/coverage checks take two per day. The supplied comparison trace also contains three nonactionable or repeated notifications per day after the policy's normal grouping/reset handling, at four minutes each to triage. In that trace, the notifications are separated and the true-incident decision maker remains available. Its additional observation burden is therefore 120 + 10 × (2 + 12) = 260 minutes. The same true-incident decision and recovery work is required under both policies and is counted in their resource plans, not treated as a saving. Retain periodic inspection for this sparse service. These counts are constructed inputs, not estimated false-alarm probabilities.
+
+Now the same service undertakes twelve independently checked reports per day with staggered windows. Qualified analysis, recovery and release resources have been supplied for that population; this assumption cannot be inferred from having more alerts. Manual inspection still needs three minutes per report: 36 per day. A qualified shared event arrangement retains the five-minute delivery bound, combined two-minute daily health check and the stated twelve-minute triage burden across that population. Over ten days, 360 observation minutes compare with 260, including the event policy's setup. With only thirty daily minutes available for these observation tasks, the shared event policy is the usable candidate; staffing and protected response work must remain feasible as well. A burn-rate policy is a serious further option only if the promised service and its eligible-event volume support a loss-rate objective. A failed discrete report must not disappear in a favorable aggregate.
+
+Test the changed condition that defeats this choice. Three spurious alerts queued ahead of a true one can consume twelve minutes; five-minute delivery plus twelve-minute triage wait plus fifteen-minute communication/decision gives 32 minutes. A failure at 7.5 would then be authorized after 8, too late for the original remedy. The operating owner needs an effective priority/triage arrangement, additional cover, an earlier direct check or another service decision. Muting notifications or copying a published burn-rate threshold does not restore the missing response. Verify the actual response queue and affected report, retain unrelated reports whose basis still holds, and use the existing promise-revision authority if no workable response remains.
+
 ### OPS.13:6 - Bias-Annotation
 
 Urgency and commercial pressure can make a desired date feel like an established promise. Read back the result and conditions to the actual parties, and distinguish an offer from their agreement.
@@ -4009,6 +4142,8 @@ The practice question is how to make service commitments under uncertain demand 
 The [SRE Workbook's service-objective guidance](https://sre.google/workbook/implementing-slos/) (2018) starts from user-relevant service behavior and distinguishes the intended indicator from how it is measured. Sections 4.1 and 4.2 adapt that distinction to the promised result, eligibility and acceptance evidence. This is a useful alternative to a resource-only account, while a software-service indicator remains insufficient for a clinical or engineering acceptance decision.
 
 Steve Tendon, *The Book of TameFlow* (2022), printed pp. 215-220 and 259-269, connects reserve consumption, progress and management attention. Adopt its use of changing conditions to focus intervention, including information that arrives before a formal alarm. Section 4.5 adds the time and resource construction that tests whether a response can preserve the promise and exposes the need for another remedy or a revised agreement. The book's heuristic conversion from a duration fraction to a delivery probability (p. 212), and its use of mean flow time as the 50th-percentile cutoff (p. 220), do not establish those probabilities. A probabilistic promise needs the applicable distribution; an alarm needs a workable response. Retain periodic meetings where they perform another needed function. Reconsider the observation policy when detection, authority, remedy duration or resource availability changes.
+
+The [SRE Workbook's alerting comparison](https://sre.google/workbook/alerting-on-slos/), chapter 5, supplies a capable alternative: choose for detection, precision, recall and reset behavior, using several windows/burn rates when the service signal supports them. It also exposes low-traffic and response-time limits. Sections 4.5 and 5.6 adapt that whole-choice reasoning to a discrete promise and price notifications and response capacity. They retain cheaper periodic inspection when it is adequate; software defaults do not become universal Operations thresholds.
 
 For a small known job set, a feasible sequence and explicit adverse case can answer the commitment question at lower effort than a stochastic model. PumpWorks uses that branch. A changed demand distribution, recurring service-level claim or consequential tail risk can justify the stronger forecasting work. Reopen the basis when work mix, windows, resources, acceptance or the promised result changes.
 
@@ -4090,6 +4225,8 @@ Include displaced use when it is real. Identify the best relevant foregone alter
 
 Connect receipts to demand, delivered service, acceptance and payment conditions. Consider the adverse cases that can change the choice: repeat work, delayed acceptance, nonpayment or a lost resource window. A claimed receipt needs its stated basis even when its arithmetic is simple.
 
+When a reported contribution deducts labor that will still be paid after redeployment, recover the receipts and genuinely avoided payments behind it before using it as the foregone amount. Otherwise the comparison can treat a retained salary as if it were saved. A competent relevant-cost account already makes this correction; reuse it rather than adding another opportunity-cost line.
+
 #### OPS.14:4.4 - Check timing, funding and horizon effects
 
 Calculate each alternative's net cash within the horizon, then the difference between alternatives. State the direction: completing now minus deferring, for example. Keep this difference distinct from the net cash of either option.
@@ -4163,6 +4300,23 @@ Consider one constructed working day with four accepted outputs due. Both option
 
 Both leave fifty-four drafts unreviewed; rejected work and the paid rework remain unaccepted. The same 240 salary is paid today, with no other payment or receipt. Total payments are 300 versus 280: the alternative saves 20 cash, while payments per output accepted that day rise from 75 to 140. These are daily payment ratios; they do not close the unfinished work. The unchanged salary yields no cash saving, and qualified review capacity remains six decisions per day. Retain the current arrangement for the four due outputs under confirmed funding and decision authority; qualify any later generator or service change before relying on it.
 
+#### OPS.14:5.5 - The deferred slot displaces an accepted job
+
+Change :5.1's no-displacement premise. The month-2 slot is now the only available way to complete previously committed job J on time. J would bring 1,100 at the end of month 2 and needs 200 of avoidable consumables before its service. The same 300 salary is paid in both alternatives, even if J is not performed. That unchanged payment has separate reserved funding; the 500 allowance in :5.1 remains available for the extension's differing payments. No other contribution uses the slot. All figures use the earlier common horizon and currency.
+
+Completing the third package now leaves the slot for J. Deferring it uses that slot and loses J's receipt while avoiding J's 200 consumables. For this comparison, J's recipient has authorized cancellation without penalty if the slot is withdrawn; without that permission, the deferral is not an admissible choice merely because its cash total is attractive. Preserve the actual commitment until its agreed cancellation takes effect.
+
+| Cash component through month 2 | Complete the third package now; perform J | Defer the third package; cancel J |
+| --- | --- | --- |
+| Third package, unchanged from :5.1 | +100 | +800 |
+| J receipt less its avoidable consumables | 1,100 − 200 = +900 | 0 |
+| Salary retained in both alternatives | −300 | −300 |
+| Total for these components | +700 | +500 |
+
+Now minus defer is **+200**, so the financial preference reverses in favor of completing now, conditional on feasible service and funding. The same answer is the earlier −700 difference plus 900 of foregone J cash. A reported J contribution of 600 that already deducted the retained salary would understate the displacement by 300. The table includes J's lost receipt and avoided consumables once; subtracting a further 900 “opportunity cost” would count the same loss twice.
+
+The earlier 300 advance-funding gap for the immediate option remains. J's later 200 payment also needs funds when due; the month-end receipts do not pre-fund it. If funding or cancellation authority is absent, return that constraint before acting. If J's receipt is only 800 with the same 200 avoidable payment, its foregone cash is 600 and now minus defer becomes −100: the financial preference returns to deferral. This is a changed demand/payment premise, not a salary saving.
+
 ### OPS.14:6 - Bias-Annotation
 
 An attractive option is easier to defend when its comparator is absent. Describe the same service result, horizon and changed flows for every serious alternative, including deferral where it is real.
@@ -4207,7 +4361,7 @@ Comparing alternatives on one basis makes an incremental claim intelligible. Sep
 
 The practice question is how to choose operating work when output, scarce resources and financial timing interact. The selected strongest line uses relevant future differences between feasible alternatives, with a constrained-throughput model only where its assumptions fit. Compared with a single unit-cost or utilization figure, this line explains both PumpWorks' cheaper deferred service and the immediate funding gap.
 
-[ACCA's treatment of relevant costs](https://www.accaglobal.com/my/en/student/exam-support-resources/fundamentals-exams-study-resources/f5/technical-articles/relevant-costs.html) supplies the future incremental cash and opportunity-cost reasoning used in sections 4.3–4.4. PumpWorks adapts that reasoning to explicit acceptance dates and two alternatives. The instructional model does not supply tax, financing permission, discounting or statutory recognition rules.
+[ACCA's treatment of relevant costs](https://www.accaglobal.com/my/en/student/exam-support-resources/fundamentals-exams-study-resources/f5/technical-articles/relevant-costs.html) supplies the future incremental cash and opportunity-cost reasoning used in sections 4.3–4.4. PumpWorks adapts that reasoning to explicit acceptance dates and two alternatives. Section 5.5 additionally works the source's redeployed-labor distinction: recover the retained payment before using a reported contribution, and count displaced cash once. The instructional model does not supply tax, financing permission, discounting or statutory recognition rules.
 
 [ACCA's throughput-accounting treatment](https://www.accaglobal.com/gb/en/student/exam-support-resources/fundamentals-exams-study-resources/f5/technical-articles/throughput-constraints2.html) contributes the scarce-resource mix question under short-horizon cost assumptions. Section 4.2 retains the useful contribution comparison while the whole-job case shows a limit of using the ratio as a decision rule. Variable cloud or labor payments require the actual cost model.
 
@@ -4650,7 +4804,7 @@ The first useful result preserves that starting status. For an admitted Method, 
 
 Use `OPS.17` when the current question is which operating Method or candidate from a repertoire deserves comparison. Use `OPS.18` when existing evidence already calls for one quality or reliability control response. Use `OPS.19` when simultaneous Work across cases or scales must first establish a feasible trial and protected conditions. Use current `ME.11`-`ME.16` when the specialist question is trial design, coherence, fit, worth, lineage, introduction, or revision without the receiving Operations decision.
 
-Recognition is noticing that a recurring operating difficulty challenges a way of working rather than only one case. Assurance preserves exact Method or candidate-account status, source support, use limits, needed authority and the bounded return. A claimed trial additionally needs its prospective plan, independently admitted actual Work, typed observations and qualified evidence. A favorable episode, new board field or rollout supplies none of those by itself.
+Recognition concerns a recurring way of working rather than only one case. Assurance establishes the selected status branch and the evidence for its bounded decision. A claimed trial must have a prospective plan, independently supported actual Work and observations qualified for that use.
 
 ### OPS.16:1 - Problem frame
 
@@ -4666,7 +4820,7 @@ An operating team needs to improve one way of working without turning local lear
 
 The evidence rarely arrives as one result. Actual Work can show that a readiness rule was followed, while service evidence remains too short to establish reliability, fit elsewhere is unknown, burden is only partly observed, and a changed provider invalidates a description. Combining these observations into one improvement score hides the decision boundary.
 
-Before Method admission, the difficulty is sharper. The candidate account may be strong enough to guide a distinguishing observation, but it is still an episteme about a possible reusable way. Calling the candidate enacted, adopted, or branched would decide its identity before the required `A.3.1` work.
+Before Method admission, a candidate account can guide a distinguishing observation while its reusable-way identity remains unsettled. Preserve that uncertainty instead of reporting Method adoption.
 
 ### OPS.16:3 - Forces
 
@@ -4694,6 +4848,8 @@ Name the operating System, Work family or service, current difficulty, receiving
 | pre-admission candidate | Exact `A.3.1.MR` candidate-account episteme for the provisionally distinguished reusable way, source support, real rivals, gaps, use limits and explicit non-admission; a distinguishing question only when it changes use | Which identity-test, account-revision, comparison, stop or selected further-observation result can this basis support? |
 
 A candidate label such as “v2”, a checklist, a repeated local habit, or a repository entry does not move the second row into the first. Independently apply `A.3.1` to admit a Method and `A.3.2` to classify a separate description episteme. If those results are unavailable, retain the candidate branch.
+
+Start with the existing improvement account. A competent PDSA record may already distinguish prediction, proposed test, actual observations, adaptation and later implementation. Reuse it. For the branch selected above, reuse any established identity and status; supply the missing Method or candidate-account distinctions needed by the receiving decision. Qualify a stronger evidence claim only when the decision uses it. Include the cost of maintaining these distinctions, obtaining support and displacing service in the comparison.
 
 #### OPS.16:4.2 - State a bounded change hypothesis and alternatives
 
@@ -4734,7 +4890,7 @@ A compact plan can use these positions:
 | observations | Direct subjects, measures or descriptions, collection point, burden, and later receiving use |
 | return | Decision branches, unsupported stronger uses, next observation, and reopen condition |
 
-This is a writing aid rather than a new trial object. `A.15.2` governs the `WorkPlan`. The plan is neither performed Work nor evidence that the candidate whole or changed Method was enacted.
+`A.15.2` governs this prospective `WorkPlan`; section 4.5 establishes what actually occurred.
 
 #### OPS.16:4.5 - Admit actual trial Work and direct results separately
 
@@ -4795,7 +4951,7 @@ An `adopt` or `branch` return makes an admitted Method available only for the na
 
 A useful return lets the responsible practitioner answer four questions quickly: which admitted Method or candidate account was considered; which available sources support the result and, if a trial is claimed, what actual Work and observations occurred; what current account or decision is supported; and what remains unsupported or reopens the decision. Attach detailed evidence through its owning account rather than restating it.
 
-What changes in practice: the team stops saying “we tried the new process and it worked.” It preserves Method or candidate-account status and source limits, finishes a supported current account, and separates a selected trial's plan, actual Work and observations. Service and authority limits remain binding in every branch.
+What changes in practice: the team can finish a supported current account or make a bounded change decision without inflating a candidate, a planned trial or a favorable episode. Service and authority conditions remain binding.
 
 ### OPS.16:5 - Archetypal Grounding
 
@@ -4819,6 +4975,8 @@ The two-package trial begins as a `WorkPlan`. It names two intended package-admi
 The observations support the readiness and permission branch for these two decisions. They do not establish transfer to another service, causal superiority over `v1`, general reliability, or practical worth across a broader horizon. The operating decision can rely on the actual occurrences, available service protection and observed hold. If a later decision asks whether `v2` causes fewer unsupported starts than `v1`, these observations do not supply the needed `C.28` comparison and inference basis. Return that causal-support gap while preserving the independently supported branch decision.
 
 The selected return is `branch`. Retain admitted `PW-TestAdmission-v2` under `PW-TestAdmission-Description-e2` for the named control-service package family and the supplied support and service conditions. Keep admitted `v1` for an unaffected family whose current facts still fit. Before widening the `v2` branch, require a discriminating observation under provider unavailability. Record the authorized operating decision, Method-lineage update, and repertoire return separately from the trial Work. Reopen when permission, provider support, incident margin, package family, relied-on description, or the next discriminating observation changes.
+
+Compare this same return with competent PDSA. A PDSA team can predict fewer unsupported starts, conduct the two bounded tests, observe A's usable result and B's proper hold, preserve service and adapt before wider implementation. Those are shared contributions. OPS.16 adds a useful result only for the receiving question that PDSA's ordinary local report might leave open: which admitted reusable way and exact description may another package family rely on, and which family stays on v1? If that report already records the same identity, applicability, conditions and evidence limits, it is sufficient. The lineage and repertoire return then reuse it. Their ongoing maintenance and any extra qualifying observation must earn their cost; two observations do not make that cost disappear or prove v2's superiority.
 
 #### OPS.16:5.2 - A hospital keeps a proposed readiness way pre-admission
 
@@ -4865,7 +5023,7 @@ The return preserves the admitted Method and its exact description while narrowi
 - [ ] Alternatives use the same operating basis, preserve protected conditions, carry uncertainty, and remain within named authority.
 - [ ] The return uses the permitted branch vocabulary, exact use, evidence window and limits, and relevant repertoire, lineage and reopen consequences. A next observation belongs only to a selected further inquiry, not to every completed account revision or stop.
 - [ ] A board, prompt, tool, description, support, or local departure changes Method identity only when reusable Method semantics changed under `A.3.1`.
-- [ ] The result claims no organization-wide adoption, cultural selection or retention, causal superiority, new capability, or authority outside its boundary.
+- [ ] Any proposed wider use has its own cultural, causal, capability or authority basis; the local decision is not that basis.
 
 ### OPS.16:8 - Common Anti-Patterns and How to Avoid Them
 
@@ -4898,18 +5056,19 @@ Local decisions remain valuable even when stronger claims are open. A branch tha
 
 ### OPS.16:11 - SoTA-Echoing
 
-The practice question is how to turn evidence about one way of operating into a bounded Method-change decision. The selected line combines current Method Engineering's trial-to-revision route with FPF identity, Work, evidence, time, measurement, causality, and choice governors, then adds Operations service consequences and authority. It deliberately requires more identity and evidence bookkeeping than a generic improvement loop, but limits that effort to distinctions that can change a start, branch, stop, or stronger claim.
+The question is what to change in a reusable way of operating, and what the evidence actually supports. The serious comparator is competent PDSA. The Institute for Healthcare Improvement's [testing guidance](https://www.ihi.org/library/model-for-improvement/testing-changes) includes predictions, small tests, actual observations, unexpected effects, refinement and tests under varied conditions. Its [implementation guidance](https://www.ihi.org/library/model-for-improvement/implementing-changes) distinguishes learning from a change from making it a lasting part of work. OPS adopts these contributions; a generic plan–success–adopt sequence is not an adequate rival.
 
-| Practice question | Best-known line | Serious alternative or default | Defect overcome and pattern mutation | Source roles and limits | Reopen condition |
-| --- | --- | --- | --- | --- | --- |
-| How should a local trial become an operating Method decision? | Preserve the admitted-Method or candidate-account branch from prospective trial through actual Work, typed observations, specialist qualification, and an authorized bounded return. | A generic improvement cycle that names a proposed process, trial, favorable result, and adoption as successive states is the serious default. | The default can make the plan prove the occurrence and the favorable occurrence prove the Method. **Adapt:** current `ME.11`-`ME.16` and FPF `A.3.1.MR`, `A.3.1`, `A.15.2`, `A.15.1`, `A.10`, `C.16`, `C.27.TA`, `C.27`, `C.28`, and `C.11` into sections 4.1-4.9. The added effort is exact status and evidence recording; at comparable application effort it prevents unsupported adoption and preserves a usable local decision. | The current Method Engineering First Edition is the best-known specialist line for trial, coherence, fit, worth, lineage, introduction, and revision. The named FPF patterns govern identity, Work, and evidence. They do not supply the Operations service consequence or local operating authority, and this pattern does not replace their tests. | Reopen if an admitted FPF pattern supplies the complete status-preserving trial-to-decision binding, or if current Method Engineering changes the Operations action or result boundary. |
-| How should rapid feedback and reliability protection shape an operating change trial? | Use small decision-changing observations, automated or direct feedback where it is valid, risk-sensitive scrutiny, and an explicit reliability stop; adapt cadence and apparatus to the actual engineered setting. | Copying hourly integration, complete automation, one approval regime, or one software pipeline into every operation is the serious default; blanket delay is the opposing default. | Universal transfer ignores hardware, provider, assurance, and service conditions, while blanket delay suppresses useful feedback. **Adapt:** sections 4.3-4.8 require actual supports, protected conditions, fallback, burden, and current evidence; **reject** universal cadence and removal of independent assurance. The accepted trade-off is slower feedback where qualification or physical access requires it. | DORA's current pages for [continuous integration](https://dora.dev/capabilities/continuous-integration/), [continuous delivery](https://dora.dev/capabilities/continuous-delivery/), and [risk-sensitive change approval](https://dora.dev/capabilities/streamlining-change-approval/) are best-known-line candidates for small changes, frequent integration, automated feedback, and risk-sensitive review; the [Google SRE error-budget example](https://sre.google/workbook/error-budget-policy/) is a service comparator with explicit stops; Zampetti et al., [“Continuous Integration and Delivery Practices for Cyber-Physical Systems”](https://doi.org/10.1145/3571854) (2022), supplies failure and transfer evidence from heterogeneous pipelines. These sources do not establish universal cadence, complete automation, safety authority, or transfer beyond their studied settings. | Reopen when a corrected DORA result, stronger cross-domain comparison, or another engineered-holon class changes the integration, assurance, approval, cadence, platform, or reliability-control boundary. |
-| What evidence justifies widening, branching, or stopping an admitted Method? | Keep direct occurrence, coherence, fit or transfer, practical worth, measurement, time, and causal reliance as separately governed questions; widen only the claim whose evidence and conditions support it. | One success story, before-and-after dashboard, or absence of an adverse event is the serious default. | The default hides population, exposure, covarying change, burden, and unsupported reach. **Adopt:** the separation supplied by current `ME.12`-`ME.16`, `A.10`, `C.16`, `C.27.TA`, `C.27`, `C.28`, and `OPS.18` in sections 4.5-4.9 and all three cases; **reject** automatic causal or transfer inference. The extra comparison effort is limited to a stronger claim that would change the decision. | Current Method Engineering and FPF are best-known-line sources for the typed judgements used here; `OPS.18` supplies Operations quality and reliability consequences. They qualify the evidence but do not choose this operating alternative or transfer specialist authority. | Reopen when a new evidence window, population, comparison, validity threat, causal result, service condition, or materially different alternative can change the branch. |
-| How should a promising reusable way be handled before Method admission? | Carry a source-traceable `A.3.1.MR` candidate account with real rivals, gaps and use limits; add a useful distinguishing question and return to `A.3.1` identity testing only when warranted. | Calling the proposal “vNext”, treating its checklist as a `U.MethodDescription`, or recording actual Work as enactment of the candidate. | These shortcuts erase the identity question. **Adopt:** the status-preserving branch in sections 4.1, 4.5 and 4.9 and the hospital case; **reject** candidate enactment and adoption language. A supported account or comparison can finish without another question or experiment; an actual selected trial retains its own question and Work evidence. | `A.3.1.MR` supplies ordinary candidate recovery, not Method admission, MethodDescription membership, effectiveness or an Operations decision. `A.3.1` remains the admission owner. | Reopen when the relied-on source, real rival, candidate identity or receiving-use distinction changes. |
+At the PumpWorks decision in section 5.1, both arrangements can retain A's successful use, value B's refusal to start without current permission, protect service and withhold a broader implementation claim. PDSA need not confuse a plan with an occurrence or infer causality from a dashboard. The residual OPS contribution arises when another service must recover the exact reusable way, distinguish its description from a changed tool or local adjustment, and decide which applicability branch it may use. Sections 4.1 and 4.5–4.9 connect that receiving decision to Method Engineering and FPF's identity, occurrence, measurement and evidence distinctions. A candidate account can also finish with a supported revision or comparison without inventing a trial or asserting Method admission.
+
+The whole added burden includes recovering Method identity, relating observations to the claims actually consumed, maintaining description and lineage, informing later users, and any specialist qualification or additional observation required by a stronger claim. Those tasks can exceed the cost of the local improvement test. Use the incumbent PDSA record as the carrier and omit distinctions that cannot change a branch, stop, receiving claim or later use. When it already preserves those distinctions, it is sufficient and OPS should add no parallel bookkeeping. The conditional gain is a recoverable bounded reuse decision, not a claim that OPS improves PDSA's experimental effectiveness.
+
+Method Engineering's trial, coherence, fit, worth, lineage and introduction contributions remain the direct suppliers. FPF `A.3.1.MR`, `A.3.1`, `A.3.2`, `A.15.1`, `A.15.2`, `A.10`, `C.16`, `C.27.TA`, `C.28` and `C.11` qualify the corresponding identity, Work, evidence and comparison questions; they do not set the operation's service consequence or authority. An operating allocation can supply trial conditions without an organization change; OCE.11 is used when changed organizational relations require coexistence with continuing service.
+
+For rapid feedback, DORA's [continuous integration](https://dora.dev/capabilities/continuous-integration/), [continuous delivery](https://dora.dev/capabilities/continuous-delivery/) and [risk-sensitive approval](https://dora.dev/capabilities/streamlining-change-approval/) guidance supplies software contributions. The [SRE error-budget example](https://sre.google/workbook/error-budget-policy/) supplies a reliability stop. Zampetti et al., [“Continuous Integration and Delivery Practices for Cyber-Physical Systems”](https://doi.org/10.1145/3571854) (2022), provides transfer limits from heterogeneous pipelines. Sections 4.3–4.8 adapt feedback and protection to actual supports; they reject universal cadence, complete automation and removal of independent assurance. Reopen when a changed family, observation window, candidate identity, support condition or capable incumbent changes the reuse decision or its total cost.
 
 ### OPS.16:12 - Relations
 
-`OPS.15` supplies a decision-specific account when observations, populations, or event relations are not yet trustworthy. `OPS.17` supplies status-preserved admitted Methods, repertoire claims, or candidate-account alternatives. `OPS.18` supplies quality or reliability evidence and its control result. None changes a Method's or candidate's status by adjacency.
+`OPS.15` supplies a decision-specific account when observations, populations, or event relations are not yet trustworthy. `OPS.17` supplies status-preserved admitted Methods, repertoire claims, or candidate-account alternatives. `OPS.18` supplies quality or reliability evidence and its control result.
 
 OPS.10–OPS.13 supply the needed resource, schedule, human-condition and service contributions; OPS.19 supplies a cross-scale decision when it changes feasible trial Work or protected conditions. OCE.11 supplies coexistence around an organization change. Use each result within its supported scope and confirm the conditions needed for execution; a prospective arrangement remains conditional.
 
@@ -5049,6 +5208,14 @@ Later, twenty-four planned package admissions make the repeated checking burden 
 
 The team selects the bounded comparison, with the permission-expiry hold as a required result and a stop if supplied support or permission ceases. R remains selected pending the result. The trial permission does not supply Method admission or authority for normal service use. Any later fit, transfer or causal claim still needs evidence adequate for that claim.
 
+#### OPS.17:5.5 - An incident exception that does not repeal the start limit
+
+Use the constructed PumpWorks choice in `OPS.2:5.2`. Recover the two rules before combining their labels. The normal rule chooses the oldest ready package; the incident rule changes order only when a supported response window would otherwise be lost. Both still require current readiness, permission, an available performer and room under the active-work limit.
+
+At 09:00, T8 occupies one of two slots. I73-D can use the other with E18, while older P8-P can wait until its authorized afternoon review. The incident lead approves the exception and the resource owner confirms the displacement. The combination therefore starts I73-D without interrupting T8 or creating a third slot. If both slots were already occupied, the exception alone would not authorize another start: a safe, permitted completion or stop and a new capacity decision would be needed. Merely moving a suspended card out of sight would not free a still-occupied resource.
+
+At 09:50, unavailable field contact removes the ground for reserving E18 for live verification. Keep the readiness and WIP rules, close only the unsupported exception and reconsider the eligible work. The combination costs the exception decision and its expiry check; when ordinary ready order already preserves the response window, keep that cheaper rule. This is a usable composition and return, not a new universal incident policy.
+
 ### OPS.17:6 - Bias-Annotation
 
 People who have invested in a school or tool can find its benefits easier to see than its operating costs. Include current practice and a simpler adequate response, and ask affected practitioners where the proposed gain creates additional work.
@@ -5165,7 +5332,7 @@ If a known violation already calls for a protective action, take that action und
 
 Branches can be complementary. Select each because its answer changes the current action. A favorable result from one branch cannot supply the evidence required by another.
 
-For recurring variation, recover whether observations are comparable, whether the baseline is appropriate and whether the selected model fits the data. Independence, changing sample size, seasonality, clustering or rare events can change the required monitor. A simple chart should yield to a qualified statistical method when its assumptions or detection performance are inadequate.
+For recurring variation, recover whether observations are comparable, whether the baseline is appropriate and whether the selected model fits the data. Independence, changing sample size, seasonality, clustering or rare events can change the required monitor. A simple chart should yield to a qualified statistical method when its assumptions or detection performance are inadequate. Make that request usable: supply the defect/result definition, sampling and grouping, time order, baseline provenance, plausible dependence or drift, losses from false and missed signals, and the latest useful response. Ask for the population and model to which the return applies, detection and false-signal performance at specified changes, observation burden, and a rule the operator can execute. “Use EWMA” or a new control limit without those conditions is not the needed return.
 
 For an event-based service, define the good and eligible events from the recipient's experience. Check omitted events, important subgroups and observation delay. A fast failure can require a timely alert before an end-of-window aggregate is available.
 
@@ -5219,6 +5386,21 @@ The next sample contains twelve nonconforming items: 12 / 200 = **0.06**, or 6%.
 The arithmetic establishes the signal under that rule. It does not identify why the items failed, determine another lot's disposition or show that the process is capable of meeting a product specification. The three-standard-deviation calculation defines the limit for this rule; it does not supply an exact confidence or false-alarm probability. With this low reference rate, a claim about false-alarm or missed-detection probability needs an appropriately qualified binomial or other statistical design.
 
 Suppose the investigation finds a changed setup condition. Returning to the earlier setup and obtaining the required process and output evidence can support restart under the responsible authority. A single subsequent point below the limit is insufficient to establish every one of those claims. A persistent smaller shift may call for a monitor such as an exponentially weighted moving average (EWMA), which retains information from successive observations, if its detection properties fit the need.
+
+Change the sampling premise. The 200 inspected items now come as fifty groups of four, sharing one setup within each group. In this constructed return, the qualified statistical supplier establishes a bounded model for the defect being monitored: all four items in a group share its conforming/nonconforming state; different sampled groups are independent; the stable reference probability is 0.02 per group. The sample's twelve defects occupy three groups. The count is therefore 3 of 50 independent group outcomes, not 12 of 200 independent item outcomes. The original 4.97% limit is inapplicable. With this model, its apparent trigger would correspond to at least three defective groups, with a baseline false-signal probability of about 7.84% per sample. More rows did not provide more independent information.
+
+The operating owner needs to protect this finite campaign and decide whether a recurring-shift monitor adds a useful further result. The current product rule already holds any known defective group's output. The supplier is asked to compare early detection with the available inspection and response time, including a persistent rise from 2% to 6% defective groups. It returns these two explicit candidate rules under the stated independent-group model and fixed baseline:
+
+| Candidate monitoring rule | Baseline false-signal probability | Detection probability if the group rate is 6% throughout the tested observations | Delay and use |
+| --- | --- | --- | --- |
+| Investigate at five or more defective groups in one fixed sample of 50. | approximately 0.321% per sample | approximately 17.94% per sample | Available after that sample; often misses this small persistent shift. |
+| Investigate at ten or more in one prespecified, nonoverlapping block of four such samples, 200 different groups in total. | approximately 0.748% per block | approximately 76.57% per block | Uses four rounds of evidence; it does not provide an earlier warning. |
+
+These exact-binomial tail calculations are a constructed statistical return, conditional on the supplied model; they are not lifetime false-alarm guarantees. Repeated blocks create repeated opportunities to signal. They do not authorize changing the baseline after seeing unfavorable observations or treating overlapping blocks as independent.
+
+Suppose the next four rounds contain three defective groups each. No individual sample triggers the first rule; twelve of 200 groups triggers the second at the fourth round. The authorized response is a wider process investigation and containment at the supported scope. Each known defective group was held when found under the independent product rule; waiting for the fourth-round monitoring result cannot authorize its release. Unaffected output still uses its own acceptance basis.
+
+Include the whole price and reuse observations already obtained. In this finite campaign each round's fifty groups are all its output. A qualified full screen costs forty staff-minutes per round, 160 over four rounds, and fits the service window. That adequate product-protection rule applies with or without a process monitor; the monitoring rule does not replace it. Its observations already supply the group outcomes, so do not charge for a second sample. The monitor adds two minutes per round for group/time reconciliation, 120 once for qualification/setup and twenty for the wider investigation in the supplied signal trace: 148 additional minutes, or 308 including inspection, apart from unchanged protective handling. Retain direct protection alone for this one-off use when no continuing exposure or other decision needs the separate recurring-shift answer. Where that answer is useful, compare its expected contribution with these added costs, actual signal workload and missed-loss consequences. The full screen protects this output without itself establishing the process-change claim. If action is needed before four rounds, request a qualified sequential design; the ordinary normal-data EWMA limits cannot simply be pasted onto these rare grouped counts. Correlation between groups, a changed defect mechanism or an unrepresentative baseline reopens this statistical return without canceling already supported containment.
 
 #### OPS.18:5.2 - Service loss exceeds the agreed budget
 
@@ -5317,8 +5499,8 @@ The practice question is how to control operating quality and reliability from e
 
 | Source and practice question | Selected move and alternative | Operative contribution and limit |
 | --- | --- | --- |
-| [NIST proportions control charts](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc332.htm) and [process stability](https://www.itl.nist.gov/div898/handbook/ppc/section4/ppc45.htm) | Use a monitor suited to recurring variation, instead of reacting to every raw fluctuation. | Sections 4.2–4.3 and 5.1 preserve baseline, population and model. The three-sigma example establishes its rule's signal, not an exact risk guarantee. |
-| [NIST EWMA guidance](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm) | Consider a memory-bearing monitor when persistent small shifts matter more than one large point. | Sections 4.5 and 5.1 retain detection delay and assumptions as reasons to change the method. A new chart requires a suitable design and reference basis. |
+| [NIST proportions control charts](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc332.htm) and [process stability](https://www.itl.nist.gov/div898/handbook/ppc/section4/ppc45.htm) | Use a monitor suited to recurring variation, instead of reacting to every raw fluctuation. | Sections 4.2–4.3 and 5.1 preserve baseline, population and model. The original three-sigma signal and the changed group-count return answer different sampling conditions; exact tail risks are stated only for the latter's supplied model. |
+| [NIST EWMA guidance](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm) | Consider a memory-bearing monitor when persistent small shifts matter more than one large point. | Sections 4.5 and 5.1 retain detection delay and assumptions as reasons to change the method. NIST's ordinary EWMA limits assume independent data and their tabulated design assumes normality; grouped rare-event monitoring needs a qualified design, not merely the chart name. |
 | [NIST process capability](https://www.itl.nist.gov/div898/handbook/pmc/section1/pmc16.htm) and [acceptance sampling](https://www.itl.nist.gov/div898/handbook/pmc/section2/pmc21.htm) | Select specification/capability or lot-disposition evidence for that question, instead of reusing a monitoring verdict. | Sections 4.2–4.3 and 5.3 keep the lot, defect and producer/consumer risk basis separate. |
 | [SRE service objectives](https://sre.google/workbook/implementing-slos/), [error-budget policy](https://sre.google/workbook/error-budget-policy/) and [alerting on SLOs](https://sre.google/workbook/alerting-on-slos/) | Relate user-relevant observed loss to an agreed action and timely detection, instead of using infrastructure availability alone. | The service case adopts the loss calculation and policy relation. Local targets, exceptions, authority and restart evidence are supplied for the actual service. |
 | Ries, *The Lean Startup* (2011), chapter 11; [Lean Enterprise Institute, Five Whys](https://www.lean.org/lexicon-terms/5-whys/); [Google SRE, Postmortem Culture](https://sre.google/sre-book/postmortem-culture/) (2016) | Recover contributing conditions and assign supported prevention, instead of stopping at the first symptom or treating a question count as causal proof. | Sections 4.4 and 5.5 adapt incident reconstruction, knowledgeable participation, countermeasure selection and follow-up. The historical accounts and practice guidance do not prove a particular causal chain or a recurrence reduction; those claims need their own evidence. |
@@ -5403,6 +5585,8 @@ Select only the subjects, Work, Methods, resources, commitments, accounts, autho
 
 Keep every process diagram, board, event log, financial model, and dashboard separate from what it represents. State what the representation preserves, what it omits, and which current decision uses it. Use `C.32.MWA` when a general synthesis across non-isomorphic practice structures is needed; its result is architecture evidence, not the operating decision returned here.
 
+Inspect a capable existing integrated account before assembling another. It may already preserve subjects, participants, production and coordination, resource calendars, promises and evidence. Reuse its supported results and add only a missing relation whose answer can reverse the choice. Count the cost of keeping that addition current, including specialist returns; a more elaborate cross-scale model is not inherently better.
+
 A compact working account can use these positions:
 
 | Position | What to record |
@@ -5476,7 +5660,9 @@ The local utilization proposal starts all four ready packages and therefore cons
 | financial consequence | qualified deferral of the third package is worth 700 more in the stated horizon | immediate completion is locally visible but financially worse under the current premises |
 | proposed Method trial | its support, permission, service, and recovery conditions are not yet current | starting the trial would convert missing conditions into unsupported Work |
 
-The sequence-only alternative forces incident response, test execution, release coordination, financial comparison, and Method-improvement Work into successive steps of one process. It hides their different subjects, overlap and authority. A combined schedule remains useful when it preserves those distinctions. The utilization-first alternative spends eight rig-hours on all four packages and therefore needs ten hours to retain the adverse repeat; keeping it to eight silently displaces that repeat, while extending qualified specialist Work consumes protected recovery and requires support not present in the current account.
+Compare a capable bounded integrated arrangement: its transaction account identifies the package request, promise, result and receiver; its schedule distinguishes test, incident and coordination Work, the six rig-hours, specialist E27 and the repeat reserve. This arrangement already yields two packages plus the two-hour repeat. OPS.19 does not add that arithmetic or need a new enterprise model. If the same arrangement also carries the third package's qualified financial horizon and later agreement, the unresolved fourth-package disposition and E27's recovery protection, reuse its complete return.
+
+Where only the resource schedule is current, the needed addition is those exact receiving constraints. Their owners confirm the third package's supported deferral and the absence of qualified specialist relief; the fourth package remains unresolved. These facts defeat an extension and keep the Method trial closed. Mapping them to the schedule costs source consultation, horizon checking and later refresh. That cost is warranted here because the proposed extension would consume a protected condition, not because multiple diagrams are desirable.
 
 `OPS.19` returns a bounded cross-scale reconfiguration: preserve incident coverage and E27's recovery; complete the two selected packages and reserve the possible two-hour repeat inside six rig-hours; defer the third package to its qualified later slot; hold the fourth package's start and return its later disposition as unresolved because no qualified priority, acceptance-window, or financial premise selects it; and keep the Method trial closed until service recovery, support, permission, and trial conditions are current. Reopen if qualified relief and access become available, the financial horizon or acceptance premise changes, a qualified fourth-package disposition basis returns, or the incident or service result changes.
 
@@ -5552,11 +5738,13 @@ The short result keeps the burden bounded. Coherence comes from explicit relatio
 
 ### OPS.19:11 - SoTA-Echoing
 
-| Practice question | Selected current line and decision | Serious alternative, defect overcome, and pattern change | Source roles, limits, and reopen condition |
-| --- | --- | --- | --- |
-| How should one operating decision use several structures that do not line up one-for-one? | **Adapt** a question-relative synthesis of actual Work, subjects, descriptions, resources, commitments, accounts, and authority, then add the Operations reconfiguration and stop. | A universal flow diagram or enterprise model is easier to standardize but changes descriptions into the operation and can hide unlike relations. Compared with that standardized diagram, this account deliberately spends extra effort naming unlike subjects, relations, and representation losses; the trade is accepted because those distinctions can reverse the authorized operating choice, and section 4.3 limits the extra work to structures that can do so. Sections 4.2–4.3 and the three grounding cases select only decision-changing structures and state their losses. | Current `C.32.MWA` supplies the strongest general synthesis line. [DEMO 2020](#source-use-and-currentness) is a serious structure-plus-flow comparator; [Perera et al. (2017)](https://doi.org/10.1007/s41109-017-0053-0), [Perez et al. (2023)](https://doi.org/10.1016/j.compchemeng.2023.108363), and [Wassick and Perez (2025)](https://doi.org/10.1002/aic.18688) supply bounded multi-network evidence. None defines a universal Operations ontology or proves effectiveness. Reopen when a missing structure changes the decision or a simpler account preserves the same relations and stops. |
-| How should local flow or utilization gains be compared with wider operating consequences? | **Adapt** explicit workflow and flow-measure discipline, distinct operational, financial, informational, and human concerns, and the constraint-accounting warning against local optimization; keep every result on its own subject and apply a bounded operating choice. | Maximizing utilization or adopting one school wholesale is cheaper to explain but can move delay, cash need, burden, and resilience loss outside the visible measure. Sections 4.4–4.6 and PumpWorks expose those transfers and retain protected conditions. | [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/) supplies the maintained minimal workflow and four-measure comparator, not a complete Operations baseline. [TameFlow 2022](#source-use-and-currentness) contributes separate concern areas and option-versus-commitment reasoning. [Bragg 2007](#source-use-and-currentness) and [Caspari and Caspari 2004](#source-use-and-currentness) are historical mechanism sources for the operating-financial bridge. None establishes universal dominance or effect. Reopen when a current comparison changes a relied-on mechanism, consequence, or effort trade-off. |
-| How much modeling is enough before acting? | **Adopt** the smallest account that exposes the conflicting results, materially different alternatives, authority, decision, and reopen condition. | An exhaustive map can improve coverage but delays a bounded choice and still supplies neither evidence nor permission. Sections 4.7–4.8 stop after the actionable return and reopen only the affected part. | Current `C.32.MWA`, `OPS.11`, and `OPS.15` supply the internal best-known line for proportional structure selection, coupling, and decision-specific accounts. They do not make the cross-scale operating decision. Reopen when a real case cannot recover a material conflict at this effort or when omitted structure repeatedly reverses the result. |
+The decision is how to reconcile simultaneous work whose service, resource, financial and human results can disagree. A serious alternative is a bounded integrated operating arrangement, not an exhaustive enterprise diagram. DEMO distinguishes models from modeled subjects and permits a selected Scope of Interest: see the primary 2024 chapter summaries for [EE Model Theory](https://link.springer.com/chapter/10.1007/978-3-031-53361-7_6) and [DEMO Methodology](https://link.springer.com/chapter/10.1007/978-3-031-53361-7_12). Its historical production/coordination and commitment distinctions are useful inputs. Those summaries establish this comparison boundary, not mastery of the full modeling procedure.
+
+The competent comparator in section 5.1 is a constructed arrangement using those distinctions together with a supplied resource schedule and domain policies. It retains separate work and parties, protects the possible repeat and reaches the same six-hour allocation. OPS adopts its results. The residual question is whether the qualified financial horizon, receiving agreement and specialist recovery condition are actually connected to the proposed extension. Sections 4.2–4.8 add only a missing consequence or authority relation and return an actionable bounded reconfiguration. If the incumbent already carries all of them, it is sufficient; no OPS account needs to coexist with it.
+
+The integrated material, information and financial model of [Perez et al. (2023)](https://doi.org/10.1016/j.compchemeng.2023.108363) is another serious source line for coupled decisions. Its published scope does not make its complete optimization construction an implemented supplier here. A more detailed model can be worth its data and maintenance cost when resource interactions repeatedly change the schedule; it is not necessary for the simple arithmetic in this case. `C.32.MWA` supplies general structure selection and synthesis, while the operation retains its actual allocation, service obligations and authority.
+
+The full incremental burden of the OPS synthesis is recovering missing owner results, aligning their subjects and horizons, checking that one benefit has not displaced another protected use, and maintaining the resulting correspondence. It can lose to a mature integrated practice that already does this. TameFlow's distinct operational, financial, informational and human concerns and the historical constraint-accounting sources help expose moved burdens, but none establishes a universal financial objective or a school-wide advantage. Reopen when a missing relation reverses an actual decision, a source assumption ceases to fit, or a simpler incumbent preserves the same commitments, protections and truthful unresolved remainder at lower total effort.
 
 ### OPS.19:12 - Relations
 
@@ -5584,13 +5772,13 @@ Use `OPS.16` for one operating Method trial and local Method-change decision. Us
 
 Here *Operations culture* is ordinary practice wording for how the named population generates, transmits, recognizes, selects, remembers, retains, changes, or loses Operations practice. It is not a generic culture object, an adoption stage, or a claim that the organization acts as one participant.
 
-Recognition is noticing that continuation across practitioners matters, rather than merely a local trial or carrier update. Assurance concerns the same result: a testable predicate, honest subject status, named participants and intervals, and separate evidence and consequences. A selected intervention needs current authority, protection and feasible work; a claimed later result needs the observations it asserts. Neither two explanations nor another experiment is required to complete every account. Attendance, publication, usage count, a mandated field, or favorable service data does not by itself establish the cultural claim.
+Recognition concerns continuation across practitioners. Assurance supports the selected population claim, with its status, participants and interval. A new intervention additionally needs feasible authorized work; a later-result claim needs later observations. Sufficient current grounds can finish the account without another experiment.
 
 ### OPS.20:1 - Problem frame
 
 Operations depend on practices that cross shifts, sites, providers, and generations of practitioners. Readiness checks, incident stops, acceptance rules, recovery routines, and case-specific judgment can disappear when one experienced person leaves, or persist only as a card that no longer guides actual Work.
 
-Visible carriers make continuity easy to overstate. A method description is published, a board field becomes mandatory, everyone attends a handover, or a tool reports high use. Those facts may establish publication, access, training Work, rule selection, or tool activity. They do not establish that a practitioner independently enacted the Method, that a population selected it, that it was retained after support ended, or that it caused a service result.
+Visible activity can overstate continuity. Handover attendance establishes participation in that event; receiving enactment requires evidence of the receiver's independent operating Work. Retention after support ends and a causal service effect need their own observations. A carrier or usage count may help find those observations, but cannot replace them.
 
 The Operations question is practical and bounded: which relation concerning one practice is supported in this practitioner population, what may explain its positive and failed cases, and what continuation or change is justified now? A further intervention or observation earns its place from what it can change in that decision or warranted claim.
 
@@ -5598,7 +5786,7 @@ The Operations question is practical and bounded: which relation concerning one 
 
 A team wants useful operating practice to continue and harmful or stale practice to change. It often responds with training, publication, a required field, or a tool rollout because those actions are visible and easy to count. If the team cannot state the value, participants, applicability, positive case, and failed case for one cultural predicate, those activities cannot show what changed.
 
-Several identities are also compressed. A school label becomes a Method; a MethodDescription becomes the Method; handover Work becomes transmission; local use becomes population selection; a successful service result becomes retention and proof of causality. Once joined, these claims cannot direct the next observation or preserve a truthful `unknown`.
+Collapsing the practice, its description and the population claim also hides what remains unknown. A local successful use may be established while selection by another shift or retention after support ends is unresolved. The next observation must answer that remaining question.
 
 Intervention adds a further boundary. An Operations lead may be permitted to change one handover or local carrier without authority over another shift, professional practice, employment condition, safety decision, or wider field. The proposed intervention, performed Work, changed subject, later cultural observation, and later operating consequence must therefore remain separately inspectable.
 
@@ -5646,23 +5834,25 @@ Choose the relation that can change the current decision. State the value, parti
 | retention | Does the same predicate remain supported after the qualification interval and relevant support change? | Independent positive cases recur after the stated interval; the negative is use only while the author or coach is present. |
 | loss | Has a previously supported relation ceased for the named participants and interval? | Eligible cases now fail the earlier predicate under otherwise applicable conditions; the negative is only a missing carrier record with no observation of practice. |
 
+Begin with the receiving practice's existing adoption or incident account. If it already identifies the eligible cases, actual independent use, failure and observation interval needed for this decision, reuse it. Add a cultural predicate only to distinguish a claim that could otherwise alter continuation, extension or withdrawal. The added observation and maintenance burden belongs in that choice.
+
 Use the lightest truthful claim. Apply `A.6.RCD` only when a reusable or local compound predicate is needed; open `A.6.REL` occurrence identity only when a later use must distinguish relation occurrences. Other cultural claims remain explicit gaps unless independently tested.
 
 #### OPS.20:4.3 - Separate the practice, carriers, Work, claims, and consequences
 
-Keep each actual subject and claim visible:
+Recover what each observation establishes for the selected predicate:
 
-| Position | What it can establish | What it does not establish by itself |
-| --- | --- | --- |
-| admitted Method or candidate account | The exact reusable way or the exact pre-admission question and status | Publication, enactment, or a population relation |
-| MethodDescription, card, board field, repository, checklist, or archive | Recoverable content, access, current wording, or retained carrier | The Method, correct use, selection, or retention |
-| publication or training Work | A dated publication or learning occurrence with actual participants | Receiving enactment, population adoption, or later retention |
-| operating Work | What actual practitioners did, with admitted enacted Methods where supported | A population-wide relation or causal explanation |
-| local decision or rule | What an authorized chooser selected for its scope | Actual enactment, cultural selection elsewhere, or effectiveness |
-| cultural claim episteme | A separately stated claim about the named value, participants, predicate, and interval | The world-side relation it describes |
-| service, reliability, flow, toil, adoption, or human-condition observation | A direct consequence for its own subject and interval | The cultural predicate or proof that an intervention caused it |
+| Subject or evidence | Required meaning for this use |
+| --- | --- |
+| admitted Method or candidate account | The exact admitted reusable way, or a source-traceable account of the provisionally distinguished way with non-admission explicit. |
+| description episteme and carrier | What the separate description says, and which carrier makes it available to which participant and when. Method, description and carrier retain their different identities. |
+| publication or training Work | What was actually delivered or performed and who participated. |
+| operating Work | What the receiving practitioners actually did, with admitted enacted Methods where supported and the relevant performance evidence. |
+| local decision or rule | What an authorized chooser selected, for which use and participants. |
+| cultural claim episteme | The separately stated proposition about the value, population, relation and interval. |
+| operating consequence | The service, reliability, burden or other outcome for its own subject and interval. |
 
-For the primary predicate, record the world-side claim, the separate episteme that states it, evidence and reliance, and observations at named intervals. Preserve `unknown` and missing information. A later observation neither creates the earlier occurrence nor proves that the intervention caused the change.
+For the primary predicate, relate the world-side claim to the episteme that states it and the evidence relied on. Preserve `unknown` where a required observation is absent. Publication, training and local rule selection can support their own rows without establishing receiving enactment or later retention. A later observation does not create an earlier occurrence or prove that the intervention caused the change.
 
 #### OPS.20:4.4 - Identify only the participating subjects that change the decision
 
@@ -5741,9 +5931,9 @@ What changes in practice: an Operations lead can retain a supported bounded prac
 
 This constructed case continues the PumpWorks control-service operation. The bounded practitioner population is the coordinators of the named `PW-Early` and `PW-Late` shifts during the next six weeks. The admitted input is `PW-TestAdmission-v2 : U.Method` under exact `PW-TestAdmission-Description-e2 : U.MethodDescription` and the bounded `OPS.16` evidence. That evidence includes one correct admission, one truthful hold for missing permission, preserved service conditions during the trial, and a branch decision. It establishes no population relation.
 
-The value under test is the admitted package-admission Method for eligible control-service packages. The primary predicate is receiving enactment: after the initial author is absent, a shift coordinator independently applies `v2` to an eligible package, records a truthful hold when a required condition is absent, and preserves the service stop. The discriminating negative is a completed handover followed by an unsupported start. Publication of the description, attendance at handover, a readiness card, a board field, local use, and a successful test result remain different claims.
+The value under test is the admitted package-admission Method for eligible control-service packages. The primary predicate is receiving enactment: after the initial author is absent, a shift coordinator independently applies `v2` to an eligible package, records a truthful hold when a required condition is absent, and preserves the service stop. The discriminating negative is a completed handover followed by an unsupported start. Apply the claim distinctions in section 4.3: handover participation and a successful package result cannot substitute for independent receiving use.
 
-Keep the participating subjects separate: admitted `v2`; `PW-TestAdmission-Description-e2`; the readiness card; the board field; each handover Work occurrence; any replay or coaching Work; each package-admission decision and later test Work; and the service results. The cultural-claim episteme states the receiving-enactment predicate for the two shifts and six-week window. Actual decisions and later service observations supply evidence for their own claims.
+For this decision, the existing handover account identifies the admitted v2 and exact description, the card and board support, performed replay and package decisions. It distinguishes supported receiving-enactment claims from open questions for the two shifts and six-week window, with the available observations linked to the claims they support. Service results remain separately qualified.
 
 Two explanations remain live:
 
@@ -5759,6 +5949,8 @@ These observations do not isolate the card, board field, replay, authority remin
 Return `revise` for the unsupported provider-unavailability branch and retain the observed familiar-use contribution of the card-plus-replay arrangement for the named `PW-Early` coordinators. Keep the failed case, `PW-Late`, and longer retention distinct. For continuation limited to the supported familiar conditions, suppose another comparison would displace needed service without changing this decision: that bounded `continue` can finish without a new replay or causal explanation. The failed unsupported start remains failed and supplies no permission to repeat it.
 
 Now suppose the next receiving use requires the provider-unavailability decision to be made independently. The current evidence does not support that extension. Select a provider-unavailability decision replay only if a qualified facilitator, participants, protected interval, and current permission for that additional replay are available and its result can change whether the extension is allowed. No unsupported operational start is part of that probe. The proposal completes the decision to test; a claimed tested extension still needs its actual result and independent later use. If the trial is unavailable or not worthwhile, withhold that extension while preserving the supported familiar branch. Reopen the affected result when the Method, description, population, authority, protection or receiving condition changes.
+
+A capable adaptive SRE approach would also investigate the unsupported provider start, listen to the receiving coordinators and retain the useful familiar branch rather than mandate wider rollout. Compare the decisions, not the labels. OPS adds the explicit receiving-enactment predicate only if the existing adoption account cannot distinguish the two supported familiar decisions from the failed unfamiliar decision, the unobserved Late shift and unobserved retention. If it already can, it suffices. Maintaining that distinction costs eligible-case observation, follow-up and communication; a further provider replay adds design, facilitation and displaced-service cost. None of those costs is justified merely by wanting a more complete culture account.
 
 #### OPS.20:5.2 - A hospital keeps the cultural claim on the candidate branch
 
@@ -5785,8 +5977,8 @@ If the provider or model changes to an unqualified edition, the current branch s
 | Recurring bias | Likely drift | Working repair |
 | --- | --- | --- |
 | rollout bias | Publication, training completion, access, or a configured tool becomes population adoption. | Derive one predicate with named participants, positive and failed cases, and later evidence. |
-| label and school bias | SRE, Kanban, TameFlow, TOC, Lean, BPM, or another community name becomes an enacted Method or field spine. | Recover the exact Method, candidate account, carrier, Work, and cultural claim used in the case. |
-| carrier bias | A card, repository, checklist, or board field becomes the practice and its continuation mechanism. | Separate access and content claims from actual Work and the population predicate. |
+| label and school bias | A familiar community name, such as SRE or Kanban, substitutes for the practice being continued. | Recover the actual Method or candidate and the population claim needed here. |
+| carrier bias | A maintained carrier is taken as evidence that the practice continues. | Recover receiving Work and the population predicate separately from access. |
 | mandate bias | A required field or policy is read as selection and enactment by every practitioner. | Test actual eligible decisions and retain unsupported, copied, or bypassed cases. |
 | organization-as-agent bias | “The organization adopted” hides selecting, receiving, and authorizing participants. | Bound the population and name the capable participant for each predicate and action. |
 | success-story bias | A favorable service result proves transmission, retention, and causality. | Observe the cultural predicate and operating consequence separately; use `C.28` only for causal reliance. |
@@ -5801,14 +5993,13 @@ If the provider or model changes to an unqualified edition, the current branch s
 - [ ] One value and cultural predicate have participant meanings, applicability, a positive test, and a discriminating negative or failed case.
 - [ ] Other cultural predicates remain explicit gaps unless independently tested.
 - [ ] The world-side claim, claim episteme, evidence and reliance, and observations at named intervals remain separate.
-- [ ] Methods, candidate accounts, descriptions, carriers, publications, training, rules, Systems, Work, local use, population claims, and consequences retain their actual identities.
+- [ ] Each observation is used for the subject and claim it supports in section 4.3.
 - [ ] A selected structure or architecture is opened only when its organization changes the decision.
 - [ ] Credible action-changing explanations and relevant uncertainty remain without a fixed hypothesis count. A new inquiry has an attainable contribution worth its whole burden, including design effort, and feasible participants, capability, access, resources, window and authorization.
 - [ ] The intended action's needed Agent, assignment, permission or authority predicate, participants, scope, positive basis and protected conditions are named. A selected intervention also bounds reversible exposure; a current account creates no new change to authorize.
 - [ ] The proposed intervention, performed intervention Work, actual changed subject, later cultural observation, and later operating consequence are distinct.
-- [ ] Service, reliability, flow, toil, adoption, human-condition, burden, non-use, and rejection observations retain their own subjects and do not prove the cultural predicate or causality.
+- [ ] Operating consequences retain their own subjects; cultural and causal conclusions have the separate evidence they require.
 - [ ] The return is `continue`, `revise`, `branch`, `replace`, `stop`, a retained set, or `unknown`, with the available grounds, material alternatives, gaps, limits and reopen condition. A next observation appears only for a selected worthwhile inquiry; stronger later claims keep their own actual evidence.
-- [ ] OPS.16, OPS.17, and OPS.19 inputs preserve their exact status and supply no cultural relation by adjacency.
 
 ### OPS.20:8 - Common Anti-Patterns and How to Avoid Them
 
@@ -5841,20 +6032,21 @@ Keeping the Method, description, carrier, Work, claim, evidence, and consequence
 
 ### OPS.20:11 - SoTA-Echoing
 
-The practice question is how to continue and deliberately change Operations practice across a bounded practitioner population. The selected line combines current `C.36` cultural-relation distinctions and `ME.17` intervention discipline with exact Operations Method status, operating authority, protected service conditions, repertoire return, and separate service, reliability, flow, toil, adoption, and human consequences. The comparison uses the accepted `SRC-DOMAIN-CULTURAL-CONTINUATION-CASES-2001-2026` card as a source-to-claim locator; that card is not independent empirical proof.
+The question is how to continue a useful operating practice among its receiving practitioners, and when to change its support or scope. A strong comparator is adaptive SRE practice, not compulsory rollout. Google's [organizational-change account, especially “Common Tooling Adoption in SRE”](https://sre.google/workbook/organizational-change/) describes attention to differing receiving needs, changes in staffing and support when an arrangement failed, migration cost and voluntary uptake. It also permits specialized solutions where a common one does not fit. These are practitioner case observations, not universal causal estimates.
 
-| Practice question | Best-known line | Serious alternative or default | Defect overcome and exact pattern mutation | Decision and comparable effort | Exact source roles and limits | Smallest reopen condition |
-| --- | --- | --- | --- | --- | --- | --- |
-| How can a team state and test cultural continuation without turning a rollout into adoption? | Bound one practice and population; preserve admitted-Method or candidate status; test one generation, transmission, recognition, selection, memory, retention, or loss predicate with positive and failed cases. | A rollout or maturity account combines publication, attendance, mandated fields, use, service success, and retention into one adoption stage. | The default cannot show which relation failed or which observation should change the decision. Sections 4.1-4.3 and 4.8 add the status branch, testable predicate, separate claim and evidence, and bounded return. | **Adopt** `C.36`'s relation separation and **adapt** `ME.17`'s Method Engineering route to Operations; **reject** the maturity-stage default. The extra effort is one predicate and evidence boundary at comparable rollout-observation effort, while unrelated relations are omitted. | Current `C.36` supplies the general cultural distinctions and intervention boundary; current `ME.17` supplies the two status branches, rival hypotheses, authorization, interval observations, and decision return. Neither supplies the Operations population, service consequences, or local authority in this pattern. | Reopen when C.36 or ME.17 changes a used predicate, status branch, authorization boundary, or return, or when repeated Operations use needs another action-bearing relation. |
-| How should an Operations team choose an intervention when the visible failure has several plausible explanations? | Retain credible action-changing explanations; use sufficient current grounds for continuation, or select a worthwhile attainable observation and permitted change under reversible exposure. | Generic training, communication, and tool rollout is the serious default response to inconsistent use; immediate compulsory standardization is the stronger version. | The default does not distinguish access, recognition, authority, support, case familiarity, or Method fit. Sections 4.5-4.7 and PumpWorks section 5.1 add rival hypotheses, a provider-case observation, bounded authority, protected stops, and separate intervention Work and effects. | **Adapt** the case-based `C.36`/`ME.17` line and **reject** generic rollout as the default. The attainable contribution must warrant case-design effort, practitioner burden and displaced service. A bounded current decision may finish without a new case; a selected test keeps its narrower conclusion. | The [Google SRE organization-change case](https://sre.google/workbook/organizational-change/), [community-driven adoption case](https://sre.google/resources/practices-and-processes/community-driven-software-adoption/), and [postmortem culture account](https://sre.google/workbook/postmortem-culture/) supply dated interventions, receiving arrangements, and cultural practices. They do not prove universal uptake, causal superiority, or transfer to PumpWorks. | Reopen when a later case or comparison shows that the selected explanation set misses a decision-changing mechanism, or when authority or protection conditions change. |
-| How should editions, archives, cards, and institutional choices contribute to a cultural claim? | Treat generation, publication, institutional selection, carrier memory, receiving enactment, practitioner selection, and retention as separate claims with their own participants and intervals. | A current official edition, archive, standard, repository, or training catalogue is treated as proof that practitioners retained and enact the practice. | The proxy erases the difference between a maintained description and actual Work. Sections 4.2-4.4, the subject table in 4.3, and the hospital and AI cases keep carriers and institutional facts from establishing Method culture. | **Adopt** the claim separation; **reject** official status as an enactment or retention proxy. The same carrier inspection is reused, with additional population observation only for the stronger claim. | `SRC-DOMAIN-CULTURAL-CONTINUATION-CASES-2001-2026` locates the Agile history, Team Topologies editions and learning carriers, OMG Essence editions, GFMAM frameworks, CDIO versions, Shell archive, IVS consultation, OECD principles, and UK Service Standard revision. Their primary pages support the reported development, publication, training, consultation, or institutional-selection events, not recurring practitioner enactment, prevalence, retention, or effectiveness. | Reopen only when a direct source changes the exact edition, event, receiving or selection arrangement, retention evidence, or limit used by this pattern. |
-| What should the team do when population evidence is sparse or long-term retention is not yet observable? | Make the smallest bounded conjecture or claim supported by named observations, label estimates and gaps, retain relevant `unknown`, and finish the supported current decision; choose a new discriminating observation only for a useful attainable contribution, without inventing prevalence or causality. | One default suppresses any action until a large population study exists; the opposing default generalizes from one favorable local case. | Delay can block a safe reversible probe, while generalization hides population, interval, and negative cases. Sections 4.5-4.9 and all three cases permit bounded action while preserving unknown transfer, causality, and retention. | **Adapt** the accepted case-comparison line; **reject** both forced certainty and study-or-stop as universal defaults. The trade-off is a deliberately local decision with a stated reopen condition rather than a field-wide conclusion. | The accepted source card's thirteen unlike cases, `SRC-MUSIC-DANCE-PRACTICE-EVOLUTION-CASES-2026`, `SRC-DORA-2025`, and `SRC-CI-CD-CPS-SRE-2018-2026` supply inspectable generation, receiving, selection, carrier, revision, and heterogeneous-transfer observations. The registry explicitly states that no case proves every link, universal uptake, causal superiority, one cultural level, or long-term retention. | Reopen when a later interval, better comparative source, changed population, or decision-changing negative case supports or defeats the bounded claim. |
+Apply that capable approach to PumpWorks. It can keep the familiar practice, investigate the unsupported provider start, improve receiving support and avoid extending an arrangement whose local value does not justify migration. OPS adopts those moves. Its residual contribution is a more exact decision claim when “adoption” leaves the matter ambiguous: which practitioners independently enact which admitted practice in which eligible cases and interval, and which failed observation defeats the proposed extension? Sections 4.2–4.3 and 5.1 distinguish receiving enactment from participation, institutional selection, carrier availability and longer retention. Two correct familiar decisions and one failed unfamiliar decision support the bounded familiar branch, not both shifts or six-week retention.
+
+This distinction changes the return only when the incumbent adoption account lacks it. If that account already separates eligible use, failed cases, population and interval, reuse it without a parallel cultural register. The full extra burden otherwise includes recovering the exact practice, observing relevant later decisions, retaining failures, communicating use limits and maintaining them when practitioners or support change. A new replay also needs case design, facilitation, permission and protected service time. Continued observation can cost more than the decision it might improve; section 4.5 permits a supported current decision to finish and selects further inquiry only for a worthwhile attainable contribution.
+
+Current `C.36` supplies cultural-relation distinctions and `ME.17` supplies their Method Engineering use. OPS adapts them to operating authority, service protection and repertoire consequences. Their role is not to replace receiving support with classification. The [SRE postmortem-culture account](https://sre.google/workbook/postmortem-culture/) provides a complementary account of learning from failure and making follow-up work actionable; it supplies neither proof of a population relation nor the cause of PumpWorks' failed case. The directly cited primary accounts are the source returns for these contributions; publication or institutional endorsement of any description is not evidence of its enactment.
+
+Reopen when a new eligible failure, changed support, authority, population or interval changes the bounded return; when evidence warrants or defeats the proposed extension; or when a capable incumbent preserves these decisions at lower total burden. The selected synthesis rejects neither ordinary adoption work nor sufficient local accounts. It makes no claim of universal uptake, causal superiority, AI learning or retention beyond observations.
 
 ### OPS.20:12 - Relations
 
 `C.20` supplies the current Discipline result when one is needed. `C.36` governs the general cultural-evolution case, including generation, transmission, recognition, selection, memory, retention, loss, and intervention distinctions. `ME.17` supplies the general admitted-Method and candidate branches, testable-predicate intervention route, rival hypotheses, authorization boundary, interval observations, and bounded return. OPS.20 adds the Operations practitioner population, exact operating input, operating authority, service and reliability conditions, consequences, and repertoire return.
 
-`OPS.16` may supply an admitted local Method variant with its exact relied-on description and bounded evidence, or a status-preserved candidate-account or observed-practice variation. OPS.20 independently supports its population, predicate and receiving decision; any intervention, needed authority or later observation has its own basis. `OPS.17` may supply current repertoire and lineage claims; a listed school, edition or repertoire entry proves no enactment or culture. `OPS.19` may supply a candidate practice variation or consequence; every cultural claim remains independent.
+`OPS.16` can supply the admitted-Method or candidate/observed-practice input with its existing status and evidence. `OPS.17` can supply repertoire alternatives and lineage claims; `OPS.19` can supply a practice variation or operating consequence. OPS.20 establishes the receiving population claim and decision; intervention authority and later observations are obtained for the work or claim that needs them.
 
 `OPS.12`, `OPS.13`, `OPS.14`, `OPS.15`, and `OPS.18` retain human-condition, service, financial, account, quality, and reliability questions when those consequences change the decision. An actual `OCE.11` result may supply obtaining simultaneous-Work conditions; a plan or possible-future arrangement does not.
 
@@ -5862,9 +6054,331 @@ The practice question is how to continue and deliberately change Operations prac
 
 ### OPS.20:End
 
+# Part X — Choose Operating Aims and Interpret Performance
+
+<a id="ops-21"></a>
+## OPS.21 - Choose Operating Aims, Targets and Comparisons
+
+> **Type:** Method
+> **Status:** Stable
+
+
+### OPS.21:1 - Problem frame
+
+**Use this when** an operating team needs to decide what improvement to pursue and how to recognize it, or when a supplied target encourages the wrong work. A repair service can meet its count by selecting easy jobs while urgent equipment remains unusable. A support team can inherit a corporate cost ratio without knowing which contribution it should change.
+
+Start with the continuing operation, its recipients and the result worth improving. Translate that result into the team's contribution, choose what to observe and a meaningful comparison, and decide whether a numerical target would help. The first useful result is an aim with an interpretable comparison and a next action, or a specific unresolved choice that prevents agreeing them. It need not be a dashboard.
+
+The wider practice is managing operating performance. This pattern constructs the aims, targets and comparisons used in that work. [OPS.22](#ops-22) interprets subsequent performance; [OPS.13](#ops-13) establishes what can actually be promised. Use an existing aim and comparison when they already answer the question. If the worthwhile direction itself remains unsettled, obtain that contribution through [Strategy](STRATEGY-PRINCIPLES-FRAMEWORK.md#str-5) or [problem structuring](PROBLEM-STRUCTURING-AND-DECISION-SUPPORT-PRINCIPLES-FRAMEWORK.md#psd-9) before refining its indicators.
+
+The intended reader understands the operation and can obtain its participants' evidence and decisions. The method supplies the target construction; it does not supply a missing professional acceptance criterion, authority over another team's work or permission to change pay.
+
+### OPS.21:2 - Problem
+
+An easily measured quantity can become the purpose of the work. Targets can also be selected by copying last year's number, dividing an organization-wide ratio or bargaining down an ambition until it is easy to exceed. These moves can produce precise numbers without an explanation of why reaching them would help the recipients.
+
+An ambitious target creates a different difficulty. It can identify a worthwhile gap while exceeding the present forecast or resources. Treating it as a promise conceals that gap; restricting every ambition to today's expected output can conceal useful improvement. The practitioner needs to construct the aim and its use together.
+
+### OPS.21:3 - Forces
+
+| Force | Tension in the work |
+| --- | --- |
+| Direction and local knowledge | A shared purpose needs compatible contributions, while each team sees conditions that a corporate ratio omits. |
+| Ambition and credible action | A demanding aim can expose an improvement opportunity; an unsupported demand can induce concealment or unsafe shortcuts. |
+| Comparability and unlike work | A common measure can aid learning while differences in demand, equipment, obligations or starting conditions defeat a ranking. |
+| Visibility and burden | More observations can reveal a neglected consequence, but collecting them consumes operating capacity. |
+| Local recognition and joint results | A team can improve its score by moving work, delay or cost to another participant. |
+| Stability and revision | A retained aim guides effort; changed needs can make it irrelevant even when its number remains attainable. |
+
+### OPS.21:4 - Solution
+
+#### OPS.21:4.1 - Recover the useful change and the team's contribution
+
+Name the recipients, continuing work and time horizon. Ask what should become better for them, what is already adequate and what must remain protected. Use a recent case to distinguish the recipient's result from internal activity: restored equipment from closed repair tickets, for example. [OPS.1](#ops-1) supplies a missing operating boundary.
+
+Translate the wider direction through the actual contribution. If the organization needs dependable repairs, reception may improve the completeness of requests, technicians may reduce avoidable returns, and a shared specialist may supply difficult diagnosis. These are related contributions, not smaller numerical copies of one corporate target. Ask the neighboring participants whether the proposed contribution helps their receiving work and what it would require from them.
+
+Keep an adequate condition as a condition to monitor when no useful improvement is needed. Turn it into an improvement aim if evidence shows a consequential deterioration. This prevents the mere availability of a measure from creating a demand to increase it continually.
+
+#### OPS.21:4.2 - Choose evidence that could distinguish improvement from a better score
+
+Describe an observable good result and a plausible case in which the proposed indicator improves but that result does not. A higher completed-job count can coexist with unaccepted work, repeated failures or delayed complex jobs. Retain the observation that distinguishes these cases: acceptance, later return, case mix or waiting of the affected cohort. [OPS.15](#ops-15) develops the observation account when its population or meaning is missing.
+
+State what is counted, whose cases are included, when observation begins and ends, and how unfinished work remains visible. Choose the horizon from the recipient's need and the time in which action could change the result. An annual reporting date can remain while an urgent operating response needs a shorter interval.
+
+Select only observations that can change interpretation or action. An early indicator can prompt intervention; a later result can test whether the intended benefit obtained. Where a numerical proxy is inadequate, describe the result to be examined and the evidence and competent judgement needed to recognize it. Do not invent a score to replace an unavailable professional criterion.
+
+#### OPS.21:4.3 - Choose the comparison before choosing the number
+
+Use the comparison whose meaning fits the aim and available evidence.
+
+| Comparison | When it helps | What must remain visible |
+| --- | --- | --- |
+| An absolute result by a relevant date | A known population, recipient need or required service gives the number a useful meaning. | Eligibility, quality, timing and the work needed to reach the result. |
+| A range or a qualified milestone | Precision would exceed the available knowledge, or progress is better demonstrated through a usable contribution. | What counts as adequate progress, what uncertainty remains and what decision follows each material outcome. |
+| A ratio such as accepted work per usable hour | The relation between input and output answers the operating question. | Definitions of both quantities, omitted quality and shifted work; a ratio is not a comparison with peers. |
+| Comparison with other operations | Their work, constraints and receiving results are sufficiently comparable for the intended inference. | Differences in mix, assets, starting conditions, shared support and observation coverage that could reverse that inference. |
+| Improvement from a relevant earlier condition | Absolute peer levels would conceal important structural differences. | The original basis and changes in it. A low starting point can make improvement easier; percentages alone do not equalize opportunities. |
+| Observation without a numerical improvement target | A condition is already adequate, the work is exploratory, or a quota would distort the useful contribution. | The condition or contribution to examine and the event that calls for a response. |
+
+Challenge a proposed comparison with an affected participant and one plausible unlike case. If a league table cannot distinguish superior work from easier conditions, use it to ask a learning question or narrow the comparison; do not use it to allocate credit. A complex adjustment is worthwhile only if its grounds are adequate and it can change the decision. An unexplained adjustment can hide the same unfairness as the raw number.
+
+#### OPS.21:4.4 - Construct an ambition and expose what attaining it would require
+
+Generate candidate aims from the useful change: the recipient need that remains unmet, a demonstrated improvement opportunity or a relevant comparison. Contrast them with continuing current performance. For each serious candidate, explain why the difference is worth pursuing and which action might produce it. Include displacement, quality and continuing-service conditions.
+
+Select the degree of ambition through that comparison and discussion with the people whose contributions it needs. A target can exceed the current expectation when there is a worthwhile, intelligible gap to work on. There is no generally correct percentage of stretch. A high number without a plausible way to achieve it is a demand for further construction, not an executable operating instruction. Where the way is unknown, a bounded learning contribution can be the current aim.
+
+Keep the conditional forecast honest through [MA.5](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md#ma5---construct-and-update-an-operating-forecast). Use [MA.1](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md#ma1---build-the-resource-consumption-and-cost-model) and [MA.2](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md#ma2---explain-the-cost-and-use-of-capacity) and [OPS.10](#ops-10) to expose resource and payment implications. A target of twelve repairs, an expectation of eight and resources for ten can be jointly intelligible: the differences locate work and decisions. They do not authorize promising twelve.
+
+#### OPS.21:4.5 - Reconcile contributions and decide how the aim will be used
+
+Check the consequential joins with other participants. Two teams can each claim a feasible target while relying on the same specialist window. A reception target can accelerate incomplete requests and burden technicians. Use [OPS.19](#ops-19) for a joint demand or displaced contribution; return an unresolved direction conflict to the people responsible for that choice.
+
+Identify who can choose the aim, assign work, provide resources, change a service promise and decide assessment consequences. These may be different people. Finance can supply an expectation without authorizing staffing. HR can advise on an assessment arrangement without controlling the jobs through which the target could be achieved. Obtain the specific decision from its actual holder; agreement in a meeting supplies only the agreements the participants can make.
+
+Agree the intended interpretation while the grounds are available: the aim, comparison, difficulty, material assumptions, protected conditions, proposed action and reason to reconsider. Explain what an unwelcome forecast will trigger. It should expose a response decision, not silently become a lower target or an automatic adverse judgement of the reporter. If an existing consequence rule defeats that use, take the conflict and proposed change to the person who can change the rule, using [OCE.10](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce10---choose-a-response-to-participation-or-working-culture-difficulties-in-the-target-organization) when the arrangement needs development. Retain the honest account and the unresolved authority condition until that change is effective.
+
+Use the ordinary working record or discussion that can carry these distinctions. No particular scorecard, software or extra annual process is required. The result may be an agreed aim, a proposal conditional on another participant's decision, or a justified choice to monitor without a new target.
+
+#### OPS.21:4.6 - Revise the affected object when conditions change
+
+Ask which premise changed and what used it. New demand evidence changes the forecast. A resource decision changes available provision when it is actually implemented. A changed recipient need or an invalid comparison can justify revising the aim. A service commitment changes through the parties' applicable agreement under OPS.13. None of these changes automatically performs the others.
+
+A difficult but still useful ambition can remain while the team changes its action or requests support. An aim whose purpose disappeared should be replaced even if it remains easy to hit. Keep the earlier aim and its basis available for [OPS.22](#ops-22); a justified revision helps interpret performance but does not turn a previous miss into a hit. Revisit only the affected contribution and preserve adequate neighboring work.
+
+### OPS.21:5 - Archetypal Grounding
+
+#### OPS.21:5.1 - Derive a repair aim before negotiating resources
+
+This constructed cooperative has twelve identified customers whose equipment could usefully return to service this month. Five have booked; seven have received qualified offers, and the available nonoverlapping demand evidence supports three further acceptances. The expected demand is eight. All twelve needs are suitable for the cooperative's standard repair; each customer retains the choice to accept or decline. Restoring useful equipment, with customer acceptance and no omitted quality work, is the receiving result.
+
+The team considers eight, ten, twelve and fourteen accepted repairs. Eight is the current expectation and leaves four identified needs beyond the expected result. Ten would serve two more needs and fits the base provision calculated below. Twelve would meet the complete known opportunity if all customers accept and the work can be supported. Fourteen has neither identified demand nor a way to achieve additional useful work in this case. The team provisionally selects twelve as a conditional ambition, with prompt clarification of the seven offers as its first action. It retains eight as the forecast. If customers decline because repair no longer serves them, manufacturing a repair sale would defeat the purpose; reconsider the affected aim.
+
+The base arrangement supplies 36 usable hours after protecting continuing service. Setup needs six hours and each standard repair three. Eight repairs need 30 hours, ten need 36, and twelve need 42. One obtainable extra block of eight hours would give 44. The ambition exposes a resource decision; it does not establish that the block is staffed or funded. The dated financial comparison shows that twelve repairs with this block would leave 20 less in closing cash than ten using the base provision. The cooperative decides that serving the two additional customers is worth that difference, provided the funding needed before customers pay is obtained and continuing service remains protected. This explicit judgement sustains the ambition; if the difference were not worthwhile, ten would be a reasoned alternative. The resource holder still has to authorize and provide the block before anyone promises the additional work. The [connected repair example](ENGINEERING-DPF-SUITE-REFERENCE.md#how-should-we-set-a-target-and-judge-a-miss-after-conditions-change) carries this result through provision, cash, changed work and assessment.
+
+#### OPS.21:5.2 - Decline a misleading ranking
+
+Two archive teams report requests completed per hour. One receives indexed digital material; the other also locates damaged, incompletely described records and assists the first team with difficult cases. Ranking their ratios as performance would conflate different work and hide the shared contribution.
+
+They retain the quantities for understanding demand, compare like cases only where that comparison has a sound basis, and examine whether recipients obtained usable material within the relevant dates. The second team's improvement from its own earlier condition remains interpretable only with changes in mix and assistance visible. They choose a concrete improvement in unresolved locating work, while monitoring an already adequate response condition without a higher quota.
+
+### OPS.21:6 - Bias-Annotation
+
+People who set targets may prefer what their own reporting can observe. Participants may negotiate an easy baseline or omit burdens borne by neighbors. Ask the receiving parties about those effects. Participation can improve the construction without establishing equal influence or eliminating conflicts of interest.
+
+Ambition is a judgement about worthwhile effort under uncertainty. It is not evidence that people will be motivated, that an expected improvement is attainable or that a more demanding number is always better.
+
+### OPS.21:7 - Conformance Checklist
+
+- The intended improvement refers to a recipient's result and the team's actual contribution.
+- An adequate condition can remain monitored without a new improvement target.
+- The observation and comparison preserve relevant population, timing, quality and unequal conditions.
+- The selected ambition has a reason and exposes the work, support or inquiry it needs.
+- Forecast, target, resource decision and service commitment keep their own meanings and revision conditions.
+- A conflict over shared resources or assessment consequences reaches the participant able to act.
+- A changed condition can revise the affected aim without rewriting its earlier basis.
+
+### OPS.21:8 - Common Anti-Patterns and How to Avoid Them
+
+| Failure | Practical repair |
+| --- | --- |
+| Divide the corporate ratio into team quotas | Translate the wider result through each team's contribution and its dependencies. |
+| Choose the indicator because its data are free | Test whether it distinguishes useful improvement from a better score. |
+| Make every target equal the forecast | Retain the gap and decide whether action, support, inquiry or a different ambition is worthwhile. |
+| Make every forecast equal the target | Preserve the supported expectation so that a response can be chosen in time. |
+| Treat a peer table as a fair ranking | Establish comparability for that inference or use a narrower learning comparison. |
+| Lower the target after observing a miss | Preserve the original result and explain any warranted revision and its effective use. |
+
+### OPS.21:9 - Consequences
+
+The team can choose what improvement matters, explain why its comparison is useful and return an exposed gap to a real decision. A supplied good target remains usable without repeating the construction. The work can also end with a monitoring condition or a bounded learning aim.
+
+This demands discussion and some knowledge of the receiving work. Detailed comparison can cost more than it changes; retain a sufficient simple basis. Better target construction alone cannot supply resources or repair a consequence rule that the responsible participants leave unchanged.
+
+### OPS.21:10 - Architectural Rationale
+
+Direction, observation, ambition and response are connected because each can defeat the others: a useful purpose can be measured badly, a sound measure can receive an arbitrary target, and a meaningful target can be used as an unsupported promise. The construction keeps these joins visible while allowing an adequate supplied result to enter directly.
+
+A fixed quota is simpler when a stable, meaningful requirement and its use are already settled. A peer comparison can reveal opportunities that an internal baseline misses. A non-numerical contribution can guide work whose useful result is poorly represented by a count. Choose among them by the receiving decision and evidence, rather than making any one a universal management system.
+
+### OPS.21:11 - SoTA-Echoing
+
+Bjarte Bogsnes, *Implementing Beyond Budgeting*, second edition (2016), chapter 4, printed pp.142–159, develops translation from direction to local contributions, indicator selection, target difficulty, peer comparison and the possibility of working without numerical targets. Those historical practice accounts inform §§4.1–4.5. This pattern retains their constructive questions while making comparison limits, shared provision and the first supported action explicit. The book supplies neither a universally correct stretch level nor evidence that one scorecard works for every operation.
+
+The [shared source discussion](#opsreference41---operating-aims-and-performance-sources) qualifies this line with the later study of budgets and forecasts. Keep a budget or reporting rhythm when its function remains useful. Reopen the selected construction when ordinary use shows that the aim no longer guides a useful contribution, the comparison conceals changed conditions, or its actual consequences again suppress the information needed for action.
+
+### OPS.21:12 - Relations
+
+[STR.5](STRATEGY-PRINCIPLES-FRAMEWORK.md#str-5) and [STR.8](STRATEGY-PRINCIPLES-FRAMEWORK.md#str-8) supply a worthwhile direction and related contributions when these are unresolved. OPS.15 supplies observation meaning; OPS.10 and OPS.19 supply capacity and joint-work comparisons. MA.5–6 preserve the conditional outlook and distinguish its use from ambition and authorization. OPS.13 establishes service commitments. OPS.22 interprets later performance against the retained basis. OCE supplies an actual organizational change when the needed response exceeds the current arrangement.
+
+### OPS.21:End
+
+<a id="ops-22"></a>
+## OPS.22 - Interpret Operating Performance and Decide the Response
+
+> **Type:** Method
+> **Status:** Stable
+
+
+### OPS.22:1 - Problem frame
+
+**Use this when** an operating result must inform a judgement and response, but a target-attainment ratio or dashboard color cannot explain the contribution. One team may narrowly miss a demanding aim while another exceeds an easy one. A favorable total can conceal deferred work, deteriorating quality or another team's unpaid effort. An adverse forecast may be treated as evidence of poor performance before its conditions are examined.
+
+Begin with the decision the assessment must support and recover the aim, observations, relevant conditions and participants' actions. Return a reasoned assessment with the response it warrants, its uncertainty and the person able to act. A conclusion can be mixed: the intended result was not fully obtained, while a timely corrective action was useful and an attribution remains unresolved.
+
+This pattern governs interpretation of operating performance. It does not determine a person's capability, corporate liability or a pay entitlement from an output total. [HCD.11](HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md#hcd-11) supplies a capability-assessment contribution; [CGOV.13](CORPORATE-GOVERNANCE-PRINCIPLES-FRAMEWORK.md#cgov13---monitor-corporate-performance-and-require-an-account) supplies corporate oversight when that is the actual decision. A sufficient established interpretation can be used directly. An ordinary service-acceptance decision with an applicable clear rule can finish through [OPS.18](#ops-18).
+
+The reader needs access to the relevant operating evidence and participants, and enough domain competence to understand the result. Use another qualified contributor for a missing technical or financial judgement; the assessment must not manufacture that competence.
+
+### OPS.22:2 - Problem
+
+An observed outcome depends on the work performed, its support, prior conditions and events that participants did not control. A target adds a judgement of ambition; its attainment ratio therefore combines result and target choice. Counting that ratio as performance can reward easy targets, favorable circumstances or transferred burdens.
+
+Replacing a formula with an unexplained managerial impression creates another failure. Participants cannot correct mistakes or understand what contribution matters. The needed interpretation must expose its grounds and uncertainty, including evidence that weakens a favorable account as well as evidence that qualifies a miss.
+
+### OPS.22:3 - Forces
+
+| Force | Tension in the work |
+| --- | --- |
+| Accountability and uncertainty | An answer is needed while causal attribution may remain incomplete. |
+| Ambition and comparability | A demanding aim can motivate useful work, while attainment percentages favor an easier target. |
+| Joint work and individual consequences | A result may require several contributors whose shares cannot be inferred from the output count. |
+| Timely learning and consequential judgement | Prompt feedback helps correction; reward or formal accountability decisions may need different evidence and authority. |
+| Context and favoritism | Circumstances change interpretation; selective excuses or hindsight can make judgement arbitrary. |
+| Present results and continuing capability | A short-term gain can consume maintenance, recovery or customer trust needed for later work. |
+
+### OPS.22:4 - Solution
+
+#### OPS.22:4.1 - Name the receiving decision and recover the comparison
+
+Ask what this judgement should change: the next operating action, a resource arrangement, an aim, feedback and development, recognition, or a decision under an existing reward or governing rule. Separate these questions when they need different evidence or powers. A useful learning conversation should not silently create a new compensation decision.
+
+Recover the original aim and comparison from [OPS.21](#ops-21) or a sufficient existing basis: intended contribution, population, horizon, difficulty, assumptions and protected conditions. Retain authorized changes with their timing and reasons. If the basis was never settled, say so and reconstruct what can be established from the actual undertaking; do not invent a retrospective promise.
+
+Keep an ambition, forecast, resource authorization and service commitment distinct. Ten deliveries can miss an original ambition of twelve and satisfy ten legitimately revised promises. Both facts matter. The revision does not delete the original ambition or prove that the response was good.
+
+#### OPS.22:4.2 - Establish what was obtained and what remains
+
+Compare observed results with that basis. Keep unfinished cases, excluded populations, quality, timing and relevant later returns visible. Check whether a changed denominator, early closing or transferred task created the apparent gain. [OPS.15](#ops-15) develops a missing operating account; [MA.7](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md#ma7---explain-a-cost-or-margin-difference) explains a monetary difference without deciding personal merit.
+
+Follow the result into its intended use. Were repairs accepted and useful, or merely marked complete? Did a faster handover require the receiving team to redo it? Include a delayed consequence when it can change the assessment. A known current result can support action before every future consequence is observed; state what later evidence could reopen the judgement.
+
+Record the gap plainly. Context can change what the gap implies; it does not change the observed count or discharge an outstanding obligation.
+
+#### OPS.22:4.3 - Examine conditions, choices and the contribution to the whole
+
+Use the following questions to explain the consequential difference, following the evidence that can change the receiving decision.
+
+1. **Did the result contribute to the intended aim?** Compare the indicator with the recipient's actual result and the conditions it omitted. A financial gain obtained by postponing required maintenance can weaken an initially favorable assessment.
+2. **How demanding was the aim on its original grounds?** Compare the opportunity, starting condition, work mix and proposed way to achieve it. A low attainment percentage against an ambitious target is not directly comparable with a high percentage against an easy one. Ambition alone also earns no credit for ineffective action.
+3. **What changed, favorably or adversely?** Recover when the change became knowable, who could respond and which premise it affected. A market windfall needs the same scrutiny as an external disruption. Separate changed circumstances from a claimed causal effect of the team's intervention.
+4. **What did the participants do with the information and means available then?** Examine promised and necessary actions, requests for support, timely warning, available alternatives and actual follow-through. Use what was reasonably available at the time; knowledge obtained later does not prove that an earlier choice was unreasonable.
+5. **What did the result require from other work, and can it continue?** Include shared assistance, displacement, quality losses, deferred obligations and consumed protection. Helpful cooperation can reduce one team's local count while improving the joint result; taking another team's resource does not create additional capacity.
+
+For a consequential explanation, compare a plausible rival. More completions could follow from a simpler work mix, overtime, transferred work or a better method. Use available evidence to distinguish them far enough for the decision. A modeled counterfactual remains conditional; a plausible story is not a measured contribution. Preserve unresolved attribution instead of assigning every residual to effort or competence.
+
+#### OPS.22:4.4 - Form a judgement that the affected participants can examine
+
+State the observed result, how it compares with the aim, which contextual findings change interpretation and what remains uncertain. Distinguish at least the findings that lead to different actions. An unmet receiving need calls for a response even when the team acted competently; a favorable outcome does not excuse concealment of a material risk.
+
+Compare teams only at the scope the evidence supports. If different work or shared contributions prevent a ranking, assess each against its meaningful aim and compare specific practices for learning. Do not repair an invalid ranking by inventing weights or a difficulty multiplier. Use an established qualified comparison when one is available.
+
+Give affected participants a real opportunity to correct consequential facts and explain their choices. Resolve a material disagreement against the evidence and agreed purpose, not by counting agreeing voices. Where the assessor's interest or a disputed ground can change a consequential decision, obtain an appropriately independent competent judgement through the existing arrangement. The result can remain qualified or contested; the person with authority must identify what can be decided on that basis.
+
+A single score may be required by an existing system. Explain the translation and preserve the separate findings that the score cannot carry. Do not let the score silently determine every later development, recognition and reward decision.
+
+#### OPS.22:4.5 - Choose and enact the response under the actual authority
+
+Use the findings to choose the smallest adequate response. Examples include correcting a report, completing deferred service, retaining a useful action, changing an assignment or provision, revising an irrelevant aim, improving a method, or obtaining a needed capability-development result. Select the method for that change rather than asking people to try harder regardless of the cause.
+
+Where the consequence arrangement is itself producing distorted forecasts or easy targets, identify its operative rule and holder. [MA.9](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md#ma9---examine-the-behavioral-effects-of-management-accounting-information) examines the account's behavioral contribution; [OCE.10](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce10---choose-a-response-to-participation-or-working-culture-difficulties-in-the-target-organization) develops an authorized change in access, workload, incentives or consequences. An adviser can propose the change without being able to make it effective.
+
+Keep the operating assessment separate from the applicable reward decision. Use its relevant findings under the actual rule and authority; where that rule prevents the intended response, return the required rule change or exception to its competent holder. A favorable operating assessment creates no payment right by itself, and a framework paragraph cannot waive an existing obligation. Capability development likewise needs its own evidence and work through HCD.
+
+For an unwelcome forecast, obtain the authorized operating response while preserving the supported forecast and its earlier basis. Address a demonstrated concealment or unsupported claim on its evidence. Do not punish the numerical decrease alone, or award automatic credit merely for reporting it. Both shortcuts replace judgement with a different indicator.
+
+#### OPS.22:4.6 - Observe the response and reopen the affected judgement
+
+Name the action, responsible participant and next useful observation. Establish whether the promised assignment, protection or consequence change occurred and whether the receiving work improved. A revised form or policy statement does not establish changed practice.
+
+Keep sound earlier findings when new evidence changes only one part. Later returns can invalidate a quality conclusion; a recovered resource decision can alter attribution; a changed recipient need can reopen the next aim. Use the retained original basis to explain the change. End this assessment when it supports its receiving decision at warranted confidence, leaving any specific dependent question explicit. Continue normal operating attention without requiring an indefinite inquiry into every cause.
+
+### OPS.22:5 - Archetypal Grounding
+
+#### OPS.22:5.1 - Ten repairs after the work becomes harder
+
+In the constructed case continued from OPS.21, all twelve customers eventually accept. One staffed eight-hour block is authorized and made available, giving 44 hours including six hours of setup. Three repairs then require five hours each instead of three. Twelve repairs would need 48 hours; no additional block can arrive before the promised dates. The coordinator reports the changed work promptly and obtains agreement to defer two standard repairs. Ten remaining repairs need 6 + 7 × 3 + 3 × 5 = 42 hours. Later arrangements retain the two deferred cases, their work and financial obligations.
+
+Suppose acceptance evidence confirms all ten repairs and no omitted quality work. The initial assessment is a miss against the twelve-repair ambition, with two identified needs still outstanding. The work became six hours more demanding for the original twelve. The timely warning and agreed response preserved a feasible service arrangement; the revised promises did not retrospectively achieve the original ambition. Whether another response was better depends on the alternatives actually available then.
+
+A second team reports ten standard repairs against a target of eight. Its 125% and the first team's roughly 83% do not establish a performance ranking. The first team's ten repairs required 42 hours with setup; the second team's ten would require 36 under the same setup assumption. These hours explain a relevant difference in demand, not a complete value or effort score. Recover the second team's original opportunity, means, quality and any assistance before making a consequential comparison.
+
+The manager decides to keep the factual miss and recognize the first team's supported corrective action in the operating account. Completion of the deferred work remains an action. If a reward policy nevertheless mandates a different consequence, this judgement is an input to that separate authorized decision, not a power to replace it.
+
+#### OPS.22:5.2 - A favorable count obtained by borrowing protected support
+
+An archive team exceeds its completion target after using a shared specialist for six extra hours. The initial report calls this an efficiency gain. Examination shows unchanged time per comparable request; the extra output came from the specialist's time, and another team's two due requests were postponed without its agreement.
+
+The assessment retains the actual completions but rejects the unsupported efficiency claim and includes the displaced service. The resource holder arranges recovery of the affected requests and corrects the rule under which that time was taken. If the same assistance had instead been authorized, displaced no protected commitment and improved the joint result, cooperation could be a positive contribution. The local count alone cannot choose between those conclusions.
+
+### OPS.22:6 - Bias-Annotation
+
+Hindsight can make an uncertain past choice appear obvious. Favoritism can make the same circumstance an excuse for one team and evidence against another. Apply the questions to favorable and adverse results, retain the evidence available at the time, and expose consequential disagreements.
+
+Participants with less authority may bear burdens absent from the official account. Obtain their relevant evidence. A discussion is not proof that they could safely disagree or that every causal share is now known.
+
+### OPS.22:7 - Conformance Checklist
+
+- The assessment serves an identified decision, with its evidence and authority needs.
+- Original aims, forecasts, commitments and later revisions remain distinguishable.
+- Observed results include the consequential unfinished work, quality and receiving effects.
+- Difficulty, changed conditions and available actions are examined in both favorable and adverse cases.
+- Shared contributions and displaced work affect the judgement where they change the whole result.
+- Affected participants can correct consequential facts; unsupported attribution and rankings remain qualified.
+- The assessment, reward decision and capability inference retain their distinct grounds.
+- The response is actually performed and its useful consequence is checked at an appropriate occasion.
+
+### OPS.22:8 - Common Anti-Patterns and How to Avoid Them
+
+| Failure | Practical repair |
+| --- | --- |
+| Rank teams by actual divided by target | Recover difficulty and comparable work, then qualify or decline the ranking. |
+| Treat context as an excuse for every miss | Preserve the miss, test the explanation and examine available action. |
+| Credit every gain to the manager | Examine favorable circumstances, shared work and rival explanations. |
+| Replace the formula with an unexplained impression | State the evidence, interpretation, uncertainty and consequence. |
+| Treat a lower forecast as poor performance | Examine its grounds and the response; retain earlier forecasts for learning. |
+| Let a good narrative erase outstanding work | Keep the receiving need and obligations in the next operating action. |
+
+### OPS.22:9 - Consequences
+
+The manager can distinguish a useful response under difficult conditions from a favorable number produced by easier work or transferred burden. The result supports an actual next action while preserving accountability for the unmet need. It can also justify retaining an adequate interpretation without additional analysis.
+
+The method requires judgement and access to relevant evidence. It cannot eliminate uncertainty, conflict or deliberate distortion. Use inquiry proportional to the decision; a modest correction need not wait for a complete causal explanation.
+
+### OPS.22:10 - Architectural Rationale
+
+The interpretation connects the original purpose, observations, contextual explanation and response because each answers a different question. Keeping only the ratio loses difficulty and joint work; keeping only a contextual narrative loses the actual result. The response remains subject to the powers and conditions of the decision it serves.
+
+Targets and subsequent assessments are independently usable contributions. A team can start here with an adequate target supplied elsewhere, while OPS.21 can finish after constructing a next aim. Shared conditions and selective returns connect them without requiring every operating decision to pass through an annual appraisal cycle.
+
+### OPS.22:11 - SoTA-Echoing
+
+Bogsnes, *Implementing Beyond Budgeting*, second edition (2016), printed pp.182–190, develops interpretation of indicator results through objectives, target difficulty, changed assumptions, responsive action and sustainability, together with the tensions among development and reward uses. Sections 4.2–4.5 adapt that connected historical treatment. The source's particular rating scale, delivery/behavior weighting and bonus arrangements are not requirements of this method.
+
+The adaptation retains uncertainty about causation and attribution after the event, and makes the affected participant's evidence and the response authority explicit. The [shared source discussion](#opsreference41---operating-aims-and-performance-sources) explains why changing budgeting labels alone cannot establish changed use. Reopen the method or its support when repeated use still rewards transferred burdens, hides missed needs or leaves a consequential judgement unexplainable to its recipients.
+
+### OPS.22:12 - Relations
+
+OPS.21 constructs aims and comparisons. OPS.15 and MA.7 develop operating and monetary accounts. OPS.13 preserves service obligations; OPS.19 reconciles affected joint work. MA.9 investigates behavioral effects of accounts, while OCE.10 changes the organizational conditions of a response. HCD.11 concerns demonstrated human capability under its own criteria. CGOV.13 supplies a governing response when the question belongs to corporate oversight. None of these results automatically substitutes for the others.
+
+### OPS.22:End
+
 # Cross-Pattern Application
 
-## APP-OPS-01 — PumpWorks continuing control-service operation
+<a id="app-ops-01--pumpworks-continuing-control-service-operation"></a>
+
+## OPS.Application:1 - APP-OPS-01 — PumpWorks continuing control-service operation
 
 PumpWorks must continue weekly evidenced controller releases while field incidents, provider changes, test-rig access, safety questions, and service commitments coexist. The application is constructed to demonstrate connected operating decisions; it is not evidence that an intervention succeeded.
 
@@ -5921,7 +6435,9 @@ OPS.20 bounds the coordinators of `PW-Early` and `PW-Late` over six weeks and ex
 
 The application can enter or stop after any matching pattern and reuse current inputs without replaying earlier bodies. Simultaneous operating reconciliation, local Method improvement, and cultural continuation remain linked but distinct decisions. Other professional questions retain their direct owners.
 
-## APP-OPS-02 — Public-hospital emergency flow probe
+<a id="app-ops-02--public-hospital-emergency-flow-probe"></a>
+
+## OPS.Application:2 - APP-OPS-02 — Public-hospital emergency flow probe
 
 | Probe position | Reused result | Boundary retained |
 | --- | --- | --- |
@@ -5959,7 +6475,9 @@ OPS.17 selects conditional case planning where changed clinical or home-support 
 
 OPS.16 can keep the proposed handover way pre-admission while observations distinguish missing readiness information from changing clinical facts. OPS.19 can reconfigure only the operating relations supported by current clinical, staffing, service and recovery inputs. OPS.20 can finish a qualified current cultural account within its licensed population and candidate branch; any new receiving-use probe must warrant its obtainable work under current authority. A checklist, training event, occupied bed or improved local count establishes none of the retained specialist results.
 
-## APP-OPS-03 — AI-assisted software-operation probe
+<a id="app-ops-03--ai-assisted-software-operation-probe"></a>
+
+## OPS.Application:3 - APP-OPS-03 — AI-assisted software-operation probe
 
 | Probe position | Reused result | Boundary retained |
 | --- | --- | --- |
@@ -5999,31 +6517,58 @@ For a deployed software service, suppose a separately defined account contains o
 
 OPS.19 can therefore reduce starts, reserve a compatible test environment, or hold release Work while preserving incident recovery and qualified review. OPS.16 can retain an admitted low-risk Method branch only under the exact provider and model condition; a changed edition triggers its stop and fallback. OPS.20 may retain a supported selection account for the named rotations without a new trial, but tool use is not cultural continuation and the changed-provider branch remains `unknown` or `stop` until qualified. Any new inquiry is selected for its useful attainable contribution; security, assurance, capability, release, employment and governance remain with their owners.
 
+## OPS.Application:End
+
+
 # Framework Boundary and Refresh
 
-## Intended use and ordinary non-use
+<a id="intended-use-and-ordinary-non-use"></a>
 
-Use this framework when a decision about continuing Work needs a better operating basis: the operation or subjects are unclear, current evidence cannot support admission or continuation, queues and resources conflict, human conditions, service, financial consequences, Method choice or quality require a decision, several operating results must be reconciled, or a bounded population relation about continued practice must be tested. Use the one pattern or small cooperating set whose result answers that question.
+## OPS.Reference:1 - Intended use and ordinary non-use
+
+Use this framework when a decision about continuing Work needs a better operating basis: the operation or subjects are unclear, current evidence cannot support admission or continuation, queues and resources conflict, human conditions, service, financial consequences, Method choice or quality require a decision, several operating results must be reconciled, a bounded population relation about continued practice must be tested, or the operation needs a meaningful aim or a reasoned performance assessment. Use the one pattern or small cooperating set whose result answers that question.
 
 Do not use it merely because a project exists, a process is documented, a board has cards, a dashboard is visible, a controller exists, or a management school is familiar. Return product or asset engineering, organization change, one human's capability, strategy, finance, governance, administration, safety, legal, medical, ecological, security, and other specialist results to their owners.
 
-## PatternID and reader order
+<a id="patternid-and-reader-order"></a>
 
-`OPS.*` is this framework's PatternID namespace. The numbers are stable addresses. The nine Parts organize the twenty available bodies for reading. A result dependency applies when one decision needs the matching result; actual Work can overlap, branch, repeat or start from existing inputs.
+## OPS.Reference:2 - PatternID and reader order
 
-## Source use and currentness
+`OPS.*` is this framework's PatternID namespace. The numbers are stable addresses. The ten Parts organize twenty-eight pattern bodies for reading, including six nested methods. A result dependency applies when one decision needs the matching result; actual Work can overlap, branch, repeat or start from existing inputs.
+
+<a id="practical-entry-forms"></a>
+
+## OPS.Reference:3 - Practical entry forms
+
+The following stable example keys select ordinary practical entries in the Readme. Each appears there once. They support direct choice and explicit worked continuations; no Practical-Use Card or separate mantra is selected. Questions outside these examples use the Table of Contents and the full pattern bodies.
+
+| Example key | Form |
+| --- | --- |
+| `OPS-PUMPWORKS` | Ordinary practical entry |
+| `OPS-SERVICE-WINDOW` | Ordinary practical entry |
+| `OPS-ACCEPTED-RESULT` | Ordinary practical entry |
+| `OPS-PRACTICE-CHANGE` | Ordinary practical entry |
+| `OPS-RELEASE-AND-WAIT` | Ordinary practical entry |
+| `OPS-PROTECT-AND-DEVELOP` | Ordinary practical entry |
+| `OPS-PREPARE-AND-RESPOND` | Ordinary practical entry |
+| `OPS-ADVICE-IN-USE` | Ordinary practical entry |
+| `OPS-AIMS-AND-PERFORMANCE` | Ordinary practical entry |
+
+<a id="source-use-and-currentness"></a>
+
+## OPS.Reference:4 - Source use and currentness
 
 The framework connects Methods and Work with resources, transformation flows, queues, constraints and descriptions. Project, process, case, queueing, issue-tracking and operations-management viewpoints can concern the same Work. Changing conditions, improvement cycles and the scale at which a change is made affect which diagnostic and coordination results are useful. Each pattern develops the contribution needed for its operating question.
 
 The Kanban Guide 2025.5, TameFlow sources, Reinertsen, Throughput Accounting and TOC, DEMO, integrated relation-specific structures, CMMN, DCR, OCEL, object-centric process management, layered control and LCA, statistical process control and SRE, DORA, harness engineering, and loop engineering each contribute bounded questions or Methods. No source school organizes the framework. Each body names the contribution it uses, its current limit, and the observation that reopens that use.
 
-The decision-bearing current comparisons are in `OPS.1:11` through `OPS.7:11`: operating-focus selection versus workflow-first entry; question-relative multi-view coordination versus one canonical or ungoverned mode; subject/relation-first accounts versus case-ID or log-first accounts; qualified shared attention versus a dashboard or latest-record default; bounded admission versus rank or state as start permission; evidenced situation-responsive case continuation versus workflow or automated transition as progress; and decision-relative temporal and commitment disposition versus age or score as automatic rank and authority. Each comparison names its governed loci and smallest reopen condition. The further comparisons in OPS.8:11–OPS.11:11 concern receiver-ready supply and purpose-specific protection, rival-based constraint diagnosis, variability-appropriate capacity/service analysis, and actual cross-structure coordination. Primary queueing and coupled-scheduling sources qualify those uses; the published Whitt–You 2022 model supplies the same bounded network-analysis line as its 2020 preprint. These comparisons do not rank one source family across all eleven questions.
+The comparisons in `OPS.1:11` through `OPS.7:11` start with capable incumbent arrangements: an explicit workflow, governed case/process integration, subject-correct histories, maintained incident coordination, policy-governed pull, outcome-aware case execution and consequence-aware service policies. OPS.3 retains its separate event/object question. The other bodies identify the decision their added receiving-result, permission, evidence or agreement distinction can change, its full maintenance cost and the sufficient-incumbent boundary. OPS.2 connects actual rule selection and composition to OPS.17; the constructed OPS.5–7 matter connects a permitted start, limited diagnostic result, changed access and effective promise agreement without imposing a lifecycle. Each comparison names its governed loci and smallest reopen condition. The further comparisons in OPS.8:11–OPS.11:11 concern receiver-ready supply and purpose-specific protection, rival-based constraint diagnosis, variability-appropriate capacity/service analysis, and actual cross-structure coordination. Primary queueing and coupled-scheduling sources qualify those uses; the published Whitt–You 2022 model supplies the same bounded network-analysis line as its 2020 preprint. These comparisons do not rank one source family across all eleven questions.
 
 Refresh the affected pattern when a source changes its practitioner action, identity, relation, view, account, or stop. Use the comparison conditions in that pattern's SoTA-Echoing section to decide whether a proposed source change improves the current guidance.
 
 The comparisons in OPS.12:11–OPS.18:11 extend this basis to changes in work demands, staffing and support, supported service promises, incremental cash and constrained-resource models, observation populations, bounded Method trials, conditional Method composition, quality-control questions and incident prevention. HSE and NIOSH contribute work-demand and intervention guidance; ACCA contributes relevant-cost and throughput-accounting reasoning; the SRE Workbook and NIST handbook contribute service-indicator, monitoring, capability and acceptance distinctions. OPS.18 also adapts Ries's chapter 11, LEI's Five Whys guidance and the 2016 SRE postmortem chapter for reconstructing contributing conditions and choosing supported prevention. Their assumptions and professional limits remain explicit in the bodies. Historical methods are identified as such; a source's date or maintained status alone does not establish the strongest answer for the operating question.
 
-OPS.19:11 and OPS.20:11 add current comparisons for cross-scale operating reconciliation and bounded population-level cultural probes. They use several-structure, workflow, operating-financial, service-change, and cultural-continuation sources only for their stated mechanisms and limits. Neither pattern claims a universal school, comparative effectiveness across domains, or transfer beyond the named conditions; each body states the observation that reopens its source use.
+OPS.16:11 compares its exact Method or candidate-account return with competent PDSA, preserving prediction, observation, adaptation and the separate implementation decision. OPS.19:11 compares the same cross-scale allocation with a capable bounded integrated arrangement. OPS.20:11 compares bounded cultural continuation with adaptive SRE practice, including receiving support, migration burden and voluntary uptake. Each may reuse a sufficient incumbent account; its added distinctions need a decision-changing contribution worth their total cost. They use several-structure, operating-financial, improvement and service-change sources only at their stated reading and applicability limits. None of these patterns claims a universal school, comparative effectiveness across domains, or transfer beyond the named conditions; each body states the observation that reopens its source use.
 
 OPS.11.1 draws on conceptual modeling to choose scope and detail while representing shared resources and order completion. OPS.15.1 uses relationships between events and their participants to construct intervals and aggregates. Their source discussions distinguish finite event histories from steady means, and modeled capacity from the work and resources actually available.
 
@@ -6031,19 +6576,31 @@ Queueing and scheduling provide complementary constructions in OPS.10.1/.2. A me
 
 OPS.8.1 compares release signals while retaining known visits and possible returns. OPS.8.2 distinguishes capacity left over after protection from temporarily used reserve, then constructs its return to service. Factory Physics, TameFlow, workload-control studies, interruption research and computational preemption contribute different mechanisms and limits. Together, the two bodies connect the release decision to feasible recovery; they do not make final acceptance a universal release signal or idle time universally available for development.
 
-### Shared source choices for the repertoire
+<a id="operating-aims-and-performance-sources"></a>
+
+### OPS.Reference:4.1 - Operating aims and performance sources
+
+Bjarte Bogsnes, *Implementing Beyond Budgeting: Unlocking the Performance Potential*, second edition (Wiley, 2016), chapter 4, printed pp.142–159 and 182–190, supplies the developed historical practice account used in OPS.21–22. Jeremy Hope and Robin Fraser, *Beyond Budgeting* (Harvard Business School Press, 2003), chapters 4–5, pp.69–116, connects targets, current outlook, provision, coordinated action and assessment, including implementation failures when the wider management uses remain unchanged. The adopted connection does not prescribe either source's complete organizational model.
+
+[Bukh, Ringgaard and Sandalgaard, “Moving beyond Beyond Budgeting” (2025)](https://doi.org/10.1080/09638180.2024.2362681), pp.1221–1244, examines one Scandinavian bank that abandoned and later reinstated budgets. Its retrospective interviews and documents show changing uses of forecasts alongside retained or restored budget controls. This supports inspecting actual uses and permitting qualified combinations, not a universal verdict for or against budgeting. One author disclosed a board position. The case supplies no general causal estimate of performance gains. OPS.21–22 retain the functional distinctions and reopen the arrangement when practice contradicts its intended use.
+
+The [forecasting text's distinction between forecasting, goals and planning](https://otexts.com/fpp3/planning.html) supports keeping expectation, intended result and action separate. It does not choose the operation's aim or settle an assessment. The repertoire therefore combines those supplied distinctions with a developed construction of the aim and subsequent judgement, rather than asking a forecast to perform every management function.
+
+<a id="shared-source-choices-for-the-repertoire"></a>
+
+### OPS.Reference:4.2 - Shared source choices for the repertoire
 
 The shared architectural choice is to combine source contributions by the operating question they answer. The following comparisons explain that choice across several bodies; each cited body's SoTA-Echoing section retains the more specific mechanism, worked distinction and reopen condition.
 
 | Professional answer | Contribution adopted or adapted in OPS | Alternative, limit and reason to reconsider |
 | --- | --- | --- |
 | [The Kanban Guide 2025.5](https://kanbanguides.org/the-kanban-guide/2025.5/) defines a workflow, controls started work and relates a service expectation to elapsed time and probability. | OPS.5, OPS.8, OPS.13 and OPS.17 use explicit boundaries and policies for admission, waiting and forecasts. | Retain a bounded Kanban use where it answers the question. For a wider operating decision, also recover case facts, commitment authority and resource conditions. Reconsider the selected policy when item boundaries, demand or the service population change. |
-| TameFlow's complete-kit and constraint-protection mechanisms, Reinertsen's economic flow trade-offs, and the queueing comparisons in OPS.8:11–OPS.10:11 answer different waiting questions. | OPS adapts receiver-ready supply, rival-based diagnosis and analysis chosen for the required service claim. | These mechanisms remain useful, while the pooling and dependent-arrival models qualify their reach. A missing prerequisite, a deadline peak and accumulated small waits can require different treatment. Reopen the choice when the mechanism or modeling assumptions change. |
-| [CMMN 1.1](https://www.omg.org/spec/CMMN/1.1/PDF), the DCR source line and [OCEL](https://www.ocel-standard.org/specification/overview/) distinguish case planning, declarative conditions and multi-object event accounts. | OPS.2, OPS.3, OPS.6 and OPS.15 adapt their different contributions to evolving case decisions and subject-correct evidence. | A fixed procedure can remain sufficient for recurring subwork. A formal plan or event record leaves actual permission, Work and resulting state to be established. Reconsider the chosen description when a changed case or missing object relation can alter continuation. |
+| TameFlow's complete-kit and constraint-protection mechanisms, Reinertsen's economic flow trade-offs, and the queueing comparisons in OPS.8:11–OPS.10:11 answer different waiting questions. | OPS adapts receiver-ready supply, rival-based diagnosis and analysis chosen for the required service claim. | Replenishment must arrive in time to preserve protection. A pooling change can alter processing behavior; a finite deadline or accumulated waits can favor treatment away from the sustained-throughput constraint. OPS.8–OPS.9 compare these choices and the effort of stronger diagnostics. Retain the cheaper adequate policy or bound, and reopen when behavior, regime or the receiving result changes. |
+| [CMMN 1.1](https://www.omg.org/spec/CMMN/1.1/PDF), the [DCR execution documentation](https://documentation.dcr.design/documentation/dcr-robots/) and [OCEL](https://www.ocel-standard.org/specification/overview/) contribute authorized case planning, outcome-aware execution and multi-object evidence. | OPS.2 and OPS.6 reuse a competent integrated contract and add only a missing subject-state, permission or rule-composition distinction; OPS.3 and OPS.15 retain their event/object contributions. | A fixed subprocedure or sufficient case contract remains in use. An execution outcome supports only the external subject claim justified by its evidence. OPS.3 uses current object-centric data-quality work to correct a faulty relation or time meaning locally, preserving unaffected claims. Reopen when changed facts, permission or a missing relation can alter continuation. |
 | The coupled-scheduling and several-network sources discussed in OPS.11:11 connect material and transaction requirements to shared resources. | OPS.11 and OPS.19 retain a coupling only when it can reverse the operating decision, then coordinate the affected choices. | A full network model may be useful for strongly coupled scheduling; one simple binding condition can suffice for a local decision. The cited industrial models and perspectives do not establish an obtaining relation or autonomous coordination in another operation. |
 | [HSE's work-demand guidance](https://www.hse.gov.uk/stress/standards/demands.htm) and [NIOSH's Total Worker Health hierarchy](https://www.cdc.gov/niosh/twh/php/hierarchy/index.html) address the demands and arrangements that produce human burden. | OPS.12 adapts changing the source of burden; OPS.13, OPS.17 and OPS.19 preserve supplied human conditions in the combined choice. | Individual support can help, but cannot resolve incompatible duties by itself. The sources supply no universal workload threshold. Reconsider the intervention when the affected people, demands, support or qualified protection change. |
 | [ACCA's relevant-cost reasoning](https://www.accaglobal.com/my/en/student/exam-support-resources/fundamentals-exams-study-resources/f5/technical-articles/relevant-costs.html) compares cash consequences that differ because of a choice. | OPS.14 connects incremental payments and receipts to accepted service, displaced uses and timing; OPS.13 and OPS.19 use the resulting financial premise. | A short-horizon throughput model can help with a fitting resource-mix question. Funding, long-lived investment or accounting recognition can require another qualified result. Reopen when avoidability, displacement, acceptance or the horizon changes. |
-| The [SRE Workbook's service-indicator treatment](https://sre.google/workbook/implementing-slos/) distinguishes user-relevant behavior from its measurement; the [NIST process-monitoring and control handbook](https://www.itl.nist.gov/div898/handbook/pmc/pmc.htm) separates statistical monitoring and acceptance questions. | OPS.13, OPS.15 and OPS.18 adapt the observation boundary and select the evidence branch needed for a service, process, lot or recovery decision. | A simple supplied acceptance rule may settle one result; a monitoring model answers another question. Error-budget guidance for software service does not establish clinical or product safety permission. Reconsider a branch when requirements, omitted events or model fit change. |
+| The [SRE Workbook's service-indicator treatment](https://sre.google/workbook/implementing-slos/) distinguishes user-relevant behavior from its measurement; the [NIST process-monitoring and control handbook](https://www.itl.nist.gov/div898/handbook/pmc/pmc.htm) separates statistical monitoring and acceptance questions. | OPS.13, OPS.15 and OPS.18 adapt the observation boundary and select the evidence branch needed for a service, process, lot or recovery decision. | A supplied acceptance rule or direct protection can suffice. A monitoring choice also pays for inspection, false/repeated signals and the actual response; grouped observations or drift can change its detection basis. OPS.13 and OPS.18 work those returns without treating software error budgets as safety permission. Reconsider when the population, response or required decision changes. |
 
 Anderson's *Kanban* (2010) combines operating mechanisms with an approach to evolutionary change; later Kanban principles explicitly distinguish service delivery and change management. OPS uses their contribution to admission, release, queues and flow while separately considering how a changed practice can become usable. Dietz and Mulder's *Enterprise Ontology* (2020), §§4.4.4–4.4.6, helps distinguish product-making from request, promise and acceptance relations. OPS.11.1 retains those relations in the operating model without treating every new assignment as a new authority structure. A source's single programme can therefore contribute to several domains; its title does not allocate all of its methods to one DPF.
 
@@ -6055,7 +6612,11 @@ Tendon's *The Book of TameFlow* (2022), pp. 194-203 and 241-247, contributes the
 
 These correspondences are source-supported reasons for the Methods' organization, not evidence that the complete OPS repertoire outperforms every other arrangement. A stronger professional result can replace one analysis or coordination contribution while preserving the other Methods. Reopen the architecture itself when repeated use shows that the question boundaries systematically hide a needed operating result, or when an integrated alternative preserves the relevant subjects, commitments, protections and evidence at lower total burden. A changed source title or publication date alone does not establish that gain.
 
-### Bibliographic returns for shared sources
+Competent improvement and adoption practices are also reusable sources. [IHI's PDSA testing guidance](https://www.ihi.org/library/model-for-improvement/testing-changes) and [implementation guidance](https://www.ihi.org/library/model-for-improvement/implementing-changes) supply the improvement comparison in OPS.16. [Google SRE's incident management](https://sre.google/sre-book/managing-incidents/) and [organizational-change account](https://sre.google/workbook/organizational-change/) supply maintained coordination and adaptive receiving support for OPS.4 and OPS.20. These contributions may already suffice. OPS adds no separate account unless a missing distinction can change the receiving decision.
+
+<a id="bibliographic-returns-for-shared-sources"></a>
+
+### OPS.Reference:4.3 - Bibliographic returns for shared sources
 
 The source comparisons above and in the bodies use the following works. The dates identify the editions consulted; the contribution and applicability of each work are explained beside its use.
 
@@ -6067,7 +6628,9 @@ The source comparisons above and in the bodies use the following works. The date
 - **Layered control:** Mung Chiang, Steven H. Low, A. Robert Calderbank and John C. Doyle, [“Layering as Optimization Decomposition”](https://doi.org/10.1109/JPROC.2006.887322) (2007); Gautam Goel, Niangjun Chen and Adam Wierman, [“Thinking Fast and Slow: Optimization Decomposition Across Timescales”](https://arxiv.org/abs/1704.07785) (2017); Nikolai Matni, Aaron D. Ames and John C. Doyle, [“Towards a Theory of Control Architecture”](https://arxiv.org/abs/2401.15185v1) (2024). These papers supply models of decomposition and operating rates. Figure's [Helix report](https://www.figure.ai/news/helix) (2025) describes its own humanoid-control system.
 - **AI-assisted operation:** DORA, [*State of AI-assisted Software Development*](https://dora.dev/research/2025/dora-report/) (2025.2; see the [errata](https://dora.dev/research/2025/errata/)); Hailin Zhong and Shengxin Zhu, [*AI Harness Engineering: A Runtime Substrate for Foundation-Model Software Agents*](https://arxiv.org/abs/2605.13357v1) (2026, v1); Ivan Belcic and Cole Stryker, [“What Is Loop Engineering?”](https://www.ibm.com/think/topics/loop-engineering) (17 July 2026). OPS compares the report, research proposal and provider explanation for their distinct contributions to context, tools, feedback and stopping in software work.
 
-## FPF dependency and compatibility
+<a id="fpf-dependency-and-compatibility"></a>
+
+## OPS.Reference:5 - FPF dependency and compatibility
 
 The OPS methods are described in their pattern bodies. The Table of Contents, SoTA-Echoing and Relations identify their external FPF contributions and receiving uses. For an OPS use that requires an FPF contribution, open the [current FPF edition](https://github.com/ailev/FPF/blob/main/FPF-Spec.md), identify the needed pattern edition, and check that its content and use conditions provide the stated contribution. Retain a permanent link or copy of the edition actually used. If the contribution is unavailable or no longer fits, keep the dependent use open and reconsider the affected OPS pattern and dependent conclusions. Unaffected results remain reusable.
 
@@ -6077,7 +6640,9 @@ The OPS methods are described in their pattern bodies. The Table of Contents, So
 
 **Authority direction.** FPF does not depend on this DPF for its transdisciplinary results. A transdisciplinary discovery returns to FPF through its own decision and review. An Operations-specific remainder found in FPF returns to this DPF and is removed from the general host rather than duplicated.
 
-## Sibling-domain returns and availability
+<a id="sibling-domain-returns-and-availability"></a>
+
+## OPS.Reference:6 - Sibling-domain returns and availability
 
 The patterns have no mandatory sibling-DPF result for every displayed use. The FPF contributions and direct Operations sources needed for each displayed use are named in its pattern body. Clinical, safety, legal, privacy, security, finance, product-release, capability, and other domain results remain direct returns rather than sibling frameworks silently imported into the edition.
 
@@ -6097,7 +6662,9 @@ The following direct returns help when the operating question exposes work owned
 
 Use the linked contribution only while its current content still supplies the stated result and boundaries. Keep the edition or copy actually used with a consequential receiving result. If a supplier's content, availability or case conditions change, requalify the affected return; unrelated OPS uses remain available.
 
-## Available packages
+<a id="available-packages"></a>
+
+## OPS.Reference:7 - Available packages
 
 | Package | PatternIDs | Availability in this edition |
 | --- | --- | --- |
@@ -6110,10 +6677,13 @@ Use the linked contribution only while its current content still supplies the st
 | `OPS-E2 — Operations Method repertoire` | `OPS.17` | Available authoritative body in this edition. |
 | `OPS-E3 — Simultaneous operating Work` | `OPS.19` | Available authoritative body in this edition. |
 | `OPS-E4 — Operations cultural continuation` | `OPS.20` | Available authoritative body in this edition. |
+| `OPS-F — Operating aims and performance interpretation` | `OPS.21`–`OPS.22` | Bodies with their stated use conditions in this edition. |
 
 These package labels keep the questions and returned results distinct. They do not prescribe an operating lifecycle, maturity ladder, or reader sequence; start from the current question and use the smallest body or exact cooperating set that can change the decision.
 
-## Representative case coverage
+<a id="representative-case-coverage"></a>
+
+## OPS.Reference:8 - Representative case coverage
 
 | Case | What it tests | Boundary retained |
 | --- | --- | --- |
@@ -6121,25 +6691,33 @@ These package labels keep the questions and returned results distinct. They do n
 | Public-hospital emergency flow | patient/case/queue/resource boundaries, qualified readiness and capacity, case continuation, support burden, service promises, financial alternatives, due-cohort evidence, operating recovery, a pre-admission Method candidate, cross-scale coordination, and bounded receiving-use observation. | Operations supplies no clinical triage, treatment, medical-safety, consent, privacy, legal, labor, patient-outcome, Method-identity, or Method-culture result. |
 | AI-assisted software operation | user issue, candidate and episode distinctions; eligible queues, provider/test/acceptance capacity, retries, human review burden, Method trial and refresh, accepted-output promises, financial consequences, service reliability, cross-scale release coordination, and bounded on-call selection. | System/Agent recognition, security, software assurance, provider/model capability, causal effect, integration, release, human authority, high-risk transfer, and cultural continuation outside the named population retain their owners. |
 
-## Edition return
+<a id="edition-return"></a>
 
-This publication contains the Readme, Table of Contents, Preface, nine Parts, eight connected practical entries, three extended applications, framework boundary and the pattern bodies listed in the contents.
+## OPS.Reference:9 - Edition return
 
-Use any of the twenty-six patterns whose working question and conditions match your situation. Combine them when one needs another's result. Each body states the professional contributions, evidence and authority its use requires.
+This publication contains the Readme, Table of Contents, Preface, ten Parts, nine connected practical entries, three extended applications, framework boundary and the pattern bodies listed in the contents.
+
+Use any of the twenty-eight patterns whose working question and conditions match your situation. Combine them when one needs another's result. Each body states the professional contributions, evidence and authority its use requires.
 
 Use the package table and each body's conditions to locate the Operations result that can change the current decision.
 
-## Publication boundary
+<a id="publication-boundary"></a>
+
+## OPS.Reference:10 - Publication boundary
 
 Pattern bodies are the authoritative working references. The Readme, Preface, Table of Contents, practical entries, and applications help readers enter and combine them; they do not replace conditions, evidence boundaries, stops, or specialist returns.
 
 This is a domain framework Reference carrier. It is neither an educational Guide nor the Engineering DPF Suite Reference. A Guide is organized for learning and memory formation; this Reference is organized for lookup and direct pattern use.
 
-## Citation
+<a id="citation"></a>
+
+## OPS.Reference:11 - Citation
 
 ```text
 Anatoly Levenchuk, with AI-assisted development and review.
 Operations Management Principles Framework.
-20 September 2026.
+2 October 2026.
 GitHub repository: https://github.com/ailev/FPF
 ```
+
+## OPS.Reference:End

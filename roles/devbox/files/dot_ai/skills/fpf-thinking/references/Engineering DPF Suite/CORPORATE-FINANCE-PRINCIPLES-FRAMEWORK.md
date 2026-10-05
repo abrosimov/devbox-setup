@@ -1,6 +1,6 @@
 # Corporate Finance Principles Framework
 
-**Edition:** [FIN 1.0](#edition-record)\
+**Edition:** [FIN 1.0](#finreference1---edition-record)\
 **Author:** Anatoly Levenchuk, with AI-assisted development and review
 
 Methods for valuing investments, arranging finance, preserving liquidity, managing financial exposure and making corporate-finance decisions.
@@ -13,7 +13,7 @@ Methods for valuing investments, arranging finance, preserving liquidity, managi
 | --- | --- | --- |
 | — | [Corporate Finance Readme](#corporate-finance-readme) | Follow connected financial decisions and a direct value calculation. |
 | — | [Preface](#preface) | Understand the language and how its methods connect. |
-| — | [References](#references) | Find supplying editions, source guidance and citation information. |
+| — | [FIN.Reference - References](#references) | Find supplying editions, source guidance and citation information. |
 
 **Part A - Cash and decision accounts**
 
@@ -250,7 +250,10 @@ Keep the first question usable and small while retaining party, time and institu
 
 If the action, alternatives, parties and comparison basis are already adequate, use the needed Method directly. The work below resolves ambiguities that could change that use; it does not require a new framing document for every calculation.
 
-#### Turn the request into an answerable choice
+<a id="turn-the-request-into-an-answerable-choice"></a>
+
+#### FIN.1:4.1 - Turn the request into an answerable choice
+
 
 Begin with the action that someone could take, refuse, change or postpone. “Can we afford the acquisition?” may ask whether its value exceeds the price, whether payment can be made at closing, whether debt service can be sustained afterward, or whether the commitment would crowd out a better use. Those questions need connected answers, but none answers all the others. Recover which choice the receiver faces and what result could change it.
 
@@ -260,7 +263,10 @@ Distinguish a decision variable from a forecast assumption. A price the buyer ca
 
 State what counts as a better financial result for this question. Increased total operating value, a better equity purchase, timely payment and a smaller exposure are different gains. A profit target or return ratio can be a useful constraint or diagnostic without representing the whole objective. A project can raise reported earnings while consuming cash and destroying value; a distribution can improve a shareholder's immediate receipt while reducing creditor protection. Obtain the actual decision criterion and binding constraints. Where material effects on employees, customers or others are not adequately represented in the financial account, preserve them for the responsible decision instead of assigning them an unexplained zero or silently inventing monetary weights.
 
-#### Identify whose consequences and which interest are at issue
+<a id="identify-whose-consequences-and-which-interest-are-at-issue"></a>
+
+#### FIN.1:4.2 - Identify whose consequences and which interest are at issue
+
 
 Follow the proposed action to the entities that pay, receive, own, owe or bear its consequences. The group, parent, subsidiary, seller and ultimate owner need not have the same answer. For a project carried out by a subsidiary, separate its operating effects from transfers to the parent. In a purchase of shares, identify the interest obtained, the obligations remaining in the company and the amount paid to the seller. FIN.7 supplies the value of that interest; FIN.9 supplies the buyer's comparison including price and transaction effects.
 
@@ -270,7 +276,10 @@ Choose the boundary that fits the receiving question, and retain a second bounda
 
 When several claimant perspectives matter, show how they differ. An action that transfers value from existing lenders to shareholders is not thereby an increase in the underlying business's value. A negotiation can legitimately concern the division of value, but the analyst must identify it as that question. This is especially consequential for leverage, distributions and restructuring; FIN.11, FIN.21 and FIN.22 supply the selected financial work.
 
-#### Set a comparison basis that the next Method can use
+<a id="set-a-comparison-basis-that-the-next-method-can-use"></a>
+
+#### FIN.1:4.3 - Set a comparison basis that the next Method can use
+
 
 Fix the baseline, valuation date and information date. The baseline is the attainable continuation against which incremental effects are measured. The valuation date is the date to which values are brought. The information date says which facts and estimates were available. A later successful outcome does not make an earlier risky decision risk-free, and an updated forecast must not silently replace the earlier basis when explaining that decision.
 
@@ -280,7 +289,10 @@ Choose the currency and price basis for the receiving use. Identify whether a fu
 
 Identify the tax perspective and the institutional conditions that could change the action. Relevant questions include who bears or can use a tax effect, when it occurs, whether cash is restricted, and which consents or covenants bind the contemplated action. Use adequate supplied legal, contractual and tax interpretations. Return a precise unresolved question, such as whether the acquiring entity can use a particular deduction in the forecast period. A generic jurisdiction label cannot supply that answer.
 
-#### Connect the work in the order required by the decision
+<a id="connect-the-work-in-the-order-required-by-the-decision"></a>
+
+#### FIN.1:4.4 - Connect the work in the order required by the decision
+
 
 Select Methods by the result missing from the current comparison. FIN.4 supplies the account or projection; FIN.5 supplies a matched required return; FIN.6 supplies incremental project cash and value; FIN.7 supplies an asset or interest value; FIN.8 supplies a contingent strategy; FIN.9 compares their uses together. Adequate supplied results can enter at any of these points with their conditions intact.
 
@@ -288,7 +300,10 @@ Use FIN.2 for dated liquidity and FIN.10–12 for actual financing possibilities
 
 Several conclusions can properly coexist: “positive operating NPV,” “not fundable at closing on these terms,” and “fundable if payment is deferred at this additional cost.” FIN.9 can compare the revised whole alternative once the terms are obtainable. FIN.16 combines the warranted contributions for the receiver. The recommendation must say which conditions belong to which alternative; a mixture of the best features from mutually incompatible alternatives is no feasible recommendation.
 
-#### Decide how much unresolved detail matters now
+<a id="decide-how-much-unresolved-detail-matters-now"></a>
+
+#### FIN.1:4.5 - Decide how much unresolved detail matters now
+
 
 Inspect the uncertainty that could change the next action or warranted claim. If a payment cutoff is decisive, establish the cutoff and usable money before building a detailed terminal valuation. If all plausible values exceed a proposed price but a particular financing condition blocks closing, valuation precision may have little immediate value. If the price is close to the range, a focused inquiry into a sensitive operating assumption may be worthwhile.
 
@@ -373,7 +388,10 @@ Stop when the receiving decision can distinguish a funded path from its unresolv
 
 If you can perform a calculation but cannot explain how it answers this liquidity question, use [B.1.5.EW][EW] to recover the connection. Identify the financial operation being performed through it, the conditions that make it fit the payment plan, and any constituent know-how or contribution still needed. The example below shows that relation.
 
-#### Build the account around the payer and the payment
+<a id="build-the-account-around-the-payer-and-the-payment"></a>
+
+#### FIN.2:4.1 - Build the account around the payer and the payment
+
 
 A liquidity forecast answers whether a particular payer can make particular payments when they become due. Start with the bank and settlement accounts that payer can use. An amount in the accounting cash balance can be pending clearance, pledged, reserved by contract or held by a different company. Record the condition and earliest usable date before treating it as a source. Conversely, an undrawn facility is a possible financing action, not opening cash. Adding its limit to the bank balance and then also adding a draw counts the same support twice.
 
@@ -383,7 +401,10 @@ The starting cash is an observed or reconciled usable balance at a stated instan
 
 Separate obligations, expected performance and selectable actions. A receivable due on Tuesday establishes a claim; its collection forecast requires evidence about payment. A proposed loan becomes cash only after its conditions, notice and settlement are satisfied. FDM.3 develops this event logic when the arrangement is unclear. A supplied schedule with these distinctions already resolved can be used directly.
 
-#### Choose dates that reveal the decision
+<a id="choose-dates-that-reveal-the-decision"></a>
+
+#### FIN.2:4.2 - Choose dates that reveal the decision
+
 
 Near a threatened payment, use event dates or intervals short enough to expose the lowest balance. A weekly total can hide Monday payroll followed by Friday collections. Include intraday order when a bank cutoff, security settlement or same-day receipt changes whether the payment can occur. A longer operating forecast may use monthly periods, but its aggregated cash cannot settle that shorter question.
 
@@ -391,7 +412,10 @@ Carry the horizon through the proposed remedy's repayments and the operating cyc
 
 For each scenario and date, begin with the previous closing balance, add usable receipts and actual financing proceeds, and subtract all payments, financing charges and repayments. Compare the resulting balance with the applicable minimum reserve. The reserve is a requirement or a chosen protection level; keeping it separate from the balance lets a reader distinguish inability to pay from an intended safety margin being consumed. If a model allows a negative balance, that row describes an unmet need unless an actual overdraft arrangement supplies it.
 
-#### Derive availability and the gross funding need together
+<a id="derive-availability-and-the-gross-funding-need-together"></a>
+
+#### FIN.2:4.3 - Derive availability and the gross funding need together
+
 
 A credit limit is only one constraint on drawing. The available amount may also depend on eligible receivables or inventory, collateral valuations, prior drawings, other uses of the facility and conditions in FIN.12. For a simple asset-backed line, a stipulated rule might permit total drawings up to the smaller of the commitment and a percentage of eligible receivables. Incremental room is that amount less existing drawings and other reserved utilization. Read the actual agreement before using such a formula; not every line has a borrowing base.
 
@@ -399,7 +423,10 @@ A decline in receivable quality can simultaneously delay collections and reduce 
 
 Size a financing action from its net usable proceeds. If a fixed fee is withheld, add that fee to the cash need before solving for the principal. If a percentage is withheld, divide the required net amount by one minus that percentage. A restricted deposit or compensating balance can absorb further proceeds; its later release belongs at its own date. FIN.10 compares the obtainable instruments and their full costs. Return its selected terms here, then recompute the account including interest and repayment. Continue until the chosen borrowing and the cash account agree; an algebraic solution alone does not establish a lender willing to supply it.
 
-#### Set protection from a plausible failure and a timely response
+<a id="set-protection-from-a-plausible-failure-and-a-timely-response"></a>
+
+#### FIN.2:4.4 - Set protection from a plausible failure and a timely response
+
 
 A reserve should answer a concrete exposure: uncertain collections, urgent repairs, margin calls or the time needed to obtain replacement funds. For each relevant adverse state, ask how far the balance can fall before a feasible response takes effect. The required initial protection is the largest shortfall relative to the chosen minimum over those dates, after allowing only responses available in that state. This is a scenario requirement, not a statistical confidence level unless the scenario model supports that interpretation.
 
@@ -407,7 +434,10 @@ Avoid treating all uncertainties as independent when they arise from the same ca
 
 Compare the cost of holding or arranging protection with the consequences it prevents. Cash holdings may earn a return but have opportunity cost; committed facilities can charge for unused capacity and still contain conditions. Selling assets quickly may realize less than their ordinary value. These costs belong to the choice of protection, while the dated account establishes whether it works. FIN.5–6 supplies the value comparison when material; no general rule makes maximum cash retention desirable.
 
-#### Change the attainable plan and keep the return visible
+<a id="change-the-attainable-plan-and-keep-the-return-visible"></a>
+
+#### FIN.2:4.5 - Change the attainable plan and keep the return visible
+
 
 If the account fails, construct a remedy that changes a dated receipt, payment or available financing action. Accelerating a customer payment has a price and requires acceptance. Extending a supplier term changes an obligation only when the arrangement permits it. Reducing inventory may undermine delivery and hence later receipts. FIN.3 compares these operating terms; FIN.10 compares finance; FIN.12 identifies restrictions and remedies. Return their actual consequences to the same account before relying on the repair.
 
@@ -438,7 +468,10 @@ Raise the required reserve from zero to 10: the same funding operation now requi
 
 These are connected descriptions of the analyst's work; charge its time once. The lender's transfer is a different occurrence whose availability the plan relies on. Sending the completed account to a decision maker is a subsequent use. Each relation matters, but none substitutes for explaining what the analyst is doing through the calculation now.
 
-#### A delayed receipt also reduces available finance
+<a id="a-delayed-receipt-also-reduces-available-finance"></a>
+
+#### FIN.2:5.2 - A delayed receipt also reduces available finance
+
 
 In a separate constructed weekly account, one corporation has usable opening cash 20, a chosen minimum reserve 10, and no existing drawings. All amounts are in one currency, taxes and ordinary costs are already in the stated payments, and interest on a new line draw is paid after week 3. The supplied payment schedule has no earlier low point within each week.
 
@@ -454,7 +487,10 @@ Now a customer's dispute moves 25 of week-1 receipts to week 3 and makes 15 of t
 
 Suppose the supplier actually agrees to move 15 of week-1 payment to week 2 without charge. With that change and the draw of 20, balances become 10, 45 and 60. After week-3 repayment of 20 and stipulated interest 2, cash is 38. Thus the operating concession and the available finance jointly restore the selected reserve. They are separate attainable actions, and the deferred 15 is paid rather than lost from the model. Without the supplier's agreement this combined route remains conditional. If payments precede the assumed draw within week 1, refine the account before claiming it works.
 
-#### A later borrowing-base test changes the repayment date
+<a id="a-later-borrowing-base-test-changes-the-repayment-date"></a>
+
+#### FIN.2:5.3 - A later borrowing-base test changes the repayment date
+
 
 Vary the delayed-receipt case above by adding a later contractual test. At the test in week 2, eligible receivables are only 10 while the drawn principal is still 20. The permitted amount is 0.80 × 10 = 8, leaving an overadvance of 12. The stipulated agreement requires repayment of that excess, or acceptance of additional eligible security, by a stated deadline. Merely recording zero room for another draw leaves this obligation unpaid.
 
@@ -527,7 +563,10 @@ Balance liquidity, contribution, reliability and commercial relationships. Disti
 
 For a discount offered in exchange for earlier cash, compare its actual cash cost with the available funding alternative over the same interval. Annualizing a short-period discount can help comparison, but retain its day count, compounding assumption and the actual amount needed; a large annualized percentage alone does not settle the order decision.
 
-#### Recover the operating cycle before trying to shorten it
+<a id="recover-the-operating-cycle-before-trying-to-shorten-it"></a>
+
+#### FIN.3:4.1 - Recover the operating cycle before trying to shorten it
+
 
 Working capital arises because buying, producing, delivering, invoicing and collecting occur at different times. Model the arrangement that creates those times: quantity and price of purchases, stock held before use or sale, credit granted to customers and credit received from suppliers. FIN.4 connects that operating plan to balances and cash. FIN.3 compares changes to the arrangement and their financial consequences.
 
@@ -535,7 +574,10 @@ Begin with the actual cause of the cash tied up. Slow collections may result fro
 
 The relevant operating alternative must still perform its intended service. Obtain a feasible replenishment or capacity response from operations and its resource/cost consequences from MA. A finance practitioner can compare those responses without inventing an inventory-control or production method. When no alternative operating plan is supplied, report the missing delivery or service condition instead of labeling the lowest stock balance optimal.
 
-#### Make customer credit a commercial choice
+<a id="make-customer-credit-a-commercial-choice"></a>
+
+#### FIN.3:4.2 - Make customer credit a commercial choice
+
 
 A customer-credit policy includes who can buy on credit, how much exposure can accumulate, the payment term, any early-payment discount, collection action and the response to overdue balances. Establish the actual offer and likely customer response. A longer term can increase sales while requiring earlier production cash and increasing expected nonpayment. A tighter term can reduce exposure while losing a profitable customer. Compare the entire change against the business that would occur without it.
 
@@ -547,7 +589,10 @@ Monitor an aging of actual unpaid invoices, with a stated reference date and whe
 
 Factoring or discounting receivables can bring forward cash without changing the customer's payment. Distinguish the advance, retained reserve, fees, servicing and any recourse if the customer fails. A transfer of the receivable and a loan secured by it have different claim consequences. Use actual FDM terms and FIN.10 to obtain net proceeds and remaining exposure. Do not count both the financier's advance and the same full customer receipt as unencumbered cash.
 
-#### Compare inventory policies at the service they provide
+<a id="compare-inventory-policies-at-the-service-they-provide"></a>
+
+#### FIN.3:4.3 - Compare inventory policies at the service they provide
+
 
 For a proposed reduction in stock, distinguish a one-time run-down from a lower steady operating requirement. Selling down existing units without replacing them can release cash during transition, but the lower inventory cannot be released again each year. A recurring improvement may instead reduce spoilage, storage or replenishment costs. Conversely, smaller batches may raise ordering and transport costs or require more supplier responsiveness.
 
@@ -555,7 +600,10 @@ Recover purchase cost, expected realizable proceeds and the payments actually av
 
 Include lost contribution and recovery costs when stockouts or quality failures are plausible. A service level can be an operating constraint, not a price to be guessed by finance. If operations supplies several feasible service/cost combinations, compare their incremental value and liquidity with explicit uncertainty. Keep resource usage, capacity supplied and expenditure distinct: releasing storage space saves cash only if the space or a related purchase can actually be reduced or redeployed. MA.5 and the actual operating plan supply that distinction.
 
-#### Price supplier terms on the amounts and dates they change
+<a id="price-supplier-terms-on-the-amounts-and-dates-they-change"></a>
+
+#### FIN.3:4.4 - Price supplier terms on the amounts and dates they change
+
 
 An agreed longer payment term provides financing until the revised due date. Simply paying late may instead create penalties, stop supply or require cash in advance later. Include those consequences and the supplier's willingness or contractual right to offer the term. A reduction in purchase price tied to earlier payment is a separate alternative with its own cash need.
 
@@ -563,7 +611,10 @@ For a discount fraction d available on an invoice amount F at an earlier date, t
 
 Compare the actual early-payment funding schedule with the later invoice payment. Include the loan's net proceeds, interest, fees and conditions, then test the dates in FIN.2. If finance is rationed, consuming scarce capacity to earn a discount can displace a better use. The high implied annual rate of a forgone discount is a useful signal, but a short period, small amount or uncertain supply can make currency amounts and operational consequences more decision-relevant.
 
-#### Use cycle measures to investigate, then calculate the changed cash
+<a id="use-cycle-measures-to-investigate-then-calculate-the-changed-cash"></a>
+
+#### FIN.3:4.5 - Use cycle measures to investigate, then calculate the changed cash
+
 
 The cash-conversion-cycle measures summarize how long operating investment remains tied up on average. Match each numerator to the flow that generates it, use the same period and a representative average balance, and inspect seasonality or rapid growth. Credit sales support receivable days; credit purchases support payable days; cost of sales can only proxy purchases when that approximation is adequate. Do not apply a sales denominator to inventory at cost and then add the result without qualification.
 
@@ -586,13 +637,19 @@ The supplied operating case requires 26–29 rig-hours for 100 units. Twenty hou
 
 For a separate 365-day illustration, average inventory 100 with cost of goods sold 500 gives 73 inventory days; average trade receivables 120 with credit sales 730 gives 60 receivable days; average trade payables 50 with credit purchases 365 gives 50 payable days. The cash-conversion cycle is 73 + 60 − 50 = 83 days on these comparable definitions. Shortening that summary still needs the operating and financial comparison above.
 
-#### A stock reduction releases cash once
+<a id="a-stock-reduction-releases-cash-once"></a>
+
+#### FIN.3:5.1 - A stock reduction releases cash once
+
 
 In a separate constructed two-year trial, operations supplies a feasible lower-stock policy. It avoids a scheduled purchase of 20 now while preserving the current sales receipts, reducing stock by 20. Thereafter it maintains that lower stock, saves storage and handling cash of 3 per year, and loses expected contribution of 4 per year through additional stockouts. These figures are net of all affected operating payments and taxes; the storage saving excludes any financing or capital charge. At the end of year 2 the trial restores the same stock as the baseline by an extra purchase of 20. There are no other differences, and a qualified 10% annual valuation rate applies.
 
 The incremental cash is +20 now, −1 at year 1 and −21 at year 2, including restoration. Its value is 20 − 1/1.10 − 21/1.10² = 1.74. The result combines temporary funding relief with a recurring operating loss. Treating the released 20 as an annual saving would misstate the policy. If expected lost contribution is instead 6 per year, the flows become +20, −3 and −23, with value −1.74. The initially lower cash requirement remains, but the economic preference reverses. Operations must still support the changed service assumption, and FIN.2 must cover the restoration payment.
 
-#### A profitable credit sale can still be unfundable
+<a id="a-profitable-credit-sale-can-still-be-unfundable"></a>
+
+#### FIN.3:5.2 - A profitable credit sale can still be unfundable
+
 
 A separate constructed customer cohort can be obtained only by granting 60 days' credit. Without that offer, there is no sale to this cohort. Production is feasible within existing capacity; incremental material, labor and delivery payments total 80 now, with no other incremental cost or tax. Invoices total 100 at day 60, but a supported performance estimate gives expected receipts of 96 then. A qualified 1% effective return per 30 days applies to these expected receipts; the credit-loss allowance is already in 96.
 
@@ -600,7 +657,10 @@ The value increment is 96/1.01² − 80 = 14.11. The positive result supports th
 
 Now expected receipts fall to 80 because the cohort's payment behavior changes, with production cost and valuation basis otherwise unchanged. The increment becomes 80/1.01² − 80 = −1.58. A lower observed receivable balance caused by write-offs would not rescue this policy; the lost receipts change its economics.
 
-#### Existing invoices and new sales move on different terms
+<a id="existing-invoices-and-new-sales-move-on-different-terms"></a>
+
+#### FIN.3:5.3 - Existing invoices and new sales move on different terms
+
 
 Consider a separate 60-day transition. Opening unpaid invoices are 60: 40 falls due on day 15 and is expected to produce 38 then; the other 20 is already overdue, with expected collection of 10 on day 45. The proposed policy does not change these invoices or their expected losses. Without the policy, new sales of 100 occur on day 0 and again on day 30, each payable 30 days later. Expected collection is 95% of each invoice, giving 95 on days 30 and 60.
 
@@ -626,7 +686,10 @@ At a qualified 1% effective rate per 30 days for the specified expected incremen
 
 The old overdue 20 remains identifiable in the aging until actual settlement or the applicable write-off treatment changes it. Growing recent sales can improve an aggregate days-receivable measure without collecting any of that overdue balance.
 
-#### An early-payment discount consumes real funding capacity
+<a id="an-early-payment-discount-consumes-real-funding-capacity"></a>
+
+#### FIN.3:5.4 - An early-payment discount consumes real funding capacity
+
 
 An invoice for 100 is payable on day 30, or 98 on day 10 under an agreed 2% discount. The company can draw exactly 98 net on day 10 under a separate available loan, with no fees and 1% interest for the 20-day period. It repays 98.98 on day 30. Relative to paying 100 then, using the loan to take the discount saves 1.02 at the same date. There are no other tax, supply or transaction differences in this illustration.
 
@@ -688,7 +751,10 @@ Connect financial views without pretending that their quantities are interchange
 
 A supplied account that answers the question can be used directly. Build or repair only the views and connections needed for the receiving decision. A direct cash forecast need not pass through complete financial statements.
 
-#### Choose the view and establish its starting basis
+<a id="choose-the-view-and-establish-its-starting-basis"></a>
+
+#### FIN.4:4.1 - Choose the view and establish its starting basis
+
 
 Name the quantity needed: a cash receipt or payment, operating profit, a projected financial position, cash available to capital providers, or another specified measure. Fix its entity, period, currency, price basis and intended use through FIN.1 where necessary. An annual income forecast and a daily funding account can concern the same activity while requiring different time resolution.
 
@@ -696,7 +762,10 @@ Recover adequate opening balances, commitments and source accounts. Establish th
 
 Keep actual observations, estimates, commitments and proposed management actions distinguishable. A signed rent increase is a different forecast input from an expected sales increase; an unapproved capacity addition is a different resource premise from installed capacity. A history can support estimation after correcting a source error or a consequential one-time event, but normalization must not erase a recurring cost merely because it makes the forecast unattractive. Preserve the source amount and explain the adjustment needed by this view.
 
-#### Obtain the operating construction and translate its drivers
+<a id="obtain-the-operating-construction-and-translate-its-drivers"></a>
+
+#### FIN.4:4.2 - Obtain the operating construction and translate its drivers
+
 
 [MA.5][MA] develops the demand–work–resource–money forecast, including capacity blocks, payment timing and action-changing uncertainty. [MA.4][MA] reconciles operating, reporting and cash accounts. [MA.6][MA] distinguishes forecasts, targets, requests and authorized allocations. Use their adequate contributions; use MA.1–3 or MA.7–8 only for unresolved resource, attribution or cohort work. [FDM][FDM] supplies disputed positions and conditional instruments. Actual operating feasibility remains an input from the responsible practice.
 
@@ -706,7 +775,10 @@ A ratio can be a useful forecast approximation when its driver and range remain 
 
 For a monthly or seasonal account, connect each sale or purchase cohort to the period in which it is expected to settle. A broad ratio may suffice for a distant valuation year but conceal a payment gap next month. Use enough detail for the decision, and aggregate afterward where aggregation preserves that answer. The mere availability of many spreadsheet periods does not make the underlying timing estimate more reliable.
 
-#### Roll flows into positions and close the accounts
+<a id="roll-flows-into-positions-and-close-the-accounts"></a>
+
+#### FIN.4:4.3 - Roll flows into positions and close the accounts
+
 
 When financial positions are needed, start each relevant balance from its actual opening amount and apply the events that change it. In a simple account without other adjustments:
 
@@ -721,7 +793,10 @@ Roll debt through the financing scenario's borrowing and principal repayment, re
 
 Agreement of the statements is an internal consistency result. A balanced forecast can still assume unattainable sales, too little maintenance or collections that customers cannot make. Reconcile the calculation and challenge the important economic assumptions as different tasks. A management reclassification does not amend a statutory account; use MA.4's return to the responsible accounting process where the source requires correction.
 
-#### Move between earnings and cash without counting an effect twice
+<a id="move-between-earnings-and-cash-without-counting-an-effect-twice"></a>
+
+#### FIN.4:4.4 - Move between earnings and cash without counting an effect twice
+
 
 Start the bridge from a clearly defined profit measure. For an operating cash view, remove financing effects when they are already being treated separately, add back the noncash expenses actually included, and account for the changes in operating balances that connect recognition to settlement. Deduct capital cash expenditure where the receiving measure includes investment. Tax expense, tax payable and cash tax can differ; use the applicable schedule when timing or loss utilization matters.
 
@@ -731,7 +806,10 @@ Define operating working capital by the balances used in the receiving calculati
 
 Match nominal and real amounts and separate currency translation from actual conversion. A receivable may change its reported carrying amount because of an exchange-rate movement without being collected. Its future cash and any hedging payment belong to the relevant dated scenarios; FIN.13–14 develop that exposure and action. Obtain the required accounting or tax interpretation where the policy itself is unresolved.
 
-#### Expose funding needs and recalculate the financing scenario
+<a id="expose-funding-needs-and-recalculate-the-financing-scenario"></a>
+
+#### FIN.4:4.5 - Expose funding needs and recalculate the financing scenario
+
 
 Project the cash balance before inventing a funding response. A negative modeled balance identifies an unmet need under those assumptions; it is not a permissible operating cash holding or evidence that a bank has agreed to lend. A desired minimum cash reserve can create an additional need even while the closing balance remains positive.
 
@@ -739,7 +817,10 @@ Use FIN.2 to locate the amount and date of the need, including other receipts, p
 
 Where interest depends on an average or closing debt balance, a model may require iteration or an explicit algebraic solution. State the timing convention and actual terms. Numerical convergence only means that those equations agree; it does not qualify the loan or cure an infeasible covenant. If financing changes the operating plan, update the relevant driver too. Preserve the unfunded alternative so the receiver can see what the proposed financing changes.
 
-#### Preserve uncertainty and return a usable forecast
+<a id="preserve-uncertainty-and-return-a-usable-forecast"></a>
+
+#### FIN.4:4.6 - Preserve uncertainty and return a usable forecast
+
 
 Build a scenario from connected assumptions. Lower volume can change price, capacity use and payment behavior together. Independently selecting a favorable margin, growth rate and collection period may describe no attainable state. A sensitivity can isolate one cause for understanding, but it should be labeled as that conditional calculation.
 
@@ -835,7 +916,10 @@ Use a tractable estimate while respecting uncertainty in market evidence, risk a
 
 6. **Return a usable estimate and its sensitivity.** Give the rate or range, the claim and cash-flow basis it supports, the relied-on inputs and dates, and the assumptions whose change would alter the decision. Propagate plausible changes into FIN.6–8's valuation. If they reverse the choice, report that dependence and obtain the missing estimate or compare a conditional action. Keep the estimated investor return, management's chosen project-acceptance minimum and the quoted borrowing offer distinct.
 
-#### Understand what the required return represents
+<a id="understand-what-the-required-return-represents"></a>
+
+#### FIN.5:4.1 - Understand what the required return represents
+
 
 Capital committed here cannot simultaneously be used in an available alternative of comparable risk. The required return represents that opportunity cost in the selected valuation model. It is not an extra payment appearing in the operating cash account, a promise that the project will earn that amount, or management's wish for a larger margin of safety. NPV tests whether the projected cash more than compensates for that opportunity cost.
 
@@ -847,13 +931,19 @@ A low borrowing offer does not make operating risk disappear. Lenders and equity
 
 The applicable investor and valuation purpose matter. A traded diversified-investor valuation and a particular undiversified owner's reservation value need not use the same risk preferences or model. Identify that change through FIN.1 and obtain the appropriate supported approach. Adding several unexplained premiums for size, private ownership, country and “project uncertainty” can charge overlapping effects without establishing any of them.
 
-#### Build the risk-free return and market premium
+<a id="build-the-risk-free-return-and-market-premium"></a>
+
+#### FIN.5:4.2 - Build the risk-free return and market premium
+
 
 Obtain a default-free benchmark in the cash-flow currency at the valuation date. Its maturity or term structure should match the cash-flow horizon: a short bill repeatedly rolled over does not fix a long-term return. Where maturity differences matter, use the relevant zero-coupon curve and dated discount factors. A government yield containing material default risk needs an explicit adjustment or another supported benchmark. Real cash flows need a real return basis. [The risk-free-rate explanation][DAM-RF] develops these matching choices.
 
 Choose an equity premium for the same market and benchmark convention. A historical estimate compares equity total returns with the specified risk-free returns over a stated period; the period and averaging convention affect it. An implied estimate solves for the return consistent with the current market price and forecast distributions, then subtracts the matched risk-free return. It depends on the forecast and pricing model. Compare defensible estimates when the choice matters; a historical average is not an observed future premium. [The estimation discussion][DAM-INPUTS] explains the trade-offs.
 
-#### Match business exposure to the project
+<a id="match-business-exposure-to-the-project"></a>
+
+#### FIN.5:4.3 - Match business exposure to the project
+
 
 A corporate average is usable for a project only insofar as the valued activity and financing assumptions are comparable. Investigate the economic sources of exposure: what moves demand and prices, which costs can adjust, which payments are fixed, what customers or suppliers concentrate risk, and how contracts or regulation alter the response. A familiar industry label alone does not establish the same exposure.
 
@@ -865,7 +955,10 @@ Account for changes in business mix, contract protection and operating condition
 
 Retain the economic reason for the chosen estimate so that a changed project can be reassessed. A rate copied without that reason gives the next analyst no way to tell whether a larger plant, a long-term offtake agreement or a different customer group changes the basis.
 
-#### Recover business risk before transferring a beta
+<a id="recover-business-risk-before-transferring-a-beta"></a>
+
+#### FIN.5:4.4 - Recover business risk before transferring a beta
+
 
 For a listed comparable business, obtain aligned stock and market total returns, including distributions, for the same periods. Subtract each period's risk-free return to obtain excess returns. If x is market excess return and y is the claim's excess return, estimate beta as Σ[(x−mean x)×(y−mean y)] / Σ[(x−mean x)²]. This is the regression slope. The same calculation can estimate a traded debt claim's beta when suitable return data exist. Alternatively, obtain an estimate with those definitions. Examine the window, market benchmark, infrequent trading and business changes before using it.
 
@@ -884,7 +977,10 @@ For each peer, remove its financing effect as βU = [βE + βD×a×D/E] / [1 + a
 
 Combine relevant business estimates only after removing their financing effects. Material excess cash or a different business mix needs separation; revenue weights need not equal business-value weights. Use a supported debt-beta estimate or a range when debt risk matters. [The fuller bottom-up-beta treatment][DAM-BETA] develops peer selection and combination; the policy choice above qualifies its tax-adjusted transfer. Compare the resulting valuations when more than one financing policy remains plausible. An approximation cannot settle the decision when the supported alternatives change its result.
 
-#### Use discount factors and financing effects on compatible grounds
+<a id="use-discount-factors-and-financing-effects-on-compatible-grounds"></a>
+
+#### FIN.5:4.5 - Use discount factors and financing effects on compatible grounds
+
 
 A single annual rate is a useful compression only when the valued cash and financing model support it. For deterministic annual forward discount rates r1 through rt, the discount factor to time t is 1/[(1+r1)×...×(1+rt)]. A time-t spot rate zt instead gives 1/(1+zt)^t. Do not treat a quoted spot rate as a one-year forward rate and compound both adjustments. For risky cash, use the corresponding supported pricing factors or model; the risk-free term structure alone does not supply them.
 
@@ -980,7 +1076,10 @@ Capture consequential cash effects without building an unnecessarily detailed mo
 6. **Use supplementary measures for their own questions.** IRR solves for a rate that makes NPV zero; payback locates recovery of the initial outlay. IRR can misrank mutually exclusive projects of different scale or timing and can be multiple or absent for unusual cash-flow signs. Ordinary payback omits time value and flows after recovery; discounted payback still omits later value. Accounting measures answer an earnings question.
 7. **Return the value and its conditions.** Include the baseline, cash and return basis, and the threshold or uncertainty that changes the recommendation. Obtain valuable exercisable flexibility through FIN.8 and interactions or capital rationing through FIN.9 when material. FIN.2 separately tests whether the payments can be funded.
 
-#### Construct the project cash account
+<a id="construct-the-project-cash-account"></a>
+
+#### FIN.6:4.1 - Construct the project cash account
+
 
 Start with the decision the corporation can still change. A past irrecoverable study cost cancels from the comparison. Its future tax effect also cancels if both alternatives obtain it; retain a refund, deduction or other future consequence that differs. An allocated overhead cancels only when taking the project leaves the actual resource commitment unchanged. For cannibalized business, subtract the contribution lost after avoided costs, not automatically its gross revenue. For a resource with another feasible use, include the cash forgone under that use. A with/without projection already containing that loss needs no second opportunity-cost charge.
 
@@ -994,7 +1093,10 @@ Depreciation reduces the tax base but is added back because it is not another pa
 
 At a finite ending, estimate realizable asset-sale proceeds, their taxes, recoverable working capital, and closure payments. Include only recovery supported by the runoff: an uncollectible receivable is not a terminal receipt. If the activity continues, its continuing value needs the investment and working capital that sustain it. Do not also liquidate those same continuing assets in a separate terminal inflow.
 
-#### Make the baseline and project boundary economic
+<a id="make-the-baseline-and-project-boundary-economic"></a>
+
+#### FIN.6:4.2 - Make the baseline and project boundary economic
+
 
 The relevant comparison is what would happen with the action versus the attainable continuation without it. “Without” need not mean unchanged sales forever. Competitor entry, asset wear, contractual commitments and maintenance can change the baseline even if the corporation takes no new initiative. A product launch should bear the loss of existing contribution it actually causes, rather than every decline that would have occurred anyway.
 
@@ -1006,7 +1108,10 @@ Specify the smallest project boundary that captures consequential dependencies. 
 
 Keep the timing of the decision visible. A study already paid for can be irrelevant to the next commitment while remaining relevant to whether the corporation's whole development program is worthwhile. Ignore the sunk payment in the forward choice, but do not erase it from learning about that earlier policy. A cancellation fee, recoverable deposit or future tax consequence can still differ now even though the associated contract or expenditure began earlier.
 
-#### Treat working capital, replacement and endings as dated consequences
+<a id="treat-working-capital-replacement-and-endings-as-dated-consequences"></a>
+
+#### FIN.6:4.3 - Treat working capital, replacement and endings as dated consequences
+
 
 Working capital often has to be provided before the sales it supports. Establish the required inventory, credit sales and supplier terms, then forecast balances and their cash movements through FIN.4. For each alternative, calculate the change over time; only afterward take the difference between alternatives. A continuing increase in sales can require continuing investment in receivables and inventory, so a cash margin alone does not represent all money distributable.
 
@@ -1016,7 +1121,10 @@ A replacement decision includes the old asset's attainable continuation and the 
 
 When operations continue beyond the explicit forecast, value the continuing activity through FIN.7. That activity must retain the capital and working capital needed for its cash production. A liquidation recovery and a going-concern terminal value are alternative treatments of the same resources unless the valued activity explicitly excludes the assets being sold. Make the boundary clear before adding either amount.
 
-#### Interpret NPV and competing measures
+<a id="interpret-npv-and-competing-measures"></a>
+
+#### FIN.6:4.4 - Interpret NPV and competing measures
+
 
 NPV expresses the change in value at the comparison date after compensating capital at the matched opportunity cost. A positive NPV supports taking the project over its stated baseline on that financial basis. It does not prove that the project is the best of all mutually exclusive choices, that the cash can be raised, or that unmodeled obligations are satisfied. Those questions can require FIN.9, FIN.2 or the responsible practice.
 
@@ -1028,7 +1136,10 @@ Ordinary payback accumulates undiscounted receipts until the initial outlay is r
 
 A modified return measure needs explicit financing and reinvestment assumptions. It may be useful for communication, but it does not create those opportunities or supersede the underlying value comparison. Computing NPV itself does not require the corporation actually to reinvest each intermediate receipt at the discount rate. Reinvestment opportunities become explicit alternatives when they are part of the decision; a chosen terminal-wealth calculation must state its own assumptions.
 
-#### Adapt the evaluation when uncertain facts or later choices matter
+<a id="adapt-the-evaluation-when-uncertain-facts-or-later-choices-matter"></a>
+
+#### FIN.6:4.5 - Adapt the evaluation when uncertain facts or later choices matter
+
 
 First identify what could change the cash or chosen alternative: price, volume, capacity, the feasible baseline, construction delay, investment cost, tax use or financing policy. A break-even calculation asks how far a specified input can move before the comparison changes. It does not state the probability of that movement. For an input related to other drivers, recompute their consequences in a coherent scenario rather than holding a physically incompatible combination fixed.
 
@@ -1133,7 +1244,10 @@ Use available market and operating evidence while retaining differences in right
 6. For comparables, choose evidence for economically similar rights and activities, then align valuation dates, historical or forecast periods, currency and accounting definitions. Construct each multiple from a claim value and a measure belonging to those claims: for example, operating enterprise value divided by earnings before interest, tax, depreciation and amortization (EBITDA), or equity value divided by earnings attributable to that equity. Treat lease and other claim adjustments consistently on both sides. Normalize a nonrecurring item only with grounds; a low multiple can reflect worse growth, margins, investment needs or risk. Apply a supported multiple or range to the target's correspondingly defined measure, then bridge to the required interest. If the evidence cannot support an adjustment, retain the conditional range or reject that comparable. For an asset approach, value the recoverable assets under the stated continued-use or disposal premise and subtract the relevant liabilities, tax, transaction and closure costs. Bring differently dated recoveries to the valuation date. Do not add a capitalized going-concern value to assets already producing it.
 7. Reconcile differences between approaches by their assumptions and evidential strength. Return a supported value or range, its use, and the condition that would require a new estimate.
 
-#### Choose the valued interest and the approach
+<a id="choose-the-valued-interest-and-the-approach"></a>
+
+#### FIN.7:4.1 - Choose the valued interest and the approach
+
 
 Ask what the value is for before choosing a technique. A shareholder's sale, a buyer's acquisition, a lender's recovery and management's continued-operation decision can concern the same assets under different rights and premises. Use FIN.1 to recover that frame. A formal engagement may impose a particular basis, scope and reporting requirement; obtain the actual applicable standard and competent interpretation. A calculation in this Method does not itself establish a standards-compliant valuation.
 
@@ -1141,7 +1255,10 @@ For an operating business, an income approach makes the connection between futur
 
 Select the approaches that supply useful evidence for the stated premise. A company with negative current profit can still have supported future operating cash or recoverable assets. A young business does not become valueless because a price/earnings multiple is unusable, and it does not acquire a supported large value merely because a distant forecast turns positive. When evidence cannot support a consequential premise, show conditional values and the unresolved operating question.
 
-#### Build the explicit forecast and reach a supportable continuation
+<a id="build-the-explicit-forecast-and-reach-a-supportable-continuation"></a>
+
+#### FIN.7:4.2 - Build the explicit forecast and reach a supportable continuation
+
 
 Use FIN.4's operating and financial accounts to project revenue, resource costs, operating tax, capital expenditure and operating working capital. For the operating enterprise, construct cash before distributions and financing payments. For equity, include the actual financing flows and prior-claim treatment. FIN.5 supplies the matching return or separate financing-effects approach. A stable debt policy can make an FCFF/WACC calculation convenient; a changing schedule may be clearer through APV or an explicit equity account.
 
@@ -1153,7 +1270,10 @@ At the transition, recover the first continuing year's cash from its operating a
 
 The condition that growth is below the required return makes the constant-growth sum finite; it does not prove an economic growth premise. Match growth to currency and inflation, the activity's mature market and the ability to repeat investment. Persistent excess operating returns require an explanation of why competition does not remove them. If these conditions cannot be supported, extend the explicit transition, compare alternative continuing premises or use a finite runoff. Do not conceal the uncertainty by selecting a terminal multiple that implies the same unsupported growth.
 
-#### Constructing the return on new operating capital
+<a id="constructing-the-return-on-new-operating-capital"></a>
+
+#### FIN.7:4.3 - Constructing the return on new operating capital
+
 
 Start with the operating plan for an identifiable addition of capital and compare it with the operation without that addition. Use the revenue and resource forecast supplied through FIN.4 and MA.5. Deduct attributable operating expenses, including depreciation, and the corresponding operating tax before financing effects to obtain the additional after-tax operating profit. Match it to the preceding addition of net operating capital: net capital expenditure plus added operating working capital. Exclude financing balances and excess cash; treat leases or capitalized development consistently in both capital and profit. Separate profit changes in existing assets from profit attributable to the new investment.
 
@@ -1161,7 +1281,10 @@ For the one-period steady case, expected new-capital return = the next period's 
 
 Support the estimate with the plan's demand, utilization, prices, resource costs and investment requirements. A historical trend or peer investment can inform those assumptions after aligning capital, profit, tax and timing definitions and explaining why its economics apply to future additions. A high average return on old assets does not establish the return on new ones; competition can reduce prices or utilization. Continuing growth also requires opportunities to repeat the investment on the assumed terms. For multiyear construction or ramp-up, changing existing productivity, or investment that cannot scale as assumed, forecast the dated transition explicitly. When future conditions remain unresolved, carry a conditional value range instead of selecting an unsupported return.
 
-#### Convert operating value into the actual claim
+<a id="convert-operating-value-into-the-actual-claim"></a>
+
+#### FIN.7:4.4 - Convert operating value into the actual claim
+
 
 An operating valuation covers the assets whose cash was modeled. Add a nonoperating asset only when it is excluded from those cash flows and belongs to the valued interest. Excess cash can qualify, but a reserve required to sustain operations cannot be removed without changing the forecast. Recover restrictions, ownership and realizability. A receivable already included in working-capital cash does not create an additional asset value to add afterward.
 
@@ -1171,7 +1294,10 @@ Match the valuation treatment of leases, pensions and similar obligations with t
 
 Translate aggregate equity value into the specific ownership rights being considered. Shares with different distributions, control or transfer conditions are not necessarily interchangeable fractions of one total. A minority or liquidity adjustment requires an economic and evidential basis and consistent prior treatment; applying a standard percentage can duplicate effects already in cash, comparables or the required return. FIN.9 then adds the buyer's attainable combination effects and compares the actual price.
 
-#### Construct and challenge a comparable valuation
+<a id="construct-and-challenge-a-comparable-valuation"></a>
+
+#### FIN.7:4.5 - Construct and challenge a comparable valuation
+
 
 Choose the economic comparison before choosing the multiple. Inspect business mix, geography of activity, growth, margins, reinvestment needs and risk, then the claim rights and transaction conditions. Sharing an industry can locate candidates but cannot establish equal economics. A past control transaction may include buyer-specific benefits or financing terms absent from a quoted minority share price.
 
@@ -1183,7 +1309,10 @@ Explain why the selected multiple or range applies to the target. Higher growth 
 
 Apply the justified range to the correspondingly defined target measure and then recover the actual interest. The worked 9–10 times example below supplies a qualified calculation, not a rule that those multiples apply to every business. Compare its implied future operation with the income estimate. A terminal multiple in a DCF is a market-based continuing assumption, so that valuation is not fully independent corroboration of a market comparison using the same peers.
 
-#### Use an asset premise and reconcile the answer
+<a id="use-an-asset-premise-and-reconcile-the-answer"></a>
+
+#### FIN.7:4.6 - Use an asset premise and reconcile the answer
+
 
 For an asset approach, identify what can be realized separately and under what conditions. Continued use, an orderly disposal and a forced sale can yield different recoveries and require different times. Estimate realizable proceeds, tax, sale and closure costs, and relevant claims at their actual dates. Book value records a reporting treatment; replacement cost can describe the cost of obtaining capacity, but neither automatically states the cash a seller receives.
 
@@ -1270,7 +1399,10 @@ Represent contingent decisions without claiming that every business risk is trad
 
 Use an adequate supplied option value with its rights, timing and valuation grounds intact. When constructing or adapting it, begin with the decisions the holder can actually make. The exercise rule, the value of the strategy and the price worth paying to obtain it are connected but different results.
 
-#### Establish the choice and what makes it available
+<a id="establish-the-choice-and-what-makes-it-available"></a>
+
+#### FIN.8:4.1 - Establish the choice and what makes it available
+
 
 Name the holder, underlying asset or activity, exercise actions, window and expiry. Recover the actual financial right through [FDM][FDM] when disputed. For operational flexibility, identify the capacity, access, implementation time and people or counterparties required to act. A plan to switch suppliers is not an available switch if qualification takes longer than the decision window. A plan to abandon is not a costless right to disregard existing obligations.
 
@@ -1278,7 +1410,10 @@ Describe what the action changes in cash and future choices. Waiting postpones c
 
 Distinguish holding a choice from buying or creating it. An existing right can have value even if no new acquisition payment is required. A reservation fee, pilot, license, extra design cost or capacity commitment may create a new choice; retain its full incremental cost and the alternatives for obtaining access. Count costs of keeping the right alive, as well as later exercise costs. A nonrefundable fee belongs in today's acquisition decision even when the optimal later action is not to exercise.
 
-#### Identify information and build the contingent action
+<a id="identify-information-and-build-the-contingent-action"></a>
+
+#### FIN.8:4.2 - Identify information and build the contingent action
+
 
 Place observations and decisions in their actual order. At each decision use only information then obtainable; future outcomes must remain uncertain where they are not yet revealed. If a test produces an imperfect signal, condition the valuation on that signal and retain the remaining uncertainty. A scenario model that chooses the best action separately in every final state can falsely grant perfect foresight to an earlier decision.
 
@@ -1288,7 +1423,10 @@ Select a valuation basis before averaging those consequences. Where probabilitie
 
 For several stages, work backward. At the last decision, compare the values of the actions still feasible with the information available there. At the preceding observation, value the resulting conditional choices using the supported pricing or probability/risk model. Include cash paid or received between those points. At the earlier decision, compare that continuation with immediate exercise, another mode, abandonment or lapse as applicable. Repeat to the present. The result is an action rule attached to observations, not merely a favorable terminal payoff.
 
-#### Value a replicable financial claim
+<a id="value-a-replicable-financial-claim"></a>
+
+#### FIN.8:4.3 - Value a replicable financial claim
+
 
 For traded contingent claims, an appropriate no-arbitrage model can infer value from a position reproducing the claim's payments. In a one-period binomial model without an intermediate underlying payout, let current underlying value be S, up/down factors u and d, and accessible risk-free borrowing and lending growth R lie between d and u. The risk-neutral up weight is (R−d)/(u−d); discount the weighted state payoffs by R.
 
@@ -1298,7 +1436,10 @@ At an allowed early-exercise date, compare immediate exercise with the value of 
 
 Match estimated inputs to the modeled quantity and period. Volatility of an underlying value, volatility of accounting profit and beta are different measures. An uncertainty estimate for the whole project including flexibility cannot automatically serve as the uncertainty of a fixed underlying activity to which that flexibility is then added. More finely spaced tree branches do not repair the wrong underlying definition or unavailable replication.
 
-#### Value a nontraded strategy on stated grounds
+<a id="value-a-nontraded-strategy-on-stated-grounds"></a>
+
+#### FIN.8:4.4 - Value a nontraded strategy on stated grounds
+
 
 A factory expansion or operating switch usually cannot be bought and sold in the same way as a traded underlying. A market proxy may hedge some exposure while leaving residual risk. Explain what the available trades span and what valuation treatment covers the remainder. A calculated risk-neutral weight from an untraded scenario pair alone does not establish a unique no-arbitrage price.
 
@@ -1308,7 +1449,10 @@ If the basis supports only state-dependent exercise choices or conditional value
 
 Compare the strategy with the best available fixed commitment and with declining where that is possible. Deduct obtaining and preserving the choice once. The value gained from flexibility is the difference between otherwise comparable strategies, not the entire favorable-state project value. A positive gross option value can coexist with an unattractive purchase price. Include actual exercise funding through FIN.2 and obtainable terms through FIN.10–12; the right can be valuable while the holder cannot presently finance its use.
 
-#### Test whether the first investment earns its claimed later opportunity
+<a id="test-whether-the-first-investment-earns-its-claimed-later-opportunity"></a>
+
+#### FIN.8:4.5 - Test whether the first investment earns its claimed later opportunity
+
 
 When a sponsor justifies an initially unattractive investment by later expansion, reconstruct the connection. What would the first investment supply: a legal right, a scarce site, installed infrastructure, a distribution relationship, operating capability or useful information? What later cash or available action would be absent or worse without it? The first project's negative standalone NPV is not proof that it buys an option, and the attractiveness of a future market is not proof that this corporation can capture its gains.
 
@@ -1320,7 +1464,10 @@ Keep learning separate from acquiring access. A pilot can improve information wi
 
 Construct the combined initial and contingent investment through the backward procedure, including the future investment needed to earn the later cash. An additive decomposition into standalone NPV plus incremental option value is useful only when the standalone account excludes the same adaptive policy. If the favorable later projects, avoided losses or expansion benefits are already in that cash forecast, adding their value again double counts them.
 
-#### Compare waiting with acting now
+<a id="compare-waiting-with-acting-now"></a>
+
+#### FIN.8:4.6 - Compare waiting with acting now
+
 
 Waiting can preserve the ability to avoid an unfavorable commitment and can postpone the payment itself. It can also lose interim operating cash, customer access, a favorable price or a limited exercise window. Include both sides. A longer legal expiry need not mean a longer economic opportunity if competitors can enter or necessary capacity disappears.
 
@@ -1328,7 +1475,10 @@ Compare immediate investment, waiting under a specified information and access p
 
 The exercise threshold is a result of that comparison. It can differ from zero NPV for immediate investment because exercising can surrender a valuable remaining choice. Rebuild the threshold if exercise cost, foregone cash, the arrival of information or risk grounds change. Do not transfer the numerical threshold from a financial call to an operating project whose holder cannot trade or wait on the same terms.
 
-#### Distinguish non-entry, abandonment and switching
+<a id="distinguish-non-entry-abandonment-and-switching"></a>
+
+#### FIN.8:4.7 - Distinguish non-entry, abandonment and switching
+
 
 Declining a new investment can have zero future incremental cash in a case with no remaining obligation. Abandoning an existing activity instead creates an exit account. FIN.6 supplies the remaining cash under continuation and the dated disposal, working-capital runoff and closure effects; FIN.7 can supply realizable asset values. Include tax, cancellation, cleanup, employee and customer obligations according to the actual applicable terms. The original sunk investment does not need to be recovered before exit can be preferable.
 
@@ -1340,7 +1490,10 @@ Switching keeps an activity available in another mode. Define the current mode, 
 
 The financial account follows the actual operating capability. A dual-fuel plant, a flexible production line or a temporary suspension may create different choices, not one generic “switching premium.” Obtain the feasible modes and constraints from the operating practice, then use FIN.6's cash construction and this Method's conditional comparison. If expansion, switching and abandonment share capacity or destroy one another, value the combined policy once rather than sum separately optimized options.
 
-#### Return a strategy that can be used and revised
+<a id="return-a-strategy-that-can-be-used-and-revised"></a>
+
+#### FIN.8:4.8 - Return a strategy that can be used and revised
+
 
 Return the initial choice, the observations that trigger later actions, the supported value or bound, and the conditions on which those actions remain available. A recommendation to reserve capacity now is incomplete if the holder cannot recognize when to exercise or cannot obtain the necessary funds. Monitoring through FIN.17 should follow the changes that could alter the rule, rather than treat the initial option value as permanent.
 
@@ -1447,7 +1600,10 @@ Compare value, limited capital, operating dependencies and risk concentration on
 6. Use FIN.10–12 for material financing conditions and FIN.21 for the retain-or-return alternative. Separate a favorable financial comparison from the availability of funds and transaction consents.
 7. State the recommendation, robust alternatives, constraints and facts that can reverse it. [C.11][CHOICE] supplies the general choice contribution over these available alternatives; this pattern supplies their financial consequences and feasible combinations.
 
-#### Construct the alternatives that actually compete
+<a id="construct-the-alternatives-that-actually-compete"></a>
+
+#### FIN.9:4.1 - Construct the alternatives that actually compete
+
 
 Start with the corporation's choice and the work or service it must accomplish. Include continuation without new investment, and retention or return of capital through FIN.21 where relevant. A mandatory service need can make “spend nothing” infeasible while still leaving several ways to meet it. A financially attractive project can be excluded by a real capacity or permission limit. Preserve the distinction between a required constraint and a sponsor's preference.
 
@@ -1457,7 +1613,10 @@ Recover the baseline used by each valuation. If two projects each count the full
 
 A resource shortage can be a genuine external limit or a chosen internal budget. If the budget can be changed, compare the obtainable financing or additional resource with the gain it enables and the costs it creates. Do not silently relax a binding limit because the projects have positive NPV, and do not treat a discretionary budget as an immutable physical fact. Use FIN.10–12 to establish obtainable financing that could change the available set.
 
-#### Compare value under interactions and dated constraints
+<a id="compare-value-under-interactions-and-dated-constraints"></a>
+
+#### FIN.9:4.2 - Compare value under interactions and dated constraints
+
 
 Bring values to one date, currency, claimant and compatible tax and risk grounds. Different components may properly have different required returns. Value them on their supported bases before combining present values; forcing their cash differences through one convenient rate can change the economics. If selecting the combination changes financing terms or risk treatment, recalculate those affected values through FIN.5.
 
@@ -1471,7 +1630,10 @@ A larger problem can use a constrained optimization model. Let a binary selectio
 
 For divisible independent investments with one initial capital limit, linear scalable values and no other constraints, ranking value per unit of capital can construct an allocation. State the chosen profitability-index definition; conventional PV-of-receipts divided by initial outlay and NPV divided by initial outlay differ by one for that simple flow pattern. Indivisibility, minimum scale, interactions or future funding constraints can defeat the ranking. A large ratio is not evidence that the leftover budget can be usefully deployed.
 
-#### Align service lives and preserve later choices
+<a id="align-service-lives-and-preserve-later-choices"></a>
+
+#### FIN.9:4.3 - Align service lives and preserve later choices
+
 
 Different asset lives do not automatically make NPVs incomparable. Ask what is being chosen. Two complete opportunities can be compared at one date even if their cash ends at different times. A choice of equipment to deliver the same continuing service is different: the shorter-lived asset may require replacement, outsourcing or a period without that service. Include the actual continuation instead of comparing only the first purchase.
 
@@ -1483,7 +1645,10 @@ Where a later action remains optional, include the contingent rule supplied by F
 
 Dependence between outcomes also matters. A sum of compatible expected cash values does not itself require statistically independent outcomes, but common shocks can cause simultaneous funding needs, operating failures or changes in financing cost. Stress the shared drivers across the combination, not a different favorable environment for each component. Return how the recommended combination behaves under those conditions and which feasible response remains.
 
-#### Build the buyer's acquisition comparison
+<a id="build-the-buyers-acquisition-comparison"></a>
+
+#### FIN.9:4.4 - Build the buyer's acquisition comparison
+
 
 Identify what the buyer obtains and pays for: assets, shares or another specified interest. Recover the included debt, cash, ownership rights and remaining obligations through FIN.7 and FDM where needed. A quoted enterprise price, an equity price and the cash required at closing are different amounts. Reconcile them before evaluating the premium.
 
@@ -1499,7 +1664,10 @@ Where consideration includes shares, earn-outs or contingent payments, value the
 
 Reconcile funding separately at each date. The target's included cash may be accessible only after closing or remain restricted; debt may stay in place, require repayment or need refinancing. Acquisition fees, collateral and integration expenditure can precede any synergy. A source of financing with a fee or changed risk must enter the valuation once on matching grounds. A positive buyer value does not establish access to the funds or the ability and authority to realize the operational changes.
 
-#### Build the seller's divestment comparison
+<a id="build-the-sellers-divestment-comparison"></a>
+
+#### FIN.9:4.5 - Build the seller's divestment comparison
+
 
 Compare the whole no-sale continuation with the sale proceeds and the remaining business under the proposed separation. Start with the actual net proceeds: consideration, transaction costs, tax, settlement timing, retained interests, escrows and contingent amounts as applicable. A headline price payable over time is not the same as cash available now.
 
@@ -1511,7 +1679,10 @@ Ask what happens to the proceeds. Repaying debt, retaining funds for investment 
 
 A divestment can raise cash while reducing total value, or reduce reported profit while improving value through an attainable better use. Explain the receiving criterion through FIN.1. If liquidity is a binding condition, compare the feasible alternatives and their value sacrificed or preserved; do not present gross cash proceeds as evidence that the seller became richer.
 
-#### Return the allocation with its grounds and reconsideration conditions
+<a id="return-the-allocation-with-its-grounds-and-reconsideration-conditions"></a>
+
+#### FIN.9:4.6 - Return the allocation with its grounds and reconsideration conditions
+
 
 Explain why the selected whole alternative is preferable under the stated basis, which constraints bind, and what a plausible change would do. A close result can depend on a price, capacity block, replacement assumption, shared customer effect or funding date. Use the relevant sensitivity or coherent scenario to identify that dependence; an unexplained composite score cannot repair incompatible financial meanings.
 
@@ -1540,7 +1711,10 @@ If supported net combination gain instead rises to 50 with every other term unch
 
 For a divestment, suppose the whole business is worth 150 before sale. Net sale proceeds are 45 and the remaining business, after all lost synergies and retained obligations, is worth 100. The comparable total is 145, five below retaining the business. A headline offer of 50 would not establish a gain without the net-proceeds and residual-business calculation.
 
-#### A project, an acquisition and an expansion choice
+<a id="a-project-an-acquisition-and-an-expansion-choice"></a>
+
+#### FIN.9:5.1 - A project, an acquisition and an expansion choice
+
 
 A corporation has 110 of usable capital today and must choose among a project P, acquisition A and an expansion that can be reserved as right O or committed to now as K. O and K are alternative strategies for the same expansion. The question is incremental value to this buyer, in one currency at date 0, against continuing the existing activities without these additions. All amounts below use consistent after-tax claims and include their relevant costs. The project, acquired business and expansion use different operating resources; absent a stated constraint their cash effects are additive. This is FIN.1's financial frame.
 
@@ -1637,7 +1811,10 @@ Balance cost, access, timing, flexibility, control and repayment risk. Retain co
 6. Obtain specific legal, tax, accounting or provider facts where they change the offer or its use. Distinguish proposed, offered, accepted, committed and currently drawable terms by what has actually occurred.
 7. Return the preferred terms or conditional alternatives, total cash consequences and the unresolved condition. FIN.11 handles the larger financing mix and FIN.15 executes an authorized transaction.
 
-#### Start with the financing service that is actually needed
+<a id="start-with-the-financing-service-that-is-actually-needed"></a>
+
+#### FIN.10:4.1 - Start with the financing service that is actually needed
+
 
 Translate the proposed operating or investment action into net usable amounts, dates and currencies. Include the time until the first draw, any staged expenditure and the cash from which the financing will later be serviced. FIN.2 supplies that dated need; FIN.4 supplies the operating account behind it. A requirement for 100 available on Monday is not met by a commitment for 100 signed on Monday if settlement occurs on Friday or fees reduce proceeds to 98.
 
@@ -1647,7 +1824,10 @@ Form alternatives from sources the corporation could actually use. They can incl
 
 Distinguish an indicative possibility, a quoted offer subject to conditions, an executed commitment and settled funds. Compare conditional offers when that is the question, but keep their unmet conditions in the recommendation. Useful next work may be obtaining a term, release or commitment that changes the feasible set. It need not be a more precise ranking of offers that cannot fund the action.
 
-#### Translate the instrument into changing claims and cash
+<a id="translate-the-instrument-into-changing-claims-and-cash"></a>
+
+#### FIN.10:4.2 - Translate the instrument into changing claims and cash
+
 
 Recover the actual borrower or issuer, financier, claim, security, ranking, guarantees, covenants and relevant options. FDM.3 derives events from terms and tracks the changing principal or other state; use that supplier rather than infer behavior from an instrument's label. FDM.1–2 resolves which entity owes the money and whether another entity's support is available. The financial comparison consumes those qualified events and adds cost, risk and fit to the need.
 
@@ -1659,7 +1839,10 @@ Collateral and guarantees affect more than the quoted spread. A pledge may preve
 
 For equity, recover the interests issued, economic participation, voting or control rights, preference, conversion, redemption and any further funding obligations. A small stated percentage can carry rights that change its financial consequence. An investor's required return is an opportunity cost and valuation input, not a promised coupon unless the actual instrument creates such a payment. Common equity with no mandatory redemption has different service risk from debt; a preference or redeemable instrument needs its own terms.
 
-#### Put prices on a comparable basis without losing timing
+<a id="put-prices-on-a-comparable-basis-without-losing-timing"></a>
+
+#### FIN.10:4.3 - Put prices on a comparable basis without losing timing
+
 
 Begin with net cash the corporation can use after issuance costs, withheld fees and any temporarily restricted proceeds. Then lay out the complete payments, recoverable deposits and other financial consequences. For a conventional loan with one initial net receipt and later payments, the effective financing rate is the rate that makes the present value of those payments equal to that receipt. Use their actual dates and a stated annualization convention. This rate reveals the effect of fees or amortization hidden by the coupon.
 
@@ -1669,7 +1852,10 @@ Tax effects require the applicable entity, deductible amounts, use limits and pa
 
 Compare identical financing service where possible. Two loans raising the same money now but repaying at different times provide different duration and liquidity support. The smaller nominal total payment can simply reflect earlier return of principal. If amounts differ, identify the use or cost of excess funds rather than choose the smallest rate without regard to need. If currency differs, incorporate actual conversion and any selected hedge; the lower foreign-currency coupon alone cannot rank the offers.
 
-#### Match service obligations to the business under relevant states
+<a id="match-service-obligations-to-the-business-under-relevant-states"></a>
+
+#### FIN.10:4.4 - Match service obligations to the business under relevant states
+
 
 Use the operating cash available after essential payments and investment to test service, preserving the required reserve. Compare dates and amounts, not merely the maturity label. A five-year facility with large annual amortization can demand more early cash than a shorter bullet loan. A bullet can fit early cash better while creating a concentrated refinancing or disposal need. Prove the proposed source of that repayment or retain it as a condition.
 
@@ -1677,7 +1863,10 @@ Consider which business exposures make financing harder to service. Floating int
 
 An option to prepay, extend, convert or redraw has value only on its terms and in the states where it can be exercised. Identify who holds it. A lender's call right can shorten the borrower's dependable horizon, while a borrower's extension subject to lender consent is not unconditional protection. A convertible's lower coupon is paid for partly with an ownership claim; compare the joint instrument rather than treating the coupon reduction as free. Use a qualified valuation for material contingent terms or return the unresolved price as a range.
 
-#### Select an obtainable arrangement and return its consequences
+<a id="select-an-obtainable-arrangement-and-return-its-consequences"></a>
+
+#### FIN.10:4.5 - Select an obtainable arrangement and return its consequences
+
 
 Compare the feasible offers on financial value, dated coverage, restrictions, exposure and effects on the chosen owners. Explain a trade-off when a cheaper expected arrangement is less dependable or sacrifices an important right. Do not hide it in an unexplained weighted score. The chosen objective and constraints come from FIN.1; the corporation-wide debt/equity policy comes from FIN.11.
 
@@ -1689,7 +1878,10 @@ A useful recommendation names the instrument and provider or provider class, net
 
 Two constructed one-year offers finance a net need of 100. A charges 8% interest on face value and withholds an issue fee of 2% of face value. B charges 9% and no fee. Assume no other cost, tax difference or contingent term and that A permits the necessary larger face amount. A must issue 100/0.98 = 102.04 and repay 102.04×1.08 = 110.20; its effective cost is 1.08/0.98−1 = 10.20%. B provides 100 and repays 109, so B is cheaper for this need despite its higher headline rate. If A is capped at face value 100, its net proceeds of 98 do not meet the need at all.
 
-#### The same rate can provide different payment capacity
+<a id="the-same-rate-can-provide-different-payment-capacity"></a>
+
+#### FIN.10:5.1 - The same rate can provide different payment capacity
+
 
 A separate corporation must pay 100 for an investment now and retain its existing cash reserve of 10. Two actually offered loans each deliver 100 net now, with no fees, tax differences or other restrictions. Both charge 10% annually on outstanding principal. Loan A repays 50 of principal at each year end; its payments are 60 in year 1 and 55 in year 2. Loan B pays interest 10 in year 1 and principal plus interest 110 in year 2. The investment and the rest of the business together provide cash of 28 and 115 at those year ends after every nonfinancing requirement. No additional source is available and no earlier shortfall occurs.
 
@@ -1697,7 +1889,10 @@ Loan A would leave 10 + 28 − 60 = −22 in year 1. Its nominal interest total 
 
 If operating receipts move so that available cash becomes 60 in year 1 and 83 in year 2, preserving the total 143, Loan A leaves 10 and then 38. Both schedules now fit. Comparing their remaining cash requires the use and return of any interim surplus; comparing the final balances alone ignores that Loan B leaves more cash available after year 1. A decision to prefer one must therefore state that use or the relevant flexibility, not merely count interest.
 
-#### The holder of a financing right changes the dependable horizon
+<a id="the-holder-of-a-financing-right-changes-the-dependable-horizon"></a>
+
+#### FIN.10:5.2 - The holder of a financing right changes the dependable horizon
+
 
 In a separate constructed case, the company has cash 10, a required reserve of 5 and an investment payment of 100 now. Each offered loan supplies 100 net before that payment. The investment produces net cash 112 at month 12, with no interim receipt or other cash difference. Interest of 3 is payable at month 6; if the principal remains outstanding, another 3 is payable at month 12. Compare three stipulated versions, with no fees or other acceleration condition:
 
@@ -1713,7 +1908,10 @@ Suppose a separate replacement commitment is actually obtained by month 5 and su
 
 These timelines establish dated availability and the resulting payments. Pricing the contingent rights is a further question requiring the qualified valuation grounds in FIN.8; the difference between final cash balances is not itself a price for an extension or call. FDM.3 supplies the actual notice, consent and claim events; FIN.2 tests their settlement order.
 
-#### Equity finance prices a transferred interest
+<a id="equity-finance-prices-a-transferred-interest"></a>
+
+#### FIN.10:5.3 - Equity finance prices a transferred interest
+
 
 In another constructed offer, the existing equity is worth 200 immediately before financing. A new investor supplies 100 net, with no fees or special rights, and the cash is added to the business without any other value change. Equal ordinary interests imply post-money equity value 300. Issuing one third of that equity to the investor leaves the old owners with two thirds worth 200. If the investor instead requires 40% on these same valuation grounds, the old owners retain 60% of 300, or 180: a transfer of 20 relative to their starting interest.
 
@@ -1781,7 +1979,10 @@ Balance financing cost, tax benefits, control, distress exposure and flexibility
 6. Compare the alternatives against the corporation's objectives and constraints. A mix with attractive expected value can be excluded by a required liquidity or access condition. Use FIN.12 for covenant and flexibility consequences.
 7. Return a structure proposal, bounded target range or supported continuation, with the implementation conditions. Authorization and the actual financing remain separate decisions and actions.
 
-#### Decide a financing policy for a business, not a ratio in isolation
+<a id="decide-a-financing-policy-for-a-business-not-a-ratio-in-isolation"></a>
+
+#### FIN.11:4.1 - Decide a financing policy for a business, not a ratio in isolation
+
 
 Capital structure concerns how the corporation funds and allocates the risks of its operations over time. Describe the present claims and the change being considered: new investment, recapitalization, refinancing, debt reduction or payout. The same observed debt ratio can arise from borrowing, a fall in equity value or disposal of operating assets. Those events have different consequences, so a ratio alone cannot specify the action.
 
@@ -1791,7 +1992,10 @@ Separate three questions. How much service can the business support? Which finan
 
 A policy must say what happens after the initial issue. Will principal amortize, stay at a stated amount, be refinanced at maturity or be adjusted toward a market-value ratio? At what dates and under what conditions can that happen? FIN.5 explains why these policies imply different risk and tax-shield treatment. Market-value weights used in a valuation cannot serve as instructions to issue a fixed amount without that conversion.
 
-#### Construct service capacity from operations and constraints
+<a id="construct-service-capacity-from-operations-and-constraints"></a>
+
+#### FIN.11:4.2 - Construct service capacity from operations and constraints
+
 
 Begin with an operating forecast independent of the proposed debt receipts. Recover cash after operating payments, applicable tax, essential maintenance and the investment required by the selected operating plan. Then apply each instrument's interest, principal, fees and other required payments at their dates. FIN.2 tests the cash account with reserves and actual support. EBITDA or interest coverage can aid analysis, but neither pays principal, tax or working-capital investment.
 
@@ -1801,7 +2005,10 @@ Use FIN.12 for legal and contractual borrowing or distribution constraints. A co
 
 Do not describe a limit obtained from one forecast as a permanent debt capacity. Report the operating conditions, time span, maturity profile and buffer that support it. If a small change in collections or margin makes a large difference, compare a range of policies with the cost of retaining more protection. Holding unused borrowing capacity can preserve a valuable future action, but its availability must survive the state in which that action matters.
 
-#### Explain what creates or destroys value when the mix changes
+<a id="explain-what-creates-or-destroys-value-when-the-mix-changes"></a>
+
+#### FIN.11:4.3 - Explain what creates or destroys value when the mix changes
+
 
 Borrowing transfers part of the operating return and loss exposure to lenders and usually creates dated service requirements. Equity holders retain a more sensitive residual claim. A lower quoted debt rate therefore does not mean replacing equity with debt continuously reduces the total economic cost. FIN.5 must re-estimate risk and compatible required returns for each materially different policy.
 
@@ -1813,7 +2020,10 @@ Two valuation arrangements are useful when their conditions fit. A weighted-cost
 
 The lowest calculated WACC maximizes value only within conditions that make that inference valid. If operating cash changes with the policy, calculate the changed cash as well. Where risk treatment, tax utilization or future access is unresolved, use a conditional comparison or a range; a finely optimized ratio can be less informative than the exposure that overturns it. Peer ratios and historical financing habits can suggest alternatives, but do not prove that the peers share this company's cash variability, assets, tax position or opportunities.
 
-#### Convert an attractive policy into a feasible transition
+<a id="convert-an-attractive-policy-into-a-feasible-transition"></a>
+
+#### FIN.11:4.4 - Convert an attractive policy into a feasible transition
+
 
 Construct the transactions that move from current claims to the proposed position. New equity used to repay debt, asset-sale proceeds used to repay debt, borrowing for investment and borrowing for a distribution alter different assets and interests. Include issuance and break costs, sale consequences, approvals and the time each transaction takes. FIN.9 supplies a divestment or investment comparison; FIN.21 supplies payout and ownership effects.
 
@@ -1827,7 +2037,10 @@ Return a preferred policy or set of acceptable policies with a funded transition
 
 A constructed corporation needs 100 for the same assets. Mix A provides debt 80 and equity 20 with annual debt service 35; mix B provides debt 40 and equity 60 with service 15. Assume these are obtainable terms without other cash cost. Cash available before debt service is 60 in the base state and 25 in the adverse state, and the corporation requires at least 5 remaining cash. A leaves 25 in the base state but −10 in the adverse state. B leaves 45 and 10. B satisfies the stated cash requirement in both states; A does not. This establishes a capacity constraint, not that B is universally optimal: the additional equity's price, control effects and other feasible terms remain part of the choice.
 
-#### More interest tax savings need not mean a better policy
+<a id="more-interest-tax-savings-need-not-mean-a-better-policy"></a>
+
+#### FIN.11:5.1 - More interest tax savings need not mean a better policy
+
 
 In a separate constructed comparison, an unlevered operating value of 200 is supplied on grounds that exclude the financing effects below. The alternatives are no debt, principal 40 for two years with annual interest 6%, or principal 80 for two years with annual interest 10%. The stated terms are obtainable. Both debts repay principal at the end of year 2; their service capacity is tested separately. The only tax effect is a fully usable 25% deduction for interest paid at each year end. A qualified 5% rate applies to these stipulated tax-saving cash flows; it is not inferred from either loan's coupon.
 
@@ -1843,7 +2056,10 @@ The smaller debt has the highest value among these alternatives on the supplied 
 
 This comparison is of total value before allocation to claims. Deriving old owners' wealth after an issue, repayment or payout requires the actual proceeds and ownership treatment. Subtracting all new principal as an additional resource loss here would misrepresent the borrowing; ignoring its claim when subsequently deriving equity value would be the opposite error.
 
-#### Turn a capital target into a recapitalization
+<a id="turn-a-capital-target-into-a-recapitalization"></a>
+
+#### FIN.11:5.2 - Turn a capital target into a recapitalization
+
 
 Consider a separate corporation with debt worth 60 and ordinary equity worth 140. A qualified valuation of a proposed financing policy gives 220 for the claims remaining after its recapitalization and distribution. That value includes retained cash and the net policy effects, using FIN.5's pricing grounds and FIN.7's value and claim boundary; it is not inferred from the desired debt ratio. All debt is priced at par before and after, there are no other claims or fees, and the contractual and distribution conditions permit the transaction.
 
@@ -1916,7 +2132,10 @@ Preserve access and flexibility while avoiding unnecessary idle capacity or expe
 5. Compare obtainable actions: modify the operating or funding plan, repay or refinance, preserve collateral, request waiver or amendment, or invoke an available cure. Include cost, delay, restrictions and the risk of non-consent.
 6. Return the action or conditional advice with its latest useful date. A waiver under discussion is an alternative dependent on consent. If ordinary responses cannot restore a viable financing path, use FIN.22.
 
-#### Read the condition as an operative rule
+<a id="read-the-condition-as-an-operative-rule"></a>
+
+#### FIN.12:4.1 - Read the condition as an operative rule
+
 
 A covenant is a condition of an actual arrangement, with a defined subject, calculation, test time and consequence. Recover the applicable signed terms, amendments and relevant consents. Identify who must satisfy it and which entities, assets or obligations enter the calculation. FDM.3 supplies the event logic, while FDM.1–2 supplies positions and group boundaries. A public description of a typical covenant cannot establish the corporation's actual obligation.
 
@@ -1926,7 +2145,10 @@ Distinguish a condition tested periodically from one triggered by a proposed act
 
 The calculation and its consequence are separate. Breach can affect draw permission, pricing, security, repayment or enforcement under the actual terms and applicable rules. A cross-default or cross-acceleration provision can transmit an event into another arrangement, but only if its conditions hold. Do not assume every breach immediately accelerates every liability, or that informal negotiations suspend an obligation.
 
-#### Turn a ratio into the headroom needed for this action
+<a id="turn-a-ratio-into-the-headroom-needed-for-this-action"></a>
+
+#### FIN.12:4.2 - Turn a ratio into the headroom needed for this action
+
 
 Compute the current or projected test from consistent amounts and dates. For a simple maximum debt/earnings ratio L with a positive earnings denominator E and debt D, debt headroom is L × E − D. It measures additional debt under that one stipulated test with E unchanged. The ratio gap L − D/E is dimensionless; it is not spendable money. If E is zero, negative or subject to special contractual treatment, return to the rule rather than apply an invalid shortcut.
 
@@ -1936,7 +2158,10 @@ For a minimum coverage test, preserve both sides of the definition. An earnings-
 
 Project headroom across the affected horizon and relevant states. Explain the drivers of changes: earnings, draws, repayments, currency translation, acquisitions, distributions, collateral values or newly active conditions. A forecast near a threshold needs enough margin to cover measurement and operating uncertainty before an actionable response can occur. The desired margin is a policy choice based on consequences and response time, not a second legal threshold invented by the analyst.
 
-#### Keep several limits and their common causes together
+<a id="keep-several-limits-and-their-common-causes-together"></a>
+
+#### FIN.12:4.3 - Keep several limits and their common causes together
+
 
 Compare commitment room, borrowing-base room, covenant room, collateral or guarantee availability and dated service capacity. The binding constraint can change between states or dates. Where each limit is a fixed bound on the same incremental draw under the scenario, the smallest permitted amount governs. Where the draw changes a denominator, rate or other limit, solve the coupled conditions rather than take the minimum of stale numbers.
 
@@ -1944,7 +2169,10 @@ The same receivable can support a borrowing base, generate a forecast receipt an
 
 Treat flexibility as the available actions after these restrictions, not as a favorable current ratio. A company may have numerical headroom but lack authority to pledge the needed asset or time to satisfy a draw condition. The useful result says which actions remain available, their extent and deadline, and which adverse event removes them. FIN.10 uses that result to compare instruments; FIN.11 uses it to compare financing policies.
 
-#### Compare remedies before the last usable date
+<a id="compare-remedies-before-the-last-usable-date"></a>
+
+#### FIN.12:4.4 - Compare remedies before the last usable date
+
 
 Construct remedies from the rule and the cause of the problem. Possible moves include debt repayment, genuinely new equity, a permitted cure, changed timing or size of an action, an agreed amendment or waiver, a refinancing or an operating improvement that actually changes the relevant measure. Determine who can perform or consent to each move, its lead time, cost and effects on other conditions.
 
@@ -1954,7 +2182,10 @@ An improvement forecast must occur in time and qualify under the definition. A p
 
 Compare the supported remedy with its alternative, including postponing or shrinking the proposed action. Prefer a response that repairs the cause at acceptable cost without creating a more serious cash or operating problem. If several creditors or continuing unviability make the local remedy inadequate, FIN.22 supplies the wider route comparison. FIN.12 can return an urgent unresolved consent or timing condition without pretending that another ratio calculation will resolve it.
 
-#### Return a usable limit and the event that changes it
+<a id="return-a-usable-limit-and-the-event-that-changes-it"></a>
+
+#### FIN.12:4.5 - Return a usable limit and the event that changes it
+
 
 Give the decision maker the defined test, relevant headroom, proposed action's effect, binding dates and actual remedies. Show conditional results where a measurement or interpretation remains unresolved. Include the next informative observation or commitment needed to rely on the result. This can fit beside the existing forecast; a separate compliance apparatus is unnecessary for a simple sufficient test.
 
@@ -1964,7 +2195,10 @@ After a new draw, payment, amendment or operating observation, update the affect
 
 A constructed facility tests debt/EBITDA at quarter end with a maximum of 3.0, using the agreement's supplied definitions. Tested debt is 240 and EBITDA 100: the ratio is 2.4 and permitted additional debt at unchanged EBITDA is 60. If EBITDA falls to 80, the same debt reaches 3.0 and that headroom disappears. A proposed debt-funded payment of 20 produces 260/80 = 3.25. This plan cannot rely on the original headroom under that scenario. A repayment of 20, different permitted financing or an actual amendment can change the result; a hoped-for waiver cannot.
 
-#### A cash remedy must also fit its borrowing permission
+<a id="a-cash-remedy-must-also-fit-its-borrowing-permission"></a>
+
+#### FIN.12:5.1 - A cash remedy must also fit its borrowing permission
+
 
 Take the adverse account in FIN.2: week-1 receipts are delayed, the borrowing base permits 20, and an agreed supplier deferral of 15 allows a draw of 20 to preserve cash reserve 10. Add a stipulated condition tested before each draw: total debt divided by the agreement's qualified earnings measure must not exceed 3. Existing included debt is 70, with no additional service within that account's horizon, and the qualifying earnings measure is 30. The draw of 20 gives 90/30 = 3. It is allowed under this test, but leaves no debt headroom under that unchanged measure.
 
@@ -1974,7 +2208,10 @@ Actually settled new equity of 15 before week-1 payments, with the draw of 5 and
 
 The example's earnings definition and draw test are stipulated contract terms, not a claim about all loan agreements. If the rule is instead tested at quarter end or grants a particular cure, model those events explicitly; do not import this draw prohibition by analogy.
 
-#### A debt-reducing disposal can tighten the covenant
+<a id="a-debt-reducing-disposal-can-tighten-the-covenant"></a>
+
+#### FIN.12:5.2 - A debt-reducing disposal can tighten the covenant
+
 
 In a separate constructed disposal, included debt is 70, qualifying annual earnings are 30 and usable cash is 10. The agreement caps debt/earnings at 3, with no cash netting. It permits the disposal only if the test passes immediately after closing: all net sale proceeds must repay debt, the disposed operation's earnings are removed at once, and a sale gain cannot enter qualifying earnings. The current ratio is 70/30 = 2.33, with headroom 20.
 
@@ -2047,7 +2284,10 @@ Balance current owner returns, valuable investment, liquidity, financing flexibi
 5. Compare a repurchase price with the value of the interests on matching grounds; do not use an increase in earnings per share alone as proof of value creation.
 6. Return a retention decision or conditional payout recommendation with its amount, form, timing and constraints. Obtain the actual decision and execute through FIN.15 when required.
 
-#### Separate capital, profit and cash before naming a surplus
+<a id="separate-capital-profit-and-cash-before-naming-a-surplus"></a>
+
+#### FIN.21:4.1 - Separate capital, profit and cash before naming a surplus
+
 
 Retained profit is the part of earnings kept in the corporation instead of distributed to owners. It can finance receivables, inventory or equipment, so it need not remain in a bank account. Conversely, cash from a new loan or asset sale can increase the bank balance without being recurring profit. Identify the corporation that can make the distribution, the interests entitled to receive it and the actual cash source.
 
@@ -2055,7 +2295,10 @@ Use FIN.2 for the dated available cash and FIN.12 for restrictions. Recover the 
 
 A holding company cannot distribute a subsidiary's cash merely because consolidated accounts show it. Establish the subsidiary-to-parent transfer, its conditions and the parent's own payments before relying on the money. Likewise, cash pledged or reserved for creditors does not become available to owners because management calls it excess. FDM.1–2 supplies the actual parties, positions and transfer relations when these are unclear.
 
-#### Build the amount that can leave the business
+<a id="build-the-amount-that-can-leave-the-business"></a>
+
+#### FIN.21:4.2 - Build the amount that can leave the business
+
 
 Start with the selected operating and investment plan. FIN.4 supplies matching forecast flows and balances; FIN.9 supplies the comparison of competing capital uses. Include the cash required to maintain that plan, not only visibly discretionary new projects. Maintenance, working-capital growth and principal repayment can consume most of positive accounting earnings.
 
@@ -2065,7 +2308,10 @@ Net borrowing must be obtainable under the selected financing policy. A formula 
 
 Determine whether the apparent surplus is temporary, recurring or a liquidation of resources needed later. A seasonal receivable collection can be needed for the next inventory build. A divestment can produce a one-time release while reducing subsequent earnings. A cut in maintenance can create cash now by borrowing from future operating capacity. Those are different reasons for a high current balance and support different payout policies.
 
-#### Compare retention with the owner's attainable alternatives
+<a id="compare-retention-with-the-owners-attainable-alternatives"></a>
+
+#### FIN.21:4.3 - Compare retention with the owner's attainable alternatives
+
 
 Give retained money a proposed use and timing. Compare worthwhile investment, repair of an exposed financing position, protection against a relevant cash shock and return to owners. FIN.9 compares capital uses; FIN.11 evaluates financing changes; FIN.8 can value a specific contingent opportunity or access when its grounds are established. An unspecified possibility of future growth is not itself a measured gain from holding every available unit of cash.
 
@@ -2075,7 +2321,10 @@ Assess the prospective opportunities rather than mechanically extrapolate a hist
 
 The payout and financing decisions interact. Returning cash while borrowing elsewhere can be justified by a chosen capital policy, but the borrowing, tax, issue cost, restrictions and service must be included. Borrowing to distribute does not create operating value by itself. It can change tax effects, risk and the allocation of interests. Use FIN.11 to assess those value and risk changes and FIN.12 to establish the restrictions on the proposed payout.
 
-#### Choose a recurring commitment and a one-time action separately
+<a id="choose-a-recurring-commitment-and-a-one-time-action-separately"></a>
+
+#### FIN.21:4.4 - Choose a recurring commitment and a one-time action separately
+
 
 A policy based on a proportion of earnings makes distributions move with that earnings measure. A stable cash dividend instead seeks continuity despite fluctuations, normally using retained cash in weaker periods and rebuilding it in stronger ones. Neither form removes the cash and restriction tests. Specify the measure, decision dates, intended persistence and circumstances for reconsideration; do not treat an earnings ratio as a standing instruction to spend unavailable cash.
 
@@ -2083,7 +2332,10 @@ Test a proposed recurring amount against a sequence of operating, investment and
 
 Consider investor expectations and information effects when proposing a change. A regular payout can be relied on by some owners, while a reduction can convey information or change their willingness to hold the interest. These effects need evidence about the company and audience; an announcement does not mechanically create or destroy a fixed amount of value. Explain the financial cause and the proposed policy clearly enough for FIN.16's advice and the actual decision process.
 
-#### Compare the actual forms and their ownership consequences
+<a id="compare-the-actual-forms-and-their-ownership-consequences"></a>
+
+#### FIN.21:4.5 - Compare the actual forms and their ownership consequences
+
 
 A proportional cash dividend transfers cash to holders entitled under the interests' rules while ordinarily leaving the number of those interests unchanged. A repurchase transfers cash to participating sellers and removes or changes ownership interests according to the actual transaction. Remaining holders' percentage can increase even while the value of each retained interest falls. Recover the eligible holders, timing, price or pricing rule and quantity; FIN.15 carries payment and settlement once the decision is sufficient.
 
@@ -2095,7 +2347,10 @@ Choose the repurchase arrangement from the intended scale and participation: pur
 
 Compare owner outcomes after applicable tax and transaction consequences when they matter. Owners can differ in residence, tax basis, eligibility and preference for cash. Do not assume one universal dividend-versus-gain tax ranking. Recover the actual affected interests, and retain a disagreement or conditional recommendation when the corporation's choice benefits owners differently.
 
-#### Return the amount, form and conditions as one decision
+<a id="return-the-amount-form-and-conditions-as-one-decision"></a>
+
+#### FIN.21:4.6 - Return the amount, form and conditions as one decision
+
 
 The result explains what remains in the business, what can be returned, why, when and to whom. It identifies any cash, restriction, valuation or authority condition still unresolved. Return the proposed action to FIN.2, FIN.11 and FIN.12 to confirm that the post-payout position matches the recommendation. If this feedback removes financing capacity or a required reserve, reduce, defer or change the proposal and compare again.
 
@@ -2109,7 +2364,10 @@ In a separate simplified comparison, a company worth 200 has ten identical share
 
 The selling holders give up two shares initially worth 40 and receive 50, a gain of 10. The remaining holders' initial interests were worth 160 and are now worth 150, a loss of 10. Cash received by sellers plus the remaining equity is still 50 + 150 = 200. A repurchase below the initial value per share reverses the direction of this transfer on the same unchanged-value, identical-rights, no-tax/fee grounds; it does not create aggregate owner value by that price difference alone.
 
-#### Positive earnings do not establish a recurring payout
+<a id="positive-earnings-do-not-establish-a-recurring-payout"></a>
+
+#### FIN.21:5.1 - Positive earnings do not establish a recurring payout
+
 
 A separate two-year plan starts with usable cash 25 and requires reserve 15. All figures refer to one corporation and currency; the supplied event schedule has no earlier cash minimum within a year. Net income includes all interest and tax, the noncash charge is depreciation, working capital excludes cash and financing debt, and there are no omitted adjustments or other flows.
 
@@ -2194,7 +2452,10 @@ Preserve viable value while respecting time, cash urgency, claimant differences 
 6. Examine whether the required consents, implementation capacity and interim funding make the route feasible. A financially preferable offer may still be rejected; report whose agreement is needed without asserting that financial superiority grants authority.
 7. Return the route comparison, conditional proposal or reason no supported route remains. Identify the immediate funded action or specialist question that changes survival or feasibility. Keep any applicable notice or filing obligation with its actual institutional source.
 
-#### Establish what must be kept alive, and until when
+<a id="establish-what-must-be-kept-alive-and-until-when"></a>
+
+#### FIN.22:4.1 - Establish what must be kept alive, and until when
+
 
 Begin with the debtor's immediate payments and the time available to make a different route possible. FIN.2 supplies the dated cash need; FIN.12 supplies binding conditions, affected actions and remedy deadlines. Identify essential operations, people, assets and relationships that would be lost if funding stopped. A valuation of future recoveries is unusable as a survival plan if the debtor cannot reach the date at which they arise.
 
@@ -2202,7 +2463,10 @@ Keep an immediate stabilization action distinct from the eventual restructuring.
 
 Diagnose the financial mechanism of distress. A viable operation with a concentrated maturity can need a financing change. An operation with persistent cash losses may need operational change, sale or closure as well. A profitable forecast can still be unfinanceable because working capital and maintenance consume the receipts. Use FIN.4 and the actual operating plan to distinguish these cases. Extending principal without repairing a continuing cash deficit simply moves the failure.
 
-#### Build whole routes with attainable operating changes
+<a id="build-whole-routes-with-attainable-operating-changes"></a>
+
+#### FIN.22:4.2 - Build whole routes with attainable operating changes
+
 
 Construct the alternatives appropriate to the debtor and its creditors: an agreed extension, reduced or converted claims, new money, operating restructuring, asset or business sale, and an available formal or exit route. The alternatives may combine these moves. Their labels are insufficient; state the payments, asset use, financing and claim treatment that make each route different.
 
@@ -2212,7 +2476,10 @@ For a sale, distinguish asset disposal from sale of an operating business. Estab
 
 For exit, include the cash costs and remaining obligations of stopping, disposal, employee or supplier settlement where applicable, taxes and the procedure itself. The relevant alternative is the feasible exit under the actual conditions, not a frictionless book-value liquidation. A continued loss-making route needs comparison with what can actually be recovered and preserved by another route.
 
-#### Establish the route's funding before allocating its rewards
+<a id="establish-the-routes-funding-before-allocating-its-rewards"></a>
+
+#### FIN.22:4.3 - Establish the route's funding before allocating its rewards
+
 
 Draw a dated cash account from the present through the point where the route becomes self-supporting, refinanced, sold or closed. Identify the peak need, not only the final surplus. Obtainable interim finance must cover that need before its due dates, including negotiation and implementation costs. If no available arrangement does, retain the proposed route as conditional or remove it from the actionable set.
 
@@ -2222,7 +2489,10 @@ Do not count the same financing effect twice. The advance is a source for the in
 
 Debt capacity after restructuring must fit the repaired operation and its uncertainty. Turning unpaid principal into a larger later promise can increase the face claim without increasing expected payment. A debt-for-equity conversion may reduce mandatory service but transfers a residual interest whose value and control differ from cash. FIN.10–11 supply the financing construction; FIN.22 connects it to claimant recovery and the available distress routes.
 
-#### Allocate value under each route's actual claim treatment
+<a id="allocate-value-under-each-routes-actual-claim-treatment"></a>
+
+#### FIN.22:4.4 - Allocate value under each route's actual claim treatment
+
 
 Identify the relevant debtor or asset pool, secured and unsecured claims, guarantees, setoff or other material rights, and the applicable or proposed priority. Several entities or collateral pools cannot be combined into one distributable pot merely because they share owners. FDM.1–2 establish those boundaries. Use the responsible institutional interpretation when the effect of a right is disputed.
 
@@ -2232,7 +2502,10 @@ Allocate within each material scenario before calculating expected recoveries. P
 
 When a plan offers cash, new debt and equity, value each actual instrument on matching grounds. Face amount is not the value of a delayed or risky promise. Use FIN.5 and FIN.7 for the claim-specific valuation, including its contingent rights and residual exposure. Use FIN.7's bridge from enterprise value to the actual equity interest. Treating the full enterprise value as equity recovery while also crediting the debt claims would count their value twice. Preserve the difference between the allowed old claim, promised new treatment, expected payment and present value.
 
-#### Compare total preservation and each participant's position
+<a id="compare-total-preservation-and-each-participants-position"></a>
+
+#### FIN.22:4.5 - Compare total preservation and each participant's position
+
 
 First compare route-level net value on consistent boundaries, dates and risk grounds. Then compare each material claimant's recovery against the relevant feasible alternative. A route that preserves more total value can still make a senior creditor worse off by delaying a payment while benefiting junior creditors or owners. That distribution matters to consent and negotiation; aggregate superiority cannot substitute for it.
 
@@ -2242,7 +2515,10 @@ Test the assumptions that can reverse the preference: sale proceeds, operating i
 
 Assess proposed transfers or concessions as changes to the route. An interest uplift, priority change or equity participation can compensate a participant only to the extent that the resulting payments or rights have value and the treatment can be agreed or imposed under the applicable procedure. Recalculate every affected recovery after the change. Do not promise the same remaining value to two creditor groups.
 
-#### Return an implementable proposal or a precise unresolved condition
+<a id="return-an-implementable-proposal-or-a-precise-unresolved-condition"></a>
+
+#### FIN.22:4.6 - Return an implementable proposal or a precise unresolved condition
+
 
 State the proposed operating and claim changes, the financing needed to reach them, the affected participants and the actual consents or procedure on which they depend. Include immediate action and the date after which another route or specialist response is needed. Use FIN.16 to return the advice and FIN.15 for sufficient authorized financial actions.
 
@@ -2262,7 +2538,10 @@ The one-year extension supports a conditional proposal on these financial ground
 
 With several creditors, repeat the payment treatment for their actual claims and priorities. Do not distribute these single-lender amounts pro rata by assumption; a different security interest or consent rule can change both recoveries and feasible routes.
 
-#### A larger total recovery can still leave a creditor worse off
+<a id="a-larger-total-recovery-can-still-leave-a-creditor-worse-off"></a>
+
+#### FIN.22:5.1 - A larger total recovery can still leave a creditor worse off
+
 
 Consider a separate constructed debtor with two old claims against one pool: a senior claim of 60, a junior claim of 40 and residual equity. The applicable exit treatment is stipulated: net sale proceeds of 70 are available now after every cost and other claim. Senior receives 60, junior 10 and equity zero. This priority is part of the case, not a jurisdictional rule.
 
@@ -2284,7 +2563,10 @@ One proposed amendment increases the senior allowed year-end claim to 65 while k
 
 If the only obtainable interim offer instead requires repayment 20 for the same advance of 10, the pool for old claims falls to 92 or 52. Its expected present value becomes 72/1.05 = 68.57, below the exit's 70. The operating improvement has not changed, but its financing price reverses the aggregate financial preference. If no one supplies the initial 10 at all, the continuation route fails earlier, regardless of its modeled year-end value.
 
-#### Recover value from a continuing business and new instruments
+<a id="recover-value-from-a-continuing-business-and-new-instruments"></a>
+
+#### FIN.22:5.2 - Recover value from a continuing business and new instruments
+
 
 In a separate constructed proposal, the old creditor's allowed claim is 100. The feasible liquidation alternative pays it 60 now, net of all relevant costs and other claims. A continuation plan requires 20 immediately for implementation. A new lender actually offers 20 net on specified terms, with a claim paying 22 in one year and valued at 20 on the common comparison date. The proposed treatment ranks this claim ahead of the replacement note described below. The dated plan covers the other operating and financing needs; acceptance of the proposed claim treatment remains required.
 
@@ -2363,7 +2645,10 @@ Make material risks visible without measuring everything in one generic score. U
 5. Examine concentrations and combined adverse conditions. A customer delay can coincide with an exchange move, collateral call or loss of funding. If a statistical loss measure is used, state its outcome, horizon, probability model and limitations; it does not give a maximum possible loss.
 6. Return the exposures and scenarios that can change action, existing protection and residual uncertainty. Use FIN.14 to compare protection, FIN.2 to assess resulting cash needs, or FIN.15 for an execution exception.
 
-#### Start with the consequence that can change a decision
+<a id="start-with-the-consequence-that-can-change-a-decision"></a>
+
+#### FIN.13:4.1 - Start with the consequence that can change a decision
+
 
 An exposure is a relation between a financial change and a consequence for the corporation. Begin with a question such as “How much more cash will this borrower need before the next reset and payment?”, “How far can this export margin fall?” or “What value would these claims lose under the proposed market change?” These questions can use the same contracts but need different calculations.
 
@@ -2373,7 +2658,10 @@ Specify the comparison as well. A loss can mean a decline from today's value, a 
 
 Use an adequate supplied exposure account directly when its position, outcome, horizon and assumptions fit. Reconstruct it when a changed term, operating premise or receiving question defeats that fit. The method does not require a statistical model for every known payment or a complete risk inventory before answering one material funding question.
 
-#### Build the exposure from positions and operating causes
+<a id="build-the-exposure-from-positions-and-operating-causes"></a>
+
+#### FIN.13:4.2 - Build the exposure from positions and operating causes
+
 
 Begin with the positions and operating plan that generate the outcome. [FDM.1–3][FDM] recover who holds each claim or obligation, which entity can use a resource, and how actual terms turn events into changed amounts or duties. FIN.4 supplies the projected flows and balances. Retain the part of those accounts needed to explain the present consequence.
 
@@ -2385,7 +2673,10 @@ Trace the routes through which non-market events change the same account. A cust
 
 A compact working account can therefore identify, for each material contribution, its party and position, amount-setting factors, performance conditions, relevant dates, outcome affected and existing protection. That is enough when it permits reconstruction of the calculation. When an input is disputed, return to the actual source account or specialist contribution rather than hide the uncertainty in a general risk allowance.
 
-#### Measure a change on stated grounds
+<a id="measure-a-change-on-stated-grounds"></a>
+
+#### FIN.13:4.3 - Measure a change on stated grounds
+
 
 For a fixed net foreign receipt Q and exchange rate S measured as home units per foreign unit, its home amount is Q × S. Holding Q fixed, the change is Q × (S1 − S0). Reverse the direction for a net payment. Write the quotation convention next to the calculation: using foreign units per home unit would require division and changes the numerical sensitivity. Distinguish a valuation translation rate from the executable buying or selling price, spread and charges needed for an actual conversion.
 
@@ -2397,7 +2688,10 @@ For market value, a sensitivity such as duration or an option's delta describes 
 
 Make the direction and units legible before presenting a total. A one-percentage-point rate rise is 0.01 in the interest formula. A sensitivity quoted per basis point uses 0.0001. A home-currency value change and an amount of foreign currency to deliver cannot be added until the receiving measure and conversion basis make that addition meaningful.
 
-#### Choose the source of an uncertain response
+<a id="choose-the-source-of-an-uncertain-response"></a>
+
+#### FIN.13:4.4 - Choose the source of an uncertain response
+
 
 A payment rule can determine how a known amount changes with a rate. An operating account can calculate the cash consequence of specified prices, quantities and collection dates. When the missing input is how customers, competitors or suppliers will respond, first decide what could support that estimate. FIN.4 and MA.5 propagate an operating response through the account; their arithmetic does not establish the response itself.
 
@@ -2411,7 +2705,10 @@ A sector or comparable-business estimate can supply information that the corpora
 
 When neither estimate supports the intended reliance, retain conditional operating scenarios with explicit response assumptions. Vary the uncertain input far enough to locate the decision-changing threshold, without labeling the range a confidence interval or attaching unsupported probabilities. Return the precise missing contribution—for example, next-quarter collection and volume response to a stated currency move under the current sales terms—and why it matters. If all supported alternatives lead to the same permitted action, further estimation may add little; if they lead to different actions, FIN.14 compares the attainable responses on those unresolved grounds. Known contractual contributions remain usable while that narrower uncertainty is investigated.
 
-#### Distinguish an economic offset from a usable payment
+<a id="distinguish-an-economic-offset-from-a-usable-payment"></a>
+
+#### FIN.13:4.5 - Distinguish an economic offset from a usable payment
+
 
 Combine contributions on the same outcome and scenario before deciding how much remains exposed. An exporter receiving a foreign currency and an importer paying it can offset part of their market sensitivity. That useful observation does not establish that the importing entity can obtain the exporter's money in time. Preserve any transfer, tax, restriction or timing condition that can defeat the proposed use; FDM.2 and FIN.2 supply the corresponding entity and dated-cash work.
 
@@ -2421,7 +2718,10 @@ Examine protection already in place before recommending more. Map each hedge to 
 
 Keep counterparty exposure separate from the market sensitivity being hedged. The cost of replacing a favorable unsettled trade, the principal at risk after an irrevocable payment, and the cash needed when a promised receipt is late answer different questions. Their durations and possible losses need not equal the derivative's notional or current value. FIN.15 examines the actual settlement route; its conditions can therefore change this exposure account.
 
-#### Build combined scenarios and use probabilities only for the claim they support
+<a id="build-combined-scenarios-and-use-probabilities-only-for-the-claim-they-support"></a>
+
+#### FIN.13:4.6 - Build combined scenarios and use probabilities only for the claim they support
+
 
 Select scenarios from the ways the corporation's outcome can change. Begin with individual drivers where they clarify the mechanism, then combine changes that can interact: rates and debt resets, exchange rates and collection, commodity prices and quantities, collateral values and drawable finance. Recalculate the account under each combination. Do not sum separately calculated “worst losses” as if their assumptions necessarily coexist, or rely on historical diversification after the scenario removes its operating cause.
 
@@ -2433,7 +2733,10 @@ An expected loss averages those losses. A chosen percentile locates a tail bound
 
 Check whether the measure could miss a consequential failure outside its selected dimensions. Low market volatility can coexist with a single-customer default, inaccessible group cash or an untested settlement route. A market-value model generally needs a separate dated-cash return before it can support a funding conclusion. FIN.2 supplies that return without requiring the exposure model to become the corporation's entire cash forecast.
 
-#### Return an exposure that someone can act on
+<a id="return-an-exposure-that-someone-can-act-on"></a>
+
+#### FIN.13:4.7 - Return an exposure that someone can act on
+
 
 State the material driver, the position it changes, the consequence and the conditions on which the calculation depends. Return gross obligations and credible offsets where their distinction affects action. Show the normal comparison, the action-changing adverse case and the residual uncertainty at the grain the receiving decision needs. An unexplained aggregate risk number leaves the next practitioner unable to tell whether to change a commercial term, obtain credit protection, arrange cash or buy a price hedge.
 
@@ -2445,7 +2748,10 @@ Reopen the affected calculation when amounts, operating behavior, counterparties
 
 A constructed corporation expects 100 foreign units from a customer and owes 60 foreign units to a supplier on the same day. If both pay in full, the net economic receipt is 40. A home-per-foreign exchange rate moving from 0.90 to 0.80 changes its home value from 36 to 32, a loss of 4. If the customer instead pays only 30 before the supplier's cutoff, the corporation must obtain 30 foreign units to pay the supplier then. The original net receipt of 40 did not establish payment capacity. If the remaining customer claim of 70 persists under the agreement, retain it separately from that immediate shortage.
 
-#### From a fixed invoice sensitivity to operating exposure
+<a id="from-a-fixed-invoice-sensitivity-to-operating-exposure"></a>
+
+#### FIN.13:5.1 - From a fixed invoice sensitivity to operating exposure
+
 
 In a separate constructed export plan, all sales and costs settle at the end of the period. The business sells 100 units at 2 foreign units each and incurs 1 home unit of cash cost per unit. There are no other flows or tax effects. At 0.90 home per foreign unit, the net operating cash contribution is 100 × 2 × 0.90 − 100 = 80.
 
@@ -2453,7 +2759,10 @@ If quantity and the foreign price remain fixed while the exchange rate falls to 
 
 Suppose the actual operating scenario instead supports a foreign price of 1.90, sales of 110 units and the same home cost per unit. At 0.80, receipts are 110 × 1.90 × 0.80 = 167.20, costs are 110 and the contribution is 57.20. The loss relative to the first plan is 22.80. FIN.4 carries the supplied operating changes into the account; FIN.13 identifies why the invoice-only sensitivity missed their combined effect. If collection is delayed, this end-period contribution must also be returned to FIN.2 on the changed dates.
 
-#### A changed business can invalidate an apparently useful estimate
+<a id="a-changed-business-can-invalidate-an-apparently-useful-estimate"></a>
+
+#### FIN.13:5.2 - A changed business can invalidate an apparently useful estimate
+
 
 In a constructed next-quarter cash decision, a corporation has an established empirical model from its former export business. Its data describe quarterly home-currency operating cash, and the estimate was useful while the same products, collection terms and protection remained in place. It has now acquired an import operation. Applying the old company coefficient to the enlarged business would omit the new purchase exposure. A proposed sector substitute measures annual changes in market value; its outcome and horizon do not supply the needed quarterly cash response.
 
@@ -2463,7 +2772,10 @@ The remaining uncertainty is the acquired operation's net cash response when it 
 
 Use the current contractual account and carry that unresolved sales response into the comparison of attainable protection or funding. Request evidence about the affected product's next-quarter volumes, margins and collection on the proposed price terms if it could change the selected action. A supported matching estimate can later replace the conditional input; neither the historical company fit nor the mismatched sector estimate presently settles it.
 
-#### A rate shock acts at resets, not on every reported balance
+<a id="a-rate-shock-acts-at-resets-not-on-every-reported-balance"></a>
+
+#### FIN.13:5.3 - A rate shock acts at resets, not on every reported balance
+
 
 A constructed borrower has debt principal 100 and a deposit of 40 throughout two quarters. Each quarter has an accrual fraction of 0.25. Debt pays the reference plus 2 percentage points; the deposit pays that same reference minus 1 percentage point. Both first-quarter rates are already fixed using a reference of 4%. The second-quarter reference is uncertain. There are no floors, principal changes or other charges in this case.
 
@@ -2471,7 +2783,10 @@ At a second-quarter reference of 4%, debt interest is 1.50 in each quarter and d
 
 If the deposit instead keeps its existing rate through the second quarter, the debt's extra 0.50 has no deposit offset then. Net cost becomes 2.90. Treating the deposit and loan notionals as one permanently floating balance would miss the reset difference. If the deposit is restricted, even the original economic offset does not establish that its cash can service the debt.
 
-#### A percentile leaves both a tail and a funding question
+<a id="a-percentile-leaves-both-a-tail-and-a-funding-question"></a>
+
+#### FIN.13:5.4 - A percentile leaves both a tail and a funding question
+
 
 For a constructed one-period loss distribution, loss is 0 with probability 90%, 10 with probability 8% and 40 with probability 2%. Define the 95th-percentile loss as the smallest amount with cumulative probability at least 95%. It is 10: cumulative probability is 90% at 0 and 98% at 10. Expected loss is 0.90 × 0 + 0.08 × 10 + 0.02 × 40 = 1.60.
 
@@ -2546,7 +2861,10 @@ Reduce consequential downside while retaining useful flexibility and affordable 
 5. Compare costs, residual exposures and peak funding needs. Obtain actual legal enforceability and accounting treatment when the proposed use relies on them; a cash-protection comparison can be complete without claiming a reporting qualification.
 6. Return the selected design or conditional recommendation, expected protection, exposure left open and what would require resizing, closing or replacing it. FIN.15 executes within authority and verifies settlement.
 
-#### Decide what protection is for
+<a id="decide-what-protection-is-for"></a>
+
+#### FIN.14:4.1 - Decide what protection is for
+
 
 Start with the consequence supplied by FIN.13. A corporation may want to preserve a minimum cash contribution, prevent a funding failure, reduce uncertainty in a committed purchase price or limit a loss in the value of an interest. State the protected entity, quantity or activity, horizon and tolerated shortfall. A target for reported earnings needs the corresponding accounting interpretation; a target for payment capacity needs the dated cash account.
 
@@ -2556,7 +2874,10 @@ Keep the underlying commercial decision visible. Changing the invoice currency c
 
 A sufficient supplied exposure and an existing authorized protection arrangement can support direct execution or continued use. Reopen the design when the protected outcome, amount, timing, terms or feasible alternatives change. A missed settlement under an otherwise appropriate contract first needs FIN.15's account of the actual problem; buying another hedge does not by itself resolve that obligation.
 
-#### Construct alternatives from what each arrangement makes happen
+<a id="construct-alternatives-from-what-each-arrangement-makes-happen"></a>
+
+#### FIN.14:4.2 - Construct alternatives from what each arrangement makes happen
+
 
 For each feasible form, recover the conditional cash and obligations it introduces. The following distinctions let the analyst construct a comparison without treating every instrument as interchangeable.
 
@@ -2576,7 +2897,10 @@ For an option, FIN.8 supplies valuation when the premium or conditional strategy
 
 Obtain the important terms before treating a form as feasible. A contract called a collar can contain a purchased option and a written option that creates a duty in another state. A zero initial premium can be financed by giving up favorable outcomes or accepting that duty. The combined terms, including barriers, limits or cancellation rights where present, determine protection. [FDM.3][FDM] supplies the derivation of duties and state changes from those terms; FIN.14 compares their financial consequences.
 
-#### Choose quantity and dates from the residual exposure
+<a id="choose-quantity-and-dates-from-the-residual-exposure"></a>
+
+#### FIN.14:4.3 - Choose quantity and dates from the residual exposure
+
 
 Use gross exposure, reliable offsets and the intended protected portion to establish the proposed amount. The denominator of a hedge ratio must be clear: forecast sales, contracted invoices, expected collections and a price sensitivity are different quantities. A “100% hedge” of a forecast is not necessarily a full match to what will actually be delivered.
 
@@ -2588,7 +2912,10 @@ Choose the reference and maturity from the actual exposure. For borrowing, match
 
 Where an imperfect proxy is proposed, estimate how its payoff changes with the exposure on the relevant horizon and inspect unlike conditions. A regression or covariance estimate can support a quantity aimed at reducing historical variance under its assumptions. It does not establish the quantity that preserves a future cash floor, or that the relationship will persist during the material stress. Use the objective to choose the comparison and return the resulting residual exposure to FIN.13.
 
-#### Compare whole outcomes, including the path to settlement
+<a id="compare-whole-outcomes-including-the-path-to-settlement"></a>
+
+#### FIN.14:4.4 - Compare whole outcomes, including the path to settlement
+
 
 Construct an unprotected or existing-arrangement account first. Add each proposed protection arrangement to that same account, applying the same underlying scenario. Retain premium, bid–ask spread, fees, taxes when relevant, collateral, financing, settlement and termination effects. A favorable derivative payment is one component of the protected outcome. Evaluating it alone would reward a hedge when the business loses and condemn it when the business gains.
 
@@ -2600,7 +2927,10 @@ Distinguish the failures that protection covers from those it leaves open. A cur
 
 Use actual settlement arrangements when determining gross cash demands. A cash-settled payoff can differ from a physical exchange of principals, even when their final economic values match under ideal conditions. Contractual netting or a supported payment-versus-payment service can change particular risks; neither arises from writing a net amount in the model. FIN.15 establishes the usable route and resulting effect. Return any material route limitation to the protection comparison before commitment.
 
-#### Select a design and retain the condition for changing it
+<a id="select-a-design-and-retain-the-condition-for-changing-it"></a>
+
+#### FIN.14:4.5 - Select a design and retain the condition for changing it
+
 
 Eliminate alternatives that cannot meet the required outcome under the accepted decision conditions or cannot be funded on obtainable terms. Compare the remaining protection, residual exposures, flexibility, implementation demands and price. A single largest expected receipt or lowest premium is insufficient if it trades away the outcome the hedge was meant to preserve. Conversely, maximal protection can cost more than the decision warrants.
 
@@ -2622,7 +2952,10 @@ If the corporation obtains that money and buys the currency in time, it delivers
 
 For a separate rate example, debt pays a floating reference plus 2%, and a swap on the same notional and dates receives exactly that floating reference and pays fixed 4%. The matched net rate is 6% before other costs. A different reference, reset or floor breaks that simple cancellation and must be modeled.
 
-#### Compare a fixed amount, a smaller amount and optional protection
+<a id="compare-a-fixed-amount-a-smaller-amount-and-optional-protection"></a>
+
+#### FIN.14:5.1 - Compare a fixed amount, a smaller amount and optional protection
+
 
 Before committing to a hedge, consider an original constructed comparison for a customer expected to pay 100 foreign units at T. The action-changing scenarios collect either 100 or 60 at T and have a spot rate of either 0.80 or 1.00 home per foreign unit. In the 60-collection cases, the claim on the remaining 40 persists; its later recovery and value are outside these current-cash figures and must be considered separately in the whole financial choice.
 
@@ -2643,7 +2976,10 @@ With zero collection and spot 1.00, the put pays nothing and the total contribut
 
 This comparison occurs before commitment. In the existing partial-receipt case above, the corporation already owes delivery under its forward; it cannot retrospectively choose the better column.
 
-#### Reduce an existing forward after the expected receipt changes
+<a id="reduce-an-existing-forward-after-the-expected-receipt-changes"></a>
+
+#### FIN.14:5.2 - Reduce an existing forward after the expected receipt changes
+
 
 In a separate constructed case, a forward already requires delivery of 100 foreign units for 90 home units on day 30. It was based on forecast orders. At the new decision date, day 15, the revised orders support a receipt of only 60 foreign units on day 30; the other 40 were uncontracted forecast sales, so no customer claim for them exists. This differs from partial payment of an existing invoice. Assume the stated 60 is collected in both compared scenarios.
 
@@ -2664,7 +3000,10 @@ If the objective is at least 110 of ending cash in both scenarios while maintain
 
 The later choice retains the old loss and its remaining contractual effect. It does not recreate an initial choice of a forward for 60 at today's rate without paying for the old position. FIN.13 receives the reduced delivery exposure; FIN.2 receives the amendment payment, collateral dates and bridge repayment; FIN.15 obtains the actual amendment effect and performs the funded actions.
 
-#### An eventual offset can require cash first
+<a id="an-eventual-offset-can-require-cash-first"></a>
+
+#### FIN.14:5.3 - An eventual offset can require cash first
+
 
 Consider a separate cash-settled forward sale of 100 foreign units at 0.90, paired with a receipt of 100 at day 30. Assume zero discounting and an enforceable term requiring cash collateral equal to an adverse marked value. On day 15, the remaining forward price is 1.00, so the seller's forward value is −10 and collateral 10 must be posted by day 16. Usable cash then is 6 and the required reserve is 2. Only 4 is free for this purpose, leaving a funding need of 6.
 
@@ -2672,7 +3011,10 @@ Suppose the spot rate is 0.80 on day 30, the customer pays in full, and the forw
 
 The eventual protection is therefore effective under these stated performance conditions, but it was not executable without the missing interim 6. FIN.2 assesses an obtainable response and its repayment; FIN.15 performs it within authority. A different margin rule, return date or failed counterparty changes both the funding and protection comparison.
 
-#### Basis and contractual floors leave different residuals
+<a id="basis-and-contractual-floors-leave-different-residuals"></a>
+
+#### FIN.14:5.4 - Basis and contractual floors leave different residuals
+
 
 A manufacturer plans to buy 100 commodity units. The physical price is a traded reference plus a local basis. Initially those amounts are 50 and 5 per unit, and the initial futures price is also 50. A perfectly performing futures offset gains the increase in that reference on 100 units, with margin funding assumed available. At purchase, the reference is 60 but local basis is 9: physical cost is 6,900 and the hedge gain is 1,000, leaving net cost 5,900. The initial implied cost was 5,500. The residual 400 comes from the local basis, which the selected contract does not fix. Changing physical quantity also requires recomputing the offset amount.
 
@@ -2745,7 +3087,10 @@ Complete the action in time while preserving authorization, account and settleme
 5. Inspect provider confirmations and the actual resulting balances, positions or settlement evidence. Reconcile amount, fees, date and counterparty; prevent duplication when an instruction is pending or its outcome is uncertain.
 6. Resolve a failed or partial execution through the provider's supported recovery and the relevant decision authority. State what changed, what remains owed and the next funded action. Use [FDM.4][FDM] where the effect of a posting or settlement is disputed.
 
-#### Turn the chosen action into an executable obligation
+<a id="turn-the-chosen-action-into-an-executable-obligation"></a>
+
+#### FIN.15:4.1 - Turn the chosen action into an executable obligation
+
 
 Recover the financial result the action is meant to achieve and the latitude already granted for execution. “Pay the invoice” may require a specified creditor to receive a specified currency and amount by a deadline; debiting the payer by that amount may leave a short payment after charges. “Draw the facility” may require usable net proceeds in a particular account before another payment. “Place surplus cash” requires principal and any needed return to become usable on the intended date. Carry that receiving result into the instruction.
 
@@ -2757,7 +3102,10 @@ Translate the selected result into the provider's actual conventions. Match curr
 
 Preserve a recoverable connection between the authorized action, the trade or instruction actually made, and its later effect on the obligation. Use the established records when their identity, terms and evidence supply that connection.
 
-#### Construct the route and its funding before committing
+<a id="construct-the-route-and-its-funding-before-committing"></a>
+
+#### FIN.15:4.2 - Construct the route and its funding before committing
+
 
 Work backward from the required effect time. Establish the provider's instruction deadline, funding deadline, settlement calendar and time zone, and the time needed for internal authorization or a preliminary conversion. Use the receiving account's availability where that is what the next payment needs. Same-day labels can hide the order of several cutoffs. A receipt expected late in the day cannot fund an earlier release unless actual credit or another supported arrangement bridges it.
 
@@ -2769,7 +3117,10 @@ Compare available execution routes on the result they can deliver: net price and
 
 A funding route is incomplete until its later effects are included. A bridge draw may permit the purchase but leave a repayment, interest payment or security obligation. Return them to FIN.2 and the relevant financing account. Treasury should be able to explain both why the immediate action is funded and what obligation remains after performing it.
 
-#### Derive a placement from genuinely available surplus
+<a id="derive-a-placement-from-genuinely-available-surplus"></a>
+
+#### FIN.15:4.3 - Derive a placement from genuinely available surplus
+
 
 For a placement that locks principal until T, begin with usable cash and every relevant cash need before T. Under a deterministic plan with no borrowing or sale of the placement, the maximum principal that can be locked is the smallest surplus above the required reserve over that interval, capped by cash actually available at placement. Include charges paid now and other committed uses. A forecast average balance can be positive while one intervening date has no investable surplus.
 
@@ -2781,7 +3132,10 @@ Compare net return on the same principal, dates and risk grounds, including cust
 
 The output for a routine placement is therefore an executable amount, instrument, counterparty, maturity or withdrawal arrangement and accepted conditions. Reopen the financial choice when a new term would change the intended preservation, liquidity or risk of the cash.
 
-#### Protect the connection between intent and instruction
+<a id="protect-the-connection-between-intent-and-instruction"></a>
+
+#### FIN.15:4.4 - Protect the connection between intent and instruction
+
 
 Validate beneficiary and account details through the trusted process appropriate to the action, especially after a change. A request arriving through the same compromised correspondence as the original instruction does not independently verify a new account. Recover the authorized source, use the established independent contact or authenticated provider route where required, and retain the result with the transaction. Urgency can explain the deadline; it does not establish identity or expand authority.
 
@@ -2791,7 +3145,10 @@ Check the economic terms as well as the account fields. A correct beneficiary wi
 
 Keep trade confirmation distinct from settlement verification. Confirming terms can establish agreement about what should occur and expose a booking discrepancy early. It does not alone establish delivery. Conversely, an adequate confirmed financial effect should not be reopened solely because another local report updates later; FDM.4 supplies the interpretation of a disputed effect.
 
-#### Choose and observe the settlement mechanism
+<a id="choose-and-observe-the-settlement-mechanism"></a>
+
+#### FIN.15:4.5 - Choose and observe the settlement mechanism
+
 
 Determine whether the action settles gross, under a valid netting arrangement, or through a linked exchange. For foreign exchange, payment-versus-payment makes final transfer of one currency conditional on final transfer of the other under the service's rules. It can remove the principal-loss exposure from paying away one leg without receiving the other. It does not promise that the trade will settle on time or supply the cash needed for prefunding.
 
@@ -2803,7 +3160,10 @@ After submission, observe the stages needed to establish the promised result. Ma
 
 Reconcile discrepancies while their consequence can still be limited. A different effective date may explain a timing difference. A fee or partial allocation may explain an amount difference. An unexplained transaction requires investigation even when recorded in a statement. Retain the supported cash movement and the unresolved cause, then correct the responsible account or instruction when the cause is established.
 
-#### Recover an exception without creating another obligation by accident
+<a id="recover-an-exception-without-creating-another-obligation-by-accident"></a>
+
+#### FIN.15:4.6 - Recover an exception without creating another obligation by accident
+
 
 When the result is uncertain, establish the status of the existing instruction through the provider's supported trace or inquiry. Keep the original transaction identity available. A timeout at the client interface does not prove that the provider failed to receive or execute it. Likewise, requesting cancellation does not establish cancellation. Retrying or substituting a route while the original can still complete may duplicate the payment or trade.
 
@@ -2819,7 +3179,10 @@ A constructed treasury plan has usable cash 160, a payment of 100 on day 7 and a
 
 For FIN.14's partial-receipt hedge, the required foreign-currency purchase costs 38 home units. If only 20 is usable, execution has an 18-unit funding need. A submitted purchase order is not proof that 40 foreign units were delivered. After actual purchase and forward settlement, reconcile the home payments and receipt and retain the unpaid customer claim.
 
-#### Choose a placement after establishing the surplus
+<a id="choose-a-placement-after-establishing-the-surplus"></a>
+
+#### FIN.15:5.1 - Choose a placement after establishing the surplus
+
 
 Continue the 160/100/20 plan above. Three alternatives are attainable within the existing mandate, including its provider and concentration limits. Each comparison allocates the same 40 on day 0. There are no upfront charges or taxes; the quoted charges below are withheld from the placement proceeds when returned. All parties perform the stated terms. These are constructed cash offers for this comparison.
 
@@ -2839,7 +3202,10 @@ For the same 40 under the notice alternative, give notice on day 19 before the d
 
 The instruction deadline is consequential. If notice can only be given after the day-19 cutoff and proceeds arrive on day 21, that withdrawal cannot fund the day-20 payment. Retain sufficient usable cash, change the placement amount or obtain a separately feasible funding response. If the fixed placement was already made before the forecast changed, comparing alternatives does not release it: FIN.2 must establish a funded response under its actual terms. FIN.15 performs and verifies the resulting placement, notice or withdrawal within the existing authority.
 
-#### Complete the partial-receipt hedge with actual interim finance
+<a id="complete-the-partial-receipt-hedge-with-actual-interim-finance"></a>
+
+#### FIN.15:5.2 - Complete the partial-receipt hedge with actual interim finance
+
 
 Continue the earlier physical-forward case. The customer has paid 60 foreign units and still owes 40. Buying the missing 40 at 0.95 costs 38 home units before the forward's receipt of 90. Assume opening usable home cash is 20, the required reserve in this isolated case is zero, and an existing authorized facility can supply 18 net before the purchase. It requires repayment of 18.50 after the forward settles that day. There are no other fees or flows.
 
@@ -2855,7 +3221,10 @@ The net increase in home cash is 71.50 − 20 = 51.50. It equals the earlier tra
 
 If the draw only becomes usable after the purchase deadline, this route fails even though its end-of-day arithmetic balances. If the spot purchase is merely submitted, do not enter its 40 foreign units as delivered. An agreed alternative settlement arrangement could change the required route and funding, but an analyst's netting of the numbers does not create it.
 
-#### Repair a partial payment on the actual remaining amount
+<a id="repair-a-partial-payment-on-the-actual-remaining-amount"></a>
+
+#### FIN.15:5.3 - Repair a partial payment on the actual remaining amount
+
 
 A separate constructed corporation has usable cash 130, a reserve requirement of 20 and a creditor obligation of 100. The permitted arrangement allows payment in parts. Treasury sends two provider transfers of 60 and 40, each with an additional fee of 1 only if executed. Adequate evidence establishes that the first transfer delivered 60 and its fee was debited, while the second was rejected and cannot later execute. The creditor applies all 60 to the obligation; no further charges or interest accrue.
 
@@ -2865,7 +3234,10 @@ Now change only the evidence: the second transfer's status is unknown. Cash of 6
 
 If a provider cannot resolve the status before the deadline, treasury returns the actual uncertainty and consequences for an authorized recovery decision.
 
-#### Settlement protection and timely delivery remain separate
+<a id="settlement-protection-and-timely-delivery-remain-separate"></a>
+
+#### FIN.15:5.4 - Settlement protection and timely delivery remain separate
+
 
 A constructed exchange requires paying 90 home units to receive 100 foreign units needed for a supplier. Under an available payment-versus-payment service, final transfers occur together only when both legs satisfy the service's conditions. Treasury has 110 home units; the service blocks 90 for prefunding, leaving 20 available for other use. Those blocked funds cannot finance another instruction while the hold remains.
 
@@ -2933,7 +3305,10 @@ Make advice concise without hiding decisive assumptions, disagreement or constra
 
 The six steps below provide a short route when the necessary financial grounds are already adequate. Use the connected explanations that follow when constructing the result, resolving a changed condition or adapting the way of working.
 
-#### Short working route
+<a id="short-working-route"></a>
+
+#### FIN.16:4.1 - Short working route
+
 
 1. Recover the receiver's actual question and available choices. Use FIN.1 or [C.11.DUA][DUA] if the intended use of advice is unclear.
 2. Select the material completed financial results and reconcile their shared conditions. Include the recommended action, expected consequence, relevant alternative and the constraint that could change the preference.
@@ -2942,7 +3317,10 @@ The six steps below provide a short route when the necessary financial grounds a
 5. Identify the deciding party when a decision or authorization is requested. A routine action under existing authority can proceed through its ordinary method; the advice does not create a new approval requirement.
 6. Return the recommendation in the smallest usable form. Name the next action and the trigger for reconsideration. If the grounds do not support a recommendation, state the precise missing choice-changing fact and what remains usable.
 
-#### Build the recommendation around an available decision
+<a id="build-the-recommendation-around-an-available-decision"></a>
+
+#### FIN.16:4.2 - Build the recommendation around an available decision
+
 
 Start with the action the receiver can still change and the time at which the answer is needed. “Assess the investment” can mean choosing whether to bid, setting a maximum price, arranging finance for an agreed purchase or deciding whether to abandon it. Those questions can share a valuation while requiring different advice. Establish the actual alternatives with the receiver. Include continuing the feasible baseline and any smaller, later or conditional action that could meet the need. An already binding payment remains an obligation in every alternative unless an attainable amendment changes it.
 
@@ -2950,7 +3328,10 @@ Recover whose financial consequence governs the recommendation. A gain to an acq
 
 The decision deadline determines useful detail. Before a nonrefundable deposit, the receiver needs the conditions that could make the commitment unacceptable. After the deposit has been paid, the advice compares the remaining continuations and their consequences. An investigation that finishes after the commitment can still improve later work, but it cannot be presented as information available for this decision. Identify what can be decided now and which later choice will use the next result.
 
-#### Assemble one compatible financial comparison
+<a id="assemble-one-compatible-financial-comparison"></a>
+
+#### FIN.16:4.3 - Assemble one compatible financial comparison
+
 
 Bring together the results needed for the alternatives, with their common subject, valuation date, currency, horizon and operating assumptions. Read what each figure measures before combining it. Project NPV, enterprise value, available cash, borrowing capacity and a covenant ratio answer different questions. An attractive value result can coexist with a payment gap or a transaction restriction. Keep the preference and its feasibility together so that the receiver does not have to discover the missing condition after agreeing to act.
 
@@ -2960,7 +3341,10 @@ Check for repeated contributions. A valuation that already contains an operating
 
 Use a table when it makes unlike alternatives easier to compare, but choose its columns from the decision. Amount and date of the first cash need, value on a common basis, remaining exposure and an actual permission condition can be more useful than twenty general ratios. A calculation supplied as adequate for the present question can remain a supplied result. Reconstruct it only when a mismatch, changed condition or unsupported reliance makes the construction necessary.
 
-#### Explain what makes the preferred action preferable
+<a id="explain-what-makes-the-preferred-action-preferable"></a>
+
+#### FIN.16:4.4 - Explain what makes the preferred action preferable
+
 
 Compare attainable continuations on the receiving criterion after the material constraints have been applied. Under a value objective, a higher NPV may lead among feasible alternatives. When timely payment is the immediate problem, an unavailable high-value alternative cannot solve it. A mandatory payment, protected reserve or binding restriction constrains the comparison while it remains in force. If changing that constraint is itself an available option, compare the actual change, its cost and its timing.
 
@@ -2970,7 +3354,10 @@ Make the reason discriminating. “The investment is profitable” does not expl
 
 Explain the scope of the preference. An action can be best among the attainable alternatives examined without being universally optimal. State an omitted alternative when its unresolved availability could reverse the recommendation. If the result is a useful threshold rather than a single answer, return it directly: the maximum price, latest receipt date or largest charge that preserves the preference can be the decision the receiver actually needs.
 
-#### Make uncertainty change a usable instruction
+<a id="make-uncertainty-change-a-usable-instruction"></a>
+
+#### FIN.16:4.5 - Make uncertainty change a usable instruction
+
 
 Locate the uncertain input in the financial operation before assigning it a general risk label. A later collection date changes payment access; a lower recurring margin changes value; uncertain contract volume can change both an exposure and the performance required by its hedge. Use the owning Method to obtain the resulting conditional outcomes. Distinguish an established term, a forecast of what will happen and a decision that somebody still has to make.
 
@@ -2980,7 +3367,10 @@ State the continuation for the adverse branch. “Proceed subject to funding” 
 
 Keep the qualification close to the action. The main recommendation should expose a condition that changes whether the receiver may rely on it. Supporting derivation can follow. If an uncertainty only affects a less important estimate and cannot change the current action or warranted claim at the required precision, do not let it obscure the supported answer.
 
-#### Decide whether further information earns its cost
+<a id="decide-whether-further-information-earns-its-cost"></a>
+
+#### FIN.16:4.6 - Decide whether further information earns its cost
+
 
 Describe the missing answer in terms of the decision it could change. “Obtain more market research” gives no stopping point. “Establish whether attainable annual contribution is above the amount needed to cover this purchase price before the offer expires” connects the inquiry to a financial threshold. The relevant source may be a customer confirmation, a supplier quotation, a contract interpretation or a bounded model comparison; another broad report may not answer it.
 
@@ -2990,7 +3380,10 @@ When probabilities and a common value basis are supported, calculate the expecte
 
 C.11.DUA develops this inquiry appraisal. Its use can end with a supported conditional recommendation now. A missing answer that prevents reliance on an important claim must remain visible, but it does not automatically require the receiver to commission a study. Where no adequate available continuation meets the governing constraints, return the precise impasse and the feasible way to reopen it.
 
-#### Write for the receiver's next action
+<a id="write-for-the-receivers-next-action"></a>
+
+#### FIN.16:4.7 - Write for the receiver's next action
+
 
 Lead with the recommended move or the unresolved decision. Follow with the reason, the material alternative and the condition that changes the answer. Give amounts and dates at the precision needed for action. Explain unfamiliar financial terms through their consequence: “repayment falls before collection” is often more useful to an operating manager than an unexplained liquidity ratio. Preserve technical definitions where a specialist needs them to inspect the account.
 
@@ -3000,7 +3393,10 @@ Use supporting material so the receiver can inspect the decisive bridge without 
 
 Before returning the advice, read it as the receiver: what would I do, with what money or authority, by when, and what would make me choose differently? This is a test of the recommendation's usefulness, not a claim that the recipient has understood or accepted it. If actual recovery is consequentially uncertain, obtain the needed clarification or reading response under the applicable communication arrangement.
 
-#### Carry the advice to its proper stopping point
+<a id="carry-the-advice-to-its-proper-stopping-point"></a>
+
+#### FIN.16:4.8 - Carry the advice to its proper stopping point
+
 
 Return the recommendation to the person whose decision or ongoing work needs it. If that person chooses an alternative, preserve the chosen premises in the receiving financial work and pass the needed terms to its performer. Advice, authorization, instruction and observed financial effect have different completion conditions. The adviser should not report a successful transaction merely because the recommendation was accepted.
 
@@ -3012,7 +3408,10 @@ For continuing reliance, give the few return conditions that can invalidate the 
 
 For FIN.2–3's order, a concise recommendation is: “Use the customer's agreed advance of 96 on day 6 against 100 of the invoice. It leaves 56 on day 7 and produces incremental gain 656, compared with zero cash and gain 655 under the available draw of 43. This preference uses the supplied operating plan and agreement. If the advance is not agreed, use the drawable-facility comparison; if collection moves beyond day 28, obtain a funded repayment path before relying on that facility.” The analyst has completed the comparison and prepared usable advice. The appropriate authorized person still chooses or performs the action under the existing arrangement.
 
-#### A higher-value purchase needs finance before commitment
+<a id="a-higher-value-purchase-needs-finance-before-commitment"></a>
+
+#### FIN.16:5.1 - A higher-value purchase needs finance before commitment
+
 
 Consider a separate constructed case in one currency. Opening usable cash is 75. An existing operating payment of 20 falls on day 4, and cash must remain at least 20 throughout. Two mutually exclusive purchases are available on day 5. A costs 50 and returns 62 on day 30; B costs 30 and returns 38 on day 30. These receipts and all operating effects are stipulated, and the comparison uses zero discounting, no tax and no other flows. A and B therefore add 12 and 8 before financing. Their independent financial construction is supplied here.
 
@@ -3022,7 +3421,10 @@ The useful recommendation is: choose A if this net advance is secured and usable
 
 Now suppose A's day-30 receipt becomes uncertain and could be only 52. Its financed gain in that branch is −1 and ending cash is 54, while B's stipulated gain remains 8. Those two A scenarios do not supply probabilities. The analyst returns the choice-changing receipt question or a conditional comparison; the original unconditional preference is no longer supported. A statement that A still has the larger headline receipt would hide the changed net consequence.
 
-#### An attainable answer can be worth less than perfect information
+<a id="an-attainable-answer-can-be-worth-less-than-perfect-information"></a>
+
+#### FIN.16:5.2 - An attainable answer can be worth less than perfect information
+
 
 In another constructed decision, two feasible investments have already been valued on a common date. The receiver uses expected value, with the risk treatment embedded in the stipulated value basis. A contributes 20 in a favorable state and −10 otherwise. B contributes 8 in either state. The supported probabilities for this illustration are one half each, so A has expected contribution 5 and B has 8. Choose B on present information.
 
@@ -3030,7 +3432,10 @@ Perfect knowledge before commitment would permit A in the favorable state and B 
 
 A signal costing 1 plus a separately valued delay cost of 0.50 leaves an expected improvement of 0.75. A cost of 3 alone exceeds the attainable gain. If the signal arrives after the commitment deadline, it supplies no improvement to this choice. These calculations demonstrate how advice about inquiry can be completed. They neither estimate a real signal's reliability nor require a numerical information-value model for every recommendation.
 
-#### Return a financial trade-off without choosing the receiver's priority
+<a id="return-a-financial-trade-off-without-choosing-the-receivers-priority"></a>
+
+#### FIN.16:5.3 - Return a financial trade-off without choosing the receiver's priority
+
 
 In a separate constructed case, take these qualified funding terms as the supplied result of FIN.10's offer comparison. Opening usable cash is 20, a committed payment of 40 falls on day 5, a receipt of 40 is supported for day 20, and reserve 10 must remain throughout. Two executable loan offers expire on day 4. Each supplies net 30 before the day-5 payment and is repaid on day 30; there are no other flows, taxes or charges in this comparison. The restricted loan requires 31 at repayment and prohibits an owner payout before then. The flexible loan requires 32 and permits a payout of 5 on day 22 under its terms. The case stipulates that the payout could satisfy the other applicable conditions; choosing or performing it still belongs to FIN.21 and the existing authority.
 
@@ -3100,7 +3505,10 @@ Keep live reliance current without redoing unaffected calculations. Preserve eno
 
 The six steps below provide a short route when the necessary financial grounds are already adequate. Use the connected explanations that follow when constructing the result, resolving a changed condition or adapting the way of working.
 
-#### Short working route
+<a id="short-working-route-1"></a>
+
+#### FIN.17:4.1 - Short working route
+
 
 1. Identify the changed fact or source and the financial use that may depend on it. Recover the previously supported result and its relevant assumptions.
 2. Trace the consequence through affected cash dates, amounts, values, ratios, constraints and advice. Distinguish correction of a description, a new expectation, an amended agreement and an actual event.
@@ -3109,7 +3517,10 @@ The six steps below provide a short route when the necessary financial grounds a
 5. Return the updated model, projection or financial conclusion with its conditions for use. If the needed fact is missing, state the specific reliance limit and what remains usable.
 6. Arrange ongoing observation only for an actual continuing use, with a source and trigger that can change action. A one-time calculation does not by itself require continuous monitoring.
 
-#### Identify the change before replacing the number
+<a id="identify-the-change-before-replacing-the-number"></a>
+
+#### FIN.17:4.2 - Identify the change before replacing the number
+
 
 Recover the source, effective time and meaning of the new information. A corrected invoice amount says the earlier description was wrong. A customer's expected payment date changes a forecast. An agreed extension changes the contractual due date. A settled, usable bank receipt changes cash and may discharge a claim under its actual terms. These changes can refer to the same invoice while requiring different model operations. FDM supplies the position, term and event interpretation when it is unclear.
 
@@ -3119,7 +3530,10 @@ Establish whether the source is adequate for the current use. A sales team's rev
 
 Keep an earlier forecast available when it will be used to understand error or assess a method. The current operating view should use the supported new grounds, while the earlier decision remains interpretable on what was known then. This need can be met by an existing dated forecast or retained output; it does not require duplicating every workbook after every edit.
 
-#### Trace the change to the receiving financial use
+<a id="trace-the-change-to-the-receiving-financial-use"></a>
+
+#### FIN.17:4.3 - Trace the change to the receiving financial use
+
 
 Start with the result currently being relied on: today's payment instruction, next week's cash plan, a purchase recommendation, a headroom assessment or a reported value. Follow the financial relation that carries the change. A collection delay first affects cash timing. If it requires borrowing, financing changes later repayments and perhaps tax or value. If the receipt also supports a borrowing base, its eligibility can change the obtainable draw. The consequences are coupled even if separate worksheets calculate them.
 
@@ -3129,7 +3543,10 @@ Retain distinctions across horizons. A monthly collection total can remain uncha
 
 Stop tracing when a supported boundary shows that the changed ground cannot affect a further result at the required precision or use. An unchanged supplier account can be reused directly. Explain a no-update conclusion through that boundary: the renamed debtor is the same party with the same claim and timing, or the corrected historical display figure is outside the model's inputs and relied-on result. The mere absence of a visible formula link does not establish independence when someone manually copied the earlier result into advice.
 
-#### Roll actual events into the remaining forecast
+<a id="roll-actual-events-into-the-remaining-forecast"></a>
+
+#### FIN.17:4.4 - Roll actual events into the remaining forecast
+
 
 Choose the observation cutoff and reconcile opening position plus actual movements to the position at that cutoff. Then forecast what remains. For cash, a receipt already in the opening bank balance must not also remain as a future inflow. For a receivable, actual settlement reduces the remaining claim only to the extent established by the terms and event. A partial payment leaves the unpaid balance and its expected dates visible. FIN.4 supplies account roll-forward; FDM.4 resolves an uncertain financial effect.
 
@@ -3139,7 +3556,10 @@ Replace forecasts with actuals on an explicit common basis. A monthly forecast m
 
 If evidence of an important event is late, use the best-supported present position with a named reliance limit. An unknown payment status may require FIN.15's recovery before another instruction is sent. A scenario can show the consequences of receipt and nonreceipt, but it does not establish which occurred. The current recommendation must retain that distinction.
 
-#### Recompute a coherent account and explain the difference
+<a id="recompute-a-coherent-account-and-explain-the-difference"></a>
+
+#### FIN.17:4.5 - Recompute a coherent account and explain the difference
+
 
 Apply the changed inputs through the owning calculation. Recalculate the dependent account, then reconcile the outputs to its financial identities: opening cash plus dated inflows less dated outflows; opening debt plus draw, accrual or amendment less repayment; or the applicable asset, claim and ownership bridge. Distinguish an inconsistent model from a model that correctly reports a shortage, negative value or breached constraint. Changing an input to make a warning disappear can destroy the information the update was meant to reveal.
 
@@ -3149,7 +3569,10 @@ Reconnect shared assumptions. A new sales expectation can change variable expens
 
 Compare the updated result with the same decision criterion used before, unless the authorized decision itself changed. New forecast cash does not silently revise the reserve. A reduced value does not automatically change an agreed transaction price. The refresh exposes the discrepancy and sends it to the work that can act on it.
 
-#### Test the changed path at the point where it could fail
+<a id="test-the-changed-path-at-the-point-where-it-could-fail"></a>
+
+#### FIN.17:4.6 - Test the changed path at the point where it could fail
+
 
 Choose checks from the financial consequence of the update. If collection moves after repayment, inspect the cash available just before repayment and the actual replacement finance. If the value crosses the purchase threshold, check the changed cash, risk basis and relevant alternative. If an agreement changes a draw limit, recompute that limit from its actual definitions before using the facility. A balanced spreadsheet alone establishes none of those external conditions.
 
@@ -3159,7 +3582,10 @@ Preserve useful earlier checks when their predicates and inputs are unaffected. 
 
 If a check fails, distinguish an implementation error, an inadequate method and an adverse financial conclusion. Repair the implementation through the model's normal controls. Return an inadequate method to FIN.18. Carry an adverse but correctly computed result to FIN.16 or the relevant financial decision. These returns prevent “fixing the model” from becoming an instruction to restore the earlier preferred answer.
 
-#### Replace stale reliance as well as the model
+<a id="replace-stale-reliance-as-well-as-the-model"></a>
+
+#### FIN.17:4.7 - Replace stale reliance as well as the model
+
 
 Give the receiver the changed result, its effective basis and the consequence for the earlier instruction or recommendation. Identify the previous result that is no longer adequate where coexistence could cause action on obsolete grounds. An updated workbook stored elsewhere does not repair a payment request or investment memo still using the old amount. Update the actual receiving account, or explicitly return the required change to its owner.
 
@@ -3169,7 +3595,10 @@ A useful return can be short: “Collection now falls on day 40; the loan still 
 
 Finish when the current financial result and its actual receiving use agree, or the exact unresolved dependence is returned. A model refresh can be complete while the resulting financing choice remains open. Those outcomes should remain distinct so that a successful recalculation is not reported as restored payment capacity.
 
-#### Choose an observation rhythm that can still change action
+<a id="choose-an-observation-rhythm-that-can-still-change-action"></a>
+
+#### FIN.17:4.8 - Choose an observation rhythm that can still change action
+
 
 For continuing reliance, connect observation to the time needed to respond. A weekly forecast cannot protect a same-day settlement if the decisive information arrives and the payment becomes binding between updates. Identify a practicable source and the latest point at which an adverse change can still lead to funding, resizing or a stop. Use event-triggered reconsideration for a material missed receipt, changed offer or new commitment when waiting for the next calendar cycle would be too late.
 
@@ -3183,7 +3612,10 @@ End monitoring when the reliance ends, the position is settled or another curren
 
 FIN.2's order was expected to collect 1,200 on day 28. Its draw of 43 supplied net cash 40 and was due with interest, totaling 45, on day 28. A new supported expectation moves collection to day 40; it does not amend the loan. The updated cash projection shows a day-28 gap of 45. The operating contribution before financing remains 660 if all other operating grounds are unchanged. The analyst must reconsider the financing recommendation because repayment on day 28 is now unfunded; the previous net gain of 655 cannot be retained without accounting for a feasible repayment arrangement and its cost. FIN.10 supplies that comparison. By contrast, correcting a customer display name while retaining the same debtor, claim, dates and use may support no financial-model update.
 
-#### Partial collection changes the remaining account
+<a id="partial-collection-changes-the-remaining-account"></a>
+
+#### FIN.17:5.1 - Partial collection changes the remaining account
+
 
 In a separate constructed case, opening cash is 20, a receipt of 100 is expected on day 8, payroll of 70 is due on day 12 and a committed supplier payment of 20 is due on day 14. Cash must remain at least 10. No other flows occur through day 20. The original projection reaches 120, then 50 and 30, so both payments are funded.
 
@@ -3193,7 +3625,10 @@ An obtainable bridge can supply net 20 before the supplier payment and require 2
 
 Move the expected remaining collection again, to day 25. The same bridge no longer has a funded day-20 repayment: cash would be 10 before repayment and −11 afterward, a gap of 21 including the reserve. FIN.10 must compare an obtainable later maturity or another funded path. The model refresh is a completed identification of that changed need, not evidence that replacement finance exists.
 
-#### A changed value premise reaches the purchase advice
+<a id="a-changed-value-premise-reaches-the-purchase-advice"></a>
+
+#### FIN.17:5.2 - A changed value premise reaches the purchase advice
+
 
 Another constructed appraisal compares an immediate outlay of 100 with two annual cash receipts of 60. On a supplied matching annual rate of 10%, value is about 104.13 and NPV is +4.13. The recommendation is therefore sensitive to fairly small changes in the qualified cash and return grounds.
 
@@ -3259,7 +3694,10 @@ Improve decision quality while accounting for data, skills, explanation, operati
 
 The six steps below provide a short route when the necessary financial grounds are already adequate. Use the connected explanations that follow when constructing the result, resolving a changed condition or adapting the way of working.
 
-#### Short working route
+<a id="short-working-route-2"></a>
+
+#### FIN.18:4.1 - Short working route
+
 
 1. Name the financial difficulty, intended gain and current method's observed or otherwise supported limit. State what result or action would change if the proposed method helped.
 2. Compare genuinely different variants, including continued use or a smaller repair. Recover the relevant current professional or research contribution and its conditions; a task syllabus establishes repertoire, not method effectiveness.
@@ -3268,7 +3706,10 @@ The six steps below provide a short route when the necessary financial grounds a
 5. Select the method, qualify its narrower use, propose a bounded trial or continue the supported method. Preserve unresolved claims instead of calling the new method universally superior.
 6. Make the selected change usable in the actual finance procedure and explain when to reopen it. FIN.17 updates the affected models; FIN.20 addresses transmission and continued use when those become the problem.
 
-#### Diagnose the financial failure that a method change must repair
+<a id="diagnose-the-financial-failure-that-a-method-change-must-repair"></a>
+
+#### FIN.18:4.2 - Diagnose the financial failure that a method change must repair
+
 
 Begin with a concrete result that the present way of working cannot adequately supply. A forecast repeatedly missing a payment gap, a valuation using a financing policy unlike the actual one and an execution process that cannot distinguish a failed payment from an unknown outcome are different difficulties. Recover the expected financial use and the condition under which it fails. FIN.17 can correct changed inputs within an adequate construction; FIN.18 becomes useful when the construction, selection rule or operating procedure itself needs comparison.
 
@@ -3278,7 +3719,10 @@ A supported limitation need not wait for repeated losses. A new acquisition can 
 
 Define success in the financial work. Fewer late funding requests, a more defensible price threshold, an exposure estimate that fits the current business or faster recovery of an uncertain transfer can be useful gains. A smaller numerical error, a faster workbook or more sophisticated software is valuable only through the contribution it makes and the cost it requires. Several gains can matter without being combined into one invented score.
 
-#### Form alternatives that differ in the way they answer the problem
+<a id="form-alternatives-that-differ-in-the-way-they-answer-the-problem"></a>
+
+#### FIN.18:4.3 - Form alternatives that differ in the way they answer the problem
+
 
 Describe what changes in each candidate: input basis, financial relationship, estimation rule, horizon, decision rule or execution procedure. Retain a smaller repair and the current method when they remain feasible. For a near-term cash question, alternatives might combine confirmed due payments with customer-specific collection expectations, extrapolate historical aggregate receipts, or use a statistical estimate supplemented by separately identified large events. Their different information demands and failure modes matter more than their software labels.
 
@@ -3288,7 +3732,10 @@ Use the supplying Methods. FIN.4 and MA.5 construct accounts and operating forec
 
 Keep combinations available when the problem warrants them. A simple routine for ordinary receipts plus explicit treatment of a few large uncertain payments can outperform replacing the entire process. Qualify which cases use each part and how their outputs combine without counting the same receipt twice. A useful local variant need not become the corporate default for unrelated businesses.
 
-#### Compare forecasts on the information and horizon actually available
+<a id="compare-forecasts-on-the-information-and-horizon-actually-available"></a>
+
+#### FIN.18:4.4 - Compare forecasts on the information and horizon actually available
+
 
 Define the forecasted quantity, observation cutoff and action horizon before measuring performance. Tomorrow's usable bank cash, next month's receipts and annual operating profit have different data and loss consequences. Use comparable entity and currency boundaries and the same forecast horizon. Reproduce each candidate's stated, obtainable information basis; hold that basis constant when the claim concerns the estimator alone. Include data publication and processing delays; a value dated before the forecast origin can still have become available afterward.
 
@@ -3300,7 +3747,10 @@ Examine more than one summary where the financial use needs it. Average absolute
 
 For interval or probabilistic forecasts, compare the stated probabilities with subsequent observations over adequate comparable cases, and examine the size and location of the intervals or tails. A very wide interval may include almost everything while giving little useful funding guidance. A small test sample can expose a defect but rarely establishes stable tail probabilities. Keep the resulting claim narrower when the evidence cannot support reliability across rare shortages or changed business conditions.
 
-#### Evaluate the action implied by the prediction
+<a id="evaluate-the-action-implied-by-the-prediction"></a>
+
+#### FIN.18:4.5 - Evaluate the action implied by the prediction
+
 
 Run the proposed forecast through the actual funding or protection rule, including lead time, capacity and cost. A lower error is not enough if both forecasts trigger action after the bank's deadline. A signal that correctly predicts a shortage still needs an obtainable amount of finance and a repayment path. Conversely, a conservative signal can avoid a shortage while creating frequent unnecessary draws, collateral calls or idle cash.
 
@@ -3310,7 +3760,10 @@ Use the same starting position and attainable action set in each comparison. Inc
 
 Test whether a simpler change to the decision rule closes the problem. A different trigger, a prepared response to a named large receipt or a more appropriate reserve can sometimes improve action without a new estimator. Any changed reserve or authority still requires its actual decision. Compare the cost of that alternative rather than treating every missed shortage as evidence for a more complex model.
 
-#### Use a comparison that fits valuation, exposure or execution
+<a id="use-a-comparison-that-fits-valuation-exposure-or-execution"></a>
+
+#### FIN.18:4.6 - Use a comparison that fits valuation, exposure or execution
+
 
 For valuation methods, there may be no directly observable “true value” against which to score prediction error. A transaction price includes the actual parties, bargaining, rights and market conditions. It cannot by itself certify every valuation premise. Compare whether the method answers the receiving question with compatible cash, risk and financing assumptions. Use FIN.5–8's limiting cases, claim bridges and changed-condition comparisons to expose an assumption that reverses the action.
 
@@ -3322,7 +3775,10 @@ For execution procedures, compare the ability to obtain the required effect and 
 
 These comparisons can use analytical examples, independently reconstructed cases, a shadow calculation, historical replay or a prospective trial. Select the form whose evidence can distinguish the candidate claims. Do not demand a forecasting-style holdout from a deterministic contractual identity, or infer a live operational benefit from an algebraic identity alone.
 
-#### Include the work needed to obtain and sustain the gain
+<a id="include-the-work-needed-to-obtain-and-sustain-the-gain"></a>
+
+#### FIN.18:4.7 - Include the work needed to obtain and sustain the gain
+
 
 Estimate the data collection, preparation, specialist judgement, explanation, review and ongoing operation required by each alternative. Include the participants who supply information and the finance work displaced by that demand. A method that saves the analyst an hour while imposing several hours of collection work on every subsidiary has moved part of its cost. A provider's availability, retention of required data and ability to recover when the service fails can alter the usable method.
 
@@ -3332,7 +3788,10 @@ When the choice remains sensitive to an unanswered performance question, define 
 
 A useful trial can end in adopting a narrower use, retaining the incumbent, repairing a missing input or stopping the candidate. Avoid a design that can only produce another request for research. Use C.11.DUA when the expected value and burden of further inquiry itself need comparison. A weak result should qualify the proposed claim rather than create an obligation to keep testing indefinitely.
 
-#### Make the selected method an obtainable way of working
+<a id="make-the-selected-method-an-obtainable-way-of-working"></a>
+
+#### FIN.18:4.8 - Make the selected method an obtainable way of working
+
 
 State the chosen operation, the uses it supports and the conditions that would make it unsuitable. Give the inputs, preparation, human judgement and tool support that the actual performer needs. Update the working procedure and the financial results that depend on it through FIN.17. A new model in an unused folder is not an implemented finance method.
 
@@ -3346,7 +3805,10 @@ Reopen on a supported new failure, a changed business or provider condition, or 
 
 In a constructed comparison, a cash forecast triggers action when predicted closing cash is below a reserve of 5. Four withheld periods have actual closing cash 20, 2, −8 and 15. Method A predicts 18, 12, 4 and 16; method B predicts 16, 3, −3 and 13 using only information available at each forecast date. A flags the third shortage but misses the second; B flags both. The comparison identifies a useful difference for liquidity action. Four illustrative cases do not establish general superiority. If B requires a costly new daily data collection, a bounded trial must compare avoided funding failures and unnecessary actions with that burden; the action-changing question is specific enough to decide whether the trial is worth doing.
 
-#### Continue the forecast comparison through the actual funding rule
+<a id="continue-the-forecast-comparison-through-the-actual-funding-rule"></a>
+
+#### FIN.18:5.1 - Continue the forecast comparison through the actual funding rule
+
 
 The four periods above are independent constructed decision windows. Their actual closing cash is measured before any funding action taken in response to the forecast. A's absolute errors are 2, 10, 12 and 1, for an average of 6.25. B's are 4, 1, 5 and 2, averaging 3. B has the smaller average here, but its predictions of 3 and −3 are still above the shortage outcomes of 2 and −8. Borrowing only the predicted amount needed to reach reserve 5 would leave cash at 4 and 0 in those two windows. Correctly flagging a shortage has not established an adequate funding amount.
 
@@ -3356,13 +3818,19 @@ For this comparison only, assign an additional financial loss of 9 to a missed s
 
 Now add a different operating condition: a necessary source for B becomes available only after the draw cutoff. Its statistical accuracy no longer establishes this funding result. A timely simpler procedure may be preferable, or B may remain useful for another horizon. Four selected windows still cannot establish general performance; a further trial is justified only if its attainable answer can change the actual adoption decision.
 
-#### A policy difference calls for qualification before a new default
+<a id="a-policy-difference-calls-for-qualification-before-a-new-default"></a>
+
+#### FIN.18:5.2 - A policy difference calls for qualification before a new default
+
 
 Consider the policy question already developed in FIN.5. A corporation comparing an annual market-value debt-share policy with a finite fixed-debt schedule has two different financial strategies. The matched annual-policy case gives NPV about −0.13, while the stipulated finite-debt alternative gives about +2.49. Selecting the latter calculation because it is positive, then keeping the annual policy in the actual financing plan, combines incompatible grounds.
 
 FIN.18's useful return is to retain the method matched to the policy actually under consideration and carry both conditional strategies to the financing choice if that choice remains open. A software change that implements both formulas can support the comparison; it cannot choose the policy. Once the financing strategy and risk/tax grounds are supported, FIN.17 recomputes the relevant appraisal and FIN.16 returns the changed advice. A specialist valuation method is needed only when the actual case exceeds those supported constructions.
 
-#### Choose a payment procedure and keep an executable fallback
+<a id="choose-a-payment-procedure-and-keep-an-executable-fallback"></a>
+
+#### FIN.18:5.3 - Choose a payment procedure and keep an executable fallback
+
 
 In a constructed treasury case, four weekly batches each contain twenty payments of 5. Each payment must reach its creditor by 16:00. A qualified cash plan supplies usable opening cash of 130 for each batch and reserve 20 throughout; the intervening funding is already provided. The incumbent procedure enters instructions individually in the bank portal. The proposed procedure imports one prepared payment file. The same provider, approved beneficiaries, account limits and distinct initiator and approver govern both. In this case the provider accepts instructions until 12:00 for the required receipt time, supports inquiry by instruction identity and can confirm cancellation of unexecuted instructions. These are supplied conditions, not assumed properties of every payment service.
 
@@ -3434,7 +3902,10 @@ Preserve useful local expertise and speed while making joint constraints effecti
 
 The seven steps below provide a short route when the necessary financial grounds are already adequate. Use the connected explanations that follow when constructing the result, resolving a changed condition or adapting the way of working.
 
-#### Short working route
+<a id="short-working-route-3"></a>
+
+#### FIN.19:4.1 - Short working route
+
 
 1. Anchor the question in a representative actual occurrence, or label a future arrangement as prospective. State the financial result at stake and the participants; do not infer performed work from a process diagram.
 2. Recover the relations needed to explain the conflict. Distinguish which work overlaps, which entity owns or owes the money, which model describes it for which use, which decisions constrain another, and which provider or capability makes action possible.
@@ -3444,7 +3915,10 @@ The seven steps below provide a short route when the necessary financial grounds
 6. Select or propose the needed change under the actual authority. Counting assigned work, rescheduling it or allocating resources within that authority can use [Operations Management][OPS]. A change to organizational responsibilities or decision rights calls for [Organization Change Engineering][OCE]. State what each participant now needs to know or do and the result that would show the conflict is resolved. Stop adding views when they cannot change the decision.
 7. Reopen when a new entity, horizon, commitment, provider or observed occurrence changes the conflict. Use FIN.20 only when transmission or continued use of the arrangement becomes the question.
 
-#### Recover the conflict from work that can actually occur
+<a id="recover-the-conflict-from-work-that-can-actually-occur"></a>
+
+#### FIN.19:4.2 - Recover the conflict from work that can actually occur
+
 
 Start with the commitment, payment or decision that cannot be reconciled, and the useful result it threatens. Follow one representative occurrence far enough to see who supplied the information, who made the choice and what became binding. A treasury procedure may require a common forecast while the investment team actually commits before that forecast is available. The procedure and the occurrence then describe different things; changing the diagram alone will not resolve the conflict.
 
@@ -3454,7 +3928,10 @@ Recover the participants by what they contribute to this result. The operating u
 
 Name the financial constraint before the organizational remedy. If the problem is only that two models use different bank opening balances, a reconciled position may be enough. If both use the same balance but each can irrevocably allocate it without seeing the other, the decision arrangement itself matters. These cases require different changes even though both may appear as “poor coordination.”
 
-#### Reconcile claims, views and horizons without erasing their uses
+<a id="reconcile-claims-views-and-horizons-without-erasing-their-uses"></a>
+
+#### FIN.19:4.3 - Reconcile claims, views and horizons without erasing their uses
+
 
 Identify which legal entity owns the balance, owes the payment or has the right to draw. Consolidation can cancel an internal claim for reporting while the entities still need actual settlement or financing. A group net cash figure does not establish the paying entity's access. Recover transfer restrictions, timing, currency conversion and the terms of internal support when they affect feasibility. FDM supplies the actual position and party relations; FIN.2 and FIN.12 supply paying capacity and action-specific access.
 
@@ -3464,7 +3941,10 @@ Make the loss from aggregation concrete. Monthly net inflow can conceal a paymen
 
 Retain uncertainty consistently. A local forecast range and a central single planning case should not be treated as two observations of actual cash. State which conditional case the shared commitment uses, what protection it relies on and how a different realization will be handled. FIN.13 supplies exposure or scenario construction when needed. Agreement among reports can still rest on the same unsupported premise.
 
-#### Make the shared constraint govern commitments before they bind
+<a id="make-the-shared-constraint-govern-commitments-before-they-bind"></a>
+
+#### FIN.19:4.4 - Make the shared constraint govern commitments before they bind
+
 
 Construct the common dated account with existing obligations, protected amounts and the proposed additional uses. Include commitments that have not yet appeared as cash payments: an accepted purchase, declared distribution or binding derivative can already constrain future money. Keep a proposal distinct from an actual obligation so that the account does not either omit binding work or reserve funds indefinitely for every idea.
 
@@ -3476,7 +3956,10 @@ An operational way to make the limit effective can be simple. Before making an e
 
 Release a reservation when the proposal expires or is rejected, and convert it to the corresponding actual obligation when accepted. The same use should not remain as both a proposed reservation and an additional actual payment. Reconcile later actual effects through FIN.15/17. This financial distinction can be implemented in different tools; its success depends on the work and account remaining connected.
 
-#### Compare genuinely different arrangements when allocation alone is insufficient
+<a id="compare-genuinely-different-arrangements-when-allocation-alone-is-insufficient"></a>
+
+#### FIN.19:4.5 - Compare genuinely different arrangements when allocation alone is insufficient
+
 
 If no participant can settle the cross-unit choice in time, identify the missing decision or supplying contribution. It may be a limited allocation right, a timely source, an available performer, a common provider or an agreement between entities. Avoid assigning every failure to the absence of central control. A central approver with no current information or time to act can become a new constraint.
 
@@ -3488,7 +3971,10 @@ A common system can support an arrangement without determining it. Installing a 
 
 Keep the public rules and conditions that genuinely constrain the choice. Finance can propose a different delegation or internal support arrangement; the appropriate authority must make it effective. The proposed holder of a decision right can exercise it only after the authorized change takes effect.
 
-#### Compare the burden that each remedy moves
+<a id="compare-the-burden-that-each-remedy-moves"></a>
+
+#### FIN.19:4.6 - Compare the burden that each remedy moves
+
 
 Trace a local gain to its other consequences. Centralization may reduce duplicated bank negotiations while increasing waiting time for local exceptions. Decentralization may preserve customer knowledge while requiring a dependable way to enforce a group funding limit. Faster execution can increase the burden on reconciliation or create concentrated dependence on one provider. The relevant comparison follows those effects rather than the visual simplicity of an organization chart.
 
@@ -3498,7 +3984,10 @@ Examine timing under normal and consequential adverse conditions. A shared decis
 
 Use an appropriate comparison for the financial consequence and preserve other material burdens. Funding cost and delayed project value can be quantified when their grounds support it. Loss of useful local knowledge, excessive interruption or an unsupported authority claim should not be concealed by an arbitrary monetary estimate. OPS can develop a work and resource plan within existing authority; OCE can develop the organizational change needed to make a different arrangement effective.
 
-#### Turn the selected arrangement into a bounded working change
+<a id="turn-the-selected-arrangement-into-a-bounded-working-change"></a>
+
+#### FIN.19:4.7 - Turn the selected arrangement into a bounded working change
+
 
 Return the selected or proposed arrangement in terms its participants can use. State which conflict it resolves, the financial limit and dates, what each participant now does differently and where the next allocation or exception goes. Preserve routine actions that remain adequately supported. An arrangement may require one changed interface rather than a new complete organization model.
 
@@ -3508,7 +3997,10 @@ Try a representative commitment and a consequential exception with the actual pa
 
 Keep outstanding obligations through the transition. A new approval route does not cancel commitments made under the old one. Reconcile the opening shared account and any temporary parallel reporting so that neither duplicated reservations nor omitted obligations arise. Preserve a usable fallback where failure of the new arrangement would leave payment or decision work unsupported.
 
-#### Return to financial use and stop adding structure
+<a id="return-to-financial-use-and-stop-adding-structure"></a>
+
+#### FIN.19:4.8 - Return to financial use and stop adding structure
+
 
 Finish this reconciliation when the relevant descriptions agree where they need to, the joint constraints govern the actual decisions and the remaining financial choice has a clear receiver. If a proposed organizational change has not taken effect, return the specific missing condition and the financial work that still depends on it. FIN.16 can express the resulting advice and FIN.17 can refresh the affected accounts.
 
@@ -3524,7 +4016,10 @@ The alternatives differ in practice. Central approval of every payment would enf
 
 For this case, the corporation can retain routine payment authority and bring the two exceptional capital uses to one allocation comparison. FIN.9 then compares reducing, deferring or funding them on their financial merits. The joint account resolves the incompatible available-cash assumptions; it does not by itself decide which capital use is best. If the existing allocation authority can choose among the feasible combinations, no organizational redesign is needed. A remaining inability to make that shared choice can instead require changing the decision arrangement. If those proposals occur in different legal entities, actual transfer conditions must also be recovered.
 
-#### Follow the financing remedy through its later obligation
+<a id="follow-the-financing-remedy-through-its-later-obligation"></a>
+
+#### FIN.19:5.1 - Follow the financing remedy through its later obligation
+
 
 Continue the prospective 100/60/20 case above. Suppose both the 30 project and the 20 distribution would be paid on day 7. An obtainable loan can provide net 30 before those payments and requires 31.50 on day 30. On day 30, a separately supported receipt of 40 arrives first, followed by another committed payment of 15 and then loan repayment; no other flows occur, and reserve 20 is required throughout.
 
@@ -3536,7 +4031,10 @@ Deferring the full distribution to day 31 while keeping the loan of 30 gives cas
 
 Now change only intraday availability: the loan arrives at 15:00, but the project payment is binding at 09:00 after the 60 operating payment. Cash would fall from 40 to 10 at 09:00, already below the reserve. A day-end account showing 20 misses that earlier failure. The commitment arrangement must either obtain earlier funds or select another available sequence before the payment becomes binding.
 
-#### A shared group total can still conceal an entity gap
+<a id="a-shared-group-total-can-still-conceal-an-entity-gap"></a>
+
+#### FIN.19:5.2 - A shared group total can still conceal an entity gap
+
 
 In another prospective case, subsidiary S holds 100 usable cash and owes operating payments of 60 with a required reserve of 20. Parent P holds no cash and must pay 20 on day 7. The group aggregate seems to leave enough money. Under the supplied actual transfer arrangement, S can provide 20 to P only on day 8.
 
@@ -3544,7 +4042,10 @@ The parent therefore still needs 20 on day 7. Consolidating the two accounts can
 
 Centralizing the reports would make this visible but would not establish the missing transfer right or timing. Giving the group treasurer a new title would not do so either. The useful first return is the specific parent funding need and the transfer condition. An organization change is warranted only if the existing arrangement cannot obtain or decide the needed response reliably.
 
-#### Make a limited allocation right effective before capital commitments
+<a id="make-a-limited-allocation-right-effective-before-capital-commitments"></a>
+
+#### FIN.19:5.3 - Make a limited allocation right effective before capital commitments
+
 
 Take a separate constructed case within one legal entity. Opening usable cash is 100; operating payments of 60 and reserve 20 leave 20 before any arrangement-change costs. Two department heads have separate capital-commitment delegations, but nobody currently has the right to settle their competing uses of the common remainder. The governing body can change those delegations on day 6, but cannot make the individual allocation when offers expire at 10:00 on day 7. No additional finance is obtainable in time. This is the wider arrangement-change branch; where an existing allocator can settle the choice, use the simpler exit above.
 
@@ -3620,7 +4121,10 @@ Preserve useful knowledge while improving consequential habits. Distinguish deli
 
 The seven steps below provide a short route when the necessary financial grounds are already adequate. Use the connected explanations that follow when constructing the result, resolving a changed condition or adapting the way of working.
 
-#### Short working route
+<a id="short-working-route-4"></a>
+
+#### FIN.20:4.1 - Short working route
+
 
 1. Name the population, practice variants and useful financial result. Use actual observations for an obtaining practice, or clearly label a proposed future arrangement.
 2. Recover how variants are generated, taught or copied, recognized as legitimate, selected or discouraged, and retained or lost. A repository retains a document; people using its method in decisions is a separate fact.
@@ -3630,7 +4134,10 @@ The seven steps below provide a short route when the necessary financial grounds
 6. Carry out an authorized intervention through its actual performers when selected. Keep the proposal, performed action, changed practice and financial effect distinct; claim each only on its own evidence.
 7. Return a supported continuation, bounded change or stop, with what would reopen it. Preserve useful materials and practices without equating their availability with uptake.
 
-#### Identify the practice that should persist or change
+<a id="identify-the-practice-that-should-persist-or-change"></a>
+
+#### FIN.20:4.2 - Identify the practice that should persist or change
+
 
 Describe what people actually do with financial information. “We have a forecasting culture” is too broad to explain a problem. A more useful account is that customer managers report their best-supported collection dates, finance preserves those expectations when they differ from targets, and treasury uses them before funding cutoffs. The practice includes those connected actions and uses, not only the spreadsheet in which dates are stored.
 
@@ -3640,7 +4147,10 @@ Use observations at the right level. A meeting record can show that a collection
 
 Separate a one-time mistake, a method defect and a recurring way of using the method. FIN.17 can correct a wrong date; FIN.18 can compare a forecast that does not fit the business. FIN.20 is needed when people repeatedly learn, reward, suppress, forget or adapt the practice in a way that changes its financial use. A successful direct correction can be the whole answer when those wider relations are not at issue.
 
-#### Recover how the variants are learned and selected
+<a id="recover-how-the-variants-are-learned-and-selected"></a>
+
+#### FIN.20:4.3 - Recover how the variants are learned and selected
+
 
 Find how newcomers and experienced participants acquire the operation. They may copy a colleague's working file, imitate what succeeds in a meeting, follow a provider's default or learn from a worked case. A written policy can conflict with the example that people actually copy. Trace the relevant path with the participants rather than assuming that the official training material is the effective teacher.
 
@@ -3650,7 +4160,10 @@ Ask what preserves the practice when its original advocate is absent. It may sur
 
 Keep useful adaptation visible. A subsidiary with a few large invoices may use customer-specific evidence, while a retail unit estimates many small receipts statistically. Their methods can differ while both distinguish expectation from target and return timely cash consequences. Examine whether a variant preserves the financial contribution before requiring it to match the central form. Return a genuine method-performance question to FIN.18.
 
-#### Examine the use of numbers and the incentives around it
+<a id="examine-the-use-of-numbers-and-the-incentives-around-it"></a>
+
+#### FIN.20:4.4 - Examine the use of numbers and the incentives around it
+
 
 Use MA.6 to separate expected outcomes, desired outcomes, resource requests and actual authorization. Then follow how those meanings enter the meeting or decision. A forecast of a later receipt should be available to treasury even if management still expects the commercial team to pursue the original target. If the forecast is required to equal the target, the receiving cash work loses the information it needs for funding.
 
@@ -3660,7 +4173,10 @@ Discuss the consequence with the participants who supply and use the information
 
 Preserve legitimate control and accountability. Keeping an honest forecast does not cancel a spending limit or remove the need to explain poor performance. Separate the expectation from the decision about effort, resources and results, then reconnect them through the actual management work. Any change to compensation, authority or mandatory reporting must be made through the responsible practice; a finance recommendation alone does not make it effective.
 
-#### Compare continuing, repairing and changing the arrangement
+<a id="compare-continuing-repairing-and-changing-the-arrangement"></a>
+
+#### FIN.20:4.5 - Compare continuing, repairing and changing the arrangement
+
 
 Keep continuation as a real alternative when the current practice supports its use and no changed condition defeats it. A new platform, vocabulary or training package can be attractive without providing enough improvement to repay its adoption burden. The useful result may be to preserve the existing practice and its accessible examples.
 
@@ -3670,7 +4186,10 @@ Compare a bounded change with a materially different intervention. A brief joint
 
 Include the work demanded from everyone affected. Preparation, training, duplicate entry, explanation, supervision and transition can displace actual financial work. A simpler local variant can be preferable if it preserves the receiving result. A practice may also be retired when its financial use has ended, with any necessary historical account preserved. The goal is the useful financial contribution, not indefinite continuation of a form.
 
-#### Make the operation learnable in the situations that matter
+<a id="make-the-operation-learnable-in-the-situations-that-matter"></a>
+
+#### FIN.20:4.6 - Make the operation learnable in the situations that matter
+
 
 Teach the action and its reason through a representative financial situation. A learner should be able to distinguish the observation, calculate the consequence and make the appropriate return. For a collection change, that includes leaving the loan due date intact, carrying partial receipts into remaining claims and identifying finance needed before repayment. Memorizing “update the forecast” leaves those operations unlearned.
 
@@ -3682,7 +4201,10 @@ Place the needed explanation where the work can retrieve it. A short reminder ca
 
 Make transfer proportionate. Not every participant needs to master every FIN Method. The customer manager needs to provide the supported collection expectation and report its change; treasury needs to translate it into a funded action; the allocator needs the alternatives and shared constraint. Teach the connection at each actual handoff and preserve access to the expertise needed when its conditions fail.
 
-#### Obtain evidence that can change the continuation
+<a id="obtain-evidence-that-can-change-the-continuation"></a>
+
+#### FIN.20:4.7 - Obtain evidence that can change the continuation
+
 
 Choose observation from the claim that matters now. Attendance establishes presence at training, a worked response can establish what was recovered under its conditions, and subsequent unassisted work can establish use in the observed cases. Continued use during an ordinary reporting cycle is stronger evidence of retention than use only while the original trainer prompts every step. None of these alone establishes an improvement in financial outcomes.
 
@@ -3694,7 +4216,10 @@ A stronger causal claim needs a design and evidence adequate for that claim. An 
 
 C.11.DUA and C.36 support choosing whether more inquiry is worth its cost for the current use. Adequate existing observations can justify continuing the practice. A new study is useful when a plausible attainable result can alter a worthwhile action or warranted reliance; it is not a prerequisite for every ordinary continuation.
 
-#### Preserve the practice through changed people and conditions
+<a id="preserve-the-practice-through-changed-people-and-conditions"></a>
+
+#### FIN.20:4.8 - Preserve the practice through changed people and conditions
+
 
 After the initial change, examine whether the operation remains possible under ordinary workload. The participant who supplied the original interpretation may leave, the provider may change a field or a new business may have a different collection pattern. Preserve the needed explanation and source return so that the operation can be reconstructed without relying on that person's memory.
 
@@ -3708,7 +4233,10 @@ Reopen on loss of a needed capability, repeated bypass, a changed incentive or a
 
 In a constructed case, a finance team has a forecast spreadsheet, but six weekly meetings replace the expected collection dates with the dates needed to meet the target. The treasurer therefore receives an optimistic cash view. The proposed repair retains the familiar spreadsheet and changes the meeting: discuss the best-supported collection expectation separately from the target, then decide resource action. A second proposal replaces the whole planning platform. The smaller intervention directly addresses the observed use problem with less transition effort. Its performance would be established by the changed meeting work; continued use by subsequent forecasts retaining genuine expectations; a financial benefit would require evidence of changed cash decisions or outcomes. A published instruction alone establishes none of those later claims.
 
-#### Separate the expectation, the action plan and the spending right
+<a id="separate-the-expectation-the-action-plan-and-the-spending-right"></a>
+
+#### FIN.20:5.1 - Separate the expectation, the action plan and the spending right
+
 
 Extend the constructed meeting case above. One unit has a target to collect 100 by day 10. Before the meeting, customer evidence supports an expectation of 60 by that date and 40 by day 25. Treasury must pay 80 on day 12, has opening cash 20 and must retain reserve 10. The manager also has an existing spending authorization of 80 for that payment. These quantities serve different uses.
 
@@ -3718,7 +4246,10 @@ The proposed meeting change preserves three statements: the collection expectati
 
 Suppose a new platform would reproduce the same manager-imposed date because the meeting still requires target and forecast to agree. It would leave the identified use problem intact. The bounded meeting intervention therefore addresses a different relation from the software replacement. If investigation instead shows that the old date came from a delayed data feed and the manager preserved all information available, the source process is the needed repair; the proposed cultural explanation must change.
 
-#### Follow a bounded change without turning uptake into a benefit claim
+<a id="follow-a-bounded-change-without-turning-uptake-into-a-benefit-claim"></a>
+
+#### FIN.20:5.2 - Follow a bounded change without turning uptake into a benefit claim
+
 
 Assume, within this constructed case, that the authorized manager introduces the distinction in the next meeting and participants use it in six later weekly forecasts. In those observed weeks, adverse expected dates remain visible, treasury receives them before its funding cutoff and the relevant cash decisions refer to them. The observation supports use of the changed routine in those six cases. It does not yet establish persistence through staff turnover, transfer to another unit or an amount of avoided financial loss.
 
@@ -3766,7 +4297,9 @@ FIN.18 supplies a selected method change, FIN.17 its model update and FIN.19 a p
 
 Copyright © Anatoly Levenchuk. The original framework text and worked examples are licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). The [licensing notice](https://github.com/ailev/FPF/blob/main/LICENSING.md) states scope and attribution terms. Referenced third-party works retain their own terms.
 
-## Edition record
+<a id="edition-record"></a>
+
+## FIN.Reference:1 - Edition record
 
 **Framework and edition:** Corporate Finance Principles Framework, FIN 1.0.\
 **Language:** English.\
@@ -3777,7 +4310,9 @@ For a precise citation, name the framework, FIN 1.0, the edition date and the pa
 
 Use current market, operating and institutional facts for a real decision. FIN.17 refreshes relied-on financial results; FIN.18 reconsiders their method. Revisit a cited supplying edition when its contribution changes the receiving use. A copied publication preserves its edition's text, not continuing accuracy of the user's data or continuing access to every external source.
 
-## Source guidance
+<a id="source-guidance"></a>
+
+## FIN.Reference:2 - Source guidance
 
 The pattern bodies state the adopted contribution and comparison. These locators let a reader examine the sources or obtain greater professional depth. They do not claim full access to restricted curricula or compliance with an unread standard.
 
@@ -3832,7 +4367,7 @@ The pattern bodies state the adopted contribution and comparison. These locators
 [EW]: ../FPF-Spec.md#b15ew---recover-how-constituent-actions-enact-encompassing-work
 [CHOICE]: ../FPF-Spec.md#c11---decision-theory-decsn-cal
 [DUA]: ../FPF-Spec.md#c11dua---make-advice-and-evidence-demands-worth-their-burden
-[MWA]: ../FPF-Spec.md#c32mwa---practice-architecture-synthesis-from-several-structures
+[MWA]: ../FPF-Spec.md#c32mwa---synthesize-an-architecture-account-of-methods-and-their-use
 [CULT]: ../FPF-Spec.md#c36---cultural-evolution-and-cultural-evolution-engineering
 [FPF]: https://github.com/ailev/FPF
 [CFA-WC]: https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/working-capital-and-liquidity
@@ -3875,3 +4410,5 @@ The pattern bodies state the adopted contribution and comparison. These locators
 [DAM-ACQUISITION]: https://pages.stern.nyu.edu/adamodar/New_Home_Page/invfables/acqmotives.htm
 [IVSC]: https://ivsc.org/standards/
 [WB-WORKOUT]: https://documents1.worldbank.org/curated/en/982181642007438817/pdf/A-Toolkit-for-Corporate-Workouts.pdf
+
+## FIN.Reference:End

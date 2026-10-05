@@ -19,9 +19,9 @@ Use a public unit for orientation or source access. Search the complete pattern 
 | :--- | :--- |
 | [Readme](#readme) | Follow an explanation through a changed question, a learner's retry and a comparison that separates content repair from a change of form. |
 | [Preface](#preface) | Connect warranted accounts, reader-relative structural recovery and the language's worked feedback relations. |
-| [Use profiles](#use-profiles) | Adapt the Methods to instructional, technical/advisory and human–AI explanation. |
-| [Sources and dependencies](#sources-and-dependencies) | Recover relied-on contributions, supplying editions, limits and conditions for reconsideration. |
-| [Name and citation](#name-and-citation) | Cite the framework and recover its local naming settlement. |
+| [EXD.Profiles - Use profiles](#use-profiles) | Adapt the Methods to instructional, technical/advisory and human–AI explanation. |
+| [EXD.Reference - Sources and dependencies](#sources-and-dependencies) | Recover relied-on contributions, supplying editions, limits and conditions for reconsideration. |
+| [EXD.Edition - Name and citation](#name-and-citation) | Cite the framework and recover its local naming settlement. |
 
 **Patterns by working question**
 
@@ -421,7 +421,7 @@ At comparable calculation complexity, the unequal-count case distinguishes rules
 
 [EXD.1](#exd1---establish-and-revise-what-a-recipient-needs-explained) selects the target question. [EXD.3](#exd3---coordinate-the-expression-of-an-explanation) coordinates the expression of the worked correspondence. [EXD.5](#exd5---guide-a-recipients-own-explanation) guides a recipient's product and correction; [EXD.6](#exd6---compare-explanations-for-the-recipients-use-and-decide-whether-a-repair-is-worthwhile) selects a worthwhile example change or retains a sufficient one.
 
-The [instructional profile](#instructional-explanation) preserves the HCD task, feedback and assistance returns. The [supplied-account entry](#exdpreface3---obtain-and-carry-the-subject-explanation) retains the subject warrant.
+The [instructional profile](#exdprofiles1---instructional-explanation) preserves the HCD task, feedback and assistance returns. The [supplied-account entry](#exdpreface3---obtain-and-carry-the-subject-explanation) retains the subject warrant.
 
 ### EXD.2:End
 
@@ -543,7 +543,7 @@ FPF C.37 and ME.22 preserve the general selection and content/form comparison. I
 
 [EXD.2](#exd2---build-and-bound-an-explanatory-example) supplies a worked correspondence and boundary. [EXD.4](#exd4---co-construct-and-repair-an-explanation-in-dialogue) can expose the local expression difficulty during use. [EXD.6](#exd6---compare-explanations-for-the-recipients-use-and-decide-whether-a-repair-is-worthwhile) compares a candidate with a sufficient incumbent.
 
-[FPF C.37](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c37---select-and-use-representations-for-one-action) governs representation selection and co-use. [C.2.8](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c28---uextractablestructuralinformation--structure-this-reader-can-recover) characterizes selected structural recovery under explicit conditions. The [instructional profile](#instructional-explanation) qualifies human learning and assistance uses.
+[FPF C.37](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c37---select-and-use-representations-for-one-action) governs representation selection and co-use. [C.2.8](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c28---uextractablestructuralinformation--structure-this-reader-can-recover) characterizes selected structural recovery under explicit conditions. The [instructional profile](#exdprofiles1---instructional-explanation) qualifies human learning and assistance uses.
 
 ### EXD.3:End
 
@@ -819,7 +819,7 @@ This pattern owns explanation-specific product and prompt construction. Human Ca
 
 [EXD.2](#exd2---build-and-bound-an-explanatory-example) supplies the instance and boundary. [EXD.3](#exd3---coordinate-the-expression-of-an-explanation) coordinates a visual or symbolic product. [EXD.4](#exd4---co-construct-and-repair-an-explanation-in-dialogue) interprets a contribution that changes the target or repair. [EXD.6](#exd6---compare-explanations-for-the-recipients-use-and-decide-whether-a-repair-is-worthwhile) selects a worthwhile prompt or explanation change.
 
-The [instructional profile](#instructional-explanation) names HCD's task, feedback, assistance and material-evaluation returns and the evidence needed for later learning claims.
+The [instructional profile](#exdprofiles1---instructional-explanation) names HCD's task, feedback, assistance and material-evaluation returns and the evidence needed for later learning claims.
 
 ### EXD.5:End
 
@@ -960,7 +960,9 @@ The serious alternative is to select the most fluent, extensive or visually attr
 
 The profiles reuse the Preface's subject, account, expression, recipient and assurance distinctions and the six Methods. Each changes the receiving use, supplied contributions and evidence question.
 
-## Instructional explanation
+<a id="instructional-explanation"></a>
+
+## EXD.Profiles:1 - Instructional explanation
 
 Use this profile when a learner needs to reconstruct and use a relation that a learning task requires. A lesson, example or demonstration is insufficient when the learner can imitate its surface but cannot make the required connection. Start from the target performance and its criterion, including the help permitted. A learner who already performs the relevant task, or someone seeking only a sufficient immediate answer, may need no additional explanatory exercise.
 
@@ -978,7 +980,9 @@ Guidance can reduce an irrelevant search burden while concealing what the learne
 
 Fiorella's differentiated explaining, visualizing and enacting contributions, the 2023 relational-mapping study, Zhang and Fiorella's error-focused feedback, and Tetzlaff and colleagues' assistance synthesis inform EXD.2/.5 at their stated limits. Mayer's multimedia principles and Cromley and Chen's synthesis inform EXD.3's conditional form choices. These sources support candidate instructional moves and relevant distinctions; they do not certify this particular lesson. The practical gain is a repair directed at the needed relation with interpretable assistance and retry evidence. EXD.6 and HCD.19 decide whether changing the material is worth its burden or whether a different task or support question owns the next action.
 
-## Technical and advisory explanation
+<a id="technical-and-advisory-explanation"></a>
+
+## EXD.Profiles:2 - Technical and advisory explanation
 
 Use this profile when a practitioner or advice recipient needs to understand a rationale well enough to select an entry, assess a condition or make an informed next move. The subject may be a technical arrangement or a recommendation. The difficulty can be an omitted relation, an ambiguous question or a changed premise; disagreement and lack of authority require their own treatment.
 
@@ -996,7 +1000,9 @@ Recognize a usable explanatory move by the recipient's actual question and the s
 
 The principal costs are unnecessary elicitation, an overlong justification and exposing more detail than the recipient needs. The principal bias is to interpret an unfamiliar question or disagreement as inability. Fisher's consultation analysis and Axelsson and colleagues' contextual feedback distinctions inform the dialogue; they are adapted to these constructed cases without claiming a universal sequence or outcome. The practical gain is a qualified rationale and correct next entry or return. A separate instructional need can select HCD and the instructional profile, but is not inferred merely from receiving advice.
 
-## Human–AI explanation
+<a id="humanai-explanation"></a>
+
+## EXD.Profiles:3 - Human–AI explanation
 
 Use this profile when a person uses an AI system to prepare, discuss or revise an explanation, or seeks an explanation about an AI system. First distinguish these subjects. An AI's role in producing text does not make its own operation the thing explained. A user asking why a deployed system produced an output may require evidence about that actual system, its inputs and operation.
 
@@ -1014,9 +1020,14 @@ Current social XAI work supplies joint question formation, incremental explanati
 
 Adaptation can make the exchange more relevant while adding turns, reading burden and opportunities for unsupported content. Treating a human user as a fixed knowledge level can miss a changed purpose; treating every correction as a prompt to add detail can retain the wrong question. The useful result is a warranted answer, task-specific repair or honest subject return with interpretable interaction evidence. EXD.6 governs worthwhile local comparison; the instructional and technical/advisory profiles supply their respective stronger receiving questions.
 
+## EXD.Profiles:End
+
+
 # Sources and dependencies
 
-## Relied-on contributions and their limits
+<a id="relied-on-contributions-and-their-limits"></a>
+
+## EXD.Reference:1 - Relied-on contributions and their limits
 
 This edition connects formal and pragmatic explanation, empirical work on learning and interaction, and constructive practice through their contributions to a recipient's task. The sources below support the stated distinctions and Methods. Worked examples in this framework are constructions unless explicitly reported as source observations.
 
@@ -1037,7 +1048,9 @@ This edition connects formal and pragmatic explanation, empirical work on learni
 
 Older books by Brown and Wragg (2001), LeFever (2012), Khalifa (2017) and McCain (2022) identify lines of instructional practice, explanatory craft and philosophical inquiry in the field's background. Their publisher descriptions and contents supplied lineage orientation. Unread chapters are not premises for the operative Methods above; the later sources supply the named receiving contributions and limits.
 
-## Framework and subject suppliers
+<a id="framework-and-subject-suppliers"></a>
+
+## EXD.Reference:2 - Framework and subject suppliers
 
 FPF remains the external foundational framework. This edition uses the September 2026 current-pattern text available on **9 September 2026**, specifically the named units below; it does not redefine FPF's kinds or import those bodies as Explanation Design members. The public repository is an access and discovery route. A later file date alone does not replace a selected supplying claim.
 
@@ -1057,13 +1070,20 @@ FPF remains the external foundational framework. This edition uses the September
 
 The source choices above are use-specific. Reopen a receiving claim when its premise or evidence no longer fits, a necessary source becomes unavailable, or the proposed use asks for a stronger effect. Preserve independently supported accounts and explicit conditional answers.
 
+## EXD.Reference:End
+
+
 # Name and citation
 
-## Citation
+<a id="citation"></a>
+
+## EXD.Edition:1 - Citation
 
 Anatoly Levenchuk. *Explanation Design Principles Framework*. Use the release date at the beginning of this file when citing this edition. Cite a particular Method by its EXD.1–EXD.6 address and title, together with this edition. The framework's [FPF publication repository](https://github.com/ailev/FPF) is the public discovery route.
 
-## Naming settlement
+<a id="naming-settlement"></a>
+
+## EXD.Edition:2 - Naming settlement
 
 This local naming settlement concerns this six-pattern Domain Principle Framework and its three use profiles. Its subject rule is [FPF E.4.DPF](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#e4dpf---domain-and-local-principle-frameworks-whether-and-how-to-author-and-publish); its naming methods are [F.18](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#f18---local-first-unification-naming-protocol) and [F.17](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#f17---make-a-settled-naming-decision-recoverable-for-reuse-unified-term-sheet).
 
@@ -1075,7 +1095,9 @@ The effective local reference scheme fixes the governed practice as constructing
 
 Reopen the name when its actual use systematically hides performed interaction, when the governed practice changes, or when an actual naming collision prevents unambiguous citation. A new source citation alone does not change this value's identity.
 
-## Public term row
+<a id="public-term-row"></a>
+
+## EXD.Edition:3 - Public term row
 
 The [F.17](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#f17---make-a-settled-naming-decision-recoverable-for-reuse-unified-term-sheet) public row below makes the single local naming settlement available for reuse. Public citation of the framework and its prefix needs this one stable designation; the six ordinary action titles do not require six additional term families. This is the bounded F.14 admission reason. The row's claim content consists of the identity, sense, basis, use and currentness claims stated here; the row and the naming settlement are distinct epistemes about the same governed framework.
 
@@ -1096,3 +1118,5 @@ The [F.17](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#f17---make-a-settl
 | CurrentnessCondition | The named value and local sense remain applicable to the receiving citation. Reconsider an affected use if the practice, repertoire identity or collision changes; preserve the distinction between naming, publication availability and substantive adequacy. |
 
 No F.9 Bridge occurrence is asserted: the row publishes the same local naming claim and does not establish a cross-scheme equivalence. Publication and substantive fitness are answered by their own evidence; the row makes neither claim merely by being filled.
+
+## EXD.Edition:End

@@ -29,10 +29,10 @@ Use the practical entries to find a useful route, the Preface to understand how 
 
 | Locus | Title | Kind | Use |
 | --- | --- | --- | --- |
-| [Heterogeneous cases](#heterogeneous-acceptance-cases) | Teaching, fiction, mathematics and live events | Worked applications | Compare uses and constraints across different narrative tasks. |
-| [Support Maps](#support-maps) | Architecture, language, sources and terminology | Reference | Follow a relevant question from a pattern to its further explanation. |
-| [DPF Relations](#dpf-relations) | Dependencies and connected uses | Reference | Recover a relation and the condition that reopens it. |
-| [Refresh Route](#refresh-route) | Source and use changes | Maintenance guidance | Revisit the affected use when its conditions change. |
+| [Heterogeneous cases](#nstdreference1---heterogeneous-acceptance-cases) | Teaching, fiction, mathematics and live events | Worked applications | Compare uses and constraints across different narrative tasks. |
+| [Support Maps](#nstdreference2---support-maps) | Architecture, language, sources and terminology | Reference | Follow a relevant question from a pattern to its further explanation. |
+| [DPF Relations](#nstdreference8---dpf-relations) | Dependencies and connected uses | Reference | Recover a relation and the condition that reopens it. |
+| [Refresh Route](#nstdreference9---refresh-route) | Source and use changes | Maintenance guidance | Revisit the affected use when its conditions change. |
 
 # Readme - First Practical Entries
 
@@ -161,7 +161,7 @@ The gain is an account whose content, order and use are easier to examine and ch
 
 ## NSTD.Preface:6 - Source synthesis, coverage and relations
 
-Narrative studies supplies several complementary contributions. Narratology distinguishes story, discourse, voice and focalization; cognitive narrative research examines event comprehension and reader processing; science communication makes the tension between engagement and supported claims visible; natural-language generation and narrative planning distinguish content, order, realization and control. Learning research contributes conditions for retrieval, spacing, interleaving and transfer. The [Source Use And Refresh Map](#source-use-and-refresh-map) and each pattern's SoTA-Echoing section state the adopted contributions and their limits.
+Narrative studies supplies several complementary contributions. Narratology distinguishes story, discourse, voice and focalization; cognitive narrative research examines event comprehension and reader processing; science communication makes the tension between engagement and supported claims visible; natural-language generation and narrative planning distinguish content, order, realization and control. Learning research contributes conditions for retrieval, spacing, interleaving and transfer. The [Source Use And Refresh Map](#nstdreference5---source-use-and-refresh-map) and each pattern's SoTA-Echoing section state the adopted contributions and their limits.
 
 The synthesis uses those distinctions as methods for recognizable work. It adapts staged planning into a revisable cycle and separates product evaluation from generation history. A purely stylistic account would miss source and dependency failures; a universal formal-admission procedure would add unnecessary work before ordinary explanation. Domain sources remain necessary when the proposed use exceeds a source's actual reach or a newer result changes the method.
 
@@ -169,7 +169,7 @@ The publication foregrounds selection, order, event and mechanism support, viewp
 
 The emphasis on explicit source relations can favor analytic and technical work. Expressive aims such as mood, voice and imaginative discovery remain legitimate; choose a fidelity or reconstruction criterion only when that use requires it. A provisional draft can help discover both the subject and the purpose. Actual field effectiveness and learning remain questions for observations qualified by their conditions.
 
-This DPF depends on FPF's general distinctions and adds narrative-domain methods. FPF does not depend on NSTD. The [DPF Relations](#dpf-relations) section explains the specific dependencies, teaching-publication relations and useful returns. In an architecture-mediated explanation, the reader may need to return from narrative to a description or view, then to the modeled structure and observations. A directly sourced explanation returns to its relevant material. Each representation may omit relations; inspect those omissions when they affect the use.
+This DPF depends on FPF's general distinctions and adds narrative-domain methods. FPF does not depend on NSTD. The [DPF Relations](#nstdreference8---dpf-relations) section explains the specific dependencies, teaching-publication relations and useful returns. In an architecture-mediated explanation, the reader may need to return from narrative to a description or view, then to the modeled structure and observations. A directly sourced explanation returns to its relevant material. Each representation may omit relations; inspect those omissions when they affect the use.
 
 ## NSTD.Preface:End
 
@@ -356,13 +356,19 @@ NarrativePurposeIntake@FictionalContinuationProbe:
   refreshCondition: source-pack correction, canon selection change, generated-carrier admission change
 ```
 
-#### When claim identity matters
+<a id="when-claim-identity-matters"></a>
+
+#### NSTD.1:4.1 - When claim identity matters
+
 
 Use the precise construction in `A.6.3.NAR:4.0.1` when the receiving use needs identifiable source and narrative claims for citation, dispute, consequential cross-scheme use or another stated reliance requirement. Recover source episteme X, narrative episteme Y and the construction between them; preserve the same EntityOfConcern and test any correspondence on which it depends. Public distribution by itself does not require this fuller account. A permission, evidence or assurance claim still needs its own grounds.
 
 ### NSTD.1:5 - Archetypal Grounding
 
-#### Worked slice: FPF seminar from source spine to narrative route
+<a id="worked-slice-fpf-seminar-from-source-spine-to-narrative-route"></a>
+
+#### NSTD.1:5.1 - Worked slice: FPF seminar from source spine to narrative route
+
 
 A seminar author receives the request: "Tell a motivating story about FPF so people want to use it." To turn that aim into a lesson, the author chooses what learners should be able to do: recognize a situation, select a suitable pattern and apply its conditions. The following record shares those choices with another teacher; a sole author could develop them in the draft itself.
 
@@ -403,7 +409,10 @@ generatedDraftInspectionRef: the NSTD.7 case that identifies the generated draft
 
 One person may operate the tool, choose the voice and decide how to use the result. The output still needs comparison with the selected material; authorship alone does not establish its fidelity.
 
-#### Worked slice: architecture-mediated narrative
+<a id="worked-slice-architecture-mediated-narrative"></a>
+
+#### NSTD.1:5.2 - Worked slice: architecture-mediated narrative
+
 
 An architect wants a narrative explaining a system's future structure after candidate synthesis. Do not start with "tell the journey from chaos to architecture". Start by deciding whether the narrative is architecture-mediated. If it is, architecture work remains live before narrative work.
 
@@ -430,13 +439,19 @@ NarrativePurposeIntake@ArchitectureDecisionStory:
 
 This case teaches the architecture bridge. The narrative worker is not exempt from architecture owners just because the output is prose. `C.2.8` is live for the amount of structure this reader can extract, applied through `NSTD.6`; `C.33` is live for architecture-description adequacy; `C.34` is live if correspondence between described and realized structure matters; `E.17` is live if the carrier is published; architecture decision owners remain live for decision authority. `NSTD.1` only binds the narrative purpose to selected structures and reader use.
 
-#### Worked slice: franchise continuation probe
+<a id="worked-slice-franchise-continuation-probe"></a>
+
+#### NSTD.1:5.3 - Worked slice: franchise continuation probe
+
 
 For a continuation-style storycraft probe using a well-known space-opera franchise such as `Star Wars`, select the canon, premise and continuity constraints relevant to the proposed scene. A draft can help reveal which of those choices remain unclear. In this example the use is a private critique; a later publication would raise separate rights questions.
 
 The request "Write a surprising sequel that feels epic" leaves those choices open. For the private critique, the writer chooses a continuation premise that preserves a character's established motivation and the consequences of earlier events. A new event may extend the story; if it conflicts with the chosen continuity, revise the event or explain the changed premise. Ordering and suspense alone cannot repair that conflict.
 
-#### Role-specific first moves
+<a id="role-specific-first-moves"></a>
+
+#### NSTD.1:5.4 - Role-specific first moves
+
 
 | Worker | First source-selection move | Common hidden overread | Repair when that difficulty occurs |
 | --- | --- | --- | --- |
@@ -447,7 +462,10 @@ The request "Write a surprising sequel that feels epic" leaves those choices ope
 | Live commentator | Name event stream, provisional interpretation, and later official return. | Live causal claim is settled fact. | Mark uncertainty and telemetry return. |
 | AI-agent operator | Name material, required relations and the proposed use. | Fluent prose silently adds a cause or drops a constraint. | Inspect and repair through `NSTD.7` and `NSTD.6`; apply `C.35` only for an architecture use. |
 
-#### What this pattern teaches about FPF
+<a id="what-this-pattern-teaches-about-fpf"></a>
+
+#### NSTD.1:5.5 - What this pattern teaches about FPF
+
 
 `NSTD.1` is often the first place where a narrative worker learns why FPF separates selected source material, description, evidence, assurance, ethics, publication, and improvement. A desired effect does not determine what the source supports. The writer chooses a purpose and checks that the selected source relations can support the intended account. This comparison can remain a short explanation; it need not become a formal intake.
 
@@ -495,7 +513,10 @@ Narrative design begins from audience, communicative aim and available material.
 
 ### NSTD.1:11 - SoTA-Echoing
 
-#### Operational comparison against domain vocabulary
+<a id="operational-comparison-against-domain-vocabulary"></a>
+
+#### NSTD.1:11.1 - Operational comparison against domain vocabulary
+
 
 Narratology distinguishes story, discourse and presentation; cognitive accounts examine event models, perspective and memory; NLG separates content planning, discourse planning and realization. Use these distinctions to ask different practical questions: what material to select, what order to present, what the reader is likely to infer, and what wording to produce. Their terms retain their disciplinary meanings; FPF supplies additional distinctions only where a claim needs them.
 
@@ -586,7 +607,10 @@ Evaluate the sequence for its intended use through `NSTD.6`, including a draft w
 
 ### NSTD.2:5 - Archetypal Grounding
 
-#### Worked example: choosing a path through a graph
+<a id="worked-example-choosing-a-path-through-a-graph"></a>
+
+#### NSTD.2:5.1 - Worked example: choosing a path through a graph
+
 
 A knowledge graph can connect concepts, dependencies, counterexamples, evidence and practice routes. To introduce part of it, choose a traversal that helps the reader encounter the necessary dependencies. The optional example note below retains those choices for a homotopy introduction.
 
@@ -611,7 +635,10 @@ NarrativeOrderingRule@HomotopyIntro:
 
 The introduction can begin with a picture of paths being deformed, then return to the formal definition. For example: "First picture a loop being deformed while its endpoints stay fixed. The next definition specifies which deformations are allowed." This connects the intuitive sequence to its missing mathematical condition.
 
-#### Before and after repair: architecture order
+<a id="before-and-after-repair-architecture-order"></a>
+
+#### NSTD.2:5.2 - Before and after repair: architecture order
+
 
 Before:
 
@@ -625,7 +652,10 @@ After:
 
 What changed: the explanation connects the choice to its problem, alternatives and remaining cost. A reader seeking the implementation sequence or an observed outcome has a different source to consult.
 
-#### Before and after repair: live commentary
+<a id="before-and-after-repair-live-commentary"></a>
+
+#### NSTD.2:5.3 - Before and after repair: live commentary
+
 
 Before:
 
@@ -639,7 +669,10 @@ After:
 
 What changed: the observed sequence remains distinct from the provisional explanation, with a specific question for later review.
 
-#### Comparing candidate orders
+<a id="comparing-candidate-orders"></a>
+
+#### NSTD.2:5.4 - Comparing candidate orders
+
 
 | Observation | Next useful move |
 | --- | --- |
@@ -650,7 +683,10 @@ What changed: the observed sequence remains distinct from the provisional explan
 
 Use `NSTD.6` when a qualified quality result is needed. The number of worked examples alone does not determine an ordering-quality value.
 
-#### SoTA-to-action translation
+<a id="sota-to-action-translation"></a>
+
+#### NSTD.2:5.5 - SoTA-to-action translation
+
 
 Narratology distinguishes selected material, story, discourse and presentation. Here those distinctions help the author separate what is included from the order in which it is encountered. NLG likewise distinguishes content selection, document planning and wording. A smooth sentence can still present a dependency in a misleading place.
 
@@ -833,7 +869,10 @@ If the required reconstruction cannot yet be stated, clarify what the reader nee
 
 ### NSTD.3:5 - Archetypal Grounding
 
-#### Worked example: event support
+<a id="worked-example-event-support"></a>
+
+#### NSTD.3:5.1 - Worked example: event support
+
 
 A science narrative says: "The failed experiment forced the theory to change." Compare the observed result with the prediction and alternatives: was a consequence refuted, an auxiliary assumption questioned, or a replacement supported? The repair should say which of those happened.
 
@@ -858,7 +897,10 @@ After:
 
 The repaired passage retains the surprising result and the next research question, while distinguishing the mismatch from the still-undecided explanation.
 
-#### Worked example: franchise plot support
+<a id="worked-example-franchise-plot-support"></a>
+
+#### NSTD.3:5.2 - Worked example: franchise plot support
+
 
 In a continuation-style storycraft probe, a scene says that a character betrays an ally "because the plot needs a darker turn." That is a narrative-function explanation, not source support. Repair it as source structure:
 
@@ -874,7 +916,10 @@ NarrativeEventSupportRecord@CharacterTurn:
 
 For a story whose events should follow intelligible motives, the author's desire for a twist does not supply the character's reason. Add a pressure, choice or event that makes the turn intelligible, or revise the turn. A deliberately unexplained or absurd turn has a different artistic aim and should be judged for that aim.
 
-#### Comparing relation support
+<a id="comparing-relation-support"></a>
+
+#### NSTD.3:5.3 - Comparing relation support
+
 
 | Observation | Next useful move |
 | --- | --- |
@@ -885,7 +930,10 @@ For a story whose events should follow intelligible motives, the author's desire
 
 These are diagnostic situations. Use `NSTD.6` for a qualified evaluation rather than deriving a score from the presence of a support record.
 
-#### Connecting to the relevant subject method
+<a id="connecting-to-the-relevant-subject-method"></a>
+
+#### NSTD.3:5.4 - Connecting to the relevant subject method
+
 
 A connector does not settle the relation it expresses. “Because” can introduce a physical cause, a reason for acting or a mathematical dependence. Identify that relation first; open the corresponding FPF or subject method when the relation itself needs further work.
 
@@ -1082,7 +1130,10 @@ A useful repair can retain the viewpoint while making the needed relation explic
 
 ### NSTD.4:5 - Archetypal Grounding
 
-#### Worked slice: viewpoint without false agency
+<a id="worked-slice-viewpoint-without-false-agency"></a>
+
+#### NSTD.4:5.1 - Worked slice: viewpoint without false agency
+
 
 An architecture explanation says: “The database wants to protect consistency, while the service wants speed.” This personification can foreground a trade-off. For a reader diagnosing latency, however, the needed relation is how transaction and replication choices affect response time.
 
@@ -1108,7 +1159,10 @@ After:
 
 This repair keeps the narrative value while protecting ontology. The viewpoint is a lens over selected source structures, not a new actor.
 
-#### Worked slice: narrator and reader roles
+<a id="worked-slice-narrator-and-reader-roles"></a>
+
+#### NSTD.4:5.2 - Worked slice: narrator and reader roles
+
 
 A future-project scenario can speak from an imagined user's viewpoint to expose possible consequences. Describe it as a scenario so readers can distinguish the proposed experience from an actual user's report or consultation. For example:
 
@@ -1123,13 +1177,19 @@ NarrativeViewpointRecord@FutureUserScenario:
   sourceReturnCondition: return to source assumptions and later evidence
 ```
 
-#### Choosing a viewpoint repair
+<a id="choosing-a-viewpoint-repair"></a>
+
+#### NSTD.4:5.3 - Choosing a viewpoint repair
+
 
 Keep wording that already makes the relevant action clear. If a viewpoint hides a needed relation, add that relation, change perspective or name the responsible participant. Mark a scenario or metaphor when the reader could otherwise rely on it as an observation. Replace the device if its effect depends on concealing a fact needed for the intended use.
 
 To compare alternatives, try a short literal account or another viewpoint and ask what the reader can now recover. For the database case, the comparison is whether the reader can explain the wait and locate the configurable choice. For the future-user case, it is whether the reader distinguishes a proposed experience from observed user evidence. Use `NSTD.6` when a declared quality result is needed; these diagnostic questions are not a second ordinal scale.
 
-#### FPF owner teaching
+<a id="fpf-owner-teaching"></a>
+
+#### NSTD.4:5.4 - FPF owner teaching
+
 
 Viewpoint selects and highlights structure for a use. An architect's view, a narrator's voice and a protagonist's function can help recover different aspects of the same case. When a real agency, assignment, capability or responsibility claim matters, recover that claim separately under its applicable definition.
 
@@ -1314,7 +1374,10 @@ Artistic language can serve atmosphere, felt experience and expression as well a
 
 ### NSTD.5:5 - Archetypal Grounding
 
-#### Worked example: a failure story that teaches a usable distinction
+<a id="worked-example-a-failure-story-that-teaches-a-usable-distinction"></a>
+
+#### NSTD.5:5.1 - Worked example: a failure story that teaches a usable distinction
+
 
 A learning narrative about FPF uses a dramatic failure story: a team blindly follows a pattern checklist and damages its project. The story is engaging, but it may over-persuade if it implies that FPF prevents all such failures or that the named team is evidence. `NSTD.5` keeps interest useful and bounded.
 
@@ -1342,7 +1405,10 @@ After:
 
 > In this fictional case, the team's checklist still assumed a stable workload after demand had changed. Before repeating the old action, compare its conditions with the present workload. The example illustrates that mismatch; whether FPF improves actual projects is a separate question.
 
-#### Worked example: an engaging homotopy image with its limiting condition
+<a id="worked-example-an-engaging-homotopy-image-with-its-limiting-condition"></a>
+
+#### NSTD.5:5.2 - Worked example: an engaging homotopy image with its limiting condition
+
 
 A homotopy lesson uses the image of a loop "slipping around a hole". The image is engaging and memorable, but it may cause learners to think all deformations are allowed. `NSTD.5` protects the formal boundary:
 
@@ -1357,7 +1423,10 @@ NarrativeEngagementBoundary@HomotopyLoopImage:
   evaluationReturn: learner marks allowed and blocked deformation conditions
 ```
 
-#### Engagement device selection matrix
+<a id="engagement-device-selection-matrix"></a>
+
+#### NSTD.5:5.3 - Engagement device selection matrix
+
 
 | Device | Buys | Risk | Repair when the risk occurs |
 | --- | --- | --- | --- |
@@ -1368,11 +1437,17 @@ NarrativeEngagementBoundary@HomotopyLoopImage:
 | Surprise reveal | Supports memory and curiosity. | Hides a needed source constraint from the writer as well as the reader. | Restore the missing condition through `NSTD.1`, or repair its presentation order through `NSTD.2`. With the condition and order already available, try the scene directly. |
 | Humor or style | Can make a passage easier to approach or remember. | Loses a distinction needed for the later use. | Restore that distinction; use `C.2.LS`, `A.6.3.CSC` or `E.10` only for the unresolved language, coarsening or precision question. |
 
-#### Comparing engagement choices
+<a id="comparing-engagement-choices"></a>
+
+#### NSTD.5:5.4 - Comparing engagement choices
+
 
 Compare the intended effect and the content the reader needs. A more vivid version is worth keeping when it improves that use without concealing a consequential condition. If both versions work, their costs and expressive aims can decide. A comparison can be an expert walkthrough, a reader response or an observed result; state which basis supports the conclusion under `NSTD.6`.
 
-#### Keeping the reader's use in view
+<a id="keeping-the-readers-use-in-view"></a>
+
+#### NSTD.5:5.5 - Keeping the reader's use in view
+
 
 “Make it interesting” leaves an important question open: interesting for which reader and activity? A narrative can attract attention to a useful problem while preserving uncertainty and alternatives. The resulting motivation still needs to be distinguished from grounds for believing a factual claim.
 
@@ -1702,7 +1777,10 @@ Default narrative rendering quality characteristics:
 
 ### NSTD.6:5 - Archetypal Grounding
 
-#### Value bank: full result rows
+<a id="value-bank-full-result-rows"></a>
+
+#### NSTD.6:5.1 - Value bank: full result rows
+
 
 Use this bank when a narrative rendering "sounds good" and therefore tempts the worker to skip evaluation. Each row illustrates evaluation of a narrative version for one declared use; prior acceptance is unnecessary. The same text may receive different values for a different use.
 
@@ -1717,13 +1795,19 @@ Use this bank when a narrative rendering "sounds good" and therefore tempts the 
 | Live commentary | `EventMechanismSupport` | `3` | Observation and provisional interpretation are separated, but later telemetry return is only generic. | Add specific official record, replay, or statistics return condition. |
 | Generated graph-to-text narrative | `EventMechanismSupport` | `2` | The draft states “A caused B”, while the source graph establishes only that A preceded B. | Return to `NSTD.3` or `NSTD.7`: remove the unsupported cause or obtain the needed causal account. |
 
-#### An existing product and an unknown manufacturing history
+<a id="an-existing-product-and-an-unknown-manufacturing-history"></a>
+
+#### NSTD.6:5.2 - An existing product and an unknown manufacturing history
+
 
 An editor receives a handout narrative with a declared onboarding use, qualified subject basis and source-return links, but no manufacturing or repair journal. The editor reconstructs the needed source relations from the intended work and subject sources, follows their use through the present explanation and exercises, and tests a meaningful changed case. A missing return or a false relation is a current-product defect. No journal is needed to identify or repair it, and a strong present boundary test can support a high product value without inventing an earlier repair.
 
 If the same editor is instead asked whether the handout faithfully transforms a named seminar, the seminar and handout must be compared. If asked whether the author performed a prescribed review or made a particular correction, evidence of that action is also needed. Current fidelity or a successful reader attempt cannot answer that historical question. A generated candidate receives the same current-product evaluation; its acceptance or production-history claims remain separate questions.
 
-#### Before and after evaluation repair
+<a id="before-and-after-evaluation-repair"></a>
+
+#### NSTD.6:5.3 - Before and after evaluation repair
+
 
 Before evaluation statement:
 
@@ -1737,7 +1821,10 @@ After evaluation statement:
 
 Now `E.23` has a concrete changed slice: add two source-return refs and re-evaluate source-return readiness. Revisit the amount only if the changed access or explanation can change structural recovery. An earlier amount label is reusable only through its recoverable selection, scale, conditions and evidence; an unsupported `4` does not become `4/5`.
 
-#### Adjacent-value calibration
+<a id="adjacent-value-calibration"></a>
+
+#### NSTD.6:5.4 - Adjacent-value calibration
+
 
 For structural-amount calibration, fix five relations in a narrative about reusing a review after a display change: reuse requires the same claims, the same question, and the same qualification window; an unavailable required argument stops the new check and returns it to the source; that stop preserves unrelated review results. This adapts ME.22's content example. The condition, stop and source return form one compound unit at this declared grain. Hold the reader, case facts, material, operations, help and budget constant. The counts below illustrate nested constructed recovery sets, not three observed trials or a universal five-point rubric. Another selected set uses its own count or denominator without conversion to five labels.
 
@@ -1758,7 +1845,10 @@ The other characteristics use their own ordinal quality meanings:
 | `SourceStructureSelectionFit` | Selected content partly serves the purpose, but a needed relation is omitted. | Selected relations support the intended use and meaningful omissions are recoverable. | A relevant changed case confirms the selection's stated reach and limits. |
 | `LearningRouteReconstructionFit` | Learners can retell the route but not reliably reconstruct source relations. | Learners reconstruct source spine and source-return boundaries. | Learners transfer the route to a new case and identify the correct neighboring owner. |
 
-#### Evaluation-to-improvement repair input without process theatre
+<a id="evaluation-to-improvement-repair-input-without-process-theatre"></a>
+
+#### NSTD.6:5.5 - Evaluation-to-improvement repair input without process theatre
+
 
 `NSTD.6` does not create a big improvement program. It creates result rows. A repeated improvement loop needs only:
 
@@ -1774,7 +1864,10 @@ NarrativeRenderingImprovementLoopInput@Context:
 
 If the change is "regenerate until better", the object version and changed slice are gone. If the change is "add a source-return link and an analogy-stop task", `E.23` can operate and `NSTD.6` can re-evaluate.
 
-#### FPF owner teaching
+<a id="fpf-owner-teaching-1"></a>
+
+#### NSTD.6:5.6 - FPF owner teaching
+
 
 `C.2.8` governs structural amount for architecture and non-architecture narratives alike. `NSTD.6` applies it to the narrative and the selected observer/use conditions. `C.33` retains the separate architecture-description adequacy question. Source-selection fit, source-return readiness, effort and usefulness remain separately judged; a story need not be an architecture description for its structural amount to be compared.
 
@@ -1931,7 +2024,10 @@ Select a probe when its possible result can change the generation method, repair
 
 ### NSTD.7:5 - Archetypal Grounding
 
-#### Generated-narrative pipeline: graph-to-text case
+<a id="generated-narrative-pipeline-graph-to-text-case"></a>
+
+#### NSTD.7:5.1 - Generated-narrative pipeline: graph-to-text case
+
 
 An AI agent receives a concept graph and produces a polished explanation. The author compares the needed dependency and example relations with the draft, evaluates consequential losses and repairs the account. The optional record below supports repetition of that comparison.
 
@@ -1957,7 +2053,10 @@ Pipeline steps:
 4. Use `NSTD.6` to assess the repaired version for the intended reading. The draft need not have been accepted before this assessment.
 5. Keep the adequate result. For repeated improvement, use `E.23` with the version, changed part, protected characteristics and comparison basis.
 
-#### Probe suite for generated narrative
+<a id="probe-suite-for-generated-narrative"></a>
+
+#### NSTD.7:5.2 - Probe suite for generated narrative
+
 
 | Probe | Question | Pass condition | Failure repair |
 | --- | --- | --- | --- |
@@ -1967,7 +2066,10 @@ Pipeline steps:
 | Schema use | Does the result satisfy the constraints that matter to its use? | Required fields and their semantic constraints are satisfied. | Repair the generator or result; use executable validation when it can test those constraints. |
 | Improvement evidence | Is the new variant better under the relevant `NSTD.6` characteristics? | Re-evaluation supports the claimed change without losing protected results. A sufficient one-off comparison can finish here. | Keep an unsupported variant as a candidate. Use `E.22` if the question needs framing, or `E.23` for repeated improvement. |
 
-#### Before and after repair: generated seminar outline
+<a id="before-and-after-repair-generated-seminar-outline"></a>
+
+#### NSTD.7:5.3 - Before and after repair: generated seminar outline
+
 
 Before:
 
@@ -1979,13 +2081,19 @@ After:
 
 > The outline selects `EntityOfConcern`, forces, solution, neighboring-pattern exits and the improvement loop, ordered by their teaching prerequisites. Compare those relations with the source and try the intended reconstruction task through `NSTD.8` and `NSTD.6`. A worked design estimate can support a provisional lesson; a claim about what learners actually recover requires a reading or teaching trial. `C.35` becomes relevant only if the generated result is being used to inform architecture work.
 
-#### Generated-storycraft boundary
+<a id="generated-storycraft-boundary"></a>
+
+#### NSTD.7:5.4 - Generated-storycraft boundary
+
 
 For a franchise continuation, compare the generated scene with the selected continuity, premise and character-motivation constraints. A surprising event is acceptable when those relations support it; if it relies on a contradiction, repair the event or change the stated premise. Source perturbation can test a recurring generator problem. A private critique and a publication have different permissions questions. `NSTD.6` can evaluate the candidate before either use is accepted.
 
 
 
-#### Calibration for generated narrative
+<a id="calibration-for-generated-narrative"></a>
+
+#### NSTD.7:5.5 - Calibration for generated narrative
+
 
 | Illustrative condition | Consequence for use |
 | --- | --- |
@@ -1995,7 +2103,10 @@ For a franchise continuation, compare the generated scene with the selected cont
 | A method improvement is claimed. | Compare versions under the same relevant conditions, including protected characteristics. Repeated or heterogeneous probes support only the generality they actually test. |
 
 
-#### FPF owner teaching
+<a id="fpf-owner-teaching-2"></a>
+
+#### NSTD.7:5.6 - FPF owner teaching
+
 
 `NSTD.7` connects content planning, realization and evaluation. A generated account has claims expressed through a publication form; its fluency alone does not establish those claims. Use `C.2.8` for reader recovery, `A.10` for evidence claims and `B.3` for assurance claims when they arise. `C.35` is restricted to generated or discovered results intended to inform architecture work. Source changes and changed generator behavior can reopen an earlier comparison.
 
@@ -2066,7 +2177,10 @@ Planning makes selected content and order available for control; inspecting the 
 
 ### NSTD.7:11 - SoTA-Echoing
 
-#### Operational comparison against domain vocabulary
+<a id="operational-comparison-against-domain-vocabulary-1"></a>
+
+#### NSTD.7:11.1 - Operational comparison against domain vocabulary
+
 
 Narratology distinguishes story, discourse and presentation; generation methods distinguish selected content, its order and its realization. Use these distinctions to locate a defect: omitted material, misleading sequence, unsupported relation or wording. A tool may combine these operations internally, so evaluate the output without inventing a production history.
 
@@ -2174,7 +2288,10 @@ The following design questions connect the route's components. They can be addre
 
 Do not optimize the learning-route architecture for local neatness. A locally neat blocked route can be globally weak: it gives learners the answer key for the current block, so they do not practice selecting the right owner under mixed cues. Interleaving is useful when the learner must later discriminate similar patterns, methods, proof obligations, architecture structures, or source-return owners. Spacing is useful when the learner must still retrieve a structure after other material has intervened. Use them as design moves with declared learner use, not as decorative variety.
 
-#### Check attachment and support at the next use
+<a id="check-attachment-and-support-at-the-next-use"></a>
+
+#### NSTD.8:4.1 - Check attachment and support at the next use
+
 
 Inspect the relation between a block or learning aid and both its surrounding context and its later use. What question is active, what distinction or action does this example, image, explanation or exercise enable, why is it needed here, and where will its result be used? A question, worked example, caption, short transition or later payoff can carry that relation. There is no compulsory five-field form and no quota of connective phrases. A repeated word is not enough when the reader still cannot connect the two uses.
 
@@ -2212,7 +2329,10 @@ If the route is improved across runs, first evaluate the concrete route version 
 
 ### NSTD.8:5 - Archetypal Grounding
 
-#### Worked learning route: FPF onboarding
+<a id="worked-learning-route-fpf-onboarding"></a>
+
+#### NSTD.8:5.1 - Worked learning route: FPF onboarding
+
 
 This example sketches the route that a seminar, tutorial or exercise sequence could realize. The note is optional; the important relation is between each teaching move and the next learner action.
 
@@ -2265,7 +2385,10 @@ A later diagram or recap should connect that choice to the next use. A wrong fig
 
 A seminar file can add timing, facilitation notes and complete exercises. This pattern keeps the examples needed to explain route design without prescribing a complete seminar.
 
-#### Worked learning route: repair topic-blocked practice
+<a id="worked-learning-route-repair-topic-blocked-practice"></a>
+
+#### NSTD.8:5.2 - Worked learning route: repair topic-blocked practice
+
 
 An engineering team wants a course on architecture patterns. Their first outline looks clean:
 
@@ -2315,7 +2438,10 @@ LearningNarrativeRoute@ArchitecturePatternCourse:
 
 The repaired route still preserves the source architecture. It simply refuses to treat that architecture as the course order. The learner sees a pattern, uses it, leaves it, then returns under a different cue. That is the point: source modules can stay modular while the learning route deliberately crosses module boundaries.
 
-#### Worked learning route: homotopy explanation
+<a id="worked-learning-route-homotopy-explanation"></a>
+
+#### NSTD.8:5.3 - Worked learning route: homotopy explanation
+
 
 ```text
 LearningNarrativeRoute@HomotopyIntro:
@@ -2344,7 +2470,10 @@ LearningNarrativeRoute@HomotopyIntro:
 
 If learners can retell the loop picture but cannot state the required constraint, repair the connection to the definition. A suitable example, counterexample or worked comparison may supply that repair.
 
-#### Worked learning route: using this pattern language
+<a id="worked-learning-route-using-this-pattern-language"></a>
+
+#### NSTD.8:5.4 - Worked learning route: using this pattern language
+
 
 A short course on this DPF may use the three probes: FPF seminar, franchise continuation, and homotopy explanation, with live commentary as a fourth transfer case. The route succeeds only if learners can see the same pattern set working across different domains:
 
@@ -2357,7 +2486,10 @@ A short course on this DPF may use the three probes: FPF seminar, franchise cont
 
 The transfer question is the actual teaching test. Remembering case names is not learning. The learner must choose the live pattern and repair the failure in a new situation.
 
-#### Before and after repair: teaching material inside pattern body
+<a id="before-and-after-repair-teaching-material-inside-pattern-body"></a>
+
+#### NSTD.8:5.5 - Before and after repair: teaching material inside pattern body
+
 
 Before:
 
@@ -2369,13 +2501,19 @@ After:
 
 > This pattern explains how to design the learning route, with worked examples of its operations. A complete seminar script, slide deck and session notes are separate teaching products. Their learner tasks and source returns can be evaluated through NSTD.6.
 
-#### Evaluating the learning route
+<a id="evaluating-the-learning-route"></a>
+
+#### NSTD.8:5.6 - Evaluating the learning route
+
 
 Select the outcome needed for the declared teaching use. Immediate reconstruction, delayed retrieval, discrimination among similar cases and transfer to a new case require different tasks and observations. Success at one does not establish the others. A one-off explanation may need only immediate reconstruction; a course promising durable independent use needs an appropriately delayed and varied task.
 
 Use `NSTD.6` with the observer, prior preparation, assistance and reading conditions stated. Keep an author's walkthrough distinct from an observed learner result.
 
-#### Connecting route design to publication and improvement
+<a id="connecting-route-design-to-publication-and-improvement"></a>
+
+#### NSTD.8:5.7 - Connecting route design to publication and improvement
+
 
 `NSTD.8` uses `E.11` for framework entry, `E.17` for publication form, `E.17.AUD` for a separately usable audience unit, `NSTD.5` for engagement and `NSTD.6` for evaluation. `E.22`/`E.23` support a selected improvement; `G.11` addresses an applicable source or practice refresh. A one-off explanation and a maintained course need different amounts of recorded design.
 
@@ -2501,13 +2639,17 @@ Uses `A.6.3.NAR`, `E.6`, `E.11`, `E.17`, `E.17.AUD`, `NSTD.1`, `NSTD.2`, `NSTD.5
 
 # Reference
 
-## Heterogeneous Acceptance Cases
+<a id="heterogeneous-acceptance-cases"></a>
+
+## NSTD.Reference:1 - Heterogeneous Acceptance Cases
 
 The cases show how the methods combine across teaching, fiction, mathematics and live commentary. Each route can be shortened to the work the current difficulty needs.
 
 Use a route to construct a narrative or to locate a defect in an existing one. An existing draft can be evaluated immediately; the absence of its production history does not prevent judging a visible problem. Return to the relevant construction step when repair needs it.
 
-### Case A - FPF Learning Route Probe With Seminar Carrier
+<a id="case-a---fpf-learning-route-probe-with-seminar-carrier"></a>
+
+### NSTD.Reference:1.1 - Case A - FPF Learning Route Probe With Seminar Carrier
 
 Use: a seminar or slide series that teaches readers to apply FPF patterns. The complete course is a separate teaching publication; a worked teaching example may also appear in a pattern.
 
@@ -2534,7 +2676,9 @@ Related work: use `E.17` and `E.17.AUD` for teaching-publication and audience-un
 
 Low `NSTD.6` repair: if learners enjoy sessions but cannot reconstruct pattern use, repair `NSTD.2`, `NSTD.3`, and `NSTD.8` before changing only style.
 
-### Case B - Franchise Continuation Storycraft
+<a id="case-b---franchise-continuation-storycraft"></a>
+
+### NSTD.Reference:1.2 - Case B - Franchise Continuation Storycraft
 
 Use: plan a continuation of an existing fictional world, such as a space-opera franchise. This case concerns narrative construction; it does not determine publication rights.
 
@@ -2562,7 +2706,9 @@ Related work: select canon and its constraints through `NSTD.1`; inspect generat
 
 Low `NSTD.6` repair: continuity drift, premise mismatch, character-agency collapse, escalation without causal structure, fan-service replacing plot function, viewpoint confusion, or stakes without source return repair through `NSTD.1` through `NSTD.4`, not by adding more dramatic prose.
 
-### Case C - Homotopy Theory Explanation
+<a id="case-c---homotopy-theory-explanation"></a>
+
+### NSTD.Reference:1.3 - Case C - Homotopy Theory Explanation
 
 Use: graph-heavy and structure-heavy mathematical theory rendered into sequential explanatory narrative for learners.
 
@@ -2589,7 +2735,9 @@ Related work: `C.29` supports a mathematical lens when one is being constructed;
 
 Low `NSTD.6` repair: if learners can retell an analogy but cannot state definitions, dependency order, example boundaries, or proof status, repair `NSTD.1`, `NSTD.2`, and `NSTD.3`; do not raise engagement alone.
 
-### Case D - Live Event Commentary
+<a id="case-d---live-event-commentary"></a>
+
+### NSTD.Reference:1.4 - Case D - Live Event Commentary
 
 Use: live commentary for an unfolding football match or analogous event stream, used for listener orientation and later review only under source-return conditions.
 
@@ -2616,13 +2764,17 @@ Related work: return to the official record for a disputed fact or correction. U
 
 Low `NSTD.6` repair: if listeners remember drama but cannot distinguish observed event from commentator inference or later official correction, repair `NSTD.1`, `NSTD.2`, `NSTD.3`, and `NSTD.4` before increasing engagement.
 
-## Support Maps
+<a id="support-maps"></a>
+
+## NSTD.Reference:2 - Support Maps
 
 Open these maps when a pattern's instruction leaves a source, meaning or neighboring-method question unresolved. They are optional reference material, not prerequisites for beginning a narrative.
 
 Use the architecture bridge for an actual architecture-related narrative; the semiotic bridge for an unresolved representation or interpretation problem; the source map for a relied-on research claim; and the precision map to distinguish an overloaded term.
 
-## Architecture and Narrative Work Bridge
+<a id="architecture-and-narrative-work-bridge"></a>
+
+## NSTD.Reference:3 - Architecture and Narrative Work Bridge
 
 Architecture and narrative work both involve selecting and relating structures, but their results differ. The table identifies useful correspondences and the conditions under which an architecture method applies. A plot, synopsis or teaching route is not thereby an architecture description.
 
@@ -2641,7 +2793,9 @@ Architecture and narrative work both involve selecting and relating structures, 
 
 The comparison suggests possible training transfers, not an established transfer effect. An architect learning narrative work can practise presentation order, viewpoint and reader response while using familiar structural distinctions. A narrator learning architecture work must additionally learn how to identify the relevant real structures, compare design alternatives and check their consequences. Competence in one practice does not establish competence in the other.
 
-## Semiotic And Language-Precision Bridge
+<a id="semiotic-and-language-precision-bridge"></a>
+
+## NSTD.Reference:4 - Semiotic And Language-Precision Bridge
 
 Narrative construction changes how signs, sequence and viewpoint make material available to a reader. Use the following neighboring methods when they address the actual difficulty. Ordinary drafting can proceed without a formal language-state profile.
 
@@ -2660,7 +2814,9 @@ Narrative construction changes how signs, sequence and viewpoint make material a
 
 Use FPF for the general definition or method and NSTD for the narrative operation that uses it. This keeps the dependency from NSTD to FPF while avoiding a second set of general definitions inside narrative practice.
 
-## Source Use And Refresh Map
+<a id="source-use-and-refresh-map"></a>
+
+## NSTD.Reference:5 - Source Use And Refresh Map
 
 The sources below contribute to particular narrative operations. Older conceptual anchors remain useful within their scope; recent studies and systems add bounded results. The extension across factual, mathematical, fictional and live accounts is this DPF's synthesis. A citation does not establish every condition of that synthesis.
 
@@ -2687,7 +2843,9 @@ Meretoja's *Narrative and Human Existence: Ontology, Epistemology, and Ethics* r
 
 Return to the affected source when its claim is contradicted, overextended or no longer suitable for the intended use. Apply `G.2`/`G.11` when the work is to synthesize or refresh the relevant SoTA traditions; ordinary comparison with a story's canon or a lesson's source remains direct.
 
-## DPF Precision Restoration And Owner Map
+<a id="dpf-precision-restoration-and-owner-map"></a>
+
+## NSTD.Reference:6 - DPF Precision Restoration And Owner Map
 
 These terms help distinguish questions that occur in narrative work. A local field name does not create a new Core kind. Use the cited definition when the particular claim needs its precision.
 
@@ -2731,7 +2889,9 @@ These terms help distinguish questions that occur in narrative work. A local fie
 | narrative precision restoration | Resolving wording whose ambiguity changes the claim or action. | Use `E.10`, `A.6.P`, `C.16.Q` or `C.2.P` for the specific unresolved meaning. |
 | artistic or literary rendering mode | A choice of voice, tone, genre, scene or technique for an expressive or other reader aim. | `NSTD.4/.5` guide the choice; `NSTD.6` assesses it for that aim without treating artistic effect as factual support. |
 
-## Name And Edition Route
+<a id="name-and-edition-route"></a>
+
+## NSTD.Reference:7 - Name And Edition Route
 
 Package name: `Narrativization and Narrative Studies Principles Framework`.
 
@@ -2745,7 +2905,9 @@ The definitions and general methods used by this edition are available in [FPF C
 
 NSTD depends on those definitions for the uses stated here. A relevant change calls for reconsidering the affected narrative instruction or evaluation; it does not require restarting unrelated uses. Compatibility across a changed Core edition is a separate question about that use. `E.4.PFR` explains this dependency distinction and `G.11` the currentness question.
 
-## DPF Relations
+<a id="dpf-relations"></a>
+
+## NSTD.Reference:8 - DPF Relations
 
 These relations explain how the methods combine and when their dependencies need to be revisited. A pattern citation locates the relevant definition or instruction; it does not own a subject or create an authority relation. Ordinary subject assertions below are sufficient for reading and use. A maintenance index may represent the same assertions through the optional forms in `E.4.PFR`.
 
@@ -2762,7 +2924,9 @@ These relations explain how the methods combine and when their dependencies need
 | NSTD.8 and NSTD.6 support evaluation of learner reconstruction and use. | Distinguish a design walkthrough, an actual reading and a learning-effect claim. Feed an established defect into the relevant repair or `E.23`. | Revisit changed reader preparation, assistance, source selection or evidence; an evaluation does not by itself grant publication permission. |
 | NSTD.4/.5 can expose agency, responsibility, persuasion or affected-party questions. | Use `A.2`, `A.13`, `D.1`–`D.5`, `A.10` or `B.3` for the corresponding claim when it is made. | Reopen the particular claim when wording changes who acts, who is affected, what is supported or who may decide. |
 
-## Refresh Route
+<a id="refresh-route"></a>
+
+## NSTD.Reference:9 - Refresh Route
 
 Use this route when the package is already being applied and one of its source, evaluation, or carrier assumptions changes.
 
@@ -2772,3 +2936,5 @@ Use this route when the package is already being applied and one of its source, 
 4. Use `E.23` only for an exact changed narrative rendering version or declared changed slice with `NSTD.6` re-evaluation planned.
 5. Use `G.11` refresh when FPF Core edition, generated-narrative practice, reader telemetry, teaching-test evidence, source pack, or the `NSTD.6` evaluation characteristic space changes.
 6. Distinguish the teaching or narrative product from observations about its use. Reuse an observation only for the claim and conditions it actually supports; a worked example may remain in the pattern that explains the method.
+
+## NSTD.Reference:End

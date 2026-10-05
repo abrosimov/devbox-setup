@@ -528,6 +528,59 @@ def test_blocks_pyrefly_permissive_ignores_with_value(tmp_path: Path) -> None:
     assert guard.evaluate("uv run pyrefly check --permissive-ignores=true", tmp_path) is not None
 
 
+# --- pyrefly --enabled-ignores ---
+
+
+def test_blocks_enabled_ignores_naming_a_foreign_tool(tmp_path: Path) -> None:
+    # Every name pyrefly offers that is not its own, in all three value spellings.
+    # `--permissive-ignores` is documented as the equivalent of naming them all, so
+    # each one reaches a slice of the same effect.
+    for tool in ("pyright", "mypy", "ty", "pyre", "zuban"):
+        for cmd in (
+            f"uv run pyrefly check --enabled-ignores {tool} src/",
+            f"uv run pyrefly check --enabled-ignores={tool} src/",
+            f'uv run pyrefly check --enabled-ignores "{tool}" src/',
+        ):
+            result = guard.evaluate(cmd, tmp_path)
+            assert result is not None, cmd
+            assert tool in result.message
+
+
+def test_blocks_enabled_ignores_in_a_mixed_value(tmp_path: Path) -> None:
+    # A comma-separated list hides the foreign name among pyrefly's own.
+    result = guard.evaluate("uv run pyrefly check --enabled-ignores type,pyright", tmp_path)
+    assert result is not None
+    assert "pyright" in result.message
+
+
+def test_blocks_enabled_ignores_repeated_flag(tmp_path: Path) -> None:
+    # The flag accepts repetition, so the second occurrence must be read too — the
+    # reason the check scans the pyrefly segment instead of matching once.
+    result = guard.evaluate(
+        "uv run pyrefly check --enabled-ignores type --enabled-ignores mypy",
+        tmp_path,
+    )
+    assert result is not None
+    assert "mypy" in result.message
+
+
+def test_allows_enabled_ignores_default_and_narrower(tmp_path: Path) -> None:
+    # `type,pyrefly` is pyrefly's own default and `pyrefly` alone is stricter than
+    # it. Refusing either would forbid restating or tightening the checker, which
+    # is the same ground on which `--preset` is refused only for the value `off`.
+    for value in ("type,pyrefly", "pyrefly", "type", "pyrefly,type"):
+        assert guard.evaluate(f"uv run pyrefly check --enabled-ignores {value}", tmp_path) is None
+        assert guard.evaluate(f"uv run pyrefly check --enabled-ignores={value}", tmp_path) is None
+
+
+def test_enabled_ignores_rule_needs_a_pyrefly_invocation(tmp_path: Path) -> None:
+    # The flag name alone is not pyrefly's business: in another command, and past a
+    # command separator, it carries none of the effect this rule refuses.
+    assert guard.evaluate("echo --enabled-ignores mypy", tmp_path) is None
+    past_separator = "uv run pyrefly check src/; echo --enabled-ignores mypy"
+    assert guard.evaluate(past_separator, tmp_path) is None
+
+
 # --- pyrefly --min-severity stays allowed ---
 
 

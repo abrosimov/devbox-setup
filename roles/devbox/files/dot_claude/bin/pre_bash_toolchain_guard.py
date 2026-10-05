@@ -187,6 +187,26 @@ PYREFLY_PERMISSIVE_IGNORES_RE: Final[re.Pattern[str]] = re.compile(
     r"\bpyrefly\b[^;|&]*\s--permissive-ignores\b",
 )
 
+# `--enabled-ignores` names the tools whose suppression comments pyrefly honours,
+# and by pyrefly's own help naming them all is equivalent to `--permissive-ignores`
+# — so the rule above, matched on one flag name, leaves the same hole open under a
+# selective spelling. Refused as an allowlist of pyrefly's own two directives
+# rather than a denylist of third-party ones: pyrefly rejects any value outside its
+# documented set anyway, so refusing an unknown token costs nothing, whereas a
+# denylist would silently admit the next checker pyrefly learns to read.
+# `type,pyrefly` is the default and narrowing it to `pyrefly` is allowed, for the
+# same reason `--preset` is refused only for the value `off`.
+PYREFLY_OWN_IGNORE_TOOLS: Final[frozenset[str]] = frozenset({"type", "pyrefly"})
+
+# Two stages rather than one regex: the flag may be repeated (`--enabled-ignores
+# type --enabled-ignores mypy`) and a single pattern anchored on `\bpyrefly\b` would
+# match once and miss the rest, and a comma-separated value has to be split before
+# its names can be compared.
+PYREFLY_SEGMENT_RE: Final[re.Pattern[str]] = re.compile(r"\bpyrefly\b[^;|&]*")
+ENABLED_IGNORES_VALUE_RE: Final[re.Pattern[str]] = re.compile(
+    r"--enabled-ignores(?:=|\s+)(?P<value>[^\s;|&]+)",
+)
+
 FORCE_FLAGS_RE: Final[re.Pattern[str]] = re.compile(
     r"("
     r"\bkill\s+-9\b"
@@ -434,6 +454,32 @@ def _check_pyrefly_permissive_ignores(cmd: str) -> Block | None:
     )
 
 
+def _foreign_ignore_tools(cmd: str) -> tuple[str, ...]:
+    """Names passed to `--enabled-ignores` that are not pyrefly's own, in argv order."""
+    found: list[str] = []
+    for segment in PYREFLY_SEGMENT_RE.findall(cmd):
+        for match in ENABLED_IGNORES_VALUE_RE.finditer(segment):
+            for token in match.group("value").split(","):
+                name = token.strip().strip("\"'").lower()
+                if name and name not in PYREFLY_OWN_IGNORE_TOOLS and name not in found:
+                    found.append(name)
+    return tuple(found)
+
+
+def _check_pyrefly_enabled_ignores(cmd: str) -> Block | None:
+    tools = _foreign_ignore_tools(cmd)
+    if not tools:
+        return None
+    named = ", ".join(tools)
+    return Block(
+        f"`--enabled-ignores {named}` makes pyrefly honour another tool's "
+        "suppression comments; its own are `type` and `pyrefly`, and by pyrefly's "
+        "own help naming every tool is equivalent to `--permissive-ignores`. Keep "
+        "the default `type,pyrefly` (narrowing it to `pyrefly` is allowed) and fix "
+        "the errors the flag would have hidden.",
+    )
+
+
 def _check_allow_empty_commit(cmd: str) -> Block | None:
     if ALLOW_EMPTY_COMMIT_RE.search(cmd):
         return Block(
@@ -613,6 +659,7 @@ def evaluate(cmd: str, start: Path) -> Block | None:
         _check_pyrefly_silence_flags,
         _check_pyrefly_baseline,
         _check_pyrefly_permissive_ignores,
+        _check_pyrefly_enabled_ignores,
         _check_allow_empty_commit,
         _check_force_flags,
         _check_pytest_collect_only,

@@ -12,10 +12,16 @@
     mode: "0755"
   tags: [configs, claude]
 
+# The sweep below has to cover every subdir that was EVER managed, not just the
+# ones managed now: the legacy scheme symlinked each entry of the list of the
+# day, and a subdir that later left the list keeps its symlink forever because
+# nothing looks at it again. That is exactly what happened to future_projects —
+# symlinked into the repo, then declared host-only and dropped from the list,
+# with the link surviving on every machine provisioned before the change.
 - name: Check existing .claude subdirectory types
   ansible.builtin.stat:
     path: "{{ devbox_paths.dotfiles_root_dir }}/.claude/{{ item }}"
-  loop: "{{ devbox_claude_managed_dirs }}"
+  loop: "{{ devbox_claude_managed_dirs + devbox_claude_unmanaged_dirs }}"
   loop_control:
     label: ".claude/{{ item }}"
   register: devbox_claude_dir_stats

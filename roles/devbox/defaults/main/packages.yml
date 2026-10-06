@@ -116,6 +116,16 @@ devbox_brew_secondary:
 
 devbox_brew_secondary_casks:
   - codex            # OpenAI Codex CLI
+  # Claude Code CLI. The `@latest` cask tracks upstream's latest channel and
+  # ships every release as it lands; the plain `claude-code` cask tracks stable,
+  # which runs about a week behind and can therefore be too old for a
+  # just-launched model. Anthropic calls its own `curl | bash` installer the
+  # recommended path, but that advice buys one thing — background auto-updates —
+  # and devbox_shell.env sets CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1, which
+  # switches them off anyway (`claude doctor` reports it). Through brew the
+  # download is checksum-verified, `make upgrade-*` keeps it current, and all
+  # three engines come from one declared list. See README.md § AI engines.
+  - claude-code@latest
   - flutter          # Flutter SDK
   # codex-app removed: discontinued upstream (deprecated 2026-07-12, brew
   # disables the cask on 2027-07-12). OpenAI folded the standalone Codex

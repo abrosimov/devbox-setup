@@ -10,7 +10,7 @@ Ansible-based developer workstation setup tool that automates installation and c
 
 ## Commands
 
-A profile is mandatory for any playbook run. Bare `make run` / `make dev` / `make check` fail with `PROFILE is required` — use the per-profile wrappers below. `personal` targets a personal laptop (`AION_AUTOPOIESEON=~/Projects`); `work` targets a work laptop (`AION_AUTOPOIESEON=~/Work`). Slim targets (`make dotfiles-push` etc.) recover the active profile from the `MNEMOSYNE_PERISTASEOS` env var rendered into the user's shell rc by the previous full run, or fail with a hint if the var is unset. First-ever bootstrap: pass `PROFILE=personal|work` explicitly, or start a new shell after `make personal`/`make work` so the just-rendered rc is sourced.
+A profile is mandatory for any playbook run. Bare `make run` / `make check` fail with `PROFILE is required` — use the per-profile wrappers below. `personal` targets a personal laptop (`AION_AUTOPOIESEON=~/Projects`); `work` targets a work laptop (`AION_AUTOPOIESEON=~/Work`). Slim targets (`make dotfiles-push` etc.) recover the active profile from the `MNEMOSYNE_PERISTASEOS` env var rendered into the user's shell rc by the previous full run, or fail with a hint if the var is unset. First-ever bootstrap: pass `PROFILE=personal|work` explicitly, or start a new shell after `make personal`/`make work` so the just-rendered rc is sourced.
 
 Sudo and SSH passphrase live in the macOS login keychain (slots `devbox-sudo` and `devbox-ssh-passphrase`), seeded on first run by `scripts/ensure_secrets.sh` — chained as a Makefile prereq (`secrets-ready`) on `run`, `check`, and `macos-defaults`, so `make personal`/`make work` prompts once on a fresh machine and never again. Ansible reads sudo through `become_password_file = scripts/keychain-become-pass.sh` (see `ansible.cfg [privilege_escalation]`); `community.general.homebrew_cask.sudo_password:` reads it via the `devbox_sudo_password` variable defined in `roles/devbox/defaults/main/core.yml`. Any task consuming these values MUST set `no_log: true`. Rotation entrypoints: `make sudo-reseed`, `make ssh-passphrase-reseed`. First read from any subprocess pops a one-time Keychain ACL dialog — grant "Always Allow" once.
 
@@ -40,8 +40,8 @@ make check-personal  # dry-run with personal profile
 make check-work      # dry-run with work profile
 make check-dev       # dry-run in dev_mode (override vars, no sudo/keychain)
 
-# Fish shell upgrade + tide prompt sync
-make fixfish          # upgrade fish, update plugins, apply tide config from defaults
+# Fish shell upgrade + tide prompt sync (replaces the old `fixfish` incantation)
+make shell-push       # upgrade fish, update fisher plugins, apply tide config, refresh font cache
 
 # Secrets (macOS login keychain)
 make secrets-init            # seed devbox-sudo + devbox-ssh-passphrase (idempotent)
@@ -59,9 +59,10 @@ make drive-backup-push       # (re)install project + LaunchAgent from the local 
 make drive-backup-now        # launchctl kickstart the agent; log in ~/Library/Logs/drive-backup.log
 make test-drive-backup       # package pytest + ruff + pyrefly (strict) + example-config check
 
-# Claude config back-propagation (root files only — subdirs are symlinked)
+# Claude config back-propagation (root files only — managed subdirs are one-way
+# rsynced from the repo, so there is nothing to pull back from them)
 make claude-diff     # show drift between deployed ~/.claude and repo
-make claude-pull     # copy changed root files back from ~/.claude to repo
+make claude-pull     # alias for claude-pull-review: reconcile reviewed live changes
 
 # Claude Code config validation
 make validate-claude # validate agent/skill library cross-references
@@ -102,14 +103,14 @@ Everything lives in one role. No multi-role orchestration.
 9. `install_codex_configs.yml` — reconcile `dot_codex/config.toml.j2` into app-owned `~/.codex/config.toml` via `scripts/ai-config apply codex` (which renders the template itself — see Block 2 below), install `~/.codex/AGENTS.md` (shared core + `dot_codex/AGENTS.md` adapter) plus native TOML agents, and deploy the compatible `dot_ai` skill subset to `~/.agents/skills/`. The final task grants Codex hook trust via `scripts/codex-hook-trust.py` (thin wrapper over the stdlib-only `scripts/codex_hook_trust/` package): it drives `codex app-server`'s `hooks/list` + `config/batchWrite` to write `hooks.state."<key>".trusted_hash`, scoped to an allowlist derived from this repo's `[hooks]` block and `devbox_codex_plugins`. Without it Codex silently drops every provisioned hook. See `dot_codex/README.md` § Hook trust.
 10. `apply_configs.yml` — post-deploy actions: fisher plugins, font cache, MCP server registration
 11. `prepare_user.yml` — shell, user-level setup
-12. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. It downloads the checksum-verified v2.1 release binary, deploys one self-contained `edge.yaml`, validates that exact pair and supervises it with `local.otelbox-edge`. The endpoint comes from the local overlay; the Keychain remains credential authority and the wrapper materialises v2.1's watched header in the private per-user temporary directory. Once v2.1 preflight passes, the task removes the legacy `otelcol-edge` binary, config, LaunchAgent and WAL. Homebrew remains a hard conflict. See `README.md` § OTLP Telemetry.
+12. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. It downloads the checksum-verified release binary pinned by `devbox_packages.otelbox_edge.version` (currently 2.4.2; Renovate bumps it and never automerges, because the binary and the deployed `edge.yaml` are one versioned contract the playbook validates as a pair), deploys one self-contained `edge.yaml`, validates that exact pair and supervises it with `local.otelbox-edge`. The endpoint comes from the local overlay; the Keychain remains credential authority and the wrapper materialises the collector's watched header in the private per-user temporary directory. Once preflight passes, the task removes the legacy `otelcol-edge` binary, config, LaunchAgent and WAL. Homebrew remains a hard conflict. The post-run smoke (`make otelbox-edge-test`, also run at the end of `make personal`/`make work`) is advisory — it prints a loud banner on failure but does not fail the provisioning run. See `README.md` § OTLP Telemetry.
 13. `darwin/configure_drive_backup.yml` — weekly drive backup. Switched on by the local-overlay config `~/.config/drive-backup/config.toml` (example: `files/.config/drive-backup/config.toml.example`): rsyncs the standalone uv project `packages/drive-backup/` to `~/.local/share/drive-backup/`, runs `uv sync --frozen --no-default-groups`, validates the config with `drive-backup check-config`, and (re)bootstraps the `local.drive-backup` LaunchAgent (`StartCalendarInterval` Saturday 03:00). Without the config it boots the agent out and removes it. See `README.md` § Drive Backup.
 
 ### Configuration Deployment (`install_configs.yml`)
 
 Six deployment blocks, each using the most efficient method:
 
-1. **one-way rsync** — `.claude/` managed subdirs (agents, skills, bin, etc.) via `ansible.posix.synchronize` with `--delete`, repo to `~/.claude/<dir>/`. Not symlinks and not bidirectional: the deployed copies are real directories, so an edit under `~/.claude/` is lost on the next run, and a repo edit does not reach the live engine until one. Hook changes in particular need a deploy before they take effect.
+1. **one-way rsync** — `.claude/` managed subdirs (agents, skills, bin, etc.) via `ansible.posix.synchronize` with `--delete`, repo to `~/.claude/<dir>/`. Not symlinks and not bidirectional: the deployed copies are real directories, so an edit under `~/.claude/` is lost on the next run, and a repo edit does not reach the live engine until one. Hook changes in particular need a deploy before they take effect. A deploy scheme before this one symlinked each managed subdir into the repo instead, so the block opens by sweeping any leftover symlink — over `devbox_claude_managed_dirs` **plus** `devbox_claude_unmanaged_dirs`, because a subdir that left the managed list (`future_projects` did) would otherwise keep its legacy symlink forever. Only symlinks are removed; a real directory there is the operator's own and is never touched.
 2. **copy loop** — `.claude/` root file (config.md). `settings.json.j2` is not copied: it is reconciled field-by-field via `scripts/ai-config apply claude` against the ownership manifest `settings.ai-config.json`, so any key deployed from the repo — including `hooks` — must be declared there first. All three engine sources (`dot_claude/settings.json.j2`, `dot_agy/cli/settings.json.j2`, `dot_codex/config.toml.j2`) are Jinja templates, and **`scripts/ai-config` renders them, not Ansible** — `make claude-diff` / `claude-pull` invoke the reconciler directly, so rendering in Ansible would make those paths behave differently from the playbook. Variables come from `roles/devbox/defaults/main/*.yml` overlaid by `profiles/<profile>.yml` for the `--profile` given, under `StrictUndefined`. A leaf that a template expression produced is never written back from the live file: `ai-config diff` marks it `templated` and always re-applies the rendered value. Per-profile values therefore need no manifest binding; the only surviving binding providers are `keychain:` and `home:`, for values that must not be materialised into a rendered artefact.
 3. **copy dir** — `kitty/`, `nvim/`, `fish/completions/`, `fish/functions/` as whole directories (no `--delete`, safe for local overlay). AeroSpace config is handled separately in **Block 3c**: `.config/aerospace/` (`aerospace.toml` + the `aerospace-layouts` dynamic-layout uv project) is one-way rsynced with `--delete` — repo is source of truth; the engine's runtime state lives under `~/.local/state/`, not here — excluding `.venv`/caches, then the project's `.venv` is materialised via `uv sync --frozen --no-dev` (mirroring Block 1b for `.claude/bin`) so the `aerospace.toml` layout keybindings can invoke the built console-script (`~/.config/aerospace/layouts/.venv/bin/aerospace-layouts`) by absolute path (`exec-and-forget` has no `uv` on PATH).
 4. **copy loop** — individual files (fish/config.fish, conf.d/aliases.fish, README.md)
@@ -136,14 +137,14 @@ Defaults are split into four files under `defaults/main/`:
 | `core.yml` | `devbox_user`, `devbox_paths`, `devbox_projects_dir`, `devbox_active_profile`, `upgrade_mode`, `devbox_extra_*` extension points |
 | `packages.yml` | `devbox_brew_taps`, `devbox_brew_*` lists, `devbox_npm_packages`, `devbox_appstore_apps`, `devbox_packages` (go_tools, kubectl, uv_tools) |
 | `shell.yml` | `devbox_shell` (env, PATH), `devbox_fish_plugins`, `devbox_tide_configure_auto` |
-| `claude.yml` | `devbox_claude_managed_dirs`, `mcp_*_servers`, `claude_plugin*` |
+| `claude.yml` | `devbox_claude_managed_dirs`, `devbox_claude_unmanaged_dirs`, `mcp_*_servers`, `claude_plugin*` |
 
 **Important**: `defaults/main.yml` (file) must NOT coexist with `defaults/main/` (directory) — Ansible loads the file and ignores the directory if both are present.
 
 Key variables:
 - `devbox_paths.dotfiles_root_dir` — target for deployment (`~` normally, `../debug/dotfiles` in dev_mode)
 - `devbox_shell.env` / `path_prepend` / `path_append` / `path_conditional` — single source of truth for shell environment. Templates for fish and bash iterate these lists. The Ancient Greek env vars (`MNEMOSYNE_PERISTASEOS` for the active profile, `AION_AUTOPOIESEON` for the workspace root) are intentional — see the comment block in `roles/devbox/defaults/main/shell.yml` for etymology and rationale. `PROJECTS_DIR` is kept as a transitional alias.
-- `devbox_active_profile` — `personal` / `work`. Overridden in `profiles/{name}.yml`, rendered into `MNEMOSYNE_PERISTASEOS` via `devbox_shell.env`, and read by slim targets (`dotfiles-push`, `shell-push`, `mcp-sync`, etc.) via `Makefile:ACTIVE_PROFILE` so they recover the active profile without re-running the full personal/work playbook.
+- `devbox_active_profile` — `personal` / `work`. Overridden in `profiles/{name}.yml`, rendered into `MNEMOSYNE_PERISTASEOS` via `devbox_shell.env`, and read by slim targets (`dotfiles-push`, `shell-push`, `mcp-sync`, etc.) via `Makefile:SLIM_PROFILE` so they recover the profile without re-running the full personal/work playbook. That fallback is scoped to those targets on purpose: a provisioning run never infers its profile from the environment — `make personal` / `make work` pass it on the command line, and bare `make run` / `make check` refuse to guess.
 - `devbox_brew_secondary` + `devbox_extra_brew` — base packages + profile-specific additions (concatenated in task files)
 - `devbox_extra_*` — extension points for profile overrides (default to `[]` in `core.yml`)
 - `devbox_extra_brew_casks_no_binaries` — separate cask list installed with `--no-binaries` to skip brew's CLI shim + Spotlight metadata steps. Required for casks whose .pkg writes root-owned files inside /Applications/<App>.app (post-install `xattr -w` runs as the user and fails). Currently used for `docker-desktop`.

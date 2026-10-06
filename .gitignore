@@ -1,5 +1,8 @@
 .ansible/
-/.devbox/
+# Unanchored: ansible.cfg's local_tmp is a relative path, so a run whose CWD was
+# not the repo root leaves a .devbox/ beside the playbooks instead. `/.devbox/`
+# missed those, and only the unanchored `debug/` rule below kept them out.
+.devbox/
 .claude/memory
 .claude/commands
 .claude/settings.local.json

@@ -41,9 +41,14 @@ jobs:
       - name: Update Homebrew (brew vulns is a built-in command)
         run: brew update
 
-      - name: Generate Brewfile from repo declarations
+      # Every profile at once, not just one. `audit-brewfile` is profile-scoped
+      # and CI has no profile to give it; the union is also the right input for a
+      # CVE scan, which needs completeness rather than fidelity to one machine.
+      # Until this switched, the work profile's extras (oras, orbstack) were never
+      # scanned — the profile path silently fell back to `personal`.
+      - name: Generate Brewfile from repo declarations (all profiles)
         run: |
-          make audit-brewfile > Brewfile.audit
+          make audit-brewfile-all > Brewfile.audit
           echo "--- Brewfile.audit ---"
           cat Brewfile.audit
 

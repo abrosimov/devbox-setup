@@ -17,7 +17,7 @@ make work       # Full run with the work profile
 
 On the very first run, `make personal`/`make work` prompts once for the sudo/login password and once for the SSH key passphrase (both stored in the macOS login Keychain as `devbox-sudo` and `devbox-ssh-passphrase`). Subsequent runs are non-interactive.
 
-A profile is mandatory: bare `make run` / `make dev` / `make check` fail with `PROFILE is required`. Use the per-profile wrappers below.
+A profile is mandatory: bare `make run` / `make check` fail with `PROFILE is required`. Use the per-profile wrappers below.
 
 ## Commands
 
@@ -97,6 +97,18 @@ Laptop-only files that should not be committed go into `roles/devbox/local/`. Th
 ```
 roles/devbox/local/.config/fish/functions/kstg.fish
 → deployed to ~/.config/fish/functions/kstg.fish
+```
+
+### AI Engine CLIs
+
+All three engine CLIs come from Homebrew casks declared in `devbox_brew_secondary_casks` — `claude-code@latest` (`claude`), `codex`, and `antigravity-cli` (`agy`) — so one mechanism installs them, `make upgrade-personal` / `make upgrade-work` keeps them current, brew verifies each download's checksum, and `make audit-brewfile-all` includes them in the CVE scan that `.github/workflows/brew-audit.yml` runs.
+
+The `@latest` suffix selects upstream's latest release channel. The plain `claude-code` cask tracks the stable channel instead, which runs roughly a week behind and can be too old for a model that has just launched. Anthropic's own documentation calls its `curl | bash` native installer the recommended route, and its single advantage over a package manager is background auto-updates — which `devbox_shell.env` switches off anyway by setting `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` (confirm with `claude doctor`, which reports `Auto-updates: disabled (set by env: …)`). With auto-updates off, whoever installs the binary owns its version, so brew is the better owner here.
+
+**Migrating a machine that still has the native install.** `devbox_shell.path_prepend` puts `~/.local/bin` ahead of `/opt/homebrew/bin`, so a leftover native launcher shadows the cask and the two versions drift apart. `install_from_brew_secondary.yml` removes it on the next run, but only once `/opt/homebrew/bin/claude` exists, so no machine is left without a `claude`. Only binaries are removed; settings and history in `~/.claude` are untouched. To do it by hand:
+
+```bash
+rm -f ~/.local/bin/claude && rm -rf ~/.local/share/claude
 ```
 
 ## Tool Documentation

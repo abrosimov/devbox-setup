@@ -21,6 +21,14 @@ requires-python = ">=3.12"
 [dependency-groups]
 dev = [
     "ansible-lint>=26.8.0",
+    # The floor for ansible itself, which `make lint-ansible` exercises through
+    # this venv's own ansible-playbook. It arrives transitively via ansible-lint,
+    # so this constrains rather than adds. It replaces the root requirements.txt,
+    # which carried `ansible>=14.4.0` and was read by nothing: the operator path
+    # installs ansible through `pipx install --include-deps ansible` in
+    # scripts/init.sh with no version at all, so that line pinned nothing while
+    # Renovate kept bumping it.
+    "ansible-core>=2.21",
     "yamllint>=1.35",
     "ruff>=0.15.22",
     "pyrefly>=0.10",
@@ -63,6 +71,12 @@ extend-exclude = [
     "roles/devbox/files/dot_agy/bin/vendor",
     "roles/devbox/files/dot_ai/skills/example-skills",
     "roles/devbox/files/dot_ai/skills/document-skills",
+    # Pinned upstream FPF / NSTD / Engineering DPF bundle, carrying its own
+    # LICENSE and upstream-snapshot.json and replaced wholesale by
+    # `make sync-upstream-docs`. Ruff 0.16 formats Python inside fenced blocks in
+    # Markdown, so without this it restyles the specification text itself — and
+    # the next upstream sync would undo it again.
+    "roles/devbox/files/dot_ai/skills/fpf-thinking/references",
     "roles/devbox/files/.config/nvim",
 ]
 
@@ -167,13 +181,6 @@ ignore = [
     "EXE001",      # Shebang present but file not executable — handled by deploy
     "E402",        # sys.path.insert hack before imports is the shared-lib pattern
 ]
-# The session-log miner's lexicons match Russian user corrections and assumption
-# phrasing verbatim ("нет", "я не просил", "видимо", ...). RUF001 fires on the
-# Cyrillic letters inside those regex literals; they are the data being matched,
-# not accidental homoglyphs. Same rationale as bash_decision_gate.py below.
-"scripts/claude_log_mining/classify.py" = [
-    "RUF001",      # intentional Cyrillic in the Russian-language match lexicons
-]
 # bash_decision_gate.py is the security-critical Bash PreToolUse gate. Its
 # command-shape dispatchers (walk_commands, check_audit_dir, check_shell_inline_exec,
 # _is_write_command, _write_path_args) are branchy by nature — one branch per shell
@@ -259,6 +266,12 @@ project-excludes = [
     "roles/devbox/files/dot_agy/bin/vendor",
     "roles/devbox/files/dot_ai/skills/example-skills",
     "roles/devbox/files/dot_ai/skills/document-skills",
+    # Pinned upstream FPF / NSTD / Engineering DPF bundle, carrying its own
+    # LICENSE and upstream-snapshot.json and replaced wholesale by
+    # `make sync-upstream-docs`. Ruff 0.16 formats Python inside fenced blocks in
+    # Markdown, so without this it restyles the specification text itself — and
+    # the next upstream sync would undo it again.
+    "roles/devbox/files/dot_ai/skills/fpf-thinking/references",
 ]
 # bin/ and skills/*/scripts/ are flat directories of scripts that import each
 # other (e.g. test_foo.py imports foo). Add them as search roots so pyrefly can
@@ -268,9 +281,9 @@ search-path = [
     "roles/devbox/files/dot_agy/bin",
     "roles/devbox/files/dot_ai/skills/techne-fewer-permission-prompts/scripts",
     "scripts",
-    # tests/scripts/ is a flat directory too: the miner tests import the shared
-    # record-builder helper (claude_log_mining_fixtures) as a sibling, the way
-    # pytest's rootdir insertion resolves it at run time.
+    # tests/scripts/ is a flat directory too: the ai-config tests import the
+    # shared builder helper (ai_config_fixtures) as a sibling, the way pytest's
+    # rootdir insertion resolves it at run time.
     "tests/scripts",
     # tests/live/ follows the same shape: the engine tests import throwaway,
     # generation and conftest as siblings.

@@ -1,5 +1,10 @@
 # Makefile
 
+# Bare `make` prints the target list. Without this the default goal would be the
+# first rule in the file — the dev-venv sentinel — so `make` would silently run
+# `uv sync --group dev` instead of the help text.
+.DEFAULT_GOAL := help
+
 PLAYBOOK      := playbooks/main.yml
 # Sudo password now comes from macOS login keychain slot `devbox-sudo` via
 # `become_password_file = scripts/keychain-become-pass.sh` (see ansible.cfg
@@ -12,22 +17,55 @@ EXTRA_VARS    ?=
 PROFILE       ?=
 PROFILE_OPTS  = $(if $(PROFILE),-e @profiles/$(PROFILE).yml)
 
-# Slim targets recover the active profile from MNEMOSYNE_PERISTASEOS — the env
-# var that `make personal` / `make work` render into the user's shell rc (see
-# devbox_shell.env in roles/devbox/defaults/main/shell.yml). Any fresh login
-# shell after the first full run has it exported. Explicit PROFILE= wins if
-# both are set. First-ever bootstrap: pass PROFILE=personal|work explicitly
-# (or start a new shell so the just-rendered rc is sourced).
-ACTIVE_PROFILE = $(or $(PROFILE),$(MNEMOSYNE_PERISTASEOS))
-ACTIVE_OPTS    = $(if $(ACTIVE_PROFILE),-e @profiles/$(ACTIVE_PROFILE).yml)
+# A provisioning run always names its profile: `make personal` / `make work` pass
+# it on the command line, and bare `make run` / `make check` refuse to guess (see
+# the ifndef guards in those targets). There is deliberately no "currently active
+# profile" notion above PROFILE — a real deploy is never decided by ambient state.
+#
+# The slim maintenance targets are the one exception, and only as a convenience:
+# when no PROFILE is given they fall back to MNEMOSYNE_PERISTASEOS, the env var
+# that the previous full run rendered into the shell rc (devbox_shell.env in
+# roles/devbox/defaults/main/shell.yml). Explicit PROFILE= always wins. These two
+# variables are scoped to that fallback — hence SLIM_, not ACTIVE_.
+#
+# This stays a separate variable rather than a target-specific default on PROFILE
+# itself, because make offers no spelling of the latter that keeps both halves of
+# the contract: `PROFILE ?=` in a target is a no-op once PROFILE is defined above
+# (the fallback silently dies), and plain `PROFILE =` in a target overrides even a
+# command-line PROFILE= (explicit silently loses). Verified both ways.
+SLIM_PROFILE = $(or $(PROFILE),$(MNEMOSYNE_PERISTASEOS))
+SLIM_OPTS    = $(if $(SLIM_PROFILE),-e @profiles/$(SLIM_PROFILE).yml)
 
 define require_profile
-	@if [ -z "$(ACTIVE_PROFILE)" ]; then \
-		echo "ERROR: No active profile."; \
-		echo "  MNEMOSYNE_PERISTASEOS is unset — start a new shell after the first"; \
-		echo "  'make personal' / 'make work' run, or pass PROFILE=personal|work explicitly."; \
+	@if [ -z "$(SLIM_PROFILE)" ]; then \
+		echo "ERROR: No profile given and none to fall back on."; \
+		echo "  Pass PROFILE=personal|work explicitly, or start a new shell after the"; \
+		echo "  first 'make personal' / 'make work' run, which exports"; \
+		echo "  MNEMOSYNE_PERISTASEOS from the shell rc."; \
 		exit 1; \
 	fi
+endef
+
+# The post-run otelbox smoke is advisory, not a gate: `make personal` provisions
+# thirteen steps and a dead collector must not block the other twelve. But a
+# bare `|| true` made the failure invisible — it scrolled past under a few
+# hundred lines of ansible output and the run still reported success. Keep the
+# exit code zero, make the failure impossible to miss.
+define otelbox_smoke_advisory
+	@./scripts/otelbox-edge-test.py || { \
+		echo ""; \
+		echo "################################################################"; \
+		echo "# ADVISORY: the otelbox edge smoke test FAILED."; \
+		echo "#"; \
+		echo "# Provisioning itself succeeded — every playbook step completed."; \
+		echo "# What did not pass is the post-run liveness and delivery check,"; \
+		echo "# so this machine is most likely not shipping telemetry."; \
+		echo "#"; \
+		echo "# Re-run the check alone:   make otelbox-edge-test"; \
+		echo "# Set endpoint / token:     make otelbox-edge-config"; \
+		echo "################################################################"; \
+		echo ""; \
+	}
 endef
 
 define ai_config_push_guard
@@ -115,28 +153,22 @@ else
   VERBOSE :=
 endif
 
-.PHONY: run dev help init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills rules-budget \
+.PHONY: run help init check check-dev validate-claude validate-skills validate-configs eval-skills improve-skills rules-budget \
        work personal dev-work dev-personal check-work check-personal \
        git-identity git-identity-ensure \
        secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed otelbox-edge-config otelbox-edge-test \
+       pub-preflight pub-e2e \
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
-       audit audit-brew audit-brewfile audit-taps untap-stale \
+       audit audit-brewfile audit-brewfile-all audit-taps untap-stale \
        claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
+       karabiner-diff karabiner-pull \
        dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now \
-       sync-upstream-docs mine-claude-logs \
+       sync-upstream-docs \
        test test-integration test-ai-config test-deploy test-claude-hooks test-agy-hooks test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
        test-live test-live-guard \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
-
-.PHONY: pub-preflight pub-e2e
-
-pub-preflight:
-	@/usr/bin/python3 scripts/pub-mode-test.py
-
-pub-e2e:
-	@/usr/bin/python3 scripts/pub-mode-test.py --live
 
 help:
 	@echo ""
@@ -147,7 +179,7 @@ help:
 	@echo "  make dev-work         - dev_mode + work profile"
 	@echo "  make check-personal   - dry-run with personal profile"
 	@echo "  make check-work       - dry-run with work profile"
-	@echo "  make check-dev        - dry-run in dev_mode (test vault)"
+	@echo "  make check-dev        - dry-run in dev_mode (profile from MNEMOSYNE_PERISTASEOS)"
 	@echo "  make pub-preflight    - read-only WARP, Docker DNS and connectivity checks"
 	@echo "  make pub-e2e          - live candidate pub on/off and restoration test"
 	@echo ""
@@ -170,7 +202,6 @@ help:
 	@echo "  make test-live-guard  - pytest for the guards around test-live (hermetic)"
 	@echo "  make test-live        - pytest against real claude/codex/agy binaries (opt-in, needs the CLIs)"
 	@echo "                          ENGINES='claude,codex' turns a skip of those engines into a failure"
-	@echo "  make mine-claude-logs - mine session transcripts into research_on_claude_behaviour/data"
 	@echo "  make test-drive-backup - drive-backup package: pytest, ruff, pyrefly, example config"
 	@echo "  make qa               - lint + typecheck + unit, integration, ai-config, and deploy tests"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
@@ -189,7 +220,8 @@ help:
 	@echo "  make audit-budget    - show detailed skill description budget report"
 	@echo "  make rules-budget    - count rule-like statements across skills/agents/commands/UAP (ARGS='--json' or '--baseline PATH')"
 	@echo "  make audit           - run brew supply-chain audit: CVE scan (brew vulns) + brew audit --installed"
-	@echo "  make audit-brewfile  - emit a Brewfile snapshot of devbox brew lists (stdout)"
+	@echo "  make audit-brewfile  - emit a Brewfile snapshot for the active profile (stdout)"
+	@echo "  make audit-brewfile-all - emit a Brewfile snapshot covering every profile (used by CI)"
 	@echo "  make audit-taps      - report status of every tapped brew repo (declared / stale / stray)"
 	@echo "  make untap-stale     - untap the curated stale-tap list (safe: nothing installed from them)"
 	@echo "  make validate-skills  - validate skill evals (structure, schema, coverage)"
@@ -252,9 +284,10 @@ endif
 secrets-ready:
 	@./scripts/ensure_secrets.sh
 
-# User-facing entrypoints for interactive seed/rotation.
-secrets-init:
-	@./scripts/ensure_secrets.sh
+# User-facing entrypoint for the interactive seed — same work as the
+# secrets-ready prerequisite, named for the operator rather than for the
+# dependency graph.
+secrets-init: secrets-ready
 
 sudo-reseed:
 	@security delete-generic-password -a "$$USER" -s devbox-sudo >/dev/null 2>&1 || true
@@ -279,8 +312,15 @@ otelbox-edge-config:
 otelbox-edge-test:
 	@./scripts/otelbox-edge-test.py
 
-dev:
-	$(MAKE) run PROFILE=$(PROFILE) EXTRA_VARS='-e dev_mode=true' V=$(V)
+# Pub mode (see README.md § Pub Mode). The interpreter is pinned to system
+# python deliberately, not left to $(VALIDATE_PYTHON): pub-mode-test.py re-spawns
+# its own live worker via /usr/bin/python3, and the LaunchDaemon under test runs
+# the controller with the same one (devbox_pub_python_path).
+pub-preflight:
+	@/usr/bin/python3 scripts/pub-mode-test.py
+
+pub-e2e:
+	@/usr/bin/python3 scripts/pub-mode-test.py --live
 
 # git-identity — generate a per-profile git identity (user.name/email/signing key)
 # into the gitignored local overlay and apply it to ~/.config/git/ immediately.
@@ -288,7 +328,7 @@ dev:
 # prerequisite of personal/work via git-identity-ensure, which only generates
 # when the identity is missing (idempotent — no prompt on later runs).
 git-identity:
-	@./scripts/git-identity-gen.py $(or $(ACTIVE_PROFILE),$(error PROFILE is required: make git-identity PROFILE=personal|work))
+	@./scripts/git-identity-gen.py $(or $(SLIM_PROFILE),$(error PROFILE is required: make git-identity PROFILE=personal|work))
 
 git-identity-ensure:
 	@test -f roles/devbox/local/.config/git/identity-$(PROFILE).gitconfig \
@@ -297,12 +337,12 @@ git-identity-ensure:
 work: PROFILE = work
 work: git-identity-ensure
 	$(MAKE) run PROFILE=work V=$(V)
-	@./scripts/otelbox-edge-test.py || true
+	$(otelbox_smoke_advisory)
 
 personal: PROFILE = personal
 personal: git-identity-ensure
 	$(MAKE) run PROFILE=personal V=$(V)
-	@./scripts/otelbox-edge-test.py || true
+	$(otelbox_smoke_advisory)
 
 dev-work:
 	$(MAKE) run PROFILE=work EXTRA_VARS='-e dev_mode=true' V=$(V)
@@ -343,10 +383,36 @@ lint-yaml: $(DEV_SENTINEL)
 # rest is TOML/Markdown config — matching the path `typecheck` already uses. Other
 # Python files in the repo (.config/kitty/) are not project code; pyrefly's
 # project-includes handles those.
+#
+# The three invocations below (ruff check, ruff format, pyrefly) used to spell
+# their path lists out in full, which drifted: four paths that no longer existed
+# sat in the pyrefly list unnoticed, because pyrefly skips a missing path
+# without failing. One shared variable plus the per-tool delta instead.
+PY_PATHS_COMMON := \
+  roles/devbox/files/dot_agy/bin/ \
+  roles/devbox/files/.local/bin/pub-lease.py \
+  scripts/ai_config_cli.py scripts/ai_config/ \
+  scripts/otelbox-edge-*.py scripts/otelbox_edge/ \
+  scripts/codex-hook-trust.py scripts/codex_hook_trust/ \
+  scripts/pub-mode-test.py \
+  scripts/sync-upstream-docs.py \
+  tests/live/ \
+  tests/scripts/test_ai_config*.py \
+  tests/scripts/test_otelbox_edge_*.py \
+  tests/scripts/test_codex_hook_trust*.py \
+  tests/scripts/test_pub_lease.py \
+  tests/scripts/test_pub_mode_test.py \
+  tests/scripts/test_sync_upstream_docs.py
+
+# Lint takes the whole dot_claude / dot_ai / dot_codex trees and the deploy
+# tests; typecheck takes only the bin/ subtrees, matching the dot_agy rule above.
+PY_LINT_PATHS      := roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/ $(PY_PATHS_COMMON)
+PY_TYPECHECK_PATHS := roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ $(PY_PATHS_COMMON)
+
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
-	@$(DEV_BIN)/ruff check roles/devbox/files/dot_claude/ roles/devbox/files/dot_agy/bin/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/deploy/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
-	@$(DEV_BIN)/ruff format --check roles/devbox/files/dot_claude/ roles/devbox/files/dot_agy/bin/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/deploy/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py
+	@$(DEV_BIN)/ruff check $(PY_LINT_PATHS)
+	@$(DEV_BIN)/ruff format --check $(PY_LINT_PATHS)
 
 # Pyrefly ignores `project-excludes` from pyproject.toml whenever files are named
 # explicitly on the command line, so the excludes have to be repeated as flags.
@@ -355,7 +421,7 @@ lint-py: $(DEV_SENTINEL)
 PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.venv/**' --project-excludes '**/__pycache__/**'
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
-	@$(DEV_BIN)/pyrefly check roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_agy/bin/ roles/devbox/files/dot_codex/bin/ roles/devbox/files/.local/bin/pub-lease.py scripts/ai_config_cli.py scripts/ai_config/ scripts/otelbox-edge-*.py scripts/otelbox_edge/ scripts/codex-hook-trust.py scripts/codex_hook_trust/ tests/live/ tests/scripts/test_ai_config*.py tests/scripts/test_otelbox_edge_*.py tests/scripts/test_codex_hook_trust*.py tests/scripts/test_pub_lease.py scripts/pub-mode-test.py tests/scripts/test_pub_mode_test.py scripts/sync-upstream-docs.py tests/scripts/test_sync_upstream_docs.py scripts/mine-claude-logs.py scripts/claude_log_mining/ tests/scripts/test_claude_log_mining_*.py tests/scripts/claude_log_mining_fixtures.py $(PYREFLY_EXCLUDES)
+	@$(DEV_BIN)/pyrefly check $(PY_TYPECHECK_PATHS) $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a
@@ -386,11 +452,13 @@ test-deploy: $(DEV_SENTINEL) ## Pytest for dotfile-deploy structure (karabiner a
 # checked with its own toolchain rather than the root dev venv. The example config
 # is validated with the same `check-config` the playbook runs against the real one.
 DRIVE_BACKUP_PKG := packages/drive-backup
+DRIVE_BACKUP_UV  := uv --directory $(DRIVE_BACKUP_PKG)
 test-drive-backup: ## drive-backup package: pytest, ruff, pyrefly, example config
-	@cd $(DRIVE_BACKUP_PKG) && uv sync --frozen --quiet
-	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen pytest -q
-	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen ruff check . && uv run --frozen ruff format --check .
-	@cd $(DRIVE_BACKUP_PKG) && uv run --frozen pyrefly check
+	@$(DRIVE_BACKUP_UV) sync --frozen --quiet
+	@$(DRIVE_BACKUP_UV) run --frozen pytest -q
+	@$(DRIVE_BACKUP_UV) run --frozen ruff check .
+	@$(DRIVE_BACKUP_UV) run --frozen ruff format --check .
+	@$(DRIVE_BACKUP_UV) run --frozen pyrefly check
 	@AION_AUTOPOIESEON=/nonexistent/aion $(DRIVE_BACKUP_PKG)/.venv/bin/drive-backup \
 	  --config roles/devbox/files/.config/drive-backup/config.toml.example check-config >/dev/null
 
@@ -470,7 +538,7 @@ upgrade-personal:
 check-dev: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 \
-	ansible-playbook --check $(VERBOSE) $(ACTIVE_OPTS) \
+	ansible-playbook --check $(VERBOSE) $(SLIM_OPTS) \
 	    -e dev_mode=true \
 	    -e devbox_sudo_password_override=dev-mode \
 	    -e devbox_ssh_pass_phrase_override=dev-mode $(PLAYBOOK)
@@ -509,14 +577,21 @@ rules-budget:
 # don't maintain. We only want operator signal.
 #
 # `audit` runs against the live local install (everything currently in /opt/homebrew).
-# `audit-brewfile` emits the static repo-defined package set as a Brewfile — used
-# by .github/workflows/brew-audit.yml on a clean macos-latest runner.
+# `audit-brewfile` emits the static repo-defined package set as a Brewfile for one
+# profile; `audit-brewfile-all` emits the union over every profile and is what
+# .github/workflows/brew-audit.yml runs on a clean macos-latest runner.
+#
+# The union matters: the CVE scan does not care which laptop installs what, it
+# cares that nothing we can install goes unchecked. PROFILE_YML used to fall back
+# to `personal` whenever no profile was set, which is exactly the case in CI — so
+# the work profile's extras (oras, orbstack) had never been scanned at all. A
+# silent default is the wrong answer where the report claims coverage, hence
+# require_profile on the single-profile target.
 PACKAGES_YML  := roles/devbox/defaults/main/packages.yml
-PROFILE_YML   := profiles/$(or $(ACTIVE_PROFILE),personal).yml
+PROFILE_YML    = profiles/$(SLIM_PROFILE).yml
+PROFILE_YMLS  := $(wildcard profiles/*.yml)
 
-audit: audit-brew
-
-audit-brew:
+audit:
 	@if ! command -v brew >/dev/null 2>&1; then \
 		echo "ERROR: brew not found in PATH."; exit 1; \
 	fi
@@ -530,26 +605,51 @@ audit-brew:
 	@echo "=== brew audit --installed (URLs / licences / deprecations) ==="
 	@brew audit --installed --skip-style || true
 
-audit-brewfile:
+# $(1) = space-separated list of profile YAML files whose extras to fold in.
+#
+# One shell block so the whole thing can be piped through awk: with more than one
+# profile the base lists would otherwise repeat, and `brew bundle`/`brew info`
+# should not be handed the same package twice. `!seen[$$0]++` keeps first-occurrence
+# order, so the output stays diffable.
+#
+# `.devbox_extra_brew[]?` deliberately carries no `// empty` fallback: that is a jq
+# idiom, and mikefarah yq rejects it with a lexer error. The previous version had
+# one, hidden behind `2>/dev/null`, so the extra-formula list was silently empty
+# for every profile — `oras` had never reached the Brewfile even when the work
+# profile was passed explicitly. `?` alone already tolerates a missing key.
+define emit_brewfile
 	@command -v yq >/dev/null 2>&1 || { \
 		echo "ERROR: yq is required (brew install yq)."; exit 1; \
 	}
-	@printf '# Generated from %s + %s — do not edit.\n' "$(PACKAGES_YML)" "$(PROFILE_YML)"
-	@for tap in $$(yq -r '.devbox_brew_taps[]' $(PACKAGES_YML)); do \
-		printf 'tap "%s"\n' "$$tap"; \
-	done
-	@for f in $$(yq -r '.devbox_brew_primary[],.devbox_brew_primary_special[],.devbox_brew_secondary[]' $(PACKAGES_YML)); do \
-		printf 'brew "%s"\n' "$$f"; \
-	done
-	@for f in $$(yq -r '.devbox_extra_brew[]? // empty' $(PROFILE_YML) 2>/dev/null); do \
-		printf 'brew "%s"\n' "$$f"; \
-	done
-	@for c in $$(yq -r '.devbox_brew_primary_casks[],.devbox_brew_secondary_casks[],.devbox_brew_secondary_casks_no_binaries[]' $(PACKAGES_YML)); do \
-		printf 'cask "%s"\n' "$$c"; \
-	done
-	@for c in $$(yq -r '.devbox_extra_brew_casks[]?,.devbox_extra_brew_casks_no_binaries[]?' $(PROFILE_YML) 2>/dev/null); do \
-		printf 'cask "%s"\n' "$$c"; \
-	done
+	@{ \
+		printf '# Generated from %s + %s — do not edit.\n' "$(PACKAGES_YML)" "$(strip $(1))"; \
+		yq -r '.devbox_brew_taps[]' $(PACKAGES_YML) \
+			| while read -r t; do printf 'tap "%s"\n' "$$t"; done; \
+		yq -r '.devbox_brew_primary[],.devbox_brew_primary_special[],.devbox_brew_secondary[]' $(PACKAGES_YML) \
+			| while read -r f; do printf 'brew "%s"\n' "$$f"; done; \
+		for p in $(1); do \
+			yq -r '.devbox_extra_brew[]?' "$$p" \
+				| while read -r f; do printf 'brew "%s"\n' "$$f"; done; \
+		done; \
+		yq -r '.devbox_brew_primary_casks[],.devbox_brew_secondary_casks[],.devbox_brew_secondary_casks_no_binaries[]' $(PACKAGES_YML) \
+			| while read -r c; do printf 'cask "%s"\n' "$$c"; done; \
+		for p in $(1); do \
+			yq -r '.devbox_extra_brew_casks[]?,.devbox_extra_brew_casks_no_binaries[]?' "$$p" \
+				| while read -r c; do printf 'cask "%s"\n' "$$c"; done; \
+		done; \
+	} | awk '!seen[$$0]++'
+endef
+
+# One profile, named explicitly or recovered from the environment. No fallback:
+# a Brewfile that silently describes the wrong machine is worse than an error.
+audit-brewfile:
+	$(require_profile)
+	$(call emit_brewfile,$(PROFILE_YML))
+
+# Every profile at once — what the CVE scan wants, since it needs completeness
+# rather than fidelity to one laptop. Needs no profile, so CI can call it bare.
+audit-brewfile-all:
+	$(call emit_brewfile,$(PROFILE_YMLS))
 
 # Curated list of third-party brew taps we want gone. Re-evaluated periodically
 # via `make audit-taps`. Adding a tap here is a one-way intent: if it ever
@@ -664,11 +764,11 @@ endif
 
 claude-diff:
 	$(require_profile)
-	@$(AI_CONFIG) diff claude --repo-root "$(CURDIR)" --home "$(HOME)" --profile "$(ACTIVE_PROFILE)" $(ARGS)
+	@$(AI_CONFIG) diff claude --repo-root "$(CURDIR)" --home "$(HOME)" --profile "$(SLIM_PROFILE)" $(ARGS)
 
 claude-pull-review:
 	$(require_profile)
-	@$(AI_CONFIG) reconcile claude --repo-root "$(CURDIR)" --home "$(HOME)" --profile "$(ACTIVE_PROFILE)" $(ARGS)
+	@$(AI_CONFIG) reconcile claude --repo-root "$(CURDIR)" --home "$(HOME)" --profile "$(SLIM_PROFILE)" $(ARGS)
 
 claude-pull: claude-pull-review
 
@@ -696,7 +796,7 @@ karabiner-pull:
 	@if [ ! -f "$(KARABINER_DEST)" ]; then echo "  ERROR: live file not found: $(KARABINER_DEST)"; exit 1; fi
 	@out=$$(mktemp); \
 	jq --slurpfile live $(KARABINER_DEST) \
-		'.profiles[0].complex_modifications = ((first($$live[0].profiles[]|select(.selected==true)) // $$live[0].profiles[0]).complex_modifications)' \
+		'.profiles[0].complex_modifications = ($$live[0] | $(KARABINER_CM_JQ))' \
 		$(KARABINER_SRC) > $$out; \
 	if ! jq -e . $$out >/dev/null 2>&1; then echo "  ERROR: produced invalid JSON — aborting"; rm -f $$out; exit 1; fi; \
 	if diff -q $$out $(KARABINER_SRC) >/dev/null 2>&1; then \
@@ -724,7 +824,7 @@ codex-push:
 # Use `make local-push` if you want to iterate on the overlay alone.
 dotfiles-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags dotfiles,local $(ACTIVE_OPTS) playbooks/dotfiles.yml
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags dotfiles,local $(SLIM_OPTS) playbooks/dotfiles.yml
 
 # Fast-path: fish + fisher plugins + tide preset + font cache.
 # Reuses fish/tide/font-cache tasks in apply_configs.yml under `shell`.
@@ -732,26 +832,26 @@ dotfiles-push: $(COLLECTIONS_SENTINEL)
 # the defensive self-become via devbox_skip_become).
 shell-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags shell $(ACTIVE_OPTS) playbooks/shell.yml
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags shell $(SLIM_OPTS) playbooks/shell.yml
 
 # Fast-path: re-register Claude Code MCP servers via `claude mcp add`.
 # Reuses the MCP register tasks in apply_configs.yml under `mcp`. No sudo.
 mcp-sync: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags mcp $(ACTIVE_OPTS) playbooks/mcp.yml
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags mcp $(SLIM_OPTS) playbooks/mcp.yml
 
 # Fast-path: gitignored local overlay (roles/devbox/local/).
 # Reuses Block 6 of install_configs.yml under `local`.
 local-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local $(ACTIVE_OPTS) playbooks/local.yml
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local $(SLIM_OPTS) playbooks/local.yml
 
 # Fast-path: (re)install the weekly drive backup — packages/drive-backup + the
 # local.drive-backup LaunchAgent. Deploys the local overlay first: its
 # ~/.config/drive-backup/config.toml is the on/off switch. No sudo.
 drive-backup-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
-	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local,drive-backup $(ACTIVE_OPTS) playbooks/drive_backup.yml
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local,drive-backup $(SLIM_OPTS) playbooks/drive_backup.yml
 
 # Run the backup now, through launchd, with exactly the scheduled environment.
 drive-backup-now:
@@ -767,14 +867,11 @@ macos-defaults: $(COLLECTIONS_SENTINEL) secrets-ready
 	@ANSIBLE_FORCE_COLOR=1 \
 	 ANSIBLE_BECOME_PASSWORD_FILE="$(CURDIR)/scripts/keychain-become-pass.sh" \
 	 ./scripts/with_sudo_keepalive.sh \
-	    ansible-playbook --tags macos $(ACTIVE_OPTS) playbooks/macos.yml
-
-sync-upstream-docs:
-	@$(VALIDATE_PYTHON) scripts/sync-upstream-docs.py --repo-root "$(CURDIR)" $(ARGS)
+	    ansible-playbook --tags macos $(SLIM_OPTS) playbooks/macos.yml
 
 # Stdlib-only, so it runs on bare python3 without materialising the dev venv.
-mine-claude-logs: ## Mine Claude session transcripts into research_on_claude_behaviour/data
-	@$(VALIDATE_PYTHON) scripts/mine-claude-logs.py $(ARGS)
+sync-upstream-docs:
+	@$(VALIDATE_PYTHON) scripts/sync-upstream-docs.py --repo-root "$(CURDIR)" $(ARGS)
 
 validate-configs: test-json test-fish test-nvim ## Validate repo configs (JSON, fish, nvim)
 	@echo "All config validations passed."
@@ -819,6 +916,10 @@ test-nvim:
 # Wipe the hermetic state directory (.devbox/ holds ansible local_tmp,
 # dev_mode dotfiles target, and any other ephemeral runtime artefacts).
 # Gitignored, fully owned by this repo — safe to recreate from scratch.
+# playbooks/.devbox is the same directory left behind by a run whose working
+# directory was playbooks/ rather than the repo root — ansible.cfg's local_tmp
+# is a relative path, so it follows the CWD. `clean` used to miss it, which is
+# how 15 MB of stale dev_mode dotfiles survived there for months.
 clean:
-	@rm -rf $(CURDIR)/.devbox
-	@echo "Cleaned: $(CURDIR)/.devbox"
+	@rm -rf $(CURDIR)/.devbox $(CURDIR)/playbooks/.devbox
+	@echo "Cleaned: .devbox/ and playbooks/.devbox/"

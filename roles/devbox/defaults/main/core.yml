@@ -35,8 +35,11 @@ devbox_projects_dir: "$HOME/Projects"
 # Active profile name, overridden in profiles/{personal,work}.yml.
 # Rendered into the MNEMOSYNE_PERISTASEOS env var (see devbox_shell.env in
 # shell.yml). Slim playbooks (dotfiles-push, shell-push, mcp-sync) read that
-# env var via Makefile ACTIVE_PROFILE to recover the active profile without
-# re-running the full personal/work playbook.
+# env var via Makefile SLIM_PROFILE to recover the profile without re-running
+# the full personal/work playbook. A full run never does that: it is always
+# given its profile explicitly, so this default stays "unknown" and a run that
+# somehow reached the playbook without a profile overlay is visible rather than
+# silently treated as personal.
 devbox_active_profile: "unknown"
 
 # Langfuse `user_id`, overridden in profiles/{personal,work}.yml. Several engines

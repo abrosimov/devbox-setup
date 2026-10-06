@@ -20,6 +20,13 @@ fi
 brew install pipx
 pipx ensurepath
 
+# uv has to exist before the playbook, not after it. `make personal` depends on
+# `test`, which materialises the dev venv, which refuses to run without uv —
+# while uv itself is declared in devbox_brew_secondary and would only be
+# installed by the very playbook that cannot start. This breaks that cycle;
+# the playbook then finds it already present and moves on.
+brew install uv
+
 # Install Ansible and tools
 pipx install --include-deps ansible ansible-navigator ansible-builder
 pipx install pipreqs
@@ -27,7 +34,9 @@ pipx install pipreqs
 # Install required Ansible collections
 ansible-galaxy collection install -r requirements.yml
 
-# Install Claude Code CLI (native binary → ~/.local/bin/)
-if ! command -v claude &> /dev/null; then
-    curl -fsSL https://claude.ai/install.sh | bash
-fi
+# Claude Code is NOT installed here. It is declared as the `claude-code@latest`
+# cask in devbox_brew_secondary_casks and installed by the playbook, alongside
+# the `codex` and `antigravity-cli` casks — one mechanism for all three engines,
+# a checksum-verified download, and `make upgrade-*` to keep it current. The
+# playbook installs it at step 2, well before the step that needs the binary to
+# register MCP servers.

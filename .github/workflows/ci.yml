@@ -99,6 +99,20 @@ jobs:
       - name: Python unit tests
         run: make test
 
+      # The reconciler that writes ~/.claude/settings.json, ~/.codex/config.toml
+      # and agy's settings.json. Two of those three engines accept an unparseable
+      # file in silence — Claude Code drops it and runs a session indistinguishable
+      # from one with no hooks at all, agy loads permissions=<nil> and says so only
+      # in its language-server log. Nothing downstream would report a generator bug,
+      # so this suite is the only place it can surface. ~7s.
+      - name: ai-config reconciler tests
+        run: make test-ai-config
+
+      # Subprocess smoke + hypothesis over the hooks: they run as separate
+      # processes in production, which the unit tests do not exercise.
+      - name: Hook integration tests
+        run: make test-integration
+
       - name: Git hook tests
         run: make test-git-hooks
 
@@ -124,3 +138,33 @@ jobs:
 
       - name: Fish config syntax check
         run: make test-fish
+
+  # The two hook trees carry their own uv projects (roles/devbox/files/dot_claude/bin
+  # and dot_agy/bin), each with its own uv.lock, and both targets run the same
+  # `uv sync --frozen` the playbook does. That is the point: a drift between a
+  # lock and its test suite otherwise surfaces for the first time mid-deploy, in
+  # Block 1b of install_configs.yml, where it breaks every Python hook on every
+  # Bash call. They are a separate job because they use their own venvs rather
+  # than the root dev one, and because ~85s in parallel beats ~165s in series.
+  #
+  # dot_agy/bin is an independent copy of the same tree that has already diverged
+  # from dot_claude/bin — a green claude-hooks run says nothing about it.
+  hook-projects:
+    name: Hook projects (deployed-venv shape)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Claude hook tests
+        run: make test-claude-hooks
+
+      - name: Antigravity hook tests
+        run: make test-agy-hooks

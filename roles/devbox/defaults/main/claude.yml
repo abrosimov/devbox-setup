@@ -19,6 +19,16 @@ devbox_claude_managed_dirs:
   - templates
   - output-styles
 
+# Subdirs that were in devbox_claude_managed_dirs once and are not any more.
+# The legacy deploy scheme symlinked every managed subdir into the repo; the
+# stale-symlink sweep in install_configs.yml only inspects the current list, so
+# a subdir that leaves the list keeps its symlink on every machine that ran the
+# old scheme. Listing it here keeps it in the sweep — nothing else. Entries are
+# permanent (removing one resurrects the leak) and cost one stat per run. Only
+# symlinks are removed: a real ~/.claude/<dir>/ is the operator's own work.
+devbox_claude_unmanaged_dirs:
+  - future_projects
+
 # MCP servers registered via `claude mcp add` (written to ~/.claude.json under
 # the `mcpServers` key, user scope). Grouped by transport type for clarity.
 # The reconciler step in apply_configs.yml removes any user-scope MCP server

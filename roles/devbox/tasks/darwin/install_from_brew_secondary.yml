@@ -100,6 +100,32 @@
     - devbox_cask_secondary_result.failed
     - '"already installed" not in devbox_cask_secondary_result.msg'
 
+# Migration cleanup: Claude Code used to be installed by scripts/init.sh through
+# Anthropic's native installer, which leaves a launcher at ~/.local/bin/claude
+# pointing into ~/.local/share/claude/versions/. The claude-code@latest cask now
+# owns the binary, but devbox_shell.path_prepend puts ~/.local/bin ahead of
+# /opt/homebrew/bin, so a surviving native launcher silently shadows the cask and
+# the two versions drift apart — Anthropic documents exactly this as a
+# conflicting installation. Nothing here touches configuration: the native
+# install keeps only binaries under ~/.local/share/claude, while settings and
+# history live in ~/.claude.
+- name: Check whether the Claude Code cask has provided its binary
+  ansible.builtin.stat:
+    path: /opt/homebrew/bin/claude
+  register: devbox_claude_brew_binary
+
+# Guarded on the cask's binary rather than on the task result above, so the
+# native install is never removed before its replacement is actually on disk —
+# a machine must not be left with no `claude` at all.
+- name: "Remove the superseded native Claude Code install (the cask owns it now)"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ devbox_paths.dotfiles_root_dir }}/.local/bin/claude"
+    - "{{ devbox_paths.dotfiles_root_dir }}/.local/share/claude"
+  when: devbox_claude_brew_binary.stat.exists
+
 # Separate task for casks whose post-install `xattr -w` step fails because the
 # .pkg lays down root-owned files inside /Applications/<App>.app. Adding
 # `no-binaries` skips brew's shim+Spotlight-metadata step entirely; the cask

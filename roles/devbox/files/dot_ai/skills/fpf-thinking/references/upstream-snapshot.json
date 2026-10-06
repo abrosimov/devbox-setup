@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "ailev/FPF",
-  "commit": "60744ae65f5fd6af60ea1e887878e20abe6be429",
+  "commit": "22b6756c9b91b366e6edf8a8176d3b8f96ee9486",
   "files": [
     {
       "source": "Engineering DPF Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md",
@@ -21,7 +21,7 @@
     {
       "source": "Engineering DPF Suite/ENGINEERING-DPF-SUITE-REFERENCE.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/ENGINEERING-DPF-SUITE-REFERENCE.md",
-      "sha256": "a4baad5c3b91e32ff773642fb11d723a07b8e8ce7b9e25ae7b95a304d9f4c0a6"
+      "sha256": "9fad315babbaeedcc51754ae065e735557182179fdc3aa1cde3092dda5895190"
     },
     {
       "source": "Engineering DPF Suite/EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md",
@@ -36,7 +36,7 @@
     {
       "source": "Engineering DPF Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "89d9f78396a580b2c3ad1863e26acfd9dc50f0b76e2aa2d8208e9c180a0c7a8a"
+      "sha256": "d7b6ba34798dd6a4855f0ea6aefa67dd6894041e422fa959c3aab68ce51e803e"
     },
     {
       "source": "Engineering DPF Suite/LICENSE",
@@ -91,12 +91,12 @@
     {
       "source": "Engineering DPF Suite/README.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/README.md",
-      "sha256": "6592706085363a46fffe15cd5609f6b79f50c57364940b6f15afbaf7f251851d"
+      "sha256": "5e35958b8557f449006e7241bfada0cf768b38069950a6ac7d417b0e232628c3"
     },
     {
       "source": "Engineering DPF Suite/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "5c4e9a9077cf5ffabcb87517901982c39b9c1419937ef24c027bb37b23e30df3"
+      "sha256": "bfbc419f6130cb3738aa40c15b8fa1371a7d490e9d31baa061a739012e34649e"
     },
     {
       "source": "Engineering DPF Suite/SEMANTIC-INTEGRATION-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
@@ -111,12 +111,12 @@
     {
       "source": "Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "670572b8b61635370e3c2a4098213e0950a98854d890c418f0fe3fd47bf767a5"
+      "sha256": "eefea97a3ae55da870e88d7e515ffc2d1e4744e046d01406ac31ce99f9ae28d0"
     },
     {
       "source": "FPF-Spec.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md",
-      "sha256": "e14bac63615dbf8fe4d11042d7f610cbaefa695cf76a85cc50a5a5a5a1917dd6"
+      "sha256": "63ef54e0bf04ba90510bb5fd779ef210be45e0f0a6fc69630ec1c045edf7d186"
     },
     {
       "source": "LICENSE",
@@ -131,12 +131,12 @@
     {
       "source": "Narrativization-and-Narrative-Studies-Principles-Framework.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Narrativization-and-Narrative-Studies-Principles-Framework.md",
-      "sha256": "a26efd3d945b2a74bc4dab472958b0a2e2261de9a518fc13c16bbb86a8f4a433"
+      "sha256": "a2f42ed8f79869010018364f35da566412b7891126991ebe1b1fe91dfd7065b8"
     },
     {
       "source": "Readme.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Readme.md",
-      "sha256": "4b7ebae59158ad01462c6e5e6305526b6891f870ae9610a7c009ed206fb279d6"
+      "sha256": "48246619d8d8ab97d0c8b8f1a9b5fb2e8158533f69b86e9c10fd6d6ddf73dfd5"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "ailev/FPF",
-  "commit": "22b6756c9b91b366e6edf8a8176d3b8f96ee9486",
+  "commit": "2c16067fe8c7f34ea3313d66d36738870f5c2087",
   "files": [
     {
       "source": "Engineering DPF Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md",
@@ -116,7 +116,7 @@
     {
       "source": "FPF-Spec.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md",
-      "sha256": "63ef54e0bf04ba90510bb5fd779ef210be45e0f0a6fc69630ec1c045edf7d186"
+      "sha256": "c6f8fffc12aa96a201090f22e4414e103c520b8f35bc1dd3c61f4273532146b1"
     },
     {
       "source": "LICENSE",
@@ -136,7 +136,7 @@
     {
       "source": "Readme.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Readme.md",
-      "sha256": "48246619d8d8ab97d0c8b8f1a9b5fb2e8158533f69b86e9c10fd6d6ddf73dfd5"
+      "sha256": "7c1db41016899827b2f8df125dcf9ac55604c0aeb0e26fe07d0ff0f166eed3f2"
     }
   ]
 }

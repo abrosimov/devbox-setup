@@ -160,6 +160,11 @@
     - .gemini/config/rules
   tags: [configs, ai, claude, agy]
 
+# Entries the local overlay (Block 6) places in these directories, e.g. an
+# organisation skill under local/.claude/skills/, would otherwise be removed by
+# --delete whenever the sync runs without the `local` tag. Protect each top-level
+# overlay entry by name; `_` separates rule and pattern because synchronize joins
+# rsync_opts unquoted.
 - name: Sync shared AI directories (dot_ai) to Claude (one-way, --delete)
   ansible.posix.synchronize:
     src: "{{ role_path }}/files/dot_ai/{{ item }}/"
@@ -167,6 +172,10 @@
     delete: true
     recursive: true
     perms: true
+    rsync_opts: >-
+      {{ query('community.general.filetree', role_path ~ '/local/.claude/' ~ item)
+         | map(attribute='path') | reject('search', '/')
+         | map('regex_replace', '^(.*)$', '--filter=P_/\1') | list }}
   delegate_to: localhost
   loop: "{{ devbox_ai_managed_dirs }}"
   tags: [configs, ai, claude]

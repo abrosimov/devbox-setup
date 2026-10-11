@@ -1,0 +1,103 @@
+---
+# Go client contract for the private Athens/Tamias module proxy in the user's
+# `go env` file (GOENV), following devbox_packages.tamias.enabled:
+#
+# - enabled: keys whose effective value diverges from the contract are written,
+#   so a converged machine reports no change;
+# - disabled: every KEY=VALUE line of the file that is exactly what the enabled
+#   branch would write is removed with `go env -u`, and Go falls back to its
+#   defaults. A line holding any other value is not ours and is left alone.
+#
+# The five keys are blanked in this task's environment: Go prefers a non-empty
+# process variable over the go env file, and an inherited GOPROXY would
+# otherwise hide what the file actually holds.
+#
+# Guarded by the include in main_darwin.yml (Darwin, not dev_mode). Runs after
+# install_tamias.yml, which provides the GOAUTH helper.
+
+- name: "Go module proxy — reconcile the persisted go env"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+    GOAUTH: ""
+    GOPROXY: ""
+    GONOPROXY: ""
+    GONOSUMDB: ""
+    GOSUMDB: ""
+  tags: [go-proxy]
+  block:
+    - name: "Go module proxy — load the contract"
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/darwin/go_module_proxy_contract.yml"
+
+    - name: "Go module proxy — apply the contract (Tamias enabled)"
+      when: devbox_packages.tamias.enabled | default(false) | bool
+      block:
+        - name: "Go module proxy — read the persisted go env"
+          ansible.builtin.command:
+            argv:
+              - go
+              - env
+              - -json
+              - GOAUTH
+              - GOPROXY
+              - GONOPROXY
+              - GONOSUMDB
+              - GOSUMDB
+          register: devbox_go_module_proxy_current
+          changed_when: false
+          check_mode: false
+
+        - name: "Go module proxy — list divergent keys"
+          # Both sides become sorted KEY=VALUE strings; what the desired side
+          # has and the persisted side lacks is exactly what `go env -w` must
+          # write.
+          ansible.builtin.set_fact:
+            devbox_go_module_proxy_divergent: >-
+              {{ devbox_go_module_proxy_desired | dictsort | map('join', '=') | list
+                 | difference(devbox_go_module_proxy_current.stdout | from_json
+                              | dictsort | map('join', '=') | list) }}
+
+        - name: "Go module proxy — write divergent keys"
+          ansible.builtin.command:
+            argv: "{{ ['go', 'env', '-w'] + devbox_go_module_proxy_divergent }}"
+          changed_when: true
+          when: devbox_go_module_proxy_divergent | length > 0
+
+    - name: "Go module proxy — remove the contract (Tamias disabled)"
+      when: not (devbox_packages.tamias.enabled | default(false) | bool)
+      block:
+        - name: "Go module proxy — locate the go env file"
+          ansible.builtin.command:
+            argv:
+              - go
+              - env
+              - GOENV
+          register: devbox_go_module_proxy_goenv
+          changed_when: false
+          check_mode: false
+
+        - name: "Go module proxy — inspect the go env file"
+          ansible.builtin.stat:
+            path: "{{ devbox_go_module_proxy_goenv.stdout | trim }}"
+          register: devbox_go_module_proxy_goenv_stat
+          # GOENV=off (or empty) means there is no file and nothing to remove.
+          when: (devbox_go_module_proxy_goenv.stdout | trim) is match('^/')
+
+        - name: "Go module proxy — read the go env file"
+          ansible.builtin.slurp:
+            src: "{{ devbox_go_module_proxy_goenv.stdout | trim }}"
+          register: devbox_go_module_proxy_goenv_content
+          when: devbox_go_module_proxy_goenv_stat.stat.exists | default(false)
+
+        - name: "Go module proxy — list the lines this playbook wrote"
+          ansible.builtin.set_fact:
+            devbox_go_module_proxy_owned_keys: >-
+              {{ devbox_go_module_proxy_desired | dictsort | map('join', '=') | list
+                 | intersect((devbox_go_module_proxy_goenv_content.content | default('')
+                              | b64decode).splitlines() | map('trim') | list)
+                 | map('regex_replace', '=.*$', '') | list }}
+
+        - name: "Go module proxy — remove the lines this playbook wrote"
+          ansible.builtin.command:
+            argv: "{{ ['go', 'env', '-u'] + devbox_go_module_proxy_owned_keys }}"
+          changed_when: true
+          when: devbox_go_module_proxy_owned_keys | length > 0

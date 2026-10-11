@@ -1,0 +1,32 @@
+---
+# The Go client contract for the private module proxy, derived once from
+# devbox_go_module_proxy and devbox_packages.tamias. Shared by
+# configure_go_module_proxy.yml (writes it, or removes it when Tamias is
+# disabled) and verify_go_module_proxy.yml (proves it end to end), so all of
+# them read the same five values.
+
+- name: "Go module proxy — derive the desired environment"
+  ansible.builtin.set_fact:
+    devbox_go_module_proxy_desired:
+      GOAUTH: "{{ (devbox_packages.tamias.install_path | expanduser) ~ ' goauth' }}"
+      GOPROXY: "{{ devbox_go_module_proxy.goproxy }}"
+      GONOPROXY: "{{ devbox_go_module_proxy.gonoproxy }}"
+      GONOSUMDB: "{{ devbox_go_module_proxy.gonosumdb | join(',') }}"
+      GOSUMDB: "{{ devbox_go_module_proxy.gosumdb }}"
+  tags: [go-proxy]
+
+- name: "Go module proxy — refuse a contract with a fallback or a broken helper"
+  # GOPROXY is one https origin: a comma or pipe list is how `direct` or a
+  # public mirror would sneak back in. Go splits a GOAUTH command on
+  # whitespace, so the helper path itself must contain none.
+  ansible.builtin.assert:
+    that:
+      - devbox_go_module_proxy_desired.GOPROXY is match('^https://[^,|\s]+$')
+      - devbox_go_module_proxy_desired.GONOPROXY == 'none'
+      - (devbox_packages.tamias.install_path | expanduser) is match('^/\S+$')
+    fail_msg: >-
+      devbox_go_module_proxy must name exactly one https proxy with no
+      fallback, GONOPROXY=none, and a Tamias install path that is absolute
+      and free of whitespace.
+    quiet: true
+  tags: [go-proxy]

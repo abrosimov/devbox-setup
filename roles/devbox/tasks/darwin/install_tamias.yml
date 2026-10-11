@@ -1,0 +1,287 @@
+---
+# Tamias — the Go module proxy credential helper (`tamias goauth`), installed
+# from a GitHub Release asset of the private abrosimov/tamias repository.
+#
+# Admission is fail-closed and has exactly one path: the authenticated `gh` CLI
+# reads the pinned release, which must be published (not a draft) and reported
+# immutable, and must carry exactly one asset for this machine's architecture.
+# The asset is staged in an Ansible-managed temporary directory, checked with
+# `gh release verify-asset` (GitHub's release attestation is the integrity
+# authority — no checksum is declared in this repository) and bound to the
+# selected asset by the digest the immutable release itself reports. Only then
+# does it replace ~/.local/bin/tamias, atomically. There is no fallback: no
+# source build, no `go install`, no Homebrew, no unchecked download — a failure
+# leaves the previously admitted binary untouched and fails the run.
+#
+# The gh token never enters Ansible: gh reads it from its own credential store.
+#
+# Guarded by the include in main_darwin.yml (Darwin, not dev_mode,
+# devbox_packages.tamias.enabled).
+
+- name: "Tamias — admit and install the pinned immutable release"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  tags: [tamias, go-proxy]
+  block:
+    - name: "Tamias — resolve the release selection"
+      ansible.builtin.set_fact:
+        devbox_tamias_repository: "{{ devbox_packages.tamias.repository }}"
+        devbox_tamias_tag: "v{{ devbox_packages.tamias.version }}"
+        devbox_tamias_asset: >-
+          {{ devbox_packages.tamias.assets[ansible_facts['architecture']] | default('') }}
+        devbox_tamias_bin: "{{ devbox_packages.tamias.install_path | expanduser }}"
+        # Test seam only: tests/deploy/test_tamias_deploy.py points this at a
+        # fake gh. Never set in defaults or profiles.
+        devbox_tamias_gh: "{{ devbox_tamias_gh_bin | default('gh') }}"
+
+    - name: "Tamias — refuse an unmapped architecture or an unsafe asset name"
+      # The asset name is passed to `gh release download --pattern`, a glob; a
+      # name restricted to these characters matches only itself.
+      ansible.builtin.assert:
+        that:
+          - devbox_tamias_asset | length > 0
+          - devbox_tamias_asset is match('^[A-Za-z0-9._-]+$')
+        fail_msg: >-
+          No Tamias release asset is declared for architecture
+          '{{ ansible_facts['architecture'] }}' (devbox_packages.tamias.assets),
+          or the declared name is not a plain file name.
+        quiet: true
+
+    - name: "Tamias — locate the GitHub CLI"
+      ansible.builtin.command:
+        argv:
+          - "{{ devbox_tamias_gh }}"
+          - --version
+      register: devbox_tamias_gh_version
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "Tamias — require the GitHub CLI"
+      ansible.builtin.assert:
+        that:
+          - (devbox_tamias_gh_version.rc | default(1)) == 0
+        fail_msg: >-
+          The GitHub CLI (`gh`) is required to admit Tamias from the private
+          {{ devbox_tamias_repository }} releases, and was not found on PATH.
+        quiet: true
+
+    - name: "Tamias — check GitHub CLI authentication"
+      # no_log: `gh auth status` masks the token, but the account and scope
+      # lines are still nobody's business in a provisioning log.
+      ansible.builtin.command:
+        argv:
+          - "{{ devbox_tamias_gh }}"
+          - auth
+          - status
+          - --active
+          - --hostname
+          - github.com
+      register: devbox_tamias_gh_auth
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      no_log: true
+
+    - name: "Tamias — require usable GitHub CLI authentication"
+      ansible.builtin.assert:
+        that:
+          - (devbox_tamias_gh_auth.rc | default(1)) == 0
+        fail_msg: >-
+          `gh auth status` reports no usable github.com login. Run
+          `gh auth login`, then re-run.
+        quiet: true
+
+    - name: "Tamias — read the pinned release"
+      ansible.builtin.command:
+        argv:
+          - "{{ devbox_tamias_gh }}"
+          - release
+          - view
+          - "{{ devbox_tamias_tag }}"
+          - --repo
+          - "{{ devbox_tamias_repository }}"
+          - --json
+          - tagName,isDraft,isImmutable,assets
+      register: devbox_tamias_release_view
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "Tamias — require the pinned release to exist"
+      ansible.builtin.assert:
+        that:
+          - (devbox_tamias_release_view.rc | default(1)) == 0
+        fail_msg: >-
+          Release {{ devbox_tamias_tag }} of {{ devbox_tamias_repository }} could
+          not be read: {{ devbox_tamias_release_view.stderr | default('') | trim }}
+        quiet: true
+
+    - name: "Tamias — parse the release metadata"
+      ansible.builtin.set_fact:
+        devbox_tamias_release: "{{ devbox_tamias_release_view.stdout | from_json }}"
+
+    - name: "Tamias — select the asset for this architecture"
+      ansible.builtin.set_fact:
+        devbox_tamias_matching_assets: >-
+          {{ devbox_tamias_release.assets | default([])
+             | selectattr('name', 'equalto', devbox_tamias_asset) | list }}
+
+    - name: "Tamias — admit only an exact, published, immutable release"
+      ansible.builtin.assert:
+        that:
+          - devbox_tamias_release.tagName | default('') == devbox_tamias_tag
+          - devbox_tamias_release.isDraft is sameas false
+          - devbox_tamias_release.isImmutable is sameas true
+        fail_msg: >-
+          {{ devbox_tamias_repository }} {{ devbox_tamias_tag }} is not admissible:
+          tagName={{ devbox_tamias_release.tagName | default('?') }},
+          isDraft={{ devbox_tamias_release.isDraft | default('?') }},
+          isImmutable={{ devbox_tamias_release.isImmutable | default('?') }}.
+          Only a published immutable release with exactly the pinned tag is
+          installed; publish one and re-run.
+        quiet: true
+
+    - name: "Tamias — require exactly one asset for this architecture"
+      ansible.builtin.assert:
+        that:
+          - devbox_tamias_matching_assets | length == 1
+          - (devbox_tamias_matching_assets[0].digest | default(''))
+            is match('^sha256:[0-9a-f]{64}$')
+        fail_msg: >-
+          {{ devbox_tamias_repository }} {{ devbox_tamias_tag }} carries {{
+          devbox_tamias_matching_assets | length }} asset(s) named
+          '{{ devbox_tamias_asset }}' (need exactly one, with a sha256 digest).
+        quiet: true
+
+    - name: "Tamias — record the release-reported asset digest"
+      ansible.builtin.set_fact:
+        devbox_tamias_asset_digest: "{{ devbox_tamias_matching_assets[0].digest }}"
+
+    - name: "Tamias — ensure the install directory exists"
+      ansible.builtin.file:
+        path: "{{ devbox_tamias_bin | dirname }}"
+        state: directory
+        mode: "0755"
+
+    - name: "Tamias — inspect the installed binary"
+      ansible.builtin.stat:
+        path: "{{ devbox_tamias_bin }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: devbox_tamias_installed
+
+    - name: "Tamias — verify the installed binary against the pinned release"
+      # Only reached when the installed bytes already equal the release asset;
+      # the attestation is still re-checked so an admitted binary is never
+      # taken on trust from a previous run.
+      ansible.builtin.command:
+        argv:
+          - "{{ devbox_tamias_gh }}"
+          - release
+          - verify-asset
+          - "{{ devbox_tamias_tag }}"
+          - "{{ devbox_tamias_bin }}"
+          - --repo
+          - "{{ devbox_tamias_repository }}"
+      register: devbox_tamias_installed_verify
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when:
+        - devbox_tamias_installed.stat.exists | default(false)
+        - ('sha256:' ~ (devbox_tamias_installed.stat.checksum | default('')))
+          == devbox_tamias_asset_digest
+
+    - name: "Tamias — decide whether the installed binary is already admitted"
+      ansible.builtin.set_fact:
+        devbox_tamias_installed_is_admitted: >-
+          {{
+            devbox_tamias_installed.stat.exists | default(false)
+            and ('sha256:' ~ (devbox_tamias_installed.stat.checksum | default('')))
+              == devbox_tamias_asset_digest
+            and (devbox_tamias_installed_verify.rc | default(1)) == 0
+          }}
+
+    - name: "Tamias — keep the admitted binary executable"
+      ansible.builtin.file:
+        path: "{{ devbox_tamias_bin }}"
+        mode: "0755"
+      when: devbox_tamias_installed_is_admitted | bool
+
+    - name: "Tamias — stage, verify and install the release asset"
+      when:
+        - not (devbox_tamias_installed_is_admitted | bool)
+        - not ansible_check_mode
+      block:
+        - name: "Tamias — create the staging directory"
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: devbox-tamias.
+          register: devbox_tamias_staging
+
+        - name: "Tamias — download the release asset into staging"
+          ansible.builtin.command:
+            argv:
+              - "{{ devbox_tamias_gh }}"
+              - release
+              - download
+              - "{{ devbox_tamias_tag }}"
+              - --repo
+              - "{{ devbox_tamias_repository }}"
+              - --pattern
+              - "{{ devbox_tamias_asset }}"
+              - --dir
+              - "{{ devbox_tamias_staging.path }}"
+          changed_when: true
+
+        - name: "Tamias — verify the staged asset against the pinned release"
+          # The integrity gate. A non-zero exit fails the run here, before
+          # anything is installed.
+          ansible.builtin.command:
+            argv:
+              - "{{ devbox_tamias_gh }}"
+              - release
+              - verify-asset
+              - "{{ devbox_tamias_tag }}"
+              - "{{ devbox_tamias_staging.path }}/{{ devbox_tamias_asset }}"
+              - --repo
+              - "{{ devbox_tamias_repository }}"
+          changed_when: false
+
+        - name: "Tamias — inspect the staged asset"
+          ansible.builtin.stat:
+            path: "{{ devbox_tamias_staging.path }}/{{ devbox_tamias_asset }}"
+            get_checksum: true
+            checksum_algorithm: sha256
+          register: devbox_tamias_staged
+
+        - name: "Tamias — require the staged bytes to be this architecture's asset"
+          # verify-asset proves the file came from the release; every asset of
+          # the release passes it. The release-reported digest pins it to the
+          # one asset selected for this architecture.
+          ansible.builtin.assert:
+            that:
+              - devbox_tamias_staged.stat.exists | default(false)
+              - ('sha256:' ~ (devbox_tamias_staged.stat.checksum | default('')))
+                == devbox_tamias_asset_digest
+            fail_msg: >-
+              The staged file does not match the digest {{ devbox_tamias_tag }}
+              reports for {{ devbox_tamias_asset }}; nothing was installed.
+            quiet: true
+
+        - name: "Tamias — install the verified binary"
+          # ansible.builtin.copy writes a temporary file beside dest and renames
+          # it into place, so the swap is atomic.
+          ansible.builtin.copy:
+            src: "{{ devbox_tamias_staging.path }}/{{ devbox_tamias_asset }}"
+            dest: "{{ devbox_tamias_bin }}"
+            remote_src: true
+            mode: "0755"
+
+      always:
+        - name: "Tamias — remove the staging directory"
+          ansible.builtin.file:
+            path: "{{ devbox_tamias_staging.path }}"
+            state: absent
+          when: devbox_tamias_staging.path is defined

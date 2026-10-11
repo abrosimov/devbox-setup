@@ -39,6 +39,7 @@ A profile is mandatory: bare `make run` / `make check` fail with `PROFILE is req
 | `make sync-upstream-docs` | Refresh the [FPF, Narrative and Engineering DPF bundle](roles/devbox/files/dot_ai/skills/fpf-thinking/references/bundle-index.md) from one upstream commit; use `ARGS='--check'` for a read-only comparison |
 | `make otelbox-edge-config` | Set the edge collector's remote endpoint + ingestion token (`ONLY=endpoint\|token`) |
 | `make otelbox-edge-test` | Liveness + delivery smoke for the edge collector (also runs after `make personal`/`work`) |
+| `make go-proxy-verify` | Prove the private Go module proxy client end to end (needs an existing `tamias login`) |
 
 Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_VARS='-e foo=bar'` (e.g. `--tags`: `make personal EXTRA_VARS='--tags packages'`).
 
@@ -286,6 +287,24 @@ OTELBOX_TUNNEL_HOST=user@telemetry.example.com
 ```
 
 Ports default to `18080` (SigNoz) and `28080` (ClickStack) and only need overriding if the server-side loopback publications change.
+
+## Go Module Proxy (Athens behind Tamias)
+
+Every Go module fetch goes through the private proxy at `https://go.abrosimov.tech`, authenticated by the [Tamias](https://github.com/abrosimov/tamias) credential helper. There is no `direct` and no public mirror in the chain.
+
+**Installation.** `tasks/darwin/install_tamias.yml` installs the release pinned in `devbox_packages.tamias` (`defaults/main/packages.yml`) to `~/.local/bin/tamias`. It uses the already authenticated `gh` CLI and admits only a published, immutable release with exactly one asset for the machine's architecture. The asset is staged in a temporary directory and checked with `gh release verify-asset`. Its digest must also equal the one the release reports, and only then is it swapped into place atomically. No checksum is declared here: the immutable release attestation is the integrity authority. Any failure fails the run and leaves the previously installed binary untouched. There is no fallback to a source build, `go install`, Homebrew or an unchecked download.
+
+**Go client.** `tasks/darwin/configure_go_module_proxy.yml` writes `GOAUTH=<home>/.local/bin/tamias goauth`, `GOPROXY`, `GONOPROXY=none`, `GONOSUMDB` and `GOSUMDB` into the user's `go env` file, rewriting only keys that diverge. It runs after the Go tools step. From then on, every module fetch, `go install` included, needs a Tamias credential.
+
+**On/off switch.** `devbox_packages.tamias.enabled` controls the whole client. When it is `false`, the Tamias step is skipped. The Go step removes, with `go env -u`, every line of the `go env` file that is exactly what it would write when enabled, so Go falls back to its defaults. Lines with any other value are left alone. The installed binary and any Keychain credential stay where they are. It is currently `false`: the Pocket ID login is unusable because of a bug on the OIDC provider's side.
+
+**Credentials.** Sign-in is interactive and never part of `make personal`/`make work`. Run `~/.local/bin/tamias login` once, then check the whole chain:
+
+```sh
+make go-proxy-verify
+```
+
+It requires the persisted go env to match the contract and an existing usable credential. It then downloads one public and one private module through the proxy into a throwaway `GOMODCACHE`, with VCS access disabled. Tamias has no credential-status command and `tamias goauth` prints the bearer token, so the credential check discards the helper's output and keeps only its exit status.
 
 ## Drive Backup
 

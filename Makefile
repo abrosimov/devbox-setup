@@ -163,7 +163,7 @@ endif
        audit audit-brewfile audit-brewfile-all audit-taps untap-stale \
        claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
        karabiner-diff karabiner-pull \
-       dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now \
+       dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now go-proxy-verify \
        sync-upstream-docs \
        test test-integration test-ai-config test-deploy test-claude-hooks test-agy-hooks test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
        test-live test-live-guard \
@@ -213,6 +213,7 @@ help:
 	@echo "  make otelbox-edge-config - set otelbox edge remote endpoint (overlay) + ingestion token (keychain); ONLY=endpoint|token|cert"
 	@echo "  make otelbox-edge-test - liveness smoke: binary, service, :13133, :8888, OTLP round-trip, delivery"
 	@echo "  make drive-backup-push - (re)install the weekly drive backup (uv project + LaunchAgent) from the local overlay config"
+	@echo "  make go-proxy-verify  - prove the Go module proxy client: go env contract, Tamias credential, public + private download"
 	@echo "  make drive-backup-now  - run the drive backup now via launchd; log in ~/Library/Logs/drive-backup.log"
 	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
 	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
@@ -852,6 +853,14 @@ local-push: $(COLLECTIONS_SENTINEL)
 drive-backup-push: $(COLLECTIONS_SENTINEL)
 	$(require_profile)
 	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local,drive-backup $(SLIM_OPTS) playbooks/drive_backup.yml
+
+# Acceptance check for the private Go module proxy (Athens behind Tamias):
+# persisted go env, an existing Tamias credential, and one public + one private
+# module through the proxy into a throwaway GOMODCACHE. Deliberately not part of
+# `make personal`/`make work`: the credential comes from an interactive
+# `tamias login`. No sudo, no profile required.
+go-proxy-verify: $(COLLECTIONS_SENTINEL)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags go-proxy $(SLIM_OPTS) playbooks/go_proxy_verify.yml
 
 # Run the backup now, through launchd, with exactly the scheduled environment.
 drive-backup-now:

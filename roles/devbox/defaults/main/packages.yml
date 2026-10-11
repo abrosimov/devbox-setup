@@ -208,6 +208,27 @@ devbox_packages:
     upstream_compression: "zstd"
     release_base: "https://github.com/abrosimov/otelcol-otelbox/releases/download"
 
+  # Tamias — Go module proxy credential helper (`tamias goauth`) for the private
+  # Athens gateway. Installed by tasks/darwin/install_tamias.yml from a GitHub
+  # Release asset fetched through the authenticated `gh` CLI. Nothing is built
+  # here and there is deliberately no checksum field: the release must be
+  # immutable, and `gh release verify-asset` (GitHub's release attestation) is
+  # the integrity authority. A release that is draft, mutable or missing the
+  # asset for this machine's architecture fails the run.
+  #
+  # `enabled` is the single switch for the whole private-proxy client: on, the
+  # helper is installed and the go env points at the proxy; off, the go env
+  # keys this playbook wrote are removed again and Go falls back to its
+  # defaults. Off while the Pocket ID login is unusable (OIDC provider bug).
+  tamias:
+    enabled: false
+    repository: "abrosimov/tamias"
+    version: "0.1.1"
+    # ansible_facts['architecture'] -> release asset name.
+    assets:
+      arm64: "tamias-darwin-arm64"
+    install_path: "~/.local/bin/tamias"
+
   # Python tools installed via `uv tool install`.
   # Binary name matches tool name.
   uv_tools:
@@ -218,3 +239,22 @@ devbox_packages:
     - pyrefly
     - pylint
     - sqlfluff
+
+# Go client contract for the private module proxy, written into the user's
+# `go env` file by tasks/darwin/configure_go_module_proxy.yml. GOAUTH is derived
+# from devbox_packages.tamias.install_path, so the helper path has one source.
+# No `direct` and no public mirror: every module, public or private, goes
+# through the authenticated proxy, and only the private prefixes skip sumdb.
+# Applied or removed according to devbox_packages.tamias.enabled.
+devbox_go_module_proxy:
+  goproxy: "https://go.abrosimov.tech"
+  gonoproxy: "none"
+  gonosumdb:
+    - "github.com/abrosimov/*"
+    - "github.com/abrosimov-tech/*"
+  gosumdb: "sum.golang.org"
+  # Fixed probes for `make go-proxy-verify`: one public module and one private
+  # module, both fetched into a throwaway GOMODCACHE.
+  verify_modules:
+    public: "rsc.io/quote@v1.5.2"
+    private: "github.com/abrosimov/tamias@v0.1.0"

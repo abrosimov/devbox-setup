@@ -1,0 +1,22 @@
+---
+# Acceptance check for the private Go module proxy client: the persisted go env
+# matches the contract, the existing Tamias credential is usable, and one public
+# and one private module download through the proxy into a throwaway
+# GOMODCACHE. Read-only for the machine; never logs in.
+#
+# No sudo, no vault. Invoked via `make go-proxy-verify`. include_role (rather
+# than import_tasks) loads every role default and sets role_path itself.
+
+- name: Verify the Go module proxy client
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: true   # ansible_facts.env supplies PATH
+
+  tasks:
+    - name: Verify the Go module proxy client
+      ansible.builtin.include_role:
+        name: devbox
+        tasks_from: darwin/verify_go_module_proxy.yml
+        apply:
+          tags: [go-proxy]
+      tags: [go-proxy]

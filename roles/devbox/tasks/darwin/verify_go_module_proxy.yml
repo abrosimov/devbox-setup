@@ -1,0 +1,167 @@
+---
+# End-to-end acceptance of the Go module proxy client: the persisted go env
+# matches the contract, an existing Tamias credential is usable, and one public
+# and one private module download through the proxy into a throwaway
+# GOMODCACHE with no route around it.
+#
+# Never part of `make personal` / `make work`: it needs a Pocket ID credential,
+# which only an interactive `tamias login` creates. This file does not log in —
+# a missing credential fails with a hint instead. Invoked via
+# `make go-proxy-verify` (playbooks/go_proxy_verify.yml).
+#
+# Nothing here prints a token. Tamias has no credential-status command, and
+# `tamias goauth` writes the bearer token to stdout, so the credential check
+# discards the helper's output in the shell and keeps only its exit status;
+# the downloads run under no_log because Go may echo helper errors.
+
+- name: "Go module proxy verify — require Tamias to be enabled"
+  ansible.builtin.assert:
+    that:
+      - devbox_packages.tamias.enabled | default(false) | bool
+    fail_msg: >-
+      devbox_packages.tamias.enabled is false, so the private proxy client is
+      switched off and its go env keys are removed; there is nothing to verify.
+    quiet: true
+  tags: [go-proxy]
+
+- name: "Go module proxy verify — load the contract"
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/darwin/go_module_proxy_contract.yml"
+  tags: [go-proxy]
+
+- name: "Go module proxy verify — prove the configured client end to end"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  tags: [go-proxy]
+  block:
+    - name: "Go module proxy verify — inspect the Tamias binary"
+      ansible.builtin.stat:
+        path: "{{ devbox_packages.tamias.install_path | expanduser }}"
+      register: devbox_go_proxy_verify_tamias
+
+    - name: "Go module proxy verify — require the Tamias binary"
+      ansible.builtin.assert:
+        that:
+          - devbox_go_proxy_verify_tamias.stat.exists | default(false)
+          - devbox_go_proxy_verify_tamias.stat.executable | default(false)
+        fail_msg: >-
+          {{ devbox_packages.tamias.install_path }} is missing or not executable.
+          Run `make "$MNEMOSYNE_PERISTASEOS" EXTRA_VARS='--tags go-proxy'` first.
+        quiet: true
+
+    - name: "Go module proxy verify — read the persisted go env"
+      ansible.builtin.command:
+        argv:
+          - go
+          - env
+          - -json
+          - GOAUTH
+          - GOPROXY
+          - GONOPROXY
+          - GONOSUMDB
+          - GOSUMDB
+      environment:
+        GOAUTH: ""
+        GOPROXY: ""
+        GONOPROXY: ""
+        GONOSUMDB: ""
+        GOSUMDB: ""
+      register: devbox_go_proxy_verify_env
+      changed_when: false
+
+    - name: "Go module proxy verify — require the persisted go env to match the contract"
+      ansible.builtin.assert:
+        that:
+          - (devbox_go_proxy_verify_env.stdout | from_json) == devbox_go_module_proxy_desired
+        fail_msg: >-
+          The go env file diverges from the contract; run
+          `make "$MNEMOSYNE_PERISTASEOS" EXTRA_VARS='--tags go-proxy'` first.
+          Expected {{ devbox_go_module_proxy_desired }}, found {{
+          devbox_go_proxy_verify_env.stdout | from_json }}.
+        quiet: true
+
+    - name: "Go module proxy verify — check for a usable Tamias credential"
+      # Contract gap: Tamias has no status command, so success of `goauth` is
+      # the only non-interactive signal, and its stdout is the bearer token.
+      # Both streams go to /dev/null inside the shell; Ansible sees only rc.
+      ansible.builtin.shell:
+        cmd: "{{ devbox_packages.tamias.install_path | expanduser | quote }} goauth >/dev/null 2>&1"
+      register: devbox_go_proxy_verify_credential
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: "Go module proxy verify — require a usable Tamias credential"
+      ansible.builtin.assert:
+        that:
+          - (devbox_go_proxy_verify_credential.rc | default(1)) == 0
+        fail_msg: >-
+          Tamias has no usable credential (goauth exited {{
+          devbox_go_proxy_verify_credential.rc | default('?') }}). Run
+          `{{ devbox_packages.tamias.install_path }} login` in a terminal to
+          complete the Pocket ID sign-in, then re-run `make go-proxy-verify`.
+        quiet: true
+
+    - name: "Go module proxy verify — download through the proxy"
+      block:
+        - name: "Go module proxy verify — create the throwaway workspace"
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: devbox-go-proxy-verify.
+          register: devbox_go_proxy_verify_tmp
+
+        - name: "Go module proxy verify — download the probe modules"
+          # Every proxy-related variable is pinned here rather than inherited:
+          # one proxy with no `direct`, nothing exempt from it, VCS access off
+          # so not even a misconfiguration can fetch from origin.
+          ansible.builtin.command:
+            argv:
+              - go
+              - mod
+              - download
+              - -json
+              - "{{ item }}"
+            chdir: "{{ devbox_go_proxy_verify_tmp.path }}"
+          environment:
+            GOAUTH: "{{ devbox_go_module_proxy_desired.GOAUTH }}"
+            GOPROXY: "{{ devbox_go_module_proxy_desired.GOPROXY }}"
+            GONOPROXY: "{{ devbox_go_module_proxy_desired.GONOPROXY }}"
+            GONOSUMDB: "{{ devbox_go_module_proxy_desired.GONOSUMDB }}"
+            GOSUMDB: "{{ devbox_go_module_proxy_desired.GOSUMDB }}"
+            GOPRIVATE: ""
+            GOINSECURE: ""
+            GOVCS: "*:off"
+            GOMODCACHE: "{{ devbox_go_proxy_verify_tmp.path }}/modcache"
+            GOFLAGS: "-modcacherw"
+            GOWORK: "off"
+            GOTOOLCHAIN: "local"
+          loop:
+            - "{{ devbox_go_module_proxy.verify_modules.public }}"
+            - "{{ devbox_go_module_proxy.verify_modules.private }}"
+          register: devbox_go_proxy_verify_downloads
+          changed_when: false
+          failed_when: false
+          no_log: true
+
+        - name: "Go module proxy verify — require both modules in the throwaway cache"
+          ansible.builtin.assert:
+            that:
+              - (result.rc | default(1)) == 0
+              - ((result.stdout | default('{}') | from_json).Zip | default(''))
+                is match('^' ~ (devbox_go_proxy_verify_tmp.path ~ '/modcache/') | regex_escape)
+            fail_msg: >-
+              {{ result.item }} did not download through
+              {{ devbox_go_module_proxy_desired.GOPROXY }} (go exited {{
+              result.rc | default('?') }}). Output is withheld because it can
+              carry credential-helper text; reproduce with an empty GOMODCACHE.
+            success_msg: "{{ result.item }} downloaded through {{ devbox_go_module_proxy_desired.GOPROXY }}."
+          loop: "{{ devbox_go_proxy_verify_downloads.results }}"
+          loop_control:
+            loop_var: result
+            label: "{{ result.item }}"
+
+      always:
+        - name: "Go module proxy verify — remove the throwaway workspace"
+          ansible.builtin.file:
+            path: "{{ devbox_go_proxy_verify_tmp.path }}"
+            state: absent
+          when: devbox_go_proxy_verify_tmp.path is defined

@@ -39,6 +39,21 @@
   ansible.builtin.include_tasks: darwin/install_from_uv.yml
 - name: "Install kubectl"
   ansible.builtin.include_tasks: darwin/install_kubectl.yml
+# After "Install Go tools" on purpose: once the go env points at the private
+# proxy, every module fetch needs a Tamias credential, which only an interactive
+# `tamias login` creates. A fresh machine still bootstraps its Go tools first.
+- name: "Install Tamias (Go module proxy credential helper)"
+  ansible.builtin.include_tasks: darwin/install_tamias.yml
+  when:
+    - not (dev_mode | default(false) | bool)
+    - devbox_packages.tamias.enabled | default(false) | bool
+  tags: [tamias, go-proxy]
+# Runs in both states: with Tamias enabled it writes the proxy keys, with Tamias
+# disabled it removes the ones it wrote.
+- name: "Configure the Go client for the private module proxy"
+  ansible.builtin.include_tasks: darwin/configure_go_module_proxy.yml
+  when: not (dev_mode | default(false) | bool)
+  tags: [go-proxy]
 - name: "Configure macOS basics (Touch ID for sudo, clamshell, dev mode)"
   ansible.builtin.include_tasks: darwin/configure_macos_basics.yml
 - name: "Configure Docker Desktop UDP networking for WARP"

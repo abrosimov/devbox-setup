@@ -191,10 +191,18 @@ Some side effects require a human owner and are never delegated to an agent, eve
 
 | Action | Why human-only | What agent does instead |
 |---|---|---|
-| **Create Jira issue** (`mcp__atlassian__createJiraIssue`) | Issue creation binds tracking metadata (project, reporter, labels) that only the human owns; blocked in `settings.json` `permissions.deny` | Draft the issue text (title + description + acceptance criteria) in the chat or in a file; user creates the issue and pastes the URL back |
-| **Create Jira issue link** (`mcp__atlassian__createIssueLink`) | Same rationale; blocked | Suggest the link (source key → target key + link type) in chat; user creates it |
 | **Push commits, open PRs, approve/merge PRs** | Externally visible state change | Prepare the commit/PR body in the working branch; user executes `git push` / `gh pr create` |
 | **Delete/close Jira issues or Confluence pages** | Irreversible from the agent's side | Never — always defer |
+
+### Jira issue creation — only on the user's explicit request
+
+`mcp__atlassian__createJiraIssue` and `mcp__atlassian__createIssueLink` are permitted, but only when the user has explicitly asked for issues to be created in this conversation. Issue creation is visible to the whole team and cannot be undone from the agent's side, so inferred intent ("the plan looks done, I'll publish it") never counts.
+
+1. Draw the tree that would be created — epic, children, sub-children — with the exact title of every issue, its type, and the links between them.
+2. Wait for the user to approve that tree (all of it or named items). A new or changed tree needs a new approval.
+3. Create exactly the approved items, parents before children, links last; report every created key.
+
+Without an explicit request, draft the issue text (title, description, acceptance criteria) in chat or in a file instead.
 
 Agent-safe Jira operations: `getJiraIssue`, `searchJiraIssuesUsingJql`, `addCommentToJiraIssue`, `editJiraIssue`, `transitionJiraIssue`, `addWorklogToJiraIssue`. Comments and transitions are reversible; issue create is not.
 

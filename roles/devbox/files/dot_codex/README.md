@@ -14,6 +14,9 @@ Currently managed:
   that matches the last applied baseline);
 - `[features]` (`memories` and hooks; `js_repl` is deliberately not enabled);
 - `[sandbox_workspace_write]`;
+- `[tui]` in inline rich-output mode: the alternate screen and raw-output
+  startup are disabled so the terminal retains scrollback and native text
+  selection, including Kitty's copy-on-select behaviour;
 - `[otel]`, with the active devbox profile as the environment, semantic log
   export and metrics enabled, and noisy native Rust trace export disabled;
 - selected plugin declarations captured during bootstrap;

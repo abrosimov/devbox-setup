@@ -48,6 +48,15 @@ class TestCodexManifestCoverage:
 
         assert values[("otel", "environment")] == "{{ devbox_active_profile }}"
 
+    def test_tui_preserves_terminal_selection_and_rich_output(
+        self,
+        repository: SemanticSnapshot,
+    ) -> None:
+        values = {field.path: to_plain_value(field.value) for field in repository.semantic_fields()}
+
+        assert values[("tui", "alternate_screen")] == "never"
+        assert values[("tui", "raw_output_mode")] is False
+
     @pytest.mark.parametrize("profile", ["personal", "work"])
     def test_environment_renders_the_selected_profile_and_is_the_only_templated_path(
         self,

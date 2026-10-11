@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "ailev/FPF",
-  "commit": "2c16067fe8c7f34ea3313d66d36738870f5c2087",
+  "commit": "e2c6ac1e97dae9b9f54f707477f7d86a12d91852",
   "files": [
     {
       "source": "Engineering DPF Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md",
@@ -21,7 +21,7 @@
     {
       "source": "Engineering DPF Suite/ENGINEERING-DPF-SUITE-REFERENCE.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/ENGINEERING-DPF-SUITE-REFERENCE.md",
-      "sha256": "9fad315babbaeedcc51754ae065e735557182179fdc3aa1cde3092dda5895190"
+      "sha256": "2d3a191d9e76201ba99bc6d119a47277362db1d30d1bfc0c9a01f918f927ab89"
     },
     {
       "source": "Engineering DPF Suite/EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md",
@@ -31,7 +31,7 @@
     {
       "source": "Engineering DPF Suite/FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "2fb6a82e99e8560e42cdac2e44c755d055f0af5f9f7d9d1d36eff9b979aeda6f"
+      "sha256": "aaafd6ecbc2ca6b93aa751b5edd27bc8e9f1a2488b7b60aed8eff288c70b5435"
     },
     {
       "source": "Engineering DPF Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md",
@@ -51,7 +51,7 @@
     {
       "source": "Engineering DPF Suite/MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "2836248cbf7c8d442c19fbcc01cdd554e6d591d052fdff704bebb9467bd4324b"
+      "sha256": "01ee944095dca6847857ba771cfe359e6b9f69b234a287ca93d318474800e7e0"
     },
     {
       "source": "Engineering DPF Suite/MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md",
@@ -61,12 +61,12 @@
     {
       "source": "Engineering DPF Suite/METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "15e74fa6fcc5aeed7492cda684f04a619e333c99df3a50931c1f873d832851f6"
+      "sha256": "f2950211c93050fe784a1c79b7e7cad6588316d3fc57cb7bf748a511e530dd9e"
     },
     {
       "source": "Engineering DPF Suite/MUSIC-AND-DANCE-PRACTICE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/MUSIC-AND-DANCE-PRACTICE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "52d0c0e7f259b6caad49c61babb5b4df5c8a2459880a891966287a3be46fe3f4"
+      "sha256": "0f77cef2a9cc9ea99b564068e997ac2b0ee75b3741309aa0f649af686ea0aff0"
     },
     {
       "source": "Engineering DPF Suite/OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
@@ -91,7 +91,7 @@
     {
       "source": "Engineering DPF Suite/README.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/README.md",
-      "sha256": "5e35958b8557f449006e7241bfada0cf768b38069950a6ac7d417b0e232628c3"
+      "sha256": "dc648c9c430e8d5ba9562bb80164c0e294bedf05e864a4fbda7b3a4efc1830dd"
     },
     {
       "source": "Engineering DPF Suite/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md",
@@ -111,12 +111,12 @@
     {
       "source": "Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "eefea97a3ae55da870e88d7e515ffc2d1e4744e046d01406ac31ce99f9ae28d0"
+      "sha256": "001e6ab3b92877baf32979effe73d02055b210a6052bab6fd8c5ea854cf29ba7"
     },
     {
       "source": "FPF-Spec.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md",
-      "sha256": "c6f8fffc12aa96a201090f22e4414e103c520b8f35bc1dd3c61f4273532146b1"
+      "sha256": "2352904d466cc280453e1663bcf14c4575967c170fa9435d45b32a87a6da5995"
     },
     {
       "source": "LICENSE",
@@ -136,7 +136,7 @@
     {
       "source": "Readme.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Readme.md",
-      "sha256": "7c1db41016899827b2f8df125dcf9ac55604c0aeb0e26fe07d0ff0f166eed3f2"
+      "sha256": "0c116a69bacccb6d3f18fe86e2acd62200e2103b9e32d6cb36884d001f35e570"
     }
   ]
 }

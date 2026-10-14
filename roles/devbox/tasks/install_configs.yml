@@ -122,6 +122,19 @@
     label: ".claude/{{ item.dest }}"
   tags: [configs, claude]
 
+# The root rules are the shared core followed by an engine adapter. `lookup('file')` output is not
+# re-templated, so Jinja-looking text inside either file is copied verbatim. Deployed before the
+# settings are reconciled: settings.json.j2 stamps the digest of this file into the Langfuse trace
+# tags, so the reconcile must see the rules of this run, not the previous one.
+- name: Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Claude
+  ansible.builtin.copy:
+    content: |
+      {{ lookup('ansible.builtin.file', role_path ~ '/files/dot_ai/USER_AUTHORITY_PROTOCOL.md') }}
+      {{ lookup('ansible.builtin.file', role_path ~ '/files/dot_claude/CLAUDE_ADAPTER.md') }}
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/CLAUDE.md"
+    mode: "0644"
+  tags: [configs, ai, claude]
+
 - name: Reconcile Claude settings
   ansible.builtin.command:
     argv: >-
@@ -209,17 +222,6 @@
       {{ devbox_paths.dotfiles_root_dir }}/.gemini/config/agents
   delegate_to: localhost
   tags: [configs, ai, agy]
-
-# The root rules are the shared core followed by an engine adapter. `lookup('file')` output is not
-# re-templated, so Jinja-looking text inside either file is copied verbatim.
-- name: Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Claude
-  ansible.builtin.copy:
-    content: |
-      {{ lookup('ansible.builtin.file', role_path ~ '/files/dot_ai/USER_AUTHORITY_PROTOCOL.md') }}
-      {{ lookup('ansible.builtin.file', role_path ~ '/files/dot_claude/CLAUDE_ADAPTER.md') }}
-    dest: "{{ devbox_paths.dotfiles_root_dir }}/.claude/CLAUDE.md"
-    mode: "0644"
-  tags: [configs, ai, claude]
 
 # Antigravity loads files under rules/ only when they carry YAML frontmatter.
 - name: Deploy shared AI root rules (USER_AUTHORITY_PROTOCOL) to Antigravity

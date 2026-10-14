@@ -27,7 +27,11 @@ MANIFEST_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "setti
 SETTINGS_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "settings.json.j2"
 FIXTURES_PATH = Path(__file__).parent / "fixtures" / "ai_config" / "claude"
 
+# The trace tags carry the digest of the deployed rules file, which only the
+# reconciling machine can supply; the leaf is templated for the same reason the
+# profile-dependent ones are.
 PROFILE_TEMPLATED_PATHS = {
+    ("env", "CC_LANGFUSE_TRACE_TAGS"),
     ("env", "LANGFUSE_TRACING_ENVIRONMENT"),
     ("env", "LANGFUSE_USER_ID"),
 }

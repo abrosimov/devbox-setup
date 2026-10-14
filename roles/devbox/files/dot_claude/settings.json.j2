@@ -28,7 +28,7 @@
     "CC_LANGFUSE_SECRET_KEY": "otelbox-local-secret",
     "CC_LANGFUSE_CAPTURE_IMAGES": "false",
     "CC_LANGFUSE_DEBUG": "true",
-    "CC_LANGFUSE_TRACE_TAGS": "[\"engine:claude-code\"]",
+    "CC_LANGFUSE_TRACE_TAGS": "[\"engine:claude-code\", \"rules:{{ file_sha256(ai_config_home ~ '/.claude/CLAUDE.md') }}\"]",
     "LANGFUSE_TRACING_ENVIRONMENT": "{{ devbox_active_profile }}",
     "LANGFUSE_USER_ID": "{{ devbox_langfuse_user_id }}"
   },

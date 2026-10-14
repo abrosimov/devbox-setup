@@ -171,7 +171,7 @@ def inspect_engine(
     document = load_repository_document(
         paths.repository,
         adapter.configuration_format,
-        load_template_variables(repo_root, profile),
+        load_template_variables(repo_root, profile, home=home),
     )
     live_source = _read_optional_bytes(paths.live)
     live_exists = live_source is not None

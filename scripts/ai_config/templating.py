@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import yaml
 from jinja2 import Environment, StrictUndefined
@@ -32,7 +33,18 @@ class TemplateError(ValueError):
     pass
 
 
-def load_template_variables(repo_root: Path, profile: str) -> TemplateVariables:
+# The home directory the engine is reconciled into, exposed to templates so an
+# expression can name a deployed artefact (`file_sha256(ai_config_home ~ ...)`).
+# It is an ordinary variable, so probing varies it and every leaf it reaches is
+# marked templated — which is what keeps a digest of a live file from being
+# captured back into the repository source as a literal.
+HOME_VARIABLE = "ai_config_home"
+_NO_HOME = "<no-home>"
+
+
+def load_template_variables(
+    repo_root: Path, profile: str, *, home: Path | None = None
+) -> TemplateVariables:
     """Role defaults overlaid by the profile selected with --profile.
 
     Values are taken verbatim: a default whose own value is a Jinja expression
@@ -41,7 +53,7 @@ def load_template_variables(repo_root: Path, profile: str) -> TemplateVariables:
     document through this context.
     """
     defaults = repo_root / _DEFAULTS_DIRECTORY
-    variables: dict[str, object] = {}
+    variables: dict[str, object] = {HOME_VARIABLE: str(home) if home is not None else _NO_HOME}
     if defaults.is_dir():
         for path in sorted(defaults.glob("*.yml")):
             variables.update(_load_variable_file(path))
@@ -80,11 +92,26 @@ def render_source(source: bytes, variables: TemplateVariables) -> bytes:
         autoescape=select_autoescape(enabled_extensions=(), default_for_string=False),
         keep_trailing_newline=True,
     )
+    cast("dict[str, Any]", environment.globals)["file_sha256"] = file_sha256
     try:
         return environment.from_string(text).render(variables).encode()
     except JinjaTemplateError as error:
         message = f"cannot render repository source: {error}"
         raise TemplateError(message) from error
+
+
+def file_sha256(path: str) -> str:
+    """Digest of a file on the reconciling machine, for templates.
+
+    A missing file yields a token derived from the path rather than a constant,
+    so two renders that only differ in the path (the real home and its probe)
+    still disagree and the leaf is still detected as templated.
+    """
+    target = Path(path).expanduser()
+    try:
+        return hashlib.sha256(target.read_bytes()).hexdigest()
+    except OSError:
+        return "absent-" + hashlib.sha256(str(target).encode()).hexdigest()[:12]
 
 
 def divergent_paths(left: SemanticSnapshot, right: SemanticSnapshot) -> frozenset[FieldPath]:

@@ -118,7 +118,7 @@ Code reviewers and implementation planners always use opus — no downgrade logi
 Escalate only what your own lookup cannot settle and what would change the result (core §1):
 
 1. **Ambiguous requirements** — readings that lead to different work
-2. **Decisions above the core §2 threshold** — irreversible, multi-component, scope-crossing, or with two or three unknowns that could change the outcome substantially
+2. **Decisions above the core §2 threshold** — the user asked for options, or the candidates differ in what the user gets and nothing the user said settles it
 3. **Scope questions** — the work would cross the named scope
 4. **Blocking issues** — cannot proceed without input
 

@@ -1,6 +1,6 @@
 ---
 name: diverge-synthesize-select
-description: Diverge-Synthesize-Select (DSS) procedure for choosing between genuinely different approaches — generate 3–7 candidates including a boring baseline and a combination, weigh their trade-offs, and present a decision card with a recommendation. Use when a choice is irreversible, spans several files or components, crosses the named scope, has two or three outcome-changing unknowns, or when the user asks for options, alternatives, or solutions. Also covers parallel "advocate" agents for architecture-level decisions. Not to be confused with `fpf-thinking` (problem framing) or `mcp-sequential-thinking` (step chains).
+description: Diverge-Synthesize-Select (DSS) procedure for choosing between genuinely different approaches — generate 3–7 candidates including a boring baseline and a combination, weigh their trade-offs, and present a decision card with a recommendation. Use when the user asks for options, alternatives, or solutions, or when the candidates differ in what the user gets and nothing the user said settles the choice; below that threshold the same procedure runs in your own reasoning and only the pick is reported. Also covers parallel "advocate" agents for architecture-level decisions. Not to be confused with `fpf-thinking` (problem framing) or `mcp-sequential-thinking` (step chains).
 alwaysApply: false
 problem: "Consequential decisions collapse into the first workable idea instead of a real comparison of alternatives."
 related: [response-templates, fpf-thinking, mcp-sequential-thinking, structured-output, writing-for-the-reader]
@@ -15,17 +15,18 @@ The output the user sees is a decision card (template T2 in the `response-templa
 
 ## When to use it
 
-Show 3–7 candidates when any of these holds:
+Show 3–7 candidates to the user when either holds:
 
-- the choice is irreversible or expensive to undo (public API, data model, wire format, migration);
-- it touches several files, components, or services;
-- it crosses the scope the user named;
 - the user asked for solutions, options, or alternatives;
-- two or three unknowns could change the outcome substantially.
+- the candidates differ in what the user gets (a public API, a data model, a wire format, a
+  migration path), and nothing the user said settles the choice.
 
-Otherwise pick a defensible default and say so in one line, for example: "Using the existing
-`retry` helper rather than a new backoff policy — it already covers this call site." The one-liner
-keeps the user informed without spending their attention on a choice that does not need them.
+The number of files, components, or services a choice touches is not a trigger: it measures effort,
+not uncertainty. Otherwise run the same procedure in your own reasoning, pick, and report the pick
+with its reason and the rejected candidates in a line each, for example: "Using the existing `retry`
+helper rather than a new backoff policy — it already covers this call site; a new policy or a
+per-call timeout would duplicate it." The one-liner keeps the user informed without spending their
+attention on a choice that does not need them.
 
 If the problem itself is still unclear (what the system is, where its boundary lies), frame it
 first with `fpf-thinking`; DSS assumes you know what you are choosing between.

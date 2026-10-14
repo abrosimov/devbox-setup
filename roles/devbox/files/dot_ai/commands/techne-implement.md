@@ -4,24 +4,22 @@ description: Implement current task using software engineer agent
 
 You are orchestrating the implementation phase of a development workflow.
 
-## CRITICAL: Verify User Approval Before Implementation
+## Approval before implementation
 
-**Before spawning any implementation agent, verify ONE of these conditions:**
+Spawn an implementation agent only when one of these holds:
 
-1. User explicitly invoked `/techne-implement` command (this counts as approval)
-2. User said "yes", "go ahead", "proceed", "implement it" after seeing a proposal
-3. User selected a specific option from alternatives presented
+1. The user invoked `/techne-implement` (this counts as approval).
+2. The user said "yes", "go ahead", "proceed", "implement it" after seeing a proposal.
+3. The user picked a specific option from alternatives presented.
 
-**If user only asked for analysis/proposal/options → DO NOT proceed. Present your analysis and wait.**
+If the user only asked for analysis, a proposal, or options, present that and wait (core §1).
 
-## CRITICAL: Always Use Agents for Code
+## Code goes through agents
 
-**DO NOT write code directly.** This command exists to ensure all code changes go through specialized agents that enforce:
-- Language-specific standards and patterns
-- Production necessities (error handling, logging, timeouts)
-- Consistency with existing codebase
-
-**If you find yourself about to write code without invoking an agent, STOP and use this command instead.**
+Do not write code directly. This command exists so that every code change goes through a specialised
+agent that carries the language standards, the production necessities (error handling, logging,
+timeouts), and the project's own patterns. If you are about to write code without an agent, use this
+command instead.
 
 ## Parse Arguments
 
@@ -49,9 +47,9 @@ CURRENT=$(git branch --show-current)
 | `main` / `master` / `$DEFAULT_BRANCH` | Create feature branch from it |
 | Feature branch (anything else) | Use it as-is |
 
-**If creating a feature branch**, ask user for the branch name:
-
-> What should I name the feature branch? Convention: `PROJ-123_short_description`
+**If creating a feature branch**, name it yourself and state the name in one line: `PROJ-123_short_description`
+when the request or the plan names a Jira issue, otherwise `adhoc_short_description` (a slug of the
+task). Do not ask.
 
 Then:
 ```bash
@@ -67,10 +65,11 @@ RC=$?
 ```
 
 **If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
-**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
-  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
-  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
-  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
+**If exit 2** — the branch does not match the `PROJ-123_description` convention. Use a Jira key only
+when the request or the plan names one (`JIRA_ISSUE={key}`,
+`PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`); otherwise
+`PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`. State the choice in one line; do
+not ask.
 
 Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent, do not re-compute.
 
@@ -89,12 +88,12 @@ Check for project markers (check ALL — a project may have multiple):
 | Python only | `backend` | `software-engineer-python` |
 | Frontend only | `frontend` | `software-engineer-frontend` |
 | Backend + Frontend | `fullstack` | See work stream routing below |
-| Unclear | — | Ask user |
+| Unclear | — | The side the request names; otherwise backend. State the assumption in one line |
 
 **Fullstack routing** — when both backend and frontend markers exist:
 1. Check for `plan.md` at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md`
 2. If `plan.md` defines work streams, route to the agent specified in each stream
-3. If no work streams and the request does not say which side, ask the user with a recommendation: "This is a fullstack project and plan.md names no work streams. Options: BE — backend only, FE — frontend only, BOTH — backend and frontend in parallel against the API contract. Recommendation: BOTH — in parallel, when the change touches the contract; otherwise the side the change lives on."
+3. If no work streams and the request does not say which side, decide: both sides in parallel against the API contract when the change touches the contract, otherwise the side the change lives on. State the choice in one line; do not ask.
 4. When running both, the contract comes first. Locate the API contract (`api_spec.yaml`, `*.proto`, or the project's OpenAPI spec; path from `plan.md` if it names one). If none exists, run `/techne-api-design` first. Once the contract exists, backend and frontend may run in parallel, because each builds against the contract and neither reads the other's code (see the `contract-boundary` skill)
 
 ### 4. Determine Model

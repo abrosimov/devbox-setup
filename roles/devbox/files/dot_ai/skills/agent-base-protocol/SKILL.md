@@ -40,7 +40,7 @@ Naming when the domain is clear, structure when approaches are close, scope when
 
 ### Show candidates (decision — Tier 3)
 
-When the core §2 threshold holds — the choice is irreversible, touches several files or components, crosses the named scope, the user asked for options, or two or three unknowns could change the outcome substantially — present 3–7 candidates as the decision card (template T2 in the `response-templates` skill). Typical cases: pattern or architecture selection, API design choices, interface definitions, new abstraction boundaries.
+When the core §2 threshold holds — the user asked for options, or the candidates differ in what the user gets and nothing the user said settles the choice — present 3–7 candidates as the decision card (template T2 in the `response-templates` skill). The number of files or components a choice touches is not a trigger. Below the threshold, consider the candidates in your own reasoning (core §1 step 3), pick, and report the pick with its reason and the rejected candidates in a line each. Typical Tier 3 cases: API design choices and interface definitions whose alternatives change what the user ships.
 
 ### How to ask
 

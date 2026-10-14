@@ -47,8 +47,8 @@ When making architecture decisions, produce an ADR:
 
 ## Choosing Between Approaches
 
-Architecture decisions usually meet the threshold in `diverge-synthesize-select` (irreversible,
-several components, two or three outcome-changing unknowns), so present them as a decision card
+Architecture decisions usually meet the threshold in `diverge-synthesize-select` (the candidates
+differ in what the user gets, and nothing they said settles the choice), so present them as a decision card
 (T2 in `response-templates`): 3–7 candidates with a boring baseline and at least one combination,
 then synergies, trade-offs, and a recommendation with its reason. The ADR's "Alternatives
 Considered" table summarises that card.

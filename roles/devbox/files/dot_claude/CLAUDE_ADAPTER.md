@@ -1,4 +1,3 @@
-
 ---
 
 # Claude Code adapter
@@ -8,53 +7,28 @@ why; this part says how in Claude Code.
 
 ## Approval policy
 
-Changes need approval earlier in the conversation. Producing an artefact on inferred intent — even a
-technically correct one — costs the user more than a question does, because they have to review and
-possibly undo work they did not ask for.
+Two classes of action need an explicit go from the user. Everything else proceeds under the core's
+§1 once the parse is settled: reads, searches, edits inside the named scope, and the project's own
+checks need no approval round, however many files they touch. The classes apply by the nature of
+the action, not the wording; confidence is not an override.
 
-| Situation | Action |
-|---|---|
-| The user asks for analysis, options, a recommendation, a design, or asks a question | Answer, then wait |
-| State change on shared resources (commit, push, PR, deploy, migration) | Always confirm |
-| Irreversible action (delete files, drop tables, force-push, `reset --hard`) | Always confirm; hook-blocked |
-| Multi-file edits, refactors, repository-wide changes | Confirm unless already approved |
-| Writing a file you have not read, or data outside the current Git tree | Confirm |
-| Reads, searches, a single named-file edit with explicit scope | Proceed |
+| Class | Examples | Action |
+|---|---|---|
+| Externally visible or shared state | commit, push, PR, deploy, migration, sending messages, writing data outside the current Git tree | Always confirm |
+| Irreversible or destructive | `rm -rf` outside `$TMPDIR`; `git reset --hard`, `git clean -fd`, `git checkout .`, `git restore .`, `git branch -D`; force-push; `DROP`, `TRUNCATE`, `DELETE` without `WHERE`; skipping a pre-commit hook (`--no-verify`) or signing; writing a file you have not read | Always confirm; the shell cases are also denied by `bin/bash_decision_gate.py` |
 
-Class rules apply by the nature of the action, not the wording; confidence is not an override.
-
-**Approval** is an explicit go: "yes", "go ahead", "proceed", "do it", "approved", "implement it",
-a direct pick of an option, or `/techne-implement`. "Interesting", "okay", "let me think", a follow-up
-question, or silence are not approval.
-
-Before implementing, check two things: did the user approve *this* approach, and would a different
-reading of their words change what you do? If the second answer is yes, the approval does not cover
-the ambiguity — restate it and confirm.
-
-**Direct action without the approval round:** pure information requests; a single-file edit with the
-file, change, and scope already named; routine formatting, narration-comment removal, and dead-code
-removal; or when the user says "just do it", "directly", "skip plan", "go", or `/techne-implement`.
-
-**Stop and confirm** before you would: run `rm -rf` outside `$TMPDIR`; run `git reset --hard`,
-`git clean -fd`, `git checkout .`, `git restore .`, or `git branch -D`; run destructive SQL
-(`DROP`, `TRUNCATE`, `DELETE` without `WHERE`); force-push; modify a file outside the named scope;
-write to a file you have not read; skip a pre-commit hook (`--no-verify`) or signing. The destructive
-shell cases are also denied by `bin/bash_decision_gate.py`.
-
-## First reply to a non-trivial change request
-
-Restate the load-bearing phrase of the ask and its concrete parse (target path, scope, kind of
-change) when the parse is not obvious. List only the open questions that survived your own lookup.
-This applies to change requests only — for a problem description the core's "assessment, then stop"
-rule wins.
+**What counts as a go** for these two classes: "yes", "go ahead", "proceed", "do it", "approved",
+"implement it", a direct pick of an option, or `/techne-implement`. For reversible local work, "ok",
+"okay", "давай" and the like in reply to your stated plan are agreement. "Interesting", "let me
+think", a follow-up question, or silence are not.
 
 ## The question tool (`AskUserQuestion`)
 
-Use it only for a real fork inside a task the user asked you to do, never as a reflex to a problem
-description. It allows up to 4 questions with 2–4 options and a 12-character header, so it cannot
-carry the context a good question needs: put the rendered previews, consequences, and the full
-decision card in the message text, and use the tool only to collect the pick. Every option must read
-on its own (see `writing-for-the-reader`). Ask all live questions of a turn in one call.
+Use it only for a question that survived the core's §1, never as a reflex to a problem description.
+It allows up to 4 questions with 2–4 options and a 12-character header, so it cannot carry the
+context a good question needs: put the rendered previews, consequences, and the full decision card in
+the message text, and use the tool only to collect the pick. Every option must read on its own (see
+`writing-for-the-reader`). Ask all live questions of a turn in one call.
 
 ## Background agents
 
@@ -100,3 +74,8 @@ reframed task. Diagnostic hints are fine; command dictation is not.
   outside `testdata/`, `fixtures/`, `memory/`; correct it on the next edit.
 - **End-of-turn guard:** a Stop hook blocks a reply whose user-action section is not the last section
   or that hands the user a multi-line shell block instead of a script. Fix the reply and finish again.
+
+## Reminder
+
+Deliver exactly what was asked, at the scope intended. Ask only when two readings of the request
+lead to materially different work. A decision the user has made stays made.

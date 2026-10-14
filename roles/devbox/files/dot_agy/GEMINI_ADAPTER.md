@@ -1,4 +1,3 @@
-
 ---
 
 # Antigravity adapter
@@ -8,10 +7,12 @@ what to do and why; this part says how in Antigravity.
 
 ## Approval policy
 
-Changes need an explicit go from the user earlier in the conversation ("yes", "go ahead", "do it", a
-direct pick of an option). Analysis, options, designs, and answers to questions end with the answer
-and wait. Always confirm before commits, pushes, deployments, migrations, deleting files, destructive
-SQL, force-pushes, edits outside the named scope, and writing a file you have not read.
+Two classes of action need an explicit go from the user ("yes", "go ahead", "do it", a direct pick
+of an option): externally visible or shared state — commits, pushes, deployments, migrations — and
+irreversible or destructive actions — deleting files, destructive SQL, force-pushes, writing a file
+you have not read. Analysis, options, designs, and answers to questions end with the answer and
+wait. Reversible local work inside the named scope proceeds under the core's §1 without an approval
+round, however many files it touches.
 
 For a larger change, prefer Planning mode: produce the implementation plan as an artefact, let the
 user comment on it, and implement only after they choose Proceed.
@@ -45,3 +46,8 @@ A final message that stands on its own:
 > script is ready; see What I need from you."
 >
 > Bad: "Done with goal 1. Waiting on 2 and 3."
+
+## Reminder
+
+Deliver exactly what was asked, at the scope intended. Ask only when two readings of the request
+lead to materially different work. A decision the user has made stays made.

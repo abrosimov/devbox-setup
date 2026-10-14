@@ -108,12 +108,13 @@ Selection: B — matches existing convention
 ### Tier 3: DESIGN (Full Exploration — 3-7 candidates shown to the user)
 A decision is Tier 3 when the core §2 threshold holds. Below the threshold it is Tier 2: decide yourself and state the choice in one line of the report.
 
-**Indicators (core §2 threshold — any one is enough):**
-- The choice is irreversible or expensive to undo
-- It touches several files, components, or services
-- It crosses the scope the user named
+**Indicators (core §2 threshold — either is enough):**
 - The user asked for solutions or options
-- Two or three unknowns could change the outcome substantially
+- The candidates differ in what the user gets, and nothing the user said settles the choice
+
+The number of files, components, or services a choice touches is not an indicator. An irreversible
+choice whose candidates give the user the same result is Tier 2: pick, and report the pick with its
+reason and the rejected candidates in a line each (core §1 step 3).
 
 **Examples:**
 - Pattern/architecture selection
@@ -431,7 +432,7 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 - [ ] I understand WHY this needs to change (not just WHAT)
 
 **1.5. Ambiguity Surface**
-- [ ] I have restated the ask and listed the open questions that survived my own lookup (core §1; the engine adapter's first-reply rule), or held them in mind for routine work
+- [ ] I have parsed the ask and listed only the questions that survived my own lookup (core §1 steps 1–4), or held them in mind for routine work
 - [ ] For each assumption: "if the user meant the opposite, would I do anything different?" → if YES, this is an open question, not an assumption
 - [ ] All open questions are resolved (approval token, user answer, or explicit re-read of conversation that confirms)
 

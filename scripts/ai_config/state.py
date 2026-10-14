@@ -24,6 +24,8 @@ _CLAUDE_DIALOG_EXPIRY_PREFERENCE = (
 _CLAUDE_CLEANUP_PERIOD_PREFERENCE = (
     "95dfe9607c1ae48e356d7452926cd1a8c0d8f0802dbe1f926ac9e10dc623ff9a"
 )
+# Tracks the current claude manifest: `attribution` joined as a shared field.
+_CLAUDE_ATTRIBUTION = "55eb8d125af1b049a2a3b78e50d3540b1a0a7ea5ac8b36c73faef308bd4dfa3e"
 _CODEX_SHARED_MODEL_AND_REASONING = (
     "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411"
 )
@@ -36,13 +38,10 @@ _CODEX_MODEL_AND_REASONING_PREFERENCES = (
 )
 # Exact transitions retain baseline history without accepting unrelated manifests.
 _MANIFEST_MIGRATIONS = {
-    ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_CLEANUP_PERIOD_PREFERENCE): (),
-    ("claude", _CLAUDE_PRE_DIALOG_EXPIRY, _CLAUDE_CLEANUP_PERIOD_PREFERENCE): (),
-    (
-        "claude",
-        _CLAUDE_DIALOG_EXPIRY_PREFERENCE,
-        _CLAUDE_CLEANUP_PERIOD_PREFERENCE,
-    ): (),
+    ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_ATTRIBUTION): (),
+    ("claude", _CLAUDE_PRE_DIALOG_EXPIRY, _CLAUDE_ATTRIBUTION): (),
+    ("claude", _CLAUDE_DIALOG_EXPIRY_PREFERENCE, _CLAUDE_ATTRIBUTION): (),
+    ("claude", _CLAUDE_CLEANUP_PERIOD_PREFERENCE, _CLAUDE_ATTRIBUTION): (),
     ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_PREFERENCE): (
         "model_reasoning_effort",
     ),

@@ -1064,27 +1064,41 @@ CLAUDE_CLEANUP_PERIOD_RULE = b"""    {
       }
     },
 """
+CLAUDE_ATTRIBUTION_RULE = b"""    {
+      "path": "attribution",
+      "scope": "shared"
+    },
+"""
 
 
 class TestClaudeManifestMigrations:
     @pytest.mark.parametrize(
         "source",
-        ["pre-hooks", "pre-dialog-expiry", "dialog-expiry-preference"],
+        [
+            "pre-hooks",
+            "pre-dialog-expiry",
+            "dialog-expiry-preference",
+            "cleanup-period-preference",
+        ],
     )
     def test_recognised_transition_preserves_baseline_history(self, source):
         target_source = CLAUDE_MANIFEST.read_bytes()
+        pre_attribution = target_source.replace(CLAUDE_ATTRIBUTION_RULE, b"", 1)
         source_bytes = {
             "pre-hooks": CLAUDE_PRE_HOOKS_MANIFEST.read_bytes(),
-            "pre-dialog-expiry": target_source.replace(CLAUDE_CLEANUP_PERIOD_RULE, b"", 1).replace(
+            "pre-dialog-expiry": pre_attribution.replace(
+                CLAUDE_CLEANUP_PERIOD_RULE, b"", 1
+            ).replace(
                 CLAUDE_DIALOG_EXPIRY_RULE,
                 b"",
                 1,
             ),
-            "dialog-expiry-preference": target_source.replace(
+            "dialog-expiry-preference": pre_attribution.replace(
                 CLAUDE_CLEANUP_PERIOD_RULE,
                 b"",
                 1,
             ),
+            "cleanup-period-preference": pre_attribution,
         }[source]
         expected_source_digest = {
             "pre-hooks": "f0f3d3f991fbfdd194db632d3caf361936cf3d6897ce0a119be9a8c75ef04b0a",
@@ -1093,6 +1107,9 @@ class TestClaudeManifestMigrations:
             ),
             "dialog-expiry-preference": (
                 "414c0ec3547c4ce09d5b4c77b75caa11f09366e3b7aa6e0746e88bdb3957c3f8"
+            ),
+            "cleanup-period-preference": (
+                "95dfe9607c1ae48e356d7452926cd1a8c0d8f0802dbe1f926ac9e10dc623ff9a"
             ),
         }[source]
         snapshot = {
@@ -1108,7 +1125,7 @@ class TestClaudeManifestMigrations:
 
         assert digest_manifest_source(source_bytes) == expected_source_digest
         assert digest_manifest_source(target_source) == (
-            "95dfe9607c1ae48e356d7452926cd1a8c0d8f0802dbe1f926ac9e10dc623ff9a"
+            "55eb8d125af1b049a2a3b78e50d3540b1a0a7ea5ac8b36c73faef308bd4dfa3e"
         )
         migrated = parse_base_state(
             render_base_state(state),

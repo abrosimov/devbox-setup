@@ -3,6 +3,10 @@
   "engine": "claude",
   "fields": [
     {
+      "path": "attribution",
+      "scope": "shared"
+    },
+    {
       "path": "autoMemoryEnabled",
       "scope": "shared"
     },

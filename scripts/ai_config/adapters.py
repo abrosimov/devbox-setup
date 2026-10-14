@@ -143,7 +143,7 @@ def load_engine_plan(
     repository = load_repository_document(
         paths.repository,
         adapter.configuration_format,
-        load_template_variables(repo_root, profile),
+        load_template_variables(repo_root, profile, home=home),
     )
     live = load_snapshot(paths.live, adapter.configuration_format)
     runtime_snapshots = (live,) if base is None else (base, live)

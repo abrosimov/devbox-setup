@@ -54,10 +54,9 @@ In a Russian conversation the same section is headed `## Что нужно от 
 
 ## T2 — Decision card
 
-Use it when the core's threshold holds: the choice is irreversible or expensive to undo; it touches
-several files, components, or services; it crosses the scope the user named; the user asked for
-options; or two or three unknowns could change the outcome substantially. Otherwise pick a defensible
-default and say so in one line.
+Use it when the core's threshold holds: the user asked for options, or the candidates differ in what
+the user gets and nothing the user said settles the choice. Otherwise pick in your own reasoning and
+report the pick with its reason and the rejected candidates in a line each.
 
 Shape, one card per problem:
 

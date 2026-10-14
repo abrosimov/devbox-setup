@@ -433,7 +433,14 @@ test-otelbox: $(DEV_SENTINEL) ## Pytest for the otelbox edge collector contract
 test: $(DEV_SENTINEL) test-otelbox ## Pytest unit tests in dot_claude/ (excludes integration — see test-integration)
 	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/ -m "not integration"
 
+# The integration runner executes each hook the way the deployed `hooks` block
+# does: through the venv beside the script. Without that venv it falls back to
+# the script's own shebang, which needs the executable bit and an ambient
+# interpreter carrying bashlex, and the CI test job has neither. Syncing the
+# bin project first (the same `--frozen` sync the playbook's Block 1b runs)
+# makes the target self-contained on a fresh checkout.
 test-integration: $(DEV_SENTINEL) ## Pytest subprocess integration tests (smoke + hypothesis)
+	@uv sync --project roles/devbox/files/dot_claude/bin --frozen --quiet
 	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/bin/test_integration/ -m integration -v
 
 test-ai-config: $(DEV_SENTINEL) ## Pytest for the ai-config reconciler

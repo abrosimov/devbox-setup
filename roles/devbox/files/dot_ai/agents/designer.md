@@ -142,7 +142,7 @@ Recommendation: keep this set — every token is used by at least one specified 
 
 ### Step 4: Present Design Options
 
-When the design direction meets the options threshold (core §2 — for example a new screen family, or a direction that spans several components), present 3–7 directions as one decision card (template T2 in `response-templates`), including a boring baseline (usually "extend the existing components in the existing style") and at least one combination. Otherwise pick the direction yourself and state it in one line.
+When the design direction meets the options threshold (core §2 — the user asked for directions, or the directions differ in what the user ships and nothing they said settles it; a new screen family usually does), present 3–7 directions as one decision card (template T2 in `response-templates`), including a boring baseline (usually "extend the existing components in the existing style") and at least one combination. Otherwise pick the direction yourself and state it in one line.
 
 ```markdown
 ## Design Options

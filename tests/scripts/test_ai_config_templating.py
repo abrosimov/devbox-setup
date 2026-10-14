@@ -10,10 +10,11 @@ type-preserving probes — and taking every leaf that differs.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import tomllib
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 import yaml
@@ -33,6 +34,7 @@ from ai_config import (
     TemplateError,
     build_repository_document,
     divergent_paths,
+    file_sha256,
     load_template_variables,
     parse_snapshot,
     probe_variables,
@@ -42,9 +44,6 @@ from ai_config import (
 from ai_config.decisions import DecisionSet, DecisionSource, FieldDecision
 from ai_config.resolution import OperationMode, ResolutionError, resolve_documents
 from ai_config.service import inspect_engine, operate_engine
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 NO_DECISIONS = DecisionSet(decisions=())
 VARIABLES = {
@@ -423,3 +422,63 @@ class TestTemplatedFieldIsNeverCaptured:
 
         assert rendered.templated_paths == {TEMPLATED_PATH[engine]}
         assert values[TEMPLATED_PATH[engine]].value == "work-edge"  # type: ignore[union-attr]
+
+
+class TestFileSha256:
+    """`file_sha256` names a deployed artefact from a template, through `ai_config_home`."""
+
+    def test_the_home_variable_is_the_reconciled_home(self, tmp_path: Path) -> None:
+        assert load_template_variables(tmp_path, "personal", home=tmp_path)[
+            "ai_config_home"
+        ] == str(tmp_path)
+        assert load_template_variables(tmp_path, "personal")["ai_config_home"] == "<no-home>"
+
+    def test_a_present_file_renders_its_digest(self, tmp_path: Path) -> None:
+        rules = tmp_path / "CLAUDE.md"
+        rules.write_bytes(b"# rules\n")
+        source = '{"tag": "rules:{{ file_sha256(ai_config_home ~ \'/CLAUDE.md\') }}"}'
+
+        rendered = build_repository_document(
+            source.encode(), ConfigurationFormat.JSON, {"ai_config_home": str(tmp_path)}
+        )
+
+        values = {
+            field.path: field.value.value  # type: ignore[union-attr]
+            for field in rendered.rendered.semantic_fields()
+        }
+        assert values[("tag",)] == "rules:" + hashlib.sha256(b"# rules\n").hexdigest()
+        assert rendered.templated_paths == {("tag",)}
+
+    def test_an_absent_file_still_renders_and_is_still_templated(self, tmp_path: Path) -> None:
+        source = '{"tag": "rules:{{ file_sha256(ai_config_home ~ \'/CLAUDE.md\') }}"}'
+
+        rendered = build_repository_document(
+            source.encode(), ConfigurationFormat.JSON, {"ai_config_home": str(tmp_path)}
+        )
+
+        values = {
+            field.path: field.value.value  # type: ignore[union-attr]
+            for field in rendered.rendered.semantic_fields()
+        }
+        assert str(values[("tag",)]).startswith("rules:absent-")
+        assert rendered.templated_paths == {("tag",)}
+
+    def test_absent_tokens_differ_per_path(self) -> None:
+        assert file_sha256("/nowhere/a") != file_sha256("/nowhere/b")
+        assert file_sha256("/nowhere/a") == file_sha256("/nowhere/a")
+
+    def test_the_claude_settings_stamp_the_deployed_rules(self, tmp_path: Path) -> None:
+        home = tmp_path / "home"
+        (home / ".claude").mkdir(parents=True)
+        (home / ".claude" / "CLAUDE.md").write_bytes(b"# deployed rules\n")
+        repo_root = Path(__file__).resolve().parents[2]
+        source = (repo_root / "roles/devbox/files/dot_claude/settings.json.j2").read_bytes()
+
+        rendered = json.loads(
+            render_source(source, load_template_variables(repo_root, "personal", home=home))
+        )
+
+        assert json.loads(rendered["env"]["CC_LANGFUSE_TRACE_TAGS"]) == [
+            "engine:claude-code",
+            "rules:" + hashlib.sha256(b"# deployed rules\n").hexdigest(),
+        ]

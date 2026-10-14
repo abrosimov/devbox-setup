@@ -258,19 +258,40 @@ def test_an_unparseable_settings_file_is_indistinguishable_from_having_no_hooks(
 ) -> None:
     """Claude Code drops a settings.json it cannot parse and says nothing.
 
-    Observed, not assumed: exit 0, empty stderr, no hook dispatched, and no
-    stream-json event — the same session a settings file with no `hooks` block
-    produces. `--debug` adds nothing. Pinned for two reasons. A release that
-    starts warning is an improvement this repository wants to notice, because
-    today nothing else would. And until then the generator is the only thing
-    standing between an operator and a silently unhooked session, so it must
-    never emit an invalid file: the engine will not report one.
+    Observed, not assumed: exit 0, nothing on stderr about the file, no hook
+    dispatched, and no stream-json event — the same session a settings file
+    with no `hooks` block produces. `--debug` adds nothing. Pinned for two
+    reasons. A release that starts warning is an improvement this repository
+    wants to notice, because today nothing else would. And until then the
+    generator is the only thing standing between an operator and a silently
+    unhooked session, so it must never emit an invalid file: the engine will
+    not report one.
+
+    The one thing the engine does say is about the machine, not the file: since
+    2.1.29x a parsed settings file whose `sandbox` block is on makes it warn
+    when bubblewrap or socat is missing, as on a GitHub runner. That notice is
+    dropped before the comparison; an unparseable file produces no sandbox
+    block and therefore no such notice, which is exactly the silence pinned
+    here.
     """
     for observed in (unparseable_session, blank_session):
         assert observed.exit_code == 0
-        assert observed.stderr == ""
+        assert _without_runner_notices(observed.stderr) == ""
         assert observed.invocations == ()
         assert [_hook_responses(observed.events, event) for event in _REACHABLE_EVENTS] == [[], []]
+
+
+# Lines Claude Code writes about the host it runs on rather than the
+# configuration it was handed. Each is matched by the start of its stripped text.
+_RUNNER_NOTICES = (
+    "⚠ Sandbox disabled:",
+    "Commands will run WITHOUT sandboxing.",
+)
+
+
+def _without_runner_notices(stderr: str) -> str:
+    kept = [line for line in stderr.splitlines() if not line.strip().startswith(_RUNNER_NOTICES)]
+    return "\n".join(kept).strip()
 
 
 def _hook_responses(

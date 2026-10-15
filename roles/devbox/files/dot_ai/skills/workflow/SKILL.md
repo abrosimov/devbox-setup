@@ -93,7 +93,7 @@ The user commits manually after each agent run; commands do not auto-commit.
 
 Each command:
 - Auto-detects project stack (Go/Python/Frontend/Fullstack)
-- Pauses for user confirmation between steps
+- Pauses for user confirmation between steps (per-step mode only; an autonomous run does not pause)
 - Suggests next step after completion
 - For fullstack projects, routes to appropriate agent(s) based on work streams
 
@@ -102,7 +102,41 @@ Each command:
 | Mode | Trigger | Approval Model |
 |------|---------|---------------|
 | **Per-step** | Individual commands (`/techne-implement`, `/techne-test`, `/techne-review`) | Approve after each agent |
+| **Autonomous run** | The user hands over a multi-step job ("do all of it", "report at the end", "decide yourselves") | One hand-over approval; decisions logged; one report at the end |
 | **Manual** | Call agents directly by name | Maximum control |
+
+### Autonomous run
+
+Use it when the user hands over a multi-step job and asks not to be consulted step by step. The
+reason: every check-in costs the user attention (core preamble), and fresh-context agents that
+formalise, build, and verify separately catch more than one agent that does all three.
+
+1. **Steps.** Split the job into steps (milestones). If the user stated a process, it is the
+   process: apply it to every step without being reminded (core §0).
+2. **Per step, three separate agents**, each launched fresh:
+   - **Formaliser** (usually `implementation-planner`, or `domain-modeller` / `api-designer` for
+     their artefacts) turns the step into a specification with acceptance criteria. It decides
+     design questions itself and records them as decisions with reasons; it lists as blockers only
+     items that pass the core's stop list.
+   - **Executor** (the matching `software-engineer-*` or other specialist) implements the
+     specification and runs the project's checks.
+   - **Reviewer** (`code-reviewer`, or the reviewer that fits the artefact) checks the result
+     against the specification and the acceptance criteria, flagging only what affects correctness
+     or the stated requirements.
+   - **Fix loop:** blocking findings go back to a fresh executor, then to a fresh reviewer, until
+     the reviewer passes the step. After three failed rounds on the same finding, record it as an
+     unresolved blocker and move on to steps that do not depend on it.
+3. **Open questions are decided inside the run.** For each one the agents raise, the orchestrator:
+   (a) derives it from the conversation, the repository, and the user's stated principles; if that
+   settles it, records the inference; otherwise (b) generates the candidates, weighs pros and cons
+   and synergies, and picks (`diverge-synthesize-select` in its own reasoning); (c) appends an
+   entry — step, problem, candidates with pros and cons, comparison, choice, reason — to a decision
+   log at `$TMPDIR/<job>-decision-log.md` or the path the user named. For a question that passes
+   the core's stop list, or an approval-class action the hand-over did not cover, finish every step
+   and part that does not depend on it, then stop and raise it.
+4. **Report once at the end** (core §6): outcome per step, review verdicts, checks run, the decision
+   log's entry titles under "Decisions I made", and — only if something is blocked on the user —
+   "What I need from you". No intermediate reports beyond one status line when asked.
 
 ## Agent Roster
 
@@ -123,7 +157,7 @@ Specialist agents available via `/techne-*` commands. Each is invoked one-shot f
 | Integration tests | `integration_tests_writer_{go,python}` | test files |
 | Review | `code_reviewer` | review report (inline) |
 
-Each stage runs independently via its `/techne-*` command. The user drives the flow by choosing which command to run next.
+Each stage runs independently via its `/techne-*` command. The user drives the flow by choosing which command to run next, except in an autonomous run, where the orchestrator chains the stages itself.
 
 **Infrastructure agents** (outside the development pipeline):
 - **agent_builder** — Creates, validates, and refines agent definitions
@@ -207,7 +241,7 @@ Grounding references (cached Anthropic docs) are read at the start of every buil
 
 - General programming concepts (not language-specific)
 - Claude Code usage (features, settings)
-- Clarifying user requirements
+- Clarifying user requirements that pass the core's stop list
 - Trivial typo fixes in comments/strings
 - Configuration files (YAML, JSON, TOML)
 

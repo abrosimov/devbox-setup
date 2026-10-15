@@ -14,10 +14,10 @@ RC=$?
 ```
 
 **If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
-**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
-  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
-  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
-  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
+**If exit 2** — branch doesn't match `PROJ-123_description` convention. Do not ask (no AskUserQuestion):
+  - If the user already named a JIRA issue key in the conversation → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
+  - Otherwise → default to `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
+  - Report the chosen path under "Decisions I made", so the user can redirect it cheaply
 
 Store these values — pass to agent, do not re-compute.
 Project directory: `{PROJECT_DIR}` (from resolve-context JSON)
@@ -39,7 +39,7 @@ Check for project markers (check ALL — a project may have multiple):
 | Python only | `backend` | `Python` (or `Python (Flask monolith)`) |
 | Frontend only | `frontend` | `Frontend` |
 | Backend + Frontend | `fullstack` | `Fullstack` — planner creates work streams for both |
-| Unclear | — | Ask user |
+| Unclear | — | Nothing — the planner detects the stack itself; report this under "Decisions I made" (no AskUserQuestion) |
 
 For Python projects, also check if it's a Flask-OpenAPI3 monolith:
 - If `app/application/__init__.py` exists with layer initialization → pass `Stack: Python (Flask monolith)` and note its layered-DI / repository constraints
@@ -79,7 +79,10 @@ Task(
 Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}
 Stack: {backend|frontend|fullstack}
 Frontend stack: {Next.js|Vite|etc.} (if frontend markers detected)
+User decisions: {every decision, answer, analogy, and stated principle from this conversation, in the user's words}
 ```
+
+The planner cannot see the conversation, so the decisions it would otherwise turn into questions must travel in the brief.
 
 The agent will:
 - Read the spec if it exists
@@ -89,5 +92,5 @@ The agent will:
 
 ### 5. After Completion
 
-Present the plan summary and suggested next step to the user.
+Present the plan summary and suggested next step to the user. Before relaying the planner's "Blockers for the user", resolve each one you can from the conversation (core §6); relay only the residue that passes the stop list, each with its recommended answer, and list the planner's key decisions under "Decisions I made".
 End on the recommended next command; the user runs it or replies with corrections to the plan.

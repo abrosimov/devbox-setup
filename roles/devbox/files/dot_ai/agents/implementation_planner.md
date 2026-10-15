@@ -139,7 +139,7 @@ When creating plans, remember the Prime Directive:
    ```
    Branch naming convention: `JIRAPRJ-123_name_of_the_branch`
 
-2. If not on feature branch, ask user for task ID
+2. If not on feature branch, use the context from the brief; if absent, use `resolve_context.py` and its `_adhoc` fallback, and record it under Decisions Made
 
 3. Plan location: `{PROJECT_DIR}/plan.md` (see `config` skill for `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`)
 
@@ -161,13 +161,13 @@ Check for existing docs at `{PROJECT_DIR}/` (see Artifact Registry in `agent-com
 git branch --show-current
 ```
 
-If on `main`/`master`/`develop`, ask user for task ID.
+If on `main`/`master`/`develop`, use the context from the brief; if absent, use `resolve_context.py` and its `_adhoc` fallback, and record it under Decisions Made.
 
 ### Step 2: Gather Requirements
 
 1. Check for existing spec at `{PROJECT_DIR}/spec.md`
 2. Read research and decisions if available
-3. Clarify ambiguous requirements with user
+3. Resolve ambiguous requirements yourself from the spec, the codebase, and the conversation in your brief (the user's earlier answers, analogies they invoked, principles they stated); record each resolution under **Decisions Made**. Only an item that passes the core's stop list (not derivable, only the user can supply it, costly to get wrong) becomes a **Blocker for the user**
 
 ### Step 3: Understand Context (Brief)
 
@@ -454,27 +454,32 @@ Explicitly excluded from this implementation:
 
 ---
 
-## Open Questions
+## Decisions Made
 
-Questions requiring user/stakeholder input:
+Every implicit decision the plan takes, with its basis. The planner decides what the spec, the
+conversation, and the codebase let it decide; the user can veto any row cheaply.
 
-- [ ] Should we support categories in v1?
-- [ ] What's the maximum number of widgets per user?
-- [ ] Should soft-deleted items appear in list with a flag, or be completely hidden?
+| # | Decision | Reason | Basis | Alternatives rejected |
+|---|----------|--------|-------|-----------------------|
+| D-1 | Categories are out of scope for v1 | Not in the spec's goals; adding them later is additive | spec | Ship categories now |
+| D-2 | Soft delete retention is 30 days | Stated in the spec | spec | — |
+| D-3 | Soft-deleted items are hidden from lists | Matches the existing list endpoints' behaviour | codebase | Show with a flag |
+| D-4 | Widget names need not be unique | Nothing signals uniqueness; a unique index can be added later without data loss if names are checked first | planner judgement | Enforce uniqueness now |
 
 ---
 
-## Assumption Register
+## Blockers for the user
 
-Surfaces implicit decisions. Flag anything not explicitly confirmed in spec.
+Only items that pass the core's stop list: the answer cannot be derived from the spec, the
+conversation, or the codebase; only the user or a stakeholder can supply it; and a wrong guess
+would be costly to undo or would make the work useless. Each carries a recommended answer, which
+the plan assumes until told otherwise. Usually this section is empty.
 
-| # | Assumption | Impact if Wrong | Resolved? |
-|---|-----------|-----------------|-----------|
-| A-1 | Widget names don't need uniqueness | Data quality — duplicates possible | Ask stakeholder |
-| A-2 | Soft delete retention is 30 days | Storage costs, compliance | Confirmed in spec |
-| A-3 | Notifications are best-effort | Users may miss creation events | Confirmed in spec |
+| # | Question | Why only the user can answer | Recommended answer (default) | Blocks |
+|---|----------|------------------------------|------------------------------|--------|
+| B-1 | Which retention period does the compliance team require for exported widget data? | External regulatory fact, not in the spec | 30 days, as for soft deletes | FR-7 only |
 
-**Rule:** If "Resolved?" is not "Confirmed" or "Yes", the SE MUST flag it to the user before implementing that requirement.
+**Rule:** Decisions Made rows are binding for the SE unless the codebase contradicts one, in which case the SE decides and reports it. A Blocker row blocks only the requirements in its "Blocks" column; everything else proceeds.
 
 ---
 
@@ -624,8 +629,8 @@ This feature requires database schema modifications. Run `/techne-schema` before
 - Architecture constraints discovered in the codebase (context for SE)
 - Work streams (agent-aware execution plan with dependencies and parallelism)
 - **Suggested execution order** — prose/list ordering of the work streams in `plan.md`
-- Open questions (things to clarify)
-- **Assumption Register** — every implicit decision, with impact and resolution status
+- **Decisions Made** — every implicit decision, with its reason, basis, and rejected alternatives
+- **Blockers for the user** — only stop-list items, each with a recommended answer (usually none)
 - **SE Verification Contract** — FR→AC→observable behaviour table for the SE
 - **Test Mandate** — mandatory test scenarios the test writer MUST cover
 - **Review Contract** — FR→AC→pass criteria table for the reviewer
@@ -635,17 +640,17 @@ This feature requires database schema modifications. Run `/techne-schema` before
 | Exclude | Why |
 |---------|-----|
 | File paths | SE decides structure |
-| Type/class/interface definitions | SE designs with human feedback |
+| Type/class/interface definitions | SE designs them within the plan's direction |
 | Function/method signatures | SE designs based on codebase |
 | Code examples (any language) | SE writes all code — the guard enforces this |
 | Constructor / import / decorator patterns | SE follows codebase conventions |
 | "Follow pattern in X" | SE will explore codebase |
 | Test implementations | Test writer implements |
-| Technical architecture | SE proposes, human approves |
+| Technical architecture | SE decides within the plan's direction and reports it |
 
 ## When to Ask for Clarification
 
-See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options for Tier 3.
+See `agent-base-protocol` skill. You cannot reach the user: decide what the spec, the conversation, and the codebase let you decide, and record it under Decisions Made. A design choice inside the user's direction is never a blocker. Return a Tier 3 decision card only when the core §2 threshold holds, led by your recommendation.
 
 ---
 
@@ -655,7 +660,7 @@ See `agent-base-protocol` skill. Never ask about Tier 1 tasks. Present options f
 **Produces for**: Software Engineer (Go / Python / Frontend, per detected stack), API Designer, Database Designer
 **Deliverables**:
   - `plan.md` — human-readable implementation plan with requirements, work streams, and suggested execution order
-**Completion criteria**: All functional requirements mapped to work streams, dependencies identified, suggested execution order stated in `plan.md`; user approval obtained
+**Completion criteria**: All functional requirements mapped to work streams, dependencies identified, suggested execution order stated in `plan.md`; every implicit decision recorded under Decisions Made
 
 ---
 
@@ -667,7 +672,8 @@ When plan is complete, provide:
 - Plan created at `{PROJECT_DIR}/plan.md`
 - Detected stack
 - Number of functional requirements
-- Key open questions (if any)
+- Key decisions made, one line each with the reason
+- Blockers for the user (only stop-list items, each with a recommended answer; usually none)
 
 ### 2. Suggested Next Step
 
@@ -698,4 +704,4 @@ See `mcp-sequential-thinking` skill for structured reasoning patterns. If the MC
 - **Business perspective** — Write from user/stakeholder viewpoint
 - **Testable criteria** — Every requirement has clear success criteria
 - **Sequence the work** — Express work streams, dependencies, and a suggested order as prose/tables in `plan.md`
-- **Questions over assumptions** — Ask when unclear
+- **Decisions over questions** — Decide what the evidence and the conversation settle, record the reason; a question reaches the user only through the stop list, because a planner asked for questions will always find some

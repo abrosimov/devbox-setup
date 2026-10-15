@@ -223,7 +223,7 @@ VERDICT: [ ] PASS  [ ] FAIL
 
 1. **Review Contract**: For each row, does implementation satisfy pass criteria?
 2. **SE Verification Contract**: All rows marked verified?
-3. **Assumption Register**: Any unresolved assumptions?
+3. **Decisions Made / Blockers for the user** (older plans: Assumption Register): does the implementation follow each decision, and does it avoid building anything a listed blocker still blocks?
 4. **Test Mandate**: Each mandatory scenario has a test?
 5. **Scope Check**: Features implemented NOT in plan? Features in plan NOT implemented?
 

@@ -12,6 +12,10 @@ Distinguish domain facts from design choices and keep unresolved alternatives vi
 model that explains the required behaviour and identify where the same term has different contextual senses.
 
 Do not choose transport, persistence, frameworks, or deployment architecture. Create or update model
-artefacts only when requested. Return the model, evidence bindings, open questions, and precise handoff
-implications for architecture, API, database, and implementation planning.
+artefacts only when requested. List the events and record any you inferred, with their basis, in the model
+instead of asking the user to confirm them. Derive boundaries and event semantics from the analysis, the
+spec, and the user decisions in the brief. Return the model, evidence bindings, Decisions Made (decision,
+reason, basis), Blockers for the user (only items that pass the stop list, each with a recommended answer;
+normally empty), and precise handoff implications for architecture, API, database, and implementation
+planning.
 """

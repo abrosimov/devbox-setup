@@ -1,6 +1,6 @@
 ---
 name: response-templates
-description: Reply templates for the end of a turn — T1 final report, T2 decision card (3–7 candidates with trade-offs), T3 "What I need from you" block with ai_written_scripts conventions and Python/Go script templates, T4 discussion ledger for multi-turn lists. Use when writing a final report, presenting options or alternatives, handing a manual step, command, or script to the user, or tracking a numbered list across turns.
+description: Reply templates for the end of a turn — T1 final report with "Decisions I made", T2 decision card (3–7 candidates with trade-offs), T3 "What I need from you" block with ai_written_scripts conventions and Python/Go script templates, T4 discussion ledger for multi-turn lists. Use when writing a final report, presenting options or alternatives, handing a manual step, command, or script to the user, or tracking a numbered list across turns.
 version: 1
 triggers:
   - final report
@@ -26,12 +26,14 @@ and their own work live without reading everything.
 ## T1 — Final report
 
 Order: outcome, supporting detail, answer to any question asked alongside the work, one-line status of
-every open list ID (only while a list is under discussion), then "What I need from you" (T3) as the
-last `##` section — omitted entirely when the user has nothing to do.
+every open list ID (only while a list is under discussion), then "Decisions I made" — one line per
+design choice or assumption you took, with its reason and how to reverse it — and finally "What I
+need from you" (T3) as the last `##` section. Omit either section when it would be empty; T3 appears
+only when work is genuinely blocked on the user.
 
-Why: the first sentence is what the user reads on return, so it states what happened. Their actions
-come last and always in the same place, so they never scan for them. A question answered above a long
-work log gets lost; answering it after the detail keeps it next to the action section.
+Why: the first sentence is what the user reads on return, so it states what happened. Decisions are
+listed rather than asked, so the user keeps authority through a cheap veto instead of an approval
+round. Their actions come last and always in the same place, so they never scan for them.
 
 ```markdown
 Staging now receives the nightly metrics dump; the first run at 02:00 wrote 1 412 rows.
@@ -43,6 +45,11 @@ You asked whether this touches the reporting dashboard: no — it reads from `pr
 
 Open: G2 — rotate the staging token (waiting for you) · G3 — alert on empty dump (decided, next turn).
 
+## Decisions I made
+
+- Kept the 02:00 schedule rather than moving it after the ETL run: the dump reads raw tables, not ETL
+  output. To change it, edit `jobs/schedule.yml:12`.
+
 ## What I need from you
 
 1. **Rotate the staging write token**, because the old one is in the leaked CI log.
@@ -50,22 +57,25 @@ Open: G2 — rotate the staging token (waiting for you) · G3 — alert on empty
    Verify: the script ends with `VERIFY OK`.
 ```
 
-In a Russian conversation the same section is headed `## Что нужно от вас`.
+In a Russian conversation the sections are headed `## Решения, которые я принял` and
+`## Что нужно от вас`.
 
 ## T2 — Decision card
 
 Use it when the core's threshold holds: the user asked for options, or the candidates differ in what
-the user gets and nothing the user said settles the choice. Otherwise pick in your own reasoning and
-report the pick with its reason and the rejected candidates in a line each.
+the user gets and the conversation does not settle the choice. Otherwise pick in your own reasoning and
+report the pick with its reason in a line.
 
 Shape, one card per problem:
 
-1. The problem, restated in one line.
+1. The problem, restated in one line, and the recommendation with its reason.
 2. 3–7 candidates, including a boring baseline and at least one combination.
 3. A table: candidate, mechanism, pros, cons, combines with.
 4. Synergies — which candidates strengthen each other.
 5. Trade-offs — what each direction gives up.
-6. Recommendation, with the reason.
+
+Unless the user asked for options or the choice passes the core's §1 stop list, take the
+recommendation, continue the work, and close the card with one line saying how to switch.
 
 Why: a first idea compared against nothing is rarely the best one; the baseline shows what doing
 little costs, and the combination row catches the answer that is better than any single candidate.
@@ -74,7 +84,8 @@ there. `diverge-synthesize-select` covers generating genuinely different candida
 
 ```markdown
 **D1 — cache invalidation for product prices.** Prices change in the admin panel but the shop shows
-stale values for up to an hour.
+stale values for up to an hour. Recommendation: A+C — stale reads disappear without a new service to
+operate.
 
 | Candidate | Mechanism | Pros | Cons | Combines with |
 |---|---|---|---|---|
@@ -85,14 +96,15 @@ stale values for up to an hour.
 
 Synergies: C removes staleness; A bounds the memory C leaves behind.
 Trade-offs: B is fastest but adds a running component; A+C adds none.
-Recommendation: A+C — stale reads disappear without a new service to operate.
+Implemented A+C; say "B" to switch to event purge instead.
 ```
 
 ## T3 — "What I need from you"
 
-Automate first. If you can do the step within your permissions, do it. Hand over only what needs the
-user's credentials, elevated privileges, a GUI, or their judgement — every handed-over step is time
-and a chance of a typo.
+Automate first. If you can do the step within your permissions, do it. Hand over only what blocks the
+work and needs the user: their credentials, elevated privileges, a GUI action, or an answer that
+passed the core's §1 stop list — every handed-over step is time and a chance of a typo. A decision
+you can make is not an item; it belongs in "Decisions I made".
 
 Each item carries:
 

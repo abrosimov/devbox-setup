@@ -97,7 +97,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
 1. **Get context**: Use `PROJECT_DIR` from orchestrator context line. If absent, run `~/.claude/bin/resolve_context.py` to compute it.
 2. **Check for plan**: Look for `${PROJECT_DIR}/plan.md`
 3. **Parse plan contracts** (if plan.md exists):
-   - Read **Assumption Register** — flag any row where "Resolved?" is not "Confirmed"/"Yes" to the user before implementing
+   - Read **Decisions Made** — binding unless the codebase contradicts a row; then decide yourself and report it. Read **Blockers for the user** — implement everything a blocker does not block, and return the blocker to the orchestrator with its recommended answer instead of raising it with the user (treat an older plan's unresolved **Assumption Register** row the same way, deciding it when the evidence allows)
    - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
    - Read the **API contract**, even when plan.md is absent. Take the path from plan.md, otherwise look for `${PROJECT_DIR}/api_spec.yaml`, `*.proto`, or the project's OpenAPI spec and the types generated from it. The contract is your boundary with the backend: build only on what it guarantees, and leave backend handlers, caches, and queries out of your reasoning, because they change without notice. If you need a guarantee the contract lacks (caching, pagination, limits, ordering), raise a contract gap. See the `contract-boundary` skill.

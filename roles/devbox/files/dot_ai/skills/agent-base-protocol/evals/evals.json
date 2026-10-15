@@ -1,0 +1,83 @@
+{
+  "skill_name": "agent-base-protocol",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "You are the orchestrator. The implementation planner returned ten open questions (Q-1 to Q-10) about the dependency resolver. Earlier the user said transitive dependencies are always downloaded, version selection works 'like Go', and software should reduce the user's cognitive load. Continue.",
+      "expected_output": "The orchestrator resolves the planner's questions itself from the user's answers, the Go analogy, and the stated principle, records each resolution in one line, and relays at most the residue that passes the stop list, each with a recommendation",
+      "expectations": [
+        "Does not forward the ten questions to the user verbatim",
+        "Resolves each question it can from the conversation and the repository, stating the inference and reason in one line",
+        "Relays only questions whose answer cannot be derived, only the user can supply, and a wrong guess would be costly — each with a recommended answer as the default",
+        "Applies the user's 'reduce cognitive load' principle when choosing between candidate designs"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The user answered your question round: 'Q-3: MVS like Go. Q-6: yes, always on disk.' Two sub-questions remain in your notes: which reading of MVS is meant, and whether module identity uses a path or a name.",
+      "expected_output": "Derives both sub-questions from the user's answers and the Go analogy, states the inferences, and proceeds without a second question round on the same topic",
+      "expectations": [
+        "Reads MVS as Go's minimal version selection, per the user's analogy, and says so in one line",
+        "Decides module identity as a design choice (by analogy with Go module paths) and records the reason",
+        "Asks no second question round on a topic the user has just answered"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add a nightly job that uploads the backups to the client's storage bucket. Neither the bucket name nor the credentials appear anywhere in the repository or the conversation.",
+      "expected_output": "Searches for the bucket and credential source, implements everything else, then asks once for the bucket and the credential mechanism with a recommended default, because only the user holds them and a wrong guess would send data to the wrong place",
+      "expectations": [
+        "Looks for an existing bucket name or credential reference in the repository and configuration before asking",
+        "Implements the parts that do not depend on the missing facts first",
+        "Asks for the bucket and credential source in one batched round, each with a recommended answer",
+        "Does not ask about schedule format, job naming, or other design choices it can make itself"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Rename the helper parseCfg to parseConfig across the package.",
+      "expected_output": "Makes the rename directly; the clarification rules do not interfere with a routine, unambiguous change",
+      "expectations": [
+        "Performs the rename without asking any question",
+        "Reports the result in a line or two",
+        "Skill does not interfere with the routine change"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Conversation so far (the user writes in Russian). Earlier the user fixed: transitive dependencies are always downloaded, non-negotiable, and said 'software exists to reduce the user's cognitive load, not create it'. You then asked a round of open questions about the dependency resolver. The user has just replied, in Russian: 'Q-3: MVS, like Go. Q-6: yes, always on disk. Q-7: no override, at most a go.mod-style replace to the local file system.' Your notes still hold: which reading of MVS is meant, whether lock creation is applied automatically or by an explicit create-once command, how a module is identified, and the syntax for a major-version change. Continue.",
+      "expected_output": "Replies in Russian, derives every remaining point from the Go analogy that runs through the answers and from the stated cognitive-load principle, states each inference in one line, and proceeds without a second question round and without a 'What I need from you' section",
+      "expectations": [
+        "Treats Q-7 as settled: no override mechanism, only a replace directive that points a module at a local path, as in go.mod",
+        "Decides major-version syntax as a design choice by analogy with Go modules, recording its reason",
+        "Decides automatic versus explicit create-once apply itself, citing 'always on disk' and the cognitive-load principle as the signals",
+        "Asks no new question and has no 'What I need from you' section, because nothing left is blocked on a fact only the user holds",
+        "Converses in Russian while any persisted artefact it writes stays in British English"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "The planner returned ten open questions, Q-1 to Q-10, and you relayed all ten. The user now writes, in Russian: 'Try to answer them yourself: 5-7 options each, with synergies.' The conversation and repository settle Q-1 to Q-9 (fixed decisions, the Go analogy, the cognitive-load principle, existing code). Q-10 asks which organisation owns the public registry namespace the packages will be published under; that name appears nowhere in the repository or the conversation.",
+      "expected_output": "Works through all ten questions, resolves Q-1 to Q-9 itself with a one-line decision and reason each, and relays only Q-10, once, with a recommended answer, as the single item in the 'What I need from you' section (headed in Russian per T1)",
+      "expectations": [
+        "For each question, shows 5–7 candidates with their synergies in compact form and ends with the chosen answer, not a card awaiting a pick",
+        "Records each of Q-1 to Q-9 as a decision with its source in the conversation or repository, under the 'Decisions I made' section (headed in Russian per T1)",
+        "Does not return any of Q-1 to Q-9 to the user, nor add new sub-questions about design details within the decided direction",
+        "Relays only Q-10, because the namespace owner cannot be derived, only the user can supply it, and a wrong guess would publish under the wrong organisation",
+        "Gives Q-10 a recommended answer the user can accept in one word, and continues the work that does not depend on it"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Earlier in this conversation the user said, in Russian, 'stop asking me things you can work out yourself'. Now: 'Deploy the release service to production.' The deployment configuration defines two production accounts, prod-eu and prod-us, with identical settings; neither the repository, the documentation nor the conversation indicates which one this service belongs to.",
+      "expected_output": "Prepares everything that does not depend on the account, then asks once which production account to deploy to, with a recommended answer and its reason, because the fact cannot be derived and a wrong guess deploys to the wrong production environment; the user's request to stop asking does not suppress this one question",
+      "expectations": [
+        "Searches the repository, documentation and conversation for the owning account before asking",
+        "Does not guess the account and does not deploy to either one before the user answers",
+        "Asks exactly one question, about the production account, with a recommended answer the user can accept in one word, stating what it searched and that no evidence points to either account",
+        "Does not add questions about design choices it can make itself, honouring the user's request to stop asking derivable things",
+        "Places the question as the single item in the closing 'What I need from you' section"
+      ]
+    }
+  ]
+}

@@ -182,7 +182,7 @@ Build a deduplicated set, e.g. `{go}`, `{python}`, `{frontend}`, or any combinat
 
 > Detected stacks: **go**, **frontend**. Loading: `go-engineer`, `go-testing`, `go-review-checklist`, `frontend-engineer`, `frontend-testing`, `frontend-tooling`. Python skills are NOT loaded for this review.
 
-If no recognised stack is detected (only configs, docs, migrations, etc.), say so explicitly and ask the user how to proceed.
+If no recognised stack is detected (only configs, docs, migrations, etc.), say so explicitly, review the diff with the core checkpoints only, and state that the language checkpoints are N/A.
 
 **Tool guardrails by stack (MANDATORY).** The frontmatter `tools:` list is the union of every stack's needs. You MUST NOT invoke a tool whose stack is absent from Step 1's detected set:
 
@@ -234,7 +234,7 @@ Before looking at code, summarise:
 2. What are the acceptance criteria?
 3. What edge cases are implied but not explicitly stated?
 
-Present this summary to the user for confirmation.
+State this summary at the top of the report as the basis for the review; do not wait for confirmation. List as a question only a requirement that passes the core's stop list.
 
 ### Step 4: Exhaustive Enumeration (NO EVALUATION YET)
 
@@ -296,7 +296,7 @@ Language-specific verification themes (run only for detected stacks):
 |----|------|----------------|-----------------|
 | C-1 | Comment Quality (BLOCKING) | No narration, no section dividers, only terse WHY/WARNING/TODO. Search diff for narration tells (`// [A-Z][a-z].*the`, `# Check`, `// Render`, `// ---`, `# ===`) AND multi-paragraph WHY blocks (any consecutive run of ≥4 `//` or `#` lines added in the diff). Each multi-paragraph block is a candidate: flag it and propose a compressed version per the `code-comments` Verbosity Ceiling. Also strip speculative/futurist WHY (`# if someone later adds X...`) and mechanism over-explanation. | `code-comments` |
 | C-2 | Lint Suppression Discipline | Every new `//nolint`, `# noqa`, `# type: ignore`, `eslint-disable`, `@ts-ignore`, `@ts-expect-error` is justified, scoped, and was approved. | `lint-discipline` |
-| C-3 | Scope Verification | Plan/spec/design exists? Walk the **Review Contract**, **SE Verification Contract**, **Assumption Register**, **Test Mandate** rows. Classify SE additions as production-necessity (OK) or product-feature (FLAG). | upstream `plan.md` |
+| C-3 | Scope Verification | Plan/spec/design exists? Walk the **Review Contract**, **SE Verification Contract**, **Decisions Made** (older plans: **Assumption Register**), **Test Mandate** rows. Classify SE additions as production-necessity (OK) or product-feature (FLAG). | upstream `plan.md` |
 | C-4 | Complexity Review | Apply Occam's Razor. Flag unnecessary abstractions, premature generalisation, deep nesting, reversal-test failures (could this be deleted/inlined?). | — |
 | C-5 | Counter-Evidence Hunt | For every category where you found no issues, actively try to disprove the conclusion. See Step 7. | — |
 | C-6 | Test Quality | Tests verify behaviour, not implementation. No tests without assertions, no copied implementation logic, no snapshot-only coverage. Error/empty/edge cases present. | `{lang}-testing` |

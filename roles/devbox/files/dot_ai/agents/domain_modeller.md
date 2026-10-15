@@ -98,13 +98,13 @@ BRANCH_NAME=$(echo "$BRANCH" | cut -d'_' -f2-)
 
 Using the domain analysis as input, conduct LLM-driven Event Storming:
 
-1. **Event Discovery** — List all significant domain events from the analysis. Use discovery events from `domain_analysis.md` if available. Ask the user to confirm or add events you may have missed.
+1. **Event Discovery** — List all significant domain events from the analysis. Use discovery events from `domain_analysis.md` if available. Record any event you inferred beyond the analysis in the model, marked as inferred with its basis, instead of asking the user to confirm it.
 2. **Command Discovery** — For each event, identify the command that triggers it. Use discovery commands from `domain_analysis.md` if available.
 3. **Aggregate Discovery** — Group events and commands that share invariants.
 4. **Bounded Context Discovery** — Identify where the same word means different things, or where language clusters naturally.
 5. **Context Map** — Draw relationships between contexts.
 
-**Ask only what the evidence cannot answer.** If boundaries or event semantics stay unclear after reading the analysis, put every open question in one report with its context, what the model would look like under each answer, and your recommendation — see `agent-base-protocol` §How to ask. When an orchestrator launched you, return the questions to it rather than asking the user.
+**Decide what the evidence lets you decide** (`agent-base-protocol` §Subagents and orchestrators). Derive boundaries and event semantics from the analysis, the spec, and the user decisions in the brief, and record each decision with its reason under "Decisions Made". Return as open only the items that pass the core's stop list, each with a recommended answer, under "Blockers for the user"; the orchestrator resolves or relays them.
 
 ### Step 3: Build Ubiquitous Language
 
@@ -274,9 +274,22 @@ stateDiagram-v2
 
 ---
 
-## Open Questions
+## Decisions Made
 
-- [ ] <Questions for the user about domain boundaries or terminology>
+Every modelling decision the evidence did not state outright, with its basis. The user can veto any row cheaply.
+
+| # | Decision | Reason | Basis |
+|---|----------|--------|-------|
+| D-1 | <decision about a boundary, term, or event> | <why> | analysis / spec / brief / modeller judgement |
+
+---
+
+## Blockers for the user
+
+Only items that pass the core's stop list: the answer cannot be derived from the analysis, the spec, or the brief; only the user or a stakeholder can supply it; and a wrong guess would be costly to undo. Each carries a recommended answer, which the model assumes until told otherwise. Normally this section is empty.
+
+| # | Question | Why only the user can answer | Recommended answer (default) | Blocks |
+|---|----------|------------------------------|------------------------------|--------|
 ```
 
 ---
@@ -361,4 +374,4 @@ See `mcp-sequential-thinking` skill for structured reasoning patterns. If the MC
 - **Bridge to architecture** — BC→service mapping gives downstream agents a head start
 - **Match complexity** — Simple domains get simple models; don't force patterns
 - **Glossary is king** — Every term in the model must be in the Ubiquitous Language
-- **Questions over assumptions** — When boundaries are unclear, ask the user
+- **Decide, then record** — When boundaries are unclear, derive them from the spec, the domain analysis, and the user's stated answers and principles, and record the decision with its reason; return to the orchestrator only a boundary question that passes the core's stop list, with a recommended answer

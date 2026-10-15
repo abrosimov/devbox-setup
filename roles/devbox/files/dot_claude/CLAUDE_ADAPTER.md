@@ -24,11 +24,11 @@ think", a follow-up question, or silence are not.
 
 ## The question tool (`AskUserQuestion`)
 
-Use it only for a question that survived the core's §1, never as a reflex to a problem description.
-It allows up to 4 questions with 2–4 options and a 12-character header, so it cannot carry the
-context a good question needs: put the rendered previews, consequences, and the full decision card in
-the message text, and use the tool only to collect the pick. Every option must read on its own (see
-`writing-for-the-reader`). Ask all live questions of a turn in one call.
+Use it only for a question that passed the core's §1 stop list, never as a reflex to a problem
+description or to a subagent's open questions. It allows up to 4 questions with 2–4 options and a
+12-character header, so put the context and rendered previews in the message text and use the tool
+only to collect the pick. Put your recommended option first, marked "(Recommended)"; every option
+must read on its own (see `writing-for-the-reader`). One call per topic carries every live question.
 
 ## Background agents
 
@@ -72,10 +72,12 @@ reframed task. Diagnostic hints are fine; command dictation is not.
   because the Bash permission matcher splits on them.
 - **Cyrillic guard:** `bin/post_edit_cyrillic_guard.py` warns when Cyrillic reaches a written file
   outside `testdata/`, `fixtures/`, `memory/`; correct it on the next edit.
-- **End-of-turn guard:** a Stop hook blocks a reply whose user-action section is not the last section
-  or that hands the user a multi-line shell block instead of a script. Fix the reply and finish again.
+- **End-of-turn guard:** a Stop hook blocks a reply whose "What I need from you" section is not the
+  last section or that hands the user a multi-line shell block instead of a script; fix the reply
+  and finish again. The section itself is optional and belongs only to a turn blocked on the user.
 
 ## Reminder
 
-Deliver exactly what was asked, at the scope intended. Ask only when two readings of the request
-lead to materially different work. A decision the user has made stays made.
+Deliver exactly what was asked, at the scope intended. Decide what is yours to decide and say so in
+a line; ask only what passes the core's stop list, once, with a recommendation. A decision the user
+has made stays made.

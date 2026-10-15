@@ -4,11 +4,11 @@
     {
       "id": 1,
       "prompt": "Implement the user authentication module based on the approved design",
-      "expected_output": "Agent validates that the design was explicitly approved before implementing",
+      "expected_output": "Agent finds the approval in the user's instruction, logs it, and proceeds without asking for re-confirmation.",
       "expectations": [
-        "Checks for explicit approval before implementation",
-        "Does not implement without user confirmation",
-        "References the approval validation protocol"
+        "Treats 'Implement … approved design' as explicit approval",
+        "Does not ask the user to re-confirm",
+        "Logs the approval per the approval validation protocol"
       ]
     },
     {
@@ -24,10 +24,11 @@
     {
       "id": 3,
       "prompt": "Add error handling to this function, also add logging, and while you're at it refactor the database layer",
-      "expected_output": "Agent identifies scope creep and focuses on what was actually requested",
+      "expected_output": "Agent treats the three explicitly requested items as the scope, delivers all three, and adds nothing beyond them",
       "expectations": [
-        "Does not silently expand scope beyond what was requested",
-        "Asks for clarification if the request seems too broad",
+        "Delivers error handling, logging, and the database-layer refactor, because the user asked for all three",
+        "Does not ask whether to narrow or confirm the request: an explicit multi-part ask is the user's scope decision",
+        "Does not add work beyond the three items; anything else that looks valuable is mentioned at the end",
         "Follows anti-satisficing rules — doesn't do partial work on each"
       ]
     },
@@ -44,11 +45,35 @@
     {
       "id": 5,
       "prompt": "I need you to completely rewrite the payment processing module",
-      "expected_output": "Agent treats this as Tier 3 (full exploration) and verifies scope before proceeding",
+      "expected_output": "Agent explores the approach in its own reasoning, derives scope from the request and the existing module, reports the chosen approach and its key decisions, and asks only for facts it cannot derive",
       "expectations": [
-        "Classifies as high-impact decision requiring full exploration",
-        "Verifies scope and approach with user before starting",
+        "Classifies as a high-impact design decision and explores candidates before writing code",
+        "Derives the scope (the whole module, behaviour preserved) from the request and the code instead of asking the user to confirm it",
+        "States the chosen approach and its main design decisions with reasons, so the user can veto cheaply",
         "Does not jump straight into rewriting without a plan"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Earlier in this conversation I answered your planner's questions: 'Q-3: version selection is MVS, like Go', 'Q-6: yes, downloaded modules always stay on disk', 'Q-7: no overrides, at most a go.mod-style replace pointing at a local directory'. Now implement the dependency resolver.",
+      "expected_output": "Agent derives the remaining design from the user's answers and the Go analogy, states each inference in one line, and implements without a new question round",
+      "expectations": [
+        "Reads 'MVS, like Go' as Go's minimal version selection and says so in one line instead of asking which reading of MVS is meant",
+        "Treats module identity, major-version syntax, and replace semantics as its own design decisions, taken by analogy with Go modules and recorded with reasons",
+        "Asks no follow-up question on a topic the user has already answered",
+        "Ends with a short list of decisions taken, not a 'What I need from you' section"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Wire the release job so it publishes the built artefacts to our internal package registry.",
+      "expected_output": "Agent builds everything that does not depend on the registry details, then asks once for the registry address and the credential mechanism, which nothing in the repository or conversation reveals, each with a recommended default",
+      "expectations": [
+        "Searches the repository and CI configuration for an existing registry address or credential reference before asking",
+        "Implements the parts that do not depend on the missing facts first",
+        "Asks for the registry address and credential source in one batched round, because only the user holds them and a wrong guess would publish to the wrong place",
+        "Each question carries a recommended answer or a clearly marked placeholder default",
+        "Does not ask about design choices it can make itself, such as job naming or step order"
       ]
     }
   ]

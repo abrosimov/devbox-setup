@@ -20,7 +20,7 @@
         "Restates the problem in one line",
         "Offers between 3 and 7 candidates including a boring baseline and at least one combination",
         "Table has columns candidate, mechanism, pros, cons, combines with",
-        "Names synergies and trade-offs, then a recommendation with its reason",
+        "Leads with the recommendation and its reason, then candidates, synergies and trade-offs",
         "Presents candidates with trade-offs rather than narrating its reasoning"
       ]
     },
@@ -64,6 +64,38 @@
         "No decision card for a trivial, reversible choice",
         "No 'What I need from you' section because the user has nothing to do",
         "Skill does not interfere with the simple edit"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Implement the lockfile writer. Choose the on-disk format and the file name yourself; nothing about this needs me.",
+      "expected_output": "Final report with the outcome, a '## Decisions I made' section listing the format and file-name choices with reasons and how to reverse them, and no 'What I need from you' section",
+      "expectations": [
+        "Lists the format and file-name choices under 'Decisions I made', one line each with its reason and how to reverse it",
+        "Does not turn those choices into questions or a decision card awaiting a pick",
+        "Has no 'What I need from you' section, because nothing is blocked on the user"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Publish the release to the company artefact registry. The registry address and the deploy token are not in the repository, and I have not mentioned them.",
+      "expected_output": "Prepares everything that does not depend on the missing facts, lists any design choices under 'Decisions I made', and ends with a '## What I need from you' section asking once for the registry address and token source, each with a recommended default",
+      "expectations": [
+        "Completes the parts of the work that do not depend on the registry address or token",
+        "'What I need from you' is the last ## section and contains only the blocking facts only the user holds",
+        "Each item carries a recommended answer or default and says how to verify the result",
+        "Does not add non-blocking design decisions to 'What I need from you'"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "The user has just answered your question round, in Russian: 'Q-3: MVS, like Go. Q-6: yes, always on disk. Q-7: no override, at most a go.mod-style replace.' Earlier they said software should reduce their cognitive load. You have derived the remaining design points (MVS reading, module identity, major-version syntax, automatic create-once apply) from those answers. Write the end-of-turn reply.",
+      "expected_output": "A T1 reply in Russian: outcome first, the 'Decisions I made' section (headed in Russian per T1) with one line per derived point naming the user answer or analogy it follows from and how to reverse it, and no 'What I need from you' section (headed in Russian per T1)",
+      "expectations": [
+        "Leads with the outcome: the remaining resolver decisions are settled and work continues",
+        "Lists each derived point under the 'Decisions I made' section (headed in Russian per T1) with the answer or analogy it follows from and how to reverse it",
+        "Has no 'What I need from you' section (headed in Russian per T1), because no remaining item passes the stop list",
+        "Does not phrase any derived point as a question, a confirmation request, or a decision card awaiting a pick"
       ]
     }
   ]

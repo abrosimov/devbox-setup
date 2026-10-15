@@ -88,7 +88,7 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 
 An agent's completion message is a result for whoever launched it, not a conversation with the user.
 
-- **Subagent (launched by an orchestrator):** report the result to the orchestrator — outcome first, then the evidence (files changed, checks run, open issues), then any decision card or questions it needs to put to the user. No prompt to the user such as "say 'continue'": the orchestrator waits until every agent it launched has returned and then gives the user one consolidated answer (core §6), so a per-agent hand-off would fragment that answer.
+- **Subagent (launched by an orchestrator):** report the result to the orchestrator — outcome first, then the evidence (files changed, checks run, open issues), then the decisions it took with their reasons, then only the open items that pass the core's stop list, each with a recommended answer. The orchestrator resolves those items itself where its context allows and relays only the residue (core §6), so a subagent's list is never forwarded verbatim. No prompt to the user such as "say 'continue'": the orchestrator waits until every agent it launched has returned and then gives the user one consolidated answer (core §6), so a per-agent hand-off would fragment that answer.
 - **Single-agent command run** (one `/techne-*` command, one agent): the final report follows template T1 in the `response-templates` skill and may end with one line naming the next command, because here the user does drive the order.
 
 ```markdown
@@ -115,18 +115,18 @@ Code reviewers and implementation planners always use opus — no downgrade logi
 
 ### User Escalation
 
-Escalate only what your own lookup cannot settle and what would change the result (core §1):
+Escalate only what passes the core's §1 stop list — the answer cannot be derived from the repository, the docs, or the conversation (earlier answers, analogies, stated principles); only the user can supply it; and a wrong guess would be costly to undo or would make the work useless. Typical survivors:
 
-1. **Ambiguous requirements** — readings that lead to different work
-2. **Decisions above the core §2 threshold** — the user asked for options, or the candidates differ in what the user gets and nothing the user said settles it
-3. **Scope questions** — the work would cross the named scope
-4. **Blocking issues** — cannot proceed without input
+1. **Goal or scope** — the work would cross the named scope, or two readings of the goal remain after derivation and building the wrong one would waste the work
+2. **A value choice with no signal** — the candidates differ in what the user gets and nothing in the conversation points to one
+3. **A fact only the user holds** — credentials, an external constraint, access
+4. **An approval-class action** — destructive, irreversible, or externally visible
 
-Below that threshold, decide and state the choice in one line of the report.
+Everything else — design and implementation choices inside the user's direction — is decided and stated in one line of the report.
 
 ### How to Ask Questions
 
-The rules live in `agent-base-protocol` (§How to ask); the question template and bad/good examples are in the `writing-for-the-reader` skill, and the decision card is template T2 in `response-templates`. In short: every question carries its context and the rendered outcome of each option in the message itself, all live questions of a turn go together, and a subagent returns them to the orchestrator rather than asking the user.
+The rules live in `agent-base-protocol` (§How to ask); the question template and bad/good examples are in the `writing-for-the-reader` skill, and the decision card is template T2 in `response-templates`. In short: every question carries its context, the rendered outcome of each option, and your recommended answer as the default; one batched round per topic; and a subagent returns its residue to the orchestrator, which resolves what it can before relaying.
 
 ## Approval Validation
 
@@ -157,7 +157,7 @@ Classify decisions before acting:
 |------|------|--------|
 | 1 | Routine | Apply rule directly, no approval needed |
 | 2 | Standard | Quick consideration, check precedent, proceed; state the choice in one line |
-| 3 | Design (core §2 threshold holds) | Explore, then show 3–7 candidates as the decision card (`response-templates` T2); a subagent returns the card to the orchestrator |
+| 3 | Design (core §2 threshold holds) | Explore, then show 3–7 candidates as the decision card (`response-templates` T2), led by the recommendation; a subagent returns the card to the orchestrator, which takes the recommendation itself unless the choice passes the stop list |
 
 ### Tier 1 Examples (Just Do It)
 - Apply formatting
@@ -170,10 +170,8 @@ Classify decisions before acting:
 - Variable naming (when domain clear)
 - Small refactoring choices
 
-### Tier 3 Examples (Present Options)
-- Pattern/architecture selection
-- API design choices
-- New abstraction boundaries
+### Tier 3 is decided by the threshold, not the topic
+An architecture, API, or abstraction choice is Tier 2 when the conversation settles it or its candidates give the user the same result; it is Tier 3 only when the user asked for options or the candidates differ in what the user gets with no signal for one of them. Example: "REST or gRPC for a new internal service" is Tier 2 when the repository already serves gRPC everywhere; it is Tier 3 when the user said "it will also be called from browsers" and nothing settles the trade-off.
 
 ## Stop Conditions
 
@@ -182,7 +180,7 @@ Every agent has boundaries. When you catch yourself crossing them, STOP.
 **Common stop conditions:**
 - Writing code when job is review → STOP, report issues only
 - Modifying production code when job is testing → STOP, test as-is
-- Adding features not in plan → STOP, ask about scope
+- Adding features not in plan → STOP, leave them out and mention them in the report
 - Implementing without approval → STOP, request approval
 
 ## Human-Only Actions

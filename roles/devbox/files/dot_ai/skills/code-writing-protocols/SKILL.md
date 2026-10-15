@@ -24,7 +24,7 @@ Shared decision-making and quality protocols for all code-writing agents (SE-go,
 
 Look for explicit approval, as the adapter defines it, in the last 2-3 user messages. These situations are not approval, whatever the wording:
 - The last message described a problem, asked a question, or asked for analysis, options, or a plan — the deliverable there is an assessment or the options, then stop (core §1)
-- No explicit pick after alternatives were presented
+- No explicit pick after the user asked for options and alternatives were presented (a card whose recommendation was taken under Tier 3 Step 6 needs no pick)
 - Approval covered scope X; the current action covers scope Y (different scope needs new approval)
 
 ### Step 2: If Approval NOT Found
@@ -55,7 +55,7 @@ Proceeding with implementation...
 
 - **Do NOT re-ask the user for approval** on scope already covered by your dispatch prompt. Re-prompting duplicates the gate and burns context.
 - The Approval Validation scan above applies to the **dispatch prompt and conversation you were given**, not to a fresh user turn you must solicit.
-- **If you hit new ambiguity outside your dispatched scope**, return to the main thread with a clarification request in your result — state the open question and stop. Do not interactively re-prompt the user yourself.
+- **If you hit new ambiguity**, derive the answer from the dispatch prompt, the plan, and the repository, decide what is yours to decide (core §0), and record each decision with its reason in your result. Return an open item to the main thread only when it passes the core's stop list or would take you outside your dispatched scope; finish everything that does not depend on it, and give it a recommended answer. Do not interactively re-prompt the user yourself.
 
 ## MANDATORY: Decision Classification Protocol
 
@@ -110,18 +110,14 @@ A decision is Tier 3 when the core §2 threshold holds. Below the threshold it i
 
 **Indicators (core §2 threshold — either is enough):**
 - The user asked for solutions or options
-- The candidates differ in what the user gets, and nothing the user said settles the choice
+- The candidates differ in what the user gets, and the conversation (earlier answers, analogies, stated principles) does not settle the choice
 
-The number of files, components, or services a choice touches is not an indicator. An irreversible
+The topic (architecture, API shape, error handling strategy, interface or struct design) and the
+number of files, components, or services a choice touches are not indicators. An irreversible
 choice whose candidates give the user the same result is Tier 2: pick, and report the pick with its
-reason and the rejected candidates in a line each (core §1 step 3).
-
-**Examples:**
-- Pattern/architecture selection
-- API design (endpoints, request/response shape)
-- Error handling strategy (for a feature)
-- Interface definition
-- New struct design that other components will depend on
+reason in a line (core §1 step 3). Example: the shape of a new error type is Tier 2 when the
+codebase already has a convention; choosing between "fail the whole batch" and "skip bad rows" is
+Tier 3 only when the user's goal gives no signal, because the two give the user different results.
 
 **Action:** Complete the exploration below before implementing, because a design decision locked in on the first workable idea is the most expensive kind to reverse. For **wide-scope** Tier 3 decisions (architecture, API design, multi-component patterns), use the full DSS protocol from the `diverge-synthesize-select` skill — it adds strategy-axis diversity, explicit combinations, and the 3–7 candidate decision card.
 
@@ -197,9 +193,9 @@ Eliminate approaches that:
 
 ### Step 6: Present the Decision Card
 
-Present every candidate that survived Step 4 — 3 to 7, with no "top 2-3" cap — as the decision card (template T2 in the `response-templates` skill): the boring baseline and at least one combination included, each candidate with its mechanism, pros, cons, and what it combines with, then the synergies, the trade-offs, and your recommendation with its reason. Showing the whole surviving set matters because the user often knows a constraint that makes a runner-up the right pick. Present candidates and trade-offs, not a narration of your reasoning. Each candidate must read on its own (see `writing-for-the-reader`).
+Present every candidate that survived Step 4 — 3 to 7 — as the decision card (template T2 in the `response-templates` skill), led by your recommendation and its reason: the boring baseline and at least one combination included, each candidate with its mechanism, pros, cons, and what it combines with, then the synergies and trade-offs. Showing the surviving set lets the user overturn the pick cheaply when they know a constraint you do not. Present candidates and trade-offs, not a narration of your reasoning. Each candidate must read on its own (see `writing-for-the-reader`).
 
-An engineer running as a subagent cannot talk to the user: return the decision card to the orchestrator as your result and stop; the orchestrator presents it and relays the pick.
+Unless the user asked for options or the choice passes the core's stop list, the recommendation is taken and work continues; the card is the record the user can veto. An engineer running as a subagent cannot talk to the user: return the card to the orchestrator, which takes the recommendation itself in that case and relays the card only when the choice passes the stop list.
 
 ---
 
@@ -224,8 +220,8 @@ Before implementing a solution:
 ```
 Is there an existing pattern in the codebase for this?
 - YES → Use it (unless fundamentally flawed)
-- NO → Am I creating a new pattern? If other components will follow it, the core §2
-  threshold holds (Tier 3); if it stays local, decide and state it in one line (Tier 2)
+- NO → creating a new pattern: decide it (Tier 2) and report it with its reason; it is
+  Tier 3 only when the core §2 threshold holds
 ```
 
 ### Rule 5: Complexity Justification
@@ -268,7 +264,7 @@ Before adding code, ask:
 If you believe a requirement is unnecessary or over-engineered:
 
 1. **Pause that part of the implementation** — building it first would spend effort on what may be dropped.
-2. Return the counter-proposal to the orchestrator as a decision card (template T2 in `response-templates`); it presents the card to the user together with the other agents' results. The plan's approach is the baseline candidate:
+2. Return the counter-proposal to the orchestrator as a decision card (template T2 in `response-templates`); the orchestrator resolves it under core §6 and relays it only if it passes the stop list. When the plan carries a user decision on this point, core §0 applies instead: say so in one sentence and implement as asked. The plan's approach is the baseline candidate:
 
 ```
 **Simplification opportunity — [short name of the requirement]**
@@ -302,9 +298,9 @@ I believe this may be over-engineered because: [specific reason]
 
 **If the codebase has OTel SDK initialised** (TracerProvider/MeterProvider in main or startup), then adding spans and metrics to new code **is a production necessity** — do not ask for approval.
 
-**If the codebase does NOT have OTel set up**: Adding instrumentation requires explicit approval (Tier 3 decision — new infrastructure pattern).
+**If the codebase does NOT have OTel set up**: adding instrumentation is an unrequested addition: leave it out and mention it at the end (core §0).
 
-**The test:** If you're unsure whether something is a production necessity → **it is NOT**. Ask.
+**The test:** If you're unsure whether something is a production necessity → **it is NOT**. Leave it out and mention it in the report.
 
 ### Red Flags: Stop and Reconsider
 
@@ -323,7 +319,7 @@ Once you start implementing, your scope is **locked** to:
 1. What the plan explicitly requests
 2. Production necessities (narrow definition above)
 
-**Any additions outside this scope require user approval.** Present them as options, don't implement them.
+**Additions outside this scope are not implemented.** Mention them at the end of the report (core §0), so the user can ask for them; they are not a question.
 
 ---
 
@@ -340,10 +336,10 @@ When a task is classified as **Tier 1 (Routine)**, enter Routine Mode.
 
 ### Exit Conditions
 
-Exit Routine Mode and ask ONLY if you encounter:
+Exit Routine Mode and stop to report ONLY if you encounter:
 - File does not exist or is in unexpected state
 - Change would affect code outside routine scope
-- Ambiguous ownership (multiple valid interpretations exist)
+- Ambiguity that the plan, the repository, and the conversation cannot resolve and that passes the core's stop list
 - Discovered issue that changes the scope of work
 
 ### Examples
@@ -432,9 +428,9 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 - [ ] I understand WHY this needs to change (not just WHAT)
 
 **1.5. Ambiguity Surface**
-- [ ] I have parsed the ask and listed only the questions that survived my own lookup (core §1 steps 1–4), or held them in mind for routine work
-- [ ] For each assumption: "if the user meant the opposite, would I do anything different?" → if YES, this is an open question, not an assumption
-- [ ] All open questions are resolved (approval token, user answer, or explicit re-read of conversation that confirms)
+- [ ] I derived what I could from the repository, the plan, and the conversation (earlier answers, analogies, stated principles) before treating anything as open (core §1 step 2)
+- [ ] Each remaining assumption is either a decision that is mine (core §0), recorded with its reason, or an open question that passes the core's stop list (not derivable, only the user can supply it, costly to get wrong), returned with a recommended answer
+- [ ] Nothing that depends only on my own design judgement is waiting on the user
 
 **2. Solution Quality**
 - [ ] This addresses root cause, not just symptom
@@ -460,9 +456,9 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 - You are adding code because "the real fix is too hard"
 
 **If workaround detected:**
-1. **STOP** — do not implement the workaround
+1. **Do not implement the workaround** — finish everything that does not depend on the workaround choice
 2. Identify what is blocking the proper solution
-3. Return a decision card (template T2 in `response-templates`) to the orchestrator, which presents it to the user:
+3. Return a decision card (template T2 in `response-templates`) to the orchestrator, which resolves it under core §6 and relays it only if it passes the stop list:
    ```
    The proper fix requires [X], which [reason it's blocked].
 

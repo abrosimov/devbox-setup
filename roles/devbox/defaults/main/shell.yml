@@ -60,6 +60,9 @@ devbox_shell:
     # a stale shell cannot change what it deploys.
     - { name: LANGFUSE_USER_ID, value: "{{ devbox_langfuse_user_id }}" }
 
+    # TLA+ tools jar (SANY, TLC, PlusCal); nvim reads it for linting and runners.
+    - { name: TLA2TOOLS_JAR, value: "$HOME/.local/share/tlaplus/tla2tools/tla2tools.jar" }
+
   path_prepend:
     - "$HOME/bin"
     - "$HOME/.local/bin"
@@ -70,6 +73,8 @@ devbox_shell:
     - "$FLUTTER_PATH/bin"
     - "$HOME/.claude/bin"
     - "$GEM_HOME/bin"
+    - "$HOME/.local/share/tlaplus/apalache/bin"
+    - "$HOME/.local/share/tlaplus/tlapm/bin"
 
   path_conditional:
     - { check: "$HOME/.cargo", add: "$HOME/.cargo/bin" }

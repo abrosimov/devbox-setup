@@ -39,6 +39,8 @@
   ansible.builtin.include_tasks: darwin/install_from_uv.yml
 - name: "Install kubectl"
   ansible.builtin.include_tasks: darwin/install_kubectl.yml
+- name: "Install TLA+ tools"
+  ansible.builtin.include_tasks: darwin/install_tlaplus.yml
 # After "Install Go tools" on purpose: once the go env points at the private
 # proxy, every module fetch needs a Tamias credential, which only an interactive
 # `tamias login` creates. A fresh machine still bootstraps its Go tools first.

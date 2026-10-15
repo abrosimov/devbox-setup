@@ -127,6 +127,7 @@ devbox_brew_secondary_casks:
   # three engines come from one declared list. See README.md § AI engines.
   - claude-code@latest
   - flutter          # Flutter SDK
+  - temurin@21       # JDK for the TLA+ tools (TLC, SANY, Apalache need Java 17+)
   # codex-app removed: discontinued upstream (deprecated 2026-07-12, brew
   # disables the cask on 2027-07-12). OpenAI folded the standalone Codex
   # desktop app into the unified ChatGPT desktop app — the `chatgpt` cask
@@ -228,6 +229,22 @@ devbox_packages:
     assets:
       arm64: "tamias-darwin-arm64"
     install_path: "~/.local/bin/tamias"
+
+  # TLA+ toolchain, installed by tasks/darwin/install_tlaplus.yml under
+  # `install_dir/<name>/`. Each tool tracks one GitHub release tag. The digest
+  # GitHub reports for the asset is both the integrity check and the change
+  # detector: tla2tools `v1.8.0` and tlapm `1.6.0-pre` are rolling pre-releases
+  # whose assets upstream re-publishes in place, so a new build is picked up on
+  # the next run instead of failing a pinned checksum.
+  #   tla2tools — SANY (parser), TLC (model checker), PlusCal translator, TLATeX
+  #   apalache  — symbolic model checker (`apalache-mc`)
+  #   tlapm     — TLA+ Proof Manager with its LSP server (`tlapm_lsp`)
+  tlaplus:
+    install_dir: "~/.local/share/tlaplus"
+    tools:
+      - { name: tla2tools, repository: tlaplus/tlaplus, tag: "v1.8.0", asset: "tla2tools.jar" }
+      - { name: apalache, repository: apalache-mc/apalache, tag: "v0.62.4", asset: "apalache-0.62.4.tgz" }
+      - { name: tlapm, repository: tlaplus/tlapm, tag: "1.6.0-pre", asset: "tlapm-1.6.0-pre-arm64-darwin.tar.gz" }
 
   # Python tools installed via `uv tool install`.
   # Binary name matches tool name.

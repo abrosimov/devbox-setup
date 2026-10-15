@@ -129,7 +129,21 @@ not open automatically while entering a multi-key command.
 |-----|--------|
 | `.rm` | Run main (opens terminal split with appropriate runner) |
 
-Supported: Go, Python, TypeScript, JavaScript, Rust, C, C++, Dart, Swift, OCaml
+Supported: Go, Python, TypeScript, JavaScript, Rust, C, C++, Dart, Swift, OCaml, TLA+ (TLC)
+
+## TLA+
+
+The playbook installs Temurin 21 and, under `~/.local/share/tlaplus/`, `tla2tools.jar`
+(SANY, TLC, PlusCal, TLATeX), Apalache and TLAPS (`tlapm`, `tlapm_lsp`).
+
+| Key / feature | Action |
+|-----|--------|
+| Highlighting | Tree-sitter `tlaplus` (PlusCal included) |
+| Diagnostics | SANY parse and semantic errors via nvim-lint (on save) |
+| LSP | `tlapm_lsp`: proof obligations, diagnostics, `.ca` code actions |
+| `.rm` | Model-check the current spec with TLC (needs `<Spec>.cfg`) |
+| `.rp` | Translate PlusCal in place (saves the buffer first) |
+| `.ra` | Check the current spec with Apalache (`apalache-mc check`) |
 
 ## Clipboard
 

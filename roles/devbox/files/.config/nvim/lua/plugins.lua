@@ -87,6 +87,7 @@ return {
 				"sql",
 				"gotmpl",
 				"helm",
+				"tlaplus",
 			}
 			ts.install(langs, { summary = false })
 
@@ -303,6 +304,14 @@ return {
 			vim.lsp.config("buf_ls", {})
 			vim.lsp.enable("buf_ls")
 
+			-- TLA+ proofs — TLAPS LSP (tlapm_lsp, installed by the playbook under ~/.local/share/tlaplus)
+			vim.lsp.config("tlapm_lsp", {
+				cmd = { "tlapm_lsp", "--stdio" },
+				filetypes = { "tla" },
+				root_markers = { ".git" },
+			})
+			vim.lsp.enable("tlapm_lsp")
+
 			-- Dart LSP is handled by flutter-tools.nvim — do NOT configure dartls here
 
 			-- Disable hover from ruff so pyrefly handles it
@@ -489,8 +498,10 @@ return {
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()
 			local lint = require("lint")
+			lint.linters.sany = require("config.tlaplus").sany_linter()
 			lint.linters_by_ft = {
 				sql = { "sqlfluff" },
+				tla = { "sany" },
 			}
 			vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
 				group = vim.api.nvim_create_augroup("nvim-lint", { clear = true }),

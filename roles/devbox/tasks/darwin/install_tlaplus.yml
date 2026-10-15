@@ -1,0 +1,7 @@
+---
+- name: "Install TLA+ tools"
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/darwin/install_tlaplus_tool.yml"
+  loop: "{{ devbox_packages.tlaplus.tools }}"
+  loop_control:
+    loop_var: devbox_tlaplus_tool
+    label: "{{ devbox_tlaplus_tool.name }}"

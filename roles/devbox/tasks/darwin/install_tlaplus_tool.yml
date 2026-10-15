@@ -1,0 +1,114 @@
+---
+# Installs one devbox_packages.tlaplus.tools entry into <install_dir>/<name>/.
+# The asset digest GitHub reports is recorded in .release-digest; the tool is
+# replaced only when that digest changes, and the download must match it.
+- name: "Resolve install path of {{ devbox_tlaplus_tool.name }}"
+  ansible.builtin.set_fact:
+    devbox_tlaplus_tool_dir: >-
+      {{ (devbox_packages.tlaplus.install_dir | expanduser) ~ '/' ~ devbox_tlaplus_tool.name }}
+
+- name: "Read GitHub release of {{ devbox_tlaplus_tool.name }}"
+  ansible.builtin.uri:
+    url: >-
+      https://api.github.com/repos/{{ devbox_tlaplus_tool.repository
+      }}/releases/tags/{{ devbox_tlaplus_tool.tag }}
+    headers:
+      Accept: "application/vnd.github+json"
+    return_content: true
+  register: devbox_tlaplus_release
+  check_mode: false
+  changed_when: false
+
+- name: "Select asset {{ devbox_tlaplus_tool.asset }}"
+  ansible.builtin.set_fact:
+    devbox_tlaplus_asset: >-
+      {{ devbox_tlaplus_release.json.assets
+         | selectattr('name', 'equalto', devbox_tlaplus_tool.asset)
+         | first | default({}) }}
+
+- name: "Require a sha256 digest for {{ devbox_tlaplus_tool.asset }}"
+  ansible.builtin.assert:
+    that:
+      - devbox_tlaplus_asset.browser_download_url is defined
+      - (devbox_tlaplus_asset.digest | default('')) is match('^sha256:[0-9a-f]{64}$')
+    fail_msg: >-
+      {{ devbox_tlaplus_tool.repository }}@{{ devbox_tlaplus_tool.tag }} has no asset
+      {{ devbox_tlaplus_tool.asset }} with a sha256 digest
+
+- name: "Read installed digest of {{ devbox_tlaplus_tool.name }}"
+  ansible.builtin.slurp:
+    src: "{{ devbox_tlaplus_tool_dir }}/.release-digest"
+  register: devbox_tlaplus_installed
+  failed_when: false
+
+- name: "Install new release of {{ devbox_tlaplus_tool.name }}"
+  when: (devbox_tlaplus_installed.content | default('') | b64decode | trim) != devbox_tlaplus_asset.digest
+  block:
+    - name: "Create staging directory"
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: "tlaplus-{{ devbox_tlaplus_tool.name }}-"
+      register: devbox_tlaplus_stage
+
+    - name: "Download {{ devbox_tlaplus_tool.asset }}"
+      ansible.builtin.get_url:
+        url: "{{ devbox_tlaplus_asset.browser_download_url }}"
+        checksum: "{{ devbox_tlaplus_asset.digest }}"
+        dest: "{{ devbox_tlaplus_stage.path }}/{{ devbox_tlaplus_tool.asset }}"
+        mode: "0644"
+
+    - name: "Create new tree"
+      ansible.builtin.file:
+        path: "{{ devbox_tlaplus_stage.path }}/tree"
+        state: directory
+        mode: "0755"
+
+    - name: "Place {{ devbox_tlaplus_tool.asset }}"
+      ansible.builtin.copy:
+        src: "{{ devbox_tlaplus_stage.path }}/{{ devbox_tlaplus_tool.asset }}"
+        dest: "{{ devbox_tlaplus_stage.path }}/tree/{{ devbox_tlaplus_tool.asset }}"
+        remote_src: true
+        mode: "0644"
+      when: devbox_tlaplus_tool.asset is match('.*\.jar$')
+
+    - name: "Unpack {{ devbox_tlaplus_tool.asset }}"
+      # unarchive insists on GNU tar; the system bsdtar handles these tarballs.
+      ansible.builtin.command:
+        argv:
+          - tar
+          - -xzf
+          - "{{ devbox_tlaplus_stage.path }}/{{ devbox_tlaplus_tool.asset }}"
+          - -C
+          - "{{ devbox_tlaplus_stage.path }}/tree"
+          - --strip-components=1
+      changed_when: true
+      when: devbox_tlaplus_tool.asset is not match('.*\.jar$')
+
+    - name: "Record digest"
+      ansible.builtin.copy:
+        content: "{{ devbox_tlaplus_asset.digest }}\n"
+        dest: "{{ devbox_tlaplus_stage.path }}/tree/.release-digest"
+        mode: "0644"
+
+    - name: "Remove previous {{ devbox_tlaplus_tool.name }}"
+      ansible.builtin.file:
+        path: "{{ devbox_tlaplus_tool_dir }}"
+        state: absent
+
+    - name: "Create install root"
+      ansible.builtin.file:
+        path: "{{ devbox_packages.tlaplus.install_dir | expanduser }}"
+        state: directory
+        mode: "0755"
+
+    - name: "Move new tree into place for {{ devbox_tlaplus_tool.name }}"
+      ansible.builtin.command:
+        argv: ["mv", "{{ devbox_tlaplus_stage.path }}/tree", "{{ devbox_tlaplus_tool_dir }}"]
+      changed_when: true
+
+  always:
+    - name: "Remove staging directory"
+      ansible.builtin.file:
+        path: "{{ devbox_tlaplus_stage.path }}"
+        state: absent
+      when: devbox_tlaplus_stage.path is defined

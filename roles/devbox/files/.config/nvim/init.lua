@@ -114,6 +114,7 @@ vim.keymap.set("n", "<leader>rm", function()
         dart = "dart run",
         swift = "swift run",
         ocaml = "dune exec .",
+        tla = require("config.tlaplus").tla2tools_command("tlc2.TLC -workers auto"),
     }
     local cmd = runners[vim.bo.filetype]
     if cmd then
@@ -151,5 +152,7 @@ vim.filetype.add({
 		["helmfile.*%.ya?ml"] = "helm",
 	},
 })
+
+require("config.tlaplus").setup()
 
 require("config.lazy")

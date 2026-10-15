@@ -1,289 +1,93 @@
 # FPF Library
 
-**FPF Library** is the collection of the First Principles Framework project's own publications: **FPF Core**, **Domain Principle Frameworks (DPFs)**, their **Suites**, and accompanying References and usage materials.
+**Methods for solving difficult problems, expanding what you can do, and continuing development.**
 
-> **AI-native declarative pattern languages for engineering work.** FPF gives engineers and AI agents a shared, precise language for Systems, Methods, architecture, Work, evidence, verification, decisions, improvement, and communication.
+FPF Library brings together the **First Principles Framework (FPF Core)** and domain frameworks for people, AI agents, teams and organizations. It offers ways to reason, investigate, design, coordinate work, learn and improve the methods used to do those things. Each method is explained as a pattern: a recognizable difficulty, the conditions in which it arises, a way to obtain a useful result, worked cases and limits.
 
-[**FPF Core Specification**](./FPF-Spec.md) · [**Foundational Thinking DPF Suite**](./Foundational%20Thinking%20DPF%20Suite/) · [**Engineering DPF Suite**](./Engineering%20DPF%20Suite/) · [**Narrativization DPF**](./Narrativization-and-Narrative-Studies-Principles-Framework.md)
+The Library is developing as a **methodology of open-ended development**. A result can make a previously unattainable problem approachable; working on that problem can expand both your capabilities and your ways of developing them. The aim is to keep that continuation possible, without a predetermined final level. This includes noticing limitations that have not yet become explicit problems, using existing knowledge, constructing missing methods, and passing useful capabilities and knowledge to others.
 
+You can also use one method for one calculation, design, decision or learning need and stop there. A completed task, a new procedure or learning a known method does not by itself establish continuing development.
 
-**Author:** Anatoly Levenchuk, with AI-agent assistance
+[Start using the Library](USING-FPF.md) · [Domain frameworks](DPFs/) · [FPF Core](https://fpf.tools/FPF) · [Library Architectural Reference](FPF-LIBRARY-REFERENCE.md)
 
-**License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) for original framework content; third-party material retains its own terms.
+## Start with your work
 
-**Status:** evolving publications; eternal alpha—already used in working projects and development programs while continuing to change.
+You do not need to read the Library from beginning to end. Bring a situation, the result you need and what currently prevents you from obtaining it. Choose an entry below, or search the publications for the difficulty in ordinary and technical language.
 
-This repository publishes the transdisciplinary **FPF Core** and domain pattern languages, available individually or in the **Foundational Thinking** and **Engineering DPF Suites**. This Readme helps you choose among these publications. The [Readme inside FPF Core](./FPF-Spec.md#first-principles-framework-fpf-readme) gives practical examples of using Core; the [Engineering Suite Readme](./Engineering%20DPF%20Suite/) helps you choose and combine its DPFs. The [Foundational Thinking Reference](./Foundational%20Thinking%20DPF%20Suite/FOUNDATIONAL-THINKING-DPF-SUITE-REFERENCE.md) connects mathematical, physical, computational, modeling and notational contributions and explains their uses and limits.
-
-The wider **FPF ecosystem** also includes other authors' DPFs and LPFs, tools, and services for using FPF.
-
-## Read online or connect your agent
-
-[**fpf.tools**](https://fpf.tools/) provides browser and read-only MCP access to the published FPF Library:
-
-- [**Browse publications and patterns**](https://fpf.tools/publications) to read their contents and source passages.
-- [**Search publication texts**](https://fpf.tools/search) by words, quoted phrases or pattern IDs.
-- [**Connect through the MCP server**](https://fpf.tools/connect) to let an AI agent search and read the publications. The remote endpoint is `https://mcp.fpf.tools/mcp` (Streamable HTTP); public reading requires no API key.
-
-See [source editions and update status](https://fpf.tools/status) for the revision currently available through the website and MCP.
-
-[Uses and community projects](https://fpf.tools/in-use) is an editorial page on the website, separate from this Library distribution.
-
-## Start here
-
-Before selecting framework guidance, read and apply [Using FPF and its DPF Suites](./USING-FPF.md). This instruction applies to project work, framework development, review and coordination. It explains how to find and read relevant content in the publications available to you, including when an interface cannot retrieve a large file.
-
-For unfamiliar terminology or incomplete source access, [F.1](./FPF-Spec.md#f1---find-and-select-sources-for-a-current-question) explains how to find inspectable material and return any remaining gap. When several patterns seem plausible, [E.11’s worked comparisons](./FPF-Spec.md#e11462---resolve-a-first-pattern-ambiguity-with-a-worked-comparison) help recover the fact that changes the first needed result. Use an already known sufficient source directly.
-
-When an AI agent assists you, put this requirement and the instruction's location in your project's `AGENTS.md` or equivalent instructions. If a reading test explicitly limits its reader to an isolated excerpt, use only the materials supplied for that test; do not add USING-FPF.md unless the test includes it.
-
-FPF is designed for two complementary uses:
-
-1. **AI-native, FPF-driven engineering work.** An AI agent can retrieve relevant patterns, compare their declared situations and questions, explain them in plain technical language, expose missing evidence or authority, and help produce the next useful result.
-2. **Description and engineering of mixed human–AI work.** People can use the same language to describe which System is being changed, which Method is proposed, which Work is actually performed, which capabilities are available, what is assigned or permitted, who has decision authority, what evidence supports a claim, and what would reopen a decision.
-
-FPF is not an agent framework, an agent runtime, or a software-coding methodology. It is a knowledge and reasoning framework that can guide work in manufacturing, construction, mechanical and electrical engineering, energy, robotics, laboratories, healthcare technology, education, embodied practice, software-intensive Systems, and other fields.
-
-## Why an AI-native pattern language?
-
-The FPF Core contains more than 300 interlinked transdisciplinary patterns. Reading and remembering the entire corpus is not a prerequisite for using it—and is rarely the best human entry mode. A capable AI agent can serve as a high-bandwidth reader of the pattern language: search the corpus, inspect a small set of plausible patterns, quote exact source passages when needed, and translate the relevant distinctions into the engineer's working language.
-
-Instead of asking an agent to improvise from generic model priors, an FPF-driven setup gives it FPF Core and the relevant DPFs as explicit, inspectable references. The agent can then follow a maintained, plural account of current engineering thought, show which patterns and sources it used, and separate a source-grounded recommendation from plausible but unsupported advice.
-
-The engineer supplies what the corpus cannot supply: the actual situation, domain knowledge, observations, constraints, stakes, local history, access to the engineered System, and any real assignment, permission, responsibility, or authority. The agent helps keep these claims distinct rather than silently inventing them.
-
-This division of Work makes FPF useful as a common language between AI agents and **engineer–managers**: engineers who identify primarily as engineers but spend much of their day doing substantive management Work. They coordinate specialists and providers, negotiate architecture and interfaces, organize reviews and working meetings, compare alternatives and trade-offs, formulate strategies, make responsible decisions, preserve knowledge, and allocate Work among people, tools, robots, and AI. The term describes Work, not a corporate job title.
-
-**AI-native does not mean AI-only.** It means that the architecture of the Work can be deliberately reconsidered around the different capabilities and limitations of humans, AI agents, tools, and other Systems. An AI-produced statement is not automatically a fact, evidence, permission, commitment, or decision. Each such relation must be established by its own basis.
-
-## A declarative language, not a prescribed process
-
-FPF and its DPFs are declarative pattern languages. Start from the **current working situation** and the **question that is current now**. Inspect the pattern whose declared Situation and Question match that difficulty. Use its distinctions, constraints, checks, result, and stop or reopen conditions to produce the smallest useful result—or an honest blocker.
-
-Pattern numbers, file order, table-of-contents order, and the order in which examples are presented do not prescribe a project sequence. Several kinds of engineering Work may overlap. A real dependency still matters when one result cannot be used before another exists, but that dependency belongs to the concrete results and Work under consideration, not to a universal process imposed by the pattern language.
-
-A constituent action can also perform several levels of work at once: updating a running total can be part of calculating a result and preparing a report. The encompassing purpose changes what that action must preserve. FPF helps [recover these connections](./FPF-Spec.md#b15ew---recover-how-constituent-actions-enact-encompassing-work) and [compare a replacement in its encompassing uses](./FPF-Spec.md#fpf-pattern-B.1.5.RS); the Suite References give domain examples. Using a DPF still requires the relevant capabilities, coordination and resources throughout the needed vertical, including any intermediate contribution that must be learned or obtained.
-
-An AI agent can therefore help choose the **next justified move** without pretending that the entire project follows one fixed sequence. The useful move may be a clarified question, an identified System, an architecture comparison, an evidence request, a decision record, a changed Method, a bounded Work plan, a source-grounded explanation, or an explicit stop because a necessary basis is missing.
-
-## What is in the Library?
-
-| Publication | What it contributes | Typical working questions |
-| --- | --- | --- |
-| [**FPF Core Conceptual Specification**](./FPF-Spec.md) | A transdisciplinary language for entities and relations, Systems, Methods, Work, descriptions, claims, evidence, decisions, architecture, quality, improvement, cultural evolution, publication, and precise language. | What exactly are we discussing? What claim is being made? Which relation obtains? What may the evidence support? Which decision is current? What Work actually occurred? |
-| [**Foundational Thinking DPF Suite**](./Foundational%20Thinking%20DPF%20Suite/) | Mathematical Thinking, Mathematical Modeling, Physical Thinking, Computational Thinking and Notational Engineering, with a Reference for their connected use. | How do we enter an unfamiliar problem, connect its different kinds of reasoning, use the result and change the way of working? |
-| [**Engineering DPF Suite**](./Engineering%20DPF%20Suite/) | Published FPF-grounded domain pattern languages for engineering, operation, maintenance, organizational change, decision support, human development, and other practices, plus a Suite Reference for questions that draw on several DPFs. | Which System and use are current? Which architecture, interface, configuration, obtaining arrangement, Method, capability, verification result, or change is needed? |
-| [**Narrativization and Narrative Studies DPF**](./Narrativization-and-Narrative-Studies-Principles-Framework.md) | Patterns for turning selected source structure into a followable narrative while preserving recoverability, evidence limits, agency boundaries, viewpoint choices, and source return. Includes human and automated narrativization. | What source structure must survive the rendering? What may be compressed or reordered? Did a fluent narrative invent causality, agency, certainty, permission, or authority? |
-
-### Foundational Thinking DPF Suite
-
-The [Suite Readme](./Foundational%20Thinking%20DPF%20Suite/) introduces available members and connected examples. The [Reference](./Foundational%20Thinking%20DPF%20Suite/FOUNDATIONAL-THINKING-DPF-SUITE-REFERENCE.md) explains their architecture and how to move between mathematical constructions, modeling and other contributions. Notational Engineering adds methods for making those contributions expressible, interpretable and usable together.
-
-Larger questions need several patterns. [Changing a combining rule](./Foundational%20Thinking%20DPF%20Suite/MATHEMATICAL-PRACTICE-DPF.md#mp-combine-results---change-a-rule-so-that-separately-obtained-results-can-be-combined) connects a counterexample, retained information, an operation and a proof. [Answering with incomplete model detail](./Foundational%20Thinking%20DPF%20Suite/MATHEMATICAL-MODELING-PRACTICE-DPF.md#mmp-sufficient-answer---answer-the-working-question-before-reconstructing-every-detail) connects reduction, bounds, interpretation and further work. [Developing a physical prediction](./Foundational%20Thinking%20DPF%20Suite/PHYSICAL-THINKING-DPF.md#ph-predict-and-distinguish---develop-a-physical-prediction-and-the-test-it-needs) links assumptions about an unknown physical law to a prediction, an observation that distinguishes alternatives, and revision when those assumptions change. [Constructing an algorithm within available resources](./Foundational%20Thinking%20DPF%20Suite/COMPUTATIONAL-THINKING-DPF.md#cp-answer-under-limits---obtain-the-answer-the-work-needs-within-available-resources) connects decomposition, reused subcomputations, search bounds and recovery of the requested answers. [Carrying meaning through several expressions](./Foundational%20Thinking%20DPF%20Suite/NOTATIONAL-ENGINEERING-DPF.md#nt-change-together---carry-a-changed-request-through-several-representations) connects interpretation, transformation, translation loss and the intended change. These sequences and worked explanations show how the pattern contributions depend on one another.
-
-Publication sizes below include the complete linked Markdown text, including spaces and markup. 1 M = 1,000,000 Unicode characters; each line break counts as one.
-
-#### Mathematical Thinking
-
-The [Mathematical Thinking publication](./Foundational%20Thinking%20DPF%20Suite/MATHEMATICAL-PRACTICE-DPF.md) contains twenty patterns and worked connections between their methods. The full publication is 0.477 M characters. Start with MP-FRAME when you have a working question but do not yet know which mathematics it needs. The Preface shows how to choose a representation, obtain and interpret a result, and revise the representation when the question changes. The individual bodies develop the mathematical constructions used along the way. This independently usable publication belongs to the Foundational Thinking DPF Suite. The [Suite Reference](./Foundational%20Thinking%20DPF%20Suite/FOUNDATIONAL-THINKING-DPF-SUITE-REFERENCE.md) gives working combinations and explains how these methods connect with FPF and Method Engineering.
-
-#### Mathematical Modeling
-
-The [Mathematical Modeling publication](./Foundational%20Thinking%20DPF%20Suite/MATHEMATICAL-MODELING-PRACTICE-DPF.md) contains fifteen general modeling methods and worked connections between them. The full publication is 0.473 M characters. Begin with the [Readme introduction](./Foundational%20Thinking%20DPF%20Suite/MATHEMATICAL-MODELING-PRACTICE-DPF.md#mathematical-modeling---readme) when the working question has no mathematical formulation. The methods cover formulation, inference, prediction repair, intervention effects, counterfactual comparisons, observation design, sequential decisions, reduction, surrogates and model coupling. Readme and Preface show how one result supplies the next operation, how a changed question returns to its affected construction, and when an adequate answer permits stopping.
-
-#### Physical Thinking
-
-The [Physical Thinking publication](./Foundational%20Thinking%20DPF%20Suite/PHYSICAL-THINKING-DPF.md) contains ten patterns and worked connections between their methods. The full publication is 0.303 M characters. Start with a physical question for which you need an account, a prediction, an observation or a revised assumption. The methods help constrain unknown laws, choose the effects to retain, derive how a system changes, relate possible microscopic states to collective behavior, use physical similarity and analogues, establish physical limits, and construct measurements and tests. The Preface shows how physical, mathematical and computational contributions work together, and which contribution to revisit when the physical situation changes.
-
-#### Computational Thinking
-
-The [Computational Thinking publication](./Foundational%20Thinking%20DPF%20Suite/COMPUTATIONAL-THINKING-DPF.md) contains fourteen patterns for algorithmics within computer science. The full publication is 0.324 M characters. Its [Readme](./Foundational%20Thinking%20DPF%20Suite/COMPUTATIONAL-THINKING-DPF.md#computational-thinking---readme) follows connections for translating programs, obtaining answers within resource limits, and sharing calculations while keeping request effects correct. The methods help construct and revise algorithms, control computation cost and error, preserve meaning when translating a program, and make interacting computations produce the required result. The Preface's worked example changes from finding one optimal solution to enumerating all of them. It shows which earlier pruning and reconstruction choices must change. Numerical computation is one application of these methods.
-
-#### Notational Engineering
-
-The [Notational Engineering publication](./Foundational%20Thinking%20DPF%20Suite/NOTATIONAL-ENGINEERING-DPF.md) contains eight patterns for designing expressions and their use. The full publication is 0.219 M characters. Use the [connected examples](./Foundational%20Thinking%20DPF%20Suite/NOTATIONAL-ENGINEERING-DPF.md#notational-engineering---readme) to follow a changed request through several representations, or keep a sequence usable when its reader or reference frame changes. The methods cover grouping and binding, interpretation, meaning-preserving transformation, translation losses, complementary representations, difficult reading operations, and temporal or embodied notation. The Preface follows a formula, graph and table through a changed request without overwriting independent observations.
-
-### Engineering DPF Suite
-
-
-The table lists the 27 published DPFs in the Suite. Each row gives the number of pattern bodies and the size of the full linked publication. Each DPF has a full pattern index.
-
-| Domain pattern language | Publication status | What it covers |
-| --- | --- | --- |
-| [**Systems Engineering DPF**](./Engineering%20DPF%20Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Published - 53 patterns, 1.779 M characters | project System focus; intended use; affected Systems; problem and System-family options; functional organization; architecture and interfaces; specialist contributions; build, buy, provider, reuse, AI, or hybrid arrangements; recursive realization; integration; platforms; configuration and effectivity; release evidence; source change; evolvability; overlapping Work; and engineering culture. |
-| [**Method Engineering DPF**](./Engineering%20DPF%20Suite/METHOD-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Published - 26 patterns, 0.910 M characters | choosing and recovering Methods from sources and observed Work; using mathematical constructions to compare and change ways of working; designing Method architectures, descriptions, complementary representations and supporting arrangements; testing coherence, situational fit, transfer and practical worth; maintaining variants and improving practice and culture; and constructing and refreshing MethodDescriptions in pattern-language form. |
-| [**Music and Dance Practice Engineering DPF**](./Engineering%20DPF%20Suite/MUSIC-AND-DANCE-PRACTICE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Published - 22 patterns, 0.887 M characters | embodied capability; coordination; generation; performance; observation; recognition; learning and transmission; supporting arrangements; alternatives; local change; style development; and cultural continuation in Music and Dance practice. |
-| [**Organization Change Engineering DPF**](./Engineering%20DPF%20Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Published - 17 patterns, 0.733 M characters | organizational contributions, roles and assignments; authority and interfaces; capability allocation; comparison and realization of organizational changes; participation and adoption; culture; and the effects of change on actual Work. |
-| [**Problem Structuring and Decision Support DPF**](./Engineering%20DPF%20Suite/PROBLEM-STRUCTURING-AND-DECISION-SUPPORT-PRINCIPLES-FRAMEWORK.md) | Published - 17 patterns, 0.719 M characters | problem formulations and participants; alternatives; values, uncertainty and consequences; comparison; recommendations; and follow-up. |
-| [**Development Opportunity Construction and Development-Direction Advising DPF**](./Engineering%20DPF%20Suite/DEVELOPMENT-OPPORTUNITY-CONSTRUCTION-AND-DEVELOPMENT-DIRECTION-ADVISING-PRINCIPLES-FRAMEWORK.md) | Published - 9 patterns, 0.332 M characters | development inquiries and characterization; neighboring possibilities; worthwhile problems and contributions; directions with support configurations; joint reachability; opportunity portfolios; advising relationships; and requalification after changed premises. Construction and advising have independent entries. |
-| [**Operations Management DPF**](./Engineering%20DPF%20Suite/OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Published - 28 patterns, 0.895 M characters | continuing Work; operating modes and admission; cases, queues, flow and work in progress; constraints, capacity and commitments; resources and human conditions; exceptions; quality and reliability; coordination of simultaneous Work; Method improvement from operating evidence; and development of operations culture. |
-| [**Maintenance Engineering and Management DPF**](./Engineering%20DPF%20Suite/MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Published - 16 patterns, 0.242 M characters | maintenance policy; condition evidence and diagnosis; support readiness; intervention recommendations and protected work; verification and return to use; maintenance information; programme coordination; Method improvement; simultaneous Work; and maintenance culture. |
-| [**Human Capability Development DPF**](./Engineering%20DPF%20Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md) | Published - 29 patterns, 1.131 M characters | human capability needed for later Work; demand and capability profiles; personal programmes and whole learning products for future audiences; individual and shared practice; learning through explanation, peer review and project comparison; group formation, regulation and shared rhythm; assessment, transfer and retention; providers and support; development portfolios and qualification; and characterization and evaluation of instructional material. |
-| [**Community Building DPF**](./Engineering%20DPF%20Suite/COMMUNITY-BUILDING-PRINCIPLES-FRAMEWORK.md) | Published - 16 patterns, 0.503 M characters | useful cultural or community contributions; first exchanges and participation; shared activities, recognition and organising; rules, provision and value; continuation and shared decisions; repertoire, connections between practices and collective voice. Independent practice is included. |
-| [**Marketing DPF**](./Engineering%20DPF%20Suite/MARKETING-PRINCIPLES-FRAMEWORK.md) | Published - 14 patterns, 0.378 M characters | customer and market inquiry; offers, positioning and reach; feasible choice; customer experience and journey design; help and relationships; intervention value and cost; promises and provision; repeatability; and programmes for selected customer organisations. |
-| [**Strategy DPF**](./Engineering%20DPF%20Suite/STRATEGY-PRINCIPLES-FRAMEWORK.md) | Published - 15 patterns, 0.423 M characters | finding worthwhile contributions and ways to obtain them; direction under uncertainty; options and scenarios; capabilities, dependencies and initiatives; investments and business models; commitments; and decisions to revise, pivot, pause or stop. |
-| [**Management Accounting DPF**](./Engineering%20DPF%20Suite/MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md) | Published - 9 patterns, 0.161 M characters | cost models for resource use and capacity; allocation of shared costs; reconciliation of operating results, financial reports and cash; forecasts, targets and resource requests; explanation of margin changes; customer and product economics; and behavioral effects of accounting measures. |
-| [**Financial Domain Modeling DPF**](./Engineering%20DPF%20Suite/FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md) | Published - 5 patterns, 0.103 M characters | financial positions, rights and obligations; boundaries of parties and groups; contractual events and payment flows; effects of approvals, postings and payments; and the contribution of a financial service to a participant's result. |
-| [**Corporate Finance DPF**](./Engineering%20DPF%20Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md) | Published - 22 patterns, 0.593 M characters | financing, liquidity and working capital; capital allocation and valuation; cost of capital and capital structure; financial exposure; and consequences for other organizational decisions. |
-| [**Economic Reasoning and Coordination DPF**](./Engineering%20DPF%20Suite/ECONOMIC-REASONING-AND-COORDINATION-PRINCIPLES-FRAMEWORK.md) | Published - 10 patterns, 0.131 M characters | economic calculation and price response; exchange discovery; resource commitments; private information and incentives; adaptation under dependence; shared resources; local and wider orders; institutional change; and resource use after demand responds to efficiency. |
-| [**Defense and Transmission Modeling DPF**](./Engineering%20DPF%20Suite/DEFENSE-AND-TRANSMISSION-MODELING-DPF.md) | Published - 9 patterns, 0.157 M characters | dependence and consequences; exposure, uptake and reconstruction; coupled continuation and spread; selection within and among collectives; variant interaction; diversion of shared support; protective targets; and response costs, memory and feedback. |
-| [**Corporate Governance DPF**](./Engineering%20DPF%20Suite/CORPORATE-GOVERNANCE-PRINCIPLES-FRAMEWORK.md) | Published - 17 patterns, 0.272 M characters | corporate matters and rules; shareholding, voting and control; governing powers and contributions; committees, conflicts and independent review; information, internal control and assurance; corporate decisions, minority rights and accountability; effective amendments; and development and continuation of governance methods. |
-| [**Engineering Asset Management DPF**](./Engineering%20DPF%20Suite/ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Published - 16 patterns, 0.263 M characters | value, service, cost, risk and capacity over the lives of engineered assets; continued use, renewal, replacement and other changes for one asset, interacting asset systems or portfolios; shared constraints, timing and asset-management practice. |
-| [**Organization Administration DPF**](./Engineering%20DPF%20Suite/ORGANIZATION-ADMINISTRATION-PRINCIPLES-FRAMEWORK.md) | Published - 15 patterns, 0.298 M characters | organizational requests and cases; permissions and effective dates; usable provision and access; obligations, performance and records; exceptions and controls; provider coordination; administrative burden; and revision while open cases continue. |
-| [**Somatic Movement Modeling DPF**](./Engineering%20DPF%20Suite/SOMATIC-MOVEMENT-MODELING-PRINCIPLES-FRAMEWORK.md) | Published - 5 patterns, 0.068 M characters | relating bodily experience, voluntary regulation and movement results; making changes distinguishable; regulating effort; combining and recalling coordination; adapting it through changing support or load, within a familiar human movement practice. |
-| [**Embodied Rhythmics DPF**](./Engineering%20DPF%20Suite/EMBODIED-RHYTHMICS-PRINCIPLES-FRAMEWORK.md) | Published - 14 patterns, 0.254 M characters | identifying rhythmic relations; continuous sound and movement with articulation; timing, representations and translation; comparison and transformation; action and cue allocation; shared reference and simultaneous layers; human practice, capability probes and observation; connected cultural uses through Music and Dance Practice Engineering. |
-| [**Semantic Integration Engineering DPF**](./Engineering%20DPF%20Suite/SEMANTIC-INTEGRATION-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Published - 12 patterns, 0.273 M characters | making separately governed meanings and representations usable together; semantic-model reuse and construction; cross-source correspondences, identities and claims; extraction and transformation; interfaces and validation; response to semantic change; and maintenance of shared semantic modules. Includes ontology and knowledge-graph engineering Methods. |
-| [**Research Method Practice DPF**](./Engineering%20DPF%20Suite/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md) | Published - 9 patterns, 0.483 M characters | qualifying a research question or answering it from existing sources; comparing approaches and selecting a design; operationalization and sampling; records and provenance; claim analysis and criticism; reproducibility, replication and triangulation; corpus synthesis; revision and return of knowledge contributions; and retention or improvement of research Methods. |
-| [**Explanation Design DPF**](./Engineering%20DPF%20Suite/EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md) | Published - 6 patterns, 0.132 M characters | explanatory questions and their subject grounds; worked examples and their limits; coordinated expression; responsive dialogue; targeted feedback and another learner attempt; and worthwhile repair for the recipient and task. Includes instructional, technical and advisory, and human–AI profiles. |
-| [**Checklist DPF**](./Engineering%20DPF%20Suite/CHECKLIST-PRINCIPLES-FRAMEWORK.md) | Published - 6 patterns, 0.148 M characters | selecting useful questions; preserving their meaning in reusable forms; fitting the occasion; obtaining grounded answers; connecting local checks to shared work; and qualifying criteria and checking means in human, AI and mixed work. |
-| [**Knowledge-Corpus Access Engineering DPF**](./Engineering%20DPF%20Suite/KNOWLEDGE-CORPUS-ACCESS-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Published - 11 patterns, 0.239 M characters | access arrangements and source preparation; complementary retrieval and developing queries; candidate assessment, corpus synthesis and combining contributions into a usable result; delivery of reading material, coherent updates, useful encounters, revisable memory and evaluation by useful results and full cost. |
-
-**Platform Engineering** is included in Systems Engineering, with common Methods and subject profiles. **Development Opportunity Construction and Development-Direction Advising** now has its own DPF. PSD supplies its generic comparison and recommendation Methods; HCD supplies human capability-development and programme-comparison Methods.
-
-Use the [**Engineering DPF Suite Reference**](./Engineering%20DPF%20Suite/ENGINEERING-DPF-SUITE-REFERENCE.md) to find the relevant DPF, combine results from several DPFs for one working question, or identify a specialist contribution that still needs to be obtained.
-
-For learning that depends on explanation, varied examples, bodily coordination or participation in work, use HCD's [connected learning cases](./Engineering%20DPF%20Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md#hcd-application-10). They show how to choose and combine the next learning action for language, partnered movement, a clerk's work and an engineering team.
-
-## What is a DPF?
-
-A **DPF, Domain Principle Framework**, is an FPF-grounded declarative pattern language for a recurring family of domain difficulties. It turns maintained domain knowledge into reusable patterns that can be selected by their Situation and Question rather than read as a textbook chapter sequence.
-
-A DPF is intended to keep a domain's **state of the art (SoTA)** usable. Here, SoTA is not equated with the newest official standard, one institutional consensus, or one fashionable method. It is a current, plural, source-linked account of useful approaches, rival schools, evidence, practitioner experience, known failures, trade-offs, and the conditions under which a particular move is warranted. A DPF must preserve disagreement and source-use limits instead of laundering them into one authoritative-sounding recipe.
-
-DPFs depend on FPF Core for transdisciplinary distinctions and do not silently rewrite it. FPF Core does not depend on any one DPF. More DPFs can be added for other domains while retaining the same shared language for cross-domain human–AI work.
-
-## Recognizable engineering difficulties
-
-FPF becomes useful when an ordinary conversation, document, dashboard, or generated answer no longer keeps difficult Work coherent. Typical signals include:
-
-| What practitioners notice | What FPF helps make explicit |
+| What you are trying to do | Where to begin |
 | --- | --- |
-| A late source, requirement, supplier, or design change returns as **rework**. | Which claims and decisions relied on the changed source; what must be revalidated; what remains unaffected. |
-| A **handoff** loses scope, configuration, assumptions, evidence, or responsibility. | The exact subject, relation, receiving use, result, evidence limits, assignment, permission, and authority. |
-| An **architecture decision** exists only in meeting memory, a chat, or a diagram. | Candidate structures, interfaces, comparison basis, accepted losses, selected structure, decision, and reopen conditions. |
-| A design review compares labels such as build, buy, supplier, reuse, automation, or AI. | Comparable whole obtaining arrangements, including integration, assurance, support, capability, lock-in, and exit burdens. |
-| A test, simulation, model, certificate, review, or AI answer “passed,” but nobody can say what it proves. | The claim, subject, conditions, configuration, evidence correspondence, traceability, uncertainty, and decision that may rely on it. |
-| Parts are complete, but **integration**, **configuration**, **commissioning**, or actual use still fails. | The bounded configuration, intended use, interfaces, unresolved dependencies, operating evidence, fallback, and release decision. |
-| Field failures or operating feedback do not return to design and Method decisions. | The affected architecture, source, configuration, evidence, Method, and decision conditions that must be reopened. |
-| The result works once but is hard to maintain, reproduce, transfer, or change. | Maintainability and evolvability trade-offs, support arrangements, capability, tacit knowledge, descriptions, trials, and knowledge transfer. |
-| One experienced person knows how the Work is really done, while the procedure says something else. | Method, MethodDescription, capability, actual Work, observed result, local variation, and evidence of transfer. |
-| Humans and AI agents produce fluent output but disagree about facts, evidence, permission, or who decides. | Separate claims for capability, assignment, permission, authority, responsibility, evidence, and actual performed Work. |
-| A technical explanation or narrative is compelling but cannot be traced back to the source structure. | Source selection, preserved and lost relations, viewpoint, compression, reconstruction checks, evidence limits, and source return. |
+| Find a way to obtain a result when the familiar answer is insufficient | [Find and develop a way to obtain a result (FPF C.39)](https://fpf.tools/C.39). It connects existing answers, missing constructions and the use that needs the result. |
+| Develop your own, a team's or an organization's ability to continue beyond its present limits | [Construct and continue open-ended development (FPF C.40.OD)](https://fpf.tools/C.40.OD), together with the domain methods needed for the actual change. |
+| Design, acquire, integrate or maintain a functioning system | [Engineering](DPFs/Engineering%20DPF%20Suite/). |
+| Make direction, promises, resources and collective work fit together | [Management](DPFs/Management%20DPF%20Suite/). |
+| Obtain or check a mathematical or physical answer, model, algorithm or notation | [Foundational Thinking](DPFs/Foundational%20Thinking%20DPF%20Suite/). Apply the needed method yourself or have a capable specialist or AI apply it; learning to perform it yourself is a separate choice. |
+| Help a person acquire or retain a capability for later work | [Human Capability Engineering](DPFs/Human%20Capability%20Engineering%20DPF%20Suite/). |
+| Investigate a question, design a decision, explain material or work in another field | [Further domain frameworks](DPFs/#further-domain-frameworks), including research, decision design, explanation and narrativization. |
 
-## Use FPF with your agent
+Before applying a method, read [Using FPF Library](USING-FPF.md). It explains how to find a useful contribution, read its conditions, connect it to the rest of the work and distinguish a source citation from a direction to apply another method. An adequate known answer can be used directly; a larger question may need several connected methods. Their order in a file is not an instruction to perform them all.
 
-Copy `FPF-Spec.md`, `Readme.md`, `USING-FPF.md`, `LICENSE` and `LICENSING.md` into a folder in your project, for example `fpf/`. Add each Suite you need as a whole folder: `Foundational Thinking DPF Suite` and/or `Engineering DPF Suite`. Place these folders beside `FPF-Spec.md`, preserving their members and `README.md`/Reference links. Independent DPFs can be copied beside Core with their accompanying files. Resolve pattern references in the copies you supplied, even when a publication writes them as GitHub links. Choose another edition when your task needs an update or a comparison.
+## From a useful result to further development
 
-For a project using both Suites:
+Suppose a team can deliver its current product, but a more demanding order is beyond its capabilities. Buying a specialist's result might meet the immediate need. Learning to produce it would change what the team can do. Learning how to recognize the next limitation, obtain or invent a needed method and organize its acquisition would change how the team can continue developing. These are different results, with different evidence.
 
-```text
-fpf/
-  FPF-Spec.md
-  Readme.md
-  USING-FPF.md
-  LICENSE
-  LICENSING.md
-  Foundational Thinking DPF Suite/
-    README.md
-    FOUNDATIONAL-THINKING-DPF-SUITE-REFERENCE.md
-    MATHEMATICAL-PRACTICE-DPF.md
-    MATHEMATICAL-MODELING-PRACTICE-DPF.md
-    PHYSICAL-THINKING-DPF.md
-    COMPUTATIONAL-THINKING-DPF.md
-    NOTATIONAL-ENGINEERING-DPF.md
-  Engineering DPF Suite/
-    README.md
-    ENGINEERING-DPF-SUITE-REFERENCE.md
-    ... member DPF files ...
-```
+The Library helps connect them without requiring the same arrangement everywhere. A person working with an AI, several collaborating teams and a company with a development office need different domain methods and allocations of work, resources and authority. An office is one possible arrangement, not a prerequisite for development.
 
-Add the following paragraph to the project instructions your agent environment actually loads, whether those are kept in a file or in its settings. Replace `fpf/` with your chosen path:
+The general methods are in **Core**: [connect development work (C.40.OD)](https://fpf.tools/C.40.OD), [connect a method, the capability to perform it and the conditions for its use (C.40.JD)](https://fpf.tools/C.40.JD), and [continue from a result to new attainable problems (C.40.NP)](https://fpf.tools/C.40.NP). The DPFs supply the particular mechanisms of learning, research, engineering, management and other practices. Developing a method, changing an agent's capability and actually performing work remain distinct contributions.
 
-> Use FPF and the relevant DPFs from `fpf/` for this project's work. Before using them, read `fpf/USING-FPF.md` and follow its guidance for choosing, reading, and applying patterns. Explain results and give feedback in the language of our work. Preserve the meaning of the sources.
+## What is available
 
-If the environment has no persistent project instructions, send that paragraph as the first message. Then describe the actual project question, constraints, and available evidence. [USING-FPF.md](./USING-FPF.md) contains the agent's working instructions, file structure, and search examples.
+**FPF Core** contains 397 patterns in 17.616 million characters. It supplies transdisciplinary concepts and methods, including methodological work and open-ended development. **33 Domain Principle Frameworks (DPFs)** supply subject-specific methods: 23 belong to four Suites, and ten have their own files directly in the DPF catalogue.
 
-## Start from the question that is current now
+A DPF describes one field through a connected pattern language. A **Suite** describes a composite discipline through its constituent fields and their relations. An **Architectural Reference** explains how the relevant language is arranged and why: within a framework, across a Suite, or across the Library.
 
-| Current question | Useful entry |
-| --- | --- |
-| What exactly is the project changing, and for which use? | FPF `A.1.SCR`, `A.15.6`; Systems Engineering DPF `SYSE.1`, `SYSE.16`, `SYSE.2`. |
-| Which functions, bearers, architecture, and interfaces should be selected? | FPF `C.30`, `C.32`, `C.32.P2S`; Systems Engineering DPF `SYSE.5`, `SYSE.6`. |
-| Should we build, buy, reuse, contract a provider, use AI, or combine them? | Systems Engineering DPF `SYSE.24`; compare complete obtaining arrangements rather than labels. |
-| What can this test, model, trial, review, or observation justify? | FPF `A.10`, `B.3`, `C.16`; Systems Engineering DPF `SYSE.4`, `SYSE.10`. |
-| Which configuration exists, where does the claim apply, and may it be released? | Systems Engineering DPF `SYSE.13`, `SYSE.14`, `SYSE.19`. |
-| Which Work may overlap, and which result dependencies really require order? | FPF `A.15.1`, `E.18.NET`; Systems Engineering DPF `SYSE.20`. |
-| Which reusable way of working is current, and does it work in this situation? | FPF `A.3.1`; Method Engineering DPF `ME.1` and the pattern owning the current Method question. |
-| What capability is missing for a named family of Work? | FPF `E.23.CDI`; then use the relevant domain pattern for the Work and evidence. |
-| What does current SoTA offer, where do approaches disagree, and what should be maintained as a DPF? | FPF `G.2`, `E.4.DPF`; preserve sources, rival approaches, scope, freshness, and stop conditions. |
-| How should source material become a technical explanation, learning rendering, or narrative without invented structure? | Narrativization and Narrative Studies DPF `NSTD.*`, selected by the current narrative question. |
+| DPF Suite | Working subject | DPFs | Patterns | Text, M characters |
+| --- | --- | ---: | ---: | ---: |
+| [Engineering](DPFs/Engineering%20DPF%20Suite/) | Designing, realizing, changing and maintaining systems; knowledge access and semantic integration. | 4 | 92 | 2.541 |
+| [Management](DPFs/Management%20DPF%20Suite/) | Direction, commitments, operations, resources, markets, communities and organizational change. | 12 | 182 | 4.941 |
+| [Foundational Thinking](DPFs/Foundational%20Thinking%20DPF%20Suite/) | Mathematical and physical accounts, models, algorithms and usable notation. | 5 | 70 | 1.951 |
+| [Human Capability Engineering](DPFs/Human%20Capability%20Engineering%20DPF%20Suite/) | Human learning and somatic change, connected to capability in later work. | 2 | 34 | 1.209 |
 
-These are entry points. One pattern can resolve a local difficulty; a larger question can require results that depend on one another. Use the Suite's connected examples and cards to follow those dependencies, and stop when the result needed by the current work is available.
+The [DPF catalogue](DPFs/) lists the ten further frameworks and opens each Suite's files. Suite totals sum their constituent framework texts; separate Suite References and README pages are excluded. Character counts include spaces and original line breaks. Counts describe the available material, not how much you must read before using it.
 
-## One-minute cross-industry example
+The [Library Architectural Reference](FPF-LIBRARY-REFERENCE.md) explains the boundaries, alternatives and connections when you need to combine contributions or propose a change. For a familiar sufficient method, go directly to its pattern. The Library does not claim to exhaust the disciplines it covers: the current Human Capability Engineering Suite, for example, develops learning and somatic contributions, not all methods concerning a human being.
 
-A factory team needs more throughput from a filling and inspection cell without sacrificing product quality, maintainability, or safe operation. The first discussion jumps between four labels: modify the existing line, buy an integrated cell, assemble a solution from specialist suppliers, or combine operators, robots, machine vision, and AI agents.
+## Read online or use your own copies
 
-An FPF-driven agent does not begin with a software architecture or a generic transformation plan. It helps the engineer:
+Read [Core on fpf.tools](https://fpf.tools/FPF), or choose a [domain publication](https://fpf.tools/publications) and open the required pattern. The first method links above open that reading service. GitHub cannot display the complete Core and may truncate large DPFs; a link to a valid heading does not remove that limit.
 
-- identify the actual project System and the operating use that matters;
-- recover affected neighbouring and using Systems;
-- compare functional, bearer, and interface alternatives;
-- turn the four labels into comparable whole obtaining arrangements, including integration, assurance, support, capability, lock-in, and exit burdens;
-- identify which configuration and effectivity range each claim concerns;
-- connect trials and measurements to the exact claims they may support;
-- distinguish overlapping Work from dependencies that genuinely require order;
-- expose capability, assignment, permission, and decision-authority gaps;
-- record the selected architecture, accepted trade-offs, evidence basis, and reopen conditions;
-- return commissioning and field feedback to the affected design, Method, and decision.
+For the source, open the [Core Markdown file and its history](FPF-Spec.md) or [download Core as raw Markdown](https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md). Framework tables on these pages pair online reading with a Markdown source link. On fpf.tools, **Copy and source** identifies the repository edition behind the displayed passage. Check [source editions and update status](https://fpf.tools/status) when the version matters; the service may lag behind GitHub. [Search](https://fpf.tools/search) and [MCP connection instructions](https://fpf.tools/connect) provide other ways to reach the material.
 
-The agent can draft and inspect this result using FPF and the Systems Engineering DPF. Engineers and other authorized participants contribute ground truth, evaluate the evidence, negotiate commitments, and make the actual decisions. The same distinctions apply to a building subsystem, laboratory setup, medical device, robotic product, energy installation, organizational method, research program, or software-intensive System.
+For local use, download or clone this repository. Keep `FPF-Spec.md`, `FPF-LIBRARY-REFERENCE.md`, `USING-FPF.md`, the licensing files and `DPFs/` in their existing arrangement. A selected subset is also usable: include the actual supplying frameworks needed by your question, not just links to unavailable files. [Using FPF Library](USING-FPF.md#make-the-publications-available) explains access and selection.
 
-## Core distinctions that matter in mixed human–AI Work
+### Work with an AI assistant
 
-| Keep distinct | Why it matters |
-| --- | --- |
-| A System and a description, model, dashboard, or document about it | Changing or approving a description does not by itself change the System. |
-| A Method, a MethodDescription, a WorkPlan, and actual Work | A procedure or plan does not prove that capable Work occurred or produced its intended result. |
-| Architecture, an architecture description, and an architecture decision | A diagram is not the structure; a selected structure is not automatically realized. |
-| Capability, assignment, permission, responsibility, and authority | A person, team, tool, or AI agent may have one relation without the others. A title or technical ability establishes none of them by itself. |
-| A claim, its evidence, assurance about reliance, and the decision that uses it | Fluent text, a passed test, or a source citation does not support every nearby conclusion. |
-| Result dependency, planned Work order, actual Work order, and teaching order | Each answers a different question. None should be inferred from document order. |
-| A local decision and a continuing Method or culture | One successful case does not prove transfer, institutional retention, or universal applicability. |
-| A narrative rendering and its source structure | Readability and engagement do not guarantee source fidelity, causal validity, or recoverability. |
+Give the assistant access to the full relevant texts, your actual situation, constraints and observations. Put this instruction in the project settings or instruction file the agent actually reads, replacing `fpf/` with your location:
 
-## What FPF is not
+> Use FPF Library from `fpf/`. Before applying its methods, read `fpf/USING-FPF.md` and follow its guidance. Help obtain the result our work needs. Explain the reasoning in our working language, identify the patterns used, and distinguish source claims, assumptions and missing evidence.
 
-FPF is not:
+Then ask a concrete question. For example: “Our team can deliver the current product but not the proposed variant. Help compare acquiring an external result, developing our capability and changing the offering. What information could change that choice?”
 
-- an AI-agent framework, agent runtime, orchestration library, memory service, or autonomous-action permission;
-- a software-coding framework, although software-intensive Systems are legitimate engineering subjects;
-- a prescribed workflow, project-management methodology, lifecycle, or universal sequence of stages;
-- a checklist bureaucracy or a compliance scheme built around official standards;
-- a claim that one school, standard, toolchain, model, or institutional consensus is the whole state of the art;
-- a replacement for domain expertise, direct observation, experiment, measurement, professional judgement, or legally valid authority;
-- a demand that a human read the full specification before obtaining a useful result;
-- a guarantee that every project needs every pattern or every DPF.
+An assistant can retrieve methods, calculate, compare alternatives, draft and challenge reasoning. Its fluent answer does not establish an observed fact, a new capability, permission, a commitment or an implemented system. Check the output against the actual work, evidence and applicable decision authority. FPF Library is a method library, not an agent runtime or a grant of autonomous authority. It is intended for human use as well as AI-assisted work, across physical, organizational, intellectual and embodied practices.
 
-FPF is most useful when the cost of semantic drift, hidden assumptions, premature convergence, lost handoffs, ungrounded AI output, weak architecture decisions, evidence gaps, rework, or unreviewable collective Work exceeds the cost of using a disciplined pattern language.
+## Understand, check or extend a contribution
 
-## Publication and use status
+README pages help you choose; full patterns teach the methods and state their conditions. Read the exact explanation when a recommendation matters. A maintained account of useful approaches can include competing schools, failures and limits; neither the newest standard nor one successful example establishes universal applicability.
 
-This README is a public entry point, not the normative specification. It deliberately coarsens and omits detail. When a claim becomes important, inspect the exact pattern body, definitions, checks, source uses, and stop or reopen conditions in [FPF Core](./FPF-Spec.md) or the relevant DPF.
+For a precise reference, retain the complete PatternID or section address and enough context to identify the publication. [Using FPF Library: resolve a portable reference](USING-FPF.md#resolve-a-portable-reference) explains how this works across files, search and MCP. You need not learn document codes before choosing what to read.
 
-The Library's publications are an **eternal alpha**: they are usable now and continuously revised as their sources, working situations, patterns, and evaluations change. AI agents should expose the source edition or snapshot they used whenever currentness matters.
+For an issue or proposed improvement, identify the publication and passage, the working situation, what failed or remains unavailable, and the change you propose. Use the relevant Architectural Reference to understand the current design. The broader FPF ecosystem can include independently authored DPFs, local frameworks (LPFs), guides, tools and services; this repository publishes FPF Library.
 
-## License and reuse
+## Author, status and reuse
 
-The original FPF and DPF content by Anatoly Levenchuk, including both DPF Suites and the Narrativization DPF, is available under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): you may share and adapt it, including commercially, with attribution, a license link and an indication of changes. See the [licensing scope](./LICENSING.md) for the full notice and third-party and software boundaries.
+**Anatoly Levenchuk, with AI-agent assistance.** The publications are usable and continuously revised: an “eternal alpha.” That describes continued development, not a guarantee of suitability for every use. Cite the publication, edition and pattern when their identity matters.
 
-You choose the license for your own original DPF or LPF. Using FPF methods or its publication form does not impose CC BY on your work. When sharing licensed FPF or DPF text under CC BY 4.0, preserve its attribution and comply with the license. Where your use needs no copyright permission, including under an applicable exception, these conditions do not apply. The license has no ShareAlike requirement.
+Original framework content is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). See [licensing terms](LICENSING.md) for attribution, third-party material and software boundaries. Sharing or adapting licensed text requires the applicable attribution and change notices. Independently authored DPFs and LPFs may use their authors' chosen licenses; using the methods or publication form does not by itself impose CC BY.
 
-## Citation
+### Citation
 
 ```text
 Levenchuk, Anatoly. FPF Library.
 GitHub repository: https://github.com/ailev/FPF
 ```
 
-For a specific claim or method, cite the publication, edition and pattern used.
+For a specific claim or method, add the publication, edition and complete PatternID.

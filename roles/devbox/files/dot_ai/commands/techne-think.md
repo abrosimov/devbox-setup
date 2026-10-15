@@ -97,19 +97,19 @@ SCOPE: {ticket | cross-cutting}
 ADVOCATE BRIEFS: {briefs from step 3b, or 'none'}
 
 INSTRUCTIONS:
-1. Read the `fpf-thinking` skill for the routing table and protocol
-2. Identify which FPF sections are relevant using the routing table
-3. Locate `references/FPF-Spec.md` relative to the installed `fpf-thinking/SKILL.md`, search for those section ids, then read only the targeted ranges
+1. Read the `fpf-thinking` skill and follow its Workflow
+2. Find the entry: a Core practical entry or card from `references/FPF-Spec.md`, or a domain framework from the skill's Domain framework routing table
+3. Locate the references relative to the installed `fpf-thinking/SKILL.md`, search for the selected pattern ids, then read only the targeted ranges
 4. Use sequential thinking (mcp__sequentialthinking) for multi-step reasoning
 5. **STREAM EACH THOUGHT** — after each sequential thinking step, output a summary to console so the user can follow along
 6. Apply the FPF patterns to structure your analysis
 7. Respond in PLAIN LANGUAGE — no FPF terminology unless the user requests it
-8. Produce concrete artifacts (see fpf-thinking skill: Artifact Recipes)
+8. Shape the result with the matching rendering (see fpf-thinking skill: Useful renderings) and close with its Result test
 9. When the problem is a choice that meets the `diverge-synthesize-select` threshold, present a decision card (T2 in `response-templates`), weighing any advocate briefs as evidence rather than verdicts; otherwise state a defensible default in one line
 
 ARTIFACT GENERATION:
 10. After completing analysis, write a human-readable artifact to ARTIFACT PATH
-11. Follow the format in fpf-thinking skill: Artifact Persistence section
+11. Use the selected rendering as the artifact's structure, written in plain language
 12. If cross-cutting ADR: ensure docs/decisions/ exists, use next sequential number (NNN)
 13. If cross-cutting design: ensure docs/design/ exists
 

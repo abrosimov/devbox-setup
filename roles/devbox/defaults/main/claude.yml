@@ -51,10 +51,14 @@ devbox_mcp_docker_servers:
 # the graph-MCP approach.
 devbox_mcp_script_servers: []
 
-# Empty by default. figma was removed 2026-06-20 — design work goes through
-# the figma plugin / web app instead. devbox_extra_mcp_http_servers (set per
-# profile) still provides an extension point (e.g. atlassian on the work profile).
-devbox_mcp_http_servers: []
+# figma was removed 2026-06-20 — design work goes through the figma plugin /
+# web app instead. devbox_extra_mcp_http_servers (set per profile) still
+# provides an extension point (e.g. atlassian on the work profile).
+# fpf is the public, unauthenticated FPF Library server (search, read_pattern,
+# backlinks) used by the fpf-thinking skill to reach the current edition.
+devbox_mcp_http_servers:
+  - name: fpf
+    url: "https://mcp.fpf.tools/mcp"
 
 # Claude Code plugins installed via `claude plugin` CLI.
 # Marketplaces are GitHub repos containing plugin manifests.

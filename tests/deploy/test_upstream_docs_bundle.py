@@ -10,27 +10,44 @@ ROOT = Path(__file__).resolve().parents[2]
 REFERENCES = PurePosixPath("roles/devbox/files/dot_ai/skills/fpf-thinking/references")
 
 
+AUTHORED = {"bundle-index.md"}
+
+
+def is_mirrored(path):
+    name = PurePosixPath(path).name
+    return path not in AUTHORED and (name.endswith(".md") or name == "LICENSE")
+
+
 class TestUpstreamDocsBundle:
-    def test_portable_bundle_matches_manifest_and_commit_provenance(self):
+    def test_snapshot_records_exactly_the_mirrored_files_on_disk(self):
         manifest = json.loads((ROOT / "config/upstream-docs.json").read_bytes())
+        assert manifest["destination"] == str(REFERENCES)
         provenance = json.loads((ROOT / REFERENCES / "upstream-snapshot.json").read_bytes())
         assert provenance["schema_version"] == 1
         assert provenance["repository"] == manifest["repository"]
         assert re.fullmatch(r"[0-9a-f]{40}", provenance["commit"])
-        assert len(provenance["files"]) == len(manifest["files"])
-        records = {entry["destination"]: entry for entry in provenance["files"]}
-        assert len(records) == len(manifest["files"])
-        for entry in manifest["files"]:
-            destination = PurePosixPath(entry["destination"])
-            assert REFERENCES in destination.parents
-            assert destination.relative_to(REFERENCES).as_posix() == entry["source"]
-            assert ".." not in destination.parts
-            target = ROOT / destination
-            assert target.is_file()
+        root = ROOT / REFERENCES
+        on_disk = {
+            path.relative_to(root).as_posix(): path
+            for path in root.rglob("*")
+            if path.is_file() and is_mirrored(path.relative_to(root).as_posix())
+        }
+        records = {record["source"]: record for record in provenance["files"]}
+        assert len(records) == len(provenance["files"])
+        assert set(records) == set(on_disk)
+        for source, record in records.items():
+            assert record["destination"] == (REFERENCES / source).as_posix()
+            target = on_disk[source]
             assert not target.is_symlink()
-            record = records[entry["destination"]]
-            assert record["source"] == entry["source"]
             assert record["sha256"] == hashlib.sha256(target.read_bytes()).hexdigest()
+
+    def test_documents_named_by_skills_are_present(self):
+        for source in (
+            "FPF-Spec.md",
+            "LICENSE",
+            "DPFs/Narrativization-and-Narrative-Studies-Principles-Framework.md",
+        ):
+            assert (ROOT / REFERENCES / source).is_file(), source
 
     def test_authored_index_relative_file_links_resolve(self):
         directory = ROOT / REFERENCES

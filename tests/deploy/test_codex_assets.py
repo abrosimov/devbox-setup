@@ -153,7 +153,8 @@ def test_fpf_bundle_is_self_contained_and_vendor_neutral() -> None:
     references = fpf_root / "references"
 
     assert (references / "FPF-Spec.md").is_file()
-    assert (references / "Narrativization-and-Narrative-Studies-Principles-Framework.md").is_file()
+    narrative = "Narrativization-and-Narrative-Studies-Principles-Framework.md"
+    assert (references / "DPFs" / narrative).is_file()
 
     skill_text = "\n".join(
         [

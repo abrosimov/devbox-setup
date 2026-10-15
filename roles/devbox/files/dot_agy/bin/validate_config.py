@@ -14,7 +14,7 @@ Checks:
   budget               Skill description budget utilisation (16K char limit)
   related-links        related: frontmatter entries resolve to existing skills/agents
   trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
-  fpf-refs             FPF and NSTD ids cited by their skills resolve in bundled references
+  fpf-refs             FPF Core, DPF and NSTD ids cited by skills resolve in bundled references
 
 Usage:
   validate-config.py                           # all checks, ~/.gemini/antigravity-cli root
@@ -741,9 +741,11 @@ def check_grounding(root: Path) -> tuple[list[str], list[str]]:
 _FPF_SPEC_REL = "skills/fpf-thinking/references/FPF-Spec.md"
 _FPF_REF_SOURCES = ("skills/fpf-thinking/SKILL.md",)
 _NSTD_SPEC_REL = (
-    "skills/fpf-thinking/references/Narrativization-and-Narrative-Studies-Principles-Framework.md"
+    "skills/fpf-thinking/references/DPFs/"
+    "Narrativization-and-Narrative-Studies-Principles-Framework.md"
 )
 _NSTD_REF_SOURCES = ("skills/narrative-thinking/SKILL.md",)
+_DPF_SPEC_REL = "skills/fpf-thinking/references/DPFs"
 
 # A cited id: Part letter, dot, digit, then dot-separated alphanumeric segments.
 # Matches A.1, A.19.CN, C.32.P2S, A.6.P.WMR, E.17.ID.CR, B.5.2.0.
@@ -756,6 +758,13 @@ _FPF_HEADER_RE = re.compile(
 _NSTD_ID_RE = re.compile(r"\b(NSTD\.[0-9][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)")
 _NSTD_HEADER_RE = re.compile(
     r"^#{1,6}\s+\*{0,2}(NSTD\.[0-9][A-Za-z0-9.]*?)\*{0,2}\s*(?=[-\u2013\u2014:])"
+)
+# A DPF id: 2-5 letter uppercase prefix, dot, digits or an uppercase word, more segments.
+# Matches SYSE.47, KCAE.USE, RMP.1. Uppercase-only segments reject SKILL.md and README.md;
+# the lookbehind rejects the tail of a Core id, such as ID.CR in E.17.ID.CR.
+_DPF_ID_RE = re.compile(r"(?<![\w.])([A-Z]{2,5}\.(?:[0-9]+|[A-Z]+)(?:\.[A-Z0-9]+)*)(?!\w)")
+_DPF_HEADER_RE = re.compile(
+    r"^#{1,6}\s+\*{0,2}([A-Z]{2,5}\.[A-Z0-9][A-Z0-9.]*?)\*{0,2}\s*(?=[-\u2013\u2014:])"
 )
 _FENCE_RE = re.compile(r"^\s*```")
 # Inline code carrying a backslash is a Grep pattern, not a citation.
@@ -813,6 +822,33 @@ def collect_nstd_citations(content: str) -> dict[str, int]:
     return cited
 
 
+def collect_dpf_spec_ids(spec: str) -> set[str]:
+    """Return every DPF pattern id defined by a section header."""
+    ids: set[str] = set()
+    for line in spec.split("\n"):
+        match = _DPF_HEADER_RE.match(line)
+        if match:
+            ids.add(match.group(1).rstrip("."))
+    return ids
+
+
+def collect_dpf_citations(content: str) -> dict[str, int]:
+    """Return cited DPF ids and their first 1-indexed line."""
+    cited: dict[str, int] = {}
+    for lineno, line in enumerate(_strip_non_citations(content).split("\n"), 1):
+        for match in _DPF_ID_RE.finditer(line):
+            cited.setdefault(match.group(1), lineno)
+    return cited
+
+
+def _read_reference(path: Path) -> str | None:
+    if path.is_file():
+        return path.read_text()
+    if path.is_dir():
+        return "\n".join(spec.read_text() for spec in sorted(path.rglob("*.md")))
+    return None
+
+
 def _check_framework_refs(
     root: Path,
     *,
@@ -830,11 +866,12 @@ def _check_framework_refs(
     if not present:
         return errors, warnings
 
-    if not spec_file.is_file():
+    spec_text = _read_reference(spec_file)
+    if spec_text is None:
         warnings.append(f"[{label}] {spec_relative_path} not found — id resolution skipped")
         return errors, warnings
 
-    spec_ids = collect_ids(spec_file.read_text())
+    spec_ids = collect_ids(spec_text)
     if not spec_ids:
         errors.append(
             f"[{label}] {spec_relative_path}: no pattern headers parsed — format changed?"
@@ -854,7 +891,7 @@ def _check_framework_refs(
 
 
 def check_fpf_spec_refs(root: Path) -> tuple[list[str], list[str]]:
-    """Every FPF and NSTD id cited by its skill must resolve in the references.
+    """Every FPF Core, DPF and NSTD id cited by its skill must resolve in the references.
 
     Guards the drift class that bin/fpf_drift_check.py cannot see: that script
     compares the vendored spec against upstream, nothing compares the skill
@@ -877,7 +914,24 @@ def check_fpf_spec_refs(root: Path) -> tuple[list[str], list[str]]:
         collect_ids=collect_nstd_spec_ids,
         collect_citations=collect_nstd_citations,
     )
-    return fpf_errors + nstd_errors, fpf_warnings + nstd_warnings
+    dpf_errors, dpf_warnings = _check_dpf_refs(root)
+    return fpf_errors + dpf_errors + nstd_errors, fpf_warnings + dpf_warnings + nstd_warnings
+
+
+def _check_dpf_refs(root: Path) -> tuple[list[str], list[str]]:
+    # Resolved against every DPF heading, not the routing row's file: prefixes are unique
+    # per framework, and a citation in prose has no row naming its file.
+    skill = root / _FPF_REF_SOURCES[0]
+    if not skill.is_file() or not collect_dpf_citations(skill.read_text()):
+        return [], []
+    return _check_framework_refs(
+        root,
+        label="DPF_REFS",
+        spec_relative_path=_DPF_SPEC_REL,
+        source_relative_paths=_FPF_REF_SOURCES,
+        collect_ids=collect_dpf_spec_ids,
+        collect_citations=collect_dpf_citations,
+    )
 
 
 def check_meta_pipeline(root: Path) -> tuple[list[str], list[str]]:

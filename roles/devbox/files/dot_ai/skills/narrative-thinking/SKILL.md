@@ -12,7 +12,7 @@ structure, and the narrative carrier distinct.
 
 Resolve both paths relative to this `SKILL.md` through the sibling `fpf-thinking` skill:
 
-- `../fpf-thinking/references/Narrativization-and-Narrative-Studies-Principles-Framework.md` owns
+- `../fpf-thinking/references/DPFs/Narrativization-and-Narrative-Studies-Principles-Framework.md` owns
   `NSTD.*` ids.
 - `../fpf-thinking/references/FPF-Spec.md` owns FPF Core ids `A.*` through `G.*`.
 

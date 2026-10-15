@@ -1,0 +1,8 @@
+extend = "../../pyproject.toml"
+
+[lint.per-file-ignores]
+"test_*.py" = [
+    "S101",    # assert is the whole point of tests
+    "PLR2004", # magic numbers OK in test cases
+    "ANN",     # annotations optional in tests
+]

@@ -15,7 +15,7 @@ triggers:
   - request_user_input
 alwaysApply: false
 problem: "Final messages and questions lean on labels and context the reader no longer has, so the user cannot understand or answer them without scrolling back."
-related: [agent-communication, response-templates, diverge-synthesize-select]
+related: [agent-communication, response-templates, diverge-synthesize-select, fpf-thinking]
 ---
 
 # Writing for the Reader
@@ -136,6 +136,16 @@ The user may answer long after the question was asked, so each option has to sta
 - **Options do not refer to each other.** "Like option 1 but for the secondary case" makes the
   reader hold two options at once; write out what the option does.
 - If a description needs more than two or three lines, it is probably two options folded into one.
+
+## Explanations the reader must act on
+
+When the message has to teach something — how a mechanism works, why a failure happened, what a
+setting changes — so that the reader can perform the next step, start from the operation they must
+perform, not from what you know. Say what they need to be able to do afterwards, explain only what
+that operation requires, and give one worked case they can check against. If their reply shows the
+explanation missed, repair the specific gap rather than repeating it louder. For harder cases the
+Explanation Design framework in `fpf-thinking` (`EXD.1` what the recipient needs, `EXD.4` repair in
+dialogue, `EXD.6` whether a repair is worth it) holds the full method.
 
 ## Self-check before sending
 

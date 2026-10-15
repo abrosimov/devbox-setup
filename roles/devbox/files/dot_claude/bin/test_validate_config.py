@@ -401,9 +401,10 @@ def _build_nstd_root(tmp_path: Path, skill_body: str, spec: str | None = _NSTD_S
     )
     (references / "FPF-Spec.md").write_text(_SPEC)
     if spec is not None:
-        (references / "Narrativization-and-Narrative-Studies-Principles-Framework.md").write_text(
-            spec
-        )
+        (references / "DPFs").mkdir()
+        (
+            references / "DPFs" / "Narrativization-and-Narrative-Studies-Principles-Framework.md"
+        ).write_text(spec)
 
     narrative_dir = tmp_path / "skills" / "narrative-thinking"
     narrative_dir.mkdir()
@@ -465,6 +466,83 @@ def test_fpf_refs_unparsable_spec_errors(tmp_path: Path) -> None:
     errors, _ = vc.check_fpf_spec_refs(root)
     assert _codes(errors) == ["FPF_REFS"]
     assert "format changed" in errors[0]
+
+
+_DPF_FILES = {
+    "Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md": (
+        "# Systems Engineering\n"
+        "## SYSE.47 - Construct an Agent's Execution Procedure\n"
+        "### SYSE.47:1 - Problem frame\n"
+    ),
+    "Engineering DPF Suite/KNOWLEDGE-CORPUS-ACCESS-ENGINEERING-PRINCIPLES-FRAMEWORK.md": (
+        "## KCAE.USE - Choose an Access Arrangement for the Work\n"
+    ),
+    "RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md": (
+        "## RMP.1 — Decide Whether a Question Needs Research\n"
+    ),
+}
+
+
+def _build_dpf_root(tmp_path: Path, skill_body: str) -> Path:
+    root = _build_fpf_root(tmp_path, skill_body)
+    dpfs = root / "skills" / "fpf-thinking" / "references" / "DPFs"
+    for relative_path, content in _DPF_FILES.items():
+        path = dpfs / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    return root
+
+
+def test_dpf_refs_routing_row_id_resolves_in_suite_subdirectory(tmp_path: Path) -> None:
+    root = _build_dpf_root(
+        tmp_path,
+        "| Agent procedure | `Engineering DPF Suite/SYSTEMS-ENGINEERING.md` | SYSE.47 |",
+    )
+    errors, warnings = vc.check_fpf_spec_refs(root)
+    assert errors == []
+    assert warnings == []
+
+
+def test_dpf_refs_em_dash_heading_defines_id(tmp_path: Path) -> None:
+    root = _build_dpf_root(tmp_path, "Start research triage at RMP.1.")
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert errors == []
+
+
+def test_dpf_refs_word_segment_id_resolves(tmp_path: Path) -> None:
+    root = _build_dpf_root(tmp_path, "Corpus access: KCAE.USE, then SYSE.47:1.")
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert errors == []
+
+
+def test_dpf_refs_unresolved_id_errors_with_location(tmp_path: Path) -> None:
+    root = _build_dpf_root(tmp_path, "Resolves: SYSE.47.\nDangling: KCAE.GONE and SYSE.99.")
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert _codes(errors) == ["DPF_REFS", "DPF_REFS"]
+    assert "SKILL.md:6: 'KCAE.GONE'" in errors[0]
+    assert "SKILL.md:6: 'SYSE.99'" in errors[1]
+
+
+def test_dpf_refs_ignores_filenames_core_ids_and_fences(tmp_path: Path) -> None:
+    body = (
+        "Read `SKILL.md`, `README.md`, `FPF-Spec.md`, `USING-FPF.md`, ABOUT.md.\n"
+        "Core owns `C.11`, `E.11.PUA` and E.17.ID.CR.\n"
+        "Grep `^## SYSE\\.99 ` for slots.\n"
+        "```\n"
+        "SYSE.98 KCAE.NOPE\n"
+        "```\n"
+    )
+    root = _build_dpf_root(tmp_path, body)
+    assert vc.collect_dpf_citations(body) == {}
+    errors, _ = vc.check_fpf_spec_refs(root)
+    assert "DPF_REFS" not in _codes(errors)
+
+
+def test_dpf_refs_missing_dpf_directory_warns(tmp_path: Path) -> None:
+    root = _build_fpf_root(tmp_path, "Open SYSE.47.")
+    errors, warnings = vc.check_fpf_spec_refs(root)
+    assert errors == []
+    assert _codes(warnings) == ["DPF_REFS"]
 
 
 # ---------------------------------------------------------------------------

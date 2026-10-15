@@ -1,6 +1,6 @@
 ---
 name: diverge-synthesize-select
-description: Diverge-Synthesize-Select (DSS) procedure for choosing between genuinely different approaches — generate 3–7 candidates including a boring baseline and a combination, weigh their trade-offs, and present a decision card with a recommendation. Use when the user asks for options, alternatives, or solutions, or when the candidates differ in what the user gets and nothing the user said settles the choice; below that threshold the same procedure runs in your own reasoning and only the pick is reported. Also covers parallel "advocate" agents for architecture-level decisions. Not to be confused with `fpf-thinking` (problem framing) or `mcp-sequential-thinking` (step chains).
+description: Diverge-Synthesize-Select (DSS) procedure for choosing between genuinely different approaches — generate 3–7 candidates including a boring baseline and a combination, weigh their trade-offs, and present a decision card with a recommendation. Use when the user asks for options, alternatives, or solutions, or when the candidates differ in what the user gets and the conversation does not settle the choice; below that threshold the same procedure runs in your own reasoning and only the pick is reported. Also covers parallel "advocate" agents for architecture-level decisions. Not to be confused with `fpf-thinking` (problem framing) or `mcp-sequential-thinking` (step chains).
 alwaysApply: false
 problem: "Consequential decisions collapse into the first workable idea instead of a real comparison of alternatives."
 related: [response-templates, fpf-thinking, mcp-sequential-thinking, structured-output, writing-for-the-reader]
@@ -19,10 +19,11 @@ Show 3–7 candidates to the user when either holds:
 
 - the user asked for solutions, options, or alternatives;
 - the candidates differ in what the user gets (a public API, a data model, a wire format, a
-  migration path), and nothing the user said settles the choice.
+  migration path), and the conversation — earlier answers, analogies the user invoked, principles
+  they stated — does not settle the choice.
 
-The number of files, components, or services a choice touches is not a trigger: it measures effort,
-not uncertainty. Otherwise run the same procedure in your own reasoning, pick, and report the pick
+The topic of a choice and the number of files, components, or services it touches are not
+triggers: they measure stakes or effort, not whose decision it is. Otherwise run the same procedure in your own reasoning, pick, and report the pick
 with its reason and the rejected candidates in a line each, for example: "Using the existing `retry`
 helper rather than a new backoff policy — it already covers this call site; a new policy or a
 per-call timeout would duplicate it." The one-liner keeps the user informed without spending their
@@ -30,6 +31,12 @@ attention on a choice that does not need them.
 
 If the problem itself is still unclear (what the system is, where its boundary lies), frame it
 first with `fpf-thinking`; DSS assumes you know what you are choosing between.
+
+When the hard part is inside the procedure rather than the frame — several framings compete, good
+alternatives will not come, or the ranking may flip under other assumptions — the Decision Design
+framework (PSDA) in `fpf-thinking` supplies the method: plural formulations (`PSDA.1`), alternative
+generation (`PSDA.5`), values and trade-offs (`PSDA.6`), robustness and sensitivity (`PSDA.9`).
+DSS still owns the card the user sees.
 
 ## Procedure
 
@@ -87,7 +94,8 @@ inherits both sets of costs helps nobody.
 
 Use template T2 from `response-templates`. Its content, in order:
 
-1. The decision in one sentence and the criteria used.
+1. The decision in one sentence, the criteria used, and your recommendation in one line, so a reader
+   who stops there already knows what you would do.
 2. A table of candidates: ID and name, mechanism, pros, cons, combines-with. The boring baseline
    and the combination are both in it; dropped candidates appear with their reason.
 3. **Synergies** — which pairings reinforce each other and why.
@@ -102,11 +110,14 @@ get refused by newer models and produce worse material anyway.
 Write the card so it stands alone: someone who reads only this message should understand every
 candidate without scrolling back (see `writing-for-the-reader`).
 
-### 7. Stop at the recommendation
+### 7. Stop at the recommendation, or take it
 
-The recommendation is the natural end of the reply. The user's next message is the decision; you do
-not need a banner asking for it. If the decision needs input you cannot get, the reply's final
-"What I need from you" section says so, as the core protocol describes.
+When the user asked for options, the recommendation is the natural end of the reply: their next
+message is the decision, and you do not need a banner asking for it. When the card exists because
+the candidates differ in what the user gets, take the recommendation and continue the work unless
+the choice passes the core's §1 stop list (a wrong pick would be costly to undo or make the work
+useless); list it under "Decisions I made" with one line on how to switch. Only a choice that passes
+the stop list goes into "What I need from you", with your recommendation as the default.
 
 ## Follow-ups
 
@@ -126,7 +137,7 @@ IDs never get renumbered, reordered, or merged across turns — the user must be
 When the calling command or workflow asks for a machine-readable record, write `dss_output.json` in
 the project directory, following the `dss_output` schema described in `structured-output`: problem
 statement, axes, candidates, evaluation, combination, and the selection (`decided_by: "pending"`
-until the user chooses). Only the chosen approach needs to travel onward in the conversation; the
+while the user is choosing; `"agent"` when you took the recommendation under step 7). Only the chosen approach needs to travel onward in the conversation; the
 record keeps the rest.
 
 ## Advocates: parallel agents for architecture-level decisions

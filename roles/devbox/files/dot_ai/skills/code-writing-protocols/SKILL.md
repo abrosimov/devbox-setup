@@ -14,9 +14,9 @@ related: [agent-communication, code-comments, diverge-synthesize-select]
 
 Shared decision-making and quality protocols for all code-writing agents (SE-go, SE-python, SE-frontend, test writers). Agents reference this skill instead of inlining ~350 lines of identical content.
 
-## ⚠️ MANDATORY: Approval Validation (DO FIRST)
+## Approval Validation (do this first)
 
-**Before ANY code work, validate approval in the conversation context.**
+Before any code work, validate approval in the conversation context.
 
 > **Canonical source:** what counts as approval is engine policy and lives in the engine adapter (for Claude Code, the Approval policy section of the deployed `CLAUDE.md`). This skill does not restate the phrase list, so the two cannot drift.
 
@@ -29,7 +29,7 @@ Look for explicit approval, as the adapter defines it, in the last 2-3 user mess
 
 ### Step 2: If Approval NOT Found
 
-**STOP. Do not write any code.** Return this response:
+Do not write any code. Return this response:
 
 ```
 ⚠️ **Approval Required**
@@ -53,13 +53,13 @@ Proceeding with implementation...
 
 **Approval is owned by the main thread.** When you run as a subagent dispatched via a `Task` call, the dispatch prompt carries the approval — the main thread already collected it from the user.
 
-- **Do NOT re-ask the user for approval** on scope already covered by your dispatch prompt. Re-prompting duplicates the gate and burns context.
+- **Do not re-ask the user for approval** on scope already covered by your dispatch prompt. Re-prompting duplicates the gate and burns context.
 - The Approval Validation scan above applies to the **dispatch prompt and conversation you were given**, not to a fresh user turn you must solicit.
 - **If you hit new ambiguity**, derive the answer from the dispatch prompt, the plan, and the repository, decide what is yours to decide (core §0), and record each decision with its reason in your result. Return an open item to the main thread only when it passes the core's stop list or would take you outside your dispatched scope; finish everything that does not depend on it, and give it a recommended answer. Do not interactively re-prompt the user yourself.
 
-## MANDATORY: Decision Classification Protocol
+## Decision Classification Protocol
 
-Before implementing ANY solution, classify the decision:
+Before implementing a solution, classify the decision:
 
 ### Tier 1: ROUTINE (Apply Rule Directly)
 Tasks with deterministic solutions from established rules.
@@ -69,14 +69,16 @@ Tasks with deterministic solutions from established rules.
 - No trade-offs to consider
 - Outcome is predictable
 
-**Examples:**
+**Examples** (within the lines and files the task already changes, or the files a routine task names):
 - Apply formatting
 - Remove narration comments (policy: no narration)
 - Fix style violations
-- Delete dead code
+- Delete dead code that the change leaves unused
 - Add error context wrapping
 
 **Action:** Apply rule. No alternatives needed. Do not ask "should I continue?"
+
+**Scope:** Tier 1 is a way of working, not a licence to widen the diff. Style violations, dead code, or comments elsewhere in the repository go into the report, not the diff (Scope Lock below; core §0).
 
 ---
 
@@ -139,7 +141,7 @@ Write one sentence describing the core problem. If you cannot articulate it clea
 - Include at least one "simple/boring" baseline
 - Include at least one combination of two other approaches
 - Include at least one "unconventional" option where one exists
-- Do NOT evaluate while generating — just list
+- Do not evaluate while generating — just list
 
 **Format:**
 ```
@@ -234,11 +236,11 @@ Why Y over X: [specific, concrete reason — NOT "might need later"]
 
 ---
 
-## ⚠️ Anti-Helpfulness Protocol (MANDATORY)
+## Anti-Helpfulness Protocol
 
-**LLMs have a sycophancy bias — a tendency to be "helpful" by adding unrequested features. This section counteracts that bias.**
+LLMs tend to be "helpful" by adding unrequested features. This section counteracts that tendency.
 
-### Before Writing ANY Code
+### Before Writing Code
 
 Complete this challenge sequence:
 
@@ -248,16 +250,16 @@ For each piece of code you're about to write, ask:
 1. "Did the user/plan **explicitly request** this?"
 2. "If I don't add this, will the feature still work?"
 
-**If answer to #1 is NO and #2 is YES → DO NOT ADD IT.**
+If the answer to #1 is no and #2 is yes, do not add it.
 
 #### Challenge 2: Deletion Opportunity
 
 Before adding code, ask:
 - "Can I **delete** code instead of adding code?"
-- "Can I **simplify** existing code instead of extending it?"
-- "Is there dead code I can remove?"
+- "Can I **simplify** the code I am changing instead of extending it?"
+- "Does my change leave dead code behind that I should remove?"
 
-**Deletion is a feature. Celebrate removals.**
+Deletion inside the task's scope is a feature. Dead code elsewhere goes into the report, not the diff.
 
 #### Challenge 3: Counter-Proposal
 
@@ -281,62 +283,66 @@ I believe this may be over-engineered because: [specific reason]
 
 ### Production Necessity: Narrow Definition
 
-**Only these qualify as "production necessities" you can add without explicit approval:**
+This table is the single source of truth for what a code-writing agent adds without explicit approval. Language skills (`go-engineer`, `python-engineer`, `frontend-engineer`) and `workflow` defer to it rather than keeping their own lists.
 
-| IS Production Necessity | IS NOT (Requires Approval) |
+A production necessity applies only to the code the task already changes: provide it in the files you are already in, with the tools the project already has (core §8). Gaps elsewhere go into the report.
+
+| Is a production necessity | Is not (needs approval unless the plan names it) |
 |-------------------------|----------------------------|
-| Error context wrapping | Retry logic |
-| Logging at boundaries (request in/out, errors) | Circuit breakers |
-| Context propagation | Caching |
-| Resource cleanup (defer/close/finally) | Rate limiting |
-| Input validation at API boundary | Feature flags |
-| OTel instrumentation (see conditional rule below) | New interfaces/abstractions |
-| | Configuration options |
+| Error handling and error context wrapping | Retry logic |
+| Timeouts on outbound calls the changed code makes | Circuit breakers |
+| Logging at boundaries (request in/out, errors) | Caching |
+| Context propagation | Rate limiting |
+| Resource cleanup (defer/close/finally) | Feature flags |
+| Input validation at API boundary | New interfaces/abstractions |
+| OTel instrumentation (see conditional rule below) | Configuration options |
+| | New UI states or wrappers (loading, error, empty states, error boundaries) |
 | | "Defensive" code for impossible cases |
 
 ### Conditional: OTel Instrumentation
 
-**If the codebase has OTel SDK initialised** (TracerProvider/MeterProvider in main or startup), then adding spans and metrics to new code **is a production necessity** — do not ask for approval.
+If the codebase has the OTel SDK initialised (TracerProvider/MeterProvider in main or startup), adding spans and metrics to new code is a production necessity — do not ask for approval.
 
-**If the codebase does NOT have OTel set up**: adding instrumentation is an unrequested addition: leave it out and mention it at the end (core §0).
+If the codebase does not have OTel set up, adding instrumentation is an unrequested addition: leave it out and mention it at the end (core §0).
 
-**The test:** If you're unsure whether something is a production necessity → **it is NOT**. Leave it out and mention it in the report.
+**The test:** if you're unsure whether something is a production necessity, it is not. Leave it out and mention it in the report.
 
 ### Red Flags: Stop and Reconsider
 
-If you catch yourself thinking any of these, **STOP**:
+If you catch yourself thinking any of these, stop and reconsider:
 
-- "This might be useful later" → **YAGNI. Don't add it.**
-- "Let me add this just in case" → **What specific case? If none, don't add.**
-- "This would be more flexible if..." → **Flexibility you don't need is complexity you don't want.**
-- "I'll add a nice helper for..." → **Was a helper requested? If not, don't add.**
-- "Let me refactor this while I'm here" → **Was refactoring requested? If not, don't.**
-- "This should really have an interface" → **Do you have 2+ implementations RIGHT NOW?**
+- "This might be useful later" → YAGNI. Don't add it.
+- "Let me add this just in case" → What specific case? If none, don't add it.
+- "This would be more flexible if..." → Flexibility you don't need is complexity you don't want.
+- "I'll add a nice helper for..." → Was a helper requested? If not, don't add it.
+- "Let me refactor this while I'm here" → Was refactoring requested? If not, don't.
+- "This should really have an interface" → Do you have two or more implementations now?
 
 ### Scope Lock
 
 Once you start implementing, your scope is **locked** to:
 1. What the plan explicitly requests
 2. Production necessities (narrow definition above)
+3. Tier 1 routine fixes in the lines and files the task already changes
 
-**Additions outside this scope are not implemented.** Mention them at the end of the report (core §0), so the user can ask for them; they are not a question.
+Additions outside this scope are not implemented. Mention them at the end of the report (core §0), so the user can ask for them; they are not a question.
 
 ---
 
 ## Routine Task Mode — Complete Without Interruption
 
-When a task is classified as **Tier 1 (Routine)**, enter Routine Mode.
+When a task is classified as **Tier 1 (Routine)**, enter Routine Mode. Routine Mode changes how you work, not what you touch: its scope is the lines and files the task already changes, or the files a routine task (such as "remove narration comments in package X") names.
 
 ### Behaviour in Routine Mode
 
-1. **No permission seeking** — You have standing approval for all routine tasks
-2. **No progress updates mid-task** — Complete the task, then report results
-3. **Batch similar operations** — Do all comment removals at once, then report
-4. **No "should I continue?"** — The answer is always YES for routine tasks
+1. **No permission seeking** — you have standing approval for routine fixes inside that scope
+2. **No progress updates mid-task** — complete the task, then report results
+3. **Batch similar operations** — do all comment removals at once, then report
+4. **No "should I continue?"** — inside the scope, keep going; outside it, report instead of fixing
 
 ### Exit Conditions
 
-Exit Routine Mode and stop to report ONLY if you encounter:
+Exit Routine Mode and stop to report only if you encounter:
 - File does not exist or is in unexpected state
 - Change would affect code outside routine scope
 - Ambiguity that the plan, the repository, and the conversation cannot resolve and that passes the core's stop list
@@ -377,24 +383,24 @@ This applies to all code in the prompt: inline snippets, code fences, attached f
 
 ---
 
-## Self-Review: Comment Audit (MANDATORY)
+## Self-Review: Comment Audit
 
-Before completing ANY implementation or test-writing task, answer honestly:
+Before completing an implementation or test-writing task, answer honestly:
 
-1. **Did I add ANY comments that describe WHAT the code does?**
+1. **Did I add comments that describe what the code does?**
    - Examples: `// Create X`, `// Get Y`, `// Check if...`, `// Return...`, `# Setup mock`, `# Verify result`
-   - If YES: **Go back and remove them NOW**
+   - If yes: remove them
 
 2. **For each comment I kept, does deleting it make the code unclear?**
-   - If NO: **Delete it NOW**
+   - If no: delete it
 
 3. **For each surviving comment, can I cut it by ≥50% without losing the load-bearing part?**
    - Comments are where helpfulness drift shows up most. Default is 1 line; ≥4 lines means it should be a docstring/ADR, not a comment. See `code-comments` skill, Verbosity Ceiling.
-   - If YES: **Cut it NOW**
+   - If yes: cut it
 
 4. **Does any comment contain speculation ("if someone later adds X..."), mechanism over-explanation, or restate visible code?**
    - These are drift, not WHY. See `code-comments` skill, "What's NOT WHY".
-   - If YES: **Strip those parts NOW**
+   - If yes: strip those parts
 
 Only proceed after all four checks pass.
 
@@ -404,9 +410,9 @@ Only proceed after all four checks pass.
 
 Before reporting analysis, recommendations, or findings — comment-cut totals, refactor proposals, tier ladders (Conservative/Recommended/Aggressive), risk rankings — ask:
 
-> *"If a strict reviewer applied the rule rigorously to my OWN recommendation, what would they cut, sharpen, or tighten?"*
+> *"If a strict reviewer applied the rule rigorously to my own recommendation, what would they cut, sharpen, or tighten?"*
 
-Apply that cut, then report. **The strict reading of a rule IS the recommended reading.** Conservative tiers must justify their leniency, not the other way round. The agent's default posture is too lenient — this pass corrects for it.
+Apply that cut, then report. **The strict reading of a rule is the recommended reading.** Conservative tiers must justify their leniency, not the other way round. The agent's default posture is too lenient — this pass corrects for it.
 
 Applies to:
 - **Comment-audit cuts**: the strict four-way deletion (see `code-comments` skill) is the default recommendation, not the Conservative tier
@@ -417,7 +423,7 @@ When in doubt: the rule's strict reading wins. The user can over-rule; the agent
 
 ---
 
-## MANDATORY: Pre-Implementation Verification
+## Pre-Implementation Verification
 
 Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 
@@ -448,7 +454,7 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 
 ### Workaround Detection
 
-**A solution is a WORKAROUND if any of these are true:**
+**A solution is a workaround if any of these are true:**
 - It fixes the symptom but not the root cause
 - It requires "working around" something that should be fixed properly
 - You would feel uncomfortable explaining it in code review
@@ -493,7 +499,7 @@ Blocked by `pre-bash-toolchain-guard` where feasible; forbidden by this protocol
 
 ### Narrow Whitelist
 
-These are the ONLY legitimate reasons to run a "checking" command:
+These are the only legitimate reasons to run a "checking" command:
 
 1. **User literally asked** ("show me the output of X").
 2. **Preflight per `sandbox-toolchain`** — `go version && go build ./...`, `uv sync`, `pnpm install` at task start. This is environment diagnosis, not code validation.
@@ -516,13 +522,13 @@ Two "yes/no" of the above pointing at "don't run" is a hard stop.
 
 ## Anti-Laziness Protocol
 
-### Verification Commands Are Mandatory
+### Verification Commands Are Run, Not Assumed
 
-Every SE agent MUST actually execute build, test, and lint commands before reporting completion. Self-assessed results like "manual review passed" or "verified by inspection" are **never acceptable**.
+Every SE agent runs the build, test, and lint commands before reporting completion. Self-assessed results like "manual review passed" or "verified by inspection" are not evidence.
 
 ### Forbidden Excuse Patterns
 
-The following phrases in Pre-Flight reports or SE output artifacts indicate the agent skipped verification. These are grounds for immediate rejection:
+The following phrases in Pre-Flight reports or SE output artifacts indicate the agent skipped verification, and a report that relies on them is sent back:
 
 - "manual review passed"
 - "manually verified"
@@ -535,10 +541,13 @@ The following phrases in Pre-Flight reports or SE output artifacts indicate the 
 ### When Commands Fail
 
 1. Report the **exact** error message — do not paraphrase or summarise
-2. Attempt to fix the root cause (wrong dependency, missing config, etc.)
-3. For sandbox-related failures: use the language-specific env var workarounds below
-4. If still failing after attempts: report to the user with full error output and ask for guidance
-5. **Never** fabricate a passing result
+2. Decide whose failure it is (core §8):
+   - **Introduced by this change, or in code the change touches** — fix the root cause. It blocks completion.
+   - **Pre-existing, elsewhere** — it lies in files and behaviour your diff does not touch, or fails the same way on the base commit. Report it (command, exact error, why you believe it predates the change) and do not fix it. It does not block completion.
+3. Environment or configuration fixes outside the task (dependency upgrades, tool or CI configuration, project settings) need approval: return them to the orchestrator with a recommendation instead of applying them
+4. For sandbox-related failures: use the language-specific env var workarounds below
+5. If a failure you own still fails after attempts: report it with full error output and ask for guidance
+6. **Never** fabricate a passing result
 
 **Sandbox Workarounds by Language:**
 
@@ -564,15 +573,15 @@ Each row in the Pre-Flight verification table must include:
 
 ### When This Applies
 
-**Mandatory** when writing NEW tests (unit or integration). Does not apply to fixing existing tests or non-test code changes.
+Applies when writing new tests (unit or integration). Does not apply to fixing existing tests or non-test code changes.
 
 ### Protocol
 
 When adding a new test:
 
-1. **RED phase**: Write the test FIRST. Run it. It MUST fail (proving it tests something real).
+1. **RED phase**: Write the test first. Run it and confirm it fails (proving it tests something real).
 2. **Implement**: Write the production code to make the test pass.
-3. **GREEN phase**: Run the test again. It MUST pass.
+3. **GREEN phase**: Run the test again and confirm it passes.
 
 ### Evidence Format
 
@@ -595,7 +604,7 @@ Each new test must include RED-GREEN evidence in the SE output artifact:
 
 ### Forbidden Shortcuts
 
-The following are NOT acceptable as RED evidence:
+The following are not acceptable as RED evidence:
 
 - "test would fail because the function doesn't exist yet"
 - Showing only the GREEN result
@@ -618,18 +627,18 @@ If a test cannot meaningfully fail first (e.g., testing existing behaviour that 
 
 Run build, test, and lint checks manually before completing. The `stop_quality` hook formats the Git change set and reports unresolved lint issues at task completion.
 
-### Pre-Flight Report (REQUIRED OUTPUT)
+### Pre-Flight Report (required output)
 
-Output a table with language-appropriate commands. Each row must include the exact command run and its exit code (see Anti-Laziness Protocol above).
+Output a table with language-appropriate commands. Each row includes the exact command run and its exit code (see Anti-Laziness Protocol above).
 
 ```
 ## Pre-Flight Verification
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| Build/Typecheck | PASS / FAIL | |
-| Tests | PASS / FAIL | X tests, Y passed |
-| Linter | PASS / WARN / FAIL | |
+| Build/Typecheck | PASS / FAIL / FAIL (pre-existing) | |
+| Tests | PASS / FAIL / FAIL (pre-existing) | X tests, Y passed |
+| Linter | PASS / WARN / FAIL / FAIL (pre-existing) | |
 | Formatter | PASS | |
 | Security scan | CLEAR / REVIEW | [findings if any] |
 | Smoke test | PASS / N/A | [what was tested] |
@@ -637,7 +646,7 @@ Output a table with language-appropriate commands. Each row must include the exa
 **Result**: READY / BLOCKED
 ```
 
-**If ANY check shows FAIL → you are BLOCKED. Fix issues before completing.**
+A FAIL that this change introduced, or that lies in code the change touches, means BLOCKED: fix it before completing. A pre-existing failure elsewhere does not block: mark the row `FAIL (pre-existing)`, give the evidence, and list it in the report without fixing it (see When Commands Fail above).
 
 ---
 
@@ -650,23 +659,24 @@ After Pre-Flight passes, verify these quality checks. Language-specific items ar
 - [ ] Each acceptance criterion manually tested
 - [ ] All error cases from plan handled
 
-### Comment Audit (DO THIS FIRST)
-- [ ] I have NOT added narration comments (Create, Get, Check, Return, Initialize, Handle, Render, Map, Set)
+### Comment Audit (do this first)
+- [ ] I have not added narration comments (Create, Get, Check, Return, Initialize, Handle, Render, Map, Set)
 - [ ] For each comment I wrote: if I delete it, does the code become unclear? If NO → deleted it
 - [ ] The only comments remaining explain WHY (business rules, gotchas), not WHAT
 - [ ] Every surviving comment is ≤3 lines. Multi-paragraph WHY blocks have been cut (≥4 lines → docstring/ADR, not a comment)
 - [ ] No comment contains speculation ("if someone later adds X..."), mechanism over-explanation, or restates visible code
 
 ### Scope Check (Anti-Helpfulness)
-- [ ] I did NOT add features not in the plan
-- [ ] I did NOT add "nice to have" improvements
-- [ ] Every addition is either: (a) explicitly requested, or (b) narrow production necessity
+- [ ] I did not add features not in the plan
+- [ ] I did not add "nice to have" improvements
+- [ ] Every addition is either: (a) explicitly requested, (b) narrow production necessity, or (c) a Tier 1 fix in lines the task already changes
+- [ ] Pre-existing failures and out-of-scope findings are in the report, not the diff
 
 ---
 
 ## After Completion (All Code-Writing Agents)
 
-1. **Comment audit**: Remove ALL narration comments (see Self-Review above)
+1. **Comment audit**: Remove narration comments from the code you changed (see Self-Review above)
 2. **Completion format**: See `agent-communication` skill — Completion Output Format. Interactive mode: summarise work and suggest next step (`/techne-test` for SE, `/techne-review` for test writers). Pipeline mode: return structured result with status.
 
 ---

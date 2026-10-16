@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -15,9 +16,8 @@ if TYPE_CHECKING:
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import env, hooks, paths, proc
+from _claude_lib import env, findings, hooks, paths, proc, session_state
 
-GIT_TIMEOUT: Final[int] = 10
 FORMAT_TIMEOUT: Final[int] = 15
 CHECK_TIMEOUT: Final[int] = 30
 PIPELINE_TIMEOUT: Final[int] = 50
@@ -27,16 +27,6 @@ RUFF_MARKERS: Final[tuple[str, ...]] = (
     "pyproject.toml",
     "ruff.toml",
     ".ruff.toml",
-)
-PRETTIER_MARKERS: Final[tuple[str, ...]] = (
-    ".prettierrc",
-    ".prettierrc.json",
-    ".prettierrc.js",
-    ".prettierrc.cjs",
-    "prettier.config.js",
-    "prettier.config.cjs",
-    "prettier.config.mjs",
-    "package.json",
 )
 ESLINT_MARKERS: Final[tuple[str, ...]] = (
     ".eslintrc",
@@ -65,11 +55,6 @@ PYREFLY_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(
 # per diagnostic; the stop message is injected into context, so it gets the
 # one-line-per-error form instead.
 PYREFLY_OUTPUT_FORMAT: Final[str] = "min-text"
-BLACK_PYPROJECT_RE: Final[re.Pattern[str]] = re.compile(r"^\[tool\.black\]\s*$", re.MULTILINE)
-BLACK_PRECOMMIT_RE: Final[re.Pattern[str]] = re.compile(
-    r"^\s*(?:-\s*)?repo:\s*\S*/psf/black(?:-pre-commit-mirror)?(?:\.git)?\s*$",
-    re.MULTILINE,
-)
 
 
 @dataclass(frozen=True)
@@ -111,54 +96,34 @@ class QualityPipeline:
         return result
 
 
-def collect_git_changes(
-    cwd: Path,
-    pipeline: QualityPipeline | None = None,
-) -> ChangeSet | None:
-    active_pipeline = pipeline or QualityPipeline.start()
-    root_result = active_pipeline.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        cwd=cwd,
-        cap=GIT_TIMEOUT,
-        label="Git repository discovery",
-    )
-    if root_result is None or not root_result.success or not root_result.stdout.strip():
-        return None
+def session_project_root(cwd: Path) -> Path:
+    resolved = cwd.resolve()
+    return paths.find_git_root(resolved) or resolved
 
-    root = Path(root_result.stdout.rstrip("\r\n")).resolve()
-    tracked = active_pipeline.run(
-        ["git", "diff", "--name-only", "--diff-filter=ACMR", "-z", "HEAD", "--"],
-        cwd=root,
-        cap=GIT_TIMEOUT,
-        label="Git tracked-change discovery",
-    )
-    untracked = active_pipeline.run(
-        ["git", "ls-files", "--others", "--exclude-standard", "-z", "--"],
-        cwd=root,
-        cap=GIT_TIMEOUT,
-        label="Git untracked-file discovery",
-    )
 
-    relative_paths: set[str] = set()
-    for result in (tracked, untracked):
-        if result is not None and result.success:
-            relative_paths.update(name for name in result.stdout.split("\0") if name)
+# The ledger holds every path the session's Edit/Write/MultiEdit/NotebookEdit
+# calls touched (post_edit_lint.py records it), subagents included. Files the
+# session changed only through Bash are not in it.
+def collect_session_changes(state: session_state.SessionState, cwd: Path) -> ChangeSet:
+    root = session_project_root(cwd)
+    files = tuple(
+        path
+        for path in state.edited_paths()
+        if path.is_file() and path.is_relative_to(root) and not paths.is_temp_path(path)
+    )
+    return ChangeSet(root=root, files=files)
 
-    files: list[Path] = []
-    for name in sorted(relative_paths):
-        relative = Path(name)
-        if relative.is_absolute() or ".." in relative.parts:
-            continue
-        candidate = root / relative
-        if candidate.is_symlink():
-            continue
+
+def change_fingerprint(changes: ChangeSet) -> str:
+    material: list[str] = []
+    for file_path in changes.files:
         try:
-            resolved = candidate.resolve(strict=True)
-        except (OSError, RuntimeError):
+            stat = file_path.stat()
+        except OSError:
             continue
-        if resolved.is_relative_to(root) and resolved.is_file():
-            files.append(candidate)
-    return ChangeSet(root=root, files=tuple(files))
+        material.append(f"{file_path}\0{stat.st_mtime_ns}\0{stat.st_size}")
+    digest = hashlib.sha256("\n".join(material).encode("utf-8")).hexdigest()
+    return f"stop-check:{digest}"
 
 
 def _group_by_root(
@@ -310,82 +275,15 @@ def _format_go(changes: ChangeSet, pipeline: QualityPipeline) -> None:
         )
 
 
-def _uses_black(root: Path) -> bool:
-    return bool(
-        BLACK_PYPROJECT_RE.search(_read_text(root / "pyproject.toml"))
-        or BLACK_PRECOMMIT_RE.search(_read_text(root / ".pre-commit-config.yaml"))
-    )
-
-
-def _format_python(changes: ChangeSet, pipeline: QualityPipeline) -> None:
-    groups = _group_by_root(
-        changes.files,
-        frozenset({".py"}),
-        RUFF_MARKERS,
-        changes.root,
-    )
-    for root, files in groups.items():
-        file_args = [str(file_path) for file_path in files]
-        _run_formatter(
-            ["ruff", "check", "--fix", "--quiet", *file_args],
-            cwd=root,
-            label="ruff check --fix",
-            count=len(files),
-            pipeline=pipeline,
-        )
-        if _uses_black(root):
-            # ruff format and black disagree on layout, so a black project gets
-            # only its own pinned black; any other version would fight its CI.
-            black = root / ".venv" / "bin" / "black"
-            if not black.is_file():
-                pipeline.advisories.append(
-                    f"black ({root}): the project formats with black but {black} "
-                    "is missing, so formatting was skipped"
-                )
-                continue
-            _run_formatter(
-                [str(black), "--quiet", *file_args],
-                cwd=root,
-                label="black",
-                count=len(files),
-                pipeline=pipeline,
-            )
-            continue
-        _run_formatter(
-            ["ruff", "format", "--quiet", *file_args],
-            cwd=root,
-            label="ruff format",
-            count=len(files),
-            pipeline=pipeline,
-        )
-
-
-def _format_javascript(changes: ChangeSet, pipeline: QualityPipeline) -> None:
-    groups = _group_by_root(
-        changes.files,
-        JAVASCRIPT_EXTENSIONS,
-        PRETTIER_MARKERS,
-        None,
-    )
-    for root, files in groups.items():
-        command = ["npx", "prettier", "--write", *(str(file_path) for file_path in files)]
-        _run_formatter(
-            command,
-            cwd=root,
-            label="prettier",
-            count=len(files),
-            pipeline=pipeline,
-        )
-
-
+# goimports -local is the global rules' Go formatting invariant, and this is the
+# hook that enforces it; it only ever sees the session's own Go files. Nothing
+# else is rewritten: other languages are reported, never reformatted.
 def format_changes(
     changes: ChangeSet,
     pipeline: QualityPipeline | None = None,
 ) -> QualityPipeline:
     active_pipeline = pipeline or QualityPipeline.start()
     _format_go(changes, active_pipeline)
-    _format_python(changes, active_pipeline)
-    _format_javascript(changes, active_pipeline)
     return active_pipeline
 
 
@@ -439,14 +337,15 @@ def _lint_containers(changes: ChangeSet, pipeline: QualityPipeline) -> list[str]
     dockerfiles = tuple(file_path for file_path in changes.files if _is_dockerfile(file_path))
     if dockerfiles:
         result = pipeline.run(
-            ["hadolint", *(str(file_path) for file_path in dockerfiles)],
+            ["hadolint", "--no-color", *(str(file_path) for file_path in dockerfiles)],
             cwd=changes.root,
             cap=CHECK_TIMEOUT,
             label="hadolint",
         )
-        issue = _issue_from_result("hadolint", result) if result is not None else None
-        if issue is not None:
-            issues.append(issue)
+        if result is not None and not result.success and not result.timed_out:
+            kept = findings.drop_hadolint_low_severity_lines(_combined_output(result))
+            if kept:
+                issues.append(f"hadolint:\n{kept}")
 
     compose_files = tuple(file_path for file_path in changes.files if _is_compose_file(file_path))
     if compose_files:
@@ -473,7 +372,14 @@ def _lint_go(changes: ChangeSet, pipeline: QualityPipeline) -> list[str]:
     issues: list[str] = []
     for root, files in _go_groups(changes.files).items():
         result = pipeline.run(
-            ["golangci-lint", "run", "--fast", *_go_targets(root, files)],
+            [
+                "golangci-lint",
+                "run",
+                "--fast-only",
+                "--output.text.print-issued-lines=false",
+                "--output.text.colors=false",
+                *_go_targets(root, files),
+            ],
             cwd=root,
             cap=CHECK_TIMEOUT,
             label=f"golangci-lint ({root})",
@@ -497,7 +403,7 @@ def _lint_python(changes: ChangeSet, pipeline: QualityPipeline) -> list[str]:
     for root, files in groups.items():
         file_args = [str(file_path) for file_path in files]
         ruff_result = pipeline.run(
-            ["ruff", "check", *file_args],
+            ["ruff", "check", "--output-format", "concise", *file_args],
             cwd=root,
             cap=CHECK_TIMEOUT,
             label=f"ruff ({root})",
@@ -595,17 +501,49 @@ def render_message(issues: list[str], advisories: list[str]) -> str:
     sections: list[str] = []
     if issues:
         sections.append(
-            f"Quality checks reported {len(issues)} issue group(s).\n\n" + "\n\n".join(issues),
+            f"Quality checks on the files this session edited reported {len(issues)} "
+            "issue group(s).\n\n" + "\n\n".join(issues),
         )
     if advisories:
         sections.append(
-            "Quality checks were incomplete:\n" + "\n".join(f"- {item}" for item in advisories),
+            "Some quality checks did not complete:\n"
+            + "\n".join(f"- {item}" for item in advisories),
         )
     return (
         "[stop-quality] "
         + "\n\n".join(sections)
-        + "\n\nFix reported issues and run incomplete checks before completing the task."
+        + "\n\nFix only the issues your change introduced. Issues that were already in "
+        "these files, and checks that did not complete, are outside your task: list them "
+        "in your report instead of fixing them."
     )
+
+
+def _hook_cwd(data: dict[str, object]) -> Path:
+    cwd = data.get("cwd")
+    return Path(cwd) if isinstance(cwd, str) and cwd else Path.cwd()
+
+
+def unseen_report(state: session_state.SessionState, cwd: Path) -> str | None:
+    changes = collect_session_changes(state, cwd)
+    if not changes.files:
+        return None
+    seen = state.seen_keys()
+    if change_fingerprint(changes) in seen:
+        return None
+
+    pipeline = format_changes(changes)
+    issues = lint_changes(changes, pipeline)
+    if not pipeline.advisories:
+        state.mark_seen([change_fingerprint(changes)])
+    if not issues and not pipeline.advisories:
+        return None
+
+    message = render_message(issues, pipeline.advisories)
+    report_key = "stop-report:" + hashlib.sha256(message.encode("utf-8")).hexdigest()
+    if report_key in seen:
+        return None
+    state.mark_seen([report_key])
+    return message
 
 
 def main() -> int:
@@ -613,18 +551,12 @@ def main() -> int:
     data = hooks.read_hook_input()
     if not data or data.get("stop_hook_active"):
         return hooks.ALLOW
-
-    pipeline = QualityPipeline.start()
-    changes = collect_git_changes(Path.cwd(), pipeline)
-    if changes is None or not changes.files:
-        if pipeline.advisories:
-            hooks.write_additional_context(render_message([], pipeline.advisories))
+    state = session_state.SessionState.from_hook_input(data)
+    if state is None:
         return hooks.ALLOW
-
-    format_changes(changes, pipeline)
-    issues = lint_changes(changes, pipeline)
-    if issues or pipeline.advisories:
-        hooks.write_additional_context(render_message(issues, pipeline.advisories))
+    message = unseen_report(state, _hook_cwd(data))
+    if message is not None:
+        hooks.write_additional_context(message)
     return hooks.ALLOW
 
 

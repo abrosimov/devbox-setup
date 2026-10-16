@@ -180,6 +180,8 @@ Current per-profile differences:
 | `dot_codex/AGENTS.md` | Codex adapter: action types, `wait_agent` loop, delegation, validation authority | Appended to the core as `~/.codex/AGENTS.md` |
 | `dot_agy/GEMINI_ADAPTER.md` | Antigravity adapter: approval, Planning mode, subagents, few-shot examples | Appended to the core (with `trigger: always_on` frontmatter) as `~/.gemini/config/rules/AGENTS.md` |
 | `bin/stop_user_actions_guard.py` | Blocking Stop hook: the "What I need from you" section must be last and hand over scripts, not multi-line shell (a self-contained copy lives in `dot_codex/bin/`) | `~/.claude/bin/`, `~/.codex/bin/` |
+| `bin/pre_edit_repo_boundary.py` | PreToolUse hook on Edit/Write/MultiEdit/NotebookEdit: returns `ask` when the target lies outside the session's project (git root of `CLAUDE_PROJECT_DIR`, else of cwd); the temp directory and `~/.claude/{memory,plans,projects}` are exempt | `~/.claude/bin/` |
+| `bin/post_edit_lint.py`, `bin/stop_quality.py` | Scoped to the session's own edits: `post_edit_lint` records each edited path under `~/.claude/state/sessions/<session_id>/` and reports findings on the lines the edit touched; `stop_quality` lints only the recorded files, formats nothing but their Go (`goimports -local`), and neither repeats a report within a session | `~/.claude/bin/` |
 | `settings.json.j2` | Default permissions (allow/deny); Jinja rendered by `scripts/ai-config` | `~/.claude/settings.json` |
 | `settings.json.j2` → `hooks` | Pre/post tool-call hooks, session lifecycle, logging | `~/.claude/settings.json` |
 | `dot_ai/agents/*.md` | Shared Markdown agent sources (28 agents) | `~/.claude/agents/`, `~/.gemini/config/agents/` |

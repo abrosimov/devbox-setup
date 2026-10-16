@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Final
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _claude_lib import env, hooks, lint, paths, proc
+from _claude_lib import env, findings, hooks, lint, paths, proc, session_state
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -30,40 +30,39 @@ LINT_TIMEOUT: Final[int] = 30
 @dataclass(frozen=True)
 class LintReport:
     tool: str
-    body: str
-
-    def render(self, file_name: str) -> str:
-        return f"[lint] {self.tool} issues in {file_name}:\n{self.body}"
+    findings: tuple[findings.Finding, ...]
 
 
-def non_empty_lines(text: str) -> list[str]:
-    return [line for line in text.splitlines() if line.strip()]
+def _combined(result: proc.CmdResult) -> str:
+    return "\n".join(part for part in (result.stdout, result.stderr) if part)
 
 
-def filter_lines_for_file(text: str, file_name: str) -> list[str]:
-    return [line for line in text.splitlines() if file_name in line]
+def _report(
+    tool: str,
+    file_path: Path,
+    found: list[findings.Finding],
+) -> LintReport | None:
+    own = findings.for_file(found, file_path)
+    return LintReport(tool=tool, findings=tuple(own)) if own else None
 
 
 def hadolint_report(file_path: Path) -> LintReport | None:
-    result = proc.run_cmd(["hadolint", str(file_path)], timeout=LINT_TIMEOUT)
-    if result.success:
-        return None
-    combined = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
-    lines = non_empty_lines(combined)
-    if not lines:
-        return None
-    return LintReport(tool="hadolint", body="\n".join(lines))
+    result = proc.run_cmd(
+        ["hadolint", "--no-color", str(file_path)],
+        cwd=file_path.parent,
+        timeout=LINT_TIMEOUT,
+    )
+    found = findings.parse_located_lines(_combined(result), file_path.parent)
+    return _report("hadolint", file_path, findings.drop_hadolint_low_severity(found))
 
 
 def dclint_report(file_path: Path) -> LintReport | None:
-    result = proc.run_cmd(["dclint", str(file_path)], timeout=LINT_TIMEOUT)
-    if result.success:
-        return None
-    combined = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
-    lines = non_empty_lines(combined)
-    if not lines:
-        return None
-    return LintReport(tool="dclint", body="\n".join(lines))
+    result = proc.run_cmd(
+        ["dclint", "--formatter", "json", str(file_path)],
+        cwd=file_path.parent,
+        timeout=LINT_TIMEOUT,
+    )
+    return _report("dclint", file_path, findings.parse_json_report(result.stdout, file_path.parent))
 
 
 def golangci_report(file_path: Path) -> LintReport | None:
@@ -71,32 +70,33 @@ def golangci_report(file_path: Path) -> LintReport | None:
     if project_root is None:
         return None
     try:
-        rel_dir = file_path.parent.relative_to(project_root).as_posix()
+        rel_dir = file_path.parent.resolve().relative_to(project_root).as_posix()
     except ValueError:
         return None
     target = f"./{rel_dir}/..." if rel_dir and rel_dir != "." else "./..."
     result = proc.run_cmd(
-        ["golangci-lint", "run", "--fast", target],
+        [
+            "golangci-lint",
+            "run",
+            "--fast-only",
+            "--output.text.print-issued-lines=false",
+            "--output.text.colors=false",
+            target,
+        ],
         cwd=project_root,
         timeout=LINT_TIMEOUT,
     )
-    if result.success:
-        return None
-    lines = filter_lines_for_file(result.stdout, file_path.name)
-    if not lines:
-        return None
-    return LintReport(tool="golangci-lint", body="\n".join(lines))
+    found = findings.parse_located_lines(result.stdout, project_root)
+    return _report("golangci-lint", file_path, found)
 
 
 def ruff_report(file_path: Path) -> LintReport | None:
-    result = proc.run_cmd(["ruff", "check", str(file_path)], timeout=LINT_TIMEOUT)
-    if result.success:
-        return None
-    combined = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
-    lines = non_empty_lines(combined)
-    if not lines:
-        return None
-    return LintReport(tool="ruff", body="\n".join(lines))
+    result = proc.run_cmd(
+        ["ruff", "check", "--output-format", "concise", str(file_path)],
+        cwd=file_path.parent,
+        timeout=LINT_TIMEOUT,
+    )
+    return _report("ruff", file_path, findings.parse_located_lines(result.stdout, file_path.parent))
 
 
 def eslint_report(file_path: Path) -> LintReport | None:
@@ -104,17 +104,11 @@ def eslint_report(file_path: Path) -> LintReport | None:
     if project_root is None:
         return None
     result = proc.run_cmd(
-        ["npx", "eslint", "--no-error-on-unmatched-pattern", str(file_path)],
+        ["npx", "eslint", "--no-error-on-unmatched-pattern", "--format", "json", str(file_path)],
         cwd=project_root,
         timeout=LINT_TIMEOUT,
     )
-    if result.success:
-        return None
-    combined = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
-    lines = non_empty_lines(combined)
-    if not lines:
-        return None
-    return LintReport(tool="eslint", body="\n".join(lines))
+    return _report("eslint", file_path, findings.parse_json_report(result.stdout, project_root))
 
 
 def is_dockerfile(file_path: Path) -> bool:
@@ -171,22 +165,88 @@ def edited_file_path(data: dict[str, object]) -> Path | None:
     return candidate
 
 
+# A deletion marks the line now standing where the removed text was. A Write
+# that creates a file has an empty patch: None, the whole file is the edit.
+def touched_lines(data: dict[str, object]) -> frozenset[int] | None:
+    response = data.get("tool_response")
+    if not isinstance(response, dict):
+        return None
+    patch = response.get("structuredPatch")
+    if not isinstance(patch, list) or not patch:
+        return None
+    lines: set[int] = set()
+    for hunk in patch:
+        if not isinstance(hunk, dict):
+            return None
+        current = hunk.get("newStart")
+        body = hunk.get("lines")
+        if not isinstance(current, int) or not isinstance(body, list):
+            return None
+        for entry in body:
+            marker = entry[:1] if isinstance(entry, str) else ""
+            if marker == "+":
+                lines.add(current)
+                current += 1
+            elif marker == "-":
+                lines.add(max(current, 1))
+            elif marker != "\\":
+                current += 1
+    return frozenset(lines)
+
+
+def _source_lines(file_path: Path) -> list[str]:
+    try:
+        return file_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+
+
+def _unseen(
+    state: session_state.SessionState,
+    tool: str,
+    file_path: Path,
+    reported: list[findings.Finding],
+) -> list[findings.Finding]:
+    source = _source_lines(file_path)
+    seen = state.seen_keys()
+    fresh = {key: item for item in reported if (key := item.dedupe_key(tool, source)) not in seen}
+    state.mark_seen(fresh)
+    return list(fresh.values())
+
+
+def render_message(tool: str, file_path: Path, reported: list[findings.Finding]) -> str:
+    body = "\n".join(item.render() for item in reported)
+    return (
+        f"[lint] {tool} reported {len(reported)} issue(s) on lines your edit touched "
+        f"in {file_path.name}:\n{body}\n"
+        "Fix the issues your edit introduced. If one was already there before your edit "
+        "and lies outside your task, leave it and mention it in your report."
+    )
+
+
 def main() -> int:
     env.setup()
     data = hooks.read_hook_input()
     if not data:
         return hooks.ALLOW
     file_path = edited_file_path(data)
-    if file_path is None:
+    if file_path is None or paths.is_temp_path(file_path):
         return hooks.ALLOW
+
+    state = session_state.SessionState.from_hook_input(data)
+    if state is not None:
+        state.record_edit(file_path)
 
     report = report_for(file_path)
     if report is None:
         return hooks.ALLOW
+    reported = findings.on_lines(report.findings, touched_lines(data))
+    if state is not None and reported:
+        reported = _unseen(state, report.tool, file_path, reported)
+    if not reported:
+        return hooks.ALLOW
 
-    hooks.write_additional_context(
-        report.render(file_path.name) + "\nFix these lint issues before proceeding.",
-    )
+    hooks.write_additional_context(render_message(report.tool, file_path, reported))
     return hooks.ALLOW
 
 

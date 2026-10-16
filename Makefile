@@ -408,7 +408,11 @@ PY_PATHS_COMMON := \
 # Lint takes the whole dot_claude / dot_ai / dot_codex trees and the deploy
 # tests; typecheck takes only the bin/ subtrees, matching the dot_agy rule above.
 PY_LINT_PATHS      := roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/ $(PY_PATHS_COMMON)
-PY_TYPECHECK_PATHS := roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ $(PY_PATHS_COMMON)
+# dot_agy/bin is checked in its own pass: it is a diverged copy of dot_claude/bin with
+# the same module names, so in a shared pass its tests resolve `import post_edit_lint`
+# to the dot_claude module, whichever search-path entry comes first.
+AGY_BIN_DIR        := roles/devbox/files/dot_agy/bin/
+PY_TYPECHECK_PATHS := roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ $(filter-out $(AGY_BIN_DIR),$(PY_PATHS_COMMON))
 
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
@@ -423,6 +427,7 @@ PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.ve
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
 	@$(DEV_BIN)/pyrefly check $(PY_TYPECHECK_PATHS) $(PYREFLY_EXCLUDES)
+	@$(DEV_BIN)/pyrefly check $(AGY_BIN_DIR) --search-path $(AGY_BIN_DIR) $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a

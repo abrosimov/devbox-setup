@@ -499,7 +499,7 @@ DO NOT specify file paths, types, interfaces, or patterns. SE will explore and d
 
 ## SE Verification Contract
 
-**The SE MUST verify each row before marking implementation complete.** Each row maps an FR to an AC with observable behaviour.
+**The SE verifies each row before marking implementation complete.** Each row maps an FR to an AC with observable behaviour.
 
 | FR | AC | Observable Behaviour | Verified? |
 |----|-----|---------------------|-----------|
@@ -515,7 +515,7 @@ DO NOT specify file paths, types, interfaces, or patterns. SE will explore and d
 
 ## Test Mandate
 
-**The test writer MUST cover these scenarios.** Each maps to an AC. Additional tests beyond this are encouraged but these are the minimum.
+**The test writer covers these scenarios.** Each maps to an AC. Beyond them, the test writer adds only bug-hunting tests for behaviour the change adds or modifies.
 
 | AC | Test Type | Scenario | Expected |
 |----|-----------|----------|----------|

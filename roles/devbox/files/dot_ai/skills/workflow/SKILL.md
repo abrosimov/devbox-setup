@@ -15,7 +15,7 @@ This document describes the agent pipeline and workflow commands for projects us
 
 ## Agent Pipeline (Always On)
 
-The agent pipeline is enforced globally for every project. Any change to source code (`.go`, `.py`, `.ts`, `.tsx`, ...) MUST go through the appropriate specialist agent via `/techne-*` commands — direct `Edit`/`Write` on code files is not allowed. See `USER_AUTHORITY_PROTOCOL.md` for the authoritative rule.
+The agent pipeline is enforced globally for every project. Any change to source code (`.go`, `.py`, `.ts`, `.tsx`, ...) goes through the appropriate specialist agent via `/techne-*` commands — direct `Edit`/`Write` on code files is not allowed. See `USER_AUTHORITY_PROTOCOL.md` for the authoritative rule.
 
 The user commits manually after each agent run; commands do not auto-commit.
 
@@ -214,26 +214,28 @@ Grounding references (cached Anthropic docs) are read at the start of every buil
 
 ## Code Writing & Language Discussion Policy
 
-**Core Principle:** Specialized agents are the authoritative source for their languages.
+**Core Principle:** The language skills (`go-engineer`, `python-engineer`, `frontend-engineer`) are the authoritative source for their languages. A question gets an answer; only an approved change gets an implementation (core §1).
 
 ### When to Use Language-Specific Agents
 
-| Situation | Examples | Agent |
+| Situation | Examples | Route |
 |-----------|----------|-------|
-| **Writing code** | Any code changes, even small fixes | `software-engineer-{lang}` |
-| **Design discussions** | "When to use pointers vs values?" | `software-engineer-{lang}` |
-| **Idiom questions** | "What's the Go way to do X?" | `software-engineer-{lang}` |
-| **Architecture decisions** | "Where should this logic live?" | `software-engineer-{lang}` |
-| **Pattern selection** | "Which pattern fits?" | `software-engineer-{lang}` |
-| **Best practices** | "Should I use X or Y?" | `software-engineer-{lang}` |
+| **Writing code** | Any approved code change, even a small fix | `software-engineer-{lang}` via `/techne-implement` |
+| **Design discussions** | "When to use pointers vs values?" | Answer directly, grounded in the `{lang}-engineer` skill and the codebase |
+| **Idiom questions** | "What's the Go way to do X?" | Answer directly, as above |
+| **Architecture decisions** | "Where should this logic live?" | Answer with a recommendation (`architect` for system-level questions); no code |
+| **Pattern selection** | "Which pattern fits?" | Answer with a recommendation; options card only when the user asked for options (core §2) |
+| **Best practices** | "Should I use X or Y?" | Answer directly, as above |
+
+A question is not a request to change code: do not dispatch `/techne-implement` for it, and stop after the answer until the user asks for the change.
 
 ### Quick Reference
 
 | Task | Agent | Command |
 |------|-------|---------|
-| **Any Go topic** | `software-engineer-go` | `/techne-implement` |
-| **Any Python topic** | `software-engineer-python` | `/techne-implement` |
-| **Any Frontend topic** (React, TypeScript, Next.js) | `software-engineer-frontend` | `/techne-implement` |
+| **Go code change** | `software-engineer-go` | `/techne-implement` |
+| **Python code change** | `software-engineer-python` | `/techne-implement` |
+| **Frontend code change** (React, TypeScript, Next.js) | `software-engineer-frontend` | `/techne-implement` |
 | **Fullstack feature** | Backend SE + Frontend SE (sequential or parallel, both from the API contract); when run in parallel, the orchestrator reports once after both return (core §6) | `/techne-implement` |
 | Unit tests (any stack) | `unit-test-writer` | `/techne-test` |
 
@@ -380,10 +382,10 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 **Default model philosophy**: Opus is the default for SE agents. Use `/techne-implement sonnet` for cost-sensitive tasks where quality trade-off is acceptable (Sonnet 4.6: 79.6% SWE-bench vs Opus 80.8%).
 
-**CRITICAL — `model` must be passed explicitly:**
+**`model` is passed explicitly:**
 - The Task tool **inherits the parent conversation's model** when no `model` parameter is given
-- Agent frontmatter `model` field defines the agent's **intended** model but does NOT override inheritance
-- Therefore, every command MUST pass `model` explicitly in the Task invocation
+- Agent frontmatter `model` field defines the agent's **intended** model but does not override inheritance
+- Therefore, every command passes `model` explicitly in the Task invocation
 - Without explicit `model`, an agent with `model: opus` in frontmatter will run on the parent's model
 
 **How it works:**
@@ -420,13 +422,13 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 - Type hints everywhere with `ruff format` formatting
 - Pydantic for validation, dataclasses for simple data
-- HTTP clients: Always use timeouts and retry logic
+- HTTP clients: set timeouts on calls the change makes; add retry logic only where the plan names it (`code-writing-protocols` — Production Necessity: Narrow Definition)
 - Exceptions: Specific types, context preserved with `raise from`
 
 ### Go Standards
 
 - Follow Effective Go and Go Code Review Comments
-- Format with `goimports -local <module-name>` (NEVER `go fmt`)
+- Format with `goimports -local <module-name>` (never `go fmt`)
 - Errors: Wrap with context using `fmt.Errorf("...: %w", err)`
 - Use `zerolog` for logging (injected, never global)
 - Nil safety: Validate at constructor boundaries

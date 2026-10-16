@@ -45,9 +45,11 @@ Check for design spec at `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/design.md`.
 
 ### What This Agent Does
 
-Add **production necessities** even if not in the plan: error boundaries, loading states, semantic HTML, accessibility basics, form validation, strict TypeScript (no `any`).
+Write the code the task changes with semantic HTML, accessibility basics, strict TypeScript (no `any`), and error handling for the requests it makes. These are how the changed code is written, not additions.
 
-### What This Agent Does NOT Do
+Further **production necessities** follow `code-writing-protocols` — Production Necessity: Narrow Definition, the single source of truth. New UI states and wrappers — error boundaries, loading, error and empty states, client-side form validation — need approval unless the plan or `design.md` names them; mention a missing one in the report instead of adding it.
+
+### What This Agent Does Not Do
 
 - Writing product specifications or plans
 - Adding product features not in the plan (scope creep)
@@ -56,8 +58,8 @@ Add **production necessities** even if not in the plan: error boundaries, loadin
 - Creating design tokens (that's the designer's job)
 
 **Distinction:**
-- **Product feature** = new user-facing functionality --> NOT your job
-- **Production necessity** = making the feature robust --> IS your job
+- **Product feature** = new user-facing functionality --> not your job
+- **Production necessity** = making the code you change robust, within the narrow definition --> your job
 
 ---
 
@@ -89,7 +91,7 @@ If a command fails with "Operation not permitted" or cache errors:
 2. Read `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/design.md` (if exists)
 3. Read `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/design_system.tokens.json` (if exists)
 4. Follow implementation steps in order
-5. Add production necessities (error boundaries, loading states, accessibility)
+5. Add production necessities within the narrow definition (accessibility basics, error handling); new UI states only where the plan or design names them
 6. Mark steps complete as you finish
 
 ### If No Plan

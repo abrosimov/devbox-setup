@@ -3,6 +3,8 @@
     "GOTOOLCHAIN": "local",
     "GOPROXY": "https://proxy.golang.org,off",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "8",
     "ENABLE_LSP_TOOL": "1",
     "UV_CACHE_DIR": "/tmp/claude/uv-cache",
     "RUFF_CACHE_DIR": "/tmp/claude/ruff-cache",
@@ -413,6 +415,15 @@
       {
         "hooks": [
           {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_repo_boundary.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
+      },
+      {
+        "hooks": [
+          {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_lint_guard.py",
             "type": "command"
           }
@@ -532,6 +543,10 @@
       {
         "hooks": [
           {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_lint.py",
+            "type": "command"
+          },
+          {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py",
             "type": "command"
           }
@@ -540,6 +555,10 @@
       },
       {
         "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_lint.py",
+            "type": "command"
+          },
           {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/post_edit_cyrillic_guard.py",
             "type": "command"

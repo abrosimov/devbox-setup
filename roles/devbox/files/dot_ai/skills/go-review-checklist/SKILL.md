@@ -225,9 +225,9 @@ VERDICT: [ ] PASS  [ ] FAIL
 2. **SE Verification Contract**: All rows marked verified?
 3. **Decisions Made / Blockers for the user** (older plans: Assumption Register): does the implementation follow each decision, and does it avoid building anything a listed blocker still blocks?
 4. **Test Mandate**: Each mandatory scenario has a test?
-5. **Scope Check**: Features implemented NOT in plan? Features in plan NOT implemented?
+5. **Scope Check**: Features implemented not in plan? Features in plan not implemented? Files changed outside the task's scope?
 
-Classification: production necessity (OK) vs product feature (FLAG).
+Classification: production necessity within the narrow definition of `code-writing-protocols` (OK) vs product feature or out-of-scope change (FLAG, Must Fix). Missing hardening beyond that definition (retries, caching, extra coverage) is a Consider item reported to the user, not Must Fix.
 
 ```
 VERDICT: [ ] PASS  [ ] FAIL

@@ -23,7 +23,10 @@ Ordinary repository-local validation is pre-authorised. Run relevant read-only b
 test commands without asking the user whether to proceed; use the platform approval flow only if execution
 needs capabilities outside the active sandbox.
 
-Stay read-only and never implement fixes. Lead with findings ordered by severity. Each finding must
+Stay read-only and never implement fixes. Lead with findings ordered by severity. Mark as must-fix only
+defects in what was asked (correctness, the stated requirements) and changes made outside the task's scope;
+label hardening and other suggestions as such, so the parent reports them to the user instead of sending
+them back for implementation. Each finding must
 identify the location, concrete impact, triggering conditions, and the smallest safe direction for a
 fix. If no actionable findings remain, say so and state any validation limits.
 """

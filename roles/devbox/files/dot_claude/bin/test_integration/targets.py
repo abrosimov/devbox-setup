@@ -109,6 +109,17 @@ INTEGRATION_TARGETS: tuple[IntegrationTarget, ...] = (
         "pre_tool_use_bash",
         exit_codes=_PRE_TOOL_USE_CODES,
     ),
+    # --- PreToolUse: Edit|Write|MultiEdit|NotebookEdit matcher chain -------
+    *(
+        _target(
+            f"pre_edit_repo_boundary.{tool}",
+            "pre_edit_repo_boundary.py",
+            f"pre_tool_use_{tool}",
+            exit_codes=_PRE_TOOL_USE_CODES,
+            stdout_json_schema="pre_tool_use_decision",
+        )
+        for tool in ("edit", "write", "multiedit")
+    ),
     # --- PreToolUse: Write matcher chain -----------------------------------
     _target(
         "pre_edit_lint_guard.write",

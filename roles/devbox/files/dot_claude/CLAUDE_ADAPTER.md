@@ -46,7 +46,7 @@ agents do not commit.
 
 Direct edits are fine for: files under `roles/devbox/files/dot_claude/`, `dot_ai/`, `dot_codex/`,
 `dot_agy/` and the deployed `~/.claude/` (see the `editing-claude-config` skill); routine formatting,
-narration-comment removal, and dead-code removal; and any single turn in which the user says
+narration-comment removal, and dead-code removal in files the task already changes; and any single turn in which the user says
 `just edit`, `direct`, `skip agent`, or the Russian equivalents («прямо», «напрямую», «без агента»).
 
 When delegating, respect the agent's own protocol. Give it the outcome, scope, and constraints, not a

@@ -81,7 +81,7 @@ Use the `api-designer` agent.
 Task(
   subagent_type: "api-designer",
   model: "opus",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, API_FORMAT={detected format}\n\nADVOCATE BRIEFS: {briefs from step 4, or 'none'}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, API_FORMAT={detected format}\n\nADVOCATE BRIEFS: {briefs from step 4, or 'none'}\n\nUser's ask: {the user's request}\nDecisions already made: {decisions, or none}\nIn scope: {files/areas}\nOut of scope: {files/areas}"
 )
 ```
 

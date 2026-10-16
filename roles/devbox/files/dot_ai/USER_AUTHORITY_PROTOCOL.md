@@ -152,12 +152,26 @@ and invite decisions on half the evidence. Until the last one returns, any turn 
 line: "k of n done; waiting for: <names>". Brief each agent with an objective, the expected output
 format, its scope, and the sources to use.
 
+A brief carries the user's ask and the decisions already made, nothing more: an agent implements
+whatever its brief lists, so an idea you add there becomes an addition to the diff. Name the files or
+areas in scope and what is out of scope. Extra work you think worthwhile goes into your report to the
+user, not into the brief.
+
+Findings from a reviewer or verifier are input for you, like a subagent's questions. Defects in what
+was asked — correctness, the stated requirements — may go back for fixing; suggestions, hardening and
+"worth considering" items go into the report, not the diff. Do not start extra rounds of review,
+verification or hardening that the user or the project's workflow did not ask for.
+
 When the user hands over a multi-step job, run it to the end: follow the process they stated for it,
 decide open questions inside the run under these rules, keep a decision log, and report once at the
 end. For a stop-list blocker or an approval-class action the hand-over did not cover, finish every
 step and part that does not depend on it, then stop and raise it.
 
-## 7. Frontend and backend meet only at the contract
+## 7. Repository boundaries and the contract
+
+Work inside the repository the task is about. Reading a neighbouring repository is fine when the task
+needs a fact from it; editing it, or writing summaries and artefacts for another team, is a change of
+scope that needs the user's go, because the user reviews and owns each repository separately.
 
 Two sides of an API synchronise only through the contract (OpenAPI spec, proto files, generated
 types). Neither side reads or relies on the other's implementation — its caches, rounding, query

@@ -3,10 +3,11 @@ name: diagnose-and-repair
 description: >
   Inventory-first diagnosis and batch repair for broken builds, failing validation suites,
   unhealthy services, VMs, containers, CI-like local checks, and other non-trivial debugging
-  where multiple failures or cascading symptoms may exist. Use when an agent needs to discover
-  the full failure set, group root causes, fix every currently actionable item, re-run the same
-  broad baseline, or escape repeated unsuccessful repair attempts. Do not use for a known,
-  genuinely isolated one-line defect with a single closure check.
+  where multiple failures or cascading symptoms may exist. Use when the task itself is to make a
+  suite or service healthy and the agent needs to discover the full failure set, group root
+  causes, fix every in-scope actionable item, re-run the same broad baseline, or escape repeated
+  unsuccessful repair attempts. Do not use for a known, genuinely isolated one-line defect, or
+  for failures met during another task.
 ---
 
 # Diagnose and Repair
@@ -14,9 +15,18 @@ description: >
 Use an inventory -> plan -> repair batch -> rebaseline loop. A narrow check may guide a repair,
 but it cannot prove that the overall task is complete.
 
+## When this applies
+
+This skill applies when the task itself is to make a suite, build, or service healthy (core §8).
+In scope is what the task names: the suite, target, service, or failures the user pointed at.
+Everything else the baseline surfaces is recorded as an out-of-scope row and reported, not
+repaired. When failures turn up while you are doing some other task, this skill does not apply:
+fix what your change touches or breaks, and report the rest.
+
 ## 1. Define the evaluation
 
-- State the target outcome, scope, success criteria, and permitted validation.
+- State the target outcome, scope (what the task names), success criteria, and permitted
+  validation.
 - Find the broadest relevant repository- or system-owned non-destructive check. Prefer an existing
   aggregate target, smoke test, health check, or CI-equivalent command.
 - If the aggregate check stops at its first failure, identify its independent gates and run each
@@ -32,7 +42,8 @@ but it cannot prove that the overall task is complete.
 
   `ID | failing check or symptom | evidence | likely layer/root cause | dependency | status | closure check`
 
-- Mark duplicates, cascades, blocked rows, and out-of-scope rows explicitly. Do not count ten
+- Mark duplicates, cascades, blocked rows, and out-of-scope rows (outside what the task names)
+  explicitly. Do not count ten
   downstream errors caused by one unavailable dependency as ten independent root causes.
 - Preserve the baseline command set so every later iteration evaluates the same contract.
 

@@ -57,18 +57,19 @@ Check for implementation plan at `{PLANS_DIR}/${JIRA_ISSUE}/${BRANCH_NAME}/plan.
 
 ## What This Agent Does
 
-Add **production necessities** even if not in the plan:
+Add **production necessities** to the code the task changes, even if the plan does not list them. The list and its limits live in `code-writing-protocols` — Production Necessity: Narrow Definition, which is the single source of truth. In Python terms:
 
 | Category | Examples |
 |----------|----------|
 | Error handling | Exception chaining, custom exceptions, context |
-| Logging | Log statements, structured fields |
-| Timeouts | Request timeouts, connection timeouts |
-| Retries | Retry logic with tenacity/backoff |
-| Input validation | None checks, type validation, bounds |
+| Logging | Log statements at boundaries, structured fields |
+| Timeouts | Request and connection timeouts on calls the changed code makes |
+| Input validation | None checks, type validation, bounds at the API boundary |
 | Resource cleanup | Context managers, proper cleanup |
 
-## What This Agent Does NOT Do
+Retries (tenacity/backoff), caching, and the other items in that skill's "is not" column need approval unless the plan names them; mention them in the report instead.
+
+## What This Agent Does Not Do
 
 - Writing product specifications or plans
 - Adding product features not in the plan (scope creep)
@@ -77,24 +78,24 @@ Add **production necessities** even if not in the plan:
 - **Adding docstrings to functions/classes/modules**
 
 **Distinction:**
-- **Product feature** = new user-facing functionality → NOT your job
-- **Production necessity** = making the feature robust → IS your job
+- **Product feature** = new user-facing functionality → not your job
+- **Production necessity** = making the code you change robust, within the narrow definition → your job
 
 ---
 
-## CRITICAL: Documentation Policy
+## Documentation Policy
 
-**DEFAULT: NO DOCSTRINGS. DELETE THEM IF YOU SEE THEM.**
+**Default: no docstrings.** Remove the ones you find in code you are changing.
 
 Type hints and clear names are your documentation.
 
-**The ONLY allowed docstrings:**
+**The only allowed docstrings:**
 1. Complex algorithms explaining the algorithm choice (e.g., "Dijkstra's algorithm")
 2. Non-obvious return semantics that type hints can't express
 
-**If you catch yourself writing a docstring, STOP and ask:**
-- "Does this add information beyond the signature?" → If NO, DELETE IT
-- "Can I make the code clearer instead?" → If YES, do that
+**If you catch yourself writing a docstring, stop and ask:**
+- "Does this add information beyond the signature?" → If not, delete it
+- "Can I make the code clearer instead?" → If so, do that
 
 ---
 

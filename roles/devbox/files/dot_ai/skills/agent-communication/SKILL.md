@@ -78,9 +78,24 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 
 `?` = optional, read if available.
 
-**Rule**: When an agent's Step 1 lists files to check, it MUST match this table. If you add a new agent or artifact, update this table first.
+**Rule**: When an agent's Step 1 lists files to check, it matches this table. If you add a new agent or artifact, update this table first.
 
 **Fallback**: Optional `se_*_output.json` reads are best-effort — never fail because one is missing (see `structured-output` skill — Graceful Degradation Rule).
+
+---
+
+## Dispatch Brief
+
+When an orchestrator or `/techne-*` command launches an agent, the prompt carries, after the context line:
+
+| Field | Contents |
+|-------|----------|
+| `User's ask` | The user's request, quoted or closely paraphrased, or the plan path and the part it covers |
+| `Decisions already made` | Choices the user made in the conversation and binding plan rows; `none` if none |
+| `In scope` | The files, packages, or areas the agent may touch or examine |
+| `Out of scope` | Areas the agent leaves alone, including anything the user excluded |
+
+The brief carries the user's ask and the decisions already made, nothing more (core §6). An agent implements whatever its brief lists, so the orchestrator's own ideas — an extra TODO, a check script, an update to a neighbouring artefact — are not tasks for it; they go into the orchestrator's report to the user. Read-only advocate briefs (`/techne-options`, `/techne-think`) keep their own format.
 
 ---
 
@@ -159,7 +174,7 @@ Classify decisions before acting:
 | 2 | Standard | Quick consideration, check precedent, proceed; state the choice in one line |
 | 3 | Design (core §2 threshold holds) | Explore, then show 3–7 candidates as the decision card (`response-templates` T2), led by the recommendation; a subagent returns the card to the orchestrator, which takes the recommendation itself unless the choice passes the stop list |
 
-### Tier 1 Examples (Just Do It)
+### Tier 1 Examples (Just Do It, in the lines and files the task already changes)
 - Apply formatting
 - Fix style violations
 - Remove narration comments
@@ -175,13 +190,14 @@ An architecture, API, or abstraction choice is Tier 2 when the conversation sett
 
 ## Stop Conditions
 
-Every agent has boundaries. When you catch yourself crossing them, STOP.
+Every agent has boundaries. When you catch yourself crossing them, stop.
 
 **Common stop conditions:**
-- Writing code when job is review → STOP, report issues only
-- Modifying production code when job is testing → STOP, test as-is
-- Adding features not in plan → STOP, leave them out and mention them in the report
-- Implementing without approval → STOP, request approval
+- Writing code when job is review → stop, report issues only
+- Modifying production code when job is testing → stop, test as-is
+- Adding features not in plan → stop, leave them out and mention them in the report
+- Fixing a pre-existing failure outside the change → stop, report it instead (core §8)
+- Implementing without approval → stop, request approval
 
 ## Human-Only Actions
 
@@ -224,6 +240,8 @@ When reporting issues back to another agent or user:
 Review: X blocking | Y important | Z suggestions
 Action: [Fix blocking and re-review] or [Ready to proceed]
 ```
+
+**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. Only Must Fix items go back to the engineer. Should Fix and Consider items are reported to the user, who decides whether they become work; they are not routed to the engineer automatically (core §6).
 
 ---
 

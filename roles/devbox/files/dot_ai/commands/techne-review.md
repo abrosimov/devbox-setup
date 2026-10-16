@@ -43,14 +43,14 @@ Language detection is the agent's responsibility — `code-reviewer` runs `git d
 
 The unified `code-reviewer` agent handles Go, Python and TypeScript/React/Next.js. No language-specific routing required.
 
-**IMPORTANT**: When invoking the Task tool, always pass `model: "opus"` explicitly (or the user-specified model).
+When invoking the Task tool, pass `model: "opus"` explicitly (or the user-specified model).
 
 Example Task invocation:
 ```
 Task(
   subagent_type: "code-reviewer",
   model: "opus",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\nUser's ask: {the user's request}\nDecisions already made: {decisions, or none}\nIn scope: {files/areas}\nOut of scope: {files/areas}"
 )
 ```
 
@@ -68,8 +68,10 @@ Present the structured feedback:
 - Should Fix (Important)
 - Consider (Optional)
 
+Must Fix is limited to defects in what was asked — correctness and the stated requirements — and to changes made outside the task's scope. Should Fix and Consider items are suggestions: they are reported to the user and are not routed to the engineer unless the user picks them (core §6).
+
 If blocking issues:
-> Say **'fix'** to have SE address issues, or provide specific instructions.
+> Say **'fix'** to have SE address the Must Fix items, or name the other items you also want addressed.
 
 If no blocking issues, offer options:
 

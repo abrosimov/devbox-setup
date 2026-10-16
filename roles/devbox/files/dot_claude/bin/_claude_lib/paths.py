@@ -3,10 +3,27 @@ from __future__ import annotations
 import os
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
+
+# Compared after resolving, so macOS /tmp lands here; on Linux gettempdir() is /tmp.
+MACOS_SYSTEM_TEMP_DIR: Final[str] = "/private/tmp"
+
+
+def temp_roots() -> tuple[Path, ...]:
+    candidates = (os.environ.get("TMPDIR"), tempfile.gettempdir(), MACOS_SYSTEM_TEMP_DIR)
+    return tuple(dict.fromkeys(Path(candidate).resolve() for candidate in candidates if candidate))
+
+
+def is_within(path: Path, roots: Iterable[Path]) -> bool:
+    resolved = path.resolve()
+    return any(resolved.is_relative_to(root) for root in roots)
+
+
+def is_temp_path(path: Path) -> bool:
+    return is_within(path, temp_roots())
 
 
 def find_project_root(

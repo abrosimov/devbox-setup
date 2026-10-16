@@ -75,7 +75,7 @@ Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent
 
 ### 3. Detect Project Stack
 
-Check for project markers (check ALL — a project may have multiple):
+Check for project markers (check all — a project may have multiple):
 - If `go.mod` exists → **Go backend**
 - If `pyproject.toml` or `requirements.txt` exists → **Python backend**
 - If `package.json` or `tsconfig.json` or `next.config.*` exists → **Frontend (TypeScript/React/Next.js)**
@@ -121,16 +121,27 @@ Based on detected stack:
 - **Frontend**: Use `software-engineer-frontend` agent
 - **Fullstack**: Make sure the API contract exists (run `/techne-api-design` if not), then run the backend and frontend agents in parallel, each given the contract path (or follow work stream order from plan)
 
-**IMPORTANT**: When invoking the Task tool, include the `model` parameter:
+When invoking the Task tool, include the `model` parameter:
 - If user specified model → use that model
 - Otherwise → use opus (default)
+
+**The brief.** Every prompt carries these four fields after the context line (`agent-communication` — Dispatch Brief):
+
+| Field | Contents |
+|-------|----------|
+| `User's ask` | The user's request, quoted or closely paraphrased, or the plan path and the work stream it covers |
+| `Decisions already made` | Choices the user made in the conversation and binding plan rows; `none` if none |
+| `In scope` | The files, packages, or areas the change may touch |
+| `Out of scope` | Areas the change leaves alone, including anything the user excluded |
+
+The brief carries the user's ask and the decisions already made, nothing more (core §6). Your own ideas — an extra TODO, a check script, an update to a neighbouring artefact such as `openapi.yaml` — are not tasks for the engineer, because an engineer implements whatever its brief lists. Put them in your report to the user instead.
 
 **Single-stack example:**
 ```
 Task(
   subagent_type: "software-engineer-go",
   model: "{determined_model}",  // "opus" (default) or "sonnet" (if user requested)
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\n\nUser's ask: {the user's request}\nDecisions already made: {decisions, or none}\nIn scope: {files/areas}\nOut of scope: {files/areas}"
 )
 ```
 
@@ -142,12 +153,12 @@ Task(
 Task(
   subagent_type: "software-engineer-{go|python}",
   model: "{determined_model}",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the BACKEND portion.\nAPI contract: {contract_path}. Implement exactly what it guarantees; do not rely on how the frontend calls you.\n\n{backend task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the BACKEND portion.\nAPI contract: {contract_path}. Implement exactly what it guarantees; do not rely on how the frontend calls you.\n\nUser's ask: {backend part of the request}\nDecisions already made: {decisions, or none}\nIn scope: {backend files/areas}\nOut of scope: {frontend, and anything else excluded}"
 )
 Task(
   subagent_type: "software-engineer-frontend",
   model: "{determined_model}",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the FRONTEND portion.\nAPI contract: {contract_path}. Build only on what it guarantees; raise a contract gap for anything missing.\n\n{frontend task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the FRONTEND portion.\nAPI contract: {contract_path}. Build only on what it guarantees; raise a contract gap for anything missing.\n\nUser's ask: {frontend part of the request}\nDecisions already made: {decisions, or none}\nIn scope: {frontend files/areas}\nOut of scope: {backend, and anything else excluded}"
 )
 ```
 
@@ -167,7 +178,7 @@ After the agent completes successfully, show the user the changed files:
 git status --short
 ```
 
-The user will commit manually. Do NOT auto-commit. If the user asks for help drafting a commit message, suggest the following conventions:
+The user will commit manually. Do not auto-commit. If the user asks for help drafting a commit message, suggest the following conventions:
 
 **Commit message conventions:**
 - `feat(PROJ-123):` for new features

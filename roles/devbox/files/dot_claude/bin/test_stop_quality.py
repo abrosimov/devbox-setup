@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import io
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -11,6 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import stop_quality
+from _claude_lib import paths, session_state
 from _claude_lib.proc import CmdResult
 
 
@@ -18,88 +18,79 @@ def _ok(stdout: str = "") -> CmdResult:
     return CmdResult(stdout=stdout, stderr="", returncode=0, timed_out=False)
 
 
-def _git(repo: Path, *args: str) -> None:
-    subprocess.run(
-        ["git", *args],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+def _fail(stdout: str = "") -> CmdResult:
+    return CmdResult(stdout=stdout, stderr="", returncode=1, timed_out=False)
 
 
-class TestCollectGitChanges:
-    def test_collects_tracked_and_untracked_from_repository_root(self, tmp_path: Path) -> None:
-        repo = tmp_path / "repo"
-        repo.mkdir()
-        _git(repo, "init", "--quiet")
-        _git(repo, "config", "user.email", "test@example.com")
-        _git(repo, "config", "user.name", "Test User")
+@pytest.fixture
+def state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> session_state.SessionState:
+    monkeypatch.setattr(paths, "temp_roots", lambda: (tmp_path / "scratch",))
+    return session_state.SessionState(tmp_path / "state" / "sess-1")
 
-        baseline = {
-            ".gitignore": "*.ignored\n",
-            "staged.py": "old\n",
-            "unstaged.py": "old\n",
-            "deleted.py": "old\n",
-        }
-        for name, content in baseline.items():
-            (repo / name).write_text(content, encoding="utf-8")
-        _git(repo, "add", ".")
-        _git(repo, "commit", "--quiet", "-m", "baseline")
 
-        (repo / "staged.py").write_text("staged\n", encoding="utf-8")
-        _git(repo, "add", "staged.py")
-        (repo / "staged.py").write_text("staged and unstaged\n", encoding="utf-8")
-        (repo / "unstaged.py").write_text("changed\n", encoding="utf-8")
-        (repo / "deleted.py").unlink()
-        (repo / "new.py").write_text("new\n", encoding="utf-8")
-        (repo / "white space.py").write_text("space\n", encoding="utf-8")
-        (repo / "line\nbreak.py").write_text("newline\n", encoding="utf-8")
-        (repo / "skip.ignored").write_text("ignored\n", encoding="utf-8")
-        nested = repo / "nested"
-        nested.mkdir()
+def _repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    (repo / ".git").mkdir(parents=True)
+    return repo
 
-        changes = stop_quality.collect_git_changes(nested)
 
-        assert changes is not None
-        assert changes.root.resolve() == repo.resolve()
-        assert {path.relative_to(changes.root).as_posix() for path in changes.files} == {
-            "line\nbreak.py",
-            "new.py",
-            "staged.py",
-            "unstaged.py",
-            "white space.py",
-        }
-        assert len(changes.files) == 5
+class TestCollectSessionChanges:
+    def test_only_files_the_session_edited_are_collected(
+        self,
+        tmp_path: Path,
+        state: session_state.SessionState,
+    ) -> None:
+        repo = _repo(tmp_path)
+        edited = repo / "pkg" / "edited.py"
+        edited.parent.mkdir()
+        edited.write_text("x = 1\n", encoding="utf-8")
+        (repo / "users_own_dirty_work.py").write_text("y = 2\n", encoding="utf-8")
+        state.record_edit(edited)
 
-    def test_returns_none_outside_git_repository(self, tmp_path: Path) -> None:
-        assert stop_quality.collect_git_changes(tmp_path) is None
+        changes = stop_quality.collect_session_changes(state, repo / "pkg")
 
-    def test_rejects_external_target_symlink(self, tmp_path: Path) -> None:
-        repo = tmp_path / "repo"
-        repo.mkdir()
-        _git(repo, "init", "--quiet")
-        _git(repo, "config", "user.email", "test@example.com")
-        _git(repo, "config", "user.name", "Test User")
-        (repo / "baseline.txt").write_text("baseline\n", encoding="utf-8")
-        _git(repo, "add", ".")
-        _git(repo, "commit", "--quiet", "-m", "baseline")
-        external = tmp_path / "external.py"
-        external.write_text("external\n", encoding="utf-8")
-        link = repo / "external.py"
-        try:
-            link.symlink_to(external)
-        except OSError:
-            pytest.skip("symlinks are unavailable on this platform")
+        assert changes.root == repo.resolve()
+        assert changes.files == (edited.resolve(),)
 
-        changes = stop_quality.collect_git_changes(repo)
+    def test_deleted_temp_and_out_of_project_files_are_dropped(
+        self,
+        tmp_path: Path,
+        state: session_state.SessionState,
+    ) -> None:
+        repo = _repo(tmp_path)
+        deleted = repo / "deleted.py"
+        deleted.write_text("", encoding="utf-8")
+        scratch = tmp_path / "scratch" / "probe.py"
+        scratch.parent.mkdir()
+        scratch.write_text("", encoding="utf-8")
+        neighbour = tmp_path / "other-repo" / "x.py"
+        neighbour.parent.mkdir()
+        neighbour.write_text("", encoding="utf-8")
+        for file_path in (deleted, scratch, neighbour):
+            state.record_edit(file_path)
+        deleted.unlink()
 
-        assert changes is not None
-        assert changes.files == ()
+        assert stop_quality.collect_session_changes(state, repo).files == ()
+
+    def test_cwd_outside_a_repository_is_its_own_project(
+        self,
+        tmp_path: Path,
+        state: session_state.SessionState,
+    ) -> None:
+        workdir = tmp_path / "plain"
+        workdir.mkdir()
+        target = workdir / "a.py"
+        target.write_text("", encoding="utf-8")
+        state.record_edit(target)
+
+        changes = stop_quality.collect_session_changes(state, workdir)
+
+        assert changes.root == workdir.resolve()
+        assert changes.files == (target.resolve(),)
 
 
 class TestBatching:
-    def test_formatters_receive_one_batch_per_project(
+    def test_only_go_files_are_formatted_and_with_goimports_local(
         self,
         monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
@@ -119,79 +110,11 @@ class TestBatching:
         monkeypatch.setattr(stop_quality.proc, "run_cmd", run)
         stop_quality.format_changes(stop_quality.ChangeSet(root=tmp_path, files=files))
 
-        goimports = [call for call in calls if call[0] == "goimports"]
-        ruff_fix = [call for call in calls if call[:3] == ["ruff", "check", "--fix"]]
-        ruff_format = [call for call in calls if call[:2] == ["ruff", "format"]]
-        prettier = [call for call in calls if call[:2] == ["npx", "prettier"]]
-        assert len(goimports) == 1
-        assert len(ruff_fix) == 1
-        assert len(ruff_format) == 1
-        assert len(prettier) == 1
-        assert {str(tmp_path / "a.go"), str(tmp_path / "b.go")} <= set(goimports[0])
-        assert {str(tmp_path / "a.py"), str(tmp_path / "b.py")} <= set(ruff_fix[0])
-        assert {str(tmp_path / "a.ts"), str(tmp_path / "b.tsx")} <= set(prettier[0])
-
-    @pytest.mark.parametrize(
-        ("config_name", "config_text"),
-        [
-            ("pyproject.toml", "[tool.ruff]\n\n[tool.black]\ntarget-version = ['py310']\n"),
-            (
-                ".pre-commit-config.yaml",
-                (
-                    "repos:\n  - repo: https://github.com/psf/black-pre-commit-mirror\n"
-                    "    rev: 26.5.1\n"
-                ),
-            ),
-        ],
-    )
-    def test_black_project_is_formatted_by_its_own_black_not_ruff_format(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        tmp_path: Path,
-        config_name: str,
-        config_text: str,
-    ) -> None:
-        (tmp_path / "pyproject.toml").touch()
-        (tmp_path / config_name).write_text(config_text, encoding="utf-8")
-        black = tmp_path / ".venv" / "bin" / "black"
-        black.parent.mkdir(parents=True)
-        black.touch()
-        source = tmp_path / "a.py"
-        source.touch()
-        calls: list[list[str]] = []
-
-        def run(command: list[str], **_kwargs: object) -> CmdResult:
-            calls.append(command)
-            return _ok()
-
-        monkeypatch.setattr(stop_quality.proc, "run_cmd", run)
-        stop_quality.format_changes(stop_quality.ChangeSet(root=tmp_path, files=(source,)))
-
-        assert [call[0] for call in calls] == ["ruff", str(black)]
-        assert calls[0][:3] == ["ruff", "check", "--fix"]
-        assert str(source) in calls[1]
-
-    def test_black_project_without_project_black_is_left_unformatted(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        tmp_path: Path,
-    ) -> None:
-        (tmp_path / "pyproject.toml").write_text("[tool.black]\n", encoding="utf-8")
-        source = tmp_path / "a.py"
-        source.touch()
-        calls: list[list[str]] = []
-
-        def run(command: list[str], **_kwargs: object) -> CmdResult:
-            calls.append(command)
-            return _ok()
-
-        monkeypatch.setattr(stop_quality.proc, "run_cmd", run)
-        pipeline = stop_quality.format_changes(
-            stop_quality.ChangeSet(root=tmp_path, files=(source,))
-        )
-
-        assert [call[:2] for call in calls] == [["ruff", "check"]]
-        assert any("formatting was skipped" in advisory for advisory in pipeline.advisories)
+        writers = [call for call in calls if call[:3] != ["go", "env", "GOPATH"]]
+        assert len(writers) == 1
+        assert writers[0][0].endswith("goimports")
+        assert writers[0][1:3] == ["-local", "example.com/project"]
+        assert set(writers[0][4:]) == {str(tmp_path / "a.go"), str(tmp_path / "b.go")}
 
     def test_checkers_receive_one_batch_per_project(
         self,
@@ -400,97 +323,183 @@ class TestQualityPipeline:
 
 
 class TestMain:
-    def test_empty_input_skips_pipeline(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(sys, "stdin", io.StringIO(""))
-        monkeypatch.setattr(
-            stop_quality,
-            "collect_git_changes",
-            lambda _cwd: (_ for _ in ()).throw(AssertionError),
-        )
+    @staticmethod
+    def _run(monkeypatch: pytest.MonkeyPatch, payload: dict[str, object]) -> str:
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+        stdout = io.StringIO()
+        monkeypatch.setattr(sys, "stdout", stdout)
         assert stop_quality.main() == 0
+        return stdout.getvalue()
 
-    def test_active_stop_hook_skips_pipeline(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"stop_hook_active": True})))
-        monkeypatch.setattr(
-            stop_quality,
-            "collect_git_changes",
-            lambda _cwd: (_ for _ in ()).throw(AssertionError),
-        )
-        assert stop_quality.main() == 0
-
-    def test_formats_before_linting_and_writes_advisory_context(
-        self,
+    @staticmethod
+    def _session(
         monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
-    ) -> None:
-        target = tmp_path / "changed.py"
-        target.write_text("", encoding="utf-8")
-        changes = stop_quality.ChangeSet(root=tmp_path, files=(target,))
-        events: list[str] = []
-        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"stop_hook_active": False})))
-        monkeypatch.setattr(
-            stop_quality,
-            "collect_git_changes",
-            lambda _cwd, _pipeline: changes,
-        )
-        monkeypatch.setattr(
-            stop_quality,
-            "format_changes",
-            lambda _changes, _pipeline: events.append("format"),
-        )
+        state: session_state.SessionState,
+    ) -> tuple[Path, Path, dict[str, object]]:
+        monkeypatch.setattr(session_state, "state_root", lambda: state.directory.parent)
+        repo = _repo(tmp_path)
+        target = repo / "changed.py"
+        target.write_text("x = 1\n", encoding="utf-8")
+        state.record_edit(target)
+        payload: dict[str, object] = {
+            "session_id": "sess-1",
+            "cwd": str(repo),
+            "stop_hook_active": False,
+        }
+        return repo, target, payload
+
+    @staticmethod
+    def _counting_lint(
+        monkeypatch: pytest.MonkeyPatch,
+        issues: list[str],
+    ) -> list[stop_quality.ChangeSet]:
+        runs: list[stop_quality.ChangeSet] = []
 
         def lint(
-            _changes: stop_quality.ChangeSet,
+            changes: stop_quality.ChangeSet,
             _pipeline: stop_quality.QualityPipeline,
         ) -> list[str]:
-            events.append("lint")
-            return ["ruff:\nchanged.py:1:1: F401"]
+            runs.append(changes)
+            return list(issues)
 
         monkeypatch.setattr(stop_quality, "lint_changes", lint)
-        stdout = io.StringIO()
-        monkeypatch.setattr(sys, "stdout", stdout)
+        monkeypatch.setattr(
+            stop_quality, "format_changes", lambda _c: stop_quality.QualityPipeline.start()
+        )
+        return runs
 
-        assert stop_quality.main() == 0
-        assert events == ["format", "lint"]
-        payload = json.loads(stdout.getvalue())
-        assert "stop-quality" in payload["additionalContext"]
-        assert "F401" in payload["additionalContext"]
+    def test_empty_input_skips_pipeline(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            stop_quality,
+            "collect_session_changes",
+            lambda *_a: (_ for _ in ()).throw(AssertionError),
+        )
+        assert self._run(monkeypatch, {}) == ""
 
-    def test_no_changed_files_is_silent(
+    def test_active_stop_hook_skips_pipeline(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            stop_quality,
+            "collect_session_changes",
+            lambda *_a: (_ for _ in ()).throw(AssertionError),
+        )
+        assert self._run(monkeypatch, {"session_id": "s", "stop_hook_active": True}) == ""
+
+    def test_missing_session_id_is_silent(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            stop_quality,
+            "collect_session_changes",
+            lambda *_a: (_ for _ in ()).throw(AssertionError),
+        )
+        assert self._run(monkeypatch, {"stop_hook_active": False}) == ""
+
+    def test_reports_issues_and_asks_to_fix_only_introduced_ones(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        state: session_state.SessionState,
+    ) -> None:
+        _repo_root, target, payload = self._session(monkeypatch, tmp_path, state)
+        runs = self._counting_lint(monkeypatch, ["ruff:\nchanged.py:1:1: F401"])
+
+        context = json.loads(self._run(monkeypatch, payload))["additionalContext"]
+
+        assert runs[0].files == (target.resolve(),)
+        assert "files this session edited" in context
+        assert "F401" in context
+        assert "Fix only the issues your change introduced" in context
+        assert "list them in your report" in context
+
+    def test_unchanged_files_are_not_rechecked_on_the_next_stop(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        state: session_state.SessionState,
+    ) -> None:
+        _repo_root, _target, payload = self._session(monkeypatch, tmp_path, state)
+        runs = self._counting_lint(monkeypatch, ["ruff:\nchanged.py:1:1: F401"])
+
+        first = self._run(monkeypatch, payload)
+        second = self._run(monkeypatch, payload)
+
+        assert first
+        assert second == ""
+        assert len(runs) == 1
+
+    def test_identical_report_after_a_new_edit_is_not_reinjected(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        state: session_state.SessionState,
+    ) -> None:
+        repo, target, payload = self._session(monkeypatch, tmp_path, state)
+        runs = self._counting_lint(monkeypatch, ["ruff:\nchanged.py:1:1: F401"])
+
+        first = self._run(monkeypatch, payload)
+        other = repo / "other.md"
+        other.write_text("notes\n", encoding="utf-8")
+        state.record_edit(other)
+        target.write_text("x = 1\ny = 2\n", encoding="utf-8")
+        second = self._run(monkeypatch, payload)
+
+        assert first
+        assert second == ""
+        assert len(runs) == 2
+
+    def test_clean_session_files_are_silent(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        state: session_state.SessionState,
+    ) -> None:
+        _repo_root, _target, payload = self._session(monkeypatch, tmp_path, state)
+        self._counting_lint(monkeypatch, [])
+        assert self._run(monkeypatch, payload) == ""
+
+    def test_session_without_edits_runs_nothing(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        state: session_state.SessionState,
+    ) -> None:
+        monkeypatch.setattr(session_state, "state_root", lambda: state.directory.parent)
+        repo = _repo(tmp_path)
+        (repo / "users_own_dirty_work.py").write_text("import os\n", encoding="utf-8")
+        runs = self._counting_lint(monkeypatch, ["should not run"])
+
+        assert self._run(monkeypatch, {"session_id": "sess-1", "cwd": str(repo)}) == ""
+        assert runs == []
+
+
+class TestContainers:
+    def test_hadolint_info_and_style_findings_are_dropped(
         self,
         monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
     ) -> None:
-        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"stop_hook_active": False})))
-        monkeypatch.setattr(
-            stop_quality,
-            "collect_git_changes",
-            lambda _cwd, _pipeline: stop_quality.ChangeSet(root=tmp_path, files=()),
+        dockerfile = tmp_path / "Dockerfile"
+        dockerfile.write_text("FROM ubuntu\n", encoding="utf-8")
+        output = (
+            "Dockerfile:1 DL3006 warning: Always tag the version\n"
+            "Dockerfile:2 DL3015 info: Avoid additional packages\n"
+            "Dockerfile:3 DL3048 style: Invalid label key\n"
         )
-        stdout = io.StringIO()
-        monkeypatch.setattr(sys, "stdout", stdout)
-        assert stop_quality.main() == 0
-        assert stdout.getvalue() == ""
+        monkeypatch.setattr(stop_quality.proc, "run_cmd", lambda *_a, **_k: _fail(output))
+        changes = stop_quality.ChangeSet(root=tmp_path, files=(dockerfile,))
 
-    def test_incomplete_change_discovery_writes_advisory_context(
+        issues = stop_quality.lint_changes(changes)
+
+        assert issues == ["hadolint:\nDockerfile:1 DL3006 warning: Always tag the version"]
+
+    def test_hadolint_with_only_info_findings_reports_nothing(
         self,
         monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
     ) -> None:
-        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"stop_hook_active": False})))
+        dockerfile = tmp_path / "Dockerfile"
+        dockerfile.write_text("FROM ubuntu\n", encoding="utf-8")
+        output = "Dockerfile:2 DL3015 info: Avoid additional packages\n"
+        monkeypatch.setattr(stop_quality.proc, "run_cmd", lambda *_a, **_k: _fail(output))
+        changes = stop_quality.ChangeSet(root=tmp_path, files=(dockerfile,))
 
-        def collect(
-            _cwd: Path,
-            pipeline: stop_quality.QualityPipeline,
-        ) -> stop_quality.ChangeSet | None:
-            pipeline.advisories.append(
-                "Git tracked-change discovery: skipped because the pipeline deadline was exhausted",
-            )
-            return None
-
-        monkeypatch.setattr(stop_quality, "collect_git_changes", collect)
-        stdout = io.StringIO()
-        monkeypatch.setattr(sys, "stdout", stdout)
-
-        assert stop_quality.main() == 0
-        payload = json.loads(stdout.getvalue())
-        assert "Git tracked-change discovery" in payload["additionalContext"]
+        assert stop_quality.lint_changes(changes) == []

@@ -1,8 +1,9 @@
 ---
 name: software-engineer-go
-description: Go software engineer - writes idiomatic, robust, production-ready Go code following Effective Go and Go Code Review Comments. Use this agent for ANY Go code changes, no matter how small. Even simple changes benefit from enforced standards.
+description: Go software engineer - writes idiomatic, robust, production-ready Go code following Effective Go and Go Code Review Comments. Use this agent for any Go code changes, no matter how small. Even simple changes benefit from enforced standards.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, LSP
 model: opus
+effort: high
 permissionMode: acceptEdits
 skills: go-engineer, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
 updated: 2026-02-10
@@ -52,9 +53,9 @@ See `code-writing-protocols` skill for verification checklist and workaround det
 
 ## Doc Comments Policy
 
-This codebase is a SERVICE, not a library. No doc comments on services, handlers, domain models, or unexported functions. Only exception: library wrappers in `pkg/` or infrastructure clients.
+This codebase is a service, not a library. No doc comments on services, handlers, domain models, or unexported functions. Only exception: library wrappers in `pkg/` or infrastructure clients.
 
-**Before writing ANY comment, ask:** *"If I delete this, does the code become unclear?"* If NO, don't write it. If YES, rename the function instead.
+**Before writing a comment, ask:** *"If I delete this, does the code become unclear?"* If not, don't write it. If so, rename the function instead.
 
 ## LSP Navigation Protocol
 
@@ -62,7 +63,7 @@ Before modifying any function, type, or interface you haven't read:
 1. `workspaceSymbol` or `documentSymbol` to locate it
 2. `goToDefinition` to understand it
 3. `findReferences` to assess blast radius (mandatory before any rename/signature change)
-4. After each edit: check LSP diagnostics — fix all errors before moving on
+4. After each edit: check LSP diagnostics — fix the errors your edit introduced, and those in code you are changing, before moving on; list pre-existing diagnostics elsewhere in the report without fixing them
 
 Use Grep only for: log messages, comments, string literals, config files. Never Grep for function definitions.
 
@@ -72,7 +73,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
 2. **Check for plan**: Look for `${PROJECT_DIR}/plan.md`
 3. **Parse plan contracts** (if plan.md exists):
    - Read **Decisions Made** — binding unless the codebase contradicts a row; then decide yourself and report it. Read **Blockers for the user** — implement everything a blocker does not block, and return the blocker to the orchestrator with its recommended answer instead of raising it with the user (treat an older plan's unresolved **Assumption Register** row the same way, deciding it when the evidence allows)
-   - Read **SE Verification Contract** — this is your implementation checklist; every row MUST be satisfied
+   - Read **SE Verification Contract** — this is your implementation checklist; satisfy every row
    - Skim **Test Mandate** and **Review Contract** for awareness of what downstream agents will verify
    - Read the **API contract**, even when plan.md is absent. Take the path from plan.md, otherwise look for `${PROJECT_DIR}/api_spec.yaml`, `*.proto`, or the project's OpenAPI spec. The contract is your boundary with API consumers: implement exactly what it promises, and leave the way the frontend happens to call you (request de-duplication, call order, payload sizes) out of your reasoning, because consumers change without notice. If the implementation needs a guarantee or constraint the contract lacks, raise a contract gap. See the `contract-boundary` skill.
 4. **Read domain model** (if available): Look for `domain_model.md` in `${PROJECT_DIR}/`. Extract:
@@ -90,7 +91,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
    |----|-----|--------|----------|
    ```
 8. **Write structured output**: Write `se_go_output.json` to `${PROJECT_DIR}/` (see `structured-output` skill — SE schema). Include `files_changed`, `requirements_implemented`, `domain_compliance`, `patterns_used`, `autonomous_decisions`, and `verification_summary`
-9. **Format**: **ALWAYS** use `goimports -local <module-name>` — **NEVER** use `gofmt`
+9. **Format**: use `goimports -local <module-name>`, never `gofmt`
 
 ---
 
@@ -100,7 +101,7 @@ Use Grep only for: log messages, comments, string literals, config files. Never 
 ```bash
 go version && go build ./... 2>&1 | head -5
 ```
-If this fails, **STOP immediately** and report the environment issue to the user. Do not proceed with code changes if you cannot verify them.
+If the toolchain itself does not run, stop and report the environment issue to the user; do not proceed with code changes you cannot verify. A build error that already exists before your change is the baseline: record it, and report it rather than fix it unless it lies in code the task changes (`code-writing-protocols` — When Commands Fail).
 
 See `code-writing-protocols` skill — Pre-Flight Verification for hook enforcement and report template.
 
@@ -111,9 +112,9 @@ See `code-writing-protocols` skill — Pre-Flight Verification for hook enforcem
 | Build | `go build ./...` |
 | Test | `go test -count=1 ./...` |
 | Lint | `golangci-lint run ./...` |
-| Format | `goimports -local {module} -w .` |
+| Format | `goimports -local {module} -w <files you changed>` |
 
-**Security Scan (MANDATORY):**
+**Security Scan (changed files):**
 
 ```bash
 CHANGED=$(git diff --name-only HEAD -- '*.go' | tr '\n' ' ')
@@ -153,7 +154,7 @@ See `code-writing-protocols` skill — Pre-Handoff Self-Review (From Plan, Comme
 **Deliverables**:
   - source code (direct edits)
   - `se_go_output.json` — structured completion contract (see `schemas/se_output.schema.json`)
-**Completion criteria**: All assigned requirements implemented, code compiles, linter passes
+**Completion criteria**: All assigned requirements implemented, code compiles, linter passes on the changed code; pre-existing failures elsewhere are reported, not fixed
 
 ---
 

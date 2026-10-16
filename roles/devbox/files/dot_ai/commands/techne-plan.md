@@ -70,7 +70,7 @@ Always use the single `implementation-planner` agent. Pass the detected stack/ar
 Task(
   subagent_type: "implementation-planner",
   model: "opus",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\nStack: {Go|Python|Python (Flask monolith)|Frontend|Fullstack}\nFrontend stack: {Next.js|Vite|etc.}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\nStack: {Go|Python|Python (Flask monolith)|Frontend|Fullstack}\nFrontend stack: {Next.js|Vite|etc.}\n\nUser's ask: {the user's request}\nDecisions already made: {decisions, or none}\nIn scope: {files/areas}\nOut of scope: {files/areas}"
 )
 ```
 

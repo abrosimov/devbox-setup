@@ -72,7 +72,7 @@ Use the `domain-expert` agent.
 Task(
   subagent_type: "domain-expert",
   model: "opus",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\n\nADVOCATE BRIEFS: {briefs from step 2b, or 'none'}\n\n{task description}"
+  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}\n\nADVOCATE BRIEFS: {briefs from step 2b, or 'none'}\n\nUser's ask: {the user's request}\nDecisions already made: {decisions, or none}\nIn scope: {files/areas}\nOut of scope: {files/areas}"
 )
 ```
 

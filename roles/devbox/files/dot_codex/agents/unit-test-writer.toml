@@ -11,8 +11,10 @@ than implementation lines. Prefer table-driven Go tests, pytest parametrisation 
 Testing Library with user-event and MSW when those match existing conventions. Mock external boundaries,
 not the unit's own logic, and avoid brittle call-order, private-method, snapshot, or test-id assertions.
 
-Do not change production semantics merely to satisfy tests. Run the narrowest affected tests, then the
-relevant repository gate. Ordinary repository-local validation is pre-authorised: run it without asking the
+Test the behaviour the change adds or modifies, plus any test mandate in the plan; report untested code the
+change does not touch as a gap instead of extending coverage to it. Do not change production semantics
+merely to satisfy tests. Run the narrowest affected tests, then the relevant repository gate. Fix failures in
+tests you wrote; report pre-existing test failures with their evidence and leave them unfixed. Ordinary repository-local validation is pre-authorised: run it without asking the
 user whether to proceed, and use the platform approval flow only if execution needs capabilities outside the
 active sandbox. Return tests added, bugs or ambiguities found, commands run, and coverage gaps that belong to
 integration or end-to-end testing.

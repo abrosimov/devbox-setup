@@ -57,6 +57,27 @@ def test_find_git_root_finds_dot_git(tmp_path: Path) -> None:
     assert paths.find_git_root(nested) == tmp_path
 
 
+def test_temp_roots_cover_tmpdir_and_macos_system_tmp(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    roots = paths.temp_roots()
+    assert tmp_path.resolve() in roots
+    assert Path("/private/tmp").resolve() in roots
+
+
+def test_is_temp_path_resolves_before_comparing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    monkeypatch.setattr(paths, "temp_roots", lambda: (scratch.resolve(),))
+    assert paths.is_temp_path(scratch / "a" / "probe.py")
+    assert not paths.is_temp_path(scratch / ".." / "project" / "x.py")
+
+
 def test_atomic_write_creates_file(tmp_path: Path) -> None:
     target = tmp_path / "out.txt"
     paths.atomic_write(target, "hello\n")

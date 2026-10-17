@@ -6,7 +6,12 @@ If you know the field, choose a Suite or framework below. If you only know the d
 
 Framework and method links open readable text on fpf.tools; **Markdown** links open the repository source. GitHub previews can truncate large files. Check the [displayed source edition](https://fpf.tools/status) when the version matters.
 
+## How the frameworks fit together
+
+**[Read the Library Architectural Reference](../FPF-LIBRARY-REFERENCE.md)** to understand why these disciplines are grouped into Suites, why other frameworks stand alone, and how to use contributions across their boundaries. Each Suite’s introduction also opens its own Architectural Reference: the explanation of that Suite’s composition, choices and limits. The tables below help you select publications; those accounts explain the arrangement.
+
 ## Suites
+
 
 A Suite brings together constituent disciplines and explains how their knowledge and practices work together. Open its folder for a task-oriented introduction, the framework files and its Architectural Reference.
 
@@ -25,7 +30,7 @@ These ten fields have their own files here. They are not a fifth Suite: research
 | --- | --- | ---: | ---: |
 | [Decision Design (PSDA)](https://fpf.tools/PSDA) · [Markdown](DECISION-DESIGN-PRINCIPLES-FRAMEWORK.md) | Formulate a decision problem, construct alternatives, compare consequences and uncertainty, and connect a recommendation to its use. | 18 | 0.792 |
 | [Research Method Practice (RMP)](https://fpf.tools/RMP) · [Markdown](RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md) | Frame and design research, obtain and criticize evidence, synthesize sources, and return a warranted knowledge contribution. | 11 | 0.555 |
-| [Explanation Design (EXD)](https://fpf.tools/EXD) · [Markdown](EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md) | Design an explanation, worked example or dialogue that helps its recipient understand and perform the needed operation. | 6 | 0.134 |
+| [Explanation Design (EXD)](https://fpf.tools/EXD) · [Markdown](EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md) | Design an explanation, worked example or dialogue that helps its recipient understand and perform the needed operation. | 6 | 0.135 |
 | [Narrativization and Narrative Studies (NSTD)](https://fpf.tools/NSTD) · [Markdown](Narrativization-and-Narrative-Studies-Principles-Framework.md) | Turn source material into a followable account while retaining the relations, uncertainty and links back to the source passages the reader needs. | 8 | 0.306 |
 | [Implementation Facilitation (IS)](https://fpf.tools/IS) · [Markdown](IMPLEMENTATION-FACILITATION-PRINCIPLES-FRAMEWORK.md) | Help participants put an evidence-informed practice to use under local conditions, adapt the assistance and develop their capacity for further change. | 7 | 0.194 |
 | [Economic Reasoning and Coordination (ECO)](https://fpf.tools/ECO) · [Markdown](ECONOMIC-REASONING-AND-COORDINATION-PRINCIPLES-FRAMEWORK.md) | Reason about exchange, commitments, incentives, shared resources and coordination under changing information and demand. | 10 | 0.133 |

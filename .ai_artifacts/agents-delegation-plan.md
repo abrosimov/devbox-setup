@@ -1,217 +1,217 @@
-# План: агенты, которые доводят работу до PR
+# Plan: agents that carry work through to a PR
 
-Статус: план, без правок в проекте. Ветка `claude/agents-delegation-models-1i1s22`. Все пути относительно `roles/devbox/files/`, если не сказано иное. Проверки `file:line` сделаны по текущему дереву; расхождения с черновиком отмечены словом **Исправлено**.
+Status: plan only, no changes to the project. Branch `claude/agents-delegation-models-1i1s22`. All paths are relative to `roles/devbox/files/` unless stated otherwise. `file:line` checks were made against the current tree; differences from the earlier draft are marked **Corrected**.
 
-## Цель
+## Goal
 
-Перестроить систему агентов так, чтобы контракт работы (цель, критерии готовности, полномочия) заменял вопросы по ходу дела: разработчик, тест-писатель и ревьюер работают парами и параллельно, спорные решения записываются с вариантами в `.ai_artifacts/` внутри репозитория, коммит/push/PR и слежение за CI пред-разрешены, слияние в основную ветку происходит автоматически при зелёном CI, а Jira-ключ распространяется автоматически и никогда не спрашивается.
+Rebuild the agent system so that a work contract (goal, done criteria, authority) replaces questions during the work. Developer, test writer and reviewer work in pairs and in parallel. Contested decisions are recorded with their options in `.ai_artifacts/` inside the repository. Commit, push, PR and CI watching are pre-authorised. Merge into the default branch happens automatically when CI is green. The Jira key is propagated automatically and is never asked for.
 
-## Не-цели
+## Non-goals
 
-Не меняем диалоговые агенты `tdd_guide` и `focus_coach`; не трогаем `fpf-thinking`, hooks-архитектуру за пределами двух хуков и `bash_decision_gate.py`; не переносим `docs/implementation_plans/` задним числом; не разрешаем force-push, `--no-verify` и деструктивные git-операции; не придумываем примеры порога — они придут из сырых логов (§ «Пороговые примеры»).
+Do not change the dialogue agents `tdd_guide` and `focus_coach`. Do not touch `fpf-thinking`, or the hook architecture beyond the two hooks named below (`bash_decision_gate.py` and `pre_edit_repo_boundary.py`). Do not back-fill `docs/implementation_plans/`. Do not allow force-push, `--no-verify` or other destructive git operations. Do not invent threshold examples; they come from raw logs (see "Threshold examples").
 
-## Целевой конвейер
+## Target pipeline
 
 ```
-contract.md (цель, критерии, полномочия, KEY)
+contract.md (goal, criteria, authority, KEY)
    ├── domain_modeller ──► entities.md ──┐
    ├── api_designer ─────► api_spec ─────┤
    │                                     ▼
-   │        ┌── software_engineer_* (реализация, без тестов)
-   │        │                 ∥ параллельно, от контракта
-   │        └── unit/integration test writer (не видит реализацию)
+   │        ┌── software_engineer_* (implementation, no tests)
+   │        │                 ∥ in parallel, from the contract
+   │        └── unit/integration test writer (does not see the implementation)
    │                          ▼
-   │              code_reviewer: находка ⇒ refute_*_test (default)
-   │                           или задание unit-test-writer'у
-   │                          │  фикс-цикл до "no open findings"
+   │              code_reviewer: finding ⇒ refute_*_test (default)
+   │                           or a task for unit-test-writer
+   │                          │  fix loop until "no open findings"
    │                          ▼
-   │      commit → push → PR → CI до зелёного → gate 4.3 → merge в master
+   │      commit → push → PR → CI until green → gate 4.3 → merge into default branch
    │                          ▼
-   └────────────────► report.md + ответ пользователю
+   └────────────────► report.md + reply to the user
 ```
 
-Отличия от нынешнего `/techne-implement` (`techne-implement.md:116-197`): тесты пишутся параллельно, а не после («Next: Run `/techne-test`»); ревьюер назначается автоматически, а не по `/techne-review`; commit/push/PR делает агент; merge — автоматический по условиям 4.3.
+Differences from today's `/techne-implement` (`techne-implement.md:116-197`): tests are written in parallel rather than after (`Next: Run /techne-test`); the reviewer is assigned automatically rather than through `/techne-review`; the agent makes commit, push and PR itself; merge is automatic under the gate in 4.3.
 
-## Предусловия и проверки до начала
+## Preconditions and checks before starting
 
-| # | Факт | Как проверить | Результат сейчас |
+| # | Fact | How to check | Result now |
 |---|---|---|---|
-| P1 | Claude Code принимает `model: fable` во фронтматтере субагента | `code.claude.com/docs/en/sub-agents`, таблица фронтматтера | **Подтверждено**: `sonnet`, `opus`, `haiku`, `fable`, полный ID, `inherit`. Fable 5.1 требует Claude Code ≥ 2.1.257 (`docs/en/model-config`) — проверить `claude --version` на машине |
-| P2 | Репозиторные валидаторы принимают `fable` | `dot_claude/bin/validate_config.py:242-244` (список `sonnet/opus/haiku`), `dot_agy/bin/translate_agents.py:8` (`MODEL_MAP` только opus/sonnet), `dot_ai/skills/agent-builder/SKILL.md:63`, `dot_ai/agents/agent_builder.md:294` | **Не принимают** — правится в шаге 6.1 |
-| P3 | `pre_edit_repo_boundary.py` считает worktree частью проекта | `dot_claude/bin/pre_edit_repo_boundary.py:33-37`: граница = git-root от `CLAUDE_PROJECT_DIR`; `_claude_lib/paths.py:51` ищет `.git` через `exists()`, то есть файл `.git` worktree тоже найдётся | **Частично**: если сессия *стартовала внутри* worktree — ок; если стартовала в основном checkout, а worktree лежит рядом (`$AION_AUTOPOIESEON/<project>/<branch>/`, `CLAUDE_ADAPTER.md:64-65`) — хук вернёт `ask`. В `test_pre_edit_repo_boundary.py` теста на worktree нет. Правится в шаге 7.2 |
-| P4 | Временная директория исключена из границы | `pre_edit_repo_boundary.py:40-45` → `paths.temp_roots()` (`TMPDIR`, `tempfile.gettempdir()`) | **Исправлено** относительно черновика: исключение есть, живёт в `_claude_lib/paths.py:15-17` |
-| P5 | `bash_decision_gate.py` не блокирует commit/push | `dot_claude/bin/bash_decision_gate.py:436-455`: `rule_git_commit` и `rule_git_push` **запрещают безусловно**, с комментарием «stands even when a project-level CLAUDE.md tells the agent to commit» | **Блокирует**. Черновик это пропустил. Без шага 4.1 ни одна политика в Markdown не заработает |
-| P6 | Основная ветка и защита ветки | `.github/workflows/ci.yml:14-20` — основная ветка **`master`** (не `main`), CI на push в `master` и `claude/**` и на PR в `master`; джобы `lint`, `validate`, `test`, `hook-projects` | Branch protection / rulesets **не проверены**: `gh auth status` → токен невалиден, в GitHub MCP нет инструмента для protection. Проверить через `gh api repos/abrosimov/devbox-setup/branches/master/protection` и `.../rulesets` с рабочим токеном |
-| P7 | GitHub-интеграция доступна агенту | `mcp__github__get_me` → `abrosimov` | **Доступна** (MCP). `gh` есть (`/usr/local/bin/gh`), но токен в этой сессии невалиден — на рабочей машине перепроверить `gh auth status` |
-| P8 | Бюджет Codex | `cat USER_AUTHORITY_PROTOCOL.md dot_codex/AGENTS.md \| wc -c` = 21 882 из 32 768 (`tests/deploy/test_codex_assets.py:124-126`) | Запас ~10,9 KB; новые правила кладём в skills, не в ядро |
-| P9 | Jira-хук git | `.config/git/hooks/prepare-commit-msg:17,56,67`: ключ берётся из имени ветки по `[A-Z]{2,}-[0-9]+`, позиция из `jira.keyPosition` | Футер/префикс коммита уже автоматический, если ключ в имени ветки. Остаётся только не спрашивать |
+| P1 | Claude Code accepts `model: fable` in subagent frontmatter | `code.claude.com/docs/en/sub-agents`, frontmatter table | **Confirmed**: `sonnet`, `opus`, `haiku`, `fable`, full model ID, `inherit`. Fable 5.1 requires Claude Code ≥ 2.1.257 (`docs/en/model-config`). Check `claude --version` on the target machine |
+| P2 | Repository validators accept `fable` | `dot_claude/bin/validate_config.py:242-244` (list is `sonnet/opus/haiku`), `dot_agy/bin/translate_agents.py:8` (`MODEL_MAP` has only opus/sonnet), `dot_ai/skills/agent-builder/SKILL.md:63`, `dot_ai/agents/agent_builder.md:294` | **Do not accept it.** Fixed in step 6.1 |
+| P3 | `pre_edit_repo_boundary.py` treats a worktree as part of the project | `dot_claude/bin/pre_edit_repo_boundary.py:33-37`: boundary is the git root of `CLAUDE_PROJECT_DIR`; `_claude_lib/paths.py:51` looks for `.git` with `exists()`, so a worktree's `.git` file is also found | **Partly**: if the session *started inside* the worktree, fine. If it started in the main checkout and the worktree sits beside it (`$AION_AUTOPOIESEON/<project>/<branch>/`, `CLAUDE_ADAPTER.md:64-65`), the hook returns `ask`. There is no worktree test in `test_pre_edit_repo_boundary.py`. Fixed in step 7.2 |
+| P4 | Temporary directory is excluded from the boundary | `pre_edit_repo_boundary.py:40-45` → `paths.temp_roots()` (`TMPDIR`, `tempfile.gettempdir()`) | **Corrected** from the draft: the exclusion exists, in `_claude_lib/paths.py:15-17` |
+| P5 | `bash_decision_gate.py` does not block commit and push | `dot_claude/bin/bash_decision_gate.py:436-455`: `rule_git_commit` and `rule_git_push` **deny unconditionally**, with the comment "stands even when a project-level CLAUDE.md tells the agent to commit" | **Blocks.** The draft missed this. Without step 4.1, no policy written in Markdown will take effect |
+| P6 | Default branch and branch protection | `.github/workflows/ci.yml:14-20`: default branch is **`master`** (not `main`); CI runs on push to `master` and `claude/**` and on PRs to `master`; jobs `lint`, `validate`, `test`, `hook-projects` | Branch protection / rulesets **not checked**: `gh auth status` reports an invalid token, and the GitHub MCP has no protection tool. Check with `gh api repos/abrosimov/devbox-setup/branches/master/protection` and `.../rulesets` using a working token |
+| P7 | GitHub integration available to the agent | `mcp__github__get_me` → `abrosimov` | **Available** via MCP. `gh` is installed (`/usr/local/bin/gh`), but its token is invalid in this session. Re-check `gh auth status` on the working machine |
+| P8 | Codex budget | `cat USER_AUTHORITY_PROTOCOL.md dot_codex/AGENTS.md \| wc -c` = 21,882 of 32,768 (`tests/deploy/test_codex_assets.py:124-126`) | About 10.9 KB left; new rules go into skills, not into the core |
+| P9 | Git Jira hook | `.config/git/hooks/prepare-commit-msg:17,56,67`: the key is taken from the branch name matching `[A-Z]{2,}-[0-9]+`, position from `jira.keyPosition` | Commit footer/prefix is already automatic if the key is in the branch name. Only "never ask" remains |
 
-## Шаги
+## Steps
 
-### Фаза 0 — артефакты и порог (фундамент)
+### Phase 0 — artifacts and threshold (foundation)
 
-**0.1 Раскладка `.ai_artifacts/` и правило «не `$TMPDIR`».**
-Файлы: `dot_ai/skills/agent-base-protocol/SKILL.md` (новая секция «Artefacts»), `dot_ai/USER_AUTHORITY_PROTOCOL.md:143` (**Исправлено**: ссылка на `$TMPDIR/ledger-<topic>.md` стоит в §5, а не §4), `dot_ai/skills/workflow/SKILL.md:134` (`$TMPDIR/<job>-decision-log.md`), `dot_ai/skills/config/SKILL.md` (`PLANS_DIR`).
-Изменение: раскладка из §«Решения и отчёт» ниже становится единственным местом для планов, решений, ledger и отчётов; упоминания `$TMPDIR` заменяются на `.ai_artifacts/<task>/…`. `ai_written_scripts/` (ядро §4:127) остаётся как есть — это код, а не артефакт.
-Проверка: `make validate-claude`, `make rules-budget`, `pytest tests/deploy/test_codex_assets.py`. Откат: один коммит. Зависимости: нет.
+**0.1 Layout of `.ai_artifacts/` and the "no `$TMPDIR`" rule.**
+Files: `dot_ai/skills/agent-base-protocol/SKILL.md` (new section "Artefacts"), `dot_ai/USER_AUTHORITY_PROTOCOL.md:143` (**Corrected**: the reference to `$TMPDIR/ledger-<topic>.md` is in §5, not §4), `dot_ai/skills/workflow/SKILL.md:134` (`$TMPDIR/<job>-decision-log.md`), `dot_ai/skills/config/SKILL.md` (`PLANS_DIR`).
+Change: the layout in "Decisions and report" below becomes the only place for plans, decisions, ledgers and reports. Mentions of `$TMPDIR` are replaced with `.ai_artifacts/<task>/…`. `ai_written_scripts/` (core §4:127) stays as is: it holds code, not artefacts.
+Check: `make validate-claude`, `make rules-budget`, `pytest tests/deploy/test_codex_assets.py`. Rollback: one commit. Dependencies: none.
 
-**0.2 Порог обсуждения вариантов — расширить `diverge-synthesize-select`, не создавать `option-deliberation`.**
-**Исправлено**: skill с процедурой 3–7 кандидатов, шагом «Combine» (синергия) и персистентным `dss_output.json` уже существует (`dot_ai/skills/diverge-synthesize-select/SKILL.md:16-40,86-92,135-141`) и подключён у architect, api_designer, designer, domain_modeller, implementation_planner, TPM и всех трёх SE. Новый skill дублировал бы его.
-Файлы: `diverge-synthesize-select/SKILL.md` — секция «When to use it» (строки 16-40) дополняется порогом владельца: *проектные решения* (структура кода, алгоритм, форма API, структура данных, границы модулей) → 5–7 кандидатов + синергия + запись в `decisions.md`; имена переменных, порядок аргументов, выбор между эквивалентными хелперами → ниже порога, одна строка в `decisions.md`. Нижняя граница «3» в тексте остаётся для диалоговых карточек пользователю, «5–7» становится нормой для записи в артефакт. Добавить подсекцию-плейсхолдер «Threshold examples (pending raw logs)» с ссылкой на §«Пороговые примеры» этого плана.
-`dot_ai/agents/architect.md:49-50` («usually meet the threshold») — заменить на ссылку на порог без «usually».
-Проверка: `make validate-claude`, `make validate-skills`. Откат: коммит. Зависимости: 0.1.
+**0.2 Threshold for option deliberation: extend `diverge-synthesize-select`, do not create `option-deliberation`.**
+**Corrected**: a skill with the procedure for 3–7 candidates, a "Combine" step (synergy) and a persisted `dss_output.json` already exists (`dot_ai/skills/diverge-synthesize-select/SKILL.md:16-40,86-92,135-141`). It is attached to architect, api_designer, designer, domain_modeller, implementation_planner, TPM and all three SE agents. A new skill would duplicate it.
+Files: in `diverge-synthesize-select/SKILL.md`, the "When to use it" section (lines 16-40) gets the owner's threshold. *Design decisions* (code structure, algorithm, API shape, data structure, module boundaries) → 5–7 candidates + synergy + an entry in `decisions.md`. Variable names, argument order, choosing between equivalent helpers → below the threshold, one line in `decisions.md`. The lower bound of "3" stays for cards shown to the user; "5–7" becomes the norm for entries written to an artefact. Add a placeholder subsection "Threshold examples (pending raw logs)" that links to the "Threshold examples" section of this plan.
+`dot_ai/agents/architect.md:49-50` ("usually meet the threshold") → replace with a reference to the threshold, without "usually".
+Check: `make validate-claude`, `make validate-skills`. Rollback: commit. Dependencies: 0.1.
 
-### Фаза 1 — контракт результата
+### Phase 1 — result contract
 
-**1.1 Секция «Work contract» в `agent-base-protocol/SKILL.md`** (его подключают все 28 агентов, 4,5 KB — есть место).
-Содержимое: цель; критерии готовности с доказательством (команда, файл, вывод) — формулировка «user approved» запрещена; три уровня полномочий (решаю и записываю / решаю и поднимаю в отчёт / BLOCKED); пред-разрешённые действия (commit в рабочей ветке, push ветки, создание PR, слежение за CI, merge при зелёном CI — §Фаза 4); формат возврата `Status | Result | Decisions | Blockers | Evidence | Paths`.
-Проверка: `make validate-claude`; `make rules-budget` (не вырасти больше, чем на удалённые ниже гейты). Откат: коммит. Зависимости: 0.1, 0.2.
+**1.1 "Work contract" section in `agent-base-protocol/SKILL.md`** (included by all 28 agents; currently 4.5 KB, so there is room).
+Content: goal; done criteria with evidence (command, file, output) — the wording "user approved" is forbidden; three authority levels (decide and record / decide and raise in the report / BLOCKED); pre-authorised actions (commit on the working branch, push the branch, create PR, watch CI, merge on green CI — see Phase 4); return format `Status | Result | Decisions | Blockers | Evidence | Paths`.
+Check: `make validate-claude`; `make rules-budget` (must not grow by more than the gates removed below). Rollback: commit. Dependencies: 0.1, 0.2.
 
-**1.2 Заменить фразовую проверку одобрения на проверку контракта.**
-Файлы: `dot_ai/skills/code-writing-protocols/SKILL.md:17-44` («Approval Validation», шаблон «⚠️ Approval Required»), `dot_ai/skills/agent-communication/SKILL.md:148-166` (та же проверка) и `:200` («Implementing without approval → stop»).
-Изменение: субагент проверяет наличие контракта от оркестратора (цель + критерии), а не фразу пользователя; одобрение пользователя остаётся делом оркестратора (ядро §0-§1, `CLAUDE_ADAPTER.md:20-23`).
-Проверка: `make validate-claude`. Откат: коммит. Зависимости: 1.1.
+**1.2 Replace the phrase-based approval check with a contract check.**
+Files: `dot_ai/skills/code-writing-protocols/SKILL.md:17-44` ("Approval Validation", the "⚠️ Approval Required" template), `dot_ai/skills/agent-communication/SKILL.md:148-166` (same check) and `:200` ("Implementing without approval → stop").
+Change: a subagent checks that a contract from the orchestrator exists (goal + criteria), not a phrase from the user. User approval stays the orchestrator's job (core §0-§1, `CLAUDE_ADAPTER.md:20-23`).
+Check: `make validate-claude`. Rollback: commit. Dependencies: 1.1.
 
-### Фаза 2 — тела агентов
+### Phase 2 — agent bodies
 
-**2.1 Разработчики** (`software_engineer_go/python/frontend.md`, зеркала `dot_codex/agents/software-engineer-*.toml`): не пишут тесты; вход — контракт + сущности (`domain_modeller`) + API (`api_designer`) + файл потока из плана; порог 0.2; упоминание автоматического ревью. Проверка: `make validate-claude`, `pytest tests/deploy/test_codex_assets.py`. Зависимости: 1.1.
+**2.1 Developers** (`software_engineer_go/python/frontend.md`, mirrors `dot_codex/agents/software-engineer-*.toml`): do not write tests; inputs are the contract + entities (`domain_modeller`) + API (`api_designer`) + the stream file from the plan; threshold from 0.2; mention automatic review. Check: `make validate-claude`, `pytest tests/deploy/test_codex_assets.py`. Dependencies: 1.1.
 
-**2.2 Тест-писатели** (`unit_tests_writer.md`, `integration_tests_writer_go/python.md`, `dot_codex/agents/unit-test-writer.toml`, `integration-tests-writer-*.toml`): вход — контракт и публичный интерфейс (сигнатуры, OpenAPI/proto, сущности), **не diff** (`unit_tests_writer.md:3,18`: «Detects the language(s) in the diff»); запрет читать файлы реализации вне публичных заголовков (`contract-boundary`); тесты, падающие до реализации, — ожидаемы, статус в отчёте `RED-by-design`. Самоостановку «re-run with Opus» (`:52-60`) убрать — модель назначает диспетчер (шаг 6.2). Проверка: `make validate-claude`. Зависимости: 1.1.
+**2.2 Test writers** (`unit_tests_writer.md`, `integration_tests_writer_go/python.md`, `dot_codex/agents/unit-test-writer.toml`, `integration-tests-writer-*.toml`): inputs are the contract and public interface (signatures, OpenAPI/proto, entities), **not the diff** (`unit_tests_writer.md:3,18`: "Detects the language(s) in the diff"). Do not read implementation files beyond public headers (`contract-boundary`). Tests that fail before the implementation exists are expected; their status in the report is `RED-by-design`. Remove the self-stop "re-run with Opus" (`:52-60`); the dispatcher assigns the model (step 6.2). Check: `make validate-claude`. Dependencies: 1.1.
 
-**2.2a Рукопожатие разработчик ∥ тест-писатель** (новая подсекция в `dot_ai/skills/contract-boundary/SKILL.md`): оба стартуют от одного `contract.md` + `entities.md` + `api_spec`; тест-писатель импортирует только публичные имена из контракта; если реализация отклонилась от контракта, разработчик обязан обновить контракт первым и записать `D<n>` — тест-писатель тесты под реализацию не подгоняет. Оркестратор запускает их одним сообщением (`CLAUDE_ADAPTER.md:38`, «Launch independent agents in one message») и ждёт обоих перед ревью. Проверка: `make validate-claude`. Зависимости: 2.1, 2.2.
+**2.2a Developer ∥ test writer handshake** (new subsection in `dot_ai/skills/contract-boundary/SKILL.md`): both start from the same `contract.md` + `entities.md` + `api_spec`. The test writer imports only public names from the contract. If the implementation departs from the contract, the developer must update the contract first and record `D<n>`; the test writer does not adapt tests to the implementation. The orchestrator launches both in one message (`CLAUDE_ADAPTER.md:38`, "Launch independent agents in one message") and waits for both before review. Check: `make validate-claude`. Dependencies: 2.1, 2.2.
 
-**2.3 Ревьюер** (`code_reviewer.md`, `dot_codex/agents/code-reviewer.toml`):
-- Тесты-опровержения: **путь по умолчанию** — ревьюер сам пишет падающий тест в отдельный файл `<tests_dir>/refute_<slug>_test.<ext>` (Go: `refute_<slug>_test.go`; Python: `tests/refute_<slug>_test.py`; TS: `__tests__/refute_<slug>.test.ts`). Файлы `refute_*` живут до фикса; после зелёного CI разработчик (или `unit-test-writer`) переносит их содержимое в основной тестовый файл и удаляет `refute_*`; наличие `refute_*` в ветке — блокер merge (шаг 4.3). **Альтернативный путь** — делегировать `unit-test-writer`у с описанием бага; используется, когда баг требует фикстур/инфраструктуры, которых у ревьюера нет (интеграционные, фронтенд с MSW). Выбор пути — одна строка в `decisions.md`.
-- Разрешения: во фронтматтере уже есть `Edit` (`code_reviewer.md:4`), добавить `Write`, ограничив в теле путями тестов. В TOML `sandbox_mode = "read-only"` (`code-reviewer.toml:3,26`) → `workspace-write`; формулировку «Stay read-only and never implement fixes» заменить на «never edit non-test files».
-- Замечания о стиле не блокируют.
-Проверка: `make validate-claude`, `pytest tests/deploy/test_codex_assets.py`. Откат: коммит. Зависимости: 1.1, 2.2.
+**2.3 Reviewer** (`code_reviewer.md`, `dot_codex/agents/code-reviewer.toml`):
+- Refutation tests: **default path** — the reviewer writes a failing test in a separate file `<tests_dir>/refute_<slug>_test.<ext>` (Go: `refute_<slug>_test.go`; Python: `tests/refute_<slug>_test.py`; TS: `__tests__/refute_<slug>.test.ts`). `refute_*` files live until the fix. After green CI, the developer (or `unit-test-writer`) moves their content into the main test file and deletes `refute_*`. A `refute_*` file left in the branch blocks merge (gate 4.3). **Alternative path** — delegate to `unit-test-writer` with a description of the bug; used when the bug needs fixtures or infrastructure the reviewer does not have (integration tests, frontend with MSW). The choice of path is one line in `decisions.md`.
+- Permissions: the frontmatter already has `Edit` (`code_reviewer.md:4`); add `Write`, restricted in the body to test paths. In the TOML, `sandbox_mode = "read-only"` (`code-reviewer.toml:3,26`) → `workspace-write`; replace "Stay read-only and never implement fixes" with "never edit non-test files".
+- Style comments do not block.
+Check: `make validate-claude`, `pytest tests/deploy/test_codex_assets.py`. Rollback: commit. Dependencies: 1.1, 2.2.
 
-**2.4 Проектировщики** — убрать гейты и «user approved»:
-`domain_modeller.md:113` («Present the glossary to the user for validation»); `api_designer.md:55` («user approved»), `:154` («Present error strategy for approval»), `:160` («Ask user if offset-based needed»); `designer.md:55`, `:120`, `:168`, `:196`; `database_designer.md:56`; `database_designer.md:109` — `gen_random_uuid()` генерирует v4, при PG 18+ писать `uuidv7()`. Критерий готовности → «spec passes linting + consumers (developer, test writer) can build from it». Проверка: `make validate-claude`. Зависимости: 1.1.
+**2.4 Designers** — remove gates and "user approved":
+`domain_modeller.md:113` ("Present the glossary to the user for validation"); `api_designer.md:55` ("user approved"), `:154` ("Present error strategy for approval"), `:160` ("Ask user if offset-based needed"); `designer.md:55`, `:120`, `:168`, `:196`; `database_designer.md:56`; `database_designer.md:109` — `gen_random_uuid()` produces v4; on PG 18+ write `uuidv7()`. Done criterion → "spec passes linting and consumers (developer, test writer) can build from it". Check: `make validate-claude`. Dependencies: 1.1.
 
-**2.5 TPM** (`technical_product_manager.md:173-181,283,413,561`): интервью-цикл превращается в «вопросы, прошедшие стоп-лист ядра §1, одним пакетом в отчёт», `user approval obtained` → проверяемый критерий. Зависимости: 1.1.
+**2.5 TPM** (`technical_product_manager.md:173-181,283,413,561`): the interview loop becomes "questions that pass the core §1 stop list, batched into the report"; `user approval obtained` → a checkable criterion. Dependencies: 1.1.
 
-**2.6 Планировщик** (`implementation_planner.md:144,186,631,662`): вместо одного `plan.md` — `plan.md` как индекс (цель, критерии, порядок, зависимости) + `streams/WS-<n>-<slug>.md` на поток; разработчик получает путь только своего потока. Хук `pre-plan-code-guard` (`:26`) должен покрывать `streams/*.md` — проверить `pre_plan_code_guard.py` и расширить тест. Проверка: `make validate-claude`, `make test-claude-hooks`. Зависимости: 0.1.
+**2.6 Planner** (`implementation_planner.md:144,186,631,662`): instead of one `plan.md`, a `plan.md` index (goal, criteria, order, dependencies) plus `streams/WS-<n>-<slug>.md` per stream; a developer receives only the path of its own stream. The hook `pre-plan-code-guard` (`:26`) must cover `streams/*.md`: check `pre_plan_code_guard.py` and extend its test. Check: `make validate-claude`, `make test-claude-hooks`. Dependencies: 0.1.
 
-**2.7 Утилитарные**: `refactor_cleaner.md:60` («Ask the user before removing >20 lines» → решение в отчёт); `observability_engineer.md:24-36` (самоостановка → диспетчер), `:216,441-454` vs `:650` (деплой в sandbox — убрать команды деплоя, оставить генерацию: соответствует `:650` «humans deploy»); `build_resolver_go` — `go clean -modcache`, `goimports -w .` только с записью в `decisions.md`. Зависимости: 1.1.
+**2.7 Utility agents**: `refactor_cleaner.md:60` ("Ask the user before removing >20 lines" → decision in the report); `observability_engineer.md:24-36` (self-stop → dispatcher), `:216,441-454` vs `:650` (deploy to sandbox — remove the deploy commands, keep generation; matches `:650` "humans deploy"); `build_resolver_go` — `go clean -modcache` and `goimports -w .` only with an entry in `decisions.md`. Dependencies: 1.1.
 
-**2.8 `skill-builder.toml:5`** ссылается на `skill-creator`, которого нет в `dot_ai/skills/` (есть `skill-builder`). Заменить ссылку. Проверка: `make validate-claude`.
+**2.8 `skill-builder.toml:5`** refers to `skill-creator`, which does not exist in `dot_ai/skills/` (the skill is `skill-builder`). Replace the reference. Check: `make validate-claude`.
 
-### Фаза 3 — Jira без вопросов
+### Phase 3 — Jira without questions
 
-**3.1 Единое правило разрешения контекста.** Файлы: `techne-test.md:34-36`, `techne-review.md:25-27`, `techne-design.md:17-19`, `techne-api-design.md:17-19`, `techne-domain-analysis.md:17-19`, `techne-schema.md:36-38` (все шесть — `AskUserQuestion` при exit 2). Заменить на блок по образцу `techne-plan.md:17-20` / `techne-implement.md:68-72` (уже «do not ask»): ключ берётся из ветки (`resolve_context.py:16`), иначе из текста задачи, иначе — `_adhoc`. Если ключ дан в задаче, а ветки ещё нет — ветка создаётся как `<KEY>_<slug>`, тогда `prepare-commit-msg` (P9) сам проставит ключ в коммит; PR-заголовок `<type>(<KEY>): …`; папка `.ai_artifacts/<KEY>_<slug>/`. `PROJECT_DIR` в `resolve_context.py:15` переключить на `.ai_artifacts` (новый дефолт `DEFAULT_PLANS_DIR`), обновить `test_resolve_context.py` и `config/SKILL.md`.
-Проверка: `make test-claude-hooks` (`test_resolve_context.py`), `make validate-claude`, `make test-git-hooks`. Откат: коммит. Зависимости: 0.1.
+**3.1 One rule for context resolution.** Files: `techne-test.md:34-36`, `techne-review.md:25-27`, `techne-design.md:17-19`, `techne-api-design.md:17-19`, `techne-domain-analysis.md:17-19`, `techne-schema.md:36-38` (all six call `AskUserQuestion` on exit 2). Replace with the block already used by `techne-plan.md:17-20` / `techne-implement.md:68-72` ("do not ask"): the key comes from the branch (`resolve_context.py:16`), else from the task text, else `_adhoc`. If the user gave a key and no branch exists yet, create the branch as `<KEY>_<slug>`; then `prepare-commit-msg` (P9) adds the key to commits automatically; PR title `<type>(<KEY>): …`; folder `.ai_artifacts/<KEY>_<slug>/`. Switch the default `PROJECT_DIR` in `resolve_context.py:15` to `.ai_artifacts` (new `DEFAULT_PLANS_DIR`); update `test_resolve_context.py` and `config/SKILL.md`.
+Check: `make test-claude-hooks` (`test_resolve_context.py`), `make validate-claude`, `make test-git-hooks`. Rollback: commit. Dependencies: 0.1.
 
-### Фаза 4 — git, PR, CI, merge
+### Phase 4 — git, PR, CI, merge
 
-**4.1 Хук `bash_decision_gate.py`** (`:436-455`): `rule_git_commit`/`rule_git_push` → разрешать `git commit` и `git push` **без** `--force*`, `--no-verify`, `--amend` и не на `main|master` (правила `rule_commit_on_main:458`, force-push и `--no-verify` остаются deny). Обновить `test_pre_bash_safety_gate.py:52-260` (тесты `*_denied_via_generic` для обычного push/commit инвертируются). Проверка: `make test-claude-hooks`, `make test-agy-hooks` (копия дерева в `dot_agy/bin/` — править отдельно). Откат: коммит. Зависимости: нет, но включать только вместе с 4.2.
+**4.1 Hook `bash_decision_gate.py`** (`:436-455`): `rule_git_commit` / `rule_git_push` → allow `git commit` and `git push` **without** `--force*`, `--no-verify`, `--amend`, and not on `main|master` (rule `rule_commit_on_main:458` stays; force-push and `--no-verify` stay denied). Update `test_pre_bash_safety_gate.py:52-260` (the `*_denied_via_generic` tests for plain push/commit are inverted). Check: `make test-claude-hooks`, `make test-agy-hooks` (the copy in `dot_agy/bin/` must be edited separately). Rollback: commit. Dependencies: none, but ship only together with 4.2.
 
-**4.2 Политика в адаптерах и skills**: `CLAUDE_ADAPTER.md:17` (commit/push/PR из «Always confirm» → «pre-authorised inside a work contract; merge — only via 4.3 gate»), `:44-45` и `:62-63` (модели — ссылка на фронтматтер); `dot_codex/AGENTS.md:56-57,97`; `dot_agy/GEMINI_ADAPTER.md:11`; `agent-communication/SKILL.md:208` (строка «Push commits, open PRs» из Human-Only → в контракт; `approve/merge` остаётся human-only **кроме** автоматического merge по 4.3); `techne-implement.md:177-197` («The user will commit manually», «Next: Run /techne-test»), `techne-review.md:85-110` (меню `'pr'`). Проверка: `make rules-budget`, `pytest tests/deploy/test_codex_assets.py`, `make test-live` (меняется содержимое, но не генерация settings — достаточно `test-live-guard`). Зависимости: 1.1, 4.1.
+**4.2 Policy in adapters and skills**: `CLAUDE_ADAPTER.md:17` (commit/push/PR from "Always confirm" → "pre-authorised inside a work contract; merge — only through the 4.3 gate"), `:44-45` and `:62-63` (models → reference the frontmatter); `dot_codex/AGENTS.md:56-57,97`; `dot_agy/GEMINI_ADAPTER.md:11`; `agent-communication/SKILL.md:208` (the line "Push commits, open PRs" moves from Human-Only into the contract; approve/merge stay human-only **except** the automatic merge under 4.3); `techne-implement.md:177-197` ("The user will commit manually", "Next: Run /techne-test"); `techne-review.md:85-110` (the `'pr'` menu). Check: `make rules-budget`, `pytest tests/deploy/test_codex_assets.py`, `make test-live` (content changes but settings generation does not — `test-live-guard` is enough). Dependencies: 1.1, 4.1.
 
-**4.3 Авто-merge в `master`** — новая секция в `workflow/SKILL.md` + `techne-implement.md` шаг «Land». Условия, все обязательны:
-1. PR не draft; `mergeable_state` = `clean` (`mcp__github__pull_request_read`).
-2. Все required checks зелёные (`get_check_run`/`actions_get`); required-набор берётся из защиты ветки (P6), а до её подтверждения — хардкод `lint, validate, test, hook-projects` из `ci.yml`.
-3. Нет неразрешённых review-thread'ов (`pull_request_read` → threads; `resolve_review_thread` только для thread'ов, открытых самими агентами и закрытых фиксом с зелёным CI).
-4. Ревьюер вернул `no open findings`, в ветке нет файлов `refute_*`.
-5. `.ai_artifacts/<task>/report.md` записан и закоммичен.
-Механика: `mcp__github__enable_pr_auto_merge` (squash) после п.1-5; если auto-merge на репозитории выключен — `merge_pull_request` вручную после повторной проверки п.2. **CI красный** → разбор логов (`get_job_logs`), фикс, push, повтор; падение вне задачи → BLOCKED в отчёте, merge не делается. **CI недоступен** (нет запусков 10 мин, API 5xx) → PR остаётся открытым, статус `CI unavailable` в отчёте, merge не делается. **Branch protection требует review** от человека → merge невозможен, это записывается, PR остаётся; требование снять/оставить — вопрос владельцу (Q2).
-Проверка: сквозной прогон (шаг 8.2). Откат: коммит; аварийно — `disable_pr_auto_merge`. Зависимости: 4.1, 4.2, P6.
+**4.3 Automatic merge into the default branch** — new section in `workflow/SKILL.md` and a "Land" step in `techne-implement.md`. All conditions are mandatory:
+1. The PR is not a draft; `mergeable_state` is `clean` (`mcp__github__pull_request_read`).
+2. All required checks are green (`get_check_run` / `actions_get`). The required set comes from branch protection (P6); until that is confirmed, hardcode `lint, validate, test, hook-projects` from `ci.yml`.
+3. No unresolved review threads (`pull_request_read` → threads; `resolve_review_thread` only for threads opened by the agents themselves and closed by a fix with green CI).
+4. The reviewer returned `no open findings`, and the branch has no `refute_*` files.
+5. `.ai_artifacts/<task>/report.md` is written and committed.
+Mechanics: `mcp__github__enable_pr_auto_merge` (squash) after items 1–5; if auto-merge is disabled on the repository, `merge_pull_request` manually after re-checking item 2. **CI red** → read logs (`get_job_logs`), fix, push, repeat; a failure outside the task → BLOCKED in the report, no merge. **CI unavailable** (no runs for 10 min, API 5xx) → the PR stays open, status `CI unavailable` in the report, no merge. **Branch protection requires a human review** → merge is impossible; this is recorded and the PR stays open; whether to lift that requirement is an owner question (Q2).
+Check: end-to-end run (step 8.2). Rollback: commit; in an emergency, `disable_pr_auto_merge`. Dependencies: 4.1, 4.2, P6.
 
-**4.4 Слежение за CI**: `subscribe_pr_activity` после создания PR; при недоступности — опрос `actions_list` раз в 2 мин, не более 30 мин. Файл: `workflow/SKILL.md`. Зависимости: 4.3.
+**4.4 CI watching**: `subscribe_pr_activity` after the PR is created; if unavailable, poll `actions_list` every 2 minutes, for at most 30 minutes. File: `workflow/SKILL.md`. Dependencies: 4.3.
 
-### Фаза 5 — команды и конвейер
+### Phase 5 — commands and pipeline
 
-**5.1 `techne-implement.md`**: шаги 6-8 (`:116-197`) → цепочка «contract → (domain_modeller, api_designer при необходимости) → [developer ∥ test writer] → reviewer → fix loop → push → CI → land → report». `:91` «Unclear → backend» и `:97,122` (неявный запуск `/techne-api-design`) → решение с записью в `decisions.md`. `:99-110` таблица моделей → ссылка на фронтматтер. Проверка: `make validate-claude`. Зависимости: фазы 1-4.
+**5.1 `techne-implement.md`**: steps 6–8 (`:116-197`) → the chain "contract → (domain_modeller, api_designer if needed) → [developer ∥ test writer] → reviewer → fix loop → push → CI → land → report". `:91` "Unclear → backend" and `:97,122` (implicit launch of `/techne-api-design`) → a decision recorded in `decisions.md`. `:99-110` model table → reference to the frontmatter. Check: `make validate-claude`. Dependencies: phases 1–4.
 
-**5.2 `workflow/SKILL.md:96,104,160`**: автономный режим — дефолт, пошаговый — по `--step`. Убрать «Next: Run …» из 5 команд (`grep "Next\*\*: Run"`). `lint-discipline/SKILL.md:28,85-90` — WAIT → пункт в отчёт оркестратору. Зависимости: 5.1.
+**5.2 `workflow/SKILL.md:96,104,160`**: autonomous mode is the default; step-by-step mode runs only with `--step`. Remove "Next: Run …" from the 5 commands (`grep "Next\*\*: Run"`). `lint-discipline/SKILL.md:28,85-90` — WAIT → an item in the report for the orchestrator. Dependencies: 5.1.
 
-### Фаза 6 — модели
+### Phase 6 — models
 
-**6.1 Валидаторы**: `validate_config.py:242-244` — добавить `fable` и `inherit`; `test_validate_config.py` — кейсы; `translate_agents.py:8` — `fable` → **открыто** (у Antigravity тиры `pro`/`flash`; сопоставления для `fable` в его документации не найдено — до проверки оставить явный fallback `pro` с комментарием и тестом в `test_agy_hooks.py`); `agent-builder/SKILL.md:63`, `agent_builder.md:184-189,294`. Проверка: `make validate-claude`, `make test-claude-hooks`, `make test-agy-hooks`. Зависимости: P1.
+**6.1 Validators**: `validate_config.py:242-244` — add `fable` and `inherit`; `test_validate_config.py` — cases; `translate_agents.py:8` — `fable` → **open** (Antigravity has the tiers `pro`/`flash`; I found no documentation mapping `fable` to them; until verified, keep an explicit fallback to `pro` with a comment and a test in `test_agy_hooks.py`); `agent-builder/SKILL.md:63`, `agent_builder.md:184-189,294`. Check: `make validate-claude`, `make test-claude-hooks`, `make test-agy-hooks`. Dependencies: P1.
 
-**6.2 Фронтматтер** `dot_ai/agents/*.md` по таблице ниже. Один источник правды — `model:`; прозу `agent-communication/SKILL.md:122-129`, `techne-implement.md:101`, `CLAUDE_ADAPTER.md:62-63` удалить. Codex TOML поля `model` не содержат — верно, наследуют (`dot_codex/README.md:155`). Проверка: `make validate-claude`. Зависимости: 6.1.
+**6.2 Frontmatter** in `dot_ai/agents/*.md` per the table below. Single source of truth — `model:`. Delete the prose in `agent-communication/SKILL.md:122-129`, `techne-implement.md:101`, `CLAUDE_ADAPTER.md:62-63`. Codex TOML files do not contain `model` — correct, they inherit (`dot_codex/README.md:155`). Check: `make validate-claude`. Dependencies: 6.1.
 
-### Фаза 7 — хуки
+### Phase 7 — hooks
 
-**7.1 `stop_user_actions_guard.py`** R3 (`:191-196`): тест на русский императив рядом со слэш-командой в `test_stop_user_actions_guard.py`. Проверка: `make test-claude-hooks`.
+**7.1 `stop_user_actions_guard.py`** R3 (`:191-196`): add a test in `test_stop_user_actions_guard.py` for a Russian imperative next to a slash command. Check: `make test-claude-hooks`.
 
-**7.2 `pre_edit_repo_boundary.py:33-37`**: считать in-project любой путь, чей `git rev-parse --git-common-dir` совпадает с общим `.git` проекта (worktree того же репозитория). Добавить `test_worktree_of_the_session_repository_is_allowed`. Зеркало в `dot_agy/bin/`. Проверка: `make test-claude-hooks`, `make test-agy-hooks`. Зависимости: P3.
+**7.2 `pre_edit_repo_boundary.py:33-37`**: treat as in-project any path whose `git rev-parse --git-common-dir` matches the project's shared `.git` (a worktree of the same repository). Add `test_worktree_of_the_session_repository_is_allowed`. Mirror in `dot_agy/bin/`. Check: `make test-claude-hooks`, `make test-agy-hooks`. Dependencies: P3.
 
-**7.3 Изоляция субагентов**: Claude Code поддерживает `isolation: worktree` во фронтматтере (docs/sub-agents), но `CLAUDE_ADAPTER.md:64` запрещает `EnterWorktree` в пользу `proj wt add`. Решить одним правилом (Q3) и записать в `workflow/SKILL.md`.
+**7.3 Subagent isolation**: Claude Code supports `isolation: worktree` in frontmatter (docs/sub-agents), but `CLAUDE_ADAPTER.md:64` prefers `proj wt add` over `EnterWorktree`. Decide on one rule (Q3) and record it in `workflow/SKILL.md`.
 
-### Фаза 8 — проверка
+### Phase 8 — verification
 
-**8.1** `make qa`, `make validate-claude`, `make validate-skills`, `make rules-budget`, `make test-live-guard`; деплой `make "$MNEMOSYNE_PERISTASEOS" EXTRA_VARS='--tags ai,claude,codex,agy'`.
-**8.2** Сквозной прогон на учебной задаче в отдельном worktree этого репозитория: контракт → developer ∥ test writer → reviewer с `refute_*` → фикс → push → CI → auto-merge в тестовую ветку-«master» (временная ветка `landing-test`, чтобы не трогать настоящий `master`) → отчёт. Критерии: ни одного `AskUserQuestion`, `decisions.md` заполнен, `refute_*` отсутствует после фикса, параллельные worktree не мешают.
+**8.1** `make qa`, `make validate-claude`, `make validate-skills`, `make rules-budget`, `make test-live-guard`; deploy with `make "$MNEMOSYNE_PERISTASEOS" EXTRA_VARS='--tags ai,claude,codex,agy'`.
+**8.2** End-to-end run on a practice task in a separate worktree of this repository: contract → developer ∥ test writer → reviewer with `refute_*` → fix → push → CI → auto-merge into a test branch called `landing-test` (a temporary branch, so the real `master` is untouched) → report. Criteria: no `AskUserQuestion` calls; `decisions.md` is filled in; no `refute_*` left after the fix; parallel worktrees do not interfere with each other.
 
-### Порядок коммитов и откат
+### Commit order and rollback
 
-Каждый шаг — один коммит с Jira-ключом задачи в заголовке (ключ появится через `prepare-commit-msg`, если ветка названа `<KEY>_<slug>`). Порядок фаз фиксирован зависимостями: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8; внутри фазы 2 шаги независимы и могут идти параллельно в разных worktree. Два шага нельзя разносить по разным деплоям: 4.1 (хук) и 4.2 (политика) — иначе либо Markdown разрешает то, что хук запрещает, либо наоборот. Откат любого шага — `git revert` его коммита; откат 4.1 возвращает прежний deny, и это единственный шаг, после отката которого остальное дерево остаётся согласованным только при одновременном откате 4.2 и 4.3. Деплой на машину (`make "$MNEMOSYNE_PERISTASEOS" EXTRA_VARS='--tags ai,claude,codex,agy'`) делать после каждой фазы, а не после каждого шага: Block 1 rsync `--delete` перезапишет `~/.claude/` целиком, и промежуточное состояние фазы (например, 4.1 без 4.2) не должно жить на живом движке.
+Each step is one commit, with the task's Jira key in the title (the key is added by `prepare-commit-msg` if the branch is named `<KEY>_<slug>`). Phase order follows the dependencies: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8. Within phase 2 the steps are independent and can run in parallel in separate worktrees. Steps 4.1 (hook) and 4.2 (policy) must not be deployed separately: otherwise Markdown either permits what the hook denies, or the reverse. Rolling back any step means `git revert` of its commit. Rolling back 4.1 restores the old deny, and it is the only step after which the rest of the tree stays consistent only if 4.2 and 4.3 are rolled back at the same time. Deploy to the machine (`make "$MNEMOSYNE_PERISTASEOS" EXTRA_VARS='--tags ai,claude,codex,agy'`) after each phase, not after each step: Block 1 rsync with `--delete` overwrites `~/.claude/` entirely, and an intermediate state of a phase (for example 4.1 without 4.2) must not live in the running engine.
 
-## Модели по ролям (проверить по докам перед 6.2)
+## Models by role (verify against the docs before 6.2)
 
-| Роль | Модель | Почему | Статус |
+| Role | Model | Why | Status |
 |---|---|---|---|
-| architect, technical_product_manager | `fable` | первые решения, на которых держится остальное; docs: «hardest and longest-running tasks» | алиас подтверждён; версия CLI ≥ 2.1.257 — проверить |
-| оценщик вариантов для архитектурных решений (advocates в DSS) | `fable` | независимая проверка высоких ставок | то же |
-| domain_modeller, api_designer, designer, database_designer, implementation_planner | `opus` | контракты для двух потребителей | без изменений |
-| software_engineer_* | `opus` (`sonnet` по явному флагу) | точность реализации, ревьюер ловит остальное | без изменений |
-| unit/integration test writers | `sonnet`, `opus` при сложном контракте (решает диспетчер по размеру интерфейса, не агент) | спецификация → тесты | убрать самоостановку |
-| code_reviewer | `opus` | ревью корректности + падающие тесты | без изменений |
-| build_resolver_go, doc_updater, refactor_cleaner, consistency_checker, freshness_auditor, observability_engineer | `sonnet` | ограниченные задачи | без изменений |
-| tdd_guide, focus_coach | `sonnet` | диалог | не трогать |
-| `haiku` | не назначать | ни одна роль не механическая | — |
-| Antigravity-тир для `fable` | `pro` (fallback) | нет документации на сопоставление | открыто |
+| architect, technical_product_manager | `fable` | first decisions that everything else depends on; docs: "hardest and longest-running tasks" | alias confirmed; CLI version ≥ 2.1.257 to check |
+| option evaluators for architecture decisions (advocates in DSS) | `fable` | independent check of high-stakes choices | same |
+| domain_modeller, api_designer, designer, database_designer, implementation_planner | `opus` | contracts for two consumers | unchanged |
+| software_engineer_* | `opus` (`sonnet` with an explicit flag) | accuracy of implementation; the reviewer catches the rest | unchanged |
+| unit/integration test writers | `sonnet`, `opus` for a complex contract (the dispatcher decides by interface size, not the agent) | specification → tests | remove the self-stop |
+| code_reviewer | `opus` | correctness review + failing tests | unchanged |
+| build_resolver_go, doc_updater, refactor_cleaner, consistency_checker, freshness_auditor, observability_engineer | `sonnet` | bounded tasks | unchanged |
+| tdd_guide, focus_coach | `sonnet` | dialogue | do not touch |
+| `haiku` | do not assign | no role is purely mechanical | — |
+| Antigravity tier for `fable` | `pro` (fallback) | no documentation for the mapping | open |
 
-## Решения и отчёт: раскладка `.ai_artifacts/`
+## Decisions and report: `.ai_artifacts/` layout
 
 ```
 .ai_artifacts/
-  <KEY>_<slug>/            # или _adhoc/<sanitised_branch>/
-    contract.md            # цель, критерии, полномочия, пред-разрешённое
-    plan.md                # индекс плана (implementation_planner)
+  <KEY>_<slug>/            # or _adhoc/<sanitised_branch>/
+    contract.md            # goal, criteria, authority, pre-authorised actions
+    plan.md                # plan index (implementation_planner)
     streams/WS-<n>-<slug>.md
     entities.md, api_spec.yaml | *.proto   # domain_modeller, api_designer
-    decisions.md           # журнал решений (формат ниже)
-    dss_output.json        # машинная запись DSS, когда запрошена
-    review.md              # находки ревьюера со ссылками на refute_*
-    ci.md                  # push → run id → статус → что исправлено
-    report.md              # итоговый отчёт пользователю
+    decisions.md           # decision log (format below)
+    dss_output.json        # machine-readable DSS record, when requested
+    review.md              # reviewer findings with links to refute_*
+    ci.md                  # push → run id → status → what was fixed
+    report.md              # final report to the user
 ```
 
-Запись в `decisions.md`: `## D<n> — <вопрос>` → уровень (routine / stated / escalated) → для проектных решений 5–7 вариантов с плюсами/минусами и найденной синергией → выбор и причина → отвергнутые → как отменить → статус (`decided`, `raised`). Ниже порога — одна строка `D<n>: <выбор> — <причина>`.
+Entry format in `decisions.md`: `## D<n> — <question>` → level (routine / stated / escalated) → for design decisions, 5–7 options with pros/cons and the synergy found → choice and reason → rejected options → how to undo → status (`decided`, `raised`). Below the threshold, a single line `D<n>: <choice> — <reason>`.
 
-`report.md` и ответ пользователю: ссылка на PR и статус merge; критерии PASS/FAIL с доказательством; `Decisions I made` (только stated/escalated, с номерами D<n>); блокеры; состояние CI; `What I need from you` — только при BLOCKED (ядро §4:116-120, хук R1-R3). Папка коммитится в ветку вместе с работой; `.gitignore` её не исключает (проверено).
+`report.md` and the reply to the user: link to the PR and merge status; criteria PASS/FAIL with evidence; `Decisions I made` (only stated/escalated, with D<n> numbers); blockers; CI status; `What I need from you` — only for BLOCKED items (core §4:116-120, hook R1-R3). The folder is committed to the branch along with the work; `.gitignore` does not exclude it (checked).
 
-## Риски
+## Risks
 
-| Риск | Смягчение |
+| Risk | Mitigation |
 |---|---|
-| 4.1 открывает commit/push, и агент коммитит мусор | deny на `main|master`, `--amend`, `--force*`, `--no-verify` остаются; обязательный `git_safe_commit.py`; PR всегда создаётся до merge |
-| Авто-merge при неполном наборе required checks | до подтверждения P6 — хардкод четырёх джобов + запрет merge, если хотя бы один не отчитался |
-| Тесты, написанные параллельно, не компилируются против реализации | test writer работает только от сигнатур контракта; расхождение = contract gap в `decisions.md`, разработчик правит реализацию, не тесты |
-| Ревьюер с правом записи начинает чинить код | allowlist путей тестов в теле агента + проверка в 8.2; TOML `workspace-write` только для `refute_*` |
-| `refute_*` остаются в ветке | условие 4 в 4.3 блокирует merge |
-| Процесс 5–7 вариантов съедает бюджет на мелочах | порог 0.2 + плейсхолдер примеров; ниже порога — одна строка |
-| Бюджет Codex 32 KiB | новые правила в skills; `test_codex_assets.py` в CI |
-| `dot_agy/bin` разошёлся с `dot_claude/bin` | каждый шаг хуков — обе копии, оба make-таргета |
-| `fable` недоступен на машине (версия CLI, гейтвей) | docs: fallback на session model тихий — шаг 8.2 проверяет фактическую модель через hook log (`universal_logger`) |
+| 4.1 opens commit/push, and the agent commits junk | deny on `main|master`, `--amend`, `--force*`, `--no-verify` stay; mandatory `git_safe_commit.py`; PR is always created before merge |
+| Auto-merge with an incomplete set of required checks | until P6 is confirmed, hardcode the four CI jobs and refuse merge if any of them has not reported |
+| Tests written in parallel do not compile against the implementation | the test writer works only from contract signatures; a mismatch is a contract gap recorded in `decisions.md`; the developer fixes the implementation, not the tests |
+| A reviewer with write access starts fixing code | allowlist of test paths in the agent body + check in 8.2; the TOML is `workspace-write` only for `refute_*` |
+| `refute_*` files stay in the branch | condition 4 in 4.3 blocks merge |
+| The 5–7 option process eats the budget on small things | threshold 0.2 + placeholder for examples; below the threshold, one line |
+| Codex budget of 32 KiB | new rules go into skills; `test_codex_assets.py` runs in CI |
+| `dot_agy/bin` drifts from `dot_claude/bin` | every hook step touches both copies and both make targets |
+| `fable` unavailable on a machine (CLI version, gateway) | docs: fallback to the session model is silent — step 8.2 checks the actual model through the hook log (`universal_logger`) |
 
-## Открытые вопросы владельцу
+## Open questions for the owner
 
-1. **Merge-стратегия**: squash (рекомендация — один коммит на задачу, Jira-ключ в заголовке) или merge-commit?
-2. **Branch protection на `master`**: если требует approving review человека, авто-merge невозможен. Рекомендация: required checks = четыре джоба CI, review не требовать, разрешить auto-merge в настройках репозитория.
-3. **Worktree-механика для субагентов**: `isolation: worktree` Claude Code (временный, удаляется без изменений) или нынешний `proj wt add` (`CLAUDE_ADAPTER.md:64`)? Рекомендация: оставить `proj wt add`, так как `pre_edit_repo_boundary` и раскладка `$AION_AUTOPOIESEON` уже на него завязаны; 7.2 делает его безопасным.
-4. **Antigravity и `fable`**: fallback `pro` или исключить агентов на `fable` из `agy`-деплоя? Рекомендация: `pro` с комментарием до появления документации.
+1. **Merge strategy**: squash (recommended — one commit per task, Jira key in the title) or merge commit?
+2. **Branch protection on `master`**: if it requires an approving human review, auto-merge is impossible. Recommendation: required checks = the four CI jobs, no human review required, auto-merge enabled in the repository settings.
+3. **Worktree mechanism for subagents**: Claude Code's `isolation: worktree` (temporary, removed without changes) or the existing `proj wt add` (`CLAUDE_ADAPTER.md:64`)? Recommendation: keep `proj wt add`, because `pre_edit_repo_boundary` and the `$AION_AUTOPOIESEON` layout already depend on it; step 7.2 makes it safe.
+4. **Antigravity and `fable`**: fall back to `pro`, or exclude agents on `fable` from the `agy` deployment? Recommendation: `pro` with a comment until documentation exists.
 
-## Пороговые примеры (будут добавлены из сырых логов)
+## Threshold examples (to be added from raw logs)
 
-> Плейсхолдер. Сюда войдут реальные случаи, где пользователь явно требовал обсуждения вариантов (с цитатой запроса, типом решения — структура / алгоритм / форма API / структура данных / границы модулей — и тем, что было выбрано), и контрпримеры ниже порога. Примеры не придумываются; источник — сырые логи сессий. После добавления они переносятся в `diverge-synthesize-select/SKILL.md` (шаг 0.2).
+> Placeholder. This section will hold real cases where the user explicitly asked for a discussion of options: the request quoted, the type of decision (structure / algorithm / API shape / data structure / module boundaries), what was chosen, and counter-examples below the threshold. Examples are not invented; the source is raw session logs. Once added, they move into `diverge-synthesize-select/SKILL.md` (step 0.2).
 
-## Что проверено и что нет
+## What was checked and what was not
 
-Проверено по файлам: все `file:line` в шагах выше открыты и подтверждены, в том числе `unit_tests_writer.md:52-60`, `domain_modeller.md:113`, `api_designer.md:55,154,160`, `designer.md:55,120,168,196`, `database_designer.md:56,109`, `technical_product_manager.md:175-179,283,413,561`, `refactor_cleaner.md:60`, `observability_engineer.md:24-36,216,441-454,650`, `architect.md:49-50`, `agent_builder.md:184-189,294`, шесть команд с `AskUserQuestion`, `techne-implement.md:68-72,91,97,101,122,177-197`, `techne-review.md:25-27,85-110`, `workflow/SKILL.md:96,104,134,160`, `code-writing-protocols:17-44`, `agent-communication:122-129,148-166,200,208`, `lint-discipline:28,85-90`, `agent-builder/SKILL.md:63`, `translate_agents.py:8`, `validate_config.py:242-244`, `code-reviewer.toml:3,26`, `skill-builder.toml:5`, `CLAUDE_ADAPTER.md:17-18,44-45,62-65`, `dot_codex/AGENTS.md:52-57,97`, `GEMINI_ADAPTER.md:11-12`, `ci.yml:14-20`, `prepare-commit-msg:17,56,67`, бюджет Codex 21 882 B. По документации: `model: fable` в субагентах и алиас `fable` в Claude Code (code.claude.com, sub-agents и model-config). GitHub MCP работает (`get_me`).
+Checked against files: every `file:line` in the steps above was opened and confirmed, including `unit_tests_writer.md:52-60`, `domain_modeller.md:113`, `api_designer.md:55,154,160`, `designer.md:55,120,168,196`, `database_designer.md:56,109`, `technical_product_manager.md:175-179,283,413,561`, `refactor_cleaner.md:60`, `observability_engineer.md:24-36,216,441-454,650`, `architect.md:49-50`, `agent_builder.md:184-189,294`, the six commands that call `AskUserQuestion`, `techne-implement.md:68-72,91,97,101,122,177-197`, `techne-review.md:25-27,85-110`, `workflow/SKILL.md:96,104,134,160`, `code-writing-protocols:17-44`, `agent-communication:122-129,148-166,200,208`, `lint-discipline:28,85-90`, `agent-builder/SKILL.md:63`, `translate_agents.py:8`, `validate_config.py:242-244`, `code-reviewer.toml:3,26`, `skill-builder.toml:5`, `CLAUDE_ADAPTER.md:17-18,44-45,62-65`, `dot_codex/AGENTS.md:52-57,97`, `GEMINI_ADAPTER.md:11-12`, `ci.yml:14-20`, `prepare-commit-msg:17,56,67`, and the Codex budget of 21,882 bytes. Against documentation: `model: fable` for subagents and the `fable` alias in Claude Code (code.claude.com, sub-agents and model-config). The GitHub MCP works (`get_me`).
 
-Исправлено относительно черновика: `$TMPDIR` в ядре — §5:143, не §4; исключение temp-директории в `pre_edit_repo_boundary` существует (`paths.temp_roots`); `bash_decision_gate.py` безусловно запрещает commit/push — критичный пропуск; DSS-skill уже содержит процедуру вариантов — новый `option-deliberation` не нужен; основная ветка — `master`, не `main`; `techne-implement.md:68-72` и `techne-plan.md` Jira уже не спрашивают.
+Corrected from the draft: `$TMPDIR` in the core is at §5:143, not §4; the temporary-directory exclusion in `pre_edit_repo_boundary` does exist (`paths.temp_roots`); `bash_decision_gate.py` denies commit/push unconditionally — a critical omission; the DSS skill already contains the option procedure, so a new `option-deliberation` is not needed; the default branch is `master`, not `main`; `techne-implement.md:68-72` and `techne-plan.md` no longer ask about Jira.
 
-Не проверено: branch protection / rulesets и настройка auto-merge на `abrosimov/devbox-setup` (`gh` токен невалиден, в MCP нет инструмента); версия `claude` на целевой машине (≥ 2.1.257 для Fable 5.1); сопоставление `fable` с тирами Antigravity; поведение `pre_plan_code_guard.py` для `streams/*.md`; поддержка `workspace-write` в текущей версии Codex для TOML-агентов (`dot_codex/README.md:41` отдаёт это клиенту Codex).
+Not checked: branch protection / rulesets and the auto-merge setting on `abrosimov/devbox-setup` (the `gh` token is invalid and MCP has no tool for it); the `claude` version on the target machine (≥ 2.1.257 for Fable 5.1); the mapping of `fable` to Antigravity tiers; the behaviour of `pre_plan_code_guard.py` for `streams/*.md`; `workspace-write` support in the current Codex version for TOML agents (`dot_codex/README.md:41` leaves this to the Codex client).

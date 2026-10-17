@@ -44,9 +44,18 @@ SubagentStart = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/
 SubagentStop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SubagentStop", type = "command" }] }]
 UserPromptSubmit = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py UserPromptSubmit", type = "command" }] }]
 
+
+[tui]
+alternate_screen = "never"
+raw_output_mode = false
+screen_reader_detection_done = true
+
 [plugins]
 
 [plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."code-review@openai-bundled"]
 enabled = true
 
 [plugins."codex-app-tools@openai-bundled"]
@@ -59,9 +68,6 @@ enabled = true
 enabled = true
 
 [plugins."presentations@openai-primary-runtime"]
-enabled = true
-
-[plugins."sites@openai-bundled"]
 enabled = true
 
 [plugins."spreadsheets@openai-primary-runtime"]
@@ -78,8 +84,3 @@ enabled = true
 
 [plugins."visualize@openai-bundled"]
 enabled = true
-
-[tui]
-alternate_screen = "never"
-raw_output_mode = false
-screen_reader_detection_done = true

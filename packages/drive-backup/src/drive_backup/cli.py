@@ -55,6 +55,7 @@ def _check_config(cfg: config.Config) -> int:
 
     print(f"repo_dir: {cfg.repo_dir}{mark(cfg.repo_dir)}")
     print(f"zstd_level: {cfg.zstd_level}")
+    print(f"max_part_bytes: {cfg.max_part_bytes}")
     for spec in cfg.dirs:
         print(f"- {spec.name}: {spec.path}{mark(spec.path)}")
         for pattern in spec.exclude:

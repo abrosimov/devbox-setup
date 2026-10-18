@@ -20,6 +20,9 @@ from typing import cast
 WORKSPACE_ENV = "AION_AUTOPOIESEON"
 PROFILE_ENV = "MNEMOSYNE_PERISTASEOS"
 DEFAULT_REPO_DIR = "drive/base"
+DEFAULT_MAX_PART_BYTES = 1900 * 2**20
+# GitHub LFS rejects objects larger than 2 GiB.
+LFS_MAX_OBJECT_BYTES = 2**31
 
 # `_` separates profile, name and date in archive file names, so it is not allowed
 # inside either component.
@@ -49,6 +52,7 @@ class Config:
     repo_dir: Path
     dirs: tuple[DirSpec, ...]
     zstd_level: int = 9
+    max_part_bytes: int = DEFAULT_MAX_PART_BYTES
 
 
 def validate_token(kind: str, value: str) -> str:
@@ -145,12 +149,15 @@ def _is_within(child: Path, parent: Path) -> bool:
 
 
 def parse(data: Table, env: dict[str, str]) -> Config:
-    _check_known(data, {"repo_dir", "zstd_level", "defer", "dir"}, "config")
+    _check_known(data, {"repo_dir", "zstd_level", "max_part_bytes", "defer", "dir"}, "config")
     _validate_legacy_defer(data.get("defer", {}))
     repo_dir = resolve_path(_get(data, "repo_dir", str, "config", DEFAULT_REPO_DIR), env)
     level = _get(data, "zstd_level", int, "config", 9)
     if not 1 <= level <= 22:
         raise ConfigError("config: zstd_level must be within 1..22")
+    max_part_bytes = _get(data, "max_part_bytes", int, "config", DEFAULT_MAX_PART_BYTES)
+    if not 0 < max_part_bytes <= LFS_MAX_OBJECT_BYTES:
+        raise ConfigError(f"config: max_part_bytes must be within 1..{LFS_MAX_OBJECT_BYTES}")
 
     raw_dirs = cast(list[object], _get(data, "dir", list, "config", []))
     if not raw_dirs:
@@ -170,6 +177,7 @@ def parse(data: Table, env: dict[str, str]) -> Config:
         repo_dir=repo_dir,
         dirs=dirs,
         zstd_level=level,
+        max_part_bytes=max_part_bytes,
     )
 
 

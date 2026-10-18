@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pytest
 
-GITATTRIBUTES = "*.tar.zst filter=lfs diff=lfs merge=lfs -text\n"
+GITATTRIBUTES = (
+    "*.tar.zst filter=lfs diff=lfs merge=lfs -text\n"
+    "*.tar.zst.part-* filter=lfs diff=lfs merge=lfs -text\n"
+)
 
 
 def git(cwd: Path, *args: str) -> str:

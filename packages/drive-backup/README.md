@@ -34,6 +34,7 @@ the lock.
 ```toml
 repo_dir = "drive/base"      # default; relative to $AION_AUTOPOIESEON
 zstd_level = 9               # 1..22
+max_part_bytes = 1992294400  # default 1900 MiB; 1..2147483648 (GitHub LFS 2 GiB limit)
 
 [[dir]]
 name = "claude"              # [a-z0-9-]; part of the archive file name
@@ -45,6 +46,11 @@ exclude = ["bin/.venv", "**/__pycache__"]
 `PurePath.full_match` semantics: `*` stays within one path segment, `**` spans any
 number. A pattern that matches a directory prunes the whole subtree.
 
+`max_part_bytes` caps the size of every file a run writes, because GitHub LFS
+rejects objects larger than 2 GiB (2147483648 bytes). An archive whose compressed
+stream is larger is written as numbered parts (see the layout below). The default,
+1900 MiB, leaves headroom under the limit.
+
 Older configs may still contain per-directory `busy` lists and a top-level
 `[defer]` table. They are validated for compatibility but ignored; every run
 archives immediately.
@@ -55,11 +61,13 @@ archives immediately.
 2. Preflight: `repo_dir` is a repository root on a branch with an upstream, the
    tracked tree is clean, `git-lfs` is installed and its filters are configured.
    If this fails, nothing is written; the error goes to stderr only.
-3. `git pull --ff-only` (with `GIT_LFS_SKIP_SMUDGE=1`: other machines' archives
-   stay pointers).
+3. `git pull --rebase` (with `GIT_LFS_SKIP_SMUDGE=1`: other machines' archives
+   stay pointers). Backup commits that an earlier run could not push are replayed
+   onto the remote and go out with this run's push. A rebase that stops on a
+   conflict is aborted and the run fails, leaving the branch as it was.
 4. Immediately archives every configured directory as a fuzzy snapshot, without
-   inspecting running processes. Refuses to write an archive whose path is not
-   LFS-tracked.
+   inspecting running processes. Every file it produces must be LFS-tracked, or
+   the archive is discarded and the run fails.
 5. Commits the archives and the run log in one commit, uploads LFS objects
    explicitly (`git lfs push`), pushes, and on a non-fast-forward rebases and
    retries.
@@ -67,15 +75,37 @@ archives immediately.
 Layout:
 
 ```
-<YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst    # -2, -3 … on same-day reruns
+<YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst            # -2, -3 … on same-day reruns
+<YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst.part-001   # larger than max_part_bytes:
+<YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst.part-002   #   parts instead of the .tar.zst
 <YYYY-MM>/<profile>_backup_<YYYY-MM-DD>.log
 ```
 
-Archives are rooted at the directory's own name (`.claude/…`). Restore:
+An archive that fits in `max_part_bytes` is a single `.tar.zst`. A larger one is
+cut on the fly into `.part-001`, `.part-002`, … (contiguous, every part but the
+last exactly `max_part_bytes`) and no `.tar.zst` is written. The parts are a plain
+byte split of the one compressed stream, so concatenating them in order yields the
+`.tar.zst`; there is no manifest. The repository's `.gitattributes` must track both
+names:
+
+```
+*.tar.zst filter=lfs diff=lfs merge=lfs -text
+*.tar.zst.part-* filter=lfs diff=lfs merge=lfs -text
+```
+
+Archives are rooted at the directory's own name (`.claude/…`). Restore a
+single-file archive:
 
 ```bash
 git lfs pull --include '2026-09/work_claude_2026-09-26.tar.zst'
 tar --zstd -xf 2026-09/work_claude_2026-09-26.tar.zst -C /tmp/restore
+```
+
+Restore a multi-part archive (the shell sorts the zero-padded part names in order):
+
+```bash
+git lfs pull --include '2026-09/work_codex_2026-09-26.tar.zst.part-*'
+cat 2026-09/work_codex_2026-09-26.tar.zst.part-* | tar --zstd -xf - -C /tmp/restore
 ```
 
 Files that change while being read are stored at the size recorded in their tar

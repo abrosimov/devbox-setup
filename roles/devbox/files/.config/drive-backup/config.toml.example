@@ -12,10 +12,13 @@
 #
 # Paths: `~`, `$VARS`, or relative to $AION_AUTOPOIESEON. Archives land in
 # <repo_dir>/<YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst with the profile
-# taken from $MNEMOSYNE_PERISTASEOS. Full reference: packages/drive-backup/README.md.
+# taken from $MNEMOSYNE_PERISTASEOS; an archive larger than max_part_bytes is
+# written as .tar.zst.part-001, .part-002, … instead.
+# Full reference: packages/drive-backup/README.md.
 
 # repo_dir = "drive/base"     # default: $AION_AUTOPOIESEON/drive/base
 # zstd_level = 9
+# max_part_bytes = 1992294400 # default 1900 MiB; at most 2147483648 (GitHub LFS limit)
 
 [[dir]]
 name = "claude"

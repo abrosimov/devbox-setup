@@ -2,7 +2,8 @@
 
 Output layout inside the repository::
 
-    <YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst
+    <YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst            # fits in one part
+    <YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst.part-001   # otherwise, -002, …
     <YYYY-MM>/<profile>_backup_<YYYY-MM-DD>.log
 
 The run log is committed together with the archives, and also when the run fails,
@@ -78,6 +79,15 @@ def archive_name(profile: str, name: str, day: str, taken: Callable[[str], bool]
     return candidate
 
 
+def archive_taken(month_dir: Path, name: str) -> bool:
+    return (month_dir / name).exists() or any(month_dir.glob(f"{name}.part-*"))
+
+
+def _archive_label(result: ArchiveResult) -> str:
+    first = result.parts[0].name
+    return first if len(result.parts) == 1 else f"{first}..{len(result.parts):03d}"
+
+
 class Backup:
     def __init__(
         self, config: Config, options: RunOptions, git: GitRepo, runtime: Runtime | None = None
@@ -93,14 +103,25 @@ class Backup:
     # -- archiving -----------------------------------------------------------------
 
     def _archive(self, spec: DirSpec, report: RunReport) -> None:
-        rel_month = self.month_dir.relative_to(self.config.repo_dir)
+        repo = self.config.repo_dir
+        rel_month = self.month_dir.relative_to(repo)
         name = archive_name(
-            self.options.profile, spec.name, self.day, lambda n: (self.month_dir / n).exists()
+            self.options.profile,
+            spec.name,
+            self.day,
+            lambda n: archive_taken(self.month_dir, n),
         )
+        # Fail fast, before compressing; every produced file is checked again below.
         self.git.require_lfs_tracked(f"{rel_month}/{name}")
         log.info("archiving %s (%s) -> %s/%s", spec.name, spec.path, rel_month, name)
         t0 = self.rt.monotonic()
-        result = write_archive(spec, self.month_dir / name, self.config.zstd_level)
+        result = write_archive(
+            spec,
+            self.month_dir / name,
+            self.config.zstd_level,
+            self.config.max_part_bytes,
+            approve=lambda path: self.git.require_lfs_tracked(str(path.relative_to(repo))),
+        )
         for warning in result.warnings:
             log.warning("%s: %s", spec.name, warning)
         log.info(
@@ -111,6 +132,13 @@ class Backup:
             result.bytes_out / 2**20,
             self.rt.monotonic() - t0,
         )
+        if len(result.parts) > 1:
+            log.info(
+                "split %s into %d parts: %s",
+                name,
+                len(result.parts),
+                ", ".join(f"{p.name} {p.stat().st_size / 2**20:.1f} MiB" for p in result.parts),
+            )
         report.archives.append(result)
 
     def archive_all(self, report: RunReport) -> None:
@@ -126,7 +154,7 @@ class Backup:
         head = f"backup({self.options.profile}): {self.day}"
         if not report.ok:
             return f"{head} FAILED: {report.error}"
-        names = ", ".join(r.path.name for r in report.archives)
+        names = ", ".join(_archive_label(r) for r in report.archives)
         return f"{head}: {names}"
 
     def run(self, log_buffer: io.StringIO) -> RunReport:
@@ -158,7 +186,7 @@ class Backup:
         with log_path.open("a", encoding="utf-8") as fh:
             fh.write(log_buffer.getvalue())
         repo = self.config.repo_dir
-        paths = [str(r.path.relative_to(repo)) for r in report.archives]
+        paths = [str(p.relative_to(repo)) for r in report.archives for p in r.parts]
         paths.append(str(log_path.relative_to(repo)))
         try:
             committed = self.git.commit(paths, self._commit_message(report))

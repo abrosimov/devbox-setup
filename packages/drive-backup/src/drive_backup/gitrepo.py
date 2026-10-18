@@ -8,6 +8,10 @@ the branch itself is pushed.
 
 ``GIT_LFS_SKIP_SMUDGE=1`` keeps ``pull`` from downloading every archive that other
 machines pushed: the working tree only ever needs their pointers.
+
+``pull`` rebases rather than fast-forwards, so backup commits left unpushed by an
+earlier failed push are replayed onto the remote and go out with the next push. A
+rebase that stops half-way is aborted, so it never wedges the following runs.
 """
 
 from __future__ import annotations
@@ -84,13 +88,21 @@ class GitRepo:
         if not attr.endswith(": lfs"):
             raise GitError(
                 f"{rel} is not tracked by LFS ({attr!r}); add "
-                "`*.tar.zst filter=lfs diff=lfs merge=lfs -text` to .gitattributes"
+                "`*.tar.zst filter=lfs diff=lfs merge=lfs -text` and "
+                "`*.tar.zst.part-* filter=lfs diff=lfs merge=lfs -text` to .gitattributes"
             )
 
     # -- sync ----------------------------------------------------------------------
 
+    def _pull_rebase(self, *remote_branch: str) -> None:
+        try:
+            self._git("pull", "--rebase", "--quiet", *remote_branch)
+        except GitError:
+            self._git("rebase", "--abort", check=False)
+            raise
+
     def pull(self) -> None:
-        self._git("pull", "--ff-only", "--quiet")
+        self._pull_rebase()
 
     def commit(self, paths: Sequence[str], message: str) -> bool:
         """Commit exactly ``paths``; return False when there was nothing to commit."""
@@ -115,5 +127,5 @@ class GitRepo:
             log.warning("push attempt %d failed: %s", attempt, proc.stderr.strip())
             if attempt < self.push_attempts:
                 # Another machine pushed first; our archives never collide with its.
-                self._git("pull", "--rebase", "--quiet", remote, branch)
+                self._pull_rebase(remote, branch)
         raise GitError(f"push to {remote}/{branch} failed after {self.push_attempts} attempts")

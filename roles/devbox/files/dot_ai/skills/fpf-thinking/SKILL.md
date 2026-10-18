@@ -36,11 +36,6 @@ rg -n '^## SYSE\.47\s*[-—]' 'references/DPFs/Engineering DPF Suite/SYSTEMS-ENG
 rg -l -i 'stale cache|invalidat' references/                       # difficulty words, all files
 ```
 
-When an `fpf` MCP server is connected (`https://mcp.fpf.tools/mcp`), its `search`,
-`read_pattern` and `backlinks` tools read the current published edition without loading files.
-Prefer the local snapshot when the answer must match the vendored edition, and pass the server's
-`expected_snapshot` when continuing a reading.
-
 DPF headings use either a hyphen or an em dash after the id, so accept both. Use the `:End` heading
 as the pattern boundary. Search for a distinctive slot title such as `Solution`, `Conformance`,
 `Rationale` or `Relations` instead of assuming its slot number.

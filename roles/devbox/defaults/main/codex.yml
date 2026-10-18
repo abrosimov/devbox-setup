@@ -68,3 +68,8 @@ devbox_codex_plugins:
   - name: tracing
     marketplace: codex-observability-plugin
     version: 0.1.0
+
+# Codex app-server daemon releases kept under ~/.codex/packages (newest by
+# install time, plus the `current` target). Older releases are removed on every
+# Codex config deploy.
+devbox_codex_daemon_releases_keep: 3

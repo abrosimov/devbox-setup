@@ -1,0 +1,44 @@
+---
+# Gemini CLI prunes saved sessions older than 30 days by default
+# (general.sessionRetention). Sessions are kept indefinitely here, so the
+# cleanup is switched off. The app also writes this file (security.auth), so our
+# keys are merged into it rather than replacing it.
+
+- name: "Gemini CLI — resolve settings path"
+  ansible.builtin.set_fact:
+    devbox_gemini_cli_settings_path: >-
+      {{ (ansible_facts['env']['HOME'] ~ '/.gemini/settings.json')
+         if devbox_paths.dotfiles_root_dir == '~'
+         else (devbox_paths.dotfiles_root_dir ~ '/.gemini/settings.json') }}
+  tags: [gemini, agents]
+
+- name: "Gemini CLI — stat settings"
+  ansible.builtin.stat:
+    path: "{{ devbox_gemini_cli_settings_path }}"
+  register: devbox_gemini_cli_settings_stat
+  tags: [gemini, agents]
+
+- name: "Gemini CLI — read current settings"
+  ansible.builtin.slurp:
+    src: "{{ devbox_gemini_cli_settings_path }}"
+  register: devbox_gemini_cli_settings_current
+  when: devbox_gemini_cli_settings_stat.stat.exists
+  tags: [gemini, agents]
+
+- name: "Gemini CLI — ensure settings directory exists"
+  ansible.builtin.file:
+    path: "{{ devbox_gemini_cli_settings_path | dirname }}"
+    state: directory
+    mode: "0700"
+  tags: [gemini, agents]
+
+- name: "Gemini CLI — disable session retention cleanup"
+  ansible.builtin.copy:
+    content: >-
+      {{ ((devbox_gemini_cli_settings_current.content | b64decode | from_json)
+          if devbox_gemini_cli_settings_stat.stat.exists else {})
+         | combine({'general': {'sessionRetention': {'enabled': false}}}, recursive=True)
+         | to_nice_json(indent=2) }}
+    dest: "{{ devbox_gemini_cli_settings_path }}"
+    mode: "0600"
+  tags: [gemini, agents]

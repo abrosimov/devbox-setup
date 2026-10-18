@@ -392,3 +392,35 @@
           '--json']
          + (['--plugin'] | product(devbox_codex_hook_trust_plugin_ids) | flatten) }}
   tags: [configs, ai, codex]
+
+# Codex's app-server daemon auto-updates into a new release directory (~320 MB)
+# and never removes old ones (openai/codex#52067). Keep the newest
+# devbox_codex_daemon_releases_keep by install time; the `current` target is
+# never removed, whatever its age. Sessions and other state are not touched.
+- name: Find Codex app-server daemon releases
+  ansible.builtin.find:
+    paths: "{{ devbox_codex_home }}/packages/app-server-daemon/releases"
+    file_type: directory
+    recurse: false
+  register: devbox_codex_daemon_releases
+  tags: [configs, ai, codex]
+
+- name: Resolve the current Codex app-server daemon release
+  ansible.builtin.stat:
+    path: "{{ devbox_codex_home }}/packages/app-server-daemon/current"
+  register: devbox_codex_daemon_current
+  tags: [configs, ai, codex]
+
+- name: Remove superseded Codex app-server daemon releases
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: >-
+    {{ (devbox_codex_daemon_releases.files
+        | sort(attribute='mtime', reverse=true)
+        | map(attribute='path')
+        | list)[(devbox_codex_daemon_releases_keep | int):]
+       | reject('equalto', devbox_codex_daemon_current.stat.lnk_source | default(''))
+       | list }}
+  when: devbox_codex_daemon_current.stat.islnk | default(false)
+  tags: [configs, ai, codex]

@@ -87,6 +87,8 @@
   ansible.builtin.include_tasks: install_configs.yml
 - name: "Install portable Codex config"
   ansible.builtin.include_tasks: install_codex_configs.yml
+- name: "Configure Gemini CLI settings (keep sessions)"
+  ansible.builtin.include_tasks: darwin/configure_gemini_cli.yml
 - name: "Apply configs"
   ansible.builtin.include_tasks: apply_configs.yml
 - name: "Finish user polishing"

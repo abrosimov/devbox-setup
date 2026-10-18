@@ -6,11 +6,16 @@ from typing import cast
 
 import pytest
 import yaml
+from ai_config import (
+    ConfigurationFormat,
+    build_repository_document,
+    load_template_variables,
+    snapshot_mapping,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TASKS_PATH = REPO_ROOT / "roles/devbox/tasks/install_configs.yml"
 AGY_SETTINGS_PATH = REPO_ROOT / "roles/devbox/files/dot_agy/cli/settings.json.j2"
-CLAUDE_DEFAULTS_PATH = REPO_ROOT / "roles/devbox/defaults/main/claude.yml"
 CLAUDE_SETTINGS_PATH = REPO_ROOT / "roles/devbox/files/dot_claude/settings.json.j2"
 AI_ROOT = REPO_ROOT / "roles/devbox/files/dot_ai"
 
@@ -71,11 +76,23 @@ class TestClaudeSettingsWriter:
 
         assert "environment" not in task
 
-    def test_repository_settings_match_declared_plugin_state(self) -> None:
-        defaults = yaml.safe_load(CLAUDE_DEFAULTS_PATH.read_text(encoding="utf-8"))
-        settings = json.loads(CLAUDE_SETTINGS_PATH.read_text(encoding="utf-8"))
-        marketplaces = defaults["devbox_claude_plugin_marketplaces"]
-        plugins = defaults["devbox_claude_plugins"]
+    @pytest.mark.parametrize("profile", ["personal", "work"])
+    def test_repository_settings_match_declared_plugin_state(self, profile: str) -> None:
+        """`claude plugin install` writes enabledPlugins itself, so the rendered
+        settings must name exactly the plugins the playbook installs for the profile,
+        or the next reconcile finds a live-only plugin it has to ask about."""
+        variables = load_template_variables(REPO_ROOT, profile)
+        settings = snapshot_mapping(
+            build_repository_document(
+                CLAUDE_SETTINGS_PATH.read_bytes(), ConfigurationFormat.JSON, variables
+            ).rendered
+        )
+        marketplaces = cast(
+            "list[dict[str, object]]", variables["devbox_claude_plugin_marketplaces"]
+        )
+        plugins = cast("list[dict[str, str]]", variables["devbox_claude_plugins"]) + cast(
+            "list[dict[str, str]]", variables["devbox_extra_claude_plugins"]
+        )
 
         expected_marketplaces = {
             marketplace["name"]: {"source": {"source": "github", "repo": marketplace["repo"]}}

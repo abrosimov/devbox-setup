@@ -32,7 +32,10 @@
     "CC_LANGFUSE_DEBUG": "true",
     "CC_LANGFUSE_TRACE_TAGS": "[\"engine:claude-code\", \"rules:{{ file_sha256(ai_config_home ~ '/.claude/CLAUDE.md') }}\"]",
     "LANGFUSE_TRACING_ENVIRONMENT": "{{ devbox_active_profile }}",
-    "LANGFUSE_USER_ID": "{{ devbox_langfuse_user_id }}"
+    "LANGFUSE_USER_ID": "{{ devbox_langfuse_user_id }}",
+    "LANGFUSE_HOST": "{{ devbox_langfuse_host or '@omit@' }}",
+    "LANGFUSE_PUBLIC_KEY": "{{ '@keychain@' if devbox_langfuse_host else '@omit@' }}",
+    "LANGFUSE_SECRET_KEY": "{{ '@keychain@' if devbox_langfuse_host else '@omit@' }}"
   },
   "permissions": {
     "allow": [
@@ -617,7 +620,7 @@
       {
         "hooks": [
           {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/langfuse_trace_hook.py",
             "type": "command"
           }
         ]
@@ -667,7 +670,7 @@
       {
         "hooks": [
           {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/langfuse_trace_hook.py",
             "timeout": 60,
             "type": "command"
           }
@@ -695,7 +698,7 @@
       {
         "hooks": [
           {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py",
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/langfuse_trace_hook.py",
             "timeout": 60,
             "type": "command"
           }
@@ -991,7 +994,8 @@
     "gopls-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "example-skills@anthropic-agent-skills": true,
-    "document-skills@anthropic-agent-skills": true
+    "document-skills@anthropic-agent-skills": true,
+    "{{ 'langfuse@claude-plugins-official' if 'langfuse' in devbox_extra_claude_plugins | map(attribute='name') else '@omit@' }}": true
   },
   "extraKnownMarketplaces": {
     "anthropic-agent-skills": {
@@ -1104,7 +1108,9 @@
         "registry.k8s.io",
         "mcp.atlassian.com",
         "stackoverflow.com",
-        "*.stackexchange.com"
+        "*.stackexchange.com",
+        "{{ devbox_langfuse_host | replace('https://', '') or '@omit@' }}",
+        "{{ 'langfuse.com' if devbox_langfuse_host else '@omit@' }}"
       ],
       "allowLocalBinding": true
     },

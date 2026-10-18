@@ -39,6 +39,7 @@ A profile is mandatory: bare `make run` / `make check` fail with `PROFILE is req
 | `make sync-upstream-docs` | Refresh the [FPF, Narrative and Engineering DPF bundle](roles/devbox/files/dot_ai/skills/fpf-thinking/references/bundle-index.md) from one upstream commit; use `ARGS='--check'` for a read-only comparison |
 | `make otelbox-edge-config` | Set the edge collector's remote endpoint + ingestion token (`ONLY=endpoint\|token`) |
 | `make otelbox-edge-test` | Liveness + delivery smoke for the edge collector (also runs after `make personal`/`work`) |
+| `make langfuse-config` | Seed or rotate the Langfuse API keys for the personal profile's `langfuse` Claude Code skill (login Keychain) |
 | `make go-proxy-verify` | Prove the private Go module proxy client end to end (needs an existing `tamias login`) |
 
 Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_VARS='-e foo=bar'` (e.g. `--tags`: `make personal EXTRA_VARS='--tags packages'`).
@@ -47,12 +48,13 @@ Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_V
 
 ### Secrets (macOS Keychain)
 
-Two login-keychain slots are used, seeded automatically on first `make personal`/`make work`:
+`devbox-sudo` and `devbox-ssh-passphrase` are seeded automatically on first `make personal`/`make work`; the personal-only `devbox-langfuse` pair is seeded by `make langfuse-config`, and `make personal` fails at the Claude settings reconcile until it is:
 
 | Slot | Contents | Consumers |
 |---|---|---|
 | `devbox-sudo` | Login/sudo password | `scripts/with_sudo_keepalive.sh` (primes `sudo -v`); `ansible.cfg` `become_password_file`; Homebrew cask `sudo_password:` (via `devbox_sudo_password` var) |
 | `devbox-ssh-passphrase` | SSH key passphrase | `roles/devbox/tasks/prepare_user.yml` (key generation); `configure_ssh_keychain.yml` (writes `SSH: <path>` slot for `ssh-add --apple-load-keychain`) |
+| `devbox-langfuse` (accounts `public-key`, `secret-key`) | Langfuse API key pair | `scripts/ai-config apply claude --profile personal` writes them into `~/.claude/settings.json` `env` for the `langfuse` skill |
 
 Rotation:
 
@@ -60,6 +62,7 @@ Rotation:
 make sudo-reseed              # after changing macOS login password
 make ssh-passphrase-reseed    # after changing/regenerating SSH passphrase
 make secrets-init             # reseed both (idempotent -U)
+make langfuse-config          # seed or rotate the Langfuse key pair (personal)
 ```
 
 Inspect existing slots via `security find-generic-password -s devbox-sudo` (or `-s devbox-ssh-passphrase`). The first read from any subprocess triggers a one-time Keychain ACL dialog — click "Always Allow" to grant `security` silent access thereafter.
@@ -80,6 +83,8 @@ Current per-profile differences:
 | Projects dir | `$HOME/Projects` | `$HOME/Work` |
 | Container runtime | `docker-desktop` | `orbstack` |
 | Extra MCP servers | none | `atlassian` (HTTP) |
+| Extra Claude plugins | `langfuse` (official marketplace) | none |
+| Langfuse skill access | `LANGFUSE_HOST`, Keychain API keys, sandbox domains for `langfuse.abrosimov.tech` and `langfuse.com` | none |
 
 ### System-Level macOS Tweaks
 

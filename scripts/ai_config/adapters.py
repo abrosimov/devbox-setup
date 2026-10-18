@@ -12,6 +12,7 @@ from .model import FieldPath, SemanticSnapshot, SnapshotError
 from .templating import (
     TemplateVariables,
     divergent_paths,
+    drop_omitted,
     load_template_variables,
     probe_variables,
     render_source,
@@ -194,10 +195,12 @@ def build_repository_document(
     same text under both contexts.
     """
     snapshot = parse_snapshot(source, configuration_format)
-    rendered = parse_snapshot(render_source(source, variables), configuration_format)
-    probe = parse_snapshot(
-        render_source(source, probe_variables(variables)),
-        configuration_format,
+    rendered = drop_omitted(parse_snapshot(render_source(source, variables), configuration_format))
+    probe = drop_omitted(
+        parse_snapshot(
+            render_source(source, probe_variables(variables)),
+            configuration_format,
+        )
     )
     return RepositoryDocument(
         source=source,

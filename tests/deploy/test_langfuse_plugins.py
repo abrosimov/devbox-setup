@@ -68,10 +68,25 @@ def test_claude_langfuse_hook_runs_from_the_pinned_bin_venv() -> None:
     assert any(dep.startswith("langfuse") for dep in project["project"]["dependencies"])
     assert 'name = "langfuse"' in lock
 
-    expected = "~/.claude/bin/.venv/bin/python ~/.claude/bin/vendor/langfuse_hook.py"
-    for event in ("Stop", "SessionEnd"):
+    expected = "~/.claude/bin/.venv/bin/python ~/.claude/bin/langfuse_trace_hook.py"
+    for event in ("SessionStart", "Stop", "SessionEnd"):
         commands = [hook["command"] for group in hooks["hooks"][event] for hook in group["hooks"]]
         assert expected in commands
+
+
+def test_claude_never_runs_the_vendored_hook_without_scrubbing_the_operator_keys() -> None:
+    """The personal profile puts real Langfuse keys into Claude's env for the langfuse
+    skill; the vendored hook would prefer them over the CC_LANGFUSE_* loopback edge."""
+    hooks = json.loads(CLAUDE_HOOKS.read_text(encoding="utf-8"))
+    commands = [
+        hook["command"]
+        for groups in hooks["hooks"].values()
+        for group in groups
+        for hook in group["hooks"]
+    ]
+
+    assert (CLAUDE_BIN / "langfuse_trace_hook.py").is_file()
+    assert not [command for command in commands if "vendor/langfuse_hook.py" in command]
 
 
 def test_claude_provisioning_is_idempotent_and_fail_closed() -> None:

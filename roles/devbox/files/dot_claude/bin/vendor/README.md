@@ -52,13 +52,18 @@ over the plugin wizard channel, in this order:
 3. `CLAUDE_PLUGIN_OPTION_*` (unavailable once the plugin is removed — unused here)
 
 `settings.json.j2` sets the `CC_`-prefixed spellings, so removing the plugin changes
-nothing about how the hook is configured. `LANGFUSE_USER_ID` is the exception: it is
+nothing about how the hook is configured. The personal profile also puts the operator's
+real `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_HOST` into Claude's `env`
+for the `langfuse` skill, and the SDK prefers `LANGFUSE_BASE_URL` over the host the hook
+passes. The hook is therefore launched through `../langfuse_trace_hook.py`, which removes
+those four names before running this file unmodified, so traces still go to the
+`CC_LANGFUSE_*` loopback edge. `LANGFUSE_USER_ID` is the exception: it is
 deployed unprefixed so that the shell rc (`devbox_shell.env`) and `settings.json.j2` can
 carry one per-profile identity for every producer writing into the Langfuse project.
 
 ### Registration
 
-`settings.json.j2` registers the hook on `Stop` and `SessionEnd` (as upstream does) and, as a
+`settings.json.j2` registers the hook (through `../langfuse_trace_hook.py`) on `Stop` and `SessionEnd` (as upstream does) and, as a
 local addition, on `SessionStart` — a catch-up pass for sessions whose `Stop`/`SessionEnd`
 never fired. The `SessionEnd` registration carries `"timeout": 60` because `SessionEnd`
 hooks otherwise share a 1.5-second budget and the hook is killed mid-flush.

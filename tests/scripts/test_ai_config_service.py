@@ -126,6 +126,10 @@ BINDINGS_REPOSITORY = (
     '{"renderedValue": "{{ devbox_rendered_value }}",'
     ' "secretValue": "${AI_CONFIG_KEYCHAIN_VALUE}"}\n'
 )
+OPTIONAL_BINDING_REPOSITORY = (
+    '{"renderedValue": "{{ devbox_rendered_value }}",'
+    " \"secretValue\": \"{{ '@keychain@' if devbox_secret_wanted else '@omit@' }}\"}\n"
+)
 MARKETPLACE_SUFFIX = ".claude/marketplaces/langfuse-observability"
 HOME_BINDING_MANIFEST = """{
   "schema_version": 1,
@@ -950,6 +954,70 @@ class TestBindingsAndRedaction:
         assert runner.calls
         assert all(arguments == expected_arguments for arguments in runner.calls)
 
+    @pytest.mark.parametrize("live_source", [None, '{"secretValue": "stale-secret"}\n'])
+    def test_a_profile_that_omits_a_bound_field_never_consults_its_provider(
+        self,
+        tmp_path: Path,
+        live_source: str | None,
+    ) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=OPTIONAL_BINDING_REPOSITORY,
+            manifest_source=BINDINGS_MANIFEST,
+            live_source=live_source,
+            variables={"devbox_rendered_value": "rendered-value", "devbox_secret_wanted": False},
+        )
+        runner = RecordingCommandRunner(CommandResult(returncode=1, stdout=""))
+        providers = BindingProviders(home=tree.home, command_runner=runner)
+
+        operate(tree, providers=providers)
+
+        assert runner.calls == []
+        assert read_json(tree.paths.live) == {"renderedValue": "rendered-value"}
+        assert tree.paths.repository.read_text(encoding="utf-8") == OPTIONAL_BINDING_REPOSITORY
+
+    def test_the_profile_that_renders_a_bound_field_gets_the_bound_value(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=OPTIONAL_BINDING_REPOSITORY,
+            manifest_source=BINDINGS_MANIFEST,
+            variables={"devbox_rendered_value": "rendered-value", "devbox_secret_wanted": True},
+        )
+        runner = RecordingCommandRunner(CommandResult(returncode=0, stdout="bound-value\n"))
+        providers = BindingProviders(home=tree.home, command_runner=runner)
+
+        operate(tree, providers=providers)
+
+        assert runner.calls
+        assert read_json(tree.paths.live) == {
+            "renderedValue": "rendered-value",
+            "secretValue": "bound-value",
+        }
+
+    def test_binding_failure_names_the_slot_but_not_the_provider_output(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=BINDINGS_REPOSITORY,
+            manifest_source=BINDINGS_MANIFEST,
+            variables={"devbox_rendered_value": "rendered-value"},
+        )
+        runner = RecordingCommandRunner(CommandResult(returncode=44, stdout="provider-output"))
+        providers = BindingProviders(home=tree.home, command_runner=runner)
+
+        with pytest.raises(BindingResolutionError, match="ai-config/account") as caught:
+            operate(tree, providers=providers)
+
+        assert "provider-output" not in str(caught.value)
+
     def test_binding_failure_is_redacted_and_does_not_write(self, tmp_path: Path) -> None:
         tree = create_tree(
             tmp_path,
@@ -1069,6 +1137,19 @@ CLAUDE_ATTRIBUTION_RULE = b"""    {
       "scope": "shared"
     },
 """
+CLAUDE_LANGFUSE_KEY_RULES = b"""    {
+      "path": "env.LANGFUSE_PUBLIC_KEY",
+      "scope": "environment",
+      "binding": "keychain:devbox-langfuse/public-key",
+      "secret": true
+    },
+    {
+      "path": "env.LANGFUSE_SECRET_KEY",
+      "scope": "environment",
+      "binding": "keychain:devbox-langfuse/secret-key",
+      "secret": true
+    },
+"""
 
 
 class TestClaudeManifestMigrations:
@@ -1079,11 +1160,13 @@ class TestClaudeManifestMigrations:
             "pre-dialog-expiry",
             "dialog-expiry-preference",
             "cleanup-period-preference",
+            "attribution",
         ],
     )
     def test_recognised_transition_preserves_baseline_history(self, source):
         target_source = CLAUDE_MANIFEST.read_bytes()
-        pre_attribution = target_source.replace(CLAUDE_ATTRIBUTION_RULE, b"", 1)
+        attribution = target_source.replace(CLAUDE_LANGFUSE_KEY_RULES, b"", 1)
+        pre_attribution = attribution.replace(CLAUDE_ATTRIBUTION_RULE, b"", 1)
         source_bytes = {
             "pre-hooks": CLAUDE_PRE_HOOKS_MANIFEST.read_bytes(),
             "pre-dialog-expiry": pre_attribution.replace(
@@ -1099,6 +1182,7 @@ class TestClaudeManifestMigrations:
                 1,
             ),
             "cleanup-period-preference": pre_attribution,
+            "attribution": attribution,
         }[source]
         expected_source_digest = {
             "pre-hooks": "f0f3d3f991fbfdd194db632d3caf361936cf3d6897ce0a119be9a8c75ef04b0a",
@@ -1111,6 +1195,7 @@ class TestClaudeManifestMigrations:
             "cleanup-period-preference": (
                 "95dfe9607c1ae48e356d7452926cd1a8c0d8f0802dbe1f926ac9e10dc623ff9a"
             ),
+            "attribution": "55eb8d125af1b049a2a3b78e50d3540b1a0a7ea5ac8b36c73faef308bd4dfa3e",
         }[source]
         snapshot = {
             "env": {"LANGFUSE_TRACING_ENVIRONMENT": "personal"},
@@ -1125,7 +1210,7 @@ class TestClaudeManifestMigrations:
 
         assert digest_manifest_source(source_bytes) == expected_source_digest
         assert digest_manifest_source(target_source) == (
-            "55eb8d125af1b049a2a3b78e50d3540b1a0a7ea5ac8b36c73faef308bd4dfa3e"
+            "e5d2d86bcab70f984254f73ce6e16336b3dccdce6f0e6d342d56e6cc6be7948b"
         )
         migrated = parse_base_state(
             render_base_state(state),

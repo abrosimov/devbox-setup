@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from ai_config import (
+    BindingProvider,
     ChangeKind,
     ConfigurationFormat,
     FieldManifest,
@@ -18,6 +19,7 @@ from ai_config import (
     build_repository_document,
     load_template_variables,
     plan_reconciliation,
+    snapshot_mapping,
     to_plain_value,
 )
 from ai_config.cli import load_manifest
@@ -34,7 +36,20 @@ PROFILE_TEMPLATED_PATHS = {
     ("env", "CC_LANGFUSE_TRACE_TAGS"),
     ("env", "LANGFUSE_TRACING_ENVIRONMENT"),
     ("env", "LANGFUSE_USER_ID"),
+    ("env", "LANGFUSE_HOST"),
+    ("env", "LANGFUSE_PUBLIC_KEY"),
+    ("env", "LANGFUSE_SECRET_KEY"),
+    ("sandbox", "network", "allowedDomains"),
 }
+LANGFUSE_PLUGIN = "langfuse@claude-plugins-official"
+KEYCHAIN_DECLARATION = "@keychain@"
+LANGFUSE_KEY_PATHS = {("env", "LANGFUSE_PUBLIC_KEY"), ("env", "LANGFUSE_SECRET_KEY")}
+
+
+def langfuse_plugin_declaration() -> tuple[str, ...]:
+    settings = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    (key,) = (key for key in settings["enabledPlugins"] if key.startswith("{{"))
+    return ("enabledPlugins", key)
 
 
 def repository_document(profile: str) -> RepositoryDocument:
@@ -73,10 +88,13 @@ class TestClaudeFieldManifest:
         assert {path for path, scope in scopes.items() if scope is FieldScope.PREFERENCE} == {
             ("cleanupPeriodDays",)
         }
+        assert {
+            path for path, scope in scopes.items() if scope is FieldScope.ENVIRONMENT
+        } == LANGFUSE_KEY_PATHS
         assert all(
             scope is FieldScope.SHARED
             for path, scope in scopes.items()
-            if path != ("cleanupPeriodDays",)
+            if path != ("cleanupPeriodDays",) and path not in LANGFUSE_KEY_PATHS
         )
 
     def test_cleanup_period_default_is_ten_years(self, manifest: FieldManifest) -> None:
@@ -164,7 +182,47 @@ class TestClaudeFieldManifest:
     def test_only_the_profile_dependent_settings_are_templated(self) -> None:
         document = repository_document("personal")
 
-        assert document.templated_paths == PROFILE_TEMPLATED_PATHS
+        assert document.templated_paths == PROFILE_TEMPLATED_PATHS | {
+            ("enabledPlugins", LANGFUSE_PLUGIN),
+            langfuse_plugin_declaration(),
+        }
+
+    def test_personal_renders_langfuse_skill_access(self) -> None:
+        rendered = snapshot_mapping(repository_document("personal").rendered)
+        environment = rendered["env"]
+        sandbox = rendered["sandbox"]
+        plugins = rendered["enabledPlugins"]
+        assert isinstance(environment, dict)
+        assert isinstance(sandbox, dict)
+        assert isinstance(plugins, dict)
+
+        assert environment["LANGFUSE_HOST"] == "https://langfuse.abrosimov.tech"
+        assert environment["LANGFUSE_PUBLIC_KEY"] == KEYCHAIN_DECLARATION
+        assert environment["LANGFUSE_SECRET_KEY"] == KEYCHAIN_DECLARATION
+        assert "LANGFUSE_BASE_URL" not in environment
+        assert plugins[LANGFUSE_PLUGIN] is True
+        assert sandbox["network"]["allowedDomains"][-2:] == [
+            "langfuse.abrosimov.tech",
+            "langfuse.com",
+        ]
+
+    def test_work_renders_no_langfuse_skill_access(self) -> None:
+        document = repository_document("work")
+        rendered = snapshot_mapping(document.rendered)
+        environment = rendered["env"]
+        sandbox = rendered["sandbox"]
+        plugins = rendered["enabledPlugins"]
+        assert isinstance(environment, dict)
+        assert isinstance(sandbox, dict)
+        assert isinstance(plugins, dict)
+
+        assert {"LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"}.isdisjoint(
+            environment
+        )
+        assert LANGFUSE_PLUGIN not in plugins
+        assert not any("langfuse" in domain for domain in sandbox["network"]["allowedDomains"])
+        assert "@omit@" not in json.dumps(rendered)
+        assert KEYCHAIN_DECLARATION not in json.dumps(rendered)
 
     def test_otel_resource_classification_is_shared(
         self,
@@ -175,17 +233,24 @@ class TestClaudeFieldManifest:
         assert settings["env"]["OTEL_RESOURCE_ATTRIBUTES"] == ("otelbox.telemetry.class=llm")
         assert manifest.scope_for(("env", "OTEL_RESOURCE_ATTRIBUTES")) is FieldScope.SHARED
 
-    def test_no_manifest_rule_resolves_a_profile_value_through_a_binding(
+    def test_bindings_resolve_only_keychain_secrets(
         self,
         manifest: FieldManifest,
     ) -> None:
         """Profile values reach the live file by rendering, never by binding.
 
         A binding materialises its value at apply time and is deliberately not
-        written back, so a reintroduced one would make a profile value portable
-        again without the templated-path guard noticing.
+        written back, so a binding for anything but a secret would make a profile
+        value portable again without the templated-path guard noticing.
         """
-        assert [rule.path for rule in manifest.rules if rule.binding is not None] == []
+        bound = [rule for rule in manifest.rules if rule.binding is not None]
+
+        assert {rule.path for rule in bound} == LANGFUSE_KEY_PATHS
+        assert all(rule.secret for rule in bound)
+        assert all(
+            rule.binding is not None and rule.binding.provider is BindingProvider.KEYCHAIN
+            for rule in bound
+        )
 
     @pytest.mark.parametrize(
         "path",

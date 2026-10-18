@@ -31,6 +31,18 @@
       "scope": "shared"
     },
     {
+      "path": "env.LANGFUSE_PUBLIC_KEY",
+      "scope": "environment",
+      "binding": "keychain:devbox-langfuse/public-key",
+      "secret": true
+    },
+    {
+      "path": "env.LANGFUSE_SECRET_KEY",
+      "scope": "environment",
+      "binding": "keychain:devbox-langfuse/secret-key",
+      "secret": true
+    },
+    {
       "path": "extraKnownMarketplaces",
       "scope": "shared"
     },

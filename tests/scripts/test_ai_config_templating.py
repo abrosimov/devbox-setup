@@ -42,8 +42,10 @@ from ai_config import (
     resolve_engine_paths,
 )
 from ai_config.decisions import DecisionSet, DecisionSource, FieldDecision
+from ai_config.document import snapshot_mapping
 from ai_config.resolution import OperationMode, ResolutionError, resolve_documents
 from ai_config.service import inspect_engine, operate_engine
+from ai_config.templating import OMIT_MARKER
 
 NO_DECISIONS = DecisionSet(decisions=())
 VARIABLES = {
@@ -482,3 +484,53 @@ class TestFileSha256:
             "engine:claude-code",
             "rules:" + hashlib.sha256(b"# deployed rules\n").hexdigest(),
         ]
+
+
+WORK_ONLY = "{{ '%s' if devbox_active_profile == 'work' else '@omit@' }}"
+PERSONAL_ONLY = "{{ '%s' if devbox_active_profile == 'personal' else '@omit@' }}"
+
+
+class TestOmittedFields:
+    def test_a_member_whose_value_renders_to_the_marker_is_dropped(self) -> None:
+        rendered = document(json.dumps({"env": {"KEEP": "x", "HOST": WORK_ONLY % "host"}}))
+
+        assert snapshot_mapping(rendered.rendered) == {"env": {"KEEP": "x"}}
+        assert ("env", "HOST") in rendered.templated_paths
+
+    def test_a_member_whose_key_renders_to_the_marker_is_dropped(self) -> None:
+        rendered = document(json.dumps({"plugins": {"a": True, WORK_ONLY % "b": True}}))
+
+        assert snapshot_mapping(rendered.rendered) == {"plugins": {"a": True}}
+
+    def test_an_array_item_that_renders_to_the_marker_is_dropped(self) -> None:
+        rendered = document(json.dumps({"domains": ["a.test", WORK_ONLY % "b.test"]}))
+
+        assert snapshot_mapping(rendered.rendered) == {"domains": ["a.test"]}
+        assert rendered.templated_paths == {("domains",)}
+
+    def test_the_profile_that_renders_a_value_keeps_every_shape(self) -> None:
+        source = json.dumps(
+            {
+                "env": {"HOST": PERSONAL_ONLY % "host"},
+                "plugins": {PERSONAL_ONLY % "b": True},
+                "domains": [PERSONAL_ONLY % "b.test"],
+            }
+        )
+
+        assert snapshot_mapping(document(source).rendered) == {
+            "env": {"HOST": "host"},
+            "plugins": {"b": True},
+            "domains": ["b.test"],
+        }
+
+    def test_the_unrendered_declaration_survives_as_the_write_back_base(self) -> None:
+        declaration = WORK_ONLY % "host"
+
+        rendered = document(json.dumps({"env": {"HOST": declaration}}))
+
+        assert snapshot_mapping(rendered.snapshot) == {"env": {"HOST": declaration}}
+
+    def test_a_literal_marker_is_dropped_too(self) -> None:
+        rendered = document(json.dumps({"value": OMIT_MARKER, "nested": [{"k": OMIT_MARKER}]}))
+
+        assert snapshot_mapping(rendered.rendered) == {"nested": [{}]}

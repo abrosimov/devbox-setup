@@ -72,6 +72,11 @@ devbox_extra_brew_casks: []
 # installer into /usr/local/bin, so the user-facing surface is unchanged.
 devbox_extra_brew_casks_no_binaries: []
 devbox_extra_mcp_http_servers: []
+# Claude Code plugins added to devbox_claude_plugins (claude.yml); same entry shape.
+devbox_extra_claude_plugins: []
+# Self-hosted Langfuse the langfuse skill talks to. Empty renders no LANGFUSE_HOST,
+# no Langfuse keys and no Langfuse sandbox domains into ~/.claude/settings.json.
+devbox_langfuse_host: ""
 # Casks whose signatures we accept without Gatekeeper verification. Homebrew 5.0
 # removed `--no-quarantine`; macOS 26 Tahoe removed the right-click Gatekeeper
 # bypass. `xattr -rd com.apple.quarantine` is the only non-interactive path

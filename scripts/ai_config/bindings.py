@@ -4,8 +4,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
-from .core import BindingProvider, FieldBinding, FieldManifest, home_binding_suffix
-from .document import assign_value, snapshot_mapping
+from .core import BindingProvider, FieldBinding, FieldManifest, MissingValue, home_binding_suffix
+from .document import assign_value, snapshot_mapping, value_at
 from .model import SemanticSnapshot
 
 if TYPE_CHECKING:
@@ -76,7 +76,7 @@ class BindingProviders:
             )
         )
         if result.returncode != 0:
-            message = "keychain binding is unavailable"
+            message = f"keychain binding is unavailable: {service}/{account}"
             raise BindingResolutionError(message)
         return result.stdout.rstrip("\r\n")
 
@@ -88,6 +88,11 @@ def resolve_snapshot_bindings(
 ) -> SemanticSnapshot:
     configuration = snapshot_mapping(snapshot)
     for rule in manifest.rules:
-        if rule.binding is not None:
-            assign_value(configuration, rule.path, providers.resolve(rule.binding))
+        if rule.binding is None:
+            continue
+        # The manifest is profile-independent; a profile that renders no
+        # declaration for the field neither needs nor gets the bound value.
+        if value_at(configuration, rule.path) is MissingValue.MISSING:
+            continue
+        assign_value(configuration, rule.path, providers.resolve(rule.binding))
     return SemanticSnapshot.from_value(configuration)

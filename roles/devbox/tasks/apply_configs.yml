@@ -214,7 +214,7 @@
            if item.marketplace is defined else item.name }}
       - --scope
       - user
-  loop: "{{ devbox_claude_plugins }}"
+  loop: "{{ devbox_claude_plugins + devbox_extra_claude_plugins }}"
   loop_control:
     label: "{{ item.name }}"
   register: devbox_claude_plugins_installed
@@ -257,7 +257,7 @@
            if item.marketplace is defined else item.name }}
       - --scope
       - user
-  loop: "{{ devbox_claude_plugins }}"
+  loop: "{{ devbox_claude_plugins + devbox_extra_claude_plugins }}"
   loop_control:
     label: "{{ item.name }}"
   register: devbox_claude_plugins_enabled
@@ -306,7 +306,7 @@
       Claude Code plugin
       {{ item.name }}@{{ item.marketplace | default('claude-plugins-official') }}
       is not installed and enabled
-  loop: "{{ devbox_claude_plugins }}"
+  loop: "{{ devbox_claude_plugins + devbox_extra_claude_plugins }}"
   loop_control:
     label: "{{ item.name }}"
   when:

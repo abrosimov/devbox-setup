@@ -10,11 +10,12 @@ from jinja2 import TemplateError as JinjaTemplateError
 from jinja2.utils import select_autoescape
 
 from .core import MissingValue
+from .model import ScalarKind, SemanticArray, SemanticObject, SemanticScalar, SemanticSnapshot
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from .model import FieldPath, SemanticSnapshot
+    from .model import FieldPath, SemanticValue
 
 type TemplateVariables = Mapping[str, object]
 
@@ -40,6 +41,11 @@ class TemplateError(ValueError):
 # captured back into the repository source as a literal.
 HOME_VARIABLE = "ai_config_home"
 _NO_HOME = "<no-home>"
+
+# Jinja is confined to value positions so the unrendered source stays parseable,
+# which leaves a profile no block syntax to leave a field out. A member whose key or
+# value renders to this marker, and an array item that does, is dropped instead.
+OMIT_MARKER = "@omit@"
 
 
 def load_template_variables(
@@ -123,6 +129,40 @@ def divergent_paths(left: SemanticSnapshot, right: SemanticSnapshot) -> frozense
         for path in left_fields.keys() | right_fields.keys()
         if left_fields.get(path, MissingValue.MISSING)
         != right_fields.get(path, MissingValue.MISSING)
+    )
+
+
+def drop_omitted(snapshot: SemanticSnapshot) -> SemanticSnapshot:
+    return SemanticSnapshot(root=_drop_omitted_members(snapshot.root))
+
+
+def _drop_omitted_members(value: SemanticObject) -> SemanticObject:
+    return SemanticObject(
+        fields=tuple(
+            (key, _drop_omitted_value(item))
+            for key, item in value.fields
+            if key != OMIT_MARKER and not _is_omit_marker(item)
+        )
+    )
+
+
+def _drop_omitted_value(value: SemanticValue) -> SemanticValue:
+    if isinstance(value, SemanticObject):
+        return _drop_omitted_members(value)
+    if isinstance(value, SemanticArray):
+        return SemanticArray(
+            items=tuple(
+                _drop_omitted_value(item) for item in value.items if not _is_omit_marker(item)
+            )
+        )
+    return value
+
+
+def _is_omit_marker(value: SemanticValue) -> bool:
+    return (
+        isinstance(value, SemanticScalar)
+        and value.kind is ScalarKind.STRING
+        and value.value == OMIT_MARKER
     )
 
 

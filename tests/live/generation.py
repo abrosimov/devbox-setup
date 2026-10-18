@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
@@ -19,6 +20,10 @@ REPO_ROOT: Final = Path(__file__).resolve().parents[2]
 AI_CONFIG: Final = REPO_ROOT / "scripts" / "ai-config"
 DEFAULT_PROFILE: Final = "personal"
 _APPLY_TIMEOUT_SECONDS: Final = 300.0
+# ai-config resolves keychain bindings through `security` on PATH. A stub keeps the
+# run off the operator's Keychain and gives Linux CI a `security` at all.
+_KEYCHAIN_STUB_DIRECTORY: Final = ".local/ai-config-stubs"
+_KEYCHAIN_STUB: Final = "#!/bin/sh\nprintf 'live-test-keychain-value\\n'\n"
 
 
 class GenerationError(RuntimeError):
@@ -32,6 +37,8 @@ def apply_engine(
     profile: str = DEFAULT_PROFILE,
 ) -> Mapping[str, object]:
     """Run the same `scripts/ai-config apply` invocation the playbook runs."""
+    stub = home.write(f"{_KEYCHAIN_STUB_DIRECTORY}/security", _KEYCHAIN_STUB, mode=0o755)
+    search_path = os.pathsep.join((str(stub.parent), os.environ.get("PATH", "")))
     completed = subprocess.run(
         [
             str(AI_CONFIG),
@@ -48,7 +55,7 @@ def apply_engine(
         capture_output=True,
         text=True,
         timeout=_APPLY_TIMEOUT_SECONDS,
-        env=home.environment(),
+        env=home.environment(PATH=search_path),
         cwd=REPO_ROOT,
         check=False,
     )

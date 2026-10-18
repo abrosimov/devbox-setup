@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -12,7 +13,7 @@ from ai_config.adapters import (
     parse_engine_manifest,
     resolve_engine_paths,
 )
-from ai_config.bindings import BindingProviders
+from ai_config.bindings import BindingProviders, CommandResult
 from ai_config.core import (
     HOME_BINDING_SENTINEL,
     BindingProvider,
@@ -84,6 +85,79 @@ def engine_declarations(
     return sentinel_declarations(repository.snapshot), home_binding_declarations(manifest)
 
 
+def seeded_value(account: str) -> str:
+    return f"keychain-{account}"
+
+
+def seeded_keychain(arguments: tuple[str, ...], /) -> CommandResult:
+    account = arguments[arguments.index("-a") + 1]
+    return CommandResult(returncode=0, stdout=f"{seeded_value(account)}\n")
+
+
+@dataclass(slots=True)
+class EmptyKeychain:
+    calls: list[tuple[str, ...]] = field(default_factory=list)
+
+    def __call__(self, arguments: tuple[str, ...], /) -> CommandResult:
+        self.calls.append(arguments)
+        return CommandResult(returncode=44, stdout="")
+
+
+def test_personal_claude_settings_carry_the_keychain_langfuse_keys(tmp_path: Path) -> None:
+    isolated_repo = tmp_path / "repository"
+    isolated_home = tmp_path / "home"
+    copy_engine_documents(EngineKind.CLAUDE, isolated_repo)
+
+    operate_engine(
+        EngineKind.CLAUDE,
+        repo_root=isolated_repo,
+        home=isolated_home,
+        profile="personal",
+        state_root=tmp_path / "state",
+        mode=OperationMode.APPLY,
+        decisions=DecisionSet(()),
+        check=False,
+        providers=BindingProviders(home=isolated_home, command_runner=seeded_keychain),
+    )
+    live = json.loads((isolated_home / ".claude/settings.json").read_text(encoding="utf-8"))
+    state_files = [path for path in (tmp_path / "state").rglob("*") if path.is_file()]
+
+    assert state_files
+    assert live["env"]["LANGFUSE_PUBLIC_KEY"] == seeded_value("public-key")
+    assert live["env"]["LANGFUSE_SECRET_KEY"] == seeded_value("secret-key")
+    assert live["env"]["LANGFUSE_HOST"] == "https://langfuse.abrosimov.tech"
+    assert live["enabledPlugins"]["langfuse@claude-plugins-official"] is True
+    assert all(seeded_value("secret-key").encode() not in path.read_bytes() for path in state_files)
+
+
+def test_work_claude_settings_apply_without_any_langfuse_keychain_item(tmp_path: Path) -> None:
+    isolated_repo = tmp_path / "repository"
+    isolated_home = tmp_path / "home"
+    copy_engine_documents(EngineKind.CLAUDE, isolated_repo)
+    keychain = EmptyKeychain()
+
+    result = operate_engine(
+        EngineKind.CLAUDE,
+        repo_root=isolated_repo,
+        home=isolated_home,
+        profile="work",
+        state_root=tmp_path / "state",
+        mode=OperationMode.APPLY,
+        decisions=DecisionSet(()),
+        check=False,
+        providers=BindingProviders(home=isolated_home, command_runner=keychain),
+    )
+    live_text = (isolated_home / ".claude/settings.json").read_text(encoding="utf-8")
+    live = json.loads(live_text)
+
+    assert result.changed is True
+    assert keychain.calls == []
+    assert {"LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"}.isdisjoint(live["env"])
+    assert "langfuse@claude-plugins-official" not in live["enabledPlugins"]
+    assert "langfuse.com" not in live["sandbox"]["network"]["allowedDomains"]
+    assert "@omit@" not in live_text
+
+
 @pytest.mark.parametrize("engine", tuple(EngineKind))
 def test_current_repository_documents_apply_and_converge_in_an_isolated_home(
     tmp_path: Path,
@@ -93,7 +167,7 @@ def test_current_repository_documents_apply_and_converge_in_an_isolated_home(
     isolated_home = tmp_path / "home"
     state_root = tmp_path / "state"
     copy_engine_documents(engine, isolated_repo)
-    providers = BindingProviders(home=isolated_home)
+    providers = BindingProviders(home=isolated_home, command_runner=seeded_keychain)
 
     first = operate_engine(
         engine,

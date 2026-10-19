@@ -5,6 +5,7 @@ These are strict xfails until the transport handoff has a durable ACK boundary.
 They exercise the actual upstream functions with injected failures, not a copy
 of their implementation. Do not mark them passing by weakening assertions.
 """
+
 from __future__ import annotations
 
 import importlib.util

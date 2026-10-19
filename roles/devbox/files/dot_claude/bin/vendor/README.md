@@ -9,11 +9,11 @@ in the root `pyproject.toml`) so that upstream diffs stay reviewable byte-for-by
 | | |
 |---|---|
 | Upstream | <https://github.com/langfuse/claude-observability-plugin> |
-| Commit | `b5211009698fdfe79c6bbe90d6901ad255ea65d3` (2026-09-15) |
-| Plugin version | `1.2.0` |
+| Commit | `b5b7cc364996467e856dc17575b5674f4799ad87` (2026-10-06) |
+| Plugin version | `1.2.1` |
 | Licence | MIT |
-| SHA-256 | `154da1e6c2cca4a5e215a9ca987135f89abe22f74f58cd97365561526e0f4a89` |
-| Lines | 3561 |
+| SHA-256 | Git blob SHA-1 `cdd8f64f0b8e437a73442de3fb1c4e8c8a64f798` |
+| Artifact pin | `langfuse-upstream.lock.json` |
 
 ### Why it is vendored rather than installed as a plugin
 
@@ -67,6 +67,23 @@ carry one per-profile identity for every producer writing into the Langfuse proj
 local addition, on `SessionStart` — a catch-up pass for sessions whose `Stop`/`SessionEnd`
 never fired. The `SessionEnd` registration carries `"timeout": 60` because `SessionEnd`
 hooks otherwise share a 1.5-second budget and the hook is killed mid-flush.
+
+### Reproducible upstream source and patches
+
+The committed `langfuse_hook.py` is the deployment artifact. Its source commit,
+Git blob checksum, expected generated checksum and ordered patch list are recorded
+in `langfuse-upstream.lock.json`. Ordinary provisioning stays offline.
+
+Run `python3 scripts/langfuse-hook-source.py verify` to check the committed
+artifact without network access. Run `python3 scripts/langfuse-hook-source.py
+refresh` only when intentionally rebuilding it from the pinned upstream commit.
+Refresh verifies the upstream blob, applies every listed patch with strict
+`git apply --check --whitespace=error`, and checks the generated checksum.
+A changed upstream or patch requires an explicit lock update and code review.
+No network request is made from a Claude hook or its provisioning process.
+
+Current patch list is empty. Delivery checkpoint fixes are intentionally out of
+scope for this version bump; they require fault-injection tests first.
 
 ### Updating
 

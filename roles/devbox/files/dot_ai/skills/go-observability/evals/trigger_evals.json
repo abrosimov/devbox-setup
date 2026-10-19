@@ -1,0 +1,10 @@
+[
+  {"query": "How would we debug this order service in production? Audit what it exposes", "should_trigger": true},
+  {"query": "Add Prometheus metrics and structured logs to the Go payment worker", "should_trigger": true},
+  {"query": "Design burn-rate alerts for the checkout SLO and write promtool tests", "should_trigger": true},
+  {"query": "Build a Grafana dashboard for the search service with the Foundation SDK in Go", "should_trigger": true},
+  {"query": "Which OTel semconv name should the DB pool wait time histogram use?", "should_trigger": true},
+  {"query": "Write a TLA+ spec for the two-phase commit", "should_trigger": false},
+  {"query": "Implement the /orders REST endpoint in Go", "should_trigger": false},
+  {"query": "Design the PostgreSQL schema for invoices", "should_trigger": false}
+]

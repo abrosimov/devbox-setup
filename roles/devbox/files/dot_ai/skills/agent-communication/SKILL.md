@@ -57,12 +57,13 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 | **Domain Expert** | `spec.md` | `domain_analysis.md` |
 | **Domain Modeller** | `domain_analysis.md`, `spec.md` | `domain_model.md` |
 | **Designer** | `spec.md`, `domain_analysis.md`, `plan.md`?, `api_design.md`? | `design.md`, `design_system.tokens.json` |
-| **Impl Planner** | `spec.md`, `domain_analysis.md`, `domain_model.md` | `plan.md` |
+| **Formal Model Writer** | `domain_model.md`, `domain_analysis.md`, `plan.md`?, `se_{lang}_output.json`? | `model_report.md`, `model_requirements.md`, `trace_contract.md`?, `formal_model/` (repository) |
+| **Impl Planner** | `spec.md`, `domain_analysis.md`, `domain_model.md`, `model_report.md`? | `plan.md` |
 | **Database Designer** | `plan.md`, `spec.md`, `domain_analysis.md`, `domain_model.md` | `schema_design.md`, `migrations/` |
 | **API Designer** | `plan.md`, `spec.md`, `domain_analysis.md`, `domain_model.md` | `api_design.md`, `api_spec.yaml` |
 | **SE (backend)** | `plan.md`, `api_spec.yaml`, `schema_design.md`, `domain_model.md`? | *(source code)*, `se_{lang}_output.json` |
 | **SE (frontend)** | `plan.md`, `design.md`, `api_spec.yaml`, `domain_model.md`? | *(source code)*, `se_frontend_output.json` |
-| **Observability** | `plan.md` | *(dashboards, alerts)* |
+| **Observability** | `plan.md`, `domain_model.md`?, `spec.md`?, `se_{lang}_output.json`? | `observability_audit.md`, `observability_design.md`, *(instrumentation, `observability/` in the repository)* |
 | **Test Writer** | `plan.md`, `spec.md`, `domain_model.md`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(test files)* |
 | **Code Reviewer** | `plan.md`, `spec.md`, `domain_model.md`?, `design.md`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(review report — inline)* |
 | **Content Reviewer** | agent/skill artifact, 2-3 referenced skills | `<audit-findings>` XML (inline) |

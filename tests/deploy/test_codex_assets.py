@@ -29,6 +29,7 @@ EXPECTED_AGENTS = {
     "domain-expert",
     "domain-modeller",
     "focus-coach",
+    "formal-model-writer",
     "freshness-auditor",
     "implementation-planner",
     "integration-tests-writer-go",
@@ -57,8 +58,10 @@ READ_ONLY_AGENTS = {
 VALIDATION_AGENTS = {
     "build-resolver-go",
     "code-reviewer",
+    "formal-model-writer",
     "integration-tests-writer-go",
     "integration-tests-writer-python",
+    "observability-engineer",
     "refactor-cleaner",
     "software-engineer-frontend",
     "software-engineer-go",

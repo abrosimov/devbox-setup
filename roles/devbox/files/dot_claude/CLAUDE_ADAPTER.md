@@ -14,7 +14,7 @@ the action, not the wording; confidence is not an override.
 
 | Class | Examples | Action |
 |---|---|---|
-| Externally visible or shared state | commit, push, PR, deploy, migration, sending messages, writing data outside the current Git tree | Always confirm |
+| Externally visible or shared state | commit, push, PR, deploy, migration, sending messages, writing data outside the current Git tree and outside the directories the user added to the session | Always confirm |
 | Irreversible or destructive | `rm -rf` outside `$TMPDIR`; `git reset --hard`, `git clean -fd`, `git checkout .`, `git restore .`, `git branch -D`; force-push; `DROP`, `TRUNCATE`, `DELETE` without `WHERE`; skipping a pre-commit hook (`--no-verify`) or signing; writing a file you have not read | Always confirm; the shell cases are also denied by `bin/bash_decision_gate.py` |
 
 **What counts as a go** for these two classes: "yes", "go ahead", "proceed", "do it", "approved",

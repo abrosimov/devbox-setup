@@ -171,7 +171,9 @@ step and part that does not depend on it, then stop and raise it.
 
 Work inside the repository the task is about. Reading a neighbouring repository is fine when the task
 needs a fact from it; editing it, or writing summaries and artefacts for another team, is a change of
-scope that needs the user's go, because the user reviews and owns each repository separately.
+scope that needs the user's go, because the user reviews and owns each repository separately. A
+directory the user added to the session (for example with /add-dir) or named as the destination is
+already that go: write there without asking.
 
 Two sides of an API synchronise only through the contract (OpenAPI spec, proto files, generated
 types). Neither side reads or relies on the other's implementation — its caches, rounding, query

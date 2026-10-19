@@ -17,7 +17,7 @@ This document describes the agent pipeline and workflow commands for projects us
 
 The agent pipeline is enforced globally for every project. Any change to source code (`.go`, `.py`, `.ts`, `.tsx`, ...) goes through the appropriate specialist agent via `/techne-*` commands — direct `Edit`/`Write` on code files is not allowed. See `USER_AUTHORITY_PROTOCOL.md` for the authoritative rule.
 
-The user commits manually after each agent run; commands do not auto-commit.
+Commands do not auto-commit. The main session commits, pushes and opens a PR/MR as part of finishing the task; subagents do not touch git.
 
 ## Directory Structure
 
@@ -264,10 +264,10 @@ Each feature branch is independent. No local merge — integration happens via P
 
 ### Branch Lifecycle
 
-1. Command creates feature branch from default branch (or uses current)
+1. Command creates feature branch from its base — the default branch or a release branch such as `release-1.18.0` (or uses current)
 2. SE agent implements on feature branch (agent never touches git)
-3. User commits manually after each agent phase (commands do not auto-commit; use `git-safe-commit` for branch-protection + secret detection)
-4. After review, user pushes and creates PR
+3. When the task is finished and its checks pass, the main session commits (commands do not auto-commit; use `git-safe-commit` for branch-protection + secret detection), unless the user said they will commit themselves
+4. The main session then pushes the feature branch and opens the PR/MR against its base, ready for review, or updates the existing one
 5. Merge happens in GitHub/GitLab (not locally)
 
 ### Multi-Branch Per Ticket

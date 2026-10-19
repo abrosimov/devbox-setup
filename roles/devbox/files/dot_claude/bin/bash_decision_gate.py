@@ -433,36 +433,14 @@ def rule_heredoc(ctx: Ctx) -> str | None:
     return None
 
 
-def rule_git_commit(ctx: Ctx) -> str | None:
-    # Claude never creates commits — the human is the commit gatekeeper. This
-    # deny stands even when a project-level CLAUDE.md tells the agent to commit,
-    # which is the failure mode that motivated the rule (subagent auto-commits
-    # during /techne-implement runs).
-    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "commit":
-        return (
-            "Claude does not create commits. The user commits manually. "
-            "Draft the message for the user; do not run git commit."
-        )
-    return None
-
-
-def rule_git_push(ctx: Ctx) -> str | None:
-    # Claude never pushes. Pushing is a shared-state action reserved for the
-    # human. Complements rule_git_commit; both stand regardless of project
-    # CLAUDE.md overrides.
-    if _tool(ctx.argv) == "git" and len(ctx.argv) >= 2 and ctx.argv[1] == "push":
-        return "Claude does not push. The user pushes manually after reviewing local commits."
-    return None
-
-
 def rule_commit_on_main(ctx: Ctx) -> str | None:
     if (
         _tool(ctx.argv) == "git"
         and len(ctx.argv) >= 2
         and ctx.argv[1] == "commit"
-        and _current_branch() in {"main", "master"}
+        and _matches_protected(_current_branch(), _protected_branches())
     ):
-        return "Cannot commit on the main/master branch. Create a feature branch first."
+        return "Cannot commit on a protected branch. Create a feature branch from it first."
     return None
 
 
@@ -471,16 +449,33 @@ def rule_merge_on_main(ctx: Ctx) -> str | None:
         _tool(ctx.argv) == "git"
         and len(ctx.argv) >= 2
         and ctx.argv[1] == "merge"
-        and _current_branch() in {"main", "master"}
+        and _matches_protected(_current_branch(), _protected_branches())
     ):
-        return "Cannot merge into the main/master branch. Use a feature branch instead."
+        return "Cannot merge into a protected branch. Use a feature branch instead."
     return None
 
 
+def rule_rebase_on_protected(ctx: Ctx) -> str | None:
+    if (
+        _tool(ctx.argv) == "git"
+        and len(ctx.argv) >= 2
+        and ctx.argv[1] == "rebase"
+        and _matches_protected(_current_branch(), _protected_branches())
+    ):
+        return "Cannot rebase a protected branch. Rebase only your own feature branch."
+    return None
+
+
+# `--force-with-lease` is allowed: it refuses to overwrite commits it has not
+# seen, and rule_push_to_protected still stops it reaching main/master, so it
+# only ever rewrites the agent's own feature branch after a rebase.
 def rule_force_push(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "push":
         return None
-    msg = "Force push is not allowed. Push normally or ask the user."
+    msg = (
+        "Force push is not allowed. After a rebase of your own feature branch use "
+        "--force-with-lease; otherwise push normally or ask the user."
+    )
     for arg in ctx.argv[2:]:
         if arg == "-f":
             return msg
@@ -497,9 +492,9 @@ def rule_push_mirror_all(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "push":
         return None
     for arg in ctx.argv[2:]:
-        if arg in {"--mirror", "--all"}:
+        if arg in {"--mirror", "--all", "--tags"}:
             return (
-                "git push --mirror/--all is not allowed (pushes all refs). "
+                "git push --mirror/--all/--tags is not allowed (pushes many refs). "
                 "Push specific branches instead."
             )
     return None
@@ -523,12 +518,13 @@ def rule_push_to_protected(ctx: Ctx) -> str | None:
     if _tool(ctx.argv) != "git" or len(ctx.argv) < 2 or ctx.argv[1] != "push":
         return None
     positionals = _push_positionals(ctx.argv)
-    if len(positionals) < 2:
-        return None
-    refspecs = positionals[1:]
+    # Without a refspec git pushes the current branch, so that is the target.
+    refspecs = positionals[1:] or ["HEAD"]
     protected = _protected_branches()
     for refspec in refspecs:
         target = _refspec_target(refspec)
+        if target == "HEAD":
+            target = _current_branch()
         if _matches_protected(target, protected):
             return (
                 f"Cannot push to protected branch '{target}'. "
@@ -710,6 +706,7 @@ PHASE1_RULES: Final[list[tuple[str, RuleFn]]] = [
     ("git-stash", rule_git_stash),
     ("commit-on-main", rule_commit_on_main),
     ("merge-on-main", rule_merge_on_main),
+    ("rebase-on-protected", rule_rebase_on_protected),
     ("force-push", rule_force_push),
     ("push-mirror-all", rule_push_mirror_all),
     ("push-delete-branch", rule_push_delete_branch),
@@ -723,12 +720,6 @@ PHASE1_RULES: Final[list[tuple[str, RuleFn]]] = [
     ("wholesale-checkout-restore", rule_wholesale_checkout_restore),
     ("branch-force-delete", rule_branch_force_delete),
     ("destructive-sql", rule_destructive_sql),
-    # Catch-alls last: specific rules above emit more actionable messages
-    # (e.g. "Cannot commit on main. Create a feature branch first.") than the
-    # generic "Claude does not commit" — so we let them fire first and only
-    # deny the remaining commit/push cases here.
-    ("git-commit", rule_git_commit),
-    ("git-push", rule_git_push),
 ]
 
 

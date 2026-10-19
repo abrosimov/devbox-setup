@@ -32,7 +32,6 @@ A profile is mandatory: bare `make run` / `make check` fail with `PROFILE is req
 | `make check-dev` | Dry-run in dev_mode (override vars, no sudo/keychain) |
 | `make upgrade-personal` | Upgrade all packages (personal profile) |
 | `make upgrade-work` | Upgrade all packages (work profile) |
-| `make codex-push` | Deploy portable Codex settings, global guidance, custom agents, and compatible shared skills |
 | `make lint` | Syntax-check + ansible-lint + semantics + typecheck |
 | `make lint-ansible-semantics` | Static catch for set_fact intra-task self-references |
 | `make validate-claude` | Validate agent/skill cross-references |

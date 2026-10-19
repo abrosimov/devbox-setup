@@ -61,12 +61,37 @@ def test_blocks_commit_on_master() -> None:
         assert gate.evaluate_phase1_legacy("git commit").blocked
 
 
-def test_commit_on_feature_denied_via_generic() -> None:
-    # commit-on-main must not fire on a feature branch; git-commit catch-all does.
-    with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
+def test_blocks_commit_on_release_branch() -> None:
+    with (
+        mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "main,master,release-*"}),
+        mock.patch.object(gate, "_current_branch", return_value="release-1.18.0"),
+    ):
         d = gate.evaluate_phase1_legacy("git commit -m 'fix'")
     assert d.blocked
-    assert d.rule_name == "git-commit"
+    assert d.rule_name == "commit-on-main"
+
+
+def test_allows_merging_release_branch_into_feature() -> None:
+    with (
+        mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "main,master,release-*"}),
+        mock.patch.object(gate, "_current_branch", return_value="EF-9237_reconcile"),
+    ):
+        assert not gate.evaluate_phase1_legacy("git merge origin/release-1.18.0").blocked
+
+
+def test_blocks_merge_into_release_branch() -> None:
+    with (
+        mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "main,master,release-*"}),
+        mock.patch.object(gate, "_current_branch", return_value="release-1.18.0"),
+    ):
+        d = gate.evaluate_phase1_legacy("git merge EF-9237_reconcile")
+    assert d.blocked
+    assert d.rule_name == "merge-on-main"
+
+
+def test_allows_commit_on_feature() -> None:
+    with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
+        assert not gate.evaluate_phase1_legacy("git commit -m 'fix'").blocked
 
 
 # --- Merge on main ----------------------------------------------------------
@@ -101,18 +126,55 @@ def test_blocks_force_equals() -> None:
     assert gate.evaluate_phase1_legacy("git push --force=origin").blocked
 
 
-def test_force_with_lease_denied_via_generic_not_force_push() -> None:
-    # force-push must not fire on --force-with-lease (safer variant); git-push
-    # catch-all denies the push itself.
-    d = gate.evaluate_phase1_legacy("git push --force-with-lease")
-    assert d.blocked
-    assert d.rule_name == "git-push"
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git push --force-with-lease origin feature/x",
+        "git push --force-with-lease=feature/x origin feature/x",
+        "git push --force-with-lease --force-if-includes origin feature/x",
+    ],
+)
+def test_allows_force_with_lease_to_feature_branch(cmd: str) -> None:
+    assert not gate.evaluate_phase1_legacy(cmd).blocked
 
 
-def test_normal_feature_push_denied_via_generic() -> None:
-    d = gate.evaluate_phase1_legacy("git push origin feature/x")
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git push --force-with-lease origin main",
+        "git push --force-with-lease origin HEAD:master",
+    ],
+)
+def test_blocks_force_with_lease_to_protected_branch(cmd: str) -> None:
+    d = gate.evaluate_phase1_legacy(cmd)
     assert d.blocked
-    assert d.rule_name == "git-push"
+    assert d.rule_name == "push-to-protected"
+
+
+def test_blocks_force_with_lease_combined_with_force() -> None:
+    d = gate.evaluate_phase1_legacy("git push --force-with-lease --force origin feature/x")
+    assert d.blocked
+    assert d.rule_name == "force-push"
+
+
+# --- Rebase -----------------------------------------------------------------
+
+
+def test_allows_rebase_of_feature_branch() -> None:
+    with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
+        assert not gate.evaluate_phase1_legacy("git rebase origin/main").blocked
+
+
+@pytest.mark.parametrize("branch", ["main", "master"])
+def test_blocks_rebase_of_protected_branch(branch: str) -> None:
+    with mock.patch.object(gate, "_current_branch", return_value=branch):
+        d = gate.evaluate_phase1_legacy("git rebase feature/x")
+    assert d.blocked
+    assert d.rule_name == "rebase-on-protected"
+
+
+def test_allows_normal_feature_push() -> None:
+    assert not gate.evaluate_phase1_legacy("git push origin feature/x").blocked
 
 
 def test_blocks_refspec_plus_prefix() -> None:
@@ -155,10 +217,10 @@ def test_blocks_all_no_remote() -> None:
     assert gate.evaluate_phase1_legacy("git push --all").blocked
 
 
-def test_normal_push_denied_via_generic() -> None:
-    d = gate.evaluate_phase1_legacy("git push origin feature/x")
+def test_blocks_tags() -> None:
+    d = gate.evaluate_phase1_legacy("git push origin --tags")
     assert d.blocked
-    assert d.rule_name == "git-push"
+    assert d.rule_name == "push-mirror-all"
 
 
 # --- Push delete branch -----------------------------------------------------
@@ -182,18 +244,9 @@ def test_blocks_colon_refs_heads_refspec() -> None:
     assert d.rule_name == "push-delete-branch"
 
 
-def test_normal_refspec_denied_via_generic_not_delete() -> None:
-    # local:remote (both sides non-empty) is a normal push, not a delete —
-    # push-delete-branch must not fire; git-push catch-all does.
-    d = gate.evaluate_phase1_legacy("git push origin local:remote-feature")
-    assert d.blocked
-    assert d.rule_name == "git-push"
-
-
-def test_normal_push_denied_via_generic_not_delete() -> None:
-    d = gate.evaluate_phase1_legacy("git push origin feature/x")
-    assert d.blocked
-    assert d.rule_name == "git-push"
+def test_allows_normal_refspec_not_delete() -> None:
+    # local:remote (both sides non-empty) is a normal push, not a delete.
+    assert not gate.evaluate_phase1_legacy("git push origin local:remote-feature").blocked
 
 
 # --- Push to protected branches ---------------------------------------------
@@ -234,45 +287,38 @@ def test_blocks_refs_remotes_origin_main() -> None:
     assert d.rule_name == "push-to-protected"
 
 
-def test_feature_branch_push_denied_via_generic() -> None:
-    # Non-protected pushes are now denied by the generic git-push catch-all
-    # (Claude never pushes). push-to-protected must NOT fire on a feature ref.
-    d = gate.evaluate_phase1_legacy("git push origin feature/x")
-    assert d.blocked
-    assert d.rule_name == "git-push"
+def test_allows_feature_branch_push() -> None:
+    assert not gate.evaluate_phase1_legacy("git push origin feature/x").blocked
 
 
-def test_set_upstream_feature_denied_via_generic() -> None:
+def test_allows_set_upstream_feature() -> None:
     # -u must not confuse positional parsing into hitting push-to-protected.
-    d = gate.evaluate_phase1_legacy("git push -u origin feature/x")
+    assert not gate.evaluate_phase1_legacy("git push -u origin feature/x").blocked
+
+
+@pytest.mark.parametrize("cmd", ["git push", "git push origin", "git push -u origin HEAD"])
+def test_implicit_target_on_main_blocked(cmd: str) -> None:
+    # No refspec, or HEAD, pushes the current branch.
+    with mock.patch.object(gate, "_current_branch", return_value="main"):
+        d = gate.evaluate_phase1_legacy(cmd)
     assert d.blocked
-    assert d.rule_name == "git-push"
+    assert d.rule_name == "push-to-protected"
 
 
-def test_bare_push_denied_via_generic() -> None:
-    d = gate.evaluate_phase1_legacy("git push")
-    assert d.blocked
-    assert d.rule_name == "git-push"
+@pytest.mark.parametrize("cmd", ["git push", "git push origin", "git push -u origin HEAD"])
+def test_implicit_target_on_feature_allowed(cmd: str) -> None:
+    with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
+        assert not gate.evaluate_phase1_legacy(cmd).blocked
 
 
-def test_remote_only_push_denied_via_generic() -> None:
-    d = gate.evaluate_phase1_legacy("git push origin")
-    assert d.blocked
-    assert d.rule_name == "git-push"
+def test_branch_with_main_substring_not_protected() -> None:
+    # "mainline" is NOT main.
+    assert not gate.evaluate_phase1_legacy("git push origin mainline").blocked
 
 
-def test_branch_with_main_substring_hits_generic_not_protected() -> None:
-    # "mainline" is NOT main — push-to-protected must not fire; git-push does.
-    d = gate.evaluate_phase1_legacy("git push origin mainline")
-    assert d.blocked
-    assert d.rule_name == "git-push"
-
-
-def test_branch_with_master_path_hits_generic_not_protected() -> None:
+def test_branch_with_master_path_not_protected() -> None:
     # "feature/master-cleanup" is NOT master.
-    d = gate.evaluate_phase1_legacy("git push origin feature/master-cleanup")
-    assert d.blocked
-    assert d.rule_name == "git-push"
+    assert not gate.evaluate_phase1_legacy("git push origin feature/master-cleanup").blocked
 
 
 def test_env_var_extends_protected() -> None:
@@ -284,25 +330,18 @@ def test_env_var_extends_protected() -> None:
 
 
 def test_env_var_wildcard_release() -> None:
-    # Wildcard extends the push-to-protected pattern; non-matching branches
-    # still get denied — but by the generic git-push catch-all, not the
-    # push-to-protected rule.
+    # Wildcard extends the push-to-protected pattern; non-matching branches pass.
     with mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "main,master,release/*"}):
         d = gate.evaluate_phase1_legacy("git push origin release/1.0")
         assert d.blocked
         assert d.rule_name == "push-to-protected"
-        non_matching = gate.evaluate_phase1_legacy("git push origin feature/x")
-        assert non_matching.blocked
-        assert non_matching.rule_name == "git-push"
+        assert not gate.evaluate_phase1_legacy("git push origin feature/x").blocked
 
 
 def test_env_var_override_removes_default() -> None:
-    # User explicitly sets only "develop" — main is no longer *protected*, so
-    # push-to-protected does not fire on main; git-push catch-all does.
+    # User explicitly sets only "develop" — main is no longer protected.
     with mock.patch.dict("os.environ", {"CC_PROTECTED_BRANCHES": "develop"}):
-        main_push = gate.evaluate_phase1_legacy("git push origin main")
-        assert main_push.blocked
-        assert main_push.rule_name == "git-push"
+        assert not gate.evaluate_phase1_legacy("git push origin main").blocked
         develop_push = gate.evaluate_phase1_legacy("git push origin develop")
         assert develop_push.blocked
         assert develop_push.rule_name == "push-to-protected"
@@ -612,7 +651,8 @@ def test_blocks_git_stash(cmd: str) -> None:
     ],
 )
 def test_allows_non_stash_git(cmd: str) -> None:
-    assert not gate.evaluate_phase1_legacy(cmd).blocked, cmd
+    with mock.patch.object(gate, "_current_branch", return_value="feature/x"):
+        assert not gate.evaluate_phase1_legacy(cmd).blocked, cmd
 
 
 # --- destructive SQL --------------------------------------------------------

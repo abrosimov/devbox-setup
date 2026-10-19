@@ -367,7 +367,7 @@
 # Reconciler: anything registered at user scope that is NOT in the declared
 # union above gets removed. Makes defaults/main/claude.yml the single source
 # of truth for MCP servers — drop an entry from the YAML and the next
-# `make claude-push` (or full playbook) will deregister it.
+# `make mcp-sync` (or full playbook) will deregister it.
 #
 # `claude mcp list` prints `<name>: <command-or-url> - <status>` per line
 # plus a header. Names may contain spaces and dots (e.g. "claude.ai Gmail"),

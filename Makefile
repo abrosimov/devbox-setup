@@ -68,27 +68,6 @@ define otelbox_smoke_advisory
 	}
 endef
 
-define ai_config_push_guard
-	@echo "WARNING: make $(1)-push is intentionally blocked."
-	@echo "The repository is the source of truth, but live changes must be reviewed first."
-	@echo ""
-	@echo "Inspect drift:"
-	@echo '  scripts/ai-config diff $(1) --repo-root "$(CURDIR)" --home "$$HOME" --profile "$$MNEMOSYNE_PERISTASEOS"'
-	@echo ""
-	@echo "Capture or resolve reviewed changes:"
-	@echo '  scripts/ai-config reconcile $(1) --repo-root "$(CURDIR)" --home "$$HOME" --profile "$$MNEMOSYNE_PERISTASEOS" [--decisions FILE]'
-	@echo ""
-	@echo "For a first live-derived baseline with no existing state:"
-	@echo '  scripts/ai-config bootstrap $(1) --from-live'
-	@echo '  scripts/ai-config bootstrap $(1) --from-live --write --preview-token TOKEN'
-	@echo ""
-	@echo "Preview a subsequent non-interactive apply:"
-	@echo '  scripts/ai-config apply $(1) --repo-root "$(CURDIR)" --home "$$HOME" --profile "$$MNEMOSYNE_PERISTASEOS" --check'
-	@echo ""
-	@echo "No Ansible command was run."
-	@exit 2
-endef
-
 # Dev venv — lazy bootstrap for developer-mode targets (lint-*, typecheck,
 # test, test-integration, qa). The operator-flow (init / personal / work /
 # *-push / upgrade-*) does NOT depend on this venv and never touches it.
@@ -162,7 +141,7 @@ endif
        upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        audit audit-brewfile audit-brewfile-all audit-taps untap-stale \
-       claude-diff claude-pull claude-pull-review claude-push agy-push codex-push \
+       claude-diff claude-pull claude-pull-review \
        karabiner-diff karabiner-pull \
        dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now go-proxy-verify \
        sync-upstream-docs \
@@ -232,9 +211,6 @@ help:
 	@echo "  make improve-skills   - optimize skill description for trigger accuracy (run_loop.py)"
 	@echo ""
 	@echo "Maintenance (slim playbooks, no full bootstrap):"
-	@echo "  make claude-push      - blocked safety guard; print Claude reconciliation workflow"
-	@echo "  make agy-push         - blocked safety guard; print Antigravity reconciliation workflow"
-	@echo "  make codex-push       - blocked safety guard; print Codex reconciliation workflow"
 	@echo "  make dotfiles-push    - deploy kitty / nvim / fish / bash configs + templates + local/ overlay (no sudo, no vault)"
 	@echo "  make shell-push       - refresh fish + fisher plugins + tide preset + font cache (no sudo)"
 	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
@@ -827,18 +803,6 @@ karabiner-pull:
 		echo "  PULLED: complex_modifications -> $(KARABINER_SRC)"; \
 		echo "  Review with: git diff $(KARABINER_SRC)"; \
 	fi
-
-# These historical fast paths are intentionally hard-blocked. They used to be
-# easy to invoke as one-way deploys; keeping the names as guards prevents muscle
-# memory from bypassing the explicit diff/reconcile workflow.
-claude-push:
-	$(call ai_config_push_guard,claude)
-
-agy-push:
-	$(call ai_config_push_guard,agy)
-
-codex-push:
-	$(call ai_config_push_guard,codex)
 
 # Fast-path: kitty / nvim / fish / bash configs + Jinja templates + local overlay.
 # Reuses Blocks 3-5 (dotfiles) and Block 6 (local) of install_configs.yml.

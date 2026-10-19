@@ -112,7 +112,7 @@ Implementation complete: 3 files changed in `internal/orders/` (validation of em
 Next: `/techne-test` to write tests for the new validation path.
 ```
 
-Typical next commands: SE → `/techne-test`; Test Writer → `/techne-review`; API Designer → `/techne-implement` for backend and frontend (both read the contract); Designer → `/techne-implement` for `software-engineer-frontend`; Code Reviewer with blocking issues → `/techne-implement`, then `/techne-review` again; Code Reviewer with no blocking issues → ready to commit (the user commits).
+Typical next commands: SE → `/techne-test`; Test Writer → `/techne-review`; API Designer → `/techne-implement` for backend and frontend (both read the contract); Designer → `/techne-implement` for `software-engineer-frontend`; Code Reviewer with blocking issues → `/techne-implement`, then `/techne-review` again; Code Reviewer with no blocking issues → ready to commit (the main session commits, pushes and opens the MR as part of finishing the task; subagents do not touch git).
 
 ---
 

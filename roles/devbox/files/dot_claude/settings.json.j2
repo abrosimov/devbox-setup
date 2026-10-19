@@ -320,7 +320,6 @@
       "Bash(wget *)",
       "Bash(sudo *)",
       "Bash(git push --force *)",
-      "Bash(git push --force-with-lease *)",
       "Bash(git push -f *)",
       "Bash(git push --mirror *)",
       "Bash(git push --all *)",
@@ -332,19 +331,13 @@
       "Bash(git push *:master)",
       "Bash(git push * HEAD:main)",
       "Bash(git push * HEAD:master)",
-      "Bash(git rebase *)",
-      "Bash(git reset *)",
       "Bash(git reset --hard *)",
       "Bash(git commit --amend *)",
       "Bash(git commit --no-verify *)",
       "Bash(git commit*--no-verify*)",
       "Bash(git tag *)",
-      "Bash(git rm *)",
-      "Bash(git mv *)",
       "Bash(git clean *)",
-      "Bash(git checkout -- *)",
       "Bash(git -C * push --force *)",
-      "Bash(git -C * push --force-with-lease *)",
       "Bash(git -C * push -f *)",
       "Bash(git -C * push --mirror *)",
       "Bash(git -C * push --all *)",
@@ -356,17 +349,12 @@
       "Bash(git -C * push *:master)",
       "Bash(git -C * push * HEAD:main)",
       "Bash(git -C * push * HEAD:master)",
-      "Bash(git -C * rebase *)",
-      "Bash(git -C * reset *)",
       "Bash(git -C * reset --hard *)",
       "Bash(git -C * commit --amend *)",
       "Bash(git -C * commit --no-verify *)",
       "Bash(git -C * commit*--no-verify*)",
       "Bash(git -C * tag *)",
-      "Bash(git -C * rm *)",
-      "Bash(git -C * mv *)",
       "Bash(git -C * clean *)",
-      "Bash(git -C * checkout -- *)",
       "Bash(cat *>*)",
       "Bash(echo *>*)",
       "Bash(kill *)",
@@ -382,10 +370,8 @@
       "Bash(gh issue close *)",
       "Bash(glab mr close *)",
       "Bash(glab mr merge *)",
-      "Bash(glab mr update *)",
       "Bash(glab issue close *)",
       "Bash(glab ci cancel *)",
-      "Bash(glab ci retry *)",
       "Bash(find / *)",
       "Bash(find ~ *)",
       "Edit(**/*.pem)",
@@ -414,15 +400,6 @@
           }
         ],
         "matcher": "Bash"
-      },
-      {
-        "hooks": [
-          {
-            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_repo_boundary.py",
-            "type": "command"
-          }
-        ],
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
       },
       {
         "hooks": [

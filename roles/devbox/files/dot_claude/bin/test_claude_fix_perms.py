@@ -256,7 +256,7 @@ def test_run_with_git_adds_commit_rule(tmp_path: Path) -> None:
     data = json.loads((tmp_path / cfp.SETTINGS_RELATIVE).read_text(encoding="utf-8"))
     perms = data["permissions"]
     assert "Bash(git commit -m *)" in perms["allow"]
-    assert "Bash(git merge main *)" in perms["deny"]
+    assert "Bash(git merge main *)" not in perms["deny"]
 
 
 def test_run_auto_detect_python_project(tmp_path: Path) -> None:

@@ -76,8 +76,8 @@
 # .venv's interpreter. --no-dev excludes pytest/hypothesis
 # from the deployed venv — those are dev-only and live in the repo for
 # `make test-claude-hooks`.
-# Runs in both the full playbook and the slim `make claude-push` flow,
-# since playbooks/claude.yml import_tasks install_configs.yml.
+# Runs in the full playbook, including tag-scoped runs such as
+# `--tags ai,claude`.
 # =============================================================================
 
 - name: Find uv path

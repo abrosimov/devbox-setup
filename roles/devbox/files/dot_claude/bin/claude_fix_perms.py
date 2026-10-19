@@ -19,18 +19,12 @@ BASE_DENY: Final[list[str]] = [
     "Bash(curl *)",
     "Bash(wget *)",
     "Bash(sudo *)",
-    "Bash(git push *)",
     "Bash(git push --force *)",
     "Bash(git push -f *)",
-    "Bash(git rebase *)",
-    "Bash(git reset *)",
     "Bash(git reset --hard *)",
     "Bash(git commit --amend *)",
     "Bash(git tag *)",
-    "Bash(git rm *)",
-    "Bash(git mv *)",
     "Bash(git clean *)",
-    "Bash(git checkout -- *)",
     "Bash(cat *>*)",
     "Bash(echo *>*)",
     "Bash(kill *)",
@@ -166,11 +160,6 @@ GIT_WRITE_ALLOW: Final[list[str]] = [
     "Bash(git merge --no-edit *)",
     "Bash(git switch -c *)",
     "Bash(git branch -d *)",
-]
-
-GIT_WRITE_DENY: Final[list[str]] = [
-    "Bash(git merge main *)",
-    "Bash(git merge master *)",
 ]
 
 USAGE: Final[str] = (
@@ -333,11 +322,9 @@ def merge_permissions(
 
 def _flag_specific(args: ParsedArgs) -> tuple[list[str], list[str]]:
     add_allow: list[str] = []
-    add_deny: list[str] = []
     if args.with_git:
         add_allow.extend(GIT_WRITE_ALLOW)
-        add_deny.extend(GIT_WRITE_DENY)
-    return add_allow, add_deny
+    return add_allow, []
 
 
 def _load_existing(target: Path) -> dict[str, object]:

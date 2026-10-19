@@ -14,8 +14,23 @@ the action, not the wording; confidence is not an override.
 
 | Class | Examples | Action |
 |---|---|---|
-| Externally visible or shared state | commit, push, PR, deploy, migration, sending messages, writing data outside the current Git tree and outside the directories the user added to the session | Always confirm |
-| Irreversible or destructive | `rm -rf` outside `$TMPDIR`; `git reset --hard`, `git clean -fd`, `git checkout .`, `git restore .`, `git branch -D`; force-push; `DROP`, `TRUNCATE`, `DELETE` without `WHERE`; skipping a pre-commit hook (`--no-verify`) or signing; writing a file you have not read | Always confirm; the shell cases are also denied by `bin/bash_decision_gate.py` |
+| Externally visible or shared state | merging or closing a PR/MR, pushing to a protected branch, deleting a remote branch or tag, deploy, migration, sending messages, writing data outside the current Git tree and outside the directories the user added to the session | Always confirm |
+| Irreversible or destructive | `rm -rf` outside `$TMPDIR`; `git reset --hard`, `git clean -fd`, `git checkout .`, `git restore .`, `git branch -D`; force-push other than `--force-with-lease` to your own feature branch; `DROP`, `TRUNCATE`, `DELETE` without `WHERE`; skipping a pre-commit hook (`--no-verify`) or signing; writing a file you have not read | Always confirm; the shell cases are also denied by `bin/bash_decision_gate.py` |
+
+**Git delivery is part of finishing a task.** The user has given a standing go: when a task has
+changed files in a Git repository and its checks pass, commit under the user's identity, push the
+feature branch, and open its PR/MR ready for review (not draft), or update the one that already
+exists — without a confirmation round. Skip it only when the user says they will commit themselves,
+or when the turn produced analysis rather than a change.
+
+- **Base branch.** The base is the branch the feature branch was cut from, which is also the MR
+  target: `main`, or a release branch such as `release-1.18.0`. Bring in new base commits by rebasing
+  onto that base (or merging it), never onto a different branch. When the base is not evident — no
+  MR yet and the history fits both `main` and a release branch — ask once.
+- **Protected branches** (`CC_PROTECTED_BRANCHES`: `main`, `master`, `develop`, `release-*`,
+  `release/*`). Never commit, merge, rebase or push on one; on a protected branch, first create a
+  feature branch from it. Rebasing your own feature branch and pushing it with `--force-with-lease`
+  is part of delivery.
 
 **What counts as a go** for these two classes: "yes", "go ahead", "proceed", "do it", "approved",
 "implement it", a direct pick of an option, or `/techne-implement`. For reversible local work, "ok",
@@ -41,8 +56,10 @@ and nothing else. Launch independent agents in one message so they run concurren
 
 For any modification to `.go`, `.py`, `.ts`, `.tsx` files in a code project, use `/techne-implement`
 to spawn the matching software-engineer agent rather than editing directly — the agents carry the
-language standards, production necessities, and the project's patterns. The user commits manually;
-agents do not commit.
+language standards, production necessities, and the project's patterns. The main session commits,
+pushes the feature branch and opens a PR/MR under "Git delivery is part of finishing a task" above;
+subagents do not touch git. The Bash hook denies commits, merges and rebases on protected branches,
+pushes to them, force pushes other than `--force-with-lease`, `--amend` and `--no-verify`.
 
 Direct edits are fine for: files under `roles/devbox/files/dot_claude/`, `dot_ai/`, `dot_codex/`,
 `dot_agy/` and the deployed `~/.claude/` (see the `editing-claude-config` skill); routine formatting,

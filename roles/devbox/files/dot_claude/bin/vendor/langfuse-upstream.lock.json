@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "source": "langfuse/claude-observability-plugin",
+  "version": "1.2.1",
+  "commit": "b5b7cc364996467e856dc17575b5674f4799ad87",
+  "path": "hooks/langfuse_hook.py",
+  "upstream_git_blob_sha1": "cdd8f64f0b8e437a73442de3fb1c4e8c8a64f798",
+  "output_git_blob_sha1": "cdd8f64f0b8e437a73442de3fb1c4e8c8a64f798",
+  "patches": []
+}

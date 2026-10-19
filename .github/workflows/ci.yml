@@ -68,6 +68,9 @@ jobs:
       - name: Check jq is available
         run: jq --version
 
+      - name: Verify pinned Claude Langfuse hook (offline)
+        run: python3 scripts/langfuse-hook-source.py verify
+
       - name: Validate Claude agent/skill/command cross-references
         run: make validate-claude
 

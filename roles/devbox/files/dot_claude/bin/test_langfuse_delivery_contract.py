@@ -74,8 +74,8 @@ def test_failed_flush_must_be_observable_to_delivery_caller(
         def shutdown(self):
             pass
     # Never call the network; the SDK itself raises deterministically.
-    m.flush_and_shutdown_langfuse_client(BrokenClient())
-    pytest.fail("flush returned normally despite a failed delivery")
+    with pytest.raises(OSError, match="injected collector"):
+        m.flush_and_shutdown_langfuse_client(BrokenClient())
 
 
 @pytest.mark.xfail(strict=True, reason="Upstream times out and abandons daemon flush")
@@ -94,8 +94,8 @@ def test_hanging_flush_must_not_report_success(
         def is_alive(self):
             return True
     monkeypatch.setattr(m.threading, "Thread", FakeThread)
-    m.flush_and_shutdown_langfuse_client(SimpleNamespace())
-    pytest.fail("hook accepted an unacknowledged, unfinished flush")
+    with pytest.raises(TimeoutError):
+        m.flush_and_shutdown_langfuse_client(SimpleNamespace())
 
 
 def test_turn_trace_id_is_deterministic_for_replay() -> None:

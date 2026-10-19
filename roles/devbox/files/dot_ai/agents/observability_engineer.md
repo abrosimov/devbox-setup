@@ -166,7 +166,7 @@ the skill's tables and reported.
 
 ```bash
 go version && go build ./... 2>&1 | head -5
-promtool --version 2>/dev/null || echo "promtool missing: use go run github.com/prometheus/prometheus/cmd/promtool@latest"
+promtool --version 2>/dev/null || echo "promtool missing: brew install prometheus, or go build ./cmd/promtool from a clone of the release tag"
 ```
 
 See `code-writing-protocols` skill — Pre-Flight Verification for the report template. A build error

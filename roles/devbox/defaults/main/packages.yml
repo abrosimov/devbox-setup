@@ -76,6 +76,7 @@ devbox_brew_secondary:
   - mise
   - fnm             # Fast Node Manager — auto-switches Node version on cd
   - golangci-lint
+  - prometheus      # promtool — rule syntax checks and `promtool test rules` for the observability-engineer agent
   - luarocks       # Needed by lazy.nvim
   - go-jsonnet
   - jsonnet-bundler

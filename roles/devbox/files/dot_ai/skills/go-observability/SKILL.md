@@ -194,8 +194,9 @@ promtool test rules observability/rules/*/tests/*.yaml  # every alert has a firi
 go run ./observability/dashboards -o observability/dashboards/out && jq empty observability/dashboards/out/*.json
 ```
 
-When `promtool` is not installed: `go run github.com/prometheus/prometheus/cmd/promtool@latest`,
-pinned in the project's tool list once adopted. `gcx` (Grafana CLI on this machine) can run PromQL
+`promtool` ships with the `prometheus` Homebrew formula this machine installs; `go install ...@latest`
+does not work for it (the upstream `go.mod` carries `replace` directives), so when it is missing
+elsewhere build it from a shallow clone of the release tag with `go build ./cmd/promtool`. `gcx` (Grafana CLI on this machine) can run PromQL
 against a configured datasource to confirm that a query returns series before it goes on a panel;
 read-only queries only.
 

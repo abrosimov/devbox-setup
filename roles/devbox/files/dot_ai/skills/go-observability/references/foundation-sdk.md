@@ -1,10 +1,10 @@
 # Grafana Foundation SDK (Go)
 
 Module `github.com/grafana/grafana-foundation-sdk/go`, packages `dashboard`, `timeseries`, `stat`,
-`table`, `prometheus`, `alerting`, `cog`, `common`. Releases are tagged per Grafana version
-(`v<grafana>+cog-v<cog>`); pin the tag the project already uses, otherwise the newest tag for the
-Grafana major the organisation runs, and read `go doc` for the builder signatures of that tag:
-field names below follow the generated builders and shift between Grafana majors.
+`table`, `prometheus`, `alerting`, `cog`, `common`. The Go module is tagged `v0.0.N` (`v0.0.21`
+at the time of writing; `go list -m -versions github.com/grafana/grafana-foundation-sdk/go` lists
+them); pin the tag the project already uses, otherwise the newest, and read `go doc` for the builder
+signatures of that tag. The code below compiles against `v0.0.21`.
 
 ## Program Layout
 

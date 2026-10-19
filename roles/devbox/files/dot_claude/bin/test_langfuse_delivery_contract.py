@@ -1,3 +1,4 @@
+# ruff: noqa: ARG005
 """Executable, currently failing delivery invariants for the vendored Langfuse hook.
 
 These are strict xfails until the transport handoff has a durable ACK boundary.
@@ -20,7 +21,8 @@ SOURCE = Path(__file__).parent / "vendor" / "langfuse_hook.py"
 def hook():
     pytest.importorskip("langfuse")
     spec = importlib.util.spec_from_file_location("langfuse_delivery_contract_under_test", SOURCE)
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
@@ -38,7 +40,7 @@ def test_unacknowledged_observations_are_not_checkpointed(
     saved = []
     state = m.SessionState(open_turn={"rows": [{"type": "user"}]})
     monkeypatch.setattr(m, "FileLock", lambda *args, **kwargs: nullcontext())
-    monkeypatch.setattr(m, "load_hook_state", lambda: {})
+    monkeypatch.setattr(m, "load_hook_state", dict)
     monkeypatch.setattr(m, "get_session_state", lambda *_: state)
     monkeypatch.setattr(m, "get_subagent_transcripts_by_tool_use_id", lambda *_: {})
     monkeypatch.setattr(m, "WorkflowAgentTranscriptsByRunId", lambda *_: None)
@@ -50,7 +52,7 @@ def test_unacknowledged_observations_are_not_checkpointed(
             "turn-one": {"emitted_keys": ["generation:1"], "trace_id": "a" * 32}
         }))
     monkeypatch.setattr(m, "save_session_state",
-        lambda global_state, key, session_state: saved.append(
+        lambda _global_state, _key, session_state: saved.append(
             dict(session_state.turn_progress)
         ))
     m.emit_new_turns_from_transcript(
@@ -65,14 +67,13 @@ def test_unacknowledged_observations_are_not_checkpointed(
 
 
 @pytest.mark.xfail(strict=True, reason="Upstream suppresses SDK flush exceptions")
-def test_failed_flush_must_be_observable_to_delivery_caller(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_failed_flush_must_be_observable_to_delivery_caller() -> None:
     """A flush failure must not look identical to a confirmed durable handoff."""
     m = hook()
     class BrokenClient:
         def flush(self):
-            raise OSError("injected collector connection failure")
+            message = "injected collector connection failure"
+            raise OSError(message)
         def shutdown(self):
             pass
     # Never call the network; the SDK itself raises deterministically.
@@ -87,7 +88,7 @@ def test_hanging_flush_must_not_report_success(
     """Simulate an SDK worker which cannot finish inside the hook's budget."""
     m = hook()
     class FakeThread:
-        def __init__(self, target, daemon):
+        def __init__(self, _target, daemon):
             assert daemon
         def start(self):
             pass

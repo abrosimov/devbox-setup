@@ -47,18 +47,23 @@ def test_unacknowledged_observations_are_not_checkpointed(
     monkeypatch.setattr(m, "get_new_turns_from_transcript", lambda *args, **kwargs: ([], state))
     monkeypatch.setattr(m, "build_session_history", lambda *args, **kwargs: None)
     monkeypatch.setattr(m, "get_task_id_to_tool_use_id", lambda *_: {})
-    monkeypatch.setattr(m, "emit_ready_observations_of_open_turn",
-        lambda *args, **kwargs: state.turn_progress.update({
-            "turn-one": {"emitted_keys": ["generation:1"], "trace_id": "a" * 32}
-        }))
-    monkeypatch.setattr(m, "save_session_state",
-        lambda _global_state, _key, session_state: saved.append(
-            dict(session_state.turn_progress)
-        ))
+    monkeypatch.setattr(
+        m,
+        "emit_ready_observations_of_open_turn",
+        lambda *args, **kwargs: state.turn_progress.update(
+            {"turn-one": {"emitted_keys": ["generation:1"], "trace_id": "a" * 32}}
+        ),
+    )
+    monkeypatch.setattr(
+        m,
+        "save_session_state",
+        lambda _global_state, _key, session_state: saved.append(dict(session_state.turn_progress)),
+    )
     m.emit_new_turns_from_transcript(
         object(),
         SimpleNamespace(user_id="test", trace_seed=None, parent_context=None),
-        "session", transcript,
+        "session",
+        transcript,
     )
     # No flush or durable collector acknowledgement happened, so the
     # persisted checkpoint must NOT declare the event sent.
@@ -74,8 +79,10 @@ def test_failed_flush_must_be_observable_to_delivery_caller() -> None:
         def flush(self):
             message = "injected collector connection failure"
             raise OSError(message)
+
         def shutdown(self):
             pass
+
     # Never call the network; the SDK itself raises deterministically.
     with pytest.raises(OSError, match="injected collector"):
         m.flush_and_shutdown_langfuse_client(BrokenClient())
@@ -90,12 +97,16 @@ def test_hanging_flush_must_not_report_success(
     class FakeThread:
         def __init__(self, _target, daemon):
             assert daemon
+
         def start(self):
             pass
+
         def join(self, timeout):
             assert timeout == 5.0
+
         def is_alive(self):
             return True
+
     monkeypatch.setattr(m.threading, "Thread", FakeThread)
     with pytest.raises(TimeoutError):
         m.flush_and_shutdown_langfuse_client(SimpleNamespace())

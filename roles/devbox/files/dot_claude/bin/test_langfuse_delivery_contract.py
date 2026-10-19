@@ -75,6 +75,7 @@ def test_unacknowledged_observations_are_not_checkpointed(
 def test_failed_flush_must_be_observable_to_delivery_caller() -> None:
     """A flush failure must not look identical to a confirmed durable handoff."""
     m = hook()
+
     class BrokenClient:
         def flush(self):
             message = "injected collector connection failure"
@@ -94,6 +95,7 @@ def test_hanging_flush_must_not_report_success(
 ) -> None:
     """Simulate an SDK worker which cannot finish inside the hook's budget."""
     m = hook()
+
     class FakeThread:
         def __init__(self, _target, daemon):
             assert daemon

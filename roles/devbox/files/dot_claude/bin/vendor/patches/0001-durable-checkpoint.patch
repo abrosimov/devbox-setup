@@ -1,7 +1,7 @@
 diff --git a/langfuse_hook.py b/langfuse_hook.py
 --- a/langfuse_hook.py
 +++ b/langfuse_hook.py
-@@ -615,11 +615,20 @@ def save_hook_state(state: Dict[str, Any]) -> None:
+@@ -615,9 +615,18 @@ def save_hook_state(state: Dict[str, Any]) -> None:
          sweep_stale_session_locks(state, cutoff)
          STATE_DIR.mkdir(parents=True, exist_ok=True)
          tmp = STATE_FILE.with_suffix(".tmp")

@@ -26,13 +26,16 @@ def replay_environment() -> dict[str, str]:
     settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
     configured = settings.get("env", {})
     if not isinstance(configured, dict):
-        raise ValueError("Claude settings.env must be an object")
+        message = "Claude settings.env must be an object"
+        raise TypeError(message)
     if any(not isinstance(configured.get(name), str) or not configured[name]
            for name in REQUIRED):
-        raise ValueError("Missing local-edge Langfuse runtime configuration")
+        message = "Missing local-edge Langfuse runtime configuration"
+        raise ValueError(message)
     url = configured["CC_LANGFUSE_BASE_URL"]
-    if not (url.startswith("http://127.0.0.1:") or url.startswith("http://localhost:")):
-        raise ValueError("Replay exporter must target a loopback collector")
+    if not url.startswith(("http://127.0.0.1:", "http://localhost:")):
+        message = "Replay exporter must target a loopback collector"
+        raise ValueError(message)
     environment = dict(os.environ)
     for key in REPLAY_SETTINGS:
         if isinstance(configured.get(key), str):
@@ -44,12 +47,14 @@ def replay_environment() -> dict[str, str]:
 def replay_one(marker: Path, base_env: dict[str, str]) -> bool:
     record = json.loads(marker.read_text(encoding="utf-8"))
     if record.get("schema_version") != 1 or not isinstance(record.get("nonce"), str):
-        raise ValueError("Unsupported pending marker format")
+        message = "Unsupported pending marker format"
+        raise ValueError(message)
     session_id = record["session_id"]
     original = Path(record["transcript_path"])
     snapshot = Path(record["snapshot_path"])
     if not snapshot.is_file():
-        raise FileNotFoundError(f"Pending transcript snapshot missing: {marker.name}")
+        message = f"Pending transcript snapshot missing: {marker.name}"
+        raise FileNotFoundError(message)
     transcript = original if original.is_file() else snapshot
     payload = {
         "session_id": session_id,

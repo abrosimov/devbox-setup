@@ -26,7 +26,6 @@ def load_hook():
     return module
 
 
-@pytest.mark.xfail(strict=True, reason="Upstream swallows state persistence errors")
 def test_checkpoint_storage_failure_is_not_reported(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -44,7 +43,6 @@ def test_checkpoint_storage_failure_is_not_reported(
         module.save_hook_state({"session": {"offset": 23}})
 
 
-@pytest.mark.xfail(strict=True, reason="Upstream atomically renames but does not fsync checkpoint")
 def test_checkpoint_calls_fsync_before_returning(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

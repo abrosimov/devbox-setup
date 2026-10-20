@@ -3422,7 +3422,8 @@ def emit_new_turns_from_transcript(
     *,
     flush_deferred_agent_turns: bool = False,
 ) -> int:
-    key = get_session_state_key(session_id, str(transcript_path))
+    state_identity = os.environ.get("CC_LANGFUSE_STATE_IDENTITY_PATH") or str(transcript_path)
+    key = get_session_state_key(session_id, state_identity)
 
     with FileLock(get_session_lock_path(key)):
         with FileLock(LOCK_FILE):
@@ -3539,7 +3540,7 @@ def main() -> int:
     config = get_langfuse_config()
     if config is None:
         log_missing_langfuse_config()
-        return 0
+        return 1
 
     payload = read_hook_payload()
     hook_context = get_session_id_and_transcript_path(payload)
@@ -3551,7 +3552,7 @@ def main() -> int:
 
     langfuse = create_langfuse_client(config)
     if langfuse is None:
-        return 0
+        return 1
 
     try:
         emitted = emit_new_turns_from_transcript(

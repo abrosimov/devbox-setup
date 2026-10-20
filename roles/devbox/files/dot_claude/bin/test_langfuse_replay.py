@@ -127,3 +127,21 @@ def test_failed_replay_preserves_pending_snapshot(
     assert not langfuse_replay.replay_one(marker, {})
     assert marker.is_file()
     assert snapshot.is_file()
+
+
+def test_transcript_removed_during_hook_retains_pending_snapshot(
+    monkeypatch: pytest.MonkeyPatch, pending_environment: Path, tmp_path: Path,
+) -> None:
+    payload = sample_payload(tmp_path)
+    source = Path(payload["transcript_path"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+
+    def remove_source(*_args, **_kwargs):
+        source.unlink()
+
+    monkeypatch.setattr(langfuse_trace_hook.runpy, "run_path", remove_source)
+    langfuse_trace_hook.main()
+    markers = list((pending_environment / "langfuse_pending").glob("*.json"))
+    assert len(markers) == 1
+    record = json.loads(markers[0].read_text(encoding="utf-8"))
+    assert Path(record["snapshot_path"]).is_file()

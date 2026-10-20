@@ -601,6 +601,15 @@
             "type": "command"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/local_hooks.py Stop",
+            "timeout": 60,
+            "type": "command"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -676,6 +685,15 @@
         "hooks": [
           {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/langfuse_trace_hook.py",
+            "timeout": 60,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/local_hooks.py SessionEnd",
             "timeout": 60,
             "type": "command"
           }

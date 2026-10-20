@@ -1,4 +1,4 @@
-# ruff: noqa: ARG005
+# ruff: noqa: ARG001
 """Persistent pending-session and independent replay tests (no network)."""
 
 from __future__ import annotations

@@ -15,10 +15,6 @@ Installed under `~/.local/share/tlaplus/<tool>/` (Java from `temurin@21`): `tla2
 `IOUtils`), `apalache-mc`, `tlapm`. Nothing else: when Alloy, P, Quint or SPIN would fit better,
 say so in the report and still deliver TLA+.
 
-Runnable reference: `examples/orders/` — spec, two TLC configurations, Apalache entry module,
-trace spec with fixtures, and a README whose commands are the verification. Copy the directory
-and rename; do not retype the shape.
-
 ## 1. Decide whether to model
 
 Model when any row scores yes; otherwise write a two-line refusal with the reasons and stop.
@@ -93,15 +89,20 @@ instance, distinct states or length, time and outcome as the tool printed them.
 
 ## 5. Run
 
+Layout: `<Spec>.tla` (the specification), `MC<Spec>.tla` + `.cfg` (TLC instance: constants,
+`Permutations` for symmetry), `Apa<Spec>.tla` (Apalache entry: `CInit`, assignable invariant,
+`EXTENDS Apalache`; SANY cannot resolve that module, so keep it out of the TLC files),
+`Trace<Spec>.tla` + `.cfg` (§8), `README.md` with every command.
+
 ```bash
 CP="$TLA2TOOLS_JAR:$HOME/.local/share/tlaplus/communitymodules/CommunityModules-deps.jar"
-java -cp "$CP" tla2sany.SANY Orders.tla                                     # parse
+java -cp "$CP" tla2sany.SANY Spec.tla                                       # parse
 java -cp "$CP" pcal.trans Algo.tla                                          # PlusCal → TLA+
-java -XX:+UseParallelGC -cp "$CP" tlc2.TLC -config MCOrders.cfg -workers auto -noTE -cleanup MCOrders.tla
-java -cp "$CP" tlc2.TLC -config MCOrders.cfg -simulate num=1000 -depth 50 MCOrders.tla   # when BFS is too big
-apalache-mc typecheck ApaOrders.tla
-apalache-mc check --cinit=CInit --inv=PaidImpliesOrdered --length=8 --out-dir="$(mktemp -d)" ApaOrders.tla
-tlapm Orders.tla
+java -XX:+UseParallelGC -cp "$CP" tlc2.TLC -config MCSpec.cfg -workers auto -noTE -cleanup MCSpec.tla
+java -cp "$CP" tlc2.TLC -config MCSpec.cfg -simulate num=1000 -depth 50 MCSpec.tla   # when BFS is too big
+apalache-mc typecheck ApaSpec.tla
+apalache-mc check --cinit=CInit --inv=Safety --length=8 --out-dir="$(mktemp -d)" ApaSpec.tla
+tlapm Spec.tla
 ```
 
 `.cfg` keys: `SPECIFICATION`, `CONSTANTS` (model values or sets), `INVARIANTS`, `PROPERTIES`,
@@ -122,7 +123,7 @@ values from a `.cfg` are strings. `CInit` constrains constants symbolically
 | Construct | Apalache | Use instead |
 |-----------|----------|-------------|
 | `a..b` with a bound that is not a literal (a `CInit` constant fixed by `\in`) | unsupported | fix that constant with `=` in `CInit` |
-| `--init=P` where `P` does not assign every variable with `=` or `\in` | fails | an `ApaTypeOK` written with `=`, `\in`, `Gen(n)` (see `examples/orders/ApaOrders.tla`) |
+| `--init=P` where `P` does not assign every variable with `=` or `\in` | fails | an `ApaTypeOK` written as assignments: `f = [x \in S |-> Gen(n)]`, `s \in SUBSET S` |
 | `CHOOSE` | unsupported | `Guess(S)` when any element will do; folds for a deterministic pick |
 | `RECURSIVE`, recursive functions | unsupported | `ApaFoldSet`, `ApaFoldSeqLeft` |
 | `Seq(S)` as a set, quantification over `Nat`, `Int`, `Seq(S)` | unsupported | `Gen(n)` with a length bound; ranges |
@@ -149,9 +150,10 @@ onto, with conformance vectors next to it.
 A behaviour log of the implementation replayed against the spec by TLC. It is a verification
 fixture: not an OpenTelemetry trace, never the service logger or the telemetry pipeline.
 
-- **Schema**: a protobuf `Event` with a `oneof action`, one member per spec action and its
-  arguments, an optional state snapshot (`examples/orders/proto/orders/trace/v1/trace.proto`).
-  On disk one protojson object per line, because the `Json` module reads it. protojson: field
+- **Schema**: a protobuf `Event` with a `oneof action`, one member per spec action carrying its
+  arguments, an optional `Snapshot` of spec variables, `node` and `seq` for distributed logs
+  (`proto/<spec>/trace/v1/trace.proto`). On disk one protojson object per line, because the
+  `Json` module reads it. protojson: field
   names lowerCamelCase; scalars and repeated fields at their default are omitted (ids start at 1;
   guard snapshot fields with `\in DOMAIN`); a set message is written as `{}`; 64-bit integers
   become strings, so anything TLC compares is 32-bit. `buf lint` always; `buf breaking` before a
@@ -159,8 +161,8 @@ fixture: not an OpenTelemetry trace, never the service logger or the telemetry p
 - **Contract** `trace_contract.md`: one row per action — `oneof` member, spec action, arguments,
   code point, emitted when (at the commit point, never before) — plus abstraction rules. The SE
   writes the emitter from it: own package, off by default, enabled by `TRACE_PATH`.
-- **Trace spec** (`TraceOrders.tla`): `IsEvent(name) == l <= Len(Trace) /\ name \in DOMAIN
-  logline /\ l' = l + 1`; an argument on the line fixes the step, a missing one is chosen with
+- **Trace spec**: `Trace == ndJsonDeserialize(IOEnv.TRACE_PATH)`, a line index `l`,
+  `IsEvent(name) == l <= Len(Trace) /\ name \in DOMAIN Trace[l] /\ l' = l + 1`; an argument on the line fixes the step, a missing one is chosen with
   `\E`; `POSTCONDITION TraceAccepted` with `TLCGet("stats").diameter = Len(Trace) + 1`;
   `CHECK_DEADLOCK FALSE`. A rejected trace names the first unmatched line.
 - **Scenarios**: happy path single and concurrent (three actors), each admitted failure injected

@@ -15,9 +15,6 @@ The question every signal answers: when this breaks at 3am, how do we see it, lo
 know what to do? Product dashboards describe the product's model; outages happen in reality,
 which the technology and code layers below cover.
 
-Runnable reference: `examples/` — a Foundation SDK dashboard program, the OTel and client_golang
-bootstrap, and the three-layer rule files with promtool unit tests. They build and pass; copy them.
-
 ## Methods
 
 | Method | Applies to | Gives |
@@ -143,8 +140,9 @@ Propose from a baseline: the next standard availability target below observed (9
 
 ## Dashboards
 
-One Go program on the Grafana Foundation SDK (`examples/dashboards/`), one file per service,
-rendered JSON committed. Rows: overview (SLO status, burn, `build_info`), traffic (RED per route
+One Go program on the Grafana Foundation SDK (`github.com/grafana/grafana-foundation-sdk/go`,
+packages `dashboard`, `timeseries`, `stat`, `prometheus`, `cog`), one file per service, a `-o`
+flag that renders `<uid>.json`, rendered JSON committed. Rows: overview (SLO status, burn, `build_info`), traffic (RED per route
 or consumer), dependencies, saturation, detectors, runtime. Every panel has a unit, a legend from
 the attribute that matters, a bounded series count, a catalogue id in its description; alerting
 panels link the runbook. Jsonnet is not used.

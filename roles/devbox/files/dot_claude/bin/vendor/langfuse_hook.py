@@ -372,11 +372,18 @@ def create_langfuse_client(config: LangfuseConfig) -> Optional[Langfuse]:
     if not CAPTURE_IMAGES and not os.environ.get("LANGFUSE_MEDIA_UPLOAD_ENABLED"):
         os.environ["LANGFUSE_MEDIA_UPLOAD_ENABLED"] = "false"
     try:
-        return Langfuse(
+        # The hook's ACK is to a fsync-backed local OTLP outbox, not to the
+        # network. The independent LaunchAgent uploads the persisted batches.
+        from durable_otel_exporter import DurableSpoolExporter
+        exporter = DurableSpoolExporter()
+        client = Langfuse(
             public_key=config.public_key,
             secret_key=config.secret_key,
             host=config.host,
+            span_exporter=exporter,
         )
+        client._devbox_durable_exporter = exporter
+        return client
     except Exception as e:
         info(f"Langfuse client creation failed ({type(e).__name__}: {e}); tracing disabled for this turn")
         return None
@@ -3525,6 +3532,12 @@ def flush_and_shutdown_langfuse_client(langfuse: Optional[Langfuse]) -> None:
         raise TimeoutError("Langfuse flush did not complete within 5 seconds")
     if failures:
         raise failures[0]
+    durable_exporter = getattr(langfuse, "_devbox_durable_exporter", None)
+    if durable_exporter is not None and durable_exporter.failed is not None:
+        raise RuntimeError(
+            f"Langfuse local OTLP outbox persistence failed: "
+            f"{type(durable_exporter.failed).__name__}"
+        ) from durable_exporter.failed
 
 
 # ----------------- Main -----------------

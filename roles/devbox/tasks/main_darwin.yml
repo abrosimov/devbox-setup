@@ -99,6 +99,10 @@
 - name: "Install durable OpenTelemetry edge collector (otelcol-otelbox + LaunchAgent)"
   ansible.builtin.include_tasks: darwin/install_otelbox_edge.yml
   when: not (dev_mode | default(false) | bool)
+- name: "Configure durable Langfuse pending replay (LaunchAgent)"
+  ansible.builtin.include_tasks: darwin/configure_langfuse_replay.yml
+  when: not (dev_mode | default(false) | bool)
+  tags: [configs, claude, langfuse]
 - name: "Configure weekly drive backup (drive-backup + LaunchAgent)"
   ansible.builtin.include_tasks: darwin/configure_drive_backup.yml
   when: not (dev_mode | default(false) | bool)

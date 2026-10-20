@@ -109,7 +109,7 @@ def register_pending(payload: dict) -> tuple[Path, str, Path] | None:
     key = pending_key(session_id, source)
     nonce = uuid.uuid4().hex
     root = pending_root()
-    snapshot = root / f"{key}.{nonce}.jsonl"
+    snapshot = root / f"{key}.{nonce}" / source.name
     durable_snapshot(source, snapshot)
     marker = root / f"{key}.json"
     record = {
@@ -140,6 +140,10 @@ def complete_pending(marker: Path, nonce: str, snapshot: Path) -> None:
         pass
     # Every registration owns a distinct immutable snapshot.
     snapshot.unlink(missing_ok=True)
+    try:
+        snapshot.parent.rmdir()
+    except OSError:
+        pass
 
 
 def main() -> None:

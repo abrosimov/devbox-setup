@@ -3565,12 +3565,12 @@ def main() -> int:
         return 0
 
     except TimeoutError as e:
-        info(f"lock timeout, skipping: {e}")
-        return 0
+        info(f"Langfuse delivery incomplete (will retry): {e}")
+        return 1
 
     except Exception as e:
-        debug(f"Unexpected failure: {e}")
-        return 0
+        info(f"Langfuse delivery incomplete (will retry): {type(e).__name__}: {e}")
+        return 1
 
 
 if __name__ == "__main__":

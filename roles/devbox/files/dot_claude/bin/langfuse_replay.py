@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import langfuse_trace_hook as hook
+from vendor.durable_otel_exporter import drain_spool
 
 SETTINGS = Path.home() / ".claude" / "settings.json"
 WRAPPER = Path(__file__).resolve().parent / "langfuse_trace_hook.py"
@@ -98,11 +99,14 @@ def main() -> int:
         print(f"Langfuse replay configuration unavailable: {type(exc).__name__}", file=sys.stderr)
         return 1
 
+    base_url = environment["CC_LANGFUSE_BASE_URL"]
+    # Deliver batches which were already fsynced before replaying transcripts;
+    # an unavailable edge never deletes local OTLP payloads.
+    sent_before, _pending_before = drain_spool(base_url)
+
     root = hook.pending_root()
-    if not root.exists():
-        return 0
     attempted = failed = 0
-    for marker in sorted(root.glob("*.json")):
+    for marker in sorted(root.glob("*.json")) if root.exists() else []:
         attempted += 1
         try:
             if not replay_one(marker, environment):
@@ -110,8 +114,13 @@ def main() -> int:
         except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
             print(f"Replay still pending: {marker.name} ({type(exc).__name__})", file=sys.stderr)
             failed += 1
-    print(f"Langfuse replay: attempted={attempted}, pending={failed}")
-    return 1 if failed else 0
+    sent_after, pending_batches = drain_spool(base_url)
+    print(
+        f"Langfuse replay: sessions_attempted={attempted}, "
+        f"sessions_pending={failed}, otlp_sent={sent_before + sent_after}, "
+        f"otlp_pending={pending_batches}"
+    )
+    return 1 if failed or pending_batches else 0
 
 
 if __name__ == "__main__":

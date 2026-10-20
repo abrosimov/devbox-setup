@@ -1,0 +1,45 @@
+---
+groups:
+  - name: checkout.sli
+    interval: 30s
+    rules:
+      - record: sli:checkout_errors:ratio_rate5m
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout", http_response_status_code=~"5.."
+              }[5m]))
+          / sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout"
+              }[5m]))
+      - record: sli:checkout_errors:ratio_rate30m
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout", http_response_status_code=~"5.."
+              }[30m]))
+          / sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout"
+              }[30m]))
+      - record: sli:checkout_errors:ratio_rate1h
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout", http_response_status_code=~"5.."
+              }[1h]))
+          / sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout"
+              }[1h]))
+      - record: sli:checkout_errors:ratio_rate6h
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout", http_response_status_code=~"5.."
+              }[6h]))
+          / sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout"
+              }[6h]))
+      - record: sli:checkout_errors:ratio_rate3d
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout", http_response_status_code=~"5.."
+              }[3d]))
+          / sum(rate(http_server_request_duration_seconds_count{
+                service_name="checkout", http_route="/checkout"
+              }[3d]))

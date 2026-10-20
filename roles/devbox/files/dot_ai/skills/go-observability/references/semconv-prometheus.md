@@ -70,6 +70,8 @@ records the Prometheus name next to the OTel name.
 
 ## Bootstrap Snippets
 
+Both compile as `examples/bootstrap/main.go`.
+
 OpenTelemetry SDK, OTLP to the collector plus a Prometheus scrape endpoint:
 
 ```go
@@ -114,3 +116,16 @@ histogram_quantile(0.99, sum by (le, http_route) (rate(http_server_request_durat
 # join version onto anything
 sum by (service_version) (up * on (job, instance) group_left (service_version) target_info)
 ```
+
+## Sources
+
+- OpenTelemetry semantic conventions (HTTP, RPC, database, messaging, runtime, process metrics;
+  attribute requirement levels) — https://opentelemetry.io/docs/specs/semconv/
+- Prometheus and OpenMetrics compatibility (the OTLP → Prometheus translation rules) —
+  https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/
+- Prometheus metric and label naming — https://prometheus.io/docs/practices/naming/
+- Prometheus histograms, native histograms — https://prometheus.io/docs/concepts/metric_types/ ,
+  https://prometheus.io/docs/specs/native_histograms/
+- OpenTelemetry Go SDK and contrib (`otelhttp`, `runtime`, Prometheus exporter) —
+  https://pkg.go.dev/go.opentelemetry.io/otel , https://pkg.go.dev/go.opentelemetry.io/contrib
+- `client_golang` — https://pkg.go.dev/github.com/prometheus/client_golang/prometheus

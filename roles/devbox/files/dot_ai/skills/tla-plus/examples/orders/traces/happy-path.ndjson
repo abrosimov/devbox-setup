@@ -1,0 +1,3 @@
+{"event":"Place","args":{"c":"c1","item":1}}
+{"event":"Pay","args":{"c":"c1"},"state":{"payments":["c1"]}}
+{"event":"Ship","args":{"c":"c1"}}

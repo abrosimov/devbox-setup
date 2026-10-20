@@ -19,6 +19,7 @@ covered by the technology and code layers below, which is where most of the sign
 ## Table of Contents
 
 - [Signal Catalogue](#signal-catalogue)
+- [Methods the Catalogue Draws On](#methods-the-catalogue-draws-on)
 - [Debuggability Audit](#debuggability-audit)
 - [Instrumentation in Go](#instrumentation-in-go)
 - [Three Alert Layers](#three-alert-layers)
@@ -27,6 +28,9 @@ covered by the technology and code layers below, which is where most of the sign
 - [Validation Gates](#validation-gates)
 - [Artefact Layout](#artefact-layout)
 - [Pitfalls](#pitfalls)
+
+Runnable examples: `examples/` (Foundation SDK program, OTel bootstrap, rule files with promtool
+tests), built and checked by `tests/deploy/test_skill_examples.py` when the tools are present.
 
 References: `references/debuggability-checklist.md` (audit heuristics and grep patterns),
 `references/semconv-prometheus.md` (metric names, attributes, Prometheus translation),
@@ -50,6 +54,20 @@ Columns are mandatory. "Budget" is the maximum series count for that metric on o
 from attribute cardinalities; an attribute with unbounded values (user id, path with parameters,
 free-text error message) never appears. Three layers: **product** (user journeys and SLOs),
 **technology** (saturation and dependency health), **code** (detectors for paths that should be rare).
+
+## Methods the Catalogue Draws On
+
+| Method | Applies to | Gives | Source |
+|--------|-----------|-------|--------|
+| RED (rate, errors, duration) | request-driven services, consumers | the product and dependency rows | Tom Wilkie, 2015 |
+| USE (utilisation, saturation, errors) | every resource: CPU, memory, pools, queues, disks | the technology rows | Brendan Gregg, 2012 |
+| Four golden signals (latency, traffic, errors, saturation) | the overview row of a dashboard | the first question: is it us | SRE Book ch. 6 |
+| SLO, error budget, burn rate | user journeys | the product alerts and the maturity ladder | SRE Workbook ch. 2 and 5 |
+| Symptom-based alerting | all layers | pages for what users feel, tickets for causes | SRE Book ch. 6; Ewaschuk |
+| Failure-mode table (FMEA-lite) | the audit | the code and technology rows nobody asked for | this skill |
+
+RED and the golden signals describe the product's model; USE and the failure-mode table describe
+what actually breaks. A catalogue that stops at RED is the dashboard that looks fine during an outage.
 
 ## Debuggability Audit
 
@@ -228,3 +246,18 @@ ${PROJECT_DIR}/observability_design.md       # signal catalogue, alert layers, S
 - Dashboards with 60 panels are not read at 3am; six rows, the first one answers "is it us".
 - Instrumenting a codebase that has no telemetry bootstrap is a design decision: bring the
   bootstrap as its own catalogue row and work stream, do not sprinkle instruments that nothing exports.
+
+## Sources
+
+- Tom Wilkie, *The RED Method* (2015) —
+  https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/
+- Brendan Gregg, *The USE Method* — https://www.brendangregg.com/usemethod.html
+- Google SRE Book ch. 6 *Monitoring Distributed Systems*; SRE Workbook ch. 2 *Implementing SLOs*,
+  ch. 5 *Alerting on SLOs* — https://sre.google/books/
+- Charity Majors, Liz Fong-Jones, George Miranda, *Observability Engineering* (O'Reilly, 2022):
+  high-cardinality debugging, the question the on-call engineer asks
+- OpenTelemetry semantic conventions — https://opentelemetry.io/docs/specs/semconv/
+- Prometheus best practices: naming, histograms, alerting, rule unit tests —
+  https://prometheus.io/docs/practices/
+- Grafana Foundation SDK — https://github.com/grafana/grafana-foundation-sdk
+- Per-topic sources close each file in `references/`.

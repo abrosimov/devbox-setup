@@ -66,65 +66,24 @@ Rules for the emitter:
 
 ## Trace Specification
 
+The full module is `examples/orders/TraceOrders.tla` with `TraceOrders.cfg` and two traces under
+`examples/orders/traces/`. The parts that carry the pattern:
+
 ```tla
----- MODULE TraceOrders ----
-EXTENDS Orders, Json, IOUtils, Sequences, TLC
-
-\* NDJSON file named by the TRACE_PATH environment variable
-Trace == ndJsonDeserialize(IOEnv.TRACE_PATH)
-
-VARIABLE l                       \* index of the next log line to consume
-tvars == <<vars, l>>
-
-logline == Trace[l]
-
-IsEvent(name) ==
-    /\ l <= Len(Trace)
-    /\ logline.event = name
-    /\ l' = l + 1
-
-\* Arguments present on the line are fixed; absent ones are chosen existentially
-TracePay ==
-    /\ IsEvent("Pay")
-    /\ Pay(logline.args.c)
-
-TraceShip ==
-    /\ IsEvent("Ship")
-    /\ \E c \in Customers : c = logline.args.c /\ Ship(c)
-
-\* Optional snapshot check when the line carries state
-SnapshotOK ==
-    "state" \in DOMAIN logline => payments' = logline.state.payments
-
-TraceInit == Init /\ l = 1
-
-TraceNext ==
-    /\ \/ TracePay
-       \/ TraceShip
-    /\ SnapshotOK
-
-TraceSpec == TraceInit /\ [][TraceNext]_tvars
-
-\* TLC consumed every line: the diameter of the explored graph is the trace length plus the initial state
+Trace == ndJsonDeserialize(IOEnv.TRACE_PATH)          \* Json + IOUtils from CommunityModules
+VARIABLE l                                            \* next line to consume
+IsEvent(name) == l <= Len(Trace) /\ Trace[l].event = name /\ l' = l + 1
+TracePay  == IsEvent("Pay") /\ Pay(Trace[l].args.c)   \* argument on the line fixes the step
+TraceShip == IsEvent("Ship") /\ \E c \in Customers : c = Trace[l].args.c /\ Ship(c)
+TraceNext == (TracePlace \/ TracePay \/ TraceShip) /\ SnapshotOK
 TraceAccepted == TLCGet("stats").diameter = Len(Trace) + 1
-====
 ```
 
-`TraceOrders.cfg`:
-
-```
-SPECIFICATION TraceSpec
-CONSTANTS
-    Customers = {"c1", "c2", "c3"}
-    MaxItems = 2
-INVARIANTS TypeOK NoDoublePayment
-POSTCONDITION TraceAccepted
-CHECK_DEADLOCK FALSE
-```
-
-Deadlock checking is off because the spec legitimately has no enabled action once the log is
-consumed. Constants are strings here, matching the JSON; keep model values and JSON ids aligned in
-the contract.
+`TraceOrders.cfg` sets `SPECIFICATION TraceSpec`, keeps the safety `INVARIANTS`, adds
+`POSTCONDITION TraceAccepted` and `CHECK_DEADLOCK FALSE` (the spec legitimately stops once the log is
+consumed). Constants are strings there, matching the JSON ids; the contract keeps model values and
+JSON ids aligned. JSON arrays deserialise as sequences, so a snapshot of a set variable goes through
+`AsSet`.
 
 ## Running
 
@@ -160,3 +119,6 @@ Minimum set per subsystem, each as its own trace file:
 
 Run TLC with `-coverage 1` on each and collect the action counts; an action with zero coverage across
 all scenarios is reported as "never exercised".
+
+Source: Cirstea, Kuppe, Loillier, Merz, *Validating Traces of Distributed Programs Against TLA+
+Specifications*, https://arxiv.org/abs/2404.16075; TLC docs, https://docs.tlapl.us/using:tlc:trace_validation.

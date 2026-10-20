@@ -18,6 +18,9 @@ observability/dashboards/
 
 ## Dashboard
 
+Full program: `examples/dashboards/` (`main.go`, `alert.go`, `go.mod`); it builds against
+`v0.0.21` and renders `checkout.json`. The shape:
+
 ```go
 package main
 
@@ -80,20 +83,8 @@ func checkoutDashboard() *dashboard.DashboardBuilder {
 }
 ```
 
-Rendering:
-
-```go
-func main() {
-    out := flag.String("o", "out", "output directory")
-    flag.Parse()
-    for _, b := range []*dashboard.DashboardBuilder{checkoutDashboard()} {
-        d, err := b.Build()
-        if err != nil { log.Fatal(err) }
-        data, _ := json.MarshalIndent(d, "", "  ")
-        if err := os.WriteFile(filepath.Join(*out, *d.Uid+".json"), data, 0o644); err != nil { log.Fatal(err) }
-    }
-}
-```
+Rendering: `main.go` in the example takes `-o <dir>` and writes `<uid>.json` per dashboard with
+`json.MarshalIndent`.
 
 `Build()` validates required fields; a build error is a bug in the program, not a warning.
 
@@ -120,20 +111,11 @@ rule groups the same way; the expression, labels and annotations follow `alert-r
 unchanged, and the promtool tests still run against a Prometheus-rule rendering of the same
 expressions kept next to it, because Grafana has no equivalent unit test.
 
-```go
-group := alerting.NewRuleGroupBuilder("checkout").
-    FolderUid("observability").
-    Interval(60).
-    WithRule(alerting.NewRuleBuilder("CheckoutErrorBudgetBurnFast").
-        For("2m").
-        Labels(map[string]string{"severity": "page", "layer": "product", "maturity": "agreed"}).
-        Annotations(map[string]string{"runbook_url": "..."}).
-        Condition("C").
-        WithQuery(alerting.NewQueryBuilder("A").DatasourceUid("prom").
-            Model(prometheus.NewDataqueryBuilder().Expr(`sli:checkout_errors:ratio_rate1h`))).
-        // B: reduce, C: threshold — expressions as in the Grafana provisioning docs
-    )
-```
+See `examples/dashboards/alert.go`: `alerting.NewRuleGroupBuilder(...).FolderUid(...).Interval(60)`
+with one `alerting.NewRuleBuilder(name)` per rule carrying `For`, `Labels`, `Annotations`,
+`Condition("C")` and a `WithQuery(alerting.NewQueryBuilder("A").DatasourceUid(...).Model(
+prometheus.NewDataqueryBuilder().Expr(...)))`, plus the reduce (`B`) and threshold (`C`) expressions
+as in the Grafana provisioning docs.
 
 ## Conventions
 
@@ -147,3 +129,10 @@ group := alerting.NewRuleGroupBuilder("checkout").
 - Validation: `go run ./observability/dashboards -o observability/dashboards/out`, then
   `jq empty` on each file, then `git diff --exit-code observability/dashboards/out` in CI;
   `dashboard-linter lint <file>` when the project installs it.
+
+## Sources
+
+- Grafana Foundation SDK, Go README and reference — https://github.com/grafana/grafana-foundation-sdk/tree/main/go
+- Grafana dashboard JSON model — https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/view-dashboard-json-model/
+- Grafana-managed alerting provisioning — https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/
+- `grafana/dashboard-linter` — https://github.com/grafana/dashboard-linter

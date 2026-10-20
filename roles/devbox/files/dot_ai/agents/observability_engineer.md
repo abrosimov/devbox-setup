@@ -2,7 +2,7 @@
 name: observability-engineer
 description: Observability engineer for Go services — audits debuggability ("how would we debug this at 3am"), instruments metrics, structured logs and spans by OpenTelemetry semantic conventions, designs three-layer alerting (product SLO burn rate, technology saturation, code-level detectors) with promtool unit tests, derives SLOs from a baseline, and builds Grafana dashboards as Go code with the Foundation SDK. Use for any metrics, logs, alerts, dashboards, SLO or runbook work, and for an observability review of an existing service.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, LSP
-model: sonnet
+model: opus
 effort: high
 permissionMode: acceptEdits
 skills: go-observability, go-engineer, code-comments, lint-discipline, lsp-tools, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols, config

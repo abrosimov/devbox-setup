@@ -1,0 +1,93 @@
+---
+groups:
+  - name: checkout.slo
+    rules:
+      - alert: CheckoutErrorBudgetBurnFast
+        expr: |
+          sli:checkout_errors:ratio_rate1h > (14.4 * 0.001)
+          and
+          sli:checkout_errors:ratio_rate5m > (14.4 * 0.001)
+        for: 2m
+        labels: { severity: page, layer: product, maturity: agreed }
+        annotations:
+          summary: "Checkout burning error budget at 14.4x (2% of 30-day budget in 1h)"
+          description: "1h error ratio {{ $value | humanizePercentage }} against SLO 99.9%"
+          runbook_url: https://<runbooks>/CheckoutErrorBudgetBurnFast
+      - alert: CheckoutErrorBudgetBurnMedium
+        expr: |
+          sli:checkout_errors:ratio_rate6h > (6 * 0.001)
+          and
+          sli:checkout_errors:ratio_rate30m > (6 * 0.001)
+        for: 15m
+        labels: { severity: page, layer: product, maturity: agreed }
+      - alert: CheckoutErrorBudgetBurnSlow
+        expr: |
+          sli:checkout_errors:ratio_rate3d > (1 * 0.001)
+          and
+          sli:checkout_errors:ratio_rate6h > (1 * 0.001)
+        for: 1h
+        labels: { severity: ticket, layer: product, maturity: agreed }
+  - name: checkout.technology
+    rules:
+      - alert: DBPoolExhausted
+        expr: |
+          sum by (db_client_connection_pool_name) (db_client_connection_count{db_client_connection_state="used"})
+          / sum by (db_client_connection_pool_name) (db_client_connection_max) > 0.9
+        for: 5m
+        labels: { severity: ticket, layer: technology, maturity: none }
+      - alert: ConsumerLagAgeHigh
+        expr: orders_queue_oldest_age_seconds > 300
+        for: 5m
+        labels: { severity: ticket, layer: technology, maturity: none }
+      - alert: ConsumerStalled
+        expr: rate(messaging_client_consumed_messages_total[10m]) == 0 and orders_queue_depth > 0
+        for: 10m
+        labels: { severity: page, layer: technology, maturity: none }
+      - alert: GoroutineGrowth
+        expr: deriv(go_goroutine_count[30m]) > 1 and go_goroutine_count > 5000
+        for: 30m
+        labels: { severity: ticket, layer: technology, maturity: none }
+      - alert: GCPauseHigh
+        expr: histogram_quantile(0.99, sum by (le) (rate(go_schedule_duration_seconds_bucket[5m]))) > 0.1
+        for: 10m
+        labels: { severity: ticket, layer: technology, maturity: none }
+      - alert: PodRestartLoop
+        expr: increase(kube_pod_container_status_restarts_total{container="checkout"}[1h]) > 3
+        labels: { severity: page, layer: technology, maturity: none }
+      - alert: DiskRunwayShort
+        expr: predict_linear(node_filesystem_avail_bytes{mountpoint="/data"}[6h], 4 * 3600) < 0
+        for: 30m
+        labels: { severity: page, layer: technology, maturity: none }
+      - alert: CertificateExpiringSoon
+        expr: (probe_ssl_earliest_cert_expiry - time()) < 14 * 86400
+        labels: { severity: ticket, layer: technology, maturity: none }
+      - alert: DependencyErrorRateHigh
+        expr: |
+          sum by (server_address) (rate(http_client_request_duration_seconds_count{error_type!=""}[5m]))
+          / sum by (server_address) (rate(http_client_request_duration_seconds_count[5m])) > 0.05
+        for: 10m
+        labels: { severity: ticket, layer: technology, maturity: none }
+  - name: checkout.code
+    rules:
+      - alert: PanicsRecovered
+        expr: increase(checkout_panics_total[10m]) > 0
+        labels: { severity: ticket, layer: code, maturity: none }
+      - alert: SwallowedErrorsSpike
+        expr: sum by (error_type) (rate(checkout_reconcile_errors_total[5m])) > 0.1
+        for: 10m
+        labels: { severity: ticket, layer: code, maturity: none }
+      - alert: RetriesExhausted
+        expr: increase(checkout_payment_retries_exhausted_total[15m]) > 5
+        labels: { severity: ticket, layer: code, maturity: none }
+      - alert: CircuitBreakerOpen
+        expr: checkout_breaker_state{state="open"} == 1
+        for: 5m
+        labels: { severity: ticket, layer: code, maturity: none }
+      - alert: DeadLetterWrites
+        expr: increase(checkout_dead_letter_total[30m]) > 0
+        labels: { severity: ticket, layer: code, maturity: none }
+      - alert: InvariantViolated
+        expr: increase(checkout_invariant_violations_total[5m]) > 0
+        labels: { severity: page, layer: code, maturity: none }
+        annotations:
+          summary: "Runtime invariant {{ $labels.invariant }} violated"

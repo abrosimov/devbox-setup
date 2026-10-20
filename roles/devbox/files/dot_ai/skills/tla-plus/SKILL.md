@@ -90,45 +90,21 @@ One abstract spec per subsystem, one model-checking module per instance:
 formal_model/
   Orders.tla          \* the specification: EXTENDS, CONSTANTS, VARIABLES, Init, Next, Spec, properties
   MCOrders.tla        \* EXTENDS Orders; small-instance overrides, state constraint, symmetry
-  MCOrders.cfg        \* TLC configuration for MCOrders
-  MCOrders_apalache.cfg
+  MCOrders.cfg        \* TLC: safety + liveness, no symmetry
+  MCOrdersSafety.cfg  \* TLC: safety only, symmetry on, larger instance
+  ApaOrders.tla       \* Apalache entry: CInit over the constant family
   TraceOrders.tla     \* trace validation (see below), present when the implementation exists
+  TraceOrders.cfg
+  traces/*.ndjson     \* one behaviour log per scenario
   README.md           \* how to run every check, in copy-paste form
   model_report.md     \* results, see Model Report
 ```
 
-Skeleton:
-
-```tla
----- MODULE Orders ----
-EXTENDS Naturals, Sequences, FiniteSets
-
-CONSTANTS Customers, MaxItems
-ASSUME MaxItems \in Nat /\ MaxItems > 0
-
-VARIABLES orders, payments
-vars == <<orders, payments>>
-
-TypeOK ==
-    /\ orders \in [Customers -> Seq(1..MaxItems)]
-    /\ payments \subseteq Customers
-
-Init == orders = [c \in Customers |-> <<>>] /\ payments = {}
-
-Pay(c) ==
-    /\ c \notin payments
-    /\ orders[c] /= <<>>
-    /\ payments' = payments \cup {c}
-    /\ UNCHANGED orders
-
-Next == \E c \in Customers : Pay(c)
-
-Spec == Init /\ [][Next]_vars /\ WF_vars(Next)
-
-NoDoublePayment == \A c \in Customers : c \in payments => orders[c] /= <<>>
-EventuallyPaid == \A c \in Customers : orders[c] /= <<>> ~> c \in payments
-====
-```
+Skeleton: `examples/orders/Orders.tla` (constants, `TypeOK`, one action per command, `Spec`
+with per-action fairness, properties named after the `INV-n` they encode), `MCOrders.tla` and the
+two `.cfg` files (one for liveness without symmetry, one for safety with symmetry), `ApaOrders.tla`
+(symbolic `CInit`), `TraceOrders.tla` with two traces, and a `README.md` whose commands are the
+verification. Copy the directory and rename; do not retype the shape.
 
 Rules that keep the spec checkable:
 
@@ -139,19 +115,9 @@ Rules that keep the spec checkable:
 - Constants are model values or small sets; `MC*.tla` overrides them, the spec never hardcodes them.
 - Fairness goes in `Spec` only when a liveness property needs it, and the report says which.
 
-`MCOrders.cfg`:
-
-```
-SPECIFICATION Spec
-CONSTANTS
-    Customers = {c1, c2, c3}
-    MaxItems = 2
-SYMMETRY Perms           \* Perms == Permutations(Customers) in MCOrders.tla
-CONSTRAINT StateConstraint
-INVARIANTS TypeOK NoDoublePayment
-PROPERTIES EventuallyPaid
-CHECK_DEADLOCK TRUE
-```
+`MCOrders.cfg` in the example shows the configuration keys: `SPECIFICATION`, `CONSTANTS` (model
+values or sets), `CONSTRAINT`, `INVARIANTS`, `PROPERTIES`, `CHECK_DEADLOCK`, and `SYMMETRY` only in the
+safety configuration.
 
 ## Choosing the Combination
 
@@ -317,8 +283,29 @@ Numbers in the report are copied from tool output, never estimated.
   `CONSTRAINT` are advisory only.
 - `CHOOSE` is deterministic: it never models a non-deterministic choice; use `\E`.
 - Stuttering: `[][Next]_vars` allows doing nothing forever, so a liveness property needs fairness.
-- Unbounded `Seq(S)` and `Nat` in `TypeOK` make TLC enumerate forever; bound them in the `MC` module.
+- `Seq(S)` and `Nat` work on the right of `\in` but cannot be enumerated: never `\E x \in Seq(S)`,
+  never as a constant's value, and not at all in Apalache (see `examples/orders/Orders.tla` for a
+  `TypeOK` both tools evaluate).
 - Apalache ignores `ASSUME` and needs every operator it evaluates to be typed; a passing TLC run says
   nothing about Apalache's type check.
 - Trace validation that matches on action names only, without arguments, accepts almost anything;
   carry the identifying arguments.
+
+## Sources
+
+- Leslie Lamport, *Specifying Systems* (2002) and the TLA+ Hyperbook: the notation, `[][Next]_vars`,
+  fairness, refinement — https://lamport.azurewebsites.net/tla/book.html
+- *The PlusCal Algorithm Language* manual — https://lamport.azurewebsites.net/tla/p-manual.pdf
+- Hillel Wayne, *Practical TLA+* (2018) and https://learntla.com — the working engineer's path in
+- TLA+ Examples repository (reference specs: Paxos, Raft, two-phase commit, bakery) —
+  https://github.com/tlaplus/Examples
+- TLC options and the `.cfg` grammar — https://docs.tlapl.us (TLA+ Tools → TLC);
+  trace validation — https://docs.tlapl.us/using:tlc:trace_validation
+- Apalache manual: types, `CInit`, unsupported features, inductive invariants —
+  https://apalache-mc.org/docs/
+- TLAPS: *TLA+ Proof System* tutorial — https://proofs.tlapl.us
+- CommunityModules (`Json`, `IOUtils`, `VectorClocks`) — https://github.com/tlaplus/CommunityModules
+- Horatiu Cirstea, Markus A. Kuppe, Benjamin Loillier, Stephan Merz, *Validating Traces of
+  Distributed Programs Against TLA+ Specifications* (2024) — https://arxiv.org/abs/2404.16075
+- Chris Newcombe et al., *How Amazon Web Services Uses Formal Methods* (CACM 2015) — the cost and
+  value argument behind Step 0

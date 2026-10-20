@@ -1,5 +1,8 @@
 # Alert Rules
 
+Runnable files: `examples/rules/checkout/` (`alerts.yaml`, `recording.yaml`,
+`tests/alerts_test.yaml`), checked with `promtool check rules` and `promtool test rules`.
+
 Rule files are Prometheus rule YAML; wrap them in a `PrometheusRule` CRD only when the project runs
 the Prometheus Operator. Every rule has labels `severity` (`page`/`ticket`), `layer`
 (`product`/`technology`/`code`), `maturity` (`none`/`baseline`/`observed`/`agreed`) and annotations
@@ -245,3 +248,17 @@ Exact commands or buttons, including rollback.
 ## Afterwards
 What to record, which detector or threshold to revisit.
 ```
+
+## Sources
+
+- Google SRE Workbook, ch. 5 *Alerting on SLOs* (the multiwindow, multi-burn-rate table) —
+  https://sre.google/workbook/alerting-on-slos/
+- Google SRE Book, ch. 6 *Monitoring Distributed Systems* (symptoms versus causes) —
+  https://sre.google/sre-book/monitoring-distributed-systems/
+- Rob Ewaschuk, *My Philosophy on Alerting* (the pages-versus-tickets rule) —
+  https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q
+- Prometheus alerting rules and unit testing —
+  https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/ ,
+  https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/
+- Prometheus Operator `PrometheusRule` — https://prometheus-operator.dev/docs/developer/alerting/
+- Brian Brazil, *Prometheus: Up & Running* (2nd ed., O'Reilly 2023), recording rules and alerting chapters

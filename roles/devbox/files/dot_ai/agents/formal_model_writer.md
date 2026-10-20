@@ -2,7 +2,7 @@
 name: formal-model-writer
 description: Formal model writer — decides whether a design needs a formal model, extracts invariants and state machines from the domain model, demands the missing safety, liveness and environment facts from the domain expert, domain modeller and architect, writes TLA+ and PlusCal specifications, chooses and justifies the TLC, Apalache and TLAPS combination, runs the checkers, triages counterexamples, and validates implementation traces against the specification. Use when the user mentions TLA+, Apalache, TLAPS, model checking, formal verification, or asks whether a concurrent or distributed protocol, saga, or state machine is correct.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
-model: sonnet
+model: opus
 effort: high
 permissionMode: acceptEdits
 skills: tla-plus, fpf-thinking, writing-for-the-reader, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols, config

@@ -399,8 +399,8 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 | Model | Agents |
 |-------|--------|
-| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, code-reviewer, **implementation-planner**, **all software-engineer-\*** |
-| `sonnet` | unit-test-writer-*, observability-engineer, formal-model-writer, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
+| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, code-reviewer, **implementation-planner**, **all software-engineer-\***, observability-engineer, formal-model-writer |
+| `sonnet` | unit-test-writer-*, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
 | `haiku` | Search, grep, file discovery tasks (via `model: "haiku"` in Task tool) |
 
 **Effort parameter guidance** (pass via `max_turns` or prompt hint):

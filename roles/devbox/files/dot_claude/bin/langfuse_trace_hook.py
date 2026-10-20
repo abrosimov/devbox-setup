@@ -177,7 +177,12 @@ def main() -> None:
             if exc.code not in (None, 0):
                 raise
         if pending is not None:
-            complete_pending(*pending)
+            marker, nonce, snapshot = pending
+            record = json.loads(marker.read_text(encoding="utf-8"))
+            if Path(record["transcript_path"]).is_file():
+                complete_pending(marker, nonce, snapshot)
+            # An original removed during export may make the vendored hook
+            # return without processing; retain its durable snapshot for replay.
     finally:
         sys.stdin = original_stdin
 

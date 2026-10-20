@@ -71,6 +71,11 @@ jobs:
       - name: Verify pinned Claude Langfuse hook (offline)
         run: python3 scripts/langfuse-hook-source.py verify
 
+      - name: Rebuild pinned Claude Langfuse patches from upstream
+        run: |
+          python3 scripts/langfuse-hook-source.py refresh
+          git diff --exit-code -- roles/devbox/files/dot_claude/bin/vendor/langfuse_hook.py
+
       - name: Validate Claude agent/skill/command cross-references
         run: make validate-claude
 

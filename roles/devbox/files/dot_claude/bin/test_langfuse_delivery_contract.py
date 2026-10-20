@@ -30,7 +30,6 @@ def hook():
     return module
 
 
-@pytest.mark.xfail(strict=True, reason="Upstream persists emission progress before SDK flush")
 def test_unacknowledged_observations_are_not_checkpointed(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -60,19 +59,26 @@ def test_unacknowledged_observations_are_not_checkpointed(
         "save_session_state",
         lambda _global_state, _key, session_state: saved.append(dict(session_state.turn_progress)),
     )
-    m.emit_new_turns_from_transcript(
-        object(),
+    class BrokenClient:
+        def flush(self):
+            message = "collector unavailable"
+            raise OSError(message)
+
+        def shutdown(self):
+            pass
+
+    with pytest.raises(OSError, match="collector unavailable"):
+        m.emit_new_turns_from_transcript(
+        BrokenClient(),
         SimpleNamespace(user_id="test", trace_seed=None, parent_context=None),
         "session",
         transcript,
-    )
+        )
     # No flush or durable collector acknowledgement happened, so the
     # persisted checkpoint must NOT declare the event sent.
-    assert saved
-    assert not saved[-1].get("turn-one", {}).get("emitted_keys")
+    assert not saved
 
 
-@pytest.mark.xfail(strict=True, reason="Upstream suppresses SDK flush exceptions")
 def test_failed_flush_must_be_observable_to_delivery_caller() -> None:
     """A flush failure must not look identical to a confirmed durable handoff."""
     m = hook()
@@ -90,7 +96,6 @@ def test_failed_flush_must_be_observable_to_delivery_caller() -> None:
         m.flush_and_shutdown_langfuse_client(BrokenClient())
 
 
-@pytest.mark.xfail(strict=True, reason="Upstream times out and abandons daemon flush")
 def test_hanging_flush_must_not_report_success(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

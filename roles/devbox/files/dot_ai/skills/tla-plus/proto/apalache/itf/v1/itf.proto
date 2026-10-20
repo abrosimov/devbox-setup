@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+// Typed contract for the Informal Trace Format (ITF) that Apalache writes as
+// counterexample<N>.itf.json (Apalache ADR-015). ITF is untagged JSON: a state
+// is one object whose keys are the variable names next to "#meta", and a value
+// is a JSON scalar, an object with one "#"-key ("#set", "#tup", "#map",
+// "#bigint", "#unserializable") or a plain object for a record. protojson
+// cannot read that shape directly, so this file is the target of a converter,
+// not a protojson mapping: the converter parses ITF JSON into Trace, and the
+// conformance vectors in itf_vectors.txtpb fix what it must produce.
+//
+// Two things this contract guards:
+//   - our own compatibility: `buf breaking` rejects a change that would break a
+//     consumer of Trace (a report generator, a diff tool, a test);
+//   - Apalache's format drift: when a new Apalache release writes ITF the
+//     converter cannot map onto Trace, the vectors fail before any report does.
+package apalache.itf.v1;
+
+// One counterexample or simulation run.
+message Trace {
+  // The "#meta" object of the file.
+  Meta meta = 1;
+  // Names of the specification constants the run fixed ("params").
+  repeated string params = 2;
+  // Names of the state variables in declaration order ("vars").
+  repeated string vars = 3;
+  // States in order; a liveness counterexample ends in a loop.
+  repeated State states = 4;
+  // Index of the state the last state loops back to ("loop"), when present.
+  optional int32 loop = 5;
+}
+
+// The file-level "#meta" object. Unknown keys are dropped by the converter
+// and listed in the conformance vectors when they matter.
+message Meta {
+  // "ITF".
+  string format = 1;
+  // Human-readable format note ("format-description").
+  string format_description = 2;
+  // The tool and version that wrote the file ("source").
+  string source = 3;
+  // Free text ("description").
+  string description = 4;
+  // Variable names as the tool ordered them ("varNames"), when present.
+  repeated string var_names = 5;
+}
+
+// One state: its "#meta".index and one value per variable.
+message State {
+  int32 index = 1;
+  map<string, Value> vars = 2;
+}
+
+// A TLA+ value as ITF encodes it.
+message Value {
+  oneof kind {
+    bool bool_value = 1;
+    string string_value = 2;
+    // A JSON number; ITF uses it for integers that fit a JSON number.
+    int64 int_value = 3;
+    // {"#bigint": "<decimal>"} for integers outside that range.
+    string bigint_value = 4;
+    // {"#set": [...]}
+    ValueList set_value = 5;
+    // {"#tup": [...]}
+    ValueList tuple_value = 6;
+    // {"#map": [[key, value], ...]} — a function with non-string domain.
+    MapValue map_value = 7;
+    // A plain JSON object: a record, or a function with string keys.
+    RecordValue record_value = 8;
+    // {"#unserializable": "<text>"} for values ITF cannot encode (e.g. Nat).
+    string unserializable_value = 9;
+  }
+}
+
+message ValueList {
+  repeated Value items = 1;
+}
+
+message MapValue {
+  repeated MapEntry entries = 1;
+}
+
+message MapEntry {
+  Value key = 1;
+  Value value = 2;
+}
+
+message RecordValue {
+  map<string, Value> fields = 1;
+}
+
+// Conformance vectors: an ITF document and the Trace a converter must produce
+// from it, or a rejection. itf_vectors.txtpb holds the instances.
+message ConformanceVectors {
+  repeated ItfCase itf = 1;
+}
+
+message ItfCase {
+  // The ITF document verbatim.
+  string json = 1;
+  // False when the converter must reject the document.
+  bool valid = 2;
+  // Expected result when valid.
+  Trace parsed = 3;
+  // Why the vector exists.
+  string note = 4;
+}

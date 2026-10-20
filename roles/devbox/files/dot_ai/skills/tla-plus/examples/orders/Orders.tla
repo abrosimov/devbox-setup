@@ -64,11 +64,18 @@ Next ==
 \* Weak fairness per customer on Ship: a paid order is not left unshipped forever.
 Spec == Init /\ [][Next]_vars /\ \A c \in Customers : WF_vars(Ship(c))
 
-\* INV-1: a customer is paid only when an order exists.
+(* Each property evidences the invariant note that states it, through a kadmos
+   code anchor (standards/code-anchors.md of the project's vault). The vault's
+   validator scans these lines; the note lists the slug under `anchored_by`.
+   The references below are illustrative: this example lives in no vault. *)
+
+\* ariadne-kadmou[orders-no-double-payment|evidences|kadmos://oikos/invariants/INV-00001-no-double-payment.md#Statement]
 NoDoublePayment == \A c \in Customers : c \in payments => orders[c] /= <<>>
-\* INV-2: only paid customers are shipped.
+
+\* ariadne-kadmou[orders-ship-only-paid|evidences|kadmos://oikos/invariants/INV-00002-ship-only-paid.md#Statement]
 ShipOnlyPaid == shipped \subseteq payments
-\* INV-3 (liveness): every paid customer is eventually shipped.
+
+\* ariadne-kadmou[orders-eventually-shipped|evidences|kadmos://oikos/invariants/INV-00003-eventually-shipped.md#Statement] liveness
 EventuallyShipped == \A c \in Customers : c \in payments ~> c \in shipped
 
 \* Candidate inductive invariant for the Apalache workflow.

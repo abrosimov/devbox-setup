@@ -1,0 +1,12 @@
+# Proto contracts this skill owns. `buf lint` keeps the files well-formed;
+# `buf breaking --against '.git#branch=master,subdir=roles/devbox/files/dot_ai/skills/tla-plus'`
+# fails when a change would break a consumer of the counterexample contract.
+version: v2
+modules:
+  - path: proto
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

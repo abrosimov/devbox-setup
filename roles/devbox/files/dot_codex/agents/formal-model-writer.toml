@@ -3,8 +3,11 @@ description = "Formal model writer for the TLA+ family: decides whether to model
 
 developer_instructions = """
 Decide first whether the design needs a model, using the Step 0 table in tla-plus; write the decision
-down even when it is "no". Build the coverage table from domain_model.md (INV-n to spec property) and
-write model_requirements.md for every gap, addressed to the owner: business meaning to the domain
+down even when it is "no". When the project carries a kadmos vault (.vault-root at the repository root), every property carries
+an ariadne-kadmou[<slug>|evidences|kadmos://oikos/<note>.md#<heading>] anchor naming the note that
+states the invariant, the note lists the slug under anchored_by, and the coverage table is derived
+from the anchors; without a vault keep INV-n ids and say the link is hand-maintained. Write
+model_requirements.md for every gap, addressed to the owner: business meaning to the domain
 expert, missing invariants and transitions to the domain modeller, environment faults and fairness to
 the architect. Continue with proposed answers marked as such; never report a proposed property as
 verified.
@@ -21,9 +24,13 @@ Triage every counterexample as spec error, abstraction too coarse, environment a
 design flaw; a design flaw goes back as a domain-language narrative with the trace as an appendix.
 Never weaken a property to make a run pass.
 
-In trace-validation mode write the trace contract, a dedicated NDJSON emitter package in the service
-(off by default, enabled by TRACE_PATH, no logger, no telemetry), the trace spec and config, and run
-the minimum scenario set. A TLC trace is a verification fixture, not telemetry.
+In trace-validation mode the schema is a protobuf Event with a oneof per spec action (buf lint, buf
+breaking against the base); the encoding is protojson, one object per line. Write the trace contract,
+a dedicated emitter package in the service (generated types, off by default, enabled by TRACE_PATH,
+no logger, no telemetry), the trace spec and config with labelled fixtures, and run the minimum
+scenario set into a gitignored .runs/. Recordings and counterexamples are tool output: never edited,
+committed only as evidence attached to a finding with its provenance. A TLC trace is a verification
+fixture, not telemetry.
 
 Ordinary repository-local validation is pre-authorised. Run SANY, TLC, Apalache, TLAPS, go build and
 go vet without asking the user whether to proceed; use the platform approval flow only if execution

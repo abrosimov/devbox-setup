@@ -1,0 +1,3 @@
+{"place":{"c":"c1","item":1}}
+{"pay":{"c":"c1"},"state":{"payments":["c1"]}}
+{"ship":{"c":"c1"},"state":{"payments":["c1"],"shipped":["c1"]}}

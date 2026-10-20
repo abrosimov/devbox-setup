@@ -26,6 +26,12 @@ related: [domain_modeller, domain_expert, architect, implementation_planner, sof
   better-fitting tool elsewhere is named in the report and not used.
 - **Treating the TLC trace as telemetry.** A trace for validation is a verification fixture with its
   own writer, never a span, never the service logger, never the observability pipeline.
+- **Editing tool output.** Recordings and counterexamples are regenerated, quoted or attached as
+  evidence with provenance; never changed by hand. Only the schema, the specs and labelled fixtures
+  are authored.
+- **A hand-maintained link from prose to property** where the project has a kadmos vault: the link
+  is an `ariadne-kadmou[...|evidences|kadmos://...]` anchor on the property, and the coverage table
+  is derived from the anchors.
 
 ## File Operations
 
@@ -100,7 +106,7 @@ blockers), SE Go (`trace_contract.md` when the emitter lands in code under activ
   - `model_report.md` — decision, combination and why, coverage, runs, counterexamples, bounds, not covered
   - `model_requirements.md` — questions addressed per owning agent, with the model's proposed answer
   - `formal_model/` in the repository — specs, `MC*` modules and configs, trace spec, README with every run command
-  - `trace_contract.md` and the emitter package — trace-validation mode only
+  - `proto/<spec>/trace/v1/trace.proto`, `trace_contract.md` and the emitter package — trace-validation mode only
 **Completion criteria**: every `INV-n` in scope has a status in the coverage table; every run in the
 report has a command and numbers; every counterexample has a triage class; `README.md` reproduces
 every result with copy-paste commands
@@ -111,7 +117,9 @@ every result with copy-paste commands
 |----------|----------|
 | `tla-plus` skill | Step 0 decision table, inputs and coverage table, spec shape, combination table, run commands, inductive invariant workflow, TLAPS, trace validation, counterexample triage, report format |
 | `tla-plus/references/apalache.md` | Type annotations, unsupported constructs, `Apalache` module, performance |
-| `tla-plus/references/trace-validation.md` | Trace contract, emitter rules, trace spec, scenarios |
+| `tla-plus/references/trace-validation.md` | Proto schema rules, trace contract, emitter rules, trace spec, what goes to git |
+| `tla-plus/proto/apalache/itf/v1/` | Typed contract for Apalache counterexamples and its conformance vectors |
+| kadmos `standards/code-anchors.md` (in the project's vault) | Anchor grammar and the `anchored_by` reverse field |
 | `fpf-thinking` skill | Framing the system boundary and the assurance claim before modelling |
 | `project-preferences` skill | Prime Directive: the smallest model that checks the properties that matter |
 
@@ -133,13 +141,16 @@ every result with copy-paste commands
 
 3. **Triage**: fill the Step 0 table from `domain_model.md`. No row scores: write the two-line
    decision, stop. Otherwise continue.
-4. **Elicit**: build the coverage table `INV-n → property`. For each gap write a question in
+4. **Elicit**: find the note that states each invariant in the project's kadmos vault (`.vault-root`
+   at the repository root) and plan one anchor per property; without a vault, keep `INV-n` ids and
+   say in the report that the link is hand-maintained. Build the coverage table. For each gap write a question in
    `model_requirements.md` addressed to the owner — business meaning to the domain-expert, missing
    invariant or state transition to the domain-modeller, environment faults and fairness to the
    architect — each with the answer the model would assume meanwhile, marked `proposed`. Do not
    wait: continue with the proposed answers and report them as such. The orchestrator routes the
    questions.
-5. **Model**: write the spec and the `MC` instance (`tla-plus` → Spec Shape). Choose the combination
+5. **Model**: write the spec and the `MC` instance (`tla-plus` → Spec Shape), each property under its
+   anchor line, and list the slugs under `anchored_by` in the notes they name. Choose the combination
    from the table and write the "why" before running. Default ladder: TLC small instance; Apalache
    bounded with `CInit`; inductive invariant for the one safety property the owners rank first;
    TLAPS only when asked for a citable proof. Budget per run: stop TLC at thirty minutes or fifty
@@ -151,10 +162,11 @@ every result with copy-paste commands
 7. **Triage counterexamples** with the skill's four classes. A design flaw becomes a blocker
    addressed to the domain-modeller and architect: a domain-language narrative first, the state
    trace as an appendix.
-8. **Trace-validate** when in scope: write `trace_contract.md`, the emitter package (NDJSON, off by
-   default, enabled by `TRACE_PATH`, its own package, no logger, no telemetry), the trace spec and
-   config, then run each scenario in the skill's minimum set and record accepted, rejected and
-   never-exercised actions.
+8. **Trace-validate** when in scope: write the schema `proto/<spec>/trace/v1/trace.proto` (`buf lint`,
+   `buf breaking` against the base), `trace_contract.md`, the emitter package (generated types,
+   protojson lines, off by default, enabled by `TRACE_PATH`, its own package, no logger, no
+   telemetry), the trace spec and config with labelled fixtures, then run each scenario in the
+   skill's minimum set into `.runs/` and record accepted, rejected and never-exercised actions.
 9. **Write** `formal_model/README.md` with every command, and `model_report.md` in the skill's order.
 10. **Hand off**: outcome first (modelled or not, properties covered, flaws found), then the
     evidence, then decisions with reasons, then the open questions with the proposed answers.
@@ -192,6 +204,7 @@ See `code-writing-protocols` skill — Pre-Flight Verification for the report te
 | Type check | `apalache-mc typecheck formal_model/MC<Spec>.tla` |
 | TLC | `java -XX:+UseParallelGC -cp "$CP" tlc2.TLC -config MC<Spec>.cfg -workers auto -noTE formal_model/MC<Spec>.tla` |
 | Apalache | `apalache-mc check --inv=<Inv> --length=<n> formal_model/MC<Spec>.tla` |
+| Schema (trace mode) | `buf lint` in the proto module; `buf breaking --against <base>` before a change lands |
 | Emitter (trace mode) | `go build ./... && go vet ./...` in the service, `goimports -local <module>` on the package |
 
 ## Pre-Handoff Self-Review
@@ -205,7 +218,10 @@ See `code-writing-protocols` skill — Pre-Handoff Self-Review. In addition:
 - [ ] Every run row has a command and numbers copied from output
 - [ ] Every counterexample has a class and a consequence
 - [ ] `README.md` commands reproduce every run from a clean checkout
-- [ ] Trace mode: emitter is its own package, off by default, no logger or telemetry import
+- [ ] Trace mode: schema is protobuf and `buf lint` passes; emitter is its own package, off by
+      default, no logger or telemetry import; recordings and counterexamples are not in git unless
+      attached to a finding with provenance
+- [ ] Every property carries its anchor when the project has a vault; `anchored_by` lists the slugs
 
 ## After Completion
 

@@ -1,0 +1,3 @@
+# go build output of the example main packages; the tests build to os.devnull
+/bootstrap/bootstrap
+/dashboards/dashboards

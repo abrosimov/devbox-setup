@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+// Behaviour log of the Orders implementation for trace validation against
+// Orders.tla. Serialised as one protojson object per line; TLC reads the file
+// with the Json module and matches each line to the spec action the oneof
+// names. The schema is the contract between the emitter in the service and
+// TraceOrders.tla; `buf breaking` guards it on both sides.
+//
+// protojson rules that shape the TLA+ side:
+//   - field names appear in lowerCamelCase; TraceOrders.tla uses those names;
+//   - a field at its default value is omitted: an id or an item must never be
+//     0 or "" when it carries meaning (Items == 1..MaxItems);
+//   - int64/uint64 serialise as JSON strings; everything TLC must compare as a
+//     number is int32/uint32.
+package orders.trace.v1;
+
+// One abstract step, written at the commit point of the action.
+message Event {
+  oneof action {
+    Place place = 1;
+    Pay pay = 2;
+    Ship ship = 3;
+  }
+  // Optional snapshot of spec variables after the step; narrows the match.
+  Snapshot state = 10;
+  // Emitting process, distributed deployments only.
+  string node = 11;
+  // Per-node sequence number.
+  uint32 seq = 12;
+}
+
+message Place {
+  string c = 1;
+  int32 item = 2;
+}
+
+message Pay {
+  string c = 1;
+}
+
+message Ship {
+  string c = 1;
+}
+
+message Snapshot {
+  repeated string payments = 1;
+  repeated string shipped = 2;
+}

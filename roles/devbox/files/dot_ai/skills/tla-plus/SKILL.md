@@ -61,13 +61,41 @@ Say so; a model there costs more than it finds.
 ## Inputs a Model Needs
 
 Read `domain_model.md` (invariants `INV-n`, commands with pre/postconditions, state machines) and
-`domain_analysis.md` (constraints, invalidated assumptions). Build the coverage table before writing
-TLA+:
+`domain_analysis.md` (constraints, invalidated assumptions). The link between a prose invariant and
+the property that encodes it is not a table somebody maintains; it is a **code anchor** in the spec,
+and the coverage table is derived from the anchors.
 
-| INV | Kind | Source statement | Spec property | Status |
-|-----|------|------------------|---------------|--------|
-| INV-1 | safety | "an order is never paid twice" | `NoDoublePayment` | covered |
-| INV-3 | liveness | "every accepted order is eventually shipped" | — | **gap: fairness unknown** |
+### Linking prose and model: kadmos code anchors
+
+When the project carries a kadmos vault (a `.vault-root` file at the repository root naming the
+vault directory, usually `docs/`), every property in the spec carries one anchor line, the grammar of
+`standards/code-anchors.md` in that vault:
+
+```tla
+\* ariadne-kadmou[orders-no-double-payment|evidences|kadmos://oikos/invariants/INV-00001-no-double-payment.md#Statement]
+NoDoublePayment == \A c \in Customers : c \in payments => orders[c] /= <<>>
+```
+
+- `<slug>` is lowercase kebab-case and unique in the repository; prefix it with the spec name.
+- `<relation>` is `evidences` for a spec property, `tests` for a property-based or trace test,
+  `implements` for the code that realises the command. The vocabulary is the vault's; never add to it
+  from here.
+- `<reference>` is the `kadmos://oikos/<path>.md#<heading>` address of the note that states the
+  invariant (an `INV-` note's `#Statement`, or the heading of the domain-model note). The model
+  writer reads the vault to find it and never invents a path.
+- The note lists the slug under `anchored_by`; the vault's validator (Lynkeus) checks that every
+  anchor resolves and every listed slug exists. The report's coverage table is the scan of these
+  anchors: one row per property, resolved reference, status.
+
+Without a vault, the coverage table is maintained by hand with `INV-n` ids, and the report says so
+in its first line: that link rots, and the remedy is the vault, not more care.
+
+### Coverage table
+
+| INV | Kind | Anchor slug | Property | Status |
+|-----|------|-------------|----------|--------|
+| INV-1 | safety | `orders-no-double-payment` | `NoDoublePayment` | covered |
+| INV-3 | liveness | — | — | **gap: fairness unknown** |
 
 Every gap becomes a question in `model_requirements.md`, addressed to the agent that owns the
 answer (domain-expert for business rules, domain-modeller for invariants and state machines,
@@ -95,7 +123,8 @@ formal_model/
   ApaOrders.tla       \* Apalache entry: CInit over the constant family
   TraceOrders.tla     \* trace validation (see below), present when the implementation exists
   TraceOrders.cfg
-  traces/*.ndjson     \* one behaviour log per scenario
+  proto/<spec>/trace/v1/trace.proto  \* behaviour-log schema (protobuf; protojson lines on disk)
+  traces/*.jsonl      \* labelled fixtures for the trace spec; recordings go to .runs/
   README.md           \* how to run every check, in copy-paste form
   model_report.md     \* results, see Model Report
 ```
@@ -220,23 +249,37 @@ setup speaks to `tlapm_lsp` for inline obligation status.
 
 ## Trace Validation
 
-Checks that executions of the real implementation are behaviours of the spec. Full pattern, event
-schema and Go-side contract in `references/trace-validation.md`. The shape:
+Checks that executions of the real implementation are behaviours of the spec. Full pattern, schema
+rules and the Go-side contract in `references/trace-validation.md`; runnable files in
+`examples/orders/`. The shape:
 
 A "trace" here is a behaviour log for TLC, not a distributed trace: it is not an OpenTelemetry span,
 never goes through the telemetry pipeline, and has nothing to do with the observability work. The
 formal-model-writer owns all of it, emitter included.
 
-1. **Trace contract** (`trace_contract.md`): one row per spec action — action name, the code point
-   that performs it, the arguments the log line carries, and which variables the line snapshots.
-   The formal-model-writer writes the emitter from this contract (or hands the contract to the SE
-   when the code point sits in code under active change) and owns the trace spec.
-2. **Emitter**: the implementation writes NDJSON, one line per abstract action, in commit order.
-3. **Trace spec** `TraceOrders.tla` extends the spec, reads the file with `Json!ndJsonDeserialize`,
-   and defines `TraceNext` so that line `l` can only be matched by the spec action it names; missing
-   arguments are existentially chosen, so TLC explores every spec step consistent with the line.
-4. **Acceptance**: `POSTCONDITION TraceAccepted` in the cfg, where `TraceAccepted` holds when TLC
+1. **Schema** is a protobuf message (`proto/<spec>/trace/v1/trace.proto`): one `Event` with a
+   `oneof action` whose members are the spec actions and their arguments, plus an optional state
+   snapshot. Serialisation is protojson, one object per line; the proto is the contract, the
+   encoding is not. `buf lint` keeps it well-formed, `buf breaking` keeps emitter and trace spec
+   compatible.
+2. **Trace contract** (`trace_contract.md`): one row per spec action — the `oneof` member, the code
+   point that performs it, which arguments it carries, which variables the snapshot holds — plus the
+   abstraction rules (ids, units). The formal-model-writer writes the emitter from this contract (or
+   hands the contract to the SE when the code point sits in code under active change) and owns the
+   trace spec.
+3. **Emitter**: generated types plus `protojson.Marshal`, one line per abstract action at its commit
+   point, in its own package, off by default.
+4. **Trace spec** `Trace<Spec>.tla` extends the spec, reads the file with `Json!ndJsonDeserialize`,
+   and defines `TraceNext` so that line `l` can only be matched by the action its `oneof` names;
+   missing arguments are existentially chosen, so TLC explores every spec step consistent with the
+   line.
+5. **Acceptance**: `POSTCONDITION TraceAccepted` in the cfg, where `TraceAccepted` holds when TLC
    consumed every line. A rejected trace comes with the first line the spec could not match.
+
+What goes to git: the schema, the trace spec, and hand-written **fixtures** that exercise the trace
+spec itself (labelled as such, in `traces/`). Recordings of the implementation and every checker
+output live in a gitignored `.runs/` and are regenerated; a recording or a counterexample is
+committed only as evidence attached to a finding, with its provenance, and is never edited.
 
 Validation is evidence about executions seen, never a proof; the report says how many traces, from
 which scenarios (happy path, each failure injected), and which actions the traces never exercised.
@@ -256,6 +299,12 @@ class:
 A design flaw is reported as a story ("customer c1 pays, the payment service restarts before the
 ack, the retry pays again"), the trace states as an appendix. Never quietly weaken a property to make
 a run pass.
+
+A counterexample is tool output and is never edited. Apalache writes ITF JSON
+(`counterexample<N>.itf.json`); `proto/apalache/itf/v1/itf.proto` in this skill is the typed
+contract a converter maps it onto, with conformance vectors next to it, so that a new Apalache
+release that changes the format fails the vectors before it corrupts a report, and `buf breaking`
+guards our own side of that contract.
 
 ## Model Report
 
@@ -290,6 +339,8 @@ Numbers in the report are copied from tool output, never estimated.
   nothing about Apalache's type check.
 - Trace validation that matches on action names only, without arguments, accepts almost anything;
   carry the identifying arguments.
+- protojson omits fields at their default value and writes 64-bit integers as strings: an id of 0
+  or "" vanishes from the line, and an `int64` never equals a TLA+ number.
 
 ## Sources
 
@@ -307,5 +358,8 @@ Numbers in the report are copied from tool output, never estimated.
 - CommunityModules (`Json`, `IOUtils`, `VectorClocks`) — https://github.com/tlaplus/CommunityModules
 - Horatiu Cirstea, Markus A. Kuppe, Benjamin Loillier, Stephan Merz, *Validating Traces of
   Distributed Programs Against TLA+ Specifications* (2024) — https://arxiv.org/abs/2404.16075
+- kadmos `standards/code-anchors.md` and `standards/cross-instance-references.md`: the anchor
+  grammar and the `kadmos://` address that tie a property to the note stating its invariant
+- Apalache ADR-015, the Informal Trace Format — https://apalache-mc.org/docs/adr/015adr-trace.html
 - Chris Newcombe et al., *How Amazon Web Services Uses Formal Methods* (CACM 2015) — the cost and
   value argument behind Step 0

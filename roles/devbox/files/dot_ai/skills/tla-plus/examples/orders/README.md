@@ -27,9 +27,10 @@ apalache-mc check --cinit=CInit --inv=NoDoublePayment --length=8 ApaOrders.tla
 apalache-mc check --cinit=CInit --init=Init --inv=IndInv --length=0 ApaOrders.tla     # base
 apalache-mc check --cinit=CInit --init=IndInv --inv=IndInv --length=1 ApaOrders.tla   # step
 
-# 5. Trace validation: one accepted trace, one that must be rejected
-TRACE_PATH="$PWD/traces/happy-path.ndjson" java -cp "$CP" tlc2.TLC -config TraceOrders.cfg -noTE -cleanup TraceOrders.tla
-TRACE_PATH="$PWD/traces/ship-before-pay.ndjson" java -cp "$CP" tlc2.TLC -config TraceOrders.cfg -noTE -cleanup TraceOrders.tla \
+# 5. Trace validation against the fixtures in traces/ (schema: proto/orders/trace/v1/trace.proto)
+buf lint
+TRACE_PATH="$PWD/traces/happy-path.jsonl" java -cp "$CP" tlc2.TLC -config TraceOrders.cfg -noTE -cleanup TraceOrders.tla
+TRACE_PATH="$PWD/traces/ship-before-pay.jsonl" java -cp "$CP" tlc2.TLC -config TraceOrders.cfg -noTE -cleanup TraceOrders.tla \
     && echo "UNEXPECTED: rejected trace accepted" || echo "rejected as expected"
 ```
 

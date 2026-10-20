@@ -19,6 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILLS = REPO_ROOT / "roles/devbox/files/dot_ai/skills"
 OBS = SKILLS / "go-observability/examples"
 TLA = SKILLS / "tla-plus/examples/orders"
+TLA_SKILL = SKILLS / "tla-plus"
 TLA_LIB = Path(os.environ.get("TLA_LIB", Path.home() / ".local/share/tlaplus"))
 TLA2TOOLS = Path(os.environ.get("TLA2TOOLS_JAR", TLA_LIB / "tla2tools/tla2tools.jar"))
 COMMUNITY = TLA_LIB / "communitymodules/CommunityModules-deps.jar"
@@ -45,6 +46,7 @@ needs_promtool = pytest.mark.skipif(
 needs_java = pytest.mark.skipif(shutil.which("java") is None, reason="java not installed")
 needs_tla2tools = pytest.mark.skipif(not TLA2TOOLS.is_file(), reason=f"{TLA2TOOLS} missing")
 needs_community = pytest.mark.skipif(not COMMUNITY.is_file(), reason=f"{COMMUNITY} missing")
+needs_buf = pytest.mark.skipif(shutil.which("buf") is None, reason="buf not installed")
 needs_apalache = pytest.mark.skipif(
     shutil.which("apalache-mc") is None, reason="apalache-mc not installed"
 )
@@ -53,7 +55,7 @@ needs_apalache = pytest.mark.skipif(
 @needs_go
 @pytest.mark.parametrize("module", ["dashboards", "bootstrap"])
 def test_go_examples_build(module: str) -> None:
-    result = _run(["go", "build", "./..."], OBS / module)
+    result = _run(["go", "build", "-o", os.devnull, "."], OBS / module)
     assert result.returncode == 0, result.stderr
 
 
@@ -109,12 +111,12 @@ def test_orders_model_checks_with_tlc(config: str) -> None:
 def test_trace_validation_accepts_happy_path_and_rejects_ship_before_pay() -> None:
     traces = TLA / "traces"
     accepted = _tlc(
-        "TraceOrders.cfg", "TraceOrders.tla", {"TRACE_PATH": str(traces / "happy-path.ndjson")}
+        "TraceOrders.cfg", "TraceOrders.tla", {"TRACE_PATH": str(traces / "happy-path.jsonl")}
     )
     assert accepted.returncode == 0, accepted.stdout + accepted.stderr
 
     rejected = _tlc(
-        "TraceOrders.cfg", "TraceOrders.tla", {"TRACE_PATH": str(traces / "ship-before-pay.ndjson")}
+        "TraceOrders.cfg", "TraceOrders.tla", {"TRACE_PATH": str(traces / "ship-before-pay.jsonl")}
     )
     assert rejected.returncode != 0, rejected.stdout
 
@@ -131,4 +133,11 @@ def test_trace_validation_accepts_happy_path_and_rejects_ship_before_pay() -> No
 )
 def test_orders_apalache(args: list[str]) -> None:
     result = _run(["apalache-mc", *args], TLA)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@needs_buf
+@pytest.mark.parametrize("module", [TLA_SKILL, TLA])
+def test_proto_contracts_lint(module: Path) -> None:
+    result = _run(["buf", "lint"], module)
     assert result.returncode == 0, result.stdout + result.stderr

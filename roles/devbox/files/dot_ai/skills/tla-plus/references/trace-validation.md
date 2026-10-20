@@ -16,35 +16,69 @@ concern; it is a verification fixture owned by the formal-model-writer.
 
 | Artefact | Owner | Content |
 |----------|-------|---------|
-| `trace_contract.md` | formal-model-writer | Action ↔ code point table, event schema, abstraction rules |
-| Emitter in the service | formal-model-writer (the SE on the task when the code point is under active change) | Small NDJSON writer behind a build tag or env flag, following the contract |
+| `proto/<spec>/trace/v1/trace.proto` | formal-model-writer | The schema: `Event` with a `oneof action`, one member per spec action, optional snapshot |
+| `trace_contract.md` | formal-model-writer | Action ↔ code point table, abstraction rules, what the snapshot carries |
+| Emitter in the service | formal-model-writer (the SE on the task when the code point is under active change) | Generated types + `protojson.Marshal`, one line per step, behind an env flag, its own package |
 | `Trace<Spec>.tla`, `Trace<Spec>.cfg` | formal-model-writer | Trace spec and TLC configuration |
-| Scenario harness | integration-tests-writer or SE | Runs the system under each scenario, collects trace files |
+| `traces/*.jsonl` fixtures | formal-model-writer | Hand-written lines that exercise the trace spec; labelled as fixtures |
+| Scenario harness, `.runs/` | integration-tests-writer or SE | Runs the system under each scenario, records traces; gitignored |
+
+## Schema
+
+The schema is protobuf because a structured record needs a contract that tools can check for
+compatibility, and the encoding is a separate choice. protojson is the encoding here because the
+TLA+ `Json` module reads it; nothing else about the pipeline depends on JSON.
+
+```proto
+message Event {
+  oneof action {              // the member name is the key TLC sees: "place", "pay", "ship"
+    Place place = 1;
+    Pay pay = 2;
+    Ship ship = 3;
+  }
+  Snapshot state = 10;        // optional; narrows the match
+  string node = 11;           // distributed deployments only
+  uint32 seq = 12;            // per-node sequence number
+}
+message Pay { string c = 1; }
+message Snapshot { repeated string payments = 1; repeated string shipped = 2; }
+```
+
+Rules that follow from protojson, and that the trace spec relies on:
+
+- Field names appear in lowerCamelCase; the trace spec uses those names (`logline.pay.c`).
+- A field at its default value is omitted. An id, an item number or an amount that carries meaning
+  is never `0` or `""`; the spec's constants start at 1 for that reason.
+- `int64`, `uint64` and `sint64` serialise as JSON strings; anything TLC compares as a number is
+  32-bit.
+- Repeated fields that are empty are omitted; the trace spec guards each snapshot field with
+  `"payments" \in DOMAIN logline.state`.
+- Enums serialise as their names; the spec matches the string.
+
+`buf lint` on every change; `buf breaking --against <base>` before a schema change lands, because
+the emitter and the trace spec are two consumers of one contract and either can silently diverge.
 
 ## Trace Contract
 
 ```markdown
 # Trace contract: Orders
 
-## Event schema (NDJSON, one object per line, commit order)
-| Field | Type | Required | Meaning |
-|-------|------|----------|---------|
-| `event` | string | yes | Spec action name, exact case |
-| `args` | object | yes | Action arguments at the spec's abstraction |
-| `state` | object | no | Snapshot of spec variables after the step, when cheap |
-| `node` | string | distributed only | Emitting process |
-| `seq` | int | yes | Per-node sequence number |
+Schema: proto/orders/trace/v1/trace.proto (orders.trace.v1.Event), protojson, one object per line,
+commit order.
 
 ## Actions
-| Spec action | Args carried | Code point | Emitted when |
-|-------------|--------------|------------|--------------|
-| `Pay(c)` | `c` | `payments.Service.Pay`, after `tx.Commit()` | commit succeeded |
-| `Ship(c)` | `c` | `shipping.Worker.handle` | message acked |
-| `Crash(n)` | `n` | process exit hook | always, best effort |
+| oneof member | Spec action | Args carried | Code point | Emitted when |
+|--------------|-------------|--------------|------------|--------------|
+| `place` | `Place(c, i)` | `c`, `item` | `orders.Service.Place`, after `tx.Commit()` | commit succeeded |
+| `pay` | `Pay(c)` | `c` | `payments.Service.Pay`, after `tx.Commit()` | commit succeeded |
+| `ship` | `Ship(c)` | `c` | `shipping.Worker.handle` | message acked |
+
+## Snapshot
+`state.payments`, `state.shipped` after the step, when the service can read them cheaply.
 
 ## Abstraction rules
-- Customer ids map 1:1 to spec model values (`"c1"`).
-- Amounts in minor units as integers.
+- Customer ids map 1:1 to the spec's string constants (`"c1"`).
+- Items are 1-based integers (`Items == 1..MaxItems`).
 - Retries that do not change state emit nothing.
 ```
 
@@ -53,7 +87,7 @@ Rules for the emitter:
 - Emit at the **commit point** of the abstract step (after the transaction commits or the message is
   acknowledged), never before; an emitted step that then fails is a false trace.
 - Off by default; enabled by an environment variable naming the file (`TRACE_PATH`). Each line is
-  written and flushed atomically (`encoding/json` into a buffered writer, `Flush` per line).
+  `protojson.Marshal` of one `Event`, written and flushed atomically.
 - A dedicated writer in its own package (`internal/tlatrace` or similar), not the service logger and
   not an OTel exporter: the file format, ordering and lifetime are the spec's, not the telemetry
   stack's.
@@ -63,6 +97,17 @@ Rules for the emitter:
   commit log where one exists (database, broker partition), otherwise by vector clocks
   (`VectorClocks` module in CommunityModules). The merge order is one possible order; the trace spec
   may keep sibling events unordered by matching any permutation of a concurrent block.
+
+## What Goes to Git
+
+| Artefact | In git | Edited by hand | Why |
+|----------|--------|----------------|-----|
+| `trace.proto`, `trace_contract.md`, `Trace<Spec>.tla`, `.cfg` | yes | yes | the contract |
+| `traces/*.jsonl` fixtures | yes | yes, labelled as fixtures | they test the trace spec, not the system |
+| Recordings from the harness | no (`.runs/`) | never | regenerated by the test that needs them |
+| A recording attached to a finding | yes, next to the report | never | evidence, with scenario, commit and date in the report |
+| Counterexamples (TLC trace, Apalache `*.itf.json`) | no (`.runs/`) | never | tool output; quoted by the report |
+| A counterexample attached to a design-flaw finding | yes, next to the report | never | evidence |
 
 ## Trace Specification
 
@@ -91,7 +136,7 @@ JSON ids aligned. JSON arrays deserialise as sequences, so a snapshot of a set v
 TLA_LIB="$HOME/.local/share/tlaplus"
 CP="$TLA2TOOLS_JAR:$TLA_LIB/communitymodules/CommunityModules-deps.jar"
 
-TRACE_PATH=traces/happy-path.ndjson java -cp "$CP" tlc2.TLC \
+TRACE_PATH=traces/happy-path.jsonl java -cp "$CP" tlc2.TLC \
     -config TraceOrders.cfg -workers auto -noTE formal_model/TraceOrders.tla
 ```
 

@@ -1,0 +1,39 @@
+# proto/apalache/itf/v1/itf_vectors.txtpb -- conformance vectors for the ITF
+# converter, as apalache.itf.v1.ConformanceVectors. An implementation
+# reproduces every vector; a vector it cannot reproduce is a finding against
+# the implementation or against a new Apalache release, never a reason to edit
+# the vector without a recorded Apalache version.
+#
+# Status: written from Apalache ADR-015; to be confirmed against the output of
+# the pinned Apalache (devbox_packages.tlaplus.tools) on the first real run,
+# which replaces the json field of the first vector with the tool's own file.
+
+itf {
+  note: "minimal safety counterexample: two states, a set-valued variable"
+  json: "{\"#meta\":{\"format\":\"ITF\",\"source\":\"MCOrders.tla\"},\"vars\":[\"payments\"],\"states\":[{\"#meta\":{\"index\":0},\"payments\":{\"#set\":[]}},{\"#meta\":{\"index\":1},\"payments\":{\"#set\":[\"c1\"]}}]}"
+  valid: true
+  parsed {
+    meta { format: "ITF" source: "MCOrders.tla" }
+    vars: "payments"
+    states {
+      index: 0
+      vars { key: "payments" value { set_value {} } }
+    }
+    states {
+      index: 1
+      vars { key: "payments" value { set_value { items { string_value: "c1" } } } }
+    }
+  }
+}
+# A state object without "#meta" is not ITF.
+itf {
+  note: "state without #meta is rejected"
+  json: "{\"#meta\":{\"format\":\"ITF\"},\"vars\":[\"x\"],\"states\":[{\"x\":1}]}"
+  valid: false
+}
+# A "#"-key the grammar does not define is rejected rather than guessed.
+itf {
+  note: "unknown #-key is rejected"
+  json: "{\"#meta\":{\"format\":\"ITF\"},\"vars\":[\"x\"],\"states\":[{\"#meta\":{\"index\":0},\"x\":{\"#seq\":[1]}}]}"
+  valid: false
+}

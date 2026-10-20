@@ -1,0 +1,4 @@
+# Checker output and harness recordings: regenerated, never edited.
+.runs/
+states/
+*.itf.json

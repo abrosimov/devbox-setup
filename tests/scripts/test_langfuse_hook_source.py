@@ -22,7 +22,10 @@ def test_deployed_artifact_matches_pin() -> None:
     module = load_module()
     info = module.manifest()
     assert module.git_blob_sha1(module.OUTPUT.read_bytes()) == info["output_git_blob_sha1"]
-    assert info["patches"] == ["0001-durable-checkpoint.patch"]
+    assert info["patches"] == [
+        "0001-durable-checkpoint.patch",
+        "0002-flush-before-checkpoint.patch",
+    ]
 
 
 def test_upstream_mismatch_is_rejected() -> None:

@@ -27,6 +27,8 @@ def test_deployed_artifact_matches_pin() -> None:
         "0002-flush-before-checkpoint.patch",
         "0003-visible-delivery-errors.patch",
         "0004-propagate-emission-failures.patch",
+        "0005-replay-snapshot-identity.patch",
+        "0006-durable-otlp-exporter.patch",
     ]
 
 

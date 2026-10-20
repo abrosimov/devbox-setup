@@ -9,7 +9,9 @@ import yaml
 from jinja2 import StrictUndefined, Template
 
 ROOT = Path(__file__).resolve().parents[2]
-TEMPLATE = ROOT / "roles/devbox/templates/darwin/Library/LaunchAgents/local.langfuse-replay.plist.j2"
+TEMPLATE = (
+    ROOT / "roles/devbox/templates/darwin/Library/LaunchAgents/local.langfuse-replay.plist.j2"
+)
 TASKS = ROOT / "roles/devbox/tasks/darwin/configure_langfuse_replay.yml"
 MAIN = ROOT / "roles/devbox/tasks/main_darwin.yml"
 

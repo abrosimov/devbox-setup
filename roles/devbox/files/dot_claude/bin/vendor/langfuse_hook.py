@@ -3489,10 +3489,10 @@ def emit_new_turns_from_transcript(
             session_history=session_history,
         )
 
-        # Known limitation (accepted, like the crash-between-emit-and-save
-        # duplicate window): progress is persisted before the SDK flush in
-        # main(); a dropped flush leaves emitted_keys pointing at spans that
-        # never reached the server.
+        # Do not acknowledge transcript offsets or emitted observations before
+        # the SDK reports a completed flush. A failed or timed-out flush leaves
+        # the previous checkpoint intact so the next hook can replay.
+        flush_and_shutdown_langfuse_client(langfuse)
         with FileLock(LOCK_FILE):
             state = load_hook_state()
             save_session_state(state, key, session_state)
@@ -3504,20 +3504,24 @@ def flush_and_shutdown_langfuse_client(langfuse: Optional[Langfuse]) -> None:
     if langfuse is None:
         return
 
-    # Cap flush+shutdown at 5s so a slow/unreachable Langfuse can't stall Claude Code.
-    try:
-        def _flush_and_shutdown():
-            try:
-                langfuse.flush()
-            except Exception:
-                pass
-            langfuse.shutdown()
+    # Bound hook exit latency without ever treating an incomplete flush as
+    # delivered. A timeout preserves the last committed replay cursor.
+    failures: List[BaseException] = []
 
-        t = threading.Thread(target=_flush_and_shutdown, daemon=True)
-        t.start()
-        t.join(5.0)
-    except Exception:
-        pass
+    def _flush_and_shutdown():
+        try:
+            langfuse.flush()
+            langfuse.shutdown()
+        except BaseException as exc:
+            failures.append(exc)
+
+    worker = threading.Thread(target=_flush_and_shutdown, daemon=True)
+    worker.start()
+    worker.join(5.0)
+    if worker.is_alive():
+        raise TimeoutError("Langfuse flush did not complete within 5 seconds")
+    if failures:
+        raise failures[0]
 
 
 # ----------------- Main -----------------
@@ -3568,8 +3572,6 @@ def main() -> int:
         debug(f"Unexpected failure: {e}")
         return 0
 
-    finally:
-        flush_and_shutdown_langfuse_client(langfuse)
 
 if __name__ == "__main__":
     sys.exit(main())

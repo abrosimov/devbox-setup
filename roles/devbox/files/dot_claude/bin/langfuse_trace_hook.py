@@ -82,7 +82,7 @@ def durable_snapshot(source: Path, destination: Path) -> None:
                 shutil.copyfile(source, temporary)
         else:
             shutil.copyfile(source, temporary)
-        os.chmod(temporary, 0o600)
+        temporary.chmod(0o600)
         with temporary.open("rb") as copied:
             os.fsync(copied.fileno())
         temporary.replace(destination)
@@ -145,22 +145,24 @@ def complete_pending(marker: Path, nonce: str, snapshot: Path) -> None:
         snapshot.parent.rmdir()
 
 
-def main() -> None:
-    scrub_shadowing_credentials(os.environ)
-    # The replay runner supplies a minimal, known hook payload through stdin.
+def read_hook_input() -> tuple[str, dict]:
+    """Read once and replay unchanged stdin to the vendored hook."""
     try:
         raw = sys.stdin.read()
     except OSError:
-        raw = ""
-    payload = {}
-    if raw:
-        try:
-            obj = json.loads(raw)
-            if isinstance(obj, dict):
-                payload = obj
-        except ValueError:
-            pass
+        return "", {}
+    if not raw:
+        return "", {}
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return raw, {}
+    return raw, data if isinstance(data, dict) else {}
 
+
+def main() -> None:
+    scrub_shadowing_credentials(os.environ)
+    raw, payload = read_hook_input()
     pending = None
     if not os.environ.get(REPLAY_ENV) and payload:
         pending = register_pending(payload)

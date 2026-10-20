@@ -25,6 +25,7 @@ def test_deployed_artifact_matches_pin() -> None:
     assert info["patches"] == [
         "0001-durable-checkpoint.patch",
         "0002-flush-before-checkpoint.patch",
+        "0003-visible-delivery-errors.patch",
     ]
 
 

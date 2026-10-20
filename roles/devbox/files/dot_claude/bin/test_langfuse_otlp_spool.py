@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import urllib.error
 from pathlib import Path
-from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import pytest
@@ -12,10 +11,6 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from vendor import durable_otel_exporter as spool
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
-
 
 @pytest.fixture
 def spool_home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:

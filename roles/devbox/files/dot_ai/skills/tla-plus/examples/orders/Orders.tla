@@ -2,7 +2,7 @@
 (* Abstract specification of a small order flow. Shape: constants, variables,
    TypeOK first, one action per domain command, Spec with the fairness the
    liveness property needs, properties named after the invariant they encode. *)
-EXTENDS Naturals, Sequences, FiniteSets
+EXTENDS Naturals, Sequences
 
 CONSTANTS
     \* @type: Set(Str);
@@ -69,8 +69,8 @@ Spec == Init /\ [][Next]_vars /\ \A c \in Customers : WF_vars(Ship(c))
    validator scans these lines; the note lists the slug under `anchored_by`.
    The references below are illustrative: this example lives in no vault. *)
 
-\* ariadne-kadmou[orders-no-double-payment|evidences|kadmos://oikos/invariants/INV-00001-no-double-payment.md#Statement]
-NoDoublePayment == \A c \in Customers : c \in payments => orders[c] /= <<>>
+\* ariadne-kadmou[orders-paid-implies-ordered|evidences|kadmos://oikos/invariants/INV-00001-paid-implies-ordered.md#Statement]
+PaidImpliesOrdered == \A c \in Customers : c \in payments => orders[c] /= <<>>
 
 \* ariadne-kadmou[orders-ship-only-paid|evidences|kadmos://oikos/invariants/INV-00002-ship-only-paid.md#Statement]
 ShipOnlyPaid == shipped \subseteq payments
@@ -78,6 +78,6 @@ ShipOnlyPaid == shipped \subseteq payments
 \* ariadne-kadmou[orders-eventually-shipped|evidences|kadmos://oikos/invariants/INV-00003-eventually-shipped.md#Statement] liveness
 EventuallyShipped == \A c \in Customers : c \in payments ~> c \in shipped
 
-\* Candidate inductive invariant for the Apalache workflow.
-IndInv == TypeOK /\ NoDoublePayment /\ ShipOnlyPaid
+\* Inductive invariant (TLC checks it as an ordinary invariant; Apalache uses ApaOrders.ApaIndInv).
+IndInv == TypeOK /\ PaidImpliesOrdered /\ ShipOnlyPaid
 ====

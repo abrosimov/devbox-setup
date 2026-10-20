@@ -3,5 +3,4 @@
 EXTENDS Orders, TLC
 
 Perms == Permutations(Customers)
-StateConstraint == \A c \in Customers : Len(orders[c]) <= MaxItems
 ====

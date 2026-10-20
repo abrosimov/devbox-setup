@@ -1,35 +1,42 @@
-# proto/apalache/itf/v1/itf_vectors.txtpb -- conformance vectors for the ITF
-# converter, as apalache.itf.v1.ConformanceVectors. An implementation
-# reproduces every vector; a vector it cannot reproduce is a finding against
-# the implementation or against a new Apalache release, never a reason to edit
-# the vector without a recorded Apalache version.
-#
-# Status: written from Apalache ADR-015; to be confirmed against the output of
-# the pinned Apalache (devbox_packages.tlaplus.tools) on the first real run,
-# which replaces the json field of the first vector with the tool's own file.
+# Conformance vectors for the ITF converter, as apalache.itf.v1.ConformanceVectors.
+# Written from Apalache ADR-015; the first real run of the pinned Apalache replaces
+# the json of the first vector with the tool's own file and records the version here.
 
 itf {
-  note: "minimal safety counterexample: two states, a set-valued variable"
-  json: "{\"#meta\":{\"format\":\"ITF\",\"source\":\"MCOrders.tla\"},\"vars\":[\"payments\"],\"states\":[{\"#meta\":{\"index\":0},\"payments\":{\"#set\":[]}},{\"#meta\":{\"index\":1},\"payments\":{\"#set\":[\"c1\"]}}]}"
+  note: "safety counterexample: a set, a sequence, an integer, varTypes"
+  json: "{\"#meta\":{\"format\":\"ITF\",\"source\":\"ApaOrders.tla\",\"varTypes\":{\"orders\":\"Str -> Seq(Int)\",\"payments\":\"Set(Str)\"}},\"vars\":[\"orders\",\"payments\"],\"states\":[{\"#meta\":{\"index\":0},\"orders\":{\"#map\":[[\"c1\",[]]]},\"payments\":{\"#set\":[]}},{\"#meta\":{\"index\":1},\"orders\":{\"#map\":[[\"c1\",[{\"#bigint\":\"1\"}]]]},\"payments\":{\"#set\":[\"c1\"]}}]}"
   valid: true
   parsed {
-    meta { format: "ITF" source: "MCOrders.tla" }
+    meta {
+      format: "ITF"
+      source: "ApaOrders.tla"
+      var_types { key: "orders" value: "Str -> Seq(Int)" }
+      var_types { key: "payments" value: "Set(Str)" }
+    }
+    vars: "orders"
     vars: "payments"
     states {
       index: 0
+      vars { key: "orders" value { map_value { entries { key { string_value: "c1" } value { seq_value {} } } } } }
       vars { key: "payments" value { set_value {} } }
     }
     states {
       index: 1
+      vars { key: "orders" value { map_value { entries { key { string_value: "c1" } value { seq_value { items { int_value: 1 } } } } } } }
       vars { key: "payments" value { set_value { items { string_value: "c1" } } } }
     }
   }
 }
-# A state object without "#meta" is not ITF.
+# "#meta" inside a state is optional.
 itf {
-  note: "state without #meta is rejected"
-  json: "{\"#meta\":{\"format\":\"ITF\"},\"vars\":[\"x\"],\"states\":[{\"x\":1}]}"
-  valid: false
+  note: "state without #meta is valid; index stays unset"
+  json: "{\"#meta\":{\"format\":\"ITF\"},\"vars\":[\"x\"],\"states\":[{\"x\":{\"#bigint\":\"1\"}}]}"
+  valid: true
+  parsed {
+    meta { format: "ITF" }
+    vars: "x"
+    states { vars { key: "x" value { int_value: 1 } } }
+  }
 }
 # A "#"-key the grammar does not define is rejected rather than guessed.
 itf {

@@ -149,7 +149,7 @@ Check for existing docs at `{PROJECT_DIR}/` (see Artifact Registry in `agent-com
 1. `spec.md` — Product specification (from TPM)
 2. `domain_analysis.md` — Validated domain analysis (from Domain Expert)
 3. `domain_model.md` — Formal DDD model with bounded contexts, aggregates, system constraints (from Domain Modeller, if exists)
-3a. `model_report.md` — Formal model results: coverage of `INV-n`, design flaws found, bounds (from Formal Model Writer, if exists); its blockers and `proposed` invariants are planning constraints
+3a. `model_report.md` — Formal model results: coverage of `INV-n`, design flaws found, bounds (from Formal Model Writer, which runs before planning; only re-checks and trace validation are plan work streams); its blockers and `proposed` invariants are planning constraints
 4. `research.md` — Research findings
 5. `decisions.md` — Decision log
 6. Direct user requirements (if no docs exist)
@@ -373,7 +373,7 @@ Each stream maps to a downstream agent and command. Streams with no dependency b
 | WS-3: Backend Logic | software-engineer-{go\|python} | `/techne-implement` | FR-1–FR-5 | WS-1, WS-2 | WS-4, WS-5 |
 | WS-4: Frontend UI | software-engineer-frontend | `/techne-implement` | FR-6, FR-7 | WS-2 | WS-3, WS-5 |
 | WS-5: Observability | observability-engineer | — | NFR-1, NFR-2 | WS-2 | WS-3, WS-4 |
-| WS-6: Formal model | formal-model-writer | — | INV-1, INV-3 (from `domain_model.md`) | — | WS-1, WS-2 |
+| WS-6: Trace validation | formal-model-writer | — | `model_report.md` constraints; trace contract from WS-3 | WS-3 | WS-4, WS-5 |
 
 ### Rules
 

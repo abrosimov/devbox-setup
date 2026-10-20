@@ -22,10 +22,10 @@ IsEvent(name) ==
     /\ name \in DOMAIN logline
     /\ l' = l + 1
 
-\* Arguments present on the line fix the step; a missing one is chosen existentially.
+\* An argument on the line fixes the step; an absent one is chosen with \E.
 TracePlace == IsEvent("place") /\ Place(logline.place.c, logline.place.item)
 TracePay   == IsEvent("pay")   /\ Pay(logline.pay.c)
-TraceShip  == IsEvent("ship")  /\ \E c \in Customers : c = logline.ship.c /\ Ship(c)
+TraceShip  == IsEvent("ship")  /\ \E c \in Customers : ("c" \in DOMAIN logline.ship => c = logline.ship.c) /\ Ship(c)
 
 \* A snapshot on the line narrows the match further; protojson omits empty lists.
 SnapshotOK ==

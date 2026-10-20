@@ -1,263 +1,174 @@
 ---
 name: go-observability
 description: >
-  Observability for Go services: debuggability audits, semconv-named metrics, logs and spans,
-  three-layer alerting (SLO burn rate, technology, code detectors) with promtool tests, SLO
-  derivation, Grafana dashboards as Go code. Use when asking how a service would be debugged,
-  adding instrumentation, or when Prometheus, Grafana, OTel, SLO or PromQL is mentioned.
-problem: "Dashboards and alerts get built from whatever metrics happen to exist, cover the product's model rather than its failure modes, and leave the 3am debugging question unanswered."
+  Observability for Go services: debuggability audits, semconv metrics, logs and spans,
+  three-layer alerting with promtool tests, SLO derivation, Grafana dashboards as Go code. Use
+  when asking how a service would be debugged, adding instrumentation, or when Prometheus,
+  Grafana, OTel, SLO, alerts or PromQL is mentioned.
+problem: "Dashboards and alerts get built from whatever metrics exist, cover the product's model rather than its failure modes, and leave the 3am debugging question unanswered."
 related: [go-engineer, lint-discipline, observability_engineer]
 ---
 
 # Go Observability
 
-The question every signal answers: **when this breaks at 3am, how do we see it, localise it and
-know what to do?** A metric, log line or span without an answer to that question is cost without
-value. Product dashboards describe the product's model; outages happen in reality. Reality is
-covered by the technology and code layers below, which is where most of the signals live.
+The question every signal answers: when this breaks at 3am, how do we see it, localise it and
+know what to do? Product dashboards describe the product's model; outages happen in reality,
+which the technology and code layers below cover.
 
-## Table of Contents
+Runnable reference: `examples/` — a Foundation SDK dashboard program, the OTel and client_golang
+bootstrap, and the three-layer rule files with promtool unit tests. They build and pass; copy them.
 
-- [Signal Catalogue](#signal-catalogue)
-- [Methods the Catalogue Draws On](#methods-the-catalogue-draws-on)
-- [Debuggability Audit](#debuggability-audit)
-- [Instrumentation in Go](#instrumentation-in-go)
-- [Three Alert Layers](#three-alert-layers)
-- [SLO Maturity Ladder](#slo-maturity-ladder)
-- [Dashboards as Go Code](#dashboards-as-go-code)
-- [Validation Gates](#validation-gates)
-- [Artefact Layout](#artefact-layout)
-- [Pitfalls](#pitfalls)
+## Methods
 
-Runnable examples: `examples/` (Foundation SDK program, OTel bootstrap, rule files with promtool
-tests), built and checked by `tests/deploy/test_skill_examples.py` when the tools are present.
+| Method | Applies to | Gives |
+|--------|-----------|-------|
+| RED (rate, errors, duration) | request-driven services, consumers | product and dependency rows |
+| USE (utilisation, saturation, errors) | every resource: CPU, memory, pools, queues, disks | technology rows |
+| Four golden signals | the overview row of a dashboard | "is it us" |
+| SLO, error budget, burn rate | user journeys | product alerts, the maturity ladder |
+| Symptom-based alerting | all layers | pages for what users feel, tickets for causes |
+| Failure-mode table | the audit | the rows nobody asked for |
 
-References: `references/debuggability-checklist.md` (audit heuristics and grep patterns),
-`references/semconv-prometheus.md` (metric names, attributes, Prometheus translation),
-`references/alert-rules.md` (rule templates, burn-rate maths, promtool tests, runbook template),
-`references/foundation-sdk.md` (dashboard and Grafana-managed alert code).
+## Signal catalogue
 
----
+`observability_design.md` has one row per signal, and nothing is instrumented, charted or
+alerted on without a row:
 
-## Signal Catalogue
+| ID | Failure revealed | Decision supported | Measure | Instrument | Name | Attributes | Budget | Layer |
+|----|------------------|--------------------|---------|------------|------|------------|--------|-------|
 
-The first artefact of any observability work is `observability_design.md`, a catalogue. Nothing is
-instrumented, charted or alerted on without a row:
+Budget = distinct attribute combinations per instance; a histogram costs each × (buckets + 2)
+series on scrape. Attribute values are bounded: route template not path, error class not
+message, enum not id. Layers: product (journeys, SLOs), technology (saturation, dependencies),
+code (detectors for paths that should be rare).
 
-| ID | Failure it reveals | Decision it supports | Signal | Type | Name | Attributes | Budget | Layer |
-|----|--------------------|----------------------|--------|------|------|------------|--------|-------|
-| S-1 | Checkout latency regression | page vs ticket, rollback | request duration | histogram | `http.server.request.duration` | `http.request.method`, `http.route`, `http.response.status_code` | 40 series | product |
-| S-2 | DB pool exhausted | scale pool / find leak | pool wait time | histogram | `db.client.connection.wait_time` | `db.client.connection.pool.name` | 4 series | technology |
-| S-3 | Swallowed error in `reconcile()` | know a silent path fired | counter | counter | `app.reconcile.errors` | `error.type` | 10 series | code |
+## Audit
 
-Columns are mandatory. "Budget" is the maximum series count for that metric on one instance, computed
-from attribute cardinalities; an attribute with unbounded values (user id, path with parameters,
-free-text error message) never appears. Three layers: **product** (user journeys and SLOs),
-**technology** (saturation and dependency health), **code** (detectors for paths that should be rare).
+One row per component and failure: Component | Failure | Detect today | Localise today | Gap
+(`blind`, `late`, `noisy`, `unlocalised`, `covered`) | Proposed signal | Layer | Cost (`trivial`,
+`small`, `design`). Rank by "would have hidden an incident", then cost. Heuristics with the
+pattern that finds them:
 
-## Methods the Catalogue Draws On
+1. Swallowed errors: `ast-grep -p '_ = $F($$$)'` (then `errcheck -blank`), `if $$$; err != nil { $$$ }`
+   bodies without a log or metric call, `recover()` without a counter, silent `context.Canceled` branches.
+2. Invisible background work: `go $F($$$)` without a lifetime metric, tickers without a
+   last-success timestamp, retry loops without an exhausted counter, consumers without lag.
+3. Unmeasured waits: pools, semaphores, buffered channels with no wait histogram; timeouts
+   configured and never counted.
+4. Broken correlation: `context.Background()` on request paths, goroutines and publishers that
+   drop the span context, log lines without `trace_id`.
+5. Unbounded labels: `WithLabelValues(`/`attribute.String(` fed ids, `URL.Path`, `err.Error()`.
+6. Health that lies: one handler for liveness and readiness; no `build_info`.
+7. Logs that cannot be queried: ids in the message text, `ERROR` for expected conditions.
 
-| Method | Applies to | Gives | Source |
-|--------|-----------|-------|--------|
-| RED (rate, errors, duration) | request-driven services, consumers | the product and dependency rows | Tom Wilkie, 2015 |
-| USE (utilisation, saturation, errors) | every resource: CPU, memory, pools, queues, disks | the technology rows | Brendan Gregg, 2012 |
-| Four golden signals (latency, traffic, errors, saturation) | the overview row of a dashboard | the first question: is it us | SRE Book ch. 6 |
-| SLO, error budget, burn rate | user journeys | the product alerts and the maturity ladder | SRE Workbook ch. 2 and 5 |
-| Symptom-based alerting | all layers | pages for what users feel, tickets for causes | SRE Book ch. 6; Ewaschuk |
-| Failure-mode table (FMEA-lite) | the audit | the code and technology rows nobody asked for | this skill |
+## Instrumentation
 
-RED and the golden signals describe the product's model; USE and the failure-mode table describe
-what actually breaks. A catalogue that stops at RED is the dashboard that looks fine during an outage.
+- SDK: follow the project (`MeterProvider` → OTel; `prometheus.NewRegistry`/`promauto` →
+  client_golang); nothing → OTel SDK exporting over OTLP, plus the Prometheus reader only when
+  Prometheus scrapes the service. Never two metric SDKs in one process. A service with no
+  bootstrap gets one as its own catalogue row and work-stream item, never instruments sprinkled in.
+- Names: semconv where it covers the area, `<app>.<component>.<measure>` otherwise; units on the
+  instrument (`s`, `By`, `{request}`), never in the name.
+- Instruments: counter for events (rate it), histogram for durations and sizes (seconds), up-down
+  counter for in-flight, observable gauge for depth, age, lag, last success; `build_info{version,
+  commit} = 1`.
+- Errors: `error.type` is the class (`errors.As` target, gRPC code, status string as emitted by
+  otelhttp); `recover()` counts `app.panics{error.type}` and logs once with the stack.
+- Logs (`log/slog`): one line per failure at the boundary that handles it, attributes not text
+  for ids, `trace_id`/`span_id` from the context, `ERROR` means a person acts.
+- Spans: `otelhttp`/`otelgrpc` at the edges, a span per outbound call and DB operation, context
+  carried through goroutines and in message headers.
+- Code-layer detectors: panics recovered, swallowed-error branches, retries exhausted, breaker
+  open, dead-letter writes, impossible `default` branches, `app.invariant.violations{invariant}`
+  with the domain model's `INV-n` ids. Zero is their expected value.
 
-## Debuggability Audit
+Semconv names as of v1.43 (Prometheus form after translation):
 
-Read the system as the person on call. For each component, fill a failure-mode table:
+| Area | Name | Instrument, unit | Attributes | Status |
+|------|------|------------------|------------|--------|
+| HTTP server | `http.server.request.duration` → `http_server_request_duration_seconds` | histogram, s | `http.request.method`, `url.scheme`, `http.route`, `http.response.status_code`, `error.type` | stable |
+| HTTP client | `http.client.request.duration` | histogram, s | `http.request.method`, `server.address`, `server.port`, `http.response.status_code`, `error.type` | stable |
+| DB | `db.client.operation.duration` | histogram, s | `db.system.name`, `db.operation.name`, `db.collection.name`, `error.type` | stable |
+| DB pool | `db.client.connection.count{db.client.connection.state}`, `.max`, `.wait_time`, `.timeouts`, `.pending_requests` | up-down / histogram / counter | `db.client.connection.pool.name` | development |
+| RPC | `rpc.server.call.duration`, `rpc.client.call.duration` | histogram, s | `rpc.system.name`, `rpc.method`, `rpc.response.status_code`, `error.type` | development |
+| Messaging | `messaging.client.operation.duration`, `messaging.client.sent.messages`, `messaging.client.consumed.messages`, `messaging.process.duration` | histogram / counter | `messaging.system`, `messaging.operation.name`, `messaging.destination.name`, `error.type` | development |
+| Go runtime (`contrib/instrumentation/runtime`) | `go.memory.used`, `go.memory.limit`, `go.goroutine.count`, `go.schedule.duration` (scheduler latency, not GC pause), `go.config.gogc` | up-down / histogram | `go.memory.type` | development |
 
-| Component | What can fail | How we would know today | How we would localise it | Gap | Proposed signal |
-|-----------|---------------|-------------------------|--------------------------|-----|-----------------|
-| `orders.Worker` | consumer stalls | nothing; lag not exported | — | blind | consumer lag gauge, age of oldest message |
-| `payments.Client` | upstream 5xx burst | error log per call (unbounded) | no per-dependency metric | noisy, no metric | `rpc.client.call.duration` with `error.type` |
+Translation (collector and the Go exporter alike): `.` → `_`; unit suffix `_seconds`, `_bytes`;
+counters `_total` after the unit; gauges with unit `1` get `_ratio`; resource attributes become
+`target_info{job, instance, service_name, ...}`; scope becomes `otel_scope_name`/`_version`
+labels. Pin `prometheus.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithSuffixes)`
+explicitly (today's default, announced to change); `WithoutUnits`/`WithoutCounterSuffixes` are
+deprecated. HTTP and RPC bucket boundaries come with the semconv instruments
+(`httpconv.NewServerRequestDuration`); `otelhttp` sets `http.route` from `r.Pattern` itself.
 
-Heuristics that find gaps fastest, with grep and ast-grep patterns in
-`references/debuggability-checklist.md`:
+## Alerts
 
-1. **Swallowed errors**: `_ = f()`, `if err != nil { return }` without log or metric, `recover()`
-   without a counter, `errors.Is(..., context.Canceled)` branches that return silently.
-2. **Invisible background work**: goroutines started in constructors with no lifetime metric, tickers
-   with no "last successful run" timestamp, retry loops without an exhausted counter.
-3. **Unmeasured waits**: pools, semaphores, channel sends with no wait histogram; timeouts configured
-   but never counted when hit.
-4. **Broken correlation**: `context.Background()` inside request paths, goroutines and queue
-   consumers that drop the span context, log lines without `trace_id`.
-5. **Unbounded labels**: ids, raw URLs, error strings used as attribute values.
-6. **Health that lies**: liveness and readiness merged, readiness that does not check dependencies,
-   no `build_info`.
-7. **Logs that cannot be queried**: `fmt.Sprintf` messages carrying the entity id in the text, levels
-   used for emphasis rather than action.
+| Layer | Source | Examples | Severity |
+|-------|--------|----------|----------|
+| product | journeys → SLI → SLO → burn rate | checkout availability, search latency | page on fast burn, ticket on slow |
+| technology | saturation, dependency health | pool exhausted, consumer stalled, restarts, disk runway, cert expiry, dependency error rate | ticket; page when the runway is under an hour |
+| code | detectors above | panics, retries exhausted, breaker open, DLQ, invariant violations | ticket; page on invariant violation |
 
-Every gap becomes a catalogue row with the proposed signal; the audit report ranks gaps by "would
-have hidden an incident" first, cost second.
+Every component has all three layers or a one-line reason. Every rule carries labels `severity`
+(`page`/`ticket`) and `layer`, annotations `summary`, `description`, `runbook_url`, a runbook
+stub, and a promtool unit test with a firing and a non-firing case. Product rules also carry
+`maturity` (§SLO ladder). A rule that fires weekly is a bug or a threshold to revisit, never a
+silence. PromQL joins (`and`, `/`) need identical label sets: aggregate both sides or use
+`on (label)`.
 
-## Instrumentation in Go
+Burn-rate alerts over a 30-day window, `burn = budget_fraction × 720 h / long_window_h`:
 
-**Which SDK**: follow the project. A `MeterProvider`/`TracerProvider` in `main` means the OpenTelemetry
-SDK; `prometheus.NewRegistry` or `promauto` means `client_golang`; nothing means the OpenTelemetry SDK
-with an OTLP exporter to the collector and, when Prometheus scrapes directly, the Prometheus exporter.
-Never mix two metric SDKs in one process. Names follow semconv either way; `client_golang` users write
-the translated Prometheus name directly (`http_server_request_duration_seconds`).
+| Severity | Budget consumed | Long | Short | Burn | `for` |
+|----------|-----------------|------|-------|------|-------|
+| page | 2 % in 1 h | 1h | 5m | 14.4 | 2m |
+| page | 5 % in 6 h | 6h | 30m | 6 | 15m |
+| ticket | 10 % in 3 d | 3d | 6h | 1 | 1h |
 
-**Naming**: semconv names for anything semconv covers (HTTP, RPC, DB, messaging, runtime, process);
-`<app>.<component>.<thing>` for domain metrics. Units in the instrument, not in the name, for OTel
-(`s`, `By`, `{request}`); Prometheus names carry the unit suffix after translation
-(`_seconds`, `_bytes`, `_total`). Table and translation rules in `references/semconv-prometheus.md`.
+Expression: `sli:errors:ratio_rate1h > 14.4 × (1 − SLO) and sli:errors:ratio_rate5m > 14.4 ×
+(1 − SLO)` over recording rules; latency SLIs are the ratio of requests slower than the
+threshold. promtool series syntax: `a b c`, `0+10x5`, `1x60`, `_`, `stale`.
 
-**Instruments**:
+## SLO ladder
 
-| Measure | Instrument | Rule |
-|---------|------------|------|
-| Events that happen | Counter (`_total`) | monotonic; rate it, never read it raw |
-| Duration, size | Histogram | seconds; semconv buckets for HTTP; native/exponential histograms when the backend supports them |
-| In-flight, pool in use | UpDownCounter | add on start, subtract on end, in `defer` |
-| Depth, age, lag, last success time | Gauge (observable) | callback reads the real value; "age of oldest" beats "count" |
-| Version, config | Gauge `build_info{version,commit}` = 1 | one series, joins everywhere |
+| Stage | Exists | Alerts | Exit |
+|-------|--------|--------|------|
+| `none` | no SLI data | technology and code only | baseline instrumented |
+| `baseline` | SLIs emitted, black-box probes on key journeys | plus a placeholder burn-rate at `ticket` | 4 weeks of data |
+| `observed` | percentiles over the window | burn-rate at the proposed SLO, `ticket` | owners accept |
+| `agreed` | SLO signed off | all layers, pages on | — |
 
-**Errors**: one `error.type` attribute holding the error class (`errors.As` to a typed error,
-`status.Code` for gRPC, the HTTP status class otherwise), never the message. A `recover()` increments
-`app.panics` with `error.type` and re-raises or returns, and logs once with the stack.
+Propose from a baseline: the next standard availability target below observed (99.99 → 99.95 →
+99.9 → 99.5 → 99), latency 20 % above observed p99; both are defaults the owner decides.
 
-**Logs** (`log/slog` unless the project has a logger): one line per failure at the boundary that
-handles it, carrying the wrapped error chain; no line at each layer the error passes through.
-Attributes, not text, for ids (`slog.String("order_id", id)`); `trace_id` and `span_id` from
-`trace.SpanContextFromContext(ctx)` added by a handler wrapper. Levels mean action: `ERROR` needs a
-person, `WARN` degrades, `INFO` is state change, `DEBUG` is off in production.
+## Dashboards
 
-**Spans**: `otelhttp` and `otelgrpc` at the edges, a span per outbound call and per DB operation, the
-context carried through goroutines explicitly and through queues in message headers
-(`propagation.TextMapCarrier`). Exemplars link histograms to traces when the backend supports them.
+One Go program on the Grafana Foundation SDK (`examples/dashboards/`), one file per service,
+rendered JSON committed. Rows: overview (SLO status, burn, `build_info`), traffic (RED per route
+or consumer), dependencies, saturation, detectors, runtime. Every panel has a unit, a legend from
+the attribute that matters, a bounded series count, a catalogue id in its description; alerting
+panels link the runbook. Jsonnet is not used.
 
-**Code-layer detectors** are cheap counters placed where "this should not happen" lives: panics
-recovered, swallowed error branches, retries exhausted, circuit breaker opened, dead-letter writes,
-default branches of exhaustive switches, runtime invariant violations (`app.invariant.violations`
-with `invariant` as the attribute, the same `INV-n` ids as the domain model).
-
-## Three Alert Layers
-
-| Layer | Source | Examples | Default severity | Typical count |
-|-------|--------|----------|------------------|---------------|
-| Product | user journeys → SLI → SLO → burn rate | checkout availability, search latency | page on fast burn, ticket on slow | 2–6 |
-| Technology | saturation and dependency health | pool exhausted, consumer lag age, disk < 10 %, GC pause, goroutine growth, restarts, cert expiry, dependency error rate | ticket; page when the runway is under an hour | 10–20 |
-| Code | detectors above | panics, swallowed errors by class, retries exhausted, breaker open, DLQ rate, invariant violations | ticket; page for invariant violations | 5–15 |
-
-Every rule carries labels `severity`, `layer`, `maturity` and annotations `summary`, `description`,
-`runbook_url`. The design document lists the three layers separately and shows coverage per
-component: a component with product alerts only is unprotected in practice.
-
-Burn-rate alerts use two windows per severity so a short spike neither pages nor hides:
-
-| Severity | Budget consumed | Long window | Short window | Burn rate |
-|----------|-----------------|-------------|--------------|-----------|
-| page | 2 % in 1 h | 1h | 5m | 14.4 |
-| page | 5 % in 6 h | 6h | 30m | 6 |
-| ticket | 10 % in 3 d | 3d | 6h | 1 |
-
-Expressions, recording rules and the promtool test for each are in `references/alert-rules.md`.
-
-## SLO Maturity Ladder
-
-Alerts are only as honest as the SLO behind them. State the stage in the design document and in
-the `maturity` label:
-
-| Stage | What exists | Alerts allowed | Exit criterion |
-|-------|-------------|----------------|----------------|
-| `none` | no SLI data | technology and code layers only | baseline instrumented |
-| `baseline` | SLIs emitted; black-box probes on the key journeys | as above, plus a conservative placeholder burn-rate at `ticket` | 2–4 weeks of data |
-| `observed` | percentiles over the observation window | burn-rate at proposed SLO, `ticket` only | owners accept the SLO |
-| `agreed` | SLO document signed off | full three layers, pages enabled | — |
-
-Deriving the SLO from a baseline: take the 28-day p99 (latency) or success ratio (availability),
-subtract headroom that the owners can live with (a latency target 20 % above observed p99, an
-availability target one nine below observed), present the number with the traffic it was measured
-on, and let the owner decide. Probes (a blackbox exporter or a small Go probe job) give a signal that
-does not depend on the service's own instrumentation being right.
-
-For an existing system without instrumentation: audit first, then propose the baseline set
-(RED per route and consumer, saturation per resource, the code-layer detectors), then the ladder.
-
-## Dashboards as Go Code
-
-One dashboard per service, generated by a Go program using the Grafana Foundation SDK and committed
-with its rendered JSON. Rows, top to bottom:
-
-1. **Overview** — SLO status and burn rate per journey, deploy marker, `build_info` version
-2. **Traffic** — RED per route or consumer: rate, error ratio by `error.type`, duration p50/p95/p99
-3. **Dependencies** — outbound RED per dependency, pool usage and wait time
-4. **Saturation** — CPU, memory, GC, goroutines, file descriptors, queue depth and age
-5. **Detectors** — the code-layer counters, one panel each, zero is the expected value
-6. **Runtime and process** — `go.*` and `process.*`
-
-Panel rules: a unit on every panel, legend from the attribute that matters (`{{http_route}}`), series
-count bounded by the catalogue budget, a link to the runbook on alerting panels, `$datasource` and
-`$service` variables, no panel without a catalogue row. Code in `references/foundation-sdk.md`.
-
-Jsonnet and Grafonnet are not used; when a repository has them, raise it and still produce Go.
-
-## Validation Gates
-
-Run before reporting, in this order; a failure stops the hand-off:
+## Gates
 
 ```bash
-go build ./... && go vet ./...                         # instrumentation and dashboard code compile
-promtool check rules observability/rules/*/alerts.yaml observability/rules/*/recording.yaml
-promtool test rules observability/rules/*/tests/*.yaml  # every alert has a firing and a non-firing case
+go build ./... && go vet ./...
+promtool check rules observability/rules/*/*.yaml
+promtool test rules observability/rules/*/tests/*.yaml
 go run ./observability/dashboards -o observability/dashboards/out && jq empty observability/dashboards/out/*.json
 ```
 
-`promtool` ships with the `prometheus` Homebrew formula this machine installs; `go install ...@latest`
-does not work for it (the upstream `go.mod` carries `replace` directives), so when it is missing
-elsewhere build it from a shallow clone of the release tag with `go build ./cmd/promtool`. `gcx` (Grafana CLI on this machine) can run PromQL
-against a configured datasource to confirm that a query returns series before it goes on a panel;
-read-only queries only.
-
-Sandbox rule: artefacts are files in the repository. Nothing deploys to Grafana, Alertmanager or
-Prometheus from the agent; deployment instructions go in the hand-off.
-
-## Artefact Layout
-
-```
-${PROJECT_DIR}/observability_audit.md        # failure-mode table, ranked gaps (audit mode)
-${PROJECT_DIR}/observability_design.md       # signal catalogue, alert layers, SLO stage, dashboard outline
-<repo>/observability/
-  dashboards/<service>/main.go               # Foundation SDK program
-  dashboards/out/<service>.json              # rendered, committed
-  rules/<service>/alerts.yaml                # PrometheusRule or plain rule file, per project
-  rules/<service>/recording.yaml
-  rules/<service>/tests/alerts_test.yaml     # promtool unit tests
-  runbooks/<Alertname>.md
-```
-
-## Pitfalls
-
-- A histogram with `http.route` set to the raw path explodes; use the router's template.
-- `rate()` over a counter that resets on deploy is fine; `increase()` over a gauge is a bug.
-- `error.type` from `err.Error()` is a cardinality leak and a secret leak.
-- Alerting on cause (`cpu > 90%`) pages for things users never see; the technology layer tickets it,
-  the product layer pages.
-- A `for:` shorter than two scrape intervals flaps; longer than the burn window hides.
-- Dashboards with 60 panels are not read at 3am; six rows, the first one answers "is it us".
-- Instrumenting a codebase that has no telemetry bootstrap is a design decision: bring the
-  bootstrap as its own catalogue row and work stream, do not sprinkle instruments that nothing exports.
+`promtool` comes with the `prometheus` formula; `gcx` runs read-only PromQL against a datasource
+to confirm a query returns series. Artefacts are repository files: `observability_audit.md`,
+`observability_design.md`, instrumentation diff, `observability/{dashboards,rules/<service>/
+{alerts,recording}.yaml,rules/<service>/tests/,runbooks/}`. Nothing deploys from here.
 
 ## Sources
 
-- Tom Wilkie, *The RED Method* (2015) —
-  https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/
-- Brendan Gregg, *The USE Method* — https://www.brendangregg.com/usemethod.html
-- Google SRE Book ch. 6 *Monitoring Distributed Systems*; SRE Workbook ch. 2 *Implementing SLOs*,
-  ch. 5 *Alerting on SLOs* — https://sre.google/books/
-- Charity Majors, Liz Fong-Jones, George Miranda, *Observability Engineering* (O'Reilly, 2022):
-  high-cardinality debugging, the question the on-call engineer asks
-- OpenTelemetry semantic conventions — https://opentelemetry.io/docs/specs/semconv/
-- Prometheus best practices: naming, histograms, alerting, rule unit tests —
-  https://prometheus.io/docs/practices/
+- Google SRE Book ch. 6, SRE Workbook ch. 2 and 5 — https://sre.google/books/ ; Ewaschuk, *My
+  Philosophy on Alerting*
+- Wilkie, *The RED Method*; Gregg, *The USE Method* — https://www.brendangregg.com/usemethod.html
+- OpenTelemetry semantic conventions and Prometheus compatibility — https://opentelemetry.io/docs/specs/
+- Prometheus practices, unit-testing rules — https://prometheus.io/docs/practices/
 - Grafana Foundation SDK — https://github.com/grafana/grafana-foundation-sdk
-- Per-topic sources close each file in `references/`.
+- Majors, Fong-Jones, Miranda, *Observability Engineering* (O'Reilly, 2022)

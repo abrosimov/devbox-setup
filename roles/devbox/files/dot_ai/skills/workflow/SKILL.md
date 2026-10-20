@@ -148,7 +148,7 @@ Specialist agents available via `/techne-*` commands. Each is invoked one-shot f
 | Requirements | `technical_product_manager` | `spec.md` |
 | Domain validation | `domain_expert` | `domain_analysis.md` |
 | Domain modelling | `domain_modeller` | `domain_model.md` |
-| Formal model (when Step 0 of `tla-plus` says so) | `formal_model_writer` | `model_report.md`, `model_requirements.md`, `formal_model/` |
+| Formal model (before planning, when `tla-plus` §1 says so) | `formal_model_writer` | `model_report.md`, `model_requirements.md`, `formal_model/`, `trace_contract.md` |
 | Planning | `implementation_planner` | `plan.md` |
 | UI design | `designer` | `design.md` |
 | Database design | `database_designer` | `schema_design.md`, migrations |
@@ -356,6 +356,8 @@ Documentation is organized by Jira issue and branch:
 - `spec.md` - Product specification
 - `domain_analysis.md` - Domain analysis
 - `domain_model.md` - DDD domain model (bounded contexts, aggregates, invariants)
+- `model_report.md`, `model_requirements.md`, `trace_contract.md` - Formal model results, questions to the domain owners, trace contract
+- `observability_audit.md`, `observability_design.md` - Failure-mode table and signal catalogue
 - `plan.md` - Implementation plan
 - `api_design.md` - API design rationale and decisions
 - `api_spec.yaml` - OpenAPI specification (REST mode)

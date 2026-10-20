@@ -1,17 +1,9 @@
 syntax = "proto3";
 
 // Behaviour log of the Orders implementation for trace validation against
-// Orders.tla. Serialised as one protojson object per line; TLC reads the file
-// with the Json module and matches each line to the spec action the oneof
-// names. The schema is the contract between the emitter in the service and
-// TraceOrders.tla; `buf breaking` guards it on both sides.
-//
-// protojson rules that shape the TLA+ side:
-//   - field names appear in lowerCamelCase; TraceOrders.tla uses those names;
-//   - a field at its default value is omitted: an id or an item must never be
-//     0 or "" when it carries meaning (Items == 1..MaxItems);
-//   - int64/uint64 serialise as JSON strings; everything TLC must compare as a
-//     number is int32/uint32.
+// Orders.tla: one protojson object per line, the oneof member names the spec
+// action. The protojson rules that shape TraceOrders.tla are in the tla-plus
+// skill §8. `buf breaking` guards this contract on both sides.
 package orders.trace.v1;
 
 // One abstract step, written at the commit point of the action.

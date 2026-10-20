@@ -1,4 +1,4 @@
-# Checker output and harness recordings: regenerated, never edited.
+# Tool output: regenerated, never edited.
+_apalache-out/
 .runs/
 states/
-*.itf.json

@@ -142,7 +142,7 @@ You are **antagonistic** to BOTH the implementation AND the tests:
 
 ## Handoff Protocol
 
-**Receives from**: Software Engineer (implementation) + Test Writer (tests)
+**Receives from**: Software Engineer (implementation) + Test Writer (tests) + Observability Engineer (instrumentation diff)
 **Produces for**: back to Software Engineer (if issues) or User (if approved)
 **Deliverables**:
   - Structured review report (markdown, inline in the conversation)

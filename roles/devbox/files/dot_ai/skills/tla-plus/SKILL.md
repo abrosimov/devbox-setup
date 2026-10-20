@@ -1,365 +1,201 @@
 ---
 name: tla-plus
 description: >
-  TLA+ family toolchain: TLA+/PlusCal specs, TLC, Apalache (bounded and inductive), TLAPS,
-  trace validation of an implementation against the spec. Use when deciding whether a design
-  needs a formal model, encoding invariants, choosing a checker, triaging a counterexample, or
-  when TLA+, TLC, Apalache, safety, liveness or refinement is mentioned.
-problem: "Formal models get written as unverified prose or as specs nobody runs, with no record of which invariants a check actually covered and under which bounds."
+  TLA+ toolchain: TLA+/PlusCal specs, TLC, Apalache, TLAPS, trace validation. Use when deciding
+  whether a design needs a formal model, encoding invariants, choosing a checker, triaging a
+  counterexample, or when safety, liveness, refinement or model checking is mentioned.
+problem: "Formal models get written as prose or as specs nobody runs, with no record of which invariants a check covered and under which bounds."
 related: [fpf-thinking, domain_modeller, formal_model_writer]
 ---
 
 # TLA+ Toolchain
 
-One paradigm, one notation. The machine carries the TLA+ family only; everything below targets what
-`tasks/darwin/install_tlaplus.yml` installs under `~/.local/share/tlaplus/`:
+Installed under `~/.local/share/tlaplus/<tool>/` (Java from `temurin@21`): `tla2tools.jar`
+(`$TLA2TOOLS_JAR`: SANY, TLC, PlusCal), `communitymodules/CommunityModules-deps.jar` (`Json`,
+`IOUtils`), `apalache-mc`, `tlapm`. Nothing else: when Alloy, P, Quint or SPIN would fit better,
+say so in the report and still deliver TLA+.
 
-| Tool | Location | Role |
-|------|----------|------|
-| `tla2tools.jar` | `$TLA2TOOLS_JAR` (env), `tla2tools/tla2tools.jar` | SANY parser, TLC model checker, PlusCal translator |
-| CommunityModules | `communitymodules/CommunityModules-deps.jar` | `Json`, `IOUtils`, `SequencesExt`, `FiniteSetsExt`, `Functions`, `Folds` — needed for trace validation |
-| Apalache | `apalache-mc` on PATH | Symbolic bounded checking, inductive invariants, type checking |
-| TLAPS | `tlapm` on PATH | Proof manager for the one or two invariants worth a proof |
+Runnable reference: `examples/orders/` — spec, two TLC configurations, Apalache entry module,
+trace spec with fixtures, and a README whose commands are the verification. Copy the directory
+and rename; do not retype the shape.
 
-Java comes from the `temurin@21` cask. Alloy, P, Quint, SPIN and the like are out of scope: when one
-of them would fit better, say so in the report and still deliver TLA+.
+## 1. Decide whether to model
 
-## Table of Contents
-
-- [Step 0: Decide Whether to Model](#step-0-decide-whether-to-model)
-- [Inputs a Model Needs](#inputs-a-model-needs)
-- [Spec Shape](#spec-shape)
-- [Choosing the Combination](#choosing-the-combination)
-- [Running TLC](#running-tlc)
-- [Running Apalache](#running-apalache)
-- [Inductive Invariant Workflow](#inductive-invariant-workflow)
-- [TLAPS](#tlaps)
-- [Trace Validation](#trace-validation)
-- [Counterexample Triage](#counterexample-triage)
-- [Model Report](#model-report)
-- [Pitfalls](#pitfalls)
-
----
-
-## Step 0: Decide Whether to Model
-
-Score the design. Model when any row scores **yes**; otherwise write a two-line refusal with the
-reasons and stop.
+Model when any row scores yes; otherwise write a two-line refusal with the reasons and stop.
 
 | Signal | Yes when |
 |--------|----------|
-| Concurrency | Two or more actors update shared state without a single serialising lock |
-| Distribution | State lives on more than one node, or messages can be lost, duplicated or reordered |
+| Concurrency | Two or more actors update shared state without one serialising lock |
+| Distribution | State lives on more than one node, or messages can be lost, duplicated, reordered |
 | Failure handling | Crash, restart or partial failure must leave an invariant intact |
 | Multi-step protocol | A transaction, handshake, saga or workflow spans several messages or commits |
 | Money or inventory under races | A quantity must never go negative or be double-spent |
-| Non-trivial state machine | An aggregate has more than four states, or transitions depend on other aggregates |
+| Non-trivial state machine | More than four states, or transitions that depend on other aggregates |
 
-A CRUD service with one database transaction per command and no cross-aggregate rule scores no row.
-Say so; a model there costs more than it finds.
-
-## Inputs a Model Needs
+## 2. Inputs and the link to prose
 
 Read `domain_model.md` (invariants `INV-n`, commands with pre/postconditions, state machines) and
-`domain_analysis.md` (constraints, invalidated assumptions). The link between a prose invariant and
-the property that encodes it is not a table somebody maintains; it is a **code anchor** in the spec,
-and the coverage table is derived from the anchors.
-
-### Linking prose and model: kadmos code anchors
-
-When the project carries a kadmos vault (a `.vault-root` file at the repository root naming the
-vault directory, usually `docs/`), every property in the spec carries one anchor line, the grammar of
-`standards/code-anchors.md` in that vault:
+`domain_analysis.md` (constraints, invalidated assumptions). Each property in the spec is tied to
+the note that states its invariant by a kadmos code anchor on the line above it
+(`standards/code-anchors.md` of the project's vault, present when the repository root has
+`.vault-root`):
 
 ```tla
-\* ariadne-kadmou[orders-no-double-payment|evidences|kadmos://oikos/invariants/INV-00001-no-double-payment.md#Statement]
-NoDoublePayment == \A c \in Customers : c \in payments => orders[c] /= <<>>
+\* ariadne-kadmou[orders-paid-implies-ordered|evidences|kadmos://oikos/invariants/INV-00001-paid-implies-ordered.md#Statement]
+PaidImpliesOrdered == \A c \in Customers : c \in payments => orders[c] /= <<>>
 ```
 
-- `<slug>` is lowercase kebab-case and unique in the repository; prefix it with the spec name.
-- `<relation>` is `evidences` for a spec property, `tests` for a property-based or trace test,
-  `implements` for the code that realises the command. The vocabulary is the vault's; never add to it
-  from here.
-- `<reference>` is the `kadmos://oikos/<path>.md#<heading>` address of the note that states the
-  invariant (an `INV-` note's `#Statement`, or the heading of the domain-model note). The model
-  writer reads the vault to find it and never invents a path.
-- The note lists the slug under `anchored_by`; the vault's validator (Lynkeus) checks that every
-  anchor resolves and every listed slug exists. The report's coverage table is the scan of these
-  anchors: one row per property, resolved reference, status.
+- Slug: lowercase kebab-case, unique in the repository, prefixed with the spec name. Relation:
+  `evidences` for a spec property, `tests` for a property-based or trace test, `implements` for
+  code. Reference: the `kadmos://oikos/<path>.md#<heading>` of the note; read the vault for it,
+  never invent a path.
+- If the note carries `anchored_by`, add the slug (the field is exact when present).
+- The coverage table (`INV`, kind, slug, property, status) is the scan of these anchors. Without
+  a vault it is written by hand with `INV-n` ids and the report says so in its first line.
 
-Without a vault, the coverage table is maintained by hand with `INV-n` ids, and the report says so
-in its first line: that link rots, and the remedy is the vault, not more care.
+Every gap is a question in `model_requirements.md` addressed to its owner: business meaning to
+the domain-expert, missing invariants and transitions to the domain-modeller, environment faults
+and fairness to the architect. Ask, in order: safety (what never happens), liveness (what
+eventually happens, under which fairness), environment (crash-stop, crash-recovery, loss,
+duplication, reordering, clock skew), bounds (actors, keys, retries, messages). Continue with the
+answer the model assumes, marked `proposed`; a `proposed` property is never reported as verified.
 
-### Coverage table
+## 3. Spec rules
 
-| INV | Kind | Anchor slug | Property | Status |
-|-----|------|-------------|----------|--------|
-| INV-1 | safety | `orders-no-double-payment` | `NoDoublePayment` | covered |
-| INV-3 | liveness | — | — | **gap: fairness unknown** |
+- `TypeOK` is the first invariant in every configuration. Write it so both TLC and Apalache
+  evaluate it: no `\in Seq(S)`; bound sequences by `Len` and element membership.
+- Every variable is in `vars`; every action ends with `UNCHANGED` for what it leaves alone.
+- Actions are named after domain commands, properties after the invariant they encode. A name
+  that promises more than the predicate says (`NoDoublePayment` over a set) is a defect.
+- Constants are assigned by the `.cfg` (TLC) or `CInit` (Apalache); the spec never hardcodes them.
+- Fairness only where a liveness property needs it, per action (`WF_vars(Ship(c))`), and the
+  report says which.
+- No `CONSTRAINT` the guards already imply; liveness under a `CONSTRAINT` is advisory only.
 
-Every gap becomes a question in `model_requirements.md`, addressed to the agent that owns the
-answer (domain-expert for business rules, domain-modeller for invariants and state machines,
-architect for environment assumptions). The questions to ask, in this order:
+## 4. Choose the checker
 
-1. **Safety** — what must never happen, as a predicate over the model's state.
-2. **Liveness** — what must eventually happen, and under which fairness (weak or strong, per action).
-3. **Environment** — which failures are in scope: crash-stop, crash-recovery, message loss,
-   duplication, reordering, clock skew.
-4. **Bounds** — how many actors, keys, retries and messages the small instance should have.
+| Need | Tool | Gives | Does not give |
+|------|------|-------|---------------|
+| First feedback on safety and liveness | TLC, small instance | Counterexample in minutes | Anything beyond the instance |
+| Liveness with fairness | TLC | `~>`, `[]<>` with WF/SF | Large instances |
+| Safety beyond a handful of constants | Apalache bounded (`--length`, `CInit`) | A constant family per run | Beyond `--length` steps |
+| Safety for every reachable state | Apalache inductive invariant | No step bound | Finding the invariant is the work |
+| A citable proof | TLAPS on the inductive invariant | Machine-checked | Expensive; one or two invariants |
+| Algorithm with loops and locks | PlusCal, translated | Readable to engineers | Coarse labels hide interleavings |
+| Abstract and detailed spec | Refinement (`INSTANCE`, `Spec => A!Spec`) in TLC | Detail keeps the guarantees | Needs a mapping |
+| Implementation exists | Trace validation (§8) | Model meets the code | Only executions seen |
 
-An invariant the model writer proposes from the model is marked `proposed` in the coverage table and
-never reported as verified until the owning agent confirms it.
+Ladder: TLC small instance → Apalache bounded with `CInit` → inductive invariant for the safety
+property the owners rank first → trace validation once code exists; TLAPS only on request.
+Budgets: a TLC run stops at thirty minutes or fifty million distinct states and reports the
+partial result; inductive strengthening stops after six rounds. Record every run's command,
+instance, distinct states or length, time and outcome as the tool printed them.
 
-## Spec Shape
-
-One abstract spec per subsystem, one model-checking module per instance:
-
-```
-formal_model/
-  Orders.tla          \* the specification: EXTENDS, CONSTANTS, VARIABLES, Init, Next, Spec, properties
-  MCOrders.tla        \* EXTENDS Orders; small-instance overrides, state constraint, symmetry
-  MCOrders.cfg        \* TLC: safety + liveness, no symmetry
-  MCOrdersSafety.cfg  \* TLC: safety only, symmetry on, larger instance
-  ApaOrders.tla       \* Apalache entry: CInit over the constant family
-  TraceOrders.tla     \* trace validation (see below), present when the implementation exists
-  TraceOrders.cfg
-  proto/<spec>/trace/v1/trace.proto  \* behaviour-log schema (protobuf; protojson lines on disk)
-  traces/*.jsonl      \* labelled fixtures for the trace spec; recordings go to .runs/
-  README.md           \* how to run every check, in copy-paste form
-  model_report.md     \* results, see Model Report
-```
-
-Skeleton: `examples/orders/Orders.tla` (constants, `TypeOK`, one action per command, `Spec`
-with per-action fairness, properties named after the `INV-n` they encode), `MCOrders.tla` and the
-two `.cfg` files (one for liveness without symmetry, one for safety with symmetry), `ApaOrders.tla`
-(symbolic `CInit`), `TraceOrders.tla` with two traces, and a `README.md` whose commands are the
-verification. Copy the directory and rename; do not retype the shape.
-
-Rules that keep the spec checkable:
-
-- `TypeOK` is the first invariant in every configuration; a type error found later is a wasted run.
-- Every `VARIABLE` appears in `vars`; every action ends with `UNCHANGED` for what it leaves alone.
-- Name actions after domain commands (`Pay`, `Ship`), properties after the invariant they encode
-  (`NoDoublePayment` for INV-1). The report maps the two.
-- Constants are model values or small sets; `MC*.tla` overrides them, the spec never hardcodes them.
-- Fairness goes in `Spec` only when a liveness property needs it, and the report says which.
-
-`MCOrders.cfg` in the example shows the configuration keys: `SPECIFICATION`, `CONSTANTS` (model
-values or sets), `CONSTRAINT`, `INVARIANTS`, `PROPERTIES`, `CHECK_DEADLOCK`, and `SYMMETRY` only in the
-safety configuration.
-
-## Choosing the Combination
-
-Pick by property kind and by the guarantee the stakeholder needs; record the choice and its reason
-in the report's "Why this combination" section.
-
-| Need | Tool | Why | What it does not give |
-|------|------|-----|-----------------------|
-| First feedback on safety and liveness | TLC on a small instance | Minutes to a counterexample, no annotations needed | Nothing beyond the instance's bounds |
-| Liveness with fairness | TLC | The only checker here that handles `~>` and `[]<>` with fairness routinely | State-space blow-up on large instances |
-| Safety where TLC blows up, or bounds beyond a handful | Apalache bounded check | Symbolic, bounds on steps rather than on state count | Only up to `--length` steps |
-| Safety for every reachable state, no bound | Apalache inductive invariant | One-step check of `IndInv`; see workflow below | Finding `IndInv` is the work |
-| A proof the organisation will cite | TLAPS on the inductive invariant | Machine-checked, independent of bounds | Expensive; do it for one or two invariants |
-| Algorithm written as code with locks and loops | PlusCal, translated to TLA+ | Readable to engineers; translation is mechanical | Labels decide atomicity; easy to over-approximate |
-| Abstract spec and detailed spec both exist | Refinement (`INSTANCE` + `Spec => A!Spec`) in TLC | Proves the detail keeps the abstract guarantees | Needs a refinement mapping |
-| Implementation exists | Trace validation | Connects the model to the running code | Validates executions seen, not all executions |
-
-Default ladder for a new model: TLC small instance → Apalache bounded with larger constants → inductive
-invariant for the one safety property that matters most → trace validation once code exists. Stop
-climbing when the next rung costs more than the residual risk; say that in the report.
-
-## Running TLC
+## 5. Run
 
 ```bash
-TLA_LIB="$HOME/.local/share/tlaplus"
-CP="$TLA2TOOLS_JAR:$TLA_LIB/communitymodules/CommunityModules-deps.jar"
-
-# Parse only (fast syntax and semantic check)
-java -cp "$CP" tla2sany.SANY formal_model/Orders.tla
-
-# PlusCal translation (writes the TLA+ block back into the file)
-java -cp "$CP" pcal.trans formal_model/Algo.tla
-
-# Model check (BFS, all cores, deadlock check on, no trace-explorer module)
-java -XX:+UseParallelGC -Xmx4g -cp "$CP" tlc2.TLC \
-    -config MCOrders.cfg -workers auto -noTE -cleanup formal_model/MCOrders.tla
-
-# Random simulation when BFS is too big; depth and run count bounded
-java -cp "$CP" tlc2.TLC -config MCOrders.cfg -simulate num=1000 -depth 50 formal_model/MCOrders.tla
+CP="$TLA2TOOLS_JAR:$HOME/.local/share/tlaplus/communitymodules/CommunityModules-deps.jar"
+java -cp "$CP" tla2sany.SANY Orders.tla                                     # parse
+java -cp "$CP" pcal.trans Algo.tla                                          # PlusCal → TLA+
+java -XX:+UseParallelGC -cp "$CP" tlc2.TLC -config MCOrders.cfg -workers auto -noTE -cleanup MCOrders.tla
+java -cp "$CP" tlc2.TLC -config MCOrders.cfg -simulate num=1000 -depth 50 MCOrders.tla   # when BFS is too big
+apalache-mc typecheck ApaOrders.tla
+apalache-mc check --cinit=CInit --inv=PaidImpliesOrdered --length=8 --out-dir="$(mktemp -d)" ApaOrders.tla
+tlapm Orders.tla
 ```
 
-Flags worth knowing: `-deadlock` turns deadlock checking off (use when the spec has a quiescent
-state by design), `-coverage 1` prints action coverage every minute (an action with zero coverage is a
-dead action or a modelling bug), `-dump dot,colorize out.dot` draws small state graphs,
-`-lncheck final` defers liveness checking to the end, `-dfid N` runs iterative-deepening DFS for long
-traces. TLC's exit code is non-zero on a violation; the counterexample is the numbered state trace on
-stdout.
+`.cfg` keys: `SPECIFICATION`, `CONSTANTS` (model values or sets), `INVARIANTS`, `PROPERTIES`,
+`SYMMETRY` (never together with `PROPERTIES`: unsound), `CHECK_DEADLOCK`, `POSTCONDITION`. TLC
+flags: `-deadlock` turns deadlock checking off, `-coverage 1` prints action coverage (zero
+coverage is a dead action), `-dump dot out.dot` draws small graphs. A TLAPS proof is the standard
+`Init => Inv`, `Inv /\ [Next]_vars => Inv'`, `Inv => Safety`, `QED BY ..., PTL DEF Spec` with
+`EXTENDS TLAPS`; prove only an invariant Apalache already found inductive.
 
-Record from every run: states generated, distinct states, depth, wall time, and the command line.
+## 6. Apalache specifics
 
-## Running Apalache
+Annotate every `CONSTANT` and `VARIABLE` on the line before it (`\* @type: Set(Str);`); types are
+`Int`, `Bool`, `Str`, `Set(T)`, `Seq(T)`, `A -> B`, `<<A, B>>`, `{ f: Int }`, operators
+`(Int, Str) => Bool`. Operators are inferred; annotate one only when `typecheck` asks. Model
+values from a `.cfg` are strings. `CInit` constrains constants symbolically
+(`Customers \in SUBSET {"c1","c2","c3"}`), which is how one run covers a family.
 
-Annotate every `CONSTANT` and `VARIABLE` with a type comment, then:
+| Construct | Apalache | Use instead |
+|-----------|----------|-------------|
+| `a..b` with a bound that is not a literal (a `CInit` constant fixed by `\in`) | unsupported | fix that constant with `=` in `CInit` |
+| `--init=P` where `P` does not assign every variable with `=` or `\in` | fails | an `ApaTypeOK` written with `=`, `\in`, `Gen(n)` (see `examples/orders/ApaOrders.tla`) |
+| `CHOOSE` | unsupported | `Guess(S)` when any element will do; folds for a deterministic pick |
+| `RECURSIVE`, recursive functions | unsupported | `ApaFoldSet`, `ApaFoldSeqLeft` |
+| `Seq(S)` as a set, quantification over `Nat`, `Int`, `Seq(S)` | unsupported | `Gen(n)` with a length bound; ranges |
+| `Reals`, string operations beyond `=`, `ENABLED`, `TLCGet`, `Permutations` | unsupported | integers scaled; model values; TLC |
+| `SYMMETRY`, `CONSTRAINT`, `POSTCONDITION` in `.cfg` | ignored | nothing (bounded steps) |
+| `ASSUME` | unreliable | put every constant constraint in `CInit` |
+| Temporal properties (`--temporal`) | no fairness | TLC for anything that needs WF/SF |
 
-```bash
-apalache-mc typecheck formal_model/MCOrders.tla
-apalache-mc check --config=formal_model/MCOrders_apalache.cfg --inv=NoDoublePayment --length=15 \
-    --run-dir=formal_model/.apalache formal_model/MCOrders.tla
-apalache-mc check --cinit=CInit --inv=NoDoublePayment --length=20 formal_model/MCOrders.tla
-apalache-mc simulate --max-run=200 --length=30 --inv=NoDoublePayment formal_model/MCOrders.tla
-apalache-mc check --temporal=EventuallyPaid --length=10 formal_model/MCOrders.tla   # temporal: slow, use TLC first
-```
+Output goes to `_apalache-out/` or `--out-dir`: `violation<N>.tla` and `violation<N>.itf.json`.
+ITF is untagged JSON; `proto/apalache/itf/v1/itf.proto` is the typed contract a converter maps it
+onto, with conformance vectors next to it.
 
-`CInit` is an operator that constrains constants symbolically (`Customers \in SUBSET {"c1","c2","c3"}`),
-which is how Apalache checks many instances at once. Type annotations, the unsupported-construct
-list and the `Apalache.tla` operators are in `references/apalache.md`.
+## 7. Inductive invariant
 
-## Inductive Invariant Workflow
+1. `IndInv == TypeOK /\ Safety`, in the Apalache-assignable form of §6.
+2. Base: `--init=Init --inv=IndInv --length=0`. Step: `--init=IndInv --inv=IndInv --length=1`.
+3. A step counterexample starts from an unreachable state: add the conjunct the spec maintains
+   that excludes it, rerun.
+4. `--init=IndInv --inv=Safety --length=0`, then TLC on the small instance with `IndInv` as an
+   ordinary invariant (catches a conjunct too strong to be true).
 
-An inductive invariant proves a safety property for every reachable state without a step bound.
+## 8. Trace validation
 
-1. Start with `IndInv == TypeOK /\ Safety`.
-2. Base: `apalache-mc check --init=Init --inv=IndInv --length=0 MC.tla`.
-3. Step: `apalache-mc check --init=IndInv --inv=IndInv --length=1 MC.tla`.
-4. A step counterexample starts from a state satisfying `IndInv` that is **not reachable**: add a
-   conjunct to `IndInv` that excludes it (a relation between variables the spec maintains), rerun 2–3.
-5. Implication: `apalache-mc check --init=IndInv --inv=Safety --length=0 MC.tla` (trivial when
-   `Safety` is a conjunct; still run it).
-6. Confirm with TLC on the small instance that `IndInv` holds as an ordinary invariant, which catches
-   a conjunct too strong to be true.
+A behaviour log of the implementation replayed against the spec by TLC. It is a verification
+fixture: not an OpenTelemetry trace, never the service logger or the telemetry pipeline.
 
-Typically three to six strengthening rounds. Report each conjunct and the counterexample that forced it.
+- **Schema**: a protobuf `Event` with a `oneof action`, one member per spec action and its
+  arguments, an optional state snapshot (`examples/orders/proto/orders/trace/v1/trace.proto`).
+  On disk one protojson object per line, because the `Json` module reads it. protojson: field
+  names lowerCamelCase; scalars and repeated fields at their default are omitted (ids start at 1;
+  guard snapshot fields with `\in DOMAIN`); a set message is written as `{}`; 64-bit integers
+  become strings, so anything TLC compares is 32-bit. `buf lint` always; `buf breaking` before a
+  change lands.
+- **Contract** `trace_contract.md`: one row per action — `oneof` member, spec action, arguments,
+  code point, emitted when (at the commit point, never before) — plus abstraction rules. The SE
+  writes the emitter from it: own package, off by default, enabled by `TRACE_PATH`.
+- **Trace spec** (`TraceOrders.tla`): `IsEvent(name) == l <= Len(Trace) /\ name \in DOMAIN
+  logline /\ l' = l + 1`; an argument on the line fixes the step, a missing one is chosen with
+  `\E`; `POSTCONDITION TraceAccepted` with `TLCGet("stats").diameter = Len(Trace) + 1`;
+  `CHECK_DEADLOCK FALSE`. A rejected trace names the first unmatched line.
+- **Scenarios**: happy path single and concurrent (three actors), each admitted failure injected
+  once, restart. Report accepted, rejected, and actions never exercised.
 
-## TLAPS
+| Artefact | In git | Edited |
+|----------|--------|--------|
+| schema, contract, trace spec, `.cfg`, labelled fixtures in `traces/` | yes | yes |
+| harness recordings, counterexamples | no (`.runs/`, `_apalache-out/`) | never |
+| a recording or counterexample attached to a finding | yes, next to the report, with scenario, commit, date | never |
 
-Prove only an invariant whose inductive form already passed Apalache; the proof is then mostly
-bookkeeping.
-
-```tla
-THEOREM Safe == Spec => []NoDoublePayment
-<1>1. Init => IndInv                      BY DEF Init, IndInv, TypeOK, NoDoublePayment
-<1>2. IndInv /\ [Next]_vars => IndInv'    BY DEF IndInv, TypeOK, NoDoublePayment, Next, Pay, vars
-<1>3. IndInv => NoDoublePayment           BY DEF IndInv
-<1>. QED                                  BY <1>1, <1>2, <1>3, PTL DEF Spec
-```
-
-Run `tlapm formal_model/Orders.tla`; an obligation the backends (SMT, Zenon, Isabelle) cannot
-discharge is split into `<2>` steps. `PTL` is the temporal backend for the final step. The nvim
-setup speaks to `tlapm_lsp` for inline obligation status.
-
-## Trace Validation
-
-Checks that executions of the real implementation are behaviours of the spec. Full pattern, schema
-rules and the Go-side contract in `references/trace-validation.md`; runnable files in
-`examples/orders/`. The shape:
-
-A "trace" here is a behaviour log for TLC, not a distributed trace: it is not an OpenTelemetry span,
-never goes through the telemetry pipeline, and has nothing to do with the observability work. The
-formal-model-writer owns all of it, emitter included.
-
-1. **Schema** is a protobuf message (`proto/<spec>/trace/v1/trace.proto`): one `Event` with a
-   `oneof action` whose members are the spec actions and their arguments, plus an optional state
-   snapshot. Serialisation is protojson, one object per line; the proto is the contract, the
-   encoding is not. `buf lint` keeps it well-formed, `buf breaking` keeps emitter and trace spec
-   compatible.
-2. **Trace contract** (`trace_contract.md`): one row per spec action — the `oneof` member, the code
-   point that performs it, which arguments it carries, which variables the snapshot holds — plus the
-   abstraction rules (ids, units). The formal-model-writer writes the emitter from this contract (or
-   hands the contract to the SE when the code point sits in code under active change) and owns the
-   trace spec.
-3. **Emitter**: generated types plus `protojson.Marshal`, one line per abstract action at its commit
-   point, in its own package, off by default.
-4. **Trace spec** `Trace<Spec>.tla` extends the spec, reads the file with `Json!ndJsonDeserialize`,
-   and defines `TraceNext` so that line `l` can only be matched by the action its `oneof` names;
-   missing arguments are existentially chosen, so TLC explores every spec step consistent with the
-   line.
-5. **Acceptance**: `POSTCONDITION TraceAccepted` in the cfg, where `TraceAccepted` holds when TLC
-   consumed every line. A rejected trace comes with the first line the spec could not match.
-
-What goes to git: the schema, the trace spec, and hand-written **fixtures** that exercise the trace
-spec itself (labelled as such, in `traces/`). Recordings of the implementation and every checker
-output live in a gitignored `.runs/` and are regenerated; a recording or a counterexample is
-committed only as evidence attached to a finding, with its provenance, and is never edited.
-
-Validation is evidence about executions seen, never a proof; the report says how many traces, from
-which scenarios (happy path, each failure injected), and which actions the traces never exercised.
-
-## Counterexample Triage
-
-Every counterexample is classified before anything is changed, with the evidence that supports the
-class:
+## 9. Counterexample triage
 
 | Class | Evidence | Action |
 |-------|----------|--------|
-| Spec error | The trace takes a step the real design forbids (missing guard, wrong `UNCHANGED`) | Fix the spec, rerun, note it in the report |
-| Abstraction too coarse | The step is possible in the model only because a detail was abstracted away | Refine the model for that detail; record the abstraction |
-| Environment assumption too strong or too weak | The failure needs a fault the owners ruled out, or the model allows one they did not | Question to the architect in `model_requirements.md` |
-| Design flaw | The trace is a legal execution of the design as described | Blocker to domain-modeller and architect, written as a domain-language narrative of the trace |
+| Spec error | The step is forbidden by the real design (missing guard, wrong `UNCHANGED`) | Fix the spec, rerun, note it |
+| Abstraction too coarse | Possible only because a detail was abstracted away | Refine for that detail, record it |
+| Environment assumption | Needs a fault the owners ruled out, or one they did not | Question to the architect |
+| Design flaw | A legal execution of the design as described | Blocker to domain-modeller and architect as a story, trace as appendix |
 
-A design flaw is reported as a story ("customer c1 pays, the payment service restarts before the
-ack, the retry pays again"), the trace states as an appendix. Never quietly weaken a property to make
-a run pass.
+Never weaken a property to make a run pass; never edit tool output.
 
-A counterexample is tool output and is never edited. Apalache writes ITF JSON
-(`counterexample<N>.itf.json`); `proto/apalache/itf/v1/itf.proto` in this skill is the typed
-contract a converter maps it onto, with conformance vectors next to it, so that a new Apalache
-release that changes the format fails the vectors before it corrupts a report, and `buf breaking`
-guards our own side of that contract.
+## 10. Report
 
-## Model Report
-
-`model_report.md`, in this order:
-
-1. **Decision** — modelled or not, and the Step 0 rows that decided it.
-2. **Why this combination** — the rows of the combination table used, the rung where climbing stopped
-   and why.
-3. **Coverage** — the INV table with status: `covered (TLC, bound)`, `covered (Apalache, length N)`,
-   `proved (inductive)`, `proposed`, `gap`.
-4. **Runs** — one row per run: command, instance, states or length, time, outcome.
-5. **Counterexamples** — each with its triage class and what happened to it.
-6. **Assumptions and bounds** — environment faults in scope, fairness, instance sizes.
-7. **Not covered** — properties outside the bounds or the tools, with the reason.
-8. **Trace validation** — traces checked, scenarios, actions never exercised.
-
-Numbers in the report are copied from tool output, never estimated.
-
-## Pitfalls
-
-- A property that passes on an instance of size 1 or 2 has usually not been tested: use at least
-  three actors where the invariant is about interaction.
-- `SYMMETRY` with liveness checking is unsound in TLC; drop symmetry when `PROPERTIES` is set.
-- A state constraint cuts the state space and also the behaviours; liveness results under a
-  `CONSTRAINT` are advisory only.
-- `CHOOSE` is deterministic: it never models a non-deterministic choice; use `\E`.
-- Stuttering: `[][Next]_vars` allows doing nothing forever, so a liveness property needs fairness.
-- `Seq(S)` and `Nat` work on the right of `\in` but cannot be enumerated: never `\E x \in Seq(S)`,
-  never as a constant's value, and not at all in Apalache (see `examples/orders/Orders.tla` for a
-  `TypeOK` both tools evaluate).
-- Apalache ignores `ASSUME` and needs every operator it evaluates to be typed; a passing TLC run says
-  nothing about Apalache's type check.
-- Trace validation that matches on action names only, without arguments, accepts almost anything;
-  carry the identifying arguments.
-- protojson omits fields at their default value and writes 64-bit integers as strings: an id of 0
-  or "" vanishes from the line, and an `int64` never equals a TLA+ number.
+`model_report.md`: decision (§1 rows), why this combination and where the ladder stopped,
+coverage table, runs, counterexamples with class, assumptions and bounds, not covered, trace
+validation. Every number is copied from tool output.
 
 ## Sources
 
-- Leslie Lamport, *Specifying Systems* (2002) and the TLA+ Hyperbook: the notation, `[][Next]_vars`,
-  fairness, refinement — https://lamport.azurewebsites.net/tla/book.html
-- *The PlusCal Algorithm Language* manual — https://lamport.azurewebsites.net/tla/p-manual.pdf
-- Hillel Wayne, *Practical TLA+* (2018) and https://learntla.com — the working engineer's path in
-- TLA+ Examples repository (reference specs: Paxos, Raft, two-phase commit, bakery) —
-  https://github.com/tlaplus/Examples
-- TLC options and the `.cfg` grammar — https://docs.tlapl.us (TLA+ Tools → TLC);
-  trace validation — https://docs.tlapl.us/using:tlc:trace_validation
-- Apalache manual: types, `CInit`, unsupported features, inductive invariants —
-  https://apalache-mc.org/docs/
-- TLAPS: *TLA+ Proof System* tutorial — https://proofs.tlapl.us
-- CommunityModules (`Json`, `IOUtils`, `VectorClocks`) — https://github.com/tlaplus/CommunityModules
-- Horatiu Cirstea, Markus A. Kuppe, Benjamin Loillier, Stephan Merz, *Validating Traces of
-  Distributed Programs Against TLA+ Specifications* (2024) — https://arxiv.org/abs/2404.16075
-- kadmos `standards/code-anchors.md` and `standards/cross-instance-references.md`: the anchor
-  grammar and the `kadmos://` address that tie a property to the note stating its invariant
-- Apalache ADR-015, the Informal Trace Format — https://apalache-mc.org/docs/adr/015adr-trace.html
-- Chris Newcombe et al., *How Amazon Web Services Uses Formal Methods* (CACM 2015) — the cost and
-  value argument behind Step 0
+- Lamport, *Specifying Systems* — https://lamport.azurewebsites.net/tla/book.html ; PlusCal
+  manual — https://lamport.azurewebsites.net/tla/p-manual.pdf
+- Hillel Wayne, *Practical TLA+*; TLA+ Examples — https://github.com/tlaplus/Examples
+- TLC options and trace validation — https://docs.tlapl.us ; Cirstea, Kuppe, Loillier, Merz,
+  *Validating Traces of Distributed Programs Against TLA+ Specifications* (2024) —
+  https://arxiv.org/abs/2404.16075
+- Apalache manual and ADR-015 (ITF) — https://apalache-mc.org/docs/ ; TLAPS — https://proofs.tlapl.us
+- kadmos `standards/code-anchors.md`, `standards/cross-instance-references.md`

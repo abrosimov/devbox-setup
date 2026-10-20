@@ -1,9 +1,9 @@
 """The runnable examples shipped with the go-observability and tla-plus skills.
 
-Each skill's references point at files under ``examples/``; these tests are what keeps those
-files true. Every test needs a toolchain the CI runner does not have (Go, promtool, Java with
-tla2tools and CommunityModules), so each skips when its tool is missing and runs on a
-provisioned devbox, where ``devbox_packages`` installs all of them.
+Opt-in like tests/live: the whole module skips unless SKILL_EXAMPLES=1, because the Go modules
+download a toolchain and forty dependencies and the TLA+ runs need Java, tla2tools,
+CommunityModules and Apalache. Each test also skips when its own tool is missing, so a
+provisioned devbox with SKILL_EXAMPLES=1 runs everything and CI runs nothing.
 """
 
 from __future__ import annotations
@@ -14,6 +14,10 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    os.environ.get("SKILL_EXAMPLES") != "1", reason="set SKILL_EXAMPLES=1 to run the skill examples"
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILLS = REPO_ROOT / "roles/devbox/files/dot_ai/skills"
@@ -53,9 +57,8 @@ needs_apalache = pytest.mark.skipif(
 
 
 @needs_go
-@pytest.mark.parametrize("module", ["dashboards", "bootstrap"])
-def test_go_examples_build(module: str) -> None:
-    result = _run(["go", "build", "-o", os.devnull, "."], OBS / module)
+def test_bootstrap_example_builds() -> None:
+    result = _run(["go", "vet", "."], OBS / "bootstrap")
     assert result.returncode == 0, result.stderr
 
 
@@ -119,6 +122,7 @@ def test_trace_validation_accepts_happy_path_and_rejects_ship_before_pay() -> No
         "TraceOrders.cfg", "TraceOrders.tla", {"TRACE_PATH": str(traces / "ship-before-pay.jsonl")}
     )
     assert rejected.returncode != 0, rejected.stdout
+    assert "Postcondition TraceAccepted" in rejected.stdout, rejected.stdout
 
 
 @needs_apalache
@@ -126,13 +130,20 @@ def test_trace_validation_accepts_happy_path_and_rejects_ship_before_pay() -> No
     "args",
     [
         ["typecheck", "ApaOrders.tla"],
-        ["check", "--cinit=CInit", "--inv=NoDoublePayment", "--length=8", "ApaOrders.tla"],
-        ["check", "--cinit=CInit", "--init=Init", "--inv=IndInv", "--length=0", "ApaOrders.tla"],
-        ["check", "--cinit=CInit", "--init=IndInv", "--inv=IndInv", "--length=1", "ApaOrders.tla"],
+        ["check", "--cinit=CInit", "--inv=PaidImpliesOrdered", "--length=8", "ApaOrders.tla"],
+        ["check", "--cinit=CInit", "--init=Init", "--inv=ApaIndInv", "--length=0", "ApaOrders.tla"],
+        [
+            "check",
+            "--cinit=CInit",
+            "--init=ApaIndInv",
+            "--inv=ApaIndInv",
+            "--length=1",
+            "ApaOrders.tla",
+        ],
     ],
 )
-def test_orders_apalache(args: list[str]) -> None:
-    result = _run(["apalache-mc", *args], TLA)
+def test_orders_apalache(args: list[str], tmp_path: Path) -> None:
+    result = _run(["apalache-mc", *args[:-1], f"--out-dir={tmp_path}", args[-1]], TLA)
     assert result.returncode == 0, result.stdout + result.stderr
 
 

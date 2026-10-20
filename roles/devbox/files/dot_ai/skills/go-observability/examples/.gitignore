@@ -1,3 +1,4 @@
-# go build output of the example main packages; the tests build to os.devnull
+# go build / go run output of the example programs.
 /bootstrap/bootstrap
 /dashboards/dashboards
+/dashboards/out/

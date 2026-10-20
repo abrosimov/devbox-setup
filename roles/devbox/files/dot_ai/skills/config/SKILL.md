@@ -89,6 +89,11 @@ All project documentation is organized by Jira issue and branch name:
 │   │   ├── analysis.md      # FPF thinking artifact (structured reasoning)
 │   │   ├── domain_analysis.md  # Domain analysis
 │   │   ├── domain_model.md    # DDD domain model (bounded contexts, aggregates)
+│   │   ├── model_report.md    # Formal model results (formal-model-writer)
+│   │   ├── model_requirements.md  # Questions to the domain owners (formal-model-writer)
+│   │   ├── trace_contract.md  # Trace-validation contract for the SE (formal-model-writer)
+│   │   ├── observability_audit.md   # Failure-mode table (observability-engineer)
+│   │   ├── observability_design.md  # Signal catalogue (observability-engineer)
 │   │   ├── api_design.md     # API design rationale and decisions
 │   │   ├── api_spec.yaml     # OpenAPI specification (when REST)
 │   │   ├── design.md         # UI/UX design specification
@@ -120,6 +125,11 @@ All project documentation is organized by Jira issue and branch name:
 | FPF analysis | /techne-think command | `{PROJECT_DIR}/analysis.md` |
 | Domain analysis | Domain Expert | `{PROJECT_DIR}/domain_analysis.md` |
 | Domain model | Domain Modeller | `{PROJECT_DIR}/domain_model.md` |
+| Formal model report | Formal Model Writer | `{PROJECT_DIR}/model_report.md` |
+| Model requirements | Formal Model Writer | `{PROJECT_DIR}/model_requirements.md` |
+| Trace contract | Formal Model Writer | `{PROJECT_DIR}/trace_contract.md` |
+| Observability audit | Observability Engineer | `{PROJECT_DIR}/observability_audit.md` |
+| Observability design | Observability Engineer | `{PROJECT_DIR}/observability_design.md` |
 | API design rationale | API Designer | `{PROJECT_DIR}/api_design.md` |
 | OpenAPI specification | API Designer | `{PROJECT_DIR}/api_spec.yaml` |
 | UI/UX design specification | Designer | `{PROJECT_DIR}/design.md` |

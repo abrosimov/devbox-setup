@@ -59,6 +59,7 @@ def test_unacknowledged_observations_are_not_checkpointed(
         "save_session_state",
         lambda _global_state, _key, session_state: saved.append(dict(session_state.turn_progress)),
     )
+
     class BrokenClient:
         def flush(self):
             message = "collector unavailable"
@@ -69,10 +70,10 @@ def test_unacknowledged_observations_are_not_checkpointed(
 
     with pytest.raises(OSError, match="collector unavailable"):
         m.emit_new_turns_from_transcript(
-        BrokenClient(),
-        SimpleNamespace(user_id="test", trace_seed=None, parent_context=None),
-        "session",
-        transcript,
+            BrokenClient(),
+            SimpleNamespace(user_id="test", trace_seed=None, parent_context=None),
+            "session",
+            transcript,
         )
     # No flush or durable collector acknowledgement happened, so the
     # persisted checkpoint must NOT declare the event sent.
@@ -148,8 +149,13 @@ def test_closed_turn_emit_failure_is_propagated(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(m, "emit_turn", broken_emit)
     with pytest.raises(ValueError, match="injected observation"):
         m.emit_and_close_ready_turns(
-            object(), "session", Path("session.jsonl"), [turn], state,
-            user_id=None, subagent_transcripts_by_tool_use_id={},
+            object(),
+            "session",
+            Path("session.jsonl"),
+            [turn],
+            state,
+            user_id=None,
+            subagent_transcripts_by_tool_use_id={},
         )
 
 
@@ -178,6 +184,11 @@ def test_open_turn_emit_failure_is_propagated(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(m, "emit_turn", broken_emit)
     with pytest.raises(ValueError, match="injected open-turn"):
         m.emit_ready_observations_of_open_turn(
-            object(), "session", Path("session.jsonl"), state, {},
-            user_id=None, subagent_transcripts_by_tool_use_id={},
+            object(),
+            "session",
+            Path("session.jsonl"),
+            state,
+            {},
+            user_id=None,
+            subagent_transcripts_by_tool_use_id={},
         )

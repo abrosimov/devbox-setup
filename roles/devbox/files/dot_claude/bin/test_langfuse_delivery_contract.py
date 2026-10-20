@@ -126,3 +126,58 @@ def test_turn_trace_id_is_deterministic_for_replay() -> None:
     second = m.derive_turn_trace_id("stable-session", 1)
     assert first == second
     assert m._is_valid_trace_id_hex(first)
+
+
+def test_closed_turn_emit_failure_is_propagated(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failed closed turn cannot be marked emitted and committed."""
+    m = hook()
+    turn = m.Turn(
+        user_msg={"uuid": "turn-one"},
+        assistant_msgs=[],
+        tool_results_by_id={},
+        tool_use_timestamps_by_id={},
+        injected_by_tool_id={},
+        rows=[],
+    )
+    state = m.SessionState(turn_numbers={"turn-one": 1})
+
+    def broken_emit(*_args, **_kwargs):
+        message = "injected observation serialization failure"
+        raise ValueError(message)
+
+    monkeypatch.setattr(m, "emit_turn", broken_emit)
+    with pytest.raises(ValueError, match="injected observation"):
+        m.emit_and_close_ready_turns(
+            object(), "session", Path("session.jsonl"), [turn], state,
+            user_id=None, subagent_transcripts_by_tool_use_id={},
+        )
+
+
+def test_open_turn_emit_failure_is_propagated(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An open turn cannot silently proceed to commit after emission fails."""
+    m = hook()
+    turn = m.Turn(
+        user_msg={"uuid": "turn-one"},
+        assistant_msgs=[],
+        tool_results_by_id={},
+        tool_use_timestamps_by_id={},
+        injected_by_tool_id={},
+        rows=[],
+    )
+    state = m.SessionState(
+        open_turn={"rows": [{"type": "user", "uuid": "turn-one"}]},
+        turn_numbers={"turn-one": 1},
+    )
+
+    def broken_emit(*_args, **_kwargs):
+        message = "injected open-turn emission failure"
+        raise ValueError(message)
+
+    monkeypatch.setattr(m, "assemble_turns", lambda *_: ([], turn, []))
+    monkeypatch.setattr(m, "turn_has_unresolved_async_activity", lambda *_: False)
+    monkeypatch.setattr(m, "emit_turn", broken_emit)
+    with pytest.raises(ValueError, match="injected open-turn"):
+        m.emit_ready_observations_of_open_turn(
+            object(), "session", Path("session.jsonl"), state, {},
+            user_id=None, subagent_transcripts_by_tool_use_id={},
+        )

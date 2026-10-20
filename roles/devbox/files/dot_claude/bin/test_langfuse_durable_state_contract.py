@@ -65,7 +65,9 @@ def test_checkpoint_calls_fsync_before_returning(
     assert len(fsync_calls) >= 2
 
 
-def test_checkpoint_state_contains_replay_cursor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_checkpoint_state_contains_replay_cursor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The persisted state format carries the per-turn emission cursor."""
     module = load_hook()
     monkeypatch.setattr(module, "STATE_DIR", tmp_path)

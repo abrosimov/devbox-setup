@@ -198,6 +198,10 @@ contract does not give, raise a contract gap. Details: the `contract-boundary` s
   indirectly via `--autostash`, `rebase.autoStash`, or `merge.autoStash`. Stashed work is invisible to
   review and routinely lost. Make a WIP commit on a scratch branch or hand the dirty tree back.
 - **Never add `Co-Authored-By` trailers** to commit messages.
+- **Branch names are flat: no `/`.** Name a new branch `PROJ-123_short_description` (Jira key,
+  underscore, snake_case) or `short_description` without a key; never `feat/x`, `fix/y` or any other
+  slash prefix. The task tooling reads the Jira key and description from the name by splitting on
+  the first `_`, and a slash breaks the worktree directory layout.
 - **Language.** Match the user's language in conversation. Write files, code comments, commit
   messages, PR text, plans, and persisted memory in British English.
 - **Go formatting.** Format Go with `goimports -local <module-path>` (module path from `go.mod`),

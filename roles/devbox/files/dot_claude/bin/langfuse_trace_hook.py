@@ -2,6 +2,7 @@
 """Credential-safe Claude Langfuse hook with a durable local retry intent."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import io
 import json
@@ -55,11 +56,11 @@ def durable_json(path: Path, value: dict) -> None:
     temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
     try:
         with temporary.open("x", encoding="utf-8") as out:
-            os.chmod(temporary, 0o600)
+            temporary.chmod(0o600)
             json.dump(value, out, sort_keys=True)
             out.flush()
             os.fsync(out.fileno())
-        os.replace(temporary, path)
+        temporary.replace(path)
         fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
@@ -84,7 +85,7 @@ def durable_snapshot(source: Path, destination: Path) -> None:
         os.chmod(temporary, 0o600)
         with temporary.open("rb") as copied:
             os.fsync(copied.fileno())
-        os.replace(temporary, destination)
+        temporary.replace(destination)
         fsync_directory(destination.parent)
     finally:
         temporary.unlink(missing_ok=True)
@@ -140,10 +141,8 @@ def complete_pending(marker: Path, nonce: str, snapshot: Path) -> None:
         pass
     # Every registration owns a distinct immutable snapshot.
     snapshot.unlink(missing_ok=True)
-    try:
+    with contextlib.suppress(OSError):
         snapshot.parent.rmdir()
-    except OSError:
-        pass
 
 
 def main() -> None:

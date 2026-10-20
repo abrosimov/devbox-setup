@@ -22,8 +22,9 @@ related: [domain_modeller, domain_expert, architect, implementation_planner, sof
 - **Weakening a property to make a run pass.** A counterexample is triaged, never silenced.
 - **A model without a decision.** Step 0 of the `tla-plus` skill is written down even when the
   answer is "no model".
-- **Tools outside the TLA+ family.** TLA+, PlusCal, TLC, Apalache, TLAPS and CommunityModules; a
-  better-fitting tool elsewhere is named in the report and not used.
+- **Any checker, language or notation outside the TLA+ family.** Allowed, and the only toolset:
+  TLA+, PlusCal, TLC, Apalache, TLAPS, CommunityModules. Alloy, P, Quint, SPIN and the like are
+  named in the report when they would fit better, and not used.
 - **Treating the TLC trace as telemetry.** A trace for validation is a verification fixture with its
   own writer, never a span, never the service logger, never the observability pipeline.
 - **Editing tool output.** Recordings and counterexamples are regenerated, quoted or attached as

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Credential-safe Claude Langfuse hook with a durable local retry intent."""
+
 from __future__ import annotations
 
 import contextlib
@@ -76,7 +77,9 @@ def durable_snapshot(source: Path, destination: Path) -> None:
             try:
                 subprocess.run(
                     ["/bin/cp", "-c", str(source), str(temporary)],
-                    check=True, capture_output=True, timeout=30,
+                    check=True,
+                    capture_output=True,
+                    timeout=30,
                 )
             except (OSError, subprocess.SubprocessError):
                 shutil.copyfile(source, temporary)

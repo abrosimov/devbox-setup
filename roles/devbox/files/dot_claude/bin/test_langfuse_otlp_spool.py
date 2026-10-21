@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import pytest
+
 pytest.importorskip("opentelemetry.sdk")
 
 from opentelemetry.sdk.trace import TracerProvider
@@ -43,7 +44,8 @@ def test_otel_span_is_fsynced_before_export_ack(spool_home: Path) -> None:
 
 
 def test_failure_to_persist_otlp_is_not_acknowledged(
-    monkeypatch: pytest.MonkeyPatch, spool_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    spool_home: Path,
 ) -> None:
     exporter = spool.DurableSpoolExporter()
 

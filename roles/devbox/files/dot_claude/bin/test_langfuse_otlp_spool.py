@@ -11,10 +11,10 @@ import pytest
 
 pytest.importorskip("opentelemetry.sdk")
 
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-
 from vendor import durable_otel_exporter as spool
+
+TracerProvider = pytest.importorskip("opentelemetry.sdk.trace").TracerProvider
+SimpleSpanProcessor = pytest.importorskip("opentelemetry.sdk.trace.export").SimpleSpanProcessor
 
 if TYPE_CHECKING:
     from pathlib import Path

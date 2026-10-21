@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 import urllib.error
-from pathlib import Path
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import pytest
+pytest.importorskip("opentelemetry.sdk")
+
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from vendor import durable_otel_exporter as spool
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 @pytest.fixture
 def spool_home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
@@ -96,7 +102,7 @@ def test_langfuse_sdk_can_use_durable_span_exporter(spool_home: Path) -> None:
     exporter = spool.DurableSpoolExporter()
     client = langfuse.Langfuse(
         public_key=f"test-{uuid4().hex}",
-        secret_key="test-local-edge-only",
+        secret_key=f"local-{uuid4().hex}",
         host="http://127.0.0.1:14318",
         span_exporter=exporter,
     )

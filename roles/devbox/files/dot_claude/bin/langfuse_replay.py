@@ -5,6 +5,7 @@ Run using ~/.claude/bin/.venv/bin/python, independently of Claude Code. The
 registry stores sanitized session metadata and a transcript snapshot, never
 project secrets or user prompts in a LaunchAgent configuration.
 """
+
 from __future__ import annotations
 
 import json
@@ -18,8 +19,12 @@ import langfuse_trace_hook as hook
 SETTINGS = Path.home() / ".claude" / "settings.json"
 WRAPPER = Path(__file__).resolve().parent / "langfuse_trace_hook.py"
 REQUIRED = ("CC_LANGFUSE_PUBLIC_KEY", "CC_LANGFUSE_SECRET_KEY", "CC_LANGFUSE_BASE_URL")
-REPLAY_SETTINGS = (*REQUIRED, "CC_LANGFUSE_CAPTURE_IMAGES", "CC_LANGFUSE_DEBUG",
-                   "CC_LANGFUSE_STATE_DIR")
+REPLAY_SETTINGS = (
+    *REQUIRED,
+    "CC_LANGFUSE_CAPTURE_IMAGES",
+    "CC_LANGFUSE_DEBUG",
+    "CC_LANGFUSE_STATE_DIR",
+)
 
 
 def replay_environment() -> dict[str, str]:
@@ -28,8 +33,7 @@ def replay_environment() -> dict[str, str]:
     if not isinstance(configured, dict):
         message = "Claude settings.env must be an object"
         raise TypeError(message)
-    if any(not isinstance(configured.get(name), str) or not configured[name]
-           for name in REQUIRED):
+    if any(not isinstance(configured.get(name), str) or not configured[name] for name in REQUIRED):
         message = "Missing local-edge Langfuse runtime configuration"
         raise ValueError(message)
     url = configured["CC_LANGFUSE_BASE_URL"]

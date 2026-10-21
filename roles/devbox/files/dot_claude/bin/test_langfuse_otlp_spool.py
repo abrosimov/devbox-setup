@@ -60,7 +60,8 @@ def test_failure_to_persist_otlp_is_not_acknowledged(
 
 
 def test_otel_spool_delivery_removes_payload_after_http_ack(
-    monkeypatch: pytest.MonkeyPatch, spool_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    spool_home: Path,
 ) -> None:
     emit_test_span(spool.DurableSpoolExporter())
     sent: list[bytes] = []
@@ -87,7 +88,8 @@ def test_otel_spool_delivery_removes_payload_after_http_ack(
 
 
 def test_failed_http_delivery_never_deletes_queued_payload(
-    monkeypatch: pytest.MonkeyPatch, spool_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    spool_home: Path,
 ) -> None:
     emit_test_span(spool.DurableSpoolExporter())
 

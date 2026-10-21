@@ -35,7 +35,8 @@ def sample_payload(tmp_path: Path) -> dict[str, str]:
 
 
 def test_pending_registration_is_durable_and_recoverable(
-    pending_environment: Path, tmp_path: Path,
+    pending_environment: Path,
+    tmp_path: Path,
 ) -> None:
     record = langfuse_trace_hook.register_pending(sample_payload(tmp_path))
     assert record is not None
@@ -66,7 +67,8 @@ def test_old_hook_cannot_clear_a_newer_pending_session(
 
 
 def test_failed_hook_keeps_its_pending_snapshot(
-    monkeypatch: pytest.MonkeyPatch, pending_environment: Path, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pending_environment: Path, tmp_path: Path,
 ) -> None:
     payload = sample_payload(tmp_path)
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))

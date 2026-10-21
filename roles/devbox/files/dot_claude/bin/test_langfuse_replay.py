@@ -53,7 +53,8 @@ def test_pending_registration_is_durable_and_recoverable(
 
 
 def test_old_hook_cannot_clear_a_newer_pending_session(
-    pending_environment: Path, tmp_path: Path,
+    pending_environment: Path,
+    tmp_path: Path,
 ) -> None:
     payload = sample_payload(tmp_path)
     first = langfuse_trace_hook.register_pending(payload)
@@ -68,7 +69,8 @@ def test_old_hook_cannot_clear_a_newer_pending_session(
 
 def test_failed_hook_keeps_its_pending_snapshot(
     monkeypatch: pytest.MonkeyPatch,
-    pending_environment: Path, tmp_path: Path,
+    pending_environment: Path,
+    tmp_path: Path,
 ) -> None:
     payload = sample_payload(tmp_path)
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
@@ -84,7 +86,9 @@ def test_failed_hook_keeps_its_pending_snapshot(
 
 
 def test_completed_hook_clears_its_pending_snapshot(
-    monkeypatch: pytest.MonkeyPatch, pending_environment: Path, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pending_environment: Path,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(sample_payload(tmp_path))))
     monkeypatch.setattr(langfuse_trace_hook.runpy, "run_path", lambda *_args, **_kwargs: None)
@@ -93,7 +97,9 @@ def test_completed_hook_clears_its_pending_snapshot(
 
 
 def test_replay_uses_snapshot_when_original_transcript_was_removed(
-    monkeypatch: pytest.MonkeyPatch, pending_environment: Path, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pending_environment: Path,
+    tmp_path: Path,
 ) -> None:
     payload = sample_payload(tmp_path)
     record = langfuse_trace_hook.register_pending(payload)
@@ -116,7 +122,9 @@ def test_replay_uses_snapshot_when_original_transcript_was_removed(
 
 
 def test_failed_replay_preserves_pending_snapshot(
-    monkeypatch: pytest.MonkeyPatch, pending_environment: Path, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pending_environment: Path,
+    tmp_path: Path,
 ) -> None:
     record = langfuse_trace_hook.register_pending(sample_payload(tmp_path))
     assert record is not None
@@ -132,7 +140,9 @@ def test_failed_replay_preserves_pending_snapshot(
 
 
 def test_transcript_removed_during_hook_retains_pending_snapshot(
-    monkeypatch: pytest.MonkeyPatch, pending_environment: Path, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pending_environment: Path,
+    tmp_path: Path,
 ) -> None:
     payload = sample_payload(tmp_path)
     source = Path(payload["transcript_path"])

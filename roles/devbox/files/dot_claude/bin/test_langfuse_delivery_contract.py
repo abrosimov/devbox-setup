@@ -104,7 +104,8 @@ def test_hanging_flush_must_not_report_success(
     m = hook()
 
     class FakeThread:
-        def __init__(self, _target, daemon):
+        def __init__(self, target, daemon):
+            assert callable(target)
             assert daemon
 
         def start(self):

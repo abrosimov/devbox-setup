@@ -101,7 +101,7 @@ def main() -> int:
     base_url = environment["CC_LANGFUSE_BASE_URL"]
     # Deliver batches which were already fsynced before replaying transcripts;
     # an unavailable edge never deletes local OTLP payloads.
-    from vendor.durable_otel_exporter import drain_spool
+    from vendor.durable_otel_exporter import drain_spool  # noqa: PLC0415
 
     sent_before, _pending_before = drain_spool(base_url)
 

@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """Durable Langfuse OTLP exporter tests without a live endpoint."""
 
 from __future__ import annotations

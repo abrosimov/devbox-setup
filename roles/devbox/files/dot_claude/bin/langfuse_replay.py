@@ -14,7 +14,6 @@ import sys
 from pathlib import Path
 
 import langfuse_trace_hook as hook
-from vendor.durable_otel_exporter import drain_spool
 
 SETTINGS = Path.home() / ".claude" / "settings.json"
 WRAPPER = Path(__file__).resolve().parent / "langfuse_trace_hook.py"
@@ -102,6 +101,8 @@ def main() -> int:
     base_url = environment["CC_LANGFUSE_BASE_URL"]
     # Deliver batches which were already fsynced before replaying transcripts;
     # an unavailable edge never deletes local OTLP payloads.
+    from vendor.durable_otel_exporter import drain_spool
+
     sent_before, _pending_before = drain_spool(base_url)
 
     root = hook.pending_root()

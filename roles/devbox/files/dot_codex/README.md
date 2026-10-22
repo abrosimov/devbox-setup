@@ -26,7 +26,7 @@ Currently managed:
   copy of the Claude hook (a test enforces parity), which enforces the final
   "What I need from you" section;
 - global working agreements in `AGENTS.md`;
-- all 28 Codex-native custom-agent adapters under `agents/*.toml`;
+- all 29 Codex-native custom-agent adapters under `agents/*.toml`;
 - the allowlisted shared skills installed under `~/.agents/skills`, including
   the self-contained FPF/NSTD reference package and the inventory-first
   `diagnose-and-repair` workflow.

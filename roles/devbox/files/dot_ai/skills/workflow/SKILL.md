@@ -36,6 +36,7 @@ Commands do not auto-commit. The main session commits, pushes and opens a PR/MR 
 │   ├── designer.md
 │   ├── domain_expert.md
 │   ├── domain_modeller.md
+│   ├── formal_model_writer.md
 │   ├── observability_engineer.md
 │   ├── technical_product_manager.md
 │   ├── agent_builder.md
@@ -147,12 +148,13 @@ Specialist agents available via `/techne-*` commands. Each is invoked one-shot f
 | Requirements | `technical_product_manager` | `spec.md` |
 | Domain validation | `domain_expert` | `domain_analysis.md` |
 | Domain modelling | `domain_modeller` | `domain_model.md` |
+| Formal model (before planning, when `tla-plus` §1 says so) | `formal_model_writer` | `model_report.md`, `model_requirements.md`, `formal_model/`, `trace_contract.md` |
 | Planning | `implementation_planner` | `plan.md` |
 | UI design | `designer` | `design.md` |
 | Database design | `database_designer` | `schema_design.md`, migrations |
 | API design | `api_designer` | `api_design.md`, `api_spec.yaml` |
 | Implementation | `software_engineer_{go,python,frontend}` | source code, `se_{lang}_output.json` |
-| Observability | `observability_engineer` | dashboards, alerts |
+| Observability | `observability_engineer` | `observability_audit.md`, `observability_design.md`, instrumentation, `observability/` (dashboards as Go, rules, promtool tests, runbooks) |
 | Unit tests | `unit_tests_writer_{go,python,frontend}` | test files |
 | Integration tests | `integration_tests_writer_{go,python}` | test files |
 | Review | `code_reviewer` | review report (inline) |
@@ -354,6 +356,8 @@ Documentation is organized by Jira issue and branch:
 - `spec.md` - Product specification
 - `domain_analysis.md` - Domain analysis
 - `domain_model.md` - DDD domain model (bounded contexts, aggregates, invariants)
+- `model_report.md`, `model_requirements.md`, `trace_contract.md` - Formal model results, questions to the domain owners, trace contract
+- `observability_audit.md`, `observability_design.md` - Failure-mode table and signal catalogue
 - `plan.md` - Implementation plan
 - `api_design.md` - API design rationale and decisions
 - `api_spec.yaml` - OpenAPI specification (REST mode)
@@ -397,8 +401,8 @@ When invoking agents via commands, the model is determined by this precedence (h
 
 | Model | Agents |
 |-------|--------|
-| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, code-reviewer, **implementation-planner**, **all software-engineer-\*** |
-| `sonnet` | unit-test-writer-*, observability-engineer, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
+| `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, code-reviewer, **implementation-planner**, **all software-engineer-\***, observability-engineer, formal-model-writer |
+| `sonnet` | unit-test-writer-*, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
 | `haiku` | Search, grep, file discovery tasks (via `model: "haiku"` in Task tool) |
 
 **Effort parameter guidance** (pass via `max_turns` or prompt hint):

@@ -70,7 +70,7 @@ strong candidate is missing from the briefs, add it with the next free ID and sa
 
 ## Handoff Protocol
 
-**Receives from**: User or Implementation Planner (architecture analysis request)
+**Receives from**: User or Implementation Planner (architecture analysis request); Formal Model Writer (`model_requirements.md` questions on environment faults and fairness)
 **Produces for**: Implementation Planner (architecture decisions, constraints)
 **Deliverables**:
   - architecture analysis (inline response)

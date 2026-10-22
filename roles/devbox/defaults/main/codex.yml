@@ -12,6 +12,7 @@ devbox_codex_shared_skills:
   - frontend-testing
   - frontend-tooling
   - go-engineer
+  - go-observability
   - go-review-checklist
   - go-testing
   - lint-discipline
@@ -21,6 +22,7 @@ devbox_codex_shared_skills:
   - python-testing
   - python-tooling
   - response-templates
+  - tla-plus
   - ui-design
   - writing-for-the-reader
 
@@ -42,6 +44,7 @@ devbox_codex_agents:
   - domain-expert
   - domain-modeller
   - focus-coach
+  - formal-model-writer
   - freshness-auditor
   - implementation-planner
   - integration-tests-writer-go

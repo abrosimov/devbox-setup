@@ -98,7 +98,7 @@ Everything lives in one role. No multi-role orchestration.
 3. `darwin/install_from_go.yml` — Go tools via `go install` (variable-driven)
 4. `darwin/install_from_uv.yml` — Python tools via `uv tool` (variable-driven)
 5. `darwin/install_kubectl.yml` — pinned kubectl binary download
-   - `darwin/install_tlaplus.yml` — TLA+ toolchain (`tla2tools.jar`, Apalache, TLAPS) into `~/.local/share/tlaplus/<tool>/`, one GitHub release tag per tool in `devbox_packages.tlaplus`. The asset digest GitHub reports is the integrity check and the change detector (`.release-digest`), so rolling pre-releases update in place instead of failing a pinned checksum. Java comes from the `temurin@21` cask.
+   - `darwin/install_tlaplus.yml` — TLA+ toolchain (`tla2tools.jar`, CommunityModules jar, Apalache, TLAPS) into `~/.local/share/tlaplus/<tool>/`, one GitHub release tag per tool in `devbox_packages.tlaplus`. The asset digest GitHub reports is the integrity check and the change detector (`.release-digest`), so rolling pre-releases update in place instead of failing a pinned checksum. Java comes from the `temurin@21` cask.
    - `darwin/install_tamias.yml` + `darwin/configure_go_module_proxy.yml` — the Tamias credential helper and the Go client for the private Athens proxy (`devbox_packages.tamias`, `devbox_go_module_proxy`). Tamias is admitted from an immutable GitHub release through the authenticated `gh` CLI: `gh release verify-asset` plus the release-reported digest, no declared checksum and no fallback. Any failure fails the run. Only divergent `go env` keys are rewritten, with no `direct`. `devbox_packages.tamias.enabled` is the single switch: when it is false, the Go step removes the `go env` lines it owns and Go falls back to its defaults. Placed after the Go tools step because every later module fetch needs a Tamias credential. Interactive `tamias login` and the end-to-end check (`make go-proxy-verify`, `playbooks/go_proxy_verify.yml`) stay outside the provisioning run. See `README.md` § Go Module Proxy.
 6. `darwin/configure_macos_basics.yml` — codifies manual notes: Touch ID for sudo via `sudo_local`, `pmset disablesleep` for clamshell, `DevToolsSecurity --enable` for debugger access
 7. `darwin/configure_pub_mode.yml` — pub mode: deploys the `pub-lease` controller to `~/.local/bin/` and installs the system-domain LaunchDaemon `local.pub-lease`, which reconciles the lease every 60 seconds. Gated on the profile actually installing the `cloudflare-warp` cask (personal only); the disabled path tears the whole thing down and restores any active lease. See `README.md` § Pub Mode.
@@ -188,10 +188,10 @@ Current per-profile differences:
 | `bin/local_hooks.py` | Stop/SessionEnd dispatcher for machine-local hook commands listed in `~/.claude/local-hooks.json` (`{"<Event>": [{"command": "...", "timeout": 30}]}`, shipped from the gitignored local overlay); fail-open: always exits 0, no stdout | `~/.claude/bin/` |
 | `settings.json.j2` | Default permissions (allow/deny); Jinja rendered by `scripts/ai-config` | `~/.claude/settings.json` |
 | `settings.json.j2` → `hooks` | Pre/post tool-call hooks, session lifecycle, logging | `~/.claude/settings.json` |
-| `dot_ai/agents/*.md` | Shared Markdown agent sources (28 agents) | `~/.claude/agents/`, `~/.gemini/config/agents/` |
-| `dot_codex/agents/*.toml` | All 28 Codex-native agent adapters | `~/.codex/agents/` |
+| `dot_ai/agents/*.md` | Shared Markdown agent sources (29 agents) | `~/.claude/agents/`, `~/.gemini/config/agents/` |
+| `dot_codex/agents/*.toml` | All 29 Codex-native agent adapters | `~/.codex/agents/` |
 | `commands/techne-*.md` | Slash commands — 22, all `techne-` prefixed (`/techne-implement`, `/techne-test`, `/techne-plan`, etc.) | `~/.claude/commands/` |
-| `dot_ai/skills/*/SKILL.md` | Reusable knowledge modules (42 skills); Codex receives the compatible allowlist | `~/.claude/skills/`, `~/.gemini/config/skills/`, `~/.agents/skills/` |
+| `dot_ai/skills/*/SKILL.md` | Reusable knowledge modules (45 skills); Codex receives the compatible allowlist | `~/.claude/skills/`, `~/.gemini/config/skills/`, `~/.agents/skills/` |
 | `dot_ai/skills/fpf-thinking/references/` | Vendored FPF Core and companion NSTD specifications | Alongside each deployed `fpf-thinking` skill |
 | `schemas/*.json` | JSON Schema files (2: `se_output`, `dss_output`) for SE and DSS output validation | `~/.claude/schemas/` |
 | `bin/*` | Helper scripts (MCP wrappers, hooks, validation) | `~/.claude/bin/` |

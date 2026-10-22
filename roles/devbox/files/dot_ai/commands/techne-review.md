@@ -21,11 +21,10 @@ RC=$?
 DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
 
-**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
-**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
-  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
-  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
-  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
+**If exit 0** — parse JSON fields: `PROFILE`, `VAULT`, `BRANCH`, `JIRA_ISSUE` (null when the
+branch carries none), `BRANCH_NAME`. Artefacts are notes in `VAULT` (see `config` skill).
+**If exit 1** — stderr names what is missing (the profile variable, `.vault-root`, or the vault
+directory it names). Relay that line and stop; do not guess a location.
 
 Store these values — pass to agent, do not re-compute.
 

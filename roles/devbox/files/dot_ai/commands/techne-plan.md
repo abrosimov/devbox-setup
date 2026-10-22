@@ -13,14 +13,14 @@ CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 RC=$?
 ```
 
-**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
-**If exit 2** — branch doesn't match `PROJ-123_description` convention. Do not ask (no AskUserQuestion):
-  - If the user already named a JIRA issue key in the conversation → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
-  - Otherwise → default to `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
-  - Report the chosen path under "Decisions I made", so the user can redirect it cheaply
+**If exit 0** — parse JSON fields: `PROFILE`, `VAULT`, `BRANCH`, `JIRA_ISSUE` (null when the
+branch carries none), `BRANCH_NAME`. Artefacts are notes in `VAULT` (see `config` skill).
+**If exit 1** — stderr names what is missing (the profile variable, `.vault-root`, or the vault
+directory it names). Relay that line and stop; do not guess a location.
+If `JIRA_ISSUE` is null and the user named an issue key in the conversation, use that key.
 
 Store these values — pass to agent, do not re-compute.
-Project directory: `{PROJECT_DIR}` (from resolve-context JSON)
+Vault: `{VAULT}` (from resolve-context JSON)
 
 ### 2. Detect Project Stack
 

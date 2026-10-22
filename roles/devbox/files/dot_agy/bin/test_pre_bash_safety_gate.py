@@ -555,7 +555,7 @@ def test_allows_checkout_named_file() -> None:
 
 
 def test_allows_checkout_new_branch() -> None:
-    assert not gate.evaluate_phase1_legacy("git checkout -b feature/x").blocked
+    assert not gate.evaluate_phase1_legacy("git checkout -b PROJ-123_feature_x").blocked
 
 
 # --- branch force-delete ----------------------------------------------------
@@ -571,6 +571,28 @@ def test_allows_branch_d() -> None:
 
 def test_allows_branch_list() -> None:
     assert not gate.evaluate_phase1_legacy("git branch").blocked
+
+
+# --- branch name with slash -------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git checkout -b feat/x",
+        "git switch -c fix/y",
+        "git worktree add -b feat/x ../x main",
+        "git fetch && git branch feat/x",
+    ],
+)
+def test_blocks_slashed_branch_name(cmd: str) -> None:
+    d = gate.evaluate_phase1_legacy(cmd)
+    assert d.blocked
+    assert d.rule_name == "branch-name-slash"
+
+
+def test_allows_switch_to_existing_slashed_branch() -> None:
+    assert not gate.evaluate_phase1_legacy("git switch feat/colleague").blocked
 
 
 # --- git stash --------------------------------------------------------------

@@ -1,6 +1,6 @@
 ---
 # Migrate ~/.gitconfig into managed schema:
-#   • behavioural keys (core.editor, core.quotepath, push.followTags, pull.ff)
+#   • behavioural keys (core.editor, core.quotepath, push.default, pull.ff)
 #     live in the managed XDG config at ~/.config/git/config
 #   • identity keys (user.name/email/signingkey, [gpg], [commit], [tag],
 #     init.defaultBranch, jira.keyPosition) live in the per-profile
@@ -56,11 +56,11 @@
       - core.quotepath
       - core.hookspath
       - core.autocrlf
-      - push.followtags
       - push.default
       - push.autosetupremote
       - pull.ff
       - fetch.prune
+      - remote.origin.tagopt
       - rebase.autostash
       - rebase.autosquash
       - merge.conflictstyle
@@ -80,6 +80,9 @@
       # (see config.j2 [pull]). Any legacy `pull.rebase` in ~/.gitconfig is
       # archived and the value is dropped.
       - pull.rebase
+      # No managed target — push.followTags is deliberately unset (see config.j2
+      # [push]); a legacy value in ~/.gitconfig is archived and dropped.
+      - push.followtags
     devbox_gitconfig_actual_keys: >-
       {{ (devbox_gitconfig_keys.stdout_lines | default([]))
          | map('lower') | list }}

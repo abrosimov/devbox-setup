@@ -61,6 +61,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bashlex
 import bashlex.errors
+import branch_name_guard
 from _agy_lib import env, hooks
 
 # ============================================================
@@ -633,6 +634,15 @@ def rule_branch_force_delete(ctx: Ctx) -> str | None:
     return None
 
 
+def rule_branch_name_slash(ctx: Ctx) -> str | None:
+    # Branch names are flat (PROJ-123_short_description); "feat/x"-style prefixes
+    # are denied for every agent. The parser lives in branch_name_guard.py so the
+    # Codex hook enforces the identical rule; it reads ctx.cmd, not ctx.argv,
+    # because it splits chains (`&&`, `;`) and `sh -c` payloads itself.
+    name = branch_name_guard.slashed_branch(ctx.cmd)
+    return branch_name_guard.reason(name) if name else None
+
+
 def _git_subcommand(argv: list[str]) -> str | None:
     """First non-option token after ``git``, skipping git's global options.
 
@@ -722,6 +732,7 @@ PHASE1_RULES: Final[list[tuple[str, RuleFn]]] = [
     ("git-clean", rule_git_clean),
     ("wholesale-checkout-restore", rule_wholesale_checkout_restore),
     ("branch-force-delete", rule_branch_force_delete),
+    ("branch-name-slash", rule_branch_name_slash),
     ("destructive-sql", rule_destructive_sql),
     # Catch-alls last: specific rules above emit more actionable messages
     # (e.g. "Cannot commit on main. Create a feature branch first.") than the

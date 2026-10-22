@@ -1,190 +1,91 @@
 ---
 name: config
 description: >
-  Configurable paths, task context variables, and project directory structure for agents
-  and commands. Single source of truth for PLANS_DIR, JIRA_ISSUE, BRANCH_NAME, PROJECT_DIR.
-  Use when resolving project paths, looking up configuration variables, or understanding
-  the agent system directory structure.
-problem: "Agents and commands hard-code paths and task variables, leading to inconsistent PLANS_DIR / BRANCH_NAME resolution."
+  Task context and vault layout for agents and commands: PROFILE, VAULT, BRANCH, JIRA_ISSUE,
+  BRANCH_NAME from resolve_context.py, the delivery-unit homes in the kadmos vault, and the
+  settings hierarchy. Use when resolving where artefacts live, reading configuration
+  variables, or placing a note.
+problem: "Agents and commands hard-code paths and task variables, leading to inconsistent vault and branch resolution."
 related: [shared-utils, workflow]
 ---
 
 # Claude Code Configuration
 
-This file contains configurable paths and settings for agents and commands.
-
-## Paths
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PLANS_DIR` | `docs/implementation_plans` | Base directory for all project documentation |
-| `DEFAULT_BRANCH` | auto-detected | Project's default branch (main/master/develop) |
-| `INTEGRATION_BRANCH` | *(none — opt-in)* | Optional local integration branch for pre-PR testing |
-
-## Default Branch Detection
-
-The default branch is detected automatically by `.claude/bin/git-default-branch`:
-```bash
-DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
-```
-
-Detection priority: `claude.defaultBranch` git config > remote HEAD > `init.defaultBranch` > `"main"`.
-
-To override per-repo: `git config --local claude.defaultBranch develop`
-
-**Optional integration branch** (opt-in for local merge testing):
-```bash
-git config --local claude.integrationBranch build/stable
-```
-When set, commands offer local merge as an additional option alongside push+PR.
+Configurable paths and the task context every command and agent starts from.
 
 ## Task Context
 
-**IMPORTANT**: Commands compute context ONCE and pass to agents. Agents should NOT re-compute.
+**IMPORTANT**: Commands compute context ONCE and pass it to agents. Agents do not re-compute.
 
-### Context Variables
-
-- **`BRANCH`** — `git branch --show-current` — e.g. `PROJ-123_add_user_auth`
-- **`JIRA_ISSUE`** — first segment before `_` — e.g. `PROJ-123`
-- **`BRANCH_NAME`** — remaining segments after first `_` — e.g. `add_user_auth`
-- **`DEFAULT_BRANCH`** — `.claude/bin/git-default-branch` — e.g. `main`
-- **`PROJECT_DIR`** — `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}` — e.g. `docs/implementation_plans/PROJ-123/add_user_auth`
-
-### For Commands (Orchestrators)
-
-Compute once at the start:
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)  # exit 0=valid, exit 2=non-convention branch
-# Parse: JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)   # exit 0 = resolved; exit 1 = stderr says what is missing
 DEFAULT_BRANCH=$(.claude/bin/git-default-branch)
 ```
 
-When invoking agents via Task tool, include in prompt:
+| Variable | Source | Example |
+|----------|--------|---------|
+| `PROFILE` | `MNEMOSYNE_PERISTASEOS`, always read first; unset is an error, not a default | `personal` |
+| `VAULT` | `.vault-root` at the repository top level, read under the profile's rule (below) | `/home/me/Projects/app/docs` |
+| `BRANCH` | `git branch --show-current` | `PROJ-123_add_user_auth` |
+| `JIRA_ISSUE` | first segment of the branch when it is `PROJ-123_...`; otherwise `null` | `PROJ-123` |
+| `BRANCH_NAME` | the rest of the branch after that segment, or the whole branch | `add_user_auth` |
+| `DEFAULT_BRANCH` | `.claude/bin/git-default-branch` | `main` |
+
+A Jira issue is optional. It is the value of the `issue` field on the notes a task produces, never a
+directory.
+
+### Where the vault is
+
+| `MNEMOSYNE_PERISTASEOS` | `.vault-root` holds | `VAULT` |
+|---|---|---|
+| `personal` | the name of one immediate child (`docs`) | `<repo>/docs` |
+| `personal` | an absolute path, or the file is missing | error: on a personal machine the vault lives inside the repository |
+| `work` | an absolute path (or `~/...`) outside the repository | that directory |
+| `work` | a child name, or the file is missing | error: on a work machine the vault lives outside the repository |
+| unset | anything | error: `make personal` / `make work` render the variable into the shell rc |
+
+The vault is a kadmos vault: `.vault-profile` inside it, kadmos's own folders (`decisions/`,
+`open_questions/`, `standards/`, `templates/`, ...) and the delivery-unit homes below. The repository
+binds to it through `.vault-root` only; the materialiser never writes that file.
+
+When invoking agents via the Task tool, include in the prompt:
 ```
-Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}
-```
-
-### For Agents
-
-Use context provided by orchestrator. If invoked directly (no context), compute once:
-```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)  # exit 0=valid, exit 2=non-convention branch
-# Parse: JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
-```
-
----
-
-## Project Directory Structure
-
-All project documentation is organized by Jira issue and branch name:
-
-```
-{PLANS_DIR}/
-├── PROJ-123/
-│   ├── add_user_auth/       # Branch: PROJ-123_add_user_auth
-│   │   ├── plan.md          # Implementation plan
-│   │   ├── spec.md          # Product specification
-│   │   ├── research.md      # Research findings
-│   │   ├── decisions.md     # Decision log (TPM)
-│   │   ├── analysis.md      # FPF thinking artifact (structured reasoning)
-│   │   ├── domain_analysis.md  # Domain analysis
-│   │   ├── domain_model.md    # DDD domain model (bounded contexts, aggregates)
-│   │   ├── model_report.md    # Formal model results (formal-model-writer)
-│   │   ├── model_requirements.md  # Questions to the domain owners (formal-model-writer)
-│   │   ├── trace_contract.md  # Trace-validation contract for the SE (formal-model-writer)
-│   │   ├── observability_audit.md   # Failure-mode table (observability-engineer)
-│   │   ├── observability_design.md  # Signal catalogue (observability-engineer)
-│   │   ├── api_design.md     # API design rationale and decisions
-│   │   ├── api_spec.yaml     # OpenAPI specification (when REST)
-│   │   ├── design.md         # UI/UX design specification
-│   │   ├── design_system.tokens.json  # W3C Design Tokens
-│   │   ├── schema_design.md  # Database schema design rationale
-│   │   ├── migrations/       # Database migration files
-│   │   ├── se_{lang}_output.json   # Backend SE structured output
-│   │   ├── se_frontend_output.json # Frontend SE structured output
-│   │   └── memory/
-│   │       └── upstream.jsonl # Knowledge graph — domain knowledge, decisions (VCS)
-│   └── add_user_auth_v2/    # Branch: PROJ-123_add_user_auth_v2
-│       └── ...
-├── PROJ-456/
-│   └── refactor_api/
-│       └── ...
-├── _adhoc/
-│   └── branch-name/           # Non-convention branches (resolve-context exit 2)
-│       └── ...
+Context: PROFILE={value}, VAULT={path}, BRANCH={value}, JIRA_ISSUE={value or null}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}
 ```
 
-### File Paths
+## Default Branch Detection
 
-| File | Created By | Path |
-|------|-----------|------|
-| Implementation plan | Impl Planner | `{PROJECT_DIR}/plan.md` |
-| Product specification | TPM | `{PROJECT_DIR}/spec.md` |
-| Research findings | TPM | `{PROJECT_DIR}/research.md` |
-| Decision log | TPM | `{PROJECT_DIR}/decisions.md` |
-| FPF analysis | /techne-think command | `{PROJECT_DIR}/analysis.md` |
-| Domain analysis | Domain Expert | `{PROJECT_DIR}/domain_analysis.md` |
-| Domain model | Domain Modeller | `{PROJECT_DIR}/domain_model.md` |
-| Formal model report | Formal Model Writer | `{PROJECT_DIR}/model_report.md` |
-| Model requirements | Formal Model Writer | `{PROJECT_DIR}/model_requirements.md` |
-| Trace contract | Formal Model Writer | `{PROJECT_DIR}/trace_contract.md` |
-| Observability audit | Observability Engineer | `{PROJECT_DIR}/observability_audit.md` |
-| Observability design | Observability Engineer | `{PROJECT_DIR}/observability_design.md` |
-| API design rationale | API Designer | `{PROJECT_DIR}/api_design.md` |
-| OpenAPI specification | API Designer | `{PROJECT_DIR}/api_spec.yaml` |
-| UI/UX design specification | Designer | `{PROJECT_DIR}/design.md` |
-| W3C Design Tokens | Designer | `{PROJECT_DIR}/design_system.tokens.json` |
-| Schema design rationale | Database Designer | `{PROJECT_DIR}/schema_design.md` |
-| Database migrations | Database Designer | `{PROJECT_DIR}/migrations/` |
-| Backend SE structured output | SE (backend) | `{PROJECT_DIR}/se_{lang}_output.json` |
-| Frontend SE structured output | SE (frontend) | `{PROJECT_DIR}/se_frontend_output.json` |
-| Memory (upstream) | TPM, Domain, Planners | `{PROJECT_DIR}/memory/upstream.jsonl` |
-| Memory (downstream) | Code Reviewers | `.claude/memory/downstream.jsonl` (project root, gitignored) |
+`.claude/bin/git-default-branch` picks, in order: `claude.defaultBranch` git config, the remote HEAD,
+`init.defaultBranch`, then `main`. Override per repository with
+`git config --local claude.defaultBranch develop`. An optional
+`git config --local claude.integrationBranch build/stable` makes commands offer a local merge
+alongside push and PR.
 
-Where `PROJECT_DIR` = `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}`
+## Delivery Units
 
-When `resolve-context` exits 2 (non-convention branch), commands fall back to `_adhoc/{sanitised_branch}/` under the plans directory. The sanitised branch name replaces `/` with `-` (e.g. `feature/login` becomes `feature-login`).
+Pipeline artefacts are notes in the vault, one per unit, with a typed id and links in frontmatter.
+The homes and subtypes are kadmos's (CAD-FR-19); coverage is derived by following links and is never
+written by hand.
 
-### Examples
+| Unit | Home | Id | Written by | Read by |
+|------|------|----|------------|---------|
+| Requirement (`kind: functional` or `quality`) | `requirements/` | `REQ-NNNNN` | TPM | planner, bdd-spec-writer, reviewer |
+| Invariant (`status: prose` → `formal` → `checked`) | `invariants/` | `INV-NNNNN` | domain-expert (prose), domain-modeller (predicate) | SE, tests, formal-model-writer, observability-engineer |
+| Scenario (one Given/When/Then; `covers`, `exercises`) | `scenarios/` | `SC-NNNNN` | bdd-spec-writer | planner, SE, integration tests, reviewer |
+| Work stream (`implements`, `verifies`, `depends_on`, `agent`) | `workstreams/` | `WS-NNNNN` | implementation-planner | the one agent that executes it |
+| Decision, open question | `decisions/`, `open_questions/` | `D-NNN`, `OQ-NNN` | any agent, per kadmos's skills | all |
 
-| Branch Name | Jira Issue | Branch Name | Project Directory |
-|-------------|------------|-------------|-------------------|
-| `PROJ-123_add_user_auth` | `PROJ-123` | `add_user_auth` | `docs/implementation_plans/PROJ-123/add_user_auth/` |
-| `PROJ-123_add_user_auth_v2` | `PROJ-123` | `add_user_auth_v2` | `docs/implementation_plans/PROJ-123/add_user_auth_v2/` |
-| `FEAT-42_refactor_api` | `FEAT-42` | `refactor_api` | `docs/implementation_plans/FEAT-42/refactor_api/` |
+Each home follows kadmos's dated layout (`requirements/2026/10/REQ-00012-fast-search.md`). A note
+body is immutable once landed; a change is a successor note. An agent receives one id in its brief
+(a `WS` for an implementer, a `REQ` for a scenario writer) and follows links from it; it never loads
+a home wholesale.
 
-### Cross-Cutting Documentation
+Code and specs point back at notes with kadmos code anchors, one comment line:
+`ariadne-kadmou[<slug>|implements|kadmos://oikos/requirements/2026/10/REQ-00012-fast-search.md]`
+(`tests` for a test, `evidences` for a TLA+ property against `invariants/...#Statement`).
 
-Artifacts not tied to specific tickets live at project root level:
-
-```
-docs/
-├── prd.md                      # Main PRD (current, top-level)
-├── decisions/                  # Project-wide ADRs
-│   ├── 001-auth-strategy.md
-│   └── 002-database-choice.md
-├── design/                     # Cross-cutting architecture docs
-│   └── caching-architecture.md
-├── domain/                     # Foundational domain models
-│   └── bounded-contexts.md
-│
-└── implementation_plans/       # Ticket-scoped (see above)
-    └── ...
-```
-
-| File | Created By | Path |
-|------|-----------|------|
-| Main PRD | TPM | `docs/prd.md` |
-| Project-wide ADR | /techne-think, Architect | `docs/decisions/NNN-<topic>.md` |
-| Architecture doc | /techne-think, Architect | `docs/design/<topic>.md` |
-| Core domain model | Domain Modeller | `docs/domain/<context>.md` |
-| FPF analysis (cross-cutting) | /techne-think command | `docs/decisions/NNN-<topic>.md` or `docs/design/<topic>.md` |
-
-**Routing rule**: If thinking relates to a specific Jira ticket → `{PROJECT_DIR}/analysis.md`. If cross-cutting → `docs/decisions/` or `docs/design/`.
-
-## Customizing Paths
-
-To override defaults for your project, update the `PLANS_DIR` value in the table above. All agents and commands will read from this file.
+Structured outputs that are not notes (`se_<lang>_output.json`, rendered dashboards, migrations)
+stay where their tool expects them in the repository, named in the work stream that produced them.
 
 ## Settings Hierarchy
 

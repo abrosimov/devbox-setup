@@ -4,15 +4,12 @@ import io
 import json
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import pytest
 import resolve_context
 from _claude_lib import proc
-
-if TYPE_CHECKING:
-    import pytest
 
 
 def _ok(stdout: str = "") -> proc.CmdResult:
@@ -23,163 +20,216 @@ def _err(stderr: str = "") -> proc.CmdResult:
     return proc.CmdResult(stdout="", stderr=stderr, returncode=128, timed_out=False)
 
 
-def test_resolve_valid_branch() -> None:
-    ctx = resolve_context.resolve("PROJ-123_add_user_auth", "docs/implementation_plans")
-    assert ctx is not None
-    assert ctx.jira_issue == "PROJ-123"
-    assert ctx.branch_name == "add_user_auth"
-    assert ctx.branch == "PROJ-123_add_user_auth"
-    assert ctx.project_dir == "docs/implementation_plans/PROJ-123/add_user_auth"
+# --- profile -----------------------------------------------------------------
 
 
-def test_resolve_custom_plans_dir() -> None:
-    ctx = resolve_context.resolve("ABC-9_feature", "custom/plans")
-    assert ctx is not None
-    assert ctx.project_dir == "custom/plans/ABC-9/feature"
+def test_profile_unset_is_an_error_with_the_remedy() -> None:
+    with pytest.raises(resolve_context.ContextError, match="make personal"):
+        resolve_context.read_profile({})
 
 
-def test_resolve_rejects_non_jira_prefix() -> None:
-    assert resolve_context.resolve("feature_branch_only", "p") is None
+def test_profile_unknown_value_is_an_error() -> None:
+    with pytest.raises(resolve_context.ContextError, match="not one of"):
+        resolve_context.read_profile({"MNEMOSYNE_PERISTASEOS": "lab"})
 
 
-def test_resolve_rejects_lowercase_prefix() -> None:
-    assert resolve_context.resolve("abc-1_x", "p") is None
+@pytest.mark.parametrize("profile", ["personal", "work"])
+def test_profile_known_values_pass(profile: str) -> None:
+    assert resolve_context.read_profile({"MNEMOSYNE_PERISTASEOS": profile}) == profile
 
 
-def test_resolve_rejects_missing_underscore_payload() -> None:
-    assert resolve_context.resolve("PROJ-1", "p") is None
+# --- vault -------------------------------------------------------------------
 
 
-def test_resolve_rejects_empty_branch() -> None:
-    assert resolve_context.resolve("", "p") is None
+def test_personal_child_directory(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    assert resolve_context.resolve_vault("personal", tmp_path, "docs\n") == tmp_path / "docs"
 
 
-def test_to_json_round_trip() -> None:
-    ctx = resolve_context.resolve("PROJ-1_x", "plans")
-    assert ctx is not None
+def test_personal_missing_marker_names_the_expected_form(tmp_path: Path) -> None:
+    with pytest.raises(resolve_context.ContextError, match="child directory such as `docs`"):
+        resolve_context.resolve_vault("personal", tmp_path, None)
+
+
+def test_personal_rejects_an_external_path(tmp_path: Path) -> None:
+    with pytest.raises(resolve_context.ContextError, match="inside the repository"):
+        resolve_context.resolve_vault("personal", tmp_path, "/srv/vaults/x")
+
+
+@pytest.mark.parametrize("declared", ["a/b", ".docs", ""])
+def test_personal_rejects_non_child_forms(tmp_path: Path, declared: str) -> None:
+    with pytest.raises(resolve_context.ContextError):
+        resolve_context.resolve_vault("personal", tmp_path, declared)
+
+
+def test_personal_rejects_a_missing_or_symlinked_child(tmp_path: Path) -> None:
+    with pytest.raises(resolve_context.ContextError, match="not a directory"):
+        resolve_context.resolve_vault("personal", tmp_path, "docs")
+    (tmp_path / "real").mkdir()
+    (tmp_path / "docs").symlink_to(tmp_path / "real")
+    with pytest.raises(resolve_context.ContextError, match="symlinks"):
+        resolve_context.resolve_vault("personal", tmp_path, "docs")
+
+
+def test_work_external_absolute_path(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    vault = tmp_path / "vaults" / "repo"
+    repo.mkdir()
+    vault.mkdir(parents=True)
+    assert resolve_context.resolve_vault("work", repo, f"{vault}\n") == vault.resolve()
+
+
+def test_work_tilde_path_is_expanded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    repo = tmp_path / "repo"
+    vault = tmp_path / "vaults" / "repo"
+    repo.mkdir()
+    vault.mkdir(parents=True)
+    assert resolve_context.resolve_vault("work", repo, "~/vaults/repo") == vault.resolve()
+
+
+def test_work_missing_marker_names_the_expected_form(tmp_path: Path) -> None:
+    with pytest.raises(resolve_context.ContextError, match="absolute path outside"):
+        resolve_context.resolve_vault("work", tmp_path, None)
+
+
+def test_work_rejects_a_child_name(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    with pytest.raises(resolve_context.ContextError, match="outside the repository"):
+        resolve_context.resolve_vault("work", tmp_path, "docs")
+
+
+def test_work_rejects_a_path_inside_the_repository(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    with pytest.raises(resolve_context.ContextError, match="lies inside"):
+        resolve_context.resolve_vault("work", tmp_path, str(tmp_path / "docs"))
+
+
+def test_work_rejects_a_missing_directory(tmp_path: Path) -> None:
+    with pytest.raises(resolve_context.ContextError, match="not a directory"):
+        resolve_context.resolve_vault("work", tmp_path, str(tmp_path / "nowhere"))
+
+
+# --- branch ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("branch", "expected"),
+    [
+        ("PROJ-123_add_user_auth", ("PROJ-123", "add_user_auth")),
+        ("ABC-9_feature", ("ABC-9", "feature")),
+        ("feature_branch_only", (None, "feature_branch_only")),
+        ("abc-1_x", (None, "abc-1_x")),
+        ("PROJ-1", (None, "PROJ-1")),
+        ("master", (None, "master")),
+        ("", (None, "")),
+    ],
+)
+def test_split_branch(branch: str, expected: tuple[str | None, str]) -> None:
+    assert resolve_context.split_branch(branch) == expected
+
+
+def test_to_json_carries_a_null_issue(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    ctx = resolve_context.resolve("personal", tmp_path, "docs", "feature/login")
     payload = json.loads(ctx.to_json())
     assert payload == {
-        "JIRA_ISSUE": "PROJ-1",
-        "BRANCH_NAME": "x",
-        "BRANCH": "PROJ-1_x",
-        "PROJECT_DIR": "plans/PROJ-1/x",
+        "PROFILE": "personal",
+        "VAULT": str(tmp_path / "docs"),
+        "BRANCH": "feature/login",
+        "JIRA_ISSUE": None,
+        "BRANCH_NAME": "feature/login",
     }
 
 
-def test_parse_args_defaults() -> None:
-    parsed = resolve_context.parse_args([])
-    assert parsed is not None
-    assert parsed.plans_dir == "docs/implementation_plans"
-    assert not parsed.show_help
+# --- main --------------------------------------------------------------------
 
 
-def test_parse_args_help_flag() -> None:
-    parsed = resolve_context.parse_args(["--help"])
-    assert parsed is not None
-    assert parsed.show_help
+def _stub_git(monkeypatch: pytest.MonkeyPatch, toplevel: Path, branch: str) -> None:
+    responses = {
+        "git rev-parse --is-inside-work-tree": _ok("true\n"),
+        "git rev-parse --show-toplevel": _ok(f"{toplevel}\n"),
+        "git branch --show-current": _ok(f"{branch}\n"),
+    }
+
+    def fake(cmd: list[str], **_kwargs: object) -> proc.CmdResult:
+        return responses.get(" ".join(cmd), _err())
+
+    monkeypatch.setattr(proc, "run_cmd", fake)
 
 
-def test_parse_args_plans_dir_override() -> None:
-    parsed = resolve_context.parse_args(["--plans-dir", "my/plans"])
-    assert parsed is not None
-    assert parsed.plans_dir == "my/plans"
-
-
-def test_parse_args_plans_dir_requires_value(monkeypatch: pytest.MonkeyPatch) -> None:
-    err = io.StringIO()
-    monkeypatch.setattr(sys, "stderr", err)
-    assert resolve_context.parse_args(["--plans-dir"]) is None
-    assert "requires a value" in err.getvalue()
-
-
-def test_parse_args_unknown_option(monkeypatch: pytest.MonkeyPatch) -> None:
-    err = io.StringIO()
-    monkeypatch.setattr(sys, "stderr", err)
-    assert resolve_context.parse_args(["--no-such-flag"]) is None
-    assert "Unknown option" in err.getvalue()
-
-
-def test_main_help_writes_usage_to_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_help_writes_usage(monkeypatch: pytest.MonkeyPatch) -> None:
     out = io.StringIO()
     monkeypatch.setattr(sys, "stdout", out)
     assert resolve_context.main(["--help"]) == 0
     assert "Usage:" in out.getvalue()
 
 
-def _stub_run_cmd(monkeypatch: pytest.MonkeyPatch, responses: dict[str, proc.CmdResult]) -> None:
-    def fake(cmd: list[str], **_kwargs: object) -> proc.CmdResult:
-        key = " ".join(cmd)
-        for prefix, result in responses.items():
-            if key.startswith(prefix):
-                return result
-        return _err()
+def test_main_unknown_option(monkeypatch: pytest.MonkeyPatch) -> None:
+    err = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", err)
+    assert resolve_context.main(["--plans-dir", "x"]) == 1
+    assert "Unknown option" in err.getvalue()
 
-    monkeypatch.setattr(proc, "run_cmd", fake)
+
+def test_main_profile_is_read_before_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("MNEMOSYNE_PERISTASEOS", raising=False)
+    monkeypatch.setattr(proc, "run_cmd", lambda *_a, **_k: _ok("true\n"))
+    err = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", err)
+    assert resolve_context.main([]) == 1
+    assert "MNEMOSYNE_PERISTASEOS is not set" in err.getvalue()
 
 
 def test_main_not_in_git_repo(monkeypatch: pytest.MonkeyPatch) -> None:
-    _stub_run_cmd(monkeypatch, {"git rev-parse --is-inside-work-tree": _err()})
+    monkeypatch.setenv("MNEMOSYNE_PERISTASEOS", "personal")
+    monkeypatch.setattr(proc, "run_cmd", lambda *_a, **_k: _err())
     err = io.StringIO()
     monkeypatch.setattr(sys, "stderr", err)
     assert resolve_context.main([]) == 1
     assert "not inside a git repository" in err.getvalue()
 
 
-def test_main_detached_head(monkeypatch: pytest.MonkeyPatch) -> None:
-    _stub_run_cmd(
-        monkeypatch,
-        {
-            "git rev-parse --is-inside-work-tree": _ok("true\n"),
-            "git branch --show-current": _ok(""),
-        },
-    )
-    err = io.StringIO()
-    monkeypatch.setattr(sys, "stderr", err)
-    assert resolve_context.main([]) == 2
-    assert "detached HEAD" in err.getvalue()
-
-
-def test_main_non_convention_branch(monkeypatch: pytest.MonkeyPatch) -> None:
-    _stub_run_cmd(
-        monkeypatch,
-        {
-            "git rev-parse --is-inside-work-tree": _ok("true\n"),
-            "git branch --show-current": _ok("master\n"),
-        },
-    )
-    err = io.StringIO()
-    monkeypatch.setattr(sys, "stderr", err)
-    assert resolve_context.main([]) == 2
-    assert "PROJ-123_description convention" in err.getvalue()
-
-
-def test_main_writes_json_on_success(monkeypatch: pytest.MonkeyPatch) -> None:
-    _stub_run_cmd(
-        monkeypatch,
-        {
-            "git rev-parse --is-inside-work-tree": _ok("true\n"),
-            "git branch --show-current": _ok("PROJ-123_feature_name\n"),
-        },
-    )
+def test_main_personal_success(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("MNEMOSYNE_PERISTASEOS", "personal")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / ".vault-root").write_text("docs\n", encoding="utf-8")
+    _stub_git(monkeypatch, tmp_path, "PROJ-123_feature_name")
     out = io.StringIO()
     monkeypatch.setattr(sys, "stdout", out)
     assert resolve_context.main([]) == 0
     payload = json.loads(out.getvalue())
+    assert payload["PROFILE"] == "personal"
+    assert payload["VAULT"] == str(tmp_path / "docs")
     assert payload["JIRA_ISSUE"] == "PROJ-123"
     assert payload["BRANCH_NAME"] == "feature_name"
-    assert payload["PROJECT_DIR"] == "docs/implementation_plans/PROJ-123/feature_name"
 
 
-def test_main_respects_plans_dir_override(monkeypatch: pytest.MonkeyPatch) -> None:
-    _stub_run_cmd(
-        monkeypatch,
-        {
-            "git rev-parse --is-inside-work-tree": _ok("true\n"),
-            "git branch --show-current": _ok("X-1_y\n"),
-        },
-    )
+def test_main_work_success_without_an_issue(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("MNEMOSYNE_PERISTASEOS", "work")
+    repo = tmp_path / "repo"
+    vault = tmp_path / "vaults" / "repo"
+    repo.mkdir()
+    vault.mkdir(parents=True)
+    (repo / ".vault-root").write_text(f"{vault}\n", encoding="utf-8")
+    _stub_git(monkeypatch, repo, "master")
     out = io.StringIO()
     monkeypatch.setattr(sys, "stdout", out)
-    assert resolve_context.main(["--plans-dir", "alt/plans"]) == 0
+    assert resolve_context.main([]) == 0
     payload = json.loads(out.getvalue())
-    assert payload["PROJECT_DIR"] == "alt/plans/X-1/y"
+    assert payload["VAULT"] == str(vault.resolve())
+    assert payload["JIRA_ISSUE"] is None
+    assert payload["BRANCH_NAME"] == "master"
+
+
+def test_main_missing_marker_is_exit_1_with_hint(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("MNEMOSYNE_PERISTASEOS", "personal")
+    _stub_git(monkeypatch, tmp_path, "PROJ-1_x")
+    err = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", err)
+    assert resolve_context.main([]) == 1
+    assert ".vault-root is missing" in err.getvalue()

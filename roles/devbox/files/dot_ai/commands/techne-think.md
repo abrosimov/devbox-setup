@@ -28,13 +28,13 @@ Determine where the artifact should be written:
 
 ```bash
 # Try to get ticket context
-CONTEXT_JSON=$(~/.claude/bin/resolve_context.py 2>/dev/null) && RC=$? || RC=$?
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py) || { echo "$CONTEXT_JSON"; exit 1; }   # exit 1: relay stderr, stop
 ```
 
 | Condition | Scope | Artifact Path |
 |-----------|-------|---------------|
-| Problem mentions Jira ticket (e.g., "PROJ-123") | Ticket | `{PROJECT_DIR}/analysis.md` |
-| `resolve-context` succeeds (RC=0) and problem relates to current work | Ticket | `{PROJECT_DIR}/analysis.md` |
+| Problem mentions Jira ticket (e.g., "PROJ-123") | Ticket | `{VAULT}` per `config` skill, `issue` set |
+| `JIRA_ISSUE` is set and the problem relates to current work | Ticket | `{VAULT}` per `config` skill |
 | Problem is strategic/project-wide, mentions "overall", "strategy", "architecture" | Cross-cutting | `docs/decisions/NNN-<topic>.md` or `docs/design/<topic>.md` |
 | Unclear | Ask user | "Is this analysis for the current ticket, or a project-wide decision?" |
 

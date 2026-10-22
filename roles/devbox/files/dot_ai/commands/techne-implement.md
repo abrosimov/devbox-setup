@@ -64,12 +64,11 @@ CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 RC=$?
 ```
 
-**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
-**If exit 2** — the branch does not match the `PROJ-123_description` convention. Use a Jira key only
-when the request or the plan names one (`JIRA_ISSUE={key}`,
-`PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`); otherwise
-`PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`. State the choice in one line; do
-not ask.
+**If exit 0** — parse JSON fields: `PROFILE`, `VAULT`, `BRANCH`, `JIRA_ISSUE` (null when the
+branch carries none), `BRANCH_NAME`. Artefacts are notes in `VAULT` (see `config` skill).
+**If exit 1** — stderr names what is missing (the profile variable, `.vault-root`, or the vault
+directory it names). Relay that line and stop; do not guess a location.
+If `JIRA_ISSUE` is null and the request or the plan names an issue key, use that key.
 
 Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent, do not re-compute.
 
@@ -141,7 +140,7 @@ The brief carries the user's ask and the decisions already made, nothing more (c
 Task(
   subagent_type: "software-engineer-go",
   model: "{determined_model}",  // "opus" (default) or "sonnet" (if user requested)
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\n\nUser's ask: {the user's request}\nDecisions already made: {decisions, or none}\nIn scope: {files/areas}\nOut of scope: {files/areas}"
+  prompt: "Context: PROFILE={value}, VAULT={path}, BRANCH={value}, JIRA_ISSUE={value or null}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\nUser's ask: {the user's request}\nDecisions already made: {decisions, or none}\nIn scope: {files/areas}\nOut of scope: {files/areas}"
 )
 ```
 
@@ -153,12 +152,12 @@ Task(
 Task(
   subagent_type: "software-engineer-{go|python}",
   model: "{determined_model}",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the BACKEND portion.\nAPI contract: {contract_path}. Implement exactly what it guarantees; do not rely on how the frontend calls you.\n\nUser's ask: {backend part of the request}\nDecisions already made: {decisions, or none}\nIn scope: {backend files/areas}\nOut of scope: {frontend, and anything else excluded}"
+  prompt: "Context: PROFILE={value}, VAULT={path}, BRANCH={value}, JIRA_ISSUE={value or null}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\nStack: fullstack\nThis is the BACKEND portion.\nAPI contract: {contract_path}. Implement exactly what it guarantees; do not rely on how the frontend calls you.\n\nUser's ask: {backend part of the request}\nDecisions already made: {decisions, or none}\nIn scope: {backend files/areas}\nOut of scope: {frontend, and anything else excluded}"
 )
 Task(
   subagent_type: "software-engineer-frontend",
   model: "{determined_model}",
-  prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}, PROJECT_DIR={value}\nStack: fullstack\nThis is the FRONTEND portion.\nAPI contract: {contract_path}. Build only on what it guarantees; raise a contract gap for anything missing.\n\nUser's ask: {frontend part of the request}\nDecisions already made: {decisions, or none}\nIn scope: {frontend files/areas}\nOut of scope: {backend, and anything else excluded}"
+  prompt: "Context: PROFILE={value}, VAULT={path}, BRANCH={value}, JIRA_ISSUE={value or null}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\nStack: fullstack\nThis is the FRONTEND portion.\nAPI contract: {contract_path}. Build only on what it guarantees; raise a contract gap for anything missing.\n\nUser's ask: {frontend part of the request}\nDecisions already made: {decisions, or none}\nIn scope: {frontend files/areas}\nOut of scope: {backend, and anything else excluded}"
 )
 ```
 

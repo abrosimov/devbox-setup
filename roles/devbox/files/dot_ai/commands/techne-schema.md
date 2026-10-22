@@ -32,11 +32,10 @@ CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
 RC=$?
 ```
 
-**If exit 0** — parse JSON fields: `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`
-**If exit 2** — branch doesn't match `PROJ-123_description` convention. Ask user (AskUserQuestion):
-  "Branch '{branch}' doesn't match PROJ-123_description convention. Enter JIRA issue key or 'none':"
-  - Valid key → `JIRA_ISSUE={key}`, `PROJECT_DIR=docs/implementation_plans/{key}/{branch_name}/`
-  - "none" → `PROJECT_DIR=docs/implementation_plans/_adhoc/{sanitised_branch}/`
+**If exit 0** — parse JSON fields: `PROFILE`, `VAULT`, `BRANCH`, `JIRA_ISSUE` (null when the
+branch carries none), `BRANCH_NAME`. Artefacts are notes in `VAULT` (see `config` skill).
+**If exit 1** — stderr names what is missing (the profile variable, `.vault-root`, or the vault
+directory it names). Relay that line and stop; do not guess a location.
 
 Store these values — pass to agent, do not re-compute.
 
@@ -80,7 +79,7 @@ Use the `database-designer` agent:
 Task(
     subagent_type: "database-designer",
     model: "opus",
-    prompt: "Context: BRANCH={value}, JIRA_ISSUE={value}, BRANCH_NAME={value}, PROJECT_DIR={PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}\n\nDatabase: {detected_or_specified_db}\n\n{existing docs summary}\n\nDesign the database schema for this task."
+    prompt: "Context: PROFILE={value}, VAULT={path}, BRANCH={value}, JIRA_ISSUE={value or null}, BRANCH_NAME={value}, DEFAULT_BRANCH={value}\n\nDatabase: {detected_or_specified_db}\n\n{existing docs summary}\n\nDesign the database schema for this task."
 )
 ```
 

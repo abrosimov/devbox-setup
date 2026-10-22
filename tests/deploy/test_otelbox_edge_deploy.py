@@ -62,6 +62,30 @@ def test_gateway_tls_stays_verified() -> None:
     assert _GATEWAY_TLS["insecure"] is False
 
 
+def test_gateway_retries_server_errors() -> None:
+    # Without it the 2.x exporters drop an admitted record on one HTTP 5xx or
+    # gRPC Internal/Unknown answer instead of retrying it on the backoff.
+    exporter = _edge["exporters"]["otlp_grpc/gateway"]
+    assert exporter["retry_on_failure"]["enabled"] is True
+    assert exporter["retry_on_server_error"] == {"enabled": True}
+
+
+def test_redaction_keeps_token_usage_counts() -> None:
+    # The `token` key pattern would otherwise mask Langfuse's usage counts.
+    ignored = _edge["processors"]["redaction/secrets"]["ignored_keys"]
+    assert {"llm.token_count.prompt", "llm.token_count.completion", "llm.token_count.total"} <= set(
+        ignored
+    )
+    assert all("." in key and "*" not in key for key in ignored)
+
+
+def test_self_metrics_report_storage_volume_space() -> None:
+    # The only volume-space signal for a macOS edge, whose WAL can fill the disk.
+    assert "host_metrics/storage" in _edge["service"]["pipelines"]["metrics/self"]["receivers"]
+    scraper = _edge["receivers"]["host_metrics/storage"]["scrapers"]["filesystem"]
+    assert scraper["metrics"]["system.filesystem.utilization"]["enabled"] is True
+
+
 def test_langfuse_plugin_receiver_is_loopback_only_and_trace_only() -> None:
     receiver = _edge["receivers"]["otlp/langfuse_plugins"]
 

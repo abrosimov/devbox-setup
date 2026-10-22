@@ -25,13 +25,24 @@
 [push]
 	default = simple
 	autoSetupRemote = true       # first push auto-creates upstream (git >= 2.37)
-	followTags = true            # push annotated tags reachable from pushed commits
+	# push.followTags deliberately NOT set: it pushed back CI tags (dev-*) that
+	# had been deleted on origin but survived locally. Push a release tag
+	# explicitly: `git push origin <tag>` or a one-off `git push --follow-tags`.
 
 [pull]
 	ff = only                    # never a surprise merge commit; diverged = stop
 
 [fetch]
 	prune = true                 # drop local refs for branches deleted on origin
+
+# --- Tags --------------------------------------------------------------------
+# Do not auto-follow tags on fetch: CI tags every main build (dev-NNNNN), and
+# those would arrive on every fetch. Fetch tags on demand with `git fetch --tags`.
+# Global remote.origin.* applies to the `origin` of every repo and worktree; a
+# repo's own .git/config still wins. Side effect: in a repo with no `origin`,
+# `git remote` lists an empty `origin` (`git remote add origin ...` still works).
+[remote "origin"]
+	tagOpt = --no-tags
 
 # --- Merge / rebase quality-of-life -------------------------------------------
 # rebase.autoStash and rebase.autosquash deliberately NOT set — silent stashes

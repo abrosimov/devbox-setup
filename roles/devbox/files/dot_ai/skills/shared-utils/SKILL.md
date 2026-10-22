@@ -51,11 +51,11 @@ Extract Jira issue from git branch name.
 
 **Convention:** Branch names follow `JIRAPRJ-123_description_of_branch`
 
-**Primary method**: `~/.claude/bin/resolve_context.py` -- outputs JSON with `JIRA_ISSUE`, `BRANCH_NAME`, `BRANCH`, `PROJECT_DIR`. Exit 0 = valid, exit 2 = non-convention branch (falls back to `_adhoc/{sanitised_branch}/`).
+**Primary method**: `~/.claude/bin/resolve_context.py` -- outputs JSON with `PROFILE`, `VAULT`, `BRANCH`, `JIRA_ISSUE` (null when the branch carries none), `BRANCH_NAME`. Exit 0 = resolved; exit 1 = the profile variable, `.vault-root` or the vault directory is missing, and stderr says which. A Jira issue is optional: a branch without one is not an error.
 
 ```bash
 CONTEXT_JSON=$(~/.claude/bin/resolve_context.py)
-# Parse JSON for JIRA_ISSUE, BRANCH_NAME, BRANCH, PROJECT_DIR
+# Parse JSON for PROFILE, VAULT, BRANCH, JIRA_ISSUE, BRANCH_NAME
 ```
 
 ### Legacy Scripts (deprecated -- prefer `resolve-context`)

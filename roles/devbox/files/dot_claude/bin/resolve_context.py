@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
+"""Resolve the task context every command and agent starts from.
+
+The profile (MNEMOSYNE_PERISTASEOS) is read first and always: it decides where
+the repository's vault may live. The repository then declares the vault in
+`.vault-root` at its top level: the name of one immediate child on a personal
+machine, an absolute path outside the repository on a work machine. A Jira
+issue in the branch name is a convenience, never a requirement.
+"""
+
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -12,124 +22,173 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _claude_lib import env, proc
 
-DEFAULT_PLANS_DIR: Final[str] = "docs/implementation_plans"
+PROFILE_VAR: Final[str] = "MNEMOSYNE_PERISTASEOS"
+PROFILES: Final[frozenset[str]] = frozenset({"personal", "work"})
+VAULT_ROOT_FILE: Final[str] = ".vault-root"
 JIRA_RE: Final[re.Pattern[str]] = re.compile(r"^[A-Z]+-[0-9]+$")
 
 USAGE: Final[str] = (
-    "Usage: resolve_context.py [--plans-dir <path>]\n"
+    "Usage: resolve_context.py\n"
     "\n"
-    "Options:\n"
-    "  --plans-dir <path>  Override plans directory (default: docs/implementation_plans)\n"
-    "  -h, --help          Show this help\n"
+    "Prints one JSON object: PROFILE, VAULT, BRANCH, JIRA_ISSUE (null when the\n"
+    "branch carries none), BRANCH_NAME.\n"
     "\n"
     "Exit codes:\n"
-    "  0  Valid context resolved (JSON on stdout)\n"
-    "  1  Not a git repository\n"
-    "  2  Branch does not match PROJ-123_description convention\n"
+    "  0  Context resolved\n"
+    "  1  Not a git repository, profile unset, or no usable .vault-root (stderr says which)\n"
 )
+
+
+class ContextError(Exception):
+    """A condition the caller must fix; the message is the whole explanation."""
 
 
 @dataclass(frozen=True)
 class Context:
-    jira_issue: str
-    branch_name: str
+    profile: str
+    vault: str
     branch: str
-    project_dir: str
+    jira_issue: str | None
+    branch_name: str
 
     def to_json(self) -> str:
         payload = {
+            "PROFILE": self.profile,
+            "VAULT": self.vault,
+            "BRANCH": self.branch,
             "JIRA_ISSUE": self.jira_issue,
             "BRANCH_NAME": self.branch_name,
-            "BRANCH": self.branch,
-            "PROJECT_DIR": self.project_dir,
         }
         return json.dumps(payload, ensure_ascii=False)
 
 
-@dataclass(frozen=True)
-class ParsedArgs:
-    plans_dir: str
-    show_help: bool
+def read_profile(environ: dict[str, str]) -> str:
+    profile = environ.get(PROFILE_VAR, "").strip()
+    if not profile:
+        message = (
+            f"{PROFILE_VAR} is not set. `make personal` / `make work` render it into the shell rc;"
+            " start a new shell, or run the provisioning once on this machine."
+        )
+        raise ContextError(message)
+    if profile not in PROFILES:
+        message = f"{PROFILE_VAR}={profile!r} is not one of {sorted(PROFILES)}."
+        raise ContextError(message)
+    return profile
 
 
-def parse_args(argv: list[str]) -> ParsedArgs | None:
-    plans_dir = DEFAULT_PLANS_DIR
-    show_help = False
-    i = 0
-    while i < len(argv):
-        arg = argv[i]
-        if arg in ("-h", "--help"):
-            show_help = True
-            i += 1
-            continue
-        if arg == "--plans-dir":
-            if i + 1 >= len(argv):
-                sys.stderr.write("ERROR: --plans-dir requires a value\n")
-                return None
-            plans_dir = argv[i + 1]
-            i += 2
-            continue
-        sys.stderr.write(f"Unknown option: {arg}\n")
-        return None
-    return ParsedArgs(plans_dir=plans_dir, show_help=show_help)
+def resolve_vault(profile: str, toplevel: Path, declared: str | None) -> Path:
+    """Apply the profile's rule to the content of .vault-root."""
+    if declared is None:
+        where = (
+            "the name of a child directory such as `docs`"
+            if profile == "personal"
+            else "an absolute path outside the repository"
+        )
+        message = (
+            f"{toplevel / VAULT_ROOT_FILE} is missing; on a {profile} machine it must hold {where}."
+        )
+        raise ContextError(message)
+    value = declared.strip()
+    external = value.startswith(("/", "~"))
+    if profile == "personal":
+        if external or not value:
+            message = (
+                f"{VAULT_ROOT_FILE} holds {value!r}; on a personal machine the vault lives inside"
+                " the repository, so it must name one immediate child directory."
+            )
+            raise ContextError(message)
+        if "/" in value or value.startswith("."):
+            message = (
+                f"{VAULT_ROOT_FILE} holds {value!r}; it must name one immediate, non-dot child."
+            )
+            raise ContextError(message)
+        vault = toplevel / value
+        if vault.is_symlink() or not vault.is_dir():
+            message = f"{vault} is not a directory (symlinks are not admitted)."
+            raise ContextError(message)
+        return vault
+    if not external:
+        message = (
+            f"{VAULT_ROOT_FILE} holds {value!r}; on a work machine the vault lives outside the"
+            " repository, so it must be an absolute path (or start with `~`)."
+        )
+        raise ContextError(message)
+    vault = Path(value).expanduser()
+    if not vault.is_dir():
+        message = f"{vault} is not a directory."
+        raise ContextError(message)
+    resolved_vault = vault.resolve()
+    resolved_top = toplevel.resolve()
+    if resolved_vault == resolved_top or resolved_top in resolved_vault.parents:
+        message = (
+            f"{vault} lies inside the repository; on a work machine the vault must be outside it."
+        )
+        raise ContextError(message)
+    return resolved_vault
 
 
-def inside_git_repo() -> bool:
-    result = proc.run_cmd(
-        ["git", "rev-parse", "--is-inside-work-tree"],
-        timeout=5,
-    )
-    return result.success and result.stdout.strip() == "true"
+def split_branch(branch: str) -> tuple[str | None, str]:
+    """`PROJ-123_name` -> ("PROJ-123", "name"); anything else -> (None, branch)."""
+    head, sep, tail = branch.partition("_")
+    if sep and tail and JIRA_RE.match(head):
+        return head, tail
+    return None, branch
+
+
+def git_toplevel() -> Path:
+    """The repository root; raises when the cwd is not inside a git work tree."""
+    inside = proc.run_cmd(["git", "rev-parse", "--is-inside-work-tree"], timeout=5)
+    if not inside.success or inside.stdout.strip() != "true":
+        message = "not inside a git repository."
+        raise ContextError(message)
+    result = proc.run_cmd(["git", "rev-parse", "--show-toplevel"], timeout=5)
+    if not result.success or not result.stdout.strip():
+        message = "git rev-parse --show-toplevel failed."
+        raise ContextError(message)
+    return Path(result.stdout.strip())
 
 
 def current_branch() -> str:
     result = proc.run_cmd(["git", "branch", "--show-current"], timeout=5)
-    if not result.success:
-        return ""
-    return result.stdout.strip()
+    return result.stdout.strip() if result.success else ""
 
 
-def resolve(branch: str, plans_dir: str) -> Context | None:
-    if not branch:
+def read_vault_root(toplevel: Path) -> str | None:
+    marker = toplevel / VAULT_ROOT_FILE
+    if not marker.is_file():
         return None
-    jira_issue, _, branch_name = branch.partition("_")
-    if not JIRA_RE.match(jira_issue):
-        return None
-    if not branch_name:
-        return None
-    project_dir = f"{plans_dir}/{jira_issue}/{branch_name}"
+    return marker.read_text(encoding="utf-8")
+
+
+def resolve(profile: str, toplevel: Path, declared: str | None, branch: str) -> Context:
+    vault = resolve_vault(profile, toplevel, declared)
+    jira_issue, branch_name = split_branch(branch)
     return Context(
+        profile=profile,
+        vault=str(vault),
+        branch=branch,
         jira_issue=jira_issue,
         branch_name=branch_name,
-        branch=branch,
-        project_dir=project_dir,
     )
 
 
 def main(argv: list[str] | None = None) -> int:
     env.setup()
-    args = parse_args(argv if argv is not None else sys.argv[1:])
-    if args is None:
-        return 1
-    if args.show_help:
+    args = argv if argv is not None else sys.argv[1:]
+    if args and args[0] in ("-h", "--help"):
         sys.stdout.write(USAGE)
         return 0
-
-    if not inside_git_repo():
-        sys.stderr.write("ERROR: not inside a git repository\n")
+    if args:
+        sys.stderr.write(f"Unknown option: {args[0]}\n")
         return 1
 
-    branch = current_branch()
-    if not branch:
-        sys.stderr.write("ERROR: detached HEAD — no branch name available\n")
-        return 2
-
-    context = resolve(branch, args.plans_dir)
-    if context is None:
-        sys.stderr.write(
-            f"Branch '{branch}' does not match PROJ-123_description convention.\n",
-        )
-        return 2
+    try:
+        profile = read_profile(dict(os.environ))
+        toplevel = git_toplevel()
+        context = resolve(profile, toplevel, read_vault_root(toplevel), current_branch())
+    except ContextError as exc:
+        sys.stderr.write(f"ERROR: {exc}\n")
+        return 1
 
     sys.stdout.write(context.to_json() + "\n")
     return 0

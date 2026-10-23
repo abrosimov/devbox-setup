@@ -1,9 +1,9 @@
 ---
 name: diverge-synthesize-select
-description: Diverge-Synthesize-Select (DSS) procedure for choosing between genuinely different approaches — generate 3–7 candidates including a boring baseline and a combination, weigh their trade-offs, and present a decision card with a recommendation. Use when the user asks for options, alternatives, or solutions, or when the candidates differ in what the user gets and the conversation does not settle the choice; below that threshold the same procedure runs in your own reasoning and only the pick is reported. Also covers parallel "advocate" agents for architecture-level decisions. Not to be confused with `fpf-thinking` (problem framing) or `mcp-sequential-thinking` (step chains).
+description: Diverge-Synthesize-Select (DSS) procedure for choosing between genuinely different approaches — generate 3–7 candidates including a boring baseline and a combination, weigh their trade-offs on the frame `comparison-frame` builds, and present a decision card with a recommendation. Use when the user asks for options, alternatives, or solutions, or when the candidates differ in what the user gets and the conversation does not settle the choice; below that threshold run it in your own reasoning and report only the pick.
 alwaysApply: false
 problem: "Consequential decisions collapse into the first workable idea instead of a real comparison of alternatives."
-related: [response-templates, fpf-thinking, mcp-sequential-thinking, structured-output, writing-for-the-reader]
+related: [response-templates, fpf-thinking, comparison-frame, mcp-sequential-thinking, structured-output, writing-for-the-reader]
 ---
 
 # Diverge-Synthesize-Select (DSS)
@@ -77,6 +77,9 @@ Generate the candidates before judging any of them; early judgement anchors on t
 
 ### 4. Evaluate
 
+When the criteria of step 1 are not yet scales — a number without a unit or basis, a quality
+word without declared values, a performance figure beside a correctness requirement — build
+the frame with `comparison-frame` first: floors, budgets, optimised coordinates, comparator.
 Weigh the candidates in an order different from the one you generated them in, which dampens the
 pull of whichever came first. Score each criterion `strong`, `adequate`, or `weak`. A candidate
 that is weak on simplicity or consistency without a compelling reason, or that needs work outside

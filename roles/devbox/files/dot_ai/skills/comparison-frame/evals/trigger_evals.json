@@ -1,0 +1,10 @@
+[
+  {"query": "Before we compare the three storage options, define what we are actually comparing them on", "should_trigger": true},
+  {"query": "Here is a benchmark showing the new parser is 30% faster; can we adopt it?", "should_trigger": true},
+  {"query": "Build the pros and cons table for the migration approaches", "should_trigger": true},
+  {"query": "The review scored every candidate 1 to 5 and averaged; is that a sound comparison?", "should_trigger": true},
+  {"query": "What counts as a better CI gate for this repository, and when do we stop optimising it?", "should_trigger": true},
+  {"query": "Rename this variable to match the rest of the package", "should_trigger": false},
+  {"query": "Write a Go HTTP handler for the /orders endpoint", "should_trigger": false},
+  {"query": "Explain how TLC's -simulate flag works", "should_trigger": false}
+]

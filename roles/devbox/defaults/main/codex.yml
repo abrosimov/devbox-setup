@@ -4,6 +4,7 @@
 # Vendor-specific skills stay in dot_ai until they have a Codex adapter.
 devbox_codex_shared_skills:
   - code-comments
+  - comparison-frame
   - contract-boundary
   - diagnose-and-repair
   - diverge-synthesize-select

@@ -141,7 +141,8 @@ naming conventions rather than inventing a global FPF path scheme.
 - Use FPF for systems thinking, not as a replacement for language-specific engineering skills.
 - Use `narrative-thinking` when the problem is already framed and the task is to explain, teach, or
   narrate it without outrunning the source.
-- `diverge-synthesize-select` owns the user-facing decision card; Decision Design supplies its
+- `comparison-frame` builds the scales a comparison is made on (`A.17`–`A.19`, `A.19.ECS`, `C.16`,
+  `E.13`) before options are weighed; `diverge-synthesize-select` owns the user-facing decision card; Decision Design supplies its
   formulation, alternatives and robustness methods when those are the hard part.
 - Use option-generation or sequential-reasoning aids only when they add something to the selected
   branch; they are not mandatory dependencies.

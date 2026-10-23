@@ -193,7 +193,7 @@ Current per-profile differences:
 | `commands/techne-*.md` | Slash commands — 22, all `techne-` prefixed (`/techne-implement`, `/techne-test`, `/techne-plan`, etc.) | `~/.claude/commands/` |
 | `dot_ai/skills/*/SKILL.md` | Reusable knowledge modules (46 skills); Codex receives the compatible allowlist | `~/.claude/skills/`, `~/.gemini/config/skills/`, `~/.agents/skills/` |
 | `dot_ai/skills/fpf-thinking/references/` | Vendored FPF Core and companion NSTD specifications | Alongside each deployed `fpf-thinking` skill |
-| `schemas/*.json` | JSON Schema files (3: `se_output`, `dss_output`, `comparison_frame`) for SE and DSS output validation | `~/.claude/schemas/` |
+| `schemas/*.json` | JSON Schema files (2: `se_output`, `dss_output`) for SE and DSS output validation | `~/.claude/schemas/` |
 | `bin/*` | Helper scripts (MCP wrappers, hooks, validation) | `~/.claude/bin/` |
 | `templates/` | Reusable project templates (devcontainer) | `~/.claude/templates/` |
 | `docs/` | Reference documentation | `~/.claude/docs/` |

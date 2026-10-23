@@ -117,8 +117,8 @@ tier unless the use defines one; a floor question stays a floor question.
 
 ### 8. Write the record, render the table
 
-The frame and its values are one machine-readable record, `comparison_frame.json`, under the
-schema `schemas/comparison_frame.schema.json` (`structured-output`): the evaluated kind with its
+The frame and its values are one machine-readable record, `comparison_frame.json`: protobuf
+JSON of `devbox.comparison_frame.v1.ComparisonFrame` (`proto/` in this skill, `buf lint`): the evaluated kind with its
 FPF nature (system, episteme, work, method, relation), the three contrast cases, each
 coordinate with its scale, role, measurement account and protected trade-offs, the comparator,
 the basis, the stop condition, the candidates, one result row per candidate and coordinate
@@ -148,7 +148,9 @@ Nothing in the frame rewards being faster than the budget.
 
 ## Persisted record
 
-`comparison_frame.json` in the project directory, following `schemas/comparison_frame.schema.json`.
+`comparison_frame.json` in the project directory: protobuf JSON of
+`devbox.comparison_frame.v1.ComparisonFrame`, declared in `proto/devbox/comparison_frame/v1/`.
+No JSON Schema: every record this skill writes is declared in protobuf.
 When DSS runs after the frame, its `dss_output.json` names the candidates by the same `OPT-n`
 ids, and the frame's result rows are the evaluation the card summarises.
 

@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+// A comparison frame as the comparison-frame skill builds it: the evaluated
+// kind and use, the three contrast cases, one scale per coordinate with its
+// role, the comparator and basis, the stop condition, the candidates, the
+// result rows and the set-valued outcome. The record on disk is protobuf JSON
+// of this message (comparison_frame.json); every table or decision card is a
+// rendering of it.
+package devbox.comparison_frame.v1;
+
+// What is compared, as a kind, and the use the comparison serves.
+message Evaluated {
+  // FPF nature of the evaluated kind.
+  enum Nature {
+    NATURE_UNSPECIFIED = 0;
+    NATURE_SYSTEM = 1;     // an acting system
+    NATURE_EPISTEME = 2;   // a claim-bearing description: a model, a specification, a design
+    NATURE_WORK = 3;       // a performed occurrence: a run, a measurement
+    NATURE_METHOD = 4;     // a reusable way of doing
+    NATURE_RELATION = 5;
+  }
+  string kind = 1;        // "a gate run of one directory by one release on one runner"
+  Nature nature = 2;
+  string use = 3;         // the decision or action the comparison serves
+  string judged_by = 4;
+  string window = 5;      // how long a result stays valid
+}
+
+// The three cases a frame must tell apart before any coordinate is read.
+message ContrastCases {
+  string admissible = 1;
+  string below_floor = 2;
+  string outside_kind = 3;  // a candidate that is refused, not scored
+}
+
+message Scale {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_NOMINAL = 1;
+    KIND_ORDINAL = 2;
+    KIND_INTERVAL = 3;
+    KIND_RATIO = 4;
+  }
+  Kind kind = 1;
+  repeated string values = 2;              // admissible values in order, for nominal and ordinal scales
+  string unit = 3;
+  map<string, string> value_meanings = 4;
+}
+
+// The C.16 account of a measured value.
+message Measurement {
+  string measurand = 1;
+  string method = 2;
+  repeated string conditions = 3;  // what the value depends on: hardware, versions, seeds, data
+  string uncertainty = 4;          // how variance is handled: "larger of two runs"
+  string validity_window = 5;
+}
+
+message Coordinate {
+  enum Role {
+    ROLE_UNSPECIFIED = 0;
+    ROLE_FLOOR = 1;        // must be met; never traded
+    ROLE_BUDGET = 2;       // must stay within a limit from the use; nothing gained past it
+    ROLE_OPTIMISED = 3;    // a preferred direction under the comparator
+    ROLE_ORIENTATION = 4;  // read for understanding, never for ranking
+  }
+  enum Direction {
+    DIRECTION_UNSPECIFIED = 0;
+    DIRECTION_LOWER = 1;
+    DIRECTION_HIGHER = 2;
+    DIRECTION_NONE = 3;
+  }
+  string id = 1;                  // C-1, C-2, ...
+  string characteristic = 2;      // what is measured or judged, named from a failure mode
+  Scale scale = 3;
+  bool is_measurement = 4;        // true for a measured value, false for a content judgement
+  Measurement measurement = 5;    // required when is_measurement is true
+  string missing_means = 6;       // what an absent value means
+  Role role = 7;
+  string floor = 8;               // the condition that must be met (role floor)
+  string limit = 9;               // the limit from the use (role budget)
+  Direction direction = 10;       // role optimised; none otherwise
+  repeated string protected_tradeoffs = 11;  // coordinate ids that may worsen while this one improves
+}
+
+message Comparator {
+  enum Aggregation {
+    AGGREGATION_UNSPECIFIED = 0;
+    AGGREGATION_NONE = 1;            // set-valued outcome over primitive coordinates
+    AGGREGATION_DECLARED_INDEX = 2;  // weights published, primitives kept
+  }
+  repeated Coordinate.Role role_order = 1;
+  string tie_rule = 2;
+  Aggregation aggregation = 3;
+  map<string, double> index_weights = 4;
+}
+
+message Stop {
+  string done_when = 1;
+  repeated string reopen_when = 2;
+}
+
+message Candidate {
+  string id = 1;    // OPT-n when it comes from DSS
+  string name = 2;
+}
+
+// One value of one candidate on one coordinate.
+message ResultRow {
+  string candidate = 1;
+  string coordinate = 2;
+  string value = 3;        // empty when missing; missing_means of the coordinate applies
+  bool missing = 4;
+  string basis_ref = 5;    // the basis the value was taken on
+  string evidence = 6;     // path:line, run id, document and edition
+  string rationale = 7;
+}
+
+// The set-valued outcome for one pair.
+message Outcome {
+  enum Relation {
+    RELATION_UNSPECIFIED = 0;
+    RELATION_A_DOMINATES = 1;
+    RELATION_B_DOMINATES = 2;
+    RELATION_INCOMPARABLE = 3;
+    RELATION_A_BELOW_FLOOR = 4;
+    RELATION_B_BELOW_FLOOR = 5;
+    RELATION_BASIS_DIFFERS = 6;
+  }
+  string a = 1;
+  string b = 2;
+  Relation relation = 3;
+  repeated string on = 4;  // coordinate ids the relation rests on
+}
+
+message ComparisonFrame {
+  Evaluated evaluated = 1;
+  ContrastCases contrast_cases = 2;
+  repeated Coordinate coordinates = 3;
+  Comparator comparator = 4;
+  map<string, string> basis = 5;  // conditions all compared values share; a change is a new basis
+  Stop stop = 6;
+  repeated Candidate candidates = 7;
+  repeated ResultRow results = 8;
+  repeated Outcome outcome = 9;
+}

@@ -30,7 +30,6 @@ def hook():
     return module
 
 
-@pytest.mark.xfail(strict=True, reason="Upstream persists emission progress before SDK flush")
 def test_unacknowledged_observations_are_not_checkpointed(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -60,19 +59,27 @@ def test_unacknowledged_observations_are_not_checkpointed(
         "save_session_state",
         lambda _global_state, _key, session_state: saved.append(dict(session_state.turn_progress)),
     )
-    m.emit_new_turns_from_transcript(
-        object(),
-        SimpleNamespace(user_id="test", trace_seed=None, parent_context=None),
-        "session",
-        transcript,
-    )
+
+    class BrokenClient:
+        def flush(self):
+            message = "collector unavailable"
+            raise OSError(message)
+
+        def shutdown(self):
+            pass
+
+    with pytest.raises(OSError, match="collector unavailable"):
+        m.emit_new_turns_from_transcript(
+            BrokenClient(),
+            SimpleNamespace(user_id="test", trace_seed=None, parent_context=None),
+            "session",
+            transcript,
+        )
     # No flush or durable collector acknowledgement happened, so the
     # persisted checkpoint must NOT declare the event sent.
-    assert saved
-    assert not saved[-1].get("turn-one", {}).get("emitted_keys")
+    assert not saved
 
 
-@pytest.mark.xfail(strict=True, reason="Upstream suppresses SDK flush exceptions")
 def test_failed_flush_must_be_observable_to_delivery_caller() -> None:
     """A flush failure must not look identical to a confirmed durable handoff."""
     m = hook()
@@ -90,7 +97,6 @@ def test_failed_flush_must_be_observable_to_delivery_caller() -> None:
         m.flush_and_shutdown_langfuse_client(BrokenClient())
 
 
-@pytest.mark.xfail(strict=True, reason="Upstream times out and abandons daemon flush")
 def test_hanging_flush_must_not_report_success(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -98,7 +104,8 @@ def test_hanging_flush_must_not_report_success(
     m = hook()
 
     class FakeThread:
-        def __init__(self, _target, daemon):
+        def __init__(self, target, daemon):
+            assert callable(target)
             assert daemon
 
         def start(self):
@@ -121,3 +128,68 @@ def test_turn_trace_id_is_deterministic_for_replay() -> None:
     second = m.derive_turn_trace_id("stable-session", 1)
     assert first == second
     assert m._is_valid_trace_id_hex(first)
+
+
+def test_closed_turn_emit_failure_is_propagated(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failed closed turn cannot be marked emitted and committed."""
+    m = hook()
+    turn = m.Turn(
+        user_msg={"uuid": "turn-one"},
+        assistant_msgs=[],
+        tool_results_by_id={},
+        tool_use_timestamps_by_id={},
+        injected_by_tool_id={},
+        rows=[],
+    )
+    state = m.SessionState(turn_numbers={"turn-one": 1})
+
+    def broken_emit(*_args, **_kwargs):
+        message = "injected observation serialization failure"
+        raise ValueError(message)
+
+    monkeypatch.setattr(m, "emit_turn", broken_emit)
+    with pytest.raises(ValueError, match="injected observation"):
+        m.emit_and_close_ready_turns(
+            object(),
+            "session",
+            Path("session.jsonl"),
+            [turn],
+            state,
+            user_id=None,
+            subagent_transcripts_by_tool_use_id={},
+        )
+
+
+def test_open_turn_emit_failure_is_propagated(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An open turn cannot silently proceed to commit after emission fails."""
+    m = hook()
+    turn = m.Turn(
+        user_msg={"uuid": "turn-one"},
+        assistant_msgs=[],
+        tool_results_by_id={},
+        tool_use_timestamps_by_id={},
+        injected_by_tool_id={},
+        rows=[],
+    )
+    state = m.SessionState(
+        open_turn={"rows": [{"type": "user", "uuid": "turn-one"}]},
+        turn_numbers={"turn-one": 1},
+    )
+
+    def broken_emit(*_args, **_kwargs):
+        message = "injected open-turn emission failure"
+        raise ValueError(message)
+
+    monkeypatch.setattr(m, "assemble_turns", lambda *_: ([], turn, []))
+    monkeypatch.setattr(m, "turn_has_unresolved_async_activity", lambda *_: False)
+    monkeypatch.setattr(m, "emit_turn", broken_emit)
+    with pytest.raises(ValueError, match="injected open-turn"):
+        m.emit_ready_observations_of_open_turn(
+            object(),
+            "session",
+            Path("session.jsonl"),
+            state,
+            {},
+            user_id=None,
+            subagent_transcripts_by_tool_use_id={},
+        )

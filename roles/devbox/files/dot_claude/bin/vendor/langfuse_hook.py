@@ -372,11 +372,18 @@ def create_langfuse_client(config: LangfuseConfig) -> Optional[Langfuse]:
     if not CAPTURE_IMAGES and not os.environ.get("LANGFUSE_MEDIA_UPLOAD_ENABLED"):
         os.environ["LANGFUSE_MEDIA_UPLOAD_ENABLED"] = "false"
     try:
-        return Langfuse(
+        # The hook's ACK is to a fsync-backed local OTLP outbox, not to the
+        # network. The independent LaunchAgent uploads the persisted batches.
+        from durable_otel_exporter import DurableSpoolExporter
+        exporter = DurableSpoolExporter()
+        client = Langfuse(
             public_key=config.public_key,
             secret_key=config.secret_key,
             host=config.host,
+            span_exporter=exporter,
         )
+        client._devbox_durable_exporter = exporter
+        return client
     except Exception as e:
         info(f"Langfuse client creation failed ({type(e).__name__}: {e}); tracing disabled for this turn")
         return None
@@ -616,10 +623,19 @@ def save_hook_state(state: Dict[str, Any]) -> None:
         sweep_stale_session_locks(state, cutoff)
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         tmp = STATE_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+        with open(tmp, "w", encoding="utf-8") as checkpoint:
+            checkpoint.write(json.dumps(state, indent=2, sort_keys=True))
+            checkpoint.flush()
+            os.fsync(checkpoint.fileno())
         os.replace(tmp, STATE_FILE)
+        directory_fd = os.open(STATE_DIR, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
     except Exception as e:
-        debug(f"save_hook_state failed: {e}")
+        info(f"save_hook_state failed: {e}")
+        raise
 
 def save_session_state(global_state: Dict[str, Any], key: str, session_state: SessionState) -> None:
     update_session_state(global_state, key, session_state)
@@ -3333,6 +3349,7 @@ def emit_and_close_ready_turns(
             # Log at INFO so SDK incompatibilities (and other emit failures)
             # are visible without needing CC_LANGFUSE_DEBUG=true.
             info(f"emit_turn failed: {type(e).__name__}: {e}")
+            raise
     return emitted
 
 
@@ -3402,6 +3419,7 @@ def emit_ready_observations_of_open_turn(
         session_state.turn_progress[user_row_uuid] = progress
     except Exception as e:
         info(f"emitting ready observations of open turn failed: {type(e).__name__}: {e}")
+        raise
 
 def emit_new_turns_from_transcript(
     langfuse: Langfuse,
@@ -3411,7 +3429,8 @@ def emit_new_turns_from_transcript(
     *,
     flush_deferred_agent_turns: bool = False,
 ) -> int:
-    key = get_session_state_key(session_id, str(transcript_path))
+    state_identity = os.environ.get("CC_LANGFUSE_STATE_IDENTITY_PATH") or str(transcript_path)
+    key = get_session_state_key(session_id, state_identity)
 
     with FileLock(get_session_lock_path(key)):
         with FileLock(LOCK_FILE):
@@ -3480,10 +3499,10 @@ def emit_new_turns_from_transcript(
             session_history=session_history,
         )
 
-        # Known limitation (accepted, like the crash-between-emit-and-save
-        # duplicate window): progress is persisted before the SDK flush in
-        # main(); a dropped flush leaves emitted_keys pointing at spans that
-        # never reached the server.
+        # Do not acknowledge transcript offsets or emitted observations before
+        # the SDK reports a completed flush. A failed or timed-out flush leaves
+        # the previous checkpoint intact so the next hook can replay.
+        flush_and_shutdown_langfuse_client(langfuse)
         with FileLock(LOCK_FILE):
             state = load_hook_state()
             save_session_state(state, key, session_state)
@@ -3495,20 +3514,30 @@ def flush_and_shutdown_langfuse_client(langfuse: Optional[Langfuse]) -> None:
     if langfuse is None:
         return
 
-    # Cap flush+shutdown at 5s so a slow/unreachable Langfuse can't stall Claude Code.
-    try:
-        def _flush_and_shutdown():
-            try:
-                langfuse.flush()
-            except Exception:
-                pass
-            langfuse.shutdown()
+    # Bound hook exit latency without ever treating an incomplete flush as
+    # delivered. A timeout preserves the last committed replay cursor.
+    failures: List[BaseException] = []
 
-        t = threading.Thread(target=_flush_and_shutdown, daemon=True)
-        t.start()
-        t.join(5.0)
-    except Exception:
-        pass
+    def _flush_and_shutdown():
+        try:
+            langfuse.flush()
+            langfuse.shutdown()
+        except BaseException as exc:
+            failures.append(exc)
+
+    worker = threading.Thread(target=_flush_and_shutdown, daemon=True)
+    worker.start()
+    worker.join(5.0)
+    if worker.is_alive():
+        raise TimeoutError("Langfuse flush did not complete within 5 seconds")
+    if failures:
+        raise failures[0]
+    durable_exporter = getattr(langfuse, "_devbox_durable_exporter", None)
+    if durable_exporter is not None and durable_exporter.failed is not None:
+        raise RuntimeError(
+            f"Langfuse local OTLP outbox persistence failed: "
+            f"{type(durable_exporter.failed).__name__}"
+        ) from durable_exporter.failed
 
 
 # ----------------- Main -----------------
@@ -3524,7 +3553,7 @@ def main() -> int:
     config = get_langfuse_config()
     if config is None:
         log_missing_langfuse_config()
-        return 0
+        return 1
 
     payload = read_hook_payload()
     hook_context = get_session_id_and_transcript_path(payload)
@@ -3536,7 +3565,7 @@ def main() -> int:
 
     langfuse = create_langfuse_client(config)
     if langfuse is None:
-        return 0
+        return 1
 
     try:
         emitted = emit_new_turns_from_transcript(
@@ -3552,15 +3581,13 @@ def main() -> int:
         return 0
 
     except TimeoutError as e:
-        info(f"lock timeout, skipping: {e}")
-        return 0
+        info(f"Langfuse delivery incomplete (will retry): {e}")
+        return 1
 
     except Exception as e:
-        debug(f"Unexpected failure: {e}")
-        return 0
+        info(f"Langfuse delivery incomplete (will retry): {type(e).__name__}: {e}")
+        return 1
 
-    finally:
-        flush_and_shutdown_langfuse_client(langfuse)
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -4,7 +4,7 @@ description: >
   Build the scales before comparing options: object kind and use, three contrast cases, one
   characteristic per coordinate on one declared scale, floors never traded, budgets,
   protected trade-offs, comparator and basis, stop condition. Use before any pros-and-cons
-  table, decision card or benchmark claim.
+  table or decision card.
 problem: "Options get compared on scores nobody declared, so the easiest number wins, correctness is traded for a proxy, and no one can say when the comparison is done."
 related: [fpf-thinking, diverge-synthesize-select, response-templates, writing-for-the-reader]
 ---

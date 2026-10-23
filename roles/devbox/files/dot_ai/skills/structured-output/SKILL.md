@@ -36,6 +36,7 @@ Machine-readable JSON Schema files live in `schemas/`:
 |--------|------|---------|
 | SE Output | `schemas/se_output.schema.json` | SE agents (Go, Python, Frontend), Test Writers, Code Reviewers |
 | DSS Output | `schemas/dss_output.schema.json` | `/techne-options` command, DSS protocol |
+| Comparison Frame | `schemas/comparison_frame.schema.json` | `comparison-frame` skill; the scales a DSS evaluation is made on |
 
 These files are the **authoritative** schema definitions. The inline JSON examples below are derived from them. When in doubt, the schema file wins.
 

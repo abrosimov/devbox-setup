@@ -35,7 +35,11 @@ step below is in doubt.
 
 ### 1. Name the object kind and the use
 
-One sentence: *good as what kind of object, for which use, judged by whom, over which window.*
+One sentence: *good as what kind of thing, for which use, judged by whom, over which window*,
+and the thing's nature: an acting system, a claim-bearing description (a model, a
+specification, a design), a performed occurrence (a run, a measurement), a method, or a
+relation. A formal model is a description; what a check establishes is a claim about it, never
+about the system it describes. The frame compares the kind named here and nothing above it.
 "A gate run of one directory by one release on one runner, for deciding where the tier runs in
 CI, judged by the owner, until the pins or the runner change." If the object kind cannot be
 named, stop here: no coordinate is meaningful yet.
@@ -111,10 +115,16 @@ coordinates compared under the comparator. When does it reopen: the object kind,
 or a contrast case changes, or a protected trade-off was found to have moved. No "exceptional"
 tier unless the use defines one; a floor question stays a floor question.
 
-### 8. Fix the result row
+### 8. Write the record, render the table
 
-Every value is recorded as: coordinate, value, basis, evidence locus, one-line rationale.
-A table of values without rationale and basis is an impression, not a comparison.
+The frame and its values are one machine-readable record, `comparison_frame.json`, under the
+schema `schemas/comparison_frame.schema.json` (`structured-output`): the evaluated kind with its
+FPF nature (system, episteme, work, method, relation), the three contrast cases, each
+coordinate with its scale, role, measurement account and protected trade-offs, the comparator,
+the basis, the stop condition, the candidates, one result row per candidate and coordinate
+(value, basis, evidence locus, rationale), and the set-valued outcome per pair. Every table or
+decision card is rendered from this record; a table that exists without it is an impression,
+not a comparison.
 
 ### 9. Hand the frame to the comparison
 
@@ -135,6 +145,12 @@ Machine-independent cost for ranking, if ever needed: distinct states, tool invo
 starts, SMT problem count. Protected trade-off: a change that saves time by adding a second
 code path is accepted only with that cost named. Stop: floors met and budget held on two runs.
 Nothing in the frame rewards being faster than the budget.
+
+## Persisted record
+
+`comparison_frame.json` in the project directory, following `schemas/comparison_frame.schema.json`.
+When DSS runs after the frame, its `dss_output.json` names the candidates by the same `OPT-n`
+ids, and the frame's result rows are the evaluation the card summarises.
 
 ## Pitfalls
 

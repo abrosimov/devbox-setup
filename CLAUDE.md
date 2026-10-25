@@ -171,7 +171,6 @@ Current per-profile differences:
 | `devbox_projects_dir` | `$HOME/Projects` | `$HOME/Work` |
 | Container runtime cask | `docker-desktop` | `orbstack` |
 | Extra MCP HTTP servers | none | `atlassian` |
-| Extra Claude plugins (`devbox_extra_claude_plugins`) | `langfuse` | none |
 | Langfuse skill access (`devbox_langfuse_host`) | `LANGFUSE_HOST` + Keychain keys + sandbox domains | none |
 
 ### AI Config (in `roles/devbox/files/dot_claude/`, `dot_codex/`, and `dot_ai/`)

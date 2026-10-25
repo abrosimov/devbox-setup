@@ -153,7 +153,7 @@ def test_work_claude_settings_apply_without_any_langfuse_keychain_item(tmp_path:
     assert result.changed is True
     assert keychain.calls == []
     assert {"LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"}.isdisjoint(live["env"])
-    assert "langfuse@claude-plugins-official" not in live["enabledPlugins"]
+    assert live["enabledPlugins"]["langfuse@claude-plugins-official"] is True
     assert "langfuse.com" not in live["sandbox"]["network"]["allowedDomains"]
     assert "@omit@" not in live_text
 

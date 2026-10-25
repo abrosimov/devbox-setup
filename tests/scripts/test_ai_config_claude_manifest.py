@@ -46,12 +46,6 @@ KEYCHAIN_DECLARATION = "@keychain@"
 LANGFUSE_KEY_PATHS = {("env", "LANGFUSE_PUBLIC_KEY"), ("env", "LANGFUSE_SECRET_KEY")}
 
 
-def langfuse_plugin_declaration() -> tuple[str, ...]:
-    settings = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-    (key,) = (key for key in settings["enabledPlugins"] if key.startswith("{{"))
-    return ("enabledPlugins", key)
-
-
 def repository_document(profile: str) -> RepositoryDocument:
     return build_repository_document(
         SETTINGS_PATH.read_bytes(),
@@ -182,10 +176,7 @@ class TestClaudeFieldManifest:
     def test_only_the_profile_dependent_settings_are_templated(self) -> None:
         document = repository_document("personal")
 
-        assert document.templated_paths == PROFILE_TEMPLATED_PATHS | {
-            ("enabledPlugins", LANGFUSE_PLUGIN),
-            langfuse_plugin_declaration(),
-        }
+        assert document.templated_paths == PROFILE_TEMPLATED_PATHS
 
     def test_personal_renders_langfuse_skill_access(self) -> None:
         rendered = snapshot_mapping(repository_document("personal").rendered)
@@ -206,7 +197,7 @@ class TestClaudeFieldManifest:
             "langfuse.com",
         ]
 
-    def test_work_renders_no_langfuse_skill_access(self) -> None:
+    def test_work_enables_the_langfuse_plugin_without_skill_access(self) -> None:
         document = repository_document("work")
         rendered = snapshot_mapping(document.rendered)
         environment = rendered["env"]
@@ -219,7 +210,7 @@ class TestClaudeFieldManifest:
         assert {"LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"}.isdisjoint(
             environment
         )
-        assert LANGFUSE_PLUGIN not in plugins
+        assert plugins[LANGFUSE_PLUGIN] is True
         assert not any("langfuse" in domain for domain in sandbox["network"]["allowedDomains"])
         assert "@omit@" not in json.dumps(rendered)
         assert KEYCHAIN_DECLARATION not in json.dumps(rendered)

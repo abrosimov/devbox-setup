@@ -77,6 +77,7 @@
   ansible.builtin.command: pmset -a disablesleep 1
   when: devbox_pmset_disablesleep.stdout | trim != "1"
   become: true
+  changed_when: true
   tags: [macos]
 
 # --- Developer mode (note: "Enable Developer mode.md") -----------------------
@@ -94,6 +95,7 @@
   ansible.builtin.command: /usr/sbin/DevToolsSecurity --enable
   when: '"enabled" not in (devbox_devtools_status.stdout | default(""))'
   become: true
+  changed_when: true
   tags: [macos]
 
 # HiDPI for external displays (note: "Enable HiDPI for external displays.md")

@@ -203,6 +203,34 @@
   check_mode: false
   tags: [configs, claude]
 
+# A marketplace is cloned once, at registration, and refreshed only when Claude
+# Code itself decides to; a plugin published after that clone is "not found".
+# Refresh only the marketplace a missing plugin comes from, so a converged run
+# makes no network calls.
+- name: Refresh the marketplace of each Claude Code plugin not installed yet
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - update
+      - "{{ item.marketplace | default('claude-plugins-official') }}"
+  loop: "{{ devbox_claude_plugins + devbox_extra_claude_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when:
+    - devbox_claude_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      (item.name ~ '@' ~ (item.marketplace | default('claude-plugins-official')))
+      not in
+      (devbox_claude_plugins_before.stdout | from_json
+       | map(attribute='id') | list)
+  changed_when: true
+  tags: [configs, claude]
+
 - name: Install Claude Code plugins (user scope)
   ansible.builtin.command:
     argv:

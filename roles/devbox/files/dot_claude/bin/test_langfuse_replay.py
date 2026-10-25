@@ -85,6 +85,30 @@ def test_failed_hook_keeps_its_pending_snapshot(
     assert len(list((pending_environment / "langfuse_pending").glob("*.json"))) == 1
 
 
+def test_repeated_failed_stops_keep_one_snapshot_per_session(
+    monkeypatch: pytest.MonkeyPatch,
+    pending_environment: Path,
+    tmp_path: Path,
+) -> None:
+    payload = sample_payload(tmp_path)
+
+    def failed_hook(*_args, **_kwargs):
+        raise SystemExit(1)
+
+    monkeypatch.setattr(langfuse_trace_hook.runpy, "run_path", failed_hook)
+    for _ in range(3):
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+        with pytest.raises(SystemExit):
+            langfuse_trace_hook.main()
+
+    root = pending_environment / "langfuse_pending"
+    (marker,) = root.glob("*.json")
+    record = json.loads(marker.read_text(encoding="utf-8"))
+    snapshots = [path for path in root.iterdir() if path.is_dir()]
+    assert snapshots == [Path(record["snapshot_path"]).parent]
+    assert Path(record["snapshot_path"]).is_file()
+
+
 def test_completed_hook_clears_its_pending_snapshot(
     monkeypatch: pytest.MonkeyPatch,
     pending_environment: Path,

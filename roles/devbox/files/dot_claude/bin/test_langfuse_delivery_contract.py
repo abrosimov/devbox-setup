@@ -9,6 +9,8 @@ of their implementation. Do not mark them passing by weakening assertions.
 from __future__ import annotations
 
 import importlib.util
+import os
+import subprocess
 import sys
 from contextlib import nullcontext
 from pathlib import Path
@@ -17,6 +19,7 @@ from types import SimpleNamespace
 import pytest
 
 SOURCE = Path(__file__).parent / "vendor" / "langfuse_hook.py"
+HOOK_RUN_DRIVER = Path(__file__).parent / "testdata" / "langfuse_hook_run.py"
 
 
 def hook():
@@ -193,3 +196,53 @@ def test_open_turn_emit_failure_is_propagated(monkeypatch: pytest.MonkeyPatch) -
             user_id=None,
             subagent_transcripts_by_tool_use_id={},
         )
+
+
+def run_hook_scenario(
+    tmp_path: Path, scenario: str
+) -> tuple[subprocess.CompletedProcess[str], Path]:
+    pytest.importorskip("langfuse")
+    state = tmp_path / "state"
+    transcript = tmp_path / "session.jsonl"
+    transcript.write_text("", encoding="utf-8")
+    environment = {
+        name: value for name, value in os.environ.items() if not name.startswith("LANGFUSE_")
+    }
+    environment |= {
+        "CC_LANGFUSE_STATE_DIR": str(state),
+        "CC_LANGFUSE_PUBLIC_KEY": "pk-lf-hook-run",
+        "CC_LANGFUSE_SECRET_KEY": "sk-lf-hook-run",
+        "CC_LANGFUSE_BASE_URL": "http://127.0.0.1:9",
+    }
+    try:
+        result = subprocess.run(
+            [sys.executable, str(HOOK_RUN_DRIVER), str(SOURCE.parent), str(transcript), scenario],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+            env=environment,
+        )
+    except subprocess.TimeoutExpired:
+        pytest.fail(f"Hook process did not exit after the {scenario} run")
+    return result, state
+
+
+def test_run_failing_on_turn_k_leaves_nothing_in_the_spool(tmp_path: Path) -> None:
+    """The checkpoint stays put, so replay re-emits earlier turns; spooling them duplicates."""
+    result, state = run_hook_scenario(tmp_path, "emission")
+    assert result.returncode == 1, result.stderr
+    assert not list(state.rglob("*.otlp"))
+
+
+def test_flush_timeout_discards_queued_spans_and_exits(tmp_path: Path) -> None:
+    result, state = run_hook_scenario(tmp_path, "flush-timeout")
+    assert result.returncode == 1, result.stderr
+    assert not list((state / "langfuse_otlp_spool").glob("*.otlp"))
+
+
+def test_successful_run_commits_every_turn_to_the_spool(tmp_path: Path) -> None:
+    result, state = run_hook_scenario(tmp_path, "success")
+    assert result.returncode == 0, result.stderr
+    assert list((state / "langfuse_otlp_spool").glob("*.otlp"))
+    assert not list((state / "langfuse_otlp_spool").rglob(".staging/*/*.otlp"))

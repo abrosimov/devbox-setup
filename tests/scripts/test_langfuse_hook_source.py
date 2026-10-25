@@ -29,6 +29,7 @@ def test_deployed_artifact_matches_pin() -> None:
         "0004-propagate-emission-failures.patch",
         "0005-replay-snapshot-identity.patch",
         "0006-durable-otlp-exporter.patch",
+        "0007-discard-uncommitted-spans.patch",
     ]
 
 

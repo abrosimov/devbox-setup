@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import contextlib
+import fcntl
 import hashlib
 import io
 import json
@@ -17,7 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
-    from collections.abc import MutableMapping
+    from collections.abc import Generator, MutableMapping
 
 # Operator API credentials are never exported through the unauthenticated edge.
 SHADOWING_VARIABLES: Final[tuple[str, ...]] = (
@@ -42,6 +43,29 @@ def pending_root() -> Path:
 
 def pending_key(session_id: str, transcript_path: Path) -> str:
     return hashlib.sha256(f"{session_id}::{transcript_path}".encode()).hexdigest()
+
+
+@contextlib.contextmanager
+def registry_lock(root: Path) -> Generator[None]:
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (root / ".lock").open("a") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        yield
+
+
+def marker_nonce(marker: Path) -> str | None:
+    try:
+        nonce = json.loads(marker.read_text(encoding="utf-8")).get("nonce")
+    except (FileNotFoundError, ValueError, AttributeError):
+        return None
+    return nonce if isinstance(nonce, str) else None
+
+
+def snapshot_directory(root: Path, key: str, nonce: str) -> Path | None:
+    try:
+        return root / f"{key}.{uuid.UUID(hex=nonce).hex}"
+    except ValueError:
+        return None
 
 
 def fsync_directory(path: Path) -> None:
@@ -129,19 +153,23 @@ def register_pending(payload: dict) -> tuple[Path, str, Path] | None:
         "trace_seed": os.environ.get("CC_LANGFUSE_TRACE_SEED", ""),
         "traceparent": os.environ.get("CC_LANGFUSE_TRACEPARENT", ""),
     }
-    durable_json(marker, record)
+    with registry_lock(root):
+        replaced = marker_nonce(marker)
+        durable_json(marker, record)
+    # Nothing references the replaced record's snapshot any more: its own hook
+    # reads the original transcript and replay reads only the current marker.
+    stale = snapshot_directory(root, key, replaced) if replaced else None
+    if stale is not None:
+        shutil.rmtree(stale, ignore_errors=True)
     return marker, nonce, snapshot
 
 
 def complete_pending(marker: Path, nonce: str, snapshot: Path) -> None:
     """Do not delete a newer Stop's marker while an older hook is finishing."""
-    try:
-        current = json.loads(marker.read_text(encoding="utf-8"))
-        if current.get("nonce") == nonce:
+    with registry_lock(marker.parent):
+        if marker_nonce(marker) == nonce:
             marker.unlink()
             fsync_directory(marker.parent)
-    except FileNotFoundError:
-        pass
     # Every registration owns a distinct immutable snapshot.
     snapshot.unlink(missing_ok=True)
     with contextlib.suppress(OSError):

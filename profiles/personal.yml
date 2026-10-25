@@ -12,9 +12,4 @@ devbox_extra_brew_casks_no_binaries:
   - cloudflare-warp    # personal-only
 
 # The langfuse skill reads its API keys from the login Keychain (make langfuse-config).
-# The marketplace is explicit because a bare `claude plugin install langfuse`
-# resolves to the claude.ai anthropic-plugin-directory copy, not this one.
-devbox_extra_claude_plugins:
-  - name: langfuse
-    marketplace: claude-plugins-official
 devbox_langfuse_host: "https://langfuse.abrosimov.tech"

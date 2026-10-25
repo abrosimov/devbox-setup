@@ -4,11 +4,21 @@
 
 A task can finish with a sufficient analysis, design, recommendation or justified decision to keep the current arrangement. An actual system change requires evidence of that change; approving a model or specification does not establish it.
 
-Framework and method links open readable text on fpf.tools; **Markdown** links open the repository source. GitHub previews can truncate large files. Check the [displayed source edition](https://fpf.tools/status) when the version matters.
+Links to fpf.tools open readable text; **Markdown** links and the CAD entries below open the repository source. GitHub previews can truncate large files. Check the [displayed source edition](https://fpf.tools/status) when the version matters.
 
 ## How this Suite is organized and why
 
-**[Read the Engineering Architectural Reference](ENGINEERING-DPF-SUITE-REFERENCE.md).** It explains how systems engineering, maintenance, knowledge access and semantic integration fit together, why organizational and human specializations have their own Suites, and how these contributions meet in a working system. Read it for the overall design and its alternatives; use a familiar sufficient method directly when that is all your task needs.
+**[Read the Engineering Architectural Reference](ENGINEERING-DPF-SUITE-REFERENCE.md).** It explains how systems engineering, maintenance, knowledge access, semantic integration and control architecture design fit together, why organizational and human specializations have their own Suites, and how these contributions meet in a working system. Read it for the overall design and its alternatives; use a familiar sufficient method directly when that is all your task needs.
+
+## Keep the project reasoning together
+
+The **[system-thinking long mantra (FPF A.1.STM)](https://fpf.tools/A.1.STM)** connects the intended use and common target to functioning, construction, ways of obtaining the system, capable creators and their cooperation. Its questions hold large areas of knowledge together: a good component, capable team and approved plan still have to fit the same project.
+
+Use the [connected explanation in Engineering.Reference:0.5](ENGINEERING-DPF-SUITE-REFERENCE.md#engineeringreference05---the-system-thinking-long-mantra-across-engineering-contributions) to see how the Suite's contributions constrain one another. The mantra's order helps explain and remember the reasoning; actual work can begin at any consequential question and return as answers change. The full Methods supply the knowledge needed to answer those questions.
+
+## Reduce avoidable work and repeated firefighting
+
+A faster operation can still produce an unneeded result, repeat an error or leave the result waiting elsewhere. Use **FPF C.42, Reduce Avoidable Work While Preserving the Needed Result**, to construct a worthwhile change, compare its complete burden and make it usable in later work. Its elegance mantra connects these questions without imposing one work sequence. The **[engineering application](ENGINEERING-DPF-SUITE-REFERENCE.md#engineeringreference06---the-elegance-mantra-and-reducing-repeated-firefighting)** explains how systems engineering, operations and method introduction contribute.
 
 ## Choose an entry
 
@@ -16,6 +26,7 @@ Framework and method links open readable text on fpf.tools; **Markdown** links o
 | Your question | Open |
 | --- | --- |
 | How do we design a new system and choose its architecture? | [Develop linked use and system concepts (SYSE.2)](https://fpf.tools/SYSE.2), [construct functional and implementation alternatives (SYSE.5)](https://fpf.tools/SYSE.5), and [decide the architecture and when to reopen it (SYSE.6)](https://fpf.tools/SYSE.6). |
+| Which observations, memory, commands and execution conditions can make a control design feasible? | [Choose observations and internal state (CAD.5)](CONTROL-ARCHITECTURE-DESIGN-PRINCIPLES-FRAMEWORK.md#cad5---choose-observations-and-internal-state-for-control); use the [planning-and-feedback branch (CAD.1–CAD.4)](CONTROL-ARCHITECTURE-DESIGN-PRINCIPLES-FRAMEWORK.md#cadreference4---the-layered-planning-and-feedback-branch) when that separation is useful. |
 | Should we build, buy, commission, reuse or combine ways to obtain a result? | [Compare ways to obtain the result (SYSE.24)](https://fpf.tools/SYSE.24), including integration, capability, support and eventual replacement. |
 | How do we keep a system fit for use or restore it after a failure? | [Maintenance Engineering and Management](https://fpf.tools/MNT). |
 | How do we make a changing body of knowledge usable in real work? | [Knowledge-Corpus Access Engineering](https://fpf.tools/KCAE). |
@@ -29,18 +40,19 @@ The [Engineering Architectural Reference](ENGINEERING-DPF-SUITE-REFERENCE.md) he
 
 | Framework | What you can work on | Patterns | Text, M characters |
 | --- | --- | ---: | ---: |
-| [Systems Engineering (SYSE)](https://fpf.tools/SYSE) · [Markdown](SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Define the system and intended use; compare designs and ways to obtain them; realize, integrate, qualify and change the result. | 53 | 1.780 |
-| [Maintenance Engineering and Management (MNT)](https://fpf.tools/MNT) · [Markdown](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Select maintenance policy from condition and failure knowledge; prepare interventions, restore functioning and qualify return to use. | 16 | 0.244 |
-| [Knowledge-Corpus Access Engineering (KCAE)](https://fpf.tools/KCAE) · [Markdown](KNOWLEDGE-CORPUS-ACCESS-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Engineer arrangements for finding, reading and using documentary knowledge, including links back to source passages, delivery and coherent updates. | 11 | 0.241 |
-| [Semantic Integration Engineering (SIE)](https://fpf.tools/SIE) · [Markdown](SEMANTIC-INTEGRATION-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Make separately governed meanings usable together through models, mappings, interfaces, validation and response to change. | 12 | 0.276 |
+| [Systems Engineering (SYSE)](https://fpf.tools/SYSE) · [Markdown](SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Define the system and intended use; compare designs and ways to obtain them; realize, integrate, qualify and change the result. | 54 | 1.834 |
+| [Maintenance Engineering and Management (MNT)](https://fpf.tools/MNT) · [Markdown](MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Select maintenance policy from condition and failure knowledge; prepare interventions, restore functioning and qualify return to use. | 16 | 0.252 |
+| [Knowledge-Corpus Access Engineering (KCAE)](https://fpf.tools/KCAE) · [Markdown](KNOWLEDGE-CORPUS-ACCESS-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Engineer arrangements for finding, reading and using documentary knowledge, including links back to source passages, delivery and coherent updates. | 11 | 0.242 |
+| [Semantic Integration Engineering (SIE)](https://fpf.tools/SIE) · [Markdown](SEMANTIC-INTEGRATION-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Make separately governed meanings usable together through models, mappings, interfaces, validation and response to change. | 13 | 0.315 |
+| [Control Architecture Design (CAD) — Markdown](CONTROL-ARCHITECTURE-DESIGN-PRINCIPLES-FRAMEWORK.md) | Choose observations and memory; construct a planning-and-feedback arrangement when useful; connect information error, command limits and execution conditions. | 5 | 0.149 |
 
 **Patterns** counts full pattern bodies. **Text, M characters** measures each complete Markdown framework, including its embedded Architectural Reference, in millions of Unicode characters with spaces and original line breaks, rounded to three decimals. These are scope indicators, not a required reading load.
 
-These four frameworks are the current direct coverage, not a claim to cover all engineering branches. Platform Engineering is developed within Systems Engineering. The organizational specialization has its own [Management Suite](../Management%20DPF%20Suite/); the human specialization has its own [Human Capability Engineering Suite](../Human%20Capability%20Engineering%20DPF%20Suite/).
+These five frameworks are the current direct coverage, not a claim to cover all engineering branches. Platform Engineering is developed within Systems Engineering. The organizational specialization has its own [Management Suite](../Management%20DPF%20Suite/); the human specialization has its own [Human Capability Engineering Suite](../Human%20Capability%20Engineering%20DPF%20Suite/).
 
 ## Connect the contributions
 
-Consider a laboratory introducing an automated measurement service. Systems Engineering connects the instrument, software, operator and receiving experiment. Semantic Integration makes sample identities, units and reported results agree across interfaces. Knowledge-Corpus Access makes the applicable procedures and evidence retrievable. Maintenance establishes how the measurement capability will remain available.
+Consider a laboratory introducing an automated measurement service. Systems Engineering connects the instrument, software, operator and receiving experiment. If controlled motion or temperature is needed, Control Architecture Design connects observations, permitted commands and execution limits for that loop. Semantic Integration makes sample identities, units and reported results agree across interfaces. Knowledge-Corpus Access makes the applicable procedures and evidence retrievable. Maintenance establishes how the measurement capability will remain available.
 
 The project may also need Organization Change Engineering to establish who accepts a sample or releases a result, and Human Capability Development to develop the operator's missing ability. Those methods come from their specialized Suites. Somatic Movement Modeling matters only if bodily coordination limits the work. This is one possible combination, not a required sequence or a requirement to use every contribution.
 

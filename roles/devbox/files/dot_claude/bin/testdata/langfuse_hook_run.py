@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from contextlib import AbstractContextManager
     from types import ModuleType
 
 FAILING_TURN = 3
@@ -22,10 +21,6 @@ FAILING_TURN = 3
 
 class TracingClient(Protocol):
     def flush(self) -> None: ...
-
-    def start_as_current_observation(
-        self, *, as_type: str, name: str
-    ) -> AbstractContextManager[object]: ...
 
 
 def load_hook(vendor: Path) -> ModuleType:
@@ -52,9 +47,17 @@ def install_hanging_flush() -> None:
     trace.get_tracer_provider().add_span_processor(processor())
 
 
-def emit_turn_span(langfuse: TracingClient, turn: int) -> None:
-    with langfuse.start_as_current_observation(as_type="span", name=f"turn-{turn}"):
-        pass
+def emit_turn_span(hook: ModuleType, langfuse: TracingClient, turn: int) -> None:
+    # The hook's own creation path: its id generator refuses ids nothing pinned.
+    span = vars(hook)["_start_backdated"](
+        langfuse,
+        name=f"turn-{turn}",
+        as_type="span",
+        start_time=None,
+        span_key=f"turn-{turn}",
+        forced_trace_id=hook.derive_turn_trace_id("hook-run-session", turn),
+    )
+    vars(hook)["_end_backdated"](span, None)
 
 
 def main() -> int:
@@ -63,10 +66,10 @@ def main() -> int:
 
     def fail_on_turn(langfuse: TracingClient, *_args: object, **_kwargs: object) -> int:
         for turn in range(1, FAILING_TURN):
-            emit_turn_span(langfuse, turn)
+            emit_turn_span(hook, langfuse, turn)
         # The batch processor exports on its own schedule while later turns are emitted.
         langfuse.flush()
-        emit_turn_span(langfuse, FAILING_TURN)
+        emit_turn_span(hook, langfuse, FAILING_TURN)
         if scenario == "emission":
             message = f"injected emission failure on turn {FAILING_TURN}"
             raise ValueError(message)

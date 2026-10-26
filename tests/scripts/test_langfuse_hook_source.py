@@ -1,4 +1,5 @@
 """Offline contract tests for the Claude Langfuse source pin."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -30,6 +31,7 @@ def test_deployed_artifact_matches_pin() -> None:
         "0005-replay-snapshot-identity.patch",
         "0006-durable-otlp-exporter.patch",
         "0007-discard-uncommitted-spans.patch",
+        "0008-deterministic-observation-ids.patch",
     ]
 
 

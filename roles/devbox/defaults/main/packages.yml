@@ -66,6 +66,7 @@ devbox_brew_secondary:
   - node
   - uv
   - helm
+  - opentofu       # OpenTofu (`tofu`) — open-source Terraform fork for infrastructure as code
   - tree-sitter-cli
   # orbstack moved to profile overrides (work uses orbstack, personal uses docker-desktop).
   - k9s

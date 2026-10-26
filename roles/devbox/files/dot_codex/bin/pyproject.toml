@@ -16,6 +16,8 @@ dependencies = []
 # every hook invocation, which a `--no-dev` venv cannot satisfy.
 [tool.uv]
 package = false
+# Seven-day release quarantine for every lock, see the repository's root pyproject.toml.
+exclude-newer = "7 days"
 
 [dependency-groups]
 dev = ["pytest"]

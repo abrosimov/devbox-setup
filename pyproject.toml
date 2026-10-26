@@ -52,6 +52,11 @@ dev = [
 
 [tool.uv]
 package = false
+# The seven-day quarantine of the shared Renovate preset, held by uv itself:
+# Renovate's lock file maintenance re-resolves through uv and checks the age of
+# nothing it brings back, so without this a weekly refresh could lock a release
+# published the day before. Keep it equal to the preset's minimumReleaseAge.
+exclude-newer = "7 days"
 
 # ─── Ruff ────────────────────────────────────────────────────────────────────
 # Strict-by-default: `select = ["ALL"]` opts into every rule, then `ignore` strips

@@ -32,7 +32,7 @@ Further architectural and source sections: [IS.Reference:11 - Supplier availabil
 
 # IS.Readme - Find the first useful contribution
 
-Implementation Facilitation helps practitioners, organizations and affected people make an evidence-informed practice usable in its setting and develop their ability to conduct subsequent changes. Enter at the missing contribution; a sufficient local answer can be enough. The examples below show ordinary entries, not a catalogue or the field boundary. Use the [pattern index](#table-of-contents) for a different question.
+Implementation Facilitation helps practitioners, organizations and affected people make an evidence-informed practice usable in its setting and develop their ability to conduct subsequent changes. Enter at the missing contribution; a sufficient local answer can be enough. The examples below show ordinary entries. Use the [pattern index](#table-of-contents) for a different question.
 
 **A tool is available but cannot be used.** A practitioner tries to compare two source editions and discovers that the older one cannot be opened. Start with IS.2. Recover the failed input and obtain the source owner's access result. If that makes the already understood operation possible, the useful answer can stop there. If the source does not exist, return the target operation to its subject owner; another invitation to use the tool will not supply it.
 
@@ -138,7 +138,7 @@ A.3.1.MI supplies a general introduction Method: an implementer can use it direc
 
 This framework does not supply each target profession's technical Method, a universal learning theory, every organization's design or a general development strategy. It tells the support practitioner how to obtain and use the needed contribution, keep its conditions intact, and return the work when it cannot be supplied. A provider should reduce a promise that depends on unavailable expertise rather than fill the gap with a procedure name.
 
-The short entry routes foreground the receiving work, helper contribution and next decision. They omit the detailed technical, learning and organizational constructions supplied by the pattern bodies and the external practices in IS.Reference:1. Return to those bodies when the shorter account leaves an operation, condition or evidence claim unresolved. The examples illustrate selected ways of combining the Methods; they do not define the field's coverage.
+The short entry routes foreground the receiving work, helper contribution and next decision. They omit the detailed technical, learning and organizational constructions supplied by the pattern bodies and the external practices in IS.Reference:1. Return to those bodies when the shorter account leaves an operation, condition or evidence claim unresolved. The examples illustrate selected ways of combining the Methods.
 
 ## IS.Reference:8 - Obtain the external contribution
 
@@ -646,13 +646,21 @@ Use A.3.1.MI:4.5 when the proposed adaptation requires the fuller delivery–mec
 
 Distinguish the support strategy from the target. Changing the time of a briefing or the availability of help can leave the target unchanged. Replacing its decision criterion, accepting a different input interpretation or removing a decisive comparison can change it. Preserve the proposed function and the evidence for its actual fulfillment separately; unchanged intended function does not prove unchanged Method identity.
 
-#### IS.3:4.4 - Construct the local way with the people who will use it
+#### IS.3:4.4 - Construct the local way with its recipients and providers
 
 Bring a representative input to the intended performer and receiver. Work through the critical operation together. Ask the performer to show where the explanation, input, tool or assistance enters. Ask the receiver to show what they must obtain to continue.
 
 Use the conversation to change the construction. If an instruction requires information the performer cannot access, obtain that input, select a compatible operation or return the target condition to its owner. If the result arrives too late, change the timing or obtaining way. If the participant's objection identifies a harmful consequence, compare a different arrangement rather than relabel the objection as resistance.
 
+Distinguish the recipient, helper and sponsor where their undertakings differ. The recipient needs to identify or examine the difficulty, choose what help to accept, supply a relevant attempt or input, perform their own contribution and use the return. The helper needs to establish the receiving need, offer a contribution they can actually supply, perform it or arrange its provider, inspect its effect and revise or conclude the engagement. A sponsor can provide resources or hold authority without being the learner or the person receiving confidential help. Obtain the actual compatible undertakings; silence, payment or attendance does not establish all of them.
+
+Select the interaction by the result. Expert performance can supply current work. Joint work can combine interpretations and expose a consequential operation. Teaching and coached practice aim to change the recipient's capability. Facilitation can help participants make and coordinate their own choices when the subject knowledge is available. Leadership can obtain a feasible role contribution. Condition repair can make an existing ability usable. Several can be connected, but their different results and professional requirements remain visible.
+
+For example, an expert reviewing a forecast can correct this forecast, help its author learn to judge later forecasts, or discover a defect in the forecasting Method. Work through one consequential choice and ask which result the undertaking requires. If the author must learn, obtain the author's own attempt and useful feedback. If only today's result is required, competent provision may suffice. If the Method is unsuitable, return to its subject owner. A routine service need not become a learning programme, and a learning promise cannot be discharged solely by expert output.
+
 Make the first-use instruction concrete enough to act: how the relevant situation is recognized, what input is needed, what the performer does with it, how they inspect the result and when they seek help, return or stop. Put that instruction where the action occurs. A.3.2.DE supplies a fuller description-construction Method when the reusable explanation is the missing contribution.
+
+The local way must remain intelligible from both positions. The recipient should know what they must do, what the helper supplies and how to question an unsuitable contribution. The helper should know which missing result they own, which conditions others provide and where a disagreement returns. Use the actual human or technical participant's capabilities and authority. An AI acknowledgement does not establish human understanding or an unlimited organizational commitment.
 
 Agree only the local variation that the target's qualification permits. A simplified input display may preserve the needed comparison; a default answer that hides the relevant difference may not. When the equivalence is unresolved, retain a proposed variant and obtain subject and A.3.1.MV judgement. A convenient tool configuration cannot settle that question by itself.
 

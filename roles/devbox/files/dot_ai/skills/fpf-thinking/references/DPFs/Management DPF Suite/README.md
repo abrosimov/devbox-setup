@@ -4,11 +4,13 @@
 
 The undertaking can be a company, public service, temporary collaboration or voluntary community. A shared employer is unnecessary, but contributions, resources and authority need an actual basis. A smaller promise, sufficient existing arrangement or justified refusal can be the useful result.
 
-Framework and method links open readable text on fpf.tools; **Markdown** links open the repository source. GitHub previews can truncate large files. Check the [displayed source edition](https://fpf.tools/status) when the version matters.
+This Suite contributes methods for organizing a **shared culture of thinking and acting among people and AI agents**: connecting their direction, contributions, commitments and conditions of work. Its methods can help sustain both current performance and open-ended development. The [Library account of this culture](../../FPF-LIBRARY-REFERENCE.md#libraryreference13---a-canon-for-shared-humanai-culture) explains the common canon; actual roles and authority follow the working arrangement.
+
+Framework and method links open readable text on fpf.tools or Markdown sources in the repository. GitHub previews can truncate large files. For fpf.tools, check the [displayed source edition](https://fpf.tools/status) when the version matters.
 
 ## How this Suite is organized and why
 
-**[Read the Management Architectural Reference](MANAGEMENT-DPF-SUITE-REFERENCE.md).** It explains why strategy, commitments, operations, resources, communities and organizational change belong in one connected management account, what each contributes, and which related disciplines remain outside this Suite. Read it for the overall design and its alternatives; use a familiar sufficient method directly when that is all your task needs.
+**[Read the Management Architectural Reference](MANAGEMENT-DPF-SUITE-REFERENCE.md).** It explains why strategy, goals, commitments, operations, resources, communities and organizational change belong in one connected management account, what each contributes, and which related disciplines remain outside this Suite. Read it for the overall design and its alternatives; use a familiar sufficient method directly when that is all your task needs.
 
 ## Choose an entry
 
@@ -16,8 +18,10 @@ Framework and method links open readable text on fpf.tools; **Markdown** links o
 | Your question | Open |
 | --- | --- |
 | Which direction and investment are worth pursuing? | [Strategy](https://fpf.tools/STR). |
+| How do we construct, pursue and revise goals or use a complete OKR/CFR practice? | [Goals and OKR (GOALS)](GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md); [GOALS.6](GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md#goals6---make-a-professional-goal-workable-for-the-person-pursuing-it) for a human professional goal and [GOALS.7](GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md#goals7---assign-and-continue-goal-directed-ai-work) for AI work. |
 | How can production or service be arranged, and current work meet its promises? | [Operations Management](https://fpf.tools/OPS); use [Organization Administration](https://fpf.tools/ADM) for permissions, provision and obligations. |
 | How do we answer different clients without losing repeatability or scale? | [Manage client variation and develop repeatable offerings (CUST.1)](https://fpf.tools/CUST.1). Its constituent methods also work for a bounded offering, delivery or transition question. |
+| How do we connect hiring, pay, employee voice, protection and work transitions? | [Human Resource Management (HRM)](HUMAN-RESOURCE-MANAGEMENT-PRINCIPLES-FRAMEWORK.md). |
 | How do we direct personal action, establish joint direction and sustain participation? | [Leadership](https://fpf.tools/LDR) and [Community Management](https://fpf.tools/CB), according to the missing result. |
 | Do roles, authority or capability allocations need to change? | [Organization Change Engineering](https://fpf.tools/OCE). |
 
@@ -25,7 +29,7 @@ For a connected case, the [Management Architectural Reference](MANAGEMENT-DPF-SU
 
 ## Keep strategic decisions connected
 
-The **[strategizing mantra (STR.18)](https://fpf.tools/STR.18)** connects **strategic question → worthwhile contribution → explained way → feasible contributions and means → justified choice and commitment → realization, use and renewed questions**. An attractive direction can lack an obtaining way; individually affordable initiatives can compete for the same people; a useful preparation can finish without authorizing implementation. The developed account explains how to assemble and revise these answers, including when a technological possibility comes first or an existing answer is enough.
+The **[strategizing mantra (STR.18)](https://fpf.tools/STR.18)** connects **strategic question → worthwhile contribution → explained way → feasible contributions and means → justified choice and commitment → realization, use and renewed questions**. An attractive direction may lack an explained way to obtain its intended result; individually affordable initiatives can compete for the same people; a useful preparation can finish without authorizing implementation. The developed account explains how to assemble and revise these answers, including when a technological possibility comes first or an existing answer is enough.
 
 ## Keep operating decisions connected
 
@@ -36,7 +40,8 @@ The **[operational mantra (OPS.23)](https://fpf.tools/OPS.23)** connects local w
 | Framework | What you can work on | Patterns | Text, M characters |
 | --- | --- | ---: | ---: |
 | [Strategy (STR)](https://fpf.tools/STR) · [Markdown](STRATEGY-PRINCIPLES-FRAMEWORK.md) | Find a worthwhile direction; compare options, capabilities, investments and business models; revise commitments when conditions change. | 18 | 0.550 |
-| [Operations Management (OPS)](https://fpf.tools/OPS) · [Markdown](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Understand, construct and revise operating arrangements; manage work, provision, service and improvement under actual conditions. | 29 | 0.951 |
+| [Goal Construction and Regulation (GOALS)](GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md) | Construct worthwhile goals and achievement evidence, coordinate their pursuit and revise the practice; complete OKR/CFR and human and AI applications. | 9 | 0.150 |
+| [Operations Management (OPS)](https://fpf.tools/OPS) · [Markdown](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Understand, construct and revise operating arrangements; manage work, provision, service and improvement under actual conditions. | 29 | 0.966 |
 | [Organization Administration (ADM)](https://fpf.tools/ADM) · [Markdown](ORGANIZATION-ADMINISTRATION-PRINCIPLES-FRAMEWORK.md) | Make requests, permissions, obligations, provision, records and provider coordination effective without unnecessary burden. | 15 | 0.302 |
 | [Corporate Governance (CGOV)](https://fpf.tools/CGOV) · [Markdown](CORPORATE-GOVERNANCE-PRINCIPLES-FRAMEWORK.md) | Constitute and exercise corporate powers, decisions, controls and accountability under applicable governing rules. | 17 | 0.272 |
 | [Management Accounting (MA)](https://fpf.tools/MA) · [Markdown](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md) | Explain costs, capacity and economic consequences; forecast outcomes; develop activity designs from economic requirements and arrange how accounting information is used. | 10 | 0.211 |
@@ -47,6 +52,7 @@ The **[operational mantra (OPS.23)](https://fpf.tools/OPS.23)** connects local w
 | [Leadership (LDR)](https://fpf.tools/LDR) · [Markdown](LEADERSHIP-PRINCIPLES-FRAMEWORK.md) | Direct personal action; develop joint direction, participation and responsibility; obtain feasible contributions and first useful work. | 4 | 0.185 |
 | [Community Management (CB)](https://fpf.tools/CB) · [Markdown](COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Develop useful participation, relationships, shared practices and contributions in organizations or voluntary communities. | 16 | 0.524 |
 | [Organization Change Engineering (OCE)](https://fpf.tools/OCE) · [Markdown](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Construct and qualify organizational changes to contributions, roles, authority, interfaces, capabilities and culture. | 17 | 0.726 |
+| [Human Resource Management (HRM)](HUMAN-RESOURCE-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Construct and revise workforce conditions, assessment and selection, reward, voice, protection and continuing participation. | 5 | 0.115 |
 
 **Patterns** counts full pattern bodies. **Text, M characters** measures each complete Markdown framework, including its embedded Architectural Reference, in millions of Unicode characters with spaces and original line breaks, rounded to three decimals. These are scope indicators, not a required reading load.
 
@@ -54,9 +60,11 @@ The **[operational mantra (OPS.23)](https://fpf.tools/OPS.23)** connects local w
 
 An attractive new order can require a revised offering, delivery capacity, a financial commitment and a change in who may authorize work. Each can look feasible alone while the combination exceeds shared capacity. The Suite helps connect those judgements and revise the offer, provision or commitments together. Use only the contributions needed by the undertaking; Corporate Governance and Corporate Finance retain their corporate conditions.
 
+[GOALS](GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md) keeps the desired results, achievement evidence, shared means and revisions connected within this arrangement. Its full language is part of the Suite, while a person or an AI can use a sufficient Method directly without an organization or an OKR cycle. The [goal account (Management.Reference:3.4)](MANAGEMENT-DPF-SUITE-REFERENCE.md#managementreference34---goals-are-part-of-the-management-arrangement) explains the membership and its limits.
+
 Management can change an organization's functioning while retaining its organization chart. OCE develops deliberate organizational construction, but does not exhaust management. The [Architectural Reference](MANAGEMENT-DPF-SUITE-REFERENCE.md) explains this organizational specialization of engineering and its [coverage limits (Management.Reference:7)](MANAGEMENT-DPF-SUITE-REFERENCE.md#managementreference7---continuity-and-coverage).
 
-For maintained equipment, [Maintenance Engineering and Management](https://fpf.tools/MNT) supplies its full methods from Engineering. For a person's capability, use [Human Capability Engineering](../Human%20Capability%20Engineering%20DPF%20Suite/). A manager may perform a method when capable or obtain its result from another contributor. The [organizational construction and maintenance account (Management.Reference:3.1)](MANAGEMENT-DPF-SUITE-REFERENCE.md#managementreference31---organizational-construction-and-maintenance-use) explains how organizational choices and maintenance conditions constrain one another.
+For maintained equipment, [Maintenance Engineering and Management](https://fpf.tools/MNT) supplies its full methods from Engineering. For personnel decisions and work participation, [Human Resource Management](HUMAN-RESOURCE-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) connects assessment, reward, voice and participation with the conditions of the work. When a work adjustment requires clinical judgement, HRM obtains qualified help and arranges the resulting work restrictions with those responsible for the work. People's own interests remain part of these decisions. For a person's capability, use [Human Capability Engineering](../Human%20Capability%20Engineering%20DPF%20Suite/). A manager may perform a method when capable or obtain its result from another contributor. The [organizational construction and maintenance account (Management.Reference:3.1)](MANAGEMENT-DPF-SUITE-REFERENCE.md#managementreference31---organizational-construction-and-maintenance-use) explains how organizational choices and maintenance conditions constrain one another.
 
 ## Organize conditions for continuing development
 

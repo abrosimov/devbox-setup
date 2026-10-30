@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Managed by devbox: retries durable Langfuse transcript snapshots. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.langfuse-replay</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ ansible_facts['env']['HOME'] }}/.claude/bin/.venv/bin/python</string>
+        <string>{{ ansible_facts['env']['HOME'] }}/.claude/bin/langfuse_replay.py</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+    <key>StandardOutPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/langfuse-replay.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/langfuse-replay.log</string>
+</dict>
+</plist>

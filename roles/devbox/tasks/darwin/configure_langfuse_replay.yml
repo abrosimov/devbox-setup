@@ -1,0 +1,71 @@
+---
+# The replay worker is a login-user LaunchAgent, not a daemon with secrets.
+# Both the hook and the worker run from the same pinned Claude hook venv.
+- name: "Langfuse replay — ensure LaunchAgent directories"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents"
+    - "{{ ansible_facts['env']['HOME'] }}/Library/Logs"
+  tags: [configs, claude, langfuse]
+
+- name: "Langfuse replay — install LaunchAgent"
+  ansible.builtin.template:
+    src: darwin/Library/LaunchAgents/local.langfuse-replay.plist.j2
+    dest: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.langfuse-replay.plist"
+    mode: "0644"
+  register: devbox_langfuse_replay_plist
+  tags: [configs, claude, langfuse]
+
+- name: "Langfuse replay — check current LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "gui/{{ ansible_facts['user_uid'] }}/local.langfuse-replay"
+  register: devbox_langfuse_replay_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [configs, claude, langfuse]
+
+- name: "Langfuse replay — unload old definition after plist change"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "gui/{{ ansible_facts['user_uid'] }}/local.langfuse-replay"
+  when:
+    - not ansible_check_mode
+    - devbox_langfuse_replay_plist.changed
+    - devbox_langfuse_replay_status.rc == 0
+  changed_when: true
+  tags: [configs, claude, langfuse]
+
+- name: "Langfuse replay — bootstrap LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootstrap
+      - "gui/{{ ansible_facts['user_uid'] }}"
+      - "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.langfuse-replay.plist"
+  when:
+    - not ansible_check_mode
+    - devbox_langfuse_replay_plist.changed or devbox_langfuse_replay_status.rc != 0
+  register: devbox_langfuse_replay_bootstrap
+  changed_when: true
+  tags: [configs, claude, langfuse]
+
+- name: "Langfuse replay — start a newly bootstrapped job"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - kickstart
+      - "gui/{{ ansible_facts['user_uid'] }}/local.langfuse-replay"
+  when:
+    - not ansible_check_mode
+    - devbox_langfuse_replay_bootstrap is not skipped
+  changed_when: true
+  tags: [configs, claude, langfuse]

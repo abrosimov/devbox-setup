@@ -9,7 +9,7 @@
   // workstation by an unattended playbook run, so a bad release has to be
   // found by somebody else's machine rather than by ours. Only what is
   // specific to this repository is restated below.
-  extends: ["github>abrosimov/renovate-config#v1.0.0"],
+  extends: ["github>abrosimov/renovate-config#v3.2.1"],
 
   // Every built-in manager runs. In this repository that means, concretely:
   // pyproject.toml + uv.lock at the root and under

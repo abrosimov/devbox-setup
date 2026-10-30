@@ -10,12 +10,12 @@ Claude Code -> Langfuse hook
 
 """
 
+import atexit
 import base64
 import contextlib
 import json
 import logging
 import os
-import random
 import sys
 import threading
 import time
@@ -349,6 +349,8 @@ def info(msg: str) -> None:
 try:
     from langfuse import Langfuse, propagate_attributes
     from opentelemetry import trace as otel_trace_api
+    from langfuse._client.span import LangfuseObservationWrapper
+    from opentelemetry.sdk.trace.id_generator import IdGenerator
 except Exception as e:
     info(
         f"langfuse import failed ({type(e).__name__}: {e}); "
@@ -372,11 +374,20 @@ def create_langfuse_client(config: LangfuseConfig) -> Optional[Langfuse]:
     if not CAPTURE_IMAGES and not os.environ.get("LANGFUSE_MEDIA_UPLOAD_ENABLED"):
         os.environ["LANGFUSE_MEDIA_UPLOAD_ENABLED"] = "false"
     try:
-        return Langfuse(
+        # The hook's ACK is to a fsync-backed local OTLP outbox, not to the
+        # network. The independent LaunchAgent uploads the persisted batches.
+        from durable_otel_exporter import DurableSpoolExporter
+        exporter = DurableSpoolExporter()
+        client = Langfuse(
             public_key=config.public_key,
             secret_key=config.secret_key,
             host=config.host,
+            span_exporter=exporter,
+            id_generator=TranscriptIdGenerator(),
         )
+        client._devbox_durable_exporter = exporter
+        _transcript_id_generator(client)
+        return client
     except Exception as e:
         info(f"Langfuse client creation failed ({type(e).__name__}: {e}); tracing disabled for this turn")
         return None
@@ -616,10 +627,19 @@ def save_hook_state(state: Dict[str, Any]) -> None:
         sweep_stale_session_locks(state, cutoff)
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         tmp = STATE_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+        with open(tmp, "w", encoding="utf-8") as checkpoint:
+            checkpoint.write(json.dumps(state, indent=2, sort_keys=True))
+            checkpoint.flush()
+            os.fsync(checkpoint.fileno())
         os.replace(tmp, STATE_FILE)
+        directory_fd = os.open(STATE_DIR, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
     except Exception as e:
-        debug(f"save_hook_state failed: {e}")
+        info(f"save_hook_state failed: {e}")
+        raise
 
 def save_session_state(global_state: Dict[str, Any], key: str, session_state: SessionState) -> None:
     update_session_state(global_state, key, session_state)
@@ -1876,6 +1896,92 @@ def derive_turn_trace_id(trace_seed: str, turn_number: int) -> Optional[str]:
     except Exception:
         return None
 
+# ---- Deterministic observation ids and times ----
+# Replay re-emits a firing whose checkpoint did not advance; it must produce
+# the same span ids and times, so neither may come from the clock or the RNG.
+# Last resort for a turn whose rows carry no timestamp at all.
+TRANSCRIPT_TIME_FALLBACK = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+def derive_span_id(trace_id: int, parent_span_id: int, span_key: str, attempt: int = 0) -> int:
+    """Span id of the observation span_key under parent_span_id.
+
+    Formula: the first 8 bytes, big-endian, of
+    sha256(f"{trace_id:032x}:{parent_span_id:016x}:{span_key}"), with
+    f"#{attempt}" appended for attempt > 0 (collision resolution only).
+    """
+    material = f"{trace_id:032x}:{parent_span_id:016x}:{span_key}"
+    if attempt:
+        material += f"#{attempt}"
+    return int.from_bytes(hashlib.sha256(material.encode("utf-8")).digest()[:8], "big")
+
+def phantom_parent_span_id(trace_id: int) -> int:
+    # Never exported: OTel only needs a valid id for the trace-id carrier.
+    return derive_span_id(trace_id, 0, "carrier") or 1
+
+class TranscriptIdGenerator(IdGenerator):
+    """OTel id generator that only returns span ids pinned from transcript keys.
+
+    An id request no pin covers fails the firing (which then stays pending)
+    instead of minting a random id that a replay could never reproduce.
+    """
+
+    def __init__(self) -> None:
+        self._pinned: Optional[int] = None
+        self._issued: Dict[int, set] = {}
+
+    @contextlib.contextmanager
+    def pinned(self, trace_id: int, parent_span_id: int, span_key: str):
+        # Keys are unique among siblings by construction; this only guards
+        # hash collisions and fallback keys, in this firing's emission order.
+        issued = self._issued.setdefault(trace_id, set())
+        attempt = 0
+        span_id = derive_span_id(trace_id, parent_span_id, span_key)
+        while span_id == 0 or span_id == parent_span_id or span_id in issued:
+            attempt += 1
+            span_id = derive_span_id(trace_id, parent_span_id, span_key, attempt)
+        issued.add(span_id)
+        self._pinned = span_id
+        try:
+            yield span_id
+        finally:
+            self._pinned = None
+
+    def generate_span_id(self) -> int:
+        if self._pinned is None:
+            raise RuntimeError("OTel span id requested without a transcript-derived pin")
+        span_id, self._pinned = self._pinned, None
+        return span_id
+
+    def generate_trace_id(self) -> int:
+        raise RuntimeError("OTel trace id requested without a transcript-derived trace context")
+
+def _transcript_id_generator(langfuse: Langfuse) -> TranscriptIdGenerator:
+    generator = getattr(getattr(langfuse, "_otel_tracer", None), "id_generator", None)
+    if not isinstance(generator, TranscriptIdGenerator):
+        # e.g. a TracerProvider registered before the client, whose generator Langfuse keeps.
+        raise RuntimeError("Langfuse tracer does not use TranscriptIdGenerator; observation ids would be random")
+    return generator
+
+def get_turn_identity(turn: Turn, turn_num: int) -> str:
+    user_row_uuid = turn.user_msg.get("uuid")
+    if isinstance(user_row_uuid, str) and user_row_uuid:
+        return user_row_uuid
+    return f"turn:{turn_num}"
+
+def get_turn_start_timestamp(turn: Turn) -> datetime:
+    start = parse_timestamp(turn.user_msg)
+    if start is None:
+        row_timestamps = [ts for ts in (parse_timestamp(row) for row in turn.rows) if ts is not None]
+        start = min(row_timestamps, default=TRANSCRIPT_TIME_FALLBACK)
+    return start
+
+def _end_backdated(observation: LangfuseObservationWrapper, end_time: Optional[datetime]) -> None:
+    end_ns = to_otel_nanoseconds(end_time)
+    if end_ns is None:
+        # No transcript time: zero duration, never the emission time.
+        end_ns = observation._otel_span.start_time
+    observation.end(end_time=end_ns)
+
 def _build_forced_trace_context(trace_id_hex: str,
                                 parent_span_id_hex: Optional[str] = None) -> Optional[Any]:
     """Build an OTel context whose remote parent carries the forced trace id.
@@ -1884,16 +1990,15 @@ def _build_forced_trace_context(trace_id_hex: str,
     keep inheriting it as usual. Without parent_span_id_hex the parent gets a
     phantom span id that never exports (the span becomes the trace's root);
     with it (attached mode) the span nests under that externally exported
-    span. Returns None (caller falls back to an auto-generated id) when the
-    context cannot be built.
+    span. Returns None when the context cannot be built.
     """
     try:
         trace_id = int(trace_id_hex, 16)
         if trace_id == 0:
             return None
         span_id = int(parent_span_id_hex, 16) if parent_span_id_hex else 0
-        while span_id == 0:
-            span_id = random.getrandbits(64)
+        if span_id == 0:
+            span_id = phantom_parent_span_id(trace_id)
         parent_span_context = otel_trace_api.SpanContext(
             trace_id=trace_id,
             span_id=span_id,
@@ -1907,20 +2012,21 @@ def _build_forced_trace_context(trace_id_hex: str,
         debug(f"forced trace context for {trace_id_hex!r} failed: {e}")
         return None
 
-def _start_root_otel_span(langfuse: Langfuse, name: str, start_ns: Optional[int],
+def _start_root_otel_span(langfuse: Langfuse, name: str, start_ns: int,
                           forced_trace_id: Optional[str],
-                          forced_parent_span_id: Optional[str] = None) -> Any:
-    if forced_trace_id:
-        context = _build_forced_trace_context(forced_trace_id, forced_parent_span_id)
-        if context is not None:
-            try:
-                return langfuse._otel_tracer.start_span(name=name, start_time=start_ns, context=context)
-            except Exception as e:
-                debug(f"start_span with forced trace id {forced_trace_id!r} failed: {e}")
-    return langfuse._otel_tracer.start_span(name=name, start_time=start_ns)
+                          forced_parent_span_id: Optional[str],
+                          span_key: str) -> Any:
+    context = _build_forced_trace_context(forced_trace_id, forced_parent_span_id) if forced_trace_id else None
+    if context is None:
+        # An SDK-generated trace id would differ on replay.
+        raise RuntimeError(f"No transcript-derived trace id for root observation {name!r}")
+    parent = otel_trace_api.get_current_span(context).get_span_context()
+    with _transcript_id_generator(langfuse).pinned(parent.trace_id, parent.span_id, span_key):
+        return langfuse._otel_tracer.start_span(name=name, start_time=start_ns, context=context)
 
 def _start_backdated(langfuse: Langfuse, *, name: str, as_type: str,
                      start_time: Optional[datetime],
+                     span_key: str,
                      parent_otel_span: Any = None,
                      as_root: bool = False,
                      forced_trace_id: Optional[str] = None,
@@ -1948,11 +2054,20 @@ def _start_backdated(langfuse: Langfuse, *, name: str, as_type: str,
             f"pin with `pip install \"langfuse>=4.7,<5\"` or update the hook script."
         )
     start_ns = to_otel_nanoseconds(start_time)
+    if start_ns is None:
+        # No transcript time: inherit the parent's, never the emission time.
+        start_ns = getattr(parent_otel_span, "start_time", None)
+    if start_ns is None:
+        start_ns = to_otel_nanoseconds(TRANSCRIPT_TIME_FALLBACK)
     if parent_otel_span is not None:
-        with otel_trace_api.use_span(parent_otel_span, end_on_exit=False):
+        parent = parent_otel_span.get_span_context()
+        with otel_trace_api.use_span(parent_otel_span, end_on_exit=False), \
+                _transcript_id_generator(langfuse).pinned(parent.trace_id, parent.span_id, span_key):
             otel_span = langfuse._otel_tracer.start_span(name=name, start_time=start_ns)
     else:
-        otel_span = _start_root_otel_span(langfuse, name, start_ns, forced_trace_id, forced_parent_span_id)
+        otel_span = _start_root_otel_span(
+            langfuse, name, start_ns, forced_trace_id, forced_parent_span_id, span_key
+        )
     if as_root:
         # SDK/server contract: spans under a synthetic trace-id carrier have a
         # parentSpanId that never exports, so the server only treats them as
@@ -2400,6 +2515,7 @@ def emit_single_tool_observation(
             name=f"Tool: {tool_name}",
             as_type="tool",
             start_time=tool_use_timestamp,
+            span_key=tool_key,
             parent_otel_span=parent_otel_span,
             input=tool_input,
             metadata=tool_metadata,
@@ -2428,12 +2544,14 @@ def emit_single_tool_observation(
                     or tool_result_entry.get("final_content") is None
                 )
             )
-            if cursor.should_emit(f"subagent:{tool_use_id or tool_key}", complete=not subagent_still_running):
+            subagent_key = f"subagent:{tool_use_id or tool_key}"
+            if cursor.should_emit(subagent_key, complete=not subagent_still_running):
                 subagent_end_timestamp = emit_subagent_observations(
                     langfuse,
                     parent_otel_span,
                     subagent,
                     tool_use_timestamp,
+                    subagent_key,
                     subagent_transcripts_by_tool_use_id=subagent_transcripts_by_tool_use_id,
                 )
 
@@ -2470,7 +2588,7 @@ def emit_single_tool_observation(
         or assistant_timestamp
     )
     if tool_span is not None:
-        tool_span.end(end_time=to_otel_nanoseconds(tool_end_timestamp))
+        _end_backdated(tool_span, tool_end_timestamp)
 
     if tool_result.final_result_timestamp is not None and tool_result.final_output is not None:
         pending_async_tool_results.append({
@@ -2651,12 +2769,14 @@ def emit_generation_observation(
     generation_name: str,
     start_timestamp: Optional[datetime],
     generation_kwargs: Dict[str, Any],
+    span_key: str,
 ) -> Any:
     return _start_backdated(
         langfuse,
         name=generation_name,
         as_type="generation",
         start_time=start_timestamp,
+        span_key=span_key,
         parent_otel_span=parent_otel_span,
         **generation_kwargs,
     )
@@ -2709,6 +2829,7 @@ def emit_turn_observations(langfuse: Langfuse, parent_otel_span: Any, turn: Turn
             parent_otel_span,
             pending_subagent["subagent"],
             pending_subagent.get("display_start_timestamp") or pending_subagent.get("start_timestamp"),
+            subagent_key,
             subagent_transcripts_by_tool_use_id=subagent_transcripts_by_tool_use_id,
         )
         latest_end_timestamp = _get_latest_timestamp(latest_end_timestamp, subagent_end_timestamp)
@@ -2762,16 +2883,15 @@ def emit_turn_observations(langfuse: Langfuse, parent_otel_span: Any, turn: Turn
             )
         )
         generation_span = None
-        if cursor.should_emit(
-            generation_emission_key(assistant_index, assistant_message),
-            complete=generation_complete,
-        ):
+        generation_key = generation_emission_key(assistant_index, assistant_message)
+        if cursor.should_emit(generation_key, complete=generation_complete):
             generation_span = emit_generation_observation(
                 langfuse,
                 parent_otel_span=parent_otel_span,
                 generation_name=generation_name,
                 start_timestamp=generation_start_timestamp,
                 generation_kwargs=generation_kwargs,
+                span_key=generation_key,
             )
         update_pending_subagent_display_start_after_launch_response(
             pending_subagents,
@@ -2802,7 +2922,7 @@ def emit_turn_observations(langfuse: Langfuse, parent_otel_span: Any, turn: Turn
             generation_start_timestamp,
         )
         if generation_span is not None:
-            generation_span.end(end_time=to_otel_nanoseconds(generation_end_timestamp))
+            _end_backdated(generation_span, generation_end_timestamp)
         latest_end_timestamp = _get_latest_timestamp(
             latest_end_timestamp,
             generation_end_timestamp,
@@ -2860,9 +2980,8 @@ def emit_workflow_agent_observations(
         agent_id = workflow_agent.get("agent_id")
         if not isinstance(agent_id, str) or not agent_id:
             continue
-        if not cursor.should_emit(
-            f"workflow-agent:{emission_scope}:{agent_id}", complete=workflow_resolved
-        ):
+        workflow_agent_key = f"workflow-agent:{emission_scope}:{agent_id}"
+        if not cursor.should_emit(workflow_agent_key, complete=workflow_resolved):
             continue
         extra_metadata: Dict[str, Any] = {
             "workflow_run_id": workflow_run_id,
@@ -2881,6 +3000,7 @@ def emit_workflow_agent_observations(
             workflow_agent,
             # No explicit start: the agent transcript's first row is the real start.
             None,
+            workflow_agent_key,
             span_name=f"Workflow agent: {workflow_label}/{agent_id}",
             extra_metadata=extra_metadata,
             generation_name="LLM Call",
@@ -2895,6 +3015,7 @@ def emit_workflow_agent_observations(
 def emit_subagent_observations(langfuse: Langfuse, parent_otel_span: Any,
                                subagent: Dict[str, Any],
                                start_timestamp: Optional[datetime],
+                               span_key: str,
                                span_name: Optional[str] = None,
                                extra_metadata: Optional[Dict[str, Any]] = None,
                                generation_name: str = "Subagent LLM Call",
@@ -2941,6 +3062,7 @@ def emit_subagent_observations(langfuse: Langfuse, parent_otel_span: Any,
         name=span_name,
         as_type="span",
         start_time=subagent_start_timestamp,
+        span_key=span_key,
         parent_otel_span=parent_otel_span,
         input={"role": "user", "content": subagent_input_text},
         metadata=subagent_metadata,
@@ -2969,10 +3091,8 @@ def emit_subagent_observations(langfuse: Langfuse, parent_otel_span: Any,
             previous_start_timestamp = latest_turn_timestamp
 
     subagent_span.update(output={"role": "assistant", "content": subagent_output_text})
-    subagent_span.end(
-        end_time=to_otel_nanoseconds(
-            _get_latest_timestamp(latest_end_timestamp, subagent_start_timestamp)
-        )
+    _end_backdated(
+        subagent_span, _get_latest_timestamp(latest_end_timestamp, subagent_start_timestamp)
     )
 
     return latest_end_timestamp
@@ -3076,7 +3196,7 @@ def remote_parent(langfuse: Langfuse, session_id: str, user_row_uuid: Any,
                   root_span_id: Optional[str] = None,
                   trace_id: Optional[str] = None) -> Optional[Any]:
     """Return a carrier span pinning the turn's trace id, seeded from session
-    id + the turn's user-row uuid.
+    id + the turn identity (user-row uuid, else "turn:<turn number>").
 
     Without root_span_id the carrier gets a phantom span id: it is never
     exported, OTel merely requires a valid non-zero id, and children become
@@ -3104,13 +3224,13 @@ def remote_parent(langfuse: Langfuse, session_id: str, user_row_uuid: Any,
             trace_id = langfuse.create_trace_id(seed=f"{session_id}:{user_row_uuid}")
         parent_context = otel_trace_api.SpanContext(
             trace_id=int(trace_id, 16),
-            span_id=int(root_span_id, 16) if root_span_id else (random.getrandbits(64) or 1),
+            span_id=int(root_span_id, 16) if root_span_id else phantom_parent_span_id(int(trace_id, 16)),
             trace_flags=otel_trace_api.TraceFlags(0x01),  # sampled
             is_remote=False,
         )
         return otel_trace_api.NonRecordingSpan(parent_context)
     except Exception as e:
-        debug(f"remote_parent failed, falling back to random trace id: {e}")
+        debug(f"remote_parent failed: {e}")
         return None
 
 
@@ -3136,6 +3256,9 @@ def open_turn_root_span(langfuse: Langfuse, session_id: str, turn_num: int, turn
     # scannable; the conversation history lives on the LLM call inputs.
     root_input = {"role": "user", "content": build_user_history_content(turn.user_msg)}
     trace_metadata = build_trace_metadata(session_id, turn_num, turn, transcript_path, user_text_meta)
+    turn_identity = get_turn_identity(turn, turn_num)
+    # Attached turns of every session share the parent's trace id.
+    root_span_key = f"turn-root:{session_id}:{turn_identity}"
     if parent_context is not None:
         parent_trace_id, parent_span_id = parent_context
         trace_metadata["parent_trace_id"] = parent_trace_id
@@ -3144,7 +3267,8 @@ def open_turn_root_span(langfuse: Langfuse, session_id: str, turn_num: int, turn
             langfuse,
             name="Conversational Turn",
             as_type="span",
-            start_time=parse_timestamp(turn.user_msg),
+            start_time=get_turn_start_timestamp(turn),
+            span_key=root_span_key,
             forced_trace_id=parent_trace_id,
             forced_parent_span_id=parent_span_id,
             as_root=False,
@@ -3163,8 +3287,9 @@ def open_turn_root_span(langfuse: Langfuse, session_id: str, turn_num: int, turn
         langfuse,
         name="Conversational Turn",
         as_type="span",
-        start_time=parse_timestamp(turn.user_msg),
-        parent_otel_span=None if forced_trace_id else remote_parent(langfuse, session_id, turn.user_msg.get("uuid")),
+        start_time=get_turn_start_timestamp(turn),
+        span_key=root_span_key,
+        parent_otel_span=None if forced_trace_id else remote_parent(langfuse, session_id, turn_identity),
         forced_trace_id=forced_trace_id,
         as_root=True,
         input=root_input,
@@ -3185,7 +3310,7 @@ def get_root_span_end_time(turn: Turn, obs_end_ts: Optional[datetime]) -> Option
         get_turn_end_timestamp(turn),
         parse_timestamp(turn.assistant_msgs[-1]),
         obs_end_ts,
-        parse_timestamp(turn.user_msg),
+        get_turn_start_timestamp(turn),
     )
 
 
@@ -3245,7 +3370,7 @@ def emit_turn(langfuse: Langfuse, session_id: str, turn_num: int,
             # via a carrier. The stored trace id wins over re-derivation so
             # seeded and attached turns resume into the same trace.
             parent_otel_span = remote_parent(
-                langfuse, session_id, turn.user_msg.get("uuid"),
+                langfuse, session_id, get_turn_identity(turn, turn_num),
                 root_span_id=root_span_id,
                 trace_id=progress.get("trace_id") or (parent_context[0] if parent_context else None),
             )
@@ -3253,7 +3378,7 @@ def emit_turn(langfuse: Langfuse, session_id: str, turn_num: int,
             langfuse,
             parent_otel_span,
             turn,
-            parse_timestamp(turn.user_msg),
+            get_turn_start_timestamp(turn),
             subagent_transcripts_by_tool_use_id=subagent_transcripts_by_tool_use_id,
             cursor=cursor,
             workflow_agent_transcripts_by_run_id=workflow_agent_transcripts_by_run_id,
@@ -3263,9 +3388,7 @@ def emit_turn(langfuse: Langfuse, session_id: str, turn_num: int,
             # The root exports exactly once: end time and output are the
             # values known now, and stay — exported fields are immutable.
             trace_span.update(output=build_turn_output_payload(turn))
-            trace_span.end(
-                end_time=to_otel_nanoseconds(get_root_span_end_time(turn, obs_end_ts))
-            )
+            _end_backdated(trace_span, get_root_span_end_time(turn, obs_end_ts))
     progress["emitted_keys"] = sorted(cursor.emitted)
     return progress
 
@@ -3333,6 +3456,7 @@ def emit_and_close_ready_turns(
             # Log at INFO so SDK incompatibilities (and other emit failures)
             # are visible without needing CC_LANGFUSE_DEBUG=true.
             info(f"emit_turn failed: {type(e).__name__}: {e}")
+            raise
     return emitted
 
 
@@ -3402,6 +3526,7 @@ def emit_ready_observations_of_open_turn(
         session_state.turn_progress[user_row_uuid] = progress
     except Exception as e:
         info(f"emitting ready observations of open turn failed: {type(e).__name__}: {e}")
+        raise
 
 def emit_new_turns_from_transcript(
     langfuse: Langfuse,
@@ -3411,7 +3536,8 @@ def emit_new_turns_from_transcript(
     *,
     flush_deferred_agent_turns: bool = False,
 ) -> int:
-    key = get_session_state_key(session_id, str(transcript_path))
+    state_identity = os.environ.get("CC_LANGFUSE_STATE_IDENTITY_PATH") or str(transcript_path)
+    key = get_session_state_key(session_id, state_identity)
 
     with FileLock(get_session_lock_path(key)):
         with FileLock(LOCK_FILE):
@@ -3480,10 +3606,10 @@ def emit_new_turns_from_transcript(
             session_history=session_history,
         )
 
-        # Known limitation (accepted, like the crash-between-emit-and-save
-        # duplicate window): progress is persisted before the SDK flush in
-        # main(); a dropped flush leaves emitted_keys pointing at spans that
-        # never reached the server.
+        # Do not acknowledge transcript offsets or emitted observations before
+        # the SDK reports a completed flush. A failed or timed-out flush leaves
+        # the previous checkpoint intact so the next hook can replay.
+        flush_and_shutdown_langfuse_client(langfuse)
         with FileLock(LOCK_FILE):
             state = load_hook_state()
             save_session_state(state, key, session_state)
@@ -3495,20 +3621,48 @@ def flush_and_shutdown_langfuse_client(langfuse: Optional[Langfuse]) -> None:
     if langfuse is None:
         return
 
-    # Cap flush+shutdown at 5s so a slow/unreachable Langfuse can't stall Claude Code.
-    try:
-        def _flush_and_shutdown():
-            try:
-                langfuse.flush()
-            except Exception:
-                pass
-            langfuse.shutdown()
+    # Bound hook exit latency without ever treating an incomplete flush as
+    # delivered. A timeout preserves the last committed replay cursor.
+    failures: List[BaseException] = []
 
-        t = threading.Thread(target=_flush_and_shutdown, daemon=True)
-        t.start()
-        t.join(5.0)
-    except Exception:
-        pass
+    def _flush_and_shutdown():
+        try:
+            langfuse.flush()
+            langfuse.shutdown()
+        except BaseException as exc:
+            failures.append(exc)
+
+    worker = threading.Thread(target=_flush_and_shutdown, daemon=True)
+    worker.start()
+    worker.join(5.0)
+    if worker.is_alive():
+        raise TimeoutError("Langfuse flush did not complete within 5 seconds")
+    if failures:
+        raise failures[0]
+    durable_exporter = getattr(langfuse, "_devbox_durable_exporter", None)
+    if durable_exporter is not None and durable_exporter.failed is not None:
+        raise RuntimeError(
+            f"Langfuse local OTLP outbox persistence failed: "
+            f"{type(durable_exporter.failed).__name__}"
+        ) from durable_exporter.failed
+    if durable_exporter is not None:
+        durable_exporter.commit()
+
+
+def abandon_langfuse_client(langfuse: Optional[Langfuse]) -> None:
+    # The checkpoint did not advance, so replay re-emits this firing's turns:
+    # drop its staged spans, and skip the SDK's atexit flush, which would
+    # export the queued rest and joins its worker queues without a timeout.
+    durable_exporter = getattr(langfuse, "_devbox_durable_exporter", None)
+    if durable_exporter is not None:
+        durable_exporter.discard()
+    resources = getattr(langfuse, "_resources", None)
+    if resources is None:
+        return
+    atexit.unregister(resources.shutdown)
+    tracer_provider_shutdown = getattr(resources.tracer_provider, "shutdown", None)
+    if tracer_provider_shutdown is not None:
+        atexit.unregister(tracer_provider_shutdown)
 
 
 # ----------------- Main -----------------
@@ -3524,7 +3678,7 @@ def main() -> int:
     config = get_langfuse_config()
     if config is None:
         log_missing_langfuse_config()
-        return 0
+        return 1
 
     payload = read_hook_payload()
     hook_context = get_session_id_and_transcript_path(payload)
@@ -3536,7 +3690,7 @@ def main() -> int:
 
     langfuse = create_langfuse_client(config)
     if langfuse is None:
-        return 0
+        return 1
 
     try:
         emitted = emit_new_turns_from_transcript(
@@ -3552,15 +3706,15 @@ def main() -> int:
         return 0
 
     except TimeoutError as e:
-        info(f"lock timeout, skipping: {e}")
-        return 0
+        info(f"Langfuse delivery incomplete (will retry): {e}")
+        abandon_langfuse_client(langfuse)
+        return 1
 
     except Exception as e:
-        debug(f"Unexpected failure: {e}")
-        return 0
+        info(f"Langfuse delivery incomplete (will retry): {type(e).__name__}: {e}")
+        abandon_langfuse_client(langfuse)
+        return 1
 
-    finally:
-        flush_and_shutdown_langfuse_client(langfuse)
 
 if __name__ == "__main__":
     sys.exit(main())

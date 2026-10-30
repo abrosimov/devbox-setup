@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
+"""Credential-safe Claude Langfuse hook with a durable local retry intent."""
+
 from __future__ import annotations
 
+import contextlib
+import fcntl
+import hashlib
+import io
+import json
 import os
 import runpy
+import shutil
+import subprocess
 import sys
+import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
-    from collections.abc import MutableMapping
+    from collections.abc import Generator, MutableMapping
 
-# Claude's env may carry the operator's real Langfuse credentials for the langfuse skill.
-# The vendored hook reads these names before CC_LANGFUSE_*, and the SDK prefers
-# LANGFUSE_BASE_URL over the host it is given, so traces would leave the loopback edge.
+# Operator API credentials are never exported through the unauthenticated edge.
 SHADOWING_VARIABLES: Final[tuple[str, ...]] = (
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
@@ -20,6 +28,14 @@ SHADOWING_VARIABLES: Final[tuple[str, ...]] = (
     "LANGFUSE_HOST",
 )
 VENDORED_HOOK: Final[Path] = Path(__file__).resolve().parent / "vendor" / "langfuse_hook.py"
+REPLAY_ENV: Final = "CC_LANGFUSE_PENDING_REPLAY"
+PENDING_MAX_BYTES_ENV: Final = "CC_LANGFUSE_PENDING_MAX_BYTES"
+# A snapshot outlives its Stop only when that hook failed, so the store stays near empty.
+DEFAULT_PENDING_MAX_BYTES: Final = 2 * 1024 * 1024 * 1024
+
+
+class PendingCapacityError(OSError):
+    pass
 
 
 def scrub_shadowing_credentials(environment: MutableMapping[str, str]) -> None:
@@ -27,11 +43,231 @@ def scrub_shadowing_credentials(environment: MutableMapping[str, str]) -> None:
         environment.pop(name, None)
 
 
+def pending_root() -> Path:
+    state = Path(os.environ.get("CC_LANGFUSE_STATE_DIR") or Path.home() / ".claude/state")
+    return state.expanduser() / "langfuse_pending"
+
+
+def pending_key(session_id: str, transcript_path: Path) -> str:
+    return hashlib.sha256(f"{session_id}::{transcript_path}".encode()).hexdigest()
+
+
+@contextlib.contextmanager
+def registry_lock(root: Path) -> Generator[None]:
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (root / ".lock").open("a") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        yield
+
+
+def marker_nonce(marker: Path) -> str | None:
+    try:
+        nonce = json.loads(marker.read_text(encoding="utf-8")).get("nonce")
+    except (FileNotFoundError, ValueError, AttributeError):
+        return None
+    return nonce if isinstance(nonce, str) else None
+
+
+def snapshot_directory(root: Path, key: str, nonce: str) -> Path | None:
+    try:
+        return root / f"{key}.{uuid.UUID(hex=nonce).hex}"
+    except ValueError:
+        return None
+
+
+def pending_max_bytes() -> int:
+    raw = os.environ.get(PENDING_MAX_BYTES_ENV)
+    try:
+        return int(raw) if raw else DEFAULT_PENDING_MAX_BYTES
+    except ValueError as exc:
+        message = f"{PENDING_MAX_BYTES_ENV}={raw!r} is not a byte count"
+        raise ValueError(message) from exc
+
+
+def pending_bytes(root: Path, *, excluding: Path | None) -> int:
+    total = 0
+    for path in root.rglob("*") if root.is_dir() else ():
+        if excluding is not None and (path == excluding or excluding in path.parents):
+            continue
+        with contextlib.suppress(FileNotFoundError):
+            if path.is_file():
+                total += path.stat().st_size
+    return total
+
+
+def admit_snapshot(root: Path, source: Path, replaced: Path | None) -> None:
+    # The snapshot this registration replaces is removed right after, so it does not count.
+    cap = pending_max_bytes()
+    held = pending_bytes(root, excluding=replaced)
+    needed = source.stat().st_size
+    if held + needed > cap:
+        message = (
+            f"Langfuse pending store full: {held} bytes held plus a {needed}-byte snapshot of "
+            f"{source.name} exceeds {PENDING_MAX_BYTES_ENV}={cap} at {root}; "
+            "this firing has no replay snapshot, nothing was deleted"
+        )
+        raise PendingCapacityError(message)
+
+
+def fsync_directory(path: Path) -> None:
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def durable_json(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8") as out:
+            temporary.chmod(0o600)
+            json.dump(value, out, sort_keys=True)
+            out.flush()
+            os.fsync(out.fileno())
+        temporary.replace(path)
+        fsync_directory(path.parent)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def durable_snapshot(source: Path, destination: Path) -> None:
+    """Keep a replayable transcript even if Claude rotates/removes its original."""
+    destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temporary = destination.with_name(f".{destination.name}.tmp")
+    try:
+        # APFS clonefile avoids copying multi-megabyte transcripts on each Stop.
+        if sys.platform == "darwin":
+            try:
+                subprocess.run(
+                    ["/bin/cp", "-c", str(source), str(temporary)],
+                    check=True,
+                    capture_output=True,
+                    timeout=30,
+                )
+            except (OSError, subprocess.SubprocessError):
+                shutil.copyfile(source, temporary)
+        else:
+            shutil.copyfile(source, temporary)
+        temporary.chmod(0o600)
+        with temporary.open("rb") as copied:
+            os.fsync(copied.fileno())
+        temporary.replace(destination)
+        fsync_directory(destination.parent)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def hook_identity(payload: dict) -> tuple[str, Path] | None:
+    session_id = payload.get("session_id") or payload.get("sessionId")
+    path = payload.get("transcript_path") or payload.get("transcriptPath")
+    if not isinstance(session_id, str) or not isinstance(path, str):
+        return None
+    source = Path(path).expanduser().resolve()
+    if not source.is_file():
+        return None
+    return session_id, source
+
+
+def register_pending(payload: dict) -> tuple[Path, str, Path] | None:
+    identity = hook_identity(payload)
+    if identity is None:
+        return None
+    session_id, source = identity
+    key = pending_key(session_id, source)
+    nonce = uuid.uuid4().hex
+    root = pending_root()
+    marker = root / f"{key}.json"
+    current = marker_nonce(marker)
+    admit_snapshot(root, source, snapshot_directory(root, key, current) if current else None)
+    snapshot = root / f"{key}.{nonce}" / source.name
+    durable_snapshot(source, snapshot)
+    record = {
+        "schema_version": 1,
+        "nonce": nonce,
+        "session_id": session_id,
+        "transcript_path": str(source),
+        "snapshot_path": str(snapshot),
+        "hook_event_name": payload.get("hook_event_name") or payload.get("hookEventName") or "Stop",
+        "environment": os.environ.get("LANGFUSE_TRACING_ENVIRONMENT", ""),
+        "user_id": os.environ.get("LANGFUSE_USER_ID", ""),
+        "trace_tags": os.environ.get("CC_LANGFUSE_TRACE_TAGS", ""),
+        "trace_seed": os.environ.get("CC_LANGFUSE_TRACE_SEED", ""),
+        "traceparent": os.environ.get("CC_LANGFUSE_TRACEPARENT", ""),
+    }
+    with registry_lock(root):
+        replaced = marker_nonce(marker)
+        durable_json(marker, record)
+    # Nothing references the replaced record's snapshot any more: its own hook
+    # reads the original transcript and replay reads only the current marker.
+    stale = snapshot_directory(root, key, replaced) if replaced else None
+    if stale is not None:
+        shutil.rmtree(stale, ignore_errors=True)
+    return marker, nonce, snapshot
+
+
+def complete_pending(marker: Path, nonce: str, snapshot: Path) -> None:
+    """Do not delete a newer Stop's marker while an older hook is finishing."""
+    with registry_lock(marker.parent):
+        if marker_nonce(marker) == nonce:
+            marker.unlink()
+            fsync_directory(marker.parent)
+    # Every registration owns a distinct immutable snapshot.
+    snapshot.unlink(missing_ok=True)
+    with contextlib.suppress(OSError):
+        snapshot.parent.rmdir()
+
+
+def read_hook_input() -> tuple[str, dict]:
+    """Read once and replay unchanged stdin to the vendored hook."""
+    try:
+        raw = sys.stdin.read()
+    except OSError:
+        return "", {}
+    if not raw:
+        return "", {}
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return raw, {}
+    return raw, data if isinstance(data, dict) else {}
+
+
 def main() -> None:
     scrub_shadowing_credentials(os.environ)
-    # The import root the vendored file gets when it is run directly.
+    raw, payload = read_hook_input()
+    pending = None
+    refused = False
+    if not os.environ.get(REPLAY_ENV) and payload:
+        try:
+            pending = register_pending(payload)
+        except (OSError, ValueError) as exc:
+            # Still export: spooled spans are durable without the snapshot safety net.
+            print(f"langfuse_trace_hook: {exc}", file=sys.stderr)
+            refused = True
+
     sys.path[0] = str(VENDORED_HOOK.parent)
-    runpy.run_path(str(VENDORED_HOOK), run_name="__main__")
+    original_stdin = sys.stdin
+    try:
+        if raw:
+            sys.stdin = io.StringIO(raw)
+        try:
+            runpy.run_path(str(VENDORED_HOOK), run_name="__main__")
+        except SystemExit as exc:
+            if exc.code not in (None, 0):
+                raise
+        if pending is not None:
+            marker, nonce, snapshot = pending
+            record = json.loads(marker.read_text(encoding="utf-8"))
+            if Path(record["transcript_path"]).is_file():
+                complete_pending(marker, nonce, snapshot)
+            # An original removed during export may make the vendored hook
+            # return without processing; retain its durable snapshot for replay.
+    finally:
+        sys.stdin = original_stdin
+    if refused:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

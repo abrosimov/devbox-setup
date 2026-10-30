@@ -1,0 +1,19 @@
+diff --git a/langfuse_hook.py b/langfuse_hook.py
+--- a/langfuse_hook.py
++++ b/langfuse_hook.py
+@@ -3342,6 +3342,7 @@
+             # Log at INFO so SDK incompatibilities (and other emit failures)
+             # are visible without needing CC_LANGFUSE_DEBUG=true.
+             info(f"emit_turn failed: {type(e).__name__}: {e}")
++            raise
+     return emitted
+ 
+ 
+@@ -3411,6 +3412,7 @@
+         session_state.turn_progress[user_row_uuid] = progress
+     except Exception as e:
+         info(f"emitting ready observations of open turn failed: {type(e).__name__}: {e}")
++        raise
+ 
+ def emit_new_turns_from_transcript(
+     langfuse: Langfuse,

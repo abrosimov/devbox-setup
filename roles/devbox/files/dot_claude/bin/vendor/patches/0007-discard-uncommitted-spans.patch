@@ -1,0 +1,49 @@
+diff --git a/langfuse_hook.py b/langfuse_hook.py
+--- a/langfuse_hook.py
++++ b/langfuse_hook.py
+@@ -10,6 +10,7 @@ Claude Code -> Langfuse hook
+ 
+ """
+ 
++import atexit
+ import base64
+ import contextlib
+ import json
+@@ -3538,6 +3539,24 @@ def flush_and_shutdown_langfuse_client(langfuse: Optional[Langfuse]) -> None:
+             f"Langfuse local OTLP outbox persistence failed: "
+             f"{type(durable_exporter.failed).__name__}"
+         ) from durable_exporter.failed
++    if durable_exporter is not None:
++        durable_exporter.commit()
++
++
++def abandon_langfuse_client(langfuse: Optional[Langfuse]) -> None:
++    # The checkpoint did not advance, so replay re-emits this firing's turns:
++    # drop its staged spans, and skip the SDK's atexit flush, which would
++    # export the queued rest and joins its worker queues without a timeout.
++    durable_exporter = getattr(langfuse, "_devbox_durable_exporter", None)
++    if durable_exporter is not None:
++        durable_exporter.discard()
++    resources = getattr(langfuse, "_resources", None)
++    if resources is None:
++        return
++    atexit.unregister(resources.shutdown)
++    tracer_provider_shutdown = getattr(resources.tracer_provider, "shutdown", None)
++    if tracer_provider_shutdown is not None:
++        atexit.unregister(tracer_provider_shutdown)
+ 
+ 
+ # ----------------- Main -----------------
+@@ -3582,10 +3601,12 @@ def main() -> int:
+ 
+     except TimeoutError as e:
+         info(f"Langfuse delivery incomplete (will retry): {e}")
++        abandon_langfuse_client(langfuse)
+         return 1
+ 
+     except Exception as e:
+         info(f"Langfuse delivery incomplete (will retry): {type(e).__name__}: {e}")
++        abandon_langfuse_client(langfuse)
+         return 1
+ 
+ 

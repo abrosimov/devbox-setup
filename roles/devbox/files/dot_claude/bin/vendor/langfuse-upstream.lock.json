@@ -5,6 +5,15 @@
   "commit": "b5b7cc364996467e856dc17575b5674f4799ad87",
   "path": "hooks/langfuse_hook.py",
   "upstream_git_blob_sha1": "cdd8f64f0b8e437a73442de3fb1c4e8c8a64f798",
-  "output_git_blob_sha1": "cdd8f64f0b8e437a73442de3fb1c4e8c8a64f798",
-  "patches": []
+  "output_git_blob_sha1": "e012e4b1cfef45ddfcf4e8628a08cce0380086bc",
+  "patches": [
+    "0001-durable-checkpoint.patch",
+    "0002-flush-before-checkpoint.patch",
+    "0003-visible-delivery-errors.patch",
+    "0004-propagate-emission-failures.patch",
+    "0005-replay-snapshot-identity.patch",
+    "0006-durable-otlp-exporter.patch",
+    "0007-discard-uncommitted-spans.patch",
+    "0008-deterministic-observation-ids.patch"
+  ]
 }

@@ -1,0 +1,24 @@
+diff --git a/langfuse_hook.py b/langfuse_hook.py
+--- a/langfuse_hook.py
++++ b/langfuse_hook.py
+@@ -615,9 +615,18 @@ def save_hook_state(state: Dict[str, Any]) -> None:
+         sweep_stale_session_locks(state, cutoff)
+         STATE_DIR.mkdir(parents=True, exist_ok=True)
+         tmp = STATE_FILE.with_suffix(".tmp")
+-        tmp.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
++        with open(tmp, "w", encoding="utf-8") as checkpoint:
++            checkpoint.write(json.dumps(state, indent=2, sort_keys=True))
++            checkpoint.flush()
++            os.fsync(checkpoint.fileno())
+         os.replace(tmp, STATE_FILE)
++        directory_fd = os.open(STATE_DIR, os.O_RDONLY)
++        try:
++            os.fsync(directory_fd)
++        finally:
++            os.close(directory_fd)
+     except Exception as e:
+-        debug(f"save_hook_state failed: {e}")
++        info(f"save_hook_state failed: {e}")
++        raise
+ 
+ def save_session_state(global_state: Dict[str, Any], key: str, session_state: SessionState) -> None:

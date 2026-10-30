@@ -1,4 +1,5 @@
 """Offline contract tests for the Claude Langfuse source pin."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -22,7 +23,16 @@ def test_deployed_artifact_matches_pin() -> None:
     module = load_module()
     info = module.manifest()
     assert module.git_blob_sha1(module.OUTPUT.read_bytes()) == info["output_git_blob_sha1"]
-    assert module.build(module.OUTPUT.read_bytes(), info) == module.OUTPUT.read_bytes()
+    assert info["patches"] == [
+        "0001-durable-checkpoint.patch",
+        "0002-flush-before-checkpoint.patch",
+        "0003-visible-delivery-errors.patch",
+        "0004-propagate-emission-failures.patch",
+        "0005-replay-snapshot-identity.patch",
+        "0006-durable-otlp-exporter.patch",
+        "0007-discard-uncommitted-spans.patch",
+        "0008-deterministic-observation-ids.patch",
+    ]
 
 
 def test_upstream_mismatch_is_rejected() -> None:
@@ -36,5 +46,7 @@ def test_unsafe_patch_name_is_rejected(tmp_path: Path, monkeypatch: pytest.Monke
     module = load_module()
     info = dict(module.manifest())
     info["patches"] = ["../outside.patch"]
+    source = b"synthetic upstream fixture"
+    info["upstream_git_blob_sha1"] = module.git_blob_sha1(source)
     with pytest.raises(ValueError, match="Patch must be a basename"):
-        module.build(module.OUTPUT.read_bytes(), info)
+        module.build(source, info)

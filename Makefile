@@ -146,7 +146,7 @@ endif
        dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now go-proxy-verify \
        sync-upstream-docs \
        test test-integration test-ai-config test-deploy test-claude-hooks test-agy-hooks test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
-       test-live test-live-guard \
+       test-live test-live-guard test-langfuse-e2e \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -497,6 +497,15 @@ test-live-guard: $(DEV_SENTINEL) ## Pytest for the throwaway-home and engine gua
 test-live: $(DEV_SENTINEL) ## Pytest against real engine binaries (opt-in, needs claude/codex/agy)
 	@DEVBOX_LIVE_ENGINE_TESTS=1 DEVBOX_LIVE_REQUIRE_ENGINES="$(ENGINES)" \
 	  $(DEV_BIN)/pytest tests/live -m live -v
+
+# Opt-in, Linux only: the Claude Langfuse handoff end to end — real Stop hook,
+# the replay runner as its LaunchAgent plist starts it, and the pinned otelbox
+# edge release (fetched and checked against its published .sha256) forwarding
+# to a test-owned gateway. Skips when the edge cannot run here (macOS, busy edge
+# ports, no download); ENGINES=otelbox-edge turns that skip into a failure.
+test-langfuse-e2e: $(DEV_SENTINEL) ## Langfuse handoff against the pinned otelbox edge (opt-in, Linux)
+	@DEVBOX_LIVE_ENGINE_TESTS=1 DEVBOX_LIVE_REQUIRE_ENGINES="$(ENGINES)" \
+	  $(DEV_BIN)/pytest tests/live/test_live_langfuse_handoff.py -m live -v
 
 qa: lint-py typecheck test test-integration test-ai-config test-scripts test-deploy test-live-guard ## Full Python quality gate
 

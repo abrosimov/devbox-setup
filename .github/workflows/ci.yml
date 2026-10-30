@@ -171,3 +171,15 @@ jobs:
 
       - name: Antigravity hook tests
         run: make test-agy-hooks
+
+  # The one check the baseline ruleset from gh-repo-settings requires: it
+  # stands for every job above, so the ruleset names a single check however
+  # this workflow's jobs change.
+  required:
+    name: required
+    if: always()
+    needs: [lint, validate, test, hook-projects]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All jobs passed
+        run: test "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = false

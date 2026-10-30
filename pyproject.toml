@@ -48,6 +48,10 @@ dev = [
     # deployed venv; mirrored here so the root dev venv (used by `make test`
     # and `make typecheck`) can also resolve it.
     "bashlex",
+    # tests/live/langfuse_handoff.py: the test-owned TLS OTLP/gRPC gateway that
+    # the pinned otelbox edge forwards to, and the CA it is issued from.
+    "grpcio>=1.60",
+    "cryptography>=42",
 ]
 
 [tool.uv]
@@ -422,5 +426,5 @@ markers = [
     # tests/live/ drives real claude/codex/agy binaries against a throwaway home.
     # tests/live/conftest.py refuses to collect them unless DEVBOX_LIVE_ENGINE_TESTS=1,
     # so `make test`, `make qa` and a bare `pytest` stay hermetic. See `make test-live`.
-    "live: engine tests that spawn an installed AI CLI (opt-in, needs real binaries)",
+    "live: tests that spawn an installed AI CLI or the pinned otelbox edge (opt-in, needs real binaries)",
 ]

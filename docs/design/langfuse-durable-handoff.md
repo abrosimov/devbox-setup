@@ -1,6 +1,6 @@
-# Claude Langfuse hook: durable delivery handoff (proposal)
+# Claude Langfuse hook: durable delivery handoff
 
-Status: **design and fault-injection only**. The current hook is not proven lossless. No production changes in this proposal.
+Status: **implemented in PR #72 (strategy B with deterministic identities)**. The pre-merge gates are closed by automated end-to-end tests in CI, not by a manual rollout; see [Verification](#verification). The sections up to the test plan record the original proposal.
 
 ## Current state (upstream 1.2.1)
 
@@ -45,6 +45,23 @@ Use raw transcript as a local replay source; never consider a turn delivered mer
 ## Test plan
 
 The existing `test_langfuse_delivery_contract.py` records checkpoint-before-flush, swallowed flush exceptions, timed-out daemon flush and deterministic turn trace ID. `test_langfuse_durable_state_contract.py` adds disk state failure visibility and fsync evidence. Both suites keep known defects marked `xfail(strict=True)` until the implementation repairs them. A subsequent PR should add subprocess crash/restart tests with a fake OTLP receiver and test replay across session start/stop boundaries before removing the xfail markers.
+
+## Verification
+
+The four manual pre-merge gates are replaced by tests. There is no Mac or Linux machine for a manual rollout, so every gate runs in CI on a Linux runner.
+
+| Gate | Closed by | What runs |
+| --- | --- | --- |
+| G1 runtime rollout | `tests/live/test_live_langfuse_handoff.py` (`make test-langfuse-e2e`, CI job `langfuse-e2e`) | The Stop hook command from the generated `settings.json`; the replay runner with exactly the `ProgramArguments` and log paths of the rendered `local.langfuse-replay.plist.j2` and launchd's default environment; the `otelcol-otelbox` release pinned by `devbox_packages.otelbox_edge.version`, checked against its published `.sha256`, running the repository's `edge.yaml`; a test-owned TLS OTLP/gRPC gateway. Scenarios: edge offline at Stop, hook SIGKILLed mid-export, transcript rotated before replay, two overlapping Stops. |
+| G2 edge 2xx is a durable acknowledgement | same file | The edge answers 2xx while the gateway is down, is SIGKILLed, restarts on its WAL, and the gateway still receives every span. A proxy in front of the edge checks that each batch is still in the local spool when the edge answers and that a 503 deletes nothing. |
+| G3 disk budget | `roles/devbox/files/dot_claude/bin/test_langfuse_capacity.py`, `test_langfuse_otlp_spool.py` | Both stores have caps (see the runbook). A full store refuses new data, fails the hook with a stderr line naming the cap and path, deletes nothing, and recovers once replay drains or clears it. |
+| G4 duplicates after replay | `tests/live/test_live_langfuse_handoff.py` | A hook killed after its batches reached the spool but before the checkpoint is replayed; the gateway receives every span exactly twice, with identical trace id, span id, parent span id, start and end. |
+
+launchd scheduling (`RunAtLoad`, `StartInterval`) is not exercised: it does not exist on Linux. What runs is the plist's command and environment; the schedule is pinned only statically by `tests/deploy/test_langfuse_replay_deployment.py`.
+
+## Dependency: deduplication at the otelbox gateway
+
+Langfuse v4 does not deduplicate observations server-side: a re-ingested span id becomes a second observation. Replay is at-least-once by design, and G4 proves that a replayed transcript repeats the original identities exactly, so the duplicates are recognisable but still delivered. Deduplication by (trace id, span id) is being added at the otelbox gateway in the separate `abrosimov/otelcol-otelbox` repository; this repository does not implement it. Until that gateway release is deployed, a hook that dies after committing its batches to the spool but before saving its checkpoint shows up in Langfuse as duplicate observations once replay re-emits that firing.
 
 ## Boundary to setup_lab
 

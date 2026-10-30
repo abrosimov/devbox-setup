@@ -24,6 +24,8 @@ REPLAY_SETTINGS = (
     "CC_LANGFUSE_CAPTURE_IMAGES",
     "CC_LANGFUSE_DEBUG",
     "CC_LANGFUSE_STATE_DIR",
+    "CC_LANGFUSE_SPOOL_MAX_BYTES",
+    "CC_LANGFUSE_PENDING_MAX_BYTES",
 )
 
 
@@ -84,6 +86,9 @@ def replay_one(marker: Path, base_env: dict[str, str]) -> bool:
         env=environment,
     )
     if result.returncode != 0:
+        # A full spool names its cap on the hook's stderr; the LaunchAgent log is its only witness.
+        if result.stderr:
+            sys.stderr.write(result.stderr)
         return False
     # Re-read the marker to avoid deleting a newer Stop/SessionEnd registration.
     try:

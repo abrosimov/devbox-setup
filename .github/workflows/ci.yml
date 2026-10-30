@@ -8,6 +8,7 @@ name: CI
 #   - test-nvim     : downloads lazy.nvim plugins at runtime (slow, flaky)
 #   - eval-skills   : needs the `claude` CLI + Anthropic API (cost, secrets)
 #   - test-live     : installs real engine CLIs; see live-engines.yml
+#                     (its Langfuse handoff file runs here, as test-langfuse-e2e)
 #   - the operator flow (make personal/work) : provisions a real machine
 
 on:
@@ -176,3 +177,26 @@ jobs:
 
       - name: Antigravity hook tests
         run: make test-agy-hooks
+
+  # The Claude Langfuse handoff end to end, in place of a manual Mac rollout:
+  # the real Stop hook, the replay runner started as its LaunchAgent plist starts
+  # it, and the pinned otelbox edge release (verified against its published
+  # .sha256) forwarding to a test-owned TLS gateway. Linux only, because the
+  # edge's gateway leg trusts the platform store and only Linux lets a test CA in
+  # through SSL_CERT_FILE. ENGINES=otelbox-edge makes any skip a failure.
+  langfuse-e2e:
+    name: Langfuse handoff e2e (pinned otelbox edge)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Langfuse handoff against the pinned edge
+        run: make test-langfuse-e2e ENGINES=otelbox-edge

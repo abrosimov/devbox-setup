@@ -156,11 +156,32 @@ def test_failed_replay_preserves_pending_snapshot(
     monkeypatch.setattr(
         langfuse_replay.subprocess,
         "run",
-        lambda *_args, **_kwargs: SimpleNamespace(returncode=1),
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=1, stderr=""),
     )
     assert not langfuse_replay.replay_one(marker, {})
     assert marker.is_file()
     assert snapshot.is_file()
+
+
+def test_replay_forwards_the_disk_caps_configured_for_the_hook(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = tmp_path / "settings.json"
+    configured = {
+        "CC_LANGFUSE_BASE_URL": "http://127.0.0.1:14318",
+        "CC_LANGFUSE_PUBLIC_KEY": "pk",
+        "CC_LANGFUSE_SECRET_KEY": "sk",
+        "CC_LANGFUSE_SPOOL_MAX_BYTES": "1048576",
+        "CC_LANGFUSE_PENDING_MAX_BYTES": "2097152",
+    }
+    settings.write_text(json.dumps({"env": configured}), encoding="utf-8")
+    monkeypatch.setattr(langfuse_replay, "SETTINGS", settings)
+
+    environment = langfuse_replay.replay_environment()
+
+    assert environment["CC_LANGFUSE_SPOOL_MAX_BYTES"] == "1048576"
+    assert environment["CC_LANGFUSE_PENDING_MAX_BYTES"] == "2097152"
 
 
 def test_transcript_removed_during_hook_retains_pending_snapshot(

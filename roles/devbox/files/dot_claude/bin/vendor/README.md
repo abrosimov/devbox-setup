@@ -82,8 +82,26 @@ Refresh verifies the upstream blob, applies every listed patch with strict
 A changed upstream or patch requires an explicit lock update and code review.
 No network request is made from a Claude hook or its provisioning process.
 
-Current patch list is empty. Delivery checkpoint fixes are intentionally out of
-scope for this version bump; they require fault-injection tests first.
+The patch list makes delivery recoverable (design:
+`docs/design/langfuse-durable-handoff.md`; operations:
+`docs/runbooks/langfuse-replay.md`). Applied in this order:
+
+| Patch | Change |
+| --- | --- |
+| `0001-durable-checkpoint.patch` | fsync the checkpoint file and its directory, and report a failed save |
+| `0002-flush-before-checkpoint.patch` | advance the checkpoint only after the SDK flush completed |
+| `0003-visible-delivery-errors.patch` | a lock timeout or delivery failure exits 1 instead of looking like success |
+| `0004-propagate-emission-failures.patch` | a failed turn emission fails the firing instead of being skipped |
+| `0005-replay-snapshot-identity.patch` | replay from a transcript snapshot keeps the original session's checkpoint key |
+| `0006-durable-otlp-exporter.patch` | export through `durable_otel_exporter.py` to the fsynced local spool |
+| `0007-discard-uncommitted-spans.patch` | a failed firing discards its staged spans, which replay re-emits |
+| `0008-deterministic-observation-ids.patch` | derive every trace and span id from the transcript, so replay repeats them |
+
+`durable_otel_exporter.py` sits beside the hook but is not upstream code: it is
+this repository's spool exporter, kept here because the patched hook imports it
+from its own directory. It is excluded from Ruff and Pyrefly with the rest of
+`vendor/`. The tests that close the pre-merge gates (G1–G4) are listed in the
+runbook's *Pre-merge verification* section.
 
 ### Updating
 

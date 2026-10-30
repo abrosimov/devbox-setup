@@ -105,6 +105,28 @@ def test_failure_to_persist_otlp_is_not_acknowledged(
     assert not list(spool_home.glob("*.otlp"))
 
 
+def test_staging_of_a_concurrent_hook_counts_towards_the_spool_cap(
+    monkeypatch: pytest.MonkeyPatch,
+    spool_home: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    concurrent = spool.DurableSpoolExporter()
+    emit_test_span(concurrent)
+    staged = sum(path.stat().st_size for path in concurrent.staging.glob("*.otlp"))
+    monkeypatch.setenv(spool.SPOOL_MAX_BYTES_ENV, str(staged + staged // 2))
+    exporter = spool.DurableSpoolExporter()
+
+    emit_test_span(exporter)
+    emit_test_span(exporter)
+
+    assert isinstance(exporter.failed, OSError)
+    assert not list(exporter.staging.glob("*.otlp"))
+    refusals = capsys.readouterr().err.splitlines()
+    assert len(refusals) == 1
+    assert f"{spool.SPOOL_MAX_BYTES_ENV}={staged + staged // 2}" in refusals[0]
+    assert str(spool_home) in refusals[0]
+
+
 def test_otel_spool_delivery_removes_payload_after_http_ack(
     monkeypatch: pytest.MonkeyPatch,
     spool_home: Path,

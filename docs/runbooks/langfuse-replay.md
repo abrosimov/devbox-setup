@@ -1,6 +1,6 @@
 # Claude Langfuse durable replay — operator runbook
 
-Status: **candidate implementation in PR #72; do not treat as production verified before a Mac smoke test.**
+Status: **PR #72; the pre-merge gates are automated end-to-end tests in CI** (see [Pre-merge verification](#pre-merge-verification)). There is no manual Mac rollout step.
 
 ## Data path and guarantees
 
@@ -8,7 +8,21 @@ A Claude `SessionStart`, `Stop` or `SessionEnd` hook writes a local pending mark
 
 Pending files are located under `~/.claude/state/langfuse_pending/` unless `CC_LANGFUSE_STATE_DIR` is configured. Files are chmod 0600 and new snapshot directories 0700. They contain real transcript content and must be protected as sensitive local data. The marker records session metadata only, never operator Langfuse API credentials. The worker reads the *deployed* local-edge sentinel configuration and exports only through the loopback edge collector.
 
-This is **at-least-once**, not exactly once: after a crash between remote acceptance and local checkpoint a session may be re-emitted. Stable trace identity does not automatically make generated observation IDs idempotent. `Langfuse.flush()` is not assumed to be an end-to-end durable backend ACK. The gateway's independent durable fan-out contract is addressed in `setup_lab/docs/rfcs/0001-durable-telemetry-fanout.md`.
+This is **at-least-once**, not exactly once: after a crash between spooling a firing's batches and saving its checkpoint, replay re-emits that firing. Every observation id is derived from the transcript, so a re-emission repeats the original trace id, span id, parent span id and times exactly; Langfuse v4 still stores it as a second observation until deduplication lands at the otelbox gateway (`docs/design/langfuse-durable-handoff.md`). `Langfuse.flush()` is not assumed to be an end-to-end durable backend ACK: the hook acknowledges only fsynced spool files, and only an edge HTTP 2xx deletes one. The gateway's independent durable fan-out contract is addressed in `setup_lab/docs/rfcs/0001-durable-telemetry-fanout.md`.
+
+## Disk budget
+
+Both local stores are capped. A full store never deletes undelivered data to make room: it refuses new data, and the hook exits nonzero with one stderr line naming the cap and the path. Replay keeps draining while a store is full, so the condition clears on its own once the edge is reachable.
+
+| Store | Path | Cap variable | Default |
+| --- | --- | --- | --- |
+| OTLP spool (spans fsynced, awaiting the edge) | `~/.claude/state/langfuse_otlp_spool/` | `CC_LANGFUSE_SPOOL_MAX_BYTES` | 2 GiB |
+| Transcript snapshots and pending markers | `~/.claude/state/langfuse_pending/` | `CC_LANGFUSE_PENDING_MAX_BYTES` | 2 GiB |
+
+The spool fills only while the loopback edge is unreachable; the edge carries its own 16 GiB WAL for gateway outages. A snapshot outlives its Stop only when that hook failed, so the pending store is normally near empty. Both values are bytes. To change one, set it in the `env` block of Claude's settings (`roles/devbox/files/dot_claude/settings.json.j2`): the hook reads it from there, and the replay runner forwards it from the same file to the hook runs it starts.
+
+- **Spool full:** the firing's spans are refused, its staging is dropped and its checkpoint does not advance, so its pending snapshot keeps the turns for replay. Stderr: `durable_otel_exporter: Langfuse OTLP spool full: ... exceeds CC_LANGFUSE_SPOOL_MAX_BYTES=<cap> at <path> ...`.
+- **Pending store full:** no snapshot is taken for this firing, the turns are still exported to the spool, and the hook exits 1. Stderr: `langfuse_trace_hook: Langfuse pending store full: ... exceeds CC_LANGFUSE_PENDING_MAX_BYTES=<cap> at <path> ...`. The re-registration of a session does not count the snapshot it replaces.
 
 ## Inspect without mutation
 
@@ -37,20 +51,24 @@ The worker may see `Stop` and `SessionEnd` pending work concurrently with live C
 | Local collector unreachable | Keep pending files; verify `local.otelbox-edge`, edge logs and restart/retry |
 | Hook timeout | Keep pending snapshot; retry by LaunchAgent/manual pass |
 | Session transcript was deleted | Replay falls back to the snapshot, retaining the original checkpoint identity |
-| Disk full while snapshotting | Hook reports failure; free storage, retain original transcript and existing pending records |
+| Spool or pending store at its cap | Hook stderr names the cap and path; bring the edge back and let replay drain, or raise the cap. Never delete spool or pending files |
+| Disk full while snapshotting | Hook reports failure on stderr and still exports; free storage, retain original transcript and existing pending records |
 | Malformed marker / missing snapshot | Do not delete marker silently; inspect local spool and investigate |
 | Backlog does not drain | Check current hook log and edge metrics; never `rm -rf` the pending directory as a recovery step |
 
-No automatic TTL-based deletion is currently enabled; this deliberately prioritises not deleting undelivered snapshots. Plan capacity monitoring and a *verified* orphan cleanup policy before production adoption.
+No automatic TTL-based deletion is enabled; this deliberately prioritises not deleting undelivered snapshots. The caps above bound the disk the stores can take instead.
 
-## Pre-merge Mac failure-injection exercise
+## Pre-merge verification
 
-1. Apply this PR's configuration on a non-production Mac profile; verify the pinned Python venv and LaunchAgent are installed.
-2. Stop local otelbox edge, execute one non-sensitive Claude turn and end the session. Confirm the hook reports unsuccessful handoff and creates a pending marker/snapshot.
-3. Restore the edge and invoke the retry runner. Check the marker is removed **only** after the worker reports success, and verify the trace in Langfuse.
-4. Repeat with forced process kill during hook export, while preserving the pending directory. Confirm recovery after restart/login.
-5. Test deletion/rotation of an original transcript with a durable snapshot and verify replay can still read its content under the original session key.
-6. Test two overlapping `Stop` attempts for the same session and verify the older completion does not remove the newer marker.
-7. Cross-check edge accepted-spans and gateway exporter metrics; verify the target observation identity and payload. Record any duplicate observations and reconcile them against the at-least-once contract.
+The former manual Mac failure-injection exercise is replaced by tests that CI runs on every push (`.github/workflows/ci.yml`):
 
-Do **not** claim end-to-end losslessness from successful unit tests or an empty pending directory alone.
+| Gate | Test | Make target |
+| --- | --- | --- |
+| G1 runtime rollout: edge offline at Stop, hook SIGKILLed mid-export, transcript rotated before replay, overlapping Stops | `tests/live/test_live_langfuse_handoff.py` | `make test-langfuse-e2e ENGINES=otelbox-edge` (CI job `langfuse-e2e`) |
+| G2 edge 2xx is durable (edge SIGKILLed after 2xx, before forwarding); no spool deletion before a 2xx | `tests/live/test_live_langfuse_handoff.py` | as above |
+| G3 disk budget: reaching each cap, recovery once replay frees space | `roles/devbox/files/dot_claude/bin/test_langfuse_capacity.py`, `test_langfuse_otlp_spool.py` | `make test-claude-hooks` |
+| G4 identical identities when a delivered transcript is replayed | `tests/live/test_live_langfuse_handoff.py` | `make test-langfuse-e2e ENGINES=otelbox-edge` |
+
+The end-to-end tests drive real processes: the Stop hook command from the generated `settings.json`, the replay runner with the rendered LaunchAgent plist's arguments and log path under launchd's default environment, and the pinned `otelcol-otelbox` release (checked against its published `.sha256`) running the repository's `edge.yaml` and forwarding over TLS to a gateway recipient the test owns. They need Linux: on macOS the edge trusts only the Keychain and a running local edge holds its fixed ports, so locally the suite skips with that reason; `ENGINES=otelbox-edge` turns the skip into a failure. launchd's own scheduling is not exercised.
+
+Do **not** claim end-to-end losslessness from an empty pending directory alone; the gateway's fan-out to Langfuse is outside these tests.

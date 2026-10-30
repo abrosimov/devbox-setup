@@ -25,7 +25,9 @@ from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 
 # Remain below the devbox edge's 1 MiB OTLP/HTTP request body cap.
 MAX_BATCH_BYTES = 900_000
-DEFAULT_SPOOL_MAX_BYTES = 8 * 1024 * 1024 * 1024
+SPOOL_MAX_BYTES_ENV = "CC_LANGFUSE_SPOOL_MAX_BYTES"
+# Fills only while the loopback edge is unreachable: a week of heavy Langfuse output.
+DEFAULT_SPOOL_MAX_BYTES = 2 * 1024 * 1024 * 1024
 OTLP_TRACE_PATH = "/api/public/otel/v1/traces"
 STAGING_DIRECTORY = ".staging"
 # Hook firings are killed well inside this; older staging belongs to a dead process.
@@ -67,6 +69,15 @@ def _durable_save(directory: Path, payload: bytes) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def _spool_bytes(directory: Path) -> int:
+    # Every hook's staging counts: concurrent firings share one cap.
+    total = 0
+    for path in (*directory.glob("*.otlp"), *directory.glob(f"{STAGING_DIRECTORY}/*/*.otlp")):
+        with contextlib.suppress(FileNotFoundError):
+            total += path.stat().st_size
+    return total
+
+
 def _encode(spans: Sequence[ReadableSpan]) -> bytes:
     return encode_spans(spans).SerializeToString()
 
@@ -79,8 +90,7 @@ class DurableSpoolExporter(SpanExporter):
         self.staging = self.directory / STAGING_DIRECTORY / uuid.uuid4().hex
         self.failed: BaseException | None = None
         self.discarded = False
-        raw = os.environ.get("CC_LANGFUSE_SPOOL_MAX_BYTES", str(DEFAULT_SPOOL_MAX_BYTES))
-        self.max_bytes = int(raw)
+        self.max_bytes = int(os.environ.get(SPOOL_MAX_BYTES_ENV) or DEFAULT_SPOOL_MAX_BYTES)
 
     def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
         if not spans or self.discarded:
@@ -88,6 +98,9 @@ class DurableSpoolExporter(SpanExporter):
         try:
             self._persist(spans)
         except BaseException as exc:
+            if self.failed is None:
+                # The hook logs only to a file; a refused span must reach the operator.
+                print(f"durable_otel_exporter: {exc}", file=sys.stderr)
             self.failed = exc
             return SpanExportResult.FAILURE
         return SpanExportResult.SUCCESS
@@ -126,15 +139,19 @@ class DurableSpoolExporter(SpanExporter):
         payload = _encode(spans)
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         (self.directory / STAGING_DIRECTORY).mkdir(exist_ok=True, mode=0o700)
-        allocated = sum(
-            p.stat().st_size
-            for p in (*self.directory.glob("*.otlp"), *self.staging.glob("*.otlp"))
-        )
+        allocated = _spool_bytes(self.directory)
         if allocated + len(payload) > self.max_bytes:
-            raise OSError("Langfuse OTLP outbox capacity exceeded")
+            raise OSError(
+                f"Langfuse OTLP spool full: {allocated} bytes queued plus a {len(payload)}-byte "
+                f"batch exceeds {SPOOL_MAX_BYTES_ENV}={self.max_bytes} at {self.directory}; "
+                "refusing new spans until replay drains it, nothing was deleted"
+            )
         free = shutil.disk_usage(self.directory).free
         if free <= len(payload) + MAX_BATCH_BYTES:
-            raise OSError("Insufficient free disk space for durable OTLP export")
+            raise OSError(
+                f"Langfuse OTLP spool refused a {len(payload)}-byte batch: only {free} bytes "
+                f"free on the volume holding {self.directory}; nothing was deleted"
+            )
         _durable_save(self.staging, payload)
 
     def shutdown(self, timeout_millis: int = 30_000) -> None:

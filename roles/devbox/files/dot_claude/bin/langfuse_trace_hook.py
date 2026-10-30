@@ -29,6 +29,13 @@ SHADOWING_VARIABLES: Final[tuple[str, ...]] = (
 )
 VENDORED_HOOK: Final[Path] = Path(__file__).resolve().parent / "vendor" / "langfuse_hook.py"
 REPLAY_ENV: Final = "CC_LANGFUSE_PENDING_REPLAY"
+PENDING_MAX_BYTES_ENV: Final = "CC_LANGFUSE_PENDING_MAX_BYTES"
+# A snapshot outlives its Stop only when that hook failed, so the store stays near empty.
+DEFAULT_PENDING_MAX_BYTES: Final = 2 * 1024 * 1024 * 1024
+
+
+class PendingCapacityError(OSError):
+    pass
 
 
 def scrub_shadowing_credentials(environment: MutableMapping[str, str]) -> None:
@@ -66,6 +73,40 @@ def snapshot_directory(root: Path, key: str, nonce: str) -> Path | None:
         return root / f"{key}.{uuid.UUID(hex=nonce).hex}"
     except ValueError:
         return None
+
+
+def pending_max_bytes() -> int:
+    raw = os.environ.get(PENDING_MAX_BYTES_ENV)
+    try:
+        return int(raw) if raw else DEFAULT_PENDING_MAX_BYTES
+    except ValueError as exc:
+        message = f"{PENDING_MAX_BYTES_ENV}={raw!r} is not a byte count"
+        raise ValueError(message) from exc
+
+
+def pending_bytes(root: Path, *, excluding: Path | None) -> int:
+    total = 0
+    for path in root.rglob("*") if root.is_dir() else ():
+        if excluding is not None and (path == excluding or excluding in path.parents):
+            continue
+        with contextlib.suppress(FileNotFoundError):
+            if path.is_file():
+                total += path.stat().st_size
+    return total
+
+
+def admit_snapshot(root: Path, source: Path, replaced: Path | None) -> None:
+    # The snapshot this registration replaces is removed right after, so it does not count.
+    cap = pending_max_bytes()
+    held = pending_bytes(root, excluding=replaced)
+    needed = source.stat().st_size
+    if held + needed > cap:
+        message = (
+            f"Langfuse pending store full: {held} bytes held plus a {needed}-byte snapshot of "
+            f"{source.name} exceeds {PENDING_MAX_BYTES_ENV}={cap} at {root}; "
+            "this firing has no replay snapshot, nothing was deleted"
+        )
+        raise PendingCapacityError(message)
 
 
 def fsync_directory(path: Path) -> None:
@@ -137,9 +178,11 @@ def register_pending(payload: dict) -> tuple[Path, str, Path] | None:
     key = pending_key(session_id, source)
     nonce = uuid.uuid4().hex
     root = pending_root()
+    marker = root / f"{key}.json"
+    current = marker_nonce(marker)
+    admit_snapshot(root, source, snapshot_directory(root, key, current) if current else None)
     snapshot = root / f"{key}.{nonce}" / source.name
     durable_snapshot(source, snapshot)
-    marker = root / f"{key}.json"
     record = {
         "schema_version": 1,
         "nonce": nonce,
@@ -195,8 +238,14 @@ def main() -> None:
     scrub_shadowing_credentials(os.environ)
     raw, payload = read_hook_input()
     pending = None
+    refused = False
     if not os.environ.get(REPLAY_ENV) and payload:
-        pending = register_pending(payload)
+        try:
+            pending = register_pending(payload)
+        except (OSError, ValueError) as exc:
+            # Still export: spooled spans are durable without the snapshot safety net.
+            print(f"langfuse_trace_hook: {exc}", file=sys.stderr)
+            refused = True
 
     sys.path[0] = str(VENDORED_HOOK.parent)
     original_stdin = sys.stdin
@@ -217,6 +266,8 @@ def main() -> None:
             # return without processing; retain its durable snapshot for replay.
     finally:
         sys.stdin = original_stdin
+    if refused:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

@@ -793,26 +793,25 @@ class Stack:
 
     def faulted_hook(self, fault: str) -> subprocess.Popen[str]:
         bin_directory = self.home.path / ".claude" / "bin"
-        process = subprocess.Popen(
-            [
-                str(bin_directory / ".venv" / "bin" / "python"),
-                str(FAULT_LAUNCHER),
-                str(bin_directory),
-                fault,
-                str(self.signals),
-            ],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=self.claude_environment(),
-            cwd=self.home.path,
-        )
-        if process.stdin is None:
-            message = "the faulted hook has no stdin"
-            raise RuntimeError(message)
-        process.stdin.write(self.payload())
-        process.stdin.close()
+        payload = self.signals / f"{fault}-payload.json"
+        payload.write_text(self.payload(), encoding="utf-8")
+        # A file, not a pipe: Python 3.12's communicate() raises on a pipe already closed.
+        with payload.open("rb") as stdin:
+            process = subprocess.Popen(
+                [
+                    str(bin_directory / ".venv" / "bin" / "python"),
+                    str(FAULT_LAUNCHER),
+                    str(bin_directory),
+                    fault,
+                    str(self.signals),
+                ],
+                stdin=stdin,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=self.claude_environment(),
+                cwd=self.home.path,
+            )
         self.hooks.append(process)
         return process
 

@@ -50,7 +50,7 @@ You are NOT a helpful assistant who agrees with everything. You are a **critical
 ## Handoff Protocol
 
 **Receives from**: Technical Product Manager (spec.md) or direct user requirements
-**Produces for**: Domain Modeller (primary) or Implementation Planner (if modeller skipped)
+**Produces for**: Domain Modeller (primary) or Implementation Planner (if modeller skipped); Formal Model Writer reads `domain_analysis.md` for constraints
 **Deliverables**:
   - `domain_analysis.md` — validated assumptions, constraints, discovery model, event/command discovery
 **Completion criteria**: All critical assumptions validated or marked as blockers, discovery model reflects reality, events and commands identified

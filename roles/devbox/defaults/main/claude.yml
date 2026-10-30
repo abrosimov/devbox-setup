@@ -87,3 +87,9 @@ devbox_claude_plugins:
   # being built in a separate repository and will be wired in later.
   - name: gopls-lsp
   - name: typescript-lsp
+  # The official Langfuse skill. The marketplace is explicit because a bare
+  # `claude plugin install langfuse` resolves to the claude.ai
+  # anthropic-plugin-directory copy, not this one. Its API keys and host are
+  # per profile (devbox_langfuse_host, make langfuse-config).
+  - name: langfuse
+    marketplace: claude-plugins-official

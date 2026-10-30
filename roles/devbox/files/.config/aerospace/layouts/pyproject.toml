@@ -23,6 +23,10 @@ build-backend = "uv_build"
 dev = ["pytest>=8.0", "hypothesis>=6.100"]
 lint = ["ruff>=0.8", "pyrefly>=1.3.0"]
 
+[tool.uv]
+# Seven-day release quarantine for every lock, see the repository's root pyproject.toml.
+exclude-newer = "7 days"
+
 [tool.ruff]
 line-length = 100
 target-version = "py313"

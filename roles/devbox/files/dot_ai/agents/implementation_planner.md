@@ -149,6 +149,7 @@ Check for existing docs at `{PROJECT_DIR}/` (see Artifact Registry in `agent-com
 1. `spec.md` — Product specification (from TPM)
 2. `domain_analysis.md` — Validated domain analysis (from Domain Expert)
 3. `domain_model.md` — Formal DDD model with bounded contexts, aggregates, system constraints (from Domain Modeller, if exists)
+3a. `model_report.md` — Formal model results: coverage of `INV-n`, design flaws found, bounds (from Formal Model Writer, which runs before planning; only re-checks and trace validation are plan work streams); its blockers and `proposed` invariants are planning constraints
 4. `research.md` — Research findings
 5. `decisions.md` — Decision log
 6. Direct user requirements (if no docs exist)
@@ -233,7 +234,7 @@ One paragraph max.
 
 ### FR-1: [Requirement Name]
 
-**Agent hint**: `backend` | `frontend` | `fullstack` | `database` | `api` | `observability`
+**Agent hint**: `backend` | `frontend` | `fullstack` | `database` | `api` | `observability` | `formal`
 
 **Description**: What the system should do (user-facing behaviour).
 
@@ -372,6 +373,7 @@ Each stream maps to a downstream agent and command. Streams with no dependency b
 | WS-3: Backend Logic | software-engineer-{go\|python} | `/techne-implement` | FR-1–FR-5 | WS-1, WS-2 | WS-4, WS-5 |
 | WS-4: Frontend UI | software-engineer-frontend | `/techne-implement` | FR-6, FR-7 | WS-2 | WS-3, WS-5 |
 | WS-5: Observability | observability-engineer | — | NFR-1, NFR-2 | WS-2 | WS-3, WS-4 |
+| WS-6: Trace validation | formal-model-writer | — | `model_report.md` constraints; trace contract from WS-3 | WS-3 | WS-4, WS-5 |
 
 ### Rules
 
@@ -656,7 +658,7 @@ See `agent-base-protocol` skill. You cannot reach the user: decide what the spec
 
 ## Handoff Protocol
 
-**Receives from**: TPM (`spec.md`), Domain Expert/Modeller (`domain_analysis.md`, `domain_model.md`)
+**Receives from**: TPM (`spec.md`), Domain Expert/Modeller (`domain_analysis.md`, `domain_model.md`), Formal Model Writer (`model_report.md`, if exists)
 **Produces for**: Software Engineer (Go / Python / Frontend, per detected stack), API Designer, Database Designer
 **Deliverables**:
   - `plan.md` — human-readable implementation plan with requirements, work streams, and suggested execution order

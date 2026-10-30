@@ -149,7 +149,7 @@ See `code-writing-protocols` skill — Pre-Handoff Self-Review (From Plan, Comme
 
 ## Handoff Protocol
 
-**Receives from**: Implementation Planner (`plan.md`), API Designer (`api_spec.yaml`), Database Designer (`schema_design.md`)
+**Receives from**: Implementation Planner (`plan.md`), API Designer (`api_spec.yaml`), Database Designer (`schema_design.md`), Formal Model Writer (`trace_contract.md`)
 **Produces for**: Unit Test Writer Go, Integration Test Writer Go
 **Deliverables**:
   - source code (direct edits)

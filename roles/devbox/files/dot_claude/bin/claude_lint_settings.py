@@ -18,6 +18,8 @@ Checks (report-only):
   * allow-deny-conflict identical rule present in both allow and deny
   * syntax-variant      same base in both `X:*` and `X *` forms (matches differ)
   * duplicate           identical rule listed twice in one file's allow/deny
+  * ignored-write-path  path-scoped `Write(path)` rule -- file permission checks
+                        match only `Edit(path)`, which covers every editing tool
   * unparseable         settings file is not valid JSON
 """
 
@@ -253,7 +255,20 @@ def analyse(layers: list[LoadedLayer]) -> list[Finding]:
 
     findings.extend(_conflict_findings(allows, denies))
     findings.extend(_syntax_findings(rules))
+    findings.extend(_ignored_write_findings(rules))
     return findings
+
+
+def _ignored_write_findings(rules: list[Rule]) -> list[Finding]:
+    return [
+        Finding(
+            "ignored-write-path",
+            f"{rule.layer}/{rule.verb}: {rule.raw} is ignored by file permission checks "
+            f"-- use Edit({rule.inner}) instead",
+        )
+        for rule in rules
+        if rule.tool == "Write" and rule.inner is not None
+    ]
 
 
 def _conflict_findings(allows: list[Rule], denies: list[Rule]) -> list[Finding]:

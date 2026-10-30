@@ -16,29 +16,37 @@ Framework and method links open readable text on fpf.tools; **Markdown** links o
 | Your question | Open |
 | --- | --- |
 | Which direction and investment are worth pursuing? | [Strategy](https://fpf.tools/STR). |
-| Can current work meet its promises with the available capacity? | [Operations Management](https://fpf.tools/OPS); use [Organization Administration](https://fpf.tools/ADM) for permissions, provision and obligations. |
+| How can production or service be arranged, and current work meet its promises? | [Operations Management](https://fpf.tools/OPS); use [Organization Administration](https://fpf.tools/ADM) for permissions, provision and obligations. |
 | How do we answer different clients without losing repeatability or scale? | [Manage client variation and develop repeatable offerings (CUST.1)](https://fpf.tools/CUST.1). Its constituent methods also work for a bounded offering, delivery or transition question. |
-| How do we establish contributions and sustain a shared practice? | [Leadership](https://fpf.tools/LDR) and [Community Management](https://fpf.tools/CB), according to the missing result. |
+| How do we direct personal action, establish joint direction and sustain participation? | [Leadership](https://fpf.tools/LDR) and [Community Management](https://fpf.tools/CB), according to the missing result. |
 | Do roles, authority or capability allocations need to change? | [Organization Change Engineering](https://fpf.tools/OCE). |
 
-For a connected case, the [Management Architectural Reference](MANAGEMENT-DPF-SUITE-REFERENCE.md) follows both a [voluntary practice network (Management.Reference:5.1)](MANAGEMENT-DPF-SUITE-REFERENCE.md#managementreference51---a-voluntary-practice-development-network) and [a new order in an operating business (Management.Reference:5.2)](MANAGEMENT-DPF-SUITE-REFERENCE.md#managementreference52---a-new-order-in-an-operating-business). These are contrasting uses, not the limits of the field.
+For a connected case, the [Management Architectural Reference](MANAGEMENT-DPF-SUITE-REFERENCE.md) follows both a [voluntary practice network (Management.Reference:5.1)](MANAGEMENT-DPF-SUITE-REFERENCE.md#managementreference51---a-voluntary-practice-development-network) and [a new order in an operating business (Management.Reference:5.2)](MANAGEMENT-DPF-SUITE-REFERENCE.md#managementreference52---a-new-order-in-an-operating-business).
+
+## Keep strategic decisions connected
+
+The **[strategizing mantra (STR.18)](https://fpf.tools/STR.18)** connects **strategic question → worthwhile contribution → explained way → feasible contributions and means → justified choice and commitment → realization, use and renewed questions**. An attractive direction can lack an obtaining way; individually affordable initiatives can compete for the same people; a useful preparation can finish without authorizing implementation. The developed account explains how to assemble and revise these answers, including when a technological possibility comes first or an existing answer is enough.
+
+## Keep operating decisions connected
+
+The **[operational mantra (OPS.23)](https://fpf.tools/OPS.23)** connects local work to the result the operation must deliver: **accepted result → route and readiness → limiting conditions → release and feasible order → service, money and human conditions → observed result and changed conditions**. Its developed account explains the grounds, branches and returns. Increasing a team's activity can leave delivery unchanged; a changed resource window can require revising both starts and promises. Read this account when those decisions need to be made together, rather than treating the phrase order as a work schedule.
 
 ## Frameworks in this Suite
 
 | Framework | What you can work on | Patterns | Text, M characters |
 | --- | --- | ---: | ---: |
-| [Strategy (STR)](https://fpf.tools/STR) · [Markdown](STRATEGY-PRINCIPLES-FRAMEWORK.md) | Find a worthwhile direction; compare options, capabilities, investments and business models; revise commitments when conditions change. | 17 | 0.530 |
-| [Operations Management (OPS)](https://fpf.tools/OPS) · [Markdown](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Organize flow, queues, capacity, admission, quality and simultaneous work under actual operating conditions. | 28 | 0.903 |
+| [Strategy (STR)](https://fpf.tools/STR) · [Markdown](STRATEGY-PRINCIPLES-FRAMEWORK.md) | Find a worthwhile direction; compare options, capabilities, investments and business models; revise commitments when conditions change. | 18 | 0.550 |
+| [Operations Management (OPS)](https://fpf.tools/OPS) · [Markdown](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Understand, construct and revise operating arrangements; manage work, provision, service and improvement under actual conditions. | 29 | 0.951 |
 | [Organization Administration (ADM)](https://fpf.tools/ADM) · [Markdown](ORGANIZATION-ADMINISTRATION-PRINCIPLES-FRAMEWORK.md) | Make requests, permissions, obligations, provision, records and provider coordination effective without unnecessary burden. | 15 | 0.302 |
-| [Corporate Governance (CGOV)](https://fpf.tools/CGOV) · [Markdown](CORPORATE-GOVERNANCE-PRINCIPLES-FRAMEWORK.md) | Constitute and exercise corporate powers, decisions, controls and accountability under applicable governing rules. | 17 | 0.274 |
-| [Management Accounting (MA)](https://fpf.tools/MA) · [Markdown](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md) | Construct cost and capacity accounts, forecasts and explanations that inform organizational choices. | 9 | 0.163 |
-| [Corporate Finance (FIN)](https://fpf.tools/FIN) · [Markdown](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md) | Arrange financing, liquidity and capital allocation; compare value, exposure and financial consequences. | 22 | 0.584 |
-| [Marketing (MKT)](https://fpf.tools/MKT) · [Markdown](MARKETING-PRINCIPLES-FRAMEWORK.md) | Investigate customers and markets; design, communicate and sustain feasible offers and relationships. | 14 | 0.384 |
-| [Customization and Productization Management (CUST)](https://fpf.tools/CUST) · [Markdown](CUSTOMIZATION-AND-PRODUCTIZATION-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Handle client differences while developing repeatable offerings, delivery and compatible transitions for existing clients. | 8 | 0.184 |
-| [Engineering Asset Management (EAM)](https://fpf.tools/EAM) · [Markdown](ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Compare use, renewal, replacement and other asset changes over time, including shared risk, cost and capacity. | 16 | 0.265 |
-| [Leadership (LDR)](https://fpf.tools/LDR) · [Markdown](LEADERSHIP-PRINCIPLES-FRAMEWORK.md) | Obtain feasible agreement and contributions to joint work, including preparation through first useful work. | 3 | 0.128 |
-| [Community Management (CB)](https://fpf.tools/CB) · [Markdown](COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Develop useful participation, relationships, shared practices and contributions in organizations or voluntary communities. | 16 | 0.526 |
-| [Organization Change Engineering (OCE)](https://fpf.tools/OCE) · [Markdown](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Construct and qualify organizational changes to contributions, roles, authority, interfaces, capabilities and culture. | 17 | 0.697 |
+| [Corporate Governance (CGOV)](https://fpf.tools/CGOV) · [Markdown](CORPORATE-GOVERNANCE-PRINCIPLES-FRAMEWORK.md) | Constitute and exercise corporate powers, decisions, controls and accountability under applicable governing rules. | 17 | 0.272 |
+| [Management Accounting (MA)](https://fpf.tools/MA) · [Markdown](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md) | Explain costs, capacity and economic consequences; forecast outcomes; develop activity designs from economic requirements and arrange how accounting information is used. | 10 | 0.211 |
+| [Corporate Finance (FIN)](https://fpf.tools/FIN) · [Markdown](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md) | Understand financial relations, construct financing terms and group arrangements, and compare value, liquidity, capital uses and exposure. | 23 | 0.643 |
+| [Marketing (MKT)](https://fpf.tools/MKT) · [Markdown](MARKETING-PRINCIPLES-FRAMEWORK.md) | Connect customer inquiry, offers, advertising, acquisition, distribution and use; construct workable provision and revise it from experience. | 14 | 0.411 |
+| [Customization and Productization Management (CUST)](https://fpf.tools/CUST) · [Markdown](CUSTOMIZATION-AND-PRODUCTIZATION-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Handle client differences while developing repeatable offerings, delivery and compatible transitions for existing clients. | 8 | 0.178 |
+| [Engineering Asset Management (EAM)](https://fpf.tools/EAM) · [Markdown](ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Compare use, renewal, replacement and other asset changes over time, including shared risk, cost and capacity. | 16 | 0.262 |
+| [Leadership (LDR)](https://fpf.tools/LDR) · [Markdown](LEADERSHIP-PRINCIPLES-FRAMEWORK.md) | Direct personal action; develop joint direction, participation and responsibility; obtain feasible contributions and first useful work. | 4 | 0.185 |
+| [Community Management (CB)](https://fpf.tools/CB) · [Markdown](COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Develop useful participation, relationships, shared practices and contributions in organizations or voluntary communities. | 16 | 0.524 |
+| [Organization Change Engineering (OCE)](https://fpf.tools/OCE) · [Markdown](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Construct and qualify organizational changes to contributions, roles, authority, interfaces, capabilities and culture. | 17 | 0.726 |
 
 **Patterns** counts full pattern bodies. **Text, M characters** measures each complete Markdown framework, including its embedded Architectural Reference, in millions of Unicode characters with spaces and original line breaks, rounded to three decimals. These are scope indicators, not a required reading load.
 

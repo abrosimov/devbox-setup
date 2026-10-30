@@ -82,7 +82,6 @@ Current per-profile differences:
 | Projects dir | `$HOME/Projects` | `$HOME/Work` |
 | Container runtime | `docker-desktop` | `orbstack` |
 | Extra MCP servers | none | `atlassian` (HTTP) |
-| Extra Claude plugins | `langfuse` (official marketplace) | none |
 | Langfuse skill access | `LANGFUSE_HOST`, Keychain API keys, sandbox domains for `langfuse.abrosimov.tech` and `langfuse.com` | none |
 
 ### System-Level macOS Tweaks

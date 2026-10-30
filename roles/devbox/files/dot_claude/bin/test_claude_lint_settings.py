@@ -155,6 +155,20 @@ def test_analyse_syntax_variant() -> None:
     assert "syntax-variant" in kinds
 
 
+def test_analyse_ignored_write_path() -> None:
+    layers = [
+        _layer([_allow("Write(/repo/**)", "local"), _deny("Write(**/.env)", "user")], "mix"),
+    ]
+    findings = [f for f in cls.analyse(layers) if f.kind == "ignored-write-path"]
+    assert len(findings) == 2
+    assert "Edit(/repo/**)" in findings[0].detail
+
+
+def test_analyse_bare_write_is_not_ignored() -> None:
+    layers = [_layer([_allow("Write", "user"), _allow("Edit(/repo/**)", "local")], "mix")]
+    assert cls.analyse(layers) == []
+
+
 def test_analyse_clean() -> None:
     layers = [
         _layer([_allow("Bash(go test *)", "project"), _deny("Bash(rm *)", "user")], "mix"),

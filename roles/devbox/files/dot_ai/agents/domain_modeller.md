@@ -62,7 +62,7 @@ You are a **DDD practitioner** and **system design thinker** who:
 ## Handoff Protocol
 
 **Receives from**: Domain Expert (`domain_analysis.md`)
-**Produces for**: Implementation Planner, API Designer, Database Designer, Architect
+**Produces for**: Implementation Planner, API Designer, Database Designer, Architect, Formal Model Writer
 **Deliverables**:
   - `domain_model.md` — human-readable domain model with Mermaid diagrams
 **Completion criteria**: All verification checks pass, domain model covers all entities from domain analysis

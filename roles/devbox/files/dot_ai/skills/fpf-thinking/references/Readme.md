@@ -12,7 +12,7 @@ You can also use one method for one calculation, design, decision or learning ne
 
 ## How the Library is organized and why
 
-**[Read the Library Architectural Reference](FPF-LIBRARY-REFERENCE.md).** It explains why general methods belong to Core, why some disciplines form Suites while others have standalone frameworks, and how their contributions work together. Use it to get an overview, understand an apparent overlap or judge a proposed change. It is the explanation of the Library’s design, not a catalogue of filenames.
+**[Read the Library Architectural Reference](FPF-LIBRARY-REFERENCE.md).** It explains why general methods belong to Core, why some disciplines form Suites while others have standalone frameworks, and how their contributions work together. Use it to get an overview, understand an apparent overlap or judge a proposed change.
 
 For a familiar task, you can go straight to a suitable method below.
 
@@ -32,6 +32,14 @@ You do not need to read the Library from beginning to end. Bring a situation, th
 
 Before applying a method, read [Using FPF Library](USING-FPF.md). It explains how to find a useful contribution, read its conditions, connect it to the rest of the work and distinguish a source citation from a direction to apply another method. An adequate known answer can be used directly; a larger question may need several connected methods. Their order in a file is not an instruction to perform them all.
 
+## Keep connected reasoning in view
+
+**Long mantras** help recall how answers to related questions depend on one another. For a project, the **[system-thinking long mantra (FPF A.1.STM)](https://fpf.tools/A.1.STM)** connects intended use, a common target, functioning, construction, ways of obtaining it, capable creators and their cooperation. Its full explanation shows why those answers must fit and what to revisit when one changes.
+
+The **[control mantra (FPF C.43)](https://fpf.tools/C.43)** connects assessment of the situation, possible continuations, comparison and choice, realization, examination of what happened and revision. Its full Method explains how observations can change later choices, how means and timing constrain them, and how an intervention can develop the capability to address further problems. Technical control, economic choices and developmental recommendation retain their particular mechanisms.
+
+A mantra is a logical teaching unfolding, not a fixed order of thinking or work. The [Library's account of connected reasoning (Library.Reference:1.1)](FPF-LIBRARY-REFERENCE.md#libraryreference11---long-mantras-and-connected-reasoning) leads to developed connections in several fields. Read the full account to understand and adapt the method; use the short formula to recall it.
+
 ## From a useful result to further development
 
 Suppose a team can deliver its current product, but a more demanding order is beyond its capabilities. Buying a specialist's result might meet the immediate need. Learning to produce it would change what the team can do. Learning how to recognize the next limitation, obtain or invent a needed method and organize its acquisition would change how the team can continue developing. These are different results, with different evidence.
@@ -42,16 +50,16 @@ The general methods are in **Core**: [connect development work (C.40.OD)](https:
 
 ## What is available
 
-**FPF Core** contains 397 patterns in 17.617 million characters. It supplies transdisciplinary concepts and methods, including methodological work and open-ended development. **33 Domain Principle Frameworks (DPFs)** supply subject-specific methods: 23 belong to four Suites, and ten have their own files directly in the DPF catalogue.
+**FPF Core** contains 400 patterns in 17.870 million characters. It supplies transdisciplinary concepts and methods, including methodological work and open-ended development. **34 Domain Principle Frameworks (DPFs)** supply subject-specific methods: 24 belong to four Suites, and ten have their own files directly in the DPF catalogue.
 
 A DPF describes one field through a connected pattern language. A **Suite** describes a composite discipline through its constituent fields and their relations. An **Architectural Reference** explains how the relevant language is arranged and why: within a framework, across a Suite, or across the Library.
 
 | DPF Suite | Working subject | DPFs | Patterns | Text, M characters |
 | --- | --- | ---: | ---: | ---: |
-| [Engineering](DPFs/Engineering%20DPF%20Suite/) | Designing, realizing, changing and maintaining systems; knowledge access and semantic integration. | 4 | 92 | 2.541 |
-| [Management](DPFs/Management%20DPF%20Suite/) | Direction, commitments, operations, resources, markets, communities and organizational change. | 12 | 182 | 4.941 |
-| [Foundational Thinking](DPFs/Foundational%20Thinking%20DPF%20Suite/) | Mathematical and physical accounts, models, algorithms and usable notation. | 5 | 70 | 1.951 |
-| [Human Capability Engineering](DPFs/Human%20Capability%20Engineering%20DPF%20Suite/) | Human learning and somatic change, connected to capability in later work. | 2 | 34 | 1.209 |
+| [Engineering](DPFs/Engineering%20DPF%20Suite/) | Designing, realizing, changing and maintaining systems; knowledge access, semantic integration and control architecture design. | 5 | 99 | 2.791 |
+| [Management](DPFs/Management%20DPF%20Suite/) | Direction, commitments, operations, resources, markets, communities and organizational change. | 12 | 187 | 5.216 |
+| [Foundational Thinking](DPFs/Foundational%20Thinking%20DPF%20Suite/) | Mathematical and physical accounts, models, algorithms and usable notation. | 5 | 71 | 2.017 |
+| [Human Capability Engineering](DPFs/Human%20Capability%20Engineering%20DPF%20Suite/) | Human learning and somatic change, connected to capability in later work. | 2 | 34 | 1.207 |
 
 The [DPF catalogue](DPFs/) lists the ten further frameworks and opens each Suite's files. Suite totals sum their constituent framework texts; separate Suite References and README pages are excluded. Character counts include spaces and original line breaks. Counts describe the available material, not how much you must read before using it.
 
@@ -61,7 +69,7 @@ The Library does not claim to exhaust the disciplines it covers: the current Hum
 
 Read [Core on fpf.tools](https://fpf.tools/FPF), or choose a [domain publication](https://fpf.tools/publications) and open the required pattern. The first method links above open that reading service. GitHub cannot display the complete Core and may truncate large DPFs; a link to a valid heading does not remove that limit.
 
-For the source, open the [Core Markdown file and its history](FPF-Spec.md) or [download Core as raw Markdown](https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md). Framework tables on these pages pair online reading with a Markdown source link. On fpf.tools, **Copy and source** identifies the repository edition behind the displayed passage. Check [source editions and update status](https://fpf.tools/status) when the version matters; the service may lag behind GitHub. [Search](https://fpf.tools/search) and [MCP connection instructions](https://fpf.tools/connect) provide other ways to reach the material.
+For the source, open the [Core Markdown file and its history](FPF-Spec.md) or [download Core as raw Markdown](https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md). Framework tables on these pages provide Markdown source links and, where available, online reading links. On fpf.tools, **Copy and source** identifies the repository edition behind the displayed passage. Check [source editions and update status](https://fpf.tools/status) when the version matters; the service may lag behind GitHub. [Search](https://fpf.tools/search) and [MCP connection instructions](https://fpf.tools/connect) provide other ways to reach the material.
 
 For local use, download or clone this repository. Keep `FPF-Spec.md`, `FPF-LIBRARY-REFERENCE.md`, `USING-FPF.md`, the licensing files and `DPFs/` in their existing arrangement. A selected subset is also usable: include the actual supplying frameworks needed by your question, not just links to unavailable files. [Using FPF Library](USING-FPF.md#make-the-publications-available) explains access and selection.
 

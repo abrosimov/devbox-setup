@@ -20,10 +20,10 @@ If no argument provided, ask:
 ### 2. Resolve Context
 
 ```bash
-CONTEXT_JSON=$(~/.claude/bin/resolve_context.py 2>/dev/null) && RC=$? || RC=$?
+CONTEXT_JSON=$(~/.claude/bin/resolve_context.py) || { echo "$CONTEXT_JSON"; exit 1; }   # exit 1: relay stderr, stop
 ```
 
-Extract `JIRA_ISSUE`, `BRANCH_NAME`, and `PROJECT_DIR` from the context. Use `config` skill paths for artifact placement.
+Extract `VAULT`, `JIRA_ISSUE` (may be null) and `BRANCH_NAME` from the context. Use `config` skill paths for artifact placement.
 
 ### 3. Check for Existing Docs
 
@@ -92,7 +92,7 @@ Task(
 
 Problem: {user's problem from $ARGUMENTS}
 
-PROJECT_DIR: {determined in Step 2}
+VAULT: {determined in Step 2}
 EXISTING DOCS: {list of available upstream artifacts from Step 3}
 ADVOCATE BRIEFS: {briefs from Step 5, or 'none'}
 
@@ -101,7 +101,7 @@ INSTRUCTIONS:
 2. Read the upstream docs that matter for this problem.
 3. If advocate briefs are present, treat them as evidence rather than verdicts: check what they cite, keep their IDs and names, and add any strong missing candidate with the next free ID.
 4. Produce the decision card (T2 in `response-templates`): 3–7 candidates including a boring baseline and at least one combination; a table with mechanism, pros, cons, combines-with; synergies; trade-offs; a recommendation with its reason. End with the recommendation.
-5. Write dss_output.json to PROJECT_DIR (decided_by: 'pending' until the user selects).
+5. Write dss_output.json into the vault per the `config` skill (decided_by: 'pending' until the user selects).
 
 Return: { artifact_path: string, decision_card: string, recommendation: string }"
 )

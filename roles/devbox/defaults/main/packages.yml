@@ -66,6 +66,7 @@ devbox_brew_secondary:
   - node
   - uv
   - helm
+  - opentofu       # OpenTofu (`tofu`) — open-source Terraform fork for infrastructure as code
   - tree-sitter-cli
   # orbstack moved to profile overrides (work uses orbstack, personal uses docker-desktop).
   - k9s
@@ -76,6 +77,7 @@ devbox_brew_secondary:
   - mise
   - fnm             # Fast Node Manager — auto-switches Node version on cd
   - golangci-lint
+  - prometheus      # promtool — rule syntax checks and `promtool test rules` for the observability-engineer agent
   - luarocks       # Needed by lazy.nvim
   - go-jsonnet
   - jsonnet-bundler
@@ -200,7 +202,7 @@ devbox_packages:
   # collector's. The role profile and binary move together as one contract.
   otelbox_edge:
     enabled: true
-    version: "2.4.2"
+    version: "2.5.0"
     # Wire codec for the gateway leg, rendered into the LaunchAgent. zstd is
     # upstream's 2.x default and holds only while the gateway is the same
     # binary — a gRPC codec has to be registered in the peer's build. Drop to
@@ -237,12 +239,17 @@ devbox_packages:
   # whose assets upstream re-publishes in place, so a new build is picked up on
   # the next run instead of failing a pinned checksum.
   #   tla2tools — SANY (parser), TLC (model checker), PlusCal translator, TLATeX
+  #   communitymodules — Json, IOUtils, SequencesExt, ... for TLC (trace validation)
   #   apalache  — symbolic model checker (`apalache-mc`)
   #   tlapm     — TLA+ Proof Manager with its LSP server (`tlapm_lsp`)
   tlaplus:
     install_dir: "~/.local/share/tlaplus"
     tools:
       - { name: tla2tools, repository: tlaplus/tlaplus, tag: "v1.8.0", asset: "tla2tools.jar" }
+      - name: communitymodules
+        repository: tlaplus/CommunityModules
+        tag: "202610131629"
+        asset: "CommunityModules-deps.jar"
       - { name: apalache, repository: apalache-mc/apalache, tag: "v0.62.4", asset: "apalache-0.62.4.tgz" }
       - { name: tlapm, repository: tlaplus/tlapm, tag: "1.6.0-pre", asset: "tlapm-1.6.0-pre-arm64-darwin.tar.gz" }
 

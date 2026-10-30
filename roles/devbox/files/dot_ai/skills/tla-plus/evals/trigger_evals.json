@@ -1,0 +1,10 @@
+[
+  {"query": "Write a TLA+ spec for our two-phase commit and check it with TLC", "should_trigger": true},
+  {"query": "Apalache reports a counterexample for the inventory invariant, what do I do with it?", "should_trigger": true},
+  {"query": "Should this order saga get a formal model, and which checker fits: TLC or Apalache?", "should_trigger": true},
+  {"query": "Validate the Go service's execution traces against the TLA+ specification", "should_trigger": true},
+  {"query": "Prove the NoDoublePayment invariant with TLAPS", "should_trigger": true},
+  {"query": "Write a Go HTTP handler for the /orders endpoint", "should_trigger": false},
+  {"query": "Design the DDD bounded contexts for the billing domain", "should_trigger": false},
+  {"query": "Add Prometheus alerts for the payment service", "should_trigger": false}
+]

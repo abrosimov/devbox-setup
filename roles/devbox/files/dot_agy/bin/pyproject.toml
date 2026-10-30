@@ -11,6 +11,8 @@ dependencies = ["bashlex", "langfuse>=4.7,<5"]
 # Python package.
 [tool.uv]
 package = false
+# Seven-day release quarantine for every lock, see the repository's root pyproject.toml.
+exclude-newer = "7 days"
 
 [dependency-groups]
 dev = ["pytest", "hypothesis"]

@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+// Typed contract for the Informal Trace Format (ITF) that Apalache writes as
+// violation<N>.itf.json (Apalache ADR-015). ITF is untagged JSON: a state is
+// one object with the variable names as keys next to an optional "#meta", a
+// value is a JSON array (sequence), string, bool, a one-key object ("#bigint",
+// "#set", "#tup", "#map", "#unserializable") or a plain object (record).
+// protojson cannot read that, so this message is the target of a converter;
+// itf_vectors.txtpb fixes what the converter must produce. `buf breaking`
+// guards our side; a new Apalache release that breaks the vectors is caught
+// before it corrupts a report.
+package apalache.itf.v1;
+
+message Trace {
+  Meta meta = 1;            // "#meta"
+  repeated string params = 2;
+  repeated string vars = 3;
+  repeated State states = 4;
+  optional int32 loop = 5;  // index the last state loops back to
+}
+
+message Meta {
+  string format = 1;              // "ITF"
+  string format_description = 2;  // "format-description"
+  string source = 3;
+  string description = 4;
+  map<string, string> var_types = 5;  // "varTypes": variable -> type string
+}
+
+message State {
+  optional int32 index = 1;  // "#meta".index when present
+  map<string, Value> vars = 2;
+}
+
+message Value {
+  oneof kind {
+    bool bool_value = 1;
+    string string_value = 2;
+    // Converter target for a {"#bigint": "<decimal>"} that fits; ITF itself writes every integer as #bigint.
+    int64 int_value = 3;
+    string bigint_value = 4;        // {"#bigint": "<decimal>"} outside int64
+    ValueList set_value = 5;        // {"#set": [...]}
+    ValueList tuple_value = 6;      // {"#tup": [...]}
+    ValueList seq_value = 10;       // a JSON array: a TLA+ sequence
+    MapValue map_value = 7;         // {"#map": [[key, value], ...]}
+    RecordValue record_value = 8;   // a plain JSON object
+    string unserializable_value = 9;  // {"#unserializable": "<text>"}
+  }
+}
+
+message ValueList {
+  repeated Value items = 1;
+}
+
+message MapValue {
+  repeated MapEntry entries = 1;
+}
+
+message MapEntry {
+  Value key = 1;
+  Value value = 2;
+}
+
+message RecordValue {
+  map<string, Value> fields = 1;
+}
+
+message ConformanceVectors {
+  repeated ItfCase itf = 1;
+}
+
+message ItfCase {
+  string json = 1;   // the ITF document verbatim
+  bool valid = 2;    // false: the converter must reject it
+  Trace parsed = 3;  // expected result when valid
+  string note = 4;
+}

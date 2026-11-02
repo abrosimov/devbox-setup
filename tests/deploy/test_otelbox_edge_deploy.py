@@ -133,17 +133,39 @@ def test_langfuse_plugin_traces_keep_the_user_and_tags_their_sdk_states() -> Non
     assert "transform/langfuse_native" not in processors
 
 
-def test_native_traces_take_the_langfuse_user_from_the_launch_agent() -> None:
-    statements = _edge["processors"]["transform/langfuse_native"]["trace_statements"]
+_NATIVE_STATEMENTS: list[str] = _edge["processors"]["transform/langfuse_native"]["trace_statements"]
+_NATIVE_STAMP = re.compile(
+    r'set\(span\.attributes\["(?P<key>[^"]+)"\], "[^"]*"\) where (?P<where>.+)'
+)
 
-    assert statements == [
-        'set(span.attributes["langfuse.user.id"], "${env:OTELBOX_LANGFUSE_USER_ID:-unknown}")',
+
+def test_native_traces_take_the_langfuse_user_from_the_launch_agent() -> None:
+    assert _NATIVE_STATEMENTS == [
+        (
+            'set(span.attributes["langfuse.user.id"], "${env:OTELBOX_LANGFUSE_USER_ID:-unknown}")'
+            ' where resource.attributes["otelbox.telemetry.class"] == "llm"'
+            ' and span.attributes["langfuse.user.id"] == nil'
+        ),
         (
             'set(span.attributes["langfuse.trace.tags"], '
             '"${env:OTELBOX_LANGFUSE_NATIVE_TAGS:-otel-native}")'
+            ' where resource.attributes["otelbox.telemetry.class"] == "llm"'
+            ' and span.attributes["langfuse.trace.tags"] == nil'
         ),
     ]
     assert "OTELBOX_LANGFUSE_USER_ID" in _render_plist("zstd")
+
+
+@pytest.mark.parametrize("statement", _NATIVE_STATEMENTS)
+def test_native_stamps_touch_only_llm_spans_that_state_nothing(statement: str) -> None:
+    (llm_class,) = _edge["processors"]["resource/langfuse_plugins"]["attributes"]
+    stamp = _NATIVE_STAMP.fullmatch(statement)
+
+    assert stamp is not None
+    assert stamp["where"] == (
+        f'resource.attributes["{llm_class["key"]}"] == "{llm_class["value"]}"'
+        f' and span.attributes["{stamp["key"]}"] == nil'
+    )
 
 
 def _client_pair(present: tuple[str, ...]) -> dict[str, Any]:
@@ -304,6 +326,16 @@ def _render_plist(compression: str, user_id: str = "someone@example.com") -> dic
 @pytest.mark.parametrize("user_id", ["abrosimov.k.a@gmail.com", "R&D <tools>"])
 def test_plist_renders_the_langfuse_user_from_the_variable(user_id: str) -> None:
     assert _render_plist("zstd", user_id)["OTELBOX_LANGFUSE_USER_ID"] == user_id
+
+
+@pytest.mark.parametrize("user_id", ["abrosimov.k.a@gmail.com", "R&D <tools>"])
+def test_profile_validate_sees_the_langfuse_user_the_launch_agent_passes(user_id: str) -> None:
+    environment = _task("validate the pinned profile before cleanup")["environment"]
+    rendered = Template(environment["OTELBOX_LANGFUSE_USER_ID"], undefined=StrictUndefined).render(
+        devbox_langfuse_user_id=user_id
+    )
+
+    assert rendered == _render_plist("zstd", user_id)["OTELBOX_LANGFUSE_USER_ID"]
 
 
 def test_plist_renders_compression_from_the_variable() -> None:

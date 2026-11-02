@@ -110,13 +110,21 @@ processors:
 
   # Langfuse reads a trace's user and tags from span attributes only, so native
   # producers, whose own `user.id` is an installation hash, need them stamped.
-  # `set` overwrites: keep this off the plugin pipeline, whose SDK states both.
+  # Only Langfuse-bound (`llm`) spans are stamped, and only where the producer
+  # stated nothing, so another producer's own values and ordinary traces stay
+  # untouched. Kept off the plugin pipeline all the same: its SDK states both.
   # Tags stay a comma-separated string so redaction/secrets still inspects them.
   transform/langfuse_native:
     error_mode: ignore
     trace_statements:
-      - 'set(span.attributes["langfuse.user.id"], "${env:OTELBOX_LANGFUSE_USER_ID:-unknown}")'
-      - 'set(span.attributes["langfuse.trace.tags"], "${env:OTELBOX_LANGFUSE_NATIVE_TAGS:-otel-native}")'
+      - >-
+        set(span.attributes["langfuse.user.id"], "${env:OTELBOX_LANGFUSE_USER_ID:-unknown}")
+        where resource.attributes["otelbox.telemetry.class"] == "llm"
+        and span.attributes["langfuse.user.id"] == nil
+      - >-
+        set(span.attributes["langfuse.trace.tags"], "${env:OTELBOX_LANGFUSE_NATIVE_TAGS:-otel-native}")
+        where resource.attributes["otelbox.telemetry.class"] == "llm"
+        and span.attributes["langfuse.trace.tags"] == nil
 
   # The limiter observes Go heap rather than RSS or mapped WAL pages.
   memory_limiter:

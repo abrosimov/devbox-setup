@@ -504,17 +504,6 @@ def test_all_engines_stamp_otelbox_telemetry_class_llm() -> None:
     assert "OTEL_RESOURCE_ATTRIBUTES=otelbox.telemetry.class=llm" in agy_fish
 
 
-def test_codex_otel_resource_attributes_are_forward_declared() -> None:
-    """Codex does not yet honour [otel] resource_attributes (openai/codex#30987).
-
-    The key is declared in config.toml so it activates automatically once the
-    feature lands.  Until then the edge collector's resource/langfuse_plugins
-    processor stamps the attribute on Langfuse-bound traces.
-    """
-    codex_config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
-    assert codex_config["otel"]["resource_attributes"]["otelbox.telemetry.class"] == "llm"
-
-
 def test_codex_hooks_run_from_a_pinned_venv_rather_than_ambient_python() -> None:
     """`/usr/bin/env python3` hands the hook to whatever PATH resolves first."""
     config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))

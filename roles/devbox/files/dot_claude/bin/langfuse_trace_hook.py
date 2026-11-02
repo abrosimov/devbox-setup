@@ -32,6 +32,10 @@ REPLAY_ENV: Final = "CC_LANGFUSE_PENDING_REPLAY"
 PENDING_MAX_BYTES_ENV: Final = "CC_LANGFUSE_PENDING_MAX_BYTES"
 # A snapshot outlives its Stop only when that hook failed, so the store stays near empty.
 DEFAULT_PENDING_MAX_BYTES: Final = 2 * 1024 * 1024 * 1024
+SPAN_QUEUE_SIZE_ENV: Final = "OTEL_BSP_MAX_QUEUE_SIZE"
+# The SDK default of 2048 overflows on one turn with many subagents. The queue
+# drains to local disk within the firing, so the bound only caps memory.
+SPAN_QUEUE_SIZE: Final = 65_536
 
 
 class PendingCapacityError(OSError):
@@ -41,6 +45,11 @@ class PendingCapacityError(OSError):
 def scrub_shadowing_credentials(environment: MutableMapping[str, str]) -> None:
     for name in SHADOWING_VARIABLES:
         environment.pop(name, None)
+
+
+def bound_span_queue(environment: MutableMapping[str, str]) -> None:
+    # Overrides any inherited value: Claude Code's own OTEL_* settings are not this hook's.
+    environment[SPAN_QUEUE_SIZE_ENV] = str(SPAN_QUEUE_SIZE)
 
 
 def pending_root() -> Path:
@@ -236,6 +245,7 @@ def read_hook_input() -> tuple[str, dict]:
 
 def main() -> None:
     scrub_shadowing_credentials(os.environ)
+    bound_span_queue(os.environ)
     raw, payload = read_hook_input()
     pending = None
     refused = False

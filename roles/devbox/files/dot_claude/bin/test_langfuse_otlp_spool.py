@@ -17,6 +17,13 @@ from vendor import durable_otel_exporter as spool
 
 TracerProvider = pytest.importorskip("opentelemetry.sdk.trace").TracerProvider
 SimpleSpanProcessor = pytest.importorskip("opentelemetry.sdk.trace.export").SimpleSpanProcessor
+SpanExportResult = pytest.importorskip("opentelemetry.sdk.trace.export").SpanExportResult
+InMemorySpanExporter = pytest.importorskip(
+    "opentelemetry.sdk.trace.export.in_memory_span_exporter"
+).InMemorySpanExporter
+ExportTraceServiceRequest = pytest.importorskip(
+    "opentelemetry.proto.collector.trace.v1.trace_service_pb2"
+).ExportTraceServiceRequest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -103,6 +110,37 @@ def test_failure_to_persist_otlp_is_not_acknowledged(
     emit_test_span(exporter)
     assert isinstance(exporter.failed, OSError)
     assert not list(spool_home.glob("*.otlp"))
+
+
+def spans_in(batch: bytes) -> int:
+    request = ExportTraceServiceRequest.FromString(batch)
+    return sum(
+        len(scope.spans) for resource in request.resource_spans for scope in resource.scope_spans
+    )
+
+
+@pytest.mark.usefixtures("spool_home")
+def test_one_export_is_split_into_batches_within_the_receiver_envelope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    memory = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(memory))
+    tracer = provider.get_tracer("devbox-langfuse-test")
+    for index in range(40):
+        with tracer.start_as_current_span(f"durable-test-{index}"):
+            pass
+    spans = memory.get_finished_spans()
+    envelope = 5 * len(spool._encode(spans[:1]))
+    monkeypatch.setattr(spool, "MAX_BATCH_BYTES", envelope)
+    exporter = spool.DurableSpoolExporter()
+
+    assert exporter.export(spans) is SpanExportResult.SUCCESS
+
+    batches = [path.read_bytes() for path in exporter.staging.glob("*.otlp")]
+    assert len(batches) > 1
+    assert all(len(batch) <= envelope for batch in batches)
+    assert sum(spans_in(batch) for batch in batches) == len(spans)
 
 
 def test_staging_of_a_concurrent_hook_counts_towards_the_spool_cap(

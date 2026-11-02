@@ -61,6 +61,11 @@ those four names before running this file unmodified, so traces still go to the
 deployed unprefixed so that the shell rc (`devbox_shell.env`) and `settings.json.j2` can
 carry one per-profile identity for every producer writing into the Langfuse project.
 
+The wrapper also sets `OTEL_BSP_MAX_QUEUE_SIZE` (`SPAN_QUEUE_SIZE`, 65,536 spans) over
+any inherited value. The SDK's default of 2,048 overflowed on a single turn with many
+subagents; the queue drains to the local spool within the firing, so the bound only caps
+memory.
+
 ### Registration
 
 `settings.json.j2` registers the hook (through `../langfuse_trace_hook.py`) on `Stop` and `SessionEnd` (as upstream does) and, as a
@@ -100,7 +105,9 @@ The patch list makes delivery recoverable (design:
 `durable_otel_exporter.py` sits beside the hook but is not upstream code: it is
 this repository's spool exporter, kept here because the patched hook imports it
 from its own directory. It is excluded from Ruff and Pyrefly with the rest of
-`vendor/`. The tests that close the pre-merge gates (G1–G4) are listed in the
+`vendor/`. It also watches the SDK batch processor's logger: a span dropped
+before export (a full queue) marks the exporter failed, so the patched flush
+check fails the firing and replay re-emits the turn instead of losing it. The tests that close the pre-merge gates (G1–G4) are listed in the
 runbook's *Pre-merge verification* section.
 
 ### Updating

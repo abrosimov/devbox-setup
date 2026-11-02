@@ -1,6 +1,6 @@
-# otelbox 2.5.0 — deployed edge profile.
+# otelbox 2.6.0 — deployed edge profile.
 #
-# Adapted from abrosimov/otelcol-otelbox v2.5.0 config/edge.yaml. This file is
+# Adapted from abrosimov/otelcol-otelbox v2.6.0 config/edge.yaml. This file is
 # loaded alone; the binary and profile are one versioned contract.
 #
 # The additional loopback receiver accepts transcript-derived Langfuse plugin
@@ -107,6 +107,16 @@ processors:
       - key: otelbox.telemetry.class
         value: llm
         action: upsert
+
+  # Langfuse reads a trace's user and tags from span attributes only, so native
+  # producers, whose own `user.id` is an installation hash, need them stamped.
+  # `set` overwrites: keep this off the plugin pipeline, whose SDK states both.
+  # Tags stay a comma-separated string so redaction/secrets still inspects them.
+  transform/langfuse_native:
+    error_mode: ignore
+    trace_statements:
+      - 'set(span.attributes["langfuse.user.id"], "${env:OTELBOX_LANGFUSE_USER_ID:-unknown}")'
+      - 'set(span.attributes["langfuse.trace.tags"], "${env:OTELBOX_LANGFUSE_NATIVE_TAGS:-otel-native}")'
 
   # The limiter observes Go heap rather than RSS or mapped WAL pages.
   memory_limiter:
@@ -232,7 +242,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, resource_detection, redaction/secrets]
+      processors: [memory_limiter, resource_detection, transform/langfuse_native, redaction/secrets]
       exporters: [otlp_grpc/gateway]
     traces/langfuse_plugins:
       receivers: [otlp/langfuse_plugins]

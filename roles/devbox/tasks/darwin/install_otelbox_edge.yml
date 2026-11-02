@@ -315,6 +315,9 @@
     OTELBOX_EXPORTER_CONSUMERS: "2"
     OTELBOX_STORAGE_MAX_SIZE_BYTES: "17179869184"
     OTELBOX_QUEUE_SIZE_BYTES: "12884901888"
+    # The value the LaunchAgent passes, so validation does not lean on the
+    # profile's `unknown` default.
+    OTELBOX_LANGFUSE_USER_ID: "{{ devbox_langfuse_user_id }}"
   changed_when: false
   when:
     - devbox_packages.otelbox_edge.enabled | default(true)

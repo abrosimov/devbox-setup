@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import base64
 import json
+import os
 import re
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
+import pytest
 import yaml
 from ansible.plugins.filter.core import FilterModule as CoreFilters
 from ansible.plugins.filter.mathstuff import FilterModule as MathFilters
@@ -27,14 +31,80 @@ AGY_BIN = REPO_ROOT / "roles/devbox/files/dot_agy/bin"
 AGY_VENDORED_HOOK = AGY_BIN / "vendor/langfuse_hook.py"
 AGY_HOOKS = REPO_ROOT / "roles/devbox/files/dot_agy/config/hooks.json.j2"
 AGY_FISH = REPO_ROOT / "roles/devbox/files/.config/fish/functions/agy.fish"
+ROLE = REPO_ROOT / "roles/devbox"
+ROLE_MAIN = ROLE / "tasks/main.yml"
+CORE_DEFAULTS = ROLE / "defaults/main/core.yml"
+PROFILES = ("personal", "work")
 
 FULL_SHA = re.compile(r"[0-9a-f]{40}")
 LOOPBACK_URL = "http://127.0.0.1:14318"
+CODEX_RENDER = "Install Codex Langfuse runtime configuration"
+CODEX_READ_BACK = "Read back the Codex Langfuse runtime configuration"
+CODEX_CHECK = "Check the Codex Langfuse runtime configuration traces as the profile user"
+JSON_METACHARACTERS = ('a"b\\c', "R&D <tools>", "o'brien@example.com")
 
 
 def _tasks_by_name(path: Path) -> dict[str, dict[str, object]]:
     tasks = yaml.safe_load(path.read_text(encoding="utf-8"))
     return {task["name"]: task for task in tasks}
+
+
+def _profile_user_id(profile: str) -> str:
+    overlay = yaml.safe_load(
+        (REPO_ROOT / "profiles" / f"{profile}.yml").read_text(encoding="utf-8")
+    )
+    return overlay["devbox_langfuse_user_id"]
+
+
+def _ansible_environment() -> NativeEnvironment:
+    environment = NativeEnvironment(undefined=StrictUndefined, autoescape=False)
+    # Ansible's own `default` expects its templar's undefined marker, not Jinja's.
+    for name, function in CoreFilters().filters().items():
+        environment.filters.setdefault(name, function)
+    return environment
+
+
+def _render_native(template: str, **context: object) -> object:
+    return _ansible_environment().from_string(template).render(**context)
+
+
+def _evaluate(expression: str, **context: object) -> object:
+    return _render_native("{{ " + expression + " }}", **context)
+
+
+def _assert_passes(conditions: list[str], **context: object) -> bool:
+    # Ansible's assert stops at the first false condition, so later ones never see
+    # a value an earlier one already rejected.
+    return all(_evaluate(condition, **context) is True for condition in conditions)
+
+
+def _user_id_guard() -> dict[str, object]:
+    return yaml.safe_load(ROLE_MAIN.read_text(encoding="utf-8"))[0]
+
+
+def _user_id_guard_passes(**context: object) -> bool:
+    return _assert_passes(_user_id_guard()["ansible.builtin.assert"]["that"], **context)
+
+
+def _render_codex_langfuse(user_id: str, profile: str = "personal") -> str:
+    return Template(CODEX_LANGFUSE.read_text(encoding="utf-8"), undefined=StrictUndefined).render(
+        devbox_active_profile=profile, devbox_langfuse_user_id=user_id
+    )
+
+
+def _codex_check_passes(langfuse_json: str, user_id: str) -> bool:
+    tasks = _tasks_by_name(CODEX_TASKS)
+    check = tasks[CODEX_CHECK]
+    slurped = {"content": base64.b64encode(langfuse_json.encode()).decode()}
+    config = _render_native(
+        check["vars"]["devbox_codex_langfuse_config"],
+        **{tasks[CODEX_READ_BACK]["register"]: slurped},
+    )
+    return _assert_passes(
+        check["ansible.builtin.assert"]["that"],
+        devbox_codex_langfuse_config=config,
+        devbox_langfuse_user_id=user_id,
+    )
 
 
 def test_claude_langfuse_hook_is_vendored_rather_than_installed_as_a_plugin() -> None:
@@ -282,6 +352,137 @@ def test_codex_langfuse_traces_are_attributed_to_the_profile_owner() -> None:
     assert all(profile["devbox_langfuse_user_id"] for profile in profiles.values())
 
 
+@pytest.mark.parametrize("user_id", JSON_METACHARACTERS)
+def test_codex_langfuse_user_survives_json_metacharacters(user_id: str) -> None:
+    assert json.loads(_render_codex_langfuse(user_id))["user_id"] == user_id
+
+
+def test_langfuse_user_guard_runs_first_on_every_tag() -> None:
+    guard = _user_id_guard()
+
+    assert "ansible.builtin.assert" in guard
+    assert guard["tags"] == ["always"]
+
+
+@pytest.mark.parametrize("user_id", ["", "   ", "unknown", "Unknown", " UNKNOWN\t"])
+def test_langfuse_user_guard_rejects_a_meaningless_user(user_id: str) -> None:
+    assert not _user_id_guard_passes(devbox_langfuse_user_id=user_id)
+
+
+def test_langfuse_user_guard_rejects_an_undefined_user() -> None:
+    assert not _user_id_guard_passes()
+
+
+def test_langfuse_user_guard_rejects_the_role_default() -> None:
+    core = yaml.safe_load(CORE_DEFAULTS.read_text(encoding="utf-8"))
+
+    assert not _user_id_guard_passes(devbox_langfuse_user_id=core["devbox_langfuse_user_id"])
+
+
+@pytest.mark.parametrize("profile", PROFILES)
+def test_langfuse_user_guard_accepts_every_profile(profile: str) -> None:
+    assert _user_id_guard_passes(devbox_langfuse_user_id=_profile_user_id(profile))
+
+
+def test_codex_langfuse_configuration_is_read_back_right_after_rendering() -> None:
+    tasks = yaml.safe_load(CODEX_TASKS.read_text(encoding="utf-8"))
+    names = [task["name"] for task in tasks]
+    render, read_back, check = tasks[names.index(CODEX_RENDER) :][:3]
+
+    assert [read_back["name"], check["name"]] == [CODEX_READ_BACK, CODEX_CHECK]
+    assert read_back["ansible.builtin.slurp"]["src"] == render["ansible.builtin.template"]["dest"]
+    assert read_back["register"] in check["vars"]["devbox_codex_langfuse_config"]
+    assert read_back["when"] == check["when"] == "not ansible_check_mode"
+    assert render["tags"] == read_back["tags"] == check["tags"]
+
+
+@pytest.mark.parametrize("profile", PROFILES)
+def test_codex_langfuse_check_accepts_every_profile_render(profile: str) -> None:
+    user_id = _profile_user_id(profile)
+
+    assert _codex_check_passes(_render_codex_langfuse(user_id, profile), user_id)
+
+
+@pytest.mark.parametrize("user_id", JSON_METACHARACTERS)
+def test_codex_langfuse_check_accepts_json_metacharacters(user_id: str) -> None:
+    assert _codex_check_passes(_render_codex_langfuse(user_id), user_id)
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"enabled": False, "user_id": "someone@example.com"},
+        {"enabled": "true", "user_id": "someone@example.com"},
+        {"user_id": "someone@example.com"},
+        {"enabled": True, "user_id": "unknown"},
+        {"enabled": True},
+    ],
+)
+def test_codex_langfuse_check_rejects_a_configuration_that_misattributes(
+    config: dict[str, object],
+) -> None:
+    assert not _codex_check_passes(json.dumps(config), "someone@example.com")
+
+
+@pytest.mark.integration
+def test_codex_langfuse_render_and_check_pass_under_ansible(tmp_path: Path) -> None:
+    tasks = _tasks_by_name(CODEX_TASKS)
+    user_id = JSON_METACHARACTERS[0]
+    playbook = tmp_path / "playbook.yml"
+    playbook.write_text(
+        yaml.safe_dump(
+            [
+                {
+                    "hosts": "localhost",
+                    "connection": "local",
+                    "gather_facts": False,
+                    "vars": {
+                        "ansible_python_interpreter": sys.executable,
+                        "devbox_codex_home": str(tmp_path / "codex"),
+                        "devbox_codex_role_path": str(ROLE),
+                        "devbox_active_profile": "personal",
+                        "devbox_langfuse_user_id": user_id,
+                    },
+                    "tasks": [
+                        {
+                            "name": "Create the Codex home",
+                            "ansible.builtin.file": {
+                                "path": str(tmp_path / "codex"),
+                                "state": "directory",
+                            },
+                        },
+                        *(tasks[name] for name in (CODEX_RENDER, CODEX_READ_BACK, CODEX_CHECK)),
+                    ],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "ANSIBLE_LOCAL_TEMP": str(tmp_path / "ansible-local"),
+            "ANSIBLE_REMOTE_TEMP": str(tmp_path / "ansible-remote"),
+            "ANSIBLE_HOME": str(tmp_path / "ansible-home"),
+            "ANSIBLE_NOCOLOR": "1",
+        }
+    )
+
+    result = subprocess.run(
+        [str(Path(sys.executable).parent / "ansible-playbook"), "-i", "localhost,", str(playbook)],
+        capture_output=True,
+        text=True,
+        timeout=180,
+        env=environment,
+        cwd=tmp_path,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    rendered = json.loads((tmp_path / "codex/langfuse.json").read_text(encoding="utf-8"))
+    assert rendered["user_id"] == user_id
+
+
 def test_repo_owned_langfuse_configuration_has_no_remote_ingestion_url() -> None:
     sources = (
         CLAUDE_SETTINGS.read_text(encoding="utf-8"),
@@ -301,17 +502,6 @@ def test_all_engines_stamp_otelbox_telemetry_class_llm() -> None:
 
     agy_fish = AGY_FISH.read_text(encoding="utf-8")
     assert "OTEL_RESOURCE_ATTRIBUTES=otelbox.telemetry.class=llm" in agy_fish
-
-
-def test_codex_otel_resource_attributes_are_forward_declared() -> None:
-    """Codex does not yet honour [otel] resource_attributes (openai/codex#30987).
-
-    The key is declared in config.toml so it activates automatically once the
-    feature lands.  Until then the edge collector's resource/langfuse_plugins
-    processor stamps the attribute on Langfuse-bound traces.
-    """
-    codex_config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
-    assert codex_config["otel"]["resource_attributes"]["otelbox.telemetry.class"] == "llm"
 
 
 def test_codex_hooks_run_from_a_pinned_venv_rather_than_ambient_python() -> None:

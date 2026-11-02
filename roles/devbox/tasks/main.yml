@@ -1,4 +1,17 @@
 ---
+# Every engine and the edge stamp this into Langfuse; a blank or the role's
+# `unknown` placeholder would file a person's traces under a meaningless user.
+- name: Require a meaningful Langfuse user id from the profile
+  ansible.builtin.assert:
+    that:
+      - devbox_langfuse_user_id | default('') | trim | length > 0
+      - devbox_langfuse_user_id | trim | lower != 'unknown'
+    fail_msg: >-
+      devbox_langfuse_user_id is '{{ devbox_langfuse_user_id | default('') }}'.
+      Set it in profiles/{{ devbox_active_profile | default('<profile>') }}.yml.
+    quiet: true
+  tags: [always]
+
 - name: Override dotfiles_root_dir if dev_mode is enabled
   ansible.builtin.set_fact:
     devbox_paths: "{{ devbox_paths | combine({'dotfiles_root_dir': dev_dotfiles_path_override}) }}"

@@ -68,6 +68,27 @@
     mode: "0600"
   tags: [configs, ai, codex]
 
+# The plugin swallows an unreadable file and falls back to `enabled: false`, so
+# a broken render would silently stop Codex tracing rather than fail here.
+- name: Read back the Codex Langfuse runtime configuration
+  ansible.builtin.slurp:
+    src: "{{ devbox_codex_home }}/langfuse.json"
+  register: devbox_codex_langfuse_rendered
+  when: not ansible_check_mode
+  tags: [configs, ai, codex]
+
+- name: Check the Codex Langfuse runtime configuration traces as the profile user
+  ansible.builtin.assert:
+    that:
+      - devbox_codex_langfuse_config.enabled | default(false) is sameas true
+      - devbox_codex_langfuse_config.user_id | default('') == devbox_langfuse_user_id
+    fail_msg: "{{ devbox_codex_home }}/langfuse.json must enable tracing as {{ devbox_langfuse_user_id }}."
+    quiet: true
+  vars:
+    devbox_codex_langfuse_config: "{{ devbox_codex_langfuse_rendered.content | b64decode | from_json }}"
+  when: not ansible_check_mode
+  tags: [configs, ai, codex]
+
 # Shared core followed by the Codex adapter; see the matching Claude and Antigravity tasks.
 - name: Install Codex global authority protocol
   ansible.builtin.copy:

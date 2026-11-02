@@ -2,13 +2,16 @@
 
 The exporter only acknowledges a batch after fsync-backed local persistence.
 Batches stay in a private staging directory until the hook commits them, so a
-failed firing, whose turns replay re-emits, never reaches the outbox.
+failed firing, whose turns replay re-emits, never reaches the outbox. A span
+the SDK's batch processor drops before export fails the exporter, and with it
+the firing, just as a refused batch does.
 Delivery to the loopback otelbox edge is a separate retryable operation.
 """
 from __future__ import annotations
 
 import contextlib
 import http.client
+import logging
 import os
 import shutil
 import sys
@@ -33,6 +36,24 @@ STAGING_DIRECTORY = ".staging"
 # Hook firings are killed well inside this; older staging belongs to a dead process.
 STALE_STAGING_SECONDS = 3600
 TRANSIENT_HTTP_STATUSES = frozenset({408, 429})
+# The SDK's BatchProcessor reports a dropped span only through this logger
+# (a full queue, or an exporter that raised); nothing else ever sees the loss.
+BATCH_PROCESSOR_LOGGER = "opentelemetry.sdk._shared_internal"
+
+
+class SpanLossError(RuntimeError):
+    pass
+
+
+class _SpanLossWatch(logging.Handler):
+    def __init__(self, exporter: DurableSpoolExporter) -> None:
+        super().__init__(logging.WARNING)
+        self.exporter = exporter
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.exporter.refuse(
+            SpanLossError(f"OpenTelemetry batch processor lost a span: {record.getMessage()}")
+        )
 
 
 def spool_directory() -> Path:
@@ -91,6 +112,8 @@ class DurableSpoolExporter(SpanExporter):
         self.failed: BaseException | None = None
         self.discarded = False
         self.max_bytes = int(os.environ.get(SPOOL_MAX_BYTES_ENV) or DEFAULT_SPOOL_MAX_BYTES)
+        self._loss_watch = _SpanLossWatch(self)
+        logging.getLogger(BATCH_PROCESSOR_LOGGER).addHandler(self._loss_watch)
 
     def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
         if not spans or self.discarded:
@@ -98,12 +121,15 @@ class DurableSpoolExporter(SpanExporter):
         try:
             self._persist(spans)
         except BaseException as exc:
-            if self.failed is None:
-                # The hook logs only to a file; a refused span must reach the operator.
-                print(f"durable_otel_exporter: {exc}", file=sys.stderr)
-            self.failed = exc
+            self.refuse(exc)
             return SpanExportResult.FAILURE
         return SpanExportResult.SUCCESS
+
+    def refuse(self, exc: BaseException) -> None:
+        if self.failed is None:
+            # The hook logs only to a file; a refused span must reach the operator.
+            print(f"durable_otel_exporter: {exc}", file=sys.stderr)
+        self.failed = exc
 
     def commit(self) -> None:
         if self.discarded or not self.staging.is_dir():
@@ -117,21 +143,26 @@ class DurableSpoolExporter(SpanExporter):
 
     def discard(self) -> None:
         self.discarded = True
+        self._stop_watching_for_loss()
         shutil.rmtree(self.staging, ignore_errors=True)
 
+    def _stop_watching_for_loss(self) -> None:
+        logging.getLogger(BATCH_PROCESSOR_LOGGER).removeHandler(self._loss_watch)
+
     def _persist(self, spans: Sequence[ReadableSpan]) -> None:
+        # Re-encoding the growing group per span is quadratic and overran the 5 s flush. Each
+        # span encoded alone repeats resource and scope, so the sum bounds the group's size.
         group: list[ReadableSpan] = []
+        group_bytes = 0
         for span in spans:
-            proposed = [*group, span]
-            if len(_encode(proposed)) > MAX_BATCH_BYTES:
-                if not group:
-                    raise ValueError("Single OTLP span exceeds local receiver envelope")
+            span_bytes = len(_encode([span]))
+            if span_bytes > MAX_BATCH_BYTES:
+                raise ValueError("Single OTLP span exceeds local receiver envelope")
+            if group and group_bytes + span_bytes > MAX_BATCH_BYTES:
                 self._persist_batch(group)
-                group = [span]
-                if len(_encode(group)) > MAX_BATCH_BYTES:
-                    raise ValueError("Single OTLP span exceeds local receiver envelope")
-            else:
-                group = proposed
+                group, group_bytes = [], 0
+            group.append(span)
+            group_bytes += span_bytes
         if group:
             self._persist_batch(group)
 
@@ -155,7 +186,8 @@ class DurableSpoolExporter(SpanExporter):
         _durable_save(self.staging, payload)
 
     def shutdown(self, timeout_millis: int = 30_000) -> None:
-        return None
+        # The batch processor drains its queue before it shuts its exporter down.
+        self._stop_watching_for_loss()
 
     def force_flush(self, timeout_millis: int = 30_000) -> bool:
         return self.failed is None

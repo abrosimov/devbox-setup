@@ -118,6 +118,34 @@ def test_langfuse_plugin_pipeline_classifies_only_its_own_traces() -> None:
     }
 
 
+def test_native_traces_are_stamped_for_langfuse_before_redaction() -> None:
+    assert _edge["service"]["pipelines"]["traces"]["processors"] == [
+        "memory_limiter",
+        "resource_detection",
+        "transform/langfuse_native",
+        "redaction/secrets",
+    ]
+
+
+def test_langfuse_plugin_traces_keep_the_user_and_tags_their_sdk_states() -> None:
+    processors = _edge["service"]["pipelines"]["traces/langfuse_plugins"]["processors"]
+
+    assert "transform/langfuse_native" not in processors
+
+
+def test_native_traces_take_the_langfuse_user_from_the_launch_agent() -> None:
+    statements = _edge["processors"]["transform/langfuse_native"]["trace_statements"]
+
+    assert statements == [
+        'set(span.attributes["langfuse.user.id"], "${env:OTELBOX_LANGFUSE_USER_ID:-unknown}")',
+        (
+            'set(span.attributes["langfuse.trace.tags"], '
+            '"${env:OTELBOX_LANGFUSE_NATIVE_TAGS:-otel-native}")'
+        ),
+    ]
+    assert "OTELBOX_LANGFUSE_USER_ID" in _render_plist("zstd")
+
+
 def _client_pair(present: tuple[str, ...]) -> dict[str, Any]:
     return {
         "results": [
@@ -261,15 +289,21 @@ def test_profile_validate_environment(key: str, expected: str) -> None:
     assert environment[key] == expected
 
 
-def _render_plist(compression: str) -> dict[str, Any]:
+def _render_plist(compression: str, user_id: str = "someone@example.com") -> dict[str, Any]:
     rendered = Template(
         PLIST_TEMPLATE.read_text(encoding="utf-8"), undefined=StrictUndefined
     ).render(
         ansible_facts={"env": {"HOME": "/Users/tester"}},
         devbox_packages={"otelbox_edge": {"upstream_compression": compression}},
         devbox_active_profile="personal",
+        devbox_langfuse_user_id=user_id,
     )
     return plistlib.loads(rendered.encode("utf-8"))["EnvironmentVariables"]
+
+
+@pytest.mark.parametrize("user_id", ["abrosimov.k.a@gmail.com", "R&D <tools>"])
+def test_plist_renders_the_langfuse_user_from_the_variable(user_id: str) -> None:
+    assert _render_plist("zstd", user_id)["OTELBOX_LANGFUSE_USER_ID"] == user_id
 
 
 def test_plist_renders_compression_from_the_variable() -> None:

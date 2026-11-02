@@ -81,6 +81,24 @@ def test_main_hands_the_vendored_hook_a_scrubbed_environment(
 
 
 @pytest.mark.usefixtures("claude_environment")
+def test_main_hands_the_vendored_hook_its_own_span_queue_bound(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, str | None] = {}
+
+    def record(_path: str, run_name: str) -> None:
+        seen[run_name] = os.environ.get(langfuse_trace_hook.SPAN_QUEUE_SIZE_ENV)
+
+    monkeypatch.setenv(langfuse_trace_hook.SPAN_QUEUE_SIZE_ENV, "16")
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setattr(langfuse_trace_hook.runpy, "run_path", record)
+
+    langfuse_trace_hook.main()
+
+    assert seen == {"__main__": str(langfuse_trace_hook.SPAN_QUEUE_SIZE)}
+
+
+@pytest.mark.usefixtures("claude_environment")
 def test_unscrubbed_vendored_hook_would_trace_with_the_operator_keys() -> None:
     pytest.importorskip("langfuse")
 

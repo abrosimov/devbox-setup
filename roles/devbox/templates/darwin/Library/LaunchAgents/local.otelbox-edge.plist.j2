@@ -55,6 +55,12 @@
         -->
         <key>OTELBOX_UPSTREAM_COMPRESSION</key>
         <string>{{ devbox_packages.otelbox_edge.upstream_compression | default('zstd') }}</string>
+        <!--
+          Stamped by transform/langfuse_native on native traces, so they share
+          the user the Langfuse hooks already report.
+        -->
+        <key>OTELBOX_LANGFUSE_USER_ID</key>
+        <string>{{ devbox_langfuse_user_id | e }}</string>
         <key>OTEL_RESOURCE_ATTRIBUTES</key>
         <string>deployment.environment.name={{ devbox_active_profile | default('personal') }}</string>
     </dict>

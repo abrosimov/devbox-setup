@@ -51,6 +51,7 @@ if TYPE_CHECKING:
 
 EDGE: Final = "otelbox-edge"
 PACKAGES: Final = REPO_ROOT / "roles/devbox/defaults/main/packages.yml"
+CORE: Final = REPO_ROOT / "roles/devbox/defaults/main/core.yml"
 EDGE_PROFILE: Final = REPO_ROOT / "roles/devbox/files/.config/otelbox/edge/edge.yaml"
 LAUNCH_AGENTS: Final = REPO_ROOT / "roles/devbox/templates/darwin/Library/LaunchAgents"
 EDGE_PLIST: Final = LAUNCH_AGENTS / "local.otelbox-edge.plist.j2"
@@ -457,6 +458,7 @@ class Recipient:
 
 def render_plist(template: Path, home: Path) -> dict[str, object]:
     defaults = yaml.safe_load(PACKAGES.read_text(encoding="utf-8"))
+    core = yaml.safe_load(CORE.read_text(encoding="utf-8"))
     jinja = Environment(
         undefined=StrictUndefined,
         autoescape=select_autoescape(enabled_extensions=(), default_for_string=False),
@@ -464,6 +466,7 @@ def render_plist(template: Path, home: Path) -> dict[str, object]:
     rendered = jinja.from_string(template.read_text(encoding="utf-8")).render(
         ansible_facts={"env": {"HOME": str(home)}},
         devbox_packages=defaults["devbox_packages"],
+        devbox_langfuse_user_id=core["devbox_langfuse_user_id"],
     )
     loaded = plistlib.loads(rendered.encode())
     if not isinstance(loaded, dict):

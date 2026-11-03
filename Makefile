@@ -247,7 +247,7 @@ help:
 	@echo "  EXTRA_VARS='-e foo=bar' - pass extra variables"
 	@echo ""
 
-run: test $(COLLECTIONS_SENTINEL) secrets-ready
+run: test test-claude-hooks $(COLLECTIONS_SENTINEL) secrets-ready
 ifndef PROFILE
 	$(error PROFILE is required. Use: make personal, make work, make dev-personal, or make dev-work)
 endif
@@ -507,7 +507,7 @@ test-langfuse-e2e: $(DEV_SENTINEL) ## Langfuse handoff against the pinned otelbo
 	@DEVBOX_LIVE_ENGINE_TESTS=1 DEVBOX_LIVE_REQUIRE_ENGINES="$(ENGINES)" \
 	  $(DEV_BIN)/pytest tests/live/test_live_langfuse_handoff.py -m live -v
 
-qa: lint-py typecheck test test-integration test-ai-config test-scripts test-deploy test-live-guard ## Full Python quality gate
+qa: lint-py typecheck test test-claude-hooks test-integration test-ai-config test-scripts test-deploy test-live-guard ## Full Python quality gate
 
 regenerate-fixtures: $(DEV_SENTINEL) ## Re-extract recorded fixtures + regenerate synthetic ones
 	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/extract_fixtures.py --max-per-bucket 50

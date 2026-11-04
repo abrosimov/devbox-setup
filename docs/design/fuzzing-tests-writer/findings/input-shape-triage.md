@@ -16,7 +16,7 @@ addresses: ["[[H3-random-seeds-for-structured-input]]"]
 grounded_in: ["[[03-structure-aware-generation|R3]]", "[[05-fuzzingbook-part2-syntactic|R5]]", "[[04-fuzzingbook-part1-lexical|R4]]", "[[07-lang-go|R7]]"]
 realised_by: ["[[skill-structured-input-generation]]", "[[skill-go-fuzzing]]", "[[skill-python-fuzzing]]", "[[skill-rust-fuzzing]]"]
 tested_by: ["[[eval-family-C-structure]]"]
-related: ["[[corpus-lifecycle]]", "[[applicability-gate]]"]
+related: ["[[corpus-lifecycle]]", "[[applicability-gate]]", "[[fuzzing-vs-pbt-boundary]]"]
 ---
 # Input shape triage — structure versus bytes
 
@@ -33,9 +33,9 @@ exist; the agent must choose one explicitly (R3 §0).
 | Text with keywords; lenient parser; flat format | seeds + bytes + dictionary; **no grammar** | real samples | engine minimiser |
 | Recursive text, strict parser, a grammar exists in the repo or spec | grammar-generated seed corpus (bounded, coverage-driven) handed to the engine; terminals as dictionary | one input per expansion | grammar reducer or generator shrinker |
 | Binary format with magic, length, CRC | fuzzing-build flag that skips the check **or** custom mutator with repair | real valid files | engine minimiser only if the repair hook also runs on reproduction |
-| Typed value, struct, argument tuple | `arbitrary` derive / Hypothesis `builds` + `composite` / rapid generators / go-fuzz-headers | explicit `f.Add` / `@example` boundary values | generator shrinker (proptest, Hypothesis, rapid twin) |
-| Sequence of operations | `Vec<Op>` / `RuleBasedStateMachine` / rapid `T.Repeat` | one trace per public method + recorded traces | state-machine shrinking; none under `go test -fuzz` |
-| External schema (JSON Schema, OpenAPI, protobuf) | `hypothesis-jsonschema`, schemathesis, libprotobuf-mutator | schema-generated + fixtures | integrated |
+| Typed value, struct, argument tuple | **fuzzing-side decoder** over the engine's bytes: `arbitrary` derive (Rust), typed `f.Fuzz` arguments or go-fuzz-headers (Go), `FuzzedDataProvider` (Python); PBT generators (Hypothesis strategies, rapid, proptest) only through the existing-artefact bridges of [[fuzzing-vs-pbt-boundary]] | explicit `f.Add` / seed files with boundary values | engine minimiser (lexical); structured shrinking is a PBT property, not available here |
+| Sequence of operations | fuzz target decoding an op sequence from bytes: `Vec<Op>` with `arbitrary` (Rust), go-fuzz-headers loop (Go), `FuzzedDataProvider` loop (Python); model-based state machines (rapid `T.Repeat`, `proptest-state-machine`, `RuleBasedStateMachine`) are `out-of-scope: pbt-track` | one trace per public method + recorded traces | engine minimiser; none under `go test -fuzz` |
+| External schema (JSON Schema, OpenAPI, protobuf) | libprotobuf-mutator or a schema-driven decoder inside the target; `hypothesis-jsonschema` and schemathesis are `out-of-scope: pbt-track` | schema-generated + fixtures | engine minimiser; LPM keeps messages valid |
 | Compressed or encrypted wrapper | custom mutator (decompress → mutate → recompress) or fuzz the inner layer directly | decompressed samples | minimise the inner payload |
 
 **Dry-run gate**: if >~90 % of engine mutants are rejected at the first check during a one-minute
@@ -44,8 +44,10 @@ rows, do not run longer (R3 §5.1).
 
 ## Rules of thumb with their evidence
 
-- *Construct, do not filter*: Luhn filter ≈10 attempts per valid number, repair 1 (R5 §0);
-  Hypothesis `filter_too_much` fires at 50 rejected draws (R8 §3.1 claim 10).
+- *Construct, do not filter*: Luhn filter ≈10 attempts per valid number, repair 1 (R5 §0); the
+  same lesson appears on the PBT side as Hypothesis' `filter_too_much` at 50 rejected draws
+  (R8 §3.1 claim 10). For a fuzz target it means: decode constructively from the bytes and
+  recompute derived fields (lengths, checksums) instead of rejecting.
 - *Bound size explicitly* (`max_nonterminals`, `max_size`/`max_leaves`, `size_hint`) or recursive
   generators recreate the simple-fuzzer hang (R5 §5.i).
 - *Keep the byte-level harness beside the structured one*, or the parser's error paths are never
@@ -75,4 +77,6 @@ the corpus is saturated for this harness.
 ## Design consequence
 
 [[skill-structured-input-generation]] carries the table, the checklist, the rules and one snippet
-per language; the per-language skills fill in the idioms; [[eval-family-C-structure]] grades it.
+per language (fuzzing-side decoders only); the per-language skills fill in the idioms;
+[[eval-family-C-structure]] grades it. "Generators over the byte stream" in this design always means
+a decoder that the fuzz engine drives; it never means authoring a PBT strategy.

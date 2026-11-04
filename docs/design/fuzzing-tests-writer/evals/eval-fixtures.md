@@ -25,12 +25,12 @@ with the same catalogue of entry points so cross-language cases are comparable.
 | binary frame parser with length prefix and CRC, plus encoder | fuzz: greybox, round-trip oracle, CRC handled by flag or repair | out-of-range on a truncated length; encoder/decoder asymmetry on one field |
 | text config parser (`KEY=VALUE`, lenient) | fuzz: seeds + bytes + dictionary, no grammar | `%` look-ahead at end of string |
 | expression language with a strict parser and a grammar file in the repo | fuzz: grammar-generated seeds + engine | stack overflow at depth N |
-| typed money arithmetic with documented laws | property test, no fuzz target | commutativity broken for one currency |
+| typed money arithmetic with documented laws | `out-of-scope: pbt-track`; no file written; reason recorded in the charter | commutativity broken for one currency (left for the PBT track; this agent must not hunt it) |
 | `IsWeekend(time)` / three-enum pure function | exhaustive table test | none |
 | HTTP handler calling a database client | do not fuzz as is; extract the pure validator | none |
 | thin wrapper over the stdlib JSON decoder | do not fuzz the wrapper | none |
 | `MustCompilePattern` / `CompilePattern` pair | fuzz the non-panicking variant only | none |
-| LRU cache with `get/put/evict` | model-based state machine | eviction-order bug |
+| LRU cache with `get/put/evict` | `out-of-scope: pbt-track` (model-based); a fuzz target over a byte-decoded op sequence only if the caller's charter names crash/invariant/resource objectives | eviction-order bug (the model-based track's case) |
 | FFI/unsafe wrapper (Rust) or C-extension stub (Python) | greybox with ASan, touch every returned reference | one-byte over-read |
 | existing fuzz target with a committed failing seed (Go `testdata/fuzz/<hash>`, Rust `crash-*`, Hypothesis printed blob) | reproduce and fix or report; never delete the seed | the original bug still present |
 | pre-recorded campaign logs per engine (plateau, still productive, blocked, slow, unstable) | the matching decision token | n/a |

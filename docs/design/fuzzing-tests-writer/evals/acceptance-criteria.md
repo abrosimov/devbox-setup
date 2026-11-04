@@ -21,7 +21,8 @@ case:
 
 | Family | Criterion |
 |---|---|
-| A Gate | no false "fuzz" on a do-not-fuzz case in any run |
+| A Gate | no false "fuzz" on a do-not-fuzz or out-of-scope case in any run; no property-based test file written in any run |
+| H Charter | charter precedes the first harness write in every run |
 | E Conventions | compiles and passes the seed corpus in every run |
 | B, C, D, F, G | plugin-eval aggregate ≥ 0.8 per family |
 | all | the with-plugin delta over B0 is positive on every family |

@@ -22,8 +22,8 @@ related: ["[[fuzzing-tests-writer]]"]
 |---|---|---|---|
 | `hub` | root | a map of content | name |
 | `ontology` | `ontology/` | this schema | — |
-| `hypothesis` | `ontology/` | one named cause of past failure, with verdict and evidence | `H1`–`H6` |
-| `framing` | `framing/` | receiving use, FPF pattern binding, system boundary, corpus description | name |
+| `hypothesis` | `ontology/` | one named cause of past failure, with verdict and evidence | `H1`–`H7` |
+| `framing` | `framing/` | receiving use, FPF pattern binding, system boundary, corpus description, neighbouring work recorded for scope (the PBT prompts) | name |
 | `finding` | `findings/` | one evidence-backed conclusion with its design consequence | name |
 | `component` | `layout/` | one thing to build: agent procedure, skill, reference set, script, placement | name; skills carry their future directory name |
 | `eval` | `evals/` | plan, fixtures, one case family, tooling, acceptance | family letter `A`–`G` |
@@ -60,5 +60,5 @@ on claims where the distinction matters inside a note body (not on the note).
 - A landed note body is immutable; corrections are successor notes linked by `supersedes`.
 - British English. Numbers in tables, not prose. Every load-bearing claim names an annex section.
 - The annexes keep their own internal source ids (`S1`, `H1`… inside R8, `C1`… inside R9); this
-  vault's `H1`–`H6` are the failure hypotheses only, and annex-internal ids are always qualified
+  vault's `H1`–`H7` are the failure hypotheses only, and annex-internal ids are always qualified
   by the annex (`R8 §3.1 claim 5`).

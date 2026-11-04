@@ -24,8 +24,9 @@ separate the measures.
 
 ## Claim under test
 
-Given a Go, Python or Rust repository and an entry point, the agent (a) decides correctly whether
-to fuzz and how, (b) produces a harness that compiles, whose seed corpus passes as unit tests, and
+Given a Go, Python or Rust repository and an entry point, the agent (0) fixes a charter with an
+objective and a verifiable result before any harness, (a) decides correctly whether to fuzz and how
+(and hands typed-law, metamorphic and model-based cases to the PBT track), (b) produces a harness that compiles, whose seed corpus passes as unit tests, and
 that carries an oracle beyond crash where one exists, (c) runs a bounded campaign and stops with a
 defensible decision, (d) follows the ecosystem's corpus and CI conventions, (e) reports buckets
 with reproducers.
@@ -58,8 +59,9 @@ cost and turns. Combined only in a dashboard, never into one scalar.
 | E Conventions and compile | [[H5-harness-conventions]] | [[eval-family-E-conventions]] |
 | F Reporting | [[H6-crash-counting-reports]] | [[eval-family-F-reporting]] |
 | G Triage false positives | [[H6-crash-counting-reports]] | [[eval-family-G-triage]] |
+| H Charter before work | [[H7-no-objective-before-work]] | [[eval-family-H-charter]] |
 
-≈59 cases; 30 % tagged `holdout` and run only before a release. Three runs per case per arm (the
+≈65 cases; 30 % tagged `holdout` and run only before a release. Three runs per case per arm (the
 tool's default; "one run tells you little"). Grader policy: deterministic for long artefacts, LLM
 judge for decision prose and the report (R10).
 

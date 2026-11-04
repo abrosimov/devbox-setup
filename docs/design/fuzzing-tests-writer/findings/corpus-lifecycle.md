@@ -49,8 +49,9 @@ Mechanical, so a checklist (R2 §5.2); the per-ecosystem paths are in the `langu
   the artefact path.
 - Commit the **regression set** in the ecosystem's form: Go writes `testdata/fuzz/FuzzX/<hash>` and
   plain `go test` replays it; Rust copies the minimised artefact into a `#[test]` fixture (or
-  bolero's committed `__fuzz__`); proptest commits `proptest-regressions/` (seeds, not values);
-  Hypothesis converts the printed case into `@example`.
+  bolero's committed `__fuzz__`); Atheris crash files go into the committed seed corpus. (For
+  reference only, PBT track: proptest commits `proptest-regressions/` seeds, Hypothesis pins
+  `@example` — [[fuzzing-vs-pbt-boundary]].)
 - Merge new-coverage inputs back into the committed seeds, re-`cmin`, generate a coverage report
   and keep the uncovered-function list for the next escalation rung.
 - Staleness: renaming a target or `go clean -fuzzcache` loses the generated corpus; a changed input

@@ -42,6 +42,17 @@ Ordered so that each step has a gate before the next starts.
 7. **Deploy and live test**: `make <profile> EXTRA_VARS='--tags ai,claude,codex,agy'`, then
    `make test-live ENGINES=claude,codex`.
 
+## Scope boundaries for the iteration
+
+- The property-based-testing track (Hypothesis, proptest, rapid incl. state machines) is a separate
+  piece of work with its own agent and skills; this iteration builds no PBT artefact and the gate
+  hands such cases off ([[FTW-D-008-pbt-out-of-scope]]; [[pbt-agent-prompts]] is its starting point).
+- Every campaign the agent runs starts from a charter ([[fuzzing-charter]]); the skill, the
+  procedure and eval family H enforce it.
+- Go toolchain for authoring and verification: `GOTOOLCHAIN=go1.27.3` with
+  `GOPROXY=https://proxy.golang.org,direct` (the toolchain is fetched as the module
+  `golang.org/toolchain@v0.0.1-go1.27.3.linux-amd64`; `dl.google.com` is not needed).
+
 ## Refresh triggers (G.2 §11 SoTA-Echoing)
 
 The annexes are frozen as of 2026-11-03. Refresh when any of: Go custom-mutator proposal #48815

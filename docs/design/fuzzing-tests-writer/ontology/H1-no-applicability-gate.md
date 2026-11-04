@@ -22,7 +22,7 @@ related: ["[[ontology]]"]
 
 **Hypothesis.** Earlier agents wrote a fuzz target for every function they were pointed at, including glue code, thin wrappers over already-fuzzed libraries, and code with network or clock dependence.
 
-**Verdict.** Confirmed as the dominant risk. Independent traditions agree on the hard stops and on where the yield is.
+**Verdict.** Confirmed as the dominant risk. Independent traditions agree on the hard stops (engine contracts). Where the yield is rests on the Fuzzing Book's lessons and on the Go/Rust/Python bug records; no per-language yield study exists ([[FTW-OQ-007-per-language-yield-statistics]]), so "fuzzing pays off on a narrow class" is an inference from those two sources, labelled as such in [[applicability-gate]].
 
 ## Evidence
 

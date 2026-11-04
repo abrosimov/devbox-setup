@@ -14,13 +14,13 @@ tags: [fuzzing, design/decision]
 status: accepted
 supersedes: []
 superseded_by: []
-related: ["[[skill-fuzzing-applicability]]", "[[skill-fuzzing-campaign]]", "[[skill-structured-input-generation]]", "[[skill-go-fuzzing]]", "[[skill-python-fuzzing]]", "[[skill-rust-fuzzing]]"]
+related: ["[[skill-fuzzing-applicability]]", "[[skill-fuzzing-campaign]]", "[[skill-structured-input-generation]]", "[[skill-go-fuzzing]]", "[[skill-python-fuzzing]]", "[[skill-rust-fuzzing]]", "[[FTW-D-008-pbt-out-of-scope]]"]
 ---
 # FTW-D-002: Six skills: three methodology, three per language; no separate property-based-testing skill
 
 ## Decision
 
-Write `fuzzing-applicability`, `fuzzing-campaign`, `structured-input-generation`, `go-fuzzing`, `python-fuzzing`, `rust-fuzzing`. Property-based testing is folded into the gate skill's property catalogue and into each language skill; claim hygiene is the closing section of the campaign skill; grammar material is a reference file of the structure skill.
+Write `fuzzing-applicability`, `fuzzing-campaign`, `structured-input-generation`, `go-fuzzing`, `python-fuzzing`, `rust-fuzzing`. Claim hygiene is the closing section of the campaign skill; grammar material is a reference file of the structure skill. *Amended by [[FTW-D-008-pbt-out-of-scope]]*: property-based testing is not folded into any of these skills; the gate skill carries the fuzzing-versus-PBT boundary table and the hand-off outcome instead.
 
 ## Context
 

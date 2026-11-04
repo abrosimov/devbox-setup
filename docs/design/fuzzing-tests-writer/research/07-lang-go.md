@@ -299,3 +299,24 @@ New since 1.24 that a Go skill should know:
 - **Go 1.27**: `go test -json` annotates `"Action":"output"` events with an `"OutputType"` field, which makes the `fuzz: elapsed: …` progress lines easier to separate from test output when the campaign runner parses JSON; `go test` runs the `stdversion` vet check by default.
 
 Conclusion: every claim in §§3–5 holds for 1.27.3; the harness skeleton, flags and stopping inputs need no change. The 1.24.7 throughput numbers in §3.7 are machine-specific either way.
+
+### 8.1 Run on the actual go1.27.3 binary (2026-11-04)
+
+The toolchain was obtained without `dl.google.com`: `GOTOOLCHAIN=go1.27.3` with
+`GOPROXY=https://proxy.golang.org,direct` fetches it as the module
+`golang.org/toolchain@v0.0.1-go1.27.3.linux-amd64`. A throw-away module with the tutorial's
+byte-reversing `FuzzReverse` (round-trip + UTF-8 oracle, three `f.Add` seeds) confirmed:
+
+| Check | Observed on go1.27.3 |
+|---|---|
+| `go doc testing.F.Fuzz` allowed types | `[]byte, string, bool, byte, rune, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64. More types may be supported in the future.` |
+| `go help testflag` | `-fuzz` (one package in the main module, one fuzz test), `-fuzztime` (default forever, `Nx`), `-fuzzminimizetime` (default 60 s), `-artifacts` ("Save test artifacts in the directory specified by -outputdir. See 'go doc testing.T.ArtifactDir'") — texts identical to the 1.24.7 reading plus the new flag |
+| `go doc testing.F` | methods declared on `*F`: `Add`, `Fail`, `Fuzz`, `Helper`, `Skipped`; `Attr`, `Output`, `ArtifactDir` are promoted from the embedded `common` (not listed by `go doc testing.F`, reachable as `f.ArtifactDir()`) |
+| Seed corpus as unit tests | `go test -run='^FuzzReverse$' -v` → `--- PASS: FuzzReverse/seed#0..2` |
+| Fuzz run, `-json` | progress line `fuzz: elapsed: 0s, execs: 545 (22473/sec), new interesting: 3 (total: 6)` arrives as an `Action:"output"` event **without** `OutputType`; framing lines (`=== RUN`, `--- FAIL`, `FAIL`) carry `"OutputType":"frame"`. A parser can therefore select progress lines as `output` events lacking `OutputType` and matching `^fuzz: ` |
+| Failing input | `Failing input written to testdata/fuzz/FuzzReverse/3c46e12e595642de`; file content `go test fuzz v1` / `string("̓0")` (two runes — minimisation is best-effort, consistent with §4.2) |
+| Baseline failure on re-run | `failure while testing seed corpus entry: FuzzReverse/3c46e12e595642de` on the next `-fuzz` run and on `go test -fuzz=Fuzz ./...`; the committed crasher pre-empts fuzzing until fixed |
+| Generated corpus | `$GOCACHE/fuzz/example.com/…` created |
+
+All §§3–5 claims stand on 1.27.3; the local throughput figure (22 473 exec/s on a trivial target,
+two workers) is machine-specific.

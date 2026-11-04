@@ -17,12 +17,26 @@ grounded_in: ["[[01-methods-and-applicability|R1]]", "[[04-fuzzingbook-part1-lex
 realised_by: ["[[skill-fuzzing-applicability]]", "[[agent-procedure]]"]
 tested_by: ["[[eval-family-A-gate]]"]
 decided_by: ["[[FTW-D-001-gate-is-first-step]]"]
-related: ["[[oracle-ladder]]", "[[input-shape-triage]]"]
+related: ["[[oracle-ladder]]", "[[input-shape-triage]]", "[[fuzzing-vs-pbt-boundary]]", "[[fuzzing-charter]]"]
 opens: ["[[FTW-OQ-007-per-language-yield-statistics]]"]
 ---
 # Applicability gate
 
-Evaluate top to bottom; the first "do not fuzz" row that matches wins. Every per-language annex
+## What the claim rests on
+
+The gate is built from two kinds of evidence and one inference. **Sourced**: the engine contracts
+(determinism, no persistent threads, ≥ ~100–1 000 exec/s, no network/disk/clock, bounded input,
+one format per target — google/fuzzing `good-fuzz-target`, libFuzzer manual, AFL++ docs, Go fuzz
+docs; R1 §3.2, §5.1) and the Fuzzing Book's lessons that random inputs "exercise mostly input
+processing functionality" and that an already-fuzzed target returns nothing (R4 F1, M1, F9).
+**Empirical record**: Go issue-tracker finds are almost all in `debug/*`, `archive/*`,
+`encoding/*`, `image/*`, `net/*/html`, `regexp` (R7 §3.6); the Rust trophy case is dominated by
+parsers, decoders and codecs (R9 §3.7); Python finds are in parsers and C extensions (R8 §3.2).
+**Inference**: "fuzzing pays off on a narrow class of code" combines the two; no per-language
+yield study exists ([[FTW-OQ-007-per-language-yield-statistics]]), so the gate states the
+preconditions and the record, not a yield percentage.
+
+Evaluate top to bottom; the first "do not fuzz" or "out of scope" row that matches wins. Every per-language annex
 agrees on every row (R1 §5.1; R4 §5.1; R6 §5.4; R7 §5.4; R8 §5.1; R9 §5.3).
 
 ## Hard stops
@@ -38,15 +52,19 @@ agrees on every row (R1 §5.1; R4 §5.1; R6 §5.4; R7 §5.4; R8 §5.1; R9 §5.3)
 | Memory-safe total function, no resource amplification, no oracle beyond crash | **Unit tests suffice.** | crash-oracle bug set is empty for such code (R1 §3.9, inference) |
 | Finite enumerable domain (three enum arguments, seven weekdays) | **Exhaustive table test.** | R6 §5.4; R7 E3 |
 
-## Fuzz or property-test
+## Fuzz, or out of scope for this agent
+
+Rows marked `out-of-scope: pbt-track` are handed to the property-based-testing track
+([[fuzzing-vs-pbt-boundary]], [[FTW-D-008-pbt-out-of-scope]]); the agent records the reason in the
+charter and writes nothing for them.
 
 | Target characteristic | Method | Oracles |
 |---|---|---|
 | Untrusted raw bytes: decoders, decompressors, archive/image/font parsers, wire frames | coverage-guided greybox on bytes; real files as seeds; dictionary for tokens | crash + timeout + allocation bound + round trip where an encoder exists |
 | Structured text: JSON-like, YAML/TOML, URLs, regexes, templates, DSLs, headers | greybox + seeds + dictionary; grammar or typed generation only if <50 % of the corpus passes validation after the first run ([[input-shape-triage]]) | round trip, differential versus a reference, "never panics, returns error" |
-| Typed API over ints/floats/strings/structs/enums | property-based test first (Hypothesis, proptest, rapid); bridge into the engine only on hot untrusted paths | invariant, postcondition, metamorphic, model-based ([[oracle-ladder]]) |
-| Numeric or algorithmic code | property test with metamorphic and differential oracles | never crash-only |
-| Stateful API (containers, caches, protocol state machines, in-memory clients) | model-based state machine (`proptest-state-machine`, `RuleBasedStateMachine`, rapid `T.Repeat`), or an enum-of-operations trace under the coverage engine for long sequences | model equality + invariants after every transition |
+| Typed API over ints/floats/strings/structs/enums whose risk is a violated law (commutativity, identity, ordering) | `out-of-scope: pbt-track`. Fuzz only when the same API is reachable from untrusted bytes: then the fuzz target decodes the bytes with a fuzzing-side decoder (`arbitrary`, go-fuzz-headers, `FuzzedDataProvider`) and checks round trip or invariants inside the target. | round trip, invariants, resource limits ([[oracle-ladder]]) |
+| Numeric or algorithmic code whose only oracle is a metamorphic relation | `out-of-scope: pbt-track`. Fuzz only when a reference implementation exists (differential target) or the input is a byte/text format. | differential; never crash-only |
+| Stateful API (containers, caches, protocol state machines, in-memory clients) | Model-based state-machine testing is `out-of-scope: pbt-track`. In scope only as a fuzz target that decodes an operation sequence from bytes (`Vec<Op>` with `arbitrary`, go-fuzz-headers loop, `FuzzedDataProvider` loop) when the charter names crash, invariant or resource objectives and sequences are long enough for coverage guidance to matter. | invariants after every operation, resource limits, crash |
 | `unsafe`, cgo/FFI, C extensions | greybox with ASan (UBSan too for Python native); the harness touches every returned reference | sanitizer + crash |
 | Two implementations of one specification | differential fuzzing; confirm the spec defines all behaviours first | normalised equality |
 
@@ -61,5 +79,6 @@ format or API family per target; split above 20–30 k reachable edges (R1 S1).
 ## Design consequence
 
 The gate is step 1 of [[agent-procedure]] and the body of [[skill-fuzzing-applicability]]. Its
-output is one line — `fuzz(method, oracle)` / `property-test` / `unit-test` / `do-not-fuzz` — with
-the matching row quoted, so [[eval-family-A-gate]] can grade it deterministically.
+output is one line — `fuzz(method, oracle)` / `out-of-scope: pbt-track` / `out-of-scope: unit-tests`
+/ `do-not-fuzz` — with the matching row quoted, so [[eval-family-A-gate]] can grade it
+deterministically. A `fuzz` outcome is followed by the [[fuzzing-charter]] before any harness.

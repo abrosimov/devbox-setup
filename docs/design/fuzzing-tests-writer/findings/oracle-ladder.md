@@ -16,7 +16,7 @@ addresses: ["[[H4-crash-only-oracle]]"]
 grounded_in: ["[[01-methods-and-applicability|R1]]", "[[04-fuzzingbook-part1-lexical|R4]]", "[[06-fuzzingbook-parts3-5|R6]]", "[[07-lang-go|R7]]", "[[08-lang-python|R8]]", "[[09-lang-rust|R9]]"]
 realised_by: ["[[skill-fuzzing-applicability]]", "[[skill-go-fuzzing]]", "[[skill-python-fuzzing]]", "[[skill-rust-fuzzing]]"]
 tested_by: ["[[eval-family-B-oracle]]"]
-related: ["[[applicability-gate]]", "[[reporting-and-claim-hygiene]]"]
+related: ["[[applicability-gate]]", "[[reporting-and-claim-hygiene]]", "[[pbt-agent-prompts]]", "[[fuzzing-vs-pbt-boundary]]"]
 ---
 # Oracle ladder
 
@@ -48,17 +48,19 @@ security issues — R1 S15).
   `except Exception` is only acceptable in a documented differential harness (R8 §3.2).
 - Rust ASan fires only on access: harnesses over FFI must touch every returned reference (R9 C17).
 
-## Property catalogue and triage rubric
+## Borrowed discipline
 
-Reused from the two existing agent prompts that agree on the discipline (R8 §3.5): round trip,
-inverse, equivalent implementations, idempotence, commutativity/associativity, invariants,
-confluence, metamorphic, single entry point, stateful. Propose only properties with evidence from
-docstrings, callers or type hints; strategies sound and ~90 % complete; no unnecessary constraints;
-triage (reproducible → legitimate → impactful) before calling anything a bug; "if nothing valuable
-turns up, say so and stop".
+The relations on rungs 1–5 are the same relations a property-based test would state; here they are
+written **inside the fuzz target** and checked on engine-generated inputs, which is what the Go
+tutorial, the Go blog and the rust-url and ujson findings do (R7 §3.6, R9 §3.7, R8 §3.2). The two
+existing PBT agent prompts supply a discipline this agent borrows in fuzzing form — evidence before
+proposing, a triage rubric (reproducible → legitimate → impactful), "say so and stop" — see
+[[pbt-agent-prompts]]; their property catalogue as a deliverable stays on the PBT track
+([[fuzzing-vs-pbt-boundary]]).
 
 ## Design consequence
 
-The ladder, the contract-statement header and the property templates live in
-[[skill-fuzzing-applicability]]; the per-language review checklists reject a "does not panic"
-harness on a typed API ([[eval-family-B-oracle]]).
+The ladder, the contract-statement header and fuzz-target templates for round trip, differential
+and invariant checks live in [[skill-fuzzing-applicability]]; the per-language review checklists
+reject a "does not panic" harness where a stronger rung is available ([[eval-family-B-oracle]]).
+The oracle rung is a charter field ([[fuzzing-charter]]).

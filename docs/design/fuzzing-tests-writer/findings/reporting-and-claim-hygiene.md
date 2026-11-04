@@ -16,12 +16,14 @@ addresses: ["[[H6-crash-counting-reports]]", "[[H2-no-stopping-rule]]"]
 grounded_in: ["[[06-fuzzingbook-parts3-5|R6]]", "[[02-stopping-and-corpus-lifecycle|R2]]", "[[01-methods-and-applicability|R1]]"]
 realised_by: ["[[skill-fuzzing-campaign]]"]
 tested_by: ["[[eval-family-F-reporting]]", "[[eval-family-G-triage]]"]
-related: ["[[stopping-algorithm]]", "[[corpus-lifecycle]]"]
+related: ["[[stopping-algorithm]]", "[[corpus-lifecycle]]", "[[fuzzing-charter]]"]
 ---
 # Reporting and claim hygiene
 
 ## The campaign report (R2 §5.3, R6 §5.3)
 
+0. **Charter restatement** ([[fuzzing-charter]]): entry point, objective, oracle, out of scope,
+   verifiable result, budget class — verbatim from the charter fixed before the work.
 1. **Product identifier**: module/crate/package, commit, toolchain version, OS/arch, sanitizer or
    race-detector flags.
 2. **Campaign**: engine, harness path, budget class, seed corpus origin and size, dictionary, wall
@@ -35,7 +37,9 @@ related: ["[[stopping-algorithm]]", "[[corpus-lifecycle]]"]
 4. **Coverage**: per-file/function coverage of the corpus run, with reachable-but-unreached areas as
    the next seeds.
 5. **Corpus committed at** / **working corpus at** (not committed).
-6. **What I need from you** — last section (the repository's Stop hook enforces the position).
+6. **Charter check**: each item of the verifiable result marked met / not met, with the evidence
+   (path, command, decision token).
+7. **What I need from you** — last section (the repository's Stop hook enforces the position).
 
 ## Claim hygiene (R1 §5.4; fuzz-evaluator guidelines read in full, Klees abstract level)
 

@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150403"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: component
@@ -36,8 +37,6 @@ interrupted, declare "saturated" on a quiet quarter-hour, or report crash counts
 - The campaign report template and the claim-hygiene rules of [[reporting-and-claim-hygiene]].
 - How to call `fuzz_campaign.py` and `fuzz_corpus.py` ([[automation-scripts]]) and read their JSON.
 
-## Size and shape
-
 ≤ 300 lines plus `references/engine-output-cheatsheet.md` and `references/stopping-theory.md`
 ([[reference-documents]]).
 
@@ -46,5 +45,3 @@ interrupted, declare "saturated" on a quiet quarter-hour, or report crash counts
 Trigger queries around "how long should we fuzz", "is the corpus saturated", "what do these
 libFuzzer lines mean", "write up the fuzzing results"; negatives about benchmark timing and
 flaky-test retries. Content evals from [[eval-family-D-stopping]] and [[eval-family-F-reporting]].
-
-Sources: R2 §5, R6 §5.2–5.3, R1 §5.4.

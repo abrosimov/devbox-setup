@@ -29,27 +29,20 @@ accept "does not crash" as the oracle in memory-safe code.
 
 ## Carries
 
-1. **Gate table** of [[applicability-gate]] with the seven preconditions, the grounding paragraph
-   (what is sourced, what is empirical record, what is inference) and the four outcomes:
-   `fuzz(method, oracle)` / `out-of-scope: pbt-track` / `out-of-scope: unit-tests` / `do-not-fuzz`,
-   each with the matching row quoted.
+1. **Gate tables** of [[applicability-gate]]: hard stops, fuzz-or-out-of-scope rows and the seven
+   preconditions, each with its evidence, and the one-line outcome with its matching row quoted.
 2. **Fuzzing-versus-PBT boundary**: the definitions table and the tool-by-tool table of
-   [[fuzzing-vs-pbt-boundary]] (Go `testing.F` vs rapid incl. `rapid.MakeFuzz`; cargo-fuzz/`arbitrary`
-   vs proptest, bolero as hybrid; Atheris/`FuzzedDataProvider` vs Hypothesis, `fuzz_one_input` and
-   HypoFuzz as hybrids), with the conditions under which a hybrid is allowed.
-3. **Charter template** of [[fuzzing-charter]] and the rule that no harness is written before it.
-4. **Oracle ladder** of [[oracle-ladder]] in fuzz-target form: contract-statement header, round-trip,
-   differential and invariant checks inside the target, resource limits, the per-ecosystem facts
-   that change what the bottom rungs see.
-5. **Borrowed discipline** from [[pbt-agent-prompts]]: evidence before proposing, triage rubric,
-   "say so and stop".
+   [[fuzzing-vs-pbt-boundary]], with the conditions under which a hybrid bridge is allowed.
+3. **Charter** template and rules of [[fuzzing-charter]].
+4. **Oracle ladder** of [[oracle-ladder]] in fuzz-target form: contract-statement header; round-trip,
+   differential and invariant checks inside the target; resource limits; the ecosystem facts that
+   change what the bottom rungs see.
+5. **Borrowed discipline** of [[pbt-agent-prompts]] in its fuzzing form.
 6. **Anti-pattern list** with the evidence behind each entry (R1 §3.12), and pairwise option
    testing as the answer for flag spaces (R6 §5.4).
 
-## Size and shape
-
-≤ 300 lines; decision tables, no narrative; `references/bug-class-evidence.md` and
-`references/fuzzingbook-map.md` ([[reference-documents]]).
+≤ 300 lines of decision tables; references `bug-class-evidence.md` and `fuzzingbook-map.md`
+([[reference-documents]]).
 
 ## Evals shipped with the skill
 
@@ -58,5 +51,3 @@ for the decoder", "is fuzzing worth it here", "define the goal of the fuzzing ca
 negatives: "add table-driven tests for the parser", "write a Hypothesis property for this
 function", "fuzzy-match these strings", "speed up the CI test job") and `evals/evals.json` with
 the gate and charter cases of [[eval-family-A-gate]] and [[eval-family-H-charter]].
-
-Sources: R1 §5.1–5.5, R4 §5.1/5.4, R6 §5.4, R7 §3.5, R8 §3.5, R9 §3.3–3.4.

@@ -23,11 +23,9 @@ related: ["[[repository-placement]]", "[[automation-scripts]]"]
 ---
 # Agent procedure — `fuzzing_tests_writer`
 
-Written per SYSE.47 ([[fpf-framing]]): each step names its evidence in, its return out, and the
-predicate that decides the continuation. Limits that matter are enforced outside the model: the
-engine cap is a command-line flag, the campaign script refuses to run without one, the tool
-allow-list excludes network and destructive commands, and no harness file is written before the
-charter exists.
+Limits are enforced outside the model: the engine cap is a command-line flag, the campaign script
+refuses to run without one, the tool allow-list excludes network and destructive commands, and no
+harness file is written before the charter exists.
 
 | Step | Evidence in | Action | Return | Continuation predicate |
 |---|---|---|---|---|
@@ -41,6 +39,8 @@ charter exists.
 | 7 Triage | artefacts, crash states | minimise, reproduce three times, bucket, convert to the ecosystem's regression fixture ([[corpus-lifecycle]]) | bucket list with reproducers | unreproducible → separate list; contract panics and sub-1 s "hangs" are triaged out, not filed |
 | 8 Report | all of the above | restate the charter, fill the template in [[reporting-and-claim-hygiene]], mark each verifiable-result item met / not met, list decisions needed | report | "What I need from you" is last (Stop hook) |
 
+The step shape (evidence in, return, continuation predicate) follows SYSE.47 ([[fpf-framing]]).
+
 ## Frontmatter decisions (Claude definition; archetype Code-Writing per `agent-builder`)
 
 - `tools: Read, Write, Edit, Grep, Glob, Bash`; no `WebFetch`/`WebSearch`.
@@ -52,13 +52,11 @@ charter exists.
   [[skill-rust-fuzzing]]) plus `agent-communication`, `shared-utils`, `agent-base-protocol`,
   `code-writing-protocols`, `lint-discipline`, `code-comments`, and the existing
   `go-engineer`/`python-engineer` for idiom. The `go-testing`/`python-testing` skills are loaded
-  only for the seed-corpus-as-unit-test wiring, not for test authoring.
+  only for the seed-corpus-as-unit-test wiring.
 - Codex TOML adapter mirrors the Claude file as the other 29 do; the Gemini copy comes from `dot_ai`.
 
 ## Relations to other agents and commands
 
-- `unit_tests_writer` receives the `out-of-scope: unit-tests` list; the future PBT agent receives
-  the `out-of-scope: pbt-track` list with reasons ([[FTW-D-008-pbt-out-of-scope]]).
 - `code_reviewer` gets the three language fuzz-review checklists appended to its skill list.
-- A new `/techne-fuzz` command routes to this agent ([[FTW-D-005-techne-fuzz-command]]) and passes
-  the budget class; it does not pass a charter — the agent writes it.
+- `/techne-fuzz` ([[FTW-D-005-techne-fuzz-command]]) routes to this agent and passes the budget
+  class; the agent writes the charter itself.

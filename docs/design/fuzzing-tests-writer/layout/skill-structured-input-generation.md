@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150404"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: component
@@ -35,10 +36,9 @@ validation step; agents then extend the budget instead of changing technique.
   (decompress → mutate → recompress) for libFuzzer, Atheris and AFL++ (R3 §7).
 - Structured reduction checklist: same-symptom runner, determinism, reducer by structure, keep
   candidates valid, report minimal input plus original (R5 §5.iii).
-- One snippet per language (R3 §5.3): Rust `Vec<Op>` with `Arbitrary`; Python Hypothesis strategy
-  under `fuzz_one_input`; Go `rapid.MakeFuzz` state machine — each with its limits.
-
-## Size and shape
+- One fuzzing-side decoder snippet per language (R3 §5.3), each with its limits: Rust `Vec<Op>`
+  with `Arbitrary`, Go go-fuzz-headers loop, Python `FuzzedDataProvider` loop. The `fuzz_one_input`
+  and `rapid.MakeFuzz` bridges appear only under the conditions in [[fuzzing-vs-pbt-boundary]].
 
 ≤ 300 lines plus `references/grammar-and-repair.md` ([[reference-documents]]).
 
@@ -47,5 +47,3 @@ validation step; agents then extend the budget instead of changing technique.
 Trigger queries around "seeds for the parser", "the fuzzer never gets past the CRC", "generate
 valid inputs for", "write a grammar for fuzzing"; negatives about test data factories and fixture
 cleanup. Content evals from [[eval-family-C-structure]].
-
-Sources: R3 §5, R5 §5.i–5.iii, R4 §5.3.

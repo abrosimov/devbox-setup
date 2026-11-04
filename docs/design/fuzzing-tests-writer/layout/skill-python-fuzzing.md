@@ -30,28 +30,23 @@ uncaught `ValueError` as a finding.
 
 ## Carries (from [[language-facts-python]])
 
-- Scope rule: Atheris for parsers, decoders, decompressors over `bytes`/`str` and for any C-extension
-  boundary; HypoFuzz as a coverage-guided engine over an **existing** Hypothesis suite (licence
-  stated first); `out-of-scope: pbt-track` for typed properties, stateful models and schema-based API
-  testing; the `fuzz_one_input` bridge only for an existing `@given` test
-  ([[fuzzing-vs-pbt-boundary]]).
-- Atheris harness skeleton (R8 §5.3), layout (`tests/fuzz/<name>_fuzzer.py`, `corpus/<name>/`,
-  `<name>.dict`), `instrument_imports` / `instrument_all` cost, `-atheris_runs=N`, the "No interesting
-  inputs" diagnostic, `FuzzedDataProvider` idioms for structured knobs, custom mutators for
-  compressed input, expected-exception classification, crash files as regression seeds.
-- Oracles in the target: round trip, differential against a second implementation (the OSS-Fuzz
-  ujson pattern), timeouts as findings (CPython parser DoS), resource limits.
-- Native extensions: `-fsanitize=address,fuzzer-no-link`, `LD_PRELOAD asan_with_fuzzer.so`,
-  `ASAN_OPTIONS=detect_leaks=0`, `enable_python_coverage=False`; never preload for pure Python.
-- HypoFuzz operation (collection via pytest, shared database, run ≥ 1 h, restart workers) and what
-  it does and does not report; no plateau logic for plain Hypothesis runs.
+- The decision rule (Atheris, HypoFuzz, `fuzz_one_input`, `out-of-scope: pbt-track` hand-offs),
+  with the HypoFuzz licence stated first and the `fuzz_one_input` condition of
+  [[fuzzing-vs-pbt-boundary]].
+- Atheris harness skeleton (R8 §5.3), the `tests/fuzz/` layout, instrumentation and its cost,
+  `-atheris_runs=N`, the "No interesting inputs" diagnostic, `FuzzedDataProvider` idioms for
+  structured knobs, custom mutators for compressed input, expected-exception classification, crash
+  files as regression seeds.
+- Oracles in the target: round trip, differential against a second implementation, timeouts as
+  findings, resource limits.
+- Native extensions: sanitizer build, ASan preload and `ASAN_OPTIONS`, `enable_python_coverage`;
+  pure-Python targets run without a preload.
+- HypoFuzz operation and what it does and does not report; no plateau logic for plain Hypothesis
+  runs.
 - OSS-Fuzz Python integration and CI recipe (R8 §5.6, fuzz rows only).
 - Review checklist (R8 §5.5, fuzz items).
 
-## Size and shape
-
-≤ 250 lines. Hypothesis authoring (strategies, settings, health checks, `@example`) is **not** in
-this skill; it belongs to the PBT track.
+≤ 250 lines.
 
 ## Evals shipped with the skill
 
@@ -59,5 +54,3 @@ Trigger queries: "fuzz this parser with Atheris", "libFuzzer for Python", "our C
 decoder", "fuzz_one_input under Atheris"; negatives: "property-based test with Hypothesis",
 "pytest fixtures for the database". Content evals: R8 §6 cases 4, 5, 7, 8, 11 (fuzz-side) plus
 hand-off cases.
-
-Sources: R8 §3.2–3.4, §5.

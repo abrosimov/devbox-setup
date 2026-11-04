@@ -31,25 +31,18 @@ for (or the reverse).
 
 ## Carries (from [[language-facts-go]], Go 1.27.3)
 
-- `testing.F` contract, allowed types, one-`f.Fuzz` rule; platform limits; what the engine counts
-  as a failure and what it cannot see (OOM-killed worker).
-- Harness skeleton (R7 §5.2) and the ten-point review checklist (R7 §5.3).
-- Scope rule: native `f.Fuzz` for bytes/strings from a format; `out-of-scope: pbt-track` for typed
-  laws (rapid is PBT); `out-of-scope: unit-tests` for enumerable domains and thin wrappers. The
-  `rapid.MakeFuzz` bridge only when a rapid property already exists and the charter names coverage
-  guidance ([[fuzzing-vs-pbt-boundary]]).
+- The fact table as decision rows: `testing.F` contract and allowed types,
+  platforms, what the engine counts as a failure and what it cannot see, seed corpus (`f.Add` +
+  `testdata/fuzz/`) and `$GOCACHE/fuzz`, failing-input handling, the invocation template, `-json`
+  parsing incl. `OutputType`, `GODEBUG=fuzzdebug=1`, `-race` cost, the OSS-Fuzz / ClusterFuzzLite
+  shim differences, `F.ArtifactDir` + `-artifacts` for campaign artefacts.
+- Its decision rule for Go entry points, with the `rapid.MakeFuzz` condition of
+  [[fuzzing-vs-pbt-boundary]].
 - Structure from bytes: typed `f.Fuzz` arguments, go-fuzz-headers `ConsumeFuzzer`/`GenerateStruct`,
-  hand-written decoders; `file2fuzz` for raw seeds; costs stated (instrumented decoder, opaque
-  corpus, no structured shrinking).
-- Seed corpus semantics (`f.Add` + `testdata/fuzz/`, baseline failure on committed crashers),
-  `$GOCACHE/fuzz` and `go clean -fuzzcache`.
-- Invocation template, `-json` parsing incl. `OutputType`, `GODEBUG=fuzzdebug=1`, `-race` cost.
-- OSS-Fuzz / ClusterFuzzLite shim differences (`F.Add` no-op, named types panic, seeds as zip).
-- CI recipe (R7 §5.5) and `F.ArtifactDir` + `-artifacts` for campaign artefacts.
+  hand-written decoders, `file2fuzz` for raw seeds, with the costs stated.
+- Harness skeleton (R7 §5.2), ten-point review checklist (R7 §5.3), CI recipe (R7 §5.5), and the
+  twelve rules R1–R12 of R7 §5.1 tagged by hypothesis.
 - Toolchain: `GOTOOLCHAIN=go1.27.3` with `GOPROXY=https://proxy.golang.org,direct`.
-- Twelve rules R1–R12 of R7 §5.1 tagged by hypothesis.
-
-## Size and shape
 
 ≤ 250 lines; pointer paragraph added to the existing `go-testing` skill.
 
@@ -58,5 +51,3 @@ for (or the reverse).
 Trigger queries: "write a Go fuzz test for", "testing.F", "go test -fuzz keeps failing", "fuzz the
 decoder in pkg/codec"; negatives: "table-driven tests with testify", "rapid property test for
 Money", "benchmark this Go function". Content evals: R7 §6 E1–E9 with E2 restated as a hand-off.
-
-Sources: R7 §5, §8.

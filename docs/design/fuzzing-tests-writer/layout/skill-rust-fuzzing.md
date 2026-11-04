@@ -30,12 +30,11 @@ as minimal, and proptest tests get written where a fuzz target was asked for.
 
 ## Carries (from [[language-facts-rust]])
 
-- Scope rule: cargo-fuzz + ASan for byte/text parsers, decoders, decompressors, deserialisers,
-  `unsafe`, FFI; bolero as a harness front-end when one target must run in `cargo test` and under a
-  fuzzer; `out-of-scope: pbt-track` for typed laws and model-based state machines (proptest,
-  `proptest-state-machine`, quickcheck) ([[fuzzing-vs-pbt-boundary]]).
-- `fuzz_target!` + `#[derive(Arbitrary)]` skeleton (R9 §5.1, first block); `Vec<Op>` sequence
-  pattern; `fuzz_mutator!` for encoded containers; `Corpus::Reject` for invalid input.
+- The decision rule (cargo-fuzz + ASan, bolero as harness front-end, `out-of-scope: pbt-track`
+  hand-offs) with the boundary conditions of [[fuzzing-vs-pbt-boundary]].
+- `fuzz_target!` + `#[derive(Arbitrary)]` skeleton (R9 §5.1, first block only; the proptest skeleton
+  there stays on the PBT track); `Vec<Op>` sequence pattern; `fuzz_mutator!` for encoded containers;
+  `Corpus::Reject` for invalid input.
 - Twelve-point review checklist (R9 §5.2).
 - Layout and git-ignore facts; corpus/artefact commit policy; minimised crashes as `#[test]`
   fixtures or bolero's `__fuzz__`.
@@ -44,14 +43,10 @@ as minimal, and proptest tests get written where a fuzz target was asked for.
 - Nightly pinning and the CI recipe (R9 §5.5); OSS-Fuzz / ClusterFuzzLite integration.
 - afl.rs / honggfuzz as stable-toolchain alternatives; Miri and Kani as related tools.
 
-## Size and shape
-
-≤ 300 lines. The proptest skeleton of R9 §5.1 is **not** carried; it goes to the PBT track.
+≤ 300 lines.
 
 ## Evals shipped with the skill
 
 Trigger queries: "cargo fuzz target for", "derive Arbitrary", "fuzz/artifacts crash what next",
 "ASan for this FFI wrapper"; negatives: "proptest for this struct", "add a benchmark with
 criterion". Content evals: R9 §6 E1–E3, E5, E7–E12, with E4 and E6 restated as hand-offs.
-
-Sources: R9 §5.

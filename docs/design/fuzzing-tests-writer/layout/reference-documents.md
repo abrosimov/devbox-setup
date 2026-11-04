@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150408"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: component
@@ -18,10 +19,9 @@ related: ["[[research-index]]", "[[repository-placement]]"]
 ---
 # Reference documents
 
-Reference files live next to the skill that cites them (`<skill>/references/`), so Codex and
-Gemini receive them with the skill ([[FTW-D-006-references-beside-skills]]). Nothing goes into
-`dot_claude/docs/` except an index. The research annexes stay in this vault as the audit trail and
-are cited by file and section, not copied.
+Reference files live in `<skill>/references/`, so Codex and Gemini receive them with the skill
+([[FTW-D-006-references-beside-skills]]); `dot_claude/docs/` gets only an index. The research
+annexes stay in this vault and are cited by file and section.
 
 | Document | Lives in | Derived from | Content |
 |---|---|---|---|

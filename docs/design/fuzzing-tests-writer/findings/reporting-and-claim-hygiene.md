@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150206"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: finding
@@ -20,10 +21,13 @@ related: ["[[stopping-algorithm]]", "[[corpus-lifecycle]]", "[[fuzzing-charter]]
 ---
 # Reporting and claim hygiene
 
+The campaign report has the sections below in this order; `fuzz_campaign.py` renders it from its
+JSON ([[automation-scripts]]).
+
 ## The campaign report (R2 §5.3, R6 §5.3)
 
 0. **Charter restatement** ([[fuzzing-charter]]): entry point, objective, oracle, out of scope,
-   verifiable result, budget class — verbatim from the charter fixed before the work.
+   verifiable result, budget class, verbatim from the charter.
 1. **Product identifier**: module/crate/package, commit, toolchain version, OS/arch, sanitizer or
    race-detector flags.
 2. **Campaign**: engine, harness path, budget class, seed corpus origin and size, dictionary, wall
@@ -43,7 +47,10 @@ related: ["[[stopping-algorithm]]", "[[corpus-lifecycle]]", "[[fuzzing-charter]]
 
 ## Claim hygiene (R1 §5.4; fuzz-evaluator guidelines read in full, Klees abstract level)
 
-- Report bugs, not crashes: group by crash state, reproduce, minimise, then count.
+- Report bugs, not crashes: group by crash state (sanitizer/panic type + top frames), reproduce,
+  minimise, then count. Stack hashes over-count, ~46 per bug, and collide, ~16 % (Klees et al.,
+  abstract level); timeouts and OOMs cannot be deduplicated at all, so one each per target; ground
+  truth is "one fix" (R2 §3.3 C8).
 - One short run is not evidence a target is clean; state exec/s, runtime, coverage from a neutral
   build, number of trials.
 - Name the saturation signal used (windowed rate, `p0`, quiet AFL++ cycle) and say which.
@@ -51,10 +58,3 @@ related: ["[[stopping-algorithm]]", "[[corpus-lifecycle]]", "[[fuzzing-charter]]
 - Triage out before filing: panics permitted by contract (`Must*`), "hangs" that are legitimate
   work under the engine's 1 s budget (x/image/webp #56932), unreproducible artefacts (listed
   separately).
-
-## Design consequence
-
-The template and rules are the closing section of [[skill-fuzzing-campaign]]; `fuzz_campaign.py`
-renders the template from its JSON ([[automation-scripts]]); [[eval-family-F-reporting]] greps for
-the bucket table, reproduce command, product id and section order; [[eval-family-G-triage]] checks
-that contract panics and sub-second hangs are not filed.

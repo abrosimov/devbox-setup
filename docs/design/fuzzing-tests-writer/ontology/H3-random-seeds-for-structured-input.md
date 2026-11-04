@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150004"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: hypothesis
@@ -22,7 +23,7 @@ related: ["[[ontology]]"]
 
 **Hypothesis.** Earlier agents seeded with random bytes or with the unit-test inputs only; structured inputs (parsers, protocols, typed APIs) never got past validation and coverage stayed shallow.
 
-**Verdict.** Confirmed with mechanism and numbers.
+**Verdict.** Confirmed with mechanism and numbers; the remedy is chosen by input shape in [[input-shape-triage]].
 
 ## Evidence
 
@@ -30,11 +31,3 @@ related: ["[[ontology]]"]
 - Checksums gate everything: the first CRC, magic, length field or parse step rejects almost every mutant — R3 §0 (libFuzzer structure-aware doc, good-fuzz-target).
 - Generate-then-repair beats generate-then-reject ≈10× (Luhn example); Hypothesis `filter_too_much` fires at 50 rejected draws — R5 §0, R8 §3.1.
 - Go cannot take structured arguments at all; structure must be decoded inside the target — R7 §3.4, R3 §5.3.
-
-## Addressed by
-
-[[input-shape-triage]] (shape table, seed checklist, construct-not-filter), carried by [[skill-structured-input-generation]] and the per-language skills.
-
-## Tested by
-
-[[eval-family-C-structure]]: ten cases including the CRC frame, the lenient parser where a grammar is overkill, and the dry-run rejection gate.

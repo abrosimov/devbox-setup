@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150102"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: framing
@@ -28,9 +29,8 @@ related: ["[[fpf-framing]]", "[[agent-procedure]]", "[[repository-placement]]"]
   [[skill-fuzzing-campaign]], [[skill-structured-input-generation]]); three language skills
   ([[skill-go-fuzzing]], [[skill-python-fuzzing]], [[skill-rust-fuzzing]]); [[reference-documents]];
   [[automation-scripts]]; [[eval-fixtures]] and suites.
-- **Crossings**: receives work from `/techne-fuzz` (see [[FTW-D-005-techne-fuzz-command]]) or the
-  user; produces files for the repository and a report for `code_reviewer` / the user; consumes the
-  engine command lines (`go test -fuzz`, `cargo fuzz`, `pytest`, Atheris harnesses) and their stdout.
-- **Context rules**: British English; `techne-` prefix for any command; skills vendor-neutral to be
-  admitted to the Codex shared list; the global rules budget is untouched because nothing here goes
-  into the global rules.
+- **Crossings**: receives work from `/techne-fuzz` ([[FTW-D-005-techne-fuzz-command]]) or the user;
+  produces files for the repository and a report for `code_reviewer` / the user; consumes the engine
+  command lines (`go test -fuzz`, `cargo fuzz`, `pytest`, Atheris harnesses) and their stdout.
+- **Context rules**: British English; `techne-` prefix for any command; skills vendor-neutral so
+  that they are admitted to the Codex shared list; nothing here goes into the global rules.

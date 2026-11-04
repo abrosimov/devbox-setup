@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150303"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: finding
@@ -34,7 +35,7 @@ Source: [[09-lang-rust|R9]] (cargo-fuzz 0.13.2, arbitrary 1.5.0, proptest MSRV 1
 | Flags and output | `-- -max_total_time=S -max_len=N -rss_limit_mb=2048 -dict=…`; libFuzzer defaults `-timeout=1200`, `-rss_limit_mb=2048`, `-max_len` guessed from the corpus; output `cov:` / `ft:` / `corp:` / `NEW` / `REDUCE` (`ft`, `lim`, `L` legend UNVERIFIED — [[FTW-OQ-002-libfuzzer-legend]]). |
 | Commands | `cargo fuzz init/add/build/run/list`; `cmin` = `-merge=1`; `tmin` = `-minimize_crash=1 -runs=255`; `coverage` = `-Cinstrument-coverage` over the corpus + `llvm-profdata merge`; `fmt` prints the `Debug` of a typed input; reproduce with `cargo fuzz run <t> fuzz/artifacts/<t>/crash-…`. |
 | Regression fixtures | copy the minimised artefact into `tests/fuzz_regressions/<t>/` and replay it from a `#[test]` (stable, no cargo-fuzz needed in `cargo test`); or bolero's committed `__fuzz__`; proptest: commit `proptest-regressions/` (a changed strategy can silently stop a seed reproducing). |
-| proptest (boundary facts only) | PBT track. Facts the boundary needs: it persists failing seeds in `proptest-regressions/`; it has no coverage feedback; no proptest/quickcheck finds appear in the trophy case; `proptest-arbitrary-interop` consumes this agent's `Arbitrary` impls on the PBT side. |
+| proptest (hand-off facts) | persists failing seeds in `proptest-regressions/`; no coverage feedback; no proptest/quickcheck finds appear in the trophy case; `proptest-arbitrary-interop` consumes this agent's `Arbitrary` impls on the PBT side. |
 | CI | pin `nightly-YYYY-MM-DD` (the book's recipe uses floating `nightly`; OSS-Fuzz uses latest nightly) and `cargo-fuzz --version`; `cargo fuzz build --debug-assertions <t>` as compile check; 300 s smoke per target; upload `fuzz/artifacts` on failure; ClusterFuzzLite `code-change` 600 s / `batch` 3 600 s / `prune` / `coverage` with a storage repo for long runs; keep `cargo test` (proptest/bolero replay) on stable so the oracle survives a broken nightly. |
 | Other engines | afl.rs builds on stable (only `-C` flags) unless CMPLOG/plugins; honggfuzz-rs stable; no primary source states a libFuzzer-vs-AFL selection rule. Miri and Kani are related, not fuzzing (run harnesses under Miri; bolero `--engine kani`). |
 | Yield evidence | chrono overflow, rmpv 2.9 GB `with_capacity` from a 15-byte input, ron stack overflow on 10 000 `{`, regex `unwrap`/UTF-8 boundary, rust-url round trip; quinn-proto advisories credit *absent* fuzzing coverage (RUSTSEC-2026-0037). |

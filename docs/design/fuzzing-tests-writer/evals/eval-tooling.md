@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150510"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: eval
@@ -55,7 +56,5 @@ and `--judge-model` in CI so a model rollout is not read as a regression; keep
 `aggregate-result.json` per run with model and date. Use `--ablation none` to halve cost when the
 with/without delta is not needed.
 
-## What `/skill-doctor` does not do
-
-It is a usage and context-cost report, not a behavioural check; `claude plugin validate` checks
-structure only.
+`/skill-doctor` reports usage and context cost and `claude plugin validate` checks structure;
+neither grades behaviour.

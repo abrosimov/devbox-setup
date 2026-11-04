@@ -1,6 +1,7 @@
 ---
 note_id: "20261104100004"
 created: 2026-11-04
+modified: 2026-11-04
 language: en
 type: design
 subtype: framing
@@ -18,9 +19,8 @@ opens: ["[[FTW-OQ-011-agentic-pbt-validity]]"]
 ---
 # The two existing PBT agent prompts — what they are and what this agent borrows
 
-Both are **property-based-testing** prompts (R8 §3.5). They are recorded here because they are the
-only published, evaluated agent procedures in the neighbourhood, not because PBT is in scope
-([[fuzzing-vs-pbt-boundary]]).
+Both are **property-based-testing** prompts (R8 §3.5), recorded here as the only published,
+evaluated agent procedures in the neighbourhood of this agent ([[fuzzing-vs-pbt-boundary]]).
 
 ## 1. Hypothesis' own `.claude/commands/hypothesis.md` (HypothesisWorks/hypothesis, master)
 
@@ -58,8 +58,7 @@ Hatfield-Dodds, Carlini, 2025-10)
 | Outcome taxonomy bugs / no bugs / inconclusive | decision tokens plus bucket list; "inconclusive" = `BLOCKED_HARNESS` or discoverability failure |
 | Few high-value targets over many | one format or API family per target; attention allocation across targets by discovery rate |
 
-## What stays on the PBT track
-
-Strategy design, the property catalogue as deliverable, `@example` pinning, stateful models,
-Ghostwriter, the "sound and ~90 % complete" strategy rule, and the evaluation design over PyPI
-packages. The PBT agent, when it is built, should start from these two prompts.
+Not borrowed, because it belongs to the PBT agent: strategy design, the property catalogue as a
+deliverable, `@example` pinning, stateful models, Ghostwriter, the "sound and ~90 % complete"
+strategy rule, and the evaluation design over PyPI packages. That agent, when it is built, starts
+from these two prompts.

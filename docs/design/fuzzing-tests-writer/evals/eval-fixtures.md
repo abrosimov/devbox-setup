@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150502"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: eval
@@ -17,7 +18,7 @@ target_path: "tests/fuzzing_agent_evals/fixtures/<lang>/"
 ---
 # Eval fixtures
 
-One small repository per language, dependencies vendored (the eval sandbox limits network), each
+One small repository per language, dependencies vendored for the sandbox ([[eval-tooling]]), each
 with the same catalogue of entry points so cross-language cases are comparable.
 
 | Entry point | Expected gate outcome | Planted defect |
@@ -25,7 +26,7 @@ with the same catalogue of entry points so cross-language cases are comparable.
 | binary frame parser with length prefix and CRC, plus encoder | fuzz: greybox, round-trip oracle, CRC handled by flag or repair | out-of-range on a truncated length; encoder/decoder asymmetry on one field |
 | text config parser (`KEY=VALUE`, lenient) | fuzz: seeds + bytes + dictionary, no grammar | `%` look-ahead at end of string |
 | expression language with a strict parser and a grammar file in the repo | fuzz: grammar-generated seeds + engine | stack overflow at depth N |
-| typed money arithmetic with documented laws | `out-of-scope: pbt-track`; no file written; reason recorded in the charter | commutativity broken for one currency (left for the PBT track; this agent must not hunt it) |
+| typed money arithmetic with documented laws | `out-of-scope: pbt-track`; no file written; reason recorded in the charter | commutativity broken for one currency (left for the PBT track) |
 | `IsWeekend(time)` / three-enum pure function | exhaustive table test | none |
 | HTTP handler calling a database client | do not fuzz as is; extract the pure validator | none |
 | thin wrapper over the stdlib JSON decoder | do not fuzz the wrapper | none |
@@ -35,6 +36,6 @@ with the same catalogue of entry points so cross-language cases are comparable.
 | existing fuzz target with a committed failing seed (Go `testdata/fuzz/<hash>`, Rust `crash-*`, Hypothesis printed blob) | reproduce and fix or report; never delete the seed | the original bug still present |
 | pre-recorded campaign logs per engine (plateau, still productive, blocked, slow, unstable) | the matching decision token | n/a |
 
-The recorded logs need no live engine and double as unit-test fixtures for `fuzz_campaign.py`
+The recorded logs need no live engine and also serve as unit-test fixtures for `fuzz_campaign.py`
 ([[automation-scripts]]). Live-engine cases run with the `interactive` budget capped at 60 s inside
-the eval; stop-decision logic is exercised on recorded logs, not on long runs.
+the eval; stop decisions are exercised on the recorded logs.

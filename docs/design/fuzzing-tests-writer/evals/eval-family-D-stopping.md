@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150506"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: eval
@@ -40,6 +41,4 @@ Ten recorded-log cases, no live engine. Sources: R2 §6 E1–E4/E6–E8/E10; R6 
 - LLM judge: the justification cites the observable (window, exec/s, stability) and names the next
   escalation rung; Hypothesis cases get no plateau logic.
 
-The same logs are unit-test fixtures for `fuzz_campaign.py`, so the deterministic half of this
-family runs without a model. The ◇ defaults are written so that a wrong default flips a decision
-([[FTW-D-003-thresholds-as-flags]]).
+Cases are written so that a wrong ◇ default flips a decision ([[FTW-D-003-thresholds-as-flags]]).

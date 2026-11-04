@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150203"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: finding
@@ -20,10 +21,10 @@ related: ["[[corpus-lifecycle]]", "[[applicability-gate]]", "[[fuzzing-vs-pbt-bo
 ---
 # Input shape triage — structure versus bytes
 
-Byte mutation fails on structured input for a mechanical reason: the first checksum, magic
-number, length field or parse step rejects almost every mutant, so coverage stops at the validation
-layer (R3 §0; R4 §0: random `http://` prefix odds 1/96⁷). Three mechanically different remedies
-exist; the agent must choose one explicitly (R3 §0).
+Byte mutation fails on structured input because the first checksum, magic number, length field or
+parse step rejects almost every mutant, so coverage stops at the validation layer (R3 §0; R4 §0:
+random `http://` prefix odds 1/96⁷). Three mechanically different remedies exist; the agent chooses
+one explicitly, by input shape (R3 §0).
 
 ## Decision table by input shape (R3 §5.1, R5 §5.i)
 
@@ -65,18 +66,14 @@ rows, do not run longer (R3 §5.1).
 ## Seed-corpus checklist (R3 §5.2)
 
 1. Collect: unit-test fixtures, regression inputs, upstream corpora, recorded traffic or carved
-   calls; record provenance and licence. 2. Synthesise when thin: one input per grammar alternative,
-   enum variant or message type; explicit boundary values. 3. Mix: mostly valid, a few
-   one-field-invalid variants, never random garbage. 4. Keep each seed small; split large APIs.
+   calls; record provenance and licence.
+2. Synthesise when thin: one input per grammar alternative, enum variant or message type; explicit
+   boundary values.
+3. Mix: mostly valid, a few one-field-invalid variants, never random garbage.
+4. Keep each seed small; split large APIs.
 5. Dedupe with `afl-cmin` / `-merge=1` / `cargo fuzz cmin` (Go: no tool, rely on the fuzz cache and
-curation). 6. Discoverability: the target must gain coverage from an empty corpus too. 7. Maintain:
-every bug input goes back into the seeds; dictionary lives next to the target. 8. Input to
-[[stopping-algorithm]]: when merge adds nothing from a fresh run and the synthesis list is exhausted,
-the corpus is saturated for this harness.
-
-## Design consequence
-
-[[skill-structured-input-generation]] carries the table, the checklist, the rules and one snippet
-per language (fuzzing-side decoders only); the per-language skills fill in the idioms;
-[[eval-family-C-structure]] grades it. "Generators over the byte stream" in this design always means
-a decoder that the fuzz engine drives; it never means authoring a PBT strategy.
+   curation).
+6. Discoverability: the target must gain coverage from an empty corpus too.
+7. Maintain: every bug input goes back into the seeds; dictionary lives next to the target.
+8. Input to [[stopping-algorithm]]: when merge adds nothing from a fresh run and the synthesis list
+   is exhausted, the corpus is saturated for this harness.

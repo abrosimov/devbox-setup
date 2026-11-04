@@ -1,6 +1,7 @@
 ---
 note_id: "202611031506001"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: meta
 subtype: decision
@@ -20,7 +21,7 @@ related: ["[[applicability-gate]]", "[[agent-procedure]]", "[[eval-family-A-gate
 
 ## Decision
 
-The agent never writes a harness before producing a one-line gate decision (`fuzz(method, oracle)` / `property-test` / `unit-test` / `do-not-fuzz`) with the matching row of [[applicability-gate]] quoted. The gate lives in [[skill-fuzzing-applicability]] so other agents (`code_reviewer`, `unit_tests_writer`) can load it too.
+The agent writes no harness before producing a one-line gate decision with the matching row of [[applicability-gate]] quoted. *Amended by [[FTW-D-008-pbt-out-of-scope]]*: the outcomes are `fuzz(method, oracle)` / `out-of-scope: pbt-track` / `out-of-scope: unit-tests` / `do-not-fuzz`. The gate lives in [[skill-fuzzing-applicability]] so other agents (`code_reviewer`, `unit_tests_writer`) can load it too.
 
 ## Context
 
@@ -32,7 +33,7 @@ The agent never writes a harness before producing a one-line gate decision (`fuz
 
 ## Consequences
 
-Family A evals grade the decision line deterministically; non-fuzz outcomes hand off to `unit_tests_writer`; the prompt stays short because the table is in the skill.
+Family A evals grade the decision line deterministically; `out-of-scope: unit-tests` hands off to `unit_tests_writer` and `out-of-scope: pbt-track` to the PBT agent, with nothing written for either; the prompt stays short because the table is in the skill.
 
 ## Reopen when
 

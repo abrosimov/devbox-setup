@@ -1,6 +1,7 @@
 ---
 note_id: "20261104100003"
 created: 2026-11-04
+modified: 2026-11-04
 language: en
 type: design
 subtype: finding
@@ -21,10 +22,9 @@ related: ["[[applicability-gate]]", "[[input-shape-triage]]", "[[pbt-agent-promp
 ---
 # Fuzzing versus property-based testing — the boundary this agent keeps
 
-The two approaches overlap in tooling and are routinely conflated. This agent does **fuzzing**;
-property-based testing (PBT) is a separate track with its own agent and skills
-([[FTW-D-008-pbt-out-of-scope]]). The boundary below says what each is, where they share
-mechanisms, and which parts of which tools this agent may use.
+This agent does **fuzzing**; property-based testing (PBT) is a separate track with its own agent and
+skills ([[FTW-D-008-pbt-out-of-scope]]). The first table says what each is; the second says which
+parts of which tools this agent may use.
 
 ## Definitions the agent works with
 
@@ -39,11 +39,11 @@ mechanisms, and which parts of which tools this agent may use.
 | Lives in | `testdata/fuzz`, `fuzz/`, `tests/fuzz/*_fuzzer.py`, CI fuzz job | the ordinary unit-test suite |
 | Primary evidence | R1 §3.2, R2 §3.2, R7 §3.1, R9 §3.1 | R1 §3.4, R8 §3.1, R9 §3.4, R7 §3.5 (rapid) |
 
-The gate therefore returns `out-of-scope: pbt-track` for typed APIs with algebraic laws, numeric
-code with metamorphic relations, and stateful APIs needing a model — with the reason recorded in
-the charter ([[fuzzing-charter]]) — instead of writing a property test. rapid's state machines,
-`proptest-state-machine` and `RuleBasedStateMachine` are PBT and out of scope here, even though
-they are excellent tools (R7 §3.5, R9 §3.4, R8 §3.1).
+The gate returns `out-of-scope: pbt-track` for typed APIs with algebraic laws, numeric code with
+metamorphic relations, and stateful APIs needing a model, and records the reason in the charter
+([[fuzzing-charter]]). Round-trip, differential and invariant checks written inside a fuzz target
+are fuzzing ([[oracle-ladder]]); the same relation stated as a PBT property is the other track's
+deliverable.
 
 ## Where the tools overlap, and what this agent may use
 
@@ -67,15 +67,4 @@ they are excellent tools (R7 §3.5, R9 §3.4, R8 §3.1).
 | Python schemathesis | PBT over an API schema | no — PBT/API-testing track | R8 §3.4 |
 | libFuzzer / AFL++ / honggfuzz flags, dictionaries, `-merge`, `-minimize_crash` | fuzzing | yes | R2 §3.2 |
 
-## Consequences for the other notes
-
-- [[applicability-gate]]: the rows that used to say "property-based test first" now say
-  `out-of-scope: pbt-track`; the agent hands off and records the reason.
-- [[input-shape-triage]]: "generators over the byte stream" means **fuzzing-side decoders**
-  (`arbitrary`, go-fuzz-headers, `FuzzedDataProvider`); PBT generators (Hypothesis strategies,
-  rapid, proptest) are not a seed-construction technique for this agent except through the hybrid
-  bridges above, under their stated conditions.
-- [[oracle-ladder]]: round-trip, differential and invariant checks written *inside a fuzz target*
-  are fuzzing; the same relations stated as a PBT property are not this agent's deliverable.
-- Per-language skills carry only the fuzzing-side column plus the boundary table; the
-  "property-based twin" material moves to the PBT track.
+The per-language skills carry the fuzzing-side column of the definitions and this tool table.

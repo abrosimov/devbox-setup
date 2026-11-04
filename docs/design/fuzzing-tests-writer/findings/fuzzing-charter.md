@@ -1,6 +1,7 @@
 ---
 note_id: "20261104100002"
 created: 2026-11-04
+modified: 2026-11-04
 language: en
 type: design
 subtype: finding
@@ -21,9 +22,8 @@ related: ["[[applicability-gate]]", "[[stopping-algorithm]]", "[[reporting-and-c
 ---
 # Fuzzing charter — objective and verifiable result before any work
 
-The agent fixes, in writing, what the fuzzing is for and what result can be checked, **before** it
-writes a harness or runs an engine. The charter is the contract the campaign report is compared
-against; a campaign without a charter is not started.
+The charter fixes in writing what the fuzzing is for and what result can be checked. It is the
+contract the campaign report is compared against; a campaign without a charter is not started.
 
 ## Charter fields
 
@@ -40,15 +40,15 @@ against; a campaign without a charter is not started.
 ## Rules
 
 1. The charter is written after the gate ([[applicability-gate]]) says the entry point is a fuzzing
-   task, and before any harness file exists; in the trace, the charter precedes the first `Write` of
+   task and before any harness file exists: in the trace, the charter precedes the first `Write` of
    a harness ([[eval-family-H-charter]]).
 2. The charter is short (≤ 25 lines) and lives next to the work: a section at the top of the
    campaign report draft, or a `FUZZING.md` next to the harness when the repository has none.
 3. Changing the charter mid-campaign is allowed only through the escalation ladder
    ([[stopping-algorithm]] step 8); the change is recorded, and a harness change starts a new
    (target, corpus) ledger entry with its own charter line.
-4. The final report ([[reporting-and-claim-hygiene]]) opens by restating the charter and closes by
-   stating, item by item, whether the verifiable result was met.
+4. The final report ([[reporting-and-claim-hygiene]]) opens with the charter and closes with the
+   item-by-item check of the verifiable result.
 5. A charter whose objective cannot name a plausible bug class, or whose oracle is "does not crash"
    on a memory-safe typed API, is returned to the gate: the entry point is not a fuzzing task.
 

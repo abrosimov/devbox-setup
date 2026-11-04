@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150001"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: ontology
@@ -23,10 +24,10 @@ related: ["[[fuzzing-tests-writer]]"]
 | `hub` | root | a map of content | name |
 | `ontology` | `ontology/` | this schema | — |
 | `hypothesis` | `ontology/` | one named cause of past failure, with verdict and evidence | `H1`–`H7` |
-| `framing` | `framing/` | receiving use, FPF pattern binding, system boundary, corpus description, neighbouring work recorded for scope (the PBT prompts) | name |
+| `framing` | `framing/` | receiving use, FPF pattern binding, system boundary, corpus description, the PBT agent prompts | name |
 | `finding` | `findings/` | one evidence-backed conclusion with its design consequence | name |
 | `component` | `layout/` | one thing to build: agent procedure, skill, reference set, script, placement | name; skills carry their future directory name |
-| `eval` | `evals/` | plan, fixtures, one case family, tooling, acceptance | family letter `A`–`G` |
+| `eval` | `evals/` | plan, fixtures, one case family, tooling, acceptance | family letter `A`–`H` |
 | `decision` (`type: meta`) | `decisions/` | one design choice, alternatives, consequences, reopen condition | `FTW-D-NNN` |
 | `open-question` (`type: meta`) | `open_questions/` | one unverified item or risk with its resolution path | `FTW-OQ-NNN` |
 | `plan` | `next/` | ordered steps for the next iteration and refresh triggers | name |
@@ -51,14 +52,18 @@ related: ["[[fuzzing-tests-writer]]"]
 ## Tags
 
 `fuzzing` on every note; `design/<subtype>`; `lang/go`, `lang/python`, `lang/rust` on
-language-specific notes; `h1`…`h6` on notes that address a hypothesis; `verified` / `unverified`
-on claims where the distinction matters inside a note body (not on the note).
+language-specific notes; `h1`…`h7` on notes that address a hypothesis; `verified` / `unverified`
+on claims where the distinction matters inside a note body (not on the note). In Obsidian's graph
+view the `fuzzing` tag selects the whole study; `design/finding` and `design/component` select the
+build map.
 
 ## Conventions
 
 - Filenames are kebab-case and unique across the folder; readable names are `aliases`.
-- A landed note body is immutable; corrections are successor notes linked by `supersedes`.
+- While `publication_status: draft`, a note may be amended in place; an amendment that changes a
+  decision is marked in the body (*Amended by [[FTW-D-008-pbt-out-of-scope]]* is the form). Once a
+  note leaves draft, its body is immutable and a change is a successor note linked by `supersedes`.
 - British English. Numbers in tables, not prose. Every load-bearing claim names an annex section.
 - The annexes keep their own internal source ids (`S1`, `H1`… inside R8, `C1`… inside R9); this
-  vault's `H1`–`H7` are the failure hypotheses only, and annex-internal ids are always qualified
-  by the annex (`R8 §3.1 claim 5`).
+  vault's `H1`–`H7` are the failure hypotheses, and an annex-internal id is always qualified by
+  its annex (`R8 §3.1 claim 5`).

@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150202"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: finding
@@ -21,8 +22,9 @@ related: ["[[applicability-gate]]", "[[reporting-and-claim-hygiene]]", "[[pbt-ag
 # Oracle ladder
 
 Pick the strongest oracle the target admits and name it in the harness header (R1 §3.10, §5.2;
-R4 §5.4; R6 §5.4). Hughes' ranking of property kinds (model-based and metamorphic strongest) is
-partially verified (R1 §3.4).
+R4 §5.4; R6 §5.4). The rung is a charter field ([[fuzzing-charter]]), and a "does not panic"
+harness where a stronger rung is available fails review ([[eval-family-B-oracle]]). Hughes' ranking
+of property kinds (model-based and metamorphic strongest) is partially verified (R1 §3.4).
 
 | Rung | Oracle | Detects | Needs from the target | Fits |
 |---|---|---|---|---|
@@ -38,6 +40,11 @@ A harness that stands only on rungs 6–7 is accepted only for untrusted byte de
 service is the risk (Go's security policy counts panics, stack exhaustion and unbounded reads as
 security issues — R1 S15).
 
+Rungs 1–5 state the relations a property-based test would state; here they are written **inside the
+fuzz target** and checked on engine-generated inputs, as the Go tutorial, the Go blog and the
+rust-url and ujson findings do (R7 §3.6, R9 §3.7, R8 §3.2). The triage and claim discipline this
+agent borrows from the PBT agent prompts is in [[pbt-agent-prompts]].
+
 ## Ecosystem facts that change what the bottom rungs see
 
 - Go records a worker killed by the OOM killer as *no crash*; only the 1 s per-input timeout
@@ -47,20 +54,3 @@ security issues — R1 S15).
 - Atheris reports any uncaught exception; expected exception types must be caught, and a broad
   `except Exception` is only acceptable in a documented differential harness (R8 §3.2).
 - Rust ASan fires only on access: harnesses over FFI must touch every returned reference (R9 C17).
-
-## Borrowed discipline
-
-The relations on rungs 1–5 are the same relations a property-based test would state; here they are
-written **inside the fuzz target** and checked on engine-generated inputs, which is what the Go
-tutorial, the Go blog and the rust-url and ujson findings do (R7 §3.6, R9 §3.7, R8 §3.2). The two
-existing PBT agent prompts supply a discipline this agent borrows in fuzzing form — evidence before
-proposing, a triage rubric (reproducible → legitimate → impactful), "say so and stop" — see
-[[pbt-agent-prompts]]; their property catalogue as a deliverable stays on the PBT track
-([[fuzzing-vs-pbt-boundary]]).
-
-## Design consequence
-
-The ladder, the contract-statement header and fuzz-target templates for round trip, differential
-and invariant checks live in [[skill-fuzzing-applicability]]; the per-language review checklists
-reject a "does not panic" harness where a stronger rung is available ([[eval-family-B-oracle]]).
-The oracle rung is a charter field ([[fuzzing-charter]]).

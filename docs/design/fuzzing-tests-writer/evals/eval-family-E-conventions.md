@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150507"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: eval
@@ -18,7 +19,8 @@ related: ["[[eval-plan]]", "[[eval-fixtures]]"]
 ---
 # Eval family E — Conventions and compile
 
-Twelve cases. Sources: R7 E4/E6/E8; R8 cases 9/10/12; R9 E3/E7/E9/E10/E12; R4 E10.
+Twelve cases; release criterion in [[acceptance-criteria]]. Sources: R7 E4/E6/E8; R8 cases 9/10/12;
+R9 E3/E7/E9/E10/E12; R4 E10.
 
 | Input the agent sees | Expected |
 |---|---|
@@ -43,5 +45,3 @@ Twelve cases. Sources: R7 E4/E6/E8; R8 cases 9/10/12; R9 E3/E7/E9/E10/E12; R4 E1
 - Correct paths; `-run='^$' -fuzz='^FuzzX$'` form in CI snippets; `--debug-assertions` present
   with `-O`; no `@reproduce_failure` committed; no deleted seed files.
 - LLM judge: CI recipe matches the ecosystem's smoke/batch split.
-
-Acceptance: compiles and passes seeds in every run ([[acceptance-criteria]]).

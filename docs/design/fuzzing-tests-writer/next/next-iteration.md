@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150800"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: plan
@@ -26,9 +27,8 @@ Ordered so that each step has a gate before the next starts.
 2. **Language skills**: [[skill-go-fuzzing]] (1.27.3), [[skill-python-fuzzing]],
    [[skill-rust-fuzzing]]; verify every command line in a scratch module with the local toolchains
    (Go and cargo are available in the dev container; Atheris and Hypothesis need a venv).
-3. **Scripts**: `fuzz_campaign.py` and `fuzz_corpus.py` ([[automation-scripts]]) with the
-   recorded-log fixtures and unit tests; `uv lock` for `bin/` only if a dependency is added (none
-   planned).
+3. **Scripts**: `fuzz_campaign.py` and `fuzz_corpus.py` ([[automation-scripts]]) with their unit
+   tests; `uv lock` for `bin/` only if a dependency is added (none planned).
 4. **Agent**: `fuzzing_tests_writer.md` per `agent-builder` (mandatory sections, hand-off protocol,
    complexity check) from [[agent-procedure]], the Codex TOML, `techne-fuzz.md`;
    `make validate-claude`; register in `codex.yml`; update the agent-count test and the
@@ -44,14 +44,12 @@ Ordered so that each step has a gate before the next starts.
 
 ## Scope boundaries for the iteration
 
-- The property-based-testing track (Hypothesis, proptest, rapid incl. state machines) is a separate
-  piece of work with its own agent and skills; this iteration builds no PBT artefact and the gate
-  hands such cases off ([[FTW-D-008-pbt-out-of-scope]]; [[pbt-agent-prompts]] is its starting point).
-- Every campaign the agent runs starts from a charter ([[fuzzing-charter]]); the skill, the
-  procedure and eval family H enforce it.
+- No property-based-testing artefact is built; the gate hands `out-of-scope: pbt-track` cases to
+  the future PBT agent ([[FTW-D-008-pbt-out-of-scope]]), whose starting point is
+  [[pbt-agent-prompts]].
+- Every campaign starts from a charter ([[fuzzing-charter]]).
 - Go toolchain for authoring and verification: `GOTOOLCHAIN=go1.27.3` with
-  `GOPROXY=https://proxy.golang.org,direct` (the toolchain is fetched as the module
-  `golang.org/toolchain@v0.0.1-go1.27.3.linux-amd64`; `dl.google.com` is not needed).
+  `GOPROXY=https://proxy.golang.org,direct` ([[FTW-D-007-go-target-version]]).
 
 ## Refresh triggers (G.2 §11 SoTA-Echoing)
 
@@ -62,4 +60,4 @@ release notes mention fuzzing.
 
 ## Open questions to close along the way
 
-`open_questions/` FTW-OQ-001 … 010; each names the component it blocks.
+Every note in `open_questions/` names the component it blocks.

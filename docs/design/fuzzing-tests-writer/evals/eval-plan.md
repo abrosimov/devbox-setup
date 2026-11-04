@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150501"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: eval
@@ -19,17 +20,18 @@ related: ["[[eval-fixtures]]", "[[eval-tooling]]", "[[acceptance-criteria]]"]
 ---
 # Eval plan
 
-Per SYSE.46 §4.1: state the claim, choose a real baseline, protect the consequential effects,
-separate the measures.
-
 ## Claim under test
 
-Given a Go, Python or Rust repository and an entry point, the agent (0) fixes a charter with an
-objective and a verifiable result before any harness, (a) decides correctly whether to fuzz and how
-(and hands typed-law, metamorphic and model-based cases to the PBT track), (b) produces a harness that compiles, whose seed corpus passes as unit tests, and
-that carries an oracle beyond crash where one exists, (c) runs a bounded campaign and stops with a
-defensible decision, (d) follows the ecosystem's corpus and CI conventions, (e) reports buckets
-with reproducers.
+Given a Go, Python or Rust repository and an entry point, the agent:
+
+0. fixes a charter with an objective and a verifiable result before any harness;
+1. decides correctly whether to fuzz and how, handing typed-law, metamorphic and model-based cases
+   to the PBT track;
+2. produces a harness that compiles, whose seed corpus passes as unit tests, and that carries an
+   oracle beyond crash where one exists;
+3. runs a bounded campaign and stops with a defensible decision;
+4. follows the ecosystem's corpus and CI conventions;
+5. reports buckets with reproducers.
 
 ## Baselines
 
@@ -61,13 +63,13 @@ cost and turns. Combined only in a dashboard, never into one scalar.
 | G Triage false positives | [[H6-crash-counting-reports]] | [[eval-family-G-triage]] |
 | H Charter before work | [[H7-no-objective-before-work]] | [[eval-family-H-charter]] |
 
-≈65 cases; 30 % tagged `holdout` and run only before a release. Three runs per case per arm (the
-tool's default; "one run tells you little"). Grader policy: deterministic for long artefacts, LLM
-judge for decision prose and the report (R10).
+≈65 cases; 30 % tagged `holdout` and run only before a release ([[acceptance-criteria]]). Three
+runs per case per arm (the tool's default). Graders: deterministic for long artefacts, LLM judge for
+decision prose and the report (R10).
 
 ## Contrasts the families must contain (SYSE.46 §4.2)
 
 Cases that admit useful progress and cases that require a bounded stop; a sufficient supplied
-premise (fixtures with a grammar), a decisive fact reachable only through a tool (the recorded log,
-the coverage report), and offered material that is irrelevant or misleading (a `Must*` panic, a
-legitimate 2.5 s decode reported as a hang). Final cases stay outside tuning ([[acceptance-criteria]]).
+premise (fixtures with a grammar); a decisive fact reachable only through a tool (the recorded log,
+the coverage report); and offered material that is irrelevant or misleading (a `Must*` panic, a
+legitimate 2.5 s decode reported as a hang).

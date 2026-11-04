@@ -1,6 +1,7 @@
 ---
 note_id: "20261104100008"
 created: 2026-11-04
+modified: 2026-11-04
 language: en
 type: meta
 subtype: decision
@@ -20,7 +21,7 @@ related: ["[[fuzzing-vs-pbt-boundary]]", "[[applicability-gate]]", "[[pbt-agent-
 
 ## Decision
 
-The fuzzing agent writes fuzz targets, seed corpora, campaign wiring and reports. It does not write property-based tests (Hypothesis, proptest, rapid, including their state machines). Typed APIs with algebraic laws, numeric metamorphic cases and model-based stateful cases leave the gate as `out-of-scope: pbt-track` with the reason recorded in the charter. Hybrid bridges (`rapid.MakeFuzz`, `fuzz_one_input`, bolero) are used only when the PBT artefact already exists and the charter names coverage guidance as the objective ([[fuzzing-vs-pbt-boundary]]).
+The fuzzing agent writes fuzz targets, seed corpora, campaign wiring and reports, and no property-based tests (Hypothesis, proptest, rapid, including their state machines). Typed APIs with algebraic laws, numeric metamorphic cases and model-based stateful cases leave the gate as `out-of-scope: pbt-track` with the reason recorded in the charter. Hybrid bridges (`rapid.MakeFuzz`, `fuzz_one_input`, bolero) are used only over a PBT artefact that already exists, under the per-tool conditions in [[fuzzing-vs-pbt-boundary]].
 
 ## Context
 
@@ -32,7 +33,7 @@ The user asked to concentrate on fuzzing now and to keep the two approaches stri
 
 ## Consequences
 
-Gate outcomes, the shape table, the per-language skills and eval families A–C are rewritten without PBT deliverables; the PBT prompts are recorded in [[pbt-agent-prompts]] for the other track; [[FTW-D-002-six-skills]] is amended (no PBT catalogue in the gate skill).
+Gate outcomes, the shape table, the per-language skills and eval families A–C carry no PBT deliverables; the PBT prompts are kept in [[pbt-agent-prompts]] for the other track; [[FTW-D-002-six-skills]] is amended (no PBT catalogue in the gate skill).
 
 ## Reopen when
 

@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150205"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: finding
@@ -20,7 +21,10 @@ related: ["[[input-shape-triage]]", "[[stopping-algorithm]]"]
 ---
 # Corpus lifecycle
 
-Mechanical, so a checklist (R2 §5.2); the per-ecosystem paths are in the `language-facts-*` notes.
+A checklist (R2 §5.2) for the seed, working and regression corpus before, during and after a run;
+the per-ecosystem paths are in the `language-facts-*` notes. The wrappers are `fuzz_corpus.py`
+([[automation-scripts]]); the per-ecosystem commit policy is open in
+[[FTW-OQ-008-corpus-commit-policy]].
 
 ## Before fuzzing
 
@@ -49,24 +53,14 @@ Mechanical, so a checklist (R2 §5.2); the per-ecosystem paths are in the `langu
   the artefact path.
 - Commit the **regression set** in the ecosystem's form: Go writes `testdata/fuzz/FuzzX/<hash>` and
   plain `go test` replays it; Rust copies the minimised artefact into a `#[test]` fixture (or
-  bolero's committed `__fuzz__`); Atheris crash files go into the committed seed corpus. (For
-  reference only, PBT track: proptest commits `proptest-regressions/` seeds, Hypothesis pins
-  `@example` — [[fuzzing-vs-pbt-boundary]].)
+  bolero's committed `__fuzz__`); Atheris crash files go into the committed seed corpus.
 - Merge new-coverage inputs back into the committed seeds, re-`cmin`, generate a coverage report
   and keep the uncovered-function list for the next escalation rung.
 - Staleness: renaming a target or `go clean -fuzzcache` loses the generated corpus; a changed input
   format invalidates seeds (re-run the sanity gate); Hypothesis database entries drop on version or
-  test change; corpora built through a generator (`fuzz_one_input`, `MakeFuzz`, `arbitrary`) are
-  tied to the generator's version and are not durable assets (R3 §4.5).
+  test change; corpora built through a generator (`fuzz_one_input`, `MakeFuzz`, `arbitrary`; the
+  bridges of [[fuzzing-vs-pbt-boundary]]) are tied to the generator's version and are not durable
+  assets (R3 §4.5).
 
-## Crash deduplication
-
-Crash state (sanitizer/panic type + top frames) is the practical key; Klees et al. show stack
-hashes over-count (~46 per bug) and collide (~16 %), abstract level; timeouts and OOMs cannot be
-deduplicated at all — one each per target. Ground truth is "one fix" (R2 §3.3 C8).
-
-## Design consequence
-
-Checklist and per-engine commands in [[skill-fuzzing-campaign]]; wrappers in `fuzz_corpus.py`
-([[automation-scripts]]); commit policy per ecosystem is graded in [[eval-family-E-conventions]]
-and recorded in [[FTW-OQ-008-corpus-commit-policy]].
+Crashers are deduplicated by crash state before they are counted; the figures are in
+[[reporting-and-claim-hygiene]].

@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150002"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: hypothesis
@@ -22,7 +23,7 @@ related: ["[[ontology]]"]
 
 **Hypothesis.** Earlier agents wrote a fuzz target for every function they were pointed at, including glue code, thin wrappers over already-fuzzed libraries, and code with network or clock dependence.
 
-**Verdict.** Confirmed as the dominant risk. Independent traditions agree on the hard stops (engine contracts). Where the yield is rests on the Fuzzing Book's lessons and on the Go/Rust/Python bug records; no per-language yield study exists ([[FTW-OQ-007-per-language-yield-statistics]]), so "fuzzing pays off on a narrow class" is an inference from those two sources, labelled as such in [[applicability-gate]].
+**Verdict.** Confirmed as the dominant risk. The hard stops are engine contracts on which independent traditions agree; where the yield lies rests on the Fuzzing Book's lessons and the Go/Rust/Python bug records, with no per-language yield study ([[FTW-OQ-007-per-language-yield-statistics]]), so [[applicability-gate]] labels "fuzzing pays off on a narrow class" as an inference.
 
 ## Evidence
 
@@ -31,10 +32,4 @@ related: ["[[ontology]]"]
 - The Go issue tracker shows almost every fuzzing find in `debug/*`, `archive/*`, `encoding/*`, `image/*`, `regexp`: format readers, not business logic — R7 §3.6.
 - Configuration/option spaces are finite and belong to pairwise testing, not fuzzing — R6 §5.4 (ConfigurationFuzzer).
 
-## Addressed by
-
-[[applicability-gate]] (the decision table), carried by [[skill-fuzzing-applicability]] and run as step 1 of [[agent-procedure]].
-
-## Tested by
-
-[[eval-family-A-gate]]: twelve cases, half of which expect "do not fuzz"; any false "fuzz" fails acceptance ([[acceptance-criteria]]).
+Acceptance for this hypothesis: no false `fuzz` on a non-fuzz case in any [[eval-family-A-gate]] run ([[acceptance-criteria]]).

@@ -1,6 +1,7 @@
 ---
 note_id: "202611031506002"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: meta
 subtype: decision
@@ -24,7 +25,7 @@ Write `fuzzing-applicability`, `fuzzing-campaign`, `structured-input-generation`
 
 ## Context
 
-The annexes proposed between six and fourteen skills with overlapping names (R1 §5.5, R2 §5.4, R3 §5.4, R7 §5.6, R8 §5.4, R9 §5.6). The property-based libraries are language-specific and the discipline is one page; the existing `go-testing`/`python-testing` skills already own language test idiom.
+The annexes proposed between six and fourteen skills with overlapping names (R1 §5.5, R2 §5.4, R3 §5.4, R7 §5.6, R8 §5.4, R9 §5.6). The existing `go-testing`/`python-testing` skills already own language test idiom.
 
 ## Alternatives considered
 

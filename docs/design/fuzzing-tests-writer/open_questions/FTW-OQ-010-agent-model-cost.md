@@ -15,9 +15,9 @@ status: open
 blocks: ["[[agent-procedure]]"]
 related: ["[[eval-plan]]"]
 ---
-# FTW-OQ-010: Opus for the gate and shape steps raises cost per eval case
+# FTW-OQ-010: Opus for the gate, charter and shape steps raises cost per eval case
 
-**Question.** Is the decision density of steps 1–2 worth Opus, or does Sonnet with the skills pass family A?
+**Question.** Is the decision density of the gate, charter and shape steps worth Opus, or does Sonnet with the skills pass family A?
 
 **Why it matters.** Eval budget and day-to-day cost of the agent.
 

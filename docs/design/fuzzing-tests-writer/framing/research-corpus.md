@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150103"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: framing
@@ -17,8 +18,8 @@ grounded_in: ["[[01-methods-and-applicability|R1]]", "[[02-stopping-and-corpus-l
 ---
 # Research corpus
 
-Ten annexes (≈3 100 lines) written by parallel research agents against one brief
-([[00-research-brief]]); index at [[research-index]].
+The annexes R1–R10 were written by parallel research agents against one brief
+([[00-research-brief]]); [[research-index]] lists them.
 
 | Annex | Topic | Primary sources (GitHub source of the rendered site unless noted) |
 |---|---|---|
@@ -45,7 +46,7 @@ feedback matters for typed inputs (R1 §4.2, R9 §4 D6).
 ## Access caveats
 
 `fuzzingbook.org`, `go.dev`, `llvm.org`, `docs.rs`, `hypothesis.readthedocs.io`,
-`rust-fuzz.github.io`, `google.github.io`, `arxiv.org` were not reachable from the research session.
-Tool documentation was read from the GitHub repositories that render those sites. Paper bodies that
-exist only on those hosts are cited at abstract level and marked UNVERIFIED in the ledgers; see
-[[FTW-OQ-001-unverified-paper-bodies]] and [[FTW-OQ-002-libfuzzer-legend]].
+`rust-fuzz.github.io`, `google.github.io` and `arxiv.org` were not reachable from the research
+session, so tool documentation was read from the GitHub repositories that render those sites, and
+paper bodies that exist only on those hosts are cited at abstract level and marked UNVERIFIED in the
+ledgers ([[FTW-OQ-001-unverified-paper-bodies]], [[FTW-OQ-002-libfuzzer-legend]]).

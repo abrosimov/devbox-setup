@@ -19,8 +19,8 @@ related: ["[[eval-plan]]", "[[eval-fixtures]]", "[[fuzzing-vs-pbt-boundary]]"]
 ---
 # Eval family A — Gate
 
-Twelve cases; six expect `do-not-fuzz`, three expect `out-of-scope: pbt-track`, three expect a fuzz
-target. Sources: R1 §6 cases 1/3/5/7/12/14; R7 E2/E3/E9; R8 cases 6/7; R9 E1/E2.
+Twelve cases covering all four gate outcomes; release criterion in [[acceptance-criteria]].
+Sources: R1 §6 cases 1/3/5/7/12/14; R7 E2/E3/E9; R8 cases 6/7; R9 E1/E2.
 
 | Input the agent sees | Expected |
 |---|---|
@@ -44,6 +44,3 @@ target. Sources: R1 §6 cases 1/3/5/7/12/14; R7 E2/E3/E9; R8 cases 6/7; R9 E1/E2
 - Regex on the last message for the decision token and the quoted gate row.
 - LLM judge: the decision names the matching row and reason; `pbt-track` hand-offs state what the
   PBT agent would test, without writing it.
-
-Acceptance: no false `fuzz` on a non-fuzz case and no PBT artefact in any run
-([[acceptance-criteria]]).

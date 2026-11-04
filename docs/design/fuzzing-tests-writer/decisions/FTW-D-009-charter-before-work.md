@@ -1,6 +1,7 @@
 ---
 note_id: "20261104100009"
 created: 2026-11-04
+modified: 2026-11-04
 language: en
 type: meta
 subtype: decision
@@ -20,7 +21,7 @@ related: ["[[fuzzing-charter]]", "[[agent-procedure]]", "[[eval-family-H-charter
 
 ## Decision
 
-Step 1 of [[agent-procedure]] produces a charter ([[fuzzing-charter]]: entry point, objective with plausible bug classes, oracle and contract, out of scope, verifiable result, budget class and stop rule, success/failure criteria). No harness file is written before it; the report is compared against it item by item.
+Step 2 of [[agent-procedure]], after the gate at step 1, produces the charter with the fields of [[fuzzing-charter]]. No harness file is written before it; the report is compared against it item by item.
 
 ## Context
 

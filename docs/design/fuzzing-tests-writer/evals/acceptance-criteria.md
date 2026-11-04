@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150511"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: eval
@@ -29,12 +30,10 @@ case:
 
 ## What the evals tune (non-holdout only)
 
-The proposed defaults (◇ in [[stopping-algorithm]]): plateau window `max(10 min, 25 % elapsed)`,
-the 10⁶-execution floor, the 2-minute sanity gate, the 50 % discoverability criterion, the ≤10 %
-triage budget, the 90 % first-check rejection trigger. Each is a `fuzz_campaign.py` flag; family D
-cases are written so that a wrong default flips a decision.
+The ◇ defaults of [[stopping-algorithm]], each a `fuzz_campaign.py` flag, tuned on family D cases
+([[FTW-D-003-thresholds-as-flags]]).
 
 ## Reporting
 
 Results kept as `aggregate-result.json` per run with model and date; a dashboard shows the
-separated measures of [[eval-plan]] and never a single scalar.
+separated measures of [[eval-plan]], never one scalar.

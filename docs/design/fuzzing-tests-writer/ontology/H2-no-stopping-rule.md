@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150003"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: hypothesis
@@ -22,7 +23,7 @@ related: ["[[ontology]]"]
 
 **Hypothesis.** Earlier agents either ran the engine until interrupted or stopped arbitrarily; they had no notion of a saturated corpus, of a blocked harness, or of when to move to another seed corpus or target.
 
-**Verdict.** Confirmed and sharpened: there is no sourced numeric threshold anywhere; engines expose plateau proxies only; the correct output is a decision with a recorded budget, not an open-ended run.
+**Verdict.** Confirmed and sharpened: no source gives a numeric threshold, engines expose plateau proxies only, and the correct output is a decision with a recorded budget, not an open-ended run. The thresholds [[stopping-algorithm]] proposes are therefore marked sourced or proposed ([[FTW-D-003-thresholds-as-flags]]).
 
 ## Evidence
 
@@ -30,11 +31,3 @@ related: ["[[ontology]]"]
 - Practice: AFL++ "at least one queue cycle without new finds" and "a day or a week… often this just means switch strategy"; Go "it is up to you"; libFuzzer only `-max_total_time`/`-runs`; Hypothesis stops at `max_examples` and has no plateau notion — R2 §3.2.
 - Budgets in use: ClusterFuzzLite 600 s PR / 3 600 s batch; cargo-fuzz book 300 s smoke; research ≥ 24 h — R2 §3.4.
 - Plateau ≠ saturation: OSS-Fuzz names four causes of "no new coverage for days" — R2 §3.4 F6.
-
-## Addressed by
-
-[[stopping-algorithm]] and [[corpus-lifecycle]], carried by [[skill-fuzzing-campaign]] and implemented by `fuzz_campaign.py` in [[automation-scripts]]; thresholds marked sourced/proposed per [[FTW-D-003-thresholds-as-flags]].
-
-## Tested by
-
-[[eval-family-D-stopping]]: ten recorded-log cases per engine with a deterministic decision token.

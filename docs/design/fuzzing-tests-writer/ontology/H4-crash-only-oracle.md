@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150005"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: hypothesis
@@ -22,7 +23,7 @@ related: ["[[ontology]]"]
 
 **Hypothesis.** Earlier agents wrote harnesses that only checked "does not panic"; in memory-safe languages that finds almost nothing on typed APIs.
 
-**Verdict.** Confirmed for all three languages with trophy-case and issue-tracker evidence; the Go standard library's own fuzz tests are round-trip properties.
+**Verdict.** Confirmed for all three languages with trophy-case and issue-tracker evidence; the Go standard library's own fuzz tests are round-trip properties. The stronger oracles are the rungs of [[oracle-ladder]].
 
 ## Evidence
 
@@ -30,11 +31,3 @@ related: ["[[ontology]]"]
 - Go: panics dominate but unbounded allocation (archive/tar CVE-2022-2879, debug/gosym #81191) and round-trip inconsistencies (net/netip #67126) need a property or resource oracle; an OOM-killed worker records no crash — R7 §3.6, §3.1.
 - Python: wrong exception types, exponential parsing (CPython #90863), wrong results via differential oracles (ujson #440) — R8 §3.2.
 - Hughes ranks model-based and metamorphic properties strongest (partially verified) — R1 §3.4.
-
-## Addressed by
-
-[[oracle-ladder]], carried by [[skill-fuzzing-applicability]] and enforced by the per-language review checklists.
-
-## Tested by
-
-[[eval-family-B-oracle]]: eight cases; a "does not panic" harness on a typed API fails.

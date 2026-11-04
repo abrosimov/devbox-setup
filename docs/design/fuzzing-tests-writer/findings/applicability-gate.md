@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150201"
 created: 2026-11-03
+modified: 2026-11-04
 language: en
 type: design
 subtype: finding
@@ -22,22 +23,11 @@ opens: ["[[FTW-OQ-007-per-language-yield-statistics]]"]
 ---
 # Applicability gate
 
-## What the claim rests on
-
-The gate is built from two kinds of evidence and one inference. **Sourced**: the engine contracts
-(determinism, no persistent threads, ≥ ~100–1 000 exec/s, no network/disk/clock, bounded input,
-one format per target — google/fuzzing `good-fuzz-target`, libFuzzer manual, AFL++ docs, Go fuzz
-docs; R1 §3.2, §5.1) and the Fuzzing Book's lessons that random inputs "exercise mostly input
-processing functionality" and that an already-fuzzed target returns nothing (R4 F1, M1, F9).
-**Empirical record**: Go issue-tracker finds are almost all in `debug/*`, `archive/*`,
-`encoding/*`, `image/*`, `net/*/html`, `regexp` (R7 §3.6); the Rust trophy case is dominated by
-parsers, decoders and codecs (R9 §3.7); Python finds are in parsers and C extensions (R8 §3.2).
-**Inference**: "fuzzing pays off on a narrow class of code" combines the two; no per-language
-yield study exists ([[FTW-OQ-007-per-language-yield-statistics]]), so the gate states the
-preconditions and the record, not a yield percentage.
-
-Evaluate top to bottom; the first "do not fuzz" or "out of scope" row that matches wins. Every per-language annex
-agrees on every row (R1 §5.1; R4 §5.1; R6 §5.4; R7 §5.4; R8 §5.1; R9 §5.3).
+For each entry point, evaluate the rows below top to bottom; the first "do not fuzz" or "out of
+scope" row that matches wins. The gate's output is one line, `fuzz(method, oracle)` /
+`out-of-scope: pbt-track` / `out-of-scope: unit-tests` / `do-not-fuzz`, with the matching row quoted
+([[eval-family-A-gate]] grades the token and the row). A `fuzz` row holds only under the seven
+preconditions listed after the tables.
 
 ## Hard stops
 
@@ -54,9 +44,9 @@ agrees on every row (R1 §5.1; R4 §5.1; R6 §5.4; R7 §5.4; R8 §5.1; R9 §5.3)
 
 ## Fuzz, or out of scope for this agent
 
-Rows marked `out-of-scope: pbt-track` are handed to the property-based-testing track
+`out-of-scope: pbt-track` hands the entry point to the property-based-testing track
 ([[fuzzing-vs-pbt-boundary]], [[FTW-D-008-pbt-out-of-scope]]); the agent records the reason in the
-charter and writes nothing for them.
+charter and writes nothing for it.
 
 | Target characteristic | Method | Oracles |
 |---|---|---|
@@ -70,15 +60,26 @@ charter and writes nothing for them.
 
 ## Preconditions every "fuzz" row assumes
 
-1. Determinism (RNG and clock injectable). 2. Speed ≥ ~100 exec/s after init hoisting. 3. Isolation
-(no network/DB/FS writes; reads only in one-time init). 4. An oracle named from the
-[[oracle-ladder]]. 5. A contract statement: "never panics; returns error on invalid input" or "may
-panic on precondition X". 6. Seeds that pass validation; dictionary if the format has tokens. 7. One
-format or API family per target; split above 20–30 k reachable edges (R1 S1).
+1. Determinism (RNG and clock injectable).
+2. Speed ≥ ~100 exec/s after init hoisting.
+3. Isolation (no network/DB/FS writes; reads only in one-time init).
+4. An oracle named from the [[oracle-ladder]].
+5. A contract statement: "never panics; returns error on invalid input" or "may panic on
+   precondition X".
+6. Seeds that pass validation; dictionary if the format has tokens.
+7. One format or API family per target; split above 20–30 k reachable edges (R1 S1).
 
-## Design consequence
+## What the rows rest on
 
-The gate is step 1 of [[agent-procedure]] and the body of [[skill-fuzzing-applicability]]. Its
-output is one line — `fuzz(method, oracle)` / `out-of-scope: pbt-track` / `out-of-scope: unit-tests`
-/ `do-not-fuzz` — with the matching row quoted, so [[eval-family-A-gate]] can grade it
-deterministically. A `fuzz` outcome is followed by the [[fuzzing-charter]] before any harness.
+- **Sourced**: the engine contracts (determinism, no persistent threads, ≥ ~100–1 000 exec/s, no
+  network/disk/clock, bounded input, one format per target: google/fuzzing `good-fuzz-target`,
+  libFuzzer manual, AFL++ docs, Go fuzz docs; R1 §3.2, §5.1) and the Fuzzing Book's lessons that
+  random inputs "exercise mostly input processing functionality" and that an already-fuzzed target
+  returns nothing (R4 F1, M1, F9). The per-language gate tables agree on every row (R1 §5.1;
+  R4 §5.1; R6 §5.4; R7 §5.4; R8 §5.1; R9 §5.3).
+- **Empirical record**: Go issue-tracker finds are almost all in `debug/*`, `archive/*`,
+  `encoding/*`, `image/*`, `net/*/html`, `regexp` (R7 §3.6); the Rust trophy case is dominated by
+  parsers, decoders and codecs (R9 §3.7); Python finds are in parsers and C extensions (R8 §3.2).
+- **Inference**: "fuzzing pays off on a narrow class of code" combines the two. No per-language
+  yield study exists ([[FTW-OQ-007-per-language-yield-statistics]]), so the gate states the
+  preconditions and the record, not a yield percentage.

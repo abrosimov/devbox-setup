@@ -1,3 +1,21 @@
+---
+note_id: "20261103150908"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R8"]
+tags: [fuzzing, design/research, h2, h3, h4, h5]
+topic: "Hypothesis, Atheris, HypoFuzz and the Python ecosystem"
+addresses: ["[[H2-no-stopping-rule]]", "[[H3-random-seeds-for-structured-input]]", "[[H4-crash-only-oracle]]", "[[H5-harness-conventions]]"]
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # Python: fuzzing and property-based testing ecosystem (Hypothesis, Atheris, HypoFuzz and the rest)
 
 Research date: 2026-11-03. Sources fetched live where possible (GitHub raw files, PyPI). The following hosts were

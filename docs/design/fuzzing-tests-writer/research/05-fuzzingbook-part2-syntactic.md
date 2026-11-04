@@ -1,3 +1,21 @@
+---
+note_id: "20261103150905"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R5"]
+tags: [fuzzing, design/research, h2, h3, h5]
+topic: "The Fuzzing Book, Part II: syntactic fuzzing"
+addresses: ["[[H2-no-stopping-rule]]", "[[H3-random-seeds-for-structured-input]]", "[[H5-harness-conventions]]"]
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # The Fuzzing Book, Part II "Syntactic Fuzzing" — what it gives a fuzzing-tests-writer agent
 
 ## 0. Summary for the design doc (≤ 25 lines, decisions a designer can act on)

@@ -1,3 +1,21 @@
+---
+note_id: "20261103150904"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R4"]
+tags: [fuzzing, design/research, h1, h2, h3, h4]
+topic: "The Fuzzing Book, Part I: lexical fuzzing"
+addresses: ["[[H1-no-applicability-gate]]", "[[H2-no-stopping-rule]]", "[[H3-random-seeds-for-structured-input]]", "[[H4-crash-only-oracle]]"]
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # The Fuzzing Book, Part I "Lexical Fuzzing" + introductory chapters — what it gives a fuzzing-tests-writer agent
 
 Report 04 for the fuzzing-agent design document. Sources are the Fuzzing Book chapters (Zeller, Gopinath, Böhme, Fraser, Holler), read from the project's GitHub mirror because `www.fuzzingbook.org` is not resolvable from this session (see §2). Canonical URLs are given in the form `https://www.fuzzingbook.org/html/<Chapter>.html`; the content read is byte-identical in substance to those pages (same notebooks, rendered by nbconvert).

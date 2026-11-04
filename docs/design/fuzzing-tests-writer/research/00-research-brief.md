@@ -1,3 +1,21 @@
+---
+note_id: "20261103150900"
+created: 2026-11-03
+language: en
+type: research
+subtype: brief
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["Research brief"]
+tags: [fuzzing, design/research]
+topic: ""
+addresses: []
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # Common brief for fuzzing research agents
 
 ## Receiving use (why this research exists)

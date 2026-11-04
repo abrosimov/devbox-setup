@@ -1,3 +1,21 @@
+---
+note_id: "20261103150903"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R3"]
+tags: [fuzzing, design/research, h3, h5]
+topic: "Grammars, typed generators, custom mutators, repair; seeds; shrinking"
+addresses: ["[[H3-random-seeds-for-structured-input]]", "[[H5-harness-conventions]]"]
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # Structure-aware input generation: seeds and mutation for structured inputs (Go, Python, Rust)
 
 ## 0. Summary for the design doc (≤ 25 lines)

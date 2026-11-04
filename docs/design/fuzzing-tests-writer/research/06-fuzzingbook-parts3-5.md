@@ -1,3 +1,21 @@
+---
+note_id: "20261103150906"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R6"]
+tags: [fuzzing, design/research, h1, h2, h3, h4, h5]
+topic: "The Fuzzing Book, Parts III-V: semantic, domain-specific, managing"
+addresses: ["[[H1-no-applicability-gate]]", "[[H2-no-stopping-rule]]", "[[H3-random-seeds-for-structured-input]]", "[[H4-crash-only-oracle]]", "[[H5-harness-conventions]]"]
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # The Fuzzing Book, Parts III–V: semantic fuzzing, domain-specific fuzzing, managing fuzzing
 
 Research input for the "fuzzing tests writer" agent design (Go / Python / Rust). Sources are the

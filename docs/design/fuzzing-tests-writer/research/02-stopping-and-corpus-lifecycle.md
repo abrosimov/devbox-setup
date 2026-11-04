@@ -1,3 +1,21 @@
+---
+note_id: "20261103150902"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R2"]
+tags: [fuzzing, design/research, h2, h3, h5]
+topic: "Saturation theory; engine observables; corpus lifecycle; CI budgets; stopping algorithm"
+addresses: ["[[H2-no-stopping-rule]]", "[[H3-random-seeds-for-structured-input]]", "[[H5-harness-conventions]]"]
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # When to stop fuzzing, when to move on, and the corpus lifecycle around it
 
 Research input for the fuzzing-tests-writer agent design doc. Topic: an executable stopping

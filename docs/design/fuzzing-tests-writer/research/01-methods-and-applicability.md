@@ -1,3 +1,21 @@
+---
+note_id: "20261103150901"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R1"]
+tags: [fuzzing, design/research, h1, h4]
+topic: "Method families; applicability gate; oracle catalogue; evaluation hygiene; cost"
+addresses: ["[[H1-no-applicability-gate]]", "[[H4-crash-only-oracle]]"]
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # Fuzzing method families and the applicability gate (Go / Rust / Python focus)
 
 Research report for the "fuzzing tests writer" agent design document. Written 2026-11-03.

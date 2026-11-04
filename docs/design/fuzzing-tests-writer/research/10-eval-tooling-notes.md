@@ -1,3 +1,21 @@
+---
+note_id: "20261103150910"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R10"]
+tags: [fuzzing, design/research]
+topic: "claude plugin eval, skill-creator scripts, headless mode"
+addresses: []
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # Eval tooling notes (from claude-code-guide agent; sources: code.claude.com/docs/en/plugin-evals.md, sub-agents.md, headless.md, cli-reference.md, skills.md, agent-sdk/subagents.md, anthropics/skills skill-creator)
 
 - `claude plugin eval` targets a PLUGIN. A loose ~/.claude/agents/*.md is not a documented target -> package the fuzzing agent + skills as a plugin dir (agents/, skills/) for evals. Measures delegation: runs each prompt with/without plugin (WITH / W/OUT / delta); requires Claude Code >= 2.1.269.

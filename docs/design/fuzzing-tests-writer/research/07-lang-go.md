@@ -1,3 +1,21 @@
+---
+note_id: "20261103150907"
+created: 2026-11-03
+language: en
+type: research
+subtype: annex
+note_role: artifact
+artifact_kind: research-report
+publication_status: draft
+authorship: agent
+assistant: claude-code
+project: fuzzing-tests-writer
+aliases: ["R7"]
+tags: [fuzzing, design/research, h3, h4, h5]
+topic: "Go native fuzzing ecosystem (verified against go1.27.3 sources in section 8)"
+addresses: ["[[H3-random-seeds-for-structured-input]]", "[[H4-crash-only-oracle]]", "[[H5-harness-conventions]]"]
+related: ["[[research-index]]", "[[research-corpus]]"]
+---
 # Go fuzzing ecosystem — what a Go fuzz-test-writing agent must know
 
 Research date: 2026-11-03. Local toolchain used for confirmation: `go1.24.7 linux/amd64` (`go help testflag`, `go doc testing.F`, source of `internal/fuzz`, and three throw-away fuzz runs under `scratchpad/research/exp*`). `go.dev` and `google.github.io` were not reachable from this session; their content was read from the upstream Markdown in `golang/website` and `google/oss-fuzz` on raw.githubusercontent.com, which is the same source the sites render.

@@ -16,7 +16,6 @@ SOURCE = Path(__file__).parent / "vendor" / "langfuse_hook.py"
 
 
 def load_hook():
-    pytest.importorskip("langfuse")
     spec = importlib.util.spec_from_file_location("langfuse_durable_state_under_test", SOURCE)
     assert spec is not None
     assert spec.loader is not None

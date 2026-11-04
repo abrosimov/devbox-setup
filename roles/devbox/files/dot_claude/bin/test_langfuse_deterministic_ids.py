@@ -23,8 +23,7 @@ from types import ModuleType, SimpleNamespace
 import langfuse_replay
 import langfuse_trace_hook
 import pytest
-
-trace_service = pytest.importorskip("opentelemetry.proto.collector.trace.v1.trace_service_pb2")
+from opentelemetry.proto.collector.trace.v1 import trace_service_pb2 as trace_service
 
 BIN = Path(__file__).parent
 WRAPPER = BIN / "langfuse_trace_hook.py"
@@ -255,7 +254,6 @@ def is_nonzero_hex(value: str, length: int) -> bool:
 
 
 def load_hook() -> ModuleType:
-    pytest.importorskip("langfuse")
     spec = importlib.util.spec_from_file_location(
         "langfuse_deterministic_ids_under_test", VENDORED_HOOK
     )

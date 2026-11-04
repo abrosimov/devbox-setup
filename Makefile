@@ -69,7 +69,8 @@ define otelbox_smoke_advisory
 endef
 
 # Dev venv — lazy bootstrap for developer-mode targets (lint-*, typecheck,
-# test, test-integration, qa). The operator-flow (init / personal / work /
+# test-otelbox, test-scripts, qa). The hook trees are tested in their own venvs
+# instead (see HOOK TREES below). The operator-flow (init / personal / work /
 # *-push / upgrade-*) does NOT depend on this venv and never touches it.
 # See pyproject.toml for the rationale.
 DEV_VENV     := .venv
@@ -145,7 +146,7 @@ endif
        karabiner-diff karabiner-pull \
        dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now go-proxy-verify \
        sync-upstream-docs \
-       test test-integration test-ai-config test-deploy test-claude-hooks test-agy-hooks test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
+       test test-integration test-ai-config test-deploy test-claude-hooks test-claude-hooks-unit test-agy-hooks test-agy-hooks-unit test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
        test-live test-live-guard test-langfuse-e2e \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
@@ -169,13 +170,14 @@ help:
 	@echo "  make lint-py          - ruff check + format check"
 	@echo "  make lint-ansible     - ansible-playbook --syntax-check + ansible-lint"
 	@echo "  make lint-ansible-semantics - static catch for set_fact intra-task self-references"
-	@echo "  make typecheck        - pyrefly type check"
-	@echo "  make test             - pytest unit tests (excludes integration)"
-	@echo "  make test-integration - pytest subprocess integration tests (slower)"
+	@echo "  make typecheck        - pyrefly type check (each hook tree against its own venv)"
+	@echo "  make test             - unit tests of both hook trees (own venvs) + otelbox contract"
+	@echo "  make test-integration - dot_claude/bin subprocess integration tests only (own venv)"
 	@echo "  make test-ai-config   - pytest for the ai-config reconciler"
 	@echo "  make test-deploy      - pytest for deployment structure"
-	@echo "  make test-claude-hooks - pytest under bin/'s own uv project (deployed-venv shape)"
-	@echo "  make test-agy-hooks   - pytest under dot_agy/bin's own uv project (deployed-venv shape)"
+	@echo "  make test-claude-hooks - all dot_claude/bin tests, unit + integration (own venv)"
+	@echo "  make test-agy-hooks   - all dot_agy/bin tests, unit + integration (own venv)"
+	@echo "  make test-claude-hooks-unit / test-agy-hooks-unit - the same, unit tests only"
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
 	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
 	@echo "  make test-otelbox     - pytest for the otelbox edge contract (wrapper, preflight, version pin)"
@@ -183,7 +185,7 @@ help:
 	@echo "  make test-live        - pytest against real claude/codex/agy binaries (opt-in, needs the CLIs)"
 	@echo "                          ENGINES='claude,codex' turns a skip of those engines into a failure"
 	@echo "  make test-drive-backup - drive-backup package: pytest, ruff, pyrefly, example config"
-	@echo "  make qa               - lint + typecheck + unit, integration, ai-config, and deploy tests"
+	@echo "  make qa               - lint-py + typecheck + full hook trees + ai-config, scripts, deploy, live-guard tests"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
 	@echo "  make init             - install Homebrew, Ansible, and dependencies (macOS only)"
@@ -247,7 +249,7 @@ help:
 	@echo "  EXTRA_VARS='-e foo=bar' - pass extra variables"
 	@echo ""
 
-run: test test-claude-hooks $(COLLECTIONS_SENTINEL) secrets-ready
+run: test $(COLLECTIONS_SENTINEL) secrets-ready
 ifndef PROFILE
 	$(error PROFILE is required. Use: make personal, make work, make dev-personal, or make dev-work)
 endif
@@ -392,11 +394,15 @@ PY_PATHS_COMMON := \
 # Lint takes the whole dot_claude / dot_ai / dot_codex trees and the deploy
 # tests; typecheck takes only the bin/ subtrees, matching the dot_agy rule above.
 PY_LINT_PATHS      := roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/ $(PY_PATHS_COMMON)
-# dot_agy/bin is checked in its own pass: it is a diverged copy of dot_claude/bin with
-# the same module names, so in a shared pass its tests resolve `import post_edit_lint`
-# to the dot_claude module, whichever search-path entry comes first.
+# Each hook tree is checked in its own pass, against the interpreter of its own
+# locked venv, so bashlex/langfuse resolve exactly as the deployed venv has them.
+# dot_agy/bin also needs the separate pass for a second reason: it is a diverged
+# copy of dot_claude/bin with the same module names, so in a shared pass its tests
+# resolve `import post_edit_lint` to the dot_claude module, whichever search-path
+# entry comes first. dot_codex/bin is stdlib-only and stays in the common pass.
+CLAUDE_BIN_DIR     := roles/devbox/files/dot_claude/bin/
 AGY_BIN_DIR        := roles/devbox/files/dot_agy/bin/
-PY_TYPECHECK_PATHS := roles/devbox/files/dot_claude/bin/ roles/devbox/files/dot_codex/bin/ $(filter-out $(AGY_BIN_DIR),$(PY_PATHS_COMMON))
+PY_TYPECHECK_PATHS := roles/devbox/files/dot_codex/bin/ $(filter-out $(AGY_BIN_DIR),$(PY_PATHS_COMMON))
 
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
@@ -411,7 +417,12 @@ PYREFLY_EXCLUDES := --project-excludes '**/vendor/**' --project-excludes '**/.ve
 
 typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
 	@$(DEV_BIN)/pyrefly check $(PY_TYPECHECK_PATHS) $(PYREFLY_EXCLUDES)
-	@$(DEV_BIN)/pyrefly check $(AGY_BIN_DIR) --search-path $(AGY_BIN_DIR) $(PYREFLY_EXCLUDES)
+	$(call hook_sync,$(CLAUDE_BIN_DIR))
+	@$(DEV_BIN)/pyrefly check $(CLAUDE_BIN_DIR) \
+	  --python-interpreter-path $(CLAUDE_BIN_DIR).venv/bin/python $(PYREFLY_EXCLUDES)
+	$(call hook_sync,$(AGY_BIN_DIR))
+	@$(DEV_BIN)/pyrefly check $(AGY_BIN_DIR) --search-path $(AGY_BIN_DIR) \
+	  --python-interpreter-path $(AGY_BIN_DIR).venv/bin/python $(PYREFLY_EXCLUDES)
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a
@@ -419,18 +430,17 @@ typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
 test-otelbox: $(DEV_SENTINEL) ## Pytest for the otelbox edge collector contract
 	@$(DEV_BIN)/pytest tests/deploy/test_otelbox_edge_deploy.py tests/scripts/test_otelbox_edge_*.py -q
 
-test: $(DEV_SENTINEL) test-otelbox ## Pytest unit tests in dot_claude/ (excludes integration — see test-integration)
-	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/ -m "not integration"
+# The gate of every provisioning run (`run` depends on it): unit tests of both
+# hook trees, each in its own venv, plus the otelbox edge contract.
+test: test-claude-hooks-unit test-agy-hooks-unit test-otelbox ## Unit tests of both hook trees (own venvs) + otelbox contract
 
 # The integration runner executes each hook the way the deployed `hooks` block
 # does: through the venv beside the script. Without that venv it falls back to
 # the script's own shebang, which needs the executable bit and an ambient
-# interpreter carrying bashlex, and the CI test job has neither. Syncing the
-# bin project first (the same `--frozen` sync the playbook's Block 1b runs)
-# makes the target self-contained on a fresh checkout.
-test-integration: $(DEV_SENTINEL) ## Pytest subprocess integration tests (smoke + hypothesis)
-	@uv sync --project roles/devbox/files/dot_claude/bin --frozen --quiet
-	@$(DEV_BIN)/pytest roles/devbox/files/dot_claude/bin/test_integration/ -m integration -v
+# interpreter carrying bashlex. A convenience subset of `test-claude-hooks`,
+# which `qa` and CI run instead.
+test-integration: ## dot_claude/bin subprocess integration tests only (smoke + hypothesis)
+	$(call hook_pytest,$(CLAUDE_BIN_DIR),$(CLAUDE_BIN_DIR)test_integration/ -m integration -v)
 
 test-ai-config: $(DEV_SENTINEL) ## Pytest for the ai-config reconciler
 	@$(DEV_BIN)/pytest tests/scripts/test_ai_config*.py -q
@@ -459,22 +469,37 @@ test-drive-backup: ## drive-backup package: pytest, ruff, pyrefly, example confi
 	@AION_AUTOPOIESEON=/nonexistent/aion $(DRIVE_BACKUP_PKG)/.venv/bin/drive-backup \
 	  --config roles/devbox/files/.config/drive-backup/config.toml.example check-config >/dev/null
 
-# Isolated check against the deployed-shape venv: same uv sync --frozen that
-# Ansible runs in production, then pytest from bin/'s own dev group. Catches
-# drift between bin/uv.lock and the test suite (e.g. bashlex version skew)
-# that `make test` would miss because it uses the root dev venv.
-test-claude-hooks: ## Pytest under bin/'s own uv project (mirrors deployed venv)
-	@uv sync --project roles/devbox/files/dot_claude/bin --frozen --quiet
-	@uv run --project roles/devbox/files/dot_claude/bin \
-	  pytest roles/devbox/files/dot_claude/bin
+# HOOK TREES. dot_claude/bin and dot_agy/bin are each their own uv project, with
+# the uv.lock the playbook deploys (`uv sync --frozen --no-dev`, Block 1b of
+# install_configs.yml). Their tests run only in that tree's venv, never the root
+# dev venv, so every runtime dependency (bashlex, langfuse, opentelemetry)
+# resolves from the real lock and none can be skipped as missing. `--locked`
+# makes a stale lock fail instead of being rewritten by a test run; the relative
+# `exclude-newer` span is stored as a span in the lock, so time passing does not
+# make it stale. The two trees share an ancestry but not a venv: a green run of
+# one says nothing about the other.
+#
+# $(1): hook tree directory; $(2): pytest arguments.
+define hook_sync
+@uv sync --project $(1) --locked --quiet
+endef
 
-# Same isolation for the Antigravity hook tree, which carries its own uv project
-# and its own `_agy_lib`. The two trees share an ancestry but not a venv, so a
-# green `test-claude-hooks` says nothing about this one.
-test-agy-hooks: ## Pytest under dot_agy/bin's own uv project (deployed-venv shape)
-	@uv sync --project roles/devbox/files/dot_agy/bin --frozen --quiet
-	@uv run --project roles/devbox/files/dot_agy/bin \
-	  pytest roles/devbox/files/dot_agy/bin
+define hook_pytest
+$(call hook_sync,$(1))
+@uv run --project $(1) --locked pytest $(2)
+endef
+
+test-claude-hooks: ## All dot_claude/bin tests, unit + integration (own venv)
+	$(call hook_pytest,$(CLAUDE_BIN_DIR),$(CLAUDE_BIN_DIR))
+
+test-claude-hooks-unit: ## dot_claude/bin unit tests (own venv)
+	$(call hook_pytest,$(CLAUDE_BIN_DIR),$(CLAUDE_BIN_DIR) -m "not integration")
+
+test-agy-hooks: ## All dot_agy/bin tests, unit + integration (own venv)
+	$(call hook_pytest,$(AGY_BIN_DIR),$(AGY_BIN_DIR))
+
+test-agy-hooks-unit: ## dot_agy/bin unit tests (own venv)
+	$(call hook_pytest,$(AGY_BIN_DIR),$(AGY_BIN_DIR) -m "not integration")
 
 # The guards around tests/live/ are the two things in that suite that must never
 # silently stop working — the throwaway home, and the refusal to skip an engine
@@ -507,7 +532,9 @@ test-langfuse-e2e: $(DEV_SENTINEL) ## Langfuse handoff against the pinned otelbo
 	@DEVBOX_LIVE_ENGINE_TESTS=1 DEVBOX_LIVE_REQUIRE_ENGINES="$(ENGINES)" \
 	  $(DEV_BIN)/pytest tests/live/test_live_langfuse_handoff.py -m live -v
 
-qa: lint-py typecheck test test-claude-hooks test-integration test-ai-config test-scripts test-deploy test-live-guard ## Full Python quality gate
+# Each suite once: the full hook-tree runs carry their integration tests, and the
+# otelbox contract that `test` adds is part of test-scripts + test-deploy.
+qa: lint-py typecheck test-claude-hooks test-agy-hooks test-ai-config test-scripts test-deploy test-live-guard ## Full Python quality gate
 
 regenerate-fixtures: $(DEV_SENTINEL) ## Re-extract recorded fixtures + regenerate synthetic ones
 	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/extract_fixtures.py --max-per-bucket 50

@@ -22,8 +22,6 @@ import pytest
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-pytest.importorskip("langfuse")
-
 BIN = Path(__file__).parent
 WRAPPER = BIN / "langfuse_trace_hook.py"
 REPLAY = BIN / "langfuse_replay.py"

@@ -41,7 +41,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.12
+        run: uv python install 3.13
 
       # Put the dev venv on PATH up front. The bin dir doesn't exist yet, but
       # PATH is resolved at exec time: `make lint` populates .venv via uv first
@@ -98,15 +98,15 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.12
+        run: uv python install 3.13
 
       - name: Install fish shell
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fish
 
-      - name: Python unit tests
-        run: make test
+      # No `make test` here: its hook-tree half runs in hook-projects, and its
+      # otelbox half is part of test-scripts + test-deploy below.
 
       # The reconciler that writes ~/.claude/settings.json, ~/.codex/config.toml
       # and agy's settings.json. Two of those three engines accept an unparseable
@@ -116,11 +116,6 @@ jobs:
       # so this suite is the only place it can surface. ~7s.
       - name: ai-config reconciler tests
         run: make test-ai-config
-
-      # Subprocess smoke + hypothesis over the hooks: they run as separate
-      # processes in production, which the unit tests do not exercise.
-      - name: Hook integration tests
-        run: make test-integration
 
       - name: Git hook tests
         run: make test-git-hooks
@@ -149,12 +144,12 @@ jobs:
         run: make test-fish
 
   # The two hook trees carry their own uv projects (roles/devbox/files/dot_claude/bin
-  # and dot_agy/bin), each with its own uv.lock, and both targets run the same
-  # `uv sync --frozen` the playbook does. That is the point: a drift between a
-  # lock and its test suite otherwise surfaces for the first time mid-deploy, in
-  # Block 1b of install_configs.yml, where it breaks every Python hook on every
-  # Bash call. They are a separate job because they use their own venvs rather
-  # than the root dev one, and because ~85s in parallel beats ~165s in series.
+  # and dot_agy/bin), each with its own uv.lock, and their tests run only in that
+  # venv: both targets `uv sync --locked` the lock the playbook deploys, so a stale
+  # lock fails here instead of mid-deploy, in Block 1b of install_configs.yml,
+  # where it breaks every Python hook on every Bash call. Each target is the full
+  # suite, unit and subprocess integration tests (smoke + hypothesis) alike, so no
+  # other job runs hook-tree tests.
   #
   # dot_agy/bin is an independent copy of the same tree that has already diverged
   # from dot_claude/bin — a green claude-hooks run says nothing about it.
@@ -170,7 +165,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.12
+        run: uv python install 3.13
 
       - name: Claude hook tests
         run: make test-claude-hooks
@@ -196,7 +191,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.12
+        run: uv python install 3.13
 
       - name: Langfuse handoff against the pinned edge
         run: make test-langfuse-e2e ENGINES=otelbox-edge

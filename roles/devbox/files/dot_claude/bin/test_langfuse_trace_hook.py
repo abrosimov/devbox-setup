@@ -100,8 +100,6 @@ def test_main_hands_the_vendored_hook_its_own_span_queue_bound(
 
 @pytest.mark.usefixtures("claude_environment")
 def test_unscrubbed_vendored_hook_would_trace_with_the_operator_keys() -> None:
-    pytest.importorskip("langfuse")
-
     config = _load_vendored_hook().get_langfuse_config()
 
     assert config.public_key == OPERATOR_ENVIRONMENT["LANGFUSE_PUBLIC_KEY"]
@@ -109,8 +107,6 @@ def test_unscrubbed_vendored_hook_would_trace_with_the_operator_keys() -> None:
 
 @pytest.mark.usefixtures("claude_environment")
 def test_scrubbed_vendored_hook_traces_with_the_edge_keys_to_the_loopback() -> None:
-    pytest.importorskip("langfuse")
-
     langfuse_trace_hook.scrub_shadowing_credentials(os.environ)
     config = _load_vendored_hook().get_langfuse_config()
 

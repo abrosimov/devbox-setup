@@ -7,7 +7,9 @@
 #
 # Bootstrap: lazy. The Makefile sentinel target `.venv/.devbox-installed` runs
 # `uv sync --group dev` on first invocation of any dev target (lint-py, typecheck,
-# test, test-integration, qa, etc.) and re-runs only when this file changes.
+# test-otelbox, test-scripts, qa, etc.) and re-runs only when this file changes.
+# The hook trees (dot_claude/bin, dot_agy/bin) do not use it: each is its own uv
+# project, tested and type-checked against its own locked venv.
 #
 # Naming: `package = false` under [tool.uv] tells uv we are not a buildable package,
 # we are a "virtual project" that exists only to pin dev dependencies.
@@ -43,11 +45,6 @@ dev = [
     # change here must be mirrored in scripts/ai-config.
     "jinja2>=3.1",
     "pyyaml>=6",
-    # Runtime dep of roles/devbox/files/dot_claude/bin/bash_decision_gate.py.
-    # Pinned authoritatively in bin/pyproject.toml + bin/uv.lock for the
-    # deployed venv; mirrored here so the root dev venv (used by `make test`
-    # and `make typecheck`) can also resolve it.
-    "bashlex",
     # tests/live/langfuse_handoff.py: the test-owned TLS OTLP/gRPC gateway that
     # the pinned otelbox edge forwards to, and the CA it is issued from.
     "grpcio>=1.60",
@@ -117,6 +114,11 @@ ignore = [
     "PLR2004",
 ]
 
+# A missing dependency must fail, not skip: run each hook tree's tests in its own
+# venv, where the lock guarantees the import.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"pytest.importorskip".msg = "a dependency the lock pins must not be skipped; run hook-tree tests via `make test-claude-hooks` / `make test-agy-hooks`"
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
     "S101",        # assert is the whole point of tests
@@ -125,7 +127,7 @@ ignore = [
     "D",           # docstrings optional in tests
 ]
 # The hook-test files in dot_claude/bin/ are pytest tests, not utility scripts.
-# pytest discovery is configured via testpaths in [tool.pytest.ini_options]; the
+# They run through `make test-claude-hooks` in the tree's own venv; the
 # same conventions (assert, private member access, hardcoded /tmp paths, ...)
 # apply here. Skill-bundled scripts under skills/*/scripts/ follow the same shape.
 "roles/devbox/files/dot_claude/bin/test_*.py" = [
@@ -413,10 +415,12 @@ unbound-name = true
 [tool.pytest.ini_options]
 # tests/ holds Ansible vault fixtures plus tests for deploy-dir artefacts that
 # cannot host a test beside them (tests/git_hooks/ covers the global git hook,
-# which is deployed verbatim to ~/.config/git/hooks/). Other Python tests live
-# next to their implementations under dot_claude/ — hook scripts in bin/, skill
-# helpers in skills/*/scripts/.
-testpaths = ["tests", "roles/devbox/files/dot_claude", "roles/devbox/files/dot_ai"]
+# which is deployed verbatim to ~/.config/git/hooks/). Skill helper tests live
+# beside their scripts under dot_ai/skills/*/scripts/. The hook trees
+# (dot_claude/bin, dot_agy/bin) are left out on purpose: their tests need their
+# own locked venv, so they run only through `make test-claude-hooks` /
+# `make test-agy-hooks`.
+testpaths = ["tests", "roles/devbox/files/dot_ai"]
 pythonpath = ["scripts"]
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers --strict-config"

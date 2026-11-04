@@ -12,8 +12,9 @@
   extends: ["github>abrosimov/renovate-config#v3.4.0"],
 
   // Every built-in manager runs. In this repository that means, concretely:
-  // pyproject.toml + uv.lock at the root and under
-  // roles/devbox/files/dot_claude/bin/, requirements.yml (ansible-galaxy),
+  // pyproject.toml + uv.lock at the root and under each hook tree
+  // (roles/devbox/files/dot_claude/bin/, dot_agy/bin/, dot_codex/bin/),
+  // requirements.yml (ansible-galaxy),
   // .github/workflows/*.yml (github-actions), and the devcontainer scaffold in
   // roles/devbox/files/dot_claude/templates/devcontainer/ (Dockerfile +
   // devcontainer.json). The template is a scaffold rather than a live

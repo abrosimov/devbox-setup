@@ -23,7 +23,6 @@ HOOK_RUN_DRIVER = Path(__file__).parent / "testdata" / "langfuse_hook_run.py"
 
 
 def hook():
-    pytest.importorskip("langfuse")
     spec = importlib.util.spec_from_file_location("langfuse_delivery_contract_under_test", SOURCE)
     assert spec is not None
     assert spec.loader is not None
@@ -201,7 +200,6 @@ def test_open_turn_emit_failure_is_propagated(monkeypatch: pytest.MonkeyPatch) -
 def run_hook_scenario(
     tmp_path: Path, scenario: str
 ) -> tuple[subprocess.CompletedProcess[str], Path]:
-    pytest.importorskip("langfuse")
     state = tmp_path / "state"
     transcript = tmp_path / "session.jsonl"
     transcript.write_text("", encoding="utf-8")

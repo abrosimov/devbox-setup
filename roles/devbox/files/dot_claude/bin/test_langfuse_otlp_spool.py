@@ -9,21 +9,13 @@ from email.message import Message
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+import langfuse
 import pytest
-
-pytest.importorskip("opentelemetry.sdk")
-
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceRequest
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExportResult
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from vendor import durable_otel_exporter as spool
-
-TracerProvider = pytest.importorskip("opentelemetry.sdk.trace").TracerProvider
-SimpleSpanProcessor = pytest.importorskip("opentelemetry.sdk.trace.export").SimpleSpanProcessor
-SpanExportResult = pytest.importorskip("opentelemetry.sdk.trace.export").SpanExportResult
-InMemorySpanExporter = pytest.importorskip(
-    "opentelemetry.sdk.trace.export.in_memory_span_exporter"
-).InMemorySpanExporter
-ExportTraceServiceRequest = pytest.importorskip(
-    "opentelemetry.proto.collector.trace.v1.trace_service_pb2"
-).ExportTraceServiceRequest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -273,7 +265,6 @@ def test_transiently_rejected_batch_stays_queued_and_stops_the_pass(
 
 
 def test_langfuse_sdk_can_use_durable_span_exporter(spool_home: Path) -> None:
-    langfuse = pytest.importorskip("langfuse")
     exporter = spool.DurableSpoolExporter()
     client = langfuse.Langfuse(
         public_key=f"test-{uuid4().hex}",

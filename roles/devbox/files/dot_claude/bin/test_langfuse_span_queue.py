@@ -14,10 +14,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import pytest
-
-pytest.importorskip("langfuse")
-trace_service = pytest.importorskip("opentelemetry.proto.collector.trace.v1.trace_service_pb2")
+from opentelemetry.proto.collector.trace.v1 import trace_service_pb2 as trace_service
 
 BIN = Path(__file__).parent
 GATED_RUN = BIN / "testdata" / "langfuse_gated_run.py"

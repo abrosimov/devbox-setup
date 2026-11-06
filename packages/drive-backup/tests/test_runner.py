@@ -237,7 +237,9 @@ def test_archive_outside_lfs_is_refused(repo: Path, source: Path) -> None:
     assert not list((repo / "2026-09").glob("*.tar.zst"))
 
 
-def test_push_race_is_rebased(repo: Path, remote: Path, source: Path, tmp_path: Path) -> None:
+def test_push_race_is_rebased(
+    repo: Path, remote: Path, source: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # The other machine pushes after our pull but before our push.
     other = clone(remote, tmp_path / "other")
     cfg = _config(repo, DirSpec("claude", source))
@@ -253,7 +255,7 @@ def test_push_race_is_rebased(repo: Path, remote: Path, source: Path, tmp_path: 
         git(other, "commit", "-qm", "personal")
         git(other, "push", "-q")
 
-    backup.git.pull = pull_then_race
+    monkeypatch.setattr(backup.git, "pull", pull_then_race)
     assert backup.run(io.StringIO()).ok
     files = git(remote, "ls-tree", "-r", "--name-only", "master").splitlines()
     assert {"personal.txt", "2026-09/work_claude_2026-09-26.tar.zst"} <= set(files)

@@ -5,7 +5,7 @@ Logs all hook events (PreToolUse, PostToolUse, etc.) as JSONL.
 """
 
 import contextlib
-import datetime
+import datetime as dt
 import fcntl
 import json
 import os
@@ -33,7 +33,7 @@ def main() -> None:
     env_metadata = {k: v for k, v in env_metadata.items() if v is not None}
 
     log_entry = {
-        "timestamp": datetime.datetime.now(datetime.UTC).isoformat() + "Z",
+        "timestamp": dt.datetime.now(dt.UTC).isoformat() + "Z",
         "event": event_name,
         "env": env_metadata,
         "payload": payload,
@@ -55,7 +55,7 @@ def main() -> None:
             # Rotate log if it exceeds 500 MB
             max_size = 500 * 1024 * 1024
             if log_file.exists() and log_file.stat().st_size >= max_size:
-                ts = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d_%H%M%S")
+                ts = dt.datetime.now(dt.UTC).strftime("%Y%m%d_%H%M%S")
                 rotated_file = state_dir / f"hook_events.{ts}.jsonl"
                 with contextlib.suppress(OSError):
                     log_file.rename(rotated_file)

@@ -10,7 +10,7 @@ recipient that records every span it is handed.
 from __future__ import annotations
 
 import contextlib
-import datetime
+import datetime as dt
 import hashlib
 import http.client
 import http.server
@@ -334,15 +334,15 @@ class Tls:
 def _certificate(
     subject: str, issuer: x509.Name, public_key: ec.EllipticCurvePublicKey
 ) -> x509.CertificateBuilder:
-    now = datetime.datetime.now(datetime.UTC)
+    now = dt.datetime.now(dt.UTC)
     return (
         x509.CertificateBuilder()
         .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, subject)]))
         .issuer_name(issuer)
         .public_key(public_key)
         .serial_number(x509.random_serial_number())
-        .not_valid_before(now - datetime.timedelta(hours=1))
-        .not_valid_after(now + datetime.timedelta(days=1))
+        .not_valid_before(now - dt.timedelta(hours=1))
+        .not_valid_after(now + dt.timedelta(days=1))
     )
 
 

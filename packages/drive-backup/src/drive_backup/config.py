@@ -28,6 +28,9 @@ LFS_MAX_OBJECT_BYTES = 2**31
 # inside either component.
 _TOKEN_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _UNSET_VAR_RE = re.compile(r"\$(\w+|\{[^}]*\})")
+# Remote and branch names go into git argv and refspecs: no leading `-`, no `:`.
+_GIT_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+DEFAULT_REMOTE = "origin"
 
 # Legacy busy/[defer] values stay parse-only so existing machine-local configs
 # remain valid without reintroducing process observation or waiting into Config.
@@ -53,11 +56,20 @@ class Config:
     dirs: tuple[DirSpec, ...]
     zstd_level: int = 9
     max_part_bytes: int = DEFAULT_MAX_PART_BYTES
+    remote: str = DEFAULT_REMOTE
+    # None: the remote's default branch.
+    branch: str | None = None
 
 
 def validate_token(kind: str, value: str) -> str:
     if not _TOKEN_RE.fullmatch(value):
         raise ConfigError(f"{kind} {value!r} must match {_TOKEN_RE.pattern}")
+    return value
+
+
+def validate_git_name(kind: str, value: str) -> str:
+    if not _GIT_NAME_RE.fullmatch(value) or ".." in value:
+        raise ConfigError(f"{kind} {value!r} must match {_GIT_NAME_RE.pattern} without '..'")
     return value
 
 
@@ -149,9 +161,16 @@ def _is_within(child: Path, parent: Path) -> bool:
 
 
 def parse(data: Table, env: dict[str, str]) -> Config:
-    _check_known(data, {"repo_dir", "zstd_level", "max_part_bytes", "defer", "dir"}, "config")
+    known = {"repo_dir", "remote", "branch", "zstd_level", "max_part_bytes", "defer", "dir"}
+    _check_known(data, known, "config")
     _validate_legacy_defer(data.get("defer", {}))
     repo_dir = resolve_path(_get(data, "repo_dir", str, "config", DEFAULT_REPO_DIR), env)
+    remote = validate_git_name("config: remote", _get(data, "remote", str, "config", DEFAULT_REMOTE))
+    branch = (
+        validate_git_name("config: branch", _get(data, "branch", str, "config"))
+        if "branch" in data
+        else None
+    )
     level = _get(data, "zstd_level", int, "config", 9)
     if not 1 <= level <= 22:
         raise ConfigError("config: zstd_level must be within 1..22")
@@ -178,6 +197,8 @@ def parse(data: Table, env: dict[str, str]) -> Config:
         dirs=dirs,
         zstd_level=level,
         max_part_bytes=max_part_bytes,
+        remote=remote,
+        branch=branch,
     )
 
 

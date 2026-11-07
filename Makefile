@@ -658,7 +658,7 @@ define emit_brewfile
 		printf '# Generated from %s + %s — do not edit.\n' "$(PACKAGES_YML)" "$(strip $(1))"; \
 		yq -r '.devbox_brew_taps[]' $(PACKAGES_YML) \
 			| while read -r t; do printf 'tap "%s"\n' "$$t"; done; \
-		yq -r '.devbox_brew_primary[],.devbox_brew_primary_special[],.devbox_brew_secondary[]' $(PACKAGES_YML) \
+		yq -r '.devbox_brew_primary[],.devbox_brew_primary_special[],.devbox_brew_secondary[],.devbox_brew_always_latest[]' $(PACKAGES_YML) \
 			| while read -r f; do printf 'brew "%s"\n' "$$f"; done; \
 		for p in $(1); do \
 			yq -r '.devbox_extra_brew[]?' "$$p" \

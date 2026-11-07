@@ -51,6 +51,11 @@
     name: "{{ devbox_brew_secondary + devbox_extra_brew }}"
     state: "{{ 'latest' if devbox_upgrade_mode | default(false) | bool else 'present' }}"
 
+- name: "Install Homebrew apps kept at latest"
+  community.general.homebrew:
+    name: "{{ devbox_brew_always_latest }}"
+    state: latest
+
 # Migration cleanup: goreleaser moved to the `goreleaser-pro` cask, which ships
 # the same `goreleaser` binary. Homebrew refuses to install it while the old
 # `goreleaser` formula/cask still owns /opt/homebrew/bin/goreleaser, and

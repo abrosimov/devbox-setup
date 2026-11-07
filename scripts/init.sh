@@ -22,9 +22,9 @@ pipx ensurepath
 
 # uv has to exist before the playbook, not after it. `make personal` depends on
 # `test`, which materialises the dev venv, which refuses to run without uv —
-# while uv itself is declared in devbox_brew_secondary and would only be
+# while uv itself is declared in devbox_brew_always_latest and would only be
 # installed by the very playbook that cannot start. This breaks that cycle;
-# the playbook then finds it already present and moves on.
+# the playbook then finds it already present and upgrades it to latest.
 brew install uv
 
 # Install Ansible and tools

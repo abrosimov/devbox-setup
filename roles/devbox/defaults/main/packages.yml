@@ -64,7 +64,7 @@ devbox_brew_secondary:
   - go
   - go-task
   - node
-  - uv
+  # uv moved to devbox_brew_always_latest.
   - helm
   - opentofu       # OpenTofu (`tofu`) — open-source Terraform fork for infrastructure as code
   - tree-sitter-cli
@@ -115,6 +115,12 @@ devbox_brew_secondary:
   - grafana/grafana/gcx  # Grafana CLI — PromQL/LogQL/Tempo queries via Grafana datasources
   - mongosh                 # MongoDB shell (homebrew/core — was mongodb/brew, moved upstream 2026)
   - hashicorp/tap/vault     # HashiCorp Vault CLI (tap: hashicorp/tap)
+
+# Upgraded on every run, not only in upgrade mode. uv resolves `.python-version`
+# against the CPython release list compiled into its binary: a stale uv knows
+# only the pre-releases of a new minor and silently installs a beta for it.
+devbox_brew_always_latest:
+  - uv
 
 devbox_brew_secondary_casks:
   - codex            # OpenAI Codex CLI

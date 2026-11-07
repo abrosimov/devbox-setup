@@ -17,6 +17,8 @@
 # Full reference: packages/drive-backup/README.md.
 
 # repo_dir = "drive/base"     # default: $AION_AUTOPOIESEON/drive/base
+# remote = "origin"
+# branch = "master"           # default: the remote's default branch, whatever repo_dir has checked out
 # zstd_level = 9
 # max_part_bytes = 1992294400 # default 1900 MiB; at most 2147483648 (GitHub LFS limit)
 

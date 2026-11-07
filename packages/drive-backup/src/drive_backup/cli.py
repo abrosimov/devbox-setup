@@ -54,8 +54,6 @@ def _check_config(cfg: config.Config) -> int:
         return "" if path.exists() else "  (missing)"
 
     print(f"repo_dir: {cfg.repo_dir}{mark(cfg.repo_dir)}")
-    print(f"remote: {cfg.remote}")
-    print(f"branch: {cfg.branch or '(default branch of the remote)'}")
     print(f"zstd_level: {cfg.zstd_level}")
     print(f"max_part_bytes: {cfg.max_part_bytes}")
     for spec in cfg.dirs:
@@ -77,8 +75,7 @@ def _run(cfg: config.Config, args: argparse.Namespace, env: dict[str, str]) -> i
     try:
         with run_lock(_lock_path(env)):
             options = RunOptions(profile=profile, push=not args.no_push)
-            git = GitRepo(cfg.repo_dir, remote=cfg.remote, branch=cfg.branch)
-            report = Backup(cfg, options, git).run(buffer)
+            report = Backup(cfg, options, GitRepo(cfg.repo_dir)).run(buffer)
     except LockedError as exc:
         logging.getLogger("drive_backup").warning("%s", exc)
         return EXIT_LOCKED

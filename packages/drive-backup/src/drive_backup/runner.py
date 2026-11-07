@@ -1,7 +1,6 @@
 """One backup run: lock, archive, commit, push.
 
-Everything is written into the private backup worktree (see ``gitrepo``), never
-into the user's checkout. Output layout on the target branch::
+Output layout inside the repository::
 
     <YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst            # fits in one part
     <YYYY-MM>/<profile>_<name>_<YYYY-MM-DD>.tar.zst.part-001   # otherwise, -002, …
@@ -9,8 +8,7 @@ into the user's checkout. Output layout on the target branch::
 
 The run log is committed together with the archives, and also when the run fails,
 so a failure is visible from any clone of the repository. Only a failure that
-leaves no worktree to commit into (repository missing or not a repository, remote
-unreachable) stays local.
+leaves no usable repository (missing, not a repo, detached HEAD) stays local.
 """
 
 from __future__ import annotations
@@ -27,7 +25,7 @@ from pathlib import Path
 
 from .archive import ArchiveResult, write_archive
 from .config import Config, DirSpec
-from .gitrepo import GitError, GitRepo, Worktree
+from .gitrepo import GitError, GitRepo
 
 log = logging.getLogger("drive_backup")
 
@@ -99,27 +97,30 @@ class Backup:
         self.git = git
         self.rt = runtime or Runtime()
         self.started = self.rt.now()
-        self.month = self.started.strftime("%Y-%m")
+        self.month_dir = config.repo_dir / self.started.strftime("%Y-%m")
         self.day = self.started.strftime("%Y-%m-%d")
 
-    def _archive(self, spec: DirSpec, tree: Worktree, report: RunReport) -> None:
-        month_dir = tree.path / self.month
+    # -- archiving -----------------------------------------------------------------
+
+    def _archive(self, spec: DirSpec, report: RunReport) -> None:
+        repo = self.config.repo_dir
+        rel_month = self.month_dir.relative_to(repo)
         name = archive_name(
             self.options.profile,
             spec.name,
             self.day,
-            lambda n: archive_taken(month_dir, n),
+            lambda n: archive_taken(self.month_dir, n),
         )
         # Fail fast, before compressing; every produced file is checked again below.
-        tree.require_lfs_tracked(f"{self.month}/{name}")
-        log.info("archiving %s (%s) -> %s/%s", spec.name, spec.path, self.month, name)
+        self.git.require_lfs_tracked(f"{rel_month}/{name}")
+        log.info("archiving %s (%s) -> %s/%s", spec.name, spec.path, rel_month, name)
         t0 = self.rt.monotonic()
         result = write_archive(
             spec,
-            month_dir / name,
+            self.month_dir / name,
             self.config.zstd_level,
             self.config.max_part_bytes,
-            approve=lambda path: tree.require_lfs_tracked(str(path.relative_to(tree.path))),
+            approve=lambda path: self.git.require_lfs_tracked(str(path.relative_to(repo))),
         )
         for warning in result.warnings:
             log.warning("%s: %s", spec.name, warning)
@@ -140,12 +141,14 @@ class Backup:
             )
         report.archives.append(result)
 
-    def archive_all(self, tree: Worktree, report: RunReport) -> None:
+    def archive_all(self, report: RunReport) -> None:
         for spec in self.config.dirs:
-            self._archive(spec, tree, report)
+            self._archive(spec, report)
 
-    def _log_path(self, tree: Worktree) -> Path:
-        return tree.path / self.month / f"{self.options.profile}_backup_{self.day}.log"
+    # -- run -----------------------------------------------------------------------
+
+    def _log_path(self) -> Path:
+        return self.month_dir / f"{self.options.profile}_backup_{self.day}.log"
 
     def _commit_message(self, report: RunReport) -> str:
         head = f"backup({self.options.profile}): {self.day}"
@@ -158,18 +161,15 @@ class Backup:
         report = RunReport()
         try:
             self.git.preflight()
-            with self.git.worktree() as tree:
-                self._backup(tree, report, log_buffer)
         except GitError as exc:
-            # No worktree to commit into: the log stays local.
+            # No usable repository: there is nowhere to commit the log to.
             report.error = exc
-            log.error("backup not started: %s", exc)
-        return report
+            log.error("repository unusable: %s", exc)
+            return report
 
-    def _backup(self, tree: Worktree, report: RunReport, log_buffer: io.StringIO) -> None:
-        log.info("backing up to %s/%s", tree.remote, tree.branch)
         try:
-            self.archive_all(tree, report)
+            self.git.pull()
+            self.archive_all(report)
         except Exception as exc:
             report.error = exc
             log.exception("backup failed")
@@ -177,28 +177,22 @@ class Backup:
         log.info(
             "run %s: %d archive(s)", "succeeded" if report.ok else "FAILED", len(report.archives)
         )
-        self._publish(tree, report, log_buffer)
+        self._publish(report, log_buffer)
+        return report
 
-    def _publish(self, tree: Worktree, report: RunReport, log_buffer: io.StringIO) -> None:
-        log_path = self._log_path(tree)
+    def _publish(self, report: RunReport, log_buffer: io.StringIO) -> None:
+        log_path = self._log_path()
         log_path.parent.mkdir(parents=True, exist_ok=True)
         with log_path.open("a", encoding="utf-8") as fh:
             fh.write(log_buffer.getvalue())
-        paths = [str(p.relative_to(tree.path)) for r in report.archives for p in r.parts]
-        paths.append(str(log_path.relative_to(tree.path)))
+        repo = self.config.repo_dir
+        paths = [str(p.relative_to(repo)) for r in report.archives for p in r.parts]
+        paths.append(str(log_path.relative_to(repo)))
         try:
-            tree.commit(paths, self._commit_message(report))
-            if not tree.ahead():
-                return
-            if not self.options.push:
-                log.info("not pushed; commit kept at %s", tree.keep_unpushed())
-                return
-            try:
-                tree.push()
-            except GitError:
-                log.warning("commit kept at %s for the next run", tree.keep_unpushed())
-                raise
-            log.info("pushed to %s/%s", tree.remote, tree.branch)
+            committed = self.git.commit(paths, self._commit_message(report))
+            if committed and self.options.push:
+                self.git.push()
+                log.info("pushed")
         except GitError as exc:
             log.exception("publishing failed")
             if report.error is None:

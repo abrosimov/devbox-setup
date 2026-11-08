@@ -9,16 +9,17 @@ in the root `pyproject.toml`) so that upstream diffs stay reviewable byte-for-by
 | | |
 |---|---|
 | Upstream | <https://github.com/langfuse/claude-observability-plugin> |
-| Commit | `b5b7cc364996467e856dc17575b5674f4799ad87` (2026-10-06) |
-| Plugin version | `1.2.1` |
+| Commit | `b1619f994240ad49de4a97caa01d7d7853944fc0` (2026-10-26) |
+| Plugin version | `1.2.2` |
 | Licence | MIT |
-| SHA-256 | Git blob SHA-1 `cdd8f64f0b8e437a73442de3fb1c4e8c8a64f798` |
-| Artifact pin | `langfuse-upstream.lock.json` |
+| Upstream Git blob SHA-1 | `16acd20e839303da7068676dc09e8e08b4d0e81a` |
+| Output Git blob SHA-1 | `f58a27acbb04d77ddf80625802a7d85452253488` (upstream plus the patches below) |
+| Artifact pin | `langfuse-upstream.lock.json` (authoritative when this table disagrees) |
 
 ### Why it is vendored rather than installed as a plugin
 
-Upstream ships this hook with PEP 723 inline metadata (`langfuse>=4.7,<5`) and invokes it
-as `uv run --script`. That resolves dependencies **at hook-invocation time** into uv's
+Upstream ships this hook with PEP 723 inline metadata (`langfuse>=4.7,<5` as of 1.2.2;
+patch `0010` aligns the copy here with what runs) and invokes it as `uv run --script`. That resolves dependencies **at hook-invocation time** into uv's
 ephemeral environment cache. With `UV_CACHE_DIR=/tmp/claude/uv-cache` (set in
 `settings.json` so that uv stays writable inside the Bash sandbox), the resulting
 environment lives under `/tmp` — where macOS `/usr/libexec/tmp_cleaner`, run daily at
@@ -101,19 +102,43 @@ The patch list makes delivery recoverable (design:
 | `0006-durable-otlp-exporter.patch` | export through `durable_otel_exporter.py` to the fsynced local spool |
 | `0007-discard-uncommitted-spans.patch` | a failed firing discards its staged spans, which replay re-emits |
 | `0008-deterministic-observation-ids.patch` | derive every trace and span id from the transcript, so replay repeats them |
+| `0009-untruncated-by-default.patch` | truncate nothing unless `CC_LANGFUSE_MAX_CHARS` is set; when set, the upstream cut applies |
+| `0010-pep723-langfuse-5.patch` | the PEP 723 header names `langfuse>=5,<6`, the range `../pyproject.toml` installs |
 
 `durable_otel_exporter.py` sits beside the hook but is not upstream code: it is
 this repository's spool exporter, kept here because the patched hook imports it
 from its own directory. It is excluded from Ruff and Pyrefly with the rest of
 `vendor/`. It also watches the SDK batch processor's logger: a span dropped
 before export (a full queue) marks the exporter failed, so the patched flush
-check fails the firing and replay re-emits the turn instead of losing it. The tests that close the pre-merge gates (G1–G4) are listed in the
-runbook's *Pre-merge verification* section.
+check fails the firing and replay re-emits the turn instead of losing it. A single span
+larger than `MAX_BATCH_BYTES` fits no batch the edge accepts: the exporter stages it whole
+beside the firing's batches and, when the firing commits, moves it to
+`langfuse_otlp_quarantine/` with a stderr line naming the session, its size and the cap.
+The rest of the firing proceeds. The tests that close the pre-merge gates (G1–G4) are
+listed in the runbook's *Pre-merge verification* section.
 
 ### Updating
 
-1. Fetch the new upstream revision and diff it against this copy.
-2. Replace the file, then update the commit, SHA-256 and line count in the table above.
-3. Re-check the PEP 723 block for dependency changes; mirror them into `../pyproject.toml`
-   and regenerate the lock with `uv lock --project roles/devbox/files/dot_claude/bin`.
-4. Run `make validate-claude` and `make test-claude-hooks`.
+The vendored file is never edited by hand: it is the output of the pinned upstream file
+plus the patch list, and `verify` fails on any other content.
+
+1. Find the new upstream tag's full commit SHA and read the upstream diff from the
+   pinned commit.
+2. In `langfuse-upstream.lock.json`, set `version` and `commit`.
+3. Run `python3 scripts/langfuse-hook-source.py refresh --print-hashes`. It fetches the
+   file at that commit, applies every listed patch with the same strict checks as
+   `refresh`, and prints `upstream_git_blob_sha1` and `output_git_blob_sha1` without
+   enforcing either or writing anything. A patch that no longer applies stops it here:
+   rebase that patch onto the new upstream before going on.
+4. Copy both printed values into the lock, then run `refresh`, which enforces them and
+   rewrites `langfuse_hook.py`, and `verify`.
+5. Re-check the upstream PEP 723 block for dependency changes; mirror them into
+   `../pyproject.toml`, regenerate the lock with
+   `uv lock --project roles/devbox/files/dot_claude/bin`, and keep patch `0010` naming
+   the range that runs.
+6. For a behaviour change, add a patch: write it against the previous output, append it
+   to `patches` in the lock, and repeat steps 3 and 4. A new `CC_LANGFUSE_*` option fails
+   `test_every_langfuse_option_the_hook_reads_is_classified_for_replay` until it is
+   classified as run-scoped (`RUN_SCOPED_VARIABLES` in `../langfuse_trace_hook.py`), per
+   machine (`REPLAY_SETTINGS` in `../langfuse_replay.py`), or not replayed.
+7. Update the table above, then run `make validate-claude` and `make test-claude-hooks`.

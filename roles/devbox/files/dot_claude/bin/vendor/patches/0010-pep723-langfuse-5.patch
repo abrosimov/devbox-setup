@@ -1,0 +1,12 @@
+diff --git a/langfuse_hook.py b/langfuse_hook.py
+--- a/langfuse_hook.py
++++ b/langfuse_hook.py
+@@ -2,7 +2,7 @@
+ # /// script
+ # requires-python = ">=3.10"
+ # dependencies = [
+-#   "langfuse>=4.7,<5",
++#   "langfuse>=5,<6",
+ # ]
+ # ///
+ """

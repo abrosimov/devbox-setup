@@ -27,6 +27,10 @@ REPLAY_SETTINGS = (
     "CC_LANGFUSE_SPOOL_MAX_BYTES",
     "CC_LANGFUSE_PENDING_MAX_BYTES",
 )
+LEGACY_MARKER_FIELDS = {
+    "CC_LANGFUSE_TRACE_SEED": "trace_seed",
+    "CC_LANGFUSE_TRACEPARENT": "traceparent",
+}
 
 
 def replay_environment() -> dict[str, str]:
@@ -43,11 +47,29 @@ def replay_environment() -> dict[str, str]:
         message = "Replay exporter must target a loopback collector"
         raise ValueError(message)
     environment = dict(os.environ)
-    for key in REPLAY_SETTINGS:
+    # Run-scoped settings only reach a replay whose marker predates run_environment.
+    for key in (*REPLAY_SETTINGS, *hook.RUN_SCOPED_VARIABLES):
         if isinstance(configured.get(key), str):
             environment[key] = configured[key]
     environment[hook.REPLAY_ENV] = "1"
     return environment
+
+
+def restore_run_environment(environment: dict[str, str], record: dict[str, object]) -> None:
+    recorded = record.get("run_environment")
+    if not isinstance(recorded, dict):
+        # Legacy marker: it carried these two; the rest stay as settings.json gives them.
+        for name, field in LEGACY_MARKER_FIELDS.items():
+            value = record.get(field, "")
+            environment[name] = value if isinstance(value, str) else ""
+        return
+    # The marker records what the run had, absence included, so settings.json cannot override it.
+    for name in hook.RUN_SCOPED_VARIABLES:
+        value = recorded.get(name)
+        if isinstance(value, str):
+            environment[name] = value
+        else:
+            environment.pop(name, None)
 
 
 def replay_one(marker: Path, base_env: dict[str, str]) -> bool:
@@ -71,8 +93,7 @@ def replay_one(marker: Path, base_env: dict[str, str]) -> bool:
     environment["LANGFUSE_USER_ID"] = record.get("user_id", "")
     environment["LANGFUSE_TRACING_ENVIRONMENT"] = record.get("environment", "")
     environment["CC_LANGFUSE_TRACE_TAGS"] = record.get("trace_tags", "")
-    environment["CC_LANGFUSE_TRACE_SEED"] = record.get("trace_seed", "")
-    environment["CC_LANGFUSE_TRACEPARENT"] = record.get("traceparent", "")
+    restore_run_environment(environment, record)
     if transcript != original:
         environment["CC_LANGFUSE_STATE_IDENTITY_PATH"] = str(original)
 
@@ -85,10 +106,11 @@ def replay_one(marker: Path, base_env: dict[str, str]) -> bool:
         check=False,
         env=environment,
     )
+    # A full spool or a quarantined span is named on the hook's stderr; the LaunchAgent log
+    # is its only witness, on success as well as on failure.
+    if result.stderr:
+        sys.stderr.write(result.stderr)
     if result.returncode != 0:
-        # A full spool names its cap on the hook's stderr; the LaunchAgent log is its only witness.
-        if result.stderr:
-            sys.stderr.write(result.stderr)
         return False
     # Re-read the marker to avoid deleting a newer Stop/SessionEnd registration.
     try:

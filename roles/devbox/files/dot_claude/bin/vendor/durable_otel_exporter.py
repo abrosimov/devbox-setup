@@ -33,12 +33,15 @@ SPOOL_MAX_BYTES_ENV = "CC_LANGFUSE_SPOOL_MAX_BYTES"
 DEFAULT_SPOOL_MAX_BYTES = 2 * 1024 * 1024 * 1024
 OTLP_TRACE_PATH = "/api/public/otel/v1/traces"
 STAGING_DIRECTORY = ".staging"
+OVERSIZED_STAGING = "oversized"
+SESSION_ATTRIBUTE = "session.id"
 # Hook firings are killed well inside this; older staging belongs to a dead process.
 STALE_STAGING_SECONDS = 3600
 TRANSIENT_HTTP_STATUSES = frozenset({408, 429})
 # The SDK's BatchProcessor reports a dropped span only through this logger
 # (a full queue, or an exporter that raised); nothing else ever sees the loss.
 BATCH_PROCESSOR_LOGGER = "opentelemetry.sdk._shared_internal"
+HOOK_LOG = "langfuse_hook.log"
 
 
 class SpanLossError(RuntimeError):
@@ -56,6 +59,14 @@ class _SpanLossWatch(logging.Handler):
         )
 
 
+def _alert(message: str) -> None:
+    # A successful firing's stderr reaches no operator in Claude Code; its log file does.
+    print(message, file=sys.stderr)
+    stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    with contextlib.suppress(OSError), hook_log_path().open("a", encoding="utf-8") as log:
+        log.write(f"{stamp} [WARNING] {message}\n")
+
+
 def spool_directory() -> Path:
     state = Path(os.environ.get("CC_LANGFUSE_STATE_DIR") or Path.home() / ".claude/state")
     return state.expanduser() / "langfuse_otlp_spool"
@@ -63,6 +74,10 @@ def spool_directory() -> Path:
 
 def quarantine_directory() -> Path:
     return spool_directory().parent / "langfuse_otlp_quarantine"
+
+
+def hook_log_path() -> Path:
+    return spool_directory().parent / HOOK_LOG
 
 
 def _fsync_directory(directory: Path) -> None:
@@ -73,7 +88,7 @@ def _fsync_directory(directory: Path) -> None:
         os.close(fd)
 
 
-def _durable_save(directory: Path, payload: bytes) -> None:
+def _durable_save(directory: Path, payload: bytes) -> Path:
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     name = f"{time.time_ns():020d}-{uuid.uuid4().hex}"
     temporary = directory / f".{name}.tmp"
@@ -88,6 +103,7 @@ def _durable_save(directory: Path, payload: bytes) -> None:
         _fsync_directory(directory)
     finally:
         temporary.unlink(missing_ok=True)
+    return target
 
 
 def _spool_bytes(directory: Path) -> int:
@@ -111,6 +127,7 @@ class DurableSpoolExporter(SpanExporter):
         self.staging = self.directory / STAGING_DIRECTORY / uuid.uuid4().hex
         self.failed: BaseException | None = None
         self.discarded = False
+        self.oversized: list[tuple[Path, str, int]] = []
         self.max_bytes = int(os.environ.get(SPOOL_MAX_BYTES_ENV) or DEFAULT_SPOOL_MAX_BYTES)
         self._loss_watch = _SpanLossWatch(self)
         logging.getLogger(BATCH_PROCESSOR_LOGGER).addHandler(self._loss_watch)
@@ -139,7 +156,23 @@ class DurableSpoolExporter(SpanExporter):
             path.replace(self.directory / path.name)
         if staged:
             _fsync_directory(self.directory)
+        self._commit_oversized()
         shutil.rmtree(self.staging, ignore_errors=True)
+
+    def _commit_oversized(self) -> None:
+        if not self.oversized:
+            return
+        quarantine = quarantine_directory()
+        quarantine.mkdir(parents=True, exist_ok=True, mode=0o700)
+        for path, session, size in self.oversized:
+            path.replace(quarantine / path.name)
+            _alert(
+                f"Langfuse OTLP span of session {session} is {size} bytes, over the "
+                f"{MAX_BATCH_BYTES}-byte batch cap: quarantined whole, not delivered: "
+                f"{quarantine / path.name}"
+            )
+        _fsync_directory(quarantine)
+        self.oversized = []
 
     def discard(self) -> None:
         self.discarded = True
@@ -155,9 +188,12 @@ class DurableSpoolExporter(SpanExporter):
         group: list[ReadableSpan] = []
         group_bytes = 0
         for span in spans:
-            span_bytes = len(_encode([span]))
+            encoded = _encode([span])
+            span_bytes = len(encoded)
             if span_bytes > MAX_BATCH_BYTES:
-                raise ValueError("Single OTLP span exceeds local receiver envelope")
+                # No edge accepts it and replay would retry it forever; it is kept, never cut.
+                self._stage_oversized(span, encoded)
+                continue
             if group and group_bytes + span_bytes > MAX_BATCH_BYTES:
                 self._persist_batch(group)
                 group, group_bytes = [], 0
@@ -165,6 +201,19 @@ class DurableSpoolExporter(SpanExporter):
             group_bytes += span_bytes
         if group:
             self._persist_batch(group)
+
+    def _stage_oversized(self, span: ReadableSpan, encoded: bytes) -> None:
+        # Staged like any batch, so a discarded firing leaves no quarantine entry behind.
+        self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        free = shutil.disk_usage(self.directory).free
+        if free <= len(encoded) + MAX_BATCH_BYTES:
+            raise OSError(
+                f"Langfuse OTLP spool refused a {len(encoded)}-byte oversized span: only {free} "
+                f"bytes free on the volume holding {self.directory}; nothing was deleted"
+            )
+        path = _durable_save(self.staging / OVERSIZED_STAGING, encoded)
+        session = (span.attributes or {}).get(SESSION_ATTRIBUTE, "unknown")
+        self.oversized.append((path, str(session), len(encoded)))
 
     def _persist_batch(self, spans: Sequence[ReadableSpan]) -> None:
         payload = _encode(spans)

@@ -35,6 +35,7 @@ def test_check_config_prints_plan(env: Path, capsys: pytest.CaptureFixture[str])
     assert cli.main(["check-config"]) == cli.EXIT_OK
     out = capsys.readouterr().out
     assert f"repo_dir: {env}/Work/drive/base  (missing)" in out
+    assert "remote: origin\nbranch: (default branch of the remote)\n" in out
     assert f"- claude: {env}/.claude  (missing)" in out
 
 

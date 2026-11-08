@@ -43,6 +43,13 @@ def test_defaults() -> None:
     assert cfg.repo_dir == Path("/home/u/Work/drive/base")
     assert cfg.zstd_level == 9
     assert cfg.max_part_bytes == 1900 * 2**20
+    assert cfg.remote == "origin"
+    assert cfg.branch is None
+
+
+def test_remote_and_branch() -> None:
+    cfg = parse(_cfg(remote="backup", branch="archive/weekly"), ENV)
+    assert (cfg.remote, cfg.branch) == ("backup", "archive/weekly")
 
 
 @pytest.mark.parametrize("value", [1, 1900 * 2**20, 2**31])
@@ -107,6 +114,11 @@ def test_legacy_deferral_fields_are_validated_but_not_exposed() -> None:
         (_cfg(max_part_bytes=2**31 + 1), "max_part_bytes"),
         (_cfg(max_part_bytes="1900M"), "must be int"),
         (_cfg(max_part_bytes=True), "must be int"),
+        (_cfg(remote=""), "remote '' must match"),
+        (_cfg(remote="--upload-pack=x"), "must match"),
+        (_cfg(branch=1), "must be str"),
+        (_cfg(branch="a:b"), "must match"),
+        (_cfg(branch="a..b"), "without '..'"),
         # The repository must not be archived into itself, in either direction.
         ({"repo_dir": "~/.claude/drive", "dir": [{"name": "c", "path": "~/.claude"}]}, "overlaps"),
         ({"repo_dir": "~", "dir": [{"name": "c", "path": "~/.claude"}]}, "overlaps"),

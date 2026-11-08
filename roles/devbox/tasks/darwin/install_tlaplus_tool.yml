@@ -41,8 +41,23 @@
   register: devbox_tlaplus_installed
   failed_when: false
 
+- name: "Compare installed and released digest of {{ devbox_tlaplus_tool.name }}"
+  ansible.builtin.set_fact:
+    devbox_tlaplus_outdated: >-
+      {{ (devbox_tlaplus_installed.content | default('') | b64decode | trim) != devbox_tlaplus_asset.digest }}
+
+# A dry run cannot stage the download: tempfile creates nothing in check mode,
+# so the steps below would have no path to work in.
+- name: "Report pending release of {{ devbox_tlaplus_tool.name }}"
+  ansible.builtin.debug:
+    msg: >-
+      {{ devbox_tlaplus_tool.repository }}@{{ devbox_tlaplus_tool.tag }} would be
+      installed ({{ devbox_tlaplus_asset.digest }})
+  changed_when: true
+  when: devbox_tlaplus_outdated | bool and ansible_check_mode
+
 - name: "Install new release of {{ devbox_tlaplus_tool.name }}"
-  when: (devbox_tlaplus_installed.content | default('') | b64decode | trim) != devbox_tlaplus_asset.digest
+  when: devbox_tlaplus_outdated | bool and not ansible_check_mode
   block:
     - name: "Create staging directory"
       ansible.builtin.tempfile:

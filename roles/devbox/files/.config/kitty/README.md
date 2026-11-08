@@ -10,6 +10,12 @@ Where a binding is referenced by character below (e.g. `Cmd+C`), it is the
 **physical** key on the US-QWERTY position. On Russian, that's `С` on physical
 C, `В` on physical D, etc — same physical key.
 
+`clear_all_shortcuts yes` drops every kitty default shortcut: only the keys
+listed here exist. The intended feel is a Linux terminal — Cmd only for the
+clipboard and the tab/split basics — so none of kitty's macOS defaults
+(Cmd+Enter new window, Cmd+Opt+, debug screen, Cmd+K clear, …) are kept.
+Clear the screen with `Ctrl+L`.
+
 After editing `kitty.conf`, run through
 [`kitty_keybinding_tests.md`](../../../.claude/future_projects/kitty_keybinding_tests.md)
 to verify nothing regressed.
@@ -21,14 +27,16 @@ to verify nothing regressed.
 | `Cmd+T` | New tab at `$HOME` |
 | `Cmd+Shift+T` | New tab at current `cwd` |
 | `Cmd+1` … `Cmd+9` | Jump to tab N |
-| `Cmd+W` | **Disabled** (no-op). Replaces kitty's default tab-close to prevent browser-muscle-memory accidents |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Cmd+W` | **Disabled** (no-op) to prevent browser-muscle-memory accidents |
 
 ## Splits
 
 | Key | Action |
 |-----|--------|
 | `Cmd+D` | Vertical split (side by side) |
-| `Cmd+Shift+D` | Horizontal split (top/bottom) — overrides kitty's macOS default that bound this to `close_window` |
+| `Cmd+Shift+D` | Horizontal split (top/bottom) |
+| `Ctrl+Shift+R` | Resize the active split |
 | `Cmd+Opt+←/→/↑/↓` | Move focus between splits |
 | `Cmd+Shift+Enter` | Zoom active split fullscreen (toggle layout stack); press again to revert |
 
@@ -39,6 +47,7 @@ to verify nothing regressed.
 | `Cmd+C` | Copy selection to clipboard |
 | `Cmd+V` | Paste from clipboard |
 | `Cmd+X` | Cut selection |
+| `Ctrl+Shift+C` / `Ctrl+Shift+V` | Copy / paste (Linux terminal habit) |
 
 Auto-copy on selection is enabled (`copy_on_select clipboard`).
 
@@ -105,6 +114,9 @@ prompts" restore them at the physical-key layer.
 | `Ctrl+Shift+G` | Last command's output in a writable Neovim buffer (`:w path` to save) |
 | `Ctrl+Shift+Z` | Jump to previous shell prompt |
 | `Ctrl+Shift+X` | Jump to next shell prompt |
+| `Ctrl+Shift+F` | Search the scrollback |
+| `Shift+PgUp` / `Shift+PgDn` | Scroll a page |
+| `Ctrl+Shift+↑` / `Ctrl+Shift+↓` | Scroll a line |
 
 `shell_integration` is set to `no-cursor` — all features enabled except
 cursor-shape reset, so vim/nvim manage their own cursor.

@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#   "langfuse>=4.7,<5",
+#   "langfuse>=5,<6",
 # ]
 # ///
 """
@@ -41,10 +41,14 @@ SKILL_TAGS = (_opt("CC_LANGFUSE_SKILL_TAGS") or "true").lower() == "true"
 CAPTURE_SKILL_CONTENT = _opt("CC_LANGFUSE_CAPTURE_SKILL_CONTENT").lower() == "true"
 CAPTURE_IMAGES = (_opt("CC_LANGFUSE_CAPTURE_IMAGES") or "true").lower() == "true"
 OPERATOR_TAGS_VAR = "CC_LANGFUSE_TRACE_TAGS"
-try:
-    MAX_CHARS = int(_opt("CC_LANGFUSE_MAX_CHARS") or "20000")
-except ValueError:
-    MAX_CHARS = 20000
+# No cap unless CC_LANGFUSE_MAX_CHARS is set: the transcript is the only copy
+# replay has, and a cut observation cannot be restored later.
+MAX_CHARS: Optional[int] = None
+if _opt("CC_LANGFUSE_MAX_CHARS"):
+    try:
+        MAX_CHARS = int(_opt("CC_LANGFUSE_MAX_CHARS"))
+    except ValueError:
+        MAX_CHARS = 20000
 
 MAX_OPERATOR_TAGS = 20
 MAX_OPERATOR_TAG_CHARS = 200
@@ -657,10 +661,14 @@ def get_content_from_row(row: Dict[str, Any]) -> Any:
 
 def get_user_or_assistant_role_from_row(row: Dict[str, Any]) -> Optional[str]:
     # Claude Code transcript row format is internal. Prefer top-level row.type
-    # when it marks a chat row, then fall back to nested message.role.
+    # when it marks a chat row, then fall back to nested message.role. A row
+    # typed as anything else (e.g. an api-request-blob request record) is not
+    # a chat row even when its nested message carries a role.
     row_type = row.get("type")
     if row_type in ("user", "assistant"):
         return row_type
+    if row_type is not None:
+        return None
 
     message = row.get("message")
     if isinstance(message, dict):
@@ -804,11 +812,11 @@ def extract_text_from_content(content: Any) -> str:
         return "\n".join([p for p in parts if p])
     return ""
 
-def truncate_text(s: str, max_chars: int = MAX_CHARS) -> Tuple[str, Dict[str, Any]]:
+def truncate_text(s: str, max_chars: Optional[int] = MAX_CHARS) -> Tuple[str, Dict[str, Any]]:
     if s is None:
         return "", {"truncated": False, "orig_len": 0}
     orig_len = len(s)
-    if orig_len <= max_chars:
+    if max_chars is None or orig_len <= max_chars:
         return s, {"truncated": False, "orig_len": orig_len}
     head = s[:max_chars]
     return head, {"truncated": True, "orig_len": orig_len, "kept_len": len(head), "sha256": hashlib.sha256(s.encode("utf-8")).hexdigest()}

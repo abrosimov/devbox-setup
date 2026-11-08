@@ -1,0 +1,36 @@
+diff --git a/langfuse_hook.py b/langfuse_hook.py
+--- a/langfuse_hook.py
++++ b/langfuse_hook.py
+@@ -41,10 +41,14 @@ SKILL_TAGS = (_opt("CC_LANGFUSE_SKILL_TAGS") or "true").lower() == "true"
+ CAPTURE_SKILL_CONTENT = _opt("CC_LANGFUSE_CAPTURE_SKILL_CONTENT").lower() == "true"
+ CAPTURE_IMAGES = (_opt("CC_LANGFUSE_CAPTURE_IMAGES") or "true").lower() == "true"
+ OPERATOR_TAGS_VAR = "CC_LANGFUSE_TRACE_TAGS"
+-try:
+-    MAX_CHARS = int(_opt("CC_LANGFUSE_MAX_CHARS") or "20000")
+-except ValueError:
+-    MAX_CHARS = 20000
++# No cap unless CC_LANGFUSE_MAX_CHARS is set: the transcript is the only copy
++# replay has, and a cut observation cannot be restored later.
++MAX_CHARS: Optional[int] = None
++if _opt("CC_LANGFUSE_MAX_CHARS"):
++    try:
++        MAX_CHARS = int(_opt("CC_LANGFUSE_MAX_CHARS"))
++    except ValueError:
++        MAX_CHARS = 20000
+ 
+ MAX_OPERATOR_TAGS = 20
+ MAX_OPERATOR_TAG_CHARS = 200
+@@ -808,11 +812,11 @@ def extract_text_from_content(content: Any) -> str:
+         return "\n".join([p for p in parts if p])
+     return ""
+ 
+-def truncate_text(s: str, max_chars: int = MAX_CHARS) -> Tuple[str, Dict[str, Any]]:
++def truncate_text(s: str, max_chars: Optional[int] = MAX_CHARS) -> Tuple[str, Dict[str, Any]]:
+     if s is None:
+         return "", {"truncated": False, "orig_len": 0}
+     orig_len = len(s)
+-    if orig_len <= max_chars:
++    if max_chars is None or orig_len <= max_chars:
+         return s, {"truncated": False, "orig_len": orig_len}
+     head = s[:max_chars]
+     return head, {"truncated": True, "orig_len": orig_len, "kept_len": len(head), "sha256": hashlib.sha256(s.encode("utf-8")).hexdigest()}

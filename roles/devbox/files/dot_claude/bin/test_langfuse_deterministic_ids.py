@@ -37,9 +37,9 @@ PER_RUN_VARIABLES = (
     "LANGFUSE_USER_ID",
     "LANGFUSE_TRACING_ENVIRONMENT",
     "CC_LANGFUSE_TRACE_TAGS",
-    "CC_LANGFUSE_TRACE_SEED",
-    "CC_LANGFUSE_TRACEPARENT",
+    *langfuse_trace_hook.RUN_SCOPED_VARIABLES,
 )
+TRACEPARENT = f"00-{PARENT_TRACE_ID}-{PARENT_SPAN_ID}-01"
 FIRST_TURN_START = "2026-10-01T10:00:00.000Z"
 UUIDLESS_TURN_FIRST_ROW = "2026-10-01T10:01:01.000Z"
 LAST_TURN_START = "2026-10-01T10:02:00.000Z"
@@ -227,10 +227,14 @@ def run_pending_replay(
     monkeypatch: pytest.MonkeyPatch,
     *,
     remove_original: bool = False,
+    run_options: dict[str, str] | None = None,
 ) -> list[Identity]:
+    # run_options are what the live firing saw; replay itself starts without them.
     monkeypatch.setenv("CC_LANGFUSE_STATE_DIR", str(state))
     for name in PER_RUN_VARIABLES:
         monkeypatch.delenv(name, raising=False)
+    for name, value in (run_options or {}).items():
+        monkeypatch.setenv(name, value)
     payload = {
         "session_id": session_id,
         "transcript_path": str(transcript),
@@ -294,6 +298,32 @@ def test_replay_from_the_snapshot_reproduces_the_live_identities(
     assert replayed == live
 
 
+@pytest.mark.parametrize(
+    "run_options",
+    [
+        pytest.param({"CC_LANGFUSE_TRACE_SEED": "external-seed"}, id="seed"),
+        pytest.param({"CC_LANGFUSE_TRACEPARENT": TRACEPARENT}, id="attached-traceparent"),
+        pytest.param(
+            {
+                "CC_LANGFUSE_PARENT_TRACE_ID": PARENT_TRACE_ID,
+                "CC_LANGFUSE_PARENT_SPAN_ID": PARENT_SPAN_ID,
+            },
+            id="attached-parent-pair",
+        ),
+    ],
+)
+def test_replay_reproduces_the_live_identities_of_a_run_with_trace_options(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, run_options: dict[str, str]
+) -> None:
+    transcript = write_session(tmp_path / "projects", SESSION_ID)
+    live = run_live_hook(transcript, SESSION_ID, tmp_path / "live", **run_options)
+    replayed = run_pending_replay(
+        transcript, SESSION_ID, tmp_path / "replay", monkeypatch, run_options=run_options
+    )
+    assert replayed == live
+    assert live != run_live_hook(transcript, SESSION_ID, tmp_path / "unoptioned")
+
+
 def test_each_turn_and_each_session_gets_its_own_trace(tmp_path: Path) -> None:
     session = run_live_hook(
         write_session(tmp_path / "a", SESSION_ID), SESSION_ID, tmp_path / "state-a"
@@ -354,15 +384,14 @@ def test_trace_seed_keeps_its_formula_and_its_span_ids(tmp_path: Path) -> None:
 
 def test_attached_turns_nest_under_the_parent_with_reproducible_ids(tmp_path: Path) -> None:
     transcript = write_session(tmp_path / "projects", SESSION_ID)
-    traceparent = f"00-{PARENT_TRACE_ID}-{PARENT_SPAN_ID}-01"
     attached = run_live_hook(
-        transcript, SESSION_ID, tmp_path / "first", CC_LANGFUSE_TRACEPARENT=traceparent
+        transcript, SESSION_ID, tmp_path / "first", CC_LANGFUSE_TRACEPARENT=TRACEPARENT
     )
     assert {identity.trace_id for identity in attached} == {PARENT_TRACE_ID}
     assert {root.parent_span_id for root in roots(attached)} == {PARENT_SPAN_ID}
     assert len({identity.span_id for identity in attached}) == len(attached)
     again = run_live_hook(
-        transcript, SESSION_ID, tmp_path / "second", CC_LANGFUSE_TRACEPARENT=traceparent
+        transcript, SESSION_ID, tmp_path / "second", CC_LANGFUSE_TRACEPARENT=TRACEPARENT
     )
     assert again == attached
 

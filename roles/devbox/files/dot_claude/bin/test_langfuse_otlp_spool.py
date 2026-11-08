@@ -12,7 +12,7 @@ from uuid import uuid4
 import langfuse
 import pytest
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceRequest
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExportResult
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from vendor import durable_otel_exporter as spool
@@ -109,6 +109,64 @@ def spans_in(batch: bytes) -> int:
     return sum(
         len(scope.spans) for resource in request.resource_spans for scope in resource.scope_spans
     )
+
+
+OVERSIZED_PAYLOAD = "x" * 4096
+
+
+def export_with_one_oversized_span(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[spool.DurableSpoolExporter, list[ReadableSpan]]:
+    memory = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(memory))
+    tracer = provider.get_tracer("devbox-langfuse-test")
+    for index in range(3):
+        with tracer.start_as_current_span(f"ordinary-{index}", attributes={"session.id": "s-1"}):
+            pass
+    oversized = {"session.id": "s-1", "payload": OVERSIZED_PAYLOAD}
+    with tracer.start_as_current_span("oversized", attributes=oversized):
+        pass
+    spans = list(memory.get_finished_spans())
+    monkeypatch.setattr(spool, "MAX_BATCH_BYTES", len(spool._encode(spans[:1])) * 2)
+    exporter = spool.DurableSpoolExporter()
+    assert exporter.export(spans) is SpanExportResult.SUCCESS
+    return exporter, spans
+
+
+def test_an_oversized_span_is_quarantined_whole_and_the_rest_is_committed(
+    monkeypatch: pytest.MonkeyPatch,
+    spool_home: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exporter, spans = export_with_one_oversized_span(monkeypatch)
+    assert exporter.force_flush()
+
+    exporter.commit()
+
+    committed = [path.read_bytes() for path in spool_home.glob("*.otlp")]
+    assert sum(spans_in(batch) for batch in committed) == 3
+    (quarantined,) = spool.quarantine_directory().glob("*.otlp")
+    assert quarantined.read_bytes() == spool._encode(spans[3:])
+    error = capsys.readouterr().err
+    assert "session s-1" in error
+    assert f"is {len(spool._encode(spans[3:]))} bytes" in error
+    assert f"{spool.MAX_BATCH_BYTES}-byte batch cap" in error
+    assert str(quarantined) in error
+    hook_log = (spool_home.parent / "langfuse_hook.log").read_text(encoding="utf-8")
+    assert error.strip() in hook_log
+
+
+@pytest.mark.usefixtures("spool_home")
+def test_a_discarded_firing_quarantines_no_oversized_span(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    exporter, _ = export_with_one_oversized_span(monkeypatch)
+
+    exporter.discard()
+    exporter.commit()
+
+    assert not spool.quarantine_directory().exists()
 
 
 @pytest.mark.usefixtures("spool_home")

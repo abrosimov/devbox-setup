@@ -36,6 +36,17 @@ SPAN_QUEUE_SIZE_ENV: Final = "OTEL_BSP_MAX_QUEUE_SIZE"
 # The SDK default of 2048 overflows on one turn with many subagents. The queue
 # drains to local disk within the firing, so the bound only caps memory.
 SPAN_QUEUE_SIZE: Final = 65_536
+# Options that belong to one run rather than to the machine. The pending marker
+# records them, so replay re-runs a firing with the identities and content it had.
+RUN_SCOPED_VARIABLES: Final[tuple[str, ...]] = (
+    "CC_LANGFUSE_TRACE_SEED",
+    "CC_LANGFUSE_TRACEPARENT",
+    "CC_LANGFUSE_PARENT_TRACE_ID",
+    "CC_LANGFUSE_PARENT_SPAN_ID",
+    "CC_LANGFUSE_MAX_CHARS",
+    "CC_LANGFUSE_SKILL_TAGS",
+    "CC_LANGFUSE_CAPTURE_SKILL_CONTENT",
+)
 
 
 class PendingCapacityError(OSError):
@@ -202,8 +213,9 @@ def register_pending(payload: dict) -> tuple[Path, str, Path] | None:
         "environment": os.environ.get("LANGFUSE_TRACING_ENVIRONMENT", ""),
         "user_id": os.environ.get("LANGFUSE_USER_ID", ""),
         "trace_tags": os.environ.get("CC_LANGFUSE_TRACE_TAGS", ""),
-        "trace_seed": os.environ.get("CC_LANGFUSE_TRACE_SEED", ""),
-        "traceparent": os.environ.get("CC_LANGFUSE_TRACEPARENT", ""),
+        "run_environment": {
+            name: os.environ[name] for name in RUN_SCOPED_VARIABLES if name in os.environ
+        },
     }
     with registry_lock(root):
         replaced = marker_nonce(marker)

@@ -17,22 +17,34 @@ regular file because the repository's relative source layout is not installed.
 | Canonical copy | `roles/devbox/files/dot_claude/bin/vendor/langfuse_hook.py` |
 | Licence | MIT |
 
-### Why the Claude Code hook works for Antigravity CLI
+## `durable_otel_exporter.py`
 
-Antigravity CLI (agy) exposes the same hook lifecycle events (Stop, Start,
-PreToolUse, PostToolUse, PreCompact) and delivers the same stdin payload shape
-(`session_id`, `transcript_path`, `cwd`, `hook_event_name`). Its JSONL transcript
-format is structurally compatible: `entry.message.role`, `entry.message.content`
-with typed content blocks (`{type: "text", text: "..."}`), and
-`entry.message.model` — the same contract the Claude langfuse hook parses via
-`get_user_or_assistant_role_from_row()` and `get_content_from_row()`.
+A symlink to `../../../dot_claude/bin/vendor/durable_otel_exporter.py`, deployed the
+same way. The patched hook imports it from its own directory, so without it the hook
+cannot create its Langfuse client.
 
-Differences are handled entirely through environment variables:
+### Why the hook is registered but disabled for Antigravity CLI
 
-- `CC_LANGFUSE_STATE_DIR` → `~/.gemini/antigravity-cli/state` (isolates state
-  from Claude Code's `~/.claude/state`)
-- `CC_LANGFUSE_BASE_URL` / `CC_LANGFUSE_PUBLIC_KEY` / `CC_LANGFUSE_SECRET_KEY` →
-  same loopback otelbox credentials
+The `langfuse_hook` entry in `../../config/hooks.json.j2` stays `"enabled": false`,
+because the Claude hook cannot read what agy gives it:
+
+- **Payload.** agy sends camelCase fields (`conversationId`, `transcriptPath`) and no
+  `hook_event_name`; the hook reads `session_id` / `transcript_path` and exits without
+  reading anything.
+- **Transcript.** agy's `transcript.jsonl` (under
+  `~/.gemini/antigravity-cli/brain/<conversation>/.system_generated/logs/`) is a log of
+  typed steps (`USER_INPUT`, `PLANNER_RESPONSE` with `thinking` and `tool_calls`,
+  `RUN_COMMAND`, `VIEW_FILE`, ...) with no `message` and no role. The hook keeps only
+  rows typed `user` / `assistant` or carrying `message.role`, so it finds no turn:
+  every one of the 3,126 steps across 40 local transcripts is skipped. Tool calls carry
+  no ids to pair them with their result steps, and the file is a rolling window rather
+  than an append-only log.
+- **Output.** agy's Stop contract expects a JSON object on stdout; the hook writes none.
+
+Tracing agy needs a translator from its step log to turns, which has not been written.
+The environment for that path is already set by the `agy` fish wrapper:
+`CC_LANGFUSE_STATE_DIR` (`~/.gemini/antigravity-cli/state`, apart from Claude's),
+the loopback `CC_LANGFUSE_*` credentials, and `CC_LANGFUSE_TRACE_TAGS=["engine:agy"]`.
 
 ### Updating
 

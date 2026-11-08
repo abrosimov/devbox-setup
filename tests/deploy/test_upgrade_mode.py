@@ -102,6 +102,62 @@ def test_uv_tools_are_installed_in_both_modes() -> None:
     assert SWITCH in _when(upgrade)
 
 
+def _command_task(name: str) -> Doc:
+    tasks = [task for task in _tasks("install_from_brew_secondary.yml") if task["name"] == name]
+    assert len(tasks) == 1, name
+    return tasks[0]
+
+
+TOOLCHAIN_UPGRADES = {
+    # task name -> (path it must already exist at, text in changed_when)
+    "Update Rust toolchains": (".cargo/bin/rustc", "(updated|installed) - "),
+    "Update opam package repositories": (".opam/default", "synchronised from"),
+    "Upgrade OCaml packages": (".opam/default", "The following actions "),
+    "Upgrade SWI-Prolog LSP server": (".local/share/swi-prolog/pack/lsp_server", "upgraded"),
+}
+
+
+def test_toolchain_upgrades_are_gated_and_need_an_existing_install() -> None:
+    for name, (path, _) in TOOLCHAIN_UPGRADES.items():
+        task = _command_task(name)
+        command = task["ansible.builtin.command"]
+        assert SWITCH in _when(task), name
+        assert command["removes"].endswith("/" + path), name
+        assert "creates" not in command, name
+
+
+def test_toolchain_upgrades_report_change_from_output() -> None:
+    for name, (_, needle) in TOOLCHAIN_UPGRADES.items():
+        task = _command_task(name)
+        assert task["changed_when"] is not True, name
+        assert needle in task["changed_when"], name
+        assert task["register"] in task["changed_when"], name
+
+
+def test_toolchain_upgrades_run_after_their_first_install() -> None:
+    names = [task["name"] for task in _tasks("install_from_brew_secondary.yml")]
+    order = [
+        ("Init Rust toolchain", "Update Rust toolchains"),
+        ("Install necessary OCaml packages", "Update opam package repositories"),
+        ("Update opam package repositories", "Upgrade OCaml packages"),
+        ("Install SWI-Prolog LSP server", "Upgrade SWI-Prolog LSP server"),
+    ]
+    for first, then in order:
+        assert names.index(first) < names.index(then), (first, then)
+
+
+def test_rustup_never_self_updates() -> None:
+    argv = _command_task("Update Rust toolchains")["ansible.builtin.command"]["argv"]
+    assert argv == ["rustup", "update", "--no-self-update"]
+
+
+def test_first_installs_are_unchanged() -> None:
+    for name in ("Init Rust toolchain", "Install necessary OCaml packages"):
+        task = _command_task(name)
+        assert "creates" in task["ansible.builtin.command"], name
+        assert "when" not in task, name
+
+
 def test_app_store_follows_the_switch() -> None:
     (task,) = _tasks("install_from_appstore.yml")
     assert SWITCH in task["community.general.mas"]["state"]

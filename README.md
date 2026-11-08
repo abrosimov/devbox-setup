@@ -41,7 +41,7 @@ A profile is mandatory: bare `make run` / `make check` fail with `PROFILE is req
 
 Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_VARS='-e foo=bar'` (e.g. `--tags`: `make personal EXTRA_VARS='--tags packages'`).
 
-A provisioning run upgrades what it manages, not only installs it: Homebrew formulae and casks, npm globals, Go tools, uv tools and App Store apps go to their latest release. Casks are not upgraded greedily, so apps that update themselves keep doing so. Pinned artefacts (kubectl, TLA+, Tamias, the otelbox edge) follow their pins. For an install-only run, switch upgrading off: `make personal EXTRA_VARS='-e devbox_upgrade_mode=false'`.
+A provisioning run upgrades what it manages, not only installs it: Homebrew formulae and casks, npm globals, Go tools, uv tools, App Store apps, the Rust toolchains, the opam `default` switch and the SWI-Prolog `lsp_server` pack go to their latest release. Casks are not upgraded greedily, so apps that update themselves keep doing so. Pinned artefacts (kubectl, TLA+, Tamias, the otelbox edge) follow their pins. For an install-only run, switch upgrading off: `make personal EXTRA_VARS='-e devbox_upgrade_mode=false'`.
 
 ## Configuration
 

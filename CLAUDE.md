@@ -22,7 +22,8 @@ make init
 make personal   # personal profile
 make work       # work profile
 # Both install AND upgrade managed packages (devbox_upgrade_mode defaults to true:
-# brew formulae + casks (not greedy), npm, Go tools, uv tools, App Store apps).
+# brew formulae + casks (not greedy), npm, Go tools, uv tools, App Store apps,
+# Rust toolchains, the opam default switch, the SWI-Prolog lsp_server pack).
 # Install-only run:
 make personal EXTRA_VARS='-e devbox_upgrade_mode=false'
 

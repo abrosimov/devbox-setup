@@ -1,7 +1,8 @@
 ---
 # A provisioning run upgrades what it manages, not only installs it: Homebrew
-# formulae and casks, npm globals, Go tools, uv tools and App Store apps go to
-# their latest release. Casks are not upgraded greedily, so an app that updates
+# formulae and casks, npm globals, Go tools, uv tools, App Store apps, the Rust
+# toolchains (`rustup update`), the opam `default` switch and the SWI-Prolog
+# `lsp_server` pack go to their latest release. Casks are not upgraded greedily, so an app that updates
 # itself (`auto_updates true`) or ships as `version :latest` keeps doing so.
 # Pass `-e devbox_upgrade_mode=false` for an install-only run, e.g.
 #   make personal EXTRA_VARS='-e devbox_upgrade_mode=false'

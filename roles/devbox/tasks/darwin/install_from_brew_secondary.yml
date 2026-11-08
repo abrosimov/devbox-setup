@@ -194,6 +194,20 @@
   environment:
     PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
 
+# rustup itself is the Homebrew `rustup` formula, upgraded with the other
+# formulae, so only the toolchains are updated here and self-update stays off.
+# `removes:` skips a machine where the toolchain was never initialised; check
+# mode skips the command.
+- name: "Update Rust toolchains"
+  ansible.builtin.command:
+    argv: [rustup, update, --no-self-update]
+    removes: "{{ lookup('ansible.builtin.env', 'HOME') }}/.cargo/bin/rustc"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_rustup_update
+  changed_when: (devbox_rustup_update.stdout ~ devbox_rustup_update.stderr) is search('(updated|installed) - ')
+  when: devbox_upgrade_mode | default(true) | bool
+
 - name: "Init OCaml (auto-setup writes shell hooks)"
   ansible.builtin.command:
     cmd: opam init -y -a
@@ -209,9 +223,62 @@
     PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
     OPAMSWITCH: default
 
+# The playbook owns the `default` switch, so the whole switch is upgraded, not
+# only the packages above. Both steps are skipped in check mode and on a
+# machine without the switch.
+- name: "Update opam package repositories"
+  ansible.builtin.command:
+    argv: [opam, update]
+    removes: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam/default"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+    OPAMSWITCH: default
+  register: devbox_opam_update
+  changed_when: "'synchronised from' in devbox_opam_update.stdout"
+  when: devbox_upgrade_mode | default(true) | bool
+
+- name: "Upgrade OCaml packages"
+  ansible.builtin.command:
+    argv: [opam, upgrade, -y]
+    removes: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam/default"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+    OPAMSWITCH: default
+  register: devbox_opam_upgrade
+  # opam prints its action plan only when it has something to do.
+  changed_when: "'The following actions ' in devbox_opam_upgrade.stdout"
+  when: devbox_upgrade_mode | default(true) | bool
+
 - name: "Install SWI-Prolog LSP server"
   ansible.builtin.command:
     cmd: swipl -g "pack_install(lsp_server, [interactive(false)])" -t halt
     creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/swi-prolog/pack/lsp_server"
   environment:
     PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+
+# pack_install with upgrade(true) succeeds quietly on an up-to-date pack, so the
+# goal compares the version in pack.pl before and after and prints which one
+# happened; a failing goal makes swipl exit non-zero.
+- name: "Upgrade SWI-Prolog LSP server"
+  ansible.builtin.command:
+    argv:
+      - swipl
+      - -g
+      - >-
+        pack_property(lsp_server, directory(D)),
+        directory_file_path(D, 'pack.pl', F),
+        read_file_to_terms(F, T0, []), memberchk(version(Old), T0),
+        pack_install(lsp_server, [upgrade(true), interactive(false)]),
+        read_file_to_terms(F, T1, []), memberchk(version(New), T1),
+        ( Old == New
+        -> format('lsp_server unchanged at ~w~n', [Old])
+        ;  format('lsp_server upgraded ~w -> ~w~n', [Old, New])
+        )
+      - -t
+      - halt
+    removes: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/swi-prolog/pack/lsp_server"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_swipl_pack_upgrade
+  changed_when: "'lsp_server upgraded' in devbox_swipl_pack_upgrade.stdout"
+  when: devbox_upgrade_mode | default(true) | bool

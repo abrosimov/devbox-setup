@@ -20,7 +20,7 @@ Anatoly Levenchuk, with AI-assisted development. Original framework text: [CC BY
 | — | [HRM.Reference:4 - People, culture, offices and agents](#hrmreference4---people-culture-offices-and-agents) | Full text | Development after success; community; CoE; personal AI | OCE; HCD; CB; KCAE; Core development |
 | — | [HRM.Reference:5 - Construct and revise the connected arrangement](#hrmreference5---construct-and-revise-the-connected-arrangement) | Full text | AI work change; harmful hours; medical restriction; pay dispute | HRM.1–HRM.5 |
 | — | [HRM.Reference:6 - Alternatives, limits and use](#hrmreference6---alternatives-limits-and-use) | Full text | Supplier choice; continuity; evidence | Source-use account |
-| 1 | [HRM.1 - Construct and revise a coherent HR arrangement](#hrm1---construct-and-revise-a-coherent-hr-arrangement) | Stable | Workforce practices conflict; successful output but harmful conditions | STR; OPS; OCE; HRM.2–HRM.5 as needed |
+| 1 | [HRM.1 - Construct and revise a coherent HR arrangement](#hrm1---construct-and-revise-a-coherent-hr-arrangement) | Stable | Workforce planning; future qualified provision; practices conflict; successful output but harmful conditions | STR; OPS; OCE; HRM.2–HRM.5 as needed |
 | 2 | [HRM.2 - Substantiate a personnel assessment and selection](#hrm2---substantiate-a-personnel-assessment-and-selection) | Stable | Recruit; promote; allocate; work samples; AI assessment; evidence | Work analysis; qualified assessment; ADM |
 | 3 | [HRM.3 - Design and revise remuneration and progression](#hrm3---design-and-revise-remuneration-and-progression) | Stable | Job evaluation; grades; market rates; pay; benefits; incentives | MA; FIN where applicable; ADM |
 | 4 | [HRM.4 - Obtain employee voice and handle a contested personnel decision](#hrm4---obtain-employee-voice-and-handle-a-contested-personnel-decision) | Stable | Consultation; representation; grievance; investigation; appeal | Applicable institutional process; ADM |
@@ -69,7 +69,7 @@ These practical examples illustrate ways to enter the framework. If your questio
 
 **Stop or return.** If the existing rule and entitlement are clear, use Organization Administration to correct provision. A contested rule or valuation can need HRM.4.
 
-### Voice — A person needs influence or a decision they can challenge
+### Voice — A person needs to influence or challenge a personnel decision
 
 **Situation.** A change affects employees, a concern is being dismissed as resistance, or a personnel decision needs correction, determination or appeal.
 
@@ -109,7 +109,7 @@ The practical result is a warranted, obtainable arrangement and usable personnel
 
 ### HRM.Reference:2.1 - The common relationship and its different grounds
 
-An organization needs work under actual conditions. People participate under terms, obligations, expectations and alternatives of their own. The work changes those terms, while the terms influence who can and will perform the work. A technically possible service may remain unobtainable because its recruitment offer is implausible, its hours are harmful, its required helping work is unpaid, or no participant has accepted its contribution. A satisfactory service result can conceal these failures for a time.
+An organization needs work under actual conditions. People participate under terms, obligations, expectations and alternatives of their own. The work changes those terms, while the terms influence who can and will perform the work. A technically possible service may remain unobtainable because its recruitment offer is implausible, its hours are harmful, its required helping work is unpaid, or no one has agreed to perform the required work under the proposed terms. A satisfactory service result can conceal these failures for a time.
 
 HR practice acts on this continuing relationship through different professional operations. Assessment supports an inference about a person's contribution under stated conditions. Reward establishes the terms and grounds of exchange. Voice allows affected people to influence decisions and contest their application. A participation arrangement joins a person's circumstances and qualified constraints to available work and provision. The whole-configuration Method explains how these operations fit together and what a change requires one to reconsider.
 
@@ -167,7 +167,7 @@ Rest, leave, altered hours, workload limits or other adjustments can be part of 
 
 Culture can mean the ways of working that participants perform, explain, criticize, transmit and revise. Changing that culture requires changes in practice and its reproduction. Belonging and experienced support concern another aspect of participation. Voice, representation and remedy concern institutional influence. These can affect one another without becoming one measure. An enjoyable community event may leave work unchanged; a new reward rule may change willingness to help without changing anyone's capability.
 
-An organization can give HR broad responsibility for obtaining cultural contributions. This neither makes HR the exclusive performer nor supplies unlimited powers. Line managers must provide suitable work and time; specialists supply subject Methods; communities provide access to practitioners and criticism; participants retain their purposes and responses. A shared practice need not be one organized agent. A company, professional network and customer community can share some practices while retaining different commitments and powers.
+An organization can give HR broad responsibility for obtaining cultural contributions. This neither makes HR the exclusive performer nor supplies unlimited powers. Line managers must provide suitable work and time; specialists supply subject Methods; communities provide access to practitioners and criticism; participants retain their purposes and responses. A company, professional network and customer community can share some practices while retaining different commitments and powers.
 
 Development also begins after success. A mastered operation can make a new product, harder problem or better way of developing attainable. Core's development Methods, Strategy and the relevant domain practice supply that continuation. HRM examines the resulting work opportunities, terms, access and personnel uses. A deficit-only training intake would miss it. A person's independent trajectory may lead away from the employer; that difference calls for an actual participation decision, not a diagnosis of disloyalty.
 
@@ -185,7 +185,7 @@ Compare these with distributed provision, a competent colleague, an external pro
 
 ### HRM.Reference:4.3 - Allocate performance, authority and responsibility separately
 
-An agent may research a career, construct an assessment, propose a work arrangement, perform a permitted administrative act or check another result when it is capable and authorized. A personal agent can serve a person's outside opportunity or challenge; a corporate agent can serve the employer's commitments. Sharing technology does not merge their mandates. Set the permitted data and act, the recipient, the relevant quality conditions and the route for correction or revoked authority.
+An agent may research a career, construct an assessment, propose a work arrangement, perform a permitted administrative act or check another result when it is capable and authorized. A personal agent can serve a person's outside opportunity or challenge; a corporate agent can serve the employer's commitments. Sharing technology does not merge their mandates. Set the permitted data and act, the recipient and the relevant quality conditions. State how errors are corrected and what the agent must stop or change if its authority is withdrawn.
 
 AI can change the required capability and the work itself. Evaluate the actual human–AI or provider configuration. Retain an unaided human operation when the required result, credible operating conditions or an applicable rule require it; otherwise consider a changed operation or competent supply. A learning goal independently chosen by the person remains possible. Likewise, human review is selected for a needed capability, independence or institutional requirement, rather than appended to every agent act. Formal responsibility and powers still follow their actual rules; a high-quality generated recommendation does not grant them.
 
@@ -199,6 +199,8 @@ The old unaided reporting test no longer answers the advisory selection question
 
 The whole reveals a contradiction that none of the local outputs alone resolves: a role can look properly assessed and paid while its promised mentoring time is impossible. Revise the work, provision, target or promise at its owner. An engagement campaign cannot supply the missing time.
 
+HRM.3:4.2.1 obtains the comparative evaluation when changed job demands leave the reward basis unsettled. Corrected information about responsibility for mentoring can change both that evaluation and HRM.1's provision calculation. An adequate existing evaluation can be used directly while its work profile and comparison grounds still apply.
+
 Now change only a pay rule's effective date. Correct the affected entitlement and provision, retaining the supported work sample and acquired capability. If instead the AI arrangement loses a needed function, revisit the obtaining choice and the affected assessment. These different returns follow from the grounds of the original decisions.
 
 ### HRM.Reference:5.2 - Good output coexists with an unacceptable load
@@ -211,9 +213,15 @@ For a subsequent return, suppose the qualified advice permits a limited schedule
 
 ### HRM.Reference:5.3 - Ordinary payment and a voluntary community
 
-An employee shows that payroll used the wrong rate under an unambiguous current appointment. ADM can correct the obligation and provision directly. If the dispute is instead about the job evaluation, HRM.3 obtains the valuation grounds and HRM.4 supplies the competent challenge process. Making the records agree cannot decide the valuation.
+An employee shows that payroll used the wrong rate under an unambiguous current appointment. Use ADM to correct the payroll instruction and payment to match the existing obligation. If the dispute is instead about the job evaluation, HRM.3 obtains the valuation grounds and HRM.4 supplies the competent challenge process. Making the records agree cannot decide the valuation.
 
 A voluntary practice group wants to generalize a successful Method. Core development, the practice's research, Community Management and selected learning may be sufficient. HRM becomes relevant if an employer promises paid time or uses participation as promotion evidence. The changed relation selects an additional operation without turning the whole community into an HR department.
+
+### HRM.Reference:5.4 - Later capability depends on present provision
+
+A growing service expects enough qualified people at its launch date, but one current specialist will leave while another mentors a replacement. The relevant HR question is how the proposed participation arrangement supplies the work throughout that change. HRM.1:4.3.1 constructs future contributions from the current workforce and each option's movements, readiness and time requirements. The departure and learning arrangement can create a temporary gap even when the final workforce is sufficient.
+
+That result changes the connected choice. OPS tests the dated provision against demand; OCE compares temporary help, a different obtaining way or changed work; HRM.2 and HCD substantiate assessment and development. HRM.5 arranges the affected people's actual transitions. A later readiness estimate reopens the dependent coverage and launch decision while leaving an adequate pay or selection result intact. The worked case in HRM.1:5.2 shows this return.
 
 ## HRM.Reference:6 - Alternatives, limits and use
 
@@ -223,7 +231,7 @@ A competent external HR service remains a serious alternative to using this fram
 
 Use the smallest sufficient Method. For unfamiliar or coupled work, understand the Reference and the selected Methods' complete Solutions and cases; the entry table and conformance questions do not replace them. Adapt the procedure to the actual work relationship, population, jurisdiction and consequences. Obtain local professional results where the act depends on them. The framework teaches the receiving operation and its connection to work; it does not supply occupational medicine, every psychometric technique or worldwide employment law.
 
-The cases are constructed demonstrations. They establish neither a measured time saving nor a causal effect on culture, wellbeing or retention. The source-use account distinguishes professional prescriptions, historical theories, empirical observations and new construction. Check actual work and participant outcomes separately. A changed rule, work arrangement, agent capability, source conclusion or recurring failure reopens the affected premise and its consumers; preserve the results that remain adequate.
+The cases are constructed demonstrations. They establish neither a measured time saving nor a causal effect on culture, wellbeing or retention. The source-use account distinguishes professional prescriptions, historical theories, empirical observations and new construction. Check actual work and participant outcomes separately. A changed rule, work arrangement, agent capability, source conclusion or recurring failure requires reconsidering the affected premise and the decisions and activities that rely on it; preserve the results that remain adequate.
 
 ## HRM.Reference:End
 
@@ -235,7 +243,7 @@ The cases are constructed demonstrations. They establish neither a measured time
 
 ### HRM.1:1 - Problem frame
 
-**Use this when** a workforce proposal or existing practice changes conditions on which another personnel practice relies: a new job changes selection and pay, individual targets obstruct mentoring, or a service succeeds through hours that require protective action. The primary object is the combination of work, participation terms and HR practices for the affected population. Begin with the actual proposed contribution or changed condition and the current commitments. The first useful result is a compatible arrangement or an exact incompatibility returned to its owner.
+**Use this when** a workforce proposal or existing practice changes conditions on which another personnel practice relies: a new job changes selection and pay, individual targets obstruct mentoring, future work depends on people becoming ready in time, or a service succeeds through hours that require protective action. The primary object is the combination of work, participation terms and HR practices for the affected population. Begin with the actual proposed contribution or changed condition and the current commitments. The first useful result is a compatible arrangement or an exact incompatibility returned to its owner.
 
 An ordinary case with adequate existing grounds can use its established instruction directly. Do not conduct a complete HR audit to correct a known payroll error.
 
@@ -274,6 +282,22 @@ Develop plausible combinations of changed work, internal movement, recruitment, 
 
 A proposed recruitment campaign, for example, needs a real offer and qualifying work, not merely a target headcount. An internal-development option needs attainable practice and later use. An external-provider option may reduce employee learning needs while creating supplier supervision or integration work. An agent option can change both job demands and the number of participants. Compare complete contributions, including the costs of obtaining, operating and revising them.
 
+##### HRM.1:4.3.1 - Project workforce provision for each option
+
+When an option depends on a changed workforce, project the contributions it could supply through time with the work owner and affected participants. Reuse an adequate projection when its work, people and assumptions still fit. The useful result is the projected kind and amount of work available in each relevant period, the conditions on that supply, and the action needed where it falls short.
+
+**Align the work and the periods.** Receive the required contributions, their conditions and timing from the operating or strategic proposal. Choose intervals that expose consequential departures, learning periods and starts of new work. A monthly total may hide an uncovered week. Follow the projection far enough to see both the transition and the proposed continuing arrangement. Compare options under the same external scenario; when an option changes the work itself, revise its demand as well as its supply.
+
+**Project participation from the present workforce.** Begin with the people currently participating, the work they can perform under the relevant conditions, and their obtainable time. For each period, retain those continuing, add entries and returns when they join the work, and remove departures or absences for that interval. Carry the resulting population into the next period, distinguishing known changes from estimates. An internal move changes the sending and receiving work at their respective dates; it creates no additional person in the organization's total. For a larger population, group people only where the relevant work, participation and transition assumptions are sufficiently alike. Keep a scarce specialist contribution separate when an average would conceal its loss. Use permitted local observations or adequately comparable evidence to estimate uncertain movements, stating where conditions differ. A population rate estimates movement in that group; a particular person's agreement or stated intention supplies a different kind of input.
+
+**Establish when a contribution becomes usable.** Recruitment, appointment, induction and readiness for the required work can have different dates. For the people expected to join or learn, obtain a supported expectation of their contribution, its availability or a plausible range, and the conditions that must be met. HRM.2 supplies the personnel assessment; HCD supplies the selected human-development account; OCE qualifies the resulting work arrangement. Available training places and completed courses supply different grounds from demonstrated performance in the receiving work. For prospective development, keep the expected readiness conditional until the required evidence exists. An external labor pool supplies a possible obtaining source; count an external provider's contribution only under a feasible arrangement for the actual work and period.
+
+**Recalculate the time each option consumes.** Use the participation projection to derive usable time for the required contributions. Include the learners' practice and the experienced workers' recruitment, induction, mentoring and checking work. Account for these hours once: deduct them from delivery availability or include them as additional demand, using the same convention throughout the comparison. A person qualified for several roles still has one time allocation. An internal move also needs a feasible continuation for the work being left. Repeat this calculation for each obtaining option: a development option can reduce present delivery while increasing later capability, whereas a provider or agent option can change both the work remaining for people and its support requirements. Expected changes in retention or productivity need their own grounds; the intention to improve them is insufficient.
+
+**Retain uncertainty that can change the choice.** Keep dated commitments distinguishable from estimates. Use conditional scenarios or ranges when the evidence does not support probabilities; use a qualified forecasting model when its extra precision can change the decision. Vary consequential entry, exit or readiness assumptions together where they share a cause. For example, the departure of the only mentor can remove present delivery and delay a learner's future contribution. A population estimate of half a specialist cannot establish coverage of a particular shift. State the observation that would require revising the projection and obtain further evidence only where it can change the next move.
+
+**Resolve the gaps throughout the change.** Give OPS.10 the demand and usable provision for each period to test capacity, timing and coverage under the relevant work conditions. Match time to the work and period in which it can be used. Credit earlier production toward later demand only where the work permits it. An adequate end state can coexist with an earlier shortfall. Return each consequential gap to the obtaining choice: change the start or scope of work, obtain temporary coverage, revise the learning arrangement, or choose another complete option. Work back from the needed contribution through its acquisition and readiness time to the latest useful start, allowing for the uncertainty on which the decision relies. Recalculate the affected periods after changing an option. Give the person responsible for choosing an option the feasible arrangement, bounded conditional proposal or unresolved gap. Use :4.5 for the actual commitment; the projection itself supplies neither a participant's agreement nor actual performance.
+
 #### HRM.1:4.4 - Examine the dependencies that can defeat an option
 
 Use the relevant HR Method to substantiate each unresolved professional result. Then follow its consequences:
@@ -300,15 +324,43 @@ Use HRM.5 for particular continuation or transition arrangements and HRM.4 for r
 
 Examine actual provision, contribution and participant outcomes separately. Check whether mentoring occurred in available time, whether the protected schedule was respected, whether the selected person could obtain the promised tools, and whether reward followed the established terms. Satisfaction, retention, absence and output can answer different questions and should not be collapsed into one success score.
 
-A consequential observation can reveal a mechanism without establishing a causal effect. Return a changed condition to the smallest adequate owner and follow its consumers. Preserve unrelated valid results. A changed pay date can leave capability evidence intact; changed task content can require new assessment while an existing appointment remains effective. Recurring contradictions may justify redesigning the configuration rather than correcting another isolated case.
+Compare actual entry, departure, readiness and usable time with the assumptions behind future provision. Revise the affected periods and commitments when those grounds change. A readiness delay may extend mentoring and temporary cover together; a changed assignment can remove available time while leaving capability intact.
+
+A consequential observation can reveal a mechanism without establishing a causal effect. Return the changed condition to the practitioner responsible for the affected assessment or arrangement, and trace which decisions and activities depend on that condition. Preserve unrelated valid results. A changed pay date can leave capability evidence intact; changed task content can require new assessment while an existing appointment remains effective. Recurring contradictions may justify redesigning the configuration rather than correcting another isolated case.
 
 ### HRM.1:5 - Archetypal Grounding
+
+#### HRM.1:5.1 - Mentoring competes with current delivery
 
 A six-person service proposes advisory work after successful report automation. Each person's thirty available work hours are already allocated to delivery. The proposal adds three hours of mentoring for each of two experienced advisers while leaving all delivery commitments unchanged. HRM.2 can justify their advisory capability and HRM.3 can establish an appropriate reward, yet the combination still demands sixty-six hours from the advisers' sixty-hour provision.
 
 The owner considers reducing delivery, obtaining six hours of adequate external help, or changing the mentoring promise. Suppose the service can obtain that external help with the required subject access and permitted information. OCE qualifies the provision; OPS revises allocation; HRM confirms the terms and obtains participants' responses. The complete arrangement now has a plausible obtaining way. Its success still needs actual provision and use.
 
-Change the condition: a qualified assessment shows that the service's repeated late coverage violates a required working condition. Paying more for the same hours does not solve it. Reconsider the coverage, service window or obtaining arrangement. Conversely, if the only change is a mistaken payroll date, use ADM to repair that obligation; retain the work and assessment results.
+Change the condition: a qualified assessment shows that the service's repeated late coverage violates a required working condition. Paying more for the same hours does not solve it. Reconsider the coverage, service window or obtaining arrangement. Conversely, if the only change is a mistaken payroll date, use ADM to correct the recorded payroll date or payment timing under the existing terms; retain the work and assessment results.
+
+#### HRM.1:5.2 - Development restores later capacity but creates an earlier gap
+
+The following figures are teaching premises for a service with one kind of specialist work. Two qualified specialists can each supply eight delivery hours a week. One leaves after week 4. The service has committed to eight hours a week through week 8 and is considering an increase to sixteen from week 9.
+
+An employee from another team could acquire the required capability. That team has already arranged coverage for the employee's eight released hours a week. The proposed learning arrangement uses those hours for practice during weeks 1–8 and expects eight hours of qualified delivery from week 9. It also requires four hours a week from the specialist who stays. For this case, the supervised practice produces no independently usable delivery. The learning estimate and the later assignment remain conditional on adequate performance evidence.
+
+The work owner constructs the following projection before adding any temporary help. The mentoring hours are deducted from delivery availability, so they are not also added to the delivery demand.
+
+| Period | Specialist delivery available before mentoring, hours/week | Mentoring deduction, hours/week | Learner delivery expected, hours/week | Usable delivery, hours/week | Required delivery, hours/week |
+| --- | --- | --- | --- | --- | --- |
+| Weeks 1–4 | 16 | 4 | 0 | 12 | 8 |
+| Weeks 5–8 | 8 | 4 | 0 | 4 | 8 |
+| From week 9, if readiness is established | 8 | 0 | 8 | 16 | 16 |
+
+The final arrangement covers the proposed demand, but weeks 5–8 lack four qualified hours each week. The earlier spare hours cannot perform later service requests. This changes the obtaining choice before any new service promise is made.
+
+Suppose a qualified provider can supply four delivery hours a week from week 5, with adequate access and no further supervision by the service's specialist. Obtaining that contribution requires two weeks, so the service must arrange it by the end of week 2. Compare development with this temporary cover against another complete way of supplying the work, including continuing external provision. Suppose the comparison favors development plus cover. HRM.5 settles the participants' transition terms; the work owner obtains the provider and reserves the mentoring time. The proposed increase remains conditional on the learner's demonstrated readiness and an effective assignment.
+
+Now change one premise. At the end of week 6, observed practice supports a later readiness estimate: week 11, with the four mentoring hours still needed in weeks 9–10. The provider can extend its existing four hours but cannot supply more. For weeks 9–10 the revised arrangement therefore supplies four specialist delivery hours plus four provider hours: **eight**, against the proposed sixteen. Merely extending the original cover does not support the increase.
+
+The owner can retain the eight-hour service through week 10 if the extension is obtainable, and reconsider the increase for week 11 when readiness is established. An increase that must start in week 9 would require another eight qualified delivery hours or a different work arrangement. Existing commitments would need their applicable revision, rather than a silent change in the forecast. The learner's course schedule alone cannot authorize removing cover.
+
+This case uses an individual contribution because one person's timing changes the choice. The same construction can use justified population estimates for a larger workforce, while retaining scarce capabilities and shared learning resources where aggregation would hide a consequential gap.
 
 ### HRM.1:6 - Bias-Annotation
 
@@ -319,6 +371,7 @@ Management records can omit unpaid and invisible work, and silence can reflect a
 - Does the chosen option specify actual work and attainable participation under current commitments?
 - Are the consequential assessment, reward, voice and protection grounds adequate for their particular uses?
 - Has the construction resolved incompatible time, provision or terms rather than documenting them separately?
+- Where future provision matters, does each option account for participation, readiness and obtaining effort in every consequential period?
 - Can the authorized acts and promised work become effective together?
 - Does each material change return to its affected grounds while preserving adequate results?
 
@@ -340,9 +393,11 @@ The governed object is the HR configuration across practices and participants. G
 
 Boxall and Purcell's plural account connects work organization, employment practices and differing interests; this Method adopts that field basis and develops an explicit construction and return. The bounded Li and colleagues study cautions against assuming that an HR bundle benefits every dimension of wellbeing. Its cross-sectional 2009 data do not estimate this Method's effect. WHO's distinction between work-condition prevention and individual support informs the receiving protection branch; the complete clinical or safety contribution remains external. At comparable scope, a qualified HR service can supply the same needed configuration. Use it when its result and joins are sufficient; this Method adds a reusable explanation, not presumed superiority.
 
+APSC's workforce-planning guidance and HRSA's supply model inform the treatment of future participation and time. Section 4.3.1 connects those grounds with qualified performance, actual participation terms and the effort of obtaining new capability. The connection is developed in this framework, and the example uses hypothetical figures. HRM.Source:1 identifies the selected treatments and their limits.
+
 ### HRM.1:12 - Relations
 
-HRM.2–HRM.5 supply the distinct personnel results. STR supplies direction; OPS work and commitments; OCE.8 whole obtaining alternatives; ADM effective acts and provision. HCD and C.40.JD supply selected capability development. Qualified institutional and health/safety suppliers constrain the feasible arrangement. HRM.Reference:2 explains why these contributions are connected without making their entire supplying disciplines parts of HRM.
+HRM.2–HRM.5 supply the distinct personnel results. STR supplies direction; OPS work and commitments, with OPS.10 testing the projected provision; OCE.8 whole obtaining alternatives; ADM effective acts and provision. HCD and C.40.JD supply selected capability development. Qualified institutional and health/safety suppliers constrain the feasible arrangement. HRM.Reference:2 explains why these contributions are connected without making their entire supplying disciplines parts of HRM.
 
 ### HRM.1:End
 
@@ -493,7 +548,7 @@ Different questions hide under “fair pay.” Job value concerns the demands of
 
 Identify the affected jobs, people and time periods; the current terms; applicable agreements, minimums, equality and consultation requirements; the authority to alter them; and the available budget and payment capacity. Obtain qualified interpretation where an act depends on uncertain institutional grounds. Separate an owed amount from a prospective design choice.
 
-Explain the contribution the arrangement is intended to support and the people for whom it must be obtainable. An employer may seek scarce capability, predictable service, progression, shared learning or some combination. Employees can value money, time, security, flexibility and opportunities differently. Obtain their relevant responses instead of assuming a universal preference ranking. Non-financial conditions can matter to an offer, but do not erase an existing monetary or protective obligation.
+State what work or participation the arrangement should support and who is expected to provide it. Identify who can receive or use the proposed rewards. An employer may seek scarce capability, predictable service, progression, shared learning or some combination. Employees can value money, time, security, flexibility and opportunities differently. Obtain their relevant responses instead of assuming a universal preference ranking. Non-financial conditions can matter to an offer, but do not erase an existing monetary or protective obligation.
 
 #### HRM.3:4.2 - Establish the different bases of comparison
 
@@ -505,9 +560,35 @@ For **individual progression**, specify the rule and evidence: for example, an a
 
 For **variable reward**, establish what outcome or contribution qualifies, the period, attribution, thresholds or other rule, uncertainty and limits of participant control. An OPS.22 finding becomes a reward input only when its interpretation fits that rule. Output from an agent or a team does not automatically identify the individual contribution. Do not reward apparent speed by creating an incentive to conceal defects, move work to colleagues or exceed protected hours.
 
+#### HRM.3:4.2.1 - Obtain a comparative evaluation of changed work
+
+Use this operation when the job-value basis remains unsettled. A sufficient current evaluation can be used directly when it covers the actual work, relevant comparison jobs and intended decision, explains its judgement, and leaves no unresolved condition that could change that decision. A changed title alone need not reopen it. A material change in duties, an omitted demand or an unsupported comparison does.
+
+**Establish the work being compared.** Identify the jobs and the period or proposed arrangement. For each job, describe what its holder is expected to accomplish and under what conditions. Use existing descriptions together with information from people who perform and depend on the work. Ask for concrete tasks, decisions, interactions and recurring difficulties; include help and coordination that the formal description omits. Resolve conflicting accounts through the people or observations that can distinguish them. Let affected workers check whether the resulting profile represents their work. State which demands belong to an intended future arrangement; evaluation of that profile applies under those proposed conditions.
+
+Choose the comparison scope from the decision. A revised job may be assessed against an adequate existing scheme and relevant comparison jobs. Designing a common structure, or discovering a biased factor definition, can require a wider set. Selecting only jobs with similar titles can exclude the very comparison needed to expose undervaluation. Keep actual pay and individual performance separate from the description of demands; both have later uses in the reward decision.
+
+**Obtain a complete evaluation approach and people able to apply it.** A professional service can supply the evaluation, or a prepared internal team can perform it using an applicable scheme. One accessible route for a detailed point-factor approach is the EC/EIGE [job-evaluation toolkit](https://eige.europa.eu/sites/default/files/documents/eu-wide-guidelines-on-gender-neutral-job-evaluation-and-classification-step-by-step-toolkit.pdf): Tools 0–2 prepare the people and job information; Tool 5 and the complete factor and subfactor plan in §5.1 explain the evaluation; Tools 6–7 connect corrected descriptions and subsequent changes. Use those complete instructions and any calculation support on which the chosen approach depends. Before using calculated results, check that the aid implements the chosen factor-specific levels, point allocation and grouping rules. Resolve an inconsistency with the evaluation provider. Another established approach can be sufficient when it supports the same required comparison.
+
+Evaluators need to understand the chosen factors, distinguish adjacent levels, examine job evidence and recognize systematic omissions or double counting. Practice on relevant jobs before relying on the comparison; discuss why the descriptions warrant particular levels. Bring in people who know the work and provide the required worker participation. Obtain training or professional help where the evaluation capability is missing. Position in management or familiarity with present salaries does not supply these abilities. Agree who will resolve a contested evaluation under the applicable arrangement.
+
+**Apply the same declared scheme to the job profiles.** A factor identifies a demand being compared; its subfactors distinguish aspects that need separate judgement. The EC/EIGE approach covers skills, responsibility, effort and working conditions, including demands easily missed in care, coordination and helping work. Its level descriptors explain the differences to judge. Read a profile against each applicable descriptor and record the work facts that support the assigned level. Different evaluators can first make their judgements separately, then examine disagreements against the evidence and definitions.
+
+When the facts are insufficient, obtain the missing information or retain the alternative judgements and their consequences. Averaging disputed level labels would hide the unresolved question. A missing description is not evidence that a demand is absent. Likewise, an employee's additional qualification counts only insofar as the job requires the corresponding knowledge. Follow the scheme's distinctions between overlapping demands: for example, the communication skill needed to help colleagues and responsibility for their development concern different aspects of that work.
+
+**Derive and examine the comparison.** In a point-factor scheme, convert the supported levels through its stated point allocation, apply any weights as prescribed, and combine the contributions under its calculation rule. Recover the score's meaning and range, and the rule for any grouping. Level numbers alone do not authorize that arithmetic. Points express the adopted evaluation of relative job demands; the financial terms are constructed separately in :4.3.
+
+Examine the full profiles as well as the totals. Check that the same demand receives the same interpretation across jobs and that a supposedly low-demand job has not merely been described less completely. Weights determine how demands contribute to the combined judgement. Examine whether they have a job-relevant, explainable basis and whether omitted or duplicated demands favor particular kinds of work. If a material demand requires a changed factor, descriptor or weighting, revise the affected common scheme and comparisons together. Do not adjust one job's weights to obtain a preferred grade. A new scheme need not reproduce the old hierarchy. Similar demands may legitimately produce close scores; a suspected inconsistency calls for examination of the work evidence and scheme.
+
+If supported alternative judgements place a job in different groups, identify the fact or interpretation that can settle the difference. Where it remains unresolved, pass a conditional result to the reward owner. Where the distinction cannot change the intended decision, explain that limit and use the adequate result. This prevents both false precision and unnecessary reevaluation.
+
+**Return the evaluation to the reward decision.** Supply the work profiles, scheme used, reasoned judgements and resulting comparison, together with the consequential uncertainty and conditions for reconsideration. An existing professional report can carry these grounds. The recipient must be able to explain why the changed job is treated as proposed and which evidence could alter that treatment.
+
+Use the comparison alongside market grounds, progression rules, applicable obligations and affordability in :4.3–:4.5. Return a corrected account of the work to HRM.1 when obtaining choices or time allocations depend on it. HRM.4 supplies the applicable participation or challenge process. Reopen the affected evaluation when the actual duties or their conditions change; retain the earlier result for the work it described. An evaluation can inform a prospective reward decision while existing terms continue to govern payment.
+
 #### HRM.3:4.3 - Construct a coherent reward arrangement
 
-Combine the bases into terms people can understand: base pay or bands, justified supplements, progression, variable components, benefits and relevant non-financial conditions. Explain which component answers which question. A grade can organize job values while a separately justified premium responds to a market condition. A progression rule can use demonstrated capability while an allowance pays for a specified condition. One label need not pretend to explain every amount.
+Combine the bases into terms people can understand: base pay or bands, justified supplements, progression, variable components, benefits and relevant non-financial conditions. Explain which component answers which question. A grade can organize job values while a separately justified premium responds to a market condition. A progression rule can use demonstrated capability while an allowance pays for a specified condition.
 
 Compare the complete costs and cash demands with MA and, where applicable, FIN. Include transition obligations, administration and effects on other groups. A budget limit can require changed work, a smaller undertaking, phased discretionary changes or a different obtaining choice. It does not make an amount already owed disappear. Take an infeasible arrangement back to HRM.1 rather than presenting an unfunded promise as motivation.
 
@@ -527,11 +608,23 @@ Observe whether the arrangement obtains the intended participation and contribut
 
 ### HRM.3:5 - Archetypal Grounding
 
-A service changes from routine reporting to advice and paid mentoring. A qualified job evaluation finds greater responsibility in the advisory work. The employer constructs an illustrative annual band of 60–72 units and a progression rule based on specified advisory capability; these numbers demonstrate the reasoning, not market or legal benchmarks. A market comparison supports considering a separate 4-unit supplement for a scarce specialty. The employer must still establish that the resulting terms and differences meet its applicable obligations and budget.
+A service changes from routine reporting to advice and paid mentoring. Its new work profile includes judging unfamiliar client situations, explaining recommendations and developing new advisers. This is a constructed case. The distinction between informal guidance and regular responsibility for others' development illustrates the EC/EIGE people-responsibility subfactor; all points, group boundaries and pay amounts below are hypothetical local choices, not that source's numerical scheme.
 
-An experienced adviser receives 68 base units and mentors new colleagues. A proposed bonus based solely on billable hours would penalize those agreed mentoring hours. The owner changes the target to the attainable delivery contribution after the allocated mentoring time and specifies how both contributions are evidenced. Paying a larger bonus on an impossible target would not solve the incompatibility.
+The employer uses prepared evaluators and an established point-factor scheme. They compare the new profile with existing reporting and coordination jobs under the same definitions. Their evaluation covers the full set of demands, including the knowledge needed for advice, communication with clients, responsibility for information and the effort and conditions of the work. One consequential disagreement concerns mentoring: the old description says “help colleagues when asked,” while the proposed arrangement assigns regular responsibility for the development of two new advisers.
+
+The evaluators ask who selects their learning work, follows progress and responds when they cannot perform it. The work owner and advisers establish that each mentor will coordinate those activities and provide continuing support; a manager retains appointment and pay decisions. They correct the profile and judge the people-responsibility demand at level 3, rather than level 2 for informal guidance with limited responsibility. They compare that interpretation with the coordination job's regular developmental responsibility. The judgement concerns what the job requires of any holder, including a replacement for the current experienced adviser.
+
+Suppose the complete local scheme has a total range of 0–1,000 points. Its declared conversion gives 40 points for this subfactor at level 2 and 60 at level 3; these contributions already include its weighting. The report retains the other supported factor judgements, whose contributions total 540 points. The two possible totals were therefore 580 and 600, rather than an average of the disputed levels. Under the declared grouping, B covers at least 550 but less than 600, and C covers at least 600 but less than 650. The corrected information supports 600 and group C. An existing coordination job totals 610 under the same scheme and also falls in C; its full profile remains available to explain the comparison. Neither the shared group nor the ten-point difference determines individual pay. Had the mentoring facts remained unsettled, the report would have retained the two possible group results and the missing information.
+
+For the evaluated advisory job, the employer constructs an illustrative annual band of 60–72 units and a progression rule based on specified advisory capability. A market comparison supports considering a separate 4-unit supplement for a scarce specialty. The employer must still establish that the resulting terms and differences meet its applicable obligations and budget; the job points do not calculate these monetary amounts.
+
+An experienced adviser receives 68 base units and mentors new colleagues. A proposed bonus based solely on billable hours would penalize those agreed mentoring hours. The owner reduces the billable-hours target to what the adviser can deliver in the time remaining after the allocated mentoring hours, and specifies how billable work and mentoring are evidenced. Paying a larger bonus on an impossible target would not solve the incompatibility.
 
 One employee challenges the omission of substantial coordination demands from another job's description. HRM.4 obtains a competent examination; the valuation is reconsidered from the corrected work information. If, instead, the description and rule are sound but payroll omitted an effective supplement, ADM corrects the payment. Those are different repairs.
+
+Now change the work arrangement. A shared development service takes over the actual responsibility for planning and following the new advisers' development. Advisers still help colleagues interpret cases, but no longer choose their development work or follow their progress. HRM.1 establishes that the receiving service can supply that work. Evaluators revisit the affected profile and check whether other demands also changed. If the remaining 540-point contribution is still supported, the people-responsibility contribution becomes 40 and the total becomes 580, placing the revised job in B. If communication, effort or other demands changed too, their earlier judgements must also be revised before using a new total.
+
+The earlier 600-point result still describes the earlier job. The work change supplies a new reward question under the applicable agreements, participation and transition requirements; it does not itself alter anyone's entitlement or payment. HRM.3 constructs the supported terms, HRM.4 handles required agreement or contest, and ADM applies an authorized effective change. Merely assigning the service a new title while advisers continue to carry the developmental responsibility would leave the original evaluation basis in place.
 
 ### HRM.3:6 - Bias-Annotation
 
@@ -540,7 +633,7 @@ Job descriptions and market categories can omit work disproportionately performe
 ### HRM.3:7 - Conformance Checklist
 
 - Can each material pay difference be traced to an applicable obligation or an explained job, market, progression or variable-reward ground?
-- Do actual job information and comparison populations support those grounds?
+- Do actual job profiles and comparison populations support those grounds, with an applicable evaluation scheme and unresolved judgements made visible?
 - Are helping work, protection and other commitments compatible with the incentives and time allocation?
 - Is the complete arrangement affordable without erasing owed terms?
 - Are required participation, decision, effective date, payment and challenge obtainable?
@@ -562,11 +655,13 @@ Reward connects work, contribution, alternatives and institutional terms. It is 
 
 ### HRM.3:11 - SoTA-Echoing
 
-ILO's 2026 treatment of gender-neutral job evaluation supplies the equal-value comparison of job demands and correction of omissions. CIPD's reward account supplies the broader combination of base pay, progression, variable reward, benefits and internal/external positioning. This Method adapts those distinct contributions into one construction with explicit transitions and returns. Neither source supplies every jurisdiction's rules or a universal optimal pay formula. Qualified local compensation provision can be the sufficient alternative; the recipient still needs its terms, grounds and implementation conditions.
+ILO's 2026 treatment of gender-neutral job evaluation supplies the equal-value comparison of job demands and correction of omissions. The EC/EIGE 2026 toolkit develops a professional route from work information through factor-level judgements and comparison to classification and follow-up. The detailed factor definitions and level descriptors are available in that toolkit. Its European institutional discussion is context-specific; weights and grouping rules require justification for the actual comparison.
+
+CIPD's reward account supplies the broader combination of base pay, progression, variable reward, benefits and internal/external positioning. This Method connects those distinct contributions to the work arrangement, contested evidence and effective terms. The numerical example is an authored conditional calculation, not a result reported by those sources. Qualified local compensation provision can be sufficient when its terms, grounds and implementation conditions answer the receiving question.
 
 ### HRM.3:12 - Relations
 
-HRM.1 resolves wider work/practice incompatibilities; HRM.2 supports an assessment-dependent progression claim; HRM.4 provides participation and challenge; HRM.5 applies terms to a particular transition. OPS.22 supplies operating findings at their scope. MA and FIN supply economic and funding grounds; ADM realizes obligations and payments. Professional pay-equity, market and institutional suppliers retain their own judgement.
+HRM.1 supplies the proposed work arrangement and receives corrected job demands that change provision or time allocation. HRM.2 supports an assessment-dependent progression claim; HRM.4 provides participation and challenge; HRM.5 applies terms to a particular transition. OPS.22 supplies operating findings at their scope. MA and FIN supply economic and funding grounds; ADM realizes obligations and payments. Professional job-evaluation, pay-equity, market and institutional suppliers retain their own judgement.
 
 ### HRM.3:End
 
@@ -577,7 +672,7 @@ HRM.1 resolves wider work/practice incompatibilities; HRM.2 supports an assessme
 
 ### HRM.4:1 - Problem frame
 
-**Use this when** affected people need to influence a work or personnel decision, raise a concern, negotiate terms, or challenge an application that requires a competent response. Begin by recovering the issue in their terms and identifying the result and process it needs. The first useful result is an obtainable route to influence, determination or remedy, followed through to its actual use.
+**Use this when** affected people need to influence a work or personnel decision, raise a concern, negotiate terms, or challenge how a personnel rule or decision has been applied. Begin by recovering the issue in their terms and identifying the result and process it needs. The first useful result is an obtainable route to influence, determination or remedy, followed through to its actual use.
 
 The object is the participation or contested-decision process. Use a sufficient routine correction directly. Do not make a formal grievance the price of obtaining a clear payment correction or preventive protection.
 
@@ -636,9 +731,9 @@ Check whether the participation opportunity, determination and remedy actually o
 
 A company proposes using community contributions in promotion. Employees say that evening participation favors people with free time and that private learning discussions were never intended as selection evidence. Consultation occurs while the promotion design is still open. The owner distinguishes the proposed contribution from the proposed evidence and terms. HRM.2 develops a work-relevant demonstration during obtainable paid time; private developmental material remains outside the selection use unless separately justified and permitted. The response changes the design rather than merely explaining it more enthusiastically.
 
-Later, an employee challenges a promotion application because their work evidence was omitted. The competent process examines the omission and its effect under the existing criteria. If the omission could change the comparison, a qualified reassessment supplies the corrected recommendation; the authorized decision and its remedy follow. This does not require reopening the entire culture programme.
+Later, an employee challenges the promotion assessment because evidence of their work was omitted. The competent process examines the omission and its effect under the existing criteria. If the omission could change the comparison, a qualified reassessment supplies the corrected recommendation; the authorized decision and its remedy follow. This does not require reopening the entire culture programme.
 
-A different concern reports threatening conduct by the usual manager. That route cannot rely solely on asking the same manager to resolve it informally. Obtain the applicable alternative and protective response, then the competent inquiry. The example selects a process; it does not supply one universal legal procedure.
+A different concern reports threatening conduct by the usual manager. Do not rely solely on that manager to resolve the concern informally. Obtain the applicable alternative and protective response, then the competent inquiry. The example selects a process; it does not supply one universal legal procedure.
 
 ### HRM.4:6 - Bias-Annotation
 
@@ -701,7 +796,7 @@ A career conversation can promise work that does not exist. Retention can be pur
 | Protection and discretionary offers | A binding adjustment or restriction is not a retention bargaining chip. |
 | Privacy and usable work information | Receive the functional conditions needed by the work owner without unnecessary clinical disclosure. |
 | A nominal transition and actual provision | Verify the work, access, time and support, not only the personnel record. |
-| Continuity and changed conditions | Preserve current obligations while establishing the next arrangement and its return conditions. |
+| Continuity and changed conditions | Preserve current obligations while establishing the next arrangement and the conditions for reviewing it. |
 
 ### HRM.5:4 - Solution
 
@@ -770,8 +865,8 @@ The employer's preference for continuity can dominate the person's aims, and app
 ### HRM.5:7 - Conformance Checklist
 
 - Is the proposed transition grounded in the actual relation, circumstances, aims and obligations?
-- Are clinical or safety questions obtained from qualified suppliers, with serious functional difficulty taken seriously before output failure?
-- Are required constraints distinguished from discretionary preferences and supplied through actual work and terms?
+- Are clinical or safety assessments obtained from qualified suppliers, with serious functional difficulty taken seriously before output failure?
+- Are required constraints distinguished from discretionary preferences and respected in actual work and terms?
 - Does the arrangement have obtainable tasks, support, coverage, access and effective provision?
 - Are private information and personal/corporate agent mandates bounded by the actual purpose and permissions?
 - Can change reopen the affected conditions, and can a supported exit remain a legitimate result?
@@ -780,7 +875,7 @@ A plausible agreement or return plan is recognition evidence. Assurance concerns
 
 ### HRM.5:8 - Common Anti-Patterns and How to Avoid Them
 
-**Exhaustion becomes a motivation problem.** Obtain the medical receiving contribution and appropriate work response. **Return equals attendance.** Check attainable tasks and conditions. **Retention equals success.** Preserve independent aims and a warranted exit. **Development equals an enrollment.** Obtain practice and receiving work. **A restriction is written but not implemented.** Change assignments, provision and effective terms. **Consent grants unlimited medical access.** Establish the actual permitted purpose and minimum needed information.
+**Exhaustion becomes a motivation problem.** Help the person obtain appropriate medical assessment and arrange the permitted or required work changes. **Return equals attendance.** Check attainable tasks and conditions. **Retention equals success.** Preserve independent aims and a warranted exit. **Development equals an enrollment.** Obtain practice and receiving work. **A restriction is written but not implemented.** Change assignments, provision and effective terms. **Consent grants unlimited medical access.** Establish the actual permitted purpose and minimum needed information.
 
 ### HRM.5:9 - Consequences
 
@@ -792,7 +887,7 @@ Career movement, supported continuation, absence, return and exit share the cons
 
 ### HRM.5:11 - SoTA-Echoing
 
-WHO's account distinguishes prevention through work conditions, individual support, accommodation and return to work. This Method develops the HR receiving and implementation operations; it does not claim coverage of the full WHO guideline or every occupational hazard. The 2025 integrated-talent proposal supplies a serious alternative that can support personal trajectories outside the employer, while its proposed benefits remain unvalidated. A sufficient existing absence, accommodation or career service can provide the necessary contribution directly. The framework adds the connection to actual work, terms and selective return; it supplies no clinical treatment protocol or universal employment procedure.
+WHO's account distinguishes prevention through work conditions, individual support, accommodation and return to work. This Method develops the HR receiving and implementation operations; it does not claim coverage of the full WHO guideline or every occupational hazard. The 2025 integrated-talent proposal supplies a serious alternative that can support personal trajectories outside the employer, while its proposed benefits remain unvalidated. A sufficient existing absence, accommodation or career service can provide the necessary contribution directly. The framework connects these contributions to actual work and terms and shows how to revisit only the affected parts when conditions change; it supplies no clinical treatment protocol or universal employment procedure.
 
 ### HRM.5:12 - Relations
 
@@ -810,11 +905,14 @@ This framework is a conceptual and methodological construction from the followin
 | --- | --- |
 | Boxall and Purcell, *Strategy and Human Resource Management*, 5th ed., 2022, [publisher preview](https://api.pageplace.de/preview/DT0400.9781350309883_A43177100/preview-9781350309883_A43177100.pdf), selected introductory/chapter-one pp. 5–12 and 14–30 | Work organization and employment practices, plural interests, viability and legitimacy ground the connected field account. The selection is not a full-book synthesis and supplies no current AI capability limit. |
 | CIPD, [Profession Map](https://www.cipd.org/uk/the-people-profession/the-profession-map/explore-the-profession-map/specialist-knowledge/), [talent management](https://www.cipd.org/uk/knowledge/factsheets/talent-factsheet/) and [employee relations](https://www.cipd.org/en/the-people-profession/the-profession-map/explore-the-profession-map/specialist-knowledge/employee-relations/) | Professional breadth and differentiated operations; the field map is not an executable Method or proof that each specialism is a separate discipline. |
+| Australian Public Service Commission, [*Workforce Planning Guide*](https://www.apsc.gov.au/sites/default/files/2023-04/APS%20Centre%20of%20Excellence%20-%20Workforce%20Planning%20Guide%20-%20Accessibility.pdf), v2.2, January 2026, selected printed pp. 27–45 | Time-dependent supply and demand, workforce gaps, interventions and revision. The cover retains 2023; the version table identifies this update. Australian public-service governance and prescribed review intervals remain contextual. |
+| HRSA, [*II. Supply Modeling Overview*](https://bhw.hrsa.gov/es/node/1643), published 2025, reviewed September 2026 | Repeated population projection and the distinction between trained or licensed people, participation and hours. US health-workforce rates, demographic equations and the 40-hour FTE convention are not transferred. The connection to option-specific qualified work and obtaining effort is developed here. |
 | O'Connor et al., [Integrated Talent Management Framework](https://doi.org/10.1111/emre.70002), 2025 | A conceptual alternative concerning access, two-sided fit and some trajectories outside the employer. Predicted benefits and proposed practices are not established effects. |
 | van Zelderen et al., [Paradox of Inclusion](https://doi.org/10.1111/joms.13084), online 2024, issue 2025 | Experiments and a cross-sectional field study qualify simple assumptions about talent-pool size and experienced inclusion. They supply neither a universal access rule nor a secrecy prescription. |
 | SIOP, [Principles for the Validation and Use of Personnel Selection Procedures](https://www.apa.org/ed/accreditation/personnel-selection-procedures.pdf), 2018, selected pp. 5–8, 33 and 38–39; OPM, [Job Analysis](https://www.opm.gov/policy-data-oversight/assessment-and-selection/job-analysis/) and [Work Samples and Simulations](https://www.opm.gov/policy-data-oversight/assessment-and-selection/other-assessment-methods/work-samples-and-simulations/) | Work analysis, warranted use of assessment evidence and conditional choice of work samples. Neither source establishes local validity or one universal instrument. OPM's federal setting does not create appointment authority elsewhere. |
 | SIOP, [AI-based assessments for employee selection](https://www.siop.org/wp-content/uploads/2024/12/Considerations-and-Recommendations-for-the-Validation-and-Use-of-AI-Based-Assessments-for-Employee-Selection-January-2023.pdf), January 2023, introduction and selected operational considerations, pp. 20–24 | AI scoring still needs evidence for its particular use; changes and data sources matter. The document excludes broader employee–AI collaboration. Its upload path does not make it a 2024 or 2026 capability study. |
 | ILO, [*Towards pay equity*](https://www.ilo.org/publications/towards-pay-equity-comprehensive-response-gender-pay-gap), 2026, chapter 5, pp. 30–34; CIPD, [Reward: an introduction](https://www.cipd.org/en/knowledge/factsheets/reward-factsheet/), 1 October 2026 | Job-demand evaluation and the broader reward combination supply distinct operations. Local institutional, market and implementation grounds remain necessary. |
+| European Commission and EIGE, [*EU-wide guidelines on gender-neutral job evaluation and classification: Step-by-step toolkit*](https://eige.europa.eu/sites/default/files/documents/eu-wide-guidelines-on-gender-neutral-job-evaluation-and-classification-step-by-step-toolkit.pdf), 26 March 2026; Tools 0–2, printed pp. 17–33; Tool 5, pp. 55–67; Tools 6–7, pp. 68–74; selected §5.1, pp. 83–87 and 92–93 | Preparation, job information, a complete professional point-factor route, evidence correction and reconsideration of changed work. Selected factor explanations support the distinction between a job's demands and its holder's attributes, including responsibility for helping others. The complete factor plan and calculation aids remain external resources. EU legal requirements and numerical defaults are contextual; no local validity or actual pay-equity effect is established here. |
 | Acas, [Code of Practice on disciplinary and grievance procedures](https://www.acas.org.uk/acas-code-of-practice-on-disciplinary-and-grievance-procedures/html), effective 2015 edition, foreword and paragraphs 1–47, read October 2026 | Great Britain procedural comparator with stated exclusions. The 2026 consultation draft is not used as effective law. The receiving act requires the applicable current process. |
 | ICO, [employment records](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/employment/employment-practices-and-data-protection-keeping-employment-records/collecting-and-keeping-employment-records), selected purpose, lawful-basis and consent sections | A jurisdiction-bound distinction between collecting information and another permitted use. Guidance under legislative review does not settle a current local decision. |
 | Li, Fu, Chadwick and Harney, [HRM and employee wellbeing](https://doi.org/10.1111/1748-8583.12527), online 2023, issue 2024 | The study uses Ireland's 2009 employee survey, 4,823 complete cases, and distinguishes wellbeing dimensions. Cross-sectional, single-source evidence limits causal inference. It challenges automatic mutual-gain claims, not every training or reward practice. |

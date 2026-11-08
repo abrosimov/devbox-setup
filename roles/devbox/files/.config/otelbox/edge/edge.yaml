@@ -45,14 +45,16 @@ extensions:
 
 receivers:
   # Unauthenticated ingest remains loopback-only.
+  # Size ladder, pinned by tests/deploy/test_otelbox_edge_deploy.py: Langfuse hook batch
+  # 96 MiB < these receivers 128 MiB <= exporter batch 192 MiB < gateway ingress 256 MiB.
   otlp:
     protocols:
       grpc:
         endpoint: ${env:OTELBOX_BIND_HOST:-127.0.0.1}:4317
-        max_recv_msg_size_mib: 1
+        max_recv_msg_size_mib: 128
       http:
         endpoint: ${env:OTELBOX_BIND_HOST:-127.0.0.1}:4318
-        max_request_body_size: 1048576
+        max_request_body_size: 134217728
 
   # Langfuse SDKs append this traces path to their configured base URL. Keep the
   # unauthenticated listener fixed to loopback rather than inheriting a general
@@ -62,7 +64,7 @@ receivers:
       http:
         endpoint: 127.0.0.1:14318
         traces_url_path: /api/public/otel/v1/traces
-        max_request_body_size: 1048576
+        max_request_body_size: 134217728
 
   # Self-metrics traverse the same redaction and durable exporter as user data.
   prometheus/self:
@@ -129,8 +131,8 @@ processors:
   # The limiter observes Go heap rather than RSS or mapped WAL pages.
   memory_limiter:
     check_interval: 1s
-    limit_mib: ${env:OTELBOX_MEMORY_LIMIT_MIB:-400}
-    spike_limit_mib: ${env:OTELBOX_MEMORY_SPIKE_LIMIT_MIB:-80}
+    limit_mib: ${env:OTELBOX_MEMORY_LIMIT_MIB:-2048}
+    spike_limit_mib: ${env:OTELBOX_MEMORY_SPIKE_LIMIT_MIB:-512}
 
   # Keep this deny-list aligned with the v2.1 published role profiles.
   redaction/secrets:
@@ -204,7 +206,8 @@ exporters:
     # effect on the sizing invariants: `sizer: bytes` measures uncompressed
     # items and the gateway's receive envelope applies after decompression.
     compression: ${env:OTELBOX_UPSTREAM_COMPRESSION:-zstd}
-    timeout: 10s
+    # A full 192 MiB batch has to cross a home uplink inside this deadline.
+    timeout: 120s
     sending_queue:
       enabled: true
       storage: file_storage/gateway
@@ -216,7 +219,7 @@ exporters:
         flush_timeout: 200ms
         sizer: bytes
         min_size: 524288
-        max_size: 1572864
+        max_size: 201326592
     retry_on_failure:
       enabled: true
       initial_interval: 5s

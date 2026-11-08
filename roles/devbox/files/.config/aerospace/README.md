@@ -7,8 +7,11 @@ Docs: <https://nikitabobko.github.io/AeroSpace/guide>
 
 ## Launch
 
-`start-at-login = true` — AeroSpace starts automatically at login. To start or
-stop it manually while testing:
+`start-at-login = true` — AeroSpace starts automatically at login. The login
+item is registered only once AeroSpace has run, so the playbook launches it
+whenever it is not already running (skipped in dev mode). Accessibility must
+still be granted by hand on the first launch. To start or stop it manually
+while testing:
 
 ```bash
 open -a AeroSpace          # grant Accessibility on first run; it restarts itself

@@ -39,22 +39,22 @@ The **[operational mantra (OPS.23)](https://fpf.tools/OPS.23)** connects local w
 
 | Framework | What you can work on | Patterns | Text, M characters |
 | --- | --- | ---: | ---: |
-| [Strategy (STR)](https://fpf.tools/STR) · [Markdown](STRATEGY-PRINCIPLES-FRAMEWORK.md) | Find a worthwhile direction; compare options, capabilities, investments and business models; revise commitments when conditions change. | 18 | 0.550 |
-| [Goal Construction and Regulation (GOALS)](GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md) | Construct worthwhile goals and achievement evidence, coordinate their pursuit and revise the practice; complete OKR/CFR and human and AI applications. | 9 | 0.150 |
-| [Operations Management (OPS)](https://fpf.tools/OPS) · [Markdown](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Understand, construct and revise operating arrangements; manage work, provision, service and improvement under actual conditions. | 29 | 0.966 |
+| [Strategy (STR)](https://fpf.tools/STR) · [Markdown](STRATEGY-PRINCIPLES-FRAMEWORK.md) | Find a worthwhile direction; compare options, capabilities, investments and business models; revise commitments when conditions change. | 18 | 0.549 |
+| [Goal Construction and Regulation (GOALS)](GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md) | Construct worthwhile goals and achievement evidence, coordinate their pursuit and revise the practice; complete OKR/CFR and human and AI applications. | 9 | 0.149 |
+| [Operations Management (OPS)](https://fpf.tools/OPS) · [Markdown](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Understand, construct and revise operating arrangements; manage work, provision, service and improvement under actual conditions. | 29 | 0.973 |
 | [Organization Administration (ADM)](https://fpf.tools/ADM) · [Markdown](ORGANIZATION-ADMINISTRATION-PRINCIPLES-FRAMEWORK.md) | Make requests, permissions, obligations, provision, records and provider coordination effective without unnecessary burden. | 15 | 0.302 |
 | [Corporate Governance (CGOV)](https://fpf.tools/CGOV) · [Markdown](CORPORATE-GOVERNANCE-PRINCIPLES-FRAMEWORK.md) | Constitute and exercise corporate powers, decisions, controls and accountability under applicable governing rules. | 17 | 0.272 |
 | [Management Accounting (MA)](https://fpf.tools/MA) · [Markdown](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md) | Explain costs, capacity and economic consequences; forecast outcomes; develop activity designs from economic requirements and arrange how accounting information is used. | 10 | 0.211 |
-| [Corporate Finance (FIN)](https://fpf.tools/FIN) · [Markdown](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md) | Understand financial relations, construct financing terms and group arrangements, and compare value, liquidity, capital uses and exposure. | 23 | 0.643 |
-| [Marketing (MKT)](https://fpf.tools/MKT) · [Markdown](MARKETING-PRINCIPLES-FRAMEWORK.md) | Connect customer inquiry, offers, advertising, acquisition, distribution and use; construct workable provision and revise it from experience. | 14 | 0.411 |
-| [Customization and Productization Management (CUST)](https://fpf.tools/CUST) · [Markdown](CUSTOMIZATION-AND-PRODUCTIZATION-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Handle client differences while developing repeatable offerings, delivery and compatible transitions for existing clients. | 8 | 0.178 |
-| [Engineering Asset Management (EAM)](https://fpf.tools/EAM) · [Markdown](ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Compare use, renewal, replacement and other asset changes over time, including shared risk, cost and capacity. | 16 | 0.262 |
-| [Leadership (LDR)](https://fpf.tools/LDR) · [Markdown](LEADERSHIP-PRINCIPLES-FRAMEWORK.md) | Direct personal action; develop joint direction, participation and responsibility; obtain feasible contributions and first useful work. | 4 | 0.185 |
-| [Community Management (CB)](https://fpf.tools/CB) · [Markdown](COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Develop useful participation, relationships, shared practices and contributions in organizations or voluntary communities. | 16 | 0.524 |
-| [Organization Change Engineering (OCE)](https://fpf.tools/OCE) · [Markdown](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Construct and qualify organizational changes to contributions, roles, authority, interfaces, capabilities and culture. | 17 | 0.726 |
-| [Human Resource Management (HRM)](HUMAN-RESOURCE-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Construct and revise workforce conditions, assessment and selection, reward, voice, protection and continuing participation. | 5 | 0.115 |
+| [Corporate Finance (FIN)](https://fpf.tools/FIN) · [Markdown](CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md) | Understand financial relations, construct financing terms and group arrangements, and compare value, liquidity, capital uses and exposure. | 23 | 0.642 |
+| [Marketing (MKT)](https://fpf.tools/MKT) · [Markdown](MARKETING-PRINCIPLES-FRAMEWORK.md) | Connect customer inquiry, offers, advertising, acquisition, distribution and use; construct workable provision and revise it from experience. | 14 | 0.415 |
+| [Customization and Productization Management (CUST)](https://fpf.tools/CUST) · [Markdown](CUSTOMIZATION-AND-PRODUCTIZATION-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Handle client differences while developing repeatable offerings, delivery and compatible transitions for existing clients. | 8 | 0.177 |
+| [Engineering Asset Management (EAM)](https://fpf.tools/EAM) · [Markdown](ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Compare use, renewal, replacement and other asset changes over time, including shared risk, cost and capacity. | 16 | 0.261 |
+| [Leadership (LDR)](https://fpf.tools/LDR) · [Markdown](LEADERSHIP-PRINCIPLES-FRAMEWORK.md) | Direct personal action; develop joint direction, participation and responsibility; obtain feasible contributions and first useful work. | 4 | 0.194 |
+| [Community Management (CB)](https://fpf.tools/CB) · [Markdown](COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Develop useful participation, relationships, shared practices and contributions in organizations or voluntary communities. | 16 | 0.527 |
+| [Organization Change Engineering (OCE)](https://fpf.tools/OCE) · [Markdown](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | Construct and qualify organizational changes to contributions, roles, authority, interfaces, capabilities and culture. | 17 | 0.753 |
+| [Human Resource Management (HRM)](HUMAN-RESOURCE-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | Construct and revise workforce conditions, assessment and selection, reward, voice, protection and continuing participation. | 5 | 0.140 |
 
-**Patterns** counts full pattern bodies. **Text, M characters** measures each complete Markdown framework, including its embedded Architectural Reference, in millions of Unicode characters with spaces and original line breaks, rounded to three decimals. These are scope indicators, not a required reading load.
+**Patterns** counts full pattern bodies. **Text, M characters** measures each complete Markdown framework, including its embedded Architectural Reference, in millions of Unicode characters with spaces and original line breaks, rounded to three decimals. These are scope indicators.
 
 ## Connect the contributions
 
@@ -70,11 +70,11 @@ For maintained equipment, [Maintenance Engineering and Management](https://fpf.t
 
 A development undertaking may need strategy, participation, time, funding and authority as well as learning or research. This Suite helps arrange those conditions. It does not equate everyday operations, implementing a known practice or one organizational change with open-ended development.
 
-Use [Core's connected development method (C.40.OD)](https://fpf.tools/C.40.OD) when acquired capability should open further attainable problems and the means to continue. An office, distributed responsibility at workplaces, an external provider and AI-assisted arrangements are alternatives to examine from the required methods and conditions, not names that settle the design.
+Use [Core's connected development method (C.40.OD)](https://fpf.tools/C.40.OD) when acquired capability should open further attainable problems and the means to continue. An office, distributed responsibility at workplaces, an external provider and AI-assisted arrangements are alternatives to examine from the required methods and conditions.
 
 ## Reading, use and reuse
 
-Read [Using FPF Library](../../USING-FPF.md) before applying the methods, with or without an AI assistant. Start from the contribution your work needs; the order of files is not a project sequence. Read a selected pattern's conditions, explanation and worked cases. A checklist helps inspect a result; it does not replace the method.
+Read [Using FPF Library](../../USING-FPF.md) before applying the methods, with or without an AI assistant. Start from the contribution your work needs; the order of files is not a project sequence. Read a selected pattern's conditions, explanation and worked cases.
 
 Anatoly Levenchuk, with AI-assisted development and review. These publications continue to evolve; check the edition when relying on a particular result. Original content is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), subject to the [licensing terms](../../LICENSING.md). For a method, cite its framework, edition and complete PatternID.
 

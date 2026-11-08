@@ -85,6 +85,30 @@
   when: ansible_facts['os_family'] == "Darwin"
   tags: [configs, macos]
 
+# `start-at-login = true` in aerospace.toml only registers the login item once
+# AeroSpace itself has run, so a machine that never launched it would never get
+# the WM. Launching it here closes that gap; later logins start it on their own.
+# Skipped in dev_mode, which must not touch the live session.
+- name: Check whether AeroSpace is running
+  ansible.builtin.command: pgrep -x AeroSpace
+  register: devbox_aerospace_running
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when:
+    - ansible_facts['os_family'] == "Darwin"
+    - not (dev_mode | default(false) | bool)
+  tags: [configs, macos]
+
+- name: Launch AeroSpace so it registers itself as a login item
+  ansible.builtin.command: open -a AeroSpace
+  changed_when: true
+  when:
+    - ansible_facts['os_family'] == "Darwin"
+    - not (dev_mode | default(false) | bool)
+    - devbox_aerospace_running.rc != 0
+  tags: [configs, macos]
+
 # --- MCP servers data directories ---
 
 - name: Create MCP memory data directory

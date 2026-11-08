@@ -8,11 +8,12 @@ in tests/scripts/test_otelbox_edge_*.py.
 
 from __future__ import annotations
 
+import ast
 import plistlib
 import re
 import stat
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import pytest
 import yaml
@@ -25,6 +26,11 @@ TASKS = ROLE / "tasks/darwin/install_otelbox_edge.yml"
 PLIST_TEMPLATE = ROLE / "templates/darwin/Library/LaunchAgents/local.otelbox-edge.plist.j2"
 PACKAGES = ROLE / "defaults/main/packages.yml"
 CERT_CHECKER = REPO_ROOT / "scripts/otelbox-edge-cert-check.py"
+HOOK_EXPORTER = ROLE / "files/dot_claude/bin/vendor/durable_otel_exporter.py"
+
+MIB: Final = 1024 * 1024
+# Declared by setup_lab's otelbox_gateway ingress limit (gRPC 256 MiB, HTTP body 268435456).
+GATEWAY_INGRESS_BYTES: Final = 268_435_456
 
 _edge: dict[str, Any] = yaml.safe_load(EDGE_YAML.read_text(encoding="utf-8"))
 _tasks: list[dict[str, Any]] = yaml.safe_load(TASKS.read_text(encoding="utf-8"))
@@ -68,6 +74,56 @@ def test_gateway_retries_server_errors() -> None:
     exporter = _edge["exporters"]["otlp_grpc/gateway"]
     assert exporter["retry_on_failure"]["enabled"] is True
     assert exporter["retry_on_server_error"] == {"enabled": True}
+
+
+def _hook_max_batch_bytes() -> int:
+    # Parsed, not imported: the exporter's OpenTelemetry deps live in the hook tree's venv.
+    module = ast.parse(HOOK_EXPORTER.read_text(encoding="utf-8"))
+    value = next(
+        ast.literal_eval(node.value)
+        for node in module.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "MAX_BATCH_BYTES"
+            for target in node.targets
+        )
+    )
+    assert isinstance(value, int)
+    return value
+
+
+_RECEIVER_HTTP_LIMITS: dict[str, int] = {
+    name: receiver["protocols"]["http"]["max_request_body_size"]
+    for name, receiver in _edge["receivers"].items()
+    if "http" in receiver.get("protocols", {})
+}
+_RECEIVER_GRPC_LIMIT_MIB = _edge["receivers"]["otlp"]["protocols"]["grpc"]["max_recv_msg_size_mib"]
+_EXPORTER_BATCH_MAX = _edge["exporters"]["otlp_grpc/gateway"]["sending_queue"]["batch"]["max_size"]
+
+
+def test_ladder_covers_every_http_receiver() -> None:
+    assert set(_RECEIVER_HTTP_LIMITS) == {"otlp", "otlp/langfuse_plugins"}
+
+
+def test_hook_batch_fits_every_edge_receiver() -> None:
+    hook_batch = _hook_max_batch_bytes()
+
+    assert all(hook_batch < limit for limit in _RECEIVER_HTTP_LIMITS.values())
+
+
+def test_grpc_receiver_limit_is_whole_mib_equal_to_the_http_limit() -> None:
+    assert isinstance(_RECEIVER_GRPC_LIMIT_MIB, int)
+    assert _RECEIVER_HTTP_LIMITS["otlp"] == _RECEIVER_GRPC_LIMIT_MIB * MIB
+
+
+def test_every_receiver_limit_fits_one_exporter_batch() -> None:
+    receiver_limits = [*_RECEIVER_HTTP_LIMITS.values(), _RECEIVER_GRPC_LIMIT_MIB * MIB]
+
+    assert all(limit <= _EXPORTER_BATCH_MAX for limit in receiver_limits)
+
+
+def test_exporter_batch_fits_the_gateway_ingress() -> None:
+    assert _EXPORTER_BATCH_MAX < GATEWAY_INGRESS_BYTES
 
 
 def test_redaction_keeps_token_usage_counts() -> None:
@@ -336,6 +392,19 @@ def test_profile_validate_sees_the_langfuse_user_the_launch_agent_passes(user_id
     )
 
     assert rendered == _render_plist("zstd", user_id)["OTELBOX_LANGFUSE_USER_ID"]
+
+
+_ENV_DEFAULT = re.compile(r"\$\{env:(?P<name>\w+):-(?P<default>[^}]*)\}")
+
+
+@pytest.mark.parametrize("field", ["limit_mib", "spike_limit_mib"])
+def test_memory_limiter_agrees_across_profile_launch_agent_and_validate(field: str) -> None:
+    expansion = _ENV_DEFAULT.fullmatch(_edge["processors"]["memory_limiter"][field])
+    validate = _task("validate the pinned profile before cleanup")["environment"]
+
+    assert expansion is not None
+    assert validate[expansion["name"]] == expansion["default"]
+    assert _render_plist("zstd")[expansion["name"]] == expansion["default"]
 
 
 def test_plist_renders_compression_from_the_variable() -> None:

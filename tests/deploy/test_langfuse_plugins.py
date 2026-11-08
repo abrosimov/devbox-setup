@@ -544,6 +544,12 @@ def test_agy_langfuse_hook_is_a_symlink_to_the_claude_vendored_copy() -> None:
     assert AGY_VENDORED_HOOK.resolve() == VENDORED_HOOK.resolve()
 
 
+def test_agy_langfuse_hook_has_the_durable_exporter_it_imports_beside_it() -> None:
+    exporter = AGY_VENDORED_HOOK.parent / "durable_otel_exporter.py"
+    assert exporter.is_symlink()
+    assert exporter.resolve() == (VENDORED_HOOK.parent / "durable_otel_exporter.py").resolve()
+
+
 def test_agy_langfuse_hook_runs_from_the_pinned_bin_venv() -> None:
     rendered = Template(
         AGY_HOOKS.read_text(encoding="utf-8"),
@@ -564,8 +570,8 @@ def test_agy_langfuse_hook_runs_from_the_pinned_bin_venv() -> None:
     (handler,) = hook_entry["Stop"]
     assert expected_suffix in handler["command"]
     assert expected_script in handler["command"]
-    # Held off until the hook's stdout is ported from Claude's schema to
-    # Antigravity's camelCase decision contract.
+    # Held off: agy's transcript is a log of typed steps with no chat rows, so the
+    # Claude hook finds no turn in it (see dot_agy/bin/vendor/README.md).
     assert hook_entry["enabled"] is False
 
 

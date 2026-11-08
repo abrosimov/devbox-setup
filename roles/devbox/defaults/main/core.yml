@@ -1,5 +1,13 @@
 ---
-devbox_upgrade_mode: false
+# A provisioning run upgrades what it manages, not only installs it: Homebrew
+# formulae and casks, npm globals, Go tools, uv tools and App Store apps go to
+# their latest release. Casks are not upgraded greedily, so an app that updates
+# itself (`auto_updates true`) or ships as `version :latest` keeps doing so.
+# Pass `-e devbox_upgrade_mode=false` for an install-only run, e.g.
+#   make personal EXTRA_VARS='-e devbox_upgrade_mode=false'
+# Pinned artefacts (kubectl, TLA+, Tamias, otelbox edge) follow their pins
+# either way.
+devbox_upgrade_mode: true
 
 # Secrets flow: both `devbox_user.ssh_pass_phrase` and `devbox_sudo_password`
 # are read from macOS login keychain slots (`devbox-ssh-passphrase` and

@@ -116,7 +116,7 @@ devbox_brew_secondary:
   - mongosh                 # MongoDB shell (homebrew/core — was mongodb/brew, moved upstream 2026)
   - hashicorp/tap/vault     # HashiCorp Vault CLI (tap: hashicorp/tap)
 
-# Upgraded on every run, not only in upgrade mode. uv resolves `.python-version`
+# Upgraded on every run, even with devbox_upgrade_mode=false. uv resolves `.python-version`
 # against the CPython release list compiled into its binary: a stale uv knows
 # only the pre-releases of a new minor and silently installs a beta for it.
 devbox_brew_always_latest:
@@ -239,11 +239,15 @@ devbox_packages:
     install_path: "~/.local/bin/tamias"
 
   # TLA+ toolchain, installed by tasks/darwin/install_tlaplus.yml under
-  # `install_dir/<name>/`. Each tool tracks one GitHub release tag. The digest
-  # GitHub reports for the asset is both the integrity check and the change
-  # detector: tla2tools `v1.8.0` and tlapm `1.6.0-pre` are rolling pre-releases
-  # whose assets upstream re-publishes in place, so a new build is picked up on
-  # the next run instead of failing a pinned checksum.
+  # `install_dir/<name>/`. Each tool is pinned by GitHub release tag AND by the
+  # sha256 of its asset, because a tag alone does not name one artefact:
+  # tla2tools `v1.8.0` and tlapm `1.6.0-pre` are rolling pre-releases whose
+  # assets upstream re-publishes in place under the same tag. The run fails,
+  # naming both digests, when GitHub reports a digest other than the pinned
+  # one; a reissued asset is adopted only by updating `sha256` here on purpose.
+  # Read the current digest with
+  #   gh api repos/<repository>/releases/tags/<tag> --jq '.assets[] | select(.name=="<asset>") | .digest'
+  # and store the 64 hex characters without the `sha256:` prefix.
   #   tla2tools — SANY (parser), TLC (model checker), PlusCal translator, TLATeX
   #   communitymodules — Json, IOUtils, SequencesExt, ... for TLC (trace validation)
   #   apalache  — symbolic model checker (`apalache-mc`)
@@ -251,13 +255,26 @@ devbox_packages:
   tlaplus:
     install_dir: "~/.local/share/tlaplus"
     tools:
-      - { name: tla2tools, repository: tlaplus/tlaplus, tag: "v1.8.0", asset: "tla2tools.jar" }
+      - name: tla2tools
+        repository: tlaplus/tlaplus
+        tag: "v1.8.0"
+        asset: "tla2tools.jar"
+        sha256: "e1f11b75c4b5bc4478ba0ac5cb6ae28e40a01b0016bc33e0aa97da22dfdbcd7f"
       - name: communitymodules
         repository: tlaplus/CommunityModules
-        tag: "202610131629"
+        tag: "202611060952"
         asset: "CommunityModules-deps.jar"
-      - { name: apalache, repository: apalache-mc/apalache, tag: "v0.62.4", asset: "apalache-0.62.4.tgz" }
-      - { name: tlapm, repository: tlaplus/tlapm, tag: "1.6.0-pre", asset: "tlapm-1.6.0-pre-arm64-darwin.tar.gz" }
+        sha256: "a3b27c40f1fb5085f30c6ead37e918457f8cfc62c1e50a1dc668ef592ad2b5fb"
+      - name: apalache
+        repository: apalache-mc/apalache
+        tag: "v0.62.4"
+        asset: "apalache-0.62.4.tgz"
+        sha256: "b781b53bba32fac14ac2e02b0332e1dc2edc64cb7b850c0608d8142cc7aa2ef4"
+      - name: tlapm
+        repository: tlaplus/tlapm
+        tag: "1.6.0-pre"
+        asset: "tlapm-1.6.0-pre-arm64-darwin.tar.gz"
+        sha256: "1670af7aa4f72ba81da3103b581c229f1730624ec6ee5464b7c7d3c3fcc91fa7"
 
   # Python tools installed via `uv tool install`.
   # Binary name matches tool name.

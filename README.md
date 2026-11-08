@@ -23,15 +23,13 @@ A profile is mandatory: bare `make run` / `make check` fail with `PROFILE is req
 
 | Command | Description |
 |---------|-------------|
-| `make personal` | Full setup with personal profile |
-| `make work` | Full setup with work profile |
+| `make personal` | Full setup with personal profile: installs and upgrades managed packages |
+| `make work` | Full setup with work profile: installs and upgrades managed packages |
 | `make dev-personal` | Deploy to `../debug/dotfiles` with personal profile |
 | `make dev-work` | Deploy to `../debug/dotfiles` with work profile |
 | `make check-personal` | Dry-run with personal profile |
 | `make check-work` | Dry-run with work profile |
 | `make check-dev` | Dry-run in dev_mode (override vars, no sudo/keychain) |
-| `make upgrade-personal` | Upgrade all packages (personal profile) |
-| `make upgrade-work` | Upgrade all packages (work profile) |
 | `make lint` | Syntax-check + ansible-lint + semantics + typecheck |
 | `make lint-ansible-semantics` | Static catch for set_fact intra-task self-references |
 | `make validate-claude` | Validate agent/skill cross-references |
@@ -42,6 +40,8 @@ A profile is mandatory: bare `make run` / `make check` fail with `PROFILE is req
 | `make go-proxy-verify` | Prove the private Go module proxy client end to end (needs an existing `tamias login`) |
 
 Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_VARS='-e foo=bar'` (e.g. `--tags`: `make personal EXTRA_VARS='--tags packages'`).
+
+A provisioning run upgrades what it manages, not only installs it: Homebrew formulae and casks, npm globals, Go tools, uv tools and App Store apps go to their latest release. Casks are not upgraded greedily, so apps that update themselves keep doing so. Pinned artefacts (kubectl, TLA+, Tamias, the otelbox edge) follow their pins. For an install-only run, switch upgrading off: `make personal EXTRA_VARS='-e devbox_upgrade_mode=false'`.
 
 ## Configuration
 
@@ -105,7 +105,7 @@ roles/devbox/local/.config/fish/functions/kstg.fish
 
 ### AI Engine CLIs
 
-All three engine CLIs come from Homebrew casks declared in `devbox_brew_secondary_casks` — `claude-code@latest` (`claude`), `codex`, and `antigravity-cli` (`agy`) — so one mechanism installs them, `make upgrade-personal` / `make upgrade-work` keeps them current, brew verifies each download's checksum, and `make audit-brewfile-all` includes them in the CVE scan that `.github/workflows/brew-audit.yml` runs.
+All three engine CLIs come from Homebrew casks declared in `devbox_brew_secondary_casks` — `claude-code@latest` (`claude`), `codex`, and `antigravity-cli` (`agy`) — so one mechanism installs them, `make personal` / `make work` keeps them current (`antigravity-cli` declares `auto_updates`, so brew leaves its updates to agy itself), brew verifies each download's checksum, and `make audit-brewfile-all` includes them in the CVE scan that `.github/workflows/brew-audit.yml` runs.
 
 The `@latest` suffix selects upstream's latest release channel. The plain `claude-code` cask tracks the stable channel instead, which runs roughly a week behind and can be too old for a model that has just launched. Anthropic's own documentation calls its `curl | bash` native installer the recommended route, and its single advantage over a package manager is background auto-updates — which `devbox_shell.env` switches off anyway by setting `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` (confirm with `claude doctor`, which reports `Auto-updates: disabled (set by env: …)`). With auto-updates off, whoever installs the binary owns its version, so brew is the better owner here.
 

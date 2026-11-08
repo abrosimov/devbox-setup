@@ -1,7 +1,8 @@
 ---
 # Install Python tools via `uv tool install`.
 # Package list defined in defaults/main.yml under devbox_packages.uv_tools.
-# Each tool is checked individually for idempotency.
+# Each tool is checked individually for idempotency. Installing runs in both
+# modes because `uv tool upgrade` refuses a tool that is not installed yet.
 
 - name: "Install Python tools via uv"
   ansible.builtin.command:
@@ -12,7 +13,6 @@
   loop: "{{ devbox_packages.uv_tools }}"
   loop_control:
     label: "{{ item }}"
-  when: not (devbox_upgrade_mode | default(false) | bool)
 
 - name: "Upgrade Python tools via uv"
   ansible.builtin.command:
@@ -22,5 +22,5 @@
   loop: "{{ devbox_packages.uv_tools }}"
   loop_control:
     label: "{{ item }}"
-  when: devbox_upgrade_mode | default(false) | bool
+  when: devbox_upgrade_mode | default(true) | bool
   changed_when: true

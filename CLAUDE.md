@@ -21,6 +21,10 @@ make init
 # Full setup runs (first run: 2 keychain seed prompts; subsequent: 0 prompts)
 make personal   # personal profile
 make work       # work profile
+# Both install AND upgrade managed packages (devbox_upgrade_mode defaults to true:
+# brew formulae + casks (not greedy), npm, Go tools, uv tools, App Store apps).
+# Install-only run:
+make personal EXTRA_VARS='-e devbox_upgrade_mode=false'
 
 # Increase verbosity (V=1 through V=4)
 make personal V=2
@@ -98,7 +102,7 @@ Everything lives in one role. No multi-role orchestration.
 3. `darwin/install_from_go.yml` — Go tools via `go install` (variable-driven)
 4. `darwin/install_from_uv.yml` — Python tools via `uv tool` (variable-driven)
 5. `darwin/install_kubectl.yml` — pinned kubectl binary download
-   - `darwin/install_tlaplus.yml` — TLA+ toolchain (`tla2tools.jar`, CommunityModules jar, Apalache, TLAPS) into `~/.local/share/tlaplus/<tool>/`, one GitHub release tag per tool in `devbox_packages.tlaplus`. The asset digest GitHub reports is the integrity check and the change detector (`.release-digest`), so rolling pre-releases update in place instead of failing a pinned checksum. Java comes from the `temurin@21` cask.
+   - `darwin/install_tlaplus.yml` — TLA+ toolchain (`tla2tools.jar`, CommunityModules jar, Apalache, TLAPS) into `~/.local/share/tlaplus/<tool>/`, each tool pinned in `devbox_packages.tlaplus.tools` by GitHub release tag **and** asset `sha256`, because upstream reissues assets under an unchanged tag (`v1.8.0` and `1.6.0-pre` are rolling pre-releases). The run fails, naming the tag and both digests, when GitHub reports a digest other than the pinned one, so a reissue is adopted only by updating `sha256` deliberately; the download is checked against the pinned digest, and the tool is reinstalled only when its recorded `.release-digest` differs from the pin. No Renovate manager covers these pins. Java comes from the `temurin@21` cask.
    - `darwin/install_tamias.yml` + `darwin/configure_go_module_proxy.yml` — the Tamias credential helper and the Go client for the private Athens proxy (`devbox_packages.tamias`, `devbox_go_module_proxy`). Tamias is admitted from an immutable GitHub release through the authenticated `gh` CLI: `gh release verify-asset` plus the release-reported digest, no declared checksum and no fallback. Any failure fails the run. Only divergent `go env` keys are rewritten, with no `direct`. `devbox_packages.tamias.enabled` is the single switch: when it is false, the Go step removes the `go env` lines it owns and Go falls back to its defaults. Placed after the Go tools step because every later module fetch needs a Tamias credential. Interactive `tamias login` and the end-to-end check (`make go-proxy-verify`, `playbooks/go_proxy_verify.yml`) stay outside the provisioning run. See `README.md` § Go Module Proxy.
 6. `darwin/configure_macos_basics.yml` — codifies manual notes: Touch ID for sudo via `sudo_local`, `pmset disablesleep` for clamshell, `DevToolsSecurity --enable` for debugger access
 7. `darwin/configure_pub_mode.yml` — pub mode: deploys the `pub-lease` controller to `~/.local/bin/` and installs the system-domain LaunchDaemon `local.pub-lease`, which reconciles the lease every 60 seconds. Gated on the profile actually installing the `cloudflare-warp` cask (personal only); the disabled path tears the whole thing down and restores any active lease. See `README.md` § Pub Mode.
@@ -137,7 +141,7 @@ Defaults are split into four files under `defaults/main/`:
 
 | File | Contents |
 |------|----------|
-| `core.yml` | `devbox_user`, `devbox_paths`, `devbox_projects_dir`, `devbox_active_profile`, `upgrade_mode`, `devbox_extra_*` extension points |
+| `core.yml` | `devbox_user`, `devbox_paths`, `devbox_projects_dir`, `devbox_active_profile`, `devbox_upgrade_mode` (default `true`), `devbox_extra_*` extension points |
 | `packages.yml` | `devbox_brew_taps`, `devbox_brew_*` lists, `devbox_npm_packages`, `devbox_appstore_apps`, `devbox_packages` (go_tools, kubectl, uv_tools) |
 | `shell.yml` | `devbox_shell` (env, PATH), `devbox_fish_plugins`, `devbox_tide_configure_auto` |
 | `claude.yml` | `devbox_claude_managed_dirs`, `devbox_claude_unmanaged_dirs`, `mcp_*_servers`, `claude_plugin*` |

@@ -139,7 +139,6 @@ endif
        secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed otelbox-edge-config otelbox-edge-test \
        langfuse-config \
        pub-preflight pub-e2e \
-       upgrade-work upgrade-personal \
        list-skills list-agents audit-budget \
        audit audit-brewfile audit-brewfile-all audit-taps untap-stale \
        claude-diff claude-pull claude-pull-review \
@@ -156,6 +155,8 @@ help:
 	@echo "Usage:"
 	@echo "  make personal         - run with personal profile (AION_AUTOPOIESEON=~/Projects)"
 	@echo "  make work             - run with work profile (AION_AUTOPOIESEON=~/Work)"
+	@echo "                          both install AND upgrade managed packages; install-only:"
+	@echo "                          make personal EXTRA_VARS='-e devbox_upgrade_mode=false'"
 	@echo "  make dev-personal     - dev_mode + personal profile"
 	@echo "  make dev-work         - dev_mode + work profile"
 	@echo "  make check-personal   - dry-run with personal profile"
@@ -198,8 +199,6 @@ help:
 	@echo "  make drive-backup-push - (re)install the weekly drive backup (uv project + LaunchAgent) from the local overlay config"
 	@echo "  make go-proxy-verify  - prove the Go module proxy client: go env contract, Tamias credential, public + private download"
 	@echo "  make drive-backup-now  - run the drive backup now via launchd; log in ~/Library/Logs/drive-backup.log"
-	@echo "  make upgrade-personal - upgrade all managed packages (personal profile)"
-	@echo "  make upgrade-work     - upgrade all managed packages (work profile)"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
 	@echo "  make audit-budget    - show detailed skill description budget report"
 	@echo "  make rules-budget    - count rule-like statements across skills/agents/commands/UAP (ARGS='--json' or '--baseline PATH')"
@@ -552,12 +551,6 @@ check-work:
 
 check-personal:
 	$(MAKE) check PROFILE=personal V=$(V)
-
-upgrade-work:
-	$(MAKE) run PROFILE=work EXTRA_VARS='-e devbox_upgrade_mode=true' V=$(V)
-
-upgrade-personal:
-	$(MAKE) run PROFILE=personal EXTRA_VARS='-e devbox_upgrade_mode=true' V=$(V)
 
 # Profile still has to resolve to something, even though dev mode already
 # redirects every destination to ../debug/dotfiles and overrides both secrets:

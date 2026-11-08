@@ -15,7 +15,7 @@
   loop: "{{ devbox_packages.go_tools }}"
   loop_control:
     label: "{{ item.bin }}"
-  when: not (devbox_upgrade_mode | default(false) | bool)
+  when: not (devbox_upgrade_mode | default(true) | bool)
 
 - name: "Upgrade Go tools"
   ansible.builtin.command:
@@ -28,5 +28,5 @@
   loop: "{{ devbox_packages.go_tools }}"
   loop_control:
     label: "{{ item.bin }}"
-  when: devbox_upgrade_mode | default(false) | bool
+  when: devbox_upgrade_mode | default(true) | bool
   changed_when: true

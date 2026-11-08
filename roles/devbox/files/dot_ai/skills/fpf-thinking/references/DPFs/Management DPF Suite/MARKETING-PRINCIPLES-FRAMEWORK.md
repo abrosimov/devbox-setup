@@ -40,7 +40,7 @@ Search by the working question or required result. MKT identifiers are stable pa
 | :--- | :--- | :--- | :--- | :--- |
 | 1 | [MKT.1 - Qualify a Market Problem and Differences between Customers](#mkt1---qualify-a-market-problem-and-differences-between-customers) | Stable | customer problem, roles, circumstances, segmentation; Which differences change the offer? | MKT.12; C.40.PC; ECO.3 where relevant |
 | 2 | [MKT.2 - Construct and Test an Offer and Its Positioning](#mkt2---construct-and-test-an-offer-and-its-positioning) | Stable | offer, positioning, alternatives, useful contribution; What can we promise and how is it different? | MKT.1/6/9/11/12; engineering when needed |
-| 3 | [MKT.3 - Reach a Suitable Audience and Obtain a Meaningful Response](#mkt3---reach-a-suitable-audience-and-obtain-a-meaningful-response) | Stable | audience, communication, invitation, response; Who can use this and what response matters? | MKT.1/2/4/12; HCD.6.1 when explanation is needed |
+| 3 | [MKT.3 - Reach a Suitable Audience and Obtain a Meaningful Response](#mkt3---reach-a-suitable-audience-and-obtain-a-meaningful-response) | Stable | audience, communication, invitation, response; Who can use this and what response matters? | MKT.1/2/4/12; HCD.6.1 when a learner cannot yet discern a needed distinction |
 | 4 | [MKT.4 - Make Choice and Acquisition Meaningful and Feasible](#mkt4---make-choice-and-acquisition-meaningful-and-feasible) | Stable | choice, purchase, refusal, terms, transition; Can the customer understand and carry out the next action? | MKT.2/6/9/11 |
 | 5 | [MKT.5 - Develop and Align a Customer Experience Concept](#mkt5---develop-and-align-a-customer-experience-concept) | Stable | experience concept, actual experience, design; How should the experience connect to real work? | MKT.2/6/8/11/12 |
 | 6 | [MKT.6 - Jointly Shape a Useful Result and Help Achieve It](#mkt6---jointly-shape-a-useful-result-and-help-achieve-it) | Stable | customer success, useful result, goal formation, help; What result matters and what helps obtain it? | C.40.PC, C.40.DC, SYSE, OPS where needed; MKT.1/2/4/12 |
@@ -62,8 +62,8 @@ Bring the question you are actually trying to answer. These entries are selected
 ### MKT-ENTRY-QUESTION - Find out enough to make the next decision
 
 - **Situation:** A team disagrees about why customers decline an offer, and another round of interviews has been proposed.
-- **Question:** What answer could change our next action, and how can we obtain it?
-- **First useful result or blocker:** A bounded inquiry tied to that action, or an existing qualified answer sufficient to stop investigating.
+- **Question:** What do actual customer attempts reveal, which alternatives does that make worth comparing, and what further answer would change the choice?
+- **First useful result or blocker:** A grounded difficulty and candidate alternatives, a bounded inquiry for an established choice, or an existing qualified answer sufficient to stop investigating.
 - **Start with:** [MKT.12](#mkt12---investigate-a-customer-or-market-question-for-a-decision); use MKT.1 when relevant customer differences remain unclear.
 - **Stop or return:** Stop when the decision has a sufficient answer. Return a missing permission, unavailable service or disputed objective to its owner.
 
@@ -79,7 +79,7 @@ Bring the question you are actually trying to answer. These entries are selected
 
 - **Situation:** A placement combines or generates material, offers incomplete reporting, or cannot be stopped at the level the offer needs.
 - **Question:** Can the permitted expressions and actual controls preserve this offer and its receiving work?
-- **First useful result or blocker:** A supported placement and response arrangement, or the control, information or provision that requires another route.
+- **First useful result or blocker:** A supported placement and response arrangement, or the missing control, information or provision that prevents reliance on the proposed arrangement.
 - **Start with:** [The intermediary application](#mktapplication2---app-mkt-media---keep-a-supportable-offer-through-a-changing-intermediary), using MKT.3 and MKT.11.
 - **Stop or return:** Revise the affected family, route or promise when its conditions fail; preserve existing customer obligations.
 
@@ -87,7 +87,7 @@ Bring the question you are actually trying to answer. These entries are selected
 
 - **Situation:** People can discover a suitable offering but cannot obtain it where, when or on the conditions they need; an intermediary is proposed or its contribution has changed.
 - **Question:** Which arrangement connects the final customer's use to actual availability, selling, transfer or access, support and recovery?
-- **First useful result or blocker:** A supported route with distinct exchanges and effective contributions, or the missing provision or terms that require another offer.
+- **First useful result or blocker:** A supported route with distinct exchanges and effective contributions, or a supply or exchange condition that prevents reliance on the proposed route.
 - **Start with:** [MKT.11:4.2.1](#mkt11421---construct-a-distribution-arrangement-when-the-route-is-unsettled), using SYSE.8 and ECO.3/5; return its conditions to MKT.2/3/4 and use MKT.13 for ordinary repetition.
 - **Stop or return:** A settled sufficient route can be reused. A changed intermediary, availability or support condition returns to the affected promise and existing obligations.
 
@@ -199,7 +199,7 @@ When a contribution is absent, ask for its actual result. “Can an appropriatel
 
 Some connections use an earlier result: qualification informs an offer, and evidence from a performed trial informs a later choice. Others are simultaneous. During a customer meeting, a facilitator may be eliciting a useful result, helping the person understand an offer and performing part of a larger programme. The same worker may also be responsible for an existing service. Those descriptions identify different contributions and constraints of the work occurring then. Account for the shared worker’s time against the whole programme.
 
-For a proposed combination, name one intended result, the included opportunities, the period and the permitted conditions. Obtain preparation, capability, assignment, access, performance, support, coordination, updating and exception handling that the result requires. Count a shared contribution once where it is actually shared; count local work for each case that needs it. Preserve different resource kinds and time windows. Compare complete ways of producing a comparable result, including a smaller or later programme where the original promise cannot be supported.
+For a proposed combination, name one intended result, the included opportunities, the period and the permitted conditions. Identify the preparation, capability, assignments, access, performance, support, coordination, updating and exception handling that the result would require, retaining any unresolved supply conditions. Count a shared contribution once where it is actually shared; count local work for each case that needs it. Preserve different resource kinds and time windows. Compare complete ways of producing a comparable result, including a smaller or later programme where the original promise cannot be supported. If implementation is selected, obtain the effective arrangements needed before dependent work begins.
 
 Apply this whole-combination condition to the applications below. An apparently cheaper message can increase the number of unsupported responses. A common demonstration can save preparation while increasing coordination. An AI-generated explanation can reduce drafting time while leaving a subject judgement, an individual learning action or a timely human check unsupplied. Inspect those differences before replacing one constituent in a larger arrangement. [FPF C.32.MWA.PP](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c32mwapp---construct-and-compare-method-performance-and-provision-arrangements) develops the method and performance comparisons; engineering, organisation and operations supply the actual arrangements.
 
@@ -297,13 +297,13 @@ The named FPF bodies and linked DPF publications below supply the guidance used 
 
 | Publication and consumed state | Relied-on contribution and return |
 | --- | --- |
-| [FPF](https://github.com/ailev/FPF/blob/main/FPF-Spec.md), current named bodies | Method, performance, evidence and composition distinctions; C.28.CM for the causal question and B.1.5.EW/RS for simultaneous composition and replacement. C.40.PC supplies the worthwhile problem and proposed contribution used by MKT.1/2/6; C.40.DC supplies directions with supports for MKT.6. C.32.MWA.PP:4.5–4.9 constructs and compares whole work arrangements, simultaneous workload and commitments for MKT.9/11 and APP-MKT-SERVICE. A.3.1.MR:4 supplies ordinary candidate-Method recovery for APP-MKT-LEARNING. |
+| [FPF](https://github.com/ailev/FPF/blob/main/FPF-Spec.md), current named bodies | Method, performance, evidence and composition distinctions; C.28.CM for the causal question and B.1.5.EW/RS for simultaneous composition and replacement. C.40.PC supplies the worthwhile problem and proposed contribution used by MKT.1/2/6; C.40.DC supplies directions with supports for MKT.6. C.32.MWA.PP:4.5–4.9 constructs and compares whole work arrangements, simultaneous workload and commitments for MKT.9/11 and APP-MKT-SERVICE. APP-MKT-LEARNING uses A.3.1.DR:4 to recover documentary contributions, A.3.1.MR:4 to recover candidate ways from performance evidence, and A.3.1:4 to identify a ready candidate. |
 | [Human Capability Development (HCD)](../Human%20Capability%20Engineering%20DPF%20Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md), 12 October 2026, twenty-nine-pattern edition | HCD.28 learning-product construction; HCD.2 personal programmes; selected HCD.20–27 joint learning; the linked performance, transfer and retention methods retain their own conditions. |
 | [Community Management (CB)](COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md), Participation and practice-support edition, 12 October 2026 | CB.2/3/5 supply useful exchange, workable entry and contribution return; CB.9 supplies provision and its terms, CB.13 the mandate for shared decisions, and CB.14 a shared repertoire. APP-MKT-LEARNING retains voluntary participation and its own useful result. |
 | [Systems Engineering (SYSE)](../Engineering%20DPF%20Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md), 23 October 2026 | SYSE.2/8 construct the use, offering and provider arrangement consumed by MKT.2/9/11. The arrangement's engineering conditions remain with that supplier. |
 | [Organization Change Engineering (OCE)](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md), 12 October 2026, and [Operations Management (OPS)](OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md), 19 October 2026 | OCE.6/11 and OPS.6 supply assignments, coexistence with service and actual continuation. Their wider search contributions are developed in the Suite Reference. |
 | [Strategy (STR)](STRATEGY-PRINCIPLES-FRAMEWORK.md), working edition, 24 October 2026; [Management Accounting (MA)](MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md), MA 1.0 | Sustained contribution and economic alternatives with dated demands, resources and payments. |
-| [Research Method Practice (RMP)](../RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md), 24 October 2026 | RMP.1 supplies question qualification for MKT.12. RMP.10:0–4.3 supplies a larger reconstruction programme for APP-MKT-LEARNING only when ordinary A.3.1.MR recovery is insufficient: decision-relevant evidence, scoped candidate accounts, retained variants and limits. |
+| [Research Method Practice (RMP)](../RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md), 24 October 2026 | RMP.1 supplies question qualification for MKT.12. RMP.10:0–4.3 supplies a larger reconstruction programme for APP-MKT-LEARNING only when decision-changing uncertainty still requires that larger inquiry: decision-relevant evidence, scoped candidate accounts, retained variants and limits. |
 | [Economic Reasoning and Coordination (ECO)](../ECONOMIC-REASONING-AND-COORDINATION-PRINCIPLES-FRAMEWORK.md), 24 October 2026 | ECO.3/5 supply exchange between different plans and the comparison of terms; ECO.8 supports the relationship-continuation question. Each receiving Marketing use preserves the economic result's scope and evidence. |
 
 MKT.10 also uses MMP.15 from [Mathematical Modeling (MMP)](https://github.com/ailev/FPF/blob/main/DPFs/Foundational%20Thinking%20DPF%20Suite/MATHEMATICAL-MODELING-PRACTICE-DPF.md), 24 October 2026, for identification of an intervention effect. The model, identification, estimation and economic-use questions retain their distinct conditions.
@@ -386,9 +386,9 @@ Keep the observed cases, the hypothesis about a wider group and the estimate of 
 
 Compare plausible groups under the same intended investment and horizon. Ask how important and poorly served the result appears, how the relevant people can be reached, which alternative must be improved upon, whether the contribution can be supplied, and what learning or preparation it needs. Include the cost of discovering and serving the group as well as attracting it.
 
-A material unknown is a reason for a bounded inquiry when its answer could change the choice. It is not automatically a zero value, a high score or grounds for rejecting a genuine customer problem. Where criteria conflict, state the trade-off: a small reachable group may be preferable for a trial, while a larger group with unresolved delivery conditions remains a later hypothesis. Do not hide a necessary condition inside an average score.
+A material unknown is a reason for a bounded inquiry when its answer could change the choice. Where criteria conflict, state the trade-off: a small reachable group may be preferable for a trial, while a larger group with unresolved delivery conditions remains a later hypothesis. Do not hide a necessary condition inside an average score.
 
-Select one of the live results:
+Choose the next move supported by the comparison:
 
 - construct or test an offer for a supported group and stated use;
 - obtain a specified missing answer before selecting the group;
@@ -497,7 +497,7 @@ Construct the contribution, its context of comparison and its supply conditions 
 | Tension | Required response |
 | --- | --- |
 | A simple explanation helps recognition; qualifications can change the promise. | Make consequential limits visible with the claim they limit. |
-| Different roles value different results. | Preserve their separate contributions within one compatible proposal. |
+| Different roles value different results. | Keep the results sought by the different roles distinct while constructing a compatible proposal. |
 | Differentiation attracts attention; the alternative may already be adequate. | Compare actual options and identify a worthwhile difference, including convenience or access when those matter. |
 | A customer can want a result outside the supplier's control. | Promise the supported contribution and identify the other work and conditions it needs. |
 | Testing costs attention and preparation. | Test the uncertainty that changes the proposal, and reuse an already sufficient answer. |
@@ -548,7 +548,7 @@ Where an intermediary participates, identify whose offer this is. A provider's o
 
 #### MKT.2:4.4 - Obtain a supply answer before relying on the promise
 
-Ask the responsible supplier for the result that can actually be provided under the named conditions: configuration, available capability, people, time, access, dependencies, support and unresolved constraints. Separate a planned improvement from an available contribution. Include preparation and continuing support when comparing feasible versions.
+Ask the responsible supplier to identify the result it can provide and the conditions for doing so: configuration, available capability, people, time, access, dependencies, support and unresolved constraints. Separate a planned improvement from an available contribution. Include preparation and continuing support when comparing feasible versions.
 
 For each important promise, follow the required contribution to a responsible provider or to an explicit gap. Resolve incompatible timings, shared scarce resources and conflicting claims made to different roles. A technically possible service can still be unavailable in the proposed window. Return an unsupported part for engineering, operational or organisational work, or reduce the proposal to a supported part.
 
@@ -586,7 +586,7 @@ Positioning it as a file-mapping trial makes the relevant comparison intelligibl
 
 Now the available operator cannot inspect outputs during the trial window. The same technical mapping no longer supports the proposed arrangement. Possible responses include another qualified operator, another window, an actually supported additional service or no trial now. Removing inspection from the description would conceal the missing contribution. MKT.4 must receive the revised feasible choice.
 
-For a learning product, the analogous distinction is between supplying worked material and helping someone acquire a contribution to later work. A generated explanation can serve the former. An offer of the latter must include the needed practice, feedback and capability observation from HCD, with the learner's required work visible.
+For a learning product, the analogous distinction is between supplying worked material and helping someone develop a capability needed for later work. A generated explanation can serve the former. An offer of the latter must include the needed practice, feedback and capability observation from HCD, with the learner's required work visible.
 
 ### MKT.2:6 - Bias-Annotation
 
@@ -730,7 +730,7 @@ Continue, revise or stop at the scale the evidence supports. Retain working part
 
 A provider can help an operations team map one approved file into a periodic report. A staff member at Sever has asked about reducing repeated entry. The provider wants to establish whether an approved sample and an operator's time can be available before offering a trial date. Its first draft says, “Automate your reporting; book a demo.” A purchaser reads that as a promise of unattended recurring reports.
 
-The team changes the invitation to an assisted file-mapping trial for a periodic report. It states that the trial uses one approved sample, needs an operator for one agreed session and does not establish continuous integration. The requested reply is whether those conditions can be met or which one needs discussion. A named person can receive the answer and offer one of the sessions actually available. A public upload is unnecessary; sample transfer will use the agreed means if the trial proceeds.
+The team changes the invitation to an assisted file-mapping trial for a periodic report. It states that the trial uses one approved sample, needs an operator for one agreed session and does not include continuous integration. The requested reply is whether those conditions can be met or which one needs discussion. A named person can receive the answer and offer one of the sessions actually available. A public upload is unnecessary; sample transfer will use the agreed means if the trial proceeds.
 
 In a constructed probe, the provider uses requested email so contacts can clarify the conditions with colleagues before scheduling a session. It sends individually relevant invitations to eight contacts who have agreed to receive this information. Delivery is confirmed for six addresses. Four people send substantive replies: two can provide the required contributions, one needs access approval, and one declines because continuous integration is essential. Two intended recipients who discuss the message can explain the assisted scope. The remaining contacts' understanding and reasons for silence are unknown. Four substantive replies out of eight invitations describe this attempt; they do not establish market demand or a superior channel.
 
@@ -827,7 +827,7 @@ Recover the live choices and what each requires. Help the relevant people unders
 
 Ask what is being decided now: whether to investigate, compare alternatives, obtain permission, try, contract, pay, start use or continue an existing arrangement. Recover the relevant participants, what each can decide and what information or contribution they need. A sequence recorded in a CRM is a proposed or reported account; check the actual case before acting on it.
 
-Use a concrete recent event to establish where the decision stands. “We are ready” can mean that a user likes the demonstration while purchasing has not seen the terms. Preserve the first fact and obtain the second. Do not invent a stage for an unknown condition.
+Use a concrete recent event to establish where the decision stands. “We are ready” can mean that a user likes the demonstration while purchasing has not seen the terms. Preserve the user's interest and find out what purchasing still needs to review and decide. Do not invent a stage for an unknown condition.
 
 Define the attainable alternatives, including continuing the current way, another supplier, a narrower contribution and no action now. Investigate the reason for uncertainty when it can change the next move. [MKT.12](#mkt12---investigate-a-customer-or-market-question-for-a-decision) supplies a choice-history inquiry when the reported obstacle is not yet understood.
 
@@ -1007,7 +1007,7 @@ For making a choice attainable, **adopt** ECO.3/5's developed comparisons of sep
 
 The criterion repertoire in §4.3.1 adapts Rackham's historical *Major Account Sales Strategy*, Chapters 4–5. It preserves the outer choice of criterion work and the four ways to address a crucial unmet criterion; it changes the author's commercial selection pressure by requiring the customer's relevant grounds and attainable provision. Compared with an unstructured list of product strengths, it explains which work a comparison needs. That preparation is unnecessary when the criteria and available choice are already sufficient.
 
-Chapter 7's range preparation and differently valued concessions inform §4.3.2. [Harvard's Program on Negotiation](https://www.pon.harvard.edu/daily/batna/manage-the-tension-between-claiming-and-creating-value-nb/) distinguishes the attainable alternative, reservation boundary and aspiration. The receiving method also separates authority and joint provision. This adds preparation and supplier coordination; use ordinary fixed terms when they suffice. A sequence of decreasing concessions may signal a boundary, but is not evidence of that boundary or a universally effective tactic. Reopen a package when a relevant alternative, discretion, cost or supply condition changes.
+Chapter 7's range preparation and differently valued concessions inform §4.3.2. [Harvard's Program on Negotiation](https://www.pon.harvard.edu/daily/batna/manage-the-tension-between-claiming-and-creating-value-nb/) distinguishes the attainable alternative, reservation boundary and aspiration. The receiving method also separates authority and joint provision. This adds preparation and supplier coordination; use ordinary fixed terms when they suffice. A sequence of decreasing concessions may signal a boundary, but is not proof of that boundary or a universally effective tactic. Reopen a package when a relevant alternative, discretion, cost or supply condition changes.
 
 ### MKT.4:12 - Relations
 
@@ -1067,7 +1067,7 @@ Compare the alternatives against the customer's relevant expectations, useful re
 
 #### MKT.5:4.3 - Connect the concept to conditions throughout the encounter
 
-Translate the selected concept into the conditions needed to make the proposed encounter possible. Work from the customer's account in §4.2 and examine the connected contributions:
+Translate the selected concept into the conditions needed to make the proposed encounter possible. Work from the account of the proposed encounter in §4.2 and examine the connected contributions:
 
 | Contribution | Construction question |
 | --- | --- |
@@ -1078,7 +1078,7 @@ Translate the selected concept into the conditions needed to make the proposed e
 | People's actions and support | Who helps, decides, responds or resolves an exception, under which conditions? |
 | Organisation and partners | What assignment, capacity, incentives and partner contributions make those actions sustainable? |
 
-For each consequential condition, distinguish an existing capability from a proposed change. Name who can supply or decide it and what result is needed. [SYSE.2](../Engineering%20DPF%20Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md#syse2---develop-linked-use-and-system-concepts) develops compatible use and system concepts; [SYSE.8](../Engineering%20DPF%20Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md#syse8---develop-an-integrated-offering-and-provider-concept-for-using-an-engineered-result) joins an offering with its actual or intended providers. They can return a feasible arrangement or a missing contribution, not merely a more attractive description.
+For each consequential condition, distinguish an existing capability from a proposed change. Name who can supply or decide it and what result is needed. [SYSE.2](../Engineering%20DPF%20Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md#syse2---develop-linked-use-and-system-concepts) develops compatible use and system concepts; [SYSE.8](../Engineering%20DPF%20Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md#syse8---develop-an-integrated-offering-and-provider-concept-for-using-an-engineered-result) joins an offering with its actual or intended providers. Use these concepts to identify a candidate arrangement and the conditions or contributions still needed to make it feasible.
 
 Give the responsible practice a concrete request. “Enable the customer to save an incomplete application and resume it with its previous answers” is a design request with a recognizable use. “Be more empathetic” does not establish the interface, staff ability or available time. Operations must arrange performance; HCD can develop a needed capability; organisation change must obtain the relevant assignment and enabling conditions. Marketing coordinates the experience question and consumes those results.
 
@@ -1102,7 +1102,7 @@ Keep usefulness, effort, experience and later evaluation distinct where they mat
 
 Compare the intended encounter with the observed arrangement and response. If the conditions were not supplied, obtain or revise them before blaming the concept. If the arrangement worked but the intended response did not occur, investigate the context or assumption linking the conditions to that response. If the desired response occurred while the useful result failed, revise the contribution rather than treating the experience measure as success.
 
-Return the selected concept, the connected feasible conditions, material limits, the observations and the next change. Reopen the construction when a new audience, channel, provider, access condition or operating constraint alters the encounter. Retain sufficient existing work when the change is local. A journey map through MKT.8 can help locate the relevant connection, but the repair remains a change in actual conditions or in the warranted promise.
+Return the selected concept, the connected feasible conditions, material limits, the observations and whether to retain or change the arrangement. Reopen the construction when a new audience, channel, provider, access condition or operating constraint alters the encounter. Retain sufficient existing work when the change is local. A journey map through MKT.8 can help locate the relevant connection, but the repair remains a change in actual conditions or in the warranted promise.
 
 ### MKT.5:5 - Archetypal Grounding
 
@@ -1217,7 +1217,7 @@ Use the recovered situation to describe a worthwhile problem and candidate contr
 
 Build materially different directions when the choice requires them. For each, explain what would change from the present situation, how that change contributes to the receiving result, who must do what, which supports it needs and what remains outside. [FPF C.40.DC](../../FPF-Spec.md#c40dc---construct-directions-with-support-configurations) develops a direction together with those supports and permits comparison on a common basis. Merely listing a basic, premium and enterprise price does not supply different ways of achieving the result.
 
-Compare the directions against the important goals and constraints. Include leaving an adequate current arrangement in place. Identify the reason to prefer a direction, the conditions that could defeat it and any conflict it leaves unresolved. A feasible limited result can be valuable without reconciling every participant's ambition. A proposal that depends on an unavailable contribution must become conditional, be narrowed, or return to its responsible practice for construction.
+Compare the directions against the important goals and constraints. Include leaving an adequate current arrangement in place. Identify the reason to prefer a direction, the conditions that could defeat it and any conflict it leaves unresolved. A feasible limited result can be valuable without reconciling every participant's ambition. A proposal that depends on an unavailable contribution must remain conditional, be narrowed, be returned to the responsible practice for construction, or be withdrawn.
 
 #### MKT.6:4.3 - Agree what will count as useful and what is actually promised
 
@@ -1239,7 +1239,7 @@ Construct the route from the acquired contribution to the receiving result. Work
 | A required enabling condition is unavailable: materials, system access, working time or a decision from an authorized person. | The responsible authority or organisation obtains the specific enabling condition. |
 | A person cannot yet perform the required activity. | HCD develops the needed capability with suitable practice and evidence of performance. |
 | A known action or service is not being carried out. | Operations arranges the actual work, performer and continuation. |
-| Several people's work conflicts or is unassigned. | Organisation change and the responsible managers establish compatible roles and conditions. |
+| Several people's work conflicts or is unassigned. | Organisation change and the responsible managers establish compatible work assignments and enabling conditions. |
 | The useful result or its grounds remain unknown. | The relevant participants resolve the choice, or MKT.12 qualifies the needed inquiry. |
 
 Specify help around the actual point of difficulty. Identify how the customer can recognize the need, reach competent assistance and continue or stop while waiting. A help article can explain an action; it does not establish that the user can perform it, has permission or has time. Escalating every problem to training can hide missing design, access or capacity.
@@ -1464,7 +1464,7 @@ Past effort can make a team overvalue continuation; a visible complaint can make
 
 ### MKT.7:9 - Consequences
 
-Continuation can follow actual usefulness, and recovery can address the failed contribution rather than merely its appearance. An ending can protect a useful completed result and clarify remaining work. The method may reduce immediate renewals and still improve the appropriateness of the relationship. It cannot guarantee restored trust, future purchase or the profitability of a general retention programme.
+Continuation can follow actual usefulness, and recovery can address the failed contribution rather than merely its appearance. An ending can protect a useful completed result and clarify remaining work. The method may reduce immediate renewals and still improve the appropriateness of the relationship.
 
 ### MKT.7:10 - Architectural Rationale
 
@@ -1548,7 +1548,7 @@ At each relevant connection, retain the following content in whatever form serve
 
 - the activity or encounter and the participant concerned;
 - the useful result or condition sought there;
-- what is known about what occurred, with its relevant source and limits;
+- what is observed, reported, inferred or proposed there, with the relevant sources and limits;
 - the prerequisite, response or contribution needed for a continuation; and
 - the party able to change that condition, or the fact that it lies outside the provider's control.
 
@@ -1746,7 +1746,7 @@ In a constructed event-service case, a customer requests ordinary room preparati
 
 The receiving team checks the actual conditions. Only one available worker can perform the required equipment check, and that check cannot be interrupted safely under the supplied operating rule. The same worker cannot simultaneously prepare the replacement room. A customer profile or more persuasive confirmation would not remove the conflict.
 
-The team compares three attainable directions: retain the original room and complete the check; move later after the current work is finished; or obtain another appropriately prepared worker and the required access. The third remains conditional until that contribution is confirmed. The customer prefers a later move if it preserves a ready room; MKT.4 establishes the changed agreement and Operations schedules the supported work.
+The team compares three candidate directions: retain the original room and complete the check; move later after the current work is finished; or obtain another appropriately prepared worker and the required access. The third remains conditional until that contribution is confirmed. The customer prefers a later move if it preserves a ready room; MKT.4 establishes the changed agreement and Operations schedules the supported work.
 
 If repeated requests justify a reusable combined service, SYSE.8 and C.32.MWA.PP develop it with the customer-facing result, permitted combinations, relevant worker capabilities, timing and interruption conditions. HCD and the responsible managers obtain any new capability and assignment. The recommendation system then receives the available variants and their actual constraints. A test with the sole competent worker already occupied should exclude the impossible immediate combination or return a request for another provider.
 
@@ -1840,7 +1840,7 @@ Begin from the decision and its contrast. Define observations that retain their 
 
 #### MKT.10:4.1 - State the decision and the result that would change it
 
-Name the actual alternatives: retain the existing invitation, add guided help, use another channel, reduce volume, or stop the intervention. Keep the useful customer result and the provider's decision visible. An increase in replies can answer a reach question while remaining insufficient for an expansion justified by better customer performance.
+Name the actual alternatives: retain the existing invitation, add guided help, use another channel, reduce volume, or stop the intervention. Keep the useful customer result and the provider's decision visible. An increase in replies can answer a question about response volume while remaining insufficient for an expansion justified by better customer performance.
 
 Specify whose result matters, what would count, when it must occur and what downside can defeat the action. Include different participants when their outcomes differ: the purchaser can save effort while the user acquires extra work. [MKT.6](#mkt6---jointly-shape-a-useful-result-and-help-achieve-it) supplies the agreed result; [MKT.5](#mkt5---develop-and-align-a-customer-experience-concept) supplies the intended experience conditions. Neither supplies an observed effect by itself.
 
@@ -1852,7 +1852,7 @@ Choose a practically consequential difference before interpreting a favourable f
 
 Define the observation unit, eligible population, period, source and counting rule. For a response rate, say who had an opportunity to respond and what response counts. Distinguish unique people, organisations, opportunities and events. Several purchases by one organisation need not be several independent observations; a missing report is not necessarily a failed result.
 
-Match the measure to the claimed outcome. A completed form can establish a submitted request. It cannot by itself establish informed choice, successful work or a favourable experience. Ask for the additional observation only when the decision depends on it. Where a customer reports an experience, preserve the question, timing, scale and respondent; an ordinal rating does not automatically support arithmetic differences, monetary conversion or comparison with another questionnaire.
+Match the measure to the claimed outcome. A recorded form submission can establish that a request was submitted. It cannot by itself establish informed choice, successful work or a favourable experience. Ask for the additional observation only when the decision depends on it. Where a customer reports an experience, preserve the question, timing, scale and respondent; an ordinal rating does not automatically support arithmetic differences, monetary conversion or comparison with another questionnaire.
 
 Check how the data are produced. A new reminder may change who answers a survey, a new interface may change what gets logged, and better records may increase the apparent number of problems. Account for these changes before interpreting a trend. Retain consequential uncertainty about missing observations and selective follow-up.
 
@@ -1916,7 +1916,7 @@ The next proposed group includes organisations with restrictive data access and 
 
 #### MKT.10:5.2 - More support accompanies more failures
 
-An observational report shows that customers receiving many support calls fail more often. Staff explain that they contact customers after detecting serious difficulties. The report may identify a high-burden group, but it does not establish that calls cause failure. The causal model retains initial difficulty and the timing of support; the analyst considers whether available observations permit an adequate contrast. If they do not, the provider can improve the handover and record the needed conditions while withholding a causal effect claim.
+An observational report shows that customers receiving many support calls fail more often. Staff explain that they contact customers after detecting serious difficulties. The report may identify a high-burden group, but it does not establish that calls cause failure. The causal model retains initial difficulty and the timing of support; the analyst considers whether available observations permit an adequate contrast. If they do not, retain the supported description and state what prevents a causal conclusion.
 
 ### MKT.10:6 - Bias-Annotation
 
@@ -1973,7 +1973,7 @@ C.28.CM supplies the causal model, MMP.15 the identification answer and appropri
 
 Use this pattern when a customer promise depends on several people, teams or organisations, or when customer evidence reveals a mismatch between a promise and actual delivery. Examples include a consultation advertised without available specialists, a trial that needs another organisation's access decision, a service improvement that staff understand but lack the time or authority to perform, or an offering whose intermediary cannot support the promised acquisition, availability or help.
 
-The result is a supported promise joined to effective contributor arrangements and an executable continuation, or a precise limit requiring the promise to change. It includes what happens when a contribution fails and who receives the customer evidence that can change the arrangement.
+The result is a supported promise joined to effective contributor arrangements and an executable continuation, or a precise limit on what can yet be promised. It includes what happens when a contribution fails and who receives the customer evidence that can change the arrangement.
 
 The intended reader can recover the offer and engage the people responsible for its contributions. A settled ordinary offer with sufficient current supply can use that arrangement directly. This method does not replace specialist engineering, operations, organisational design or the authority to commit another party.
 
@@ -2009,7 +2009,7 @@ Ask the responsible contributor what result can be supplied, under which inputs,
 
 For a small known service, this can be a short confirmation of the changed condition. For a new or disputed arrangement, recover the needed relations explicitly. [OCE.6](ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce6---establish-holder-assignments-and-enabling-relations-for-organization-change) establishes actual assignments and their enabling conditions: a named person still needs suitable capability, available time, permission, access and the authority relevant to the work. Obtain missing conditions from their responsible sources rather than assigning them by implication.
 
-Use a competent operating answer for the supported service volume and response conditions. An apparently free calendar is not evidence that a team can handle variable arrivals, exceptions or a required service level. If the provider cannot yet answer, keep the dependent promise conditional or choose a smaller contribution whose supply is known.
+Use a competent operating answer for the supported service volume and response conditions. An apparently free calendar does not establish that a team can handle variable arrivals, exceptions or a required service level. If the provider cannot yet answer, keep the dependent promise conditional or choose a smaller contribution whose supply is known.
 
 Do not assume the customer's work merely because it appears in the offer. Obtain the needed participation, preparation and decisions in a form appropriate to the relationship. A payer's approval may not provide a user's time or an access authority's permission.
 
@@ -2055,7 +2055,7 @@ Before a dependent customer action begins, confirm the necessary contributions f
 
 Make failure handling intelligible to the people who encounter it. Identify what the customer can do, who receives an unresolved case, what temporary alternative is available and what cannot honestly be promised. A customer should not have to discover which of two providers owns an internal disagreement before obtaining the agreed response.
 
-Observe performance where a difference changes action. A provider's delayed input, a lost permission or an exhausted support interval can invalidate a dependent continuation. Pause or revise that branch and obtain the changed input; preserve independent useful work where its conditions remain valid. MKT.7 handles restoration or ending when the relationship decision is affected.
+Observe performance where a difference changes action. A provider's delayed input, a lost permission or an exhausted support interval can invalidate a dependent continuation. Pause or revise that branch; restore its required conditions or return the supply limit to the people maintaining the promise. Preserve independent useful work where its conditions remain valid. MKT.7 handles restoration or ending when the relationship decision is affected.
 
 #### MKT.11:4.6 - Return the supported promise and maintain its dependencies
 
@@ -2108,10 +2108,10 @@ People can interpret willingness as capacity and the presence of an owner as evi
 ### MKT.11:7 - Conformance Checklist
 
 - The promise and its material implications are recoverable from an actual customer use.
-- Each consequential contribution has a supported result, provider and effective conditions.
+- Each consequential contribution is either supported by a provider and effective conditions or retained as an explicit limit on the promise.
 - Capability, assignment, access, authority, timing and actual performance are distinguished where they affect the work.
 - Handover and simultaneous-demand conflicts are resolved or returned as explicit limits.
-- Customer insight reaches a responsible decision, enabled change and observation of its result.
+- Customer insight reaches a responsible decision; any selected change is enabled and its result observed.
 - Where intermediaries participate, their exchanges and contributions support the final acquisition and use; observations retain the events and parties they actually concern.
 - Failure handling and remaining obligations are usable by the customer and contributors.
 - Dependent expressions and future starts change when the supported promise changes.
@@ -2166,7 +2166,7 @@ SYSE constructs the offering and provider arrangement; C.32.MWA.PP compares how 
 
 ### MKT.12:1 - Problem frame
 
-Use this pattern when a product, offer or customer decision depends on something you do not yet understand about people's work, choice, use or experience. Perhaps customers praise a service but stop using it, apparently similar buyers choose differently, or a team cannot decide which difficulty to address. Start by stating the decision and the answer that could change it.
+Use this pattern when a product, offer or customer decision depends on something you do not yet understand about people's work, choice, use or experience. Perhaps customers praise a service but stop using it, apparently similar buyers choose differently, or a team cannot decide which difficulty to address. Start with the receiving decision as far as it is understood. If its relevant alternatives or distinctions are not yet known, develop them from an actual customer episode through §4.2–§4.3 before asking which answer would change the choice.
 
 The useful result is an answer with a stated reach, or a precisely bounded unanswered question, delivered to someone who can use it. That can come from existing information, ordinary information gathering, or a deliberately designed inquiry. A new survey is not the default result.
 
@@ -2178,7 +2178,7 @@ Use an existing sufficient answer directly. Repair an already established servic
 
 An organisation can collect abundant feedback without learning what its next decision requires. A buyer's stated preference may concern acquisition rather than use. A score after delivery may omit a difficulty that appears later. A striking interview may reveal a possible explanation while leaving its prevalence unknown. Combining these observations into one customer metric loses the question each can answer.
 
-The remedy is to construct the inquiry backward from a receiving decision, then forward from obtainable observations to a warranted answer. Keep the work being studied, the person reporting it, the observation and the inference distinct.
+Construct the inquiry from the receiving decision and the available customer material. When the decision is still poorly understood, examining an actual attempt can first reveal the relevant difficulty and alternatives. When those are established, work backward to the answer needed, then forward from obtainable observations to a warranted answer. Keep the work being studied, the person reporting it, the observation and the inference distinct.
 
 ### MKT.12:3 - Forces
 
@@ -2194,7 +2194,9 @@ The remedy is to construct the inquiry backward from a receiving decision, then 
 
 #### MKT.12:4.1 - Define the receiving question and try the existing answer
 
-Name who must decide, what alternatives remain live, when the decision matters and what answer would change it. Replace “understand our customers” with, for example, “decide whether the next offer needs an easier acquisition route or a different way of performing the work”. Ask what observation would distinguish those alternatives. If no plausible answer changes the move, revise the question or stop collecting.
+Name who must decide and when. If the relevant difficulty or alternatives cannot yet be stated, select an accessible episode through §4.2 and examine the actual attempt through §4.3, or the matching observation route. Recover what the person tried to achieve, the operations and conditions involved, and a relevant contrast. That work can produce the previously unknown distinction and candidate alternatives. Bound it by the material, attainable contribution and participant burden; it need not promise a particular discovery. Return what it establishes to this comparison.
+
+When alternatives can be stated, name which remain live and what answer would change the choice. Replace “understand our customers” with, for example, “decide whether the next offer needs an easier acquisition route or a different way of performing the work”. Ask what observation would distinguish those alternatives. If the obtained grounds leave no plausible answer that could change the bounded move, revise the question or stop collecting. Not yet having grounds to formulate alternatives is the earlier construction question, not evidence for this stop.
 
 Inspect available service records, previous inquiries, current customer accounts and relevant external sources. Check their subject, period and conditions before reuse. An old answer about individual buyers may not answer a current question about organisations with a separate access authority. Conversely, age alone does not defeat an answer whose conditions still hold.
 
@@ -2220,7 +2222,7 @@ These routes can inform each other. A choice history can expose the wrong activi
 
 Start with an executor and an activity described independently of a preferred product. Ask the person to walk through a concrete attempt: what started it, what they did, what they tried to achieve, what made success difficult and what happened afterward. Observe the relevant work or inspect its permitted traces where that can challenge the account. Separate a requested feature from the result it is expected to improve.
 
-Use the attempt to sketch what must be accomplished for the activity to succeed. Start with its central work, then recover the preparation and completion it depends on. Ask what each part achieves and whether it is merely a feature of the present solution. "Open spreadsheet A" may serve "establish which source values are valid"; another solution can perform that purpose differently. A small map or list helps retain these relations. Keep the boundary tied to the decision instead of expanding into everything the person does.
+Use the attempt to sketch what must be accomplished for the activity to succeed. Start with its central work, then recover the preparation and completion it depends on. Ask what each part achieves and whether it is merely a feature of the present solution. "Open spreadsheet A" may serve "establish which source values are valid"; another way of performing the activity can obtain that result. A small map or list helps retain these relations. Keep the boundary tied to the decision instead of expanding into everything the person does.
 
 Challenge the sketch with a materially different attempt, including an interrupted or unsuccessful one when it could expose a missing part. Examine handovers and combinations of tools that the initial account treated as incidental. Ask what was omitted, repeated or repaired and what outcome mattered there. Test a proposed addition against an actual attempt or relevant participant; a suggested possibility alone does not establish an unmet need. If the addition describes another activity, either revise the inquiry's boundary explicitly or leave it outside this answer.
 
@@ -2281,6 +2283,12 @@ The returned answer is bounded: retain reduced entry and valid source selection 
 Now management asks whether the trial reduced total reporting time. The earlier accounts do not identify that causal effect: workload or another process change may have altered the result. Define the comparison and competing explanations before choosing an evaluation design. Existing observations remain useful for constructing that question; they are not upgraded into its answer.
 
 In a learning-service case, the paying employer's reason for enrolling staff can be studied through the same question discipline. Whether each learner can subsequently perform the work needs an HCD task and observation under stated assistance conditions. A favourable buying story cannot supply that capability judgement.
+
+#### MKT.12:5.3 - Find the missing question before comparing offers
+
+Suppose the same service team has only praise after onboarding and little subsequent use; it cannot yet formulate useful alternatives. With permission, it follows an operator's reporting attempt. Entry itself is quick, but the operator spends most of the attempt checking which source values have been superseded. A contrasting attempt uses already confirmed values and finishes without that repeated checking. These episodes reveal a candidate difficulty: obtaining valid inputs, rather than entering them faster.
+
+The team can now compare supplying source validation with retaining the existing validation arrangement, and ask which version information each requires. The observations justify that local question; they do not establish its market prevalence or the causal effect of a new service. If the relevant source history cannot be obtained, retain the discovered difficulty and leave the affected offer comparison unresolved. The specification or a demonstrated use of an existing validation service may already show which version information it requires; use that answer without another interview.
 
 ### MKT.12:6 - Bias-Annotation
 
@@ -2398,9 +2406,9 @@ Name the receiving work before the trial finishes. The operating team needs more
 
 Follow a real attempt far enough to answer the selected question. For an ordinary provision claim, follow suitable customer selection, contact, choice, agreed terms, inputs, performance, use and support. Preserve where the work stops and why. An inquiry about purchase alone need not wait for years of later use, but its conclusion must remain about purchase.
 
-Record material assistance and deviations. Identify whether the founder supplied a personal introduction, unusual discount, manual repair, omitted invoice or unplanned night work. These can be legitimate ways to learn; their cost and availability must enter the proposed repeatable arrangement if it still depends on them. Remove or supply the dependency before claiming ordinary provision without it.
+Record material assistance and deviations. Identify whether the founder supplied a personal introduction, unusual discount, manual repair, omitted invoice or unplanned night work. These can be legitimate ways to learn; their cost and availability must enter the proposed repeatable arrangement if it still depends on them. Remove the dependency before claiming ordinary provision without it.
 
-Compare attempts across the differences relevant to deployment. Repetition by the same expert for similar friendly customers may leave another team or channel untested. Select cases that can expose a consequential variation rather than merely accumulating successes. Preserve refusals and ineligible cases so that the number of suitable opportunities is not inflated.
+Compare attempts across the differences relevant to deployment. Repetition by the same expert for similar friendly customers may leave another team or channel untested. Select cases that can expose a consequential variation rather than merely accumulating successes. Preserve refusals and ineligible cases; distinguish whether an opportunity was eligible from whether an attempt succeeded.
 
 Return the observed result and its limit. Distinguish “this attempt succeeded”, “the ordinary team repeated this bounded service under these conditions”, and “the proposed larger deployment is supported”. A few successful attempts can justify a limited next commitment under uncertainty; they need not establish a stable population rate or unlimited scale.
 
@@ -2678,7 +2686,7 @@ The programme has a distinct whole: selected organisations, related opportunitie
 
 ### MKT.14:11 - SoTA-Echoing
 
-For a bounded result within one organisation, **adapt** [Burgess's Scenario ABM](https://inflexiongroup.com/resources/what-is-scenario-abm/): relate the chosen outcome, preparation and available team effort. For shared work, **adapt** [Segment ABM](https://inflexiongroup.com/resources/how-is-segment-abm-used-today/): justify the group's common basis while retaining separate continuations. For broader repeated work, **adapt** [Programmatic ABM](https://inflexiongroup.com/resources/how-is-programmatic-abm-used-today/): prepare relevant organisation information, differentiated actions and their receiving work. These distinctions help choose a way of working; reported engagement is not evidence of causal benefit.
+For a bounded result within one organisation, **adapt** [Burgess's Scenario ABM](https://inflexiongroup.com/resources/what-is-scenario-abm/): relate the chosen outcome, preparation and available team effort. For shared work, **adapt** [Segment ABM](https://inflexiongroup.com/resources/how-is-segment-abm-used-today/): justify the group's common basis while retaining separate continuations. For broader repeated work, **adapt** [Programmatic ABM](https://inflexiongroup.com/resources/how-is-programmatic-abm-used-today/): prepare relevant organisation information, differentiated actions and their receiving work. These distinctions help choose a way of working; the reported engagement results alone do not establish causal benefit.
 
 STR.8, MA.8 and OCE.11 strengthen the comparison by supplying sustaining dependencies, temporal economics and change alongside continuing service. Their use prevents a choice based only on message volume or reuse of a document.
 
@@ -2710,7 +2718,7 @@ MKT.9 compares available variants against that result. The only worker prepared 
 
 ### MKT.Application:1.2 - Obtain a construction and compare whole alternatives
 
-The provider asks SYSE.8 for a service arrangement that preserves the needed learning activity and equipment conditions. Its request names the required room conditions, equipment readiness, timing, access and ongoing obligation. C.32.MWA.PP compares the methods and actual overlapping performances. The returned alternatives must identify the contributions that make each combination workable.
+The provider asks SYSE.8 for a service arrangement that preserves the needed learning activity and equipment conditions. Its request names the required room conditions, equipment readiness, timing, access and ongoing obligation. C.32.MWA.PP compares the proposed arrangements, including their demands alongside the ongoing equipment check and other commitments. The returned alternatives must identify the contributions that make each combination workable.
 
 | Alternative | What must be supplied | Consequence for the offer |
 | --- | --- | --- |
@@ -2806,7 +2814,7 @@ Use D.1–D.3 to recover the purchaser's need, the protection sought by the reci
 
 Assume an existing authenticated portal can deliver the requested quotation without exposing unrelated messages, and both parties can use it within the needed period. Under the stipulated concerns for obtaining this requested answer and protecting other attention, that route preserves both purposes better than broad disabling or losing the answer. The recipient supplies the permission and the operator the access; the sender's commercial benefit supplies neither. Keep any added effort visible.
 
-Now suppose the purchaser cannot access the portal and the authorised operator is unavailable before the deadline. The preferred route is no longer supplied. Compare another actually agreed means, a changed deadline or the unresolved decision; do not keep crediting the unavailable portal with its former result. If the value conflict or authority remains unresolved, return that question through D.4. D.5 is relevant to a separately claimed filtering or bias assurance. One blocked requested message neither establishes an overall filter error rate nor justifies abandoning protection.
+Now suppose the purchaser cannot access the portal and the authorised operator is unavailable before the deadline. The preferred route is no longer supplied. Compare another actually agreed means or a changed deadline; if neither is supported, return the unresolved choice. Do not keep crediting the unavailable portal with its former result. If the value conflict or authority remains unresolved, return that question through D.4. D.5 is relevant to a separately claimed filtering or bias assurance. One blocked requested message neither establishes an overall filter error rate nor justifies abandoning protection.
 
 
 
@@ -2848,7 +2856,7 @@ MKT.3 can now invite an appropriate response. For a qualified batch trial, that 
 
 MKT.4 makes each trial choice understandable and executable. It retains local consent, price, preparation, access and the receiving performer. MKT.9 selects the applicable variant. During delivery, MKT.6 checks the useful result and required help, while MKT.7 handles continued work or ending. The shared demonstration is prepared once; confidential samples and individual commitments remain separate.
 
-Suppose Vector still wants the limited trial but requires different customer-local preparation. The team obtains feasible preparation conditions and rebuilds the complete programme comparison. If Vector instead refuses the service method or its required data use, reopen the opportunity and offer before deciding whether a trial remains possible. In a separate variation of the original 40-hour programme, a compulsory exception adds eight hours, so the programme needs 48. The owner must obtain support, reduce the result or change its timing before making the additional promise. If automation reduces preparation, recalculate the whole programme, including its setup, checking and coordination costs. If continuous integration becomes available for Luch, qualify and compare the revised programme before adding a third trial.
+Suppose Vector still wants the limited trial but requires different customer-local preparation. The team obtains feasible preparation conditions and rebuilds the complete programme comparison. If Vector instead refuses the service method or its required data use, reopen the opportunity and offer before deciding whether a trial remains possible. In a separate variation of the original 40-hour programme, a compulsory exception adds eight hours, so the programme needs 48. The owner must obtain support, agree a reduced result or agree a change in timing before making the additional promise. If automation reduces preparation, recalculate the whole programme, including its setup, checking and coordination costs. If continuous integration becomes available for Luch, qualify and compare the revised programme before adding a third trial.
 
 MKT.13 asks whether the ordinary team can repeat this work at the proposed later scale. It uses observed preparation, exceptions and support, not merely the founder's successful intervention. STR.8 and MA.8 retain the actual business contribution and dated financial alternatives. A planned positive contribution does not pay an earlier supplier bill.
 
@@ -2936,7 +2944,7 @@ In the warehouse, the trial must show that approved identifiers pass through the
 
 Use the actual shared allocation before making the promise. If an expert is needed for both the trial and an existing obligation at the same time, two separate statements of feasibility do not establish the joint arrangement. Change timing, scope or provision, or defer. The Reference's purchase case develops this conflict and the selective return when support is lost.
 
-Early difficulty needs a discriminating response. A wrong identifier can arise from source data, an unavailable correction rule, access, a defective configuration or a person's performance. Obtain the responsible contribution. When the limitation is a person's way of performing the operation, HCD.3 locates it and HCD.9 supplies a focused attempt, feedback, correction and retry. Useful help early in implementation can prevent a small difficulty from defeating use; it does not prove a universal motivation curve or durable independent capability.
+Early difficulty needs a discriminating response. A wrong identifier can arise from source data, an unavailable correction rule, access, a defective configuration or a person's performance. Identify the missing or defective contribution and obtain the needed correction or support from its provider. When the limitation is a person's way of performing the operation, HCD.3 locates it and HCD.9 supplies a focused attempt, feedback, correction and retry. Useful help early in implementation can prevent a small difficulty from defeating use; it does not prove a universal motivation curve or durable independent capability.
 
 Observe what the receiving dispatch work actually obtains. A valid scan, an installed device, a confident operator and an on-time useful dispatch answer different questions. MKT.6 returns an inadequate contribution to its owner and preserves sufficient results. Early enthusiasm may justify keeping a conversation open; it does not establish a reliable reference case. Ask permission before using another customer's account or contact, and keep any reported benefit within its observed conditions.
 
@@ -2970,7 +2978,11 @@ The early useful explanation can finish a community exchange without a purchase.
 
 ### MKT.Application:5.2 - Obtain the learning product and the personal programme
 
-The provider gives HCD.28 the later-work family, intended human contribution, candidate audience, subject material and service limits. HCD.28 distinguishes a missing subject method from missing teaching or help. It returns a connected route with meaningful entry differences, learning tasks, explanation, practice, feedback, later observation and provider conditions. Retain an adequate demonstration or supervised contribution when it supplies the learning action. If a missing operation or criterion prevents teaching or use, [FPF A.3.1.MR:4](../../FPF-Spec.md#a31mr4---solution) recovers a source-supported candidate account. Use [RMP.10:4](../RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md#rmp104---solution) only when decision-changing uncertainty still needs a larger reconstruction programme; retain the returned accounts, variants, evidence limits and provisional status. If the required subject contribution is unavailable, narrow or defer that part of the learning promise while it is obtained.
+The provider gives HCD.28 the later-work family, intended human contribution, candidate audience, subject material and service limits. HCD.28 distinguishes a missing subject method from missing teaching or help. It returns a connected route with meaningful entry differences, learning tasks, explanation, practice, feedback, later observation and provider conditions. Retain an adequate demonstration or supervised contribution when it supplies the learning action.
+
+Choose the next contribution from what is missing. Use [FPF A.3.1.DR:4](../../FPF-Spec.md#a31dr4---solution) when a proposed way in documentary guidance needs its source meaning or status recovered. When observations or evidence about performances leave a reusable operation or criterion unclear, [FPF A.3.1.MR:4](../../FPF-Spec.md#a31mr4---solution) recovers provisional source-traceable candidate accounts or returns the limits of what the material supports. Apply [FPF A.3.1:4](../../FPF-Spec.md#a314---solution) directly when a candidate way is ready for the Method identity test. If no available way supplies the required contribution, obtain the missing construction from the relevant subject practice or Method Engineering.
+
+Use [RMP.10:4](../RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md#rmp104---solution) only when decision-changing uncertainty still needs a larger reconstruction programme; retain the returned accounts, variants, evidence limits and provisional status. If the required subject contribution is unavailable, narrow or defer that part of the learning promise while the gap remains.
 
 Assume the subject basis is available. The product offers a supported individual route and a route containing selected shared episodes. HCD.2 compares those variants for this analyst using her actual preparation, later work, available time and protected contributions. A population description does not determine that personal choice. HCD.20 compares individual and group arrangements; HCD.21 establishes compatible participants only if interaction is useful. HCD.22 supplies a shared task whose individual contributions matter.
 
@@ -2998,7 +3010,7 @@ MKT.11 returns this conflict to the responsible owners before promising the meet
 
 Suppose the employer agrees to a later meeting and its preparation and follow-up, and the responsible owner supplies the required two hours from the facilitator's following week. The current week's ten hours remain allocated to the accepted learning and community work. The later meeting remains conditional on its own access and support being available.
 
-The conflict can also be temporal. Two available hours after learners' revision deadline cannot supply feedback needed before it. During a shared explanation, withholding the answer long enough for the analyst to make a model choice may be part of learning, while offering the answer immediately may be good customer support in another situation. Recover the intended contribution before substituting the action. An AI answer can help with work; when the human must acquire the judgement, the arrangement must still obtain that person's choice, explanation, correction and later performance under the declared help conditions.
+The conflict can also be temporal. Two available hours after learners' revision deadline cannot supply feedback needed before it. During a shared explanation, withholding the answer long enough for the analyst to make a model choice may be part of learning, while offering the answer immediately may be good customer support in another situation. Recover the intended contribution before substituting the action. An AI answer can help with work; when the human must acquire the judgement, the arrangement must still obtain that person's choice, explanation, any needed correction and later performance under the declared help conditions.
 
 
 

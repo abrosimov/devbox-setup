@@ -61,7 +61,7 @@ Search the Keywords & Search Queries column for the engineering difficulty, subj
 | 1 | [SYSE.1 - Choose and Reopen the Project System-of-Interest](#syse1---choose-and-reopen-the-project-system-of-interest) |  Stable  | *Keywords:* project system-of-interest, intended System, project focus, product, solution, project boundary, outside effect. *Queries:* "Which System is this project actually changing or bringing about?" "Why is this the useful focus now, and what could reopen it?" Establish a shared project-system choice that lets later use, architecture, realization, and assurance decisions refer to the same subject. | FPF A.1.SCR, C.11 |
 | 2 | [SYSE.16 - Recover the Systems and Conditions Needed for a Use Decision](#syse16---recover-the-systems-and-conditions-needed-for-a-use-decision) |  Stable  | *Keywords:* operational environment, suprasystem, using System, neighbours, interactions, operating conditions, context diagram. *Queries:* "Which surrounding Systems and conditions matter to this use decision?" "What containing, using, interacting, or boundary-crossing relations must the engineering account distinguish?" Recover the decision-relevant use context across its functional, constructive, interaction, and operating claims so the next concept or architecture choice has a grounded basis. | SYSE.1; FPF A.22 |
 | 3 | [SYSE.17 - Find Systems That May Bear Engineering Consequences](#syse17---find-systems-that-may-bear-engineering-consequences) |  Stable  | *Keywords:* affected Systems, consequences, bystander, future operator, maintainer, ecological System, direct relation, possible path. *Queries:* "Who or what may undergo a consequence of this engineering change?" "Which supported relation or possible path makes that bearer relevant?" Discover and qualify consequence-bearing Systems while the project can still change its concept, constraint, alternative, probe, or stop decision. | SYSE.1, SYSE.16; FPF A.1.CSD, C.28, A.10 |
-| 4 | [SYSE.2 - Develop Linked Use and System Concepts](#syse2---develop-linked-use-and-system-concepts) |  Stable  | *Keywords:* use concept, System concept, Concept of Operations, use case, scenario, user story, requirements, outside effect. *Queries:* "How will this System be used in a concrete situation?" "Which candidate System concept could support that use?" Link use claims to System-concept claims with their relevant neighbours, conditions, consequences, and uncertainty; expose the next architecture question or the missing use premise. | SYSE.1, SYSE.16, SYSE.17; FPF C.17 |
+| 4 | [SYSE.2 - Develop Linked Use and System Concepts](#syse2---develop-linked-use-and-system-concepts) |  Stable  | *Keywords:* use concept, System concept, Concept of Operations, use case, scenario, user story, requirements, outside effect. *Queries:* "How will this System be used in a concrete situation?" "Which candidate System concept could support that use?" Link use claims to System-concept claims with their relevant neighbours, conditions, consequences, and any uncertainty; expose the next architecture question or the missing use premise. | SYSE.1, SYSE.16, SYSE.17; FPF C.17 |
 | 5 | [SYSE.54 - Make Domain Behaviour Explicit Together with EventStorming](#syse54---make-domain-behaviour-explicit-together-with-eventstorming) | Stable | *Keywords:* EventStorming, domain events, collaborative modelling, commands, policies, state, process modelling, domain behaviour. *Queries:* "Why do participants disagree about what happens and what should happen next?" "How can we expose missing decisions and test the behaviour before choosing software boundaries?" Construct and challenge a shared event model with its conditions, examples and unresolved questions for the receiving engineering use. | SYSE.2; FPF B.5.SD; A.3.3.TR when a state-change rule is needed |
 | 6 | [SYSE.22 - Coevolve Engineering Problems and System-Family Options](#syse22---coevolve-engineering-problems-and-system-family-options) | Stable | *Keywords:* problem formulation, System family, option generation, exploration, experiment, lineage, current alternatives. *Queries:* "How should the problem change when a prototype or operating observation reveals a new possibility?" "Which System-family options should remain under comparison now?" Develop problem formulations and possible System solutions together, preserving their lineage and returning new observations only to the choices they can change. | SYSE.1, SYSE.2, SYSE.6, SYSE.13; FPF C.11, C.17-C.19, G.11 |
 
@@ -72,7 +72,7 @@ Search the Keywords & Search Queries column for the engineering difficulty, subj
 | 7 | [SYSE.5 - Develop an Engineered System's Functional Organization and Bearer Alternatives](#syse5---develop-an-engineered-systems-functional-organization-and-bearer-alternatives) |  Stable  | *Keywords:* function, functional organization, bearer, allocation, interface, operating mode, placement, redundancy. *Queries:* "Which different organizations could produce the required outside effect?" "How could Systems share or alternate the functional contributions?" Develop functional and constructive alternatives together with their proposed allocations, interfaces, integration dependencies, and evidence, giving the architecture decision materially different structures to compare. | SYSE.2, SYSE.16; FPF A.6.F, A.22 |
 | 8 | [SYSE.6 - Decide and Reopen the Engineering Architecture](#syse6---decide-and-reopen-the-engineering-architecture) | Stable | *Keywords:* architecture decision, functional allocation, module boundary, interface, control, redundancy, product family, trade-off, software architecture styles, layers, pipeline, plugins, microservices. *Queries:* "Which engineering architecture should the project choose for this use?" "Which evidence or changed condition would reopen that choice?" Understand software-style mechanisms where relevant; select the decision-relevant structures, compare materially different alternatives and accepted losses, and state the constraints that later realization and specialist decisions must respect. | SYSE.2, SYSE.5; FPF C.30, C.32 |
 | 9 | [SYSE.7 - Keep Engineering Descriptions Usable Together for Decisions](#syse7---keep-engineering-descriptions-usable-together-for-decisions) |  Stable  | *Keywords:* engineering descriptions, model, requirement, CAD, simulation, digital twin, configuration, correspondence, contradiction. *Queries:* "Which claims across our models and records support this decision?" "Do they concern compatible subjects, configurations, intervals, and interpretations?" Maintain a usable ensemble of descriptions with explicit links to sources and returned evidence, justified correspondences, and identified contradictions that can change the engineering answer. | SYSE.6; FPF C.29, A.10 |
-| 10 | [SYSE.8 - Develop an Integrated Offering and Provider Concept for Using an Engineered Result](#syse8---develop-an-integrated-offering-and-provider-concept-for-using-an-engineered-result) |  Stable  | *Keywords:* integrated offering, provider concept, service, access, consumables, maintenance, support, financing, risk allocation. *Queries:* "What provider arrangement could fulfil this offering in its intended use?" "How do provider, access, and support choices change the technical concept and allocation of risk?" Develop the offering and provider concept alongside the System concept, naming the needed Systems, Work, promises, and supported contributions. | SYSE.2; FPF A.2.3 |
+| 10 | [SYSE.8 - Develop an Integrated Offering and Provider Concept for Using an Engineered Result](#syse8---develop-an-integrated-offering-and-provider-concept-for-using-an-engineered-result) |  Stable  | *Keywords:* integrated offering, provider concept, service, access, consumables, maintenance, support, financing, conditional payment, risk allocation. *Queries:* "What provider arrangement could fulfil this offering in its intended use?" "How do provider, access, and support choices change the technical concept and allocation of risk?" "How can we provide the result when payment depends on its technical acceptance?" Develop the offering and provider concept alongside the System concept, connecting the needed Systems, Work, promises, supported contributions and conditional finance. | SYSE.2; FPF A.2.3 |
 | 11 | [SYSE.9 - Use or Request Specialist Engineering Results](#syse9---use-or-request-specialist-engineering-results) |  Stable  | *Keywords:* specialist result, engineering contribution, receiving decision, safety, calculation, authority, evidence limits. *Queries:* "Which specialist answer could change this whole-System decision?" "What subject, configuration, conditions, and evidence must that answer address?" Use an adequate qualified specialist result or return its material limit. Select a new request only when its attainable contribution warrants the whole acquisition burden for the engineering choice; preserve the supplier Method and authority. | SYSE.2, SYSE.6; FPF A.15.9, C.11.DUA, A.6.REL, E.10.ROLE |
 | 12 | [SYSE.10 - Assess Research, Model, and Trial Results for an Engineering Decision](#syse10---assess-research-model-and-trial-results-for-an-engineering-decision) |  Stable  | *Keywords:* research result, engineering model, simulation, experiment, prototype, field trial, formal proof, validity. *Queries:* "What can this research, model, or trial result support in our engineering decision?" "Which implementation correspondence or untested condition limits that use?" Assess what the result supports, its remaining uncertainty, and any need for further observation, so the decision uses partial knowledge within its justified limits. | SYSE.6, SYSE.7; FPF A.10, C.16 |
 
@@ -112,7 +112,7 @@ Search the Keywords & Search Queries column for the engineering difficulty, subj
 | 27 | [SYSE.26 - Design a Supported Platform-Use Path](#syse26---design-a-supported-platform-use-path) | Stable | *Keywords:* supported use, request and result, variants, retry, cancellation, support. *Queries:* "What must the user supply to obtain a usable engineering result?" "What is safe after an interrupted request?" Design one supported interaction from its required inputs through waiting, completion and failure, with a capable support provider. Return a supported-use description with a trial or missing provision identified; distinguish description, actual operation and readiness to rely on it. | SYSE.12, SYSE.13; SYSE.8 if the provider concept is missing |
 | 28 | [SYSE.27 - Evolve Platform Interfaces and Contribution Paths](#syse27---evolve-platform-interfaces-and-contribution-paths) | Stable | *Keywords:* interface evolution, compatibility, units, defaults, physical connections, adapters, contribution, versioned change. *Queries:* "Does this change preserve the consumer's promised result?" "How can a contributor test and maintain an extension?" Compare implementation change, extension, adapter, explicit break and refusal by their effects on the behavior consumers rely on. Return a bounded evolution decision with consumer effects, a way to test the contribution and the maintenance/support arrangement or gap; send required migration to SYSE.29. | SYSE.13, SYSE.26; OCE.4/OCE.6 when organizational results are missing |
 | 29 | [SYSE.28 - Place Qualified Controls in a Supported Platform-Use Path](#syse28---place-qualified-controls-in-a-supported-platform-use-path) | Stable | *Keywords:* control placement, evidence reach, subject identity, reuse, unavailable checker, authorized exception. *Queries:* "Where can this property change before it is relied on?" "What stops when the required check is unavailable?" For a supplied constraint, trace where the relevant property can change, then place verification or enforcement to protect the dependent action. Return the placement, outcome meanings, applicability and remaining gaps, preserving separate domain qualification and decision authority. | SYSE.4, SYSE.13, SYSE.26; SYSE.32 for artifacts; applicable control authority |
-| 30 | [SYSE.29 - Decide Whether and How to Migrate or Retire a Supported Platform Path](#syse29---decide-whether-and-how-to-migrate-or-retire-a-supported-platform-path) | Stable | *Keywords:* platform migration, retirement, retained state, infrequent consumers, coexistence, recovery. *Queries:* "Can users complete the required work through the receiving path?" "What must remain after the old interface stops serving?" Recover affected uses and obligations and compare transition choices. Exercise a selected increment with its failure branch. Return a bounded decision, its next increment when needed, or the missing premise, with remaining uses and obligations accounted for. | SYSE.13, SYSE.18, SYSE.27; SYSE.34 for software/data |
+| 30 | [SYSE.29 - Decide Whether and How to Migrate or Retire a Supported Platform Path](#syse29---decide-whether-and-how-to-migrate-or-retire-a-supported-platform-path) | Stable | *Keywords:* platform migration, retirement, retained state, infrequent consumers, coexistence, recovery. *Queries:* "Can users complete the required work through the receiving path?" "What must remain after the old interface stops serving?" Recover affected uses and obligations and compare transition choices. Qualify a selected increment and its failure response, reusing adequate evidence. Return a bounded decision, its next increment when needed, or the missing premise, with remaining uses and obligations accounted for. | SYSE.13, SYSE.18, SYSE.27; SYSE.34 for software/data |
 | 31 | [SYSE.53 - Resolve a Usable Composition of Independently Released Components](#syse53---resolve-a-usable-composition-of-independently-released-components) | Stable | *Keywords:* independent releases, package composition, typed dependencies, shared meaning, isolation, resolver, conflict, unknown premise. *Queries:* "Which available releases can support this joint use?" "What must change when the preferred update conflicts?" Derive requirements and sharing scopes from actual consumption, obtain a supported selection or an explained conflict or unresolved premise, and return exact inputs to realization. | SYSE.13, SYSE.27; SIE.2 / SIE.4 / SIE.6 for semantic premises; CMP.4 for search; SYSE.30 / SYSE.33 for realization |
 
 **Part VII - Software Platform Engineering**
@@ -123,13 +123,13 @@ Search the Keywords & Search Queries column for the engineering difficulty, subj
 | 33 | [SYSE.31 - Keep Software Feedback and Continuous Integration Fast and Trustworthy](#syse31---keep-software-feedback-and-continuous-integration-fast-and-trustworthy) | Stable | *Keywords:* software feedback, test meaning, flaky failures, quarantine, continuous integration, mainline. *Queries:* "Does this green check answer the current engineering question?" "Why do passing branches fail when combined?" Bind checks to the exercised artifact and conditions, preserve necessary slow or human evidence, and direct failures to their actual repairers. Return a usable feedback arrangement, or use the named DORA CI Method to obtain a checked shared-mainline revision for an already testable change awaiting integration. | SYSE.30, SYSE.33; DORA CI Method when integration is missing |
 | 34 | [SYSE.32 - Promote Verified Artifacts without Rebuilding](#syse32---promote-verified-artifacts-without-rebuilding) | Stable | *Keywords:* artifact promotion, artifact identity, provenance, consumer trust, destination configuration, verification. *Queries:* "Does the received package still carry the tested artifact's evidence?" "What does a valid signature leave unestablished?" Preserve the selected artifact across transfer, separate destination configuration and apply the named SLSA verification Method with the consumer's configured expectations when authenticity is required. Return an applicable promotion basis or a specific identity, evidence or trust gap; actual runtime deployment remains a separate result. | SYSE.13, SYSE.28, SYSE.30, SYSE.31; SLSA v1.2 verification |
 | 35 | [SYSE.33 - Provide Reconstructible Software Development and Test Environments](#syse33---provide-reconstructible-software-development-and-test-environments) | Stable | *Keywords:* development environment, test environment, reconstruction, infrastructure as code, isolation, state reconciliation, cleanup. *Queries:* "Can another user reconstruct an environment that actually supports this task?" "What should happen after partial provisioning or a failed retry?" Specify required resources, data, access and operating conditions, then reconstruct and exercise the environment. The first result is an observed usable environment with its limits, or a reconstructible description with the precise missing resource, permission or data source. | SYSE.13, SYSE.26; SYSE.34 for persistent state |
-| 36 | [SYSE.34 - Change Software and Persistent Data with a Recovery Boundary](#syse34---change-software-and-persistent-data-with-a-recovery-boundary) | Stable | *Keywords:* persistent data, schema migration, compatible coexistence, concurrent writes, backfill, idempotence, recovery, information loss. *Queries:* "Can old and new software safely use the same changing data?" "What remains recoverable after a partial or lossy migration?" Define the data contracts, writers and intermediate states; qualify the transition and recovery actions against concurrent updates and partial effects. The first result is a bounded change and recovery procedure with its operating limits, decision holder and unresolved conditions. | SYSE.13, SYSE.27, SYSE.33; engine-qualified change/recovery Methods |
+| 36 | [SYSE.34 - Change Software and Persistent Data with a Recovery Boundary](#syse34---change-software-and-persistent-data-with-a-recovery-boundary) | Stable | *Keywords:* persistent data, schema migration, compatible coexistence, concurrent writes, backfill, idempotence, recovery, information loss. *Queries:* "Can old and new software safely use the same changing data?" "What remains recoverable after a partial or lossy migration?" Define the data contracts, writers and intermediate states; qualify the transition and promised recovery actions against the update histories and partial effects they must support. The first result is a bounded change and recovery procedure with its operating limits, decision holder and unresolved conditions. | SYSE.13, SYSE.27, SYSE.33; engine-qualified change/recovery Methods |
 | 37 | [SYSE.35 - Control Software Release Exposure with User-Relevant Signals](#syse35---control-software-release-exposure-with-user-relevant-signals) | Stable | *Keywords:* release exposure, canary, representative tasks, control population, attribution, delayed outcomes, feature activation, recovery. *Queries:* "What evidence justifies widening use of a deployed candidate?" "When is a canary inconclusive rather than successful?" Select the population, task, observation interval and authorized exposure; compare outcomes while accounting for shared effects and state compatibility. The first result defines the comparison, decision conditions and qualified recovery action; observations then support a bounded proceed, stop or inconclusive result. | SYSE.34, SYSE.36, SYSE.41; SYSE.14 release authority |
 | 38 | [SYSE.36 - Measure User Tasks and Set Software-Service Reliability Objectives](#syse36---measure-user-tasks-and-set-software-service-reliability-objectives) | Stable | *Keywords:* user task, service level indicator, service level objective, SLI, SLO, eligibility, missing outcomes, error budget. *Queries:* "Does this measurement count successful user tasks or only healthy components?" "What denominator and objective should govern this service?" Define eligible attempts, timely correct results and observation gaps before choosing telemetry; when an SLO is needed, agree the objective and response policy with the relevant users, providers and decision holders. The first result is a task measurement definition and exercised instrumentation, or a measurement gap. | SYSE.4; subject owner, task meaning and suitable instrumentation |
 | 39 | [SYSE.37 - Alert on Actionable Software-Service Reliability Risk](#syse37---alert-on-actionable-software-service-reliability-risk) | Stable | *Keywords:* actionable alert, error budget, burn rate, multiple windows, sparse traffic, missing data, response capacity. *Queries:* "Does this reliability signal require action soon enough to justify an alert?" "Will the alert reach someone able to respond?" Choose an alert rule for actionable task failure, budget risk or lost observation, deriving budget-risk rules from the matching task, objective and consumption. Test evaluation, delivery, acknowledgement and the permitted response together. The first result is an exercised alert rule with its response and blind spots, or a precise observation or response gap. | SYSE.36; SYSE.38 for response; actual responder authority |
 | 40 | [SYSE.38 - Diagnose and Restore a Failed Software-Platform Task](#syse38---diagnose-and-restore-a-failed-software-platform-task) | Stable | *Keywords:* failed platform task, diagnosis, incident response, safe mitigation, partial effects, competing causes, restoration, specialist request. *Queries:* "Which stage of this user attempt failed, and what can restore useful work now?" "What observation would distinguish the remaining causes?" Establish actual impact and state, compare causes, and test a permitted mitigation without repeating unknown effects. The first result is a restored task or usable limited result, or a narrowed cause question naming the result needed from a specialist. | SYSE.26, SYSE.34, SYSE.36, SYSE.40, SYSE.41; OPS.3/OPS.4 when needed |
 | 41 | [SYSE.39 - Decide Whether and How to Reduce the Total Burden of Repetitive Platform Work](#syse39---decide-whether-and-how-to-reduce-the-total-burden-of-repetitive-platform-work) | Stable | *Keywords:* repetitive platform work, toil, automation, task simplification, transferred burden, maintenance, exceptions, horizon. *Queries:* "Will this change reduce total work or move it to users?" "When does automation repay its construction and operating cost?" Compare retaining the method, simplifying the task, removing its cause, improving the supported interaction and automation using user effort, provider effort, waiting and risk over a stated horizon. The first result is a justified choice about the recurring activity. For a selected intervention, state how total burden will be compared after use. | SYSE.25, SYSE.26, SYSE.36; SYSE.24 for whole obtaining |
-| 42 | [SYSE.40 - Protect Software Platform Capacity and Isolate Failure](#syse40---protect-software-platform-capacity-and-isolate-failure) | Stable | *Keywords:* platform capacity, workload classes, admission control, bounded queues, isolation, deadlines, retry budget, serialization, recovery capacity. *Queries:* "Which shared limit lets one workload delay or disable another?" "Can the platform recover while demand remains excessive?" Compare capacity and execution changes, then exercise admission, isolation, bounded waiting and retries across shared dependencies. The first result is a tested protection arrangement for a stated envelope, with observed admitted, delayed and refused work and recovery limits, or the conditions that remain unqualified. | SYSE.26, SYSE.33, SYSE.36; SYSE.34/SYSE.41 for stateful recovery |
+| 42 | [SYSE.40 - Protect Software Platform Capacity and Isolate Failure](#syse40---protect-software-platform-capacity-and-isolate-failure) | Stable | *Keywords:* platform capacity, workload classes, admission control, bounded queues, isolation, deadlines, retry budget, serialization, recovery capacity. *Queries:* "Which shared limit lets one workload delay or disable another?" "Can the platform recover while demand remains excessive?" Compare capacity and execution changes, then qualify the selected admission, isolation, bounded-waiting or retry mechanisms across shared dependencies. The first result is a tested protection arrangement for a stated envelope, with observed admitted, delayed and refused work and recovery limits, or the conditions that remain unqualified. | SYSE.26, SYSE.33, SYSE.36; SYSE.34/SYSE.41 for stateful recovery |
 | 43 | [SYSE.41 - Deploy a Verified Software Artifact with the Target Configuration and Handle Partial Failure](#syse41---deploy-a-verified-software-artifact-with-the-target-configuration-and-handle-partial-failure) | Stable | *Keywords:* verified artifact, deployment, effective configuration, runtime readback, dependency test, partial failure, unknown effects, recovery. *Queries:* "Did the intended software and configuration become usable on each target?" "What may be retried after an interrupted deployment?" Prepare, install, configure and test the candidate against observed target state; reconcile partial outcomes before continuing. The first result is an observed runtime configuration with its test, interval and limits, or a precise failed or unknown partial state; exposure and release remain separate. | SYSE.13, SYSE.32, SYSE.33, SYSE.34; SYSE.11/SYSE.35 as receivers |
 
 **Part VIII - Engineering Agent Work and Support**
@@ -137,7 +137,7 @@ Search the Keywords & Search Queries column for the engineering difficulty, subj
 | § | ID & Title | Status | Keywords & Search Queries | Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
 | 44 | [SYSE.42 - Use a Selected Tool and Apply Its Result](#syse42---use-a-selected-tool-and-apply-its-result) | Stable | *Keywords:* selected aid, input binding, calculator, invocation, uncertain effect, receiving use. *Queries:* "Did we apply the tool to the intended input?" "How does its result enter the task?" Bind, perform, qualify and use the selected contribution; recover uncertain effects under the actual interface. | C.38/C.11; A.15.7 / A.15.9; C.24; SYSE.26–SYSE.28 / SYSE.43 / SYSE.46 / SYSE.47 / SYSE.52 |
-| 45 | [SYSE.43 - Maintain External Memory for Continuing Work](#syse43---maintain-external-memory-for-continuing-work) | Stable | *Keywords:* worksheet, episode, provenance, conditional index, retrieval, reorganization, retirement. *Queries:* "Which relation did the record lose?" "Should these episodes share a summary?" Construct recording and retrieval, qualify reorganization against contrary experience and verify the receiving continuation. | A.15.8; A.15.8.MS; SYSE.42 / SYSE.46 / SYSE.47 / SYSE.48 / SYSE.52 |
+| 45 | [SYSE.43 - Maintain External Memory for Continuing Work](#syse43---maintain-external-memory-for-continuing-work) | Stable | *Keywords:* worksheet, episode, provenance, conditional index, retrieval, reorganization, retirement. *Queries:* "Which relation did the record lose?" "Should these episodes share a summary?" Construct recording and retrieval, qualify reorganization against available relevant contrary experience and verify the receiving continuation. | A.15.8; A.15.8.MS; SYSE.42 / SYSE.46 / SYSE.47 / SYSE.48 / SYSE.52 |
 | 46 | [SYSE.44 - Divide and Recombine Work across Agents](#syse44---divide-and-recombine-work-across-agents) | Stable | *Keywords:* participant brief, contribution, shared premise, dependency, integration, source error. *Queries:* "Does this division repay its handovers?" "Which return became stale?" Compare complete ways, prepare participant-specific material, reconcile returns and reopen affected dependencies. | A.15.9; C.38/C.11; SYSE.9 / SYSE.18 / SYSE.20 / SYSE.46 / SYSE.47 |
 | 47 | [SYSE.45 - Train an LLM Policy from Qualified Interaction Experience](#syse45---train-an-llm-policy-from-qualified-interaction-experience) | Stable | *Keywords:* policy training, adapters, demonstrations, feedback, distillation, retained support. *Queries:* "Which stable contribution should the policy learn?" "What must remain externally available?" Qualify experience, choose the matching learning mechanism and compare the actual later configuration against the unchanged baseline. | CMP.7; E.23.CDI; SYSE.49 / SYSE.46; SYSE.47 for a fixed-model alternative |
 | 48 | [SYSE.46 - Test an Agent and Its Support in Representative Work](#syse46---test-an-agent-and-its-support-in-representative-work) | Stable | *Keywords:* performing arrangement, matched support regimes, selection, result use, restraint, burden, persistence. *Queries:* "Does support help, and does the agent choose it well?" "What changed in the whole task?" Obtain bounded evidence with input, action, return and use distinguished; test delay or shift for the reliance claimed. | SYSE.10 / SYSE.4 / SYSE.33 / SYSE.49; A.15.8; E.23.CAE; HCD.12 / HCD.13 |
@@ -309,8 +309,9 @@ not make, the release decision in `SYSE.14`. The following sections explain thes
 A provisional project focus can support individual concept work. Before joint work relies on a common focus,
 `SYSE.1` makes participants' referents, interests and contribution connections visible through a
 concrete use. The result may be sufficient common understanding for the current decision, an unresolved
-coordination condition, or distinct projects with a defined receiving contribution. A shared project name or
-written account cannot supply that result by itself.
+coordination condition, or distinct projects with a defined receiving contribution.
+
+The product SoI and the immediate engineering subject can differ. A factory, planning organization or shared laboratory can be designed in full as a creator while its products and their uses ground the work. Use `SYSE.1` when this relation is unclear; carry the local subject, required capability and bounded acceptance into the relevant engineering Methods. Several products can share the creator without becoming one product or one project. Local acceptance can finish before their later use, with the remaining assumptions and commitments identified.
 
 The choice of Methods must accommodate useful effects, cost and time, available evidence, and consequences for
 other Systems. Preserving an option can be worth more than completing a design early; a faster local operation
@@ -325,15 +326,15 @@ action that depends on it.
 
 ### SYSE.Reference:1.1 - The system-thinking long mantra in engineering
 
-The **system-thinking long mantra** holds these engineering questions together: agree the intended use and common target; connect outside effects, functioning, construction, ways of obtaining the system, capable creators and their cooperation; repeat for creators that must themselves be obtained; make the answers fit and follow results into use. The general construction and its reasons are developed in FPF A.1.STM:4.1–4.3.1. Use that pattern when the shared project account is itself unresolved. Here the connections explain how the engineering Methods form a language rather than a sequence of independent tasks.
+The **system-thinking long mantra** first looks toward intended receiving use and upward to the relevant encompassing functioning at the operating time. Recover the product systems-of-interest and their intended uses. Then look inward to construction and backward to obtaining Methods, capable creators and their cooperation. When engineering an organization as a creator, keep those product grounds and examine the creator's own use, functions, construction and obtaining needs. A separate organizational project has its own contribution and acceptance; its name or contract does not create another SoI. Make the answers fit and follow results into use. A proposed future use gives a reason for inquiry; its mechanism and conditions need engineering grounds. The general construction and its reasons are developed in FPF A.1.STM:4.1–4.3.1. Use that pattern when the shared project account is itself unresolved. Here the connections explain how the engineering Methods form a language rather than a sequence of independent tasks.
 
 The needed effect gives a reason to investigate particular functioning, but it does not determine a unique construction. A proposed construction permits some behaviour and requires particular ways of realization. SYSE.2 and SYSE.5 therefore develop related alternatives; SYSE.6 compares whole candidates under the conditions that matter. A proposal cannot borrow performance from one configuration and realization cost from another. SYSE.7 keeps the related engineering descriptions usable together. SYSE.8 develops the offering and provider concept alongside the technical concept, so the promise to a user and the ways of fulfilling it constrain the same proposed result.
 
-Obtaining the chosen system also depends on its creators. SYSE.3 connects recursive realization; SYSE.12 develops the needed engineering environment; SYSE.18 obtains commitments across independently governed contributors. Individual capability does not establish compatible contributions, access to a shared facility or permission to use it. SYSE.20 examines the actual conditions for overlapping work. If a needed capability or commitment is missing, the design can change, another provider can be obtained, or the promised result can be reconsidered; the mantra does not select that repair by itself.
+Obtaining the chosen system also depends on its creators. SYSE.3 connects recursive realization; SYSE.12 develops the needed engineering environment; SYSE.18 obtains commitments across independently governed contributors. Individual capability does not establish compatible contributions, access to a shared facility or permission to use it. SYSE.20 examines the actual conditions for overlapping work. If a needed capability or commitment is missing, the design can change, another provider can be obtained, or the promised result can be reconsidered.
 
 Configuration and evidence keep this reasoning about the same proposed or actual system. SYSE.9 and SYSE.10 connect inquiry and qualification to the claim at issue; SYSE.13 preserves the configuration distinctions on which the claims depend. SYSE.11 and SYSE.14 distinguish obtaining an increment from authorizing its use, while SYSE.19 traces a changed source or description into the engineering decisions that relied on it. SYSE.15 revises the repertoire of engineering Methods when that is the contribution in question. The following Reference sections develop these relations and their limits.
 
-In actual work, a test result, an available component or a missing production capability can be the first thing known. Its consequences may travel back to functioning or intended use, and several alternatives may develop together. A team needs enough compatible answers for the decision now being made, not a completed answer to every possible project question. Keep supported local results while revising the premises that no longer hold.
+In actual work, a test result, an available component or a missing production capability can be the first thing known. The mantra can also expose an unanswered question before any difficulty is felt. A.1.STM:4.0 connects these entries: recover or reuse the grounds in intended use and wider functioning, then investigate the consequential construction or creation dependency. New evidence can reopen those grounds, and alternatives may develop together. A team needs enough compatible answers for the decision now being made, not a completed answer to every possible project question. Keep supported local results while revising the premises that no longer hold.
 
 ## SYSE.Reference:2 - One System can appear in several engineering structures
 
@@ -358,6 +359,8 @@ candidate families rather than letting one preferred technical solution determin
 An available construction can also start the inquiry: develop a plausible use, follow its consequential
 behaviour, and let the failed assumption change the required functioning or proposed bearer. The next result
 can be a grounded architecture question while the proposed use remains conditional.
+
+The form of provision can also change which concept is obtainable. [SYSE.8:4.4](#syse844---connect-the-offering-to-conditional-finance) connects a promised result and its technical acceptance to the financial events needed for realization. A changed acceptance milestone or temporary operating method returns to the provider, capability and engineering choices, while finance retains its own calculation and commitment questions.
 
 Functional organization and constructive organization answer different questions. A function claim concerns a
 contribution under conditions. A bearer claim concerns an actual System or intended System referent that could
@@ -867,46 +870,22 @@ For source qualifications, citation and edition information, see the [Sources an
 
 ### SYSE.1:1 - Problem frame
 
-Use this pattern when a project is already discussed through a familiar name—for example, a product, solution,
-tool, provider, organization, component, desired effect, or broad programme—but no defensible current decision
-yet identifies which System the project is intended to change or bring about. The choice matters because it
-changes later questions about use, boundary, architecture, realization Work, evidence, and specialist decisions.
+Use this pattern when participants use a familiar project name but cannot say which system's intended use gives their joint work its purpose. A product, tool, provider, organization, component or desired effect can occupy the discussion while referring to different subjects. The choice matters to use, architecture, realization, evidence and resource decisions.
 
-The first result is a **project-system choice account** stating the selected actual System or intended referent,
-the current reason for that decision, and what may reopen the choice.
+The first useful result is a **project-system choice account**: the actual System or intended referent selected as the system-of-interest (SoI), its intended use, the grounds for the choice and what would reopen it. When the immediate engineering subject differs, identify that subject and its bounded result alongside the product it serves.
 
-First useful move: name one candidate actual System or intended referent, state the present use or change reason
-for choosing it, and write the main unresolved assumption. An individual can use this provisional choice to ask
-the next use-and-system concept question. Before coordinated Work relies on a common focus, compare the
-participants' intended referents and how their contributions connect, as in §4.4.1. Expand the account only when
-disagreement, a valuable alternative, or a later answer can change its use.
+First recover the intended use and the first assumption that could change the choice. A.1.STM explains why receiving use and encompassing functioning ground construction and provision decisions. An individual can use a provisional answer for the next concept question. Before joint work relies on it, compare the participants' referents and contribution connections through §4.4.1. Reuse an adequate existing account.
 
-If the choice is missed, participants can work competently on different projects while using the same project
-name. A supplier optimizes a component, an integrator changes an operating assembly, and a client expects an
-outside effect, yet each assumes that the familiar noun names the same project system-of-interest.
+A manufacturer may need to improve its planning organization while a vendor supplies a software product. Naming both projects does not settle their SoIs. The manufacturer's product remains the common reference for work on its creator; the vendor's independently supplied software can be its own SoI. Both the organizational work and the software supply can have finite results and acceptance conditions.
 
-The payoff is a defensible provisional choice and, when participants have established the needed common
-understanding, a shared focus for the current coordination. Evidence from use, architecture, realization,
-operation, or a participant's different understanding can reopen the claim on which that coordination relies.
+Use this pattern when a System designation is needed for the current coordination. Keep another recognized subject—such as Work, a Method, capability, state, material portion, description or research question—under its direct pattern when that answers the decision. Use `A.1.SCR` for unresolved System recognition. A System already identified for engineering can proceed to `SYSE.2` without first being renamed the SoI.
 
-Use this pattern only when project coordination needs a System designation. If the decision already concerns
-another recognized subject—for example Work, a Method, a capability, a state, a material portion, a
-description, a collection, a structure, or a transformation—keep that subject under the pattern that defines
-or constrains its claim. If the issue is only whether a named entity is a System, use `A.1.SCR`. If the System
-has already been selected and the live question is how it participates in use, continue with `SYSE.2`.
-
-At the first consequential use of source wording such as *system of interest*, *target system*, *our system*,
-*product*, or *solution*, ask one question: **is the project choosing which actual System or intended referent
-it will change?** If yes, state the candidate and its current use or change reason. *Project
-system-of-interest* names the designation made for this project; it is not another System kind.
+At a consequential use of *system of interest*, *our system*, *product*, *solution* or the source phrase *target system*, ask which system's useful functioning grounds the cooperation and which subject the local work changes. **SoI is a relative project role; system-in-hand names the immediate System being worked on.** Explain what “our” refers to and who is responsible for the local result. Several named products or classes of future use may jointly ground a shared creator's development. Their differences and competing demands remain visible.
 
 ### SYSE.1:2 - Problem
 
 Project names are chosen early, often before outside use, engineering boundaries, and realization constraints
-are understood. The first plausible referent then becomes an unstated premise in later decisions. A tool
-is selected as the project system-of-interest merely because it is purchased; a provider System is selected
-merely because its people perform the Work; or a desired state is forced into a System because the project is organized around achieving
-it.
+are understood. The first plausible referent then becomes an unstated premise in later decisions. A purchased tool can displace the product it serves; an organization can become the proposed SoI merely because the current project changes it; or a desired state can be forced into a System because the project is organized around achieving it.
 
 The opposite error is also common: a useful tool, software product, or component is categorically excluded even
 when its own product project legitimately selects it. Compare referents for the current project and keep the
@@ -916,10 +895,10 @@ choice revisable as understanding of the problem and solution changes together.
 
 | Force | Tension |
 | --- | --- |
-| Coordination and revision | Contributors need one usable focus now, while new evidence may change it. |
+| Coordination and revision | Contributors need shared product grounds now, while new evidence may change them. |
 | Outside use and technical discovery | Outside use justifies the choice, while architecture and realization discoveries can revise the use and boundary. |
 | Actual and intended Systems | Brownfield work can concern an existing System, while new development may only have an intended referent in decision or plan content. |
-| One project and related projects | Related parties—for example, a client, supplier, integrator, provider, and operator—may share components and evidence while their projects select different Systems. |
+| Products and local projects | Several projects can serve the same product; independently supplied products can have different SoIs while their contributions and commitments remain connected. |
 | Candidate breadth and decision cost | A single familiar candidate hides alternatives, while an exhaustive catalogue delays the next useful question. |
 | Stable language and ontic precision | A shared designation aids communication, while agreement on a name alone can leave the referent and contribution connections unresolved. |
 
@@ -927,16 +906,22 @@ choice revisable as understanding of the problem and solution changes together.
 
 #### SYSE.1:4.1 - State the current project decision
 
-Begin with the project whose coordination is current. State:
+Begin with the cooperation and decision that need a shared reference. Recover:
 
-1. what change or later use this project is meant to enable;
-2. which plan or decision needs a shared project-system designation now; and
-3. which subject is presently proposed as the System to be changed or brought about.
+1. the product or products and the intended use that justify the work;
+2. the System or other subject the local work must create, change or investigate;
+3. the contribution needed from that work and the conditions for accepting or stopping it; and
+4. the plan or decision that needs the SoI designation now.
 
-Keep related projects separate. A manufacturer's planning-improvement project, a software vendor's product
-project, and an integration provider's deployment project may use the same software and evidence without making
-the same project-system choice. A programme or portfolio may coordinate shared matters—for example, priority,
-resources, investment, risk, or evidence—without thereby becoming a composite acting System.
+For work that creates or develops an organization as a creator, retain the SoI on the product side. Name the organization as the creator being engineered. Its use, functions, structure, characteristics, realization and own creators can all require full engineering. The SoI name is not a prerequisite for those operations. A new contract, external consultant or label such as “enterprise producer” does not change this relation.
+
+The local project can finish when its agreed contribution has been established. For example, a planning-system project can establish the ability to produce usable plans under specified order changes before the corresponding products enter service. Product usefulness, organizational capability, software installation and acceptance of a limited supplier contribution have different evidence. Preserve the responsibility and limits of each undertaking.
+
+For a shared creator, retain the products or classes of future use that actually govern its capability, including differences that compete for the same resources. Do not select one convenient product to hide that competition. An unsettled future use can require research into concrete possibilities; do not invent a finished product to complete the account. Research retains its own epistemic result and stopping conditions.
+
+A supplier can have a different product. A machine can be its maker's SoI and a creator at the customer's factory; an engine can be its maker's SoI and an aircraft component. Recover the usable supply, recipient or class of applications, substantive decision boundaries and acceptance obligations. The customer may specify the design and use. The supplier need not control the whole product strategy or accept responsibility for every larger system. These facts inform the judgement; the existence of a separate contract alone does not make the same servicing or organizational work a different product.
+
+Keep each local project, commitment and result identifiable. A programme or portfolio can coordinate priority, resources, investment, risk or evidence without becoming one acting System. Use A.1.STM when the product purpose or its relation to the creator remains unresolved.
 
 #### SYSE.1:4.2 - Recover the direct subject before forcing a System choice
 
@@ -952,93 +937,58 @@ When the decision does need a System, distinguish two cases:
 - For a System that does not yet exist, keep the intended referent in the current plan, decision, or description.
   Do not describe it as an already acting System.
 
-Recognition and project designation remain different claims. Recognizing an actual System does not select it
-for the project; selecting an intended referent does not make it physically present.
+Recognition, choice of an engineering subject and SoI designation remain different claims. Recognizing an actual System does not determine its project role; selecting an intended referent does not make it physically present. An organization can be the immediate engineering subject while remaining a creator of the product SoI.
 
 #### SYSE.1:4.3 - Generate and criticize materially different referents
 
-Generate alternatives from the working situation under the actual-System and intended-referent conditions in
-§4.2. Use its direct-subject exit when a System designation is unnecessary.
-
-Examples include a product or tool System, an engineering platform, an operating or provider System, a containing
-or organization System, and intended counterparts. Retain only candidates that would change a later decision.
+Generate materially different product referents from the working situation under §4.2's existence and recognition conditions. A product, component, tool or operating System can be a candidate when its intended use supplies the product grounds for the cooperation. Apply §4.1 to distinguish a supplier's own product from work on the same creator under another project name.
 
 For each candidate, compare the claims that matter now:
 
-- the outside use or change the candidate is expected to support;
-- the project boundary and the relation to related projects;
+- the intended useful functioning and the receiving situation;
+- the product boundary and its relation to the participants' contributions;
 - the participating and affected Systems;
-- the boundary, interaction, constituent, containment, ownership, authority, or other direct relations that
-  actually change the choice;
-- the important characteristics, constraints, feasibility branches, evidence, and uncertainty; and
+- the part, interaction, containment, ownership, authority or other relations that can change the decision;
+- characteristics, constraints, feasibility, evidence and uncertainty; and
 - the assumption or observation that would defeat the candidate.
 
-Facts about payment, delivery, ownership, an enterprise boundary, the transformer performing realization Work,
-or the subject changed by a tool can inform comparison of candidates and project boundaries. A diagram can
-represent those facts. Choose the project system-of-interest through the project's stated use and decision.
+Alternatives for an organization, platform or production arrangement remain full engineering alternatives. Compare their functions, construction, obtaining ways and capability against the products or future uses they must serve. Choosing among those creators does not by itself change the product SoI.
 
-Retain several candidates when later learning can change their order or when different candidates preserve
-valuable options. Let the current decision, available resources, and named stop determine the candidate count
-and comparison effort. Stop when the current choice is good enough to ask the next consequential question and
-its reopening evidence is named.
+Payment, delivery, ownership, organizational boundaries and local acceptance can inform the judgement. None alone establishes the SoI. In particular, a firm's sale or valuation is an economic question; work on that firm's productive capability still engineers a creator. Preserve the economic question and its own evidence.
+
+Retain several product candidates when learning can change their order or when they preserve valuable options. For several products served together, retain their common demands and consequential differences. Let the current decision, available resources and useful stop determine the comparison effort. Stop when the next engineering question is askable and the reopening condition is clear.
 
 #### SYSE.1:4.4 - Record a sufficient choice account
 
-Start with the following content:
+Start with the following content in any readable form:
 
 ```text
 Project-system choice account:
-  current project and decision:
-  selected actual System or intended referent:
-  current use or change reason:
-  main unresolved assumption:
+  cooperation and current decision:
+  product SoI or intended referent, and intended use:
+  immediate engineering subject and bounded result, when different:
+  current grounds and any main unresolved assumption:
+  local acceptance and receiving obligations that matter now:
   reopen condition:
 ```
 
-Use any readable form for this content. Add further content—for example, comparison
-grounds, candidate alternatives, boundary and participation claims, affected Systems, authority, realization,
-or evidence—only when it changes the current choice or a downstream use.
+Include several products or classes of use where the creator must serve them together. Add alternatives, participation, authority, realization or evidence only when they change the choice or its use. A short existing explanation can suffice.
 
-Stop when the project can ask a concrete use-and-system concept question about the named referent for the stated
-reason. The resulting account supplies that referent, reason, boundary question, alternatives, and reopen
-condition to `SYSE.2`.
+Stop when the project can ask the next concrete engineering question about the identified subject for the stated purpose. Supply `SYSE.2` with that subject's use, the product grounds it serves, the boundary question, alternatives and reopening condition. Engineering the creator does not require designating it as another SoI.
 
 ##### SYSE.1:4.4.1 - Establish enough common focus for the current coordination
 
-When the next decision relies on several contributors working on the same project System, compare their
-understanding through one concrete use or change. Include the people whose contributions, receiving use, or
-limits can change that decision. Existing compatible exchanges may already supply the answer.
+When a decision depends on several contributors, compare their understanding through one concrete use or change. Include the people whose contribution, receiving use or limits can change that decision. Existing compatible exchanges may already supply the answer.
 
-Ask each contributor to point to the actual System or intended referent they mean, explain what matters to them
-in the project, and trace how their contribution would help change or use that referent. Follow a contribution
-across its next dependency: have the person relying on it explain what they expect to receive and how it supports
-the proposed use. A short conversation, annotated example, or asynchronous exchange can expose the connection;
-no particular meeting or form is required.
+Ask each contributor to identify the product or products the joint work serves and the subject of their own work. Have them explain the contribution, its recipient, the conditions for using it and the limit of their commitment. Follow each consequential connection: the receiver explains what they expect to obtain and how it supports the proposed use. A conversation, annotated case or asynchronous exchange can suffice.
 
-For example, “install the planning software” and “produce a feasible production plan” may initially share a
-project name. Following one changed order reveals whether installation, current stock information, capacity
-decisions, and the planner's use actually connect. Compare the decision-changing differences under §4.3.
-Distinguish different accounts of one proposed project from legitimate separate projects that must exchange
-contributions.
+For example, “install the planning software” and “produce a feasible production plan” can share a project name. Follow one order moved to an earlier date. Determine whether installation, current stock information, capacity decisions and the planner's use connect to feasible commitments for the manufacturer's products. A missing contribution can leave the planning capability unavailable even when installation is complete.
 
-Resolve a material mismatch through the project's actual decision authority and the contributions available.
-Explain the selected referent and the reason for selecting it; then ask the affected contributors to apply that
-choice to the same example. The current coordination has enough common focus when those relying on it can
-identify the selected referent, connect the contributions on which their next action depends, and state the
-unresolved condition that limits that action. They may retain different interests and preferred alternatives.
-Common understanding supplies neither permission to act nor a commitment to perform Work; obtain those when
-the next action requires them.
+Resolve a material mismatch through the actual decision authority and available contributions. Explain the selected product grounds and local engineering subject, then ask the affected contributors to use them on the same case. Enough common focus exists for this decision when those relying on it can identify these subjects, connect the contributions needed by their next action and identify any unresolved condition that limits it. They may retain different interests and preferred alternatives. Obtain permission and commitments separately where the next action needs them.
 
-If the participants still mean different referents or cannot connect a needed contribution, preserve the
-individual choice as provisional and hold the joint claim that depends on the unresolved connection. Name the
-difference and the answer needed to resolve it. Independently supported work can continue. If the apparent
-disagreement instead comes from separate projects, keep their designations and coordinate the receiving result
-between them; use `SYSE.8` for a provider-use arrangement or `SYSE.9` for a specialist contribution when that
-question is current.
+If participants still mean different subjects or cannot connect a needed contribution, retain the individual account as provisional and hold only the joint claim that relies on the unresolved connection. Name the missing answer; independently supported work can continue. Separate projects retain their own boundaries and acceptance. They can share a product SoI. When an independently supplied product has its own SoI, coordinate the receiving contribution between them; use `SYSE.8` for provision or `SYSE.9` for a specialist return where needed.
 
-Keep the choice account aligned with this result: provisional individual choice, sufficient common focus for a
-named decision, unresolved mismatch, or coordination between distinct projects. The account makes the result
-recoverable; writing it does not produce agreement or establish that an intended System already exists.
+Keep the account aligned with the result: a provisional individual choice, sufficient common focus for a named decision, an unresolved mismatch or coordination between distinct product undertakings.
 
 #### SYSE.1:4.5 - Reopen the choice from the answer that failed
 
@@ -1049,16 +999,17 @@ Reopen the account when one of these changes the comparison:
 - an architecture candidate moves important functioning to another System;
 - no feasible realization branch supports the selected referent;
 - operating or assurance evidence defeats the reason for the choice; or
-- a related project is separated, combined, or reoriented in a way that changes the current project decision.
+- a changed product or intended use materially changes the grounds of the cooperation.
+
+A project split, new contract or changed performer can reopen local scope, provision or authority without changing the product SoI. Reconsider that designation only when its product and use grounds change.
 
 An observed mismatch between contributors reopens the common-focus claim in §4.4.1 even when the individual
-choice remains defensible. Repeat only the exchange affected by that mismatch; reconsider the designation if
-its reason or boundary has changed.
+choice remains defensible. Repeat only the exchange affected by that mismatch; reconsider the SoI designation if
+its product or intended-use grounds have changed.
 
 Return to the failed claim or linked claims that affect the next move. A changed use assumption may require `SYSE.2` before the project focus
 changes. A failed bearer or architecture candidate may return through `C.30` or `C.32`. Reopen the
-project-system designation only when the evidence changes which System should orient this project or where
-the project boundary lies.
+SoI designation only when the evidence changes which product or intended use should orient the cooperation. Reopen the local engineering subject or acceptance separately when those are the affected claims.
 
 ### SYSE.1:5 - Archetypal Grounding
 
@@ -1085,46 +1036,19 @@ the project-system choice only when that changed claim defeats the reason or bou
 
 #### SYSE.1:5.2 - Manufacturer and ERP vendor
 
+A manufacturer supplies pump installations for water supply and seasonal irrigation. Its “new ERP” project begins because production plans repeatedly fail. The engineering lead compares software installation, a changed planning organization and an integrated planning arrangement. These are alternatives for improving the creator. The product grounds remain the two lines' installations and their intended uses; their different configurations, delivery commitments and resource demands must fit the plans.
 
-A manufacturer opens a “new ERP” project because production plans repeatedly fail. Its engineering lead compares
-the software product, the planning organization, an intended deployed planning System, and the wider
-production-control System. She provisionally selects the deployed planning System because the project is meant
-to improve production-planning use, with data quality as the main assumption. That choice is enough for her
-first concept question.
+The lead selects the deployed planning arrangement as the immediate engineering subject. Its proposed local result is the ability to produce feasible production commitments from current orders, stock and capacity under specified changes. Current-information availability is the main unresolved assumption. This is enough to begin concept work without naming the planning organization a new SoI.
 
-Before assigning joint work, she asks the contributors to follow one order moved to an earlier date. The IT lead
-means the installed ERP runtime by “our system”; his contribution is software installation and data interfaces.
-The production planner means an arrangement that produces feasible commitments; she needs current stock and
-capacity information and a way to resolve conflicts. The stock controller expects the existing overnight update
-to remain sufficient. The vendor means its software product and wants to preserve a supportable standard
-configuration.
+Before assigning joint work, she asks the contributors to follow one order moved to an earlier date. IT means the installed ERP runtime by “our system” and can supply software installation and data interfaces. The planner needs current stock and capacity information and a way to resolve conflicts between the two product lines. The stock controller expects the overnight update to remain sufficient. The independent software vendor supplies a standard ERP product and needs to preserve a supportable configuration.
 
-Tracing the intended contributions exposes a mismatch. IT can deliver the interface and the vendor can supply
-rescheduling, but the planner would receive a new schedule based on stock information that predates the moved
-order. No contribution yet supplies the missing current information. Recording the lead's choice again would
-leave the same joint plan unsupported.
+The exchange exposes a missing contribution: rescheduling can use stock information that predates the moved order. Installation and software delivery alone cannot establish the planning capability. The manufacturer's authorized decision holder retains the planning arrangement as the local engineering subject. The stock controller and planner investigate current-information and confirmation alternatives; IT identifies the required interfaces. Each contributor explains what the planner would receive, and the planner states what is still needed before issuing a production commitment. `SYSE.2` can compare these arrangements while retaining the product obligations they serve.
 
-In this worked case, the manufacturer's authorized project owner retains the intended deployed planning System
-as the focus. The stock controller and planner agree to investigate current-information and confirmation
-arrangements; IT identifies what each would require from the software interface. Each explains how that
-contribution would support the moved-order decision, and the planner identifies what she would still need
-before treating a proposed schedule as a production commitment. The common next decision is now to compare
-those arrangements in `SYSE.2`. Software installation alone is no longer their completion claim. This establishes
-enough common focus for that investigation, while feasibility, implementation permission and the eventual
-production benefit remain to be established.
+If that information cannot be obtained, the joint planning-capability claim remains open. An independently supported interface investigation can continue. If the authorized scope covers only software deployment, acceptance can close that bounded contribution against its own criteria. It leaves the planning capability and product consequences unestablished. The smaller contract does not change the manufacturer's product SoIs.
 
-If the stock-information contribution cannot be obtained or participants still disagree about the proposed
-referent, the shared planning-change claim remains open. The lead's provisional designation and independently
-supported interface investigation can remain useful; the missing contribution prevents reliance on the joint
-change. If the manufacturer authorizes only a software deployment project, that is a different bounded
-designation whose completion cannot establish the planning benefit.
+Now transfer the same planning-change work to an external consultant with a separate budget and completion date. The consultant may design the organization, its functions, responsibilities, tools and supporting work. Acceptance can establish its agreed capability under representative order changes and operating conditions before the resulting pumps enter service. The consultant's responsibility remains limited to the accepted scope. The external contract creates neither another product purpose for this work nor a requirement to wait for every downstream product outcome before closing it.
 
-The vendor's product project continues to select the ERP software product. The parties coordinate its
-contribution to the manufacturer's use without merging their projects or requiring identical interests.
-“Software is always the project system-of-interest” and “software is never the project system-of-interest”
-would both erase this distinction. Their respective choice accounts retain the shared software, different
-referents and receiving use.
-
+The ERP vendor's own product undertaking has different grounds: a usable software product supplied to customers under identified decision and acceptance boundaries. That software can be its SoI while it is a means in the manufacturer's planning arrangement. The parties coordinate their real contributions and commitments without merging their projects or interests. A vendor label or a deployment contract by itself would not establish this independent product case.
 
 #### SYSE.1:5.3 - Continuing building through several projects
 
@@ -1151,11 +1075,11 @@ plausible referent into permanent project scope; retain material alternatives an
 | `CC-SYSE1-1` | A conforming use SHALL name the current project and the decision that needs a project-system choice. |
 | `CC-SYSE1-2` | It SHALL retain a direct non-System subject when System designation is not needed, and SHALL use `A.1.SCR` when actual System recognition remains load-bearing. |
 | `CC-SYSE1-3` | It SHALL distinguish an actual System from an intended referent in plan, decision, or description content. |
-| `CC-SYSE1-4` | The first useful account SHALL name the selected referent, current use or change reason, main unresolved assumption, and reopen condition. |
+| `CC-SYSE1-4` | The first useful account SHALL name the product SoI or intended referent, intended use, any main unresolved assumption and reopen condition; when the local engineering subject differs, it SHALL preserve that subject and the bounded result needed from it. |
 | `CC-SYSE1-5` | When materially different actual Systems or intended System referents remain plausible, the account SHALL compare their decision-relevant claims and SHALL keep every non-System subject under its direct pattern rather than admit it as a candidate referent for the project system-of-interest. |
 | `CC-SYSE1-6` | Additional account content SHALL be added only when it changes the current choice or a downstream use. |
 | `CC-SYSE1-7` | A stop SHALL make the next use-and-system concept question askable; a reopen SHALL name evidence or a changed project condition that can alter the choice. |
-| `CC-SYSE1-8` | Related projects SHALL keep their own designation decisions even when they share Systems, Work, resources, descriptions, or evidence. |
+| `CC-SYSE1-8` | Related projects SHALL retain their own work boundaries and acceptance while preserving a common product SoI where they serve the same product. A different contract or performer SHALL NOT alone justify another SoI for organizational work; an independent supplier product needs its own use, decision and acceptance grounds. |
 | `CC-SYSE1-9` | Before coordinated Work relies on a shared focus, the relevant contributors SHALL establish a common referent and the contribution connections needed for that decision, or identify the unresolved mismatch and limit the dependent coordination. A written account alone SHALL NOT establish this result. |
 
 ### SYSE.1:8 - Common Anti-Patterns and How to Avoid Them
@@ -1163,7 +1087,7 @@ plausible referent into permanent project scope; retain material alternatives an
 | Anti-pattern | Working symptom | Repair |
 | --- | --- | --- |
 | Project-name shortcut | The noun in a charter or backlog is used as the selected System without a use or change reason. | State the current project decision, generate plausible referents, and compare how each changes the next question. |
-| Tool or provider substitution | The most visible tool or the System performing realization Work replaces the System whose use the project changes. | Keep tool, transformer, provider, changed subject, and project designation as separate claims; compare them as candidates only when each could orient this project. |
+| Tool or provider substitution | The immediate engineering subject replaces the product that justifies work on its creator. | Keep the product SoI, creator and local result distinct. Engineer the creator fully and accept its bounded contribution; establish separate product grounds before selecting a supplier product as another SoI. |
 | Account-as-agreement | A clear choice written by one person is treated as the participants' shared project focus. | Follow a concrete use through contributors and receivers; resolve the material mismatch or limit the coordination that depends on it. |
 | First-candidate freeze | Work has started, so later use or feasibility evidence is treated as irrelevant to project focus. | Record the main assumption and reopen condition with the first choice; return evidence to that claim when it changes. |
 | Important-subject inflation | A desired state, Work result, description, collection, capability, or transformation is called a System because the project centres on it. | Keep the direct subject and use its FPF pattern. Open `SYSE.1` only if a System designation is required for the current project decision. |
@@ -1171,27 +1095,17 @@ plausible referent into permanent project scope; retain material alternatives an
 
 ### SYSE.1:9 - Consequences
 
-The project gains a defensible provisional focus and a way to establish how far contributors can rely on it
-together. An unresolved mismatch becomes a bounded coordination question. Related projects can share resources
-and evidence while retaining their own designations. Architecture and realization discoveries can change the
-project focus without being treated as late exceptions.
+The cooperation gains defensible product grounds and an explicit local engineering subject. Contributors can compare what each must supply without treating a local completion as the final product result. Several projects can retain one product SoI; independent product undertakings can retain different SoIs and connected commitments. Architecture and realization evidence can reopen the claim it actually defeats.
 
-The cost is visible uncertainty and, for a shared claim, the work of comparing participants' understanding.
-Several candidates may remain open, and changed assumptions require a return. Spend that effort where an
-unresolved difference could redirect architecture or realization; a compatible existing result needs no repeated
-elicitation.
+The cost is visible uncertainty and, for a shared claim, comparison of participants' understanding. Several candidates may remain open. Spend that effort where an unresolved difference can redirect architecture, provision or acceptance; reuse compatible established results.
 
 ### SYSE.1:10 - Rationale
 
-Systems Engineering needs a project focus because architecture, realization, and assurance questions require a
-referent. That focus is a decision under uncertainty, not a fact supplied by the project name or by System
-recognition alone. Separating actual System identity, intended reference, project designation, and the account
-that describes the choice lets practitioners coordinate without confusing an episteme with the physical or
-operational System.
+Engineering decisions need an identified subject. The system being engineered and the product whose use justifies the cooperation can be different Systems. Keeping both makes it possible to develop a creator's full functioning and construction while using product requirements to judge its capability, priorities and shared resources.
 
-Ask about outside use when comparing candidates because it tests why each candidate matters. This check does
-not prescribe the calendar order of project Work. Problem framing, candidate development, architecture,
-realization, and evidence can change one another; the explicit reopen condition makes that movement normal.
+SoI designation remains a choice under uncertainty. System recognition, a project name and a local contract do not settle it. Actual identity, intended reference, the project role and the account describing the choice have different grounds. Local acceptance establishes only the contribution it tests and can precede the product's later use.
+
+Outside use supplies the grounds of the comparison rather than a fixed calendar order. Problem framing, concepts, architecture, realization and evidence can develop together. Reopen the product choice, local subject or provision arrangement according to which premise changed.
 
 ### SYSE.1:11 - SoTA-Echoing
 
@@ -1218,8 +1132,7 @@ every provisional choice.
 Compare both ways on the ERP case at the same effort: the same contributors examine one moved order and its
 receiving use. A bounded expectations-and-scenario discussion can expose the stale-information gap. The
 §4.4.1 contribution comparison can expose it too. SYSE makes the designation question explicit alongside that
-discovery: does the decision need a System designation, which actual System or intended referent is selected,
-and which contributions belong to separate projects? Its direct-subject exit remains available in §4.2.
+discovery: which product use grounds the cooperation, which System is being engineered, and which contributions have separate acceptance boundaries? Its direct-subject exit remains available in §4.2.
 
 For this next concept decision, the selected result is a revisable focus and the unresolved connection.
 It deliberately leaves a complete expectations set and broader commitments unprovided. When the receiving
@@ -1233,9 +1146,7 @@ less reconstruction. Repair the failed connection or use the better-suited treat
 research contribution when its evidence or transfer conditions no longer support the receiving use; keep the
 affected project's assumptions and return in view.
 
-These sources support comparing and revising project focus. Actual System recognition uses the FPF `U.System`
-criterion. Choosing an actual System or intended referent for the project uses the project's decision and case
-facts, as in the pump, ERP, and building cases above.
+These sources support comparing and revising project focus. Actual System recognition uses the FPF `U.System` criterion. FPF A.1.STM supplies the Library convention that organizational engineering retains the product SoI while fully engineering the creator. The research lines above do not establish that convention or its human effects. The pump, ERP and building cases apply it to their stated product, use and acceptance grounds.
 
 ### SYSE.1:12 - Relations
 
@@ -1245,19 +1156,18 @@ facts, as in the pump, ERP, and building cases above.
   an actual acting or changed System. It also supplies the direct-subject exit when systemhood is not
   load-bearing.
 - `SYSE.16`, `SYSE.17`, `SYSE.2`, and `SYSE.8` may use the project-system choice account when their question
-  concerns the same subject, configuration, decision, and evidence window. That use identifies the engineering
-  focus for the receiving question; it imposes no temporal order.
+  concerns compatible subjects, configuration, decision and evidence. Supply the immediate engineering subject and its relation to the product SoI separately when they differ; this imposes no temporal order.
 - An engineer uses `SYSE.2` to develop linked use and concept claims whose failure may revise the choice. The
   resulting linked proposal helps frame the architecture question. `C.30` defines that question and `C.32`
   guides candidate synthesis; infeasibility or harm returns
   through the affected linked claims and reopens this pattern only when project focus changes.
 - `A.1.STM` provides the wider systems-mantra traversal when a practitioner must reconnect this local choice to
-  outside use, architecture, realization Work, change, and recursive transformer Systems. It adds no project
-  designation or fixed Work order.
+  intended product use, architecture, realization, change and recursive creators. It supplies the product/creator distinction while leaving the case-specific designation and actual Work order to their grounds.
 - The applicable FPF decision, authority, evidence, value, harm, temporal, and direct-relation patterns define
   or constrain those claims when they become current; this pattern does not replace them.
 
 ### SYSE.1:End
+
 
 ## SYSE.16 - Recover the Systems and Conditions Needed for a Use Decision
 
@@ -1265,7 +1175,7 @@ facts, as in the pump, ERP, and building cases above.
 
 ### SYSE.16:0 - Use This When
 
-Use this pattern when an engineering decision concerns an actual System or intended System referent selected as the project system-of-interest, but everything outside it
+Use this pattern when an engineering decision concerns an actual System or intended System referent selected for engineering, but everything outside it
 has been reduced to one box called *environment*, *stakeholders*, *users*, *the business*, or *the platform*.
 The decision needs to know which larger Systems contain it, which other Systems interact with it, which
 transformation flows and interfaces matter, and which outside conditions can change the result.
@@ -1280,13 +1190,13 @@ world-side subjects.
 
 Do not use this pattern merely to draw a context diagram or inventory every nearby object. Use the governing FPF
 pattern directly when one already-known relation—such as parthood, interface, interaction, flow, or an architecture
-relation—answers the question. If the project system-of-interest designation is still unclear, use `SYSE.1` first.
+relation—answers the question. Use `SYSE.1` when the relation between that engineering subject and the product SoI is unclear. A creator retains its own engineering-use question while serving the product use.
 
 #### SYSE.16:0.1 - Terms and Distinctions
 
 | Name in this pattern | What it denotes |
 | --- | --- |
-| project system-of-interest | A project-relative designation in plan or decision content. It names either an actual System or an intended System referent. The designation, actual System identity, intended referent, and existence are separate claims. |
+| engineering subject and product SoI | The actual System or intended referent examined here can be the product, a component or a creator. For a creator, retain the products and intended uses that ground its required capability. Engineering subject, product role, identity and existence are separate claims. |
 | use situation | A bounded actual situation in which the System participates, or a described possible-future situation in which the intended referent would participate. A scenario or diagram is a description of that situation. |
 | containing whole | An actual System of which the selected System is a proper part under a stated relation, or a possible-future whole in a proposed proper-part claim. One System can belong to several relevant wholes under different relations. |
 | suprasystem | Optional source wording for a containing whole. Use it only when the proper-part claim is stated. |
@@ -1336,8 +1246,7 @@ Recurring tensions include:
 ### SYSE.16:4 - Solution
 
 Recover the Systems, structures, relations and conditions needed to ground one use decision.
-Begin with the actual System or intended System referent selected as the project system-of-interest and a named
-use situation; stop when the account exposes a material mismatch, alternative, evidence gap or reopen condition.
+Begin with the actual System or intended System referent selected for engineering and its named use situation; stop when the account supports the receiving decision or identifies the condition that prevents it.
 
 Reuse an adequate existing account or direct relation result for the same decision and conditions.
 Use the bounded recovery below when a missing connection prevents that answer. If the operating situations
@@ -1346,9 +1255,7 @@ obtain any missing specialist result from its domain before relying on it.
 
 #### SYSE.16:4.1 - Perform the Move
 
-1. **Bound the use and decision.** State the actual System or intended System referent selected as the project system-of-interest,
-   the use situation, configuration or variant, decision, relevant place, interval or horizon, and the description
-   sources being used. Keep the descriptions separate from the Systems and situation.
+1. **Bound the use and decision.** State the actual System or intended System referent selected for engineering, its use situation, configuration or variant, decision, relevant place, horizon and description sources. When it is a creator, retain the products or classes of use that ground the required contribution and local acceptance. Keep the descriptions separate from the Systems and situation.
 2. **Find containing and receiving Systems.** Identify every larger System that matters because the selected
    System is, or would be, its proper part, and every System that receives or would receive a result of its
    functioning. State each direct relation and whether it is actual or proposed; retain several wholes when
@@ -1376,8 +1283,8 @@ obtain any missing specialist result from its domain before relying on it.
 7. **Test outside change.** Ask which relevant outside factors—for example, Systems, conditions, interfaces,
    providers, uses, or regulations—can change during the relevant horizon and which change would reopen the
    concept, architecture, offering, assurance, or configuration decision.
-8. **Return the decision-changing result.** Supply the mismatch, alternative, evidence need, or qualified
-   assumption to the receiving engineering Work. Leave unrelated surroundings out.
+8. **Return the result needed by the decision.** Supply the supported relations and conditions, or the material
+   mismatch, alternative, evidence need or unresolved assumption, to the receiving engineering Work. Leave unrelated surroundings out.
 
 The numbered steps explain the Method. Determine Work order from the actual dependencies. Observation,
 concept development, architecture development and trials can overlap and recur while outside Systems change.
@@ -1386,7 +1293,7 @@ concept development, architecture development and trials can overlap and recur w
 
 | Field | Required content |
 | --- | --- |
-| focus and decision | Project System-of-interest as an actual System or intended referent, project designation, use situation, receiving decision, configuration, place when relevant, and horizon. |
+| focus and decision | Actual System or intended referent being engineered, its use, receiving decision, configuration, relevant place and horizon; for a creator, the product uses and contribution that ground its capability and local acceptance. |
 | containing and receiving Systems | Each larger or receiving System and the proper-part, transfer, interaction, or other direct relation that matters. |
 | functional organization | Selected transformations, flows, interactions, contributions, changed or receiving Systems, and operating conditions. |
 | constructive organization | Selected parts, bearers, interfaces, modules, and connections needed by the use. |
@@ -1459,16 +1366,15 @@ environmental, or financial practice. Agents with the relevant authority make th
 
 ### SYSE.16:7 - Conformance Checklist
 
-- [ ] The actual System or intended System referent selected as the project system-of-interest, use situation, receiving decision,
-      configuration, and horizon are stated.
+- [ ] The actual System or intended System referent selected for engineering, use situation, receiving decision, configuration and horizon are stated; a creator retains its product-use grounds and bounded acceptance.
 - [ ] Actual Systems and intended referents remain distinct from accounts, models, scenarios, and diagrams.
 - [ ] *Suprasystem* is used only with a stated actual or possible-future proper-part relation.
 - [ ] Functional transformation remains separate from constructive parts, bearers, and interfaces.
 - [ ] Other Systems and conditions appear only when a named relation can change the decision.
 - [ ] Observations, predictions, design choices, commitments, and unsupported assumptions remain distinct.
 - [ ] Outside changes and evidence that reopen the decision are stated.
-- [ ] The account returns a mismatch, alternative, evidence need, or qualified assumption rather than an
-      exhaustive inventory.
+- [ ] The account supplies the relations and conditions sufficient for the receiving decision, or identifies
+      a material mismatch, alternative, evidence need or unresolved assumption.
 
 ### SYSE.16:8 - Common Failures and Repairs
 
@@ -1483,7 +1389,7 @@ These recurring abstractions hide a relation that changes the engineering decisi
 | Diagram is treated as reality | Keep the representation, subject, currentness, and evidence distinct. |
 | Outside Systems are held constant | Record co-change and reopen evidence for the relevant horizon. |
 | Environment analysis becomes an early phase | Revisit the account when concepts, architecture, evidence, configuration, or outside Systems change. |
-| The team models surroundings that cannot change the decision | Stop when the bounded account changes the receiving decision or exposes a missing result. |
+| The team models surroundings that cannot change the decision | Stop when the bounded account sufficiently supports the receiving decision or identifies the missing result. |
 
 ### SYSE.16:9 - Consequences
 
@@ -1531,8 +1437,7 @@ Retain qualified evidence for unaffected claims while revising the dependent con
 
 ### SYSE.16:12 - Relations
 
-- `SYSE.1` supplies the System designation, decision, boundary question, alternatives, and reopen evidence needed
-  here. Its result creates no temporal order.
+- `SYSE.1` can supply the engineering subject and its product-use grounds, decision, boundary question, alternatives and reopening evidence. A creator is usable as the engineering subject without another SoI designation. These dependencies create no temporal order.
 - `A.1.SCR` distinguishes an actual acting or changed System from a designation, role word, description, process,
   or organization label.
 - `A.22` governs each selected structure. `A.6.F` restores function, bearer, capability, Work, and
@@ -1930,10 +1835,10 @@ structures, neighbours, conditions, and outside changes. A compatible `SYSE.17` 
 qualified consequence claims and unresolved bearers. Use only result claims compatible with the current decision.
 
 The result is a **linked use-and-system concept proposal**: bounded claim content that connects a concrete
-use situation with a candidate System concept and states their main uncertainty. One or more descriptions may
+use situation with a candidate System concept and states any main uncertainty. One or more descriptions may
 carry the claims; no document form is required.
 
-First useful move: link one concrete use claim to one candidate system-concept claim and state their main
+First useful move: link one concrete use claim to one candidate system-concept claim and state any main
 uncertainty. This is enough to expose a grounded architecture question. Add further content—for example,
 another use situation, structure, participant, failure, effect, or representation—only when it can change the
 candidate or its boundary.
@@ -1992,8 +1897,7 @@ failed claim.
 
 #### SYSE.2:4.1 - Start with one decision-changing use situation
 
-Take the selected actual System or intended System referent and current reason from the project-system choice
-account, or state the bounded engineering subject when no project-system choice is needed. If that choice is
+Take the immediate engineering subject and its receiving purpose from the project-system choice account, or identify that bounded subject directly when no SoI question remains. For a creator, retain the product-use grounds while developing the creator's own use and System concepts. If that choice is
 needed but no compatible `SYSE.1` account is available for the same subject and decision, use a qualified direct
 source for the focus claim or record the missing project-focus result and stop only the linked claim
 it blocks. An individual can explore a linked proposal from a provisional focus. When its use depends on
@@ -2007,7 +1911,7 @@ participation as already actual. State:
 2. the direct relation by which that subject enters the use;
 3. the condition or change expected;
 4. the outside effect that matters to the current decision; and
-5. the uncertainty that could change the concept.
+5. any uncertainty that could change the concept.
 
 Name the relying subject under its admitted kind; a person and a System are only two possible kinds. State the
 direct relation by which it enters the use—for example, reliance, participation, performance of Work, or affectedness.
@@ -2043,7 +1947,7 @@ Write one outside-facing use claim and one inside-facing concept claim:
 Linked use-and-system concept proposal:
   concrete use claim:
   candidate system-concept claim:
-  main uncertainty:
+  main uncertainty, if any:
   architecture question exposed:
   reopen condition:
 ```
@@ -2103,7 +2007,7 @@ is the next use.
 
 #### SYSE.2:4.5 - Expand only when another claim can change the candidate
 
-The first result is one linked use claim, one candidate concept claim, and their main uncertainty.
+The first result is one linked use claim, one candidate concept claim, and any main uncertainty.
 Reuse an adequate scenario or use-case slice as the proposal: retain its compatible use and concept claims and
 add only the missing relation, consequence or uncertainty needed for this decision. The progressive-slice
 comparison in §11 helps choose when to continue toward implemented, tested behaviour.
@@ -2125,8 +2029,8 @@ flows. An operational adjective does not settle that choice.
 
 #### SYSE.2:4.6 - Stop at a grounded architecture question and reopen from failed support
 
-Stop when the current use claim and candidate concept expose a grounded architecture question and their main
-uncertainty. The linked proposal supplies required functioning, operating conditions, outside effects,
+Stop when the current use claim and candidate concept expose a grounded architecture question and any
+uncertainty carried into it. The linked proposal supplies required functioning, operating conditions, outside effects,
 decision-relevant environment structures, assumptions, and evidence limits to `C.30` and `C.32`.
 
 Use `C.30.ASV` only when a structural description and its adequacy for a selected architecture use are current.
@@ -2140,8 +2044,7 @@ Reopen the affected linked claims when:
 - operating observation changes a condition or effect; or
 - a specialist result changes permission, feasibility, harm, value, or the participating Work arrangement.
 
-Return to `SYSE.1` only when the failed claim changes which System should orient the project or where the project
-boundary lies.
+Return to `SYSE.1` when the failed claim changes the immediate engineering subject or the product and use grounds. Distinguish those returns: a changed local scope can preserve the product SoI.
 
 ### SYSE.2:5 - Archetypal Grounding
 
@@ -2171,8 +2074,7 @@ An available construction starts this concept question: deployed `ERP-Runtime-E3
 when an order date changes. The manufacturer considers using that facility to revise production commitments.
 Its usefulness depends on what the planners would receive and could act on.
 
-The manufacturer keeps `PlanningSystem-P1` as an intended System referent in its project decision; actual System
-identity remains unestablished. Actual person Systems `Planner-A` and `Planner-B` perform `PlanningWork-PW1`.
+The manufacturer keeps `PlanningSystem-P1` as the intended creator being engineered; actual System identity remains unestablished. As in `SYSE.1:5.2`, the product SoIs remain the water-supply and irrigation installations in their intended uses. The planning capability must support their different orders and commitments with shared production resources. Actual person Systems `Planner-A` and `Planner-B` perform `PlanningWork-PW1`.
 They use `ERP-Runtime-E3` and demand, capacity, material, and production-order records as resources and evidence.
 The records are epistemes; `PlanningAPI-PA2` and the user interface are separately identified interfaces.
 The common-focus exchange in `SYSE.1:5.2` has made the missing stock-information contribution visible.
@@ -2203,12 +2105,9 @@ specific function, possible bearers, failure path and uncertainty; it does not s
 
 If confirmation cannot arrive in time, return to the timing claim or proposed allocation. If the required
 stock-control contribution or authority cannot be obtained, hold the commitment relying on it and revisit the
-affected concept claims or focus decision. Reopen `SYSE.1`'s designation only when the failure changes the
-project's selected referent or boundary.
+affected concept claims or choice of the immediate engineering subject. Reopen the product SoI designation only when its product or use grounds change; a failed local arrangement or new contract alone does not make the planning creator the SoI.
 
-The vendor's product project can still select `ERP-Runtime-E3` or its product referent for its own decision.
-Installation completion, an organization chart, and user acceptance establish neither the manufacturer's
-production effect nor the intended composite `PlanningSystem-P1`.
+The independent ERP supplier can select its software product as its own SoI on the usable supply, decision and acceptance grounds in `SYSE.1:5.2`. The manufacturer's planning project can close its agreed capability result through representative order changes and operating conditions. Software installation or an organization chart alone does not establish that capability or the existence of the composite `PlanningSystem-P1`. Its System identity, qualified capability and later product consequences require their respective evidence; local acceptance need not wait for every later product outcome.
 
 
 
@@ -2254,14 +2153,14 @@ preferred concept always succeeds; keep the use claim revisable and return evide
 
 | ID | Requirement |
 | --- | --- |
-| `CC-SYSE2-1` | A conforming use SHALL name one concrete use situation, one candidate system-concept claim, and their main uncertainty before requesting fuller documentation. |
+| `CC-SYSE2-1` | A conforming use SHALL name one concrete use situation, one candidate system-concept claim, and any main uncertainty before requesting fuller documentation. |
 | `CC-SYSE2-2` | It SHALL name the participating and affected subjects and SHALL state each decision-changing relation through the applicable FPF pattern. |
 | `CC-SYSE2-3` | It SHALL distinguish parthood, placement, interaction, use, ownership, authority, and affectedness when more than one is current. |
 | `CC-SYSE2-4` | Function-like wording SHALL identify the required functioning and proposed bearer through `A.6.F` before architecture use relies on it. |
 | `CC-SYSE2-5` | Required or intended transformations SHALL remain modal claims; an actual transformation claim SHALL satisfy `A.3.4`. |
 | `CC-SYSE2-6` | A ConOps, use case, scenario, requirement, model, diagram, or other representation SHALL remain distinct from the linked claims it presents. |
 | `CC-SYSE2-7` | Conditional expansion SHALL add only information that can change the current concept, architecture question, evidence use, or return. |
-| `CC-SYSE2-8` | The stop SHALL expose a grounded `C.30` or `C.32` question and the uncertainty carried into it. |
+| `CC-SYSE2-8` | The stop SHALL expose a grounded `C.30` or `C.32` question and any uncertainty carried into it. |
 | `CC-SYSE2-9` | When architecture, realization, observation, or specialist evidence challenges a claim, that evidence SHALL return to the use, concept, or project-focus claims it can change. |
 
 ### SYSE.2:8 - Common Anti-Patterns and How to Avoid Them
@@ -2336,9 +2235,7 @@ These current lines support continuing, use-led, model-linked revision within th
 
 ### SYSE.2:12 - Relations
 
-- A `SYSE.1` project-system choice account supplies the selected actual System or intended System referent,
-  current reason, boundary question, alternatives, and reopen condition used here. A changed use or boundary
-  returns to `SYSE.1` only when it changes the project focus.
+- A `SYSE.1` account can supply the immediate engineering subject, its relation to the product SoI, current reason, boundary question, alternatives and reopening condition. Use the subject of the present concept question; developing a creator's concept retains the product grounds. Return a changed local subject or product purpose to the corresponding choice.
 - A compatible `SYSE.16` result supplies selected operational structures, conditions, and unsupported
   assumptions; a compatible `SYSE.17` result supplies qualified consequence claims and unresolved representation
   or protection needs; a compatible `SYSE.8` account supplies only its supported provider-arrangement claims and
@@ -2486,7 +2383,7 @@ rules can both occur; a drawn rule does not supply authority to act.
 | Decision rule or policy | On this event, under these conditions, what should be done next and by whom? | “Whenever” needs its exceptions and timing. Temporal order alone establishes neither a decision rule nor a causal connection. |
 | Information used for a decision, often called a read model | What must the person or software know, where does it come from, and can it be stale? | A display of availability may differ from the state used to accept a reservation. |
 | State-bearing domain object or system | What changes, which identity continues, and what must remain true? | The event “hold expired” differs from the interval during which a hold is active. |
-| External participant or time condition | What can happen without this team's command, and how is it noticed? | A supplier refusal or elapsed deadline needs a reaction; drawing it supplies neither delivery nor a running timer. |
+| External participant or time condition | What can happen without this team's command, and how is it noticed? | A supplier refusal or elapsed deadline needs a reaction. |
 
 Connect an event to a next action only after stating the rule or physical dependency that warrants the
 connection. Ask whether it happens always, immediately, only on working days or only after additional
@@ -2575,8 +2472,8 @@ that requirement for software design rather than claiming the wall has implement
 
 The participants also ask what the crew sees while a replacement is unresolved. “Confirmed” would now be a
 false promise. They choose an explicit awaiting-replacement state and notice requiring the dispatcher to
-act. The model therefore changes the use concept, the information displayed and the work to be supported,
-not just event names. A policy for which replacement is acceptable remains a domain decision.
+act. The model therefore changes the use concept, the information displayed and the work to be supported.
+A policy for which replacement is acceptable remains a domain decision.
 
 The immediate result is the corrected account, these proposed acceptance conditions and two implementation
 questions: atomic handling of assignment transitions, and reliable receipt and reconciliation of maintenance
@@ -2694,7 +2591,7 @@ superior; both require participants who know the domain. Another smaller answer 
 
 The current official [resources](https://www.eventstorming.com/resources/) provide further facilitation and
 software-design material, including the inventor's book and workshop formats. They extend professional
-preparation; a source link does not supply absent participant knowledge or demonstrate competence. Reopen
+preparation. Reopen
 the selected route when its notation hides relevant behaviour, the participation burden exceeds its useful
 contribution, or an adequate existing account answers the question more cheaply. Changed practice and source
 conditions reopen the affected advice, not every unrelated engineering method.
@@ -2702,9 +2599,9 @@ conditions reopen the affected advice, not every unrelated engineering method.
 ### SYSE.54:12 - Relations
 
 - `SYSE.2` consumes a compatible domain account when it changes a use or system concept; it can also supply
-  the bounded situation being modelled. Neither result implies that the intended system already exists.
+  the bounded situation being modelled.
 - `SYSE.5` uses the explained contributions, state and coordination conditions to construct bearer alternatives.
-  `SYSE.6` chooses among sufficiently developed architectures; an event model does not select them.
+  `SYSE.6` chooses among sufficiently developed architectures.
 - `SYSE.7` keeps the resulting description compatible with other engineering accounts. `SYSE.10` assesses
   the observations or tests used to support claims about actual behaviour.
 - `B.5.SD` supplies the general construction of a joint substantive answer.
@@ -2823,9 +2720,7 @@ retention nor an unchanged receiving use requires a fresh trial.
 The Method uses eight recurring moves. They organize production of the account; problem-development, System-development,
 research, realization, integration, operation, and decision Work can overlap.
 
-1. **Decision boundary.** The Agent identifies the actual System or intended System referent selected as the project system-of-interest, or the System family and its
-   membership and effectivity rules; current use, environment, affected Systems, configuration, horizon,
-   resources, `DecisionSubject`, and authority complete the boundary.
+1. **Decision boundary.** The Agent identifies the actual System or intended System referent selected for engineering, or the System family with its membership and effectivity rules. For a creator, retain the products or classes of future use whose demands and shared resources its options must serve. Current use, environment, affected Systems, configuration, horizon, resources, `DecisionSubject` and authority complete the boundary. Local realization and acceptance do not require calling the creator a new SoI.
 2. **Situation and problem records.** The Agent separates the world-side occurrence or condition from assertions,
    observations, and evidence about it. Each selected `ProblemCard` states detection, problematic relation or
    unresolved claim, improvement check, constraints, affected Systems, evidence, receiving use, and the premises
@@ -2865,7 +2760,7 @@ Start at the observation that made the old pair doubtful. Recover the earlier us
 that was supposed to support it. For one consequential operating situation, follow what happens from the
 triggering event through the proposed behaviour to the effect on the user or another affected System. Use
 `SYSE.2:4.3–4.6` for that linked construction; use an adequate existing result directly. The return needed here
-is a use–concept pair with its conditions, main uncertainty and failed or supported connection, not a complete
+is a use–concept pair with its conditions, any main uncertainty and failed or supported connection, not a complete
 new concept study.
 
 Identify what the observation changes. It may contradict the predicted effect, expose an omitted condition,
@@ -3182,8 +3077,7 @@ Watch for these six recurring biases:
 
 ### SYSE.22:7 - Conformance Checklist
 
-- [ ] The decision boundary identifies the actual System or intended System referent selected as the project system-of-interest, or the System family; current use, environment, affected
-      Systems, configuration, horizon, chooser, and authority.
+- [ ] The decision boundary identifies the actual System or intended System referent selected for engineering, or the System family; current use, environment, affected Systems, configuration, horizon, chooser and authority. For a creator, it retains the product-use grounds and bounded acceptance.
 - [ ] World-side problem situations and `ProblemCard` epistemes remain separate.
 - [ ] The problem archive and finite selected problem portfolio have separate membership rules.
 - [ ] Actual Systems and configurations remain separate from possible-future specifications.
@@ -3401,9 +3295,7 @@ assurance, and continuing change.
 
 #### SYSE.5:4.1 - Perform the Move
 
-1. **Bind the engineering decision.** Name the actual System or intended System referent selected as the project system-of-interest, decision question,
-   use situation, required outside effect or observed failure, configuration or variant, operating envelope,
-   horizon, and protected characteristics. Use `SYSE.2` candidates and unresolved use–System mismatches when
+1. **Bind the engineering decision.** Name the actual System or intended System referent whose functioning and bearer alternatives are under consideration, the decision, use situation, required outside effect or observed failure, configuration, operating envelope, horizon and protected characteristics. For a creator, state the products or classes of use that ground its required contribution; its own functions and construction remain the subject here. Use `SYSE.2` candidates and unresolved use–System mismatches when
    they are current and compatible; otherwise use a qualified direct source or record the missing result.
 2. **Restore the blocking function-like claims.** For each material contribution, use `A.6.F` to state the
    predicate, possible bearer, receiving whole or effect, conditions, and claim status. Begin from outside use,
@@ -3486,9 +3378,8 @@ require decomposing every function to a uniform depth.
 the identity and relevant properties of what passes between them. Distinguish an exchange from a condition
 for starting, continuing, or stopping an operation. State where contributions must coexist, synchronize, wait,
 or feed back, and what changes with the operating mode. If two inputs must meet, explain the operation that
-combines them and how candidate bearers could perform it. A junction on a drawing supplies neither that
-operation nor its means. If production and use occur at different times, identify what preserves the needed
-material, energy, information, or state between them.
+combines them and how candidate bearers could perform it. If production and use occur at different times,
+identify what preserves the needed material, energy, information, or state between them.
 
 **Reason forward through one complete use.** Starting from the available inputs and states, explain what
 each cooperating contribution changes, what becomes available next, and why the receiving System would obtain
@@ -3509,7 +3400,7 @@ transformation, retain a resource for later use, distribute a decision, or chang
 during failure. Follow the changed relation forward to the outside effect and back to its required inputs.
 Revise the affected bearer and interface proposals, state what still works unchanged, and expose new
 dependencies. If no credible means of producing a required intermediate result is known, keep that gap
-open and use specialist development or the local return in step 11. Renaming a box does not fill it.
+open and use specialist development or the local return in step 11.
 
 Choose a representation that exposes the difficult relation:
 
@@ -3604,7 +3495,7 @@ The scheduler consequently needs an estimate of usable stored energy and the per
 conditions, as well as demand and external signals. Local protection and the heat-delivery path remain
 necessary. What changes is the timing dependency: current delivery can depend on an earlier charge rather
 than simultaneous compressor operation. Storage, sensors, valves, and circulation must realize that changed
-relation; adding a box named *buffer* is insufficient.
+relation.
 
 For this candidate the team assumes a storage capacity and discharge rate adequate for a stated flexibility
 interval. It still needs a thermal/hydraulic account that covers losses, usable temperature range and room
@@ -3662,7 +3553,7 @@ human- or AI-generated graph outrun bearer physics; recover the claims, Systems,
 
 | ID | A conforming use... |
 | --- | --- |
-| `CC-SYSE5-1` | names one actual System or intended System referent selected as the project system-of-interest, decision question, use, configuration, operating envelope, horizon, and required outside effect or observed failure. |
+| `CC-SYSE5-1` | names the actual System or intended System referent selected for engineering, decision, use, configuration, operating envelope, horizon and required effect or failure; for a creator, preserves the product-use grounds of its required contribution. |
 | `CC-SYSE5-2` | restores function-like claims through their predicates, possible bearers, conditions, and receiving effects rather than relying on functional labels. |
 | `CC-SYSE5-3` | develops materially different functional and bearer-and-interface alternatives or justifies a smaller decision-sufficient set, explaining how the cooperating contributions would produce the required effect and what changes between arrangements. |
 | `CC-SYSE5-4` | keeps functional organization, constructive organization, placement, Work, Method, descriptions, and evidence distinct. |
@@ -4084,8 +3975,8 @@ no shared serialization point. If every item
 must update the same locked state, or a later stage waits for a complete batch, this calculation does not
 apply. Queueing, retries and networking add elapsed time. At a sustained arrival rate above the slowest
 stage's capacity, backlog grows unless work is rejected, reduced or capacity changes. Below that bound,
-variability can still make a tail-latency target fail. Calculate the dependency path and capacity constraints,
-then obtain representative measurements for the commitment being made.
+variability can still make a tail-latency target fail. Calculate the dependency path and capacity constraints.
+Use qualified evidence for the performance commitment being made; obtain representative measurements when its required basis is missing.
 
 The same reasoning applies to services. Five dependent remote calls add waiting and partial-failure cases;
 five independent computations may run concurrently, but the result still waits for whichever contributions
@@ -4462,7 +4353,7 @@ objects and relations that matter to the decision.
 | model | A description episteme used under a stated modeling purpose, assumptions, omissions, interpretation, and validity boundary. Record these conditions independently of its executable, mathematical, visual, or tool form. |
 | view | The same episteme individual qualifies as `U.View` only when a `U.Viewpoint` episteme and obtaining `EpistemeViewpointConformanceRelation` are present under `E.17.0`. Establish that membership through the conformance relation; presentation labels—for example, a page title, diagram type, dashboard face, or `viewpointRef`—remain publication cues. |
 | viewpoint | A claim-bearing episteme specifying concerns and conformance rules for a view. A cue such as a stakeholder name, discipline label, screen layout, or familiar view list qualifies only when it supplies that content. |
-| representation | A visible or formal expression and, when current, its correspondence to an independently recovered object, relation, claim, or mathematical structure. Treat expressions—for example, diagrams, tables, queries, graphs, or executable files—as representations. Ground performed Work through Agent–Work attribution, authority through its own relation, and depicted claims through evidence. Use `C.29` for a declared mathematical-lens use and its preserved and lost structure. |
+| representation | A visible or formal expression used under an interpreted correspondence to an object, relation, claim, or mathematical structure. Diagrams, tables, queries, graphs, or executable files can serve this use when the correspondence is established. Ground performed Work through Agent–Work attribution, authority through its own relation, and depicted claims through evidence. Use `C.29` for a declared mathematical-lens use and its preserved and lost structure. |
 | publication | An `E.24.PUB` publication occurrence with its form, carrier, audience, bounded use, and selected source edition when those identities matter. Ground the described world-side relation independently and use `E.17.0` when `U.View` membership matters. |
 | engineering data | Claim-bearing epistemes and values used in engineering Work, together with the identities, editions, reference schemes, provenance, applicability, and relations needed by that use. Ground their world-side subjects separately. |
 | trace or link | A recoverable direct relation: for example, a claim depends on a source claim; a test result assesses a named claim; an interface description concerns a selected configuration; or a change affects a configuration item. A hyperlink or same-name token is only an index until the intended relation and participants are stated. |
@@ -4534,7 +4425,7 @@ would change if the linked claim failed.
 | Executable model and physical result | Simulation and generated code can shorten feedback; they can also reproduce shared assumptions and omit physical effects. |
 | Shared model and federated descriptions | One common model can reduce translation for a bounded use; independently maintained descriptions can preserve needed expertise and authority. Choose from the receiving decision and the losses of each arrangement. |
 | Current decision and future reuse | General data structures can enable later use; speculative completeness can delay the present decision and preserve obsolete distinctions. |
-| Publication convenience and epistemic identity | One publication occurrence can make several epistemes available, and one episteme can appear through several publication forms. Carrier consolidation leaves claim content and editions distinct. |
+| Publication convenience and epistemic identity | Several epistemes can share a carrier, with their publication relations identified separately; one episteme can appear through several publication forms. Carrier consolidation leaves claim content and editions distinct. |
 | AI-assisted production and warranted reliance | AI Systems can produce candidate descriptions quickly. The outputs still need recoverable sources, subjects, error checks, and decision-specific acceptance. |
 | Standards compatibility and present practice | Standards supply useful distinctions and exchange constraints. Treat conformance, official publication, and academic visibility as evidence of declared content; assess practical adoption, effectiveness, and current engineering Methods separately. |
 
@@ -4587,10 +4478,10 @@ unaffected claims. This work can remain within the existing data-management arra
 9. **Choose publication forms for actual users.** Publish only the forms needed by the receiving Work and its
    users. Reuse or author a viewpoint only when `U.View` membership and conformance matter. Keep the source
    episteme, view, publication occurrence, form, carrier, and audience use separate.
-10. **Assign maintenance Work.** For each material entry, identify the Agent assigned to change its description,
-    decide a contested interpretation, accept a cross-description relation, or stop reliance, together with the
-    needed capability and authority. Specify the observations that call for refresh and the Work that will update
-    the affected account.
+10. **Arrange maintenance when continued reliance needs it.** For the affected entries, identify the Agent
+    assigned to change a description, decide a contested interpretation, accept a cross-description relation,
+    or stop reliance, together with the needed capability and authority. Specify the observations that call for
+    refresh and the Work that will update the affected account.
 11. **Return the bounded result.** Make the usable claims, contradictions, unsupported correspondences, gaps,
     reliance limits, and refresh conditions available to the named engineering decisions and dependent Work.
 
@@ -4613,7 +4504,7 @@ the FPF kinds of its participants remain unchanged.
 | relations | Direct same-subject, part, interface, configuration, source, transformation, evidence, or other governed relations; unsupported correspondence hypotheses are marked as such. |
 | collision results | Claim-level agreements, explainable differences, unresolved contradictions, missing interpretations, and missing world-side checks. |
 | realization correspondence | Actual configuration or occurrence, observation/evidence basis, and the decision claim it can confirm, weaken, or reopen. |
-| maintenance assignments | Assigned Agents, their system-role assignments, authority, capability, Work, and acceptance conditions for producing, checking, changing, or retiring description uses. |
+| maintenance assignments, when needed | For continued uses needing maintenance, the assigned Agents, their system-role assignments, authority, capability, Work, and acceptance conditions for producing, checking, changing, or retiring description uses. |
 | return and refresh | Receiving Work and the Agents assigned to it, accepted reliance limits, current gaps, triggering observations, and the affected accounts or decisions to reconsider. |
 
 The account can use existing publication forms. Its identity and sufficiency do not depend on one storage
@@ -4722,8 +4613,8 @@ This pattern resists four recurrent source and practice biases.
       description consistency supplies only its stated comparison result.
 - [ ] AI-generated, transformed, or summarized descriptions retain source provenance, subjects, check
       results, and reliance limits.
-- [ ] The maintenance Agent, assignment, capability, authority, triggering observations, and refresh Work are
-      stated for material entries.
+- [ ] For continued uses needing maintenance, the Agent, assignment, capability, authority, triggering
+      observations, and refresh Work are stated for the affected entries.
 
 - [ ] The returned account names contradictions, gaps, unsupported relations, accepted reliance limits, and the
       affected decisions or accounts to reconsider.
@@ -4890,7 +4781,7 @@ authority claims require their own support.
 Apply the pattern when a choice among forms of provision—for example, transfer, access, continuing provision,
 or responsibility for a result—changes the engineered System, interfaces, provider Systems, capabilities,
 risks, or realization network. A mere change from *product* to *service* wording is outside its boundary. Use `A.2.3` for promise content alone; use `SYSE.1`,
-`SYSE.16`, and `SYSE.2` when the project system-of-interest or use is unclear. Neighboring specialist practices retain
+`SYSE.16`, and `SYSE.2` when the engineering subject, its use or its relation to the product SoI is unclear. Neighboring specialist practices retain
 their own Methods, results, and authority—for example, practices governing demand, positioning, price, finance,
 legal duty, organization change, continuing operations, or shared enabling Systems.
 
@@ -4970,8 +4861,7 @@ in :11 to generate candidates before qualifying them for the engineering decisio
 
 #### SYSE.8:4.1 - Perform the Move
 
-1. **Bound the use and decision.** Name the client-side use, intended change, receiving Systems, project
-   system-of-interest or intended System referent, configuration, horizon, and decision. Use `SYSE.1`, `SYSE.16`, or `SYSE.17` results only
+1. **Bound the use and decision.** Name the client-side use, intended change, receiving Systems, the actual System or intended System referent selected for engineering, configuration, horizon and decision. When engineering a provider, retain the product uses and obligations that ground its capability and distinguish them from the provider's local acceptance. Use `SYSE.1`, `SYSE.16`, or `SYSE.17` results only
    when they fit that subject, configuration, use, horizon, decision, and evidence window. Otherwise use a
    qualified direct source or record the missing result, then pause only the decision that needs it. These result
    dependencies do not prescribe the order of Work.
@@ -5006,7 +4896,7 @@ in :11 to generate candidates before qualifying them for the engineering decisio
 8. **Obtain specialist results.** Request a specialist result only when it can change the candidate—for example,
    a result from strategy, marketing, commercial analysis, finance, law, organization change, operations,
    supporting-System engineering, safety, security, or environmental engineering. Preserve its source and
-   authority boundary.
+   authority boundary. When finance depends on the engineering result or its acceptance, use :4.4 to develop the connected alternative.
 9. **Compare the candidates.** Compare decision-relevant consequences—for example, client-side use, technical
    feasibility, architecture, capability, value, cost, financing, risk allocation, operational burden,
    changeability, evidence, or affected-System consequences. Keep non-equivalent measures separate unless an
@@ -5037,6 +4927,27 @@ descriptions as sources and ground the provider arrangement in its actual System
 
 The practitioner follows the receiving use beyond product transfer, exposes the provider's continuing Work and
 the burden passed to the client, and returns their consequences to the engineering decision.
+
+
+#### SYSE.8:4.4 - Connect the offering to conditional finance
+
+Use this continuation when obtaining money depends on a technical result or its acceptance, or when financing terms change the result the provider can supply. An adequate funded arrangement can be used directly. The question here is how to develop a coherent offering when the engineering and financial conditions still change one another.
+
+**Connect the promised result to the event that permits payment.** For each live candidate, recover the required functioning and operating conditions, the configuration to which the evidence applies, and what must be observed or demonstrated. Identify who judges that result and what the proposed terms make payable after that judgement. Obtain the applicable terms and event interpretation through [FDM.1](../FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md#fdm1---recover-the-financial-position-behind-a-record) and [FDM.3](../FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md#fdm3---derive-events-and-conditional-flows-from-financial-contract-terms) when those relations are unresolved. Keep the technical result, its acceptance, the payment obligation and the money's usable date distinguishable. A satisfactory trial can support the technical claim while the agreed payment still arrives too late for the next construction action.
+
+**Ask finance for the condition that the engineering proposal must resolve.** Supply the relevant realization and operating account, including the work and means needed to obtain the acceptance evidence. [FIN.2](../Management%20DPF%20Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin2---assess-liquidity-and-funding-needs-by-date) returns the payer, amount, usable date and remaining exposure; [FIN.10](../Management%20DPF%20Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md#fin10---design-financing-instruments-and-terms) constructs or compares terms with prospective participants. Recover which technical or acceptance premise those results consume. If funds are released after commissioning but commissioning needs those funds, the current proposal has no funded start. ECO.4 supplies the general construction of attainable complementary commitments; the engineer must still identify a realizable first result and what its evidence establishes.
+
+**Develop the changed offering with the affected specialists.** Work back from that failed condition. A smaller independently useful result may be obtainable with available means. A different bearer, temporary qualified operating method, supplied component or division of responsibility may change the first payment, preparation cost or continuing work. Compare these with retaining the technical arrangement and changing only financing. Preserve the receiving use's necessary performance and protection; a proposed reduction in the promise needs the affected recipient's decision.
+
+For every serious variation, explain what changes in functioning, realization, observation, recovery and provider capability. Obtain the corresponding operating and financial consequences. For example, replacing an automatic observation with a manual one requires an adequate observation method, capable available performers and an interval that fits the required response. Its recurring labour and exception work belong in the new account. A temporary method also needs a supported end or transition; calling it temporary supplies neither the replacement nor the work of switching.
+
+An earlier milestone can become a financing condition if a participant accepts the result it actually establishes and the exposure that remains. A readiness test might justify an advance while leaving performance in use to later acceptance. State that allocation in the proposal. Changing a payment milestone does not make the earlier evidence establish the later performance claim. Conversely, a qualified earlier test can be useful even when it does not establish the entire service: use its result for the bounded decision it supports.
+
+**Return one compatible alternative to both decisions.** Send the changed configuration, evidence requirement, preparation and operating work to the financial contributor. Return the resulting cash dates, conditions and restrictions to the engineering and provider decisions. Replace the affected premises together: a new advance changes the later amount due, while a new operating method can change the cost and meaning of acceptance. Use FIN.10 for participation, financing claims and closing, and ECO.3–ECO.4 when the missing contribution is a different exchange or combination of commitments. The participating decision-makers retain their respective authority.
+
+Follow an ordinary completion and a consequential interruption through the proposed arrangement. If evidence arrives late, fails, or applies to another configuration, determine which payment, draw or next action is still supported and what remains due. Reconsider the dependent construction or service commitment while it can still be changed. A contractual remedy for failure can allocate loss without providing the means to maintain the promised functioning; obtain the engineering recovery separately.
+
+Return the supported concept, a conditional proposal for the participants, a justified wait for a specified result, or rejection of an unsupported arrangement. A wait is useful only while it can still meet the receiving need or leads to an agreed changed need. Technical approval, acceptance of commercial terms and provision of money remain decisions or events of their respective participants. This engineering account supplies their connection and the design consequences; it does not itself perform those acts.
 
 
 ### SYSE.8:5 - Worked Case: Cast-Iron Transfer, Delivery, or Replenishment
@@ -5118,6 +5029,40 @@ observation test, financing and restoration commitment to their responsible prac
 does not supply those results.
 
 
+#### SYSE.8:5.4 - A replenishment promise needs money before service acceptance
+
+Now change the foundry case from one delivered lot to keeping the machining plant's accepted stock above an agreed minimum during days 10–60. This is a new receiving use, so the single-lot selection in :5.3 remains valid for its original question. The new proposal needs observation, replenishment and exception response under stated limits on consumption and delivery delay.
+
+The following constructed inputs are supplied for comparing two provider arrangements. They are stipulated engineering, operating and negotiating grounds, not observations of a real provider. Amounts are thousands of euros. The provider has 5 of usable cash after other commitments and must retain 1. The compatible operating account covers routine purchases and replacements; the table shows the additional preparation, opening inventory and observation work that distinguish these proposals. At day 60 the plant resumes its established stock arrangement; the supplied account includes the needed handover and support. The initial schedule assumes timely successful performance and payment, with no other incremental cash flows, taxes or financing charges.
+
+The automatic candidate costs 4 on day 0 to prepare the observation and control system, 6 for inventory on day 10, and 2 for operation on day 45. Its stipulated commissioning method requires the installed stock and plant configuration. The customer offers total payment 12 on day 30, after acceptance of the initial service period. No presently offered finance is drawable before that acceptance. A successful component test would not satisfy either this installed commissioning requirement or the customer's service-acceptance condition.
+
+A qualified operating comparison also supplies a manual candidate for the same bounded stock promise. Preparation and a readiness demonstration cost 3 on day 0, inventory still costs 6 on day 10, and manual observation and response cost 5 on day 45. The specified consumption and delivery limits permit this method; the needed people, observation interval and exception response are included in that account. Its readiness can be demonstrated with existing means before buying the opening inventory. A satisfactory demonstration would support readiness for the bounded manual operation under those conditions; acceptance of the actual service period remains later.
+
+The customer is willing to consider paying 6 on day 7 after that readiness judgement and the remaining 6 on day 30 after service acceptance. This advance transfers exposure to the customer. Its stated negotiating position accepts that exposure only for the demonstrated manual arrangement and the proposed correction or refund terms. The parties must still agree those terms and make the payments. Before commitment, FIN.10 must also establish the cash consequences of the agreed correction or refund obligations in the states where they apply. The successful-performance schedule below leaves that exposure unresolved. There is no corresponding early-payment offer for the automatic candidate.
+
+| Event | Automatic candidate: projected cash | Manual candidate with the proposed advance: projected cash |
+| --- | ---: | ---: |
+| Opening usable cash | 5 | 5 |
+| Day 0: preparation | 5 − 4 = 1 | 5 − 3 = 2 |
+| Day 7: conditional advance | 1 | 2 + 6 = 8 |
+| Day 10: opening inventory | 1 − 6 = −5 | 8 − 6 = 2 |
+| Day 30: remaining customer payment | Not a feasible continuation from the unfunded day-10 action | 2 + 6 = 8 |
+| Day 45: operation | Not reached on the supplied funding grounds | 8 − 5 = 3 |
+
+FIN.2 exposes a day-10 need for 6 of additional usable money in the automatic candidate: paying 6 from cash 1 while retaining reserve 1 requires that amount. The later payment of 12 cannot cover that date. For the manual candidate, the forecast retains the reserve at every displayed event, provided readiness, terms and settlement occur as proposed. Its 6 advance is part of the total 12, so the day-30 receipt is only 6.
+
+The engineering return is a conditional manual offering with its observation method, staffing, supported operating limits, early readiness question and later service acceptance. The financial return is its dated conditional coverage. Neither return establishes the other's premises: the cash account does not qualify manual replenishment, and the operating comparison does not create the customer's advance. The useful next work is to obtain the stated readiness judgement and participant agreements, or change the proposal if their conditions cannot be met. The customer can also retain ordinary lot purchasing if it prefers arranging its own stock protection to accepting the new exposure.
+
+This is not a choice of the cheapest isolated component. The manual method has higher continuing work cost, while its different readiness conditions make an earlier payment proposal possible. The parties compare that complete arrangement with obtainable finance for automation, another complete provider offer, a changed service start or refusal. A financial value comparison uses FIN.6 or FIN.9 if the decision needs it; the displayed balances establish only dated payment capacity under the supplied terms.
+
+**Change the readiness date.** Suppose the manual readiness result cannot be obtained until day 14, so the proposed advance cannot settle before then. On day 10, cash would be 2 − 6 = −4. Maintaining the reserve now requires 5 of earlier net funding. Waiting for the unchanged day-14 advance leaves the promised day-10 start unsupported. Obtain a finance arrangement covering that interval, agree a later start with its operating consequences, select another provider arrangement, or decline the start. Preserve the manual method's otherwise adequate technical result; the changed evidence date has invalidated the funding and start conditions.
+
+**Change financing while retaining the automatic design.** Instead, suppose a lender actually offers 6 net before the day-10 inventory payment, independently of service acceptance, for repayment of 7 on day 30. With all other supplied conditions retained, automatic-candidate cash is 1 after preparation, 1 after funding and inventory purchase, 6 after receiving 12 and repaying 7, and 4 after operation. It now meets the reserve without changing the technical concept. FIN.10 compares that financing proposal and its conditions; the engineering decision can retain the automatic arrangement if the whole comparison supports it. The earlier funding failure no longer supplies a reason to prefer manual provision.
+
+If consumption or the permitted response interval changes, obtain the affected operating qualification and return its cost, capability and evidence consequences to the same comparison. A cash forecast for the earlier manual arrangement remains evidence about that earlier arrangement. The decision needs the version that can fulfil the changed stock promise.
+
+
 ### SYSE.8:6 - Bias Annotation
 
 Select candidate distinctions and Methods for the named engineering decision rather than importing a branded
@@ -5135,7 +5080,7 @@ them.
 
 | ID | A conforming use... |
 | --- | --- |
-| `CC-SYSE8-1` | names a client-side use, intended change, receiving Systems, project system-of-interest or intended System referent, configuration, horizon, and decision. |
+| `CC-SYSE8-1` | names the client-side use, intended change, receiving Systems, actual System or intended System referent selected for engineering, configuration, horizon and decision; provider engineering retains product-use grounds and its own bounded acceptance. |
 | `CC-SYSE8-2` | separates promise content, commitments, permissions, supplied or accessed subjects, Systems, Methods, Work, fulfilment, acceptance, payment, and evidence. |
 | `CC-SYSE8-3` | compares materially different offering and provider arrangements, reuses adequate existing results, and develops further candidates or connections only where the decision needs them. |
 | `CC-SYSE8-4` | identifies provider and partner Systems, relations, assignments when current, capabilities, interfaces, Work, resources, shared enabling Systems, and recovery. |
@@ -5143,6 +5088,7 @@ them.
 | `CC-SYSE8-6` | connects the selected concept to realization, provider-capability change, configuration, continuing operation, and reopen evidence. |
 | `CC-SYSE8-7` | preserves specialist decisions and authority rather than absorbing, for example, strategy, finance, law, organization change, operations, or Platform Engineering. |
 | `CC-SYSE8-8` | returns a bounded conditional or selected concept with unsupported claims, evidence needs, receiving decisions, and reopen conditions. |
+| `CC-SYSE8-9` | when finance depends on technical acceptance, connects the same configuration, evidence, payment conditions and usable dates; returns changed work and exposure to both the engineering and financial comparisons. |
 
 ### SYSE.8:8 - Common Failures and Repairs
 
@@ -5158,6 +5104,7 @@ them.
 | Hidden burden transfer | Automation or self-service reduces provider effort while increasing user Work or excluding cases. | Trace Work, exception handling, affected Systems, and burden under each candidate. |
 | Specialist absorption | Systems Engineering invents a neighboring result—for example, a price, legal duty, organization design, operating policy, or Platform Engineering result. | Obtain the specialist result and use it as an input with its authority boundary. |
 | Frozen provider | Launch architecture is treated as sufficient for continuing provision. | Record configuration, update, maintenance, partner, migration, recovery, and reopen evidence. |
+| Unfunded acceptance | The plan needs money before the technical or acceptance event that permits its release. | Use :4.4 to compare a realizable earlier result, changed terms or another provider arrangement, and retain the exposure of each party. |
 
 ### SYSE.8:9 - Consequences
 
@@ -5211,6 +5158,9 @@ arithmetic. Reopen the depth choice when a changed use, overlooked actor or cont
 better feasible arrangement defeats the existing account. Reconsider only the affected provider or engineering
 claims when a local capability, allocation or evidence condition changes.
 
+The [PPP Reference Guide 3.0, Performance Requirements](https://ppp.worldbank.org/performance-requirements) connects the required service with observation and consequences of failure. Its [Payment Mechanism](https://ppp.worldbank.org/payment-mechanism) treatment connects payment conditions, timing and risk allocation, including financial consequences of underperformance. **Adapt** that connection in :4.4: an engineering result and its evidence can determine which financial event is supportable, while financing can require a changed provider arrangement. The guide's public-project setting supplies neither this private customer's willingness to advance money nor a general preference for outcome payment. The stock case supplies its own constructed terms. Use current applicable professional and institutional grounds for the actual arrangement.
+
+
 ### SYSE.8:12 - Relations
 
 - `A.15.6` supplies the general project-focus and system-of-interest distinctions. `SYSE.1` specializes that
@@ -5230,6 +5180,8 @@ claims when a local capability, allocation or evidence condition changes.
 - Application profiles retain specialized offering and provider Methods—for example, software, electrical,
   mechanical, building, ship, transport, medical, industrial, or public-sector Methods—when their subjects,
   risks, evidence, or working moves differ.
+
+For conditional finance, FIN.2 supplies dated funding needs and FIN.10 constructs financing terms; FDM.1 and FDM.3 supply unresolved positions and contractual events. ECO.3 and ECO.4 supply exchange construction and complementary commitments. SYSE.8:4.4 returns those results to the offering, technical evidence and provider arrangement; the financial and economic Methods remain external suppliers.
 
 ### SYSE.8:End
 
@@ -5545,7 +5497,7 @@ Check the conditions needed by the claimed result. A reuse-only answer asserts n
 | Treat assignment as capability or performed Work | Check current capability, then identify the dated Work and result separately. |
 | Put authority into *architect*, *owner*, or *safety* | Name the authority relation, bearer, scope, basis, applicability, and interval, or return the missing governor. |
 | Ask for broad approval | Bound the claim, subject, configuration, Method, evidence, authority, and intended use; accept a bounded objection or blocker. |
-| Treat an AI output or tool status as a specialist result | Recover the performing Agent, provider and tool boundaries, assignment, Work, provenance, checks, and decision use. |
+| Rely on an AI output or tool status without the required specialist grounds | Recover the performing Agent, provider and tool boundaries, assignment, Work, provenance, checks, and decision use. |
 | Hide a blocker to preserve the schedule | Name the missing condition or unsupported relation, the evidence needed to resolve it, and the decision it blocks. |
 | Redesign the organization for one small missing result | Use the supported result first; select a further contribution by its obtainable value and full burden. Organization or capability change needs its own receiving question. |
 
@@ -6429,7 +6381,7 @@ Repair a failed join by changing something that can cause it to work: supply a d
 add a qualified transformation or preparation, move the operation to a capable performer, revise the technical
 interface, or obtain a larger qualified contribution. Re-run the affected continuation and update its time,
 evidence, support, and resource burden. A new adapter is an engineering contribution with its own realization
-and qualification needs; its name is not the repair. If no supported transformation is known, preserve that
+and qualification needs. If no supported transformation is known, preserve that
 gap and its effect on the choice.
 
 ##### SYSE.24:4.3.2 - Establish that the necessary conditions can coexist
@@ -6476,8 +6428,7 @@ has already ended and leaves no relevant obligation.
 
 ##### SYSE.24:4.3.4 - Keep a common account of the constructed arrangements
 
-Use the following questions to recover the arrangements for comparison. They summarize the construction;
-answering the table alone does not show that the described parts can work together.
+Use the following questions to recover the constructed arrangements for comparison.
 
 | Question | Required content |
 | --- | --- |
@@ -6891,7 +6842,7 @@ The following eleven requirements form this pattern's complete conformance check
 | `CC-SYSE24-6` | The forward account supports consequential interface, configuration, meaning, state, time, joint-resource, assurance, capability, support, custody, change, and exit conditions, or preserves the precise gap. A repair is compared with its whole burden. |
 | `CC-SYSE24-7` | Commercial, legal, financial, governance, organization, operations, asset, HCD, safety, security, and other specialist claims are obtained from their practices and used within those practices' conditions and authority boundaries. |
 | `CC-SYSE24-8` | The comparison ends in one lawful `C.11` result: choose now, reject the current set, probe again, or reroute to another named question. |
-| `CC-SYSE24-9` | A retained arrangement names its next realization Work and the commitment supported now. A decisive unsupported branch is resolved, probed, or used to restrict that commitment; `ChoiceResult` remains separate from authority, performed Work, and accepted result. |
+| `CC-SYSE24-9` | A retained arrangement states the commitment supported now and any next realization Work needed. A decisive unsupported branch is resolved, probed, or used to restrict that commitment; `ChoiceResult` remains separate from authority, performed Work, and accepted result. |
 | `CC-SYSE24-10` | Reopening follows changed premises through affected operations, joins, and shared conditions, reconstructs the whole alternatives on the changed basis, and preserves valid branches without automatically reopening the project focus. |
 | `CC-SYSE24-11` | The method supports separate comparisons for different result kinds, including a System configuration and an engineering episteme. |
 
@@ -7210,9 +7161,9 @@ or revising the architecture candidate. Select the
 action that resolves the first unsupported answer; do not schedule every visible branch.
 
 The WorkPlan states intended Work and its conditions. Establish every later assignment, capability, resource
-availability, relation, Work occurrence, transformation, and result through its direct evidence and pattern. When Work is later performed, use `A.15.1` and `F.6` for its performer and
-attribution, `A.3.4` for actual changes, and `A.15.PROD` for production, identity-inception, or completion
-claims. Compare the resulting facts with the plan only when that separate question is current.
+availability, relation, Work occurrence, transformation, and result through its direct evidence and pattern. When Work is later performed, use `A.13` for its actual performer and `A.15.1` for independent Work admission,
+`F.6` when precise assignment-bound attribution is needed, `A.3.4` for actual changes, and `A.15.PROD` for
+production, identity-inception, or completion claims. Compare the resulting facts with the plan only when that separate question is current.
 
 #### SYSE.3:4.6 - Obtain specialist results without absorbing their Methods
 
@@ -7259,7 +7210,7 @@ The comparison in :11.1 works this choice through the pump case.
 When feasibility evidence arrives, update the branch description and WorkPlan. If one branch fails but another
 admissible branch remains, repair or replace that branch. If no admissible realization remains, reopen the
 architecture candidate or decision. Reassess the linked use-and-system concept under `SYSE.2` only when its use or concept claim must change,
-and reassess the project-system choice under `SYSE.1` only when the project focus or boundary must change. Cost already incurred supplies no
+and reassess the choice account under `SYSE.1` when its immediate engineering subject or product-use grounds must change. A revised local scope does not by itself change the product SoI. Cost already incurred supplies no
 reason to preserve an unsupported answer.
 
 ### SYSE.3:5 - Archetypal Grounding
@@ -7299,7 +7250,7 @@ For this case, the PlanItem records the following intended Work and conditions:
 | Intended Work | Compare feasible fixture and welding arrangements for the selected manifold material, geometry, tolerance, access, and interface conditions. |
 | Intended performer and local role condition | The already admitted System `StationRealizationEngineeringTeam-2` is the intended performer. The plan requires a positive classification judgment under local `FixtureAndSupplierFeasibilityInvestigatorSystemRole`, constituted in `StationRealizationFeasibilityPractice-2026` by the assignable contribution of comparing fixture-and-weld branches and producing `FixtureAndWeldFeasibilityAccount-1`. This investigation-facing condition is distinct from `SupplierWeldCell-4` as the candidate transformer System for later welding Work. The plan establishes neither the classification judgment nor an assignment occurrence. |
 | Method, capability, resources, and dependencies | The plan names `FixtureAndSupplierFeasibilityMethod-v2`; requires a current capability-fit result for the engineering team before Work entry; and supplies the architecture candidate, manifold material and geometry claims, access conditions, supplier capability statements, and their evidence references as inputs. These planned conditions establish no capability or resource availability. |
-| Planned result and affected earlier answer | The intended result is `FixtureAndWeldFeasibilityAccount-1`, which identifies a supported fixture-and-supplier branch or names the failed interface, material, module, or placement assumption that requires renewed `C.32` comparison. The result does not yet exist merely because the PlanItem names it. |
+| Planned result and affected earlier answer | The intended result is `FixtureAndWeldFeasibilityAccount-1`, which identifies a supported fixture-and-supplier branch or names the failed interface, material, module, or placement assumption that requires renewed `C.32` comparison. |
 
 `Station7RecursiveRealizationArrangement-R1 : U.Episteme` is the case result. Its EntityOfConcern is
 `StationArchitectureDecision-7` for the bounded station-realization question. It cites the provisional
@@ -7311,9 +7262,7 @@ If the fixture itself must be developed, that need opens one recursive branch fo
 capability. The engineer stops there unless this branch changes the immediate investigation. If no admissible
 weld or fixture branch remains, the engineer reopens the `C.32` comparison of interface, material, module split,
 and placement alternatives. The engineer reassesses the linked station concept under `SYSE.2` only if the concept or outside-use claim must change.
-The fixture does not become part of the pump merely because realization needs it. The supplier's shop title
-does not establish welding capability, and the WorkPlan does not establish that welding Work or manifold
-change occurred.
+The fixture does not become part of the pump merely because realization needs it.
 
 
 #### SYSE.3:5.2 - Manufacturer's ERP-enabled planning change
@@ -7343,8 +7292,7 @@ If the gap concerns who may change source definitions, which organization holds 
 authority relation applies, the engineer obtains that result from Organization Engineering or Governance
 rather than encoding it as a technical interface. If the branch cannot preserve the required decision timing
 or data meaning, the engineer reopens the `C.32` comparison of interface, placement, and responsibility
-structures. The engineer reassesses the linked planning concept under `SYSE.2` only when the planning-use claim must change. The words *platform* and *migration pipeline* establish
-neither integration capability nor one universal Work order.
+structures. The engineer reassesses the linked planning concept under `SYSE.2` only when the planning-use claim must change.
 
 
 #### SYSE.3:5.3 - Occupied building retrofit
@@ -7704,7 +7652,7 @@ whose grounds that correction can invalidate. The comparison with the old result
 neither every test nor only the originally failing one by default.
 
 Proceed when the corrected interaction meets the next step's condition and no unresolved discrepancy can
-defeat that reliance. A fix record alone does not show this. If correction is infeasible in the available
+defeat that reliance. If correction is infeasible in the available
 window, reconsider the boundary, substitute or fallback under its own supported use, or stop. Repeated fixes
 that expose the same unmodelled interaction reopen the architecture or strategy, rather than just adding
 another repetition of the same test.
@@ -7805,8 +7753,8 @@ fabrication question. The teams' dated Work and its results remain distinct from
 through welding, cooling and rework, and from the station's transformation from C18 to C19.
 
 The progression condition is substantive: correct range, direction and stop response permit the subsequent
-installed check, which then permits the whole-use trial under its own conditions. A correction entry cannot
-substitute for these results. If the manifold arrives late, the rig result remains useful for its tested
+installed check, which then permits the whole-use trial under its own conditions. If the manifold arrives
+late, the rig result remains useful for its tested
 configuration, but neither C19 nor emergency-discharge fitness has thereby been established. The team revises
 the outage plan instead of treating software completion as permission to proceed.
 
@@ -7963,7 +7911,7 @@ The construction here connects the selected integration results to SYSE.10's ord
 only when another choice is live, to C.11. The worked margin and changed buffer premise show the bounded
 consequence of that connection. They do not establish empirical superiority over a competent professional
 integration programme. Qualification of domain models, equipment and tests remains real work in every
-arrangement; the pattern does not remove its cost by naming its result.
+arrangement.
 
 Reopen the comparison when a qualified existing strategy covers a previously missing interaction, an earlier
 check fails to represent the installed relation, the cost or timing of intermediate integration changes, or a
@@ -8197,7 +8145,7 @@ The authorized Agent chooses the bounded linking change because revisions recur 
 preserving correspondence at evidence creation addresses the observed failure. The Agent accepts continuing
 binding-maintenance and recovery Work. Retaining the manual arrangement could be preferable for an infrequent
 job with adequate checks and support. This choice predicts a useful repair; its total burden advantage remains
-to be assessed. The decision record does not change the platform.
+to be assessed.
 
 A platform-engineering team configures identifier bindings, repository links, and recovery hooks. This dated Work
 is distinct from the actual transformation of the continuing platform from C4 to C5 and from the evidence that
@@ -8611,11 +8559,11 @@ different contingency and lie outside this particular decision.
 
 #### SYSE.18:5.1 - Derive and compare the alternatives
 
-The decisive timeline starts at receipt of the notice. Municipal reception remains available through hour 4;
-the fallback can receive the flow from hour 6. The unsupported interval is therefore hours 4–6. With no other
-outflow during that interval, **50 m³/h × 2 h = 100 m³** must be held. This is a storage-volume requirement,
-not yet a qualified buffer design. For a varying flow, the corresponding quantity is the accumulated net
-inflow over the unsupported interval.
+Consider the limiting permitted timeline: notice arrives four hours before municipal reception ends, and
+fallback reception begins six hours after notice. The two-hour gap at the permitted 50 m³/h requires
+**50 m³/h × 2 h = 100 m³** of storage to cover that case. This bounds the required coverage; actual demand
+may be lower. It is not yet a qualified buffer design. For a varying flow, use the accumulated net inflow
+over the unsupported interval.
 
 A supplier offers an existing mobile buffer with **120 m³ of usable storage**, qualified for the stated
 medium and connection. The supplied hydraulic assessment supports its inlet rate, location and recovery
@@ -8628,7 +8576,7 @@ The same decision compares the following arrangements for the same service inter
 
 | Arrangement | Result under the stated premises | Authority, availability and burden | Present disposition |
 | --- | --- | --- | --- |
-| Retain the four-hour notice with no buffer | Leaves 100 m³ without an allowed destination | Immediately available; violates the required result | Excluded for this use. |
+| Retain the four-hour notice with no buffer | Cannot cover the permitted two-hour gap at 50 m³/h | Immediately available; cannot meet the required coverage | Excluded for this use. |
 | Obtain six-hour notice | Could remove the unsupported interval with the current fallback | Municipal operator controls the change and cannot commit before the required date | Keep as a possible later improvement; it is unavailable for the current reliance. |
 | Shorten fallback mobilization to four hours | Could remove the same interval | Current qualified Method needs six hours; no adequate shorter Method is supplied | Return the specific development or qualification need; do not assume faster dispatch solves it. |
 | Install the qualified 120 m³ buffer | Holds the required 100 m³ and retains 20 m³ of additional usable capacity | Within the integrator's authority and date; adds hire, installation, inspection and later removal | Feasible for the declared use. |
@@ -9051,9 +8999,8 @@ a complete builder hierarchy. A branch can stop at an adequate supplied result.
 
 Explain each consequential propagation. A new protocol may require an adapter because its timing differs;
 an evidence result may need renewal because its configuration basis changed; a rig may require requalification
-because its emulator now represents a different physical response. “Everything depends on everything” gives
-no place to intervene. Conversely, an unchanged interface name does not show that timing, failure behaviour
-or support demands remain unchanged.
+because its emulator now represents a different physical response. Check timing, failure behaviour and support
+demands even when the interface name is unchanged.
 
 Distinguish two mechanisms that often get mixed:
 
@@ -9104,8 +9051,7 @@ When architecture and team responsibilities must change together, involve the af
 the same technical reasoning. Explain the constraint that failed, the proposed boundary, what later decisions
 are fixed or still open, and the evidence that would overturn the proposal. Ask the production, test and service
 contributors to carry the scenario through their work and return an incompatibility they can substantiate.
-This is part of making the technical choice usable; a diagram or an announcement does not produce shared
-understanding. Organization redesign, assignments and authority still need their own decisions and Methods.
+Organization redesign, assignments and authority still need their own decisions and Methods.
 `SYSE.6:4.1` supplies the architecture decision's fixed/open constraints and receiving uses.
 
 ##### SYSE.23:4.1.4 - Compare the transition as well as the possible future
@@ -9316,9 +9262,9 @@ applicable. These are the actual proposed joins. A matching connector or schema 
 The controller engineers can retain the other components only if the boundary preserves their relied-on
 behaviour under the required load. Test engineers can reuse a result only if the supplier change leaves the
 claim and its applicable conditions supported. Release team `RT2` must obtain support or capability for
-the new evidence argument before it is relied on. The investment can include obtaining that contribution;
-the present capability gap cannot be erased by the investment decision. The coupled slice is viable for
-development when those bounded contributions can be obtained within the stated commitment and window.
+the new evidence argument before it is relied on. The investment can include obtaining that contribution.
+The coupled slice is viable for development when those bounded contributions can be obtained within the
+stated commitment and window.
 
 The team also examines transition. Existing controllers continue using the old boundary and qualified test
 configuration while the new slice is prepared. Rig time for supporting them competes with time for adapting
@@ -9450,7 +9396,7 @@ basis.
 
 ### SYSE.23:11 - SoTA and Source Use
 
-Continued engineering can require changes in a target System, its builder platform or both. Relate those alternatives to product and problem portfolios, characterize the changes they make possible, and examine reversibility and the observations that would reopen a choice. Apply the builder question recursively when changing a builder requires changing its own means of construction.
+Continued engineering can require changes in a project system-of-interest, its builder platform or both. Relate those alternatives to product and problem portfolios, characterize the changes they make possible, and examine reversibility and the observations that would reopen a choice. Apply the builder question recursively when changing a builder requires changing its own means of construction.
 
 
 
@@ -9496,7 +9442,8 @@ make a Method or mechanism preferable.
   capabilities; `SYSE.13` for configuration and effectivity; `SYSE.15` for the Method repertoire; and `SYSE.20`
   for Method-and-Work structures. Each result keeps its own subject and use boundary.
 - `SYSE.23:4.1.1–SYSE.23:4.1.6` explains how to turn a future-change scenario into a target–builder investment comparison, including propagation, transition, joint conditions and continuing burden. `SYSE.22:4.1.6` receives a changed feasibility or burden premise only at the strength established by the investment or later Work.
-- Use `C.25` only after the quality bearer and Q-Bundle have been recovered. Use `C.30` for obtaining
+- Use `C.25` when composition among quality contributors matters: recover the bearer and those contributors
+  through its construction, retaining a single Characteristic when that suffices. Use `C.30` for obtaining
   architecture relations and selected structures, `C.32.ACS` for a small project criteria set, `C.32.HCS` for
   family-specific starter material, and `C.32.MWA` for several non-isomorphic Method, Work, subject, dependency,
   and cultural structures. None supplies the engineering decision that compares changes to the project
@@ -9513,8 +9460,8 @@ make a Method or mechanism preferable.
 - Send a human capability demand to Human Capability Development only for a named human holder population,
   target Work, support arrangement, capability evidence, and horizon. Do not treat an AI or robot as a human
   holder, or turn a platform, Method, assignment, organization, or authority relation into a capability of that
-  human population. Use `A.15.1` and `F.6` for actual Work performance and attribution, and use the pattern that
-  defines the named assignment or authority relation.
+  human population. Use `A.13` for the actual performer and `A.15.1` for independent Work admission; use `F.6`
+  when precise assignment-bound attribution is needed. Use the pattern that defines the named assignment or authority relation.
 - For organization or assignment reconfiguration, continuing flow and capacity, Method construction, or service
   intervention and restored use, use the relevant DPF result when available. Otherwise name the specialist help
   that is missing and use a qualified source. Similar change language does not merge Organization Change
@@ -9687,7 +9634,7 @@ rely only on claims whose bearer and effectivity are known for that use.
 | maintenance and return | Agents and authority for revision, receiving Work, reliance limits, blockers, and conditions for reconsidering the affected claims. |
 
 The basis may be published in a form such as text, a table, a product-data query, a model view, or a generated
-report. Publication form and repository location determine neither its identity nor its truth.
+report.
 
 #### SYSE.13:4.3 - What Changes in Practice
 
@@ -10161,7 +10108,7 @@ These recurring release errors change the next permissible action:
 | Gate pass equals release | Use the gate result as one premise and state the release subject, kind, and effectivity separately. |
 | Release equals implementation | Identify performed Work and actual transformation, or state that they remain future. |
 | Updated status equals actual configuration | Obtain evidence about the identified units and keep the status as a claim. |
-| Apply one software pipeline to every engineered System | Select review, automation, assurance, and permission by consequence, reversibility, and the actual System or intended System referent selected as the project system-of-interest. |
+| Apply one software pipeline to every engineered System | Select review, automation, assurance, and permission by consequence, reversibility, and the actual System or intended System referent selected for engineering and the use this release permits, including bounded creator acceptance when that is the current question. |
 | All units inherit one release | Name supported units and conditions; narrow or withhold the rest. |
 | A changed source reopens everything | Trace the changed claim and reconsider only the affected decisions. |
 
@@ -10833,8 +10780,8 @@ challenge, five short entries make its contribution recoverable:
    the practitioner must reassess if the result does not support present reliance.
 
 The five entries describe the engineering-assurance plan; their order explains the proposal rather than
-prescribing Work order. Coordinate a selected future challenge in a separate `A.15.2` WorkPlan; the assurance
-plan cites it. Section 4.3 and the pump example give the precise plan identity and coordination content.
+prescribing Work order. When a selected future challenge needs a separately identified coordination plan,
+use an `A.15.2` WorkPlan and cite it. Section 4.3 and the pump example give that plan's identity and coordination content.
 
 When results already exist, reuse or update the engineering-assurance account: state the result, why it bears
 on the claim, its limits and the affected earlier answer (§§4.4–4.5). A supported answer or justified stop can
@@ -10934,9 +10881,10 @@ evidence use; otherwise keep that part inapplicable. Establish any changed evide
 direct pattern (§4.4) before relying on it. Reuse the compatible claims and cited evidence while keeping the
 neighbouring decision and authority separate.
 
-If the evidence already exists, recover its direct result and descriptive `A.10` evidence/provenance path, then
-reuse or update the account without another WorkPlan. If these neighbouring results supply no compatible basis,
-use a qualified direct source or state the gap limiting the present answer.
+If the evidence already exists, recover its direct result and the grounds needed for this use, then
+reuse or update the account without another WorkPlan. Use `A.10` when the source-to-use account is implicit
+or must remain replayable. If these neighbouring results supply no compatible basis, use a qualified direct
+source or state the gap limiting the present answer.
 
 For a remaining evidence gap, ask: **what attainable result could change reliance or make a needed use
 admissible?** Use `C.11.DUA` to compare obtaining it with proceeding on the present basis, narrowing the claim,
@@ -10957,9 +10905,10 @@ When further inquiry is selected, choose a challenge sufficient for its stated p
   decision question.
 
 State the challenge's intended Method, subject, configuration, conditions, scale or criterion, uncertainty
-treatment, time window, intended result form, and intended evidence use. When Work is still intended, put performer,
-local system-role-kind condition, Method, window, capability needs, resources, dependencies, and result target
-in a separate `A.15.2` WorkPlan. The engineering-assurance plan cites that WorkPlan; it is not the WorkPlan.
+treatment, any time window needed for the use, intended result form, and intended evidence use. When future
+Work needs a separately identified coordination plan, put its performer, local system-role-kind condition,
+Method, window, capability needs, resources, dependencies, and result target in an `A.15.2` WorkPlan.
+The engineering-assurance plan cites that separate WorkPlan.
 
 Apply any independence or authorization requirement governing the decision. Even without such a requirement,
 independent criticism can be useful when it exposes a consequential blind spot or conflict of interest; choose
@@ -10983,7 +10932,7 @@ The engineering-assurance plan is a C.2.1 claim-bearing episteme. Its one Entity
 load-bearing claim episteme. Its ClaimGraph states the planned challenge, decision question, validity boundary,
 and possible affected earlier answer as claims and references concerning that target claim. The other named
 entities remain participants in those claims rather than a composite subject. Use `C.2.1` to identify the claim
-content, target claim, and effective reference scheme. The plan performs no Work. Changed identity-bearing content
+content, target claim, and effective reference scheme. Changed identity-bearing content
 can identify another episteme. A later engineering-assurance account is not automatically an edition of the plan
 merely because a file or identifier is reused; claim identity and any edition relation remain with `C.2.1`.
 
@@ -10993,8 +10942,8 @@ receiving decision needs it.
 
 #### SYSE.4:4.4 - Recover performed Work, direct results, and evidence use
 
-When the challenge is performed, identify the dated Work and performer through `A.15.1` and the applicable
-assignment and Work-attribution patterns. Then use the direct pattern for the result:
+When the challenge is performed, recover the actual performer through `A.13` and independently admit the dated
+Work through `A.15.1`. Use `F.6` when precise assignment-bound attribution is needed. Then use the direct pattern for the result:
 
 - `C.16` for a measurement result, its uncertainty, and comparability;
 - `C.32.ACE` for an architecture-characteristic eval programme and its separately typed result;
@@ -11003,7 +10952,7 @@ assignment and Work-attribution patterns. Then use the direct pattern for the re
 - the applicable test, comparison, acceptance, safety, security, legal, certification, or other specialist
   result pattern when that is the actual claim.
 
-Use `A.10` to make the descriptive claim-bound evidence/provenance path replayable. Keep the source, carrier,
+Use `A.10` when the source-to-use account is implicit or a replayable descriptive claim-bound evidence/provenance path is required. Keep the source, carrier,
 performed Work, result, result episteme, provenance relation, currentness assessment, evidence use, assurance
 result, and decision question distinct. The path represents independently established relations; it moves no
 result and creates no evidence relation. Use `G.11` and `C.27.TA` when source currentness, evidence age, calibration,
@@ -11024,8 +10973,7 @@ consequential premises: for example, a model applies to the actual load and supp
 cover the operating range; a component result also holds under the system's interactions; or an observed change
 can be attributed to the proposed intervention. State which premise is established, which remains an assumption,
 and why the assumption is acceptable for this use. An assumption cannot replace evidence required by an applicable
-rule. Return a causal step to `C.28` and a model-applicability step to `A.1.1`; citing their names does not supply
-their results.
+rule. Return a causal step to `C.28` and a model-applicability step to `A.1.1`.
 
 Try to defeat the consequential step. Could the same observation occur while the intended claim fails? Look for
 a credible alternative explanation, omitted operating condition, common source of error, or interaction that
@@ -11034,8 +10982,7 @@ remains unresolved, narrow the claim to the supported conditions or retain the u
 whether resolving it warrants further inquiry. A flaw in the argument removes that support, but establishes the
 claim's negation only when the counter-evidence and reasoning actually support that stronger conclusion.
 
-Keep only assumptions and challenges that can change this use. The purpose is to make the engineer's reason
-inspectable, not to fill every possible branch of an assurance case. Section 5.3 demonstrates this construction
+Keep only assumptions and challenges that can change this use. Section 5.3 demonstrates this construction
 when an analysis and observations must jointly support a claim about a staged change.
 
 #### SYSE.4:4.5 - Update the engineering-assurance account
@@ -11045,7 +10992,7 @@ account so that the practitioner can recover:
 
 1. the named target claim and decision question;
 2. the actual challenge Work and its direct result;
-3. the descriptive `A.10` evidence/provenance path and currentness basis;
+3. the provenance and currentness grounds needed for this use, with an `A.10` path when the source-to-use account is implicit or must remain replayable;
 4. the result's configuration, condition, scale, uncertainty, and applicability limits;
 5. the reason it supports, contradicts, or leaves unresolved the target claim, including the consequential
    assumptions, coverage and disposition of criticism developed in §4.4;
@@ -11216,8 +11163,8 @@ not establish that stage B must fail.
 
 Return to the temporary-support/access arrangement in `SYSE.3` and the dependent sequence choice.
 The engineer can use §4.2 to compare retaining T, changing the sequence, obtaining a specialist analysis for the
-transition, or stopping that proposed continuation. A selected future analysis or inspection receives a separate
-`A.15.2` WorkPlan; an already sufficient amended specialist argument can be reused. The account identifies
+transition, or stopping that proposed continuation. Use a separate `A.15.2` WorkPlan when the selected future
+analysis or inspection needs that coordination; reuse an already sufficient amended specialist argument. The account identifies
 `OccupiedRetrofitSequenceQuestion-3`, the applicable results, the failed premise, the narrower conclusion and
 the condition for reopening it. A changed load, support configuration or observation window also reopens use.
 
@@ -11238,9 +11185,9 @@ answers it can change.
 | --- | --- |
 | `CC-SYSE4-1` | A conforming use SHALL name one load-bearing claim episteme, its subject, conditions, configuration or version, temporal stance, and decision question. |
 | `CC-SYSE4-2` | The first result SHALL state what the present basis supports for the decision and its limits. A selected challenge SHALL name the question it can change, its validity boundary, and the earlier answers affected. Further inquiry SHALL be chosen by its attainable contribution, burden and applicable requirements; an inactive inquiry SHALL create no empty plan or waiver record. |
-| `CC-SYSE4-3` | Intended challenge Work SHALL be coordinated through a separate `A.15.2` WorkPlan; the engineering-assurance plan SHALL NOT be treated as that WorkPlan or as performed Work. |
+| `CC-SYSE4-3` | When intended challenge Work needs a separately identified coordination plan, it SHALL use an `A.15.2` WorkPlan with its required content. The engineering-assurance plan SHALL remain distinct from that WorkPlan and from performed Work. |
 | `CC-SYSE4-4` | Performed challenge Work and its performer SHALL be identified through the direct Work and assignment patterns, and every measurement, evaluation, model-use, causal, test, or specialist result SHALL satisfy its own pattern. |
-| `CC-SYSE4-5` | An evidence use SHALL name the target claim, result, conditions, provenance, currentness, and bounded use through `A.10`; its descriptive path SHALL represent only independently established relations, and a carrier, result record, or graph edge SHALL NOT establish the use by presence. |
+| `CC-SYSE4-5` | An evidence use SHALL name the target claim, result, conditions, bounded use, and the provenance and currentness grounds needed for that use. `A.10` SHALL be used when the source-to-use account is implicit or must remain replayable; its descriptive path SHALL represent only independently established relations, and a carrier, result record, or graph edge SHALL NOT establish the use by presence. |
 | `CC-SYSE4-6` | `B.3` SHALL be applied when an actual named assurance claim is current, including one required by a direct domain rule. Consequence or material reliance alone SHALL NOT create that claim. The DPF account SHALL NOT substitute for the B.3 result or for direct domain obligations. |
 | `CC-SYSE4-7` | Model, simulation, test, and digital-twin results SHALL retain their applicability, error, uncertainty, extrapolation, configuration, and evidence limits. |
 | `CC-SYSE4-8` | Component behaviour, containing-System performance, outside effect, causality, benefit, harm, acceptance, permission, certification, release, and decision SHALL remain separately recoverable. |
@@ -11352,8 +11299,8 @@ challenge or comparative use evidence makes the compact account insufficient or 
   qualified direct evidence sources or record the missing assessment. Using the assessment gives no experiment
   choice, technical decision, assurance conclusion, acceptance, permission, or release authority.
 - A `SYSE.11` result may supply the compatible integration and observed-use evidence identified under §4.2. The practitioner uses `SYSE.4` to qualify
-  that evidence through `A.10` and record an assurance or reliance conclusion. If the result is unavailable,
-  stale, outside scope, or incompatible, use a qualified direct source or record the missing integration or use
+  that evidence under its direct rules and record an assurance or reliance conclusion, using `A.10` when the
+  source-to-use account is implicit or must remain replayable. If the result is unavailable, stale, outside scope, or incompatible, use a qualified direct source or record the missing integration or use
   evidence. Using the result gives no modernization choice, release, permission, or assurance authority.
 - A `SYSE.14` change-and-release decision may supply compatible cited evidence, a configuration/effectivity
   basis and unresolved conditions as identified under §4.2. The practitioner uses `SYSE.4` to qualify that evidence and may narrow reliance,
@@ -11361,14 +11308,14 @@ challenge or comparative use evidence makes the compact account insufficient or 
   qualified direct evidence and configuration sources or record the missing change-and-release result. Using the
   decision episteme as a source gives no release authority, permission, or assurance conclusion; it also does not
   substitute for the evidence it cites.
-- Use `A.15.2` for the intended challenge WorkPlan. Use `A.15.1`, the applicable system-role assignment pattern,
-  and Work-attribution patterns when the challenge Work actually occurs. Naming the DPF plan or account does not
-  establish an assignment, performer capability, resource availability, performed Work, result, or obtaining
-  transformation.
+- Use `A.15.2` when the intended challenge needs a separately identified WorkPlan. For actual challenge Work,
+  recover the performer through `A.13` and independently admit Work through `A.15.1`; use `F.6` when precise
+  assignment-bound attribution is needed. Establish the consumed assignment, capability, resource, result and
+  transformation claims through their direct grounds.
 - Use `C.16` for measurement, `C.32.ACE` for architecture-characteristic evaluation, `A.1.1` for model
   applicability and use, and `C.28` for causal use. Each result retains its subject, Method, configuration,
   uncertainty, applicability, and validity limits before it can be used as evidence.
-- Use `A.10` to recover the descriptive claim-bound evidence/provenance path. Use `G.11` and `C.27.TA` when currentness,
+- Use `A.10` to recover the descriptive claim-bound evidence/provenance path when the source-to-use account is implicit or must remain replayable. Use `G.11` and `C.27.TA` when currentness,
   decay, calibration, configuration time, or an observation window changes admissible use. Use `B.3` only for an
   actual named assurance claim, including one required by a direct domain rule. Direct evidence, safety, gate,
   permission and release questions retain their own rules; consequence alone opens no B.3 use.
@@ -11392,8 +11339,7 @@ toolchain, or AI workflow supplies the whole engineering Method, yet practitione
 cannot say which reusable Methods the project's Agents should apply in Work to obtain the results their current decisions need. Use it also when a local automation
 makes one task faster while integration, assurance, rework, or the engineered System shows no benefit.
 
-Begin with one recurring engineering result that is missing, unreliable, or too costly. State the project
-System-of-interest, the relevant use and conditions, and the decision that needs the result.
+Begin with one recurring engineering result that is missing, unreliable, or too costly. State the actual System or intended System referent selected for engineering, its relevant use and conditions, and the decision that needs the result. For a creator, retain the products or future uses that ground its required contribution.
 Then identify and compare reusable ways of obtaining that result without importing an entire source bundle.
 
 The first useful result is a **decision account for the project's engineering Method repertoire**. It states
@@ -11497,9 +11443,7 @@ leave a gap with evidence and a reopen condition.
 
 #### SYSE.15:4.1 - Perform the Move
 
-1. **Name the engineering result and receiving decision.** State the actual System or intended System referent selected as the project system-of-interest, relevant use,
-   configuration, conditions, decision horizon, intended users of the account, and the first recurring result whose
-   Method is missing or doubtful.
+1. **Name the engineering result and receiving decision.** State the actual System or intended System referent selected for engineering, relevant use, configuration, conditions, horizon, account users and the first recurring result whose Method is missing or doubtful. For a creator, keep its product-use grounds and local acceptance identifiable.
 2. **Recover candidate Methods from Work.** Inspect representative Work, including successful, failed, and
    difficult occurrences. For each candidate, recover the reusable action, generic participant meanings,
    conditions, intended result, applicability limits, and evidence. Keep actual performing Agents, assignments, capabilities, and authority
@@ -11508,7 +11452,7 @@ leave a gap with evidence and a reopen condition.
    standards, handbooks, lifecycles, model-based frameworks, AI workflows, or local traditions. Apply `A.3.1`
    before identifying a Method and `A.3.2` before relying on a MethodDescription. Keep an unresolved cue when the
    reusable way cannot yet be stated.
-4. **Compare the same result under the same conditions.** Hold the result, actual or intended System kind stated in the project-system choice account, use,
+4. **Compare the same result under the same conditions.** Hold the result, System kind identified for the engineering subject, use,
    configuration, evidence needs, and protected losses stable while varying the Method. A new tool, description,
    assignment, or parameter is not automatically a new Method. State the criterion that will prefer one
    feasible option, including continuing with an adequate existing Method. Compare the work needed through
@@ -11543,16 +11487,15 @@ platform development, and Method development can overlap and recur; choose Work 
 
 | Field | Required content |
 | --- | --- |
-| use boundary | Project System-of-interest, use, configuration, relevant conditions, decision horizon, intended account users, recurring engineering results, and protected losses. |
+| use boundary | Actual System or intended System referent selected for engineering, use, configuration, conditions, horizon, account users, recurring results and protected losses; product-use grounds and bounded acceptance when it is a creator. |
 | Method choices and open cues | Methods retained now, alternatives, replacements, exclusions, proposed developments, unresolved cues, and relied-on MethodDescriptions or direct sources. |
 | Method identity | For each Method: reusable action, generic participant meanings, intended result or preserved condition, applicability, and limits. |
-| Method relations | Supported classifications, whole–part participation, alternatives, refinements or replacements, result uses, and compatibility claims. Table order supplies no relation. |
+| Method relations | Supported classifications, whole–part participation, alternatives, refinements or replacements, result uses, and compatibility claims. |
 | representative Work evidence | Work situation, performing Agents, assignments, enacted Methods, relevant Systems, results, evidence limits, System consequences, integration loss, cost, time, capability, and platform observations. |
 | separate realization gaps | Missing capable Agent, assignment, provider result, platform capability, permission, evidence, or authority; receiving decision for each gap. |
 | decision and currentness | Authorized choosing Agent, retained and excluded Methods, reasons, accepted losses, source status, currentness window, and material reconsideration conditions. |
 
-Use a `G.5` shortlist or joint-use set only when a later selector needs that formal result. The ordinary repertoire
-account does not create Method membership, capability, provider availability, cultural uptake, or performed Work.
+Use a `G.5` shortlist or joint-use set only when a later selector needs that formal result.
 
 #### SYSE.15:4.3 - What Changes in Practice
 
@@ -11682,7 +11625,7 @@ These recurring substitutions hide a Method choice or send the project to the wr
 | AI speed stands for engineering improvement | Compare generation gains with review, integration, assurance, maintenance, and System consequences. |
 | Missing capable Agent or platform is called a bad Method | Keep the Method choice and return the separate capability, provider, assignment, or platform gap. |
 | Visibility stands for prevalence | State observed use or a bounded expert estimate; publication and teaching coverage establish neither enactment nor retention. |
-| Generalize one application profile to all engineering | Preserve the project-system choice and domain boundary and obtain the relevant specialist result. |
+| Generalize one application profile to all engineering | Preserve the engineering subject, product-use grounds and domain boundary and obtain the relevant specialist result. |
 
 ### SYSE.15:9 - Consequences
 
@@ -11699,7 +11642,7 @@ them behind a universal process name.
 
 FPF supplies general Method identity, descriptions, specialization, whole–part relations, Work, cultural change,
 and source-use discipline. Systems Engineering adds the recurring subject-specific question: for the actual
-or intended System selected by this project-system choice under these physical and organizational conditions,
+or intended System referent selected for engineering under these physical and organizational conditions,
 which reusable Methods should the project's Agents apply in Work to obtain the connected engineering results—
 for example, concept, modeling, realization, integration, configuration, assurance, release, or continuing-change
 results—and what did representative Work applying those Methods actually produce?
@@ -11902,8 +11845,7 @@ the project's engineering Work occurs as eight consecutive stages.
    consequence. Every claimed local gain names any material burden moved to another Agent, System, decision, or
    time interval.
 6. **Alternatives.** The Agent develops a finite current option set whose members change at least one named
-   relation. Renaming a diagram or citing an ungrounded Method creates no new option. The incumbent remains when
-   it is feasible.
+   relation. Keep the feasible incumbent.
 7. **Choice.** The authorized Agent uses `C.11` or a domain decision Method to compare the fixed option set on one
    stated basis and choice rule. Record the actual outcome: a selected alternative or retained tie-set with its
    grounds; rejection of the current set with its reason; a chosen next probe and the comparison defect it would
@@ -12007,7 +11949,7 @@ the word “local”. Use SYSE.12 when that support arrangement itself requires 
 
 Keep the feasible incumbent in the comparison. Do not generate many variants that differ only in names or
 diagram layout. C.18 helps when a genuinely different alternative is still missing; C.11 compares the
-resulting option set. Neither citation fills an unconstructed engineering arrangement.
+resulting option set.
 
 ##### SYSE.20:4.1.4 - Follow every option through the whole resource and evidence arrangement
 
@@ -12045,8 +11987,7 @@ options remain tied or none is feasible, return that outcome and its reason rath
 The decision states the selected change, any required permission and its conditions, the responsible performers
 and what would reopen the choice. Implementation makes the necessary resources and instructions available: reserve the
 windows, establish the service configuration, communicate the agreed inputs and change returns, and revise
-the applicable WorkPlan or MethodDescription. Editing the description alone does not supply a rig, qualified
-specialist or provider response.
+the applicable WorkPlan or MethodDescription.
 
 Observe a representative performance far enough to see the result used. Did the intended inputs arrive
 under their stated configurations? Could the operations share their resources as planned? What preparation
@@ -12168,6 +12109,9 @@ for the model or simulation, and the first 15 minutes of review need not wait fo
 only that independent work earlier constructs B. Finally replace the unavailable shared-service interval
 with the qualified local alternative to construct C, including the laboratory engineer's competing setup.
 
+The schedules use the shared provider's latest qualified ready time. They show completion bounds under the
+stated durations and availability; earlier actual recovery may allow an earlier start.
+
 | Operation or result | A — serialized | B — independent preparation overlaps | C — qualified local solver |
 | --- | --- | --- | --- |
 | Model correction | 0–25 | 0–25 | 0–25 |
@@ -12181,8 +12125,8 @@ with the qualified local alternative to construct C, including the laboratory en
 | First usable recommendation | minute 135 | minute 100 | minute 82 |
 | Additional continuing service maintenance | none | none | two laboratory hours per week |
 
-A is eligible as an evidence arrangement but fails the deadline. In B, the test starts at
-max(20, 68+2) = 70. Review preparation finishes with the test, so the recommendation is ready at 95+5 = 100.
+A is eligible as an evidence arrangement but its schedule does not meet the deadline. In B, the test starts
+by max(20, 68+2) = 70. Review preparation finishes with the test, so the recommendation is ready by 95+5 = 100.
 Every required result is joined; early review is preparation, not early release.
 
 For C, placing local setup at 0–15 and rig setup at 15–35 avoids simultaneous demands on the laboratory
@@ -12199,15 +12143,16 @@ there is no supported “ten-minute delay”: its minute-90 output never met the
 
 The lead authorizes implementation of B. The project makes the resource reservations and input/update
 arrangements real, updates the plan and review instructions, and follows the next representative run to its
-usable recommendation. A description alone cannot establish that performance. The provider availability and
+usable recommendation. The provider availability and
 compatibility requirement can constrain SYSE.12; the resulting project observation can enter SYSE.21.
 
 #### SYSE.20:5.4 - Change one provider condition and retain the valid work
 
 Before execution, the provider revises its latest ready time from 43 to 60. All other stipulated conditions
-remain available. B now gives simulation 60–85, interpretation 85–87, test 87–112, preparation 97–112 and
-final review 112–117. Its individual operations remain technically usable, but the whole misses minute 105.
-Do not retain B merely because each operation still has a valid Method.
+remain available. At that latest time, B gives simulation 60–85, interpretation 85–87, test 87–112,
+preparation 97–112 and final review 112–117. Its operations remain technically usable, but this bound no
+longer guarantees the minute-105 deadline. Earlier observed availability or a tighter qualified bound can
+change that conclusion; otherwise choose an arrangement that supplies the required guarantee.
 
 C still finishes at 82 under its unchanged availability and qualification premises. The lead can choose it
 within the stated authority and accept its maintenance burden. The model, rig Method and review split do
@@ -12230,8 +12175,7 @@ qualification come from the assembly specialists.
 A successful joint fit permits the specified final-design step; an interference returns to the affected
 geometry. If the needed movement exceeds the fixture's permitted range, its qualification no longer
 supports that trial: obtain another means or revise the proposal. The fixture work may be reversible while
-drilling final holes is not. Keep drilling behind the required fit and authorization condition. Repeating
-“work concurrently” supplies neither the provisional interface nor this return.
+drilling final holes is not. Keep drilling behind the required fit and authorization condition.
 
 ### SYSE.20:6 - Bias Annotation
 
@@ -12493,7 +12437,7 @@ If the relevant difference cannot be resolved now, compare retaining the qualifi
 
 Start from a credible current way where one exists. Identify what the receiving engineering action must still obtain, and construct a change that can remove the diagnosed limitation. This can produce a different engineering Method, different support for the same Method, a profile-specific branch, or a return to a qualified earlier way. Keep these meanings separate when deciding what to preserve and transmit. Use `A.3.1` when Method identity or refinement matters to that decision.
 
-For each proposed change, first work backward from the receiving use. An integration review may need accepted impact claims about the selected controller configuration, with reasons and recoverable sources. Faster candidate generation alone does not supply those claims. It needs a way to connect each candidate to the applicable source and configuration, competent review, and a result the integration review can interpret. Construct the missing link, obtain an adequate supplied operation, or retain the branch as unsupported. A bibliography or a promise to provide the evidence later is not that operation.
+For each proposed change, first work backward from the receiving use. An integration review may need accepted impact claims about the selected controller configuration, with reasons and recoverable sources. Faster candidate generation alone does not supply those claims. It needs a way to connect each candidate to the applicable source and configuration, competent review, and a result the integration review can interpret. Construct the missing link, obtain an adequate supplied operation, or retain the branch as unsupported.
 
 Then follow the arrangement forward on representative material. Identify what the next practitioner receives, why it can be used, and which state, scope, independence, evidence or authority condition permits that use. Include the means that made the earlier trial succeed. A model-based or AI-assisted variant can retain independent engineering judgement; an instruction that silently transfers that judgement to the tool proposes a different arrangement. Inspect simultaneous demands: the same scarce assurance pair cannot provide two overlapping reviews merely because each cell's local estimate fits its own limit. `SYSE.20` resolves a consequential Work-order or shared-resource conflict; the variant inherits the resulting condition.
 
@@ -12515,7 +12459,7 @@ When intervention is selected, use [FPF A.3.1.MI:4.1–A.3.1.MI:4.5](https://git
 
 Prepare what a receiving practitioner needs at the point of action: the applicable description and worked example, permitted inputs and tools, reasons for the consequential choices, recognition of a branch or stop, and access to necessary expertise and response. Explain which technical choices are fixed by the receiving use and which remain open. Let receiving engineers expose an incompatible interface, missing datum or impossible review demand; use that information to repair the variant or its conditions. Technical explanation and joint problem solving support uptake without replacing another Agent's specialist authority.
 
-Transmission occurs when the relevant carrier becomes available. Receiving enactment needs actual Work under the applicable conditions. Observe which assistance that Work used before claiming independent capability or a readily repeatable practice. Arrange later retrieval and support where continuation depends on them: maintained configuration mappings, examples of accepted and rejected impacts, review capacity, usable feedback and an accountable response. A campaign announcement or attendance record alone supplies none of these results.
+Transmission occurs when the relevant carrier becomes available. Receiving enactment needs actual Work under the applicable conditions. Observe which assistance that Work used before claiming independent capability or a readily repeatable practice. Arrange later retrieval and support where continuation depends on them: maintained configuration mappings, examples of accepted and rejected impacts, review capacity, usable feedback and an accountable response.
 
 Use `OCE.10` when the selected response changes participation or working-culture conditions. Obtain an organizational decision for changed responsibility or authority; do not embed that decision in an engineering instruction. Use `HCD.1` only when a real receiving decision needs an identified human capability demand. A functioning existing capability, or a failure attributable to unavailable access, does not create a training requirement.
 
@@ -12854,7 +12798,7 @@ The chosen next result is a limited comparison of the current interaction with a
 
 This selects an improvement question and probe, not a shared-platform winner. The identity and environment repair can be implemented locally or through a thin shared provision. Without matched maintenance and failure evidence, those complete obtaining arrangements remain tied under SYSE.24. The unsupported language-specific variant remains outside the probe.
 
-If the comparison removes identity confusion but slow or unreliable feedback remains, the next question goes to SYSE.31. A healthy artifact path does not repair the old rollback failure; that still needs the actual data construction in SYSE.34. The team has gained a concrete next action and a way to reject a cosmetic change, rather than another broad feature promise.
+If the comparison removes identity confusion but slow or unreliable feedback remains, the next question goes to SYSE.31. A healthy artifact path does not repair the old rollback failure; that still needs the actual data construction in SYSE.34.
 
 Suppose the bounded trial contains six matched attempts. On both routes, the same two artifact transfers fail once. The repair returns the tested artifact identity in all six outcomes, including the failures, and the developer can distinguish retrying a transfer from rebuilding a package. The existing route requires two manual identity reconciliations. The provider performs no new per-attempt reconciliation. This supports the functional result for the tested service class; a repair that merely hides the two failed transfers would fail the question.
 
@@ -13013,7 +12957,7 @@ Explain the path's technical decisions to practitioners and contributors. Demons
 
 #### SYSE.26:4.5 - Exercise the interaction before relying on it
 
-Try the supported case with a representative user and the intended result consumer. Include one valid variation, one invalid or unsupported request, one delayed attempt and one interrupted operation whose effect may already have occurred. Check that each leaves an intelligible next move and preserves the result's identity.
+Try the supported case with a representative user and the intended result consumer. Select further cases from the supported variants and actual failure modes: a valid variation, an invalid or unsupported request, delay where timing matters, and interruption where an operation's effect may already have occurred. Check that each selected case leaves an intelligible next move and preserves the result's identity.
 
 A desk walkthrough tests the description. A trial against the actual provision tests more: whether the request reaches the right System, the operation works under the stated conditions and the result can be used. Keep those evidence claims separate. SYSE.12 distinguishes a readiness assessment made before relying work from a later assessment of actual use; SYSE.36 helps observe software-service user tasks. Stop at the design result or bounded trial result that the current decision needs.
 
@@ -13164,7 +13108,7 @@ Make dependencies explicit: a contribution may require a toolchain, resource, pe
 
 Choose a maintained extension point only where independently changing use justifies it. A small parameter or documented composition may be enough; an open-ended plugin system can cost more to secure, qualify and support than the variants it enables.
 
-Give contributors the decision basis, not only submission mechanics. Explain which user result the boundary protects, why the fixed conditions matter and which alternatives remain acceptable. Provide a small example they can adapt and a way to see whether their proposed result can be consumed. When a proposal fails, return the failed condition and the observed case so that the contributor can revise the technical idea. This is technical mentoring; it does not turn the reviewer into the contributor's manager.
+Give contributors the decision basis, not only submission mechanics. Explain which user result the boundary protects, why the fixed conditions matter and which alternatives remain acceptable. Provide a small example they can adapt and a way to see whether their proposed result can be consumed. When a proposal fails, return the failed condition and the observed case so that the contributor can revise the technical idea.
 
 Agree the continuing work before offering a new supported extension. The contributor may supply domain implementation and examples while the platform provider supplies integration, distribution and first-line diagnosis. Establish who handles an incompatible update, an absent maintainer or an urgent failure. An experimental contribution can remain available under an explicit experimental scope until those conditions are supplied. Acceptance into a repository and a promise of continued support are different decisions.
 
@@ -13172,7 +13116,7 @@ For copied templates, explain how future change reaches existing instances: a ma
 
 #### SYSE.27:4.4 - Exercise effects on consumers
 
-Run or construct the selected compatibility cases against the old and proposed behavior. Include a representative normal request, defaults or omitted input, a supported limit, a failure and a legitimate unsupported need. Add cases only where their result can change acceptance.
+Run or construct the selected compatibility cases against the old and proposed behavior. Include normal use and the defaults, limits, failures or unsupported requests that can change acceptance under the actual contract.
 
 Use the intended result consumer to interpret the outputs. A request that is syntactically accepted but receives a different unit, deadline or configuration is not compatible merely because the interface returns success.
 
@@ -13295,7 +13239,7 @@ A second failure is to merge different results: advice, an observed property, a 
 
 Name the property, the subject to which it applies, its effectivity and the action that depends on it. Recover the actual deciding holder and any authorized exception conditions. Keep the constraint's justification separate from the proposed technical implementation.
 
-Identify what evidence or qualified procedure can answer the property question. If the domain test itself is missing, return that Method gap. A platform wrapper cannot qualify a security, measurement, safety or legal judgement by executing a script.
+Identify what evidence or qualified procedure can answer the property question. If the domain test itself is missing, return that Method gap.
 
 Use SYSE.4 for the relation between evidence and the engineering claim, and SYSE.14 when the consuming action is a release decision. This pattern determines where the supplied control can usefully act.
 
@@ -13339,13 +13283,13 @@ Treat an exception as a different authorized continuation with its own scope and
 
 #### SYSE.28:4.5 - Exercise the control where it will be relied on
 
-Use a normal case, a known violating case, a subject substitution and a checker-unavailable case. Confirm that the intended dependent action receives the right outcome and explanation. Check any authorized exception path separately.
+Select normal and violating cases, subject substitution and checker unavailability according to the ways the chosen control can fail its receiving use. Confirm that the intended dependent action receives the right outcome and explanation. Check any authorized exception path separately.
 
 For consequential reliance, also inspect whether the controlled property can change between observation and use. Bind the result to the actual subject or protect that interval with a qualified mechanism. A green check followed by an uncontrolled substitution does not protect the receiving action.
 
 Return the placement, mechanism, outcome interpretation, applicable conditions and remaining gaps. Safety or compliance claims that rely on the control require their own domain evidence; placing the check is not that qualification.
 
-Exercise the join between observation and action as well as the checker. Substitute the subject after an early pass, change an applicability condition, and try an allowed alternative entry that reaches the same reliance. For an ongoing condition, vary it during use and inspect whether the stated response can occur soon enough. Use only trials permitted by the domain and perform destructive or hazardous cases through an adequate safe substitute when needed. A desktop description establishes the logic being proposed; the actual control path still needs its relevant implementation and domain evidence.
+Exercise the join between observation and action as well as the checker. Use the actual ways that join can fail: subject substitution after an early pass, changed applicability, or an allowed alternative entry reaching the same reliance. For an ongoing condition, vary it during use and inspect whether the stated response can occur soon enough. Use only trials permitted by the domain and perform destructive or hazardous cases through an adequate safe substitute when needed. A desktop description establishes the logic being proposed; the actual control path still needs its relevant implementation and domain evidence.
 
 ### SYSE.28:5 - Archetypal Grounding
 
@@ -13483,7 +13427,7 @@ Arrange the increment with the users and providers who must perform it. Confirm 
 
 #### SYSE.29:4.4 - Exercise the receiving use and its failure branch
 
-Perform a bounded trial or a clearly labelled rehearsal before widening reliance. Check the result through a representative consumer, not merely through a successful transfer job. Include relevant old state, permissions, a material variant and a partial-failure case.
+Establish qualified receiving use before widening reliance. Reuse a matching qualified result; perform a bounded trial or a clearly labelled rehearsal where its required basis is missing. Check the result through a representative consumer, including the old state, permissions, variants and partial-failure cases that can defeat this transition.
 
 After an interrupted step, recover what actually changed before retrying. Test the claimed return or forward repair under the applicable state conditions. Keep a successful ordinary case from qualifying an unexercised recovery or infrequent-use branch.
 
@@ -13517,9 +13461,9 @@ Two continuations are possible. If a bounded recovery exercise and metadata-read
 
 Choose the first continuation for a complete illustrative outcome. The provider supplies a tested metadata decoder preserving artifact, recipe, synthetic-data identity and result references; the quarterly consumer performs its representative recovery exercise on v2 with the needed access. Both daily uses and that recovery use now have qualified receiving routes under the stipulated conditions. New requests to v1 can end, while the retained decoder and protected evidence remain available for the applicable retention period. The provider closes the served endpoint only; deletion of the old records remains a separate decision. These are constructed case results, not a report of an actual migration.
 
-Change the condition: the external provider now withdraws the old endpoint before the quarterly exercise can be performed, and no qualified return remains after v2 starts writing its new-only state. Indefinite v1 support is no longer a feasible option. The holders compare a temporary outside recovery arrangement, postponing the state-changing move, or an authorized interruption of that recovery promise. If none is qualified or permitted, the affected migration remains unresolved. Ordinary v2 uses whose conditions are independent can continue. The disappearance of a provider does not make the missing recovery result true.
+Change the condition: the external provider now withdraws the old endpoint before the quarterly exercise can be performed, and no qualified return remains after v2 starts writing its new-only state. Indefinite v1 support is no longer a feasible option. The holders compare a temporary outside recovery arrangement, postponing the state-changing move, or an authorized interruption of that recovery promise. If none is qualified or permitted, the affected migration remains unresolved. Ordinary v2 uses whose conditions are independent can continue.
 
-The decision records which continuation obtains.
+
 
 For a physical inspection or machining path, exit also requires transferable tooling, programs, relevant rights and a provider capable of producing the required result. Sending a drawing does not qualify the receiving setup. Reverting the old program cannot restore material already removed from a component; recovery may require segregation, inspection, rework or replacement under the applicable engineering decision.
 
@@ -13643,7 +13587,7 @@ Choose a sharing scope from actual interaction. Components that exchange one lib
 
 Give each relevant instance and binding an unambiguous place in the proposed configuration. “Use library 2” is incomplete if two processes have different instances and only one is updated. A single global version is also unnecessarily restrictive when the consuming contract permits qualified isolation.
 
-Test isolation at the point where results meet. If two isolated tools exchange a versioned file, recover the file schema, units, state and permitted losses at that boundary. If a proposed adapter translates between them, its supported transformation becomes another component and another requirement; its name supplies no compatibility. SYSE.27 and SIE.7 develop that changed interface and mapping. Return a missing boundary result before relying on isolation.
+Test isolation at the point where results meet. If two isolated tools exchange a versioned file, recover the file schema, units, state and permitted losses at that boundary. If a proposed adapter translates between them, its supported transformation becomes another component and another requirement. SYSE.27 and SIE.7 develop that changed interface and mapping. Return a missing boundary result before relying on isolation.
 
 Keep shared resource and authority conditions when they affect feasibility. Two individually usable instances can still exceed the available capacity or lack permission for concurrent use. Model those joint conditions directly; adding more isolated copies does not settle them.
 
@@ -13661,7 +13605,7 @@ One small problem can be represented by a table. Larger problems can use a suita
 
 Do not presume that pairwise checks settle a shared whole. With one shared definition D and allowed sets {1,2}, {2,3} and {1,3}, each pair has a common value. The three-way intersection is empty. The condition is that one D satisfies all three consumers simultaneously.
 
-Cycles require interpretation as well. A mutually constrained group may be a legitimate simultaneous selection, while a build cycle with no supported bootstrap can prevent construction. Keep the selection relation distinct from the obtaining order and send an unsupported realization cycle to SYSE.3/SYSE.30. A graph edge by itself does not decide either question.
+Cycles require interpretation as well. A mutually constrained group may be a legitimate simultaneous selection, while a build cycle with no supported bootstrap can prevent construction. Keep the selection relation distinct from the obtaining order and send an unsupported realization cycle to SYSE.3/SYSE.30.
 
 #### SYSE.53:4.5 - Obtain a witness or a justified search return
 
@@ -13695,7 +13639,7 @@ Choose preferences among feasible arrangements with comparable burden. A smaller
 
 #### SYSE.53:4.7 - Return a composition that realization can use
 
-Return the selected releases and variants, their instance bindings, required sources or access, the supported consuming use and the conditions that can reopen it. Keep the derivation from demands to selections and any remaining limits. Existing manifests, configuration records and dependency reports can carry this information; a new universal schema is unnecessary.
+Return the selected releases and variants, their instance bindings, required sources or access, the supported consuming use and the conditions that can reopen it. Keep the derivation from demands to selections and any remaining limits. Existing manifests, configuration records and dependency reports can carry this information.
 
 Separate that selection from its realization. SYSE.13 identifies the configuration. SYSE.30 reconstructs software artifacts from selected inputs. SYSE.33 provides and exercises the required environment; SYSE.11 addresses a wider bounded integration. The receiving operation must obtain the named releases, preserve the chosen bindings and observe the actual task. Successful resolution alone does not prove installation, trustworthy bytes or correct behavior.
 
@@ -13786,7 +13730,7 @@ For “How do declared requirements become a concrete package selection?”, **a
 
 For “When should several roots share dependencies?”, **adapt** [Spack 1.0.4 environments](https://spack.readthedocs.io/en/v1.0.4/environments.html): its shared, sharing-when-possible and independent concretization alternatives expose a real configuration choice. Its separation of requested specs, selected specs, installation and activation informs sections 4.3, 4.7 and 4.8. The serious alternative is one globally shared version for every use. Isolation can remove a needless constraint, but adds boundary and resource obligations; this pattern requires those grounds rather than selecting a mode by convenience.
 
-CMP.4 remains the source for constructing an appropriate covering search. SIE.4/SIE.6 supply qualified semantic relations, and SYSE.13/SYSE.30/SYSE.33 supply configuration, construction and provision. Their joint use here adds the derivation and scope choices needed before search; it does not replace those Methods. Reopen the construction when a resolver's semantics, a supplier's compatibility claim, a required exchange or the available catalogue changes. Neither these documents nor the worked calculations qualify an untested installation.
+CMP.4 remains the source for constructing an appropriate covering search. SIE.4/SIE.6 supply qualified semantic relations, and SYSE.13/SYSE.30/SYSE.33 supply configuration, construction and provision. Their joint use here adds the derivation and scope choices needed before search; it does not replace those Methods. Reopen the construction when a resolver's semantics, a supplier's compatibility claim, a required exchange or the available catalogue changes.
 
 ### SYSE.53:12 - Relations
 
@@ -13933,7 +13877,7 @@ For constructing recoverable builds, **adopt** the specified-input and byte-comp
 
 The construction here connects the chosen build claim to an inherited dependency graph, cache reuse, diagnosis of differing intermediates and the downstream tested artifact. A hermetic execution and a byte-reproducible result answer different questions. A retained artifact is often the economical delivery input; independent reconstruction costs additional execution and input retention and is selected for the claim that needs it.
 
-Reopen the affected construction when a required input disappears, a toolchain or generator changes, an independent builder disagrees, or the receiving use needs another output/equivalence claim. Neither these sources nor a successful rebuild establishes application correctness or trustworthy provenance.
+Reopen the affected construction when a required input disappears, a toolchain or generator changes, an independent builder disagrees, or the receiving use needs another output/equivalence claim.
 
 ### SYSE.30:12 - Relations
 
@@ -14018,7 +13962,7 @@ First choose the integration boundary that matters to the application. Name the 
 
 Break a large change into increments that leave the mainline usable under its existing supported behavior. A preparatory increment may add an unused adapter; a later increment may switch one caller to it; removal waits until no supported caller needs the old route. Each increment should preserve the agreed behavior or openly change it under its acceptance conditions. A feature flag can separate installation from activation only if the disabled state really preserves the required behavior and the enabled path can be qualified. A dormant flag does not make an incompatible schema change harmless.
 
-For one increment, take a current mainline base, construct the intended combined change, and run the relevant fast feedback against that combination. Resolve its actual incompatibilities before integration. When another change advances the mainline, update the candidate combination and re-establish the affected feedback. A merge queue is one possible implementation: it serializes or rebuilds candidate combinations against the base that will actually be used. Its name does not guarantee that the tested combination equals the integrated one.
+For one increment, take a current mainline base, construct the intended combined change, and run the relevant fast feedback against that combination. Resolve its actual incompatibilities before integration. When another change advances the mainline, update the candidate combination and re-establish the affected feedback. A merge queue is one possible implementation: it serializes or rebuilds candidate combinations against the base that will actually be used.
 
 After integration, build and exercise the resulting shared revision through the authoritative path. Associate its produced artifact with that combined revision and its own results. An earlier artifact from the branch can be reused only when it is actually the same qualified subject under the needed conditions. The team must be able to find the current mainline result and its unresolved checks without reconstructing several private branch histories.
 
@@ -14103,7 +14047,7 @@ For prompt feedback and a usable combined mainline, **adopt and adapt** [DORA Te
 
 Sections 4.5–4.7 construct those joins for the actual shared base, artifact and environment. Compatible preparatory increments compete with a longer branch; fast scoped tests compete with broader slower checks. Select from interaction risk, feedback delay and recoverability, retaining a pending release question where necessary. A faster early stage that delays the whole useful result is not the intended gain.
 
-Reopen test selection or integration structure when architecture, generated dependencies or supported behavior changes, regressions escape, or restoration no longer fits the working cadence. These sources do not supply application acceptance meaning or release authority.
+Reopen test selection or integration structure when architecture, generated dependencies or supported behavior changes, regressions escape, or restoration no longer fits the working cadence.
 
 ### SYSE.31:12 - Relations
 
@@ -14180,7 +14124,7 @@ Make the selected artifact available with its identity, applicable evidence, sep
 
 Exercise at least the consequential substitution and missing-evidence cases for the chosen mechanism. Check that the consumer obtains the intended bytes and can distinguish failure from a completed verification. Reuse an earlier result only while its subject, required claim and material conditions remain the same.
 
-Hand the result to SYSE.41 when an actual runtime deployment is needed. The deployment must still establish the target's effective configuration, dependencies and observed behavior. Use SYSE.14 to obtain the separately authorized release decision; artifact promotion does not widen exposure by itself.
+Hand the result to SYSE.41 when an actual runtime deployment is needed. The deployment must still establish the target's effective configuration, dependencies and observed behavior. Use SYSE.14 when a separately authorized release decision is needed; artifact promotion does not widen exposure by itself.
 
 #### SYSE.32:4.6 - Build a promotion mechanism whose evidence reaches actual use
 
@@ -14332,7 +14276,7 @@ Limit cleanup to the resources and data actually owned by that environment and a
 
 Create an environment from the retained description without relying on the original machine's hidden setup. Observe the actual resources, effective configuration and dependency reachability, then run the representative task. A successful provisioning job without the task result establishes less.
 
-Change one relevant configuration and verify both the intended new condition and the continuing task. If a manual intervention was needed, either make its necessary effect part of the supported procedure or identify the still-manual dependency. Do not let a reconciler and an unrecorded repair repeatedly undo each other.
+When the arrangement promises configuration change, change one relevant configuration and verify both the intended new condition and the continuing task. If a manual intervention was needed, either make its necessary effect part of the supported procedure or identify the still-manual dependency. Do not let a reconciler and an unrecorded repair repeatedly undo each other.
 
 Exercise a consequential partial-creation failure. Recover the actual effects before retrying, then reconcile, remove or retain them under the applicable permissions and data conditions. An unavailable observation leaves partial state unknown; it does not mean nothing was created.
 
@@ -14386,7 +14330,7 @@ A familiar workstation can become an accidental standard, while a production-lik
 - Desired configuration, actual resources, persistent information and access are distinguished.
 - Hidden setup is removed from the supported creation path or exposed as a remaining dependency.
 - Isolation and shared-state conditions preserve the meaning of independent attempts.
-- Clean creation, a relevant change and partial failure have usable responses.
+- Clean creation and consequential partial failure have usable responses; relevant configuration changes are qualified when that capability is promised.
 - A real task result, not only provisioning completion, supports readiness for the stated use.
 - Cleanup respects resource ownership, retained information and actual permission.
 
@@ -14478,7 +14422,7 @@ Make retry behavior explicit. Determine which transaction effects and progress o
 
 #### SYSE.34:4.4 - Validate coexistence and the actual recovery claim
 
-Exercise ordinary and boundary values, old and new writers/readers, relevant concurrent histories, partial failure and replay. Verify information correspondence as well as successful execution. A job that finishes can still populate the wrong values.
+Derive the required histories from the selected transition and its supported uses. Exercise ordinary and boundary values, the writers/readers and concurrency that occur in that strategy, and consequential partial-failure or replay cases. Verify information correspondence as well as successful execution.
 
 Do not activate a consumer that relies on a new representation before its required population and continuing-write invariant are established. If some data is intentionally outside the scope, ensure that the consumer can identify and handle that boundary.
 
@@ -14504,7 +14448,7 @@ Common mechanisms for a continuously updated dataset include transactional proje
 
 Do not treat coexistence completion as permission to remove old support. Find what can still return old data: a scheduled job, retained message, offline client, dormant disaster-recovery image or a restore from an earlier backup. A contraction may require keeping a conversion on the restore path even after no live client uses it. Select a compatibility horizon from those supported uses and retention commitments. This horizon can differ from the time needed to observe a canary or to finish the ordinary application rollout.
 
-Finally, test return from the state of greatest relevant exposure, not only from the moment before new writes begin. Construct a history containing an old write, a new write, a partial migration and a lost acknowledgement. Follow which representation each reader sees and which effect a repeated operation could duplicate. If return would discard legitimate later events, decide whether those events can be replayed or reconciled and who may accept the remaining loss. A backup can supply older data without supplying this reconciliation. Keep a useful forward-repair option when exact reversal is unavailable.
+For a claimed return, test the state of greatest relevant exposure. In a coexistence strategy, include old and new writes; include partial migration and lost acknowledgement where they can affect the return. Follow which representation each reader sees and which effect a repeated operation could duplicate. If return would discard legitimate later events, decide whether those events can be replayed or reconciled and who may accept the remaining loss. A backup can supply older data without supplying this reconciliation. Keep a useful forward-repair option when exact reversal is unavailable.
 
 For an unlike case, a job-message format gains a new optional field. First release workers able to read both formats while producers continue sending the old one. Then change a bounded producer population and observe completion of whole jobs. Retiring old workers is insufficient evidence to remove old-format reading: queued or archived jobs may still contain it. Conversely, rolling producers back does not remove already emitted new-format messages. If old workers cannot read those messages, recovery must retain compatible workers, translate messages with qualified meaning, or drain the queue under an agreed restriction. This is the same compatibility reasoning with a different persistence mechanism; the PostgreSQL trigger in section 5 is not its implementation.
 
@@ -14581,11 +14525,11 @@ Success on a static sample can hide concurrency, inherited privileges and rare r
 
 - Old/new meaning and information-loss boundaries are explicit.
 - All relevant writers/readers and engine-specific conditions are accounted for.
-- Coexistence has a concrete authority and synchronization mechanism.
+- Where old and new representations coexist, their authority and synchronization mechanism is concrete.
 - Backfill cannot overwrite a later legitimate write with a stale observation.
-- Partial failure, lost acknowledgement and replay have qualified behavior.
+- Consequential partial failure, lost acknowledgement and any allowed replay have qualified behavior.
 - A new reader starts only with the population and continuing invariant it needs.
-- Executable return, data restore and later-event reconciliation are separately qualified.
+- Each promised executable return, data restore or later-event reconciliation is qualified for its own result.
 - Contraction and permission to accept loss are not inferred from successful deployment.
 
 ### SYSE.34:8 - Common Anti-Patterns and How to Avoid Them
@@ -14615,7 +14559,7 @@ Reopen the transition when representation meaning, writer population, engine beh
 
 ### SYSE.34:12 - Relations
 
-SYSE.13 identifies software and data configurations. SYSE.27 and SYSE.29 address consumer compatibility and migration; SYSE.33 supplies controlled test conditions. SYSE.41 consumes the data-change result during deployment, SYSE.35 respects it during exposure recovery, and SYSE.38 uses it when an incident has partial data effects. Use SYSE.14 for the separately authorized release decision.
+SYSE.13 identifies software and data configurations. SYSE.27 and SYSE.29 address consumer compatibility and migration; SYSE.33 supplies controlled test conditions. SYSE.41 consumes the data-change result during deployment, SYSE.35 respects it during exposure recovery, and SYSE.38 uses it when an incident has partial data effects. Use SYSE.14 when a separately authorized release decision is needed.
 
 ### SYSE.34:End
 
@@ -14834,7 +14778,7 @@ If the important semantic result is not observable, return that gap. An easier p
 
 Place observation where material entry, execution and result failures can be detected. Connect the relevant metrics, logs or traces to the right subject and configuration using sufficient correlation. The [OpenTelemetry signals model](https://opentelemetry.io/docs/concepts/signals/) supplies interoperable telemetry categories; it does not choose the user-success predicate.
 
-Exercise a known good task, a meaningful failure, a failure before the backend and a loss of observation. Check delay, duplication, sampling and aggregation effects on the definition. Sampled diagnostic traces do not by themselves establish a complete event denominator.
+Exercise a known good task, a meaningful failure and a loss of observation, including a pre-backend failure when the service path admits it. Check delay, duplication, sampling and aggregation effects on the definition. Sampled diagnostic traces do not by themselves establish a complete event denominator.
 
 Keep missing data visible. If eligible attempts are known but their results are not, retain that distinction. If the entry population itself is unobserved, even the denominator may be unknown. Apply an agreed conservative policy where needed, but distinguish that policy disposition from an observed service failure.
 
@@ -14905,7 +14849,7 @@ These are invented observations for explaining the Method, not measured service 
 
 For a separate arithmetic illustration, suppose the responsible users/providers agree that at least 99% of a named service's eligible tasks must satisfy its complete good-result definition over a specified 30-day window. They also agree how budget exhaustion changes the priority of reliability work. This is an illustrative agreement, not a recommended universal target.
 
-With 1,000 fully observed eligible tasks, 995 good and 5 bad, the observed ratio is 99.5%. The window's 1% allowance is 10 bad tasks, so the five consume half of that event budget. Neither the arithmetic nor five further available events permits violation of an independent data-integrity requirement.
+With 1,000 fully observed eligible tasks, 995 good and 5 bad, the observed ratio is 99.5%. For that observed population, the 1% allowance is 10 bad tasks, so the five consume half of the nominal event budget. Further arrivals change the denominator and the allowance. Unused allowance does not permit violation of an independent data-integrity requirement.
 
 Now suppose ten results are missing rather than fully observed. The same exact reliability claim is no longer established merely by keeping the old ratio on the dashboard. Recover the observations or apply the agreed missing-data policy with that limitation visible. If the service sees only ten events in an hour, high-volume alert thresholds require a separate fit decision; the number 99% does not supply it.
 
@@ -14922,7 +14866,7 @@ Providers may count only the work their backend accepted, and application teams 
 - Eligibility and good outcome are defined independently of the convenient telemetry.
 - The implementation is exercised against good, failed and missing-observation cases.
 - Material pre-backend failures, retries and incomplete outcomes are accounted for.
-- The objective and response policy are agreed on a consistent event/time basis.
+- When an objective and response policy are required, they are agreed on a consistent event/time basis.
 - Platform and application results remain separate even when they share infrastructure.
 - A reliability measure is not presented as complete user value or release authority.
 
@@ -14965,7 +14909,7 @@ SYSE.25 uses platform-task evidence for improvement choices. SYSE.31 and SYSE.41
 
 ### SYSE.37:1 - Problem frame
 
-Use this pattern when a measured service objective and a usable response arrangement exist, but alerts arrive too often, too late or without an action someone can take. Start with the loss that matters, the time available to respond and the person or mechanism actually able to act.
+Use this pattern when alerts for a software-service loss arrive too often, too late or without an action someone can take. Start with the loss that matters, the time available to respond and the person or mechanism actually able to act.
 
 The first result is an exercised alert rule with its intended response and known blind spots, or the missing observation or response capability. An alert rule alone is not an operating on-call arrangement.
 
@@ -14992,7 +14936,7 @@ The opposite failure is silence caused by lost telemetry, the wrong denominator 
 
 Identify the user task and the condition that merits action. Distinguish budget risk, a direct task or integrity failure, and loss of observation. They can have different urgency, evidence and recipients.
 
-Recover the qualified measurement, actual objective and response policy. Determine how much loss may occur before a useful response is no longer possible, including measurement delay, notification, acknowledgement, diagnosis and mitigation time.
+Recover the qualified observation and response basis; for budget-risk alerting, include the actual objective and response policy. Determine how much loss may occur before a useful response is no longer possible, including measurement delay, notification, acknowledgement, diagnosis and mitigation time.
 
 Choose an interrupting notification, ordinary work item or observation-only signal according to that response need. Name the actual responsibility and permission. If nobody can receive or perform the response, return that missing capability instead of declaring the alert operational.
 
@@ -15016,7 +14960,7 @@ Treat missing data separately from no bad events. A zero denominator, stale seri
 
 #### SYSE.37:4.4 - Exercise evaluation, delivery and action
 
-Verify the actual numerator, denominator, labels, windows and evaluation cadence in the deployed monitoring mechanism. A vendor's lookback or duration can mean something different from the intended decision window. Check that the configured rule implements the chosen logic.
+Verify the rule's actual inputs, subject labels, triggering and clearing conditions, and evaluation cadence in the deployed monitoring mechanism. For a ratio or windowed rule, check its numerator, denominator and windows; a vendor's lookback or duration can mean something different from the intended decision window. Check that the configured rule implements the chosen logic.
 
 Use representative recorded or controlled synthetic histories to exercise a significant active failure, recovery, isolated variation and missing telemetry. Inspect when the rule fires and resets, which notifications arrive, and whether related rules duplicate or suppress a needed action.
 
@@ -15044,7 +14988,7 @@ For example, under the same constant-rate, 30-day, 99.9% assumptions as section 
 
 Check the time available after detection. A correctly evaluated predicate may still be too late when collection, evaluation, delivery and mitigation together exceed the useful response interval. Shorten those delays, change the detection rule, or redesign the mitigation if it can no longer protect the result. A higher-sensitivity rule cannot compensate for an unavailable responder or a recovery procedure that takes longer than the remaining useful time.
 
-Replay complete event histories through the intended implementation. Include a short spike, a sustained failure, intermittent loss, slow degradation, recovery and a telemetry outage. Compare the first firing time, clearing time, notifications and required action for each. Vary task volume as well as error fraction. At rapidly changing volume, p × T / w is no longer an exact statement about the fraction of the objective's event budget consumed; use actual counts under the selected objective-window convention and state any remaining forecast assumption. A time-window burn alert can still be a useful risk heuristic under that limitation.
+Replay complete histories that can challenge the selected budget-risk rules: for example, a short spike, sustained or intermittent loss, slow degradation, recovery or telemetry outage. Compare the first firing time, clearing time, notifications and required action. Vary task volume where it affects the rule. At rapidly changing volume, p × T / w is no longer an exact statement about the fraction of the objective's event budget consumed; use actual counts under the selected objective-window convention and state any remaining forecast assumption. A time-window burn alert can still be a useful risk heuristic under that limitation.
 
 Check that the implementation can express the selected interval. For example, the linked Cloud Monitoring built-in SLO alerting procedure limits its lookback compliance period to 24 hours. The three-day calculation above cannot be copied directly into that mechanism. Obtain an aggregation or another implementation that supports the intended interval, or select and exercise a different rule that preserves the needed slower-loss coverage. Shortening the window changes the decision rule even if the threshold label stays the same.
 
@@ -15082,7 +15026,7 @@ Teams can tune thresholds to reduce page count while losing important failures, 
 - Each rule has a named service/task loss and a usable response.
 - Budget-risk logic uses the matching measured objective and eligible population.
 - Thresholds and windows follow the selected loss/response basis.
-- Low traffic, impossible thresholds and missing data receive explicit treatment.
+- Missing observations have an explicit disposition; count- or rate-based rules also address low traffic and impossible thresholds.
 - Evaluation, notification, acknowledgement and response are exercised as distinct links.
 - Recovery and suppression do not hide remaining user harm or exhausted budget.
 - Platform and application alerts do not exchange subjects or denominators.
@@ -15199,7 +15143,7 @@ Use SYSE.25 when the platform's supported path needs a product improvement and S
 
 #### SYSE.38:4.7 - Develop diagnosis from the task path and build recoverable operations
 
-Use the task's causal path to choose observations. An accepted request may wait before dispatch, execute on a worker, call a dependency, commit an effect and return a result. A missing result can arise at any of those boundaries. Find the last boundary at which the particular attempt is known to have progressed and the next boundary for which evidence is missing or adverse. This narrows the next investigation without treating an architectural diagram as proof of what actually happened.
+Use the task's causal path to choose observations. An accepted request may wait before dispatch, execute on a worker, call a dependency, commit an effect and return a result. A missing result can arise at any of those boundaries. Find the last boundary at which the particular attempt is known to have progressed and the next boundary for which evidence is missing or adverse. This narrows the next investigation.
 
 Build competing explanations at that boundary. If a worker has started but no dependency response arrives, consider a call that was never sent, an unavailable route, refused access, slow execution and lost response. Choose an observation that separates consequential alternatives. A local successful ping cannot establish that the application identity can perform the required database operation. A diagnostic call through the application's actual route can be more informative, but its side effects and added load must be acceptable. Keep suggestive evidence distinguishable from an observation that rules out an explanation.
 
@@ -15277,7 +15221,7 @@ For technical diagnosis, **adopt and adapt** the developed 2016 [SRE Effective T
 
 For a coordinated major incident, **adopt** the [PagerDuty During an Incident Method](https://response.pagerduty.com/during/during_an_incident/) through section 4.5's local assignments, informed by the 2018 [SRE Incident Response](https://sre.google/workbook/incident-response/) treatment. Its coordination is useful when scope and consequences require it; a bounded failure handled by one authorized practitioner need not acquire the same overhead.
 
-Reopen the recovery procedure when task paths, access, dependency behavior, persistent effects or observation change. OPS.3 and OPS.4 supply the shared operating distinctions and account; neither that account nor an incident status substitutes for restored task evidence.
+Reopen the recovery procedure when task paths, access, dependency behavior, persistent effects or observation change. OPS.3 and OPS.4 supply the shared operating distinctions and account.
 
 ### SYSE.38:12 - Relations
 
@@ -15344,7 +15288,7 @@ Use effort arithmetic where the units are comparable, but keep reliability, risk
 
 When an intervention is selected, construct a bounded change that can test the proposed gain without losing the required result. Retaining the current method or an unresolved comparison creates no intervention or trial requirement. For an interface change, SYSE.26 or SYSE.27 supplies the supported-use and compatibility work. For automation, define the actual input, permitted operation, result and failure/exception behavior.
 
-Retain necessary judgment and authority. Retrieving an already authorized result is different from granting new access or accepting a nonconforming product. An automated wrapper cannot supply a missing decision Method or appointment.
+Retain necessary judgment and authority. Retrieving an already authorized result is different from granting new access or accepting a nonconforming product.
 
 Provide a qualified stop or return for unsupported cases and uncertain effects. Use actual maintenance and support capability, not a generic statement that “the team will own it.” Keep any temporary workaround's limits and removal condition visible.
 
@@ -15522,7 +15466,7 @@ Protect both the component receiving pressure and the dependency receiving calls
 
 #### SYSE.40:4.5 - Exercise overload, isolation and recovery
 
-Test representative ordinary demand, a burst, an expensive variant and a dependency slowdown or failure within a safe permitted environment. Observe accepted, rejected, delayed and partial task outcomes as well as resources.
+Test representative ordinary demand and the bursts, expensive variants or dependency slowdowns/failures that can defeat the claimed operating envelope, within a safe permitted environment. Observe accepted, rejected, delayed and partial task outcomes as well as resources.
 
 Verify that the protected class still obtains its qualified result, queues stay bounded, and other tenants or downstream Systems are not made worse in an unaccepted way. Check the control/observation path under pressure; repair the arrangement if its state cannot be observed or admission cannot resume under the selected recovery conditions.
 
@@ -15591,7 +15535,7 @@ Average throughput can conceal expensive requests and a small class losing all s
 - The protected envelope and priority trade-offs have an actual basis and holder.
 - Admission and waiting are bounded by capacity and task usefulness.
 - Isolation includes consequential downstream and control-path dependencies.
-- Retry has a qualified effect model and aggregate amplification limit.
+- Any retry mechanism has a qualified effect model and aggregate amplification limit.
 - Rejected, delayed and degraded work remains visible as its actual user outcome.
 - Ordinary use, overload and recovery are exercised before relying on the envelope.
 
@@ -15701,13 +15645,13 @@ Use SYSE.34 before returning binaries across a changed data boundary. If effects
 
 Provide the observed artifact/configuration, targets, dependency/test result, interval and remaining limits through the existing runtime and working account. Distinguish an engineered deployment procedure from a completed execution of it.
 
-SYSE.11 can use these integration observations to assess bounded usability of the resulting System. Use SYSE.35 to choose how to evaluate a qualified candidate under further exposure. Use SYSE.14 to obtain the authorized release decision. Do not convert a passed deployment test into permission to widen use.
+SYSE.11 can use these integration observations to assess bounded usability of the resulting System. Use SYSE.35 when further exposure needs evaluation, and SYSE.14 when an authorized release decision is needed. A passed deployment test does not supply permission to widen use.
 
 #### SYSE.41:4.7 - Choose the deployment arrangement and make interruption recoverable
 
-Construct the procedure around the target's possible intermediate states. Separate preparation that can occur while the old service runs from operations that change a serving process or shared data. Place each compatibility prerequisite before its first consumer. Put an observation after the operation whose result determines the next choice. This creates a dependency structure that can permit parallel preparation while preserving necessary ordering. A deployment tool can execute this structure; it cannot infer absent compatibility from a successful command.
+Construct the procedure around the target's possible intermediate states. Separate preparation that can occur while the old service runs from operations that change a serving process or shared data. Place each compatibility prerequisite before its first consumer. Put an observation after the operation whose result determines the next choice. This creates a dependency structure that can permit parallel preparation while preserving necessary ordering.
 
-Choose the replacement arrangement from coexistence and capacity. A rolling replacement can keep some old instances available while updating others, provided old and new versions can coexist and the remaining capacity is sufficient. A separately prepared candidate pool can be tested before routing changes, at the cost of extra resources and shared-state analysis. A stop-and-replace operation can be simpler for a service that permits the interruption and cannot coexist with its successor. Each needs a result test and a recovery boundary. Naming an arrangement blue/green or rolling does not establish those conditions.
+Choose the replacement arrangement from coexistence and capacity. A rolling replacement can keep some old instances available while updating others, provided old and new versions can coexist and the remaining capacity is sufficient. A separately prepared candidate pool can be tested before routing changes, at the cost of extra resources and shared-state analysis. A stop-and-replace operation can be simpler for a service that permits the interruption and cannot coexist with its successor. Each needs a result test and a recovery boundary.
 
 Identify the real activation boundary. Copying a file, restarting a process, reloading configuration, changing routing and enabling a feature can have different effects. The installed artifact may remain dormant; conversely, a scheduled worker can start processing shared work immediately when it starts. If runtime construction itself activates the candidate, obtain the corresponding exposure authority and protection before that action. Separation of deployment and wider exposure is a useful architecture where it exists, not a factual claim about every application.
 
@@ -15848,9 +15792,9 @@ Use the qualified return in the receiving work: update the outstanding premise, 
 
 #### SYSE.42:4.4 - Qualify consequential or repeated use
 
-For a consequential or repeated use, exercise valid progress alongside a wrong target, missing argument, changed state and ambiguous effect that could defeat the relied-on behavior. SYSE.46 tests the actual performing arrangement. The evidence concerns the actual interface and receiving result; correct entry or schema formation is only one part of that use.
+For a consequential or repeated use, reuse adequate qualification while its subject, interface and conditions match. Where the relied-on behavior lacks sufficient grounds, exercise valid progress and the wrong-target, missing-argument, changed-state or ambiguous-effect cases that can defeat it. SYSE.46 tests the actual performing arrangement. The evidence concerns the interface and receiving result; correct entry or schema formation is only one part of that use.
 
-Keep the result's source, configuration and unresolved conditions to the extent needed by that reliance. This can be a few fields in an ordinary task record; a second invocation ledger is unnecessary when the executor already retains them.
+Keep the result's source, configuration and unresolved conditions to the extent needed by that reliance. This can be a few fields in an ordinary task record.
 
 ### SYSE.42:5 - Archetypal Grounding
 
@@ -15860,7 +15804,7 @@ Keep the result's source, configuration and unresolved conditions to the extent 
 
 Six lots contain 347 items each. A calculator has been chosen because it is already open and, under the supplied conditions, using it protects other intermediate values the person is holding. The person enters 347 × 6, inspects that expression, obtains 2082 and reports the total for the six lots. The device computes; the person binds, inspects and applies the result.
 
-If the input is mistyped as 374 × 6, the functioning calculator returns 2244. The input check localizes the defect; correcting the expression restores 2082. Where the receiving reliance requires an arithmetic check, 350 × 6 − 3 × 6 supplies 2100 − 18. A paper alternative retains the aligned digits and carries while the person computes them. A lost carry/column relation returns to the working layout or retained record, not to a supposed calculation performed by paper.
+If the input is mistyped as 374 × 6, the functioning calculator returns 2244. The input check localizes the defect; correcting the expression restores 2082. Where the receiving reliance requires an arithmetic check, 350 × 6 − 3 × 6 supplies 2100 − 18. A paper alternative retains the aligned digits and carries while the person computes them. A lost carry/column relation returns to the working layout or retained record.
 
 For a search return, determine whether it is an actual computation, a recoverable cited claim or generated text before using it. A matching snippet and two interfaces to the same backend do not supply two independent checks. Stop when the required answer is used; later unaided ability is a separate development result.
 
@@ -15874,7 +15818,7 @@ The model proposes `seconds=10000`, having reused a millisecond value. The bindi
 
 The request with attempt A17 is accepted, but its reply is lost. The executor queries A17 under the supplied contract. That return identifies meter-2, revision 82 and interval 10 seconds. The next report uses those observed values and closes the change task; it does not issue another mutation.
 
-If the attempt query instead reports an unknown outcome, the task remains unresolved. If a fresh read shows an independently changed revision before invocation, the expected-revision condition fails and the engineer reconsiders the change against that state. Neither case becomes success because the generated explanation is convincing.
+If the attempt query instead reports an unknown outcome, the task remains unresolved. If a fresh read shows an independently changed revision before invocation, the expected-revision condition fails and the engineer reconsiders the change against that state.
 
 For a request merely to explain a current configuration, an already applicable observation may suffice. Reissuing a state-changing call would add no needed result.
 
@@ -15889,7 +15833,7 @@ Tool-friendly tasks can hide missing authorization, physical action or specialis
 - A partial or unknown effect follows the contract's recovery before replay.
 - The return's subject, units and evidence status support its receiving use.
 - The task consumes the result or returns the precise missing condition.
-- Tests for consequential or repeated use include failures that could change the relied-on result.
+- Qualification for consequential or repeated use reuses matching sufficient evidence and resolves remaining failures that could change the relied-on result.
 
 ### SYSE.42:8 - Common Anti-Patterns and How to Avoid Them
 
@@ -15965,7 +15909,7 @@ Keep read/write scope aligned with the permitted user or task. Prevent a record 
 
 Several valid episodes may need a better organization even when none is false. Begin with a source-linked record or index that preserves the needed facts. Extract the action-changing features of each episode: task/configuration, input, action, effect status, actual observation and recovery. Propose a conditional summary, grouping or link only when it answers the receiving query better than that simple arrangement.
 
-Test the proposed relation against its source episodes and a contrary episode. A shared word such as “timeout” does not establish the same recovery condition or cause. Preserve exact exceptional facts and links to raw evidence. Mark generated associations and explanations as candidate interpretations; do not rewrite an observed event to fit them.
+Test the proposed relation against its source episodes and available relevant contrary experience. A shared word such as “timeout” does not establish the same recovery condition or cause. Preserve exact exceptional facts and links to raw evidence. Mark generated associations and explanations as candidate interpretations; do not rewrite an observed event to fit them.
 
 Change the index, retrieval description or linked-note organization, then run the same receiving query. Check what is now returned and which continuation it supports. Keep the richer organization only when the gain warrants writing, retrieval, checking and maintenance burden. Retain a rare contrary episode when forgetting it changes a consequential action. An executable recovery operation belongs to SYSE.48; this step organizes the evidence used to select or perform it.
 
@@ -15979,7 +15923,7 @@ Have the receiver state what the retrieved contribution supplies. Incorporate it
 
 Test a representative continuation with its expected relevant material known. Ask separately whether that material was written faithfully, whether the current retrieval returned it, and whether the task used it correctly. Supplying the needed record directly can help distinguish retrieval from utilization, provided that the comparison changes only that support.
 
-Use SYSE.46 to qualify the intended reliance, including delayed and shifted use when relevant. Check an old plausible fact, a newly authoritative change, a no-match case and a distractor that could displace the needed contribution. Preserve necessary fresh access even when repeated memory calls become cheaper. A retrieval score or larger store cannot alone establish improved work.
+Use SYSE.46 to qualify the intended reliance, including delayed and shifted use when relevant. Select cases that can defeat this use: an old plausible fact, a newly authoritative change, a no-match case or a distractor displacing the needed contribution. Preserve necessary fresh access even when repeated memory calls become cheaper. A retrieval score or larger store cannot alone establish improved work.
 
 ### SYSE.43:5 - Archetypal Grounding
 
@@ -16024,7 +15968,7 @@ Conversational recall tests favor facts easy to express in text. Engineering con
 - Retained content serves a named continuation and preserves consequential provenance and applicability.
 - Retrieval uses the unresolved premise and separates relevance from currentness.
 - Summaries retain their needed conditions and source return.
-- Reorganization over valid episodes tests proposed links or abstractions against originals and contrary experience.
+- Reorganization over valid episodes tests proposed links or abstractions against originals and available relevant contrary experience.
 - Conflict, supersession and retirement change the affected records and direct projections; rare action-changing counterexamples remain recoverable.
 - The receiver uses the returned contribution or identifies the missing one.
 - Qualification separates writing, retrieval and utilization, and preserves necessary fresh observation.
@@ -16127,7 +16071,7 @@ The receiving result is a bounded service-update proposal with an applicable int
 
 One available LLM context can do both jobs. A two-context alternative gives the long contract examination to one context and the capacity calculation to another. Here the numerical input is already settled, the common brief is short, both contexts can obtain their needed source, and the integration check is a small comparison of duration, capacity and limit. A stipulated representative trial for this configuration shows that the one-context way repeatedly loses a needed contract qualification when moving between the long source and calculation; separate working material avoids that repetition without adding an equally costly join. The preference is adequate result with least total preparation, execution and repair burden.
 
-Compare three complete ways. One-context completion retains the repeated rereading/checking cost but needs no handover. The proposed division adds the short common brief and join, while keeping each examination usable. A third proposed division omits the settled duration from the calculation brief and makes it a later return from the contract reader. That arrangement creates a serial dependency: the calculation must wait or stay conditional, so its apparent parallel gain is unavailable. C.38 constructs these ways and C.11 selects the second under the stated evidence and preference. No number of contexts by itself supplies the choice.
+Compare three complete ways. One-context completion retains the repeated rereading/checking cost but needs no handover. The proposed division adds the short common brief and join, while keeping each examination usable. A third proposed division omits the settled duration from the calculation brief and makes it a later return from the contract reader. That arrangement creates a serial dependency: the calculation must wait or stay conditional, so its apparent parallel gain is unavailable. C.38 constructs these ways and C.11 selects the second under the stated evidence and preference.
 
 The contract reader returns the allowed recovery operation, duration, worker effects and source edition. The calculator consumes the settled inputs and returns the backlog trajectory with units and assumptions. Integration compares the modeled interruption with the contract and uses the joined proposal in the engineering decision. A fluent summary that omits the duration would fail this join.
 
@@ -16211,7 +16155,7 @@ Stable knowledge may be cheaper to use through a trained policy, but changing in
 
 Name the behavior to change and its receiving result: for example, forming valid arguments, selecting a useful observation or applying stable procedural guidance. Name the base model and parameter or adapter set to update. Separate that change from context, memory, tool, controller and environment changes. When the target is assistance selection, consume SYSE.50's decision unit, available signals, qualified need evidence and fallback; selecting training does not itself establish which help is needed. For learned effort control, consume SYSE.51's feasible moves, intermediate decision basis, cost accounting and completion obligations; retain externally enforced hard limits.
 
-Specify the external contributions that remain: execution, current observations, access permissions, retrieval when facts change and independent checking where the claim needs it. Compare complete later configurations through C.38/C.11.CRC and C.11. Include stability of the proposed mapping, expected recurrence, target preparation, training, independent qualification, maintenance and the fallback after a failed trial. A cheaper response that loses a necessary contribution is a different result. The [Reference comparison (Engineering.Reference:19.7)](ENGINEERING-DPF-SUITE-REFERENCE.md#engineeringreference197---develop-the-arrangement-across-attempts) selects an explicit rule for its supplied 100-update conditions and manual work for five; recurrence alone selects no learner.
+Specify the external contributions that remain: execution, current observations, access permissions, retrieval when facts change and independent checking where the claim needs it. Compare complete later configurations through C.38/C.11.CRC and C.11. Include stability of the proposed mapping, expected recurrence, target preparation, training, independent qualification, maintenance and the fallback after a failed trial. A cheaper response that loses a necessary contribution is a different result. The [Reference comparison (Engineering.Reference:19.7)](ENGINEERING-DPF-SUITE-REFERENCE.md#engineeringreference197---develop-the-arrangement-across-attempts) selects an explicit rule for its supplied 100-update conditions and manual work for five.
 
 Keep an unchanged baseline and the means to restore it. Establish the task-family boundary and what finding would make training no longer worthwhile.
 
@@ -16225,7 +16169,7 @@ Partition construction, adaptive validation and final evaluation by the dependen
 
 #### SYSE.45:4.3 - Select and execute the learning mechanism
 
-First choose the experience transformation that can supply the intended policy target. The learning algorithm then consumes that target; the names supervised learning, reinforcement learning and distillation do not construct it.
+First choose the experience transformation that can supply the intended policy target. The learning algorithm then consumes that target.
 
 | Available experience and intended change | Construct the signal | Further-use question and return |
 | --- | --- | --- |
@@ -16354,7 +16298,7 @@ E.23.CDI frames development for later work and E.10.LRN identifies the changed s
 
 The subject is the configuration in its intended work, including its available support. The first result is bounded performance evidence, a supported use limit or the unresolved qualification question.
 
-Use an adequate current test result when its configuration, task and conditions still match. Do not expand a simple parser check into a system trial unless the reliance extends that far. A test supplies evidence; the authorized holder makes the release decision using SYSE.14.
+Use an adequate current test result when its configuration, task and conditions still match. Do not expand a simple parser check into a system trial unless the reliance extends that far. When release is the receiving question, the authorized holder uses SYSE.14 to decide from the evidence.
 
 ### SYSE.46:2 - Problem
 
@@ -16370,7 +16314,7 @@ Realistic trials expose actual dependencies but may be costly or difficult to re
 
 State the intended task family, actual result, protected effects, available supports and proposed reliance. Recover the actual performing arrangement. For a technical agent this includes model/settings, instructions, next-input assembly, memory, tools/editions, executor and environment. For a person it includes applicable prior performance, instructions, available aids, working material and conditions such as task order or fatigue. Identify what changed, what can be held fixed and what must instead be recorded.
 
-Choose a baseline that represents a real alternative, including a direct deterministic operation or human-supported arrangement when appropriate. Compare the same receiving result and consequential conditions. Separate result quality, latency, cost, necessary access, restraint and side effects; combine them only when the decision supplies a justified trade-off.
+For a comparative claim, choose a baseline representing a real alternative, including a direct deterministic operation or human-supported arrangement when appropriate. Compare the same receiving result and consequential conditions. For an absolute property claim, test that property against its applicable criterion. Separate result quality, latency, cost, necessary access, restraint and side effects; combine them only when the decision supplies a justified trade-off.
 
 Choose observations from failures that could change the reliance. A model-output test cannot establish a state-changing result. Obtain the domain's acceptance predicates and the evidence that connects the measured signal to them.
 
@@ -16378,7 +16322,7 @@ Choose observations from failures that could change the reliance. A model-output
 
 Select tasks that admit useful progress and cases that require a bounded stop. Vary the location or value of a needed contribution where that distinction can reveal a failure: an adequate current premise, a missing fact, stale memory, a changed interface, unavailable support or an ambiguous effect.
 
-Use SYSE.49 if the required task/feedback conditions must be built. Qualify fixture fidelity and reset through the appropriate domain and SYSE.33. Keep final cases and their expected outcomes outside adaptive construction or candidate selection. Synthetic consistency alone does not qualify a real-world consequence.
+Use SYSE.49 if the required task/feedback conditions must be built. Qualify fixture fidelity and reset through the appropriate domain and SYSE.33. For conclusions that depend on performance beyond cases used in adaptive construction or candidate selection, keep final cases and their expected outcomes outside that adaptation. A direct test of a stated property retains its independent correctness basis and that property's scope. Synthetic consistency alone does not qualify a real-world consequence.
 
 When the question is whether the agent chooses support well, construct matched cases with a sufficient supplied premise, a decisive fact available only through the selected support, and offered material that is irrelevant or misleading. Add verification-required and presently unanswerable cases where the receiving use needs them. Keep result, correctness basis, relevant limits and performing arrangement comparable.
 
@@ -16404,7 +16348,7 @@ Read the other failures at their actual location: missing write, retrieval miss,
 
 #### SYSE.46:4.4 - Test persistence and changed conditions when relied on
 
-When the claim includes lasting improvement or response to change, compare initial, post-change, delayed and shifted use. Select the interval and shift from that reliance: normal restart, memory expiry, source revision, tool withdrawal or altered workload. There is no universal waiting period.
+For a claim of lasting improvement, compare initial, post-change and delayed performance. For a claim about response to changed conditions, compare the relevant conditions before and after the shift. Select the interval or shift from the reliance: normal restart, memory expiry, source revision, tool withdrawal or altered workload. There is no universal waiting period.
 
 At each observation retain the task/result, configuration identity, support actually available, evaluator basis and intervening changes. Test delayed persistence under stable comparison conditions separately from changed support. An unidentifiable model-provider update may leave current system performance observable while making a component-specific persistence claim unresolved.
 
@@ -16465,7 +16409,7 @@ Easy generated tasks, forgiving judges and benchmark-specific instructions can f
 
 ### SYSE.46:7 - Conformance Checklist
 
-- The reliance, task family, baseline and changed configuration are explicit.
+- The reliance, task family and performing configuration are explicit; comparative claims identify their baseline and changed conditions.
 - Result predicates concern actual receiving use and protected effects.
 - Cases discriminate the dependencies that could defeat that reliance; support-choice claims separate no optional support, supplied support and agent selection with the intervention declared.
 - Repetition, unsuccessful attempts and observation gaps remain visible.
@@ -16476,7 +16420,7 @@ Easy generated tasks, forgiving judges and benchmark-specific instructions can f
 
 **Report one aggregate score.** Recover which tasks, effects and support conditions it combines before using it for a decision.
 
-**Tune until the final test passes.** Treat reused cases as adaptive validation and obtain a separate final comparison.
+**Use a tuned test as evidence of generalization.** Treat its cases as adaptive validation for that claim and obtain a final comparison outside the adaptation.
 
 **Treat every refusal as failure or every stop as safety.** Judge whether the particular task had a permitted useful continuation and whether its needed conditions were available.
 
@@ -16486,7 +16430,7 @@ The comparison can distinguish a usable configuration change from a score change
 
 ### SYSE.46:10 - Architectural Rationale
 
-The test concerns a performing arrangement because neither a capability label nor model parameters alone supplies the available aids, current facts and receiving use. Separating task outcome, dependence and effort prevents one improvement from concealing another failure. Keeping construction outside final assessment prevents the evaluator from silently defining success around the candidate.
+The test concerns a performing arrangement because neither a capability label nor model parameters alone supplies the available aids, current facts and receiving use. Separating task outcome, dependence and effort prevents one improvement from concealing another failure. For conclusions beyond tuned cases, keeping final assessment outside construction protects against defining success around the candidate.
 
 ### SYSE.46:11 - SoTA-Echoing
 
@@ -16560,7 +16504,7 @@ When further reasoning or tool work needs adaptive allocation, consume SYSE.51's
 
 Put consequential limits in the actual controlling means. For software, enforce the permitted tool set, attempt budget and uncertain-effect branch outside model-generated narrative. A human procedure requires usable cues and feasible checking; a written instruction alone does not guarantee that the person performs it. Use SYSE.26–SYSE.28 for applicable platform interaction, interface and control questions, and SYSE.40 for software capacity and retry limits.
 
-Implement the chosen transitions in their supported form: a usable written sequence, supervised enactment, code or workflow definition. Connect actual inputs and returns, including failure paths, then exercise that implementation. A diagram with disconnected boxes does not supply the candidate.
+Implement the chosen transitions in their supported form: a usable written sequence, supervised enactment, code or workflow definition. Connect actual inputs and returns, including failure paths, then exercise that implementation.
 
 #### SYSE.47:4.4 - Bind predictions without substituting them for observations
 
@@ -16572,7 +16516,7 @@ If the current state, model premise or error bound is defeated, return to the na
 
 Use SYSE.46 to compare the candidate with its baseline on representative tasks. Include an adequate contribution, a missing premise, changed relevant information and an uncertain effect when those branches are relied on. Use SYSE.49 when informative conditions must be constructed.
 
-Inspect receiving-result correctness, needed access/use, restraint, unresolved effects and total effort. Keep final comparison cases outside procedure tuning. When persistence matters, compare delayed and changed-condition use with recoverable configuration and support identity.
+Inspect receiving-result correctness, needed access/use, restraint, unresolved effects and total effort. Keep final comparison cases outside procedure tuning. Compare delayed use when persistence is claimed and changed-condition use when transfer is claimed, retaining configuration and support identity.
 
 Retain a procedure that meets the required result at a justified total burden. Return a false sufficiency test to its predicate owner, failed execution to SYSE.42, and misleading feedback to SYSE.49. A more elaborate procedure with no useful advantage should be simplified or rejected. Stop at the bounded executable result or its unresolved construction condition.
 
@@ -16734,7 +16678,7 @@ A candidate function combines verified conversion and calculation primitives. On
 
 The next agent finds the function through its applicability entry, invokes it and uses the result with units and equation edition. If it cannot find the function, repair discovery; changing arithmetic would not fix that failure. If a later equation edition changes an assumption, withdraw or repair the affected variant. Unaffected conversion primitives and direct specialist calculation can still support the task.
 
-This is a construction and qualification plan, not measured evidence that the library saves effort. If selection and maintenance cost exceed the repeated benefit, retain direct work.
+This is a construction and qualification plan. If selection and maintenance cost exceed the repeated benefit, retain direct work.
 
 
 #### SYSE.48:5.3 - Recover an outcome lookup from interruption traces
@@ -16878,7 +16822,7 @@ To challenge shared error, deliberately make both a task generator and its gener
 
 Qualified traces return to SYSE.47 to construct the missing-effect/unknown-effect branch while the model stays fixed. A recovery wrapper under SYSE.48 or a trained policy under SYSE.45 would be a separate optional result. SYSE.46 keeps final comparison tasks outside those construction choices.
 
-If the real service lacks the fixture's attempt lookup, the useful-recovery claim remains unqualified. Retain valid normal-result exercises and return the mismatch to the interface/environment owner. This constructed example specifies the fixture and observations to obtain; it does not assert production reliability or an executed trial.
+If the real service lacks the fixture's attempt lookup, the useful-recovery claim remains unqualified. Retain valid normal-result exercises and return the mismatch to the interface/environment owner. This constructed example specifies the fixture and observations to obtain.
 
 ### SYSE.49:6 - Bias-Annotation
 
@@ -16960,7 +16904,7 @@ Assemble representative decision inputs with independently qualified target answ
 
 Use paired conditions where they discriminate need: present versus withheld premise, ambiguous versus settled target, applicable versus revised rule. Obtain actual assistance returns where the policy relies on them. An oracle answer unavailable in deployment cannot qualify the deployed help branch.
 
-Separate construction examples, calibration examples and final policy comparisons. Select enough variation for the consequence and reliance; do not infer population calibration from a few illustrative examples. SYSE.49 can construct the missing distinction and challenge the labels. A disputed label remains unresolved until its result meaning has grounds. When the target is human acquisition, use HCD's practice purpose and permitted help: a hint and a complete answer can have different effects on the action being learned.
+Keep final policy comparisons outside rule construction. When calibration is selected, give it separate calibration examples. Select enough variation for the consequence and reliance; do not infer population calibration from a few illustrative examples. SYSE.49 can construct the missing distinction and challenge the labels. A disputed label remains unresolved until its result meaning has grounds. When the target is human acquisition, use HCD's practice purpose and permitted help: a hint and a complete answer can have different effects on the action being learned.
 
 #### SYSE.50:4.3 - Construct the rule and its fallback
 
@@ -17004,7 +16948,7 @@ A text-only endpoint exposes no token scores. The engineer chooses observable pr
 
 Challenge both with a source that confidently names the wrong target. Agreement among samples cannot establish the target's identity; the qualified reference defeats it. Challenge the acquisition branch with an unavailable capacity endpoint: repeated requests cannot repair access, so the result is the missing observation. A new rule edition requiring another measurement defeats the earlier completeness assessment.
 
-The trial compares supported completion, unwarranted continuation, unnecessary assistance and total burden on separate service tasks. If a small direct rule performs adequately, retain it without claiming statistical calibration. If the more adaptive rule earns reliance, retain its observed scope and fallback. These are constructed cases and a proposed comparison, not measured performance.
+The trial compares supported completion, unwarranted continuation, unnecessary assistance and total burden on separate service tasks. If a small direct rule performs adequately, retain it without claiming statistical calibration. If the more adaptive rule earns reliance, retain its observed scope and fallback. These are constructed cases and a proposed comparison.
 
 ### SYSE.50:6 - Bias-Annotation
 
@@ -17101,9 +17045,9 @@ Implement the selected rule through SYSE.47 as a usable instruction or runtime c
 
 #### SYSE.51:4.4 - Qualify allocation on complete attempts
 
-Compare adaptive allocation with fixed and manual alternatives under the same result requirements and resource accounting. Keep construction and tuning trajectories separate from final tasks. Measure receiving success and protected effects alongside total reasoning, evaluation, tool and integration burden in the applicable units; count failed attempts too. For people, record material differences in prior practice, assistance, fatigue and task order; repeated use of an already solved case cannot establish the same fresh-task comparison.
+Compare adaptive allocation with feasible fixed or manual alternatives under the same result requirements and resource accounting. Keep construction and tuning trajectories separate from final tasks. Measure receiving success and protected effects alongside total reasoning, evaluation, tool and integration burden in the applicable units; count failed attempts too. For people, record material differences in prior practice, assistance, fatigue and task order; repeated use of an already solved case cannot establish the same fresh-task comparison.
 
-Include an easy task where early stopping is warranted, a harder task where further work changes the choice, an unresolvable missing fact, and a reduced budget. Test whether the rule's intermediate evaluator rewards plausible but invalid progress. SYSE.49 can supply those distinctions, and SYSE.46 supplies the final configuration evidence.
+Select tasks that can change the useful allocation: an easy task where early stopping is warranted, a harder task where further work changes the choice, or an unresolvable fact or reduced budget within the supported scope. Test whether the rule's intermediate evaluator rewards plausible but invalid progress. SYSE.49 can supply those distinctions, and SYSE.46 supplies the final configuration evidence.
 
 When several components change together, qualify the whole arrangement unless the comparison isolates an attribution. Return a bad evaluator to its supplier, a lost premise to SYSE.52, a needless help choice to SYSE.50 and an ignored stopping decision to SYSE.47. Stop at the bounded allocation rule and comparison result, or the unresolved feasibility or evidence condition.
 
@@ -17144,7 +17088,7 @@ A rule trained only on successful trajectories can hide the expenditure and effe
 - Intermediate evidence changes an executable allocation.
 - Required completion and its uncertainty have reserved means.
 - Useful early stop and infeasible continuation return usable results or identified gaps.
-- Final whole-trajectory comparison includes fixed/manual alternatives and failed attempts.
+- Final whole-trajectory comparison includes feasible fixed or manual alternatives and failed attempts.
 - Heuristic ranking does not become unsupported exclusion.
 
 ### SYSE.51:8 - Common Anti-Patterns and How to Avoid Them
@@ -17256,7 +17200,7 @@ Prepare a view that includes the original expression, the labeled columns and th
 | Carry from the units operation | — | — | 4 | — |
 | Partial result | — | — | — | 2 |
 
-Keep “multiply by 6” visible and provide readable scale, a pencil or usable digital entry, and room for the next carry and result. The person now performs 4 × 6 + 4 = 28, writes 8 under tens and carries 2 to hundreds; then 3 × 6 + 2 = 20 completes 2082. A calculator can be supplied when the chosen way calls for it, but simply placing one nearby does not execute or bind this multiplication. SYSE.42 governs its actual entered expression and returned result.
+Keep “multiply by 6” visible and provide readable scale, a pencil or usable digital entry, and room for the next carry and result. The person now performs 4 × 6 + 4 = 28, writes 8 under tens and carries 2 to hundreds; then 3 × 6 + 2 = 20 completes 2082. A calculator can be supplied when the chosen way calls for it. SYSE.42 governs its actual entered expression and returned result.
 
 Compare the cropped and restored views on a fresh equivalent interruption. The decisive repair is the digit-to-column relation, not a longer explanation. If the stored original itself contains only “2, 4” without positions, SYSE.43 must restore the record from a source or bounded recomputation. If the correct visible carry is still skipped, inspect the performed arithmetic or procedure instead. These are different repair locations.
 
@@ -17274,7 +17218,7 @@ Now filter tools to the apparent task “update service.” A similarity-based f
 
 Compare this with an exact small state record: target, desired version, attempt, acceptance, effect status and source. When that record and the short applicable procedure suffice, a recursive narrative summary adds no necessary value. If a later task needs the earlier diagnosis, its pointer can be followed or the input rebuilt for that new use.
 
-A second challenge changes the procedure edition to require a capacity observation before a fresh update. An old summary must not hide the new precondition. Rebuild from the applicable edition and obtain that observation. These constructed cases show what the comparison must distinguish; they do not report an executed trial or a general superiority of one compression strategy.
+A second challenge changes the procedure edition to require a capacity observation before a fresh update. An old summary must not hide the new precondition. Rebuild from the applicable edition and obtain that observation. These constructed cases show what the comparison must distinguish.
 
 ### SYSE.52:6 - Bias-Annotation
 
@@ -17995,7 +17939,7 @@ how to use or adapt it, compare alternatives and reconsider the result when cond
 | Data change and restoration: `SYSE.34` | [DORA database change management](https://dora.dev/capabilities/database-change-management/) and historical 2014 [Parallel Change](https://martinfowler.com/bliki/ParallelChange.html) inform compatible change. PostgreSQL 18 [triggers](https://www.postgresql.org/docs/18/trigger-definition.html), [Read Committed](https://www.postgresql.org/docs/18/transaction-iso.html#XACT-READ-COMMITTED), [privileges](https://www.postgresql.org/docs/18/sql-grant.html) and [continuous-archive recovery](https://www.postgresql.org/docs/18/continuous-archiving.html) supply the case's mechanisms. | One canonical write representation, current-row backfill and the named engine conditions are required in the construction. Qualify recovery against the promised data contract; archive recovery is a separate whole-cluster Method with later-event consequences. |
 | Actual runtime deployment: `SYSE.41` | [DORA deployment automation](https://dora.dev/capabilities/deployment-automation/) supplies preparation, installation, configuration and deployment-testing operations, adapted to actual-state observation and partial failure. | Artifact qualification is not deployment. Replay, data compatibility and release permission require their own basis. |
 | Bounded exposure: `SYSE.35` | Historical 2018 [SRE canarying](https://sre.google/workbook/canarying-releases/) supplies comparison principles; [Argo Rollouts analysis](https://argoproj.github.io/argo-rollouts/features/analysis/#inconclusive-runs) is a comparator for an explicit inconclusive result. | Keep the result inconclusive when representative observations are missing. Establish candidate/control attribution and a safe stopping action before relying on an exposure test. |
-| Task objectives: `SYSE.36` | Historical 2018 [SRE SLO construction](https://sre.google/workbook/implementing-slos/) supplies objective reasoning; [OpenTelemetry signals](https://opentelemetry.io/docs/concepts/signals/) supplies instrumentation concepts. | Obtain task meaning, success criteria and objective agreement from the users and providers. Keep platform and application populations distinct. |
+| Task objectives: `SYSE.36` | Historical 2018 [SRE SLO construction](https://sre.google/workbook/implementing-slos/) supplies objective reasoning; [OpenTelemetry signals](https://opentelemetry.io/docs/concepts/signals/) supplies instrumentation concepts. | Obtain task meaning and success criteria from the users and providers; obtain their objective agreement when an SLO is selected. Keep platform and application populations distinct. |
 | Actionable alerts: `SYSE.37` | Historical 2018 [SRE alerting](https://sre.google/workbook/alerting-on-slos/) informs derived burn/window choices; [Google Cloud burn-rate alerting](https://docs.cloud.google.com/stackdriver/docs/solutions/slo-monitoring/alerting-on-budget-burn-rate) supplies an implementation comparator. | Low traffic, absent observations and actual response conditions can defeat a transplanted threshold. Account for the deployed provider's lookback limits when implementing the selected alert policy. |
 | Diagnosis and restoration: `SYSE.38` | Historical 2016 [SRE troubleshooting](https://sre.google/sre-book/effective-troubleshooting/) and 2018 [incident response](https://sre.google/workbook/incident-response/) support bounded diagnosis and mitigation. [PagerDuty During an Incident](https://response.pagerduty.com/during/during_an_incident/) supplies a coordinated-response Method when a major incident requires it. | Use the actual assignments and permissions for technical recovery and, when needed, security response or release. Select coordinated major-incident response when the incident requires it. |
 | Repetitive burden: `SYSE.39` | Historical 2018 [SRE Eliminating Toil](https://sre.google/workbook/eliminating-toil/) supports cause removal, simplification and qualified automation. | Include transferred work, maintenance and exceptions. Distinguish repetitive work from necessary professional judgement, and compare possible remedies over the actual undertaking's horizon. |

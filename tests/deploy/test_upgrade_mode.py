@@ -169,6 +169,14 @@ def test_rustup_never_self_updates() -> None:
     assert argv == ["rustup", "update", "--no-self-update"]
 
 
+def test_opam_commands_answer_their_own_prompts() -> None:
+    # A Homebrew upgrade of opam makes the next opam command ask to upgrade the
+    # ~/.opam layout; unanswered, a non-interactive run says "n" and exits 10.
+    for name in ("Update opam package repositories", "Upgrade OCaml packages"):
+        argv = _command_task(name)["ansible.builtin.command"]["argv"]
+        assert {"-y", "--yes"} & set(argv), name
+
+
 def test_first_installs_are_unchanged() -> None:
     for name in ("Init Rust toolchain", "Install necessary OCaml packages"):
         task = _command_task(name)

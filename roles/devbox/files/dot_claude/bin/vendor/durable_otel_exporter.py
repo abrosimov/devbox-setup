@@ -26,8 +26,8 @@ from opentelemetry.exporter.otlp.proto.common._internal.trace_encoder import enc
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 
-# Remain below the devbox edge's 1 MiB OTLP/HTTP request body cap.
-MAX_BATCH_BYTES = 900_000
+# 96 MiB: below the devbox edge's 128 MiB OTLP/HTTP request body cap.
+MAX_BATCH_BYTES = 100_663_296
 SPOOL_MAX_BYTES_ENV = "CC_LANGFUSE_SPOOL_MAX_BYTES"
 # Fills only while the loopback edge is unreachable: a week of heavy Langfuse output.
 DEFAULT_SPOOL_MAX_BYTES = 2 * 1024 * 1024 * 1024

@@ -33,13 +33,18 @@
 # A separate task because the module hands install_options to `brew upgrade`
 # too, and `brew upgrade` rejects `--adopt`. Every cask is installed by now, so
 # this only upgrades the outdated ones. Not greedy: casks that update
-# themselves are left to do so.
+# themselves are left to do so. Retried because a transient 5xx from a vendor's
+# download host (e.g. GitHub releases) would otherwise fail the whole run.
 - name: "Upgrade Homebrew casks"
   community.general.homebrew_cask:
     name: "{{ devbox_brew_primary_casks }}"
     state: latest
     sudo_password: "{{ devbox_sudo_password }}"
   no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
+  register: devbox_cask_primary_upgrade_result
+  until: devbox_cask_primary_upgrade_result is succeeded
+  retries: 3
+  delay: 30
   when:
     - devbox_upgrade_mode | default(true) | bool
     - devbox_brew_primary_casks | length > 0

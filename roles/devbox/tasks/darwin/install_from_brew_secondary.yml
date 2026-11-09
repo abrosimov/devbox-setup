@@ -108,13 +108,18 @@
 # A separate task because the module hands install_options to `brew upgrade`
 # too, and `brew upgrade` rejects `--adopt`. Every cask is installed by now, so
 # this only upgrades the outdated ones. Not greedy: casks that update
-# themselves are left to do so.
+# themselves are left to do so. Retried because a transient 5xx from a vendor's
+# download host (e.g. GitHub releases) would otherwise fail the whole run.
 - name: "Upgrade Homebrew casks"
   community.general.homebrew_cask:
     name: "{{ devbox_brew_secondary_casks + devbox_extra_brew_casks }}"
     state: latest
     sudo_password: "{{ devbox_sudo_password }}"
   no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
+  register: devbox_cask_secondary_upgrade_result
+  until: devbox_cask_secondary_upgrade_result is succeeded
+  retries: 3
+  delay: 30
   when: devbox_upgrade_mode | default(true) | bool
 
 # Migration cleanup: Claude Code used to be installed by scripts/init.sh through
@@ -166,6 +171,7 @@
     - '"already installed" not in devbox_cask_no_binaries_result.msg'
 
 # `--no-binaries` is valid for `brew upgrade` as well; `--adopt` is not.
+# Retried for the same transient-download reason as the main upgrade task.
 - name: "Upgrade Homebrew casks (no-binaries variant)"
   community.general.homebrew_cask:
     name: "{{ devbox_brew_secondary_casks_no_binaries + devbox_extra_brew_casks_no_binaries }}"
@@ -174,6 +180,10 @@
       - no-binaries
     sudo_password: "{{ devbox_sudo_password }}"
   no_log: true
+  register: devbox_cask_no_binaries_upgrade_result
+  until: devbox_cask_no_binaries_upgrade_result is succeeded
+  retries: 3
+  delay: 30
   when:
     - devbox_upgrade_mode | default(true) | bool
     - (devbox_brew_secondary_casks_no_binaries + devbox_extra_brew_casks_no_binaries) | length > 0

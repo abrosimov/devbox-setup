@@ -20,7 +20,20 @@
       {{ (devbox_packages.tlaplus.install_dir | expanduser) ~ '/' ~ devbox_tlaplus_tool.name }}
     devbox_tlaplus_pinned: "sha256:{{ devbox_tlaplus_tool.sha256 }}"
 
-- name: "Read GitHub release of {{ devbox_tlaplus_tool.name }}"
+- name: "Read GitHub release via authenticated gh: {{ devbox_tlaplus_tool.name }}"
+  ansible.builtin.command:
+    argv:
+      - gh
+      - api
+      - "repos/{{ devbox_tlaplus_tool.repository }}/releases/tags/{{ devbox_tlaplus_tool.tag }}"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_tlaplus_release_gh
+  check_mode: false
+  changed_when: false
+  when: devbox_tlaplus_gh_auth.rc == 0
+
+- name: "Read GitHub release via anonymous API: {{ devbox_tlaplus_tool.name }}"
   ansible.builtin.uri:
     url: >-
       https://api.github.com/repos/{{ devbox_tlaplus_tool.repository
@@ -28,14 +41,17 @@
     headers:
       Accept: "application/vnd.github+json"
     return_content: true
-  register: devbox_tlaplus_release
+  register: devbox_tlaplus_release_anon
   check_mode: false
   changed_when: false
+  when: devbox_tlaplus_gh_auth.rc != 0
 
 - name: "Select asset {{ devbox_tlaplus_tool.asset }}"
   ansible.builtin.set_fact:
     devbox_tlaplus_asset: >-
-      {{ devbox_tlaplus_release.json.assets
+      {{ (devbox_tlaplus_release_gh.stdout | from_json
+          if devbox_tlaplus_gh_auth.rc == 0
+          else devbox_tlaplus_release_anon.json).assets
          | selectattr('name', 'equalto', devbox_tlaplus_tool.asset)
          | first | default({}) }}
 

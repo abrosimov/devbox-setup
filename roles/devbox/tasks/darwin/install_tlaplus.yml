@@ -1,4 +1,21 @@
 ---
+# Release metadata is read through the authenticated `gh` CLI when it has a
+# github.com login: unauthenticated api.github.com calls share a 60-per-hour
+# budget per IP, which a few reruns behind a shared office NAT exhaust. A
+# machine with no login yet (a fresh bootstrap) falls back to the anonymous API.
+# no_log: `gh auth status` masks the token, but the account and scope lines are
+# still nobody's business in a provisioning log.
+- name: "Check GitHub CLI authentication for TLA+ release lookups"
+  ansible.builtin.command:
+    argv: [gh, auth, status, --active, --hostname, github.com]
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_tlaplus_gh_auth
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+
 - name: "Install TLA+ tools"
   ansible.builtin.include_tasks: "{{ role_path }}/tasks/darwin/install_tlaplus_tool.yml"
   loop: "{{ devbox_packages.tlaplus.tools }}"

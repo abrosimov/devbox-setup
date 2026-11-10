@@ -5,7 +5,15 @@ devbox_langfuse_user_id: "abrosimov.k.a@gmail.com"
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []
 # devbox_extra_brew_casks: []
-# devbox_extra_mcp_http_servers: []
+# ClickStack (HyperDX v2) on the telemetry host, reached through the `otelbox`
+# SSH tunnel (OTELBOX_CLICKSTACK_PORT, default 28080), so the tunnel must be up.
+# The Personal API access key comes from the Keychain (make clickstack-config).
+devbox_extra_mcp_http_servers:
+  - name: clickstack
+    url: "http://127.0.0.1:28080/api/mcp"
+    headers_helper: >-
+      ~/.claude/bin/.venv/bin/python ~/.claude/bin/mcp_keychain_headers.py
+      --service devbox-clickstack --account personal-api-key
 devbox_extra_auto_mode_trusted_remote_owners:
   - host: github.com
     owner: abrosimov-tech

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "ailev/FPF",
-  "commit": "e307edbd91c04c1d85661bd309b9944fac251937",
+  "commit": "b223469ecafb9735c1d9bac220671e3336618339",
   "files": [
     {
       "source": "DPFs/DECISION-DESIGN-PRINCIPLES-FRAMEWORK.md",
@@ -216,7 +216,7 @@
     {
       "source": "DPFs/Narrativization-and-Narrative-Studies-Principles-Framework.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Narrativization-and-Narrative-Studies-Principles-Framework.md",
-      "sha256": "7f3961a9737b7f27e3ff38b8db3ed805fa8f44f0b0b76b5ee8c65589e09d7670"
+      "sha256": "d67ba82dc15c8919a3db8a5bef70e488618481b05fc773c1c5d9ebb2867221a0"
     },
     {
       "source": "DPFs/README.md",
@@ -236,7 +236,7 @@
     {
       "source": "FPF-Spec.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md",
-      "sha256": "55ca2b002783bfdeb18188794615bb9bbed8f080d805b711a8b811f331204841"
+      "sha256": "ebc1894444f805b62a8529d5517702e668169fb9ed4ae8918d7e44e2b635f061"
     },
     {
       "source": "LICENSE",
@@ -251,7 +251,7 @@
     {
       "source": "Readme.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Readme.md",
-      "sha256": "3baa4f6db023e4ccc9ad80b5cfb8116c7fdeeb8933946dd930baaefcf4ef976b"
+      "sha256": "85e95be0cb3140bc673f452187b8dc3ff64cd66153caf92edf92b666061fb887"
     },
     {
       "source": "USING-FPF.md",

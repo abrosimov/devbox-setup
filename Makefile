@@ -142,7 +142,7 @@ endif
        work personal dev-work dev-personal check-work check-personal \
        git-identity git-identity-ensure \
        secrets-ready secrets-init sudo-reseed ssh-passphrase-reseed otelbox-edge-config otelbox-edge-test \
-       langfuse-config \
+       langfuse-config clickstack-config \
        pub-preflight pub-e2e \
        list-skills list-agents audit-budget \
        audit audit-brewfile audit-brewfile-all audit-taps untap-stale \
@@ -201,6 +201,7 @@ help:
 	@echo "  make otelbox-edge-config - set otelbox edge remote endpoint (overlay) + ingestion token (keychain); ONLY=endpoint|token|cert"
 	@echo "  make otelbox-edge-test - liveness smoke: binary, service, :13133, :8888, OTLP round-trip, delivery"
 	@echo "  make langfuse-config  - seed or rotate the Langfuse API keys for the langfuse skill (keychain: devbox-langfuse)"
+	@echo "  make clickstack-config - seed or rotate the ClickStack Personal API access key for the clickstack MCP server (keychain: devbox-clickstack)"
 	@echo "  make drive-backup-push - (re)install the weekly drive backup (uv project + LaunchAgent) from the local overlay config"
 	@echo "  make go-proxy-verify  - prove the Go module proxy client: go env contract, Tamias credential, public + private download"
 	@echo "  make drive-backup-now  - run the drive backup now via launchd; log in ~/Library/Logs/drive-backup.log"
@@ -298,6 +299,14 @@ otelbox-edge-config:
 # public-key / secret-key. `ai-config apply claude --profile personal` reads them.
 langfuse-config:
 	@./scripts/langfuse-config.py
+
+# Interactive seed (and rotation) of the ClickStack (HyperDX v2) Personal API access
+# key the personal profile's `clickstack` MCP server sends as its Bearer token:
+# login keychain service devbox-clickstack, account personal-api-key, read at
+# connect time by ~/.claude/bin/mcp_keychain_headers.py. `security` prompts for the
+# value, so it never reaches the shell history or the process list.
+clickstack-config:
+	@security add-generic-password -U -s devbox-clickstack -a personal-api-key -w
 
 # Liveness + delivery smoke for the otelbox edge collector — run after `make personal`.
 otelbox-edge-test:

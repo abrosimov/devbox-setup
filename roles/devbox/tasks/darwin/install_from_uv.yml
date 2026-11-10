@@ -7,22 +7,65 @@
 # another installer (pipx --include-deps put ansible-lint there) can own a
 # launcher of the same name, which would skip the install forever and fail the
 # upgrade. `--force` lets uv take that launcher over.
+#
+# Tools run on uv-managed Python only. A tool environment links to its base
+# interpreter, and Homebrew deletes old interpreters on upgrade, which leaves
+# the environment dead and makes uv report the tool as not installed. uv never
+# removes a managed interpreter by itself, and its minor-version link
+# (cpython-3.14-...) moves to each new patch on `uv python upgrade`.
+# An environment counts as installed only when its interpreter runs and is
+# uv-managed; any other is rebuilt, and `--force` under `only-managed`
+# recreates it on a managed interpreter.
 
-- name: "Install Python tools via uv"
+- name: "Locate uv-managed Python installations"
   ansible.builtin.command:
-    cmd: "uv tool install --force {{ item }}"
-    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/uv/tools/{{ item }}"
+    cmd: "uv python dir"
   environment:
     PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_uv_python_dir
+  changed_when: false
+
+- name: "Upgrade uv-managed Python to the latest patch releases"
+  ansible.builtin.command:
+    cmd: "uv python upgrade"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_uv_python_upgrade
+  when: devbox_upgrade_mode | default(true) | bool
+  changed_when: "'Installed' in devbox_uv_python_upgrade.stderr"
+
+- name: "Check Python tool environments run on uv-managed Python"
+  ansible.builtin.command:
+    argv:
+      - "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/uv/tools/{{ item }}/bin/python"
+      - "-c"
+      - "import sys; sys.exit(not sys.base_prefix.startswith(sys.argv[1]))"
+      - "{{ devbox_uv_python_dir.stdout | trim }}/"
   loop: "{{ devbox_packages.uv_tools }}"
   loop_control:
     label: "{{ item }}"
+  register: devbox_uv_tool_health
+  changed_when: false
+  failed_when: false
+
+- name: "Install Python tools via uv"
+  ansible.builtin.command:
+    cmd: "uv tool install --force {{ item.item }}"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin:{{ ansible_facts['env']['PATH'] }}"
+    UV_PYTHON_PREFERENCE: "only-managed"
+  loop: "{{ devbox_uv_tool_health.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.rc != 0
+  changed_when: true
 
 - name: "Upgrade Python tools via uv"
   ansible.builtin.command:
     cmd: "uv tool upgrade {{ item }}"
   environment:
     PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin:{{ ansible_facts['env']['PATH'] }}"
+    UV_PYTHON_PREFERENCE: "only-managed"
   loop: "{{ devbox_packages.uv_tools }}"
   loop_control:
     label: "{{ item }}"

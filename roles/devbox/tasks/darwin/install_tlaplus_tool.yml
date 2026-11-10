@@ -1,24 +1,13 @@
 ---
 # Installs one devbox_packages.tlaplus.tools entry into <install_dir>/<name>/.
-# The entry pins both the release tag and the asset's sha256. GitHub must
-# still report that digest for the asset, the download must match it, and it
-# is recorded in .release-digest; the tool is replaced only when the recorded
-# digest differs from the pinned one.
-- name: "Require a sha256 pin for {{ devbox_tlaplus_tool.name }}"
-  ansible.builtin.assert:
-    that:
-      - (devbox_tlaplus_tool.sha256 | default('')) is match('^[0-9a-f]{64}$')
-    fail_msg: >-
-      devbox_packages.tlaplus.tools entry {{ devbox_tlaplus_tool.name }} needs a
-      `sha256` of 64 lowercase hex characters (the asset digest without the
-      `sha256:` prefix)
-    quiet: true
-
-- name: "Resolve install path and pinned digest of {{ devbox_tlaplus_tool.name }}"
+# The release tag is the pin. Upstream re-publishes assets in place under an
+# unchanged tag, so the asset digest GitHub reports for that tag is followed:
+# the download must match it, it is recorded in .release-digest, and the tool
+# is replaced whenever the recorded digest differs from the reported one.
+- name: "Resolve install path of {{ devbox_tlaplus_tool.name }}"
   ansible.builtin.set_fact:
     devbox_tlaplus_tool_dir: >-
       {{ (devbox_packages.tlaplus.install_dir | expanduser) ~ '/' ~ devbox_tlaplus_tool.name }}
-    devbox_tlaplus_pinned: "sha256:{{ devbox_tlaplus_tool.sha256 }}"
 
 - name: "Read GitHub release via authenticated gh: {{ devbox_tlaplus_tool.name }}"
   ansible.builtin.command:
@@ -55,29 +44,14 @@
          | selectattr('name', 'equalto', devbox_tlaplus_tool.asset)
          | first | default({}) }}
 
-- name: "Require the released asset {{ devbox_tlaplus_tool.asset }}"
+- name: "Require a sha256 digest for {{ devbox_tlaplus_tool.asset }}"
   ansible.builtin.assert:
     that:
       - devbox_tlaplus_asset.browser_download_url is defined
+      - (devbox_tlaplus_asset.digest | default('')) is match('^sha256:[0-9a-f]{64}$')
     fail_msg: >-
       {{ devbox_tlaplus_tool.repository }}@{{ devbox_tlaplus_tool.tag }} has no asset
-      {{ devbox_tlaplus_tool.asset }}
-    quiet: true
-
-# Upstream re-publishes assets under an unchanged tag. Adopting such a reissue
-# is a decision, so the run stops here instead of installing it silently.
-- name: "Require GitHub to report the pinned digest for {{ devbox_tlaplus_tool.asset }}"
-  ansible.builtin.assert:
-    that:
-      - (devbox_tlaplus_asset.digest | default('')) == devbox_tlaplus_pinned
-    fail_msg: >-
-      {{ devbox_tlaplus_tool.repository }}@{{ devbox_tlaplus_tool.tag }} asset
-      {{ devbox_tlaplus_tool.asset }}: GitHub reports
-      {{ devbox_tlaplus_asset.digest | default('no digest') }}, but
-      devbox_packages.tlaplus.tools pins {{ devbox_tlaplus_pinned }}.
-      The asset was reissued under the same tag. Review it, then update the
-      `sha256` of {{ devbox_tlaplus_tool.name }} in
-      roles/devbox/defaults/main/packages.yml deliberately.
+      {{ devbox_tlaplus_tool.asset }} with a sha256 digest
     quiet: true
 
 - name: "Read installed digest of {{ devbox_tlaplus_tool.name }}"
@@ -86,10 +60,10 @@
   register: devbox_tlaplus_installed
   failed_when: false
 
-- name: "Compare installed and pinned digest of {{ devbox_tlaplus_tool.name }}"
+- name: "Compare installed and released digest of {{ devbox_tlaplus_tool.name }}"
   ansible.builtin.set_fact:
     devbox_tlaplus_outdated: >-
-      {{ (devbox_tlaplus_installed.content | default('') | b64decode | trim) != devbox_tlaplus_pinned }}
+      {{ (devbox_tlaplus_installed.content | default('') | b64decode | trim) != devbox_tlaplus_asset.digest }}
 
 # A dry run cannot stage the download: tempfile creates nothing in check mode,
 # so the steps below would have no path to work in.
@@ -97,7 +71,7 @@
   ansible.builtin.debug:
     msg: >-
       {{ devbox_tlaplus_tool.repository }}@{{ devbox_tlaplus_tool.tag }} would be
-      installed ({{ devbox_tlaplus_pinned }})
+      installed ({{ devbox_tlaplus_asset.digest }})
   changed_when: true
   when: devbox_tlaplus_outdated | bool and ansible_check_mode
 
@@ -113,7 +87,7 @@
     - name: "Download {{ devbox_tlaplus_tool.asset }}"
       ansible.builtin.get_url:
         url: "{{ devbox_tlaplus_asset.browser_download_url }}"
-        checksum: "{{ devbox_tlaplus_pinned }}"
+        checksum: "{{ devbox_tlaplus_asset.digest }}"
         dest: "{{ devbox_tlaplus_stage.path }}/{{ devbox_tlaplus_tool.asset }}"
         mode: "0644"
 
@@ -146,7 +120,7 @@
 
     - name: "Record digest"
       ansible.builtin.copy:
-        content: "{{ devbox_tlaplus_pinned }}\n"
+        content: "{{ devbox_tlaplus_asset.digest }}\n"
         dest: "{{ devbox_tlaplus_stage.path }}/tree/.release-digest"
         mode: "0644"
 

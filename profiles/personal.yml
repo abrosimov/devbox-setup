@@ -6,6 +6,9 @@ devbox_langfuse_user_id: "abrosimov.k.a@gmail.com"
 # devbox_extra_brew: []
 # devbox_extra_brew_casks: []
 # devbox_extra_mcp_http_servers: []
+devbox_extra_auto_mode_trusted_remote_owners:
+  - host: github.com
+    owner: abrosimov-tech
 
 devbox_extra_brew_casks_no_binaries:
   - docker-desktop     # personal-only; work uses OrbStack

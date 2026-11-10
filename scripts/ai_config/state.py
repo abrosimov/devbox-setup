@@ -25,8 +25,9 @@ _CLAUDE_CLEANUP_PERIOD_PREFERENCE = (
     "95dfe9607c1ae48e356d7452926cd1a8c0d8f0802dbe1f926ac9e10dc623ff9a"
 )
 _CLAUDE_ATTRIBUTION = "55eb8d125af1b049a2a3b78e50d3540b1a0a7ea5ac8b36c73faef308bd4dfa3e"
-# Tracks the current claude manifest: the Langfuse API keys joined as keychain secrets.
 _CLAUDE_LANGFUSE_KEYS = "e5d2d86bcab70f984254f73ce6e16336b3dccdce6f0e6d342d56e6cc6be7948b"
+# Tracks the current claude manifest: `autoMode` and `skillOverrides` joined as shared fields.
+_CLAUDE_AUTO_MODE = "7a8a6051fb80d6a29ef029c11b2aa23dd1ac602e38db437583d467c18549a732"
 _CODEX_SHARED_MODEL_AND_REASONING = (
     "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411"
 )
@@ -39,11 +40,12 @@ _CODEX_MODEL_AND_REASONING_PREFERENCES = (
 )
 # Exact transitions retain baseline history without accepting unrelated manifests.
 _MANIFEST_MIGRATIONS = {
-    ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_LANGFUSE_KEYS): (),
-    ("claude", _CLAUDE_PRE_DIALOG_EXPIRY, _CLAUDE_LANGFUSE_KEYS): (),
-    ("claude", _CLAUDE_DIALOG_EXPIRY_PREFERENCE, _CLAUDE_LANGFUSE_KEYS): (),
-    ("claude", _CLAUDE_CLEANUP_PERIOD_PREFERENCE, _CLAUDE_LANGFUSE_KEYS): (),
-    ("claude", _CLAUDE_ATTRIBUTION, _CLAUDE_LANGFUSE_KEYS): (),
+    ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_AUTO_MODE): (),
+    ("claude", _CLAUDE_PRE_DIALOG_EXPIRY, _CLAUDE_AUTO_MODE): (),
+    ("claude", _CLAUDE_DIALOG_EXPIRY_PREFERENCE, _CLAUDE_AUTO_MODE): (),
+    ("claude", _CLAUDE_CLEANUP_PERIOD_PREFERENCE, _CLAUDE_AUTO_MODE): (),
+    ("claude", _CLAUDE_ATTRIBUTION, _CLAUDE_AUTO_MODE): (),
+    ("claude", _CLAUDE_LANGFUSE_KEYS, _CLAUDE_AUTO_MODE): (),
     ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_PREFERENCE): (
         "model_reasoning_effort",
     ),

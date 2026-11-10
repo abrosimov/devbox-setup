@@ -167,7 +167,7 @@ Profiles select non-sensitive per-machine configuration. Applied via `make perso
 | 1. Role defaults | `defaults/main/*.yml` | Base package lists, shell env, MCP servers |
 | 2. Profile | `profiles/{personal,work}.yml` | Machine-flavor overrides (extra packages, project dir) |
 | 3. Keychain | macOS login keychain (`devbox-sudo`, `devbox-ssh-passphrase`, personal: `devbox-langfuse`) | Machine-local secrets (sudo password, SSH passphrase). Seeded by `scripts/ensure_secrets.sh`; the Langfuse API keys by `make langfuse-config`. |
-| 4. Local overlay | `roles/devbox/local/` | Sensitive *files* — gitignored, for proprietary configs (k8s wrappers, internal hostnames) |
+| 4. Local overlay | `roles/devbox/local/` | Sensitive *files* — gitignored, for proprietary configs (k8s wrappers, internal hostnames). `local/vars/<profile>.yml` holds private template variables (e.g. `devbox_extra_auto_mode_trusted_remote_owners` for the work organisation) that `scripts/ai-config` layers over `profiles/<profile>.yml`; it is not deployed into the home directory. |
 
 Current per-profile differences:
 

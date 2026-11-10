@@ -21,6 +21,7 @@ type TemplateVariables = Mapping[str, object]
 
 _DEFAULTS_DIRECTORY = Path("roles/devbox/defaults/main")
 _PROFILES_DIRECTORY = Path("profiles")
+_LOCAL_VARIABLES_DIRECTORY = Path("roles/devbox/local/vars")
 
 # A probe string wraps the real one rather than replacing it, so it is longer and
 # therefore always differs, whatever the real value happens to be. Wrapping on both
@@ -51,7 +52,9 @@ OMIT_MARKER = "@omit@"
 def load_template_variables(
     repo_root: Path, profile: str, *, home: Path | None = None
 ) -> TemplateVariables:
-    """Role defaults overlaid by the profile selected with --profile.
+    """Role defaults, overlaid by the profile selected with --profile, overlaid in
+    turn by the optional gitignored ``roles/devbox/local/vars/<profile>.yml`` that
+    holds values which must not be published with the repository.
 
     Values are taken verbatim: a default whose own value is a Jinja expression
     (``devbox_sudo_password``, ``devbox_user.ssh_pass_phrase``) stays inert text
@@ -66,13 +69,15 @@ def load_template_variables(
     overlay = repo_root / _PROFILES_DIRECTORY / f"{profile}.yml"
     if overlay.is_file():
         variables.update(_load_variable_file(overlay))
-        return variables
-    # A tree carrying role defaults must also carry the selected profile: without
-    # the overlay every per-profile value would silently render its placeholder
-    # default. A tree with neither is an isolated fixture holding literals only.
-    if defaults.is_dir():
+    elif defaults.is_dir():
+        # A tree carrying role defaults must also carry the selected profile: without
+        # the overlay every per-profile value would silently render its placeholder
+        # default. A tree with neither is an isolated fixture holding literals only.
         message = f"no variables for profile: {overlay}"
         raise TemplateError(message)
+    local = repo_root / _LOCAL_VARIABLES_DIRECTORY / f"{profile}.yml"
+    if local.is_file():
+        variables.update(_load_variable_file(local))
     return variables
 
 

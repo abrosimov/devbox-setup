@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 from ai_config import (
     BindingProvider,
     ChangeKind,
@@ -23,7 +24,7 @@ from ai_config import (
     to_plain_value,
 )
 from ai_config.cli import load_manifest
-from ai_config_fixtures import REPO_ROOT
+from ai_config_fixtures import REPO_ROOT, copy_template_variables
 
 MANIFEST_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "settings.ai-config.json"
 SETTINGS_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_claude" / "settings.json.j2"
@@ -40,17 +41,18 @@ PROFILE_TEMPLATED_PATHS = {
     ("env", "LANGFUSE_PUBLIC_KEY"),
     ("env", "LANGFUSE_SECRET_KEY"),
     ("sandbox", "network", "allowedDomains"),
+    ("autoMode", "environment"),
 }
 LANGFUSE_PLUGIN = "langfuse@claude-plugins-official"
 KEYCHAIN_DECLARATION = "@keychain@"
 LANGFUSE_KEY_PATHS = {("env", "LANGFUSE_PUBLIC_KEY"), ("env", "LANGFUSE_SECRET_KEY")}
 
 
-def repository_document(profile: str) -> RepositoryDocument:
+def repository_document(profile: str, *, repo_root: Path = REPO_ROOT) -> RepositoryDocument:
     return build_repository_document(
         SETTINGS_PATH.read_bytes(),
         ConfigurationFormat.JSON,
-        load_template_variables(REPO_ROOT, profile),
+        load_template_variables(repo_root, profile),
     )
 
 
@@ -214,6 +216,51 @@ class TestClaudeFieldManifest:
         assert not any("langfuse" in domain for domain in sandbox["network"]["allowedDomains"])
         assert "@omit@" not in json.dumps(rendered)
         assert KEYCHAIN_DECLARATION not in json.dumps(rendered)
+
+    @pytest.mark.parametrize(
+        ("profile", "local_owners", "expected_workspace", "expected_owners"),
+        [
+            (
+                "personal",
+                None,
+                "~/Projects",
+                "`github.com/abrosimov`, `github.com/abrosimov-tech`",
+            ),
+            ("work", None, "~/Work", "`github.com/abrosimov`"),
+            (
+                "work",
+                [{"host": "gitlab.example", "owner": "example-org"}],
+                "~/Work",
+                "`github.com/abrosimov`, `gitlab.example/example-org`",
+            ),
+        ],
+    )
+    def test_auto_mode_renders_from_the_selected_profile(
+        self,
+        tmp_path: Path,
+        profile: str,
+        local_owners: list[dict[str, str]] | None,
+        expected_workspace: str,
+        expected_owners: str,
+    ) -> None:
+        copy_template_variables(tmp_path)
+        if local_owners is not None:
+            local = tmp_path / "roles" / "devbox" / "local" / "vars" / f"{profile}.yml"
+            local.parent.mkdir(parents=True)
+            local.write_text(
+                yaml.safe_dump({"devbox_extra_auto_mode_trusted_remote_owners": local_owners}),
+                encoding="utf-8",
+            )
+
+        rendered = snapshot_mapping(repository_document(profile, repo_root=tmp_path).rendered)
+        auto_mode = rendered["autoMode"]
+        assert isinstance(auto_mode, dict)
+        defaults, workspace, remotes = auto_mode["environment"]
+
+        assert defaults == "$defaults"
+        assert f"every git repository under `{expected_workspace}` " in workspace
+        assert f"repositories owned by {expected_owners} (including subgroups)" in remotes
+        assert rendered["skillOverrides"] == {"auto-mode-setup": "off"}
 
     def test_otel_resource_classification_is_shared(
         self,

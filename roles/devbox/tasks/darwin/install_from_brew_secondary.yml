@@ -235,10 +235,12 @@
 
 # The playbook owns the `default` switch, so the whole switch is upgraded, not
 # only the packages above. Both steps are skipped in check mode and on a
-# machine without the switch.
+# machine without the switch. `--yes` also accepts the one-way layout upgrade
+# of ~/.opam that a Homebrew upgrade of opam asks for; without it opam answers
+# its own prompt with "n" and exits 10.
 - name: "Update opam package repositories"
   ansible.builtin.command:
-    argv: [opam, update]
+    argv: [opam, update, --yes]
     removes: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam/default"
   environment:
     PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"

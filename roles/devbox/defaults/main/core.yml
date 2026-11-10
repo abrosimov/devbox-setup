@@ -83,6 +83,9 @@ devbox_extra_brew_casks_no_binaries: []
 devbox_extra_mcp_http_servers: []
 # Claude Code plugins added to devbox_claude_plugins (claude.yml); same entry shape.
 devbox_extra_claude_plugins: []
+# Remote owners the Claude auto-mode classifier treats as trusted, added to
+# devbox_auto_mode_trusted_remote_owners (claude.yml); same entry shape.
+devbox_extra_auto_mode_trusted_remote_owners: []
 # Self-hosted Langfuse the langfuse skill talks to. Empty renders no LANGFUSE_HOST,
 # no Langfuse keys and no Langfuse sandbox domains into ~/.claude/settings.json.
 devbox_langfuse_host: ""

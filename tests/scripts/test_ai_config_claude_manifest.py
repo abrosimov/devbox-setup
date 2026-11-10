@@ -40,6 +40,7 @@ PROFILE_TEMPLATED_PATHS = {
     ("env", "LANGFUSE_PUBLIC_KEY"),
     ("env", "LANGFUSE_SECRET_KEY"),
     ("sandbox", "network", "allowedDomains"),
+    ("autoMode", "environment"),
 }
 LANGFUSE_PLUGIN = "langfuse@claude-plugins-official"
 KEYCHAIN_DECLARATION = "@keychain@"
@@ -214,6 +215,29 @@ class TestClaudeFieldManifest:
         assert not any("langfuse" in domain for domain in sandbox["network"]["allowedDomains"])
         assert "@omit@" not in json.dumps(rendered)
         assert KEYCHAIN_DECLARATION not in json.dumps(rendered)
+
+    @pytest.mark.parametrize(
+        ("profile", "expected_workspace", "expected_owners"),
+        [
+            ("personal", "~/Projects", "`github.com/abrosimov`, `github.com/abrosimov-tech`"),
+            ("work", "~/Work", "`github.com/abrosimov`, `gitlab.com/openinnovationai`"),
+        ],
+    )
+    def test_auto_mode_renders_from_the_selected_profile(
+        self,
+        profile: str,
+        expected_workspace: str,
+        expected_owners: str,
+    ) -> None:
+        rendered = snapshot_mapping(repository_document(profile).rendered)
+        auto_mode = rendered["autoMode"]
+        assert isinstance(auto_mode, dict)
+        defaults, workspace, remotes = auto_mode["environment"]
+
+        assert defaults == "$defaults"
+        assert f"every git repository under `{expected_workspace}` " in workspace
+        assert f"repositories owned by {expected_owners} (including subgroups)" in remotes
+        assert rendered["skillOverrides"] == {"auto-mode-setup": "off"}
 
     def test_otel_resource_classification_is_shared(
         self,

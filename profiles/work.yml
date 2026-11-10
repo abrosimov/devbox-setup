@@ -7,6 +7,9 @@ devbox_extra_brew:
   - oras
 devbox_extra_brew_casks:
   - orbstack         # Work machines use OrbStack; personal uses Docker Desktop.
+devbox_extra_auto_mode_trusted_remote_owners:
+  - host: gitlab.com
+    owner: openinnovationai
 devbox_extra_mcp_http_servers:
   - name: atlassian
     url: "https://mcp.atlassian.com/v1/mcp"

@@ -11,6 +11,14 @@ devbox_ai_managed_dirs:
   - commands
   - skills
 
+# Remote owners rendered into autoMode.environment in ~/.claude/settings.json:
+# the auto-mode classifier treats their repositories as trusted destinations and
+# every other remote, including a third-party clone under the workspace, as external.
+# Profiles add owners through devbox_extra_auto_mode_trusted_remote_owners.
+devbox_auto_mode_trusted_remote_owners:
+  - host: github.com
+    owner: abrosimov
+
 devbox_claude_managed_dirs:
   - schemas
   - bin

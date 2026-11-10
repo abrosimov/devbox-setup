@@ -1150,6 +1150,16 @@ CLAUDE_LANGFUSE_KEY_RULES = b"""    {
       "secret": true
     },
 """
+CLAUDE_AUTO_MODE_RULE = b"""    {
+      "path": "autoMode",
+      "scope": "shared"
+    },
+"""
+CLAUDE_SKILL_OVERRIDES_RULE = b"""    {
+      "path": "skillOverrides",
+      "scope": "shared"
+    },
+"""
 
 
 class TestClaudeManifestMigrations:
@@ -1161,11 +1171,15 @@ class TestClaudeManifestMigrations:
             "dialog-expiry-preference",
             "cleanup-period-preference",
             "attribution",
+            "langfuse-keys",
         ],
     )
     def test_recognised_transition_preserves_baseline_history(self, source):
         target_source = CLAUDE_MANIFEST.read_bytes()
-        attribution = target_source.replace(CLAUDE_LANGFUSE_KEY_RULES, b"", 1)
+        langfuse_keys = target_source.replace(CLAUDE_AUTO_MODE_RULE, b"", 1).replace(
+            CLAUDE_SKILL_OVERRIDES_RULE, b"", 1
+        )
+        attribution = langfuse_keys.replace(CLAUDE_LANGFUSE_KEY_RULES, b"", 1)
         pre_attribution = attribution.replace(CLAUDE_ATTRIBUTION_RULE, b"", 1)
         source_bytes = {
             "pre-hooks": CLAUDE_PRE_HOOKS_MANIFEST.read_bytes(),
@@ -1183,6 +1197,7 @@ class TestClaudeManifestMigrations:
             ),
             "cleanup-period-preference": pre_attribution,
             "attribution": attribution,
+            "langfuse-keys": langfuse_keys,
         }[source]
         expected_source_digest = {
             "pre-hooks": "f0f3d3f991fbfdd194db632d3caf361936cf3d6897ce0a119be9a8c75ef04b0a",
@@ -1196,6 +1211,7 @@ class TestClaudeManifestMigrations:
                 "95dfe9607c1ae48e356d7452926cd1a8c0d8f0802dbe1f926ac9e10dc623ff9a"
             ),
             "attribution": "55eb8d125af1b049a2a3b78e50d3540b1a0a7ea5ac8b36c73faef308bd4dfa3e",
+            "langfuse-keys": "e5d2d86bcab70f984254f73ce6e16336b3dccdce6f0e6d342d56e6cc6be7948b",
         }[source]
         snapshot = {
             "env": {"LANGFUSE_TRACING_ENVIRONMENT": "personal"},
@@ -1210,7 +1226,7 @@ class TestClaudeManifestMigrations:
 
         assert digest_manifest_source(source_bytes) == expected_source_digest
         assert digest_manifest_source(target_source) == (
-            "e5d2d86bcab70f984254f73ce6e16336b3dccdce6f0e6d342d56e6cc6be7948b"
+            "7a8a6051fb80d6a29ef029c11b2aa23dd1ac602e38db437583d467c18549a732"
         )
         migrated = parse_base_state(
             render_base_state(state),

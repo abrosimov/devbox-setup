@@ -97,27 +97,93 @@ def test_no_binaries_survives_the_upgrade() -> None:
 
 def test_uv_tools_are_installed_in_both_modes() -> None:
     install = next(task for task in _tasks("install_from_uv.yml") if "uv tool install" in str(task))
-    assert "when" not in install
+    assert SWITCH not in _when(install)
     upgrade = next(task for task in _tasks("install_from_uv.yml") if "uv tool upgrade" in str(task))
     assert SWITCH in _when(upgrade)
 
 
+UV_FILE = "install_from_uv.yml"
+UV_DIR_TASK = "Locate uv-managed Python installations"
+UV_PYTHON_UPGRADE_TASK = "Upgrade uv-managed Python to the latest patch releases"
+UV_HEALTH_TASK = "Check Python tool environments run on uv-managed Python"
+UV_INSTALL_TASK = "Install Python tools via uv"
+UV_TOOL_UPGRADE_TASK = "Upgrade Python tools via uv"
+
+
+def _uv_task(name: str) -> Doc:
+    tasks = [task for task in _tasks(UV_FILE) if task["name"] == name]
+    assert len(tasks) == 1, name
+    return tasks[0]
+
+
 def _uv_install_command() -> Doc:
-    install = next(task for task in _tasks("install_from_uv.yml") if "uv tool install" in str(task))
-    return install["ansible.builtin.command"]
+    return _uv_task(UV_INSTALL_TASK)["ansible.builtin.command"]
 
 
 def test_uv_tool_install_takes_over_a_launcher_owned_by_another_installer() -> None:
     cmd = _uv_install_command()["cmd"]
     assert cmd.startswith("uv tool install ")
     assert "--force" in cmd.split()
-    assert cmd.endswith("{{ item }}")
+    assert cmd.endswith("{{ item.item }}")
 
 
-def test_uv_tool_presence_is_judged_by_uvs_own_tool_environment() -> None:
-    creates = _uv_install_command()["creates"]
-    assert creates.endswith("/.local/share/uv/tools/{{ item }}")
-    assert "/.local/bin/" not in creates
+def test_uv_tool_install_runs_only_for_an_unhealthy_environment() -> None:
+    install = _uv_task(UV_INSTALL_TASK)
+    health = _uv_task(UV_HEALTH_TASK)
+    assert install["loop"] == "{{ " + health["register"] + ".results }}"
+    assert _when(install).replace(" ", "") == "item.rc!=0"
+    assert "creates" not in install["ansible.builtin.command"]
+    assert "removes" not in install["ansible.builtin.command"]
+    assert "/.local/bin/" not in str(install)
+
+
+def test_uv_tool_health_check_runs_the_tools_own_interpreter() -> None:
+    health = _uv_task(UV_HEALTH_TASK)
+    argv = health["ansible.builtin.command"]["argv"]
+    assert health["loop"] == "{{ devbox_packages.uv_tools }}"
+    assert argv[0].endswith("/.local/share/uv/tools/{{ item }}/bin/python")
+    assert "/.local/bin/" not in argv[0]
+
+
+def test_uv_tool_health_check_compares_against_the_uv_python_dir() -> None:
+    argv = _uv_task(UV_HEALTH_TASK)["ansible.builtin.command"]["argv"]
+    dir_task = _uv_task(UV_DIR_TASK)
+    assert dir_task["ansible.builtin.command"]["cmd"] == "uv python dir"
+    assert dir_task["changed_when"] is False
+    assert "sys.base_prefix" in " ".join(argv)
+    assert any(dir_task["register"] in arg for arg in argv[1:])
+
+
+def test_uv_tool_health_check_never_fails_or_reports_change() -> None:
+    health = _uv_task(UV_HEALTH_TASK)
+    assert health["failed_when"] is False
+    assert health["changed_when"] is False
+    assert health["register"]
+
+
+def test_uv_tools_run_on_uv_managed_python_only() -> None:
+    for name in (UV_INSTALL_TASK, UV_TOOL_UPGRADE_TASK):
+        assert _uv_task(name)["environment"]["UV_PYTHON_PREFERENCE"] == "only-managed", name
+
+
+def test_uv_python_patch_upgrade_follows_the_switch_and_reports_from_output() -> None:
+    upgrade = _uv_task(UV_PYTHON_UPGRADE_TASK)
+    assert upgrade["ansible.builtin.command"]["cmd"] == "uv python upgrade"
+    assert SWITCH in _when(upgrade)
+    assert upgrade["changed_when"] is not True
+    assert upgrade["register"] in upgrade["changed_when"]
+
+
+def test_uv_tasks_run_in_dependency_order() -> None:
+    names = [task["name"] for task in _tasks(UV_FILE)]
+    order = [
+        UV_DIR_TASK,
+        UV_PYTHON_UPGRADE_TASK,
+        UV_HEALTH_TASK,
+        UV_INSTALL_TASK,
+        UV_TOOL_UPGRADE_TASK,
+    ]
+    assert [name for name in names if name in order] == order
 
 
 def _command_task(name: str) -> Doc:

@@ -102,6 +102,24 @@ def test_uv_tools_are_installed_in_both_modes() -> None:
     assert SWITCH in _when(upgrade)
 
 
+def _uv_install_command() -> Doc:
+    install = next(task for task in _tasks("install_from_uv.yml") if "uv tool install" in str(task))
+    return install["ansible.builtin.command"]
+
+
+def test_uv_tool_install_takes_over_a_launcher_owned_by_another_installer() -> None:
+    cmd = _uv_install_command()["cmd"]
+    assert cmd.startswith("uv tool install ")
+    assert "--force" in cmd.split()
+    assert cmd.endswith("{{ item }}")
+
+
+def test_uv_tool_presence_is_judged_by_uvs_own_tool_environment() -> None:
+    creates = _uv_install_command()["creates"]
+    assert creates.endswith("/.local/share/uv/tools/{{ item }}")
+    assert "/.local/bin/" not in creates
+
+
 def _command_task(name: str) -> Doc:
     tasks = [task for task in _tasks("install_from_brew_secondary.yml") if task["name"] == name]
     assert len(tasks) == 1, name

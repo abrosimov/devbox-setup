@@ -27,8 +27,14 @@ pipx ensurepath
 # the playbook then finds it already present and upgrades it to latest.
 brew install uv
 
-# Install Ansible and tools
-pipx install --include-deps ansible ansible-navigator ansible-builder
+# Install Ansible and tools. Only `ansible` needs --include-deps: its commands
+# (ansible-playbook, ansible-galaxy, ...) come from the ansible-core dependency.
+# On ansible-navigator the flag also exposes its dependencies' commands
+# (ansible-lint, yamllint, black, ...) in ~/.local/bin, shadowing the copies the
+# playbook manages with uv.
+pipx install --include-deps ansible
+pipx install ansible-navigator
+pipx install ansible-builder
 pipx install pipreqs
 
 # Install required Ansible collections

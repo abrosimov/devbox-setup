@@ -3,11 +3,15 @@
 # Package list defined in defaults/main.yml under devbox_packages.uv_tools.
 # Each tool is checked individually for idempotency. Installing runs in both
 # modes because `uv tool upgrade` refuses a tool that is not installed yet.
+# Presence is judged by uv's own tool environment, not by ~/.local/bin/<tool>:
+# another installer (pipx --include-deps put ansible-lint there) can own a
+# launcher of the same name, which would skip the install forever and fail the
+# upgrade. `--force` lets uv take that launcher over.
 
 - name: "Install Python tools via uv"
   ansible.builtin.command:
-    cmd: "uv tool install {{ item }}"
-    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin/{{ item }}"
+    cmd: "uv tool install --force {{ item }}"
+    creates: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/uv/tools/{{ item }}"
   environment:
     PATH: "/opt/homebrew/bin:{{ lookup('ansible.builtin.env', 'HOME') }}/.local/bin:{{ ansible_facts['env']['PATH'] }}"
   loop: "{{ devbox_packages.uv_tools }}"

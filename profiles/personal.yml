@@ -5,15 +5,14 @@ devbox_langfuse_user_id: "abrosimov.k.a@gmail.com"
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []
 # devbox_extra_brew_casks: []
-# ClickStack (HyperDX v2) on the telemetry host, reached through the `otelbox`
-# SSH tunnel (OTELBOX_CLICKSTACK_PORT, default 28080), so the tunnel must be up.
-# The Personal API access key comes from the Keychain (make clickstack-config).
+# ClickStack (HyperDX v2) MCP behind the server's Tamias `mcp` gateway: the
+# client sends a short-lived Pocket access token from `tamias mcp-headers`
+# (needs the `mcp` credential profile and, for device auth, `tamias login mcp`);
+# the gateway swaps it for the HyperDX key, which never leaves the server.
 devbox_extra_mcp_http_servers:
   - name: clickstack
-    url: "http://127.0.0.1:28080/api/mcp"
-    headers_helper: >-
-      ~/.claude/bin/.venv/bin/python ~/.claude/bin/mcp_keychain_headers.py
-      --service devbox-clickstack --account personal-api-key
+    url: "https://clickstack.abrosimov.tech/api/mcp"
+    headers_helper: "{{ devbox_packages.tamias.install_path }} mcp-headers"
 devbox_extra_auto_mode_trusted_remote_owners:
   - host: github.com
     owner: abrosimov-tech

@@ -132,7 +132,7 @@ Protected files: `_init_env_confidential.fish` is copied only if absent (`force:
 Three transport types configured in `defaults/main/claude.yml`:
 - **Docker** (`mcp_docker_servers`) — containers via `docker run --rm -i` (sequentialthinking, playwright)
 - **Script** (`mcp_script_servers`) — wrapper scripts in `~/.claude/bin/` (memory-upstream, memory-downstream)
-- **HTTP** (`mcp_http_servers + devbox_extra_mcp_http_servers`) — remote endpoints (profile extras), registered via `claude mcp add-json`; an entry's optional `headers_helper` becomes the server's `headersHelper`, so a bearer token is read at connect time (e.g. `bin/mcp_keychain_headers.py`) instead of being stored in `~/.claude.json`
+- **HTTP** (`mcp_http_servers + devbox_extra_mcp_http_servers`) — remote endpoints (profile extras), registered via `claude mcp add-json`; an entry's optional `headers_helper` becomes the server's `headersHelper`, so a bearer token is obtained at connect time (e.g. `tamias mcp-headers`) instead of being stored in `~/.claude.json`
 
 Registered via `claude mcp add` with user scope.
 
@@ -175,7 +175,7 @@ Current per-profile differences:
 |---|---|---|
 | `devbox_projects_dir` | `$HOME/Projects` | `$HOME/Work` |
 | Container runtime cask | `docker-desktop` | `orbstack` |
-| Extra MCP HTTP servers | `clickstack` (`http://127.0.0.1:28080/api/mcp` through the `otelbox` tunnel; Bearer key from Keychain `devbox-clickstack` via `headersHelper`, seeded by `make clickstack-config`) | `atlassian` |
+| Extra MCP HTTP servers | `clickstack` (`https://clickstack.abrosimov.tech/api/mcp` behind the server's Tamias `mcp` gateway; `headersHelper` runs `tamias mcp-headers` for a short-lived Pocket token, the HyperDX key stays on the server) | `atlassian` |
 | Langfuse skill access (`devbox_langfuse_host`) | `LANGFUSE_HOST` + Keychain keys + sandbox domains | none |
 
 ### AI Config (in `roles/devbox/files/dot_claude/`, `dot_codex/`, and `dot_ai/`)

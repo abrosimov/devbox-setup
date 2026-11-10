@@ -37,7 +37,6 @@ A profile is mandatory: bare `make run` / `make check` fail with `PROFILE is req
 | `make otelbox-edge-config` | Set the edge collector's remote endpoint + ingestion token (`ONLY=endpoint\|token`) |
 | `make otelbox-edge-test` | Liveness + delivery smoke for the edge collector (also runs after `make personal`/`work`) |
 | `make langfuse-config` | Seed or rotate the Langfuse API keys for the personal profile's `langfuse` Claude Code skill (login Keychain) |
-| `make clickstack-config` | Seed or rotate the ClickStack Personal API access key for the personal profile's `clickstack` MCP server (login Keychain) |
 | `make go-proxy-verify` | Prove the private Go module proxy client end to end (needs an existing `tamias login`) |
 
 Add `V=1` through `V=4` for verbosity. Pass extra Ansible variables via `EXTRA_VARS='-e foo=bar'` (e.g. `--tags`: `make personal EXTRA_VARS='--tags packages'`).
@@ -55,7 +54,6 @@ A provisioning run upgrades what it manages, not only installs it: Homebrew form
 | `devbox-sudo` | Login/sudo password | `scripts/with_sudo_keepalive.sh` (primes `sudo -v`); `ansible.cfg` `become_password_file`; Homebrew cask `sudo_password:` (via `devbox_sudo_password` var) |
 | `devbox-ssh-passphrase` | SSH key passphrase | `roles/devbox/tasks/prepare_user.yml` (key generation); `configure_ssh_keychain.yml` (writes `SSH: <path>` slot for `ssh-add --apple-load-keychain`) |
 | `devbox-langfuse` (accounts `public-key`, `secret-key`) | Langfuse API key pair | `scripts/ai-config apply claude --profile personal` writes them into `~/.claude/settings.json` `env` for the `langfuse` skill |
-| `devbox-clickstack` (account `personal-api-key`) | ClickStack (HyperDX v2) Personal API access key — not the ingestion key | `~/.claude/bin/mcp_keychain_headers.py`, the `headersHelper` of the personal `clickstack` MCP server, reads it on every connection; it is never written to `~/.claude.json` |
 
 Rotation:
 
@@ -64,7 +62,6 @@ make sudo-reseed              # after changing macOS login password
 make ssh-passphrase-reseed    # after changing/regenerating SSH passphrase
 make secrets-init             # reseed both (idempotent -U)
 make langfuse-config          # seed or rotate the Langfuse key pair (personal)
-make clickstack-config        # seed or rotate the ClickStack API key (personal)
 ```
 
 Inspect existing slots via `security find-generic-password -s devbox-sudo` (or `-s devbox-ssh-passphrase`). The first read from any subprocess triggers a one-time Keychain ACL dialog — click "Always Allow" to grant `security` silent access thereafter.
@@ -84,7 +81,7 @@ Current per-profile differences:
 |---|---|---|
 | Projects dir | `$HOME/Projects` | `$HOME/Work` |
 | Container runtime | `docker-desktop` | `orbstack` |
-| Extra MCP servers | `clickstack` (HTTP, via the `otelbox` tunnel; key from Keychain) | `atlassian` (HTTP) |
+| Extra MCP servers | `clickstack` (HTTP, `https://clickstack.abrosimov.tech/api/mcp`; Pocket token from `tamias mcp-headers`) | `atlassian` (HTTP) |
 | Langfuse skill access | `LANGFUSE_HOST`, Keychain API keys, sandbox domains for `langfuse.abrosimov.tech` and `langfuse.com` | none |
 
 ### System-Level macOS Tweaks

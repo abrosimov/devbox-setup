@@ -549,6 +549,8 @@
 # (e.g. BetterDisplay settings.plist) consumed by dedicated task files.
 # It is intentionally excluded from the filetree loop below — those files
 # are not dotfile-shape and must NOT be copied into the user's home.
+# `local/vars/<profile>.yml` is likewise excluded: it holds private template
+# variables that `scripts/ai-config` layers over `profiles/<profile>.yml`.
 # =============================================================================
 
 - name: Check if local overlay directory exists
@@ -616,7 +618,9 @@
     - devbox_local_overlay_dir.stat.exists
     - item.state == 'directory'
     - not item.path.startswith('host_state/')
+    - not item.path.startswith('vars/')
     - item.path != 'host_state'
+    - item.path != 'vars'
   tags: [configs, local]
 
 - name: Copy local overlay files
@@ -632,6 +636,7 @@
     - item.state == 'file'
     - not item.path.endswith('.j2')
     - not item.path.startswith('host_state/')
+    - not item.path.startswith('vars/')
     - item.path != '.config/otelbox/edge/client/client.crt'
     - item.path != '.config/otelbox/edge/client/client.key'
   tags: [configs, local]
@@ -749,5 +754,6 @@
     - item.state == 'file'
     - item.path.endswith('.j2')
     - not item.path.startswith('host_state/')
+    - not item.path.startswith('vars/')
     - item.path != '.config/otelbox/edge/client/client.crt.j2'
     - item.path != '.config/otelbox/edge/client/client.key.j2'

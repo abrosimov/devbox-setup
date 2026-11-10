@@ -534,3 +534,60 @@ class TestOmittedFields:
         rendered = document(json.dumps({"value": OMIT_MARKER, "nested": [{"k": OMIT_MARKER}]}))
 
         assert snapshot_mapping(rendered.rendered) == {"nested": [{}]}
+
+
+class TestLocalVariables:
+    """`roles/devbox/local/vars/<profile>.yml` is the last, gitignored layer."""
+
+    @staticmethod
+    def write_variables(path: Path, variables: dict[str, object]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(yaml.safe_dump(variables), encoding="utf-8")
+
+    @pytest.fixture
+    def repo_root(self, tmp_path: Path) -> Path:
+        self.write_variables(
+            tmp_path / "roles/devbox/defaults/main/core.yml",
+            {"owner": "default", "untouched": "default"},
+        )
+        self.write_variables(tmp_path / "profiles/personal.yml", {"owner": "personal"})
+        self.write_variables(tmp_path / "profiles/work.yml", {"owner": "work"})
+        return tmp_path
+
+    def test_an_absent_local_file_leaves_the_profile_values(self, repo_root: Path) -> None:
+        variables = load_template_variables(repo_root, "work")
+
+        assert variables["owner"] == "work"
+        assert variables["untouched"] == "default"
+
+    def test_a_local_value_overrides_the_profile_value(self, repo_root: Path) -> None:
+        self.write_variables(
+            repo_root / "roles/devbox/local/vars/work.yml", {"owner": "local-work"}
+        )
+
+        variables = load_template_variables(repo_root, "work")
+
+        assert variables["owner"] == "local-work"
+        assert variables["untouched"] == "default"
+
+    def test_only_the_selected_profile_local_file_is_read(self, repo_root: Path) -> None:
+        self.write_variables(
+            repo_root / "roles/devbox/local/vars/work.yml", {"owner": "local-work"}
+        )
+
+        assert load_template_variables(repo_root, "personal")["owner"] == "personal"
+
+    def test_a_local_file_does_not_stand_in_for_a_missing_profile(self, tmp_path: Path) -> None:
+        self.write_variables(tmp_path / "roles/devbox/defaults/main/core.yml", {"owner": "x"})
+        self.write_variables(tmp_path / "roles/devbox/local/vars/work.yml", {"owner": "y"})
+
+        with pytest.raises(TemplateError, match="no variables for profile"):
+            load_template_variables(tmp_path, "work")
+
+    def test_a_malformed_local_file_is_rejected(self, repo_root: Path) -> None:
+        local = repo_root / "roles/devbox/local/vars/work.yml"
+        local.parent.mkdir(parents=True)
+        local.write_text("- not\n- a mapping\n", encoding="utf-8")
+
+        with pytest.raises(TemplateError, match="must hold a mapping"):
+            load_template_variables(repo_root, "work")

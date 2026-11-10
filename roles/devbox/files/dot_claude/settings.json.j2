@@ -1119,6 +1119,16 @@
       "gh"
     ]
   },
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "**Trusted local workspace**: every git repository under `{{ devbox_projects_dir | replace('$HOME', '~') }}` (the AION_AUTOPOIESEON workspace root), including sibling worktrees; reading and editing files there is routine",
+      "**Trusted remotes**: repositories owned by {% for remote in devbox_auto_mode_trusted_remote_owners + devbox_extra_auto_mode_trusted_remote_owners %}`{{ remote.host }}/{{ remote.owner }}`{{ ', ' if not loop.last }}{% endfor %} (including subgroups); a remote of any other owner, including a third-party clone under the workspace, is an external destination"
+    ]
+  },
+  "skillOverrides": {
+    "auto-mode-setup": "off"
+  },
   "attribution": {
     "commit": "",
     "pr": "",

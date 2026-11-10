@@ -11,6 +11,10 @@
       "scope": "shared"
     },
     {
+      "path": "autoMode",
+      "scope": "shared"
+    },
+    {
       "path": "cleanupPeriodDays",
       "scope": "preference",
       "preference": {
@@ -79,6 +83,10 @@
     },
     {
       "path": "skipAutoPermissionPrompt",
+      "scope": "shared"
+    },
+    {
+      "path": "skillOverrides",
       "scope": "shared"
     },
     {

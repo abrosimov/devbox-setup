@@ -1,9 +1,10 @@
-"""Static contract of the TLA+ pins: every tool is pinned by tag and by sha256.
+"""Static contract of the TLA+ pins: every tool is pinned by release tag only.
 
-Upstream reissues assets under an unchanged tag, so a tag alone does not name
-one artefact. The playbook must trust only the pinned digest: it compares the
-digest GitHub reports with the pin, downloads against the pin, and decides on a
-reinstall by comparing the recorded digest with the pin.
+Upstream reissues assets under an unchanged tag, so the playbook follows the
+digest GitHub reports for the pinned tag instead of declaring one. That digest
+is shape-checked before anything uses it; the download is verified against it,
+it is recorded as the installed digest, and a reinstall happens when the
+recorded digest differs from it.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ PACKAGES = ROOT / "roles/devbox/defaults/main/packages.yml"
 TOOL_TASKS = ROOT / "roles/devbox/tasks/darwin/install_tlaplus_tool.yml"
 ENTRY_TASKS = ROOT / "roles/devbox/tasks/darwin/install_tlaplus.yml"
 BLOCK_KEYS = ("block", "rescue", "always")
-PINNED = "devbox_tlaplus_pinned"
+REPORTED = "devbox_tlaplus_asset.digest"
 GH_AUTH = "devbox_tlaplus_gh_auth"
 
 Doc = dict
@@ -71,62 +72,71 @@ def _lookup_tasks() -> tuple[Doc, Doc]:
 class TestPinShape:
     def test_every_tool_has_exactly_the_pin_keys(self) -> None:
         for tool in _tools():
-            assert set(tool) == {"name", "repository", "tag", "asset", "sha256"}, tool["name"]
+            assert set(tool) == {"name", "repository", "tag", "asset"}, tool["name"]
 
-    def test_every_sha256_is_64_lowercase_hex_without_prefix(self) -> None:
-        for tool in _tools():
-            assert re.fullmatch(r"[0-9a-f]{64}", tool["sha256"]), tool["name"]
-
-    def test_tags_and_digests_are_strings(self) -> None:
+    def test_tags_are_strings(self) -> None:
         for tool in _tools():
             assert isinstance(tool["tag"], str), tool["name"]
-            assert isinstance(tool["sha256"], str), tool["name"]
 
-    def test_tool_names_and_digests_are_unique(self) -> None:
+    def test_tool_names_are_unique(self) -> None:
         tools = _tools()
         assert len({tool["name"] for tool in tools}) == len(tools)
-        assert len({tool["sha256"] for tool in tools}) == len(tools)
 
 
-class TestInstallTrustsOnlyThePin:
-    def test_pin_shape_is_asserted_before_anything_else(self) -> None:
-        first = _tasks()[0]
-        assert "ansible.builtin.assert" in first
-        assert "devbox_tlaplus_tool.sha256" in str(first["ansible.builtin.assert"]["that"])
+class TestInstallFollowsTheReportedDigest:
+    def test_reported_digest_is_shape_checked(self) -> None:
+        task = _find("Require a sha256 digest")
+        conditions = task["ansible.builtin.assert"]["that"]
+        assert any("devbox_tlaplus_asset.browser_download_url is defined" in c for c in conditions)
+        assert any(
+            REPORTED in c and "is match" in c and "^sha256:[0-9a-f]{64}$" in c for c in conditions
+        )
 
-    def test_pinned_digest_carries_the_github_prefix(self) -> None:
-        task = _find("Resolve install path and pinned digest")
-        assert task["ansible.builtin.set_fact"][PINNED] == "sha256:{{ devbox_tlaplus_tool.sha256 }}"
-
-    def test_github_digest_must_equal_the_pin(self) -> None:
-        task = _find("Require GitHub to report the pinned digest")
-        assertion = task["ansible.builtin.assert"]
-        conditions = assertion["that"]
-        assert any(PINNED in c and "devbox_tlaplus_asset.digest" in c for c in conditions)
-        message = assertion["fail_msg"]
-        for needle in ("devbox_tlaplus_tool.tag", "devbox_tlaplus_asset.digest", PINNED):
+    def test_shape_check_names_the_release_and_asset_on_failure(self) -> None:
+        message = _find("Require a sha256 digest")["ansible.builtin.assert"]["fail_msg"]
+        for needle in (
+            "devbox_tlaplus_tool.repository",
+            "devbox_tlaplus_tool.tag",
+            "devbox_tlaplus_tool.asset",
+        ):
             assert needle in message
 
-    def test_download_is_checked_against_the_pin(self) -> None:
+    def test_shape_check_follows_asset_selection_and_precedes_every_use(self) -> None:
+        names = [str(task.get("name", "")) for task in _tasks()]
+
+        def position(prefix: str) -> int:
+            return next(i for i, name in enumerate(names) if name.startswith(prefix))
+
+        check = position("Require a sha256 digest")
+        assert position("Select asset") < check
+        assert check < position("Compare installed and released digest")
+        assert check < position("Report pending release")
+        assert check < position("Install new release")
+
+    def test_download_is_checked_against_the_reported_digest(self) -> None:
         task = _find("Download")
-        assert task["ansible.builtin.get_url"]["checksum"] == "{{ " + PINNED + " }}"
+        assert task["ansible.builtin.get_url"]["checksum"] == "{{ " + REPORTED + " }}"
 
-    def test_recorded_digest_is_the_pin(self) -> None:
+    def test_recorded_digest_is_the_reported_digest(self) -> None:
         task = _find("Record digest")
-        assert PINNED in task["ansible.builtin.copy"]["content"]
+        assert REPORTED in task["ansible.builtin.copy"]["content"]
 
-    def test_reinstall_decision_compares_with_the_pin(self) -> None:
-        task = _find("Compare installed and pinned digest")
+    def test_reinstall_decision_compares_with_the_reported_digest(self) -> None:
+        task = _find("Compare installed and released digest")
         expression = task["ansible.builtin.set_fact"]["devbox_tlaplus_outdated"]
-        assert PINNED in expression
-        assert "devbox_tlaplus_asset" not in expression
+        assert "devbox_tlaplus_installed.content" in expression
+        assert REPORTED in expression
+        assert "devbox_tlaplus_tool" not in expression
 
-    def test_reported_digest_is_never_trusted_downstream(self) -> None:
-        guard = _find("Require GitHub to report the pinned digest")
+    def test_nothing_reads_a_digest_from_the_tool_entry(self) -> None:
         for task in _flatten(_tasks()):
-            if task.get("name") == guard["name"]:
-                continue
-            assert "devbox_tlaplus_asset.digest" not in str(task), task.get("name")
+            assert not re.search(r"devbox_tlaplus_tool(\.|\[\s*['\"])sha256", str(task)), task.get(
+                "name"
+            )
+
+    def test_no_pinned_digest_fact_survives(self) -> None:
+        for task in _flatten(_tasks()):
+            assert "devbox_tlaplus_pinned" not in str(task), task.get("name")
 
 
 class TestDryRun:

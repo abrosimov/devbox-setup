@@ -75,6 +75,11 @@ endef
 # See pyproject.toml for the rationale.
 DEV_VENV     := .venv
 DEV_BIN      := $(DEV_VENV)/bin
+# The fish autovenv hook activates this venv on `cd` into the repo. Every other
+# uv project here (the hook trees, packages/drive-backup, ~/.claude/bin during the
+# playbook) owns its own venv, and an inherited VIRTUAL_ENV only makes uv warn
+# that it ignores it. Root tools are called by path via DEV_BIN, never through it.
+unexport VIRTUAL_ENV
 DEV_SENTINEL := $(DEV_VENV)/.devbox-installed
 VALIDATE_PYTHON ?= $(if $(wildcard $(DEV_BIN)/python),$(DEV_BIN)/python,python3)
 

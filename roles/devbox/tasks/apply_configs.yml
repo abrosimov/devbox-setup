@@ -401,14 +401,24 @@
   failed_when: false
   tags: [configs, claude, mcp]
 
+# add-json rather than add: only the JSON form carries `headersHelper`, which
+# resolves a bearer token at connect time so it never lands in ~/.claude.json.
 - name: Register Claude Code MCP servers - HTTP (user scope)
-  ansible.builtin.command: >
-    {{ devbox_claude_cli_path.stdout }} mcp add
-    --transport {{ item.transport | default('http') }}
-    --scope user
-    {{ item.name }}
-    {{ item.url }}
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - mcp
+      - add-json
+      - --scope
+      - user
+      - "{{ item.name }}"
+      - >-
+        {{ {'type': item.transport | default('http'), 'url': item.url}
+           | combine({'headersHelper': item.headers_helper} if item.headers_helper is defined else {})
+           | to_json }}
   loop: "{{ devbox_mcp_http_servers + devbox_extra_mcp_http_servers }}"
+  loop_control:
+    label: "{{ item.name }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
   when: devbox_claude_cli_path.rc == 0

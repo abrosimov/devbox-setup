@@ -81,7 +81,7 @@ Current per-profile differences:
 |---|---|---|
 | Projects dir | `$HOME/Projects` | `$HOME/Work` |
 | Container runtime | `docker-desktop` | `orbstack` |
-| Extra MCP servers | none | `atlassian` (HTTP) |
+| Extra MCP servers | `clickstack` (HTTP, `https://clickstack.abrosimov.tech/api/mcp`; Pocket token from `tamias mcp-headers`) | `atlassian` (HTTP) |
 | Langfuse skill access | `LANGFUSE_HOST`, Keychain API keys, sandbox domains for `langfuse.abrosimov.tech` and `langfuse.com` | none |
 
 ### System-Level macOS Tweaks

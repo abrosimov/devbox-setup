@@ -121,7 +121,7 @@
   tags: [configs, mcp]
 
 # --- Claude Code MCP servers ---
-# Registered via `claude mcp add --scope user` → writes to ~/.claude.json.
+# Registered via `claude mcp add-json --scope user` → writes to ~/.claude.json.
 # settings.json is for permissions/sandbox only, not MCP servers.
 
 - name: Find Claude Code CLI path
@@ -366,44 +366,80 @@
     - not ansible_check_mode
   tags: [configs, claude]
 
-- name: Register Claude Code MCP servers - Docker (user scope)
-  ansible.builtin.command: >
-    {{ devbox_claude_cli_path.stdout }} mcp add
-    --transport stdio
-    --scope user
-    {{ item.name }}
-    -- docker run --rm -i
-    {% if item.network is defined %}--network={{ item.network }}{% endif %}
-    {% if item.read_only | default(false) %}--read-only{% endif %}
-    {% if item.init | default(false) %}--init{% endif %}
-    {% for k, v in (item.env | default({})).items() %}-e {{ k }}={{ v }} {% endfor %}
-    {{ item.image }}
-  loop: "{{ devbox_mcp_docker_servers }}"
-  become: "{{ not (devbox_skip_become | default(false)) }}"
-  become_user: "{{ devbox_user.login }}"
-  when: devbox_claude_cli_path.rc == 0
-  changed_when: false
-  failed_when: false
-  tags: [configs, claude, mcp]
-
-- name: Register Claude Code MCP servers - Script (user scope)
-  ansible.builtin.command: >
-    {{ devbox_claude_cli_path.stdout }} mcp add
-    --transport stdio
-    --scope user
-    {{ item.name }}
-    -- {{ item.command }}
-  loop: "{{ devbox_mcp_script_servers }}"
-  become: "{{ not (devbox_skip_become | default(false)) }}"
-  become_user: "{{ devbox_user.login }}"
-  when: devbox_claude_cli_path.rc == 0
-  changed_when: false
-  failed_when: false
-  tags: [configs, claude, mcp]
-
+# Every declared server is removed and registered again on each run, so a
+# changed URL, image or flag always reaches ~/.claude.json: `add-json` refuses a
+# name that already exists and would otherwise leave the stale entry in place.
+# Only declared names that are actually registered are removed, so the remove
+# step never fails on a fresh machine, and a failing add fails the run.
 # add-json rather than add: only the JSON form carries `headersHelper`, which
 # resolves a bearer token at connect time so it never lands in ~/.claude.json.
-- name: Register Claude Code MCP servers - HTTP (user scope)
+- name: Build declared Claude Code MCP server specs
+  ansible.builtin.set_fact:
+    devbox_mcp_declared: >-
+      {%- set specs = {} -%}
+      {%- for s in devbox_mcp_docker_servers -%}
+        {%- set args = ['run', '--rm', '-i'] -%}
+        {%- if s.network is defined -%}{%- set args = args + ['--network=' ~ s.network] -%}{%- endif -%}
+        {%- if s.read_only | default(false) -%}{%- set args = args + ['--read-only'] -%}{%- endif -%}
+        {%- if s.init | default(false) -%}{%- set args = args + ['--init'] -%}{%- endif -%}
+        {%- set env_args = [] -%}
+        {%- for k, v in (s.env | default({})).items() -%}
+          {%- set _ = env_args.extend(['-e', k ~ '=' ~ v]) -%}
+        {%- endfor -%}
+        {%- set spec = {'type': 'stdio', 'command': 'docker', 'args': args + env_args + [s.image], 'env': {}} -%}
+        {%- set _ = specs.update({s.name: spec}) -%}
+      {%- endfor -%}
+      {%- for s in devbox_mcp_script_servers -%}
+        {%- set words = s.command.split() -%}
+        {%- set _ = specs.update({s.name: {'type': 'stdio', 'command': words[0], 'args': words[1:], 'env': {}}}) -%}
+      {%- endfor -%}
+      {%- for s in devbox_mcp_http_servers + devbox_extra_mcp_http_servers -%}
+        {%- set spec = {'type': s.transport | default('http'), 'url': s.url} -%}
+        {%- if s.headers_helper is defined -%}
+          {%- set spec = spec | combine({'headersHelper': s.headers_helper}) -%}
+        {%- endif -%}
+        {%- set _ = specs.update({s.name: spec}) -%}
+      {%- endfor -%}
+      {{ specs | to_json }}
+  when: devbox_claude_cli_path.rc == 0
+  tags: [configs, claude, mcp]
+
+- name: Read registered Claude Code MCP servers (user scope)
+  ansible.builtin.slurp:
+    path: "~{{ devbox_user.login }}/.claude.json"
+  register: devbox_claude_json_raw
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when: devbox_claude_cli_path.rc == 0
+  check_mode: false
+  failed_when: false
+  tags: [configs, claude, mcp]
+
+- name: Parse registered Claude Code MCP servers
+  ansible.builtin.set_fact:
+    devbox_mcp_registered: >-
+      {{ ((devbox_claude_json_raw.content | b64decode | from_json).mcpServers | default({}))
+         if (devbox_claude_json_raw.content is defined) else {} }}
+  when: devbox_claude_cli_path.rc == 0
+  tags: [configs, claude, mcp]
+
+- name: Remove declared MCP servers before re-registering them (user scope)
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_claude_cli_path.stdout }}"
+      - mcp
+      - remove
+      - --scope
+      - user
+      - "{{ item }}"
+  loop: "{{ (devbox_mcp_declared | from_json).keys() | select('in', devbox_mcp_registered) | list }}"
+  become: "{{ not (devbox_skip_become | default(false)) }}"
+  become_user: "{{ devbox_user.login }}"
+  when: devbox_claude_cli_path.rc == 0
+  changed_when: true
+  tags: [configs, claude, mcp]
+
+- name: Register Claude Code MCP servers (user scope)
   ansible.builtin.command:
     argv:
       - "{{ devbox_claude_cli_path.stdout }}"
@@ -411,19 +447,15 @@
       - add-json
       - --scope
       - user
-      - "{{ item.name }}"
-      - >-
-        {{ {'type': item.transport | default('http'), 'url': item.url}
-           | combine({'headersHelper': item.headers_helper} if item.headers_helper is defined else {})
-           | to_json }}
-  loop: "{{ devbox_mcp_http_servers + devbox_extra_mcp_http_servers }}"
+      - "{{ item.key }}"
+      - "{{ item.value | to_json }}"
+  loop: "{{ devbox_mcp_declared | from_json | dict2items }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.key }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
   when: devbox_claude_cli_path.rc == 0
-  changed_when: false
-  failed_when: false
+  changed_when: true
   tags: [configs, claude, mcp]
 
 # Reconciler: anything registered at user scope that is NOT in the declared

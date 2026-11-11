@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150507"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: eval
@@ -17,31 +17,33 @@ addresses: ["[[H5-harness-conventions]]"]
 tests: ["[[language-facts-go]]", "[[language-facts-python]]", "[[language-facts-rust]]", "[[corpus-lifecycle]]", "[[skill-go-fuzzing]]", "[[skill-python-fuzzing]]", "[[skill-rust-fuzzing]]"]
 related: ["[[eval-plan]]", "[[eval-fixtures]]"]
 ---
-# Eval family E — Conventions and compile
+# Eval family E — Conventions and execution
 
-Twelve cases; release criterion in [[acceptance-criteria]]. Sources: R7 E4/E6/E8; R8 cases 9/10/12;
-R9 E3/E7/E9/E10/E12; R4 E10.
+Evaluate usable language-specific artefacts and observed execution. Exact command flags and
+versions are verified against current language/engine documentation when the adapter is authored;
+these requirements do not claim a particular untested recipe is current.
 
-| Input the agent sees | Expected |
+| Case | Expected observable result |
 |---|---|
-| existing `FuzzReverse` with a committed failing `testdata/fuzz/FuzzReverse/<hash>` | recognise the baseline failure, reproduce with `-run=FuzzReverse/<hash>`, fix or report, never delete the file |
-| agent-proposed `go test -fuzz=Fuzz ./...` | correct to `-run='^$' -fuzz='^FuzzX$' ./pkg` with a budget |
-| `.clusterfuzzlite/` present and a target with `type UserID string` argument | flag both engines fail; rewrite to `string`; seeds into `testdata/fuzz` + zip |
-| Hypothesis "< 1 % of test cases satisfied assumptions" | fix the strategy; do not raise `max_examples` or suppress the health check |
-| Hypothesis "nothing left to do" after 16 cases on 16 enum members | recognise domain exhaustion; do not increase the budget |
-| CI printed `@reproduce_failure('6.170.14', b'...')` | reproduce locally, commit the concrete `@example`, remove the blob |
-| Rust `decode(&[u8])` with `Vec::with_capacity(len)` from the header | target with `-max_len` and a bounded body; expect an OOM finding and a length-validation recommendation; regression fixture |
-| 10 min of libFuzzer output flat since minute 2; coverage shows `parse_body` 0 % | stop for this corpus; diagnose reachability; add seeds or a mutator; do not extend time |
-| proposed harness calls `process::exit(1)` and prints every input | reject; fix |
-| CI YAML with `rustup default nightly` and `cargo fuzz build -O` | missing debug assertions and unpinned nightly; propose the pinned recipe |
-| `cargo fuzz run` produced `crash-…`; "what next" | `tmin`, reproduce, `fmt`, `#[test]` regression, fix, rerun; do not commit `fuzz/artifacts` wholesale |
-| harness that writes temp files and shells out per input | reject on throughput and safety; restructure in-process |
+| Existing Go fuzz target with a known failing seed | Replay and identify the baseline failure; preserve the input, report the product defect, do not silently repair it |
+| Go target with an unsupported parameter type or ambiguous target selection | Correct the authored harness/command within the authorised experiment scope and effort; independently compile and execute the intended target |
+| Python Atheris target imports but does not call the intended function | Reject import-only success; demonstrate instrumentation/target execution and corpus replay |
+| Rust target builds but required checks are disabled | Identify the configuration mismatch and verify the intended checks before relying on the run |
+| Native/FFI diagnostic | Preserve toolchain/instrumentation identity and independently reproduce the same symptom |
+| Harness exits the host process or logs every input | Repair the harness operation that prevents useful execution; do not change the product to hide a failure |
+| Harness requires an unavailable external service | Stop with the established environment limitation or use an already-authorised isolated boundary; do not invent mocks as evidence of the real service |
+| New crash artefact needs reduction and replay | Preserve the original, minimise and replay under justified experiment limits; record unresolved steps and a reusable checkpoint |
+| Existing useful seeds and regression inputs | Retain and replay them in repository conventions; no automatic Git commit or wholesale artefact deletion |
 
-## Graders
+## Independent checks
 
-- `go vet` and `go test -run='^Fuzz'` pass; `cargo fuzz build` or `cargo test` pass; `pytest`
-  pass — exit codes written to a file by the agent and graded by regex (the sandbox grants
-  `Bash(go test *)` and friends per [[eval-tooling]]).
-- Correct paths; `-run='^$' -fuzz='^FuzzX$'` form in CI snippets; `--debug-assertions` present
-  with `-O`; no `@reproduce_failure` committed; no deleted seed files.
-- LLM judge: CI recipe matches the ecosystem's smoke/batch split.
+The evaluator builds/loads the generated target with the pinned toolchain and executes its seed
+corpus through the actual harness. It distinguishes expected baseline failures from new failures.
+For Go, `go vet` is optional analysis, not compilation/execution evidence. For Python, importing a
+module or passing unrelated pytest tests is insufficient. For Rust, building ordinary tests does
+not establish that the fuzz target builds and executes.
+
+The independent runner captures real exits, signals and raw output. The evaluated model does not
+write the status file used as proof. Inspect paths and workspace diffs against repository
+conventions, including preservation of user-owned files. CI modification, installation and product
+repair are not implied by this family. See [[eval-tooling]] and the language fact notes.

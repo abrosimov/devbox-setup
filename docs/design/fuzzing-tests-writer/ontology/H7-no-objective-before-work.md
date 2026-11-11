@@ -1,7 +1,7 @@
 ---
 note_id: "20261104100001"
 created: 2026-11-04
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: hypothesis
@@ -13,32 +13,25 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["H7", "Work started without a defined objective and a checkable result"]
 tags: [fuzzing, design/hypothesis, h7]
-verdict: "stated by the user; consistent with H1, H2 and H6"
+verdict: "user requirement; procedure and check specified"
 grounded_in: ["[[01-methods-and-applicability|R1]]", "[[02-stopping-and-corpus-lifecycle|R2]]"]
 addressed_by: ["[[fuzzing-charter]]", "[[agent-procedure]]", "[[skill-fuzzing-applicability]]"]
 tested_by: ["[[eval-family-H-charter]]"]
 related: ["[[ontology]]", "[[H1-no-applicability-gate]]", "[[H2-no-stopping-rule]]"]
 ---
-# H7 — Work started without a defined objective and a checkable result
+# H7 — Work starts without a defined result
 
-**Hypothesis.** Earlier agents began writing harnesses and running engines before stating what the
-fuzzing was meant to establish and what observable result would count as "done". Without that
-charter there is nothing to compare the work against, and H1 (fuzz everything), H2 (never stop)
-and H6 (report crash counts) follow.
+**Status:** user requirement; persistent charter and checks specified.
 
-**Verdict.** Stated by the user as a requirement for this iteration; the research supports it
-indirectly, since every sourced stopping, harness and reporting rule presupposes something the
-charter fixes. The [[fuzzing-charter]] is written at the charter step of [[agent-procedure]]
-(step 2, after the gate), and no harness file is written before it
-([[FTW-D-009-charter-before-work]]).
+Before investigation, identify the bounded subject and question/use, or concrete material and a
+learning aim for initial reconnaissance. A precise question may emerge from that work. Before
+harness construction, settle the contract-backed oracle and checkable result. These are recorded
+in [[fuzzing-charter]], with unknowns explicit rather than replaced by invented requirements.
 
-## Evidence
+The charter persists across experiments and agent invocations. A resumed session recovers prior
+results and remaining uncertainty. Another experiment needs a named useful contribution; another
+agent run does not reset the objective or erase previous effort.
 
-- R2 §5.1 step 1: the stopping procedure cannot start without a budget class and a cap passed to
-  the engine; "stop at this budget and record it" is only meaningful against a declared budget.
-- R1 §5.1 preconditions 4–5: an oracle named explicitly and a contract statement are inputs to the
-  harness, not outputs of the campaign.
-- R6 §5.3 (FuzzingInTheLarge): the report's first items are product identifier and campaign
-  definition — they exist before any crash does.
-- SYSE.47 §4.1: "recover the required result, supplied domain operations, actual interface
-  conditions and observable evidence of completion" before constructing the procedure.
+[[agent-procedure]] and family H check this continuity. SYSE.47 supplies procedure framing; it
+does not establish local causality for every past failure. A research question may close answered
+or with limitations; finding a new bug is not a mandatory completion condition.

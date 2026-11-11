@@ -1,7 +1,7 @@
 ---
 note_id: "202611031506001"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: meta
 subtype: decision
@@ -17,24 +17,22 @@ supersedes: []
 superseded_by: []
 related: ["[[applicability-gate]]", "[[agent-procedure]]", "[[eval-family-A-gate]]"]
 ---
-# FTW-D-001: The applicability gate is a skill and the first step of the agent procedure
+# FTW-D-001: Applicability before harness construction
 
-## Decision
+*Amended in draft on 2026-11-11 for persistent research ([[methodology-review]]).*
 
-The agent writes no harness before producing a one-line gate decision with the matching row of [[applicability-gate]] quoted. *Amended by [[FTW-D-008-pbt-out-of-scope]]*: the outcomes are `fuzz(method, oracle)` / `out-of-scope: pbt-track` / `out-of-scope: unit-tests` / `do-not-fuzz`. The gate lives in [[skill-fuzzing-applicability]] so other agents (`code_reviewer`, `unit_tests_writer`) can load it too.
+Keep applicability as a reusable operation in [[skill-fuzzing-applicability]], applied before a
+harness is written. Check the named entry point, available contract, observable oracle, reproducible
+execution and proportionate experiment effort. Return a justified fuzzing plan or a reason to decline;
+unsupported work is not silently converted into PBT or unit-test authoring.
 
-## Context
+Recover any existing research record before assessment; revisit only affected assumptions. The
+charter is settled before harness construction ([[FTW-D-009-charter-before-work]]). This is procedure order after invocation, not a
+rule for triggering or routing to the agent.
 
-[[H1-no-applicability-gate]] was confirmed as the dominant failure cause; every language annex agrees on the hard-stop rows (R1 §5.1, R7 §5.4, R8 §5.1, R9 §5.3).
+**Basis:** user scope; [[applicability-gate]]; [[H1-no-applicability-gate]]. General source guidance
+supports suitability checks but does not prove H1 was the dominant cause of these failed attempts.
 
-## Alternatives considered
-
-(a) Gate as prose inside the agent prompt only — not reusable by the reviewer, not independently eval-able. (b) Gate after a first exploratory campaign — spends budget before deciding, which is exactly the H1 failure.
-
-## Consequences
-
-Family A evals grade the decision line deterministically; `out-of-scope: unit-tests` hands off to `unit_tests_writer` and `out-of-scope: pbt-track` to the PBT agent, with nothing written for either; the prompt stays short because the table is in the skill.
-
-## Reopen when
-
-a gate row is contradicted by a reproducible counter-example in the evals, or a new ecosystem tool changes a hard stop (for example Go gains custom mutators).
+**Alternatives:** a gate only in the agent prompt would not be reusable; a campaign before checking
+suitability spends resources without a stated purpose. Family A checks substantive decisions,
+not merely a matching token. Revisit the operation only when supported cases defeat its rules.

@@ -1,7 +1,7 @@
 ---
 note_id: "20261104100008"
 created: 2026-11-04
-modified: 2026-11-04
+modified: 2026-11-10
 language: en
 type: meta
 subtype: decision
@@ -17,24 +17,22 @@ supersedes: []
 superseded_by: []
 related: ["[[fuzzing-vs-pbt-boundary]]", "[[applicability-gate]]", "[[pbt-agent-prompts]]", "[[FTW-D-002-six-skills]]"]
 ---
-# FTW-D-008: Property-based testing is a separate track; this agent does fuzzing only and keeps a strict boundary
+# FTW-D-008: PBT and mutation analysis are excluded
 
-## Decision
+*Amended in draft on 2026-11-10 by the methodology revision ([[methodology-review]]).*
 
-The fuzzing agent writes fuzz targets, seed corpora, campaign wiring and reports, and no property-based tests (Hypothesis, proptest, rapid, including their state machines). Typed APIs with algebraic laws, numeric metamorphic cases and model-based stateful cases leave the gate as `out-of-scope: pbt-track` with the reason recorded in the charter. Hybrid bridges (`rapid.MakeFuzz`, `fuzz_one_input`, bolero) are used only over a PBT artefact that already exists, under the per-tool conditions in [[fuzzing-vs-pbt-boundary]].
+This capability authors fuzz targets, useful seed corpora, bounded campaigns and reports. It does
+not create or run PBT workflows, strategies, state machines or PBT bridges. Mutation analysis is
+also excluded from requirements, fixtures, acceptance gates and a proposed future workstream.
+This explicitly withdraws the earlier exception for existing PBT artefacts and hybrid bridges.
 
-## Context
+**Basis:** user's explicit scope correction; [[fuzzing-vs-pbt-boundary]]. Historical research that
+mentions these techniques remains historical, not a source of current obligations.
 
-The user asked to concentrate on fuzzing now and to keep the two approaches strictly separated because both have their own details; rapid in particular shares mechanisms with `go test -fuzz` (R7 §3.5) and the annexes blur the line in places (R1 §4.2 treats them as 'one continuum').
+A contract-backed assertion inside a fuzz target is permitted. Ordinary mutation of input bytes by
+a fuzzing engine is permitted; this is not mutation analysis of product code. The distinction is
+operational, not a ban on invariants or the word “mutation”. Unsupported requests return their
+scope reason without invoking or designing a separate PBT agent.
 
-## Alternatives considered
-
-(a) One agent for both (the first draft's 'property-test first' rows) — mixes two budgets, two regression forms and two shrinking models, and would make the fuzzing agent author strategies it cannot evaluate. (b) Fuzzing agent writes PBT 'when cheaper' — reintroduces the blur the user rejected.
-
-## Consequences
-
-Gate outcomes, the shape table, the per-language skills and eval families A–C carry no PBT deliverables; the PBT prompts are kept in [[pbt-agent-prompts]] for the other track; [[FTW-D-002-six-skills]] is amended (no PBT catalogue in the gate skill).
-
-## Reopen when
-
-the PBT track exists and an orchestrator wants one entry point that dispatches to either; then the dispatch lives in a command, not in this agent.
+**Consequences:** [[pbt-agent-prompts]] is excluded provenance only. FTW-OQ-006 and FTW-OQ-011 are
+closed for this scope. Scope changes require the user; no capability-development pattern reopens them.

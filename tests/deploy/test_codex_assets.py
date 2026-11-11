@@ -31,6 +31,7 @@ EXPECTED_AGENTS = {
     "focus-coach",
     "formal-model-writer",
     "freshness-auditor",
+    "fuzzing-tests-writer",
     "implementation-planner",
     "integration-tests-writer-go",
     "integration-tests-writer-python",

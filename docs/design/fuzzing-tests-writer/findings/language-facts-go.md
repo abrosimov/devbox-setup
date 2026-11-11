@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150301"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: finding
@@ -17,42 +17,44 @@ addresses: ["[[H5-harness-conventions]]", "[[H3-random-seeds-for-structured-inpu
 grounded_in: ["[[07-lang-go|R7]]"]
 realised_by: ["[[skill-go-fuzzing]]"]
 tested_by: ["[[eval-family-E-conventions]]"]
-toolchain: "go1.27.3 (verified against the go1.27.3 sources and on the go1.27.3 binary obtained via GOTOOLCHAIN + proxy.golang.org)"
 decided_by: ["[[FTW-D-007-go-target-version]]"]
 related: ["[[language-facts-python]]", "[[language-facts-rust]]"]
 opens: ["[[FTW-OQ-003-go-skip-and-minimisation]]", "[[FTW-OQ-004-go-ossfuzz-shim]]"]
 ---
-# Language facts — Go (1.27.3)
+# Language facts — Go
 
-Source: [[07-lang-go|R7]]; every fact below is verified against the `go1.27.3` sources (R7 §8) and
-on the go1.27.3 binary (R7 §8.1). The toolchain choice and how to obtain it are in
-[[FTW-D-007-go-target-version]].
+[[07-lang-go|R7]] is a historical research snapshot, including its recorded Go 1.27.3 source and
+binary checks. This methodology pass does not rerun that toolchain or establish those details
+for another installed version. [[FTW-D-007-go-target-version]] must not silently become a
+permanent latest-version claim.
 
-| Topic | Fact |
-|---|---|
-| Engine and contract | `func FuzzXxx(*testing.F)` in `*_test.go`; exactly one `f.Fuzz(func(t *testing.T, args…))`; argument types limited to `[]byte string bool byte rune float32 float64 int* uint*`; unsupported types panic at run time; no custom mutators (proposal #48815 still open), no dictionaries, no struct arguments. |
-| Platforms | `-fuzz` needs coverage instrumentation: amd64/arm64 on linux, darwin, windows, freebsd. |
-| Failure = | `t.Fail*`, panic, `os.Exit`, stack overflow, or one input taking > 1 s (`workerTimeoutDuration`). A worker killed by the OOM killer records **no crash**. No sanitizer, no leak check, no allocation cap. |
-| Seed corpus | `f.Add(...)` plus files in `testdata/fuzz/<FuzzName>/` (`go test fuzz v1`, one Go literal per line); plain `go test` runs them as subtests, so the seed corpus **is** a regression suite. `file2fuzz` converts raw seeds. |
-| Generated corpus | `$GOCACHE/fuzz/<module>/<pkg>/<FuzzName>`; unbounded; `go clean -fuzzcache`; CI runners start empty unless the directory is persisted. |
-| Failing input | minimised (string/byte arguments only, best-effort), written to `testdata/fuzz/<FuzzName>/<hash>`, `To re-run: go test -run=FuzzX/<hash>`; until fixed, every later `-fuzz` run fails in the baseline phase — never delete the file to "make fuzzing run again". |
-| Invocation that works | `go test -run='^$' -fuzz='^FuzzX$' -fuzztime=10m -parallel=N ./pkg` — one package, one target, anchored, budgeted; `-fuzz` is incompatible with `-coverprofile` and the profiling flags; `-race` works at ≈6× cost. |
-| Output for the campaign script | `fuzz: elapsed: …, execs: N (r/sec), new interesting: k (total: T)` every second; under `-json` as `Action:"output"` events **without** `OutputType`, while framing lines (`=== RUN`, `--- FAIL`, `FAIL`) carry `"OutputType":"frame"` (Go 1.27; observed) — select progress lines as output events lacking `OutputType` and matching `^fuzz: `; `GODEBUG=fuzzdebug=1` prints per-input details. |
-| Skip-invalid idiom | `t.Skip("reason")` (self-documenting) or `return`; expected errors `return`; unexpected `t.Fatalf`. |
-| PBT boundary | `pgregory.net/rapid` v1.3.0 (2026-03) is property-based testing (typed generators, shrinking, `T.Repeat` state machines), out of scope; `rapid.MakeFuzz` is a hybrid bridge usable only when a rapid property already exists and the charter names coverage guidance as the objective (corpus bytes opaque, no shrinking under `-fuzz`); conditions in [[fuzzing-vs-pbt-boundary]]. `testing/quick` frozen; gopter dormant; google/gofuzz archived. |
-| Structure | go-fuzz-headers `ConsumeFuzzer` / `GenerateStruct`; `rapid.MakeFuzz`; decode inside the target; costs: instrumented decoder, opaque corpus, no structured shrinking. |
-| Continuous fuzzing | OSS-Fuzz rebuilds native targets with `go-118-fuzz-build`: `F.Add` is a no-op, named types panic, `t.Skip` panics with a sentinel; seeds must also ship as `seed_corpus.zip`; ClusterFuzzLite same contract, `address` sanitizer only. |
-| New since 1.24 | `F.Attr` / `F.Output` (1.25); `F.ArtifactDir` + `go test -artifacts -outputdir` (1.26) — the sanctioned place for campaign artefacts (promoted from the embedded `common`, so not listed by `go doc testing.F`); `OutputType` on `-json` framing events, `stdversion` vet by default (1.27). No fuzzing-engine change in 1.25–1.27. |
-| Yield evidence | slice-bounds panics dominate; unbounded allocation (archive/tar CVE-2022-2879, x/net/html CVE-2025-58190, debug/gosym #81191), infinite loops (#46288, #56129), round-trip inconsistencies caught by the seed corpus as a unit test (net/netip #67126); one false-positive hang (#56932). |
+## Operations to specify at authoring
 
-## Decision rule for Go entry points (R7 §5.4, restated for this agent's scope)
+| Operation | Go-specific contract | Required evidence |
+|---|---|---|
+| Discover and build | Follow native `testing.F` naming/signature and supported input types for the selected toolchain | Actual target discovery and compilation; `go vet` alone is not a compile/replay check |
+| Replay seeds | Use `f.Add` and/or native `testdata/fuzz/<FuzzName>/` records following repository conventions | Ordinary test replay with observed exit and per-case results |
+| Search | Select the intended package and target; use supported limits for the admitted experiment | Actual command, toolchain, engine output and observed run status |
+| Reject invalid input | Handle expected errors/skip according to the target contract | Known accepted/rejected examples exercise the intended product calls |
+| Preserve useful input | Export useful generated inputs from transient cache to a durable replay location | Native corpus encoding, input provenance and successful replay |
+| Triage and reduce | Preserve original input, verify the symptom and allow only bounded reduction/reproduction | Raw diagnostic and independent replay, with unfinished reduction explicit |
+| Decode structure | Use native primitive arguments or an existing justified fuzzing-side decoder | Bounds, decoder version and raw engine input retained |
 
-bytes/strings from a format → native `f.Fuzz` with a round-trip oracle; typed values with algebraic
-laws → `out-of-scope: pbt-track`; enumerable domain or thin wrapper over the standard library →
-`out-of-scope: unit-tests`; typed API fed from bytes → native fuzz on the byte entry point (the
-logic's laws go to the PBT track); concurrency-sensitive API → not a fuzzing task (fuzzing explores
-inputs, not schedules).
+Record investigation, compilation and automatic minimisation as part of the experiment effort.
+Save interrupted work and corpus context for the research checkpoint. A local engine limit is not
+an answer to the research question or a reason to reopen it on the next agent invocation.
+Native cache location, output fields, skip handling, timeout behaviour, minimisation defaults and
+platform support must be verified against the version actually used. Do not infer product OOM
+or hang classification solely from worker exit or zero progress.
 
-Harness skeleton R7 §5.2 (round trip, size bound, skip-invalid, three seeds); ten-point review
-checklist R7 §5.3; CI recipe R7 §5.5 (seed corpus in the normal job, `-fuzz` in a dedicated job with
-the fuzz cache persisted).
+## Verification sources and boundaries
+
+Use the official [Go fuzzing documentation](https://go.dev/doc/security/fuzz/) and the matching
+[`testing` package documentation](https://pkg.go.dev/testing), then the selected toolchain's
+sources for behaviour not documented there. Record source date/version and a small relevant
+local check when authoring. [[FTW-OQ-003-go-skip-and-minimisation]] tracks unresolved detail.
+
+PBT and hybrid PBT bridges, including `rapid.MakeFuzz`, are excluded by
+[[fuzzing-vs-pbt-boundary]]. OSS-Fuzz shims and continuous-fuzzing infrastructure are not implied
+by a local harness request; [[FTW-OQ-004-go-ossfuzz-shim]] is relevant only if that infrastructure
+is separately in scope. This note supplies a Go adapter specification, not executed assurance.

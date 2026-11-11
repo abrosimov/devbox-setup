@@ -1,5 +1,6 @@
 ---
 note_id: "20261103150906"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: research
@@ -17,6 +18,11 @@ addresses: ["[[H1-no-applicability-gate]]", "[[H2-no-stopping-rule]]", "[[H3-ran
 related: ["[[research-index]]", "[[research-corpus]]"]
 ---
 # The Fuzzing Book, Parts III–V: semantic fuzzing, domain-specific fuzzing, managing fuzzing
+
+> Historical research from 2026-11-03; the body below is retained as provenance. Its proposals
+> are not current requirements. The 2026-11-10 disposition is [[methodology-review]]: PBT and
+> mutation analysis are excluded; saturation/escalation rules and provider recipes must not be
+> imported into authoring. Current operations are specified in [[agent-procedure]].
 
 Research input for the "fuzzing tests writer" agent design (Go / Python / Rust). Sources are the
 Fuzzing Book chapters as published in the `uds-se/fuzzingbook` repository (`master`, fetched

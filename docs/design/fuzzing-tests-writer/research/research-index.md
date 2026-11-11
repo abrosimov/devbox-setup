@@ -1,5 +1,6 @@
 ---
 note_id: "20261103150999"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: research
@@ -16,6 +17,11 @@ related: ["[[fuzzing-tests-writer]]", "[[research-corpus]]"]
 ---
 # Research index
 
+> Historical research from 2026-11-03; the body below is retained as provenance. Its proposals
+> are not current requirements. The 2026-11-10 disposition is [[methodology-review]]: PBT and
+> mutation analysis are excluded; saturation/escalation rules and provider recipes must not be
+> imported into authoring. Current operations are specified in [[agent-procedure]].
+
 Source-linked research pack (FPF `G.2` SoTA portfolio) behind
 [[fuzzing-tests-writer]] (see [[research-corpus]] for the independence note). Each file follows the
 format in `00-research-brief.md`: summary, scope, corpus ledger (source + edition + locator +
@@ -28,9 +34,9 @@ hypotheses H1–H5, candidate eval cases, micro-examples.
 | [[01-methods-and-applicability]] | Method families; when fuzzing is and is not applicable; oracles; evaluation hygiene |
 | [[02-stopping-and-corpus-lifecycle]] | Saturation theory, engine observables, stopping algorithm, corpus lifecycle, report template |
 | [[03-structure-aware-generation]] | Grammars, typed generators, custom mutators, repair, seeds, shrinking |
-| [[04-fuzzingbook-part1-lexical]] | The Fuzzing Book, Part I |
-| [[05-fuzzingbook-part2-syntactic]] | The Fuzzing Book, Part II |
-| [[06-fuzzingbook-parts3-5]] | The Fuzzing Book, Parts III–V (incl. "When To Stop Fuzzing") |
+| [[04-fuzzingbook-part1-lexical]] | The Fuzzing Book, lexical material (historical part label) |
+| [[05-fuzzingbook-part2-syntactic]] | The Fuzzing Book, syntactic material (historical part label) |
+| [[06-fuzzingbook-parts3-5]] | The Fuzzing Book, semantic/domain/managing material (historical part labels) |
 | [[07-lang-go]] | Go native fuzzing and ecosystem; §8 verifies the facts against the go1.27.3 sources |
 | [[08-lang-python]] | Hypothesis, Atheris, HypoFuzz and the rest of the Python ecosystem |
 | [[09-lang-rust]] | cargo-fuzz, `arbitrary`, proptest, bolero and the Rust ecosystem |

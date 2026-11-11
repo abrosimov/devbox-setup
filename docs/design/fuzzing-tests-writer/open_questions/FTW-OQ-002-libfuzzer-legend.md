@@ -1,5 +1,6 @@
 ---
 note_id: "202611031507002"
+modified: 2026-11-11
 created: 2026-11-03
 language: en
 type: meta
@@ -11,14 +12,15 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["FTW-OQ-002"]
 tags: [fuzzing, design/open-question]
-status: open
-blocks: ["[[reference-documents]]", "[[automation-scripts]]"]
+status: deferred-to-authoring
+blocks: ["[[automation-scripts]]", "[[reference-documents]]"]
 related: ["[[language-facts-rust]]", "[[language-facts-python]]"]
 ---
-# FTW-OQ-002: libFuzzer status-line legend
+# FTW-OQ-002: Engine-output semantics need edition-specific verification
 
-**Question.** `ft`, `lim`, `L` and the exact wording of the `pulse` line were read from flag source and the libFuzzer tutorial; the prose manual (`llvm/docs/LibFuzzer.rst`) was unreachable.
+**Disposition (2026-11-10):** deferred-to-authoring.
 
-**Why it matters.** The engine-output cheatsheet and the campaign script's parser depend on exact column semantics.
-
-**Resolution path.** Verify against `LibFuzzer.rst` before writing `engine-output-cheatsheet.md`; add a parser unit test per column.
+Before implementing a parser, verify field meanings against primary documentation and the actual
+engine build, then retain representative raw logs and independent parser tests. Unknown fields are
+unknown, not zero. This blocks exact parser claims, not the research lifecycle methodology. Do not derive
+saturation or residual risk from a feature-count column.

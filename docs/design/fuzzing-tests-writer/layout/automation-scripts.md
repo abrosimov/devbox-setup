@@ -1,6 +1,7 @@
 ---
 note_id: "20261103150409"
 created: 2026-11-03
+modified: 2026-11-12
 language: en
 type: design
 subtype: component
@@ -19,39 +20,76 @@ decided_by: ["[[FTW-D-003-thresholds-as-flags]]"]
 target_path: "roles/devbox/files/dot_claude/bin/"
 related: ["[[skill-fuzzing-campaign]]", "[[eval-tooling]]"]
 ---
-# Automation scripts
+# Automation support — research checkpoints, evidence and dispositions
 
-Two stdlib-only Python scripts in the existing `dot_claude/bin/` uv project, with unit tests in the
-same suite so `make test-claude-hooks` covers them. Both are engine-agnostic at the interface; the
-language skills only fill in flags.
+This note specifies support operations. The authored campaign skill implements their instructions
+through ordinary repository tools and `references/research-record.md`; no new script or service was
+added. The earlier `fuzz_campaign.py` and `fuzz_corpus.py` names identify responsibilities only.
+[[FTW-D-003-thresholds-as-flags]] and [[stopping-algorithm]] govern research continuation and closure,
+not a process-supervisor requirement. Process limits remain ordinary experiment execution controls.
 
-## `fuzz_campaign.py`
+## Minimal persistent record
 
-- `run --engine {go,libfuzzer,atheris,hypothesis} --budget {interactive,smoke,batch,deep}
-  --target … -- <engine args>`: refuses to start without a cap; injects `-fuzztime` /
-  `-max_total_time` / `-atheris_runs` / `max_examples` from the class; streams the engine output;
-  samples counters every 60 s (Go via `-json` `output` events, libFuzzer via `pulse`/`NEW`/`REDUCE`
-  lines and `-print_final_stats=1`, Hypothesis via `--hypothesis-show-statistics`); applies the
-  sanity gate and the plateau test of [[stopping-algorithm]] with the ◇ defaults as flags; writes
-  `campaign.json` (decision token, counters per window, `p̂_W`, artefacts) and renders the report
-  template of [[reporting-and-claim-hygiene]] to Markdown.
-- `discoverability`: seeded versus empty-corpus run at equal budget.
-- `triage`: minimise, reproduce three times, bucket by crash state, convert to the ecosystem's
-  regression fixture.
+Inputs are the authorised scope, research identity, question/use or reconnaissance material and aim, subject
+snapshot, experiment definition, existing evidence and repository conventions. Preserve:
 
-## `fuzz_corpus.py`
+- Research identity/revision; repository commit and relevant dirty delta, experiment version,
+  dataset version/hash and selection as applicable; assumptions and provenance.
+- Current `ACTIVE`, `PAUSED` or `CLOSED` state and dated reason. A pause includes its checkpoint
+  and observable resume condition; closure includes the conclusion, limitations and reason.
+- Experiment/attempt identities and mode: reconnaissance carries material, operation and possible
+  knowledge contribution; a question-led experiment carries its distinguishing observations. Both
+  retain method, effort/resource limits, observed status/result and actual effort.
+- Evidence pointers, useful corpus/reproducer paths, supported conclusions and unresolved issues;
+  classification and compatibility are kept distinct from the underlying raw artefacts.
+- Resumption/reopening evidence, affected claims and retained earlier dispositions. No new session,
+  attempt or label overwrites the cumulative effort and failed-attempt record.
 
-Per-engine wrappers for `cmin`/`merge` and `tmin`; raw-seed import (`file2fuzz` for Go, directory
-copy for cargo-fuzz and Atheris); seed statistics (count, bytes, largest); grammar-coverage adequacy
-count when a grammar file is given.
+Use a concise existing repository record and artefact links. No database, background service,
+new universal file format or process watchdog is required by this method. If an implementation
+cannot durably preserve essential evidence, return that specific limitation before relying on
+cross-session continuation; do not invent continuity from an absent checkpoint.
 
-## Optional later
+## Support operations
 
-Mutation-score self-assessment (10–30 statement-deletion mutants against the harness oracle,
-R4 §5.6) once the first two scripts are stable; no evidence shows an agent needs it to pass the evals.
+| Operation | Required input | Return and failure meaning |
+|---|---|---|
+| Load checkpoint | identity and available record | question/aim, method, completed and unfinished operation, evidence and disposition; missing/corrupt context is explicit |
+| Bind subject | commit/dirty delta, experiment definition or dataset identity/selection | reproducible snapshot and comparison scope; ambiguous input version blocks the affected inference |
+| Record experiment | justification, method, limits and attempt observations | planned/running/interrupted/completed/invalid/blocked status with evidence and cost; a process exit is not a research conclusion |
+| Check compatibility | old and new snapshots, assumptions, toolchain and oracle | affected claims and reusable evidence; a version change alone cannot invalidate or repeat everything |
+| Record disposition | evidence-backed decision under [[stopping-algorithm]] | active next experiment, pause with condition/checkpoint, or closure with reason and limitations |
+| Resume/reopen | observed resume condition or material new evidence | linked revision retaining previous conclusion and effort; unsupported continuation is rejected with its missing basis |
+| Link a new question | reconnaissance result, actual inputs and existing scope | question with its own contribution and links to prior evidence/effort; earlier questions need not reopen |
+| Preserve corpus | useful inputs, provenance, encoding and repository conventions | retained replay paths and observed/unknown replay status; no silent deletion or automatic commit |
 
-## Repository integration
+Updates must preserve prior evidence and disposition history. Recovery must expose uncertain
+writes or missing artefacts rather than recreating a successful result. The same experiment
+replayed after interruption gets another attempt record; it is not counted as an independent new
+experiment merely because the agent session changed.
 
-`make validate-claude` accepts the new agent/skill cross-references; `make validate-skills` sees
-`evals/` in each skill; `codex.yml` shared-skill list gains the six names;
-`tests/deploy/test_codex_assets.py` checks the 29→30 agent count.
+## Corpus and finding operations
+
+Retain useful coverage-expanding inputs, valid-structure seeds and regression examples for reuse
+and replay. Deduplication/reduction can replace an input only with evidence preserving its known
+useful behaviour or the same failure symptom. Keep the original when equivalence is unconfirmed.
+Preserving an input is distinct from checking it against a changed code or dataset snapshot.
+
+Preparation, qualification, reproduction and reduction consume the experiment's stated resources
+and remain in cumulative research accounting. A local timeout records an interrupted operation;
+it does not prove a product hang or close the research. Unconfirmed candidates can be preserved
+at a pause or closure without forcing further experiments. Report product defects and correct only
+authored harness errors within scope. PBT and mutation-analysis operations are excluded.
+
+## Remaining independent validation
+
+[[eval-tooling]] must observe the meaning and effects of these operations independently of their
+success messages. Cases include recovery after interruption, restoring useful inputs, unchanged
+and changed snapshots, a false oracle, a paused condition still unmet, a closed question without
+new evidence, and justified targeted reopening. Check that the receiving agent uses the recovered
+record rather than starting over and that a renamed session does not lose prior effort.
+
+Runtime command caps may be tested where an implementation uses them, but process termination
+is not the criterion for research closure. [[authoring-validation]] records the actual local checks;
+full lifecycle qualification remains incomplete. [[repository-placement]] records the authored paths
+and provider facilities. No custom trigger policy or scheduler was added.

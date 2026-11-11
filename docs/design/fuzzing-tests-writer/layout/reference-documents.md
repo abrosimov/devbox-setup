@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150408"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-12
 language: en
 type: design
 subtype: component
@@ -19,14 +19,36 @@ related: ["[[research-index]]", "[[repository-placement]]"]
 ---
 # Reference documents
 
-Reference files live in `<skill>/references/`, so Codex and Gemini receive them with the skill
-([[FTW-D-006-references-beside-skills]]); `dot_claude/docs/` gets only an index. The research
-annexes stay in this vault and are cited by file and section.
+The authored skills place conditional detail in `<skill>/references/`, following
+[[FTW-D-006-references-beside-skills]]. Each entrypoint links directly to its references and states
+when to read them. [[authoring-budgets]] separates discovery metadata, loaded bodies and conditional
+detail. Historical research annexes remain in this vault; they are not runtime dependencies.
 
-| Document | Lives in | Derived from | Content |
+| Authored reference | Owner | Method provenance | Contribution and limit |
 |---|---|---|---|
-| `fuzzingbook-map.md` | `fuzzing-applicability/references/` | [[04-fuzzingbook-part1-lexical\|R4]], [[05-fuzzingbook-part2-syntactic\|R5]], [[06-fuzzingbook-parts3-5\|R6]] | one paragraph per chapter: lesson, when it applies, what the agent should and should not attempt; the "too academic" list |
-| `bug-class-evidence.md` | `fuzzing-applicability/references/` | R7 §3.6, R9 §3.7, R8 §3.2 | the Go, Rust and Python bug-class tables with issue links — the argument for the [[oracle-ladder]] |
-| `engine-output-cheatsheet.md` | `fuzzing-campaign/references/` | R2 §3.2, R7 §3.3, R8 §3.1, R9 §3.1 | Go, libFuzzer, AFL++, honggfuzz, Hypothesis output lines and flags with meaning and the stop-relevant fields; `ft`/`lim`/`L` pending [[FTW-OQ-002-libfuzzer-legend]] |
-| `stopping-theory.md` | `fuzzing-campaign/references/` | R2 §3.1, R6 §3 | Good–Turing, Chao1, extrapolation formulas; Enigma and HTMLParser figures; the adaptivity caveat |
-| `grammar-and-repair.md` | `structured-input-generation/references/` | R5 | derivation trees, expansion coverage, pre/post repair, structured reduction, with the book's numbers as illustrations only |
+| `oracles.md` | `fuzzing-applicability/references/` | [[oracle-ladder]], [[reporting-and-claim-hygiene]] | Contract-linked oracle selection, independent expected examples and candidate classification; a complex oracle is not automatically stronger |
+| `research-record.md` | `fuzzing-campaign/references/` | [[stopping-algorithm]], [[fuzzing-charter]], [[automation-scripts]] | Durable question/aim, evidence and effort; ACTIVE/PAUSED/CLOSED, closure reasons, actual resumed operation and new question versus reopened answer |
+| `corpus-and-findings.md` | `fuzzing-campaign/references/` | [[corpus-lifecycle]], [[reporting-and-claim-hygiene]], R5 reduction evidence | Useful inputs retained for replay; original and verified reduced candidates, same-symptom checks and explicit unresolved results |
+| `grammar-and-repair.md` | `structured-input-generation/references/` | [[input-shape-triage]], [[05-fuzzingbook-part2-syntactic\|R5]] | Bounded derivation trees, expansion observations, deterministic repair and structured reduction; grammar coverage is not code coverage |
+
+The earlier `fuzzingbook-map.md`, `bug-class-evidence.md`, `engine-output-cheatsheet.md` and
+`research-lifecycle.md` names were design proposals, not shipped files. Their relevant operational
+content is distributed across the references above and the six skill bodies. Language skills link
+to primary engine documentation and require checking the actual toolchain and command help before
+relying on version-specific behaviour. No common metric or unverified output legend is introduced.
+
+The corpus reference cites the Fuzzing Book reduction chapter. The structure reference cites
+mutation-based input generation, grammar generation, grammar coverage and reduction. These transfer
+specific mechanisms into operations; they do not claim to implement every chapter or inherit book
+performance results. [[methodology-review]] retains the broader source-coverage assessment.
+PBT and mutation analysis remain excluded; ordinary mutation of fuzz inputs remains in scope.
+
+Read oracle detail when an assertion is uncertain, record detail when establishing or recovering
+research, corpus detail when importing, moving, reducing or deduplicating inputs, and structure
+detail when grammar or repair is useful. Do not preload all references. F.19/A.6.3.CSC preserve the
+operation's essential conditions in the entrypoint; C.16.IR prevents stronger conclusions than the
+available observations support. Useful coverage and structured inputs remain eligible for replay.
+
+The go-kdl2 and proj attempts supply negative evidence and counterexamples, never normative templates.
+Provider syntax and loading have a separate factual basis in [[authoring-budgets]] and
+[[repository-placement]]; [[authoring-validation]] records the scope of actual verification.

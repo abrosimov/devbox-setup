@@ -1,5 +1,6 @@
 ---
 note_id: "202611031506006"
+modified: 2026-11-12
 created: 2026-11-03
 language: en
 type: meta
@@ -16,24 +17,18 @@ supersedes: []
 superseded_by: []
 related: ["[[reference-documents]]", "[[research-index]]"]
 ---
-# FTW-D-006: Reference documents live beside the skill that cites them; the research annexes stay in docs/design
+# FTW-D-006: References accompany the operations that need them
 
-## Decision
+*Amended in draft on 2026-11-10 by the methodology revision ([[methodology-review]]).*
 
-Each reference file (`fuzzingbook-map`, `bug-class-evidence`, `engine-output-cheatsheet`, `stopping-theory`, `grammar-and-repair`) is placed under `<skill>/references/`; the ten annexes remain in this vault and are cited by file and section.
+Keep concise operational references beside the skill that consumes them when authoring. The
+historical annexes remain in `docs/design/fuzzing-tests-writer/research/` as evidence, not automatically
+loaded context. [[reference-documents]] defines the required subjects without creating extra skills.
 
-## Context
+**Basis:** separate executable instructions from provenance and long historical research; SYSE.48.
+[[repository-placement]] records the authored layout and loading choices for Claude Code and Codex.
+[[authoring-validation]] separates local checks from actual provider behaviour still to qualify.
 
-Codex and Gemini receive skills as directories; a reference outside the skill would not deploy with it. The annexes are an audit trail with corpus ledgers, too long and too source-heavy to ship as skill context.
-
-## Alternatives considered
-
-(a) All references in `dot_claude/docs/` — Claude-only. (b) Copy annex prose into skills — size and drift.
-
-## Consequences
-
-Skills cite annex sections in a trailing Sources list; a refresh of an annex is a vault change, not a deploy.
-
-## Reopen when
-
-a reference is needed by more than one skill in full (then a shared skill or `shared-utils` placement is reconsidered).
+**Alternatives:** a Claude-only global docs path would bind shared method to one provider; copying
+all annexes into skills would import superseded policies and excluded material. Where references are
+shared, keep one meaning and verify packaging rather than duplicating incompatible rules.

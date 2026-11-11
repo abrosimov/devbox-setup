@@ -1,0 +1,47 @@
+{
+  "skill_name": "go-testing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a test for the cache: two reads of one 24h window that end 10s and 50s into the same one-minute bucket must both be answered as of the bucket start. The suite's SetupTest builds the population fixture from s.now = time.Now().Truncate(time.Minute), covering the eight days before s.now. The incident happened at 06:30 UTC on 2 November.",
+      "expected_output": "A test whose bucket instant is derived from s.now (truncated to the key granularity and offset back), not a literal 2 November date; the incident time appears at most in a comment",
+      "expectations": [
+        "No time.Date literal for the bucket or the reads",
+        "The bucket instant is s.now offset back and truncated to the granularity",
+        "Every read's window lies inside the fixture's eight-day history",
+        "Validation runs go test with -count=1"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this test diff: `bucket := time.Date(2026, 11, 2, 6, 30, 0, 0, time.UTC)` is added to a suite whose SetupTest sets s.now = time.Now() and builds fixtures over the eight days before it. The test passes today.",
+      "expected_output": "A Must Fix finding: the literal date meets a fixture built from the real clock and will fall outside its history about eight days later; derive the instant from s.now or move the test into a synctest bubble",
+      "expectations": [
+        "Flags the literal date as Must Fix, not as a style suggestion",
+        "Names the expiry: the date leaves the fixture's eight-day window",
+        "Proposes deriving from s.now or using testing/synctest",
+        "Mentions that a cached go test result can hide the failure"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Write a test that an entry written to the cache is dropped five minutes later. The cache sets until: time.Now().Add(entryLifetime) and get compares time.Now() against it.",
+      "expected_output": "A test run inside synctest.Test that writes an entry, sleeps just under and just over the lifetime, and checks the entry is held then dropped",
+      "expectations": [
+        "Uses testing/synctest rather than a real sleep or a widened lifetime",
+        "Builds the cache inside the bubble",
+        "Has a just-inside and a just-outside case",
+        "Does not call t.Run or s.Run inside the bubble"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a test for ParseISODate(\"2026-11-02\") returning the date with no time zone conversion.",
+      "expected_output": "Writes Go code normally: a literal date is the parser's input and expected value, with no clock, synctest or anchor involved",
+      "expectations": [
+        "Uses the literal date as input and expected value",
+        "Skill does not push synctest or an s.now anchor where nothing reads the real clock"
+      ]
+    }
+  ]
+}

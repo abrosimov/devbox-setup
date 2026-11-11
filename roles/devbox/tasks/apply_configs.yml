@@ -366,14 +366,13 @@
     - not ansible_check_mode
   tags: [configs, claude]
 
-# Every declared server is registered with `claude mcp add-json`, which stores
-# the given JSON verbatim under `mcpServers` in ~/.claude.json, so the declared
-# spec compares exactly with the registered one. `add-json` refuses a name that
-# already exists, so a server whose declared spec changed (a new URL, image or
-# flag) is removed first and then added again; an unchanged one is left alone,
-# which keeps its OAuth session. add-json rather than add also because only the
-# JSON form carries `headersHelper`, which resolves a bearer token at connect
-# time so it never lands in ~/.claude.json.
+# Every declared server is removed and registered again on each run, so a
+# changed URL, image or flag always reaches ~/.claude.json: `add-json` refuses a
+# name that already exists and would otherwise leave the stale entry in place.
+# Only declared names that are actually registered are removed, so the remove
+# step never fails on a fresh machine, and a failing add fails the run.
+# add-json rather than add: only the JSON form carries `headersHelper`, which
+# resolves a bearer token at connect time so it never lands in ~/.claude.json.
 - name: Build declared Claude Code MCP server specs
   ansible.builtin.set_fact:
     devbox_mcp_declared: >-
@@ -424,20 +423,7 @@
   when: devbox_claude_cli_path.rc == 0
   tags: [configs, claude, mcp]
 
-- name: Compute MCP servers whose registered spec differs from the declared one
-  ansible.builtin.set_fact:
-    devbox_mcp_to_replace: >-
-      {%- set out = [] -%}
-      {%- for name, spec in (devbox_mcp_declared | from_json).items() -%}
-        {%- if name in devbox_mcp_registered and devbox_mcp_registered[name] != spec -%}
-          {%- set _ = out.append(name) -%}
-        {%- endif -%}
-      {%- endfor -%}
-      {{ out | to_json }}
-  when: devbox_claude_cli_path.rc == 0
-  tags: [configs, claude, mcp]
-
-- name: Remove MCP servers whose declared spec changed (user scope)
+- name: Remove declared MCP servers before re-registering them (user scope)
   ansible.builtin.command:
     argv:
       - "{{ devbox_claude_cli_path.stdout }}"
@@ -446,14 +432,14 @@
       - --scope
       - user
       - "{{ item }}"
-  loop: "{{ devbox_mcp_to_replace | from_json }}"
+  loop: "{{ (devbox_mcp_declared | from_json).keys() | select('in', devbox_mcp_registered) | list }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"
   become_user: "{{ devbox_user.login }}"
   when: devbox_claude_cli_path.rc == 0
   changed_when: true
   tags: [configs, claude, mcp]
 
-- name: Register missing or changed Claude Code MCP servers (user scope)
+- name: Register Claude Code MCP servers (user scope)
   ansible.builtin.command:
     argv:
       - "{{ devbox_claude_cli_path.stdout }}"
@@ -463,11 +449,7 @@
       - user
       - "{{ item.key }}"
       - "{{ item.value | to_json }}"
-  loop: >-
-    {{ devbox_mcp_declared | from_json | dict2items
-       | rejectattr('key', 'in',
-           devbox_mcp_registered.keys() | list | difference(devbox_mcp_to_replace | from_json))
-       | list }}
+  loop: "{{ devbox_mcp_declared | from_json | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
   become: "{{ not (devbox_skip_become | default(false)) }}"

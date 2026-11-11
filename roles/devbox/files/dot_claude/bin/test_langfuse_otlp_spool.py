@@ -322,6 +322,79 @@ def test_transiently_rejected_batch_stays_queued_and_stops_the_pass(
     assert not (spool_home.parent / "langfuse_otlp_quarantine").exists()
 
 
+def test_delivery_waits_for_the_edge_to_fsync_a_full_batch(
+    monkeypatch: pytest.MonkeyPatch,
+    spool_home: Path,
+) -> None:
+    spool_test_span()
+    deadlines: list[float] = []
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def receive(_request, timeout):
+        deadlines.append(timeout)
+        return Response()
+
+    monkeypatch.setattr(spool.urllib.request, "urlopen", receive)
+
+    assert spool.drain_spool("http://127.0.0.1:14318") == (1, 0)
+
+    assert deadlines == [spool.DRAIN_TIMEOUT_SECONDS]
+    # A deadline the edge cannot meet for a MAX_BATCH_BYTES body stalls the head
+    # batch and everything queued behind it, indefinitely and silently.
+    assert spool.DRAIN_TIMEOUT_SECONDS >= 300.0
+    assert not list(spool_home.glob("*.otlp"))
+
+
+@pytest.mark.parametrize("status", [408, 429, 500, 503])
+def test_a_transiently_rejected_batch_names_itself_and_the_status(
+    monkeypatch: pytest.MonkeyPatch,
+    spool_home: Path,
+    capsys: pytest.CaptureFixture[str],
+    status: int,
+) -> None:
+    oldest, newest = queue_payloads(spool_home, 2)
+    receive = reply_per_payload({oldest.read_bytes(): status}, [])
+    monkeypatch.setattr(spool.urllib.request, "urlopen", receive)
+
+    assert spool.drain_spool("http://127.0.0.1:14318") == (0, 2)
+
+    reported = capsys.readouterr().err
+    assert oldest.name in reported
+    assert f"HTTP {status}" in reported
+    assert str(oldest.stat().st_size) in reported
+    assert "the 1 behind it" in reported
+    assert newest.name not in reported
+
+
+def test_an_unreachable_edge_names_the_batch_and_the_error(
+    monkeypatch: pytest.MonkeyPatch,
+    spool_home: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    oldest, _newest = queue_payloads(spool_home, 2)
+
+    def unavailable(*_args, **_kwargs):
+        message = "injected outage"
+        raise urllib.error.URLError(message)
+
+    monkeypatch.setattr(spool.urllib.request, "urlopen", unavailable)
+
+    assert spool.drain_spool("http://127.0.0.1:14318") == (0, 2)
+
+    reported = capsys.readouterr().err
+    assert oldest.name in reported
+    assert "URLError" in reported
+    assert "injected outage" in reported
+
+
 def test_langfuse_sdk_can_use_durable_span_exporter(spool_home: Path) -> None:
     exporter = spool.DurableSpoolExporter()
     client = langfuse.Langfuse(

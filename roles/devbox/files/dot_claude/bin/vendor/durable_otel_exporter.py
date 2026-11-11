@@ -28,6 +28,12 @@ from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 
 # 96 MiB: below the devbox edge's 128 MiB OTLP/HTTP request body cap.
 MAX_BATCH_BYTES = 100_663_296
+# The edge fsyncs the whole request body into its persistent queue before it
+# answers, so this deadline has to cover disk time for a batch of up to
+# MAX_BATCH_BYTES rather than a loopback round trip. Too short a deadline is
+# indistinguishable from an unavailable edge, and the head batch it abandons
+# blocks every batch behind it for as long as the deadline stays short.
+DRAIN_TIMEOUT_SECONDS = 300.0
 SPOOL_MAX_BYTES_ENV = "CC_LANGFUSE_SPOOL_MAX_BYTES"
 # Fills only while the loopback edge is unreachable: a week of heavy Langfuse output.
 DEFAULT_SPOOL_MAX_BYTES = 2 * 1024 * 1024 * 1024
@@ -258,6 +264,17 @@ def _quarantine(path: Path, status: int) -> None:
     )
 
 
+def _report_stall(path: Path, reason: str, elapsed: float, behind: int) -> None:
+    size = -1
+    with contextlib.suppress(OSError):
+        size = path.stat().st_size
+    print(
+        f"Langfuse OTLP replay stopped at {path.name} ({size} bytes) after {elapsed:.1f}s: "
+        f"{reason}; this batch is retried ahead of the {behind} behind it",
+        file=sys.stderr,
+    )
+
+
 def _sweep_stale_staging(directory: Path) -> None:
     staging = directory / STAGING_DIRECTORY
     if not staging.is_dir():
@@ -269,11 +286,12 @@ def _sweep_stale_staging(directory: Path) -> None:
                 shutil.rmtree(owner)
 
 
-def drain_spool(base_url: str, timeout: float = 10.0) -> tuple[int, int]:
+def drain_spool(base_url: str, timeout: float = DRAIN_TIMEOUT_SECONDS) -> tuple[int, int]:
     """Return (delivered, pending).
 
-    A transient failure stops the pass to preserve order; a permanently rejected
-    batch is quarantined so that it cannot block the batches behind it.
+    A transient failure stops the pass to preserve order and says so on stderr;
+    a permanently rejected batch is quarantined so that it cannot block the
+    batches behind it.
     """
     if not base_url.startswith(("http://127.0.0.1:", "http://localhost:")):
         raise ValueError("OTLP replay must target a loopback receiver")
@@ -283,7 +301,7 @@ def drain_spool(base_url: str, timeout: float = 10.0) -> tuple[int, int]:
     _sweep_stale_staging(directory)
     delivered = quarantined = 0
     files = sorted(directory.glob("*.otlp"))
-    for path in files:
+    for index, path in enumerate(files):
         request = urllib.request.Request(
             base_url.rstrip("/") + OTLP_TRACE_PATH,
             data=path.read_bytes(),
@@ -293,13 +311,16 @@ def drain_spool(base_url: str, timeout: float = 10.0) -> tuple[int, int]:
             },
             method="POST",
         )
+        started = time.monotonic()
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 status = response.status
         except urllib.error.HTTPError as exc:
             status = exc.code
             exc.close()
-        except (OSError, http.client.HTTPException):
+        except (OSError, http.client.HTTPException) as exc:
+            reason = f"{type(exc).__name__}: {exc}"
+            _report_stall(path, reason, time.monotonic() - started, len(files) - index - 1)
             break
         if 200 <= status < 300:
             path.unlink()
@@ -309,5 +330,7 @@ def drain_spool(base_url: str, timeout: float = 10.0) -> tuple[int, int]:
             _quarantine(path, status)
             quarantined += 1
         else:
+            reason = f"HTTP {status}"
+            _report_stall(path, reason, time.monotonic() - started, len(files) - index - 1)
             break
     return delivered, len(files) - delivered - quarantined

@@ -206,4 +206,10 @@ contract does not give, raise a contract gap. Details: the `contract-boundary` s
   messages, PR text, plans, and persisted memory in British English.
 - **Go formatting.** Format Go with `goimports -local <module-path>` (module path from `go.mod`),
   never `go fmt` or `gofmt`, which do not enforce the local import grouping.
+- **Generated code is not committed.** Generation is part of the build: every entry point that
+  needs generated output (protobuf, mocks, bindings) generates it first from the generator version
+  the project pins, and the output is git-ignored. A committed copy drifts from that pin, and a
+  dependency bump then breaks the build. Commit the sources, the generator configuration and the
+  pin. If a consumer that cannot run the generator needs the output (a Go library fetched with
+  `go get`), say so and ask before committing it.
 - **Security at boundaries.** Validate all external input; never trust user data internally.

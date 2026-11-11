@@ -84,6 +84,14 @@ test("shows user list", async () => {
 });
 ```
 
+### Time: One Clock Per Test
+
+**Every instant in a test derives from one clock.** Either the clock is fake for the whole test — `vi.useFakeTimers()` plus `vi.setSystemTime(...)` in `beforeEach`, restored with `vi.useRealTimers()` in `afterEach` — and literal dates are then safe; or every instant is an offset from one `Date.now()` read once. The defect is the mix: a literal `new Date("2026-11-02")` in fixtures or MSW handlers next to code rendering "2 days ago", expiry badges or "last 7 days" filters against the real clock passes until the calendar moves.
+
+- Fake timers with `userEvent` need `userEvent.setup({ advanceTimers: vi.advanceTimersByTime })`, or interactions hang.
+- Assert dates rendered in a fixed zone and locale (pass `timeZone` / `locale`, or set `TZ=UTC` in the test config), never in whatever the runner's machine uses.
+- Time-relative UI gets a boundary case: just inside and just outside the threshold.
+
 ---
 
 ## E2E Tests (Playwright)

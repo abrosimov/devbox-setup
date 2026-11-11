@@ -293,6 +293,30 @@ Check if SE completed pre-handoff self-review. If SE consistently misses self-re
 VERDICT: [ ] PASS  [ ] FAIL
 ```
 
+### Checkpoint R: Test Clock (BLOCKING)
+
+A test whose literal dates sit next to the real clock expires as the calendar moves, and CI's test cache can keep `main` green over it. Rule: `go-testing`, "Time: One Clock Per Test".
+
+```bash
+# Literal instants added in tests
+git diff $DEFAULT_BRANCH...HEAD -- '*_test.go' | grep -nE '^\+.*(time\.Date\(|time\.Parse|"[0-9]{4}-[0-9]{2}-[0-9]{2}|time\.Unix\([0-9]{6,})'
+# What reads the real clock in those packages, test and production code alike
+git diff $DEFAULT_BRANCH...HEAD --name-only -- '*_test.go' | xargs -n1 dirname | sort -u | xargs -I{} grep -rnE 'time\.Now\(\)|time\.Since\(|time\.Until\(' {}
+# Fake-clock use
+git diff $DEFAULT_BRANCH...HEAD -- '*_test.go' | grep -nE '^\+.*synctest\.'
+```
+
+For each literal instant, trace what it meets: a fixture or suite setup built from `time.Now()`, a TTL or expiry, a retention or "last N days" window. A literal outside a `synctest` bubble that meets any of them is a **Must Fix**: derive it from the suite's anchor, or move the test into a bubble. A literal that never meets the real clock (a parser's input, a fixed historical window the code does not compare with now) passes — say why in the verdict.
+
+Also check: clock-reading production code the diff adds or changes (TTL, expiry, now-relative window) has a boundary test, and validation was run with `-count=1`.
+
+```
+Literal instants in tests: ___
+Of these, meeting the real clock outside synctest (MUST FIX): ___
+Clock-reading code without a boundary test: ___
+VERDICT: [ ] PASS  [ ] FAIL
+```
+
 ---
 
 ## Go-Specific Issues (Report Template)
@@ -319,6 +343,9 @@ VERDICT: [ ] PASS  [ ] FAIL
 
 ### Test Error Assertions
 - [ ] user_test.go:45 - String comparison: use ErrorIs instead
+
+### Test Clock
+- [ ] cache_test.go:592 - Literal time.Date next to a fixture built from time.Now(): derive from the suite anchor or use synctest
 
 ### Export-for-Testing
 - [ ] export_test.go - Unjustified export (test via public API instead)

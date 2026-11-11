@@ -307,6 +307,7 @@ Language-specific verification themes (run only for detected stacks):
 | C-9 | Requirements Traceability | Each acceptance criterion maps to specific code; flag gaps and deviations. | — |
 | C-10 | Domain Compliance (if domain model present) | Ubiquitous language used, invariants enforced, aggregate boundaries respected, autonomous decisions audited. | upstream `domain_model.md` |
 | C-11 | Contract Boundary (if the change touches an API consumer or provider) | Code, comments, and the engineer's written justification rely only on what the API contract (OpenAPI spec, proto, generated types) guarantees. Flag any reliance on the other side's internals — its file paths, caches, query behaviour, rounding, or limits that the contract does not state — because those change without notice. Example finding: "the backend caches results for 5 minutes, so the frontend need not de-duplicate". The fix is either local handling on this side or a contract change raised as a contract gap. | `contract-boundary` |
+| C-12 | Test Clock (BLOCKING) | Every instant in a test derives from one clock: all fake (`synctest`, `time_machine`, `vi.useFakeTimers`, an injected clock) or all offsets from one anchor read once. A literal date or timestamp in a test that meets anything reading the real clock — a fixture or suite setup built from now, a TTL, a retention or "last N days" window — is Must Fix: it passes until the calendar moves, and a cached CI result can hide the failure. Clock-reading code the diff changes has a boundary test. Go enumeration: `go-review-checklist` Checkpoint R. | `{lang}-testing` |
 
 #### Language-Specific Checkpoints
 
@@ -449,6 +450,7 @@ Produce the **markdown report (inline in the conversation)** — see template be
 | C-9 | Requirements Traceability | PASS/FAIL |
 | C-10 | Domain Compliance | PASS/FAIL/N/A |
 | C-11 | Contract Boundary | PASS/FAIL/N/A |
+| C-12 | Test Clock | PASS/FAIL/N/A |
 
 ### Language-specific
 (Include only the sub-tables for stacks detected in Step 1.)

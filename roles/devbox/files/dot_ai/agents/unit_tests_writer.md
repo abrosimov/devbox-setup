@@ -226,6 +226,7 @@ For each function/component the diff adds or changes, systematically consider:
   - Go: nil receiver design, constant-time comparison, `crypto/rand` over `math/rand`, no SQL string concat.
   - Python: parameterised queries, list args for subprocess, `hmac.compare_digest`, `secrets` module, `yaml.safe_load`, path traversal, error leakage, GUARDED patterns (`verify=False`, `shell=True`).
   - Frontend: XSS via `dangerouslySetInnerHTML`, no exposed API keys, sanitised URL params, `localStorage` token misuse.
+- **Time** — every instant in a test derives from one clock: all fake (`synctest`, `time_machine`, `vi.useFakeTimers`, an injected clock) or all offsets from one anchor read once. Never put a literal date next to a fixture, TTL or window that reads the real clock; such a test expires as the calendar moves. Copy an incident's clock times into the comment, not the code. Time-relative behaviour gets a just-inside / just-outside case. Ask of each test: would it pass unchanged in a month, at 23:59:59, on 31 December, in another `TZ`? Rules per stack: `{lang}-testing`, "Time: One Clock Per Test".
 - **Concurrency / async** — races (Go), blocking calls in async (Python), missing cleanup / stale closures (React).
 - **Backward compatibility** — deprecated functions still work, API contract stable, retry behaviour respected.
 - **Distributed systems patterns** — transactional outbox, idempotency keys, retry/backoff (when applicable).
@@ -382,10 +383,11 @@ Before completing the task, verify:
 - [ ] Every error/exception path exercised.
 - [ ] Every domain invariant from `domain_model.md` exercised (when model present).
 - [ ] Every Test Mandate row from `plan.md` exercised (when plan present).
-- [ ] Bug-hunting scenarios applied (boundary, security, concurrency/async, state transitions).
+- [ ] Bug-hunting scenarios applied (boundary, security, time, concurrency/async, state transitions).
+- [ ] One clock per test: no literal date or timestamp next to anything reading the real clock.
 
 **Validation (per detected stack)**
-- [ ] Go: `go test ./...`, `go test -race ./...`, `go test -cover ./...`
+- [ ] Go: `go test -count=1 ./...`, `go test -count=1 -race ./...`, `go test -count=1 -cover ./...` (a cached result proves nothing)
 - [ ] Python: `uv run pytest` (or `poetry run pytest`), `pytest --cov` clean
 - [ ] Frontend: `npx vitest run`, `npx tsc --noEmit`, `npx eslint` on test files, no a11y violations from `jest-axe`
 

@@ -1,5 +1,6 @@
 ---
 note_id: "202611031507010"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: meta
@@ -11,14 +12,14 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["FTW-OQ-010"]
 tags: [fuzzing, design/open-question]
-status: open
-blocks: ["[[agent-procedure]]"]
+status: deferred-to-authoring
+blocks: []
 related: ["[[eval-plan]]"]
 ---
-# FTW-OQ-010: Opus for the gate, charter and shape steps raises cost per eval case
+# FTW-OQ-010: Model choice and cost are not selected by the methodology
 
-**Question.** Is the decision density of the gate, charter and shape steps worth Opus, or does Sonnet with the skills pass family A?
+**Disposition (2026-11-10):** deferred-to-authoring.
 
-**Why it matters.** Eval budget and day-to-day cost of the agent.
-
-**Resolution path.** Run family A with both models on the non-holdout set; keep the `unit_tests_writer` complexity-escalation block either way.
+Choose available models and explicit evaluation spending limits in the later authoring/qualification
+task. Compare meaningful cases under equal constraints; do not assume a named model is required for
+applicability or automatic complexity escalation. No live model calls are required for this pass.

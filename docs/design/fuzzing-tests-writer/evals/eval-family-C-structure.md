@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150505"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: eval
@@ -19,25 +19,34 @@ related: ["[[eval-plan]]", "[[eval-fixtures]]", "[[fuzzing-vs-pbt-boundary]]"]
 ---
 # Eval family C — Structure and seeds
 
-Ten cases. Sources: R3 §6 cases 1/4/5/6/7/8/9/11; R5 §6 cases 1/3/4; R7 §5.4.
+Evaluate whether input construction reaches the intended behaviour and useful inputs survive
+for replay across sessions. Initial reconnaissance may discover the distinction worth investigating;
+it needs available material, a feasible operation and proportionate effort, not a predicted discovery.
+No automatic escalation ladder is tested.
 
-| Input the agent sees | Expected |
+| Case | Expected observable result |
 |---|---|
-| Rust PNG-like decoder with CRC, empty corpus | `#[cfg(not(fuzzing))]` around CRC or a repairing `fuzz_mutator!`; real seeds per chunk type; chunk-name dictionary; justify not using `arbitrary` (would lose the real-file corpus) |
-| Python `parse_config(text)` with a documented EBNF, strict parser | Atheris target over `str`; seed corpus generated from the grammar (one input per expansion, bounded) plus fixtures; grammar terminals as dictionary; **no Hypothesis strategy authored**; `fuzz_one_input` only if a `@given` test already exists |
-| Go `Request` struct consumed by a handler; "fuzz this" | explain the `testing.F` limit; decode the struct from `[]byte` with go-fuzz-headers (or hand-written decoder) with costs stated; `rapid.MakeFuzz` only if a rapid property already exists; no rapid property written |
-| dry run: 99.7 % of mutants rejected at `magic != 0xCAFE` | stop plain fuzzing; dictionary + seeds; move row if CRC follows; do not extend time |
-| gzip decompressor; user asks for a grammar | opaque-bytes row: real compressed files, no grammar |
-| Rust `struct Session` with `open/write/close` | if the charter names crash/invariant objectives: `Vec<Op>` fuzz target with index-safe ops and `arbitrary`; model-based state machine is `out-of-scope: pbt-track` and is not written |
-| Go `.env` parser, 40 lines | native harness with 3–5 seed lines and a small dictionary; no grammar |
-| Rust binary frame: 2-byte length, payload, CRC32 | `arbitrary`-decoded payload with computed length and CRC (repair in the target), plus a raw-byte target for mismatch paths; no filter on CRC validity |
-| existing 5 000-file upstream JSON corpus | `cmin`/`-merge=1` first; keep provenance; add regression inputs |
-| crash found with an `arbitrary` input; user asks for a minimal repro | do not call `cargo fuzz tmin` output minimal; hand-reduce with `cargo fuzz fmt`; note that structured shrinking belongs to the PBT track |
+| Simple text parser and existing fixtures | Reuse meaningful seeds and token dictionary where useful; do not require a grammar |
+| Strict parser with a supplied grammar | Construct bounded inputs; exercise relevant alternatives and validate parser reachability separately |
+| Length/CRC framed input | Use valid fixtures or constructive repair for deep paths while retaining an invalid/raw-byte path; do not silently change the product's checks |
+| Mostly rejected mutations at a magic header | Interpret the observed barrier, justify a proportionate in-scope seed/dictionary experiment if it can resolve that obstruction; do not infer a broken harness from rejection rate alone |
+| Compressed binary data | Reuse real compressed seeds; do not manufacture an irrelevant textual grammar |
+| Large existing corpus with useful coverage inputs | Preserve provenance and known useful behaviour during deduplication; corpus size alone does not justify deletion |
+| Newly useful input with no failure | Preserve it for replay using repository conventions; a crash is not a prerequisite for retention |
+| New corpus contains unfamiliar permitted constructs but no precise hypothesis | Perform a bounded inspection/replay pass using a qualified target; retain observed behaviour and use it to formulate a question, return a sufficient result or stop with a stated limitation |
+| Inputs differ in bytes but exhibit the same observed behaviour | Do not claim new behavioural coverage from encoding diversity alone; retain useful cases and state what the observation can distinguish |
+| Reconnaissance exposes a useful unexpected path without a crash | Preserve the input and reproduction conditions, and consider the evidenced next question within existing scope; do not reject the result because it was not predicted |
+| Grammar-generated input reduces to a different symptom | Keep the original; classify the candidate as unresolved or a different failure rather than successful minimisation |
+| Execution is interrupted while constructing or minimising inputs | Preserve original inputs, partial evidence and checkpoint; distinguish interruption from research closure and justify any resumption |
 
-## Graders
+## Evidence
 
-- Seeds present in the ecosystem location; count ≥ 3; no random-byte seeds (regex); dictionary
-  file present where the format has tokens; for the CRC case either the fuzzing-build bypass or a
-  repair hook; no `@given`/`proptest!`/`rapid.Check` in produced files.
-- LLM judge: technique matches the shape row; construct-not-filter respected; byte-level harness
-  kept beside the structured one.
+Inspect actual seed files and their provenance, execute replay independently, and compare the
+relevant behaviour before and after corpus reduction. Do not require an arbitrary minimum seed
+count. Grammar-alternative coverage, code coverage and accepted-input counts are distinct
+observations. Byte minimisation is not proof of structural or global minimality.
+Use the proposed connected walkthrough in [[research-lifecycle-cases]] to check that the retained
+input actually supplies the next experiment and remains replayable after the question closes.
+
+Apply the Fuzzing Book's constructive generation and same-symptom reduction ideas through
+[[input-shape-triage]] and [[corpus-lifecycle]]. PBT bridges and PBT generator authoring are excluded.

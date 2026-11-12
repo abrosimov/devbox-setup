@@ -1,5 +1,6 @@
 ---
 note_id: "202611031507005"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: meta
@@ -11,14 +12,15 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["FTW-OQ-005"]
 tags: [fuzzing, design/open-question]
-status: open
+status: deferred-to-authoring
 blocks: ["[[skill-rust-fuzzing]]"]
 related: ["[[language-facts-rust]]"]
 ---
-# FTW-OQ-005: cargo-fuzz on stable with --sanitizer none
+# FTW-OQ-005: Selected Rust engine/toolchain combination needs verification
 
-**Question.** Whether `cargo fuzz build -s none` builds on stable is unverified; sanitizer stabilisation (rust-lang/rust#123617) is open and cargo-fuzz carries a placeholder version for it.
+**Disposition (2026-11-10):** deferred-to-authoring.
 
-**Why it matters.** Decides the CI recipe (pinned nightly versus stable) and whether bolero is recommended for stable-only projects.
-
-**Resolution path.** Keep "nightly, pinned date" as the rule with a dated re-check note; test `-s none` on stable when the Rust toolchain is available in the authoring session.
+Verify cargo-fuzz, compiler channel, target and sanitizer combination using current primary docs
+and an actual fixture build/run when authoring. Historical claims about stable or nightly are not
+current execution evidence. Do not silently substitute a PBT runner or install a toolchain in this
+document pass. Report unsupported environments explicitly.

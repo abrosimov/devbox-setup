@@ -11,7 +11,10 @@ devbox_codex_shared_skills:
   - fpf-thinking
   - frontend-testing
   - frontend-tooling
+  - fuzzing-applicability
+  - fuzzing-campaign
   - go-engineer
+  - go-fuzzing
   - go-observability
   - go-review-checklist
   - go-testing
@@ -19,9 +22,12 @@ devbox_codex_shared_skills:
   - narrative-thinking
   - playwright-e2e
   - python-monolith
+  - python-fuzzing
   - python-testing
   - python-tooling
   - response-templates
+  - rust-fuzzing
+  - structured-input-generation
   - tla-plus
   - ui-design
   - writing-for-the-reader
@@ -46,6 +52,7 @@ devbox_codex_agents:
   - focus-coach
   - formal-model-writer
   - freshness-auditor
+  - fuzzing-tests-writer
   - implementation-planner
   - integration-tests-writer-go
   - integration-tests-writer-python

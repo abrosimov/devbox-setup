@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150303"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: finding
@@ -22,31 +22,38 @@ related: ["[[language-facts-go]]", "[[language-facts-python]]"]
 ---
 # Language facts — Rust
 
-Source: [[09-lang-rust|R9]] (cargo-fuzz 0.13.2, arbitrary 1.5.0, proptest MSRV 1.88, bolero; as of
-2026-11-03; nothing was executed in the research session).
+[[09-lang-rust|R9]] is a historical snapshot of cargo-fuzz, `libfuzzer-sys`, `arbitrary` and related
+tools as of 2026-11-03; the research session did not execute them. Current nightly/stable support,
+platform requirements and default flags require primary-source and local verification at
+skill authoring. They are not established by this methodology revision.
 
-| Topic | Fact |
-|---|---|
-| Tools and the boundary | **cargo-fuzz** (libFuzzer via `libfuzzer-sys`): coverage-guided, needs nightly, parsers/decoders/`unsafe`/FFI with ASan — this agent's engine. **bolero**: hybrid harness front-end (one target as a `#[test]` replaying committed `__fuzz__/<t>/{corpus,crashes}` + 1 s random, and under libFuzzer/AFL/honggfuzz/Kani; stable with `--sanitizer NONE`) — in scope as a fuzz harness. **proptest** / `proptest-state-machine` / quickcheck: property-based testing — **out of scope** ([[fuzzing-vs-pbt-boundary]]). |
-| Oracle gap | without `unsafe` the crash oracles are panics (OOB, `unwrap`, overflow with debug assertions, `debug_assert!`), stack overflow, OOM/timeout; trophy case ≈367 rows dominated by those; 8 security-marked rows, all `unsafe`/FFI/C++; logic bugs via round trip (rust-url #729) or reference mismatch. |
-| Debug assertions | cargo-fuzz adds `-Cdebug-assertions` by default (overflow checks follow); `-O` turns them off, so OSS-Fuzz's `cargo fuzz build -O` recipe needs `--debug-assertions`; the coverage build forces them off. |
-| Layout | `fuzz/Cargo.toml` (`<name>-fuzz`, `publish=false`, `[[bin]] test=false doc=false bench=false`), `fuzz/fuzz_targets/<t>.rs` starting `#![no_main]`, `fuzz/corpus/<t>/`, `fuzz/artifacts/<t>/crash-<sha1>`, `fuzz/coverage/<t>/`; generated `.gitignore` excludes `target corpus artifacts coverage`; add `fuzz` to `workspace.members`. |
-| Typed input | `fuzz_target!(|x: T|)` with `#[derive(Arbitrary)]` behind an optional `arbitrary` feature on the library; `arbitrary` is deterministic, pads with zeros when bytes run out, `libfuzzer-sys` rejects inputs shorter than `size_hint`; return `Corpus::Reject` for invalid input; `fuzz_mutator!`/`fuzz_crossover!` for custom mutation (one experiment favours mutation for coverage over time). |
-| Flags and output | `-- -max_total_time=S -max_len=N -rss_limit_mb=2048 -dict=…`; libFuzzer defaults `-timeout=1200`, `-rss_limit_mb=2048`, `-max_len` guessed from the corpus; output `cov:` / `ft:` / `corp:` / `NEW` / `REDUCE` (`ft`, `lim`, `L` legend UNVERIFIED — [[FTW-OQ-002-libfuzzer-legend]]). |
-| Commands | `cargo fuzz init/add/build/run/list`; `cmin` = `-merge=1`; `tmin` = `-minimize_crash=1 -runs=255`; `coverage` = `-Cinstrument-coverage` over the corpus + `llvm-profdata merge`; `fmt` prints the `Debug` of a typed input; reproduce with `cargo fuzz run <t> fuzz/artifacts/<t>/crash-…`. |
-| Regression fixtures | copy the minimised artefact into `tests/fuzz_regressions/<t>/` and replay it from a `#[test]` (stable, no cargo-fuzz needed in `cargo test`); or bolero's committed `__fuzz__`; proptest: commit `proptest-regressions/` (a changed strategy can silently stop a seed reproducing). |
-| proptest (hand-off facts) | persists failing seeds in `proptest-regressions/`; no coverage feedback; no proptest/quickcheck finds appear in the trophy case; `proptest-arbitrary-interop` consumes this agent's `Arbitrary` impls on the PBT side. |
-| CI | pin `nightly-YYYY-MM-DD` (the book's recipe uses floating `nightly`; OSS-Fuzz uses latest nightly) and `cargo-fuzz --version`; `cargo fuzz build --debug-assertions <t>` as compile check; 300 s smoke per target; upload `fuzz/artifacts` on failure; ClusterFuzzLite `code-change` 600 s / `batch` 3 600 s / `prune` / `coverage` with a storage repo for long runs; keep `cargo test` (proptest/bolero replay) on stable so the oracle survives a broken nightly. |
-| Other engines | afl.rs builds on stable (only `-C` flags) unless CMPLOG/plugins; honggfuzz-rs stable; no primary source states a libFuzzer-vs-AFL selection rule. Miri and Kani are related, not fuzzing (run harnesses under Miri; bolero `--engine kani`). |
-| Yield evidence | chrono overflow, rmpv 2.9 GB `with_capacity` from a 15-byte input, ron stack overflow on 10 000 `{`, regex `unwrap`/UTF-8 boundary, rust-url round trip; quinn-proto advisories credit *absent* fuzzing coverage (RUSTSEC-2026-0037). |
+## Operations to specify at authoring
 
-## Decision rule (R9 §5.3, restated for this agent's scope)
+| Operation | Rust-specific contract | Required evidence |
+|---|---|---|
+| Discover and build | Use the repository's fuzz manifest and target conventions with the selected toolchain | Actual target discovery and compilation, recording toolchain and instrumentation |
+| Replay seeds | Load stored engine bytes through the same target/decoder | Verified corpus replay; a separate ordinary test adapter where the repository requires it |
+| Search | Use supported cargo-fuzz/libFuzzer limits for the admitted experiment | Actual commands, raw output, exits and process timing |
+| Decode structure | Use a justified `arbitrary`/byte decoder with explicit size and recursion bounds | Input exhaustion/rejection behaviour, decoder version and raw bytes retained |
+| Check memory/logic | Use relevant sanitizer, panic/resource and contract checks | Build flags and contract evidence; memory-safe code can still have logic/resource defects |
+| Reduce and preserve | Retain originals and useful seeds; bound corpus/failure reduction | Same-symptom reproduction and durable replay paths |
 
-typed invariant → `out-of-scope: pbt-track`; stateful API with a simple model → `out-of-scope:
-pbt-track` (a `Vec<Op>` fuzz target with `arbitrary` only when the charter names crash/invariant
-objectives); byte/text parser, decoder, decompressor, deserialiser, `unsafe`, FFI → cargo-fuzz +
-ASan (+ `Arbitrary`, `fuzz_mutator!` for encoded containers); one harness as unit test and fuzz
-target, private functions, or no nightly → bolero as the harness front-end; `serde` derive with no
-custom impl, CLI `main` arg parsing, I/O-dominated code → do not fuzz.
+A successful search command does not establish that ordinary `cargo test` replays its corpus.
+Verify that handover explicitly. Likewise, record debug assertion, overflow and sanitizer settings
+rather than assuming a development or optimised build has the same oracle. Reproduction must
+retain the decoder and configuration that make the bytes meaningful.
 
-Skeletons R9 §5.1; twelve-point review checklist §5.2; CI recipe §5.5.
+## Verification sources and boundaries
+
+Use the primary [cargo-fuzz book](https://rust-fuzz.github.io/book/cargo-fuzz.html),
+[cargo-fuzz source](https://github.com/rust-fuzz/cargo-fuzz),
+[`arbitrary` documentation](https://docs.rs/arbitrary/latest/arbitrary/) and matching tool
+versions. [[FTW-OQ-005-cargo-fuzz-on-stable]] and [[FTW-OQ-002-libfuzzer-legend]] identify details
+that must be settled for a concrete adapter, not prerequisites for endless methodology research.
+
+The default specification centres on cargo-fuzz and direct fuzzing-side decoding. An existing
+alternative harness may be assessed within the authorised task, but does not add an engine
+portfolio or separate infrastructure project. PBT suites and bridges are excluded by
+[[fuzzing-vs-pbt-boundary]]. Preserve build, retry, reduction and replay observations with their
+configuration in the research history. Neither a historical time recipe nor a new agent session
+justifies another experiment; use the continuation rules in [[stopping-algorithm]].

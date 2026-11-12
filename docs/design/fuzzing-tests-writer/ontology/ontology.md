@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150001"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: ontology
@@ -23,8 +23,8 @@ related: ["[[fuzzing-tests-writer]]"]
 |---|---|---|---|
 | `hub` | root | a map of content | name |
 | `ontology` | `ontology/` | this schema | — |
-| `hypothesis` | `ontology/` | one named cause of past failure, with verdict and evidence | `H1`–`H7` |
-| `framing` | `framing/` | receiving use, FPF pattern binding, system boundary, corpus description, the PBT agent prompts | name |
+| `hypothesis` | `ontology/` | one failure hypothesis or design risk, with qualified verdict and evidence | `H1`–`H7` |
+| `framing` | `framing/` | receiving use, FPF pattern binding, system boundary, corpus description and historical exclusions | name |
 | `finding` | `findings/` | one evidence-backed conclusion with its design consequence | name |
 | `component` | `layout/` | one thing to build: agent procedure, skill, reference set, script, placement | name; skills carry their future directory name |
 | `eval` | `evals/` | plan, fixtures, one case family, tooling, acceptance | family letter `A`–`H` |
@@ -63,7 +63,16 @@ build map.
 - While `publication_status: draft`, a note may be amended in place; an amendment that changes a
   decision is marked in the body (*Amended by [[FTW-D-008-pbt-out-of-scope]]* is the form). Once a
   note leaves draft, its body is immutable and a change is a successor note linked by `supersedes`.
-- British English. Numbers in tables, not prose. Every load-bearing claim names an annex section.
+- British English. Numbers in tables, not prose. Every load-bearing claim names its basis: user decision, source locator or explicit inference. Historical annexes do not override current scope.
 - The annexes keep their own internal source ids (`S1`, `H1`… inside R8, `C1`… inside R9); this
   vault's `H1`–`H7` are the failure hypotheses, and an annex-internal id is always qualified by
   its annex (`R8 §3.1 claim 5`).
+
+## Research, experiment and session
+
+The methodology distinguishes persistent research and its versioned subject basis from an experiment
+attempt and an agent session. Reconnaissance can form a question from concrete material; a later
+question-led experiment investigates that question. Research states and closure reasons are
+specified once in [[stopping-algorithm]]. Experiment execution status and finding class do not
+substitute for that lifecycle. Existing note IDs and filenames remain stable when a draft rule is
+corrected; preserving an ID does not preserve the superseded rule's authority.

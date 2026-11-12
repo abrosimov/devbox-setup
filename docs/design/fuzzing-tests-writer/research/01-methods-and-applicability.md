@@ -1,5 +1,6 @@
 ---
 note_id: "20261103150901"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: research
@@ -17,6 +18,11 @@ addresses: ["[[H1-no-applicability-gate]]", "[[H4-crash-only-oracle]]"]
 related: ["[[research-index]]", "[[research-corpus]]"]
 ---
 # Fuzzing method families and the applicability gate (Go / Rust / Python focus)
+
+> Historical research from 2026-11-03; the body below is retained as provenance. Its proposals
+> are not current requirements. The 2026-11-10 disposition is [[methodology-review]]: PBT and
+> mutation analysis are excluded; saturation/escalation rules and provider recipes must not be
+> imported into authoring. Current operations are specified in [[agent-procedure]].
 
 Research report for the "fuzzing tests writer" agent design document. Written 2026-11-03.
 Network note: in this session `llvm.org`, `go.dev`, `rust-fuzz.github.io`, `hypothesis.readthedocs.io`,

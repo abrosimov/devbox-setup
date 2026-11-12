@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150006"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-10
 language: en
 type: design
 subtype: hypothesis
@@ -13,20 +13,22 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["H5", "Harnesses that do not compile or follow conventions"]
 tags: [fuzzing, design/hypothesis, h5]
-verdict: "confirmed"
+verdict: "design risk; runtime qualification still pending"
 grounded_in: ["[[07-lang-go|R7]]", "[[08-lang-python|R8]]", "[[09-lang-rust|R9]]"]
 addressed_by: ["[[language-facts-go]]", "[[language-facts-python]]", "[[language-facts-rust]]", "[[skill-go-fuzzing]]", "[[skill-python-fuzzing]]", "[[skill-rust-fuzzing]]"]
 tested_by: ["[[eval-family-E-conventions]]"]
 related: ["[[ontology]]"]
 ---
-# H5 — Harnesses that do not compile or follow conventions
+# H5 — Harness and replay conventions are not verified
 
-**Hypothesis.** Earlier harnesses did not compile, did not use the ecosystem's corpus location or CI split, or were not reproducible.
+**Status:** design risk; runtime qualification still pending.
 
-**Verdict.** Confirmed as a convention problem rather than a coding problem: each ecosystem has three or four non-obvious rules, carried by the `language-facts-*` notes. The seed corpus passes as unit tests at the harness step of [[agent-procedure]] (step 4), before any campaign.
+A written target may fail to build, fail to reach the intended code, or lose its reproducer.
+The language annexes are historical guidance; their presence does not prove a current command or
+harness works. Version-sensitive details require verification during authoring.
 
-## Evidence
-
-- Go: `-fuzz` needs one package, one target, anchored regexp and a budget or it fails with no fuzzing done; the OSS-Fuzz shim ignores `f.Add` and panics on named types; a committed failing seed fails every later baseline until fixed — R7 §3.1, §3.5, §3.2.
-- Rust: `#![no_main]`, nightly, `-O` drops overflow checks unless `--debug-assertions`; corpus and artifacts are git-ignored by default — R9 §3.1 C5, C7, D5.
-- Python: `@reproduce_failure` blobs are version-specific; `.hypothesis/` stays out of VCS; Atheris never stops without `-atheris_runs`; pure-Python targets must not preload ASan — R8 §3.1, §3.2.
+The three language skills specify real build/execution and seed replay evidence. Static checks
+alone, `go vet` alone, or a Python import alone do not qualify a fuzz harness. Use the actual target
+runtime and verify the intended oracle path independently. Preserve useful input files under
+repository conventions without assuming a Git commit is authorised. Family E checks this on new
+fixtures. [[language-facts-go]], [[language-facts-python]] and [[language-facts-rust]] own details.

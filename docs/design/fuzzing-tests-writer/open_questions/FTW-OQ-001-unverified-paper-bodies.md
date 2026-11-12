@@ -1,5 +1,6 @@
 ---
 note_id: "202611031507001"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: meta
@@ -11,14 +12,14 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["FTW-OQ-001"]
 tags: [fuzzing, design/open-question]
-status: open
-blocks: ["[[skill-fuzzing-campaign]]", "[[reference-documents]]"]
+status: nonblocking
+blocks: []
 related: ["[[research-corpus]]", "[[stopping-algorithm]]"]
 ---
-# FTW-OQ-001: Paper bodies cited at abstract level
+# FTW-OQ-001: Unverified paper bodies are excluded from current claims
 
-**Question.** Klees et al. 2018 figures (trials, 57 142 crashes → 9 bugs), Böhme 2020/2021 magnitudes, Mañes et al. taxonomy, Hughes' property ranking were read from abstracts or search snippets only.
+**Disposition (2026-11-10):** nonblocking.
 
-**Why it matters.** Skills must not quote numbers from them until read; the stopping algorithm's adaptivity caveat and the claim-hygiene rules currently rest on the Fuzzing Book chapter and the fuzz-evaluator guidelines, which were read.
-
-**Resolution path.** Re-fetch when `arxiv.org` and the ACM/IEEE hosts are reachable; until then skills cite the Fuzzing Book chapter and engine docs.
+Some historical annexes quote abstract-only figures. Do not use those figures to justify rules or
+acceptance thresholds. No current operation requires them. Read a full source only if a later
+in-scope decision actually depends on it; this is not a standing research task.

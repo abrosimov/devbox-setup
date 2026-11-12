@@ -1,5 +1,6 @@
 ---
 note_id: "20261103150904"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: research
@@ -17,6 +18,11 @@ addresses: ["[[H1-no-applicability-gate]]", "[[H2-no-stopping-rule]]", "[[H3-ran
 related: ["[[research-index]]", "[[research-corpus]]"]
 ---
 # The Fuzzing Book, Part I "Lexical Fuzzing" + introductory chapters — what it gives a fuzzing-tests-writer agent
+
+> Historical research from 2026-11-03; the body below is retained as provenance. Its proposals
+> are not current requirements. The 2026-11-10 disposition is [[methodology-review]]: PBT and
+> mutation analysis are excluded; saturation/escalation rules and provider recipes must not be
+> imported into authoring. Current operations are specified in [[agent-procedure]].
 
 Report 04 for the fuzzing-agent design document. Sources are the Fuzzing Book chapters (Zeller, Gopinath, Böhme, Fraser, Holler), read from the project's GitHub mirror because `www.fuzzingbook.org` is not resolvable from this session (see §2). Canonical URLs are given in the form `https://www.fuzzingbook.org/html/<Chapter>.html`; the content read is byte-identical in substance to those pages (same notebooks, rendered by nbconvert).
 

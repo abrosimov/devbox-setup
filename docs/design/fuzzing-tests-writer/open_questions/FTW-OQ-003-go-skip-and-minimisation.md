@@ -1,5 +1,6 @@
 ---
 note_id: "202611031507003"
+modified: 2026-11-11
 created: 2026-11-03
 language: en
 type: meta
@@ -11,14 +12,16 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["FTW-OQ-003"]
 tags: [fuzzing, design/open-question]
-status: open
+status: deferred-to-authoring
 blocks: ["[[skill-go-fuzzing]]"]
 related: ["[[language-facts-go]]"]
 ---
-# FTW-OQ-003: Go: skipped inputs and minimisation reliability
+# FTW-OQ-003: Go skip and minimisation behaviour need runtime qualification
 
-**Question.** Whether a `t.Skip`-ped input can still be kept as interesting was not determined from source; one of three local crashers was written unminimised with no log line (issue #48820 reports minimisation hangs).
+**Disposition (2026-11-10):** deferred-to-authoring.
 
-**Why it matters.** Decides the wording of the skip idiom and what the checklist promises about committed crasher size.
-
-**Resolution path.** Read the `internal/fuzz/worker.go` paths for skipped results at go1.27.3; keep minimisation as best-effort in the checklist until then.
+Qualify skipped-input retention, reproducer location and minimisation against the target repository's
+selected Go toolchain during authoring. The historical R7 question remains version-specific.
+Minimisation is best-effort within an admitted experiment; retain the original useful/failing input if a
+smaller equivalent input is not established. Save interrupted reduction and its context. Another
+minimisation attempt needs a justified contribution; a new session does not itself justify a retry.

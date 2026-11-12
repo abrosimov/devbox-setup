@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150302"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: finding
@@ -22,40 +22,37 @@ related: ["[[language-facts-go]]", "[[language-facts-rust]]", "[[fuzzing-vs-pbt-
 ---
 # Language facts — Python
 
-Source: [[08-lang-python|R8]] (Atheris 3.1.0, Hypothesis 6.170.14, HypoFuzz, as of 2026-11-03).
+[[08-lang-python|R8]] is a historical snapshot of Python fuzzing tools as of 2026-11-03. This pass
+uses its Atheris findings as candidates for an adapter; it does not certify current interpreter,
+platform, sanitizer or package compatibility. Verify those against the installed versions and
+current primary documentation when authoring the Python skill.
 
-## Fuzzing side
+## Operations to specify at authoring
 
-| Topic | Fact |
-|---|---|
-| Engine | **Atheris** = libFuzzer for Python: coverage-guided by bytecode instrumentation, byte-oriented, runs forever, instruments C extensions with ASan; Linux/macOS, Python 3.11–3.14. `atheris.Setup(sys.argv, TestOneInput)`; `TestOneInput(data: bytes)`; `atheris.Fuzz()` does not return. |
-| Instrumentation | `with atheris.instrument_imports(): import lib` (must wrap the import), `@atheris.instrument_func`, `atheris.instrument_all()` (slow, experimental); instrumenting nothing yields "No interesting inputs were found" — a sanity-gate signal. |
-| Failure model | any uncaught Python exception is a finding; expected exception types are caught in the harness (`except DecodeError: return`); timeouts and RSS limits are libFuzzer's. What fuzzing finds: wrong exception types, exponential/infinite loops (CPython parser #90863), wrong results via differential oracles (ujson #440), native memory errors (Pillow CVE-2020-35653). |
-| Structure | `FuzzedDataProvider`: `ConsumeBytes`, `ConsumeUnicode[NoSurrogates]`, `ConsumeInt[InRange]`, `ConsumeIntList`, `ConsumeFloat` (NaN/Inf), `ConsumeBool`, `PickValueInList`; consumption after exhaustion yields zeros/empties; custom mutators (`custom_mutator=`, `atheris.Mutate`) for compressed input; libprotobuf-mutator contrib. |
-| Stop and budget | never stops by itself; CI passes `-atheris_runs=N` (not `-runs`) or `-max_total_time`; coverage reports only on graceful exit. |
-| Layout | `tests/fuzz/<name>_fuzzer.py` (OSS-Fuzz discovery glob `*_fuzzer.py`), `corpus/<name>/`, `<name>.dict`; crash artefacts (`crash-<sha1>`) become regression seeds in the corpus. |
-| Native extensions | build with `-fsanitize=address,fuzzer-no-link`; `LD_PRELOAD` Atheris' `asan_with_fuzzer.so`; `ASAN_OPTIONS=detect_leaks=0`; `enable_python_coverage=False` when only native coverage matters; never preload for pure-Python targets. |
-| Oracles in the target | round trip (`loads(dumps(x)) == x`), differential (`json` vs `ujson`, idna vs libidn2 — the OSS-Fuzz ujson project), timeouts as findings, resource limits. |
-| HypoFuzz | a coverage-guided **fuzzer** (branch coverage via `sys.monitoring`) over an **existing** Hypothesis suite; runs until interrupted; failures land in the Hypothesis database so `pytest` replays them; run ≥ 1 h, restart workers every 12–24 h; licence free for non-commercial use only ([[FTW-OQ-006-hypofuzz-licence]]). In scope as an engine over an existing suite. |
-| `fuzz_one_input` bridge | `test.hypothesis.fuzz_one_input(bytes)` drives one existing `@given` test from libFuzzer bytes (OSS-Fuzz ujson `hypothesis_structured_fuzzer.py`); `deadline`/`derandomize`/`max_examples` do not apply; corpus bytes are tied to the Hypothesis version; shrinking and dedup happen later in `pytest`. Allowed only for an existing test. |
-| OSS-Fuzz | `language: python3`, `base-builder-python` (Atheris preinstalled), `compile_python_fuzzer $SRC/**/*_fuzzer.py`, `<target>_seed_corpus.zip`, `<target>.dict`, `.options`; sanitizers `address`/`undefined` for native code; reproduce with `-timeout=65 -rss_limit_mb=2560`. |
-| Not fuzzing | `pytest-randomly`, `Faker` (no oracle, no shrinking, no feedback); `pythonfuzz` archived; `python-afl` superseded by Atheris; `crosshair` is symbolic (PBT backend). |
+| Operation | Python-specific contract | Required evidence |
+|---|---|---|
+| Discover and load | Follow repository packaging and the selected Atheris entry-point convention | Actual target load and callable invocation; import success alone does not validate a harness |
+| Instrument | Instrument the intended Python code and, when applicable, native dependencies | Evidence that known product behaviour is observed; a quiet counter alone does not diagnose missing instrumentation |
+| Replay | Execute stored bytes through the same callable, with the fuzz loop separated from ordinary replay where needed | Known valid, expected-invalid and regression cases with observed exits |
+| Search | Use supported Atheris/libFuzzer limits for the admitted experiment | Actual supported flags, process timing and raw logs |
+| Decode structure | Use a justified fuzzing-side byte decoder or bounded repair | Deterministic mapping, bounds and raw bytes retained |
+| Classify failures | Catch specific expected domain exceptions; inspect unexpected diagnostics | Independent reproduction and contract/environment checks before declaring a product bug |
+| Preserve and reduce | Retain useful corpus entries and original failures; reduce the same symptom within budget | Durable paths and a verified ordinary replay command |
 
-## Boundary facts (PBT track, recorded for the hand-off: [[fuzzing-vs-pbt-boundary]])
+Native-extension sanitizer builds require a separate compatibility check for the actual compiler,
+interpreter and extension. Do not copy historical preload flags, leak settings or platform tables
+without verification. Retain partial evidence and useful inputs after interruptions; save callable,
+instrumentation and environment context for replay in another session. Process termination and
+research closure have different meanings under [[stopping-algorithm]].
 
-| Topic | Fact |
-|---|---|
-| Hypothesis | property-based testing inside pytest: typed strategies, shrinking, example database, no coverage feedback, stops at `max_examples` (100) or domain exhaustion; `RuleBasedStateMachine` for stateful models; `target()` for guided search; Ghostwriter scaffolds. |
-| Repro conventions there | `@example` pins, `@reproduce_failure` blob is version-specific, `.hypothesis/` out of VCS, `ci` profile auto-loaded. |
-| schemathesis | Hypothesis over OpenAPI/GraphQL with built-in checks — API-testing/PBT track. |
-| Existing prompts | Hypothesis' `.claude/commands/hypothesis.md` and Anthropic's `agentic-pbt` — [[pbt-agent-prompts]]. |
+## Verification sources and boundaries
 
-## Decision rule (R8 §5.1, restated for this agent's scope)
+Use the primary [Atheris documentation and source](https://github.com/google/atheris) and
+[libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html), recording the versions and the
+specific operations checked. Follow the existing repository's corpus/test layout rather than
+assuming every `corpus/` directory is replayed by pytest.
 
-parser/decoder/decompressor over `bytes`/`str`, or any C-extension boundary → Atheris (+ASan if
-native); existing Hypothesis suite with spare CPU → HypoFuzz (licence permitting); existing `@given`
-test on an untrusted hot path → Atheris via `fuzz_one_input`; typed function with a statable
-relation, stateful API, HTTP API with a schema → `out-of-scope: pbt-track`; glue with no property
-of its own, `json.loads` wrapper → do not fuzz.
-
-Skeleton R8 §5.3 (Atheris); review checklist R8 §5.5 (fuzz items); CI recipe R8 §5.6 (fuzz rows).
+Hypothesis strategies and tests, HypoFuzz, `fuzz_one_input` bridges and PBT-based API testing are
+excluded by [[fuzzing-vs-pbt-boundary]], including pre-existing suites. The historical
+[[FTW-OQ-006-hypofuzz-licence]] is therefore not a blocker for this Python adapter. This note
+specifies evidence needed at authoring; it does not claim that an Atheris campaign has run.

@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150002"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-10
 language: en
 type: design
 subtype: hypothesis
@@ -13,23 +13,22 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["H1", "Fuzzing applied everywhere, no gate"]
 tags: [fuzzing, design/hypothesis, h1]
-verdict: "confirmed"
+verdict: "design risk; historical dominance unproven"
 grounded_in: ["[[01-methods-and-applicability|R1]]", "[[04-fuzzingbook-part1-lexical|R4]]", "[[07-lang-go|R7]]"]
 addressed_by: ["[[applicability-gate]]", "[[skill-fuzzing-applicability]]", "[[agent-procedure]]"]
 tested_by: ["[[eval-family-A-gate]]"]
 related: ["[[ontology]]"]
 ---
-# H1 — Fuzzing applied everywhere, no gate
+# H1 — Suitability must precede harness work
 
-**Hypothesis.** Earlier agents wrote a fuzz target for every function they were pointed at, including glue code, thin wrappers over already-fuzzed libraries, and code with network or clock dependence.
+**Status:** design risk; historical dominance unproven.
 
-**Verdict.** Confirmed as the dominant risk. The hard stops are engine contracts on which independent traditions agree; where the yield lies rests on the Fuzzing Book's lessons and the Go/Rust/Python bug records, with no per-language yield study ([[FTW-OQ-007-per-language-yield-statistics]]), so [[applicability-gate]] labels "fuzzing pays off on a narrow class" as an inference.
+Earlier wording called lack of an applicability gate the dominant confirmed cause. The source
+survey cannot establish that causal ranking for the user's projects. Keep suitability as a design
+risk and operation, not as a measured explanation of all past failure.
 
-## Evidence
-
-- The Fuzzing Book's own evidence puts the yield at the input-processing boundary ("bugs fuzzers find are mainly due to errors and deficiencies in input processing") and says an already-fuzzed target returns nothing ("all errors found are already fixed") — R4 §5.1, R1 §3.1.
-- Google's harness guidance and the AFL++ docs enumerate hard stops: non-determinism, persistent threads, <10 exec/s, network services, GUI — R1 §5.1 (S1, S7, S30).
-- The Go issue tracker shows almost every fuzzing find in `debug/*`, `archive/*`, `encoding/*`, `image/*`, `regexp`: format readers, not business logic — R7 §3.6.
-- Configuration/option spaces are finite and belong to pairwise testing, not fuzzing — R6 §5.4 (ConfigurationFuzzer).
-
-Acceptance for this hypothesis: no false `fuzz` on a non-fuzz case in any [[eval-family-A-gate]] run ([[acceptance-criteria]]).
+Check the scoped entry point, oracle, observable work and controllable effects before constructing
+a harness ([[applicability-gate]]). Neither low throughput alone nor already having a corpus proves
+fuzzing is useless. Conversely, a technically fuzzable function does not justify spending the budget.
+The failed attempts and transfer limits are recorded in [[methodology-review]]. Family A checks
+supported acceptance and refusal cases; it does not require broad project exploration.

@@ -1,5 +1,6 @@
 ---
 note_id: "202611031507004"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: meta
@@ -11,14 +12,15 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["FTW-OQ-004"]
 tags: [fuzzing, design/open-question]
-status: open
-blocks: ["[[skill-go-fuzzing]]"]
+status: conditional
+blocks: []
 related: ["[[language-facts-go]]"]
 ---
-# FTW-OQ-004: Go: OSS-Fuzz shim ignores f.Add and panics on named types
+# FTW-OQ-004: Existing OSS-Fuzz integration requires its own compatibility check
 
-**Question.** Should the agent always generate both `testdata/fuzz` seeds and a `seed_corpus.zip` when a repository is or will be on OSS-Fuzz/ClusterFuzzLite?
+**Disposition (2026-11-10):** conditional.
 
-**Why it matters.** A locally correct target is silently seed-less upstream.
-
-**Resolution path.** Rule in the Go skill: when `.clusterfuzzlite/` or an OSS-Fuzz project exists, ship both and avoid named-type arguments; eval case in family E.
+Only if an authorised target already uses such integration, inspect its adapter, seed format and
+build/replay contract before claiming compatibility. Do not create infrastructure or always generate
+a second corpus archive. Native local target qualification can proceed without this conditional
+claim; new integration work is outside this methodology pass.

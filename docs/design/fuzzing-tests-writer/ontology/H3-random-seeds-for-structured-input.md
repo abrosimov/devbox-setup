@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150004"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: hypothesis
@@ -13,21 +13,22 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["H3", "Random seeds for structured input"]
 tags: [fuzzing, design/hypothesis, h3]
-verdict: "confirmed"
+verdict: "conditional mechanism; not a universal failure"
 grounded_in: ["[[03-structure-aware-generation|R3]]", "[[05-fuzzingbook-part2-syntactic|R5]]", "[[04-fuzzingbook-part1-lexical|R4]]"]
 addressed_by: ["[[input-shape-triage]]", "[[skill-structured-input-generation]]"]
 tested_by: ["[[eval-family-C-structure]]"]
 related: ["[[ontology]]"]
 ---
-# H3 — Random seeds for structured input
+# H3 — Inputs fail to reach the intended path
 
-**Hypothesis.** Earlier agents seeded with random bytes or with the unit-test inputs only; structured inputs (parsers, protocols, typed APIs) never got past validation and coverage stayed shallow.
+**Status:** conditional mechanism; not a universal failure.
 
-**Verdict.** Confirmed with mechanism and numbers; the remedy is chosen by input shape in [[input-shape-triage]].
+Random bytes may repeatedly fail format checks; useful seeds, dictionaries, constructive decoding
+or repair can reach deeper paths. R3 and R4–R6 provide examples, not a portable probability or a
+universal speed-up. The former numeric examples must not become acceptance thresholds.
 
-## Evidence
-
-- Prefix probability: a random `http://` prefix has odds 1/96⁷; one valid seed plus 2–10 stacked mutations keeps ~80 % of candidates valid versus ~0 % for random bytes — R4 §0, §5.3.
-- Checksums gate everything: the first CRC, magic, length field or parse step rejects almost every mutant — R3 §0 (libFuzzer structure-aware doc, good-fuzz-target).
-- Generate-then-repair beats generate-then-reject ≈10× (Luhn example); Hypothesis `filter_too_much` fires at 50 rejected draws — R5 §0, R8 §3.1.
-- Go cannot take structured arguments at all; structure must be decoded inside the target — R7 §3.4, R3 §5.3.
+[[input-shape-triage]] chooses the smallest justified operation from the actual input contract.
+Observe the intended path, retain useful inputs for replay and bound recursion/size. Preserve a
+malformed-input path where it is part of the target's contract; grammar validity is not correctness.
+Family C checks meaningful execution and defeats over-filtering. Adding grammar machinery does not
+justify another experiment or create a requirement to implement PBT.

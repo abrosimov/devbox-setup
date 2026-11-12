@@ -1,5 +1,6 @@
 ---
 note_id: "202611031507009"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: meta
@@ -11,14 +12,15 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["FTW-OQ-009"]
 tags: [fuzzing, design/open-question]
-status: open
+status: deferred-to-authoring
 blocks: ["[[eval-tooling]]"]
 related: ["[[FTW-D-004-evals-as-plugin]]"]
 ---
-# FTW-OQ-009: claude plugin eval prerequisites in CI
+# FTW-OQ-009: Provider evaluation facilities and isolation need current verification
 
-**Question.** The tool requires Claude Code ≥ 2.1.269 and, for granted Bash on Linux, bubblewrap and socat; cost per case is not documented.
+**Disposition (2026-11-10):** deferred-to-authoring.
 
-**Why it matters.** Decides the CI image and the `--max-cost-usd` ceiling for the behavioural eval job.
-
-**Resolution path.** Add the packages to the eval job image; measure cost on the first non-holdout run; the trigger evals need neither.
+Verify current official Claude Code and Codex tooling, isolation, permissions, logs and model-cost
+controls before selecting adapters. The historical plugin version and Linux package list are not
+current prerequisites adopted by this method. No CI package installation or trigger-evaluation
+work is authorised here. Cases and independent acceptance meaning remain provider-neutral.

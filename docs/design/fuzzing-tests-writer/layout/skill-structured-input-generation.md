@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150404"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-12
 language: en
 type: design
 subtype: component
@@ -18,32 +18,44 @@ realises: ["[[input-shape-triage]]", "[[corpus-lifecycle]]"]
 tested_by: ["[[eval-family-C-structure]]"]
 decided_by: ["[[FTW-D-002-six-skills]]"]
 target_path: "roles/devbox/files/dot_ai/skills/structured-input-generation/"
-codex_shared: true
 related: ["[[reference-documents]]"]
 ---
 # Skill `structured-input-generation`
 
-**Problem**: random bytes or unit-test inputs as seeds leave structured targets stuck at the first
-validation step; agents then extend the budget instead of changing technique.
+This design contract is implemented by
+`roles/devbox/files/dot_ai/skills/structured-input-generation/SKILL.md`.
+See [[authoring-validation]] for verified behaviour and remaining qualification.
+Functional descriptions support ordinary discovery; advanced invocation conditions and routing remain deferred. Use [[agent-procedure]] and
+[[skill-fuzzing-campaign]] for the research question, scope, effort and continuation. Construction
+can serve reconnaissance of unfamiliar inputs before a precise hypothesis is available.
 
-## Carries
+## Reusable operations
 
-- The shape table of [[input-shape-triage]] and the dry-run rejection gate.
-- The seed-corpus checklist and the four rules of thumb (construct not filter; bound size; keep the
-  byte path; structure at seed time).
-- Grammar coverage as a corpus-adequacy criterion and a stop signal for *seed construction* only
-  (R5 §5.ii); generate-then-repair pattern (R5 §0); custom-mutator template
-  (decompress → mutate → recompress) for libFuzzer, Atheris and AFL++ (R3 §7).
-- Structured reduction checklist: same-symptom runner, determinism, reducer by structure, keep
-  candidates valid, report minimal input plus original (R5 §5.iii).
-- One fuzzing-side decoder snippet per language (R3 §5.3), each with its limits: Rust `Vec<Op>`
-  with `Arbitrary`, Go go-fuzz-headers loop, Python `FuzzedDataProvider` loop. The `fuzz_one_input`
-  and `rapid.MakeFuzz` bridges appear only under the conditions in [[fuzzing-vs-pbt-boundary]].
+| Operation | Inputs and preconditions | Action | Result and next use | Failure or stop |
+|---|---|---|---|---|
+| Characterise input structure | input contract, available examples, observations and size limits | inspect/replay a bounded sample under [[input-shape-triage]]; distinguish bytes, syntax, repaired fields and operation sequences | observed distinctions and a construction plan or a newly formed question for [[skill-fuzzing-campaign]] | missing format meaning is recorded; poor reachability alone does not prescribe a technique escalation |
+| Construct and examine inputs | scoped plan, legitimate seed source and applicable validity conditions | construct bounded seeds, grammar expansions or repaired inputs while retaining a byte path; examine acceptance and reached behaviour | raw inputs, construction provenance and observations for language-specific replay and campaign interpretation | distinguish expected structure from observed acceptance; uncertain benefit can motivate a bounded trial, not an assertion of success |
+| Decode structured choices | byte input and bounded decoder/operation contract | map bytes to supported values or sequences without silently changing the target's contract | deterministic decoding and versioned raw input that the language harness can replay | unsupported or excessive input follows the explicit rejection policy, not swallowed exceptions |
+| Reduce a structured failure | original reproducer, same-symptom observation and structure-aware reductions | attempt bounded reductions, independently replaying candidates; on resumption restore the predicate and last verified candidate | verified same-symptom input for reporting/replay, or original and unfinished operation for continuation | preserve original on changed symptom, uncertain validity, instability or interruption |
 
-≤ 300 lines plus `references/grammar-and-repair.md` ([[reference-documents]]).
+## Evidence and language variation
 
-## Evals shipped with the skill
+Use [[corpus-lifecycle]] and [[reference-documents]] for preservation and grammar techniques.
+Grammar coverage describes exercised productions; it does not establish product correctness or
+campaign saturation. A custom mutator must preserve required representation constraints and keep
+its unsupported cases visible. Useful seeds remain available for replay rather than being discarded
+because they do not reproduce a crash.
 
-Trigger queries around "seeds for the parser", "the fuzzer never gets past the CRC", "generate
-valid inputs for", "write a grammar for fuzzing"; negatives about test data factories and fixture
-cleanup. Content evals from [[eval-family-C-structure]].
+Go can use supported typed fuzz arguments or an explicit byte decoder; Python can use Atheris
+`FuzzedDataProvider`; Rust can use a fuzzing decoder such as `Arbitrary` with bounded operation
+sequences. Each option needs local compatibility and deterministic behaviour checked at authoring.
+[[fuzzing-vs-pbt-boundary]] excludes PBT bridges; mutation analysis is also excluded. Ordinary
+fuzz-input mutation remains a fuzzing operation. Do not import historical hybrid examples as current requirements.
+
+## Planned content validation
+
+[[eval-family-C-structure]] uses a new supported recursive input whose bounded generation reaches
+the intended parser behaviour, with independently specified acceptance evidence. A defeating case
+changes a checksum or decoder assumption: syntactic validity alone must not be reported as deeper
+reachability. An interrupted reduction must resume from the verified candidate and preserve the
+original if a smaller input loses the symptom. No skill-trigger cases or live runs are included now.

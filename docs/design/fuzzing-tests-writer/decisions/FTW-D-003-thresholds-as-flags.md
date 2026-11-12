@@ -1,5 +1,6 @@
 ---
 note_id: "202611031506003"
+modified: 2026-11-11
 created: 2026-11-03
 language: en
 type: meta
@@ -16,24 +17,32 @@ supersedes: []
 superseded_by: []
 related: ["[[stopping-algorithm]]", "[[automation-scripts]]", "[[eval-family-D-stopping]]"]
 ---
-# FTW-D-003: Stopping thresholds are marked sourced or proposed and exposed as script flags
+# FTW-D-003: Close research by its result and justified continuation
 
-## Decision
+*Amended in draft on 2026-11-11 following the user's correction.*
 
-Every number in [[stopping-algorithm]] carries ✓ (sourced) or ◇ (proposed default). The ◇ values (plateau window, execution floor, sanity-gate time, discoverability criterion, triage budget, rejection trigger) are command-line flags of `fuzz_campaign.py`, and family D eval cases are written so that a wrong default flips a decision.
+The previous edition incorrectly made a mandatory end-to-end wall-clock B/R allowance and process
+supervisor the solution to endless research. Withdraw that requirement. The user needs research
+per commit, experiment or dataset to pause, resume and close across multiple agent invocations.
 
-## Context
+Adopt the lifecycle in [[stopping-algorithm]]: stable identity and versioned basis, ACTIVE/PAUSED/CLOSED
+states, durable checkpoints, explicit closure reasons, and evidence-backed continuation or reopening.
+Another contribution must offer attainable knowledge at proportionate cost. Reconnaissance starts
+from concrete material and an executable operation; its exact question or discovery may emerge from
+the work. A question-led experiment identifies observations that could resolve its distinction.
+An explanation or model discrimination can be the result; an immediate product decision is not
+necessary. Mere remaining uncertainty, a fresh session or new technique does not justify work.
 
-No primary source gives a numeric stopping threshold (R2 §4, R6 §4.2); inventing one as if cited would violate `C.11.DUA` and make the evals unable to tell a bad default from a bad rule.
+**Alternatives considered:** a single wall-clock deadline stops an execution episode but cannot
+represent paused research; a per-run reset permits the same investigation to restart indefinitely.
+Persistent conclusions and justified transitions address the cross-session problem directly.
 
-## Alternatives considered
+**Consequences:** execution limits stay local to experiments and applicable resource policy. Preserve
+attempts and cumulative effort, including preparation/triage, without imposing a universal clock
+through pauses. A new commit/dataset requires checking which conclusions it affects. Same question
+keeps its identity with a revised basis; a changed question has a linked successor within authority.
+No mandatory supervisor implementation or process-control proof gates methodology readiness.
 
-(a) Hard-code thresholds in the skill prose — untestable, and the model would restate them as facts. (b) Leave the decision to the model per run — reproduces H2.
-
-## Consequences
-
-The script, not the model, parses engine output and emits the decision token; the skill explains the token; tuning happens on non-holdout cases only ([[acceptance-criteria]]).
-
-## Reopen when
-
-an engine starts exposing per-feature incidence counts (making Good–Turing computable natively), or the evals show a ◇ default never changes a decision (then it can be fixed in prose).
+**Checks:** [[research-lifecycle-cases]] supplies negative historical cases and a proposed new-corpus
+case. [[eval-family-D-stopping]] checks legitimate exploration, preservation, closure, targeted
+reopening and refusal of unproductive continuation. These are future behavioural checks.

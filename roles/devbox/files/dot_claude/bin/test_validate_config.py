@@ -789,3 +789,95 @@ def test_hook_events_ignores_unparsable_documents(tmp_path: Path) -> None:
     (tmp_path / "settings.json.j2").write_text("{not json", encoding="utf-8")
     errors, _ = vc.check_hook_events(tmp_path)
     assert errors == []
+
+
+def _budget_skill(root: Path, name: str, description: str, extra: str = "") -> None:
+    path = root / "skills" / name / "SKILL.md"
+    path.parent.mkdir(parents=True)
+    path.write_text(f"---\nname: {name}\ndescription: {description}\n{extra}---\nBody\n")
+
+
+def test_large_listing_has_unknown_runtime_headroom_not_a_false_error(tmp_path: Path) -> None:
+    for number in range(20):
+        _budget_skill(tmp_path, f"skill-{number}", "x" * 1000)
+    errors, warnings = vc.check_skill_budget(tmp_path)
+    assert errors == []
+    assert _codes(warnings) == ["BUDGET_UNKNOWN"]
+    assert "unknown" in vc.format_budget_report(tmp_path)
+
+
+@pytest.mark.parametrize(("length", "truncated"), [(1535, False), (1536, False), (1537, True)])
+def test_description_cap_boundary(tmp_path: Path, length: int, *, truncated: bool) -> None:
+    _budget_skill(tmp_path, "example", "x" * length)
+    errors, warnings = vc.check_skill_budget(tmp_path)
+    assert errors == []
+    assert ("DESCRIPTION_TRUNCATED" in _codes(warnings)) is truncated
+    assert vc._skill_listing_entries(tmp_path, 1536) == [
+        ("example", length, len("- example: ") + min(length, 1536))
+    ]
+
+
+def test_combined_description_and_when_to_use_respect_configured_cap(tmp_path: Path) -> None:
+    _budget_skill(tmp_path, "example", "abcd", "when_to_use: efgh\n")
+    (tmp_path / "settings.json").write_text(json.dumps({"skillListingMaxDescChars": 8}))
+    errors, warnings = vc.check_skill_budget(tmp_path)
+    assert errors == []
+    assert "DESCRIPTION_TRUNCATED" in _codes(warnings)
+    assert vc._skill_listing_entries(tmp_path, 8) == [("example", 9, 19)]
+
+
+@pytest.mark.parametrize(("budget", "exceeded"), [(14, True), (15, False), (16, False)])
+def test_explicit_character_budget_is_diagnostic(
+    tmp_path: Path, budget: int, *, exceeded: bool
+) -> None:
+    _budget_skill(tmp_path, "example", "abcd")
+    (tmp_path / "settings.json").write_text(
+        json.dumps({"env": {"SLASH_COMMAND_TOOL_CHAR_BUDGET": str(budget)}})
+    )
+    errors, warnings = vc.check_skill_budget(tmp_path)
+    assert errors == []
+    assert ("BUDGET_EXCEEDED" in _codes(warnings)) is exceeded
+    assert "BUDGET_UNKNOWN" not in _codes(warnings)
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        {"skillListingMaxDescChars": 0},
+        {"skillListingMaxDescChars": True},
+        {"skillListingMaxDescChars": 1.5},
+        {"skillListingBudgetFraction": 0},
+        {"skillListingBudgetFraction": 1.01},
+        {"skillListingBudgetFraction": True},
+        {"env": []},
+        {"env": {"SLASH_COMMAND_TOOL_CHAR_BUDGET": "0"}},
+        {"env": {"SLASH_COMMAND_TOOL_CHAR_BUDGET": "garbage"}},
+        {"env": {"SLASH_COMMAND_TOOL_CHAR_BUDGET": 100}},
+        [],
+    ],
+)
+def test_invalid_budget_settings_remain_errors(tmp_path: Path, settings: object) -> None:
+    (tmp_path / "settings.json").write_text(json.dumps(settings))
+    errors, warnings = vc.check_skill_budget(tmp_path)
+    assert _codes(errors) == ["BUDGET_CONFIG"]
+    assert warnings == []
+
+
+def test_deployed_budget_settings_override_template(tmp_path: Path) -> None:
+    (tmp_path / "settings.json.j2").write_text("invalid JSON")
+    (tmp_path / "settings.json").write_text(
+        json.dumps({"skillListingMaxDescChars": 12, "skillListingBudgetFraction": 0.02})
+    )
+    assert vc._skill_budget_settings(tmp_path) == (12, 0.02, None, [])
+
+
+def test_invalid_template_is_not_ignored(tmp_path: Path) -> None:
+    (tmp_path / "settings.json.j2").write_text("invalid JSON")
+    errors, _ = vc.check_skill_budget(tmp_path)
+    assert _codes(errors) == ["BUDGET_CONFIG"]
+
+
+def test_manual_only_skill_does_not_consume_model_listing(tmp_path: Path) -> None:
+    _budget_skill(tmp_path, "manual", "x" * 2000, "disable-model-invocation: true\n")
+    assert vc.check_skill_budget(tmp_path) == ([], [])
+    assert vc._skill_listing_entries(tmp_path, 1536) == []

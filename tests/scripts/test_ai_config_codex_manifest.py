@@ -181,6 +181,16 @@ class TestCodexManifestClassification:
             (("skills", "config", "example-skill", "enabled"), FieldScope.SHARED),
             (("mcp_servers", "example", "command"), FieldScope.RUNTIME),
             (("projects", "/Users/example/project", "trust_level"), FieldScope.LOCAL_STATE),
+            (
+                (
+                    "apps",
+                    "connector_76869538009648d5b282a4bb21c3d157",
+                    "tools",
+                    "github.create_pull_request",
+                    "approval_mode",
+                ),
+                FieldScope.LOCAL_STATE,
+            ),
             (("notify",), FieldScope.LOCAL_STATE),
             (("notice", "model_migrations", "gpt-example"), FieldScope.RUNTIME),
             (("notice", "unrecognised"), FieldScope.RUNTIME),

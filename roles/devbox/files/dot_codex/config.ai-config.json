@@ -79,6 +79,10 @@
       "scope": "local-state"
     },
     {
+      "path": "apps",
+      "scope": "local-state"
+    },
+    {
       "path": "notify",
       "scope": "local-state"
     },

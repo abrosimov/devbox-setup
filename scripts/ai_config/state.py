@@ -32,12 +32,11 @@ _CODEX_SHARED_MODEL_AND_REASONING = (
     "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411"
 )
 _CODEX_REASONING_PREFERENCE = "e3c3c98f6bf7b950a3c2e827844d0755601f9a0e7c9de23a2d69de0e7e77a6ea"
-# Tracks the current codex manifest. It moved when otel.environment lost its
-# profile binding: the value is now Jinja in config.toml.j2, and a templated leaf
-# is recognised from the rendered document rather than from a manifest rule.
 _CODEX_MODEL_AND_REASONING_PREFERENCES = (
     "f6de9f0d247548b2dfb5c991c5a2db8424c16d71751633c81c03ea823d612f61"
 )
+# Tracks the current codex manifest: `apps` joined as a local-state field.
+_CODEX_APPS = "2f4f8960fc9d93533b79bd6b26031907e43ccbdd6ad5cbe4990b4d9cdca879e9"
 # Exact transitions retain baseline history without accepting unrelated manifests.
 _MANIFEST_MIGRATIONS = {
     ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_AUTO_MODE): (),
@@ -49,11 +48,12 @@ _MANIFEST_MIGRATIONS = {
     ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_PREFERENCE): (
         "model_reasoning_effort",
     ),
-    ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_MODEL_AND_REASONING_PREFERENCES): (
+    ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_APPS): (
         "model",
         "model_reasoning_effort",
     ),
-    ("codex", _CODEX_REASONING_PREFERENCE, _CODEX_MODEL_AND_REASONING_PREFERENCES): ("model",),
+    ("codex", _CODEX_REASONING_PREFERENCE, _CODEX_APPS): ("model",),
+    ("codex", _CODEX_MODEL_AND_REASONING_PREFERENCES, _CODEX_APPS): (),
 }
 
 

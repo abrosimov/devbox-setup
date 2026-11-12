@@ -1114,6 +1114,25 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "roles/devbox/files/dot_codex/config.ai-config.json"
 OLD_MANIFEST = Path(__file__).parent / "fixtures/ai_config/codex/pre-preference-manifest.json"
 REASONING_MANIFEST = OLD_MANIFEST.with_name("reasoning-preference-manifest.json")
+CODEX_APPS_RULE = b"""    {
+      "path": "apps",
+      "scope": "local-state"
+    },
+"""
+CODEX_MANIFEST_SOURCES = {
+    "pre-preference": OLD_MANIFEST.read_bytes(),
+    "reasoning-preference": REASONING_MANIFEST.read_bytes(),
+    "model-and-reasoning-preferences": MANIFEST.read_bytes().replace(CODEX_APPS_RULE, b"", 1),
+    "apps": MANIFEST.read_bytes(),
+}
+CODEX_MANIFEST_DIGESTS = {
+    "pre-preference": "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411",
+    "reasoning-preference": "e3c3c98f6bf7b950a3c2e827844d0755601f9a0e7c9de23a2d69de0e7e77a6ea",
+    "model-and-reasoning-preferences": (
+        "f6de9f0d247548b2dfb5c991c5a2db8424c16d71751633c81c03ea823d612f61"
+    ),
+    "apps": "2f4f8960fc9d93533b79bd6b26031907e43ccbdd6ad5cbe4990b4d9cdca879e9",
+}
 CLAUDE_MANIFEST = ROOT / "roles/devbox/files/dot_claude/settings.ai-config.json"
 CLAUDE_PRE_HOOKS_MANIFEST = (
     Path(__file__).parent / "fixtures/ai_config/claude/pre-hooks-manifest.json"
@@ -1334,7 +1353,10 @@ class TestPreferenceOperations:
         assert not operate(tree).changed
         assert tree.paths.repository.read_bytes() == original
 
-    @pytest.mark.parametrize("previous_manifest", [None, OLD_MANIFEST, REASONING_MANIFEST])
+    @pytest.mark.parametrize(
+        "previous_manifest",
+        [None, "pre-preference", "reasoning-preference", "model-and-reasoning-preferences"],
+    )
     def test_preserves_choice_applies_other_update_and_excludes_baseline(
         self, tree, previous_manifest
     ):
@@ -1348,7 +1370,9 @@ class TestPreferenceOperations:
                     BaseState(
                         engine=EngineKind.CODEX,
                         profile="work",
-                        manifest_digest=digest_manifest_source(previous_manifest.read_bytes()),
+                        manifest_digest=digest_manifest_source(
+                            CODEX_MANIFEST_SOURCES[previous_manifest]
+                        ),
                         snapshot=SemanticSnapshot.from_value(
                             {
                                 "service_tier": "old",
@@ -1505,14 +1529,19 @@ class TestPreferenceOperations:
     @pytest.mark.parametrize(
         ("source", "target", "demoted"),
         [
-            (OLD_MANIFEST, REASONING_MANIFEST, ("model_reasoning_effort",)),
-            (OLD_MANIFEST, MANIFEST, ("model", "model_reasoning_effort")),
-            (REASONING_MANIFEST, MANIFEST, ("model",)),
+            ("pre-preference", "reasoning-preference", ("model_reasoning_effort",)),
+            ("pre-preference", "apps", ("model", "model_reasoning_effort")),
+            ("reasoning-preference", "apps", ("model",)),
+            ("model-and-reasoning-preferences", "apps", ()),
         ],
     )
     def test_recognised_migration_changes_only_preference_scope(self, source, target, demoted):
-        old = json.loads(source.read_bytes())
-        new = json.loads(target.read_bytes())
+        source_bytes = CODEX_MANIFEST_SOURCES[source]
+        target_bytes = CODEX_MANIFEST_SOURCES[target]
+        assert digest_manifest_source(source_bytes) == CODEX_MANIFEST_DIGESTS[source]
+        assert digest_manifest_source(target_bytes) == CODEX_MANIFEST_DIGESTS[target]
+        old = json.loads(source_bytes)
+        new = json.loads(target_bytes)
         for field_name in demoted:
             rule = next(rule for rule in old["fields"] if rule["path"] == field_name)
             assert rule["scope"] == "shared"
@@ -1524,6 +1553,9 @@ class TestPreferenceOperations:
         removed = [rule for rule in old["fields"] if rule["path"] == "otel.environment"]
         if removed and not any(rule["path"] == "otel.environment" for rule in new["fields"]):
             old["fields"].remove(removed[0])
+        # `apps` joined as a local-state field, which never enters a baseline.
+        if not any(rule["path"] == "apps" for rule in old["fields"]):
+            new["fields"] = [rule for rule in new["fields"] if rule["path"] != "apps"]
         assert old == new
         snapshot = {
             "model": "gpt-6-astra",
@@ -1534,14 +1566,14 @@ class TestPreferenceOperations:
         state = BaseState(
             engine=EngineKind.CODEX,
             profile="work",
-            manifest_digest=digest_manifest_source(source.read_bytes()),
+            manifest_digest=digest_manifest_source(source_bytes),
             snapshot=SemanticSnapshot.from_value(snapshot),
         )
         migrated = parse_base_state(
             render_base_state(state),
             engine=EngineKind.CODEX,
             profile="work",
-            manifest_digest=digest_manifest_source(target.read_bytes()),
+            manifest_digest=digest_manifest_source(target_bytes),
         )
         assert migrated is not None
         assert snapshot_mapping(migrated.snapshot) == {

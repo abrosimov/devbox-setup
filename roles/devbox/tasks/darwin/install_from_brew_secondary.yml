@@ -256,21 +256,24 @@
 # the AI hooks, must not be held hostage to that: a failed upgrade restores
 # the switch from the backup opam itself wrote before acting and warns. A
 # failure of the restore still fails the run, because then the switch really
-# is broken.
-- name: "Upgrade OCaml packages (restore the switch on failure)"
+# is broken. A skipped upgrade (switch off, no switch, check mode) registers
+# no rc, which reads as success.
+- name: "Upgrade OCaml packages"
+  ansible.builtin.command:
+    argv: [opam, upgrade, -y]
+    removes: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam/default"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+    OPAMSWITCH: default
+  register: devbox_opam_upgrade
+  # opam prints its action plan only when it has something to do.
+  changed_when: "'The following actions ' in devbox_opam_upgrade.stdout"
+  failed_when: false
   when: devbox_upgrade_mode | default(true) | bool
+
+- name: "Restore the OCaml switch after a failed upgrade"
+  when: devbox_opam_upgrade.rc | default(0) != 0
   block:
-    - name: "Upgrade OCaml packages"
-      ansible.builtin.command:
-        argv: [opam, upgrade, -y]
-        removes: "{{ lookup('ansible.builtin.env', 'HOME') }}/.opam/default"
-      environment:
-        PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
-        OPAMSWITCH: default
-      register: devbox_opam_upgrade
-      # opam prints its action plan only when it has something to do.
-      changed_when: "'The following actions ' in devbox_opam_upgrade.stdout"
-  rescue:
     - name: "Locate the switch backup opam wrote before the failed upgrade"
       ansible.builtin.set_fact:
         devbox_opam_backup: >-

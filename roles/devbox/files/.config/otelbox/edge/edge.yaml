@@ -1,6 +1,6 @@
-# otelbox 2.6.0 — deployed edge profile.
+# otelbox 2.7.0 — deployed edge profile.
 #
-# Adapted from abrosimov/otelcol-otelbox v2.6.0 config/edge.yaml. This file is
+# Adapted from abrosimov/otelcol-otelbox v2.7.0 config/edge.yaml. This file is
 # loaded alone; the binary and profile are one versioned contract.
 #
 # The additional loopback receiver accepts transcript-derived Langfuse plugin
@@ -247,9 +247,10 @@ exporters:
     retry_on_auth_failure:
       enabled: true
       interval: ${env:OTELBOX_AUTH_RETRY_INTERVAL:-1h}
-    # The upstream exporters call HTTP 5xx and gRPC Internal/Unknown permanent
-    # and drop admitted data on one transient failure; retry them on the
-    # backoff above instead.
+    # The upstream exporters call HTTP 5xx, gRPC Internal/Unknown and
+    # ResourceExhausted without RetryInfo permanent and drop admitted data on
+    # one transient failure; retry them on the backoff above instead. A refused
+    # oversized message stays permanent.
     retry_on_server_error:
       enabled: true
 

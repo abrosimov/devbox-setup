@@ -105,7 +105,9 @@ class MetricsSnapshot:
         total = sum(value for name, value in self.samples if name.startswith(prefix))
         return int(total) if math.isfinite(total) else None
 
-    def max_queue_percent(self) -> int | None:
+    # Label set -> (size, capacity) for every queue with a positive capacity; None
+    # when any queue sample is non-finite.
+    def queue_series(self) -> dict[str, tuple[float, float]] | None:
         capacities: dict[str, float] = {}
         sizes: dict[str, float] = {}
         for sample, value in self.samples:
@@ -119,11 +121,17 @@ class MetricsSnapshot:
                 if not math.isfinite(value):
                     return None
                 sizes[key] = value
-        percentages = [
-            100 * size / capacities[key]
+        return {
+            key: (size, capacities[key])
             for key, size in sizes.items()
             if capacities.get(key, 0) > 0
-        ]
+        }
+
+    def max_queue_percent(self) -> int | None:
+        series = self.queue_series()
+        if series is None:
+            return None
+        percentages = [100 * size / capacity for size, capacity in series.values()]
         return round(max(percentages)) if percentages else -1
 
 

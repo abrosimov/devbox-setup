@@ -35,15 +35,23 @@
         <key>OTELBOX_AUTH_RETRY_INTERVAL</key>
         <string>1h</string>
         <!--
-          Sized to hold a week-long gateway outage without loss: measured edge
-          output is ~48 MB/h on average (~8 GB/week round the clock), so 16 GiB
-          of WAL gives a 2x margin. Keep in step with the validate task in
+          Sized to hold a 72-hour gateway outage without loss. `sizer: bytes`
+          counts UNCOMPRESSED proto, so the rate that matters is the
+          uncompressed one: ~1.1-2.1 GiB/h of traces (the traces WAL crossed
+          100 MiB about every 320 s), not the ~48 MB/h of compressed wire
+          throughput an earlier sizing used. 72 h x 2 GiB/h = 144 GiB of queue;
+          less the 768 MiB in-flight headroom under `batch` in edge.yaml it
+          still covers ~71.6 h at that rate. Storage is 1.5 x queue = 216 GiB,
+          the margin for bbolt page, freelist and churn overhead that keeps the
+          queue, not the file, the limit that refuses admission. Both caps apply
+          per signal file, and the WAL does not preallocate: disk is claimed
+          only as a backlog grows. Keep in step with the validate task in
           install_otelbox_edge.yml.
         -->
         <key>OTELBOX_STORAGE_MAX_SIZE_BYTES</key>
-        <string>17179869184</string>
+        <string>231928233984</string>
         <key>OTELBOX_QUEUE_SIZE_BYTES</key>
-        <string>12884901888</string>
+        <string>154618822656</string>
         <!--
           The gateway leg's wire codec. zstd is upstream's 2.x default and is
           safe only while both ends of the leg are this same binary: a gRPC codec

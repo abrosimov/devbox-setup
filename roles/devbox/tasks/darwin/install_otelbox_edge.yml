@@ -313,8 +313,8 @@
     OTELBOX_MEMORY_LIMIT_MIB: "2048"
     OTELBOX_MEMORY_SPIKE_LIMIT_MIB: "512"
     OTELBOX_EXPORTER_CONSUMERS: "2"
-    OTELBOX_STORAGE_MAX_SIZE_BYTES: "17179869184"
-    OTELBOX_QUEUE_SIZE_BYTES: "12884901888"
+    OTELBOX_STORAGE_MAX_SIZE_BYTES: "231928233984"
+    OTELBOX_QUEUE_SIZE_BYTES: "154618822656"
     # The value the LaunchAgent passes, so validation does not lean on the
     # profile's `unknown` default.
     OTELBOX_LANGFUSE_USER_ID: "{{ devbox_langfuse_user_id }}"
@@ -569,3 +569,116 @@
       or devbox_otelbox_edge_wrapper.changed
   changed_when: true
   tags: [otel, otelbox-edge]
+
+# Out-of-band early warning (local.otelbox-edge-watch). The edge's own queue and
+# volume metrics leave through the queue they warn about, so a periodic agent
+# reads :8888 and the WAL volume on the laptop and posts a macOS notification.
+# Installed under the same gate as the collector; removed when the edge is off.
+
+- name: "OpenTelemetry edge watch — resolve paths"
+  ansible.builtin.set_fact:
+    devbox_otelbox_edge_watch_dir: "{{ ansible_facts['env']['HOME'] }}/.local/share/otelbox-edge-watch"
+    devbox_otelbox_edge_watch_plist: >-
+      {{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.otelbox-edge-watch.plist
+    devbox_otelbox_edge_watch_service: "gui/{{ ansible_facts['user_uid'] }}/local.otelbox-edge-watch"
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge watch — check LaunchAgent bootstrap status"
+  ansible.builtin.command:
+    argv: [/bin/launchctl, print, "{{ devbox_otelbox_edge_watch_service }}"]
+  register: devbox_otelbox_edge_watch_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [otel, otelbox-edge]
+
+- name: "OpenTelemetry edge watch — tear down (edge disabled)"
+  when: not (devbox_packages.otelbox_edge.enabled | default(true))
+  tags: [otel, otelbox-edge]
+  block:
+    - name: "OpenTelemetry edge watch — bootout LaunchAgent"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootout, "{{ devbox_otelbox_edge_watch_service }}"]
+      when: devbox_otelbox_edge_watch_status.rc == 0
+      changed_when: true
+
+    - name: "OpenTelemetry edge watch — remove LaunchAgent plist and program"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ devbox_otelbox_edge_watch_plist }}"
+        - "{{ devbox_otelbox_edge_watch_dir }}"
+
+- name: "OpenTelemetry edge watch — install and schedule"
+  when:
+    - devbox_packages.otelbox_edge.enabled | default(true)
+    - devbox_otelbox_edge_ready | bool
+  tags: [otel, otelbox-edge]
+  block:
+    - name: "OpenTelemetry edge watch — ensure the program directory exists"
+      ansible.builtin.file:
+        path: "{{ devbox_otelbox_edge_watch_dir }}"
+        state: directory
+        mode: "0755"
+
+    # One-way with --delete: the repository's stdlib-only package is the program.
+    - name: "OpenTelemetry edge watch — sync the otelbox_edge package"
+      ansible.posix.synchronize:
+        src: "{{ role_path }}/../../scripts/otelbox_edge/"
+        dest: "{{ devbox_otelbox_edge_watch_dir }}/otelbox_edge/"
+        delete: true
+        recursive: true
+        rsync_opts:
+          - "--exclude=.DS_Store"
+          - "--exclude=__pycache__"
+      delegate_to: localhost
+
+    - name: "OpenTelemetry edge watch — deploy the entry point"
+      ansible.builtin.copy:
+        src: "{{ role_path }}/../../scripts/otelbox-edge-watch.py"
+        dest: "{{ devbox_otelbox_edge_watch_dir }}/otelbox-edge-watch.py"
+        mode: "0755"
+
+    - name: "OpenTelemetry edge watch — deploy LaunchAgent plist"
+      ansible.builtin.template:
+        src: darwin/Library/LaunchAgents/local.otelbox-edge-watch.plist.j2
+        dest: "{{ devbox_otelbox_edge_watch_plist }}"
+        mode: "0644"
+      register: devbox_otelbox_edge_watch_plist_result
+
+    # bootstrap fails on an already-loaded service; a changed plist needs a
+    # bootout first to be picked up. A changed program needs nothing: every run
+    # is a fresh process.
+    - name: "OpenTelemetry edge watch — bootout LaunchAgent (plist changed)"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootout, "{{ devbox_otelbox_edge_watch_service }}"]
+      when:
+        - not ansible_check_mode
+        - devbox_otelbox_edge_watch_plist_result.changed
+        - devbox_otelbox_edge_watch_status.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "OpenTelemetry edge watch — bootstrap LaunchAgent"
+      ansible.builtin.command:
+        argv:
+          - /bin/launchctl
+          - bootstrap
+          - "gui/{{ ansible_facts['user_uid'] }}"
+          - "{{ devbox_otelbox_edge_watch_plist }}"
+      when:
+        - not ansible_check_mode
+        - devbox_otelbox_edge_watch_plist_result.changed or devbox_otelbox_edge_watch_status.rc != 0
+      register: devbox_otelbox_edge_watch_bootstrapped
+      changed_when: true
+
+    # macOS 26 may leave a freshly bootstrapped job's RunAtLoad pending; see the
+    # collector's kickstart above.
+    - name: "OpenTelemetry edge watch — start the freshly bootstrapped job"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, kickstart, "{{ devbox_otelbox_edge_watch_service }}"]
+      when:
+        - not ansible_check_mode
+        - devbox_otelbox_edge_watch_bootstrapped is not skipped
+      changed_when: true

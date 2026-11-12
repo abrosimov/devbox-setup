@@ -249,6 +249,15 @@
   changed_when: "'synchronised from' in devbox_opam_update.stdout"
   when: devbox_upgrade_mode | default(true) | bool
 
+# opam-repository metadata routinely lags behind upstream breakage (for
+# example ocaml-lsp-server 1.26.1 declares no upper bound on stdune, and
+# stdune 3.25.0 removed Pid.of_int), so a whole-switch upgrade can fail on a
+# package nobody here changed. Every later step, including the deployment of
+# the AI hooks, must not be held hostage to that: a failed upgrade restores
+# the switch from the backup opam itself wrote before acting and warns. A
+# failure of the restore still fails the run, because then the switch really
+# is broken. A skipped upgrade (switch off, no switch, check mode) registers
+# no rc, which reads as success.
 - name: "Upgrade OCaml packages"
   ansible.builtin.command:
     argv: [opam, upgrade, -y]
@@ -259,7 +268,41 @@
   register: devbox_opam_upgrade
   # opam prints its action plan only when it has something to do.
   changed_when: "'The following actions ' in devbox_opam_upgrade.stdout"
+  failed_when: false
   when: devbox_upgrade_mode | default(true) | bool
+
+- name: "Restore the OCaml switch after a failed upgrade"
+  when: devbox_opam_upgrade.rc | default(0) != 0
+  block:
+    - name: "Locate the switch backup opam wrote before the failed upgrade"
+      ansible.builtin.set_fact:
+        devbox_opam_backup: >-
+          {{ (devbox_opam_upgrade.stderr | default(''))
+             | regex_search('switch import "([^"]+\.export)"', '\1')
+             | default([], true) | first | default('') }}
+
+    - name: "Fail when opam left no backup to restore from"
+      ansible.builtin.fail:
+        msg: >-
+          opam upgrade failed and printed no switch backup to restore from.
+          stderr: {{ devbox_opam_upgrade.stderr | default('') }}
+      when: devbox_opam_backup | length == 0
+
+    - name: "Restore the OCaml switch to its pre-upgrade state"
+      ansible.builtin.command:
+        argv: [opam, switch, import, "{{ devbox_opam_backup }}", --yes]
+      environment:
+        PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+        OPAMSWITCH: default
+      changed_when: true
+
+    - name: "Warn that the OCaml upgrade was rolled back"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: opam upgrade failed and the default switch was restored to
+          its pre-upgrade state from {{ devbox_opam_backup }}. The run
+          continues. First lines of the failure:
+          {{ (devbox_opam_upgrade.stderr | default('')).splitlines()[:3] | join(' | ') }}
 
 - name: "Install SWI-Prolog LSP server"
   ansible.builtin.command:

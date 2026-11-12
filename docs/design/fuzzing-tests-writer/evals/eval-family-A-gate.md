@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150503"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: eval
@@ -17,30 +17,27 @@ addresses: ["[[H1-no-applicability-gate]]"]
 tests: ["[[applicability-gate]]", "[[fuzzing-vs-pbt-boundary]]", "[[skill-fuzzing-applicability]]"]
 related: ["[[eval-plan]]", "[[eval-fixtures]]", "[[fuzzing-vs-pbt-boundary]]"]
 ---
-# Eval family A — Gate
+# Eval family A — Applicability
 
-Twelve cases covering all four gate outcomes; release criterion in [[acceptance-criteria]].
-Sources: R1 §6 cases 1/3/5/7/12/14; R7 E2/E3/E9; R8 cases 6/7; R9 E1/E2.
+Evaluate the methodological assessment after the task is explicitly assigned. Invocation and
+routing decisions are not tested here. Historical research examples supply candidates, not an
+automatic answer key; the fixture's owned behaviour, contract and execution boundary decide.
 
-| Input the agent sees | Expected |
+| Case | Expected observable result |
 |---|---|
-| Go `LoadConfig(path)` reading YAML and calling `yaml.Unmarshal` | `do-not-fuzz` (filesystem + upstream-fuzzed parser); recommend unit tests for own validation |
-| Go `ParseFrame([]byte)` custom binary protocol | `fuzz`: native target, seeds from captured frames, round trip, `testdata/fuzz/FuzzParseFrame/` |
-| Rust `parse(&str) -> Result<Ast>` + `Display` | `fuzz`: cargo-fuzz, dictionary of keywords, round-trip oracle inside the target, debug assertions kept |
-| Rust `mean(&[f64])` | `out-of-scope: pbt-track` (metamorphic relations, no reference, no byte input); nothing written |
-| Python Lambda handler calling boto3/DynamoDB | `do-not-fuzz`; name the pure transformation that could be gated separately |
-| Python `class LRUCache` | `out-of-scope: pbt-track` (model-based); nothing written |
-| Go `MustCompilePattern` / `CompilePattern` | `fuzz` `CompilePattern` only; `Must*` excluded by contract |
-| Go `Add(a, b Money)` with documented laws | `out-of-scope: pbt-track`; no rapid test written; reason recorded |
-| Go `IsWeekend(t time.Time)` | `out-of-scope: unit-tests` (enumerable domain) |
-| Go "fuzz our HTTP handler end-to-end" | `do-not-fuzz` as is; propose the request-parsing function in isolation |
-| Django view with `get_object_or_404` | `do-not-fuzz`; parametrised 200/404 is the unit-test track; schema testing is the PBT/API track |
-| Rust `#[derive(Serialize, Deserialize)]` config with no custom impls | `do-not-fuzz`; derive code is serde's, already fuzzed upstream |
+| Custom binary frame parser with a byte boundary and an encoder | Identify owned behaviour, feasible fuzz target, useful seeds and a justified oracle |
+| Supported parser and unfamiliar corpus without a precise hypothesis | Permit scoped inspection/replay to establish input distinctions and a question; qualify any failure assertion independently |
+| Thin decoder wrapper without owned transformations | Explain the limited additional fuzzing value; do not create a redundant target merely because parsing exists |
+| The same wrapper with custom length or normalisation logic | Assess that owned behaviour separately; do not reject it solely because a dependency is fuzzed upstream |
+| Handler requiring unavailable database access | Identify the unavailable boundary; do not run side effects or label the environment as a product defect |
+| Small finite domain already exhaustively checked | Explain why fuzzing adds no demonstrated value; do not write unrelated tests |
+| Panic-permitting API and an error-returning alternative | Apply each documented contract; do not count expected panics as defects |
+| Missing contract for a proposed semantic assertion | Leave that oracle unqualified or choose an independently justified narrower one; do not invent a requirement |
+| Request whose objective is outside the fuzzing charter | State the scope mismatch and stop; do not build or prescribe another testing workflow |
 
-## Graders
+## Evidence
 
-- `file_exists` negative: no `Fuzz*` function, `fuzz_target!`, or `*_fuzzer.py` created in
-  non-fuzz cases; **no `@given`, `proptest!` or `rapid.Check` written in any case**.
-- Regex on the last message for the decision token and the quoted gate row.
-- LLM judge: the decision names the matching row and reason; `pbt-track` hand-offs state what the
-  PBT agent would test, without writing it.
+Grade the decision against the fixture contract and inspect the workspace diff for unjustified
+writes. A decision-token regex can check format, not applicability. A reviewer must identify the
+premise that permits or defeats useful fuzzing. No mandatory handoff to another agent or framework
+is part of this family. See [[acceptance-criteria]] and [[fuzzing-vs-pbt-boundary]].

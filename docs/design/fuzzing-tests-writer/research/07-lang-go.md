@@ -1,5 +1,6 @@
 ---
 note_id: "20261103150907"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: research
@@ -17,6 +18,11 @@ addresses: ["[[H3-random-seeds-for-structured-input]]", "[[H4-crash-only-oracle]
 related: ["[[research-index]]", "[[research-corpus]]"]
 ---
 # Go fuzzing ecosystem — what a Go fuzz-test-writing agent must know
+
+> Historical research from 2026-11-03; the body below is retained as provenance. Its proposals
+> are not current requirements. The 2026-11-10 disposition is [[methodology-review]]: PBT and
+> mutation analysis are excluded; saturation/escalation rules and provider recipes must not be
+> imported into authoring. Current operations are specified in [[agent-procedure]].
 
 Research date: 2026-11-03. Local toolchain used for confirmation: `go1.24.7 linux/amd64` (`go help testflag`, `go doc testing.F`, source of `internal/fuzz`, and three throw-away fuzz runs under `scratchpad/research/exp*`). `go.dev` and `google.github.io` were not reachable from this session; their content was read from the upstream Markdown in `golang/website` and `google/oss-fuzz` on raw.githubusercontent.com, which is the same source the sites render.
 

@@ -1,5 +1,6 @@
 ---
 note_id: "202611031507006"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: meta
@@ -11,14 +12,14 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["FTW-OQ-006"]
 tags: [fuzzing, design/open-question]
-status: open
-blocks: ["[[skill-python-fuzzing]]"]
+status: closed-out-of-scope
+blocks: []
 related: ["[[language-facts-python]]"]
 ---
-# FTW-OQ-006: HypoFuzz is free only for non-commercial use
+# FTW-OQ-006: HypoFuzz licence question is outside the current scope
 
-**Question.** How should the agent handle HypoFuzz on the `work` profile?
+**Disposition (2026-11-10):** closed-out-of-scope.
 
-**Why it matters.** Adding it to a commercial CI without a licence is a compliance problem the agent must not create silently.
-
-**Resolution path.** The Python skill states the licence before recommending it; optionally gate the recommendation on the active profile via a skill variable.
+The former recommendation and licence-resolution task are withdrawn. PBT workflows and bridges are
+excluded by [[FTW-D-008-pbt-out-of-scope]]. This historical note creates no Python skill requirement,
+evaluation case or future research task. No current legal conclusion is asserted.

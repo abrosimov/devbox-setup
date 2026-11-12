@@ -1,7 +1,7 @@
 ---
 note_id: "202611031506002"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-10
 language: en
 type: meta
 subtype: decision
@@ -17,24 +17,21 @@ supersedes: []
 superseded_by: []
 related: ["[[skill-fuzzing-applicability]]", "[[skill-fuzzing-campaign]]", "[[skill-structured-input-generation]]", "[[skill-go-fuzzing]]", "[[skill-python-fuzzing]]", "[[skill-rust-fuzzing]]", "[[FTW-D-008-pbt-out-of-scope]]"]
 ---
-# FTW-D-002: Six skills: three methodology, three per language; no separate property-based-testing skill
+# FTW-D-002: Six skills with concrete operation contracts
 
-## Decision
+*Amended in draft on 2026-11-10 by the methodology revision ([[methodology-review]]).*
 
-Write `fuzzing-applicability`, `fuzzing-campaign`, `structured-input-generation`, `go-fuzzing`, `python-fuzzing`, `rust-fuzzing`. Claim hygiene is the closing section of the campaign skill; grammar material is a reference file of the structure skill. *Amended by [[FTW-D-008-pbt-out-of-scope]]*: property-based testing is not folded into any of these skills; the gate skill carries the fuzzing-versus-PBT boundary table and the hand-off outcome instead.
+Retain `fuzzing-applicability`, `fuzzing-campaign`, `structured-input-generation`, `go-fuzzing`,
+`python-fuzzing` and `rust-fuzzing`. The first three supply methodology; the other three specialise
+execution and replay conventions. Each layout note specifies inputs, preconditions, action, output,
+failure/stop behaviour and evidence. Shared operations must not acquire different meanings by language.
 
-## Context
+**Basis:** existing decomposition plus SYSE.48; [[methodology-review]]. PBT and mutation analysis
+are excluded by [[FTW-D-008-pbt-out-of-scope]]. The six documents are specifications, not installed
+skills or demonstrated capability.
 
-The annexes proposed between six and fourteen skills with overlapping names (R1 §5.5, R2 §5.4, R3 §5.4, R7 §5.6, R8 §5.4, R9 §5.6). The existing `go-testing`/`python-testing` skills already own language test idiom.
-
-## Alternatives considered
-
-(a) One monolithic `fuzzing` skill — exceeds the size that triggers reliably and mixes engine facts with method. (b) Twelve fine-grained skills — trigger overlap, more descriptions to tune, more Codex allowlist entries.
-
-## Consequences
-
-Each skill stays ≤ 300 lines with references beside it; the six names go into the Codex shared list; `go-testing` and `python-testing` get a pointer paragraph rather than fuzz content.
-
-## Reopen when
-
-trigger evals show two skills firing together on most queries (merge) or one skill above 300 lines after authoring (split).
+**Alternatives:** one monolith mixes method with language detail; many smaller skills add discovery
+and maintenance cost without an evidenced need. No line-count ceiling, automatic loading policy,
+trigger condition or Codex allowlist entry is adopted here. Those depend on actual authoring and the
+separate invocation decision. Revisit boundaries if an operation has conflicting ownership or a
+representative task cannot use the decomposition; do not merge/split just to meet an arbitrary size.

@@ -1,7 +1,7 @@
 ---
 note_id: "20261104100009"
 created: 2026-11-04
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: meta
 subtype: decision
@@ -17,24 +17,22 @@ supersedes: []
 superseded_by: []
 related: ["[[fuzzing-charter]]", "[[agent-procedure]]", "[[eval-family-H-charter]]"]
 ---
-# FTW-D-009: The agent fixes objective, scope and a verifiable result before writing any harness
+# FTW-D-009: Persistent research charter before harness construction
 
-## Decision
+*Amended in draft on 2026-11-11 to distinguish research from agent sessions.*
 
-Step 2 of [[agent-procedure]], after the gate at step 1, produces the charter with the fields of [[fuzzing-charter]]. No harness file is written before it; the report is compared against it item by item.
+Record the known research question/use, or reconnaissance material and learning aim, together with
+the subject basis and scope before investigation. A precise hypothesis can emerge from reconnaissance.
+Resolve the target/oracle details needed for a meaningful harness before writing it. The charter
+can initially name a bounded candidate area; it must not hide unbounded exploration or invent facts.
+[[fuzzing-charter]] supplies the compact record.
 
-## Context
+On subsequent invocations recover that record, completed work and current disposition. Refine only
+what new evidence affects. A new session is not a new charter or an excuse to repeat the research.
+State the next experiment's expected contribution, practical limits and completion evidence when
+it is justified; no universal wall-clock allowance spans the research's pauses.
 
-User requirement for this iteration; consistent with SYSE.47 §4.1 (recover the required result and the observable evidence of completion before constructing the procedure) and with the sourced preconditions of the stopping and reporting rules ([[H7-no-objective-before-work]]).
-
-## Alternatives considered
-
-(a) Objective implicit in the gate decision — too thin to compare a report against. (b) Objective written after the first exploratory campaign — reproduces H1/H2.
-
-## Consequences
-
-A new eval family H with a `tool_order` grader; the campaign report template gains a leading charter restatement and a closing checklist; [[skill-fuzzing-applicability]] carries the charter template.
-
-## Reopen when
-
-evals show the charter adds turns without changing decisions on any family (then it can be folded into the gate output).
+**Basis:** user correction; SYSE.47 procedure and persistent evidence under [[stopping-algorithm]].
+The result is checked against the question and its receiving use, not merely against a process exit.
+Family H checks the initial ordering and cross-session continuity. The charter records the task;
+it is not an additional research programme or a trigger policy.

@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150502"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-11
 language: en
 type: design
 subtype: eval
@@ -18,24 +18,41 @@ target_path: "tests/fuzzing_agent_evals/fixtures/<lang>/"
 ---
 # Eval fixtures
 
-One small repository per language, dependencies vendored for the sandbox ([[eval-tooling]]), each
-with the same catalogue of entry points so cross-language cases are comparable.
+These are requirements for future fixtures, not implemented cases. Use small Go, Python and Rust
+fixtures where language changes an operation. Each has a pinned subject, stated contract, expected
+observations and independent verifier. A research fixture can include several sessions, commits,
+experiment versions and dataset revisions. Its event sequence and available evidence are declared
+before qualification. Preparation effort is recorded; no silent dependency download is assumed.
 
-| Entry point | Expected gate outcome | Planted defect |
-|---|---|---|
-| binary frame parser with length prefix and CRC, plus encoder | fuzz: greybox, round-trip oracle, CRC handled by flag or repair | out-of-range on a truncated length; encoder/decoder asymmetry on one field |
-| text config parser (`KEY=VALUE`, lenient) | fuzz: seeds + bytes + dictionary, no grammar | `%` look-ahead at end of string |
-| expression language with a strict parser and a grammar file in the repo | fuzz: grammar-generated seeds + engine | stack overflow at depth N |
-| typed money arithmetic with documented laws | `out-of-scope: pbt-track`; no file written; reason recorded in the charter | commutativity broken for one currency (left for the PBT track) |
-| `IsWeekend(time)` / three-enum pure function | exhaustive table test | none |
-| HTTP handler calling a database client | do not fuzz as is; extract the pure validator | none |
-| thin wrapper over the stdlib JSON decoder | do not fuzz the wrapper | none |
-| `MustCompilePattern` / `CompilePattern` pair | fuzz the non-panicking variant only | none |
-| LRU cache with `get/put/evict` | `out-of-scope: pbt-track` (model-based); a fuzz target over a byte-decoded op sequence only if the caller's charter names crash/invariant/resource objectives | eviction-order bug (the model-based track's case) |
-| FFI/unsafe wrapper (Rust) or C-extension stub (Python) | greybox with ASan, touch every returned reference | one-byte over-read |
-| existing fuzz target with a committed failing seed (Go `testdata/fuzz/<hash>`, Rust `crash-*`, Hypothesis printed blob) | reproduce and fix or report; never delete the seed | the original bug still present |
-| pre-recorded campaign logs per engine (plateau, still productive, blocked, slow, unstable) | the matching decision token | n/a |
+| Fixture or variation | Required distinction |
+|---|---|
+| Length-prefixed binary parser with CRC and encoder | Truncation, semantic round trip, repaired inputs and invalid raw-byte paths |
+| Small text config parser with existing seeds | A useful corpus can suffice without grammar engineering |
+| Strict expression parser with supplied grammar | Bounded generation; grammar-alternative coverage differs from code coverage |
+| Finite enumeration already exhaustively tested | No useful fuzzing contribution; no unnecessary harness |
+| Decoder wrapper with optional owned validation | Owned behaviour and contract determine applicability |
+| Database-calling handler and separable decoder | Unavailable environment is not a product defect; any extraction remains authorised |
+| Documented rejection or panic preconditions | Expected behaviour versus actual contract violation |
+| Native/FFI decoder where supported | Instrumentation is active and the observed diagnostic is independently reproduced |
+| Known failing seed or deliberately wrong harness assertion | Existing product finding versus false oracle; preserve original evidence |
+| Denied required workspace operation | Environment failure without permission bypass |
+| Useful input with no failure | Retention and replay do not require bug discovery |
+| Unfamiliar corpus with optional-field combinations and an older closed truncation question | Reconnaissance can form a new in-scope question and retain useful inputs without reopening the unrelated answer; include a no-useful-difference variation |
+| Saved checkpoint and a fresh session without previous chat | Question/aim, method, evidence, effort and unfinished operation are recovered and used to perform the next justified action |
+| Temporarily unavailable dataset, then availability event | A meaningful pause remains inactive until its condition is observed; resumption checks the supplied dataset |
+| Answered or inconclusive question with unused resources | Closure does not depend on consuming an allowance |
+| Unrelated commit, reordered data, then a materially relevant change | Distinguish irrelevant identity changes from changed assumptions and affected claims |
+| Repeated invalid experiment with unchanged cause | No uninformative retry or history reset under a new research identifier |
+| Interrupted minimisation with saved original input | Execution interruption is separate from research state and retains a useful checkpoint |
+| Misleading or flat engine logs | Observations do not independently imply saturation, safety or a defective harness |
 
-The recorded logs need no live engine and also serve as unit-test fixtures for `fuzz_campaign.py`
-([[automation-scripts]]). Live-engine cases run with the `interactive` budget capped at 60 s inside
-the eval; stop decisions are exercised on the recorded logs.
+A known defect has a deterministic correctness basis and expected symptom. Fixtures may contain
+known bugs; mutation analysis, PBT fixtures and PBT workflows remain excluded. Abstracted incidents
+from `go-kdl2` or `proj` retain source provenance and identify changes made for the fixture. Those
+failed attempts do not supply a successful architecture to reproduce.
+
+Reset each independent trial to its declared starting state. Within a multi-session trial, preserve
+research artefacts across sessions and expose only the specified new evidence/change; resetting on
+every session would erase the behaviour under test. Keep expected answers and verifier code outside
+agent write access. Recorded traces test interpretation; actual build/replay and checkpoint-reuse
+claims require executable cases. Run limits constrain execution separately from research closure.

@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150800"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-12
 language: en
 type: design
 subtype: plan
@@ -17,47 +17,50 @@ related: ["[[fuzzing-tests-writer]]", "[[repository-placement]]", "[[acceptance-
 ---
 # Next iteration
 
-Ordered so that each step has a gate before the next starts.
+The methodology has been authored as two provider agent definitions and six shared skills. The
+2026-11-11 lifecycle correction, bounded new-corpus reconnaissance and FPF operation contracts
+remain the method basis. [[authoring-validation]] records the exact checks performed; authoring
+and static validation do not establish general effectiveness or cross-session correctness.
+No stage creates PBT or mutation-analysis work.
 
-1. **Methodology skills first**: [[skill-fuzzing-applicability]], [[skill-fuzzing-campaign]],
-   [[skill-structured-input-generation]] from the finding notes and the annexes, each with
-   `evals/trigger_evals.json` and `evals/evals.json`; `make validate-skills` and `make eval-skills
-   SKILL=…` per skill. Follow `skill-builder` and its cached Anthropic authoring notes; every rule
-   ends in a Sources list naming an annex section.
-2. **Language skills**: [[skill-go-fuzzing]] (1.27.3), [[skill-python-fuzzing]],
-   [[skill-rust-fuzzing]]; verify every command line in a scratch module with the local toolchains
-   (Go and cargo are available in the dev container; Atheris and Hypothesis need a venv).
-3. **Scripts**: `fuzz_campaign.py` and `fuzz_corpus.py` ([[automation-scripts]]) with their unit
-   tests; `uv lock` for `bin/` only if a dependency is added (none planned).
-4. **Agent**: `fuzzing_tests_writer.md` per `agent-builder` (mandatory sections, hand-off protocol,
-   complexity check) from [[agent-procedure]], the Codex TOML, `techne-fuzz.md`;
-   `make validate-claude`; register in `codex.yml`; update the agent-count test and the
-   README/CLAUDE.md tables.
-5. **Evals**: [[eval-fixtures]], plugin wrapper, graders, headless driver ([[eval-tooling]]); first
-   full run against B0 and B1; tune the ◇ defaults on the non-holdout set; record results per
-   [[acceptance-criteria]].
-6. **Vendor guidance pass**: reconcile the prompt and skills with the current Anthropic sub-agent and
-   skill authoring docs, OpenAI's Codex custom-agent format and Google's Antigravity rules format,
-   through the existing adapters; the shared core stays provider-neutral.
-7. **Deploy and live test**: `make <profile> EXTRA_VARS='--tags ai,claude,codex,agy'`, then
-   `make test-live ENGINES=claude,codex`.
+| Stage | Current result | Evidence and remaining boundary |
+|---|---|---|
+| Methodology | Specified | F.0.2.MA allocation, C.39 Case 5, SYSE.47/48 contracts and F.19/CSC preservation checks |
+| Provider authoring | Authored | [[repository-placement]] lists both agent formats, six portable skills, four local references and Codex registration; [[authoring-budgets]] records size/loading rules |
+| Focused local qualification | Recorded separately | [[authoring-validation]] distinguishes parsing, deployment/loader checks and isolated language observations from untested behaviour |
+| Invocation — separate user decision | Advanced policy deferred | Ordinary provider discovery uses functional descriptions; no custom command, trigger, hook, routing rule or scheduler |
+| Behavioural qualification | Incomplete | Full cross-session recovery, pause/closure/reopening and held-out comparison still require independent records under [[acceptance-criteria]]; Python/Rust runtime checks remain unperformed |
+| Personal deployment | User-owned, not performed | The user will deploy `personal`; source registration is not evidence of an installed or working provider session |
 
-## Scope boundaries for the iteration
+## Provider basis and qualification
 
-- No property-based-testing artefact is built; the gate hands `out-of-scope: pbt-track` cases to
-  the future PBT agent ([[FTW-D-008-pbt-out-of-scope]]), whose starting point is
-  [[pbt-agent-prompts]].
-- Every campaign starts from a charter ([[fuzzing-charter]]).
-- Go toolchain for authoring and verification: `GOTOOLCHAIN=go1.27.3` with
-  `GOPROXY=https://proxy.golang.org,direct` ([[FTW-D-007-go-target-version]]).
+Authoring used current official [Claude Code subagent](https://code.claude.com/docs/en/sub-agents)
+and [skill](https://code.claude.com/docs/en/skills) guidance, and the Codex
+[agent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents) and
+[skill](https://learn.chatgpt.com/docs/build-skills) documentation. Keep the dated rules and their
+limits in [[authoring-budgets]], rather than translating Claude frontmatter into Codex fields by
+analogy. Runtime loading, permission inheritance and provider-specific continuation need evidence
+separate from source format checks.
 
-## Refresh triggers (G.2 §11 SoTA-Echoing)
+The local discovery validator now reports context-dependent headroom as unknown when no fixed
+budget is supplied; it no longer treats 16,000 characters as a universal fatal limit. This does
+not prove every skill description will appear in every model context. Compact bodies and direct
+conditional references keep essential operations available without loading the research vault.
 
-The annexes are frozen as of 2026-11-03. Refresh when any of: Go custom-mutator proposal #48815
-lands; Rust sanitizers stabilise (rust-lang/rust#123617); Hypothesis ships an Atheris backend;
-the unreachable paper hosts become readable ([[FTW-OQ-001-unverified-paper-bodies]]); Go 1.28
-release notes mention fuzzing.
+## Finite progression
 
-## Open questions to close along the way
+For a qualification experiment, recover its question, method, evidence and unfinished operation;
+perform the smallest operation that can resolve the current claim at proportionate cost. A new
+corpus can form a question without predicting its usefulness. Closure, pause and selective reopening
+follow [[stopping-algorithm]]; a mandatory cross-session wall-clock or supervisor gate remains
+withdrawn. A configuration-loading check cannot substitute for observed research behaviour.
 
-Every note in `open_questions/` names the component it blocks.
+No commit, deployment, home change or external publication is part of the current authoring result.
+Further qualification should address named claims, not restart the broad survey or exhaust every
+historical unknown.
+
+## Open questions
+
+The `open_questions/` notes retain FTW-OQ-001–011. Each records whether it blocks an actual claim,
+is conditional, is nonblocking, or is excluded. Do not reopen excluded questions or harvest more
+papers merely because a historical research note contains an unknown.

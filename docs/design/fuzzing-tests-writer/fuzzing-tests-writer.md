@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150000"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-12
 language: en
 type: design
 subtype: hub
@@ -13,69 +13,74 @@ assistant: claude-code
 project: fuzzing-tests-writer
 aliases: ["Fuzzing Tests Writer", "FTW hub"]
 tags: [fuzzing, design/hub]
-status: research-synthesis
+status: authored-local-qualification
 related: ["[[ontology]]", "[[fpf-framing]]", "[[next-iteration]]"]
 ---
 # Fuzzing Tests Writer — design hub
 
-Design study (2026-11-03) for a *fuzzing tests writer* agent and its skills for Go 1.27.3, Python
-and Rust. Earlier attempts at such an agent went badly; the hypothesis notes name why, the findings
-ground the answer in a source-linked research pack, and [[next-iteration]] lays out what is built
-next. Nothing under `roles/devbox/files/` is changed by this study.
+This study specifies a fuzzing research capability for Claude Code and Codex in Go, Python and Rust.
+The 2026-11-11 correction defines research per commit, experiment or dataset across multiple agent
+sessions, with pauses, resumption and evidence-based closure. Failed `go-kdl2` and `proj` attempts
+supply negative cases. The method now has authored provider definitions and six shared skills; their existence does not
+establish that the agent works across sessions.
+The applied FPF method also supports bounded reconnaissance of new corpora before a precise question
+exists, then connects the resulting material to experiments and actual continuation after a pause.
 
-Goal in the user's words: *restrict fuzzing to the places where it pays off rather than applying it
-everywhere; produce an agent plus skills, including per-language ones.*
+## Reading route
 
-## How to read
+Start with [[fpf-framing]] for method construction, [[stopping-algorithm]] for exploration and the
+lifecycle, and [[research-lifecycle-cases]] for negative cases and the proposed new-corpus walkthrough.
+[[methodology-review]] records the changed rules, evidence and limits; [[authoring-validation]]
+separates authoring checks from remaining behavioural qualification. Use
+[[agent-procedure]] for the procedure and [[eval-plan]] for its independent checks.
+[[fpf-framing]] records why the selected FPF methods apply.
 
-Every note carries its relations in frontmatter ([[ontology]]); start with a chapter's entry note and
-follow `addresses` / `grounded_in` / `realised_by` / `tested_by`. The research annexes `R1`–`R10` are
-the audit trail behind every finding.
+| Area | Entry | Result |
+|---|---|---|
+| Boundary and evidence | [[system-characterisation]] · [[research-corpus]] · [[ontology]] | Scope, provenance and qualified failure hypotheses H1–H7 |
+| Method | [[fuzzing-charter]] · [[applicability-gate]] · [[oracle-ladder]] · [[input-shape-triage]] | Objective, suitability, justified oracle and input construction |
+| Finishing and retention | [[stopping-algorithm]] · [[corpus-lifecycle]] · [[reporting-and-claim-hygiene]] | Persistent conclusions, justified transitions and useful replay inputs |
+| Skills | [[skill-fuzzing-applicability]] · [[skill-fuzzing-campaign]] · [[skill-structured-input-generation]] · [[skill-go-fuzzing]] · [[skill-python-fuzzing]] · [[skill-rust-fuzzing]] | Six operation contracts and their authored skill entrypoints |
+| Support | [[automation-scripts]] · [[reference-documents]] · [[repository-placement]] | Authored placement, conditional references and record support |
+| Evaluation | [[eval-plan]] · [[eval-fixtures]] · [[acceptance-criteria]] | Behavioural cases and independent evidence |
+| Next work | [[next-iteration]] · [[authoring-budgets]] | Size/loading evidence, qualification limits and separate invocation policy |
+| Historical material | [[research-index]] | Frozen annexes R1–R10; not an executable policy |
 
-## Chapters
+## Governing rules
 
-| # | Chapter | Entry note | What it answers |
-|---|---|---|---|
-| 0 | Ontology | [[ontology]] | note types, relations, ids; the failure hypotheses [[H1-no-applicability-gate\|H1]]–[[H7-no-objective-before-work\|H7]] |
-| 1 | Framing | [[fpf-framing]] · [[system-characterisation]] · [[research-corpus]] · [[pbt-agent-prompts]] | receiving use, FPF patterns, boundary, what was read |
-| 2 | Findings | [[fuzzing-charter]] · [[fuzzing-vs-pbt-boundary]] · [[applicability-gate]] · [[oracle-ladder]] · [[input-shape-triage]] · [[stopping-algorithm]] · [[corpus-lifecycle]] · [[reporting-and-claim-hygiene]] · [[language-facts-go]] · [[language-facts-python]] · [[language-facts-rust]] | the evidence that drives each design choice |
-| 3 | Layout | [[agent-procedure]] · the `skill-*` notes · [[reference-documents]] · [[automation-scripts]] · [[repository-placement]] | what the agent, skills, docs and scripts must cover |
-| 4 | Evals | [[eval-plan]] · [[eval-fixtures]] · the `eval-family-*` notes · [[eval-tooling]] · [[acceptance-criteria]] | how the agent is tested against baselines |
-| 5 | Decisions | `decisions/` (FTW-D-001 … 009) | design choices with alternatives and consequences |
-| 6 | Open questions | `open_questions/` (FTW-OQ-001 … 011) | unverified items and risks with a resolution path |
-| 7 | Next | [[next-iteration]] | ordered plan for writing prompt, skills, scripts, evals |
-| R | Research | [[research-index]] | annexes R1–R10 with corpus ledgers and claim sheets |
+- Research retains its question, receiving use, versioned subject, evidence and effort across sessions.
+  ACTIVE, PAUSED and CLOSED have different meanings; checkpoints explain how to resume or reopen.
+- Reconnaissance needs concrete material, a feasible operation and a possible learning contribution;
+  an exact hypothesis or proof of future usefulness is unnecessary. Question-led experiments name
+  the distinction they can resolve. Both use proportionate effort and existing authority.
+  A new session, commit, dataset hash, technique or remaining unknown is not sufficient by itself.
+- A changed basis prompts a targeted check of affected conclusions, preserving prior closure and
+  unaffected evidence. Local execution limits do not decide research completion.
+- A new in-scope question can arise while an earlier question remains closed. Link its source
+  material and prior effort; neither new labels nor new corpora erase history.
+- Preserve useful coverage-expanding, structurally useful and regression inputs for reuse and replay.
+  Deduplication must preserve their demonstrated value; retention is not permission to commit.
+- Separate research state, experiment status and finding classification. No observed bug is not proof of no bugs;
+  zero feature growth is not a saturation certificate.
+- `go-kdl2` and `proj` supply negative evidence and counterexamples, not successful architectures.
+- PBT and mutation analysis are excluded from deliverables, requirements and evaluations.
+- Functional descriptions use ordinary provider discovery. Custom invocation conditions, routing,
+  commands, hooks and scheduling remain deferred; no such automation was added.
+- Provider definitions were authored against current official documentation; [[repository-placement]]
+  records their different loading and permission choices. Shared methodology does not imply
+  identical runtime behaviour.
 
-## Executive summary
+## Decisions and readiness
 
-- **Charter first.** No harness is written before a charter fixes the entry point, the objective, the oracle and contract, the scope, the verifiable result and the budget and stop rule; the report is compared against it → [[fuzzing-charter]], [[FTW-D-009-charter-before-work]].
-- **Fuzzing, not property-based testing.** The agent writes fuzz targets, seed corpora and campaigns; typed-API laws, metamorphic numerics and model-based state machines leave the gate as `out-of-scope: pbt-track`; the boundary, tool by tool, is in [[fuzzing-vs-pbt-boundary]], [[FTW-D-008-pbt-out-of-scope]].
-- **Gate before harness.** Sourced preconditions and documented hard stops decide applicability per entry point; the bug record concentrates in input-processing code and no yield study exists ([[FTW-OQ-007-per-language-yield-statistics]]) → [[applicability-gate]].
-- **Oracle ladder inside the fuzz target.** Crash-only harnesses find a bounded bug set in memory-safe code; round-trip, differential and invariant checks written into the target find the logic bugs → [[oracle-ladder]].
-- **Shape before bytes.** Byte mutation stalls at the first checksum, magic or parse step; a fuzzing-side decoder (`arbitrary`, go-fuzz-headers, `FuzzedDataProvider`), a repairing mutator or a fuzzing-build bypass is chosen by input shape → [[input-shape-triage]].
-- **Stop by decision, not by exhaustion.** No engine stops itself and no source gives a threshold; budget classes, a sanity gate, a windowed discovery rate and an escalation ladder decide, and the decision is recorded → [[stopping-algorithm]], [[FTW-D-003-thresholds-as-flags]].
-- **Conventions are the compile step.** Each ecosystem has three or four non-obvious rules that decide whether a harness is a regression suite or noise → the `language-facts-*` and `skill-*-fuzzing` notes.
-- **Evals as a plugin.** Behavioural evals run through `claude plugin eval` on fixture repositories with deterministic graders, including a charter-order grader → [[eval-plan]], [[FTW-D-004-evals-as-plugin]].
+FTW-D-001/002/006/009 retain applicability, six skills, local references and the charter.
+[[FTW-D-003-thresholds-as-flags]] now fixes the persistent research lifecycle; [[FTW-D-008-pbt-out-of-scope]]
+removes bridges and mutation analysis. [[FTW-D-004-evals-as-plugin]] and
+[[FTW-D-005-techne-fuzz-command]] defer provider tooling and invocation respectively.
+[[FTW-D-007-go-target-version]] retains the research target while separating source evidence from
+future runtime verification. Open questions retain their IDs and identify whether they block later
+authoring or are excluded; they are not a research backlog to exhaust.
 
-## Status and provenance
-
-Research annexes frozen 2026-11-03; several documentation hosts were unreachable, so sources were
-read from their GitHub repositories and paper-only claims are marked UNVERIFIED ([[research-corpus]],
-`open_questions/`). Refresh triggers are in [[next-iteration]].
-
-## Decisions
-
-- [[FTW-D-001-gate-is-first-step]] — the applicability gate is a skill and the first procedure step
-- [[FTW-D-002-six-skills]] — three methodology + three language skills; no separate PBT skill
-- [[FTW-D-003-thresholds-as-flags]] — stopping thresholds marked ✓/◇ and exposed as script flags
-- [[FTW-D-004-evals-as-plugin]] — behavioural evals via `claude plugin eval`; triggering via existing machinery
-- [[FTW-D-005-techne-fuzz-command]] — a new `/techne-fuzz` command rather than a `/techne-test` argument
-- [[FTW-D-006-references-beside-skills]] — references beside skills; annexes stay in this vault
-- [[FTW-D-007-go-target-version]] — Go facts target 1.27.3, verified against sources
-- [[FTW-D-008-pbt-out-of-scope]] — property-based testing is a separate track; strict boundary
-- [[FTW-D-009-charter-before-work]] — objective, scope and verifiable result fixed before any harness
-
-## Open questions
-
-- [[FTW-OQ-001-unverified-paper-bodies]] · [[FTW-OQ-002-libfuzzer-legend]] · [[FTW-OQ-003-go-skip-and-minimisation]] · [[FTW-OQ-004-go-ossfuzz-shim]] · [[FTW-OQ-005-cargo-fuzz-on-stable]]
-- [[FTW-OQ-006-hypofuzz-licence]] · [[FTW-OQ-007-per-language-yield-statistics]] · [[FTW-OQ-008-corpus-commit-policy]] · [[FTW-OQ-009-plugin-eval-prerequisites]] · [[FTW-OQ-010-agent-model-cost]] · [[FTW-OQ-011-agentic-pbt-validity]]
+Authoring is complete for both provider definitions and the six shared skills. See
+[[authoring-validation]] for the exact local checks and their limits. Full cross-session lifecycle
+qualification and Python/Rust runtime checks remain unperformed. Advanced invocation policy remains
+a separate decision. Nothing has been deployed; the user will deploy `personal`.

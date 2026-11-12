@@ -11,7 +11,7 @@ Checks:
   stale                Old-style doc references, formatting issues
   grounding            Builder skill grounding reference files
   meta-pipeline        Meta-reviewer existence, builder skill wiring
-  budget               Skill description budget utilisation (16K char limit)
+  budget               Skill listing size, truncation and supplied budget settings
   related-links        related: frontmatter entries resolve to existing skills/agents
   trigger-consistency  triggers: skills reachable via at least one agent (warn-only)
   fpf-refs             FPF Core, DPF and NSTD ids cited by skills resolve in bundled references
@@ -615,103 +615,141 @@ def check_stale_patterns(root: Path) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
-SKILL_BUDGET_CHARS = 16_000
-SKILL_BUDGET_WARN = 0.80
-SKILL_BUDGET_ERROR = 0.95
+# https://code.claude.com/docs/en/settings-reference#skilllistingmaxdescchars
+SKILL_DESCRIPTION_CHARS = 1_536
+SKILL_BUDGET_FRACTION = 0.01
+
+
+def _skill_budget_settings(root: Path) -> tuple[int, float, int | None, list[str]]:
+    path = root / "settings.json"
+    if not path.exists():
+        path = root / "settings.json.j2"
+    if not path.exists():
+        return SKILL_DESCRIPTION_CHARS, SKILL_BUDGET_FRACTION, None, []
+    try:
+        settings = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return 0, 0.0, None, [f"[BUDGET_CONFIG] Cannot read JSON settings from {path.name}"]
+    if not isinstance(settings, dict):
+        return 0, 0.0, None, [f"[BUDGET_CONFIG] {path.name} must contain a JSON object"]
+
+    errors: list[str] = []
+    description_cap = settings.get("skillListingMaxDescChars", SKILL_DESCRIPTION_CHARS)
+    if type(description_cap) is not int or description_cap <= 0:
+        errors.append("[BUDGET_CONFIG] skillListingMaxDescChars must be a positive integer")
+        description_cap = SKILL_DESCRIPTION_CHARS
+    fraction = settings.get("skillListingBudgetFraction", SKILL_BUDGET_FRACTION)
+    if type(fraction) not in (int, float) or not 0 < fraction <= 1:
+        errors.append(
+            "[BUDGET_CONFIG] skillListingBudgetFraction must be greater than 0 and at most 1"
+        )
+        fraction = SKILL_BUDGET_FRACTION
+
+    fixed_budget, env_errors = _fixed_skill_budget(settings.get("env", {}))
+    return description_cap, float(fraction), fixed_budget, errors + env_errors
+
+
+def _fixed_skill_budget(env: object) -> tuple[int | None, list[str]]:
+    if not isinstance(env, dict):
+        return None, ["[BUDGET_CONFIG] env must contain a JSON object"]
+    if "SLASH_COMMAND_TOOL_CHAR_BUDGET" not in env:
+        return None, []
+    raw_budget = env["SLASH_COMMAND_TOOL_CHAR_BUDGET"]
+    try:
+        fixed_budget = int(raw_budget) if isinstance(raw_budget, str) else None
+    except ValueError:
+        fixed_budget = None
+    if fixed_budget is None or fixed_budget <= 0:
+        return None, [
+            ("[BUDGET_CONFIG] env.SLASH_COMMAND_TOOL_CHAR_BUDGET must be a positive integer string")
+        ]
+    return fixed_budget, []
+
+
+def _skill_listing_entries(root: Path, description_cap: int) -> list[tuple[str, int, int]]:
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir():
+        return []
+    entries: list[tuple[str, int, int]] = []
+    for skill_dir in sorted(skills_dir.iterdir()):
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+        fm = parse_frontmatter(skill_file.read_text())
+        if fm is None or "name" not in fm or "description" not in fm:
+            continue
+        if fm.get("disable-model-invocation", "").lower() in {"true", "yes", "on", "1"}:
+            continue
+        description = " ".join(filter(None, (fm["description"], fm.get("when_to_use", ""))))
+        entry = f"- {fm['name']}: {description[:description_cap]}"
+        entries.append((fm["name"], len(description), len(entry)))
+    return entries
 
 
 def check_skill_budget(root: Path) -> tuple[list[str], list[str]]:
-    """Check total skill description budget utilisation against 16K limit."""
-    skills_dir = root / "skills"
-    errors: list[str] = []
-    warnings: list[str] = []
-
-    if not skills_dir.is_dir():
-        return errors, warnings
-
-    entries: list[tuple[str, int]] = []
-
-    for skill_dir in sorted(skills_dir.iterdir()):
-        if not skill_dir.is_dir():
-            continue
-        skill_file = skill_dir / "SKILL.md"
-        if not skill_file.exists():
-            continue
-
-        content = skill_file.read_text()
-        fm = parse_frontmatter(content)
-        if fm is None or "name" not in fm or "description" not in fm:
-            continue
-
-        entry = f"- {fm['name']}: {fm['description']}"
-        entries.append((fm["name"], len(entry)))
-
-    total = sum(size for _, size in entries)
-    utilisation = total / SKILL_BUDGET_CHARS if SKILL_BUDGET_CHARS > 0 else 0
-
-    if utilisation > SKILL_BUDGET_ERROR:
-        errors.append(
-            f"[BUDGET_EXCEEDED] Skill description budget: {total}/{SKILL_BUDGET_CHARS} chars "
-            f"({utilisation:.0%}) — skills may be silently dropped from system prompt"
-        )
-    elif utilisation > SKILL_BUDGET_WARN:
+    """Validate local settings and report listing risk without inventing a context window."""
+    description_cap, fraction, fixed_budget, errors = _skill_budget_settings(root)
+    if errors:
+        return errors, []
+    entries = _skill_listing_entries(root, description_cap)
+    warnings = [
+        f"[DESCRIPTION_TRUNCATED] {name}: description and when_to_use contain "
+        f"{length} characters; the supplied per-entry cap is {description_cap}"
+        for name, length, _ in entries
+        if length > description_cap
+    ]
+    total = sum(size for _, _, size in entries)
+    if entries and fixed_budget is None:
         warnings.append(
-            f"[BUDGET_HIGH] Skill description budget: {total}/{SKILL_BUDGET_CHARS} chars "
-            f"({utilisation:.0%}) — approaching limit"
+            f"[BUDGET_UNKNOWN] Local listing estimate: {total} characters after per-entry caps; "
+            f"aggregate headroom depends on the runtime model ({fraction:.1%} context allocation). "
+            "Use /doctor in the configured session; no fixed 16K limit is assumed"
         )
-
-    return errors, warnings
+    elif fixed_budget is not None and total > fixed_budget:
+        warnings.append(
+            f"[BUDGET_EXCEEDED] Local listing estimate: {total}/{fixed_budget} characters; "
+            "descriptions may be omitted, while skill names remain available"
+        )
+    return [], warnings
 
 
 def format_budget_report(root: Path) -> str:
-    """Produce a detailed per-skill budget breakdown (for standalone use)."""
-    skills_dir = root / "skills"
-    if not skills_dir.is_dir():
+    """Describe the supplied tree, not the effective runtime listing after every overlay."""
+    if not (root / "skills").is_dir():
         return "No skills directory found."
-
-    entries: list[tuple[str, int]] = []
-
-    for skill_dir in sorted(skills_dir.iterdir()):
-        if not skill_dir.is_dir():
-            continue
-        skill_file = skill_dir / "SKILL.md"
-        if not skill_file.exists():
-            continue
-
-        content = skill_file.read_text()
-        fm = parse_frontmatter(content)
-        if fm is None or "name" not in fm or "description" not in fm:
-            continue
-
-        entry = f"- {fm['name']}: {fm['description']}"
-        entries.append((fm["name"], len(entry)))
-
-    entries.sort(key=lambda x: x[1], reverse=True)
-    total = sum(size for _, size in entries)
-    utilisation = total / SKILL_BUDGET_CHARS if SKILL_BUDGET_CHARS > 0 else 0
-
+    description_cap, fraction, fixed_budget, errors = _skill_budget_settings(root)
+    if errors:
+        return "\n".join(["Skill Description Budget Report", *errors])
+    entries = sorted(
+        _skill_listing_entries(root, description_cap), key=lambda x: x[2], reverse=True
+    )
+    total = sum(size for _, _, size in entries)
     lines = [
         "Skill Description Budget Report",
         "=" * 40,
         "",
-        f"{'Skill':<40} {'Chars':>6}",
-        "-" * 47,
+        f"{'Skill':<40} {'Description':>11} {'Listing':>8}",
+        "-" * 61,
     ]
-    for name, size in entries:
-        lines.append(f"{name:<40} {size:>6}")
-
-    lines.append("-" * 47)
-    lines.append(f"{'TOTAL':<40} {total:>6} / {SKILL_BUDGET_CHARS}")
-    lines.append(f"{'Utilisation':<40} {utilisation:>6.0%}")
-    lines.append("")
-
-    if utilisation > SKILL_BUDGET_ERROR:
-        lines.append(f"FAIL — budget exceeded ({utilisation:.0%})")
-    elif utilisation > SKILL_BUDGET_WARN:
-        lines.append(f"WARN — budget high ({utilisation:.0%})")
-    else:
-        lines.append(f"OK — budget healthy ({utilisation:.0%})")
-
+    for name, length, size in entries:
+        lines.append(f"{name:<40} {length:>11} {size:>8}")
+    lines.extend(
+        [
+            "-" * 61,
+            f"TOTAL: {total} estimated listing characters; per-entry cap: {description_cap}",
+            (
+                "Supplied fixed budget: "
+                f"{fixed_budget if fixed_budget is not None else 'unknown'}; "
+                f"context allocation: {fraction:.1%}"
+            ),
+            (
+                "Local estimate only: runtime model, plugins, skillOverrides, external settings "
+                "and process environment are not resolved. "
+                "Confirm the effective listing with /doctor."
+            ),
+            *check_skill_budget(root)[1],
+        ]
+    )
     return "\n".join(lines)
 
 

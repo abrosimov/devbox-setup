@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150406"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-12
 language: en
 type: design
 subtype: skill
@@ -17,40 +17,51 @@ addresses: ["[[H5-harness-conventions]]", "[[H3-random-seeds-for-structured-inpu
 realises: ["[[language-facts-python]]", "[[oracle-ladder]]", "[[fuzzing-vs-pbt-boundary]]"]
 tested_by: ["[[eval-family-E-conventions]]", "[[eval-family-B-oracle]]"]
 decided_by: ["[[FTW-D-002-six-skills]]", "[[FTW-D-008-pbt-out-of-scope]]"]
-opens: ["[[FTW-OQ-006-hypofuzz-licence]]"]
 target_path: "roles/devbox/files/dot_ai/skills/python-fuzzing/"
-codex_shared: true
-related: ["[[reference-documents]]", "[[pbt-agent-prompts]]"]
+related: ["[[reference-documents]]", "[[pbt-agent-prompts]]", "[[FTW-OQ-006-hypofuzz-licence]]"]
 ---
 # Skill `python-fuzzing`
 
-**Problem**: agents reach for Hypothesis when asked to fuzz (and the reverse), write Atheris
-harnesses that never stop or instrument nothing, preload ASan on pure-Python targets, and treat an
-uncaught `ValueError` as a finding.
+This design contract is implemented by
+`roles/devbox/files/dot_ai/skills/python-fuzzing/SKILL.md`.
+See [[authoring-validation]] for verified behaviour and remaining qualification.
+Functional descriptions support ordinary discovery; advanced invocation conditions and routing remain deferred. Use [[agent-procedure]] and
+[[skill-fuzzing-campaign]] for scope, effort and research continuation. These operations supply the
+language-specific harness, observations and replay assets for a scoped reconnaissance pass or
+question-led experiment.
 
-## Carries (from [[language-facts-python]])
+## Reusable Python operations
 
-- The decision rule (Atheris, HypoFuzz, `fuzz_one_input`, `out-of-scope: pbt-track` hand-offs),
-  with the HypoFuzz licence stated first and the `fuzz_one_input` condition of
-  [[fuzzing-vs-pbt-boundary]].
-- Atheris harness skeleton (R8 §5.3), the `tests/fuzz/` layout, instrumentation and its cost,
-  `-atheris_runs=N`, the "No interesting inputs" diagnostic, `FuzzedDataProvider` idioms for
-  structured knobs, custom mutators for compressed input, expected-exception classification, crash
-  files as regression seeds.
-- Oracles in the target: round trip, differential against a second implementation, timeouts as
-  findings, resource limits.
-- Native extensions: sanitizer build, ASan preload and `ASAN_OPTIONS`, `enable_python_coverage`;
-  pure-Python targets run without a preload.
-- HypoFuzz operation and what it does and does not report; no plateau logic for plain Hypothesis
-  runs.
-- OSS-Fuzz Python integration and CI recipe (R8 §5.6, fuzz rows only).
-- Review checklist (R8 §5.5, fuzz items).
+| Operation | Inputs and preconditions | Action | Result and next use | Failure or stop |
+|---|---|---|---|---|
+| Qualify Atheris execution | repository Python environment, Atheris compatibility, target and charter | verify actual instrumented target execution and independent oracle expectations; distinguish pure-Python code from native extensions | environment, instrumentation and replay evidence used to qualify the planned execution | import success alone proves neither execution nor instrumentation; unavailable dependencies → environment gap |
+| Construct the harness | input contract, bounded byte/structured decoder and expected exceptions | build deterministic target handling with an explicit expected-rejection policy | runnable harness, useful valid-structure/coverage seeds and documented limits | broad exception swallowing is a harness defect; no PBT or hybrid backend |
+| Retain and assess artefacts | original input, observed exception or native failure and contract | reproduce and classify within the justified experiment and its limits; reduce only while preserving the same symptom | replayable corpus/regression input and supported classification | expected `ValueError` or a command timeout is not automatically a product bug; uncertain cases retain original evidence |
 
-≤ 250 lines.
+## Evidence and language variation
 
-## Evals shipped with the skill
+Use [[language-facts-python]] as research evidence, verifying actual Atheris/runtime compatibility
+and engine-limit semantics before authoring. `FuzzedDataProvider` or a bounded explicit decoder can
+supply structured choices. Native sanitiser instrumentation and its build/runtime dependencies must
+be checked when native code is in scope; pure-Python execution does not by itself establish native
+coverage. Apply [[oracle-ladder]] using independently expected behaviour.
+[[pbt-agent-prompts]] and [[FTW-OQ-006-hypofuzz-licence]] remain historical links and impose no
+current work. Hypothesis, HypoFuzz and bridges that create or execute PBT are excluded, as is
+mutation analysis; none is a backend, evaluation obligation or optional roadmap item.
 
-Trigger queries: "fuzz this parser with Atheris", "libFuzzer for Python", "our C extension
-decoder", "fuzz_one_input under Atheris"; negatives: "property-based test with Hypothesis",
-"pytest fixtures for the database". Content evals: R8 §6 cases 4, 5, 7, 8, 11 (fuzz-side) plus
-hand-off cases.
+Return build, replay and instrumentation observations with the target/toolchain/input versions to
+[[skill-fuzzing-campaign]] for interpretation and effort accounting. After interruption, recover the
+unfinished build, replay or reduction and its established results; recheck changed dependencies,
+then perform the supported next operation. A command limit does not answer the research question.
+Report product bugs; correct authored harness defects within scope. Retain useful inputs for replay
+under [[corpus-lifecycle]] without an automatic Git commit or publication.
+
+## Planned content validation
+
+[[eval-family-E-conventions]] and [[eval-family-B-oracle]] require a new applicable parser whose
+instrumented execution and retained seed replay have independently expected observations. A
+defeating case raises an expected rejection and a separate unexpected exception: the first must
+not become a product bug and the second must not disappear in a broad exception handler. An
+import-only success cannot qualify instrumentation. Repeat a saved replay in a fresh session using
+the recorded environment and expected result. Advanced invocation tests remain deferred; Python runtime qualification is unperformed.
+[[repository-placement]] records authored packaging and [[authoring-validation]] records actual checks.

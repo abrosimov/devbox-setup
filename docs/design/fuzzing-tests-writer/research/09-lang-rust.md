@@ -1,5 +1,6 @@
 ---
 note_id: "20261103150909"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: research
@@ -17,6 +18,11 @@ addresses: ["[[H2-no-stopping-rule]]", "[[H3-random-seeds-for-structured-input]]
 related: ["[[research-index]]", "[[research-corpus]]"]
 ---
 # Rust fuzzing and property-based testing ecosystem — what a fuzz-writing agent must know
+
+> Historical research from 2026-11-03; the body below is retained as provenance. Its proposals
+> are not current requirements. The 2026-11-10 disposition is [[methodology-review]]: PBT and
+> mutation analysis are excluded; saturation/escalation rules and provider recipes must not be
+> imported into authoring. Current operations are specified in [[agent-procedure]].
 
 Research date: 2026-11-03. Method note: the hosts `rust-fuzz.github.io`, `docs.rs`, `proptest-rs.github.io`, `google.github.io`, `llvm.org` and `dwrensha.github.io` were not resolvable from this session, so every "book" or "docs" claim below was taken from the **source repositories on GitHub** (raw Markdown / Rust source) that render those sites. Locators therefore name repo paths; the rendered URL is given where known. No toolchain was available locally (Bash was denied), so nothing was executed; anything that would need a run is marked UNVERIFIED.
 

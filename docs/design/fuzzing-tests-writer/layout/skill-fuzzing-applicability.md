@@ -1,7 +1,7 @@
 ---
 note_id: "20261103150402"
 created: 2026-11-03
-modified: 2026-11-04
+modified: 2026-11-12
 language: en
 type: design
 subtype: skill
@@ -18,36 +18,44 @@ realises: ["[[applicability-gate]]", "[[fuzzing-vs-pbt-boundary]]", "[[fuzzing-c
 tested_by: ["[[eval-family-A-gate]]", "[[eval-family-B-oracle]]", "[[eval-family-H-charter]]"]
 decided_by: ["[[FTW-D-001-gate-is-first-step]]", "[[FTW-D-002-six-skills]]", "[[FTW-D-008-pbt-out-of-scope]]", "[[FTW-D-009-charter-before-work]]"]
 target_path: "roles/devbox/files/dot_ai/skills/fuzzing-applicability/"
-codex_shared: true
 related: ["[[reference-documents]]", "[[pbt-agent-prompts]]"]
 ---
 # Skill `fuzzing-applicability`
 
-**Problem** (frontmatter `problem:`): agents fuzz everything they are pointed at, start harnesses
-before stating what the campaign must establish, blur fuzzing with property-based testing, and
-accept "does not crash" as the oracle in memory-safe code.
+This design contract is implemented by
+`roles/devbox/files/dot_ai/skills/fuzzing-applicability/SKILL.md`.
+See [[authoring-validation]] for verified behaviour and remaining qualification.
+Functional descriptions support ordinary discovery; advanced invocation conditions and routing remain deferred. Apply these operations within the
+scope and persistent research record in [[agent-procedure]]. A reconnaissance pass may establish
+the question before a precise hypothesis exists; it still needs accessible material, a feasible
+operation, a possible knowledge contribution and proportionate effort limits.
 
-## Carries
+## Reusable operations
 
-1. **Gate tables** of [[applicability-gate]]: hard stops, fuzz-or-out-of-scope rows and the seven
-   preconditions, each with its evidence, and the one-line outcome with its matching row quoted.
-2. **Fuzzing-versus-PBT boundary**: the definitions table and the tool-by-tool table of
-   [[fuzzing-vs-pbt-boundary]], with the conditions under which a hybrid bridge is allowed.
-3. **Charter** template and rules of [[fuzzing-charter]].
-4. **Oracle ladder** of [[oracle-ladder]] in fuzz-target form: contract-statement header; round-trip,
-   differential and invariant checks inside the target; resource limits; the ecosystem facts that
-   change what the bottom rungs see.
-5. **Borrowed discipline** of [[pbt-agent-prompts]] in its fuzzing form.
-6. **Anti-pattern list** with the evidence behind each entry (R1 §3.12), and pairwise option
-   testing as the answer for flag spaces (R6 §5.4).
+| Operation | Inputs and preconditions | Action | Result and next use | Failure or stop |
+|---|---|---|---|---|
+| Assess applicability | authorised entry point, repository contract, input domain, existing tests and available instrumentation | apply [[applicability-gate]] with evidence for each relevant prerequisite | supported method/oracle for the charter, a bounded check of a missing prerequisite, or a reasoned non-fuzz disposition | unsupported method or absent decisive evidence is reported; do not author another testing approach |
+| Frame the current contribution | initial research record, usable material and available operations | distinguish a question-forming reconnaissance pass from an experiment addressing an established question; complete [[fuzzing-charter]] before harness edits | target, operation, observation basis and effort limits that [[skill-fuzzing-campaign]] can execute | an unknown future discovery is allowed; an unavailable operation or undefined failure assertion remains a specific gap |
+| Establish oracle meaning | contract statement, known valid/invalid examples, independently expected results | select applicable checks from [[oracle-ladder]], distinguish expected rejection from product failure and expose oracle limitations | contract-linked assertion and defeating case for language-specific harness qualification; resource observations qualified by environment | an unsupported assertion is not promoted into an oracle; inability to distinguish failures remains explicit |
 
-≤ 300 lines of decision tables; references `bug-class-evidence.md` and `fuzzingbook-map.md`
-([[reference-documents]]).
+## Evidence and language variation
 
-## Evals shipped with the skill
+Use [[reference-documents]] for chapter-to-operation links and language bug-class evidence. A
+round trip, differential result or invariant is useful only when its assumptions and expected
+meaning hold; a comparator that shares the same defect is not independent confirmation. Crash-only
+checks do not establish semantic correctness. Language-specific failure visibility and toolchain
+constraints come from [[skill-go-fuzzing]], [[skill-python-fuzzing]] and [[skill-rust-fuzzing]].
 
-`evals/trigger_evals.json` (~20 queries; positives: "should we fuzz this parser", "add a fuzz target
-for the decoder", "is fuzzing worth it here", "define the goal of the fuzzing campaign"; near-miss
-negatives: "add table-driven tests for the parser", "write a Hypothesis property for this
-function", "fuzzy-match these strings", "speed up the CI test job") and `evals/evals.json` with
-the gate and charter cases of [[eval-family-A-gate]] and [[eval-family-H-charter]].
+[[fuzzing-vs-pbt-boundary]] supplies the exclusion boundary. PBT and mutation analysis are outside
+scope, including bridges that create or run PBT, evaluations and optional roadmap work.
+[[pbt-agent-prompts]] is historical context only, not a source of current implementation requirements.
+No hand-off or alternate suite is created by a non-fuzz disposition.
+
+## Planned content validation
+
+The content cases in [[eval-family-A-gate]], [[eval-family-B-oracle]] and [[eval-family-H-charter]]
+must include a new applicable case: a supported parser and unfamiliar corpus permit reconnaissance
+of acceptance and reached behaviour without a predicted defect. A defeating case supplies an
+assertion contradicted by independently specified contract examples; the agent returns the oracle
+gap rather than classifying the product as faulty. Both require a scoped charter before harness
+edits. These cases do not test activation and are not run in this methodology pass.

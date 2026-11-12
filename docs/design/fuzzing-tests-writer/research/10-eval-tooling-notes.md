@@ -1,5 +1,6 @@
 ---
 note_id: "20261103150910"
+modified: 2026-11-10
 created: 2026-11-03
 language: en
 type: research
@@ -17,6 +18,11 @@ addresses: []
 related: ["[[research-index]]", "[[research-corpus]]"]
 ---
 # Eval tooling notes (from claude-code-guide agent; sources: code.claude.com/docs/en/plugin-evals.md, sub-agents.md, headless.md, cli-reference.md, skills.md, agent-sdk/subagents.md, anthropics/skills skill-creator)
+
+> Historical research from 2026-11-03; the body below is retained as provenance. Its proposals
+> are not current requirements. The 2026-11-10 disposition is [[methodology-review]]: PBT and
+> mutation analysis are excluded; saturation/escalation rules and provider recipes must not be
+> imported into authoring. Current operations are specified in [[agent-procedure]].
 
 - `claude plugin eval` targets a PLUGIN. A loose ~/.claude/agents/*.md is not a documented target -> package the fuzzing agent + skills as a plugin dir (agents/, skills/) for evals. Measures delegation: runs each prompt with/without plugin (WITH / W/OUT / delta); requires Claude Code >= 2.1.269.
 - Case format: evals/<case>/prompt.md (frontmatter: name, description, tags, plugins, runs=3, expected_outcome (informational), model, max_turns=10, timeout_seconds=300, allowed_tools, append_system_prompt, env EVAL_*), evals/<case>/graders/<name>.md (type: regex | tool_used | tool_order | file_exists | llm | baseline; weight; arm; targets last_message|trace|files|{source:file,path}|mock_calls), optional case.yaml (schema_version "1.1"; context.scaffold_script, context.history_file, context.add_dirs; execution:).

@@ -82,7 +82,8 @@ receivers:
   # is reported; alert on the mount point holding OTELBOX_STORAGE_DIR. These
   # points leave through the same gateway queue they warn about, so the
   # threshold must fire while that queue still drains, and the backend must
-  # also alert when the edge falls silent.
+  # also alert when the edge falls silent. Out of band, the LaunchAgent
+  # local.otelbox-edge-watch reads the queue from :8888 and the volume directly.
   host_metrics/storage:
     collection_interval: 60s
     scrapers:
@@ -206,15 +207,32 @@ exporters:
     # effect on the sizing invariants: `sizer: bytes` measures uncompressed
     # items and the gateway's receive envelope applies after decompression.
     compression: ${env:OTELBOX_UPSTREAM_COMPRESSION:-zstd}
-    # A full 192 MiB batch has to cross a home uplink inside this deadline.
-    timeout: 120s
+    # Per attempt, and DeadlineExceeded is retried: a batch that cannot cross
+    # the slowest uplink within it is resent for ever and stalls its consumer,
+    # so err long; a longer deadline costs only recovery time after a network
+    # change. Rule: >= 3 x largest compressed batch / slowest uplink. 192 MiB
+    # that zstd shrinks at least 4x is 48 MiB, 403 s on a 1 Mbit/s tether
+    # (125 kB/s); 3 x 403 s = 1208 s. Compression `none` needs it recomputed.
+    timeout: 1210s
     sending_queue:
       enabled: true
       storage: file_storage/gateway
       num_consumers: ${env:OTELBOX_EXPORTER_CONSUMERS:-2}
+      # UNCOMPRESSED proto bytes, before `compression` above. Size the queue
+      # from `otelcol_exporter_enqueue_size_bytes`, never from wire throughput.
       sizer: bytes
       queue_size: ${env:OTELBOX_QUEUE_SIZE_BYTES:-4294967296}
-      block_on_overflow: true
+      # A full queue refuses at once with gRPC Unavailable / HTTP 503, which an
+      # OTLP client retries on its own budget. Blocking instead held the request
+      # until the client's export timeout cancelled it, and the client then
+      # dropped the batch without a retry. Data the client gives up on is lost
+      # before it is accepted, so a full queue is a capacity failure to alert on.
+      block_on_overflow: false
+      # 192 MiB, far above upstream's 1.5 MiB, because a record larger than
+      # max_size is dropped after acknowledgement and transcript spans reach the
+      # 128 MiB receiver limit. The cost: items count against queue_size until
+      # sent, so (num_consumers + 2) x 192 MiB = 768 MiB of the queue is in
+      # flight rather than free, negligible against the deployed 144 GiB.
       batch:
         flush_timeout: 200ms
         sizer: bytes

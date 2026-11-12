@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed by devbox (roles/devbox/templates/darwin/Library/LaunchAgents/local.otelbox-edge-watch.plist.j2).
+  Out-of-band early warning for local.otelbox-edge (scripts/otelbox_edge/watch.py):
+  every five minutes it reads the collector's queue metrics on :8888 and the free
+  space of the WAL volume, and posts a macOS notification while the queue still
+  admits data. The edge's own capacity metrics leave through the queue they warn
+  about, so they cannot do this. The package is stdlib-only Python 3.9, hence the
+  system interpreter.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.otelbox-edge-watch</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>{{ devbox_otelbox_edge_watch_dir }}/otelbox-edge-watch.py</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- The edge's OTELBOX_STORAGE_DIR: free space is read on its volume. -->
+        <key>OTELBOX_STORAGE_DIR</key>
+        <string>{{ ansible_facts['env']['HOME'] }}/.local/state/otelbox/edge</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/otelbox-edge-watch.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/otelbox-edge-watch.log</string>
+</dict>
+</plist>

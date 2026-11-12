@@ -126,6 +126,72 @@ def test_exporter_batch_fits_the_gateway_ingress() -> None:
     assert _EXPORTER_BATCH_MAX < GATEWAY_INGRESS_BYTES
 
 
+_GATEWAY_EXPORTER: dict[str, Any] = _edge["exporters"]["otlp_grpc/gateway"]
+_STORAGE_CAP_EXPANSION = _edge["extensions"]["file_storage/gateway"]["max_size"]
+_QUEUE_SIZE_EXPANSION = _GATEWAY_EXPORTER["sending_queue"]["queue_size"]
+# The otelcol-otelbox timeout rule: zstd shrinks a batch at least 4x, and the slowest
+# supported uplink is a 1 Mbit/s tether.
+ZSTD_MIN_RATIO: Final = 4
+SLOWEST_UPLINK_BYTES_PER_SECOND: Final = 125_000
+
+
+def _caps(source: dict[str, Any]) -> tuple[int, int]:
+    storage = _ENV_DEFAULT.fullmatch(_STORAGE_CAP_EXPANSION)
+    queue = _ENV_DEFAULT.fullmatch(_QUEUE_SIZE_EXPANSION)
+    assert storage is not None
+    assert queue is not None
+    return int(source[storage["name"]]), int(source[queue["name"]])
+
+
+def _profile_default_caps() -> dict[str, str]:
+    return {
+        match["name"]: match["default"]
+        for match in map(_ENV_DEFAULT.fullmatch, (_STORAGE_CAP_EXPANSION, _QUEUE_SIZE_EXPANSION))
+        if match is not None
+    }
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param(lambda: _render_plist("zstd"), id="launch-agent"),
+        pytest.param(
+            lambda: _task("validate the pinned profile before cleanup")["environment"],
+            id="validate",
+        ),
+        pytest.param(_profile_default_caps, id="profile-default"),
+    ],
+)
+def test_storage_cap_is_at_least_one_and_a_half_queues(source) -> None:
+    storage, queue = _caps(source())
+
+    assert 2 * storage >= 3 * queue
+
+
+def test_queue_and_storage_caps_agree_between_launch_agent_and_validate() -> None:
+    validate = _task("validate the pinned profile before cleanup")["environment"]
+
+    assert _caps(_render_plist("zstd")) == _caps(validate)
+
+
+def test_launch_agent_queue_holds_a_72_hour_outage_at_2_gib_per_hour() -> None:
+    _storage, queue = _caps(_render_plist("zstd"))
+
+    assert queue >= 72 * 2 * 1024 * MIB
+
+
+def test_exporter_timeout_lets_the_largest_compressed_batch_cross_the_slowest_uplink() -> None:
+    timeout = _GATEWAY_EXPORTER["timeout"]
+    assert re.fullmatch(r"\d+s", timeout)
+    crossing = _EXPORTER_BATCH_MAX / ZSTD_MIN_RATIO / SLOWEST_UPLINK_BYTES_PER_SECOND
+
+    assert int(timeout[:-1]) >= 3 * crossing
+
+
+def test_full_queue_refuses_instead_of_blocking() -> None:
+    assert _GATEWAY_EXPORTER["sending_queue"]["block_on_overflow"] is False
+
+
 def test_redaction_keeps_token_usage_counts() -> None:
     # The `token` key pattern would otherwise mask Langfuse's usage counts.
     ignored = _edge["processors"]["redaction/secrets"]["ignored_keys"]
@@ -414,3 +480,66 @@ def test_plist_renders_compression_from_the_variable() -> None:
 def test_plist_compression_matches_the_role_default() -> None:
     default = _otelbox_defaults["upstream_compression"]
     assert _render_plist(default)["OTELBOX_UPSTREAM_COMPRESSION"] == default
+
+
+WATCH_PLIST_TEMPLATE = (
+    ROLE / "templates/darwin/Library/LaunchAgents/local.otelbox-edge-watch.plist.j2"
+)
+WATCH_ENTRY_POINT = REPO_ROOT / "scripts/otelbox-edge-watch.py"
+_WATCH_DIR = "/Users/tester/.local/share/otelbox-edge-watch"
+
+
+def _render_watch_plist() -> dict[str, Any]:
+    rendered = Template(
+        WATCH_PLIST_TEMPLATE.read_text(encoding="utf-8"), undefined=StrictUndefined
+    ).render(
+        ansible_facts={"env": {"HOME": "/Users/tester"}},
+        devbox_otelbox_edge_watch_dir=_WATCH_DIR,
+    )
+    return plistlib.loads(rendered.encode("utf-8"))
+
+
+def _block(name_suffix: str) -> dict[str, Any]:
+    return next(t for t in _tasks if t["name"].endswith(name_suffix) and "block" in t)
+
+
+def test_watch_reads_free_space_on_the_volume_the_edge_writes_its_wal_to() -> None:
+    assert (
+        _render_watch_plist()["EnvironmentVariables"]["OTELBOX_STORAGE_DIR"]
+        == _render_plist("zstd")["OTELBOX_STORAGE_DIR"]
+    )
+
+
+def test_watch_runs_the_deployed_entry_point_every_five_minutes() -> None:
+    plist = _render_watch_plist()
+    install = _block("OpenTelemetry edge watch — install and schedule")["block"]
+    entry_point = next(t for t in install if t["name"].endswith("deploy the entry point"))
+
+    assert plist["ProgramArguments"] == ["/usr/bin/python3", f"{_WATCH_DIR}/otelbox-edge-watch.py"]
+    assert plist["StartInterval"] == 300
+    assert entry_point["ansible.builtin.copy"]["dest"] == (
+        "{{ devbox_otelbox_edge_watch_dir }}/otelbox-edge-watch.py"
+    )
+    assert WATCH_ENTRY_POINT.stat().st_mode & stat.S_IXUSR
+
+
+def test_watch_is_installed_under_the_collector_gate() -> None:
+    collector = _task("bootstrap LaunchAgent")["when"]
+    install = _block("OpenTelemetry edge watch — install and schedule")["when"]
+
+    assert install == collector[:2]
+    assert install == [
+        "devbox_packages.otelbox_edge.enabled | default(true)",
+        "devbox_otelbox_edge_ready | bool",
+    ]
+
+
+def test_watch_is_removed_when_the_edge_is_disabled() -> None:
+    teardown = _block("OpenTelemetry edge watch — tear down (edge disabled)")
+    removal = next(t for t in teardown["block"] if "ansible.builtin.file" in t)
+
+    assert teardown["when"] == "not (devbox_packages.otelbox_edge.enabled | default(true))"
+    assert removal["loop"] == [
+        "{{ devbox_otelbox_edge_watch_plist }}",
+        "{{ devbox_otelbox_edge_watch_dir }}",
+    ]

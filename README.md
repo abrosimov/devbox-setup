@@ -246,6 +246,8 @@ The client-certificate fields arrived with upstream 2.2.0, together with the gat
 
 `make otelbox-edge-test` also runs non-fatally at the end of `make personal`/`make work`. It requires the pinned version, probes `/status`, sends a local OTLP marker and fails on exporter send/enqueue failures, receiver refusals or any signal queue at 80% capacity.
 
+The edge's own capacity metrics leave through the queue they warn about, so the LaunchAgent `local.otelbox-edge-watch` (`scripts/otelbox_edge/watch.py`, deployed to `~/.local/share/otelbox-edge-watch/`) warns on the laptop instead. Every five minutes it reads `:8888` and posts a macOS notification when any signal queue reaches 50% (warning) or 80% (critical), when a non-empty queue has sent nothing for 30 minutes (gateway unreachable), or when the WAL volume has less free space than the queues may still claim. Each level is notified once until it clears; state lives in `~/.local/state/otelbox/watch.json`, the log in `~/Library/Logs/otelbox-edge-watch.log`. It is installed with the collector and removed when `devbox_packages.otelbox_edge.enabled` is false.
+
 The v2 apply is a one-way cleanup: after the exact pinned binary, endpoint and Keychain credential pass preflight, Ansible stops `local.otelcol-edge` and removes its binary, configuration, LaunchAgent and WAL. No v1 backlog or rollback bundle is retained.
 
 ## Telemetry Tunnel (`otelbox`)

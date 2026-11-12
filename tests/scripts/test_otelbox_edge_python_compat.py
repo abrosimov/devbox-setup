@@ -8,6 +8,7 @@ PYTHON_SOURCES = [
     REPO_ROOT / "scripts/otelbox-edge-cert-check.py",
     REPO_ROOT / "scripts/otelbox-edge-config.py",
     REPO_ROOT / "scripts/otelbox-edge-test.py",
+    REPO_ROOT / "scripts/otelbox-edge-watch.py",
     *(REPO_ROOT / "scripts/otelbox_edge").glob("*.py"),
 ]
 

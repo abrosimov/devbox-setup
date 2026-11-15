@@ -16,6 +16,9 @@
     - devbox_fontconfig_result.failed
     - '"post-install" not in devbox_fontconfig_result.msg'
 
+# No failed_when: the module skips an installed cask itself, and on a failure
+# it stops at that cask with brew's whole stderr as `msg`, so tolerating any
+# phrase in it would leave every later cask in the list silently uninstalled.
 - name: "Install Homebrew casks"
   community.general.homebrew_cask:
     name: "{{ devbox_brew_primary_casks }}"
@@ -24,11 +27,6 @@
     upgrade_all: false
     sudo_password: "{{ devbox_sudo_password }}"
   no_log: true   # Prevents the sudo password leaking into -v / -vvv output.
-  register: devbox_cask_primary_result
-  failed_when:
-    - devbox_cask_primary_result.failed is defined
-    - devbox_cask_primary_result.failed
-    - '"already installed" not in devbox_cask_primary_result.msg'
 
 # A separate task because the module hands install_options to `brew upgrade`
 # too, and `brew upgrade` rejects `--adopt`. Every cask is installed by now, so

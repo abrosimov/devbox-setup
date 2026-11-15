@@ -365,6 +365,17 @@
     label: "{{ item }}/"
   tags: [configs, dotfiles]
 
+# The directory copy above has no --delete, so a function dropped from the repo
+# lingers in ~/.config/fish/functions/ until removed here.
+- name: Remove retired fish prompt functions
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.config/fish/functions/{{ item }}"
+    state: absent
+  loop:
+    - _tide_item_fpf_drift.fish
+    - _tide_item_narrative_drift.fish
+  tags: [configs, dotfiles]
+
 # Edit rule logic in assets/complex_modifications/*.json (portable source of
 # truth, deployed by the copy loop above); karabiner.json's complex_modifications
 # must mirror it. Karabiner owns karabiner.json at runtime (machine-local

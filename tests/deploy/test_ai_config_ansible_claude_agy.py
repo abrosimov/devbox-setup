@@ -133,6 +133,7 @@ class TestAgySettingsWriter:
             "colorScheme",
             "model",
             "permissions",
+            "statusLine",
         }
         assert "trustedWorkspaces" not in settings
 

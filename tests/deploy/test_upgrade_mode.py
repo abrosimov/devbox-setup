@@ -85,6 +85,39 @@ def test_cask_upgrades_are_gated_not_greedy_and_never_adopt() -> None:
             assert task.get("no_log") is True, task["name"]
 
 
+def test_cask_installs_let_a_failure_fail_the_run() -> None:
+    # The module stops at the first failing cask with brew's whole stderr as
+    # `msg`, so a tolerated phrase in it silently skips every later cask.
+    installs = [
+        (name, task)
+        for name in CASK_FILES
+        for task in _tasks(name)
+        if CASK in task and task[CASK]["state"] == "present"
+    ]
+    assert installs
+    for name, task in installs:
+        assert "failed_when" not in task, (name, task["name"])
+
+
+AGY_STAT_TASK = "Check for an agy binary the antigravity-cli cask does not own"
+AGY_REMOVE_TASK = "Remove the foreign agy binary (the antigravity-cli cask owns that path)"
+CASK_INSTALL_TASK = "Install Homebrew casks"
+
+
+def test_foreign_agy_removal_spares_the_casks_own_symlink() -> None:
+    stat = _command_task(AGY_STAT_TASK)
+    remove = _command_task(AGY_REMOVE_TASK)
+    assert remove["ansible.builtin.file"]["state"] == "absent"
+    assert remove["ansible.builtin.file"]["path"] == stat["ansible.builtin.stat"]["path"]
+    assert f"not {stat['register']}.stat.islnk" in _when(remove)
+
+
+def test_foreign_agy_is_removed_before_the_cask_install() -> None:
+    names = [task["name"] for task in _tasks("install_from_brew_secondary.yml")]
+    order = [AGY_STAT_TASK, AGY_REMOVE_TASK, CASK_INSTALL_TASK]
+    assert [name for name in names if name in order] == order
+
+
 def test_no_binaries_survives_the_upgrade() -> None:
     upgrades = [
         task

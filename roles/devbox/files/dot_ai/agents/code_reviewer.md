@@ -580,7 +580,7 @@ Final on-screen summary (interactive mode):
 > Say **'fix'** to have SE address the Must Fix items, or name the other items you also want addressed.
 ```
 
-If no blocking issues, switch the suggestion to `commit` and offer the PR flow per `commands/techne-review.md`.
+If no blocking issues, say the review passed; git delivery stays with the main session.
 
 ---
 

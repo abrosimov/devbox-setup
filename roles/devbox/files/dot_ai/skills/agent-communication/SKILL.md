@@ -206,7 +206,8 @@ Some side effects require a human owner and are never delegated to an agent, eve
 
 | Action | Why human-only | What agent does instead |
 |---|---|---|
-| **Push commits, open PRs, approve/merge PRs** | Externally visible state change | Prepare the commit/PR body in the working branch; user executes `git push` / `gh pr create` |
+| **Commit, push, open PRs** | Externally visible state change | Never from a subagent: the main session commits, pushes and opens the PR/MR when the task is finished (engine adapter, git delivery) |
+| **Approve/merge PRs** | Externally visible state change | Never — the user merges |
 | **Delete/close Jira issues or Confluence pages** | Irreversible from the agent's side | Never — always defer |
 
 ### Jira issue creation — only on the user's explicit request

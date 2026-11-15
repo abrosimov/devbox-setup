@@ -177,18 +177,13 @@ After the agent completes successfully, show the user the changed files:
 git status --short
 ```
 
-The user will commit manually. Do not auto-commit. If the user asks for help drafting a commit message, suggest the following conventions:
-
-**Commit message conventions:**
-- `feat(PROJ-123):` for new features
-- `fix(PROJ-123):` for bug fixes
-- `refactor(PROJ-123):` for refactoring
-- Use the Jira issue as scope
+Commit, push and the PR/MR follow the engine adapter's git delivery; the commit and PR text
+follows core §9.
 
 ### 8. After Completion
 
 Present the agent's summary and suggested next step to the user.
 
-> Implementation complete on branch `$BRANCH`. The user will commit manually.
+> Implementation complete on branch `$BRANCH`.
 
 > **Next**: Run `/techne-test` to write tests.

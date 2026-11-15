@@ -73,6 +73,7 @@ These look like WHY but are filler. Cut them.
 | **Mechanism over-explanation** | `# A single HTTP request can touch the same blueprint multiple times; without this cache each touch issues a Vault round-trip` | Code shows the mechanism. Repeating it adds no information. | Keep only the WHY: `# Per-request cache to avoid repeat Vault decrypts.` |
 | **Restating the code** | `# Pop both alias ("type") and python-attr name ("secrets_type"): request bodies serialise with by_alias=True...` | The pop calls are visible. The serialisation is one line of context, not three. | `# pop both alias and attr name to keep the immutability guard` |
 | **Recursive WHY** | `# We do X because Y, because Z, because W...` | Each "because" drifts further from the load-bearing reason. | One level deep: `# We do X because Y.` |
+| **Session or plan label** | `# intentionally minimal (R1)`, `// covers AC-3` | Plan, list and option IDs resolve only inside the session that minted them (core §9). | State the constraint itself: `# intentionally minimal; a full session manager is out of scope`. A Jira key or issue number is fine. |
 | **Branch-label narration** | `if not self.__vault.is_encryption_enabled():` `    # FF off — alias holds plaintext as-is` | The branch condition is self-labelling. The `if not is_encryption_enabled()` already says "FF off". Repeating the label inside the branch is narration in disguise. | Cut the in-branch label. If a WHY exists (e.g. about stale ciphers), place it *above* the `if`, not inside it. |
 
 ## Before / After Examples

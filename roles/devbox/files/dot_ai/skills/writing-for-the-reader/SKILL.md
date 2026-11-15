@@ -25,6 +25,9 @@ the only one on screen: earlier turns have scrolled away, the context may have b
 the labels you coined an hour ago mean nothing to them now. Write each message, above all the last
 one of a turn, for a reader who sees only that message.
 
+This skill covers messages to the user. Commit messages, PR/MR text, code comments and documents
+have a different reader and follow core §9 instead: shorter, no session history, no session labels.
+
 ## Examples first
 
 ### 1. A question about a text shown to someone else

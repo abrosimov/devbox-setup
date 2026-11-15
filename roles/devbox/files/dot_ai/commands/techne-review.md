@@ -60,7 +60,7 @@ The agent will:
 - Check for issues (errors, tests, patterns)
 - Provide structured feedback with severity levels
 
-### 5. After Completion
+### 4. After Completion
 
 Present the structured feedback:
 - Must Fix (Blocking)
@@ -72,43 +72,8 @@ Must Fix is limited to defects in what was asked — correctness and the stated 
 If blocking issues:
 > Say **'fix'** to have SE address the Must Fix items, or name the other items you also want addressed.
 
-If no blocking issues, offer options:
+If no blocking issues:
+> Review passed.
 
-> Review passed. Options:
->
-> - **'pr'** — push and create pull request against `$DEFAULT_BRANCH`
-> - **'done'** — finish without git operations
->
-> Say your choice.
-
-### 6. Push + PR (if requested)
-
-When user says **'pr'**:
-
-```bash
-# Ensure all changes are committed first. If there are uncommitted changes,
-# warn the user and ask them to commit before pushing. Do NOT auto-commit.
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "Uncommitted changes detected. Please commit them before pushing."
-  exit 1
-fi
-
-# Push and create PR
-git push -u origin $BRANCH
-gh pr create --title "feat($JIRA_ISSUE): $BRANCH_NAME" --body "$(cat <<EOF
-## Summary
-[Review-verified changes]
-
-## Test plan
-- [ ] All tests pass
-- [ ] Review feedback addressed
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
-```
-
-If push/PR succeeds:
-> PR created for `$BRANCH` against `$DEFAULT_BRANCH`.
->
-> Cleanup: `proj wt rm $BRANCH` (if using worktrees)
+The review reports only. Commits, the push and the PR/MR belong to the engine adapter's git
+delivery; fixes made after the review update the PR/MR that is already open.

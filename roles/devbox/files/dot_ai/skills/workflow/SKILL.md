@@ -296,18 +296,16 @@ Backend and frontend both follow the contract rather than each other, because th
 
 | Actor | Git Operations |
 |-------|---------------|
-| **Commands** | Branch creation, stage, commit |
+| **Commands** | Branch creation |
+| **Main session** | Stage, commit, push, PR/MR creation and update |
 | **SE Agents** | None (code only) |
 | **Review Agents** | Read-only (diff, log) |
-| **User** | Push, PR creation, merge (via GitHub) |
+| **User** | Merge (via GitHub/GitLab) |
 
-### Commit Convention
+### Commit and PR text
 
-```
-<type>(<JIRA_ISSUE>): <description>
-```
-
-Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
+Core §9 governs it: an imperative subject in the form the repository's history already uses, a
+short why, no session history and no session labels.
 
 ## Worktree Parallelism
 
@@ -342,7 +340,7 @@ proj wt add PROJ-123_backend        proj wt add PROJ-123_frontend
 claude --cwd $AION_AUTOPOIESEON/p/... claude --cwd $AION_AUTOPOIESEON/p/...
 > /techne-implement backend API              > /techne-implement frontend dashboard
 > /techne-test                               > /techne-test
-> /techne-review → 'pr'                      > /techne-review → 'pr'
+> /techne-review                            > /techne-review
 proj wt rm PROJ-123_backend          proj wt rm PROJ-123_frontend
 ```
 

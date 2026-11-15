@@ -11,6 +11,7 @@ from typing import Final
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import fpf_drift_check
 from _claude_lib import ansi, env, hooks
 
 # Kanagawa Paper Ink palette — kept in sync with the fish/Tide prompt.
@@ -147,22 +148,12 @@ def git_segment(branch: str | None) -> str:
     return f"{C_MUTED} {SEP} {C_GOLD} {branch}"
 
 
-def _drift_state_path(filename: str) -> Path:
-    xdg = os.environ.get("XDG_CACHE_HOME") or ""
-    if xdg:
-        base = Path(xdg)
-    else:
-        home = os.environ.get("HOME") or str(Path.home())
-        base = Path(home) / ".cache"
-    return base / "devbox-setup" / filename
-
-
 def fpf_state_path() -> Path:
-    return _drift_state_path("fpf-drift")
+    return fpf_drift_check.state_file_for(fpf_drift_check.FPF_SPEC)
 
 
 def narrative_state_path() -> Path:
-    return _drift_state_path("narrative-drift")
+    return fpf_drift_check.state_file_for(fpf_drift_check.NARRATIVE_SPEC)
 
 
 def _read_drift_value(state_path: Path) -> int | None:
@@ -188,39 +179,16 @@ def narrative_drift_value(state_path: Path) -> int | None:
     return _read_drift_value(state_path)
 
 
-def _fpf_doc_path(cwd: str) -> Path | None:
-    if not cwd:
-        return None
-    candidate = (
-        Path(cwd)
-        / "roles"
-        / "devbox"
-        / "files"
-        / "dot_ai"
-        / "skills"
-        / "fpf-thinking"
-        / "references"
-        / "FPF-Spec.md"
-    )
-    if candidate.is_file():
-        return candidate
-    return None
-
-
-def trigger_fpf_refresh(local_spec: Path) -> None:
+def trigger_fpf_refresh() -> None:
     home = os.environ.get("HOME") or str(Path.home())
     script = Path(home) / ".claude" / "bin" / "fpf_drift_check.py"
     if not script.is_file():
         return
-    # A single call refreshes both docs: FPF via --local, the Narrative doc via a
-    # walk-up, so seed the child cwd/PWD with the repo directory.
-    repo_dir = local_spec.parent
-    child_env = {**os.environ, "PWD": str(repo_dir)}
+    # The check reads this engine's deployed skill and gates itself on TTL and on
+    # the deployed copy changing, so firing it on every render is cheap.
     try:
         subprocess.Popen(
-            [str(script), "--local", str(local_spec)],
-            cwd=str(repo_dir) if repo_dir.is_dir() else None,
-            env=child_env,
+            [str(script)],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
@@ -278,9 +246,7 @@ def run() -> int:
     parsed = parse_input(payload)
     home = os.environ.get("HOME") or ""
 
-    local_spec = _fpf_doc_path(parsed.cwd)
-    if local_spec is not None:
-        trigger_fpf_refresh(local_spec)
+    trigger_fpf_refresh()
 
     fpf_drift = fpf_drift_value(fpf_state_path())
     narrative_drift = narrative_drift_value(narrative_state_path())

@@ -72,7 +72,9 @@ Generate the candidates before judging any of them; early judgement anchors on t
   It is the yardstick every other candidate has to beat, and it often wins.
 - Include at least one candidate that challenges an assumption about how the problem "should" be
   solved, when such a candidate is plausible.
-- Give each a stable ID paired with a short name: `OPT-1 — extend the job table`.
+- Give each a stable ID paired with a short name: `OPT-1 — extend the job table`. The ID is for
+  the conversation only: code, comments, commits and PRs describe the chosen approach in words,
+  because their readers never see the card.
 - Merge candidates that sit at the same axis positions with the same trade-offs.
 
 ### 4. Evaluate

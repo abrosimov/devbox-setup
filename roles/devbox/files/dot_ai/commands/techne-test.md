@@ -117,16 +117,12 @@ After the agent completes and tests pass, show the user the changed files:
 git status --short
 ```
 
-The user will commit manually. Do NOT auto-commit. If the user asks for a suggested message, use:
-
-```
-test($JIRA_ISSUE): add tests for $BRANCH_NAME
-```
+Commit, push and the PR/MR follow the engine adapter's git delivery; write the commit text with the `commit-and-pr-text` skill.
 
 ### 6. After Completion
 
 Present the agent's summary and suggested next step to the user.
 
-> Tests complete on branch `$BRANCH`. The user will commit manually.
+> Tests complete on branch `$BRANCH`.
 
 > **Next**: Run `/techne-review` to review all changes.

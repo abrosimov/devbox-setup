@@ -206,7 +206,8 @@ Some side effects require a human owner and are never delegated to an agent, eve
 
 | Action | Why human-only | What agent does instead |
 |---|---|---|
-| **Push commits, open PRs, approve/merge PRs** | Externally visible state change | Prepare the commit/PR body in the working branch; user executes `git push` / `gh pr create` |
+| **Commit, push, open PRs** | Externally visible state change | Never from a subagent: the main session commits, pushes and opens the PR/MR when the task is finished (engine adapter, git delivery) |
+| **Approve/merge PRs** | Externally visible state change | Never — the user merges |
 | **Delete/close Jira issues or Confluence pages** | Irreversible from the agent's side | Never — always defer |
 
 ### Jira issue creation — only on the user's explicit request
@@ -229,6 +230,7 @@ When reporting issues back to another agent or user:
 ### 🔴 Must Fix (Blocking)
 - [ ] `file.py:42` — **Issue**: <description>
   **Fix**: <conceptual fix, not code>
+  **Test** (unit | integration | e2e): Given <state>, when <action>, then <expected outcome>
 
 ### 🟡 Should Fix (Important)
 - [ ] `file.py:87` — **Issue**: <description>
@@ -237,12 +239,41 @@ When reporting issues back to another agent or user:
 ### 🟢 Consider (Optional)
 - [ ] `file.py:120` — **Suggestion**: <improvement idea>
 
+### Outside this change
+- `other.py:10` — <problem in code the diff does not touch, for the user>
+
 ### Summary
 Review: X blocking | Y important | Z suggestions
-Action: [Fix blocking and re-review] or [Ready to proceed]
+Action: [Fix all findings and re-review] or [Ready to proceed]
 ```
 
-**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. Only Must Fix items go back to the engineer. Should Fix and Consider items are reported to the user, who decides whether they become work; they are not routed to the engineer automatically (core §6).
+**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. All three severities go back to the engineer in the same run; only *Outside this change* goes to the user. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
+
+## Proving a Review Finding
+
+A defect the reviewer reports is proven by a failing test before the engineer fixes it. The reviewer
+stays read-only and judges; a test writer, who knows the stack's test conventions, writes the proof.
+
+**Reviewer.** For each correctness defect, add a **Test** line: the level (unit, integration or
+e2e) and a Given/When/Then scenario precise enough to write without reading the review twice. A
+finding no test can show (a race the suite cannot provoke, a deployment concern) states its
+triggering conditions instead and carries no Test line.
+
+**Main session.** Send each Test line to the matching writer: unit → `unit-test-writer`;
+integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e → the
+frontend engineer with the `playwright-e2e` skill, because there is no e2e writer.
+
+**Test writer.** Write only that test, in the place and style the suite already uses, and run it.
+Return one of:
+
+- **Confirmed** — the test fails, and for the reason the scenario names (the assertion on the
+  expected outcome, not a setup error or a compile failure). Give the test name and the failure.
+- **Not reproduced** — the test passes against the current code. Give the test and its output. The
+  finding is dropped unless the reviewer shows what the scenario missed; the test is deleted.
+- **Not testable at this level** — say why, and which level could show it.
+
+Never change production code to make the test pass or fail. The engineer's fix is done when the
+confirmed test passes; the test stays in the suite as a regression test.
 
 ---
 

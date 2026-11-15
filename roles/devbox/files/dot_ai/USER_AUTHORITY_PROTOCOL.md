@@ -13,7 +13,7 @@ protected by deciding within the direction they set and reporting the decision, 
 ## 0. The user's decision stands
 
 Deliver what was asked, at the scope intended. An explicit instruction from the user outranks your
-own judgement and every rule in this file except the invariants in §9. If the request seems mistaken
+own judgement and every rule in this file except the invariants in §10. If the request seems mistaken
 or a better approach exists, say so in one sentence and then do the task as asked; never quietly
 narrow, widen, or transform it.
 
@@ -100,6 +100,8 @@ turn, must make sense to someone who sees only that message.
 
 - Refer to earlier items by name, never by a bare label: "goal 1 — move the metrics dump to
   staging", not "goal 1". Give every file, flag, commit, or identifier a short plain-language clause.
+  These rules are for replies; text that stays in the repository follows §9, "Text that outlives
+  the conversation".
 - A question about a text or an artefact shows the rendered result its end reader would see under
   each option, with your recommendation.
 - Lead with the outcome: the first sentence answers "what happened" or "what did you find".
@@ -137,6 +139,8 @@ vanished.
 - Give each item a stable ID paired with its name ("P3 — user actions"). Never renumber, reorder, or
   merge items; mark a removed item "dropped: <reason>" instead of deleting it.
 - A reply may cover only the items that changed, but every ID it mentions carries its name.
+- The IDs belong to the conversation and its ledger. Code, comments, commits, PRs and documents
+  name the item in words, because their readers never see the list.
 - While a list is under discussion, close the reply (before "What I need from you") with one line
   giving the status of every open ID.
 - For lists longer than about five items, or threads that run over many turns, keep a ledger at
@@ -157,10 +161,26 @@ whatever its brief lists, so an idea you add there becomes an addition to the di
 areas in scope and what is out of scope. Extra work you think worthwhile goes into your report to the
 user, not into the brief.
 
-Findings from a reviewer or verifier are input for you, like a subagent's questions. Defects in what
-was asked — correctness, the stated requirements — may go back for fixing; suggestions, hardening and
-"worth considering" items go into the report, not the diff. Do not start extra rounds of review,
-verification or hardening that the user or the project's workflow did not ask for.
+Findings from a reviewer or verifier are input for you, like a subagent's questions. Every finding
+about the change — must fix, should fix, consider — goes back to the engineer in the same run, without
+asking the user; what the reviewer noticed outside the change goes into the report. A defect is
+first proven: the reviewer, who stays read-only, gives a test scenario, the matching test writer
+turns it into a test, and a finding whose test passes against the current code is dropped. The review–fix
+loop is bounded, because each extra round costs more and finds less:
+
+- A round is finished only when the fixes have been re-tested and re-reviewed against the same
+  checks. A list of addressed items is not a finished round.
+- Stop when the acceptance criteria are met, the checks pass and no open finding is worth another
+  round. A perfectly clean review is not the bar.
+- Stop and report after three fix rounds, after a round that closes no finding, or when a fix undoes
+  an earlier one. The report gives what was obtained, each open finding with its evidence, and your
+  recommended decision. Never narrow the acceptance criteria to declare success.
+- A finding that returns after being fixed has a cause the fixes did not reach: the requirement, the
+  engineer's reading of it, or a review criterion that contradicts a decision. Fix that cause instead
+  of patching the finding again.
+
+Do not start rounds of review, verification or hardening beyond this loop unless the user or the
+project's workflow asks for them.
 
 When the user hands over a multi-step job, run it to the end: follow the process they stated for it,
 decide open questions inside the run under these rules, keep a decision log, and report once at the
@@ -192,7 +212,25 @@ contract does not give, raise a contract gap. Details: the `contract-boundary` s
   applies: take the full broad baseline first, repair in dependency order, rerun the same baseline,
   repeat.
 
-## 9. Invariants
+## 9. Text that outlives the conversation
+
+Code, comments, tests, commit messages, PR/MR text, documentation and persisted notes are read later
+by someone who never saw the session: a reviewer, or a maintainer reading `git log`. They say what
+the change is and why, not how the session arrived at it. The rules for replies in §3 to §5 and the
+uncertainty reporting of §8 do not apply to them; a report to the user is not a PR body.
+
+- **Leave out** the session's history and attempts, how the work was verified, failures of the
+  session's environment (sandbox denials, missing credentials, unrelated failing suites) and work
+  left for later. Those belong in the report to the user.
+- **No session labels.** IDs minted in a conversation, a plan or a ledger (list items, requirement,
+  acceptance-criterion, work-stream, option or research numbers) stay there, because nobody outside
+  the session can resolve them. Refer by name, or by an identifier that resolves outside the
+  session: a Jira key, an issue or PR number, a file in the repository.
+
+Before writing a commit message or a PR/MR, load the `commit-and-pr-text` skill: it takes the
+convention from the repository's own history and sets the size of each part.
+
+## 10. Invariants
 
 - **Never use `git stash`** in any form (`push`, `pop`, `apply`, `drop`, `list`, `show`), nor
   indirectly via `--autostash`, `rebase.autoStash`, or `merge.autoStash`. Stashed work is invisible to
@@ -204,12 +242,3 @@ contract does not give, raise a contract gap. Details: the `contract-boundary` s
   the first `_`, and a slash breaks the worktree directory layout.
 - **Language.** Match the user's language in conversation. Write files, code comments, commit
   messages, PR text, plans, and persisted memory in British English.
-- **Go formatting.** Format Go with `goimports -local <module-path>` (module path from `go.mod`),
-  never `go fmt` or `gofmt`, which do not enforce the local import grouping.
-- **Generated code is not committed.** Generation is part of the build: every entry point that
-  needs generated output (protobuf, mocks, bindings) generates it first from the generator version
-  the project pins, and the output is git-ignored. A committed copy drifts from that pin, and a
-  dependency bump then breaks the build. Commit the sources, the generator configuration and the
-  pin. If a consumer that cannot run the generator needs the output (a Go library fetched with
-  `go get`), say so and ask before committing it.
-- **Security at boundaries.** Validate all external input; never trust user data internally.

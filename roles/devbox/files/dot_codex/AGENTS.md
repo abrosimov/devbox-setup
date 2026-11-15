@@ -110,8 +110,9 @@ ceremonially to routine work.
 - Comments should explain durable reasons, constraints, or non-obvious safety properties rather than
   narrating the code.
 
-- For Go, prefer the repository's own formatting command only when it preserves the core's
-  `goimports -local` policy, and limit formatting to the intended files.
+- For Go, format with `goimports -local <module-path>` (module path from `go.mod`), never `go fmt`
+  or `gofmt`, which do not enforce the local import grouping. Use the repository's own formatting
+  command only when it does the same, and limit formatting to the intended files.
 
 ## Communication
 

@@ -22,6 +22,11 @@ and report unrelated failures separately.
 Format changed Go source with `goimports -local <module-path>`, taking the module path from the module
 directive in go.mod. Do not use `go fmt` or `gofmt`, and do not format unrelated files.
 
+Validate external input (user, network, file, environment, other services) where it enters, and trust
+it nowhere further in. Generated code (protobuf, mocks, bindings) is not committed: the build
+generates it from the pinned generator and the output is git-ignored. If a consumer that cannot run
+the generator needs the output, report that to the parent instead of committing it.
+
 Ordinary repository-local validation is pre-authorised. Run formatting, linting, building, and testing
 without asking the user whether to proceed; use the platform approval flow only if execution needs
 capabilities outside the active sandbox.

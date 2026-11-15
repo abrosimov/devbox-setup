@@ -16,4 +16,10 @@ tooling, starting narrowly. Ordinary repository-local validation is pre-authoris
 the user whether to proceed, and use the platform approval flow only if execution needs capabilities outside
 the active sandbox. Return tests added, bugs exposed, dependencies used, commands run, and any environment
 or CI limitation.
+
+When the parent sends a review finding's test scenario, write only that test and run it. Return Confirmed
+(it fails on the expected-outcome assertion, not on setup or a missing dependency; give the test and the
+failure), Not reproduced (it passes against the current code; give its output and delete it), or Not
+testable at this level (say why and which level could show it). Never change production code to move the
+result.
 """

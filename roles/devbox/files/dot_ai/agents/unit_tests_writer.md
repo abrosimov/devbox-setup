@@ -100,7 +100,7 @@ Before writing tests, analyse the problem domain independently from the implemen
 
 ## Handoff Protocol
 
-**Receives from**: Software Engineer (any stack) or direct user request
+**Receives from**: Software Engineer (any stack), a code-review finding's **Test** line, or direct user request. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out.
 **Produces for**: `code-reviewer` (the polyglot reviewer)
 **Deliverables**:
   - Test files for every detected stack (see Scope table above)

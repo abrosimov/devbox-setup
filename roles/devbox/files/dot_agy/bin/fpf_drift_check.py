@@ -18,14 +18,14 @@ from _agy_lib import env, paths, proc
 class DocSpec:
     name: str
     upstream_url: str
-    local_relative_path: str
+    relative_path: str
     state_filename: str
 
 
 FPF_SPEC: Final[DocSpec] = DocSpec(
     name="FPF",
     upstream_url="https://raw.githubusercontent.com/ailev/FPF/main/FPF-Spec.md",
-    local_relative_path=("roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md"),
+    relative_path="FPF-Spec.md",
     state_filename="fpf-drift",
 )
 NARRATIVE_SPEC: Final[DocSpec] = DocSpec(
@@ -34,35 +34,33 @@ NARRATIVE_SPEC: Final[DocSpec] = DocSpec(
         "https://raw.githubusercontent.com/ailev/FPF/main/DPFs/"
         "Narrativization-and-Narrative-Studies-Principles-Framework.md"
     ),
-    local_relative_path=(
-        "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/"
-        "Narrativization-and-Narrative-Studies-Principles-Framework.md"
-    ),
+    relative_path="DPFs/Narrativization-and-Narrative-Studies-Principles-Framework.md",
     state_filename="narrative-drift",
 )
 SPECS: Final[tuple[DocSpec, ...]] = (FPF_SPEC, NARRATIVE_SPEC)
 
+# The copy this engine actually loads, relative to $HOME — not a devbox-setup
+# checkout, which may be ahead of or behind what was deployed.
+REFERENCES_RELATIVE_PATH: Final[str] = ".gemini/config/skills/fpf-thinking/references"
+# Each engine deploys its own copy, so each keeps its own drift state.
+ENGINE_STATE_SUBDIR: Final[str] = "agy"
+
 DEFAULT_TTL_HOURS: Final[int] = 168
 
-# Retained so the FPF-only entrypoint and callers (statusline, tide) that key off
-# the FPF spec keep resolving without a spec object.
-UPSTREAM_URL: Final[str] = FPF_SPEC.upstream_url
-LOCAL_RELATIVE_PATH: Final[str] = FPF_SPEC.local_relative_path
-
 USAGE: Final[str] = (
-    "Usage: fpf_drift_check.py [--force] [--local PATH]\n"
+    "Usage: fpf_drift_check.py [--force] [--references DIR]\n"
     "Refreshes drift state for the FPF spec and the companion Narrative doc,\n"
-    "writing each drifted line count (or '0') to its own state file.\n"
-    "Each doc is TTL-gated on its own state file; --force refreshes both.\n"
-    "--local PATH overrides the FPF spec location only; the Narrative doc is\n"
-    "always located by walking up from the current directory.\n"
+    "comparing upstream with the copy deployed for this engine\n"
+    f"(default: ~/{REFERENCES_RELATIVE_PATH}) and writing each drifted line\n"
+    "count (or '0') to its own state file. Each doc is refreshed when its TTL\n"
+    "expires or its deployed copy changes; --force refreshes both.\n"
 )
 
 
 @dataclass(frozen=True)
 class ParsedArgs:
     force: bool
-    local: str | None
+    references: str | None
     show_usage: bool
 
 
@@ -73,7 +71,7 @@ class ParseFailure:
 
 def parse_args(argv: list[str]) -> ParsedArgs | ParseFailure:
     force = False
-    local: str | None = None
+    references: str | None = None
     show_usage = False
     i = 0
     while i < len(argv):
@@ -82,10 +80,10 @@ def parse_args(argv: list[str]) -> ParsedArgs | ParseFailure:
             force = True
             i += 1
             continue
-        if arg == "--local":
+        if arg == "--references":
             if i + 1 >= len(argv):
-                return ParseFailure("--local requires a path argument.")
-            local = argv[i + 1]
+                return ParseFailure("--references requires a directory argument.")
+            references = argv[i + 1]
             i += 2
             continue
         if arg in ("-h", "--help"):
@@ -93,25 +91,36 @@ def parse_args(argv: list[str]) -> ParsedArgs | ParseFailure:
             i += 1
             continue
         return ParseFailure(f"Unknown argument '{arg}'.")
-    return ParsedArgs(force=force, local=local, show_usage=show_usage)
+    return ParsedArgs(force=force, references=references, show_usage=show_usage)
+
+
+def _home() -> Path:
+    return Path(os.environ.get("HOME") or os.environ.get("USERPROFILE") or str(Path.home()))
+
+
+def references_dir() -> Path:
+    return _home() / REFERENCES_RELATIVE_PATH
 
 
 def state_dir() -> Path:
     xdg = os.environ.get("XDG_CACHE_HOME") or ""
-    if xdg:
-        base = Path(xdg)
-    else:
-        home = os.environ.get("HOME") or os.environ.get("USERPROFILE") or str(Path.home())
-        base = Path(home) / ".cache"
-    return base / "devbox-setup"
+    base = Path(xdg) if xdg else _home() / ".cache"
+    return base / "devbox-setup" / ENGINE_STATE_SUBDIR
 
 
 def state_file_for(spec: DocSpec) -> Path:
     return state_dir() / spec.state_filename
 
 
-def state_file() -> Path:
-    return state_file_for(FPF_SPEC)
+def source_file_for(spec: DocSpec) -> Path:
+    return state_dir() / f"{spec.state_filename}.source"
+
+
+def source_signature(local: Path) -> str:
+    # A deploy rewrites the file, changing its size or mtime; hashing a
+    # multi-megabyte spec on every statusline render is not worth it.
+    stat = local.stat()
+    return f"{stat.st_size} {stat.st_mtime_ns}"
 
 
 def is_fresh(path: Path, ttl_hours: int) -> bool:
@@ -121,20 +130,14 @@ def is_fresh(path: Path, ttl_hours: int) -> bool:
     return age < ttl_hours * 3600
 
 
-def find_local_spec(start: Path, relative_path: str = LOCAL_RELATIVE_PATH) -> Path | None:
-    current = start.resolve() if start.exists() else start
-    if current.is_file():
-        current = current.parent
-    depth = 0
-    while depth <= 20:
-        candidate = current / relative_path
-        if candidate.is_file():
-            return candidate
-        if current.parent == current:
-            return None
-        current = current.parent
-        depth += 1
-    return None
+def is_current(spec: DocSpec, local: Path, ttl_hours: int) -> bool:
+    if not is_fresh(state_file_for(spec), ttl_hours):
+        return False
+    try:
+        recorded = source_file_for(spec).read_text(encoding="utf-8").strip()
+    except OSError:
+        return False
+    return recorded == source_signature(local)
 
 
 def download_upstream(target: Path, url: str, timeout: int = 10) -> bool:
@@ -173,32 +176,35 @@ def write_state(value: int, target: Path) -> None:
     paths.atomic_write(target, f"{value}\n")
 
 
-def process_spec(spec: DocSpec, *, force: bool, local_override: str | None) -> int:
-    state = state_file_for(spec)
-    state.parent.mkdir(parents=True, exist_ok=True)
+def clear_state(spec: DocSpec) -> None:
+    state_file_for(spec).unlink(missing_ok=True)
+    source_file_for(spec).unlink(missing_ok=True)
 
-    if not force and is_fresh(state, DEFAULT_TTL_HOURS):
+
+def process_spec(spec: DocSpec, references: Path, *, force: bool) -> int:
+    local = references / spec.relative_path
+    if not local.is_file():
+        # Nothing deployed means nothing to compare; a leftover number would lie.
+        clear_state(spec)
+        return 1
+
+    if not force and is_current(spec, local, DEFAULT_TTL_HOURS):
         return 0
 
-    if local_override is not None:
-        local_spec: Path | None = Path(local_override)
-    else:
-        cwd = Path(os.environ.get("PWD") or Path.cwd())
-        local_spec = find_local_spec(cwd, spec.local_relative_path)
-
-    if local_spec is None or not local_spec.is_file():
-        return 1
+    state = state_file_for(spec)
+    state.parent.mkdir(parents=True, exist_ok=True)
+    signature = source_signature(local)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=f".{spec.state_filename}") as fh:
         tmp_path = Path(fh.name)
     try:
         if not download_upstream(tmp_path, spec.upstream_url):
             return 0
-        drift = count_drift(tmp_path, local_spec)
+        drift = count_drift(tmp_path, local)
         write_state(drift, state)
+        paths.atomic_write(source_file_for(spec), f"{signature}\n")
     finally:
-        if tmp_path.exists():
-            tmp_path.unlink(missing_ok=True)
+        tmp_path.unlink(missing_ok=True)
     return 0
 
 
@@ -211,16 +217,9 @@ def run(argv: list[str]) -> int:
         sys.stdout.write(USAGE)
         return 0
 
-    results = [
-        process_spec(
-            spec,
-            force=parsed.force,
-            local_override=parsed.local if spec is FPF_SPEC else None,
-        )
-        for spec in SPECS
-    ]
-    # Signal failure only when no vendored doc was found at all (mirrors the
-    # former FPF-only "not in repo" exit code).
+    references = Path(parsed.references) if parsed.references else references_dir()
+    results = [process_spec(spec, references, force=parsed.force) for spec in SPECS]
+    # Signal failure only when no deployed doc was found at all.
     if results and all(code == 1 for code in results):
         return 1
     return 0

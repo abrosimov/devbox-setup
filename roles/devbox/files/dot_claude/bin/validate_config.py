@@ -938,7 +938,7 @@ def check_fpf_spec_refs(root: Path) -> tuple[list[str], list[str]]:
     """Every FPF Core, DPF and NSTD id cited by its skill must resolve in the references.
 
     Guards the drift class that bin/fpf_drift_check.py cannot see: that script
-    compares the vendored spec against upstream, nothing compares the skill
+    compares the deployed spec against upstream, nothing compares the skill
     against the spec. Line numbers are deliberately not checked — ids are the
     stable handle, offsets are not.
     """

@@ -24,6 +24,10 @@
       "strategy": "ordered-set"
     },
     {
+      "path": "statusLine",
+      "scope": "shared"
+    },
+    {
       "path": "trustedWorkspaces",
       "scope": "local-state"
     }

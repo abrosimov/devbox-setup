@@ -201,13 +201,13 @@ def test_git_branch_handles_timeout(tmp_path: Path) -> None:
 
 def test_fpf_state_path_uses_xdg(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    assert sl.fpf_state_path() == tmp_path / "devbox-setup" / "fpf-drift"
+    assert sl.fpf_state_path() == tmp_path / "devbox-setup" / "agy" / "fpf-drift"
 
 
 def test_fpf_state_path_falls_back_to_home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
     monkeypatch.setenv("HOME", str(tmp_path))
-    assert sl.fpf_state_path() == tmp_path / ".cache" / "devbox-setup" / "fpf-drift"
+    assert sl.fpf_state_path() == tmp_path / ".cache" / "devbox-setup" / "agy" / "fpf-drift"
 
 
 def test_fpf_drift_value_missing(tmp_path: Path) -> None:
@@ -254,7 +254,7 @@ def test_fpf_segment_red_above_threshold() -> None:
 
 def test_narrative_state_path_uses_xdg(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    assert sl.narrative_state_path() == tmp_path / "devbox-setup" / "narrative-drift"
+    assert sl.narrative_state_path() == tmp_path / "devbox-setup" / "agy" / "narrative-drift"
 
 
 def test_narrative_state_path_falls_back_to_home(
@@ -262,7 +262,10 @@ def test_narrative_state_path_falls_back_to_home(
 ) -> None:
     monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
     monkeypatch.setenv("HOME", str(tmp_path))
-    assert sl.narrative_state_path() == tmp_path / ".cache" / "devbox-setup" / "narrative-drift"
+    assert (
+        sl.narrative_state_path()
+        == tmp_path / ".cache" / "devbox-setup" / "agy" / "narrative-drift"
+    )
 
 
 def test_narrative_drift_value_missing(tmp_path: Path) -> None:
@@ -311,7 +314,7 @@ def test_trigger_fpf_refresh_no_script(monkeypatch: pytest.MonkeyPatch, tmp_path
     monkeypatch.setenv("HOME", str(tmp_path))
     # No script present — Popen must not be called.
     with mock.patch.object(sl.subprocess, "Popen") as popen:
-        sl.trigger_fpf_refresh(tmp_path / "spec.md")
+        sl.trigger_fpf_refresh()
     popen.assert_not_called()
 
 
@@ -321,16 +324,14 @@ def test_trigger_fpf_refresh_invokes_popen(monkeypatch: pytest.MonkeyPatch, tmp_
     bin_dir.mkdir(parents=True)
     script = bin_dir / "fpf_drift_check.py"
     script.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
-    spec = tmp_path / "spec.md"
-    spec.write_text("# fpf\n", encoding="utf-8")
 
     with mock.patch.object(sl.subprocess, "Popen") as popen:
-        sl.trigger_fpf_refresh(spec)
+        sl.trigger_fpf_refresh()
 
     popen.assert_called_once()
     args, _ = popen.call_args
-    assert str(script) in args[0]
-    assert str(spec) in args[0]
+    # No path argument: the check reads the engine's deployed skill itself.
+    assert args[0] == [str(script)]
 
 
 def test_trigger_fpf_refresh_swallows_oserror(
@@ -348,7 +349,7 @@ def test_trigger_fpf_refresh_swallows_oserror(
         raise OSError(err_msg)
 
     with mock.patch.object(sl.subprocess, "Popen", side_effect=boom):
-        sl.trigger_fpf_refresh(tmp_path / "spec.md")
+        sl.trigger_fpf_refresh()
 
 
 def test_render_assembles_cwd_ctx_model() -> None:
@@ -425,7 +426,7 @@ def test_run_reads_stdin_and_writes_line(monkeypatch: pytest.MonkeyPatch) -> Non
     out = io.StringIO()
     monkeypatch.setattr(sys, "stdout", out)
     monkeypatch.setattr(sl, "git_branch", lambda _cwd: None)
-    monkeypatch.setattr(sl, "trigger_fpf_refresh", lambda _path: None)
+    monkeypatch.setattr(sl, "trigger_fpf_refresh", lambda: None)
     monkeypatch.setattr(sl, "fpf_drift_value", lambda _path: None)
     monkeypatch.setattr(sl, "narrative_drift_value", lambda _path: None)
 
@@ -441,7 +442,7 @@ def test_run_handles_empty_stdin(monkeypatch: pytest.MonkeyPatch) -> None:
     out = io.StringIO()
     monkeypatch.setattr(sys, "stdout", out)
     monkeypatch.setattr(sl, "git_branch", lambda _cwd: None)
-    monkeypatch.setattr(sl, "trigger_fpf_refresh", lambda _path: None)
+    monkeypatch.setattr(sl, "trigger_fpf_refresh", lambda: None)
     monkeypatch.setattr(sl, "fpf_drift_value", lambda _path: None)
     monkeypatch.setattr(sl, "narrative_drift_value", lambda _path: None)
 
@@ -452,9 +453,7 @@ def test_run_handles_empty_stdin(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "ctx —" in output
 
 
-def test_run_skips_fpf_refresh_outside_devbox(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_run_refreshes_fpf_from_any_cwd(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     payload = {"cwd": str(tmp_path), "model": {"display_name": "X"}}
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
     monkeypatch.setattr(sys, "stdout", io.StringIO())
@@ -463,10 +462,6 @@ def test_run_skips_fpf_refresh_outside_devbox(
     monkeypatch.setattr(sl, "narrative_drift_value", lambda _path: None)
 
     called: list[bool] = []
-
-    def fake_refresh(_path: Path) -> None:
-        called.append(True)
-
-    monkeypatch.setattr(sl, "trigger_fpf_refresh", fake_refresh)
+    monkeypatch.setattr(sl, "trigger_fpf_refresh", lambda: called.append(True))
     assert sl.run() == 0
-    assert called == []
+    assert called == [True]

@@ -177,8 +177,8 @@ After the agent completes successfully, show the user the changed files:
 git status --short
 ```
 
-Commit, push and the PR/MR follow the engine adapter's git delivery; the commit and PR text
-follows core §9.
+Commit, push and the PR/MR follow the engine adapter's git delivery; write their text with the
+`commit-and-pr-text` skill.
 
 ### 8. After Completion
 

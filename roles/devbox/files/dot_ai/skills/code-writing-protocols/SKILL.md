@@ -2,7 +2,8 @@
 name: code-writing-protocols
 description: >
   Shared protocols for all code-writing agents (software engineers, test writers).
-  Covers approval validation, decision classification with full Tier 3 exploration,
+  Covers approval validation, engineering invariants (input validation at boundaries, no committed
+  generated code), decision classification with full Tier 3 exploration,
   anti-satisficing rules, anti-helpfulness protocol, routine task mode,
   pre-implementation verification, comment audit self-review, and anti-laziness protocol.
 alwaysApply: false
@@ -56,6 +57,20 @@ Proceeding with implementation...
 - **Do not re-ask the user for approval** on scope already covered by your dispatch prompt. Re-prompting duplicates the gate and burns context.
 - The Approval Validation scan above applies to the **dispatch prompt and conversation you were given**, not to a fresh user turn you must solicit.
 - **If you hit new ambiguity**, derive the answer from the dispatch prompt, the plan, and the repository, decide what is yours to decide (core §0), and record each decision with its reason in your result. Return an open item to the main thread only when it passes the core's stop list or would take you outside your dispatched scope; finish everything that does not depend on it, and give it a recommended answer. Do not interactively re-prompt the user yourself.
+
+## Engineering Invariants
+
+These hold in every project and every language; the reviewer checks them as defects.
+
+- **Validate external input at the boundary.** Data that arrives from a user, a network peer, a
+  file, an environment variable or another service is checked where it enters (type, range, size,
+  encoding) and is trusted nowhere further in, because one unchecked path is enough to exploit.
+- **Generated code is not committed.** Generation is part of the build: every entry point that
+  needs generated output (protobuf, mocks, bindings) generates it first from the generator version
+  the project pins, and the output is git-ignored. A committed copy drifts from that pin, and a
+  dependency bump then breaks the build. Commit the sources, the generator configuration and the
+  pin. If a consumer that cannot run the generator needs the output (a Go library fetched with
+  `go get`), say so and return it to the main thread as an open item instead of committing it.
 
 ## Decision Classification Protocol
 

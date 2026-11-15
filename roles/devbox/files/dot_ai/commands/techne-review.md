@@ -67,12 +67,13 @@ Present the structured feedback:
 - Should Fix (Important)
 - Consider (Optional)
 
-Must Fix is limited to defects in what was asked — correctness and the stated requirements — and to changes made outside the task's scope. Should Fix and Consider items are suggestions: they are reported to the user and are not routed to the engineer unless the user picks them (core §6).
+- Outside this change (for the user only)
 
-If blocking issues:
-> Say **'fix'** to have SE address the Must Fix items, or name the other items you also want addressed.
+If there are findings, send all of them — Must Fix, Should Fix and Consider — to the matching
+software engineer agent without asking the user, then run this review again. The loop and its stop
+conditions are in the `workflow` skill, section *Review–fix loop*.
 
-If no blocking issues:
+If no findings remain:
 > Review passed.
 
 The review reports only. Commits, the push and the PR/MR belong to the engine adapter's git

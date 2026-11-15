@@ -12,7 +12,7 @@ function kitty-save-session --description 'Snapshot focused kitty OS window to ~
     # Render the first (focused) OS window as a kitty session file. Each tab
     # becomes a `new_tab` block with a `launch` that restores cwd. Running
     # processes are NOT relaunched — only the layout + per-tab cwd survives.
-    # This is intentionally minimal (R1); upgrade to tmux/zellij if true
+    # This is intentionally minimal; upgrade to tmux/zellij if true
     # per-process persistence becomes a requirement.
     printf '%s\n' $raw | jq -r '
         (.[] | select(.is_focused) // .[0]).tabs[] |

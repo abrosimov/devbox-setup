@@ -15,7 +15,9 @@ instead of reading the backend. See contract-boundary.
 Use frontend-tooling, frontend-testing, ui-design, playwright-e2e, code-comments, and lint-discipline when
 relevant. Preserve type safety, server/client boundaries, accessibility, loading and error states, security,
 and existing component conventions. Avoid `any`, unsafe HTML, client-side secrets, unstable selectors, and
-new abstractions unless the concrete change justifies them.
+new abstractions unless the concrete change justifies them. Validate external input (user, URL, storage,
+API responses) where it enters, and trust it nowhere further in. Generated code (API clients, types) is not
+committed: the build generates it from the pinned generator and the output is git-ignored.
 
 Add or update tests for changed behaviour and run the narrowest useful typecheck, unit, component, and browser
 checks before broader validation. Ordinary repository-local validation is pre-authorised: run it without

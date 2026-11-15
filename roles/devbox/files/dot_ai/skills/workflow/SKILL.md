@@ -122,11 +122,10 @@ formalise, build, and verify separately catch more than one agent that does all 
    - **Executor** (the matching `software-engineer-*` or other specialist) implements the
      specification and runs the project's checks.
    - **Reviewer** (`code-reviewer`, or the reviewer that fits the artefact) checks the result
-     against the specification and the acceptance criteria, flagging only what affects correctness
-     or the stated requirements.
-   - **Fix loop:** blocking findings go back to a fresh executor, then to a fresh reviewer, until
-     the reviewer passes the step. After three failed rounds on the same finding, record it as an
-     unresolved blocker and move on to steps that do not depend on it.
+     against the specification and the acceptance criteria.
+   - **Fix loop:** every finding goes back to a fresh executor, then to a fresh reviewer, under
+     *Review–fix loop* below. A finding still open when the loop stops is recorded as an unresolved
+     blocker, and the run moves on to steps that do not depend on it.
 3. **Open questions are decided inside the run.** For each one the agents raise, the orchestrator:
    (a) derives it from the conversation, the repository, and the user's stated principles; if that
    settles it, records the inference; otherwise (b) generates the candidates, weighs pros and cons
@@ -138,6 +137,33 @@ formalise, build, and verify separately catch more than one agent that does all 
 4. **Report once at the end** (core §6): outcome per step, review verdicts, checks run, the decision
    log's entry titles under "Decisions I made", and — only if something is blocked on the user —
    "What I need from you". No intermediate reports beyond one status line when asked.
+
+## Review–fix loop
+
+The loop between engineer, test writer and reviewer, bounded as the core's section on agents sets
+out. These rules make it work in practice.
+
+- **Fix the yardstick before the first round.** Write down the acceptance criteria, what is in and
+  out of scope, and the checks that will judge the work (build, tests, review checkpoints). A round
+  compares against the previous one only if the checks stay the same; change them only as a logged
+  decision with its reason.
+- **Each finding is tracked on its own**, with its severity and what closes it: for a defect, the
+  failing test the reviewer added; otherwise the concrete condition the fix must satisfy. A finding
+  closes when that test passes or that condition holds on re-review, not when the engineer says so.
+- **The engineer fixes in severity order and with substance.** Must fix first, then should fix,
+  then consider. A fix changes behaviour or clarity; guards, abstractions or tests added only to
+  quiet the reviewer make the code worse.
+- **A re-review checks; it does not hunt again.** It looks at the earlier findings and the lines the
+  fixes touched. A new finding in code no fix touched needs the reason the earlier review could not
+  have seen it, because reviewing unchanged code twice turns up new findings by chance.
+- **Stop for the user only on what needs them.** A finding that needs a decision only the user holds
+  (scope, a changed requirement, a trade-off between two findings), or two agents undoing each
+  other's work, goes to the user with both positions, their evidence, what was tried, and a
+  recommended choice. Work that does not depend on the answer continues.
+- **Leave a record another session can resume from.** After each round, update the run's decision
+  log (or `$TMPDIR/<branch>-review-loop.md` outside an autonomous run) with the acceptance criteria,
+  the round number, the commit reviewed, each finding with its status and closing test, and the
+  next action. A resuming session checks the record against the current tree before trusting it.
 
 ## Agent Roster
 
@@ -304,8 +330,8 @@ Backend and frontend both follow the contract rather than each other, because th
 
 ### Commit and PR text
 
-Core §9 governs it: an imperative subject in the form the repository's history already uses, a
-short why, no session history and no session labels.
+Use the `commit-and-pr-text` skill: it reads the repository's own convention from `git log` and
+keeps session history and conversation labels out.
 
 ## Worktree Parallelism
 

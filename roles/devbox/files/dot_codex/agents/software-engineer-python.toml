@@ -15,7 +15,9 @@ Use python-tooling, python-testing, python-monolith when applicable, code-commen
 Preserve typing, domain language, error semantics, resource and transaction lifetimes, async boundaries,
 security, and public compatibility. Use the repository's configured runner rather than assuming every
 project uses uv. Avoid unsafe deserialization, shell interpolation, timing-unsafe secret comparisons, and
-unparameterised SQL.
+unparameterised SQL. Validate external input (user, network, file, environment, other services) where it
+enters, and trust it nowhere further in. Generated code is not committed: the build generates it from the
+pinned generator and the output is git-ignored.
 
 Add or update tests for changed behaviour, then run the narrowest configured formatter, type checker, linter,
 and tests before broader validation. Ordinary repository-local validation is pre-authorised: run it without

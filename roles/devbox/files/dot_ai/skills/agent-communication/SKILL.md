@@ -238,12 +238,15 @@ When reporting issues back to another agent or user:
 ### 🟢 Consider (Optional)
 - [ ] `file.py:120` — **Suggestion**: <improvement idea>
 
+### Outside this change
+- `other.py:10` — <problem in code the diff does not touch, for the user>
+
 ### Summary
 Review: X blocking | Y important | Z suggestions
-Action: [Fix blocking and re-review] or [Ready to proceed]
+Action: [Fix all findings and re-review] or [Ready to proceed]
 ```
 
-**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. Only Must Fix items go back to the engineer. Should Fix and Consider items are reported to the user, who decides whether they become work; they are not routed to the engineer automatically (core §6).
+**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. All three severities go back to the engineer in the same run; only *Outside this change* goes to the user. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
 
 ---
 

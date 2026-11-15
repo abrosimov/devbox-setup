@@ -206,7 +206,7 @@ func TestAPIEndpoints(t *testing.T) {
 
 ## Handoff Protocol
 
-**Receives from**: Software Engineer (implementation) or Unit Test Writer (unit tests done)
+**Receives from**: Software Engineer (implementation), Unit Test Writer (unit tests done), or a code-review finding's **Test** line. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out.
 **Produces for**: Code Reviewer (for review)
 **Deliverable**: Integration test files with `//go:build integration` tag
 **Completion criteria**: All integration points tested with real dependencies

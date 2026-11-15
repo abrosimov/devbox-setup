@@ -147,9 +147,14 @@ out. These rules make it work in practice.
   out of scope, and the checks that will judge the work (build, tests, review checkpoints). A round
   compares against the previous one only if the checks stay the same; change them only as a logged
   decision with its reason.
+- **A defect is proven before it is fixed.** The read-only reviewer gives each defect a test
+  scenario and a level; the matching test writer turns it into a test and confirms it fails for the
+  stated reason (`agent-communication`, *Proving a Review Finding*). A finding whose test passes
+  against the current code is dropped. Only confirmed defects and the non-defect findings go to the
+  engineer.
 - **Each finding is tracked on its own**, with its severity and what closes it: for a defect, the
-  failing test the reviewer added; otherwise the concrete condition the fix must satisfy. A finding
-  closes when that test passes or that condition holds on re-review, not when the engineer says so.
+  confirmed failing test; otherwise the concrete condition the fix must satisfy. A finding closes
+  when that test passes or that condition holds on re-review, not when the engineer says so.
 - **The engineer fixes in severity order and with substance.** Must fix first, then should fix,
   then consider. A fix changes behaviour or clarity; guards, abstractions or tests added only to
   quiet the reviewer make the code worse.

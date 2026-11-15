@@ -163,7 +163,9 @@ user, not into the brief.
 
 Findings from a reviewer or verifier are input for you, like a subagent's questions. Every finding
 about the change — must fix, should fix, consider — goes back to the engineer in the same run, without
-asking the user; what the reviewer noticed outside the change goes into the report. The review–fix
+asking the user; what the reviewer noticed outside the change goes into the report. A defect is
+first proven: the reviewer, who stays read-only, gives a test scenario, the matching test writer
+turns it into a test, and a finding whose test passes against the current code is dropped. The review–fix
 loop is bounded, because each extra round costs more and finds less:
 
 - A round is finished only when the fixes have been re-tested and re-reviewed against the same

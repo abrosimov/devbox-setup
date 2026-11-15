@@ -66,12 +66,18 @@ Present the structured feedback:
 - Must Fix (Blocking)
 - Should Fix (Important)
 - Consider (Optional)
-
 - Outside this change (for the user only)
 
-If there are findings, send all of them — Must Fix, Should Fix and Consider — to the matching
-software engineer agent without asking the user, then run this review again. The loop and its stop
-conditions are in the `workflow` skill, section *Review–fix loop*.
+If there are findings, without asking the user:
+
+1. Send each finding's **Test** line to the matching test writer (`agent-communication`, *Proving a
+   Review Finding*). Run independent writers in parallel. Drop a finding whose test is Not
+   reproduced.
+2. Send the confirmed defects, with their failing tests, and the remaining Should Fix and Consider
+   findings to the matching software engineer agent.
+3. Run this review again.
+
+The loop and its stop conditions are in the `workflow` skill, section *Review–fix loop*.
 
 If no findings remain:
 > Review passed.

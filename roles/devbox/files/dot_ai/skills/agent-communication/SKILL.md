@@ -230,6 +230,7 @@ When reporting issues back to another agent or user:
 ### 🔴 Must Fix (Blocking)
 - [ ] `file.py:42` — **Issue**: <description>
   **Fix**: <conceptual fix, not code>
+  **Test** (unit | integration | e2e): Given <state>, when <action>, then <expected outcome>
 
 ### 🟡 Should Fix (Important)
 - [ ] `file.py:87` — **Issue**: <description>
@@ -247,6 +248,32 @@ Action: [Fix all findings and re-review] or [Ready to proceed]
 ```
 
 **Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. All three severities go back to the engineer in the same run; only *Outside this change* goes to the user. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
+
+## Proving a Review Finding
+
+A defect the reviewer reports is proven by a failing test before the engineer fixes it. The reviewer
+stays read-only and judges; a test writer, who knows the stack's test conventions, writes the proof.
+
+**Reviewer.** For each correctness defect, add a **Test** line: the level (unit, integration or
+e2e) and a Given/When/Then scenario precise enough to write without reading the review twice. A
+finding no test can show (a race the suite cannot provoke, a deployment concern) states its
+triggering conditions instead and carries no Test line.
+
+**Main session.** Send each Test line to the matching writer: unit → `unit-test-writer`;
+integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e → the
+frontend engineer with the `playwright-e2e` skill, because there is no e2e writer.
+
+**Test writer.** Write only that test, in the place and style the suite already uses, and run it.
+Return one of:
+
+- **Confirmed** — the test fails, and for the reason the scenario names (the assertion on the
+  expected outcome, not a setup error or a compile failure). Give the test name and the failure.
+- **Not reproduced** — the test passes against the current code. Give the test and its output. The
+  finding is dropped unless the reviewer shows what the scenario missed; the test is deleted.
+- **Not testable at this level** — say why, and which level could show it.
+
+Never change production code to make the test pass or fail. The engineer's fix is done when the
+confirmed test passes; the test stays in the suite as a regression test.
 
 ---
 

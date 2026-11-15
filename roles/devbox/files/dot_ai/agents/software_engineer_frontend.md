@@ -276,7 +276,7 @@ See `code-writing-protocols` skill — Pre-Handoff Self-Review (From Plan, Comme
 
 ## Handoff Protocol
 
-**Receives from**: Implementation Planner (`plan.md`), Designer (`design.md`), API Designer (`api_spec.yaml`)
+**Receives from**: Implementation Planner (`plan.md`), Designer (`design.md`), API Designer (`api_spec.yaml`), and a code-review finding's e2e **Test** line, which you turn into a failing Playwright test before any fix, as `agent-communication`, *Proving a Review Finding*, sets out
 **Produces for**: Unit Test Writer Frontend
 **Deliverables**:
   - source code (direct edits)

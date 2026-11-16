@@ -3,8 +3,7 @@ description = "Stack-aware implementation planner that turns accepted requiremen
 
 developer_instructions = """
 Inspect the accepted requirements, domain and architecture decisions, repository structure, affected call
-paths, tests, tooling, and delivery constraints before planning. Use fpf-thinking when the problem boundary,
-candidate structure, or evidence basis is still unclear.
+paths, tests, tooling, and delivery constraints before planning.
 
 Decide what the requirements, the repository, and the conversation in your brief settle, including the
 user's earlier answers, analogies they invoked, and principles they stated. Design choices inside the

@@ -17,20 +17,9 @@ the action, not the wording; confidence is not an override.
 | Externally visible or shared state | merging or closing a PR/MR, pushing to a protected branch, deleting a remote branch or tag, deploy, migration, sending messages, writing data outside the current Git tree and outside the directories the user added to the session | Always confirm |
 | Irreversible or destructive | `rm -rf` outside `$TMPDIR`; `git reset --hard`, `git clean -fd`, `git checkout .`, `git restore .`, `git branch -D`; force-push other than `--force-with-lease` to your own feature branch; `DROP`, `TRUNCATE`, `DELETE` without `WHERE`; skipping a pre-commit hook (`--no-verify`) or signing; writing a file you have not read | Always confirm; the shell cases are also denied by `bin/bash_decision_gate.py` |
 
-**Git delivery is part of finishing a task.** The user has given a standing go: when a task has
-changed files in a Git repository and its checks pass, commit under the user's identity, push the
-feature branch, and open its PR/MR ready for review (not draft), or update the one that already
-exists — without a confirmation round. Skip it only when the user says they will commit themselves,
-or when the turn produced analysis rather than a change.
-
-- **Base branch.** The base is the branch the feature branch was cut from, which is also the MR
-  target: `main`, or a release branch such as `release-1.18.0`. Bring in new base commits by rebasing
-  onto that base (or merging it), never onto a different branch. When the base is not evident — no
-  MR yet and the history fits both `main` and a release branch — ask once.
-- **Protected branches** (`CC_PROTECTED_BRANCHES`: `main`, `master`, `develop`, `release-*`,
-  `release/*`). Never commit, merge, rebase or push on one; on a protected branch, first create a
-  feature branch from it. Rebasing your own feature branch and pushing it with `--force-with-lease`
-  is part of delivery.
+Git delivery follows the core's §7 standing go. The protected-branch list is read from
+`CC_PROTECTED_BRANCHES`, and the Bash hook denies commits, merges and rebases on protected branches,
+pushes to them, force pushes other than `--force-with-lease`, `--amend` and `--no-verify`.
 
 **What counts as a go** for these two classes: "yes", "go ahead", "proceed", "do it", "approved",
 "implement it", a direct pick of an option, or `/techne-implement`. For reversible local work, "ok",
@@ -52,19 +41,25 @@ notification in a later turn. Apply the core's "one answer, after all of them" r
 notifications: while agents from the same batch are still running, reply with the single status line
 and nothing else. Launch independent agents in one message so they run concurrently.
 
-## Code changes go through agents
+## Changes go through the agent that owns them
 
-For any modification to `.go`, `.py`, `.ts`, `.tsx` files in a code project, use `/techne-implement`
-to spawn the matching software-engineer agent rather than editing directly — the agents carry the
-language standards, production necessities, and the project's patterns. The main session commits,
-pushes the feature branch and opens a PR/MR under "Git delivery is part of finishing a task" above;
-subagents do not touch git. The Bash hook denies commits, merges and rebases on protected branches,
-pushes to them, force pushes other than `--force-with-lease`, `--amend` and `--no-verify`.
+The core's §6 registry check, in Claude Code: an agent's `globs:` frontmatter declares the files it
+owns, and its `description` the work it covers. When a file you are about to change matches an
+agent's `globs`, delegate through `/techne-implement` (or the matching `/techne-*` command), however
+small the change looks. A new agent with `globs` is picked up without editing these rules;
+`make validate-claude` fails a `software-engineer-*` agent that declares none.
 
-Direct edits are fine for: files under `roles/devbox/files/dot_claude/`, `dot_ai/`, `dot_codex/`,
-`dot_agy/` and the deployed `~/.claude/` (see the `editing-claude-config` skill); routine formatting,
-narration-comment removal, and dead-code removal in files the task already changes; and any single turn in which the user says
-`just edit`, `direct`, `skip agent`, or the Russian equivalents («прямо», «напрямую», «без агента»).
+Direct edits are fine only for:
+
+- non-code configuration under `roles/devbox/files/dot_claude/`, `dot_ai/`, `dot_codex/`, `dot_agy/`
+  and the deployed `~/.claude/` — Markdown, templates, settings (see the `editing-claude-config`
+  skill); code there still matches an agent's `globs`;
+- edits that change no behaviour and no public surface — formatting, deleting a narration comment,
+  deleting dead code already identified — in files the task's own agent has already changed in
+  this run;
+- the single turn in which the user says `just edit`, `direct`, `skip agent`, or the Russian
+  equivalents («прямо», «напрямую», «без агента»). It does not carry to the next turn; say in the
+  reply that the edit was direct at the user's request.
 
 When delegating, respect the agent's own protocol. Give it the outcome, scope, and constraints, not a
 command transcript: do not paste shell commands or environment workarounds (`PYTHONPATH=…`,

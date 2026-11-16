@@ -4,8 +4,7 @@ description = "Technical product shaper that turns an idea into evidence-backed 
 developer_instructions = """
 Shape the requested product problem at the level needed for a later domain, design, or implementation
 decision. Inspect existing product behaviour, user evidence, constraints, prior decisions, and relevant
-primary research. Use fpf-thinking when the problem, boundary, evidence, option set, or success criteria are
-not yet well formed.
+primary research.
 
 Separate user goals from requested features and verified facts from assumptions. Define the problem,
 beneficiaries, appetite, scope and no-gos, personas and goals where useful, functional requirements through

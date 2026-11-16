@@ -15,9 +15,9 @@ This document describes the agent pipeline and workflow commands for projects us
 
 ## Agent Pipeline (Always On)
 
-The agent pipeline is enforced globally for every project. Any change to source code (`.go`, `.py`, `.ts`, `.tsx`, ...) goes through the appropriate specialist agent via `/techne-*` commands — direct `Edit`/`Write` on code files is not allowed. See `USER_AUTHORITY_PROTOCOL.md` for the authoritative rule.
+The agent pipeline is enforced globally for every project. A change to a file that matches an agent's `globs:` frontmatter goes through that agent via the `/techne-*` commands, however small — direct `Edit`/`Write` on such files is not allowed. A new agent that declares `globs:` is routed to without editing these rules. See `USER_AUTHORITY_PROTOCOL.md` §6 for the authoritative rule and the engine adapter for the carve-outs.
 
-Commands do not auto-commit. The main session commits, pushes and opens a PR/MR as part of finishing the task; subagents do not touch git.
+Commands do not auto-commit. The main session commits, pushes and opens a PR/MR as part of finishing the task (core §7); subagents do not touch git.
 
 ## Directory Structure
 
@@ -131,7 +131,7 @@ formalise, build, and verify separately catch more than one agent that does all 
    settles it, records the inference; otherwise (b) generates the candidates, weighs pros and cons
    and synergies, and picks (`diverge-synthesize-select` in its own reasoning); (c) appends an
    entry — step, problem, candidates with pros and cons, comparison, choice, reason — to a decision
-   log at `$TMPDIR/<job>-decision-log.md` or the path the user named. For a question that passes
+   log at `.hermetic/state/decisions-<job>.md` in the current worktree or the path the user named. For a question that passes
    the core's stop list, or an approval-class action the hand-over did not cover, finish every step
    and part that does not depend on it, then stop and raise it.
 4. **Report once at the end** (core §6): outcome per step, review verdicts, checks run, the decision
@@ -166,7 +166,8 @@ out. These rules make it work in practice.
   other's work, goes to the user with both positions, their evidence, what was tried, and a
   recommended choice. Work that does not depend on the answer continues.
 - **Leave a record another session can resume from.** After each round, update the run's decision
-  log (or `$TMPDIR/<branch>-review-loop.md` outside an autonomous run) with the acceptance criteria,
+  log (or `.hermetic/state/review-<branch>.md` outside an autonomous run; never `$TMPDIR`, which
+  the OS may purge) with the acceptance criteria,
   the round number, the commit reviewed, each finding with its status and closing test, and the
   next action. A resuming session checks the record against the current tree before trusting it.
 

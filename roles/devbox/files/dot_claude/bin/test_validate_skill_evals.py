@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+import pytest
 import validate_skill_evals as vse
 
 if TYPE_CHECKING:
@@ -151,6 +152,32 @@ def test_skill_md_allows_custom_keys(tmp_path: Path) -> None:
     )
     errors = vse.validate_skill_md(skill_dir)
     assert errors == []
+
+
+@pytest.mark.parametrize("value", ["true", "false"])
+def test_skill_md_allows_boolean_disable_model_invocation(tmp_path: Path, value: str) -> None:
+    skill_dir = _make_skill(
+        tmp_path,
+        "manual-only",
+        frontmatter=(
+            f"---\nname: manual-only\ndescription: x\ndisable-model-invocation: {value}\n---\n"
+        ),
+    )
+    assert vse.validate_skill_md(skill_dir) == []
+
+
+@pytest.mark.parametrize("value", ["", "yes", '"true"', "1"])
+def test_skill_md_rejects_non_boolean_disable_model_invocation(tmp_path: Path, value: str) -> None:
+    skill_dir = _make_skill(
+        tmp_path,
+        "manual-only",
+        frontmatter=(
+            f"---\nname: manual-only\ndescription: x\ndisable-model-invocation: {value}\n---\n"
+        ),
+    )
+    errors = vse.validate_skill_md(skill_dir)
+    assert len(errors) == 1
+    assert "disable-model-invocation" in errors[0]
 
 
 # --- validate_evals_json -----------------------------------------------------

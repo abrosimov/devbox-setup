@@ -1,6 +1,7 @@
 ---
 name: fpf-thinking
 description: Use First Principles Framework (FPF) Library patterns — FPF Core and its Domain Principle Frameworks (DPFs) — to frame complex questions before solving them. Use for system boundaries, domain modelling, architecture, problem shaping, evidence and assurance, option comparison, causal or temporal claims, naming, costly decisions, and domain methods such as systems engineering, agent procedures, knowledge-corpus access, notation design, decision design, and research method. Do not use for routine local edits or for rendering an already-framed subject as a narrative; use narrative-thinking for that.
+disable-model-invocation: true
 ---
 
 # FPF-guided systems thinking
@@ -69,8 +70,6 @@ as the pattern boundary. Search for a distinctive slot title such as `Solution`,
 When the purpose is to extend what an agent, person or team can do over continuing work, use
 `C.40.OD` with the relevant domain methods rather than a one-off pattern.
 
-Do not expose private chain-of-thought. Present conclusions, evidence, assumptions, alternatives,
-and concise rationale sufficient for the user to inspect the result.
 
 ## Domain framework routing
 

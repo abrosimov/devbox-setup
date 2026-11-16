@@ -39,7 +39,11 @@ ALLOWED_FRONTMATTER_KEYS = {
     # a cross-reference list to sibling skills.
     "problem",
     "related",
+    # Claude Code: the skill loads only on explicit user invocation.
+    "disable-model-invocation",
 }
+
+BOOLEAN_FRONTMATTER_KEYS = {"disable-model-invocation"}
 
 
 def validate_skill_md(skill_dir: Path) -> list[str]:
@@ -73,6 +77,8 @@ def validate_skill_md(skill_dir: Path) -> list[str]:
             key = line.split(":", 1)[0].strip()
             value = line.split(":", 1)[1].strip() if ":" in line else ""
             fm_keys.add(key)
+            if key in BOOLEAN_FRONTMATTER_KEYS and value not in ("true", "false"):
+                errors.append(f"'{key}' must be true or false, got '{value}'")
             if key == "name":
                 name_value = value.strip("'\"")
             elif key == "description":

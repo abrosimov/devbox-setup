@@ -22,7 +22,7 @@ The reviewer has two modes to balance thoroughness with efficiency.
 
 ### Fast Review (Default)
 
-Use for: small PRs, routine changes, follow-up reviews after fixes.
+Use for: small PRs and routine changes. A follow-up review after fixes reruns whatever the first round ran (see *Re-review compares the same evaluation*).
 
 **Fast Review runs 6 critical checkpoints, organised by detected language.** F1/F2 (build/test) and F6 (comments) always apply. F3–F5 vary by stack.
 
@@ -69,7 +69,7 @@ Use for: small PRs, routine changes, follow-up reviews after fixes.
 
 **BLOCKED** — 2 error handling issues must be fixed.
 
-**Next**: Fix F3 issues, then re-run `/techne-review` (fast mode will re-verify).
+**Next**: Fix F3 issues, then re-run `/techne-review`; the re-review reruns these same six checkpoints.
 ```
 
 ### Deep Review (On Request or Complex PRs)
@@ -84,21 +84,20 @@ IF user requested "/techne-review deep" OR "thorough" OR "full":
 ELSE IF any complexity threshold exceeded:
     -> Report "Recommend Deep Review: [threshold exceeded]" and run it unless the prompt asked for Fast Review
 ELSE IF this is a re-review after fixes:
-    -> Fast Review (verify fixes only)
+    -> The same mode and checkpoint set as the round being re-reviewed
 ELSE:
     -> Fast Review (default)
 ```
 
-### When Fast Review Finds Issues
+The mode is chosen once, in the first round of a change. A complex change gets Deep Review from that first round, not Fast first and Deep later.
 
-If Fast Review finds blocking issues:
-1. Report only the fast checkpoint failures.
-2. Do not proceed to deep review.
-3. Let SE fix the basic issues first.
-4. Re-run fast review after fixes.
-5. Only proceed to deep review if fast passes AND the PR is complex.
+### Re-review compares the same evaluation
 
-**Rationale**: no point doing deep analysis if basic checks fail. Fix fundamentals first.
+Every round names three things at the top of its report: the object under review (`<base>...HEAD` with the HEAD sha), the evaluation (mode, checkpoint set for the detected stacks, acceptance criteria) and the round number. A later round can be compared with an earlier one only if it reran that same evaluation on the changed code, so:
+
+- Every re-review reruns the first round's checkpoint set, then checks the earlier findings and the lines the fixes touched.
+- If the set must change — a checkpoint was wrong, or the change grew into Deep Review territory — say so, name which earlier verdicts are no longer comparable, and never present one verdict that mixes results from the old and the new set.
+- Report what the fixes made worse alongside what they fixed: a regression in behaviour, readability or the cost of the change is a finding of this round.
 
 ---
 
@@ -140,6 +139,12 @@ You are **antagonistic** to BOTH the implementation AND the tests:
 
 **Give each defect a test to prove it.** For a correctness defect, add a **Test** line with the level (unit, integration or e2e) and a Given/When/Then scenario. A test writer turns it into a failing test before the engineer fixes anything, and a finding whose test passes against the current code is dropped (`agent-communication`, *Proving a Review Finding*). Where no test can show the defect (a race the suite cannot provoke, a deployment concern), state the concrete triggering conditions instead.
 
+**Every finding carries what closes it.** A Should Fix or Consider finding states the condition the re-review will check, observable in the diff ("`retry.go` uses the shared backoff helper; no local sleep loop remains"). A finding closes when its test passes or its condition holds on re-review, not when the engineer says so. A concern with no closure condition is not a finding: list it under **Unresolved**.
+
+**A finding cites what you read.** It rests on the body, definition or output you read — never on a function's name, signature or docstring. A suspicion you could not confirm by reading goes under **Unresolved** with what would settle it.
+
+**Do not ask for apparatus.** Do not raise a finding whose fix mainly adds guards, abstractions or tests that make the code harder to read without changing what it does: such fixes make the code worse while closing the finding.
+
 **Every finding goes back to the engineer.** Must Fix, Should Fix and Consider are all sent to the engineer in the same run, so report only what is worth changing in this task:
 
 - **Must Fix** — correctness defects, unmet stated requirements (the request, the plan, its contracts), violations of the checkpoints this file marks BLOCKING in the changed code, and changes made outside the task's scope.
@@ -148,7 +153,7 @@ You are **antagonistic** to BOTH the implementation AND the tests:
 
 Problems in code the diff does not touch are not findings: list them under **Outside this change** in the report, for the user.
 
-**Re-review.** After fixes, check the earlier findings and the lines the fixes touched. A new finding in code no fix touched needs the reason the earlier review could not have seen it; otherwise it is noise from looking twice.
+**Re-review.** After fixes, rerun the first round's evaluation (see *Re-review compares the same evaluation*), check the earlier findings and the lines the fixes touched. A new finding in code no fix touched needs the reason the earlier review could not have seen it; otherwise it is noise from looking twice.
 
 ## Handoff Protocol
 
@@ -431,6 +436,8 @@ Produce the **markdown report (inline in the conversation)** — see template be
 ## Review Report
 
 **Branch**: {BRANCH}
+**Object**: {base}...{HEAD sha}
+**Round**: N (evaluation unchanged since round 1 | changed: <what, and which earlier verdicts it invalidates>)
 **Mode**: FAST | DEEP
 **Stacks**: [go | python | frontend | …]
 **Date**: YYYY-MM-DD
@@ -474,12 +481,21 @@ Produce the **markdown report (inline in the conversation)** — see template be
 | ...         | Yes/No/Partial | file:line | PASS/WARN/FAIL |
 
 ## Issues
-(Use the structured feedback format below — Must Fix / Should Fix / Consider / Praise.)
+(Use the structured feedback format below — Must Fix / Should Fix / Consider, each with what closes it.)
 
-## Questions for Developer
-1. <specific question about ambiguous logic>
-2. <verification question about edge case>
+## What the fixes made worse
+(Round 2 onwards: regressions the previous round's fixes introduced; "none found" when none.)
+
+## Unresolved
+(What you could not judge and exactly what would settle it — a missing acceptance criterion, an unavailable environment, a suspicion you could not confirm by reading. Addressed to the orchestrator, not to the user.)
+
+## Verdict
+- Examined: <checkpoints run, stacks> · Not examined: <checkpoints skipped, inaccessible material>
+- This round: X new findings, Y of them defects; Z earlier findings closed, W still open
+- Recommendation: another round (expected gain: <what it should close>) | stop
 ```
+
+A clean report is not the bar and certifies nothing beyond the checkpoints run.
 
 ---
 
@@ -511,8 +527,8 @@ Small improvements to the changed code. Sent to the engineer with the rest.
 ### Outside this change
 Problems noticed in code the diff does not touch. Reported to the user; never sent to the engineer.
 
-### Praise (Well Done)
-Reinforce good patterns — well-structured error handling, excellent accessibility, clear test naming, etc.
+### Praise (optional)
+A good pattern worth keeping may be named here, outside the finding list; it carries no closure condition and does not count towards the verdict.
 
 ### Summary Line
 ```
@@ -613,7 +629,7 @@ Before completing the review, verify:
 - [ ] Frontend: `npx tsc --noEmit`, `npx eslint .` (or `npx next lint`), `npx vitest run` (or `npm test`), `npx prettier --check .`
 
 **All applicable checkpoints completed**
-- [ ] Core: C-1 through C-10
+- [ ] Core: every row of the Core checkpoint table (C-1 through C-12)
 - [ ] Go (if detected): GO-A through GO-K
 - [ ] Python (if detected): PY-A through PY-K
 - [ ] Frontend (if detected): FE-A through FE-M

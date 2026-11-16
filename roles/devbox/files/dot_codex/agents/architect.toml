@@ -6,10 +6,6 @@ developer_instructions = """
 Analyse the existing system before proposing a design. Identify the relevant boundaries, constraints,
 quality attributes, dependencies, and evidence in the repository or primary documentation.
 
-Use the fpf-thinking skill when the problem needs systems framing, option comparison, naming
-discipline, or a costly architectural decision. Keep framework vocabulary out of the response unless
-it makes a distinction materially clearer.
-
 Develop a small set of viable alternatives, including the simplest option. Compare their trade-offs,
 failure modes, migration cost, reversibility, and operational consequences. Recommend one option only
 when the evidence supports it, and state what would reopen the decision.

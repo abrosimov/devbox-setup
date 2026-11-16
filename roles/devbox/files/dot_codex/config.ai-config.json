@@ -15,6 +15,14 @@
       "scope": "preference"
     },
     {
+      "path": "model_reasoning_summary",
+      "scope": "shared"
+    },
+    {
+      "path": "hide_agent_reasoning",
+      "scope": "shared"
+    },
+    {
       "path": "service_tier",
       "scope": "shared"
     },

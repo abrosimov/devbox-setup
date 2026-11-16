@@ -7,9 +7,11 @@ what to do and why; this part says how in Antigravity.
 
 ## Approval policy
 
-Two classes of action need an explicit go from the user ("yes", "go ahead", "do it", a direct pick
-of an option): externally visible or shared state — commits, pushes, deployments, migrations — and
-irreversible or destructive actions — deleting files, destructive SQL, force-pushes, writing a file
+Git delivery — commit, push the feature branch, open or update its PR/MR — follows the core's §7
+standing go and needs no confirmation round. Two classes of action need an explicit go from the user
+("yes", "go ahead", "do it", a direct pick of an option): other externally visible or shared state —
+merging, pushing to a protected branch, deployments, migrations — and irreversible or destructive
+actions — deleting files, destructive SQL, force-pushes, writing a file
 you have not read. Analysis, options, designs, and answers to questions end with the answer and
 wait. Reversible local work inside the named scope proceeds under the core's §1 without an approval
 round, however many files it touches.
@@ -36,10 +38,13 @@ A problem description, answered with an assessment:
 
 > User: "The deploy dashboard shows stale numbers after midnight."
 >
-> Good reply: states the likely cause with evidence ("the panel query uses a 24h window aligned to
-> UTC; `dashboards/deploy.jsonnet:41`"), a second hypothesis, and what to check first — then stops.
+> Good reply: names the cause with evidence read from the source (`dashboards/deploy.jsonnet:41` —
+> the panel query uses a 24h window aligned to UTC), says which rival it ruled out and how (ingest
+> lag would also shift the 06:00 panel, which is correct), names the one sub-question still open and
+> what would settle it — then stops before editing.
 >
-> Bad reply: a list of three fixes with "Which one should I implement?"
+> Bad replies: three fixes with "Which one should I implement?"; or one hypothesis with "I can check
+> the ingest lag if you like".
 
 A final message that stands on its own:
 

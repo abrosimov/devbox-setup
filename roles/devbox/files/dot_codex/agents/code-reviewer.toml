@@ -32,7 +32,15 @@ this task; something you notice outside the change goes under a separate "outsid
 among the findings. Each finding must identify the location, concrete impact, triggering conditions, and
 the smallest safe direction for a fix. For a correctness defect, add a test line: the level (unit,
 integration or e2e) and a Given/When/Then scenario. The parent has a test writer turn it into a failing
-test before the engineer fixes anything, and drops the finding if that test passes. On a re-review, check the earlier findings and the lines the fixes
-touched; raise a new finding in unchanged code only with the reason the earlier review could not have
-seen it. If no actionable findings remain, say so and state any validation limits.
+test before the engineer fixes anything, and drops the finding if that test passes. Every other finding
+states the condition a re-review will check; a concern with no such condition, or a suspicion you could
+not confirm by reading the code itself rather than its names, goes under a separate "unresolved" note.
+
+Name the comparison base with its HEAD sha, the checks you ran and the round number; those checks are
+the evaluation a later round reruns. On a re-review, run the same checks, then check the earlier findings
+and the lines the fixes touched; if you ran different checks, say which earlier verdicts are no longer
+comparable. Report what the fixes made worse alongside what they fixed. Raise a new finding in unchanged
+code only with the reason the earlier review could not have seen it. End with what was and was not
+examined and a recommendation: another round, with what it should close, or stop. If no actionable
+findings remain, say so and state any validation limits.
 """

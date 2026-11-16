@@ -551,6 +551,18 @@
   when: ansible_facts['os_family'] == 'Darwin'
   tags: [configs, dotfiles]
 
+# Git reads ~/.config/git/ignore as the global excludes file while
+# core.excludesFile is unset. The file may carry the operator's own entries, so
+# only the managed line is ensured. `.hermetic/` holds agent working records
+# (ledgers, decision logs, review-loop records) that must never be committed.
+- name: Exclude agent working records from every repository
+  ansible.builtin.lineinfile:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.config/git/ignore"
+    line: ".hermetic/"
+    create: true
+    mode: "0644"
+  tags: [configs, dotfiles]
+
 # =============================================================================
 # Block 6: local overlay — private files not tracked in VCS
 # Deploys AFTER main blocks so local files override repo-managed ones.

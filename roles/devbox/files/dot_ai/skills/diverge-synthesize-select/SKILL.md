@@ -30,13 +30,9 @@ per-call timeout would duplicate it." The one-liner keeps the user informed with
 attention on a choice that does not need them.
 
 If the problem itself is still unclear (what the system is, where its boundary lies), frame it
-first with `fpf-thinking`; DSS assumes you know what you are choosing between.
-
-When the hard part is inside the procedure rather than the frame — several framings compete, good
-alternatives will not come, or the ranking may flip under other assumptions — the Decision Design
-framework (PSDA) in `fpf-thinking` supplies the method: plural formulations (`PSDA.1`), alternative
-generation (`PSDA.5`), values and trade-offs (`PSDA.6`), robustness and sensitivity (`PSDA.9`).
-DSS still owns the card the user sees.
+first; DSS assumes you know what you are choosing between. When the user asks for FPF, its Decision
+Design framework (`PSDA.1` plural formulations, `PSDA.5` alternatives, `PSDA.6` values, `PSDA.9`
+robustness) is available through `fpf-thinking`; DSS still owns the card the user sees.
 
 ## Procedure
 

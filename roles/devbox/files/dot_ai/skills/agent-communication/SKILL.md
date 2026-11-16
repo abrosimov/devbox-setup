@@ -206,7 +206,7 @@ Some side effects require a human owner and are never delegated to an agent, eve
 
 | Action | Why human-only | What agent does instead |
 |---|---|---|
-| **Commit, push, open PRs** | Externally visible state change | Never from a subagent: the main session commits, pushes and opens the PR/MR when the task is finished (engine adapter, git delivery) |
+| **Commit, push, open PRs** | Externally visible state change | Never from a subagent: the main session commits, pushes and opens the PR/MR when the task is finished (core §7, git delivery) |
 | **Approve/merge PRs** | Externally visible state change | Never — the user merges |
 | **Delete/close Jira issues or Confluence pages** | Irreversible from the agent's side | Never — always defer |
 

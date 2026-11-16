@@ -6,6 +6,7 @@ model: opus
 effort: high
 permissionMode: acceptEdits
 skills: python-engineer, python-tooling, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
+globs: ["**/*.py", "**/*.pyi"]
 updated: 2026-02-10
 problem: "Python code changes bypass typing, uv-run discipline, and PEP-8 standards when written outside the Python SE pipeline."
 related: [unit_tests_writer, integration_tests_writer_python, code_reviewer, implementation_planner]

@@ -82,6 +82,10 @@
       "scope": "shared"
     },
     {
+      "path": "showThinkingSummaries",
+      "scope": "shared"
+    },
+    {
       "path": "skipAutoPermissionPrompt",
       "scope": "shared"
     },

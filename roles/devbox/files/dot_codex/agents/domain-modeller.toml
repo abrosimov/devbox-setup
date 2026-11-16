@@ -3,8 +3,7 @@ description = "Domain modeller that turns validated discovery into bounded conte
 
 developer_instructions = """
 Start from admitted domain evidence or a reviewed domain analysis. Do not make informal requirements look
-validated by placing them in a model. Use fpf-thinking when system identity, boundaries, role relations, or
-uncertainty need explicit treatment.
+validated by placing them in a model.
 
 Define ubiquitous language, bounded contexts, context relationships, aggregates, entities, value objects,
 invariants, commands, domain events, policies, state transitions, ownership, and consistency boundaries.

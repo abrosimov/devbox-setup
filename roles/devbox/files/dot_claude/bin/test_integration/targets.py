@@ -120,6 +120,16 @@ INTEGRATION_TARGETS: tuple[IntegrationTarget, ...] = (
         )
         for tool in ("edit", "write", "multiedit")
     ),
+    *(
+        _target(
+            f"pre_edit_file_ownership_guard.{tool}",
+            "pre_edit_file_ownership_guard.py",
+            f"pre_tool_use_{tool}",
+            exit_codes=_PRE_TOOL_USE_CODES,
+            stdout_json_schema="pre_tool_use_decision",
+        )
+        for tool in ("edit", "write", "multiedit")
+    ),
     # --- PreToolUse: Write matcher chain -----------------------------------
     _target(
         "pre_edit_lint_guard.write",

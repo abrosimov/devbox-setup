@@ -5,9 +5,9 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__playwright
 model: opus
 effort: high
 permissionMode: acceptEdits
-skills: frontend-engineer, frontend-tooling, ui-design, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
-globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
-updated: 2026-02-17
+skills: frontend-engineer, frontend-tooling, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "!**/*.test.*", "!**/*.spec.*", "!**/__tests__/**", "!**/__mocks__/**", "!**/tests/**", "!**/e2e/**"]
+updated: 2026-11-17
 problem: "TypeScript/React/Next.js code changes bypass typed, tested, accessible standards when written outside the frontend SE pipeline."
 related: [designer, unit_tests_writer, code_reviewer, implementation_planner]
 ---
@@ -83,6 +83,10 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 | `ui-design` | W3C design tokens, component specs, responsive layout, Storybook MCP |
 | `mcp-storybook` | Storybook MCP tool usage — component inventory, prop discovery, pattern matching |
 | `shared-utils` | Jira context extraction from branch |
+
+## Tests Belong to the Test Writers
+
+Do not create, edit, rename or delete test files, test helpers or test data: the `!` patterns in this agent's `globs` name them, and the `pre_edit_file_ownership_guard` hook denies the edit. Run the existing suite. When a test exposes a defect in your code, fix the code; when your change deliberately alters the behaviour a test asserts, leave the test alone and report it with its exact output. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
 
 ## LSP Navigation Protocol
 

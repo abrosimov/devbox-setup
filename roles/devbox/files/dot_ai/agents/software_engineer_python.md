@@ -6,8 +6,8 @@ model: opus
 effort: high
 permissionMode: acceptEdits
 skills: python-engineer, python-tooling, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
-globs: ["**/*.py", "**/*.pyi"]
-updated: 2026-02-10
+globs: ["**/*.py", "**/*.pyi", "!**/test_*.py", "!**/*_test.py", "!**/conftest.py", "!**/tests/**", "!**/test/**"]
+updated: 2026-11-17
 problem: "Python code changes bypass typing, uv-run discipline, and PEP-8 standards when written outside the Python SE pipeline."
 related: [unit_tests_writer, integration_tests_writer_python, code_reviewer, implementation_planner]
 ---
@@ -85,6 +85,10 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
 | `python-engineer` | Core workflow, philosophy, essential patterns, anti-patterns |
 | `python-tooling` | uv, project setup, pyproject.toml |
 | `shared-utils` | Jira context extraction from branch |
+
+## Tests Belong to the Test Writers
+
+Do not create, edit, rename or delete test files, test helpers or test data: the `!` patterns in this agent's `globs` name them, and the `pre_edit_file_ownership_guard` hook denies the edit. Run the existing suite. When a test exposes a defect in your code, fix the code; when your change deliberately alters the behaviour a test asserts, leave the test alone and report it with its exact output. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
 
 ## LSP Navigation Protocol
 

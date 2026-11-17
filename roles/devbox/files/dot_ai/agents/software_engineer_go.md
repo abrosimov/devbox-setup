@@ -6,8 +6,8 @@ model: opus
 effort: high
 permissionMode: acceptEdits
 skills: go-engineer, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
-globs: ["**/*.go"]
-updated: 2026-02-10
+globs: ["**/*.go", "!**/*_test.go", "!**/testdata/**"]
+updated: 2026-11-17
 problem: "Go code changes bypass Effective-Go idioms and lint discipline when written outside the Go SE pipeline."
 related: [build_resolver_go, unit_tests_writer, integration_tests_writer_go, code_reviewer, implementation_planner]
 ---
@@ -57,6 +57,10 @@ See `code-writing-protocols` skill for verification checklist and workaround det
 This codebase is a service, not a library. No doc comments on services, handlers, domain models, or unexported functions. Only exception: library wrappers in `pkg/` or infrastructure clients.
 
 **Before writing a comment, ask:** *"If I delete this, does the code become unclear?"* If not, don't write it. If so, rename the function instead.
+
+## Tests Belong to the Test Writers
+
+Do not create, edit, rename or delete test files, test helpers or test data: the `!` patterns in this agent's `globs` name them, and the `pre_edit_file_ownership_guard` hook denies the edit. Run the existing suite. When a test exposes a defect in your code, fix the code; when your change deliberately alters the behaviour a test asserts, leave the test alone and report it with its exact output. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
 
 ## LSP Navigation Protocol
 

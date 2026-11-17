@@ -942,6 +942,35 @@ def test_agent_globs_shared_by_two_agents_errors_naming_both(tmp_path: Path) -> 
     assert "software_engineer_b.md" in errors[0]
 
 
+def test_agent_globs_shared_exclusion_is_not_a_conflict(tmp_path: Path) -> None:
+    _write_agent(
+        tmp_path, "software_engineer_a", "software-engineer-a", '["**/*.py", "!**/tests/**"]'
+    )
+    _write_agent(
+        tmp_path, "software_engineer_b", "software-engineer-b", '["**/*.ts", "!**/tests/**"]'
+    )
+    assert _glob_errors(tmp_path) == []
+
+
+def test_agent_globs_shared_positive_glob_still_conflicts(tmp_path: Path) -> None:
+    _write_agent(tmp_path, "software_engineer_a", "software-engineer-a", '["**/tests/**"]')
+    _write_agent(tmp_path, "unit_tests_writer", "unit-test-writer", '["**/tests/**"]')
+    errors = _glob_errors(tmp_path)
+    assert len(errors) == 1
+    assert "already declared by" in errors[0]
+    assert "**/tests/**" in errors[0]
+
+
+def test_agent_globs_exclusion_does_not_conflict_with_another_agents_positive_glob(
+    tmp_path: Path,
+) -> None:
+    _write_agent(
+        tmp_path, "software_engineer_a", "software-engineer-a", '["**/*.py", "!**/tests/**"]'
+    )
+    _write_agent(tmp_path, "unit_tests_writer", "unit-test-writer", '["**/tests/**"]')
+    assert _glob_errors(tmp_path) == []
+
+
 def test_agent_globs_repeated_within_one_agent_is_not_a_conflict(tmp_path: Path) -> None:
     _write_agent(tmp_path, "software_engineer_a", "software-engineer-a", '["**/*.go", "**/*.go"]')
     assert _glob_errors(tmp_path) == []

@@ -81,8 +81,8 @@ Commands do not auto-commit. The main session commits, pushes and opens a PR/MR 
 | `/techne-api-design` | Design API contracts (REST/OpenAPI or Protobuf/gRPC) | After planning, before backend and frontend implementation (both sides build against the contract) |
 | `/techne-schema` | Design database schema with migrations | After planning, before/alongside backend implementation |
 | `/techne-design` | Create UI/UX design spec and design tokens | After spec/domain analysis, before frontend implementation |
-| `/techne-implement` | Run SE agent for current task | Start implementation |
-| `/techne-test` | Run test writer agent | After implementation |
+| `/techne-implement` | Run SE agent for current task, then the test writer on its change | Start implementation |
+| `/techne-test` | Run test writer agent | Tests for code that `/techne-implement` did not just change (it runs the test writer itself) |
 | `/techne-review` | Run code reviewer agent | After tests |
 | `/techne-build-agent` | Create/validate/refine agents (2-gate pipeline with meta-review) | When adding/modifying agents |
 | `/techne-build-skill` | Create/validate/audit/refine skills (2-gate pipeline with meta-review) | When adding/modifying skills |
@@ -371,7 +371,6 @@ Terminal 1:                          Terminal 2:
 proj wt add PROJ-123_backend        proj wt add PROJ-123_frontend
 claude --cwd $AION_AUTOPOIESEON/p/... claude --cwd $AION_AUTOPOIESEON/p/...
 > /techne-implement backend API              > /techne-implement frontend dashboard
-> /techne-test                               > /techne-test
 > /techne-review                            > /techne-review
 proj wt rm PROJ-123_backend          proj wt rm PROJ-123_frontend
 ```

@@ -21,8 +21,10 @@ Treat repository conventions as authoritative when they differ from general Go p
    sequence, broader call-path inspection, and stronger validation; it does not select a vendor model.
 4. Implement the smallest coherent change that satisfies the request. Preserve domain language and
    compatibility unless the task explicitly changes them.
-5. Add or update tests for changed behaviour unless testing is explicitly assigned elsewhere or excluded
-   from scope. Use `go-testing` when it is available and relevant.
+5. Do not create, edit or delete tests, test helpers or `testdata`: they belong to the test writers
+   (`code-writing-protocols` — Test Ownership). Run the existing tests; name each behaviour that needs
+   new coverage as a scenario in your report, and report a test your change deliberately breaks
+   instead of changing it.
 6. Format and validate using the repository's own commands. Start with checks closest to the changed
    package, then broaden in proportion to risk.
 7. Review the final diff for accidental scope expansion, generated-file drift, weak error handling,

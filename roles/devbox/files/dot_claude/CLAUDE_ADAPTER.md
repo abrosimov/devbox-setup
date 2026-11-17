@@ -49,6 +49,11 @@ agent's `globs`, delegate through `/techne-implement` (or the matching `/techne-
 small the change looks. A new agent with `globs` is picked up without editing these rules;
 `make validate-claude` fails a `software-engineer-*` agent that declares none.
 
+Test files belong to the test writers: engineers exclude them with `!` patterns in their `globs`,
+`unit-test-writer` claims them, and the `pre_edit_file_ownership_guard` hook denies an engineer's
+edit of one. `/techne-implement` runs the test writer after the engineer; a change to tests alone
+goes through `/techne-test`.
+
 Direct edits are fine only for:
 
 - non-code configuration under `roles/devbox/files/dot_claude/`, `dot_ai/`, `dot_codex/`, `dot_agy/`

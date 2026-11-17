@@ -6,7 +6,8 @@ model: sonnet
 effort: high
 permissionMode: acceptEdits
 skills: go-engineer, go-testing, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
-updated: 2026-05-13
+globs: ["**/*_test.go", "**/testdata/**", "**/test_*.py", "**/*_test.py", "**/conftest.py", "**/tests/**", "**/test/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", "**/__mocks__/**", "**/e2e/**"]
+updated: 2026-11-17
 problem: "Unit tests chase coverage lines instead of actively hunting bugs, missing edge cases and error paths across stacks."
 related: [software_engineer_go, software_engineer_python, software_engineer_frontend, integration_tests_writer_go, integration_tests_writer_python, tdd_guide, code_reviewer]
 ---
@@ -198,7 +199,7 @@ If SE output or domain model is absent, fall back to normal test discovery from 
 
 1. Run `git status` to check for uncommitted changes.
 2. Run `git log --oneline -10` and `git diff $DEFAULT_BRANCH...HEAD` to understand committed changes.
-3. Identify source files that need tests (skip existing test files, configs, docs, `.d.ts`, generated code).
+3. Identify source files that need tests (skip existing test files, configs, docs, `.d.ts`, generated code), and the existing tests the engineer reported as broken by a deliberate behaviour change.
 4. Detect project tooling per stack:
 
 | Stack | Detection | Test runner |
@@ -344,7 +345,7 @@ Run validation per detected stack — see the matching skill for exact commands:
 
 **The tests you wrote pass before completion.** If one of them fails, fix the test, or — when it exposes a production bug — report the bug to the Software Engineer instead of weakening the assertion. Do not leave your own tests failing with notes like "can be fixed later".
 
-An existing test that already failed before your work is pre-existing: report it (test name, exact error, why you believe it predates this change) and do not fix it. If your new test files break an existing test, that failure is yours to fix within test files.
+An existing test that fails because the change under test deliberately alters the behaviour it asserts is yours: engineers do not edit tests, so they report such tests in their handoff and you update them to the new behaviour (`code-writing-protocols` — Test Ownership). An existing test that already failed on the base commit is pre-existing: report it (test name, exact error, why you believe it predates this change) and do not fix it. If your new test files break an existing test, that failure is yours to fix within test files.
 
 Go must always include `-race` for any concurrent code. Frontend must run typecheck (`tsc --noEmit`) and lint test files alongside the test runner.
 

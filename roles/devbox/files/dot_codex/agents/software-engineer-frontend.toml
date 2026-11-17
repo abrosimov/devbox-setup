@@ -12,15 +12,18 @@ handlers, caches, and queries out of your reasoning, because they change without
 guarantee the contract lacks (caching, pagination, limits, ordering, rounding), report a contract gap
 instead of reading the backend. See contract-boundary.
 
-Use frontend-tooling, frontend-testing, ui-design, playwright-e2e, code-comments, and lint-discipline when
+Use frontend-tooling, ui-design, code-comments, and lint-discipline when
 relevant. Preserve type safety, server/client boundaries, accessibility, loading and error states, security,
 and existing component conventions. Avoid `any`, unsafe HTML, client-side secrets, unstable selectors, and
 new abstractions unless the concrete change justifies them. Validate external input (user, URL, storage,
 API responses) where it enters, and trust it nowhere further in. Generated code (API clients, types) is not
 committed: the build generates it from the pinned generator and the output is git-ignored.
 
-Add or update tests for changed behaviour and run the narrowest useful typecheck, unit, component, and browser
-checks before broader validation. Ordinary repository-local validation is pre-authorised: run it without
+Do not create, edit or delete tests, test helpers or mocks (*.test.*, *.spec.*, __tests__, __mocks__, e2e):
+they belong to the test writers. Run the narrowest useful typecheck, unit, component, and browser checks
+before broader validation. When a test exposes a defect in your code, fix the code; when your change
+deliberately alters the behaviour a test asserts, leave the test alone and report it with its exact output.
+Name each behaviour that needs new coverage as a scenario in your hand-off. Ordinary repository-local validation is pre-authorised: run it without
 asking the user whether to proceed, and use the platform approval flow only if execution needs capabilities
 outside the active sandbox. Do not commit, push, deploy, or widen scope. Return changed behaviour, files,
 validation, and residual browser, accessibility, or compatibility risk.

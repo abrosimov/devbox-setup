@@ -116,6 +116,7 @@ def test_deployed_bundle_matches_pin() -> None:
         "0004-trace-tool-items-nested-in-code-mode.patch",
         "0005-record-usage-of-every-model-response.patch",
         "0006-answer-each-turn-with-its-final-answer.patch",
+        "0007-attribute-subagent-turns-to-their-agent.patch",
     ]
     assert info["artifact_path"] == ARTIFACT_PATH
     assert module.LICENSE.read_text(encoding="utf-8").startswith("MIT License")

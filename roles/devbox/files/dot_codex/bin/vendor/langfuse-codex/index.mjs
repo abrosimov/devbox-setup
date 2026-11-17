@@ -35294,15 +35294,26 @@ function newTurn(startTime) {
 		aborted: false
 	};
 }
+const nonEmptyText = (value) => typeof value === "string" && value ? value : void 0;
+function threadSpawnOf(source) {
+	if (source == null || typeof source !== "object") return {};
+	const spawn = source.subagent?.thread_spawn;
+	return spawn != null && typeof spawn === "object" ? spawn : {};
+}
 function sessionMetaFrom(line) {
 	const p = line.payload;
+	const spawn = threadSpawnOf(p.source);
 	return {
 		sessionId: typeof p.id === "string" ? p.id : "unknown",
 		cliVersion: p.cli_version,
 		modelProvider: p.model_provider ?? void 0,
 		baseInstructions: p.base_instructions?.text,
 		isSubagentThread: typeof p.parent_thread_id === "string" || p.thread_source === "subagent",
-		parentThreadId: p.parent_thread_id ? p.parent_thread_id : void 0
+		parentThreadId: p.parent_thread_id ? p.parent_thread_id : void 0,
+		agentRole: nonEmptyText(p.agent_role) ?? nonEmptyText(spawn.agent_role),
+		agentPath: nonEmptyText(p.agent_path) ?? nonEmptyText(spawn.agent_path),
+		agentNickname: nonEmptyText(p.agent_nickname) ?? nonEmptyText(spawn.agent_nickname),
+		depth: Number.isSafeInteger(spawn.depth) ? spawn.depth : void 0
 	};
 }
 function parseSession(lines) {
@@ -35560,7 +35571,15 @@ function parseSession(lines) {
 				const text = extractMessageText(p.item.content);
 				if (text && !turn.userInput) turn.userInput = text;
 			} else if (et === "item_completed" && p.item?.type === "SubAgentActivity") {
-				if (p.item.kind === "started" && typeof p.item.agent_thread_id === "string") recordSubagentThread(p.item.agent_thread_id, p.item.id);
+				const threadId = p.item.agent_thread_id;
+				if (p.item.kind === "started" && typeof threadId === "string") recordSubagentThread(threadId, p.item.id);
+				else if (p.item.kind === "interacted" && typeof threadId === "string") {
+					const call = p.item.id ? toolCallsById.get(p.item.id) : void 0;
+					if (call) call.targetAgent = {
+						threadId,
+						path: nonEmptyText(p.item.agent_path)
+					};
+				}
 			} else if (et === "item_completed" && p.item?.type === "AgentMessage") {
 				const text = agentMessageText(p.item);
 				if (p.item.phase === "final_answer" && text) turn.finalAnswerItem = text;
@@ -35667,12 +35686,13 @@ async function readSessionMeta(file) {
 		const p = parsed.payload;
 		if (typeof p.id !== "string") return void 0;
 		const ts = Date.parse(parsed.timestamp);
-		const nickname = p.agent_nickname ?? p.source?.subagent?.thread_spawn?.agent_nickname;
+		const meta = sessionMetaFrom(parsed);
 		return {
 			threadId: p.id,
 			parentThreadId: typeof p.parent_thread_id === "string" ? p.parent_thread_id : void 0,
 			startTime: Number.isFinite(ts) ? ts : 0,
-			nickname: typeof nickname === "string" && nickname ? nickname : void 0
+			nickname: meta.agentNickname,
+			role: meta.agentRole
 		};
 	} catch {
 		return;
@@ -35711,7 +35731,8 @@ async function buildSubagentIndex(rolloutFile, options = {}) {
 				parentThreadId: meta.parentThreadId,
 				file: full,
 				startTime: meta.startTime,
-				nickname: meta.nickname
+				nickname: meta.nickname,
+				role: meta.role
 			};
 			index.byThread.set(meta.threadId, rollout);
 			if (!meta.parentThreadId) continue;
@@ -35964,6 +35985,13 @@ async function emitTurn(turn, sessionMeta, ctx) {
 			"codex.reasoning_effort": turn.reasoningEffort,
 			"codex.model_provider": sessionMeta.modelProvider,
 			"codex.cli_version": sessionMeta.cliVersion,
+			...sessionMeta.isSubagentThread ? {
+				"codex.agent_role": sessionMeta.agentRole,
+				"codex.agent_path": sessionMeta.agentPath,
+				"codex.agent_nickname": sessionMeta.agentNickname,
+				"codex.depth": sessionMeta.depth,
+				"codex.parent_thread_id": sessionMeta.parentThreadId
+			} : {},
 			"codex.aborted": turn.aborted,
 			"codex.tool_call_count": turn.steps.reduce((n, s) => n + s.toolCalls.length, 0),
 			...ctx.attached && ctx.parentSpanContext ? {
@@ -36080,7 +36108,9 @@ function emitToolCall(tc, parent, fallbackEnd) {
 		statusMessage: tc.error,
 		metadata: {
 			"codex.call_id": tc.callId,
-			"codex.tool_name": tc.name || "tool"
+			"codex.tool_name": tc.name || "tool",
+			"codex.target_thread_id": tc.targetAgent?.threadId,
+			"codex.target_agent_path": tc.targetAgent?.path
 		}
 	}, {
 		asType: "tool",
@@ -36234,7 +36264,7 @@ async function convertRollout(rolloutFile, options) {
 				historyPrefix: historyPrefixes[turnIndex],
 				nested
 			});
-			const attributes = spawn ? spawn.attributes : attached ? void 0 : traceAttributes(options.config, sessionMeta, turn);
+			const attributes = spawn ? spawn.attributes : attached ? void 0 : traceAttributes(options.config, sessionMeta, turn, subagentIndex);
 			if (attributes) await propagateAttributes(attributes, emit);
 			else await emit();
 			uploaded.add(turn.turnId);
@@ -36246,8 +36276,12 @@ async function convertRollout(rolloutFile, options) {
 	}
 	return exportedTurnIds;
 }
-function traceAttributes(config, sessionMeta, turn) {
+function traceAttributes(config, sessionMeta, turn, index) {
 	const tags = traceTags(config, turn);
+	for (const threadId of turn.subagentThreadIds) {
+		const role = index.byThread.get(threadId)?.role;
+		if (role && !tags.includes(`subagent:${role}`)) tags.push(`subagent:${role}`);
+	}
 	return {
 		sessionId: sessionMeta.sessionId,
 		traceName: sessionMeta.isSubagentThread ? "Codex Subagent Turn" : "Codex Turn",
@@ -36282,7 +36316,7 @@ async function spawnContextOf(child, index, config, externalParent, visited = /*
 		attributes = grandparent.attributes;
 	} else {
 		inheritedTraceId = (externalParent ?? await seededTraceParent(config, parentMeta, turnIndex + 1))?.traceId;
-		attributes = externalParent ? void 0 : traceAttributes(config, parentMeta, turn);
+		attributes = externalParent ? void 0 : traceAttributes(config, parentMeta, turn, index);
 	}
 	const seed = `${parentMeta.sessionId}:${turn.turnId ?? "no-turn-id"}`;
 	let draw = 0;

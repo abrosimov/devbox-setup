@@ -1,0 +1,617 @@
+diff --git a/plugins/tracing/src/parse.ts b/plugins/tracing/src/parse.ts
+index f246fdd..1358679 100644
+--- a/plugins/tracing/src/parse.ts
++++ b/plugins/tracing/src/parse.ts
+@@ -212,7 +212,16 @@ function newTurn(startTime: number): MutableTurn {
+   };
+ }
+ 
+-function sessionMetaFrom(line: RolloutLine): SessionMeta {
++const nonEmptyText = (value: unknown): string | undefined =>
++  typeof value === "string" && value ? value : undefined;
++
++function threadSpawnOf(source: unknown): Record<string, unknown> {
++  if (source == null || typeof source !== "object") return {};
++  const spawn = (source as { subagent?: { thread_spawn?: unknown } }).subagent?.thread_spawn;
++  return spawn != null && typeof spawn === "object" ? (spawn as Record<string, unknown>) : {};
++}
++
++export function sessionMetaFrom(line: RolloutLine): SessionMeta {
+   const p = line.payload as RolloutLine["payload"] & {
+     id?: string;
+     cli_version?: string;
+@@ -220,7 +229,12 @@ function sessionMetaFrom(line: RolloutLine): SessionMeta {
+     base_instructions?: { text?: string } | null;
+     parent_thread_id?: string | null;
+     thread_source?: string | null;
++    agent_role?: unknown;
++    agent_path?: unknown;
++    agent_nickname?: unknown;
++    source?: unknown;
+   };
++  const spawn = threadSpawnOf(p.source);
+   return {
+     sessionId: typeof p.id === "string" ? p.id : "unknown",
+     cliVersion: p.cli_version,
+@@ -228,6 +242,10 @@ function sessionMetaFrom(line: RolloutLine): SessionMeta {
+     baseInstructions: p.base_instructions?.text,
+     isSubagentThread: typeof p.parent_thread_id === "string" || p.thread_source === "subagent",
+     parentThreadId: p.parent_thread_id ? p.parent_thread_id : undefined,
++    agentRole: nonEmptyText(p.agent_role) ?? nonEmptyText(spawn.agent_role),
++    agentPath: nonEmptyText(p.agent_path) ?? nonEmptyText(spawn.agent_path),
++    agentNickname: nonEmptyText(p.agent_nickname) ?? nonEmptyText(spawn.agent_nickname),
++    depth: Number.isSafeInteger(spawn.depth) ? (spawn.depth as number) : undefined,
+   };
+ }
+ 
+@@ -539,8 +557,12 @@ export function parseSession(lines: RolloutLine[]): {
+         const text = extractMessageText(p.item.content);
+         if (text && !turn!.userInput) turn!.userInput = text;
+       } else if (et === "item_completed" && p.item?.type === "SubAgentActivity") {
+-        if (p.item.kind === "started" && typeof p.item.agent_thread_id === "string") {
+-          recordSubagentThread(p.item.agent_thread_id, p.item.id);
++        const threadId = p.item.agent_thread_id;
++        if (p.item.kind === "started" && typeof threadId === "string") {
++          recordSubagentThread(threadId, p.item.id);
++        } else if (p.item.kind === "interacted" && typeof threadId === "string") {
++          const call = p.item.id ? toolCallsById.get(p.item.id) : undefined;
++          if (call) call.targetAgent = { threadId, path: nonEmptyText(p.item.agent_path) };
+         }
+       } else if (et === "item_completed" && p.item?.type === "AgentMessage") {
+         const text = agentMessageText(p.item);
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index d8f3f78..1f5e7d8 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -15,7 +15,7 @@ import { TraceFlags, type SpanContext } from "@opentelemetry/api";
+ 
+ import type { Config } from "./config.js";
+ import { currentIdSeed, seededIdAt, seedIds } from "./instrumentation.js";
+-import { parseArgs, parseSession } from "./parse.js";
++import { parseArgs, parseSession, sessionMetaFrom } from "./parse.js";
+ import { acquireRolloutLock, loadUploadedTurnIds } from "./sidecar.js";
+ import { skillsForToolCall, traceTags } from "./skills.js";
+ import type {
+@@ -52,6 +52,7 @@ type SubagentRollout = {
+   file: string;
+   startTime: number;
+   nickname?: string;
++  role?: string;
+ };
+ 
+ export type SubagentIndex = {
+@@ -66,11 +67,7 @@ type NestedExports = { turns: NestedTurn[]; releases: Array<() => Promise<void>>
+ 
+ const CHILD_LOCK_WAIT_MS = 1_000;
+ 
+-async function readSessionMeta(
+-  file: string,
+-): Promise<
+-  { threadId: string; parentThreadId?: string; startTime: number; nickname?: string } | undefined
+-> {
++async function readSessionMeta(file: string): Promise<Omit<SubagentRollout, "file"> | undefined> {
+   let handle;
+   try {
+     handle = await fs.open(file, "r");
+@@ -81,20 +78,16 @@ async function readSessionMeta(
+     const line = newline === -1 ? text : text.slice(0, newline);
+     const parsed = JSON.parse(line) as RolloutLine;
+     if (parsed.type !== "session_meta") return undefined;
+-    const p = parsed.payload as {
+-      id?: string;
+-      parent_thread_id?: string | null;
+-      agent_nickname?: string | null;
+-      source?: { subagent?: { thread_spawn?: { agent_nickname?: string | null } } };
+-    };
++    const p = parsed.payload as { id?: string; parent_thread_id?: string | null };
+     if (typeof p.id !== "string") return undefined;
+     const ts = Date.parse(parsed.timestamp);
+-    const nickname = p.agent_nickname ?? p.source?.subagent?.thread_spawn?.agent_nickname;
++    const meta = sessionMetaFrom(parsed);
+     return {
+       threadId: p.id,
+       parentThreadId: typeof p.parent_thread_id === "string" ? p.parent_thread_id : undefined,
+       startTime: Number.isFinite(ts) ? ts : 0,
+-      nickname: typeof nickname === "string" && nickname ? nickname : undefined,
++      nickname: meta.agentNickname,
++      role: meta.agentRole,
+     };
+   } catch {
+     return undefined;
+@@ -136,6 +129,7 @@ export async function buildSubagentIndex(
+         file: full,
+         startTime: meta.startTime,
+         nickname: meta.nickname,
++        role: meta.role,
+       };
+       index.byThread.set(meta.threadId, rollout);
+       if (!meta.parentThreadId) continue;
+@@ -499,6 +493,15 @@ async function emitTurn(
+         "codex.reasoning_effort": turn.reasoningEffort,
+         "codex.model_provider": sessionMeta.modelProvider,
+         "codex.cli_version": sessionMeta.cliVersion,
++        ...(sessionMeta.isSubagentThread
++          ? {
++              "codex.agent_role": sessionMeta.agentRole,
++              "codex.agent_path": sessionMeta.agentPath,
++              "codex.agent_nickname": sessionMeta.agentNickname,
++              "codex.depth": sessionMeta.depth,
++              "codex.parent_thread_id": sessionMeta.parentThreadId,
++            }
++          : {}),
+         "codex.aborted": turn.aborted,
+         "codex.tool_call_count": turn.steps.reduce((n, s) => n + s.toolCalls.length, 0),
+         ...(ctx.attached && ctx.parentSpanContext
+@@ -652,7 +655,12 @@ function emitToolCall(
+       output: tc.output != null ? toText(tc.output) : undefined,
+       level: tc.error ? "ERROR" : undefined,
+       statusMessage: tc.error,
+-      metadata: { "codex.call_id": tc.callId, "codex.tool_name": tc.name || "tool" },
++      metadata: {
++        "codex.call_id": tc.callId,
++        "codex.tool_name": tc.name || "tool",
++        "codex.target_thread_id": tc.targetAgent?.threadId,
++        "codex.target_agent_path": tc.targetAgent?.path,
++      },
+     },
+     {
+       asType: "tool",
+@@ -885,7 +893,7 @@ export async function convertRollout(
+         ? spawn.attributes
+         : attached
+           ? undefined
+-          : traceAttributes(options.config, sessionMeta, turn);
++          : traceAttributes(options.config, sessionMeta, turn, subagentIndex);
+       if (attributes) {
+         await propagateAttributes(attributes, emit);
+       } else {
+@@ -905,8 +913,17 @@ export async function convertRollout(
+ 
+ type TraceAttributes = Parameters<typeof propagateAttributes>[0];
+ 
+-function traceAttributes(config: Config, sessionMeta: SessionMeta, turn: Turn): TraceAttributes {
++function traceAttributes(
++  config: Config,
++  sessionMeta: SessionMeta,
++  turn: Turn,
++  index: SubagentIndex,
++): TraceAttributes {
+   const tags = traceTags(config, turn);
++  for (const threadId of turn.subagentThreadIds) {
++    const role = index.byThread.get(threadId)?.role;
++    if (role && !tags.includes(`subagent:${role}`)) tags.push(`subagent:${role}`);
++  }
+   return {
+     sessionId: sessionMeta.sessionId,
+     traceName: sessionMeta.isSubagentThread ? "Codex Subagent Turn" : "Codex Turn",
+@@ -955,7 +972,7 @@ async function spawnContextOf(
+   } else {
+     const outer = externalParent ?? (await seededTraceParent(config, parentMeta, turnIndex + 1));
+     inheritedTraceId = outer?.traceId;
+-    attributes = externalParent ? undefined : traceAttributes(config, parentMeta, turn);
++    attributes = externalParent ? undefined : traceAttributes(config, parentMeta, turn, index);
+   }
+ 
+   // OpenTelemetry draws a span's id before its trace id, and a trace id only for a new root.
+diff --git a/plugins/tracing/src/types.ts b/plugins/tracing/src/types.ts
+index 635bb7d..10fd1e5 100644
+--- a/plugins/tracing/src/types.ts
++++ b/plugins/tracing/src/types.ts
+@@ -137,6 +137,7 @@ export type ThreadItem = {
+   id?: string;
+   kind?: string;
+   agent_thread_id?: string;
++  agent_path?: string;
+   content?: MessageContentPart[];
+   /** `AgentMessage` only: `commentary` for progress updates, `final_answer` for the answer. */
+   phase?: string;
+@@ -208,6 +209,10 @@ export type SessionMeta = {
+   baseInstructions?: string;
+   isSubagentThread?: boolean;
+   parentThreadId?: string;
++  agentRole?: string;
++  agentPath?: string;
++  agentNickname?: string;
++  depth?: number;
+ };
+ 
+ export type ToolDefinition = {
+@@ -234,6 +239,8 @@ export type ToolCall = {
+   mcp?: { server: string; tool: string };
+   /** Tool items completed while this code-mode call was running. */
+   children?: ToolCall[];
++  /** The agent a `send_message` or `followup_task` call reached. */
++  targetAgent?: { threadId: string; path?: string };
+ };
+ 
+ export type ModelStep = {
+diff --git a/plugins/tracing/test/fixtures/subagent-attribution/rollout-subagent-explorer.jsonl b/plugins/tracing/test/fixtures/subagent-attribution/rollout-subagent-explorer.jsonl
+new file mode 100644
+index 0000000..4460bb9
+--- /dev/null
++++ b/plugins/tracing/test/fixtures/subagent-attribution/rollout-subagent-explorer.jsonl
+@@ -0,0 +1,20 @@
++{"timestamp":"2026-11-15T23:29:19.091Z","type":"session_meta","payload":{"id":"01a1e18b-34be-7363-9295-8e590743048f","parent_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","timestamp":"2026-11-15T23:29:19.066Z","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","originator":"codex-tui","cli_version":"0.169.0","source":{"subagent":{"thread_spawn":{"parent_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","depth":1,"agent_path":"/root/scan_delta_diagnosis","agent_nickname":"Boole","agent_role":"explorer"}}},"thread_source":"subagent","agent_nickname":"Boole","agent_role":"explorer","agent_path":"/root/scan_delta_diagnosis","model_provider":"openai"}}
++{"timestamp":"2026-11-15T23:29:19.129Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","started_at":1794785359}}
++{"timestamp":"2026-11-15T23:29:20.139Z","type":"turn_context","payload":{"turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:30:01.114Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e9bc79f0b010129016afa4076c46887d2983250e171e20e54","name":"send_message","namespace":"collaboration","arguments":"{\"target\":\"/root\",\"message\":\"gAAAAABq-kB50vCXoieU_N1tp3SrlFxl6BCYgmnrCZZWLFXawLw6h9AF5DDFVA3Je-E4dQ33h3jZAisskcVATVpFr9fFAxwIw0utkbidFFPsPByjqeWlEkOzJce3EjVjYN2…","call_id":"call_06c14964013f4253961aa267866c32d7","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","create_time":1794785398.7723148}}}
++{"timestamp":"2026-11-15T23:30:01.165Z","type":"token_usage_record","payload":{"thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","response_id":"resp_0e9bc79f0b010129016afa4073544487d298328eea7a87a681","usage":{"input_tokens":149262,"cached_input_tokens":147968,"cache_write_input_tokens":0,"output_tokens":131,"reasoning_output_tokens":0,"total_tokens":149393},"turn_token_usage":{"input_tokens":855115,"cached_input_tokens":833152,"cache_write_input_tokens":0,"output_tokens":1133,"reasoning_output_tokens":73,"total_tokens":856248},"thread_token_usage":{"input_tokens":855115,"cached_input_tokens":833152,"cache_write_input_tokens":0,"output_tokens":1133,"reasoning_output_tokens":73,"total_tokens":856248}}}
++{"timestamp":"2026-11-15T23:30:01.208Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"call_06c14964013f4253961aa267866c32d7","kind":"interacted","agent_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","agent_path":"/root"},"started_at_ms":1794785401208,"completed_at_ms":1794785401208}}
++{"timestamp":"2026-11-15T23:30:01.210Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e18b-d97a-7252-aab3-7b52e0a71f12","call_id":"call_06c14964013f4253961aa267866c32d7","output":"","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","create_time":1794785401.210562}}}
++{"timestamp":"2026-11-15T23:30:01.211Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":855115,"cached_input_tokens":833152,"cache_write_input_tokens":0,"output_tokens":1133,"reasoning_output_tokens":73,"total_tokens":856248},"last_token_usage":{"input_tokens":149262,"cached_input_tokens":147968,"cache_write_input_tokens":0,"output_tokens":131,"reasoning_output_tokens":0,"total_tokens":149393},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T23:30:20.971Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","item":{"type":"AgentMessage","id":"msg_0e9bc79f0b010129016afa4082072c87d2b22d48975607d205","content":[{"type":"Text","text":"Confirmed cause: the impact classifier and delta scanner use different image catalogues.\n\n- `src/remote_server_setup/image_scan_impact.py:63` includes `roles/po…"}],"phase":"final_answer"},"content_token_count":459,"started_at_ms":1794785410079,"completed_at_ms":1794785420971}}
++{"timestamp":"2026-11-15T23:30:20.978Z","type":"response_item","payload":{"type":"message","status":"completed","id":"msg_0e9bc79f0b010129016afa4082072c87d2b22d48975607d205","role":"assistant","content":[{"type":"output_text","text":"Confirmed cause: the impact classifier and delta scanner use different image catalogues.\n\n- `src/remote_server_setup/image_scan_impact.py:63` includes `roles/po…","annotations":[],"logprobs":[]}],"phase":"final_answer","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","create_time":1794785410.0313718,"content_item_kinds":["unknown"]}}}
++{"timestamp":"2026-11-15T23:30:21.042Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45"}}
++{"timestamp":"2026-11-15T23:36:58.477Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","started_at":1794785818}}
++{"timestamp":"2026-11-15T23:36:58.493Z","type":"turn_context","payload":{"turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:37:43.266Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e9bc79f0b010129016afa42433ec487d2bce86acb7eafa3cb","name":"send_message","namespace":"collaboration","arguments":"{\"target\":\"/root\",\"message\":\"gAAAAABq-kJH4UXWsz7ZafBdRZWfHKOAp1Ngz6-PYaDuSQPE-xSvGbBWDR6-GcT5WjBchL-F8GufUlPjBgh3HKvqP4nFf1f09zEjBDQ6PKslcs_cpFomc_VmJ8wdyfCXrmm…","call_id":"call_aca51bdb38e04940b131148edfd23918","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","create_time":1794785859.2586482}}}
++{"timestamp":"2026-11-15T23:37:43.269Z","type":"token_usage_record","payload":{"thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e192-133e-76a2-bff3-2aa75ca64651","response_id":"resp_0e9bc79f0b010129016afa4240990087d28eeed35b0083335f","usage":{"input_tokens":168846,"cached_input_tokens":167424,"cache_write_input_tokens":0,"output_tokens":249,"reasoning_output_tokens":9,"total_tokens":169095},"turn_token_usage":{"input_tokens":798706,"cached_input_tokens":780288,"cache_write_input_tokens":0,"output_tokens":1577,"reasoning_output_tokens":181,"total_tokens":800283},"thread_token_usage":{"input_tokens":1803226,"cached_input_tokens":1762688,"cache_write_input_tokens":0,"output_tokens":3360,"reasoning_output_tokens":440,"total_tokens":1806586}}}
++{"timestamp":"2026-11-15T23:37:43.307Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"call_aca51bdb38e04940b131148edfd23918","kind":"interacted","agent_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","agent_path":"/root"},"started_at_ms":1794785863307,"completed_at_ms":1794785863307}}
++{"timestamp":"2026-11-15T23:37:43.309Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e192-e68d-7c73-ae54-1c0935cf9efd","call_id":"call_aca51bdb38e04940b131148edfd23918","output":"","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","create_time":1794785863.309744}}}
++{"timestamp":"2026-11-15T23:38:27.268Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","item":{"type":"AgentMessage","id":"msg_0e9bc79f0b010129016afa42613c9487d2a72cfeedddabdb8b","content":[{"type":"Text","text":"Git history identifies when and how the divergence arose. It is older than the layer refactor and is not an intentional Pocket exclusion.\n\n| Change | Verified e…"}],"phase":"final_answer"},"content_token_count":834,"started_at_ms":1794785889251,"completed_at_ms":1794785907268}}
++{"timestamp":"2026-11-15T23:38:27.269Z","type":"response_item","payload":{"type":"message","status":"completed","id":"msg_0e9bc79f0b010129016afa42613c9487d2a72cfeedddabdb8b","role":"assistant","content":[{"type":"output_text","text":"Git history identifies when and how the divergence arose. It is older than the layer refactor and is not an intentional Pocket exclusion.\n\n| Change | Verified e…","annotations":[],"logprobs":[]}],"phase":"final_answer","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","create_time":1794785889.2521625,"content_item_kinds":["unknown"]}}}
++{"timestamp":"2026-11-15T23:38:27.318Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82"}}
+diff --git a/plugins/tracing/test/fixtures/subagent-attribution/rollout-subagent-parent.jsonl b/plugins/tracing/test/fixtures/subagent-attribution/rollout-subagent-parent.jsonl
+new file mode 100644
+index 0000000..ef8651f
+--- /dev/null
++++ b/plugins/tracing/test/fixtures/subagent-attribution/rollout-subagent-parent.jsonl
+@@ -0,0 +1,14 @@
++{"timestamp":"2026-11-15T20:55:34.369Z","type":"session_meta","payload":{"id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","timestamp":"2026-11-15T20:54:37.300Z","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","originator":"codex-tui","cli_version":"0.169.0","source":"vscode","thread_source":"user","model_provider":"openai"}}
++{"timestamp":"2026-11-15T23:28:43.810Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","started_at":1794785323}}
++{"timestamp":"2026-11-15T23:28:43.827Z","type":"turn_context","payload":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:29:18.967Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e0dc6cdffebbb43016afa404a427487d293b75d4b17453c58","name":"spawn_agent","namespace":"collaboration","arguments":"{\"task_name\":\"scan_delta_diagnosis\",\"agent_type\":\"explorer\",\"message\":\"gAAAAABq-kBO_3ZzAuNHQXN5YeMXJvViyVlm8sTu9230GOHmgtXI-_uWX6F8GjZKNd7d6tYDIEisEV7VkbsTB1vHJ…","call_id":"call_56747e59474041369232fcc7d5df38da","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","create_time":1794785354.2631128}}}
++{"timestamp":"2026-11-15T23:29:18.972Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","response_id":"resp_0e0dc6cdffebbb43016afa4045f08c87d28f243a81e14c1164","usage":{"input_tokens":127120,"cached_input_tokens":124288,"cache_write_input_tokens":0,"output_tokens":235,"reasoning_output_tokens":30,"total_tokens":127355},"turn_token_usage":{"input_tokens":468631,"cached_input_tokens":448512,"cache_write_input_tokens":0,"output_tokens":778,"reasoning_output_tokens":85,"total_tokens":469409},"thread_token_usage":{"input_tokens":3126361,"cached_input_tokens":3006080,"cache_write_input_tokens":0,"output_tokens":7664,"reasoning_output_tokens":1123,"total_tokens":3134025}}}
++{"timestamp":"2026-11-15T23:29:19.122Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"SubAgentActivity","model":"gpt-6-astra","reasoning_effort":"high","id":"call_56747e59474041369232fcc7d5df38da","kind":"started","agent_thread_id":"01a1e18b-34be-7363-9295-8e590743048f","agent_path":"/root/scan_delta_diagnosis"},"started_at_ms":1794785359122,"completed_at_ms":1794785359122}}
++{"timestamp":"2026-11-15T23:29:19.126Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e18b-3516-7a70-8247-e17c0b3ce994","call_id":"call_56747e59474041369232fcc7d5df38da","output":"{\"task_name\":\"/root/scan_delta_diagnosis\"}","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","create_time":1794785359.126259}}}
++{"timestamp":"2026-11-15T23:29:19.127Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3126361,"cached_input_tokens":3006080,"cache_write_input_tokens":0,"output_tokens":7664,"reasoning_output_tokens":1123,"total_tokens":3134025},"last_token_usage":{"input_tokens":127120,"cached_input_tokens":124288,"cache_write_input_tokens":0,"output_tokens":235,"reasoning_output_tokens":30,"total_tokens":127355},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T23:29:34.832Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e0dc6cdffebbb43016afa405c474087d2a699eb175ce327f9","name":"send_message","namespace":"collaboration","arguments":"{\"target\":\"scan_delta_diagnosis\",\"message\":\"gAAAAABq-kBeP28eQs_6AM94W7IFpc7AnZHnwvL7GHyD10MTiLm-Q9QBbSLrpcEfI4Ldg2m0cYXqE2ybLOBHqWzUA0W8Ym80MXkDRqswEv9LI4bRmC1F…","call_id":"call_1591e8ea5aaa4356b3c7a5a8af03719a","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","create_time":1794785372.2820592}}}
++{"timestamp":"2026-11-15T23:29:34.854Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","response_id":"resp_0e0dc6cdffebbb43016afa4056fbf487d28fca828df7072a45","usage":{"input_tokens":130183,"cached_input_tokens":127488,"cache_write_input_tokens":0,"output_tokens":250,"reasoning_output_tokens":37,"total_tokens":130433},"turn_token_usage":{"input_tokens":726194,"cached_input_tokens":703232,"cache_write_input_tokens":0,"output_tokens":1275,"reasoning_output_tokens":122,"total_tokens":727469},"thread_token_usage":{"input_tokens":3383924,"cached_input_tokens":3260800,"cache_write_input_tokens":0,"output_tokens":8161,"reasoning_output_tokens":1160,"total_tokens":3392085}}}
++{"timestamp":"2026-11-15T23:29:34.879Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"call_1591e8ea5aaa4356b3c7a5a8af03719a","kind":"interacted","agent_thread_id":"01a1e18b-34be-7363-9295-8e590743048f","agent_path":"/root/scan_delta_diagnosis"},"started_at_ms":1794785374879,"completed_at_ms":1794785374879}}
++{"timestamp":"2026-11-15T23:29:34.882Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e18b-72a2-71d2-a385-277fe9f71cd2","call_id":"call_1591e8ea5aaa4356b3c7a5a8af03719a","output":"","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","create_time":1794785374.882215}}}
++{"timestamp":"2026-11-15T23:29:34.882Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3383924,"cached_input_tokens":3260800,"cache_write_input_tokens":0,"output_tokens":8161,"reasoning_output_tokens":1160,"total_tokens":3392085},"last_token_usage":{"input_tokens":130183,"cached_input_tokens":127488,"cache_write_input_tokens":0,"output_tokens":250,"reasoning_output_tokens":37,"total_tokens":130433},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T23:30:36.802Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece"}}
+diff --git a/plugins/tracing/test/hook-command.test.ts b/plugins/tracing/test/hook-command.test.ts
+index 7f96422..88e21fb 100644
+--- a/plugins/tracing/test/hook-command.test.ts
++++ b/plugins/tracing/test/hook-command.test.ts
+@@ -311,7 +311,12 @@ describe("bundled Stop hook command", () => {
+   });
+ });
+ 
+-type OtlpValue = { stringValue?: string; boolValue?: boolean; intValue?: number | string };
++type OtlpValue = {
++  stringValue?: string;
++  boolValue?: boolean;
++  intValue?: number | string;
++  arrayValue?: { values?: OtlpValue[] };
++};
+ type OtlpSpan = { name: string; attributes?: Array<{ key: string; value: OtlpValue }> };
+ type OtlpBody = { resourceSpans?: Array<{ scopeSpans?: Array<{ spans?: OtlpSpan[] }> }> };
+ 
+@@ -841,6 +846,63 @@ describe("subagent turns that run after the spawning turn", () => {
+     expectEachChildTurnOnceUnderSpawn(bodies, child);
+   });
+ 
++  it("attributes a follow-up child turn to its role, under the spawning trace's tags", async () => {
++    const childC1WithRole = [
++      line("2026-06-03T12:00:02.200Z", "session_meta", {
++        id: childId,
++        parent_thread_id: parentId,
++        thread_source: "subagent",
++        agent_nickname: "Ada",
++        agent_role: "explorer",
++        agent_path: "/root/helper",
++        source: { subagent: { thread_spawn: { parent_thread_id: parentId, depth: 1 } } },
++      }),
++      ...childC1.slice(1),
++    ];
++    const { bodies, child } = await runHooks(async ({ parent, child, write, hook }) => {
++      write(parent, parentT1);
++      write(child, childC1WithRole);
++      await hook({ hook_event_name: "Stop", turn_id: "parent-t1" });
++
++      write(parent, [...parentT1, ...parentT2.slice(0, 4)]);
++      write(child, [...childC1WithRole, ...childC2]);
++      await hook({
++        hook_event_name: "SubagentStop",
++        turn_id: "child-c2",
++        agent_transcript_path: child,
++      });
++
++      write(parent, [...parentT1, ...parentT2]);
++      await hook({ hook_event_name: "Stop", turn_id: "parent-t2" });
++    });
++
++    expectEachChildTurnOnceUnderSpawn(bodies, child);
++    const turnRoots = bodies
++      .flatMap((body) => (JSON.parse(body) as OtlpBody).resourceSpans ?? [])
++      .flatMap((resource) => resource.scopeSpans ?? [])
++      .flatMap((scope) => scope.spans ?? [])
++      .map((span) => new Map((span.attributes ?? []).map(({ key, value }) => [key, value])))
++      .filter((attributes) => attributes.has("langfuse.observation.metadata.codex.turn_id"));
++    const attribution = Object.fromEntries(
++      turnRoots.map((attributes) => [
++        attributes.get("langfuse.observation.metadata.codex.turn_id")?.stringValue,
++        {
++          role: attributes.get("langfuse.observation.metadata.codex.agent_role")?.stringValue,
++          depth: attributes.get("langfuse.observation.metadata.codex.depth")?.stringValue,
++          tags: attributes
++            .get("langfuse.trace.tags")
++            ?.arrayValue?.values?.map((value) => value.stringValue),
++        },
++      ]),
++    );
++    expect(attribution).toEqual({
++      "parent-t1": { tags: ["subagent:explorer"] },
++      "parent-t2": {},
++      "child-c1": { role: "explorer", depth: "1", tags: ["subagent:explorer"] },
++      "child-c2": { role: "explorer", depth: "1", tags: ["subagent:explorer"] },
++    });
++  });
++
+   it("does not nest a child turn again that SubagentStop exported before the spawning turn ended", async () => {
+     const { bodies, child } = await runHooks(async ({ parent, child, write, hook }) => {
+       write(parent, parentT1.slice(0, 5));
+diff --git a/plugins/tracing/test/trace-subagent-tags.test.ts b/plugins/tracing/test/trace-subagent-tags.test.ts
+new file mode 100644
+index 0000000..a6563e5
+--- /dev/null
++++ b/plugins/tracing/test/trace-subagent-tags.test.ts
+@@ -0,0 +1,163 @@
++import * as fs from "node:fs";
++import * as os from "node:os";
++import * as path from "node:path";
++import { fileURLToPath } from "node:url";
++
++import { LangfuseSpanProcessor } from "@langfuse/otel";
++import { InMemorySpanExporter, type ReadableSpan } from "@opentelemetry/sdk-trace-base";
++import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
++import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
++
++import type { Config } from "../src/config.js";
++import { convertRollout } from "../src/trace.js";
++
++const baseConfig: Config = {
++  enabled: true,
++  public_key: "pk-lf-test",
++  secret_key: "sk-lf-test",
++  base_url: "https://cloud.langfuse.com",
++  skill_tags: true,
++  max_history_chars: 200_000,
++  debug: false,
++  fail_on_error: false,
++};
++
++const fixtures = path.join(
++  path.dirname(fileURLToPath(import.meta.url)),
++  "fixtures/subagent-attribution",
++);
++
++const exporter = new InMemorySpanExporter();
++let processor: LangfuseSpanProcessor;
++let provider: NodeTracerProvider;
++
++beforeAll(() => {
++  processor = new LangfuseSpanProcessor({
++    publicKey: baseConfig.public_key,
++    secretKey: baseConfig.secret_key,
++    baseUrl: baseConfig.base_url,
++    exportMode: "immediate",
++    exporter,
++    shouldExportSpan: () => true,
++  });
++  provider = new NodeTracerProvider({ spanProcessors: [processor] });
++  provider.register();
++});
++
++afterAll(async () => {
++  await provider.shutdown();
++});
++
++beforeEach(() => {
++  exporter.reset();
++});
++
++const dirs: string[] = [];
++afterEach(() => {
++  while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
++});
++
++function stageDay(): string {
++  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-subagent-tags-"));
++  dirs.push(dir);
++  const day = path.join(dir, "sessions", "2026", "11", "15");
++  fs.mkdirSync(day, { recursive: true });
++  return day;
++}
++
++function stageRealFragment(): { parent: string; child: string } {
++  const day = stageDay();
++  fs.cpSync(fixtures, day, { recursive: true });
++  return {
++    parent: path.join(day, "rollout-subagent-parent.jsonl"),
++    child: path.join(day, "rollout-subagent-explorer.jsonl"),
++  };
++}
++
++async function turnRoots(name: string): Promise<ReadableSpan[]> {
++  await processor.forceFlush();
++  return exporter.getFinishedSpans().filter((s) => s.name === name);
++}
++
++const tagsOf = (span: ReadableSpan): unknown => span.attributes["langfuse.trace.tags"];
++
++describe("subagent role tags", () => {
++  it("tags the spawning trace with the role of the subagent it spawned", async () => {
++    await convertRollout(stageRealFragment().parent, { config: baseConfig });
++
++    const [root] = await turnRoots("Codex Turn");
++    const children = await turnRoots("Codex Subagent Turn");
++    expect(tagsOf(root)).toEqual(["subagent:explorer"]);
++    expect(children).toHaveLength(2);
++    for (const child of children) expect(tagsOf(child)).toEqual(["subagent:explorer"]);
++  });
++
++  it("gives a subagent turn attached after its spawning turn that trace's tags", async () => {
++    await convertRollout(stageRealFragment().parent, { config: baseConfig });
++    const [spawningRoot] = await turnRoots("Codex Turn");
++    const spawningTags = tagsOf(spawningRoot);
++    exporter.reset();
++
++    await convertRollout(stageRealFragment().child, {
++      config: baseConfig,
++      attachToSpawningTurn: true,
++    });
++
++    const children = await turnRoots("Codex Subagent Turn");
++    expect(spawningTags).toEqual(["subagent:explorer"]);
++    expect(children).toHaveLength(2);
++    for (const child of children) expect(tagsOf(child)).toEqual(spawningTags);
++  });
++
++  it("tags each distinct role once, in the order the turn spawned them", async () => {
++    const day = stageDay();
++    const at = (second: number) => new Date(Date.UTC(2026, 10, 15, 22, 0, second)).toISOString();
++    const write = (
++      name: string,
++      lines: Array<{ type: string; payload: Record<string, unknown> }>,
++    ) =>
++      fs.writeFileSync(
++        path.join(day, name),
++        lines.map((l, i) => JSON.stringify({ timestamp: at(i), ...l })).join("\n") + "\n",
++      );
++    const started = (threadId: string) => ({
++      type: "event_msg",
++      payload: {
++        type: "item_completed",
++        item: {
++          type: "SubAgentActivity",
++          id: `call-${threadId}`,
++          kind: "started",
++          agent_thread_id: threadId,
++        },
++      },
++    });
++    const roles = { "child-a": "explorer", "child-b": "code-reviewer", "child-c": "explorer" };
++    write("rollout-roles-parent.jsonl", [
++      { type: "session_meta", payload: { id: "sess-roles" } },
++      { type: "event_msg", payload: { type: "task_started", turn_id: "turn-roles" } },
++      ...Object.keys(roles).map(started),
++      { type: "event_msg", payload: { type: "task_complete", turn_id: "turn-roles" } },
++    ]);
++    for (const [threadId, role] of Object.entries(roles)) {
++      write(`rollout-roles-${threadId}.jsonl`, [
++        {
++          type: "session_meta",
++          payload: {
++            id: threadId,
++            parent_thread_id: "sess-roles",
++            thread_source: "subagent",
++            source: {
++              subagent: { thread_spawn: { parent_thread_id: "sess-roles", agent_role: role } },
++            },
++          },
++        },
++      ]);
++    }
++
++    await convertRollout(path.join(day, "rollout-roles-parent.jsonl"), { config: baseConfig });
++
++    const [root] = await turnRoots("Codex Turn");
++    expect(tagsOf(root)).toEqual(["subagent:explorer", "subagent:code-reviewer"]);
++  });
++});
+diff --git a/plugins/tracing/test/trace.test.ts b/plugins/tracing/test/trace.test.ts
+index 26f6b14..c8486a3 100644
+--- a/plugins/tracing/test/trace.test.ts
++++ b/plugins/tracing/test/trace.test.ts
+@@ -1438,6 +1438,88 @@ describe("turn output", () => {
+   });
+ });
+ 
++describe("subagent attribution", () => {
++  const fixtures = path.join(
++    path.dirname(fileURLToPath(import.meta.url)),
++    "fixtures/subagent-attribution",
++  );
++  const parentThreadId = "01a1e0fd-93c9-75a3-ae93-7277ca3a53f8";
++  const childThreadId = "01a1e18b-34be-7363-9295-8e590743048f";
++
++  const dirs: string[] = [];
++  afterEach(() => {
++    while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
++  });
++
++  function stageRealFragment(): { parent: string; child: string } {
++    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-attribution-"));
++    dirs.push(dir);
++    const day = path.join(dir, "sessions", "2026", "11", "15");
++    fs.cpSync(fixtures, day, { recursive: true });
++    return {
++      parent: path.join(day, "rollout-subagent-parent.jsonl"),
++      child: path.join(day, "rollout-subagent-explorer.jsonl"),
++    };
++  }
++
++  const subagentRoots = () => turnRoots().filter((s) => s.name === "Codex Subagent Turn");
++  const byCallId = (callId: string) =>
++    exporter
++      .getFinishedSpans()
++      .filter((s) => attr(s, "langfuse.observation.metadata.codex.call_id") === callId);
++
++  function expectExplorerAttribution(roots: ReadableSpan[]): void {
++    expect(roots.map((r) => attr(r, "langfuse.observation.metadata.codex.turn_id"))).toEqual([
++      "01a1e18b-3512-7511-a16a-9fadf004ef45",
++      "01a1e192-3767-7ea3-9193-4c40e1ad7b82",
++    ]);
++    for (const root of roots) {
++      const metadata = (key: string) => attr(root, `langfuse.observation.metadata.codex.${key}`);
++      expect(metadata("agent_role")).toBe("explorer");
++      expect(metadata("agent_path")).toBe("/root/scan_delta_diagnosis");
++      expect(metadata("agent_nickname")).toBe("Boole");
++      expect(metadata("depth")).toBe("1");
++      expect(metadata("parent_thread_id")).toBe(parentThreadId);
++    }
++  }
++
++  it("attributes a nested subagent turn to the child's role, path, nickname and depth", async () => {
++    const { parent } = stageRealFragment();
++
++    await convertRollout(parent, { config: baseConfig });
++
++    expectExplorerAttribution(subagentRoots());
++  });
++
++  it("attributes a subagent turn attached after its spawning turn in the same way", async () => {
++    const { child } = stageRealFragment();
++
++    await convertRollout(child, { config: baseConfig, attachToSpawningTurn: true });
++
++    expectExplorerAttribution(subagentRoots());
++  });
++
++  it("names the thread and agent path a send_message call reached", async () => {
++    const { parent } = stageRealFragment();
++
++    await convertRollout(parent, { config: baseConfig });
++
++    const target = (callId: string) =>
++      byCallId(callId).map((s) => [
++        s.name,
++        attr(s, "langfuse.observation.metadata.codex.target_thread_id"),
++        attr(s, "langfuse.observation.metadata.codex.target_agent_path"),
++      ]);
++    expect(target("call_1591e8ea5aaa4356b3c7a5a8af03719a")).toEqual([
++      ["send_message", childThreadId, "/root/scan_delta_diagnosis"],
++    ]);
++    expect(target("call_06c14964013f4253961aa267866c32d7")).toEqual([
++      ["send_message", parentThreadId, "/root"],
++    ]);
++    expect(target("call_56747e59474041369232fcc7d5df38da")).toEqual([["spawn_agent", "", ""]]);
++  });
++});
++
+ describe("Stop hook turn lifecycle", () => {
+   const exportedTurnIds = (): string[] =>
+     exporter

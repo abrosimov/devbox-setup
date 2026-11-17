@@ -7,13 +7,14 @@
   "node_major": 22,
   "pnpm_version": "9.5.0",
   "artifact_path": "plugins/tracing/dist/index.mjs",
-  "output_git_blob_sha1": "53f8a35721d90392294ed723b6c65cbdbec64a04",
+  "output_git_blob_sha1": "b2c3331cdc7730a2630fefff70dcd99ba8653e95",
   "patches": [
     "0001-export-interrupted-and-ended-turns.patch",
     "0002-one-hook-run-per-rollout.patch",
     "0003-export-subagent-turns-after-the-spawning-turn.patch",
     "0004-trace-tool-items-nested-in-code-mode.patch",
     "0005-record-usage-of-every-model-response.patch",
-    "0006-answer-each-turn-with-its-final-answer.patch"
+    "0006-answer-each-turn-with-its-final-answer.patch",
+    "0007-attribute-subagent-turns-to-their-agent.patch"
   ]
 }

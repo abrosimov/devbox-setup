@@ -34857,8 +34857,15 @@ function seedIds(seed) {
 	idSeed = seed;
 	idCounter = 0;
 }
-function currentIdSeed() {
-	return idSeed;
+function currentIdDraws() {
+	return {
+		seed: idSeed,
+		drawn: idCounter
+	};
+}
+function resumeIdDraws(draws) {
+	idSeed = draws.seed;
+	idCounter = draws.drawn;
 }
 function seededIdAt(seed, kind, draw) {
 	return createHash("sha256").update(`${seed}:${kind}:${draw}`).digest("hex").slice(0, kind === "trace" ? TRACE_ID_HEX_CHARS : SPAN_ID_HEX_CHARS);
@@ -35583,7 +35590,7 @@ function parseSession(lines) {
 			} else if (et === "item_completed" && p.item?.type === "SubAgentActivity") {
 				const threadId = p.item.agent_thread_id;
 				if (p.item.kind === "started" && typeof threadId === "string") recordSubagentThread(threadId, p.item.id);
-				else if (p.item.kind === "interacted" && typeof threadId === "string") {
+				else if ((p.item.kind === "interacted" || p.item.kind === "interrupted") && typeof threadId === "string") {
 					const call = p.item.id ? toolCallsById.get(p.item.id) : void 0;
 					if (call) call.targetAgent = {
 						threadId,
@@ -35986,7 +35993,7 @@ function generationEnd(step) {
 async function emitTurn(turn, sessionMeta, ctx) {
 	const isSubagent = sessionMeta.isSubagentThread === true || ctx.parentObservation != null;
 	const cwd = turn.cwd ?? sessionMeta.cwd;
-	const outerSeed = currentIdSeed();
+	const outerDraws = currentIdDraws();
 	seedIds(`${sessionMeta.sessionId}:${turn.turnId ?? "no-turn-id"}`);
 	const root = startObservation(isSubagent ? "Codex Subagent Turn" : "Codex Turn", {
 		input: toMultimodalContent(turn.userInput, turn.userImages),
@@ -36103,7 +36110,7 @@ async function emitTurn(turn, sessionMeta, ctx) {
 				continue;
 			}
 			ctx.nested.releases.push(releaseChild);
-			const seedBeforeChild = currentIdSeed();
+			const drawsBeforeChild = currentIdDraws();
 			await convertRollout(sub.file, {
 				config: ctx.config,
 				parentObservation: spawnObservations.get(turn.subagentSpawnCallIds[sub.threadId]) ?? root,
@@ -36112,7 +36119,7 @@ async function emitTurn(turn, sessionMeta, ctx) {
 				ancestorTurnIds: ctx.inheritableTurnIds,
 				nested: ctx.nested
 			});
-			seedIds(seedBeforeChild);
+			resumeIdDraws(drawsBeforeChild);
 		}
 	} catch (error) {
 		failure = error;
@@ -36123,7 +36130,7 @@ async function emitTurn(turn, sessionMeta, ctx) {
 		});
 	}
 	root.end(new Date(turn.endTime));
-	seedIds(outerSeed);
+	resumeIdDraws(outerDraws);
 	if (failure && ctx.config.fail_on_error) throw failure;
 }
 function emitToolCall(tc, parent, fallbackEnd) {

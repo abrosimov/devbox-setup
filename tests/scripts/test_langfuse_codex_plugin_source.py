@@ -119,6 +119,7 @@ def test_deployed_bundle_matches_pin() -> None:
         "0007-attribute-subagent-turns-to-their-agent.patch",
         "0008-describe-each-turn-with-its-place-and-timing.patch",
         "0009-take-credentials-only-from-the-global-config.patch",
+        "0010-continue-id-draws-after-subagents-and-name-interrupted-agents.patch",
     ]
     assert info["artifact_path"] == ARTIFACT_PATH
     assert module.LICENSE.read_text(encoding="utf-8").startswith("MIT License")

@@ -1,0 +1,208 @@
+diff --git a/plugins/tracing/src/instrumentation.ts b/plugins/tracing/src/instrumentation.ts
+index 07fc1d7..c520a97 100644
+--- a/plugins/tracing/src/instrumentation.ts
++++ b/plugins/tracing/src/instrumentation.ts
+@@ -23,8 +23,15 @@ export function seedIds(seed: string | undefined): void {
+   idCounter = 0;
+ }
+ 
+-export function currentIdSeed(): string | undefined {
+-  return idSeed;
++export type IdDraws = { seed: string | undefined; drawn: number };
++
++export function currentIdDraws(): IdDraws {
++  return { seed: idSeed, drawn: idCounter };
++}
++
++export function resumeIdDraws(draws: IdDraws): void {
++  idSeed = draws.seed;
++  idCounter = draws.drawn;
+ }
+ 
+ export function seededIdAt(seed: string, kind: "trace" | "span", draw: number): string {
+diff --git a/plugins/tracing/src/parse.ts b/plugins/tracing/src/parse.ts
+index c4f3d2f..ed9bf9b 100644
+--- a/plugins/tracing/src/parse.ts
++++ b/plugins/tracing/src/parse.ts
+@@ -569,7 +569,10 @@ export function parseSession(lines: RolloutLine[]): {
+         const threadId = p.item.agent_thread_id;
+         if (p.item.kind === "started" && typeof threadId === "string") {
+           recordSubagentThread(threadId, p.item.id);
+-        } else if (p.item.kind === "interacted" && typeof threadId === "string") {
++        } else if (
++          (p.item.kind === "interacted" || p.item.kind === "interrupted") &&
++          typeof threadId === "string"
++        ) {
+           const call = p.item.id ? toolCallsById.get(p.item.id) : undefined;
+           if (call) call.targetAgent = { threadId, path: nonEmptyText(p.item.agent_path) };
+         }
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index a6d3ca1..03af6fa 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -14,7 +14,7 @@ import {
+ import { TraceFlags, type SpanContext } from "@opentelemetry/api";
+ 
+ import type { Config } from "./config.js";
+-import { currentIdSeed, seededIdAt, seedIds } from "./instrumentation.js";
++import { currentIdDraws, resumeIdDraws, seededIdAt, seedIds } from "./instrumentation.js";
+ import { parseArgs, parseSession, sessionMetaFrom } from "./parse.js";
+ import { acquireRolloutLock, loadUploadedTurnIds } from "./sidecar.js";
+ import { skillsForToolCall, traceTags } from "./skills.js";
+@@ -478,7 +478,7 @@ async function emitTurn(
+   const isSubagent = sessionMeta.isSubagentThread === true || ctx.parentObservation != null;
+   const cwd = turn.cwd ?? sessionMeta.cwd;
+ 
+-  const outerSeed = currentIdSeed();
++  const outerDraws = currentIdDraws();
+   seedIds(`${sessionMeta.sessionId}:${turn.turnId ?? "no-turn-id"}`);
+ 
+   const root = startObservation(
+@@ -631,7 +631,7 @@ async function emitTurn(
+         continue;
+       }
+       ctx.nested.releases.push(releaseChild);
+-      const seedBeforeChild = currentIdSeed();
++      const drawsBeforeChild = currentIdDraws();
+       await convertRollout(sub.file, {
+         config: ctx.config,
+         parentObservation: spawnObservations.get(turn.subagentSpawnCallIds[sub.threadId]) ?? root,
+@@ -640,7 +640,7 @@ async function emitTurn(
+         ancestorTurnIds: ctx.inheritableTurnIds,
+         nested: ctx.nested,
+       });
+-      seedIds(seedBeforeChild);
++      resumeIdDraws(drawsBeforeChild);
+     }
+   } catch (error) {
+     failure = error;
+@@ -654,7 +654,7 @@ async function emitTurn(
+   }
+ 
+   root.end(new Date(turn.endTime));
+-  seedIds(outerSeed);
++  resumeIdDraws(outerDraws);
+   if (failure && ctx.config.fail_on_error) throw failure;
+ }
+ 
+diff --git a/plugins/tracing/test/instrumentation.test.ts b/plugins/tracing/test/instrumentation.test.ts
+index 59eb8b9..4791329 100644
+--- a/plugins/tracing/test/instrumentation.test.ts
++++ b/plugins/tracing/test/instrumentation.test.ts
+@@ -14,12 +14,14 @@ import { convertRollout } from "../src/trace.js";
+ // Capture the spans the plugin's own span processor receives, so the assertion
+ // needs no network and no Langfuse credentials.
+ const captured: ReadableSpan[] = [];
++let afterEnd: ((span: ReadableSpan) => void) | undefined;
+ 
+ vi.mock("@langfuse/otel", () => ({
+   LangfuseSpanProcessor: class implements SpanProcessor {
+     onStart(): void {}
+     onEnd(span: ReadableSpan): void {
+       captured.push(span);
++      afterEnd?.(span);
+     }
+     async forceFlush(): Promise<void> {}
+     async shutdown(): Promise<void> {}
+@@ -77,6 +79,7 @@ beforeEach(() => {
+ });
+ 
+ afterEach(() => {
++  afterEnd = undefined;
+   (globalThis as Record<symbol, unknown>)[OTEL_API_KEY] = previousGlobal;
+   setLangfuseTracerProvider(null);
+   vi.unstubAllEnvs();
+@@ -116,6 +119,27 @@ describe("setupInstrumentation", () => {
+   });
+ });
+ 
++describe("seeded observation ids", () => {
++  it("gives a span the spawning turn draws after its subagent's turns an id of its own", async () => {
++    const instrumentation = setupInstrumentation(baseConfig);
++    const dir = stageFixtures();
++    afterEnd = (span) => {
++      if (span.name === "Codex Turn") {
++        getLangfuseTracerProvider().getTracer("id-probe").startSpan("drawn after subagent").end();
++      }
++    };
++
++    await convertRollout(path.join(dir, "rollout-parent.jsonl"), { config: baseConfig });
++    await instrumentation.shutdown();
++
++    expect(captured.some((s) => s.name === "Codex Subagent Turn")).toBe(true);
++    const probe = captured.find((s) => s.name === "drawn after subagent");
++    expect(probe).toBeDefined();
++    const earlier = captured.filter((s) => s !== probe).map((s) => s.spanContext().spanId);
++    expect(earlier).not.toContain(probe!.spanContext().spanId);
++  });
++});
++
+ describe("resource attributes", () => {
+   it("names the service `codex` instead of falling back to unknown_service", async () => {
+     const attrs = await resourceAttrsOfExportedSpan();
+diff --git a/plugins/tracing/test/parse.test.ts b/plugins/tracing/test/parse.test.ts
+index 38b50ea..8f6f8af 100644
+--- a/plugins/tracing/test/parse.test.ts
++++ b/plugins/tracing/test/parse.test.ts
+@@ -426,6 +426,61 @@ describe("parseSession", () => {
+     expect(turns[0].subagentSpawnCallIds).toEqual({ "thread-a": "spawn-call" });
+   });
+ 
++  it("names the thread and agent path an interrupt_agent call reached", () => {
++    const { turns } = parseSession([
++      { timestamp: "2026-06-03T13:00:00.000Z", type: "session_meta", payload: { id: "s" } },
++      {
++        timestamp: "2026-06-03T13:00:01.000Z",
++        type: "event_msg",
++        payload: { type: "task_started", turn_id: "t" },
++      },
++      {
++        timestamp: "2026-06-03T13:00:02.000Z",
++        type: "response_item",
++        payload: {
++          type: "function_call",
++          name: "interrupt_agent",
++          namespace: "collaboration",
++          call_id: "interrupt-call",
++          arguments: '{"target":"engineer"}',
++        },
++      },
++      {
++        timestamp: "2026-06-03T13:00:02.100Z",
++        type: "event_msg",
++        payload: {
++          type: "item_completed",
++          item: {
++            type: "SubAgentActivity",
++            id: "interrupt-call",
++            kind: "interrupted",
++            agent_thread_id: "thread-a",
++            agent_path: "/root/engineer",
++          },
++        },
++      },
++      {
++        timestamp: "2026-06-03T13:00:02.200Z",
++        type: "response_item",
++        payload: {
++          type: "function_call_output",
++          call_id: "interrupt-call",
++          output: '{"previous_status":"running"}',
++        },
++      },
++      {
++        timestamp: "2026-06-03T13:00:03.000Z",
++        type: "event_msg",
++        payload: { type: "task_complete", turn_id: "t" },
++      },
++    ]);
++    const interrupt = turns[0].steps
++      .flatMap((step) => step.toolCalls)
++      .find((call) => call.name === "interrupt_agent");
++    expect(interrupt?.targetAgent).toEqual({ threadId: "thread-a", path: "/root/engineer" });
++    expect(turns[0].subagentThreadIds).toEqual([]);
++  });
++
+   it("records subagent threads from the spawn tool output when no spawn event is emitted", () => {
+     const spawn = (callId: string, name: string): RolloutLine => ({
+       timestamp: "2026-06-03T13:10:02.000Z",

@@ -35310,6 +35310,9 @@ function parseSession(lines) {
 	let toolCallsById = /* @__PURE__ */ new Map();
 	let openCodeModeCall = null;
 	let lastTimestamp = Date.now();
+	let usageFromRecords = false;
+	let cumulativeTotalTokens;
+	let unopenedResponseStart;
 	const developerMessages = [];
 	const injectedContext = [];
 	const toolDefinitions = [];
@@ -35344,11 +35347,33 @@ function parseSession(lines) {
 		if (spawnCallId) turn.subagentSpawnCallIds[threadId] = spawnCallId;
 	};
 	const closeStep = (ts, usage) => {
+		unopenedResponseStart = void 0;
 		if (!step) return;
 		step.endTime = Math.max(step.endTime, ts);
 		if (usage) step.usage = usage;
 		turn.steps.push(step);
 		step = null;
+	};
+	const pushUsageOnlyStep = (ts, usage, responseId) => {
+		const startTime = unopenedResponseStart ?? ts;
+		turn.steps.push({
+			startTime,
+			endTime: ts,
+			toolCalls: [],
+			usage,
+			responseId,
+			usageOnly: true
+		});
+		unopenedResponseStart = void 0;
+	};
+	const recordResponseUsage = (ts, usage, responseId) => {
+		if (step && !step.usage) {
+			step.usage = usage;
+			step.responseId = responseId;
+			return;
+		}
+		closeStep(ts);
+		pushUsageOnlyStep(ts, usage, responseId);
 	};
 	const finishTurn = (ts, opts) => {
 		if (!turn) return;
@@ -35498,8 +35523,15 @@ function parseSession(lines) {
 				if (reasoning) {
 					const s = ensureStep(ts);
 					s.reasoning = s.reasoning ? `${s.reasoning}\n${reasoning}` : reasoning;
-				}
+				} else if (!step) unopenedResponseStart ??= ts;
 			}
+			continue;
+		}
+		if (line.type === "token_usage_record") {
+			const p = line.payload;
+			if (!turn || !p.usage) continue;
+			usageFromRecords = true;
+			recordResponseUsage(ts, p.usage, typeof p.response_id === "string" ? p.response_id : void 0);
 			continue;
 		}
 		if (line.type === "event_msg") {
@@ -35526,8 +35558,16 @@ function parseSession(lines) {
 			} else if (et === "item_completed" && p.item && TOOL_ITEM_TYPES.has(p.item.type ?? "")) recordToolItem(p.item, p, ts);
 			else if (et === "agent_message" && typeof p.message === "string") turn.lastAgentMessage = p.message;
 			else if (et === "token_count") {
-				if (p.info?.total_token_usage) turn.totalUsage = p.info.total_token_usage;
-				closeStep(ts, p.info?.last_token_usage ?? void 0);
+				const cumulative = p.info?.total_token_usage;
+				const last = p.info?.last_token_usage ?? void 0;
+				const reEmitted = cumulative?.total_tokens !== void 0 && cumulative.total_tokens === cumulativeTotalTokens;
+				if (cumulative) {
+					turn.totalUsage = cumulative;
+					cumulativeTotalTokens = cumulative.total_tokens;
+				}
+				if (usageFromRecords) closeStep(ts);
+				else if (step || !last || reEmitted) closeStep(ts, last);
+				else pushUsageOnlyStep(ts, last);
 			} else if (et === "task_complete") finishTurn(ts, {
 				completed: true,
 				aborted: false
@@ -35821,6 +35861,7 @@ function turnHistoryMessages(turn) {
 	const user = userMessage(turn);
 	if (user) messages.push(user);
 	for (const step of turn.steps) {
+		if (step.usageOnly) continue;
 		messages.push(assistantMessage(step));
 		messages.push(...toolMessages(step));
 	}
@@ -35936,24 +35977,35 @@ async function emitTurn(turn, sessionMeta, ctx) {
 		const codeModeCalls = [];
 		const user = userMessage(turn);
 		const turnMessages = user ? [user] : [];
+		const startGeneration = (step, stepIndex, conversation) => startObservation(isSubagent ? "LLM Subagent" : "LLM", {
+			input: attachToolDefinitions(generationInput(systemMessage, conversation), turn.toolDefinitions),
+			output: buildGenerationOutput(step),
+			model: turn.model,
+			...turn.reasoningEffort ? { modelParameters: { reasoning_effort: turn.reasoningEffort } } : {},
+			usageDetails: toUsageDetails(step.usage),
+			metadata: {
+				"codex.step_index": stepIndex,
+				"codex.reasoning_effort": turn.reasoningEffort,
+				"codex.response_id": step.responseId
+			}
+		}, {
+			asType: "generation",
+			startTime: new Date(step.startTime),
+			parentSpanContext: root.otelSpan.spanContext()
+		});
+		const usageOnly = [];
 		for (let i = 0; i < turn.steps.length; i++) {
 			const step = turn.steps[i];
 			const conversation = boundedConversation(historyPrefix, turnMessages, ctx.config.max_history_chars);
-			const generation = startObservation(isSubagent ? "LLM Subagent" : "LLM", {
-				input: attachToolDefinitions(generationInput(systemMessage, conversation), turn.toolDefinitions),
-				output: buildGenerationOutput(step),
-				model: turn.model,
-				...turn.reasoningEffort ? { modelParameters: { reasoning_effort: turn.reasoningEffort } } : {},
-				usageDetails: toUsageDetails(step.usage),
-				metadata: {
-					"codex.step_index": i,
-					"codex.reasoning_effort": turn.reasoningEffort
-				}
-			}, {
-				asType: "generation",
-				startTime: new Date(step.startTime),
-				parentSpanContext: root.otelSpan.spanContext()
-			});
+			if (step.usageOnly) {
+				usageOnly.push({
+					step,
+					stepIndex: i,
+					conversation
+				});
+				continue;
+			}
+			const generation = startGeneration(step, i, conversation);
 			for (const tc of step.toolCalls) {
 				const observation = emitToolCall(tc, root, step.endTime);
 				if (tc.name === "spawn_agent") spawnObservations.set(tc.callId, observation);
@@ -35967,6 +36019,7 @@ async function emitTurn(turn, sessionMeta, ctx) {
 		}
 		for (const { observation, children } of codeModeCalls) for (const child of children) emitToolCall(child, observation, child.startTime);
 		for (const tc of turn.detachedToolCalls) emitToolCall(tc, root, tc.startTime);
+		for (const { step, stepIndex, conversation } of usageOnly) startGeneration(step, stepIndex, conversation).end(new Date(step.endTime));
 		const announced = [];
 		for (const threadId of turn.subagentThreadIds) {
 			const rollout = ctx.subagentIndex.byThread.get(threadId);
@@ -36226,6 +36279,7 @@ async function spawnContextOf(child, index, config, externalParent, visited = /*
 	const traceId = inheritedTraceId ?? seededIdAt(seed, "trace", draw++);
 	const spawnCallId = turn.subagentSpawnCallIds[child.sessionId];
 	findSpawn: for (const step of turn.steps) {
+		if (step.usageOnly) continue;
 		draw++;
 		for (const tc of step.toolCalls) {
 			const toolSpanId = seededIdAt(seed, "span", draw++);

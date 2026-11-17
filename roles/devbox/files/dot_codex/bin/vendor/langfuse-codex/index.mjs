@@ -36167,10 +36167,11 @@ function serializedChars(message) {
 	return chars;
 }
 /**
-* The conversation a generation saw, keeping only the most recent messages
-* that fit in `maxChars` (0 = unbounded). Every generation serializes its
-* input onto its span, so an unbounded history costs memory quadratic in the
-* session length and can crash the hook on long sessions.
+* The conversation a generation saw: the newest message whole, whatever its
+* size, and the most recent messages before it that fit in `maxChars`
+* (0 = unbounded). Every generation serializes its input onto its span, so an
+* unbounded history costs memory quadratic in the session length and can
+* crash the hook on long sessions.
 */
 function boundedConversation(earlier, current, maxChars) {
 	const all = [...earlier, ...current];
@@ -36179,7 +36180,7 @@ function boundedConversation(earlier, current, maxChars) {
 	let start = all.length;
 	while (start > 0) {
 		const chars = serializedChars(all[start - 1]);
-		if (used + chars > maxChars) break;
+		if (start < all.length && used + chars > maxChars) break;
 		used += chars;
 		start--;
 	}

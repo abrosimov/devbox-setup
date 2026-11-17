@@ -66,7 +66,7 @@ Present the structured feedback:
 - Must Fix (Blocking)
 - Should Fix (Important)
 - Consider (Optional)
-- Outside this change (for the user only)
+- Outside the task (for the user only)
 
 If there are findings, without asking the user:
 

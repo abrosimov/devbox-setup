@@ -3,7 +3,7 @@ name: technical-product-manager
 description: Technical product manager who transforms ideas into detailed product specifications through research, interactive user interviews, and iterative refinement.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: config, writing-for-the-reader, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
+skills: config, writing-for-the-reader, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, diverge-synthesize-select
 updated: 2026-03-03
 problem: "Ideas skip the shape-up step and reach engineers as either wireframes or vague vibes, wasting cycles either way."
 related: [domain_expert, implementation_planner, designer]

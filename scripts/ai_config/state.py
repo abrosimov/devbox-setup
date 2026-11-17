@@ -26,8 +26,9 @@ _CLAUDE_CLEANUP_PERIOD_PREFERENCE = (
 )
 _CLAUDE_ATTRIBUTION = "55eb8d125af1b049a2a3b78e50d3540b1a0a7ea5ac8b36c73faef308bd4dfa3e"
 _CLAUDE_LANGFUSE_KEYS = "e5d2d86bcab70f984254f73ce6e16336b3dccdce6f0e6d342d56e6cc6be7948b"
-# Tracks the current claude manifest: `autoMode` and `skillOverrides` joined as shared fields.
 _CLAUDE_AUTO_MODE = "7a8a6051fb80d6a29ef029c11b2aa23dd1ac602e38db437583d467c18549a732"
+# Tracks the current claude manifest: `showThinkingSummaries` joined as a shared field.
+_CLAUDE_THINKING_SUMMARIES = "687634696d52a30da13506302d4c92f2285557d8dec577f68277bfc5d51bf672"
 _CODEX_SHARED_MODEL_AND_REASONING = (
     "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411"
 )
@@ -35,25 +36,29 @@ _CODEX_REASONING_PREFERENCE = "e3c3c98f6bf7b950a3c2e827844d0755601f9a0e7c9de23a2
 _CODEX_MODEL_AND_REASONING_PREFERENCES = (
     "f6de9f0d247548b2dfb5c991c5a2db8424c16d71751633c81c03ea823d612f61"
 )
-# Tracks the current codex manifest: `apps` joined as a local-state field.
 _CODEX_APPS = "2f4f8960fc9d93533b79bd6b26031907e43ccbdd6ad5cbe4990b4d9cdca879e9"
+# Tracks the current codex manifest: `model_reasoning_summary` and
+# `hide_agent_reasoning` joined as shared fields.
+_CODEX_REASONING_SUMMARY = "723844aa8bbe8d9d48abf2828b759fc87eb5a8d4c8be0aca88f139f46f3ea483"
 # Exact transitions retain baseline history without accepting unrelated manifests.
 _MANIFEST_MIGRATIONS = {
-    ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_AUTO_MODE): (),
-    ("claude", _CLAUDE_PRE_DIALOG_EXPIRY, _CLAUDE_AUTO_MODE): (),
-    ("claude", _CLAUDE_DIALOG_EXPIRY_PREFERENCE, _CLAUDE_AUTO_MODE): (),
-    ("claude", _CLAUDE_CLEANUP_PERIOD_PREFERENCE, _CLAUDE_AUTO_MODE): (),
-    ("claude", _CLAUDE_ATTRIBUTION, _CLAUDE_AUTO_MODE): (),
-    ("claude", _CLAUDE_LANGFUSE_KEYS, _CLAUDE_AUTO_MODE): (),
+    ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_THINKING_SUMMARIES): (),
+    ("claude", _CLAUDE_PRE_DIALOG_EXPIRY, _CLAUDE_THINKING_SUMMARIES): (),
+    ("claude", _CLAUDE_DIALOG_EXPIRY_PREFERENCE, _CLAUDE_THINKING_SUMMARIES): (),
+    ("claude", _CLAUDE_CLEANUP_PERIOD_PREFERENCE, _CLAUDE_THINKING_SUMMARIES): (),
+    ("claude", _CLAUDE_ATTRIBUTION, _CLAUDE_THINKING_SUMMARIES): (),
+    ("claude", _CLAUDE_LANGFUSE_KEYS, _CLAUDE_THINKING_SUMMARIES): (),
+    ("claude", _CLAUDE_AUTO_MODE, _CLAUDE_THINKING_SUMMARIES): (),
     ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_PREFERENCE): (
         "model_reasoning_effort",
     ),
-    ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_APPS): (
+    ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_SUMMARY): (
         "model",
         "model_reasoning_effort",
     ),
-    ("codex", _CODEX_REASONING_PREFERENCE, _CODEX_APPS): ("model",),
-    ("codex", _CODEX_MODEL_AND_REASONING_PREFERENCES, _CODEX_APPS): (),
+    ("codex", _CODEX_REASONING_PREFERENCE, _CODEX_REASONING_SUMMARY): ("model",),
+    ("codex", _CODEX_MODEL_AND_REASONING_PREFERENCES, _CODEX_REASONING_SUMMARY): (),
+    ("codex", _CODEX_APPS, _CODEX_REASONING_SUMMARY): (),
 }
 
 

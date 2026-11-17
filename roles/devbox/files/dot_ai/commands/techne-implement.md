@@ -72,24 +72,24 @@ If `JIRA_ISSUE` is null and the request or the plan names an issue key, use that
 
 Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent, do not re-compute.
 
-### 3. Detect Project Stack
+### 3. Route by Agent File Scope
 
-Check for project markers (check all — a project may have multiple):
-- If `go.mod` exists → **Go backend**
-- If `pyproject.toml` or `requirements.txt` exists → **Python backend**
-- If `package.json` or `tsconfig.json` or `next.config.*` exists → **Frontend (TypeScript/React/Next.js)**
+The agents declare the files they own in their `globs:` frontmatter; this command holds no stack
+table of its own, so a new engineer agent is routed to as soon as it declares `globs:`.
 
-**Stack classification:**
+1. Read the `globs:` field of every agent definition in `~/.claude/agents/*.md`.
+2. List the files the change will touch: from the plan's work streams, from the request, or — when
+   neither names them — the tracked files of the area the request describes (`git ls-files`).
+3. Every agent whose `globs` match one of those files is a claimant, and owns the matching files.
 
-| Markers Found | Classification | Agent(s) |
-|---------------|---------------|----------|
-| Go only | `backend` | `software-engineer-go` |
-| Python only | `backend` | `software-engineer-python` |
-| Frontend only | `frontend` | `software-engineer-frontend` |
-| Backend + Frontend | `fullstack` | See work stream routing below |
-| Unclear | — | The side the request names; otherwise backend. State the assumption in one line |
+| Claimants | Classification | Agent(s) |
+|-----------|---------------|----------|
+| One | that agent's stack | that agent |
+| `software-engineer-frontend` plus a backend engineer | `fullstack` | See fullstack routing below |
+| Several backend engineers | per-file ownership | Each claimant gets its own files; run them in parallel only when their files do not depend on each other |
+| None | — | No agent covers the work: say so in one line and stop; the main session decides whether to work directly under the engine adapter's carve-outs |
 
-**Fullstack routing** — when both backend and frontend markers exist:
+**Fullstack routing** — when both backend and frontend claimants exist:
 1. Check for `plan.md` at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md`
 2. If `plan.md` defines work streams, route to the agent specified in each stream
 3. If no work streams and the request does not say which side, decide: both sides in parallel against the API contract when the change touches the contract, otherwise the side the change lives on. State the choice in one line; do not ask.
@@ -114,10 +114,8 @@ Look for plan at `{PLANS_DIR}/{JIRA_ISSUE}/{BRANCH_NAME}/plan.md` (see `config` 
 
 ### 6. Run Appropriate Agent(s)
 
-Based on detected stack:
-- **Go**: Use `software-engineer-go` agent
-- **Python**: Use `software-engineer-python` agent
-- **Frontend**: Use `software-engineer-frontend` agent
+Based on the claimants from step 3:
+- **One claimant**: run that agent with the files it owns
 - **Fullstack**: Make sure the API contract exists (run `/techne-api-design` if not), then run the backend and frontend agents in parallel, each given the contract path (or follow work stream order from plan)
 
 When invoking the Task tool, include the `model` parameter:
@@ -177,7 +175,7 @@ After the agent completes successfully, show the user the changed files:
 git status --short
 ```
 
-Commit, push and the PR/MR follow the engine adapter's git delivery; write their text with the
+Commit, push and the PR/MR follow the core's §7 git delivery; write their text with the
 `commit-and-pr-text` skill.
 
 ### 8. After Completion

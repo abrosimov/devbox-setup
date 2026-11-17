@@ -42,10 +42,18 @@ supported values and model compatibility remain the Codex client's responsibilit
 This concerns the user config file; native profile or session overrides can still
 change the effective value.
 
-Existing baselines migrate from either exact previous Codex manifest: the original
-shared model/reasoning version or the reasoning-preference version. Each migration
-removes only newly demoted preference fields and retains all other baseline fields.
-Other manifest digest changes retain the existing reinitialisation behaviour.
+Existing baselines migrate from every earlier Codex manifest the reconciler
+recognises: the original shared model/reasoning version, the reasoning-preference
+version, the model-and-reasoning-preference version, and the `apps` version. A
+migration removes only newly demoted preference fields and keeps every other
+baseline field; a field that joined as shared (`model_reasoning_summary`,
+`hide_agent_reasoning`) is absent from the migrated baseline, so its repository
+value applies as a repository change. Other manifest digest changes keep the
+existing reinitialisation behaviour.
+
+`model_reasoning_summary = "detailed"` makes Codex request reasoning summaries so
+they are recorded in the session rollouts under `~/.codex/sessions/`;
+`hide_agent_reasoning = true` keeps them out of the TUI and `codex exec` output.
 
 `AGENTS.md` routes bounded implementation, planning, review, and test work to
 the matching custom agents when delegation is useful. Go implementation uses

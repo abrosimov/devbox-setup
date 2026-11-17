@@ -147,9 +147,12 @@ When the message has to teach something — how a mechanism works, why a failure
 setting changes — so that the reader can perform the next step, start from the operation they must
 perform, not from what you know. Say what they need to be able to do afterwards, explain only what
 that operation requires, and give one worked case they can check against. If their reply shows the
-explanation missed, repair the specific gap rather than repeating it louder. For harder cases the
-Explanation Design framework in `fpf-thinking` (`EXD.1` what the recipient needs, `EXD.4` repair in
-dialogue, `EXD.6` whether a repair is worth it) holds the full method.
+explanation missed, repair the specific gap rather than repeating it louder. When the user asks
+for FPF, the Explanation Design framework in `fpf-thinking` (`EXD.1` what the recipient needs,
+`EXD.4` repair in dialogue, `EXD.6` whether a repair is worth it) holds the full method. For a
+sustained account someone will act on — an incident write-up, a tutorial, a design narrative — the
+user can ask for `narrative-thinking`, which keeps what the source supports apart from what the
+account implies.
 
 ## Self-check before sending
 

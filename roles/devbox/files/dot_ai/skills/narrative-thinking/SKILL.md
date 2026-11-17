@@ -1,6 +1,7 @@
 ---
 name: narrative-thinking
 description: Use the Narrativization and Narrative Studies Principles Framework (NSTD) to turn an admitted source structure into a readable narrative, explanation, tutorial, or learning route without letting fluency outrun evidence. Use for narrative ordering, viewpoint and agency, bounded engagement, generated narrative, rendering-quality evaluation, and source-return design. Use fpf-thinking instead when the problem itself is not yet framed.
+disable-model-invocation: true
 ---
 
 # NSTD-guided narrative thinking
@@ -35,9 +36,6 @@ than assuming a slot number.
    uncertainty, and source-return points visible.
 6. State what came from the source, what was selected or reordered, and what remains a narrative
    device rather than evidence or authority.
-
-Do not expose private chain-of-thought. Present the selected route, source basis, important choices,
-limitations, and concise rationale.
 
 ## Pattern index
 

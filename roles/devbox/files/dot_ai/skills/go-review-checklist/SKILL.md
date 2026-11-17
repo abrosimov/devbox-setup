@@ -11,6 +11,8 @@ related: [go-engineer, go-testing, lint-discipline]
 
 # Go Review Checklist
 
+The Checkpoints below are the evaluation set of a review. A re-review reruns the same Checkpoints on the changed code, so its results stay comparable with the first round's.
+
 ## Step 3: Exhaustive Enumeration (NO EVALUATION YET)
 
 **This phase is about LISTING, not JUDGING. Do not skip items. Do not optimise.**
@@ -376,6 +378,6 @@ VERDICT: [ ] PASS  [ ] FAIL
 ## Formatting Issues
 - [ ] file.go - Not formatted with goimports
 
-## Questions for Developer
-1. <specific question about ambiguous logic>
+## Unresolved
+1. <what could not be judged, and what would settle it>
 ```

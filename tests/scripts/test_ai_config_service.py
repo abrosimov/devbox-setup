@@ -1119,11 +1119,22 @@ CODEX_APPS_RULE = b"""    {
       "scope": "local-state"
     },
 """
+CODEX_REASONING_SUMMARY_RULES = b"""    {
+      "path": "model_reasoning_summary",
+      "scope": "shared"
+    },
+    {
+      "path": "hide_agent_reasoning",
+      "scope": "shared"
+    },
+"""
+CODEX_APPS_MANIFEST = MANIFEST.read_bytes().replace(CODEX_REASONING_SUMMARY_RULES, b"", 1)
 CODEX_MANIFEST_SOURCES = {
     "pre-preference": OLD_MANIFEST.read_bytes(),
     "reasoning-preference": REASONING_MANIFEST.read_bytes(),
-    "model-and-reasoning-preferences": MANIFEST.read_bytes().replace(CODEX_APPS_RULE, b"", 1),
-    "apps": MANIFEST.read_bytes(),
+    "model-and-reasoning-preferences": CODEX_APPS_MANIFEST.replace(CODEX_APPS_RULE, b"", 1),
+    "apps": CODEX_APPS_MANIFEST,
+    "reasoning-summary": MANIFEST.read_bytes(),
 }
 CODEX_MANIFEST_DIGESTS = {
     "pre-preference": "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411",
@@ -1132,6 +1143,7 @@ CODEX_MANIFEST_DIGESTS = {
         "f6de9f0d247548b2dfb5c991c5a2db8424c16d71751633c81c03ea823d612f61"
     ),
     "apps": "2f4f8960fc9d93533b79bd6b26031907e43ccbdd6ad5cbe4990b4d9cdca879e9",
+    "reasoning-summary": "723844aa8bbe8d9d48abf2828b759fc87eb5a8d4c8be0aca88f139f46f3ea483",
 }
 CLAUDE_MANIFEST = ROOT / "roles/devbox/files/dot_claude/settings.ai-config.json"
 CLAUDE_PRE_HOOKS_MANIFEST = (
@@ -1179,6 +1191,11 @@ CLAUDE_SKILL_OVERRIDES_RULE = b"""    {
       "scope": "shared"
     },
 """
+CLAUDE_THINKING_SUMMARIES_RULE = b"""    {
+      "path": "showThinkingSummaries",
+      "scope": "shared"
+    },
+"""
 
 
 class TestClaudeManifestMigrations:
@@ -1191,11 +1208,13 @@ class TestClaudeManifestMigrations:
             "cleanup-period-preference",
             "attribution",
             "langfuse-keys",
+            "auto-mode",
         ],
     )
     def test_recognised_transition_preserves_baseline_history(self, source):
         target_source = CLAUDE_MANIFEST.read_bytes()
-        langfuse_keys = target_source.replace(CLAUDE_AUTO_MODE_RULE, b"", 1).replace(
+        auto_mode = target_source.replace(CLAUDE_THINKING_SUMMARIES_RULE, b"", 1)
+        langfuse_keys = auto_mode.replace(CLAUDE_AUTO_MODE_RULE, b"", 1).replace(
             CLAUDE_SKILL_OVERRIDES_RULE, b"", 1
         )
         attribution = langfuse_keys.replace(CLAUDE_LANGFUSE_KEY_RULES, b"", 1)
@@ -1217,6 +1236,7 @@ class TestClaudeManifestMigrations:
             "cleanup-period-preference": pre_attribution,
             "attribution": attribution,
             "langfuse-keys": langfuse_keys,
+            "auto-mode": auto_mode,
         }[source]
         expected_source_digest = {
             "pre-hooks": "f0f3d3f991fbfdd194db632d3caf361936cf3d6897ce0a119be9a8c75ef04b0a",
@@ -1231,6 +1251,7 @@ class TestClaudeManifestMigrations:
             ),
             "attribution": "55eb8d125af1b049a2a3b78e50d3540b1a0a7ea5ac8b36c73faef308bd4dfa3e",
             "langfuse-keys": "e5d2d86bcab70f984254f73ce6e16336b3dccdce6f0e6d342d56e6cc6be7948b",
+            "auto-mode": "7a8a6051fb80d6a29ef029c11b2aa23dd1ac602e38db437583d467c18549a732",
         }[source]
         snapshot = {
             "env": {"LANGFUSE_TRACING_ENVIRONMENT": "personal"},
@@ -1245,7 +1266,7 @@ class TestClaudeManifestMigrations:
 
         assert digest_manifest_source(source_bytes) == expected_source_digest
         assert digest_manifest_source(target_source) == (
-            "7a8a6051fb80d6a29ef029c11b2aa23dd1ac602e38db437583d467c18549a732"
+            "687634696d52a30da13506302d4c92f2285557d8dec577f68277bfc5d51bf672"
         )
         migrated = parse_base_state(
             render_base_state(state),
@@ -1355,7 +1376,7 @@ class TestPreferenceOperations:
 
     @pytest.mark.parametrize(
         "previous_manifest",
-        [None, "pre-preference", "reasoning-preference", "model-and-reasoning-preferences"],
+        [None, "pre-preference", "reasoning-preference", "model-and-reasoning-preferences", "apps"],
     )
     def test_preserves_choice_applies_other_update_and_excludes_baseline(
         self, tree, previous_manifest
@@ -1530,9 +1551,10 @@ class TestPreferenceOperations:
         ("source", "target", "demoted"),
         [
             ("pre-preference", "reasoning-preference", ("model_reasoning_effort",)),
-            ("pre-preference", "apps", ("model", "model_reasoning_effort")),
-            ("reasoning-preference", "apps", ("model",)),
-            ("model-and-reasoning-preferences", "apps", ()),
+            ("pre-preference", "reasoning-summary", ("model", "model_reasoning_effort")),
+            ("reasoning-preference", "reasoning-summary", ("model",)),
+            ("model-and-reasoning-preferences", "reasoning-summary", ()),
+            ("apps", "reasoning-summary", ()),
         ],
     )
     def test_recognised_migration_changes_only_preference_scope(self, source, target, demoted):
@@ -1556,6 +1578,11 @@ class TestPreferenceOperations:
         # `apps` joined as a local-state field, which never enters a baseline.
         if not any(rule["path"] == "apps" for rule in old["fields"]):
             new["fields"] = [rule for rule in new["fields"] if rule["path"] != "apps"]
+        # The reasoning-summary fields joined as shared fields: absent from a
+        # migrated baseline, their repository values apply as new repository changes.
+        joined = {"model_reasoning_summary", "hide_agent_reasoning"}
+        if not any(rule["path"] in joined for rule in old["fields"]):
+            new["fields"] = [rule for rule in new["fields"] if rule["path"] not in joined]
         assert old == new
         snapshot = {
             "model": "gpt-6-astra",

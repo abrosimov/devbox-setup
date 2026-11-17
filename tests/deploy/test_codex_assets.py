@@ -133,13 +133,12 @@ def test_global_agents_file_fits_codex_instruction_budget() -> None:
     assert "**diagnose** request" in text
     assert "For change, fix, build" in text
     assert "explicit confirmation" in text
-    assert "fpf-thinking" in text
-    assert "software-engineer-go" in text
-    assert "software-engineer-python" in text
-    assert "software-engineer-frontend" in text
-    assert "goimports -local <module-path>" in text
+    assert "`fpf-thinking` and `narrative-thinking` skills only when the user names them" in text
+    assert "Consult the registry before you change anything yourself." in text
+    assert "Apply the core's §6 registry check before the first edit" in text
+    assert "the `software-engineer-*` agents own the code of their stack" in text
     assert "Pre-authorised local validation" in text
-    assert "golangci-lint" in text
+    assert "the stack skills name the exact commands and flags" in text
     assert "without asking the user whether to proceed" in text
     assert "diagnose-and-repair" in text
 
@@ -169,7 +168,22 @@ def test_fpf_bundle_is_self_contained_and_vendor_neutral() -> None:
     assert "~/.claude" not in skill_text
     assert "/techne-" not in skill_text
     assert "mcp__sequentialthinking" not in skill_text
-    assert "private chain-of-thought" in skill_text
+    assert "private chain-of-thought" not in skill_text
+
+
+def test_thinking_skills_are_explicit_invocation_only() -> None:
+    for skill in ("fpf-thinking", "narrative-thinking"):
+        skill_root = AI_ROOT / "skills" / skill
+        frontmatter_text = (skill_root / "SKILL.md").read_text(encoding="utf-8").split("---\n")[1]
+        frontmatter: object = yaml.safe_load(frontmatter_text)
+        assert isinstance(frontmatter, dict)
+        assert frontmatter["disable-model-invocation"] is True
+
+        openai: object = yaml.safe_load(
+            (skill_root / "agents/openai.yaml").read_text(encoding="utf-8")
+        )
+        assert isinstance(openai, dict)
+        assert openai["policy"]["allow_implicit_invocation"] is False
 
 
 def test_go_engineer_is_deployed_and_vendor_neutral() -> None:

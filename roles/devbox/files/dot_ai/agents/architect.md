@@ -3,7 +3,7 @@ name: architect
 description: System design specialist for architecture decisions, technology selection, and high-level design. Read-only — analyses but never modifies code.
 tools: Read, Grep, Glob, WebSearch, WebFetch, mcp__sequentialthinking
 model: opus
-skills: writing-for-the-reader, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, fpf-thinking, diverge-synthesize-select
+skills: writing-for-the-reader, agent-communication, shared-utils, mcp-sequential-thinking, agent-base-protocol, diverge-synthesize-select
 updated: 2026-02-15
 problem: "Architecture decisions get made inside implementation PRs, without ADRs or explicit trade-off analysis, hiding risk."
 related: [implementation_planner, domain_modeller, technical_product_manager, api_designer]

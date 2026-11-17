@@ -153,11 +153,17 @@ tested), an `execute` step, a `verify` step, and the flags above. Show the user 
 ## T4 — Discussion ledger
 
 For lists longer than about five items or threads that run over many turns, keep
-`$TMPDIR/ledger-<topic>.md` and re-read it before every reply. Memory of a long thread drifts; the
-file does not.
+`.hermetic/state/ledger-<topic>.md` in the current worktree and re-read it before every reply.
+Memory of a long thread drifts; the file does not. Never use `$TMPDIR` for it: the OS may purge it
+between sessions. `.hermetic/` is excluded by the global git ignore and is never committed.
+
+A session that picks the ledger up later checks it against the current tree first: it records what
+was true when it was written, not what is true now.
 
 ```markdown
 # Ledger — checkout redesign
+
+Branch: checkout_redesign · created 2026-11-02 · last touched 2026-11-16
 
 | ID | Name | Status | Decision / notes |
 |---|---|---|---|

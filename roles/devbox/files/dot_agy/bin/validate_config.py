@@ -200,9 +200,44 @@ def parse_yaml_list(content: str, field: str) -> list[str]:
     return []
 
 
+# A JSON array is also valid YAML, and the quoting it forces keeps a leading `*`
+# from being read as a YAML alias.
+def parse_globs(raw: str) -> list[str] | None:
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(value, list) or not value:
+        return None
+    globs = [item for item in value if isinstance(item, str) and item.strip()]
+    return globs if len(globs) == len(value) else None
+
+
 # ---------------------------------------------------------------------------
 # Individual checks — each returns (errors, warnings)
 # ---------------------------------------------------------------------------
+
+
+ENGINEER_AGENT_PREFIX = "software-engineer-"
+
+
+def _agent_globs(name: str, fm: dict[str, str]) -> tuple[list[str], list[str]]:
+    if "globs" not in fm:
+        if not fm.get("name", "").startswith(ENGINEER_AGENT_PREFIX):
+            return [], []
+        missing = (
+            f'[AGENT_GLOBS] {name}: "{ENGINEER_AGENT_PREFIX}*" agents must declare '
+            '"globs", the files they own'
+        )
+        return [], [missing]
+    globs = parse_globs(fm["globs"])
+    if globs is None:
+        malformed = (
+            f'[AGENT_GLOBS] {name}: "globs" must be a non-empty flow list of double-quoted, '
+            'non-empty strings, e.g. globs: ["**/*.go"]'
+        )
+        return [], [malformed]
+    return globs, []
 
 
 def check_agents(root: Path) -> tuple[list[str], list[str]]:
@@ -221,6 +256,7 @@ def check_agents(root: Path) -> tuple[list[str], list[str]]:
             d.name for d in skills_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()
         }
 
+    glob_owners: dict[str, str] = {}
     for agent_file in sorted(agents_dir.glob("*.md")):
         name = agent_file.name
         content = agent_file.read_text()
@@ -246,6 +282,13 @@ def check_agents(root: Path) -> tuple[list[str], list[str]]:
             for skill in parse_skills_list(content)
             if skill not in available_skills
         )
+
+        globs, glob_errors = _agent_globs(name, fm)
+        errors.extend(glob_errors)
+        for glob in dict.fromkeys(globs):
+            owner = glob_owners.setdefault(glob, name)
+            if owner != name:
+                errors.append(f'[AGENT_GLOBS] {name}: glob "{glob}" is already declared by {owner}')
 
     return errors, warnings
 

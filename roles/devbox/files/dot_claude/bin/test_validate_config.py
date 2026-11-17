@@ -881,3 +881,74 @@ def test_manual_only_skill_does_not_consume_model_listing(tmp_path: Path) -> Non
     _budget_skill(tmp_path, "manual", "x" * 2000, "disable-model-invocation: true\n")
     assert vc.check_skill_budget(tmp_path) == ([], [])
     assert vc._skill_listing_entries(tmp_path, 1536) == []
+
+
+def _write_agent(root: Path, stem: str, name: str, globs: str | None = None) -> None:
+    (root / "agents").mkdir(exist_ok=True)
+    globs_line = "" if globs is None else f"globs: {globs}\n"
+    (root / "agents" / f"{stem}.md").write_text(
+        f"---\nname: {name}\ndescription: d\ntools: Read\nmodel: opus\nskills:\n"
+        f"{globs_line}---\nbody\n"
+    )
+
+
+def _glob_errors(root: Path) -> list[str]:
+    errors, _ = vc.check_agents(root)
+    return [e for e in errors if e.startswith("[AGENT_GLOBS]")]
+
+
+@pytest.mark.parametrize(
+    "globs",
+    ['["**/*.go"]', '["**/*.py", "**/*.pyi"]', '["**/*.{ts,tsx}"]'],
+)
+def test_agent_globs_well_formed_list_passes(tmp_path: Path, globs: str) -> None:
+    _write_agent(tmp_path, "software_engineer_x", "software-engineer-x", globs)
+    assert _glob_errors(tmp_path) == []
+
+
+def test_agent_globs_absent_on_other_agent_passes(tmp_path: Path) -> None:
+    _write_agent(tmp_path, "code_reviewer", "code-reviewer")
+    assert _glob_errors(tmp_path) == []
+
+
+@pytest.mark.parametrize(
+    "globs",
+    [
+        "",
+        "[]",
+        '"**/*.go"',
+        '["**/*.go", ""]',
+        '["  "]',
+        "[1]",
+        "[**/*.go]",
+        "['**/*.go']",
+        '\n  - "**/*.go"',
+    ],
+)
+def test_agent_globs_malformed_errors(tmp_path: Path, globs: str) -> None:
+    _write_agent(tmp_path, "planner", "planner", globs)
+    errors = _glob_errors(tmp_path)
+    assert len(errors) == 1
+    assert "planner.md" in errors[0]
+
+
+def test_agent_globs_shared_by_two_agents_errors_naming_both(tmp_path: Path) -> None:
+    _write_agent(tmp_path, "software_engineer_a", "software-engineer-a", '["**/*.go"]')
+    _write_agent(tmp_path, "software_engineer_b", "software-engineer-b", '["**/*.rs", "**/*.go"]')
+    errors = _glob_errors(tmp_path)
+    assert len(errors) == 1
+    assert "**/*.go" in errors[0]
+    assert "software_engineer_a.md" in errors[0]
+    assert "software_engineer_b.md" in errors[0]
+
+
+def test_agent_globs_repeated_within_one_agent_is_not_a_conflict(tmp_path: Path) -> None:
+    _write_agent(tmp_path, "software_engineer_a", "software-engineer-a", '["**/*.go", "**/*.go"]')
+    assert _glob_errors(tmp_path) == []
+
+
+def test_software_engineer_agent_without_globs_errors(tmp_path: Path) -> None:
+    _write_agent(tmp_path, "software_engineer_rust", "software-engineer-rust")
+    errors = _glob_errors(tmp_path)
+    assert len(errors) == 1
+    assert "software_engineer_rust.md" in errors[0]

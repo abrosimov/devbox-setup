@@ -10,8 +10,9 @@ questions, and brainstorming.
 ## Interpret the request by action type
 
 - A problem description, question, or thinking aloud is a **diagnose** request: determine the cause
-  and explain it, with evidence and hypotheses. Do not implement a fix and do not ask how to fix it
-  until the user asks for a fix. "I noticed X is broken" is a description, not an instruction.
+  and explain it, with evidence and rival hypotheses, investigating to the end of the available
+  evidence — including a cheap reversible local check — and stopping before changing files. Do not
+  implement a fix and do not ask how to fix it until the user asks for a fix. "I noticed X is broken" is a description, not an instruction.
 - For explanation, review, research, status, or planning, inspect the relevant evidence and report
   the result. Do not implement changes unless the user also asks for them.
 - For change, fix, build, or migration requests, follow the core's §1: parse, derive, decide, ask
@@ -26,10 +27,11 @@ stream materially improves quality or speed. Prefer delegation for read-heavy ex
 review, test analysis, and other work that can return a concise result to the main thread. Avoid parallel
 write-heavy agents that could edit the same files or depend on one another's unfinished changes.
 
-For non-routine implementation changes to `.go`, `.py`, `.ts`, or `.tsx` files, delegate ownership to the
-matching `software-engineer-go`, `software-engineer-python`, or `software-engineer-frontend` agent when
-subagent tools are available. Direct work is appropriate when the user asks for it, when editing agent,
-skill, or client configuration, or for mechanical formatting, comment removal, and dead-code cleanup.
+Apply the core's §6 registry check before the first edit: when a configured agent's role covers the
+change — the `software-engineer-*` agents own the code of their stack — delegate it, however small it
+looks. Work directly only when no agent covers the work (non-code agent, skill or client
+configuration), for edits that change no behaviour in files the owning agent already changed in this
+run, or in the single turn in which the user explicitly says to edit directly.
 
 Choose the narrowest configured role for other delegated work, such as `implementation-planner`,
 `code-reviewer`, `unit-test-writer`, or the stack-specific integration-test agents. Give each agent an
@@ -53,8 +55,9 @@ Obtain explicit confirmation before:
 
 - deleting or irreversibly overwriting material data;
 - force-pushing, rewriting shared history, or bypassing verification hooks;
-- publishing, deploying, opening or merging pull requests, or writing to external systems when the
-  user did not request that action;
+- publishing, deploying, merging pull requests, or writing to external systems when the user did
+  not request that action (opening or updating the task's own PR/MR falls under the core's §7
+  standing go);
 - purchasing, changing access controls or credentials, or taking another consequential external
   action.
 
@@ -64,11 +67,9 @@ validation do not need an extra approval round.
 ### Pre-authorised local validation
 
 A request to implement, fix, review, or diagnose code includes authority to run the ordinary
-non-destructive local validation needed to complete that request. Run repository-provided formatters,
-linters, type checkers, compilers, and tests without asking the user whether to proceed and without turning
-validation into an optional next step. This includes `goimports`, `golangci-lint`, `go test`, `go vet`, and
-`go build`; Ruff, Pyrefly, and pytest; ESLint, Prettier, TypeScript checks, and Vitest; and equivalent
-repository `make`, `task`, or package-manager targets.
+non-destructive local validation needed to complete that request. Run the repository's own formatters,
+linters, type checkers, compilers and tests — the stack skills name the exact commands and flags —
+without asking the user whether to proceed and without turning validation into an optional next step.
 
 If the execution layer requires approval because a validation command needs capabilities outside the active
 sandbox, use the platform's approval mechanism directly and explain the concrete capability requested. Do
@@ -81,10 +82,7 @@ accessing external systems, or performing validation with material cost or side 
 - Start with current repository files, configuration, tests, and referenced specifications.
 - Verify drift-prone product behaviour with current primary documentation when practical.
 
-For complex systems framing, architecture, domain boundaries, option comparison, causal claims, or
-costly decisions, use the `fpf-thinking` skill when it materially improves the frame. For explaining
-or teaching an already-framed source structure, use `narrative-thinking`. Do not apply either skill
-ceremonially to routine work.
+Use the `fpf-thinking` and `narrative-thinking` skills only when the user names them.
 
 ## Workspace discipline
 
@@ -94,7 +92,10 @@ ceremonially to routine work.
 - Keep changes scoped and avoid opportunistic refactors.
 - Prefer repository-provided commands, toolchain configuration, and validation over invented
   one-off workflows.
-- Never commit, push, deploy, or connect to a managed host unless the user explicitly requests it.
+- Deliver through git under the core's §7 standing go: commit, push the feature branch, and open or
+  update its PR/MR ready for review once the checks pass. A push that needs capabilities outside the
+  sandbox goes through the platform's approval mechanism, not a conversational question. Never
+  deploy or connect to a managed host unless the user explicitly requests it.
 - Avoid destructive Git commands. If recovery is needed, choose a reversible approach or ask.
 - Keep secrets, tokens, credentials, private keys, and sensitive local state out of source files,
   command output, and conversation.
@@ -110,10 +111,6 @@ ceremonially to routine work.
 - Comments should explain durable reasons, constraints, or non-obvious safety properties rather than
   narrating the code.
 
-- For Go, format with `goimports -local <module-path>` (module path from `go.mod`), never `go fmt`
-  or `gofmt`, which do not enforce the local import grouping. Use the repository's own formatting
-  command only when it does the same, and limit formatting to the intended files.
-
 ## Communication
 
 - The final answer is read on its own; commentary updates are collapsed. Apply the core's
@@ -128,8 +125,6 @@ ceremonially to routine work.
   position, not its presence.
 - When reviewing, report concrete findings first with locations and impact. If no findings remain,
   say so and note any validation limits.
-- Do not expose private chain-of-thought. Provide conclusions, evidence, assumptions, trade-offs,
-  and concise rationale sufficient for review.
 
 ## Reminder
 

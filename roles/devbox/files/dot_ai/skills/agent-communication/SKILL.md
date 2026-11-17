@@ -71,7 +71,6 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 | **Consistency Checker** | all `agents/*.md`, all `skills/*/SKILL.md`, all `commands/*.md` | `<audit-findings scope="library">` XML (inline) |
 | **DSS (via /techne-options)** | `spec.md`, `domain_analysis.md`, `plan.md`?, `design.md`? | `dss_output.json` |
 | **Architect** | `spec.md`, `domain_analysis.md`, `plan.md`? | *(architecture analysis — inline)* |
-| **TDD Guide** | *(user query)* | *(TDD guidance — inline)* |
 | **Build Resolver (Go)** | *(build error logs)* | *(code fixes — direct edits)* |
 | **Doc Updater** | *(code changes)* | *(documentation file updates)* |
 | **Database Reviewer** | `schema_design.md`, `migrations/` | *(review feedback — inline)* |
@@ -260,8 +259,8 @@ finding no test can show (a race the suite cannot provoke, a deployment concern)
 triggering conditions instead and carries no Test line.
 
 **Main session.** Send each Test line to the matching writer: unit → `unit-test-writer`;
-integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e → the
-frontend engineer with the `playwright-e2e` skill, because there is no e2e writer.
+integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e →
+`unit-test-writer`, which owns the e2e files and loads the `playwright-e2e` skill.
 
 **Test writer.** Write only that test, in the place and style the suite already uses, and run it.
 Return one of:

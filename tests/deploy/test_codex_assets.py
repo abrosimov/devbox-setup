@@ -42,7 +42,6 @@ EXPECTED_AGENTS = {
     "software-engineer-frontend",
     "software-engineer-go",
     "software-engineer-python",
-    "tdd-guide",
     "technical-product-manager",
     "unit-test-writer",
 }
@@ -67,7 +66,6 @@ VALIDATION_AGENTS = {
     "software-engineer-frontend",
     "software-engineer-go",
     "software-engineer-python",
-    "tdd-guide",
     "unit-test-writer",
 }
 CLIENT_SPECIFIC_MARKERS = (

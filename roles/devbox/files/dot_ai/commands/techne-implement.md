@@ -77,10 +77,15 @@ Store these values (including `DEFAULT_BRANCH` from Git Setup) — pass to agent
 The agents declare the files they own in their `globs:` frontmatter; this command holds no stack
 table of its own, so a new engineer agent is routed to as soon as it declares `globs:`.
 
-1. Read the `globs:` field of every agent definition in `~/.claude/agents/*.md`.
+1. Read the `globs:` field of every agent definition in `~/.claude/agents/*.md`. A pattern prefixed
+   with `!` excludes files from that agent's ownership: an agent owns a file when one of its plain
+   patterns matches it and none of its `!` patterns does. Engineers exclude test files this way;
+   `unit-test-writer` claims them.
 2. List the files the change will touch: from the plan's work streams, from the request, or — when
    neither names them — the tracked files of the area the request describes (`git ls-files`).
-3. Every agent whose `globs` match one of those files is a claimant, and owns the matching files.
+3. Every agent that owns one of those files is a claimant, and owns the matching files. Test files
+   never go to an engineer: they are handled in step 7 (Run the Test Writer), even when the request
+   is only about tests.
 
 | Claimants | Classification | Agent(s) |
 |-----------|---------------|----------|
@@ -167,9 +172,30 @@ Each agent will:
 - Implement the required changes
 - Provide summary and suggest next step
 
-### 7. Show Changes
+### 7. Run the Test Writer
 
-After the agent completes successfully, show the user the changed files:
+Every implementation run ends with tests written by a test writer, never by the engineer
+(`code-writing-protocols` — Test Ownership). Once the engineer(s) have finished, run without asking:
+
+- **`unit-test-writer`**, always, for the behaviour the engineer changed. Pick its model as
+  `/techne-test` does (its pre-flight complexity check), unless the user named a model for this run.
+- **`integration-tests-writer-{go,python}`** as well, when the plan has an integration-test work
+  stream or the engineer's handoff names integration scenarios (database, HTTP, messaging).
+
+The brief carries the same four fields as the engineer's, plus the engineer's handoff verbatim: the
+files changed, the scenarios it named for coverage, and the existing tests it reported as broken by
+a deliberate behaviour change, which the test writer updates.
+
+When the test writer reports a defect in production code, send the failing test back to the
+engineer with the defect, then rerun the test writer on the fix. This is the review–fix loop of the
+`workflow` skill and is bounded the same way.
+
+If the engineer's run produced no behaviour change (a rename, a comment, a config value), skip this
+step and say so in one line.
+
+### 8. Show Changes
+
+After the agents complete successfully, show the user the changed files:
 
 ```bash
 git status --short
@@ -178,10 +204,10 @@ git status --short
 Commit, push and the PR/MR follow the core's §7 git delivery; write their text with the
 `commit-and-pr-text` skill.
 
-### 8. After Completion
+### 9. After Completion
 
-Present the agent's summary and suggested next step to the user.
+Present the engineer's and the test writer's summaries to the user.
 
-> Implementation complete on branch `$BRANCH`.
+> Implementation and tests complete on branch `$BRANCH`.
 
-> **Next**: Run `/techne-test` to write tests.
+> **Next**: Run `/techne-review` to review all changes.

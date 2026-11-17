@@ -288,7 +288,9 @@ def check_agents(root: Path) -> tuple[list[str], list[str]]:
 
         globs, glob_errors = _agent_globs(name, fm)
         errors.extend(glob_errors)
-        for glob in dict.fromkeys(globs):
+        # A "!" pattern removes files from the agent's own ownership and claims
+        # nothing, so two agents may exclude the same files.
+        for glob in dict.fromkeys(g for g in globs if not g.startswith("!")):
             owner = glob_owners.setdefault(glob, name)
             if owner != name:
                 errors.append(f'[AGENT_GLOBS] {name}: glob "{glob}" is already declared by {owner}')

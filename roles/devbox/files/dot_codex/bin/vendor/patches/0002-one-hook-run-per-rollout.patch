@@ -1,0 +1,309 @@
+diff --git a/plugins/tracing/src/index.ts b/plugins/tracing/src/index.ts
+index 338970e..b7c648d 100644
+--- a/plugins/tracing/src/index.ts
++++ b/plugins/tracing/src/index.ts
+@@ -1,7 +1,7 @@
+ import { getConfig } from "./config.js";
+ import { setupInstrumentation } from "./instrumentation.js";
+ import { readExternalParentSpanContext } from "./parent-context.js";
+-import { markTurnUploaded } from "./sidecar.js";
++import { acquireRolloutLock, markTurnUploaded } from "./sidecar.js";
+ import { convertRollout } from "./trace.js";
+ import type { HookInput } from "./types.js";
+ import { debugLog, readStdin, setDebug } from "./utils.js";
+@@ -55,6 +55,15 @@ export async function runHook(): Promise<void> {
+   const hookTurnId = hookInput.turn_id ?? undefined;
+   let failure: unknown;
+ 
++  // Codex gives Stop 30 s and caps Interrupt and SessionEnd at 3 s.
++  const lockWaitMs = hookInput.hook_event_name === "Stop" ? 10_000 : 1_000;
++  const releaseLock = await acquireRolloutLock(transcriptPath, lockWaitMs);
++  if (!releaseLock) {
++    debugLog("another hook run holds the rollout lock; leaving its turns to that run or the next");
++    await instrumentation.shutdown();
++    return;
++  }
++
+   try {
+     await convertRollout(transcriptPath, {
+       config,
+@@ -84,6 +93,7 @@ export async function runHook(): Promise<void> {
+     failure ??= error;
+     debugLog("error during flush/shutdown:", error);
+   }
++  await releaseLock();
+ 
+   if (failure) {
+     if (config.fail_on_error) throw failure;
+diff --git a/plugins/tracing/src/sidecar.ts b/plugins/tracing/src/sidecar.ts
+index c525379..1e4b548 100644
+--- a/plugins/tracing/src/sidecar.ts
++++ b/plugins/tracing/src/sidecar.ts
+@@ -1,3 +1,4 @@
++import { randomUUID } from "node:crypto";
+ import * as fs from "node:fs/promises";
+ 
+ /**
+@@ -22,3 +23,96 @@ export async function markTurnUploaded(rolloutFile: string, turnId: string): Pro
+     // Best-effort: a failed write only risks a duplicate upload next time.
+   }
+ }
++
++// Twice the longest hook budget (Stop, 30 s): no live hook run holds the lock this long.
++const ROLLOUT_LOCK_STALE_MS = 60_000;
++const ROLLOUT_LOCK_POLL_MS = 50;
++
++const errorCode = (error: unknown): string | undefined => (error as NodeJS.ErrnoException).code;
++
++async function readIfPresent(file: string): Promise<string | undefined> {
++  try {
++    return await fs.readFile(file, "utf-8");
++  } catch (error) {
++    if (errorCode(error) === "ENOENT") return undefined;
++    throw error;
++  }
++}
++
++async function unlinkIfPresent(file: string): Promise<void> {
++  try {
++    await fs.unlink(file);
++  } catch (error) {
++    if (errorCode(error) !== "ENOENT") throw error;
++  }
++}
++
++async function tryCreateLock(lockFile: string, token: string): Promise<boolean> {
++  const staged = `${lockFile}.${token}`;
++  await fs.writeFile(staged, token, { encoding: "utf-8", flag: "wx" });
++  try {
++    await fs.link(staged, lockFile);
++    return true;
++  } catch (error) {
++    if (errorCode(error) === "EEXIST") return false;
++    throw error;
++  } finally {
++    await unlinkIfPresent(staged);
++  }
++}
++
++async function takeOverIfStale(lockFile: string, token: string): Promise<void> {
++  let observed: string;
++  let ageMs: number;
++  try {
++    const handle = await fs.open(lockFile, "r");
++    try {
++      ageMs = Date.now() - (await handle.stat()).mtimeMs;
++      observed = await handle.readFile("utf-8");
++    } finally {
++      await handle.close();
++    }
++  } catch (error) {
++    if (errorCode(error) === "ENOENT") return;
++    throw error;
++  }
++  if (ageMs <= ROLLOUT_LOCK_STALE_MS) return;
++
++  const removed = `${lockFile}.stale.${token}`;
++  try {
++    await fs.rename(lockFile, removed);
++  } catch (error) {
++    if (errorCode(error) === "ENOENT") return;
++    throw error;
++  }
++  try {
++    if ((await readIfPresent(removed)) !== observed) {
++      // Another run replaced the stale lock first; put its live lock back.
++      await fs.link(removed, lockFile).catch((error: unknown) => {
++        if (errorCode(error) !== "EEXIST") throw error;
++      });
++    }
++  } finally {
++    await unlinkIfPresent(removed);
++  }
++}
++
++/** Resolves to `undefined` when another run still holds the lock after `waitMs`. */
++export async function acquireRolloutLock(
++  rolloutFile: string,
++  waitMs: number,
++): Promise<(() => Promise<void>) | undefined> {
++  const lockFile = `${rolloutFile}.langfuse.lock`;
++  const token = `${process.pid}-${randomUUID()}`;
++  const deadline = Date.now() + waitMs;
++  for (;;) {
++    if (await tryCreateLock(lockFile, token)) {
++      return async () => {
++        if ((await readIfPresent(lockFile)) === token) await unlinkIfPresent(lockFile);
++      };
++    }
++    await takeOverIfStale(lockFile, token);
++    if (Date.now() >= deadline) return undefined;
++    await new Promise((resolve) => setTimeout(resolve, ROLLOUT_LOCK_POLL_MS));
++  }
++}
+diff --git a/plugins/tracing/test/hook-command.test.ts b/plugins/tracing/test/hook-command.test.ts
+index 32e90f7..1c7e7e9 100644
+--- a/plugins/tracing/test/hook-command.test.ts
++++ b/plugins/tracing/test/hook-command.test.ts
+@@ -495,3 +495,161 @@ describe("hook events that end a turn or a session without Stop", () => {
+     });
+   });
+ });
++
++describe("one hook run at a time per rollout", () => {
++  const event = (ts: string, payload: Record<string, unknown>) =>
++    JSON.stringify({ timestamp: ts, type: "event_msg", payload });
++
++  function stageTwoTurnRollout(sessionId: string): string {
++    const sessionsDir = path.join(
++      makeTempDir("lf-codex-sessions-"),
++      "sessions",
++      "2026",
++      "06",
++      "03",
++    );
++    fs.mkdirSync(sessionsDir, { recursive: true });
++    const rollout = path.join(sessionsDir, "rollout.jsonl");
++    fs.writeFileSync(
++      rollout,
++      [
++        JSON.stringify({
++          timestamp: "2026-06-03T12:00:00.000Z",
++          type: "session_meta",
++          payload: { id: sessionId, cli_version: "0.160.1" },
++        }),
++        event("2026-06-03T12:00:01.000Z", { type: "task_started", turn_id: "turn-1" }),
++        event("2026-06-03T12:00:01.100Z", { type: "user_message", message: "First" }),
++        event("2026-06-03T12:00:02.000Z", { type: "agent_message", message: "One" }),
++        event("2026-06-03T12:00:02.100Z", { type: "task_complete", turn_id: "turn-1" }),
++        event("2026-06-03T12:01:00.000Z", { type: "task_started", turn_id: "turn-2" }),
++        event("2026-06-03T12:01:00.100Z", { type: "user_message", message: "Second" }),
++        event("2026-06-03T12:01:01.000Z", { type: "agent_message", message: "Two" }),
++      ].join("\n") + "\n",
++    );
++    return rollout;
++  }
++
++  async function withSlowCollector(
++    responseDelayMs: number,
++    run: (
++      hook: (payload: Record<string, unknown>) => Promise<number>,
++      bodies: string[],
++    ) => Promise<void>,
++  ): Promise<void> {
++    const codexHome = makeTempDir("lf-codex-home-");
++    const sessionCwd = makeTempDir("lf-codex-cwd-");
++    const bodies: string[] = [];
++    const server = http.createServer((req, res) => {
++      const chunks: Buffer[] = [];
++      req.on("data", (chunk) => chunks.push(chunk as Buffer));
++      req.on("end", () => {
++        bodies.push(Buffer.concat(chunks).toString("utf-8"));
++        setTimeout(() => {
++          res.writeHead(200, { "content-type": "application/json" });
++          res.end("{}");
++        }, responseDelayMs);
++      });
++    });
++    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++    const { port } = server.address() as { port: number };
++
++    const hook = async (payload: Record<string, unknown>): Promise<number> => {
++      const started = Date.now();
++      const { code } = await runShellCommand(readHookCommand(), {
++        cwd: sessionCwd,
++        env: {
++          ...process.env,
++          PLUGIN_ROOT: pluginRootDir,
++          CODEX_HOME: codexHome,
++          HOME: codexHome,
++          TRACE_TO_LANGFUSE: "true",
++          LANGFUSE_PUBLIC_KEY: "pk-lf-test",
++          LANGFUSE_SECRET_KEY: "sk-lf-test",
++          LANGFUSE_BASE_URL: `http://127.0.0.1:${port}`,
++        },
++        input: JSON.stringify(payload),
++      });
++      expect(code).toBe(0);
++      return Date.now() - started;
++    };
++
++    try {
++      await run(hook, bodies);
++    } finally {
++      await new Promise<void>((resolve) => server.close(() => resolve()));
++    }
++  }
++
++  const exportCounts = (bodies: string[]): Record<string, number> => {
++    const counts: Record<string, number> = {};
++    for (const root of exportedTurnRoots(bodies)) {
++      const turnId = root["langfuse.observation.metadata.codex.turn_id"];
++      counts[turnId] = (counts[turnId] ?? 0) + 1;
++    }
++    return counts;
++  };
++
++  const sidecar = (rollout: string): string[] =>
++    fs.existsSync(`${rollout}.langfuse`)
++      ? fs.readFileSync(`${rollout}.langfuse`, "utf-8").split("\n").filter(Boolean)
++      : [];
++
++  it("exports each turn exactly once when two runs start together", async () => {
++    const rollout = stageTwoTurnRollout("sess-concurrent");
++    const stop = {
++      hook_event_name: "Stop",
++      session_id: "sess-concurrent",
++      turn_id: "turn-2",
++      transcript_path: rollout,
++    };
++
++    await withSlowCollector(300, async (hook, bodies) => {
++      await Promise.all([hook(stop), hook({ ...stop, hook_event_name: "Interrupt" })]);
++
++      expect(exportCounts(bodies)).toEqual({ "turn-1": 1, "turn-2": 1 });
++      expect(sidecar(rollout).sort()).toEqual(["turn-1", "turn-2"]);
++      expect(fs.existsSync(`${rollout}.langfuse.lock`)).toBe(false);
++    });
++  });
++
++  it("takes over a lock older than the staleness timeout", async () => {
++    const rollout = stageTwoTurnRollout("sess-stale");
++    const lock = `${rollout}.langfuse.lock`;
++    fs.writeFileSync(lock, "99999-crashed-holder");
++    const twoMinutesAgo = new Date(Date.now() - 120_000);
++    fs.utimesSync(lock, twoMinutesAgo, twoMinutesAgo);
++
++    await withSlowCollector(0, async (hook, bodies) => {
++      await hook({
++        hook_event_name: "Stop",
++        session_id: "sess-stale",
++        turn_id: "turn-2",
++        transcript_path: rollout,
++      });
++
++      expect(exportCounts(bodies)).toEqual({ "turn-1": 1, "turn-2": 1 });
++      expect(sidecar(rollout)).toEqual(["turn-1", "turn-2"]);
++      expect(fs.existsSync(lock)).toBe(false);
++    });
++  });
++
++  it("exits without exporting while another run holds the lock", async () => {
++    const rollout = stageTwoTurnRollout("sess-held");
++    const lock = `${rollout}.langfuse.lock`;
++    fs.writeFileSync(lock, "1-live-holder");
++
++    await withSlowCollector(0, async (hook, bodies) => {
++      const elapsedMs = await hook({
++        hook_event_name: "SessionEnd",
++        session_id: "sess-held",
++        transcript_path: rollout,
++      });
++
++      expect(exportCounts(bodies)).toEqual({});
++      expect(sidecar(rollout)).toEqual([]);
++      expect(fs.readFileSync(lock, "utf-8")).toBe("1-live-holder");
++      expect(elapsedMs).toBeLessThan(3_000);
++    });
++  });
++});

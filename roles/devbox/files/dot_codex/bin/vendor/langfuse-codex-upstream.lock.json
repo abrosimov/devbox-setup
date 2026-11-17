@@ -7,6 +7,9 @@
   "node_major": 22,
   "pnpm_version": "9.5.0",
   "artifact_path": "plugins/tracing/dist/index.mjs",
-  "output_git_blob_sha1": "5f3ce6f94d5ed960507eecaa104bb02c4f9eee63",
-  "patches": ["0001-export-interrupted-and-ended-turns.patch"]
+  "output_git_blob_sha1": "5d7209b1db3763102aeb11ac88a13c55961732f6",
+  "patches": [
+    "0001-export-interrupted-and-ended-turns.patch",
+    "0002-one-hook-run-per-rollout.patch"
+  ]
 }

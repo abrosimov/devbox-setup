@@ -13,7 +13,7 @@ Third-party code built from a pinned upstream commit and committed here. Files u
 | Licence | MIT (`langfuse-codex/LICENSE`, copied from the upstream root) |
 | Upstream Git tree SHA-1 | `dc624bae569783627507f292490e079820029938` |
 | Build toolchain | Node 22, pnpm 9.5.0 |
-| Output Git blob SHA-1 | `5f3ce6f94d5ed960507eecaa104bb02c4f9eee63` (upstream plus the patches below) |
+| Output Git blob SHA-1 | `5d7209b1db3763102aeb11ac88a13c55961732f6` (upstream plus the patches below) |
 | Artifact pin | `langfuse-codex-upstream.lock.json` (authoritative when this table disagrees) |
 
 ### Why it is vendored rather than installed as a plugin
@@ -70,6 +70,7 @@ this order:
 | Patch | Change |
 | --- | --- |
 | `0001-export-interrupted-and-ended-turns.patch` | on `Interrupt`, export the hook's turn as final and aborted before `turn_aborted` reaches the rollout; on `SessionEnd`, export every turn with an id not yet in the sidecar |
+| `0002-one-hook-run-per-rollout.patch` | hold `<rollout>.langfuse.lock` from parse to the last sidecar mark; wait at most 10 s on `Stop` and 1 s on other events, then exit without exporting; take over a lock older than 60 s |
 
 The input hash is the Git tree SHA-1 of the whole upstream tree, computed from the
 fetched files exactly as `git write-tree` would. It equals `<commit>^{tree}` upstream,

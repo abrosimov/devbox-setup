@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 import * as fs$1 from "node:fs/promises";
 import * as os$1 from "node:os";
 import * as path$1 from "node:path";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import * as fs from "fs";
 import * as zlib from "zlib";
 import { Readable } from "stream";
@@ -35009,6 +35009,85 @@ async function markTurnUploaded(rolloutFile, turnId) {
 		await fs$1.appendFile(`${rolloutFile}.langfuse`, `${turnId}\n`, "utf-8");
 	} catch {}
 }
+const ROLLOUT_LOCK_STALE_MS = 6e4;
+const ROLLOUT_LOCK_POLL_MS = 50;
+const errorCode = (error) => error.code;
+async function readIfPresent(file) {
+	try {
+		return await fs$1.readFile(file, "utf-8");
+	} catch (error) {
+		if (errorCode(error) === "ENOENT") return void 0;
+		throw error;
+	}
+}
+async function unlinkIfPresent(file) {
+	try {
+		await fs$1.unlink(file);
+	} catch (error) {
+		if (errorCode(error) !== "ENOENT") throw error;
+	}
+}
+async function tryCreateLock(lockFile, token) {
+	const staged = `${lockFile}.${token}`;
+	await fs$1.writeFile(staged, token, {
+		encoding: "utf-8",
+		flag: "wx"
+	});
+	try {
+		await fs$1.link(staged, lockFile);
+		return true;
+	} catch (error) {
+		if (errorCode(error) === "EEXIST") return false;
+		throw error;
+	} finally {
+		await unlinkIfPresent(staged);
+	}
+}
+async function takeOverIfStale(lockFile, token) {
+	let observed;
+	let ageMs;
+	try {
+		const handle = await fs$1.open(lockFile, "r");
+		try {
+			ageMs = Date.now() - (await handle.stat()).mtimeMs;
+			observed = await handle.readFile("utf-8");
+		} finally {
+			await handle.close();
+		}
+	} catch (error) {
+		if (errorCode(error) === "ENOENT") return;
+		throw error;
+	}
+	if (ageMs <= ROLLOUT_LOCK_STALE_MS) return;
+	const removed = `${lockFile}.stale.${token}`;
+	try {
+		await fs$1.rename(lockFile, removed);
+	} catch (error) {
+		if (errorCode(error) === "ENOENT") return;
+		throw error;
+	}
+	try {
+		if (await readIfPresent(removed) !== observed) await fs$1.link(removed, lockFile).catch((error) => {
+			if (errorCode(error) !== "EEXIST") throw error;
+		});
+	} finally {
+		await unlinkIfPresent(removed);
+	}
+}
+/** Resolves to `undefined` when another run still holds the lock after `waitMs`. */
+async function acquireRolloutLock(rolloutFile, waitMs) {
+	const lockFile = `${rolloutFile}.langfuse.lock`;
+	const token = `${process.pid}-${randomUUID()}`;
+	const deadline = Date.now() + waitMs;
+	for (;;) {
+		if (await tryCreateLock(lockFile, token)) return async () => {
+			if (await readIfPresent(lockFile) === token) await unlinkIfPresent(lockFile);
+		};
+		await takeOverIfStale(lockFile, token);
+		if (Date.now() >= deadline) return void 0;
+		await new Promise((resolve) => setTimeout(resolve, ROLLOUT_LOCK_POLL_MS));
+	}
+}
 
 //#endregion
 //#region src/skills.ts
@@ -36010,6 +36089,13 @@ async function runHook() {
 	const transcriptPath = hookInput.transcript_path;
 	const hookTurnId = hookInput.turn_id ?? void 0;
 	let failure;
+	const lockWaitMs = hookInput.hook_event_name === "Stop" ? 1e4 : 1e3;
+	const releaseLock = await acquireRolloutLock(transcriptPath, lockWaitMs);
+	if (!releaseLock) {
+		debugLog("another hook run holds the rollout lock; leaving its turns to that run or the next");
+		await instrumentation.shutdown();
+		return;
+	}
 	try {
 		await convertRollout(transcriptPath, {
 			config,
@@ -36032,6 +36118,7 @@ async function runHook() {
 		failure ??= error;
 		debugLog("error during flush/shutdown:", error);
 	}
+	await releaseLock();
 	if (failure) {
 		if (config.fail_on_error) throw failure;
 		debugLog("export incomplete; leaving the remaining turns unmarked so they stay retryable");

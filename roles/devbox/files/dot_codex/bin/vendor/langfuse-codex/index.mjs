@@ -5500,9 +5500,9 @@ function superRefine(fn, params) {
 * Resolution order (lowest → highest precedence):
 *   defaults  →  ~/.codex/langfuse.json  →  <cwd>/.codex/langfuse.json  →  env
 *
-* For each env var, the `LANGFUSE_CODEX_*` form takes precedence over the
-* matching standard `LANGFUSE_*` form so you can scope credentials to Codex
-* without disturbing other Langfuse tooling on the same machine.
+* `public_key`, `secret_key` and `base_url` come only from ~/.codex/langfuse.json
+* and `LANGFUSE_CODEX_*`, so neither an inherited `LANGFUSE_*` environment nor
+* an opened repository can send traces elsewhere.
 */
 const ConfigSchema = object({
 	enabled: boolean(),
@@ -5619,15 +5619,20 @@ async function readCodexUserEmail(authFile) {
 		return;
 	}
 }
-function getVar(suffix, env) {
-	return env[`LANGFUSE_CODEX_${suffix}`] ?? env[`LANGFUSE_${suffix}`];
+function withoutDestination(config) {
+	if (!config) return void 0;
+	const options = { ...config };
+	delete options.public_key;
+	delete options.secret_key;
+	delete options.base_url;
+	return options;
 }
 function readEnvConfig(env) {
 	return PartialConfigSchema.parse(stripUndefined({
 		enabled: parseBoolean(env.TRACE_TO_LANGFUSE),
-		public_key: getVar("PUBLIC_KEY", env),
-		secret_key: getVar("SECRET_KEY", env),
-		base_url: getVar("BASE_URL", env),
+		public_key: env.LANGFUSE_CODEX_PUBLIC_KEY,
+		secret_key: env.LANGFUSE_CODEX_SECRET_KEY,
+		base_url: env.LANGFUSE_CODEX_BASE_URL,
 		environment: env.LANGFUSE_CODEX_ENVIRONMENT ?? env.LANGFUSE_TRACING_ENVIRONMENT,
 		user_id: env.LANGFUSE_CODEX_USER_ID,
 		tags: parseTags(env.LANGFUSE_CODEX_TAGS),
@@ -5648,7 +5653,7 @@ async function getConfig(options) {
 	const home = options?.home ?? getHomeDir();
 	const cwd = options?.cwd ?? process.cwd();
 	const env = options?.env ?? process.env;
-	const [globalConfig, localConfig] = await Promise.all([readConfigFile(path$1.join(home, ".codex", "langfuse.json")), readConfigFile(path$1.join(cwd, ".codex", "langfuse.json"))]);
+	const [globalConfig, localConfig] = await Promise.all([readConfigFile(path$1.join(home, ".codex", "langfuse.json")), readConfigFile(path$1.join(cwd, ".codex", "langfuse.json")).then(withoutDestination)]);
 	const envConfig = readEnvConfig(env);
 	const codexUserId = globalConfig?.user_id ?? localConfig?.user_id ?? envConfig.user_id ? void 0 : await readCodexUserEmail(getCodexAuthFile(home, env));
 	return ConfigSchema.parse({
@@ -36401,7 +36406,7 @@ async function runHook() {
 		return;
 	}
 	if (!config.public_key || !config.secret_key) {
-		debugLog("missing LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY; skipping");
+		debugLog("missing public_key / secret_key in ~/.codex/langfuse.json or LANGFUSE_CODEX_*; skipping");
 		return;
 	}
 	const subagentStopped = hookInput.hook_event_name === "SubagentStop";

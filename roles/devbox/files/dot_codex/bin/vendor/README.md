@@ -13,7 +13,7 @@ Third-party code built from a pinned upstream commit and committed here. Files u
 | Licence | MIT (`langfuse-codex/LICENSE`, copied from the upstream root) |
 | Upstream Git tree SHA-1 | `dc624bae569783627507f292490e079820029938` |
 | Build toolchain | Node 22, pnpm 9.5.0 |
-| Output Git blob SHA-1 | `4c0b2592a2640725c41fd6c92605274353947f4c` (upstream plus the patches below) |
+| Output Git blob SHA-1 | `395b46b039f93463a4771897bc44715ddea6aa03` (upstream plus the patches below) |
 | Artifact pin | `langfuse-codex-upstream.lock.json` (authoritative when this table disagrees) |
 
 ### Why it is vendored rather than installed as a plugin
@@ -33,7 +33,9 @@ the machine that runs it.
 ### Configuration
 
 The hook reads `~/.codex/langfuse.json`, rendered from `../../langfuse.json.j2`, with
-loopback-only sentinel credentials.
+loopback-only sentinel credentials. Its keys and base URL come only from that file and
+the `LANGFUSE_CODEX_*` variables, so an inherited `LANGFUSE_*` environment or a
+repository's `.codex/langfuse.json` cannot redirect traces away from the loopback edge.
 
 ### Registration
 
@@ -78,6 +80,7 @@ this order:
 | `0006-answer-each-turn-with-its-final-answer.patch` | set a turn's output to its final answer: the `last_agent_message` of `task_complete`, else the last `AgentMessage` item with `phase` `final_answer`, else the earlier choice of the last `agent_message` event or the last step's text. Codex no longer writes `agent_message` events, and the final step's text carries the `<oai-mem-citation>` block appended to the answer (and, when one response holds both, the commentary before it). An interrupted turn takes its `final_answer` item when it has one. No span is added, so observation ids are unchanged |
 | `0007-attribute-subagent-turns-to-their-agent.patch` | give every subagent turn root, nested or attached on `SubagentStop`, the child's `codex.agent_role`, `codex.agent_path`, `codex.agent_nickname`, `codex.depth` and `codex.parent_thread_id` from its `session_meta` (top-level fields, else `source.subagent.thread_spawn`); tag a top-level turn's trace `subagent:<role>` once per distinct role among the subagents it announced, read from each child's `session_meta`, with the same tags on the attributes a later `SubagentStop` export propagates; give a model-visible call that a `SubAgentActivity` item of kind `interacted` shares its id with (`send_message`, `followup_task`) `codex.target_thread_id` and `codex.target_agent_path`. No span is added, so observation ids are unchanged |
 | `0008-describe-each-turn-with-its-place-and-timing.patch` | give every turn root, main or subagent, nested or attached on `SubagentStop`, the keys the Claude hook records: `codex.turn_number` (1-based among the thread's own turns, so a forked child's replayed ancestor turns are not counted), `codex.cwd` (the turn's `turn_context`, else `session_meta`), `codex.project` (the last component of that cwd, as the Claude hook derives it), `codex.git_branch` and `codex.git_commit` (`session_meta.git`), `codex.transcript_path` (the rollout's file name, the Claude hook's short form) and `codex.duration_ms` (`task_complete` or `turn_aborted`). When `task_complete` reports `time_to_first_token_ms`, which Codex measures from the turn's start, the turn's first generation starts at the turn's start and records `completionStartTime` at start plus that time. No span is added, so observation ids are unchanged |
+| `0009-take-credentials-only-from-the-global-config.patch` | take `public_key`, `secret_key` and `base_url` only from `~/.codex/langfuse.json` and `LANGFUSE_CODEX_PUBLIC_KEY`, `LANGFUSE_CODEX_SECRET_KEY` and `LANGFUSE_CODEX_BASE_URL`: the standard `LANGFUSE_*` variables no longer set them, and a project's `<cwd>/.codex/langfuse.json` can still set every other option but not these three. Upstream let either one override the global file, so an inherited environment or an opened repository could send traces past the loopback edge. Observation ids are unchanged |
 
 The input hash is the Git tree SHA-1 of the whole upstream tree, computed from the
 fetched files exactly as `git write-tree` would. It equals `<commit>^{tree}` upstream,

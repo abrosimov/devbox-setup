@@ -207,7 +207,6 @@ Each stage runs independently via its `/techne-*` command. The user drives the f
 - **database_reviewer** — Reviews schema designs and migrations for correctness and safety
 - **doc_updater** — Updates documentation to reflect code and config changes
 - **refactor_cleaner** — Performs focused refactoring and dead-code cleanup
-- **tdd_guide** — Guides test-driven development flow (red-green-refactor)
 - **focus_coach** — Frames and paces a task into micro-steps (drives `/techne-focus`)
 
 ### Meta-Pipeline (Infrastructure)
@@ -431,7 +430,7 @@ When invoking agents via commands, the model is determined by this precedence (h
 | Model | Agents |
 |-------|--------|
 | `opus` | technical-product-manager, domain-expert, domain-modeller, designer, database-designer, api-designer, architect, agent-builder, skill-builder, meta-reviewer, content-reviewer, code-reviewer, **implementation-planner**, **all software-engineer-\***, observability-engineer, formal-model-writer |
-| `sonnet` | unit-test-writer-*, build-resolver-go, refactor-cleaner, doc-updater, tdd-guide, database-reviewer, freshness-auditor, consistency-checker |
+| `sonnet` | unit-test-writer-*, build-resolver-go, refactor-cleaner, doc-updater, database-reviewer, freshness-auditor, consistency-checker |
 | `haiku` | Search, grep, file discovery tasks (via `model: "haiku"` in Task tool) |
 
 **Effort parameter guidance** (pass via `max_turns` or prompt hint):

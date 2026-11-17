@@ -71,7 +71,6 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 | **Consistency Checker** | all `agents/*.md`, all `skills/*/SKILL.md`, all `commands/*.md` | `<audit-findings scope="library">` XML (inline) |
 | **DSS (via /techne-options)** | `spec.md`, `domain_analysis.md`, `plan.md`?, `design.md`? | `dss_output.json` |
 | **Architect** | `spec.md`, `domain_analysis.md`, `plan.md`? | *(architecture analysis — inline)* |
-| **TDD Guide** | *(user query)* | *(TDD guidance — inline)* |
 | **Build Resolver (Go)** | *(build error logs)* | *(code fixes — direct edits)* |
 | **Doc Updater** | *(code changes)* | *(documentation file updates)* |
 | **Database Reviewer** | `schema_design.md`, `migrations/` | *(review feedback — inline)* |

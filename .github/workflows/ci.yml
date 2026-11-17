@@ -77,6 +77,29 @@ jobs:
           python3 scripts/langfuse-hook-source.py refresh
           git diff --exit-code -- roles/devbox/files/dot_claude/bin/vendor/langfuse_hook.py
 
+      - name: Verify pinned Codex Langfuse hook bundle (offline)
+        run: python3 scripts/langfuse-codex-plugin-source.py verify
+
+      - name: Read the Codex Langfuse build toolchain pins
+        id: codex-langfuse-pins
+        run: |
+          lock=roles/devbox/files/dot_codex/bin/vendor/langfuse-codex-upstream.lock.json
+          echo "node=$(jq -r .node_major "$lock")" >> "$GITHUB_OUTPUT"
+          echo "pnpm=$(jq -r .pnpm_version "$lock")" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node for the Codex Langfuse hook build
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ steps.codex-langfuse-pins.outputs.node }}
+
+      - name: Rebuild pinned Codex Langfuse hook bundle from upstream
+        env:
+          PNPM_VERSION: ${{ steps.codex-langfuse-pins.outputs.pnpm }}
+        run: |
+          npm install --global "pnpm@${PNPM_VERSION}"
+          python3 scripts/langfuse-codex-plugin-source.py refresh
+          git diff --exit-code -- roles/devbox/files/dot_codex/bin/vendor/langfuse-codex/
+
       - name: Validate Claude agent/skill/command cross-references
         run: make validate-claude
 

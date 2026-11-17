@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import json
 import os
-import re
 import subprocess
 import sys
 import tomllib
@@ -27,6 +26,12 @@ CODEX_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/codex.yml"
 CODEX_CONFIG = REPO_ROOT / "roles/devbox/files/dot_codex/config.toml.j2"
 CODEX_LANGFUSE = REPO_ROOT / "roles/devbox/files/dot_codex/langfuse.json.j2"
 CODEX_TASKS = REPO_ROOT / "roles/devbox/tasks/install_codex_configs.yml"
+CODEX_VENDORED_HOOK = REPO_ROOT / "roles/devbox/files/dot_codex/bin/vendor/langfuse-codex/index.mjs"
+PACKAGES = REPO_ROOT / "roles/devbox/defaults/main/packages.yml"
+CODEX_NODE = "/opt/homebrew/opt/node@22/bin/node"
+CODEX_LANGFUSE_HOOK = f"{CODEX_NODE} ~/.codex/bin/vendor/langfuse-codex/index.mjs"
+RETIRED_CODEX_PLUGIN = "tracing@codex-observability-plugin"
+RETIRED_CODEX_MARKETPLACE = "codex-observability-plugin"
 AGY_BIN = REPO_ROOT / "roles/devbox/files/dot_agy/bin"
 AGY_VENDORED_HOOK = AGY_BIN / "vendor/langfuse_hook.py"
 AGY_HOOKS = REPO_ROOT / "roles/devbox/files/dot_agy/config/hooks.json.j2"
@@ -36,7 +41,6 @@ ROLE_MAIN = ROLE / "tasks/main.yml"
 CORE_DEFAULTS = ROLE / "defaults/main/core.yml"
 PROFILES = ("personal", "work")
 
-FULL_SHA = re.compile(r"[0-9a-f]{40}")
 LOOPBACK_URL = "http://127.0.0.1:14318"
 CODEX_RENDER = "Install Codex Langfuse runtime configuration"
 CODEX_READ_BACK = "Read back the Codex Langfuse runtime configuration"
@@ -191,22 +195,43 @@ def test_claude_langfuse_runtime_is_loopback_only_and_media_free() -> None:
     assert not environment["CC_LANGFUSE_SECRET_KEY"].startswith("sk-lf-")
 
 
-def test_codex_marketplace_and_plugin_are_pinned_and_enabled() -> None:
+def _codex_hooks(event: str) -> list[dict[str, object]]:
+    config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
+    return [hook for group in config["hooks"][event] for hook in group["hooks"]]
+
+
+def test_codex_langfuse_hook_is_vendored_rather_than_installed_as_a_plugin() -> None:
+    """Upstream no longer commits its built `dist/`, and its hook runs a bare `node`
+    from PATH; see roles/devbox/files/dot_codex/bin/vendor/README.md."""
     defaults = yaml.safe_load(CODEX_DEFAULTS.read_text(encoding="utf-8"))
     config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
-    marketplace = defaults["devbox_codex_plugin_marketplaces"][0]
-    plugin = defaults["devbox_codex_plugins"][0]
 
-    assert marketplace["name"] == "codex-observability-plugin"
-    assert marketplace["repo"] == "langfuse/codex-observability-plugin"
-    assert FULL_SHA.fullmatch(marketplace["ref"])
-    assert plugin == {
-        "name": "tracing",
-        "marketplace": "codex-observability-plugin",
-        "version": "0.1.0",
-    }
+    assert CODEX_VENDORED_HOOK.is_file()
+    assert "devbox_codex_plugin_marketplaces" not in defaults
+    assert "devbox_codex_plugins" not in defaults
+    assert RETIRED_CODEX_PLUGIN not in config["plugins"]
     assert config["features"]["hooks"] is True
-    assert config["plugins"]["tracing@codex-observability-plugin"]["enabled"] is True
+
+
+def test_codex_langfuse_hook_runs_the_vendored_bundle_under_pinned_node() -> None:
+    config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
+    packages = yaml.safe_load(PACKAGES.read_text(encoding="utf-8"))
+    registered = {
+        event: hook
+        for event in config["hooks"]
+        for hook in _codex_hooks(event)
+        if "langfuse-codex" in str(hook["command"])
+    }
+
+    assert registered == {
+        "Stop": {
+            "command": CODEX_LANGFUSE_HOOK,
+            "statusMessage": "Uploading Codex trace to Langfuse",
+            "timeout": 30,
+            "type": "command",
+        }
+    }
+    assert "node@22" in packages["devbox_brew_secondary"]
 
 
 def test_codex_native_trace_export_is_disabled_without_disabling_logs_or_metrics() -> None:
@@ -219,19 +244,90 @@ def test_codex_native_trace_export_is_disabled_without_disabling_logs_or_metrics
     assert telemetry["log_user_prompt"] is True
 
 
-def test_codex_provisioning_installs_the_pin() -> None:
-    tasks = _tasks_by_name(CODEX_TASKS)
-    runtime = tasks["Install Codex Langfuse runtime configuration"]
-    add = tasks["Add pinned Codex plugin marketplaces"]
-    inspect_revision = tasks["Inspect pinned Codex marketplace revisions"]
-    install = tasks["Install Codex plugins"]
+def test_codex_provisioning_installs_no_plugin() -> None:
+    tasks = yaml.safe_load(CODEX_TASKS.read_text(encoding="utf-8"))
+    runtime = _tasks_by_name(CODEX_TASKS)["Install Codex Langfuse runtime configuration"]
+    commands = [task.get("ansible.builtin.command") for task in tasks]
+    argvs = [
+        command["argv"]
+        for command in commands
+        if isinstance(command, dict) and isinstance(command.get("argv"), list)
+    ]
 
     assert runtime["ansible.builtin.template"]["mode"] == "0600"
-    assert "--ref" in add["ansible.builtin.command"]["argv"]
-    assert "{{ item.ref }}" in add["ansible.builtin.command"]["argv"]
-    assert "not ansible_check_mode" in add["when"]
-    assert "rev-parse" in inspect_revision["ansible.builtin.command"]["argv"]
-    assert "not ansible_check_mode" in install["when"]
+    assert not [argv for argv in argvs if "plugin" in argv and "add" in argv]
+
+
+@pytest.mark.parametrize(
+    ("task_name", "selector", "inventory"),
+    [
+        (
+            "Remove the retired Langfuse tracing plugin",
+            RETIRED_CODEX_PLUGIN,
+            "Inspect installed Codex plugins for the retired Langfuse tracing plugin",
+        ),
+        (
+            "Remove the retired Langfuse tracing marketplace",
+            RETIRED_CODEX_MARKETPLACE,
+            "Inspect configured Codex plugin marketplaces for the retired Langfuse marketplace",
+        ),
+    ],
+)
+def test_codex_provisioning_removes_the_retired_plugin_after_listing_it(
+    task_name: str, selector: str, inventory: str
+) -> None:
+    """Left installed, the retired plugin's own Stop hook uploads every turn a second time."""
+    tasks = _tasks_by_name(CODEX_TASKS)
+    names = list(tasks)
+    remove = tasks[task_name]
+    argv = remove["ansible.builtin.command"]["argv"]
+    rendered = [_render_native(token, **remove["vars"]) for token in argv[1:]]
+
+    assert rendered[-3:] == ["remove", selector, "--json"]
+    assert "not ansible_check_mode" in remove["when"]
+    assert any(f"{tasks[inventory]['register']}.stdout" in when for when in remove["when"])
+    assert tasks[inventory]["check_mode"] is False
+    assert names.index(inventory) < names.index(task_name)
+    assert remove["changed_when"] is True
+    assert "CODEX_HOME" in remove["environment"]
+
+
+@pytest.mark.parametrize(
+    ("task_name", "listing", "expected"),
+    [
+        (
+            "Remove the retired Langfuse tracing plugin",
+            {"installed": [{"pluginId": RETIRED_CODEX_PLUGIN}], "available": []},
+            True,
+        ),
+        (
+            "Remove the retired Langfuse tracing plugin",
+            {"installed": [{"pluginId": "browser@openai-bundled"}], "available": []},
+            False,
+        ),
+        (
+            "Remove the retired Langfuse tracing marketplace",
+            {"marketplaces": [{"name": RETIRED_CODEX_MARKETPLACE, "root": "/x"}]},
+            True,
+        ),
+        ("Remove the retired Langfuse tracing marketplace", {"marketplaces": []}, False),
+    ],
+)
+def test_codex_retired_plugin_removal_runs_exactly_when_the_listing_shows_it(
+    task_name: str, listing: dict[str, object], *, expected: bool
+) -> None:
+    remove = _tasks_by_name(CODEX_TASKS)[task_name]
+    (presence,) = [condition for condition in remove["when"] if "from_json" in condition]
+    registered = next(
+        task["register"]
+        for task in _tasks_by_name(CODEX_TASKS).values()
+        if "register" in task and f"{task['register']}.stdout" in presence
+    )
+
+    assert (
+        _evaluate(presence, **remove["vars"], **{registered: {"stdout": json.dumps(listing)}})
+        is expected
+    )
 
 
 def test_no_repo_path_bypasses_codex_hook_trust_verification() -> None:
@@ -268,34 +364,30 @@ def test_codex_hook_trust_is_granted_from_an_explicit_allowlist() -> None:
     assert "'uv', 'run', '--no-project', '--python', '>=3.12'" in argv
     assert ".venv" not in argv
     assert "scripts/codex-hook-trust.py" in argv
-    assert "'--plugin'" in argv
-    assert "devbox_codex_plugins" in trust["vars"]["devbox_codex_hook_trust_plugin_ids"]
+    assert "--plugin" not in argv
     assert "'--check'" in command
     assert "ansible_check_mode" in command
     assert trust["failed_when"] == "devbox_codex_hook_trust.rc != 0"
     assert "CODEX_HOME" in trust["environment"]
-    # The reconcile and the plugin installs both change what `hooks/list` reports.
-    assert names.index("Grant Codex hook trust for repository-declared hooks") > names.index(
-        "Assert required Codex plugins are installed and enabled"
+    # The reconcile and the plugin removal both change what `hooks/list` reports.
+    assert names.index("Grant Codex hook trust for repository-declared hooks") > max(
+        names.index("Apply repo-owned Codex settings through ai-config"),
+        names.index("Remove the retired Langfuse tracing plugin"),
+        names.index("Remove the retired Langfuse tracing marketplace"),
     )
 
 
-def test_codex_hook_trust_argv_renders_one_plugin_option_per_pinned_plugin() -> None:
+def test_codex_hook_trust_argv_renders_to_the_config_allowlist_alone() -> None:
     """The argv is built by a Jinja expression whose only other failure mode is a
     mid-playbook template error, long after the packages are installed."""
     trust = _tasks_by_name(CODEX_TASKS)["Grant Codex hook trust for repository-declared hooks"]
-    defaults = yaml.safe_load(CODEX_DEFAULTS.read_text(encoding="utf-8"))
     environment = NativeEnvironment(undefined=StrictUndefined, autoescape=False)
     environment.filters.update(MathFilters().filters())
     environment.filters.update(CoreFilters().filters())
     context = {
-        "devbox_codex_plugins": defaults["devbox_codex_plugins"],
         "devbox_codex_repo_root": "/repo",
         "devbox_codex_home": "/home/user/.codex",
     }
-    context["devbox_codex_hook_trust_plugin_ids"] = environment.from_string(
-        trust["vars"]["devbox_codex_hook_trust_plugin_ids"]
-    ).render(**context)
 
     argv = environment.from_string(trust["vars"]["devbox_codex_hook_trust_argv"]).render(**context)
 
@@ -311,8 +403,6 @@ def test_codex_hook_trust_argv_renders_one_plugin_option_per_pinned_plugin() -> 
         "--codex-home",
         "/home/user/.codex",
         "--json",
-        "--plugin",
-        "tracing@codex-observability-plugin",
     ]
 
 
@@ -504,8 +594,8 @@ def test_all_engines_stamp_otelbox_telemetry_class_llm() -> None:
     assert "OTEL_RESOURCE_ATTRIBUTES=otelbox.telemetry.class=llm" in agy_fish
 
 
-def test_codex_hooks_run_from_a_pinned_venv_rather_than_ambient_python() -> None:
-    """`/usr/bin/env python3` hands the hook to whatever PATH resolves first."""
+def test_codex_hooks_run_from_a_pinned_interpreter_rather_than_an_ambient_one() -> None:
+    """`/usr/bin/env python3` or a bare `node` hands the hook to whatever PATH resolves first."""
     config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
     project = tomllib.loads(
         (REPO_ROOT / "roles/devbox/files/dot_codex/bin/pyproject.toml").read_text(encoding="utf-8")
@@ -521,7 +611,10 @@ def test_codex_hooks_run_from_a_pinned_venv_rather_than_ambient_python() -> None
         for hook in group["hooks"]
     ]
     assert commands
-    assert all(command.startswith("~/.codex/bin/.venv/bin/python ") for command in commands)
+    assert all(
+        command.startswith(("~/.codex/bin/.venv/bin/python ", f"{CODEX_NODE} "))
+        for command in commands
+    )
 
 
 def test_codex_bin_sync_preserves_the_venv_it_bootstraps() -> None:

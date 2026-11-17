@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "source": "langfuse/codex-observability-plugin",
+  "version": "0.4.3",
+  "commit": "e1d02be28e6bacbfe350a1bc1ccf861e54edee17",
+  "upstream_tree_sha1": "dc624bae569783627507f292490e079820029938",
+  "node_major": 22,
+  "pnpm_version": "9.5.0",
+  "artifact_path": "plugins/tracing/dist/index.mjs",
+  "output_git_blob_sha1": "b40f6a66fc835b33549d3bd1769c3c3a32fd5091",
+  "patches": []
+}

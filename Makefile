@@ -385,12 +385,14 @@ PY_PATHS_COMMON := \
   scripts/ai_config_cli.py scripts/ai_config/ \
   scripts/otelbox-edge-*.py scripts/otelbox_edge/ \
   scripts/codex-hook-trust.py scripts/codex_hook_trust/ \
+  scripts/langfuse-codex-plugin-source.py \
   scripts/pub-mode-test.py \
   scripts/sync-upstream-docs.py \
   tests/live/ \
   tests/scripts/test_ai_config*.py \
   tests/scripts/test_otelbox_edge_*.py \
   tests/scripts/test_codex_hook_trust*.py \
+  tests/scripts/test_langfuse_codex_plugin_source.py \
   tests/scripts/test_pub_lease.py \
   tests/scripts/test_pub_mode_test.py \
   tests/scripts/test_sync_upstream_docs.py

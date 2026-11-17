@@ -41,7 +41,7 @@ PreCompact = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin
 PreToolUse = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py PreToolUse", type = "command" }], matcher = ".*" }, { hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/branch_name_guard.py", type = "command" }], matcher = ".*" }]
 SessionEnd = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionEnd", type = "command" }] }]
 SessionStart = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SessionStart", type = "command" }] }]
-Stop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop", type = "command" }] }, { hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/stop_user_actions_guard.py", type = "command" }] }]
+Stop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py Stop", type = "command" }] }, { hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/stop_user_actions_guard.py", type = "command" }] }, { hooks = [{ command = "/opt/homebrew/opt/node@22/bin/node ~/.codex/bin/vendor/langfuse-codex/index.mjs", statusMessage = "Uploading Codex trace to Langfuse", timeout = 30, type = "command" }] }]
 SubagentStart = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SubagentStart", type = "command" }] }]
 SubagentStop = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py SubagentStop", type = "command" }] }]
 UserPromptSubmit = [{ hooks = [{ command = "~/.codex/bin/.venv/bin/python ~/.codex/bin/universal_logger.py UserPromptSubmit", type = "command" }] }]
@@ -79,9 +79,6 @@ enabled = true
 enabled = true
 
 [plugins."template-creator@openai-primary-runtime"]
-enabled = true
-
-[plugins."tracing@codex-observability-plugin"]
 enabled = true
 
 [plugins."unified-computer-use@openai-bundled"]

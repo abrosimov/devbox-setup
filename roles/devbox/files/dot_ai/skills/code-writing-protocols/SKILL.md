@@ -84,12 +84,12 @@ Tasks with deterministic solutions from established rules.
 - No trade-offs to consider
 - Outcome is predictable
 
-**Examples** (within the lines and files the task already changes, or the files a routine task names):
+**Examples** (within the hunks the task already changes, or the files a routine task names):
 - Apply formatting
 - Remove narration comments (policy: no narration)
 - Fix style violations
 - Delete dead code that the change leaves unused
-- Add error context wrapping
+- Add error context to errors the changed code returns
 
 **Action:** Apply rule. No alternatives needed. Do not ask "should I continue?"
 
@@ -300,25 +300,35 @@ I believe this may be over-engineered because: [specific reason]
 
 This table is the single source of truth for what a code-writing agent adds without explicit approval. Language skills (`go-engineer`, `python-engineer`, `frontend-engineer`) and `workflow` defer to it rather than keeping their own lists.
 
-A production necessity applies only to the code the task already changes: provide it in the files you are already in, with the tools the project already has (core §8). Gaps elsewhere go into the report.
+**The unit is the task's diff.** A production necessity applies only to the code the task writes or changes, the hunks of its diff, with the tools the project already has (core §8). Existing code around those hunks is not improved, even in the same file, unless the change cannot work without it; a gap there goes into the report.
 
 | Is a production necessity | Is not (needs approval unless the plan names it) |
 |-------------------------|----------------------------|
-| Error handling and error context wrapping | Retry logic |
-| Timeouts on outbound calls the changed code makes | Circuit breakers |
+| Error handling, in the idiom of the stack's skill (`go-engineer`, `python-engineer`, `frontend-engineer`) | Retry logic |
+| Timeouts on outbound calls the changed code makes, sized from the call (below) | Circuit breakers |
 | Logging at boundaries (request in/out, errors) | Caching |
-| Context propagation | Rate limiting |
-| Resource cleanup (defer/close/finally) | Feature flags |
-| Input validation at API boundary | New interfaces/abstractions |
-| OTel instrumentation (see conditional rule below) | Configuration options |
+| Resource cleanup (defer/close/finally) | Rate limiting |
+| Input validation at API boundary | Feature flags |
+| OTel instrumentation (see conditional rule below) | New interfaces/abstractions |
+| | Configuration options |
 | | New UI states or wrappers (loading, error, empty states, error boundaries) |
 | | "Defensive" code for impossible cases |
+
+Language-specific guarantees, such as Go's context propagation, live in the stack's skill, not here.
+
+**List every production necessity you added** in your hand-off, one line each with the hunk it is in, so the user sees what was added without being asked for.
+
+### Timeouts Are Sized, Not Guessed
+
+A timeout is set from what the call is: its target (a local service, a third-party API, a database), the expected latency, and the weight of the request and response. Find these in the code, the client's configuration, the contract or the plan. A timeout of the same magnitude elsewhere in the project for the same target is the strongest evidence. When none of it can be found, do not invent a number: name the call in the report as missing a timeout, with what you would need to size it.
 
 ### Conditional: OTel Instrumentation
 
 If the codebase has the OTel SDK initialised (TracerProvider/MeterProvider in main or startup), adding spans and metrics to new code is a production necessity — do not ask for approval.
 
 If the codebase does not have OTel set up, adding instrumentation is an unrequested addition: leave it out and mention it at the end (core §0).
+
+Telemetry never fails the request it observes: an error while recording a span, a metric or a log is swallowed or logged, never returned or raised to the caller.
 
 **The test:** if you're unsure whether something is a production necessity, it is not. Leave it out and mention it in the report.
 
@@ -338,15 +348,15 @@ If you catch yourself thinking any of these, stop and reconsider:
 Once you start implementing, your scope is **locked** to:
 1. What the plan explicitly requests
 2. Production necessities (narrow definition above)
-3. Tier 1 routine fixes in the lines and files the task already changes
+3. Tier 1 routine fixes in the hunks the task already changes
 
-Additions outside this scope are not implemented. Mention them at the end of the report (core §0), so the user can ask for them; they are not a question.
+Initiative to improve is limited to this list: "it would be better" is not a reason to change code. Additions outside this scope are not implemented. Mention them at the end of the report (core §0), so the user can ask for them; they are not a question.
 
 ---
 
 ## Routine Task Mode — Complete Without Interruption
 
-When a task is classified as **Tier 1 (Routine)**, enter Routine Mode. Routine Mode changes how you work, not what you touch: its scope is the lines and files the task already changes, or the files a routine task (such as "remove narration comments in package X") names.
+When a task is classified as **Tier 1 (Routine)**, enter Routine Mode. Routine Mode changes how you work, not what you touch: its scope is the hunks the task already changes, or the files a routine task (such as "remove narration comments in package X") names.
 
 ### Behaviour in Routine Mode
 

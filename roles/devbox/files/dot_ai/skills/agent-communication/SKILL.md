@@ -175,7 +175,7 @@ Classify decisions before acting:
 | 2 | Standard | Quick consideration, check precedent, proceed; state the choice in one line |
 | 3 | Design (core §2 threshold holds) | Explore, then show 3–7 candidates as the decision card (`response-templates` T2), led by the recommendation; a subagent returns the card to the orchestrator, which takes the recommendation itself unless the choice passes the stop list |
 
-### Tier 1 Examples (Just Do It, in the lines and files the task already changes)
+### Tier 1 Examples (Just Do It, in the hunks the task already changes)
 - Apply formatting
 - Fix style violations
 - Remove narration comments

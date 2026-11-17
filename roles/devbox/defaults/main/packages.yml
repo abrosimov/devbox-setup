@@ -232,7 +232,7 @@ devbox_packages:
   tamias:
     enabled: false
     repository: "abrosimov/tamias"
-    version: "0.1.1"
+    version: "0.2.2"
     # ansible_facts['architecture'] -> release asset name.
     assets:
       arm64: "tamias-darwin-arm64"

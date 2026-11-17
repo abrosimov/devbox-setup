@@ -35269,6 +35269,10 @@ function toolItemCall(item, payload, ts) {
 		};
 	}
 }
+function agentMessageText(item) {
+	if (!Array.isArray(item.content)) return "";
+	return item.content.map((part) => part && typeof part.text === "string" ? part.text : "").filter(Boolean).join("\n");
+}
 const TURN_OPENING_EVENTS = /* @__PURE__ */ new Set([
 	"user_message",
 	"item_completed",
@@ -35382,7 +35386,9 @@ function parseSession(lines) {
 		turn.completed = opts.completed;
 		turn.aborted = opts.aborted;
 		turn.userInput = turn.userInput ?? turn.userInputFallback;
-		turn.finalOutput = turn.lastAgentMessage ?? turn.steps.filter((s) => s.text).at(-1)?.text;
+		turn.finalOutput = turn.reportedFinalAnswer ?? turn.finalAnswerItem ?? turn.lastAgentMessage ?? turn.steps.filter((s) => s.text).at(-1)?.text;
+		delete turn.reportedFinalAnswer;
+		delete turn.finalAnswerItem;
 		delete turn.lastAgentMessage;
 		delete turn.userInputFallback;
 		if (!(!turn.turnId && turn.userInput == null && turn.finalOutput == null && turn.steps.length === 0 && turn.subagentThreadIds.length === 0)) {
@@ -35555,6 +35561,9 @@ function parseSession(lines) {
 				if (text && !turn.userInput) turn.userInput = text;
 			} else if (et === "item_completed" && p.item?.type === "SubAgentActivity") {
 				if (p.item.kind === "started" && typeof p.item.agent_thread_id === "string") recordSubagentThread(p.item.agent_thread_id, p.item.id);
+			} else if (et === "item_completed" && p.item?.type === "AgentMessage") {
+				const text = agentMessageText(p.item);
+				if (p.item.phase === "final_answer" && text) turn.finalAnswerItem = text;
 			} else if (et === "item_completed" && p.item && TOOL_ITEM_TYPES.has(p.item.type ?? "")) recordToolItem(p.item, p, ts);
 			else if (et === "agent_message" && typeof p.message === "string") turn.lastAgentMessage = p.message;
 			else if (et === "token_count") {
@@ -35568,11 +35577,13 @@ function parseSession(lines) {
 				if (usageFromRecords) closeStep(ts);
 				else if (step || !last || reEmitted) closeStep(ts, last);
 				else pushUsageOnlyStep(ts, last);
-			} else if (et === "task_complete") finishTurn(ts, {
-				completed: true,
-				aborted: false
-			});
-			else if (et === "turn_aborted") finishTurn(ts, {
+			} else if (et === "task_complete") {
+				if (typeof p.last_agent_message === "string" && p.last_agent_message) turn.reportedFinalAnswer = p.last_agent_message;
+				finishTurn(ts, {
+					completed: true,
+					aborted: false
+				});
+			} else if (et === "turn_aborted") finishTurn(ts, {
 				completed: true,
 				aborted: true
 			});

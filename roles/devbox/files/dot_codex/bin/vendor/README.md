@@ -13,7 +13,7 @@ Third-party code built from a pinned upstream commit and committed here. Files u
 | Licence | MIT (`langfuse-codex/LICENSE`, copied from the upstream root) |
 | Upstream Git tree SHA-1 | `dc624bae569783627507f292490e079820029938` |
 | Build toolchain | Node 22, pnpm 9.5.0 |
-| Output Git blob SHA-1 | `1bb51ff34fcabb9d84db9cd37769410361d4b92c` (upstream plus the patches below) |
+| Output Git blob SHA-1 | `53f8a35721d90392294ed723b6c65cbdbec64a04` (upstream plus the patches below) |
 | Artifact pin | `langfuse-codex-upstream.lock.json` (authoritative when this table disagrees) |
 
 ### Why it is vendored rather than installed as a plugin
@@ -75,6 +75,7 @@ this order:
 | `0003-export-subagent-turns-after-the-spawning-turn.patch` | on `SubagentStop`, export the child rollout's unexported final turns under its spawning turn's `spawn_agent` span, with the ids that turn's export draws; child turns nested with their spawning turn are recorded in the child's sidecar under the child's lock, so neither path exports a turn twice |
 | `0004-trace-tool-items-nested-in-code-mode.patch` | read the shell, MCP, patch and extension calls that Codex 0.162 and later report only as `item_completed` items: an item completed while a code-mode `exec` call is open becomes a child tool observation of that call, named `exec_command`, `<server>.<tool>`, `apply_patch` or the extension kind, with the item's own start and end; a `failed` or `declined` item is `ERROR` with the exit code or MCP error as its status message, without marking `exec`; an item sharing a model-visible call's id enriches that call; any other item attaches to the turn root. Child ids are drawn after every step, so existing observation ids are unchanged |
 | `0005-record-usage-of-every-model-response.patch` | put each model response's token usage on exactly one generation: from its `token_usage_record` (one per response, compaction calls included) once the rollout writes them, otherwise from each `token_count` whose cumulative total moved, so a re-emitted `token_count` counts once; a response whose output the rollout does not show (encrypted reasoning only, no items, a compaction) becomes a generation carrying only its usage; every generation records `codex.response_id`. Usage-only generations are drawn after every other observation of their turn, and the `SubagentStop` replay skips them, so existing observation ids are unchanged |
+| `0006-answer-each-turn-with-its-final-answer.patch` | set a turn's output to its final answer: the `last_agent_message` of `task_complete`, else the last `AgentMessage` item with `phase` `final_answer`, else the earlier choice of the last `agent_message` event or the last step's text. Codex no longer writes `agent_message` events, and the final step's text carries the `<oai-mem-citation>` block appended to the answer (and, when one response holds both, the commentary before it). An interrupted turn takes its `final_answer` item when it has one. No span is added, so observation ids are unchanged |
 
 The input hash is the Git tree SHA-1 of the whole upstream tree, computed from the
 fetched files exactly as `git write-tree` would. It equals `<commit>^{tree}` upstream,

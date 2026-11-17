@@ -268,6 +268,14 @@ delivers.
   report it (§0). How something behaves is not a choice: it is read from the source or it stays an
   unverified premise. Report them differently — "I chose X because Y" and "I could not verify X
   because Z".
+- **A check proves only what it executed.** "Checks pass" names the checks and what they ran;
+  changed code that none of them executed (a verifier, a template, a deploy step) is reported as
+  unverified, never folded into "all pass". Run what exercises it when you can.
+- **Verify the state before handing over a command or an order of steps.** Check the branch, the
+  working tree, whether an agent is still editing it, and every prerequisite (secrets, earlier
+  steps, merged PRs); run it or its dry run yourself when you may. Name what the user acts on: a
+  branch and PR, not a directory. When your change made a guard or workaround pointless, remove it
+  instead of telling the user how to bypass it.
 - Fix what your change breaks, and follow how the surrounding code is built. The unit of work is
   the change's own diff: the code it writes carries the guarantees it needs in production (the
   stack's error handling, timeouts sized to the call), and tests cover what changed, nothing more.

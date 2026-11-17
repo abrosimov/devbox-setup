@@ -578,17 +578,11 @@ Two "yes/no" of the above pointing at "don't run" is a hard stop.
 
 Every SE agent runs the build, test, and lint commands before reporting completion. Self-assessed results like "manual review passed" or "verified by inspection" are not evidence.
 
-### Forbidden Excuse Patterns
+### A Pass Covers Only What It Executed
 
-The following phrases in Pre-Flight reports or SE output artifacts indicate the agent skipped verification, and a report that relies on them is sent back:
+A green command proves the code it ran, nothing more. For each changed file or code path, the report says which command executed it. A changed path that no command executed (a verifier, a template, a migration, a deploy-time assertion, a branch the tests never reach) is listed as **unverified** with the reason, never folded into "all checks pass". When a command can exercise it (a render, a `--check` run, a targeted test the test writer can add), run it or ask for it before reporting.
 
-- "manual review passed"
-- "manually verified"
-- "verified by inspection" / "verified by reading"
-- "sandbox blocks..." / "sandbox restricts..."
-- "unable to run" / "could not execute" / "could not run"
-- "appears correct" / "looks correct" / "should work"
-- "tests appear" / "would succeed" / "would work outside"
+Reading the code is not a check: "verified by inspection", "looks correct" and "should work" are not results. A command that could not run is reported as such, with the exact command and error (below); that is an honest result, not a pass.
 
 ### When Commands Fail
 

@@ -255,10 +255,12 @@ delivers.
   report it (§0). How something behaves is not a choice: it is read from the source or it stays an
   unverified premise. Report them differently — "I chose X because Y" and "I could not verify X
   because Z".
-- Fix what your change touches or breaks, and follow how the surrounding code is built. Where the
-  code you are already changing lacks basic guarantees — error handling, timeouts, a test for the
-  changed path — provide them with the tools the project already has, in the files you are already
-  in. Failures elsewhere go into the report, not the diff: do not turn the work into more work.
+- Fix what your change breaks, and follow how the surrounding code is built. The unit of work is
+  the change's own diff: the code it writes carries the guarantees it needs in production (the
+  stack's error handling, timeouts sized to the call), and tests cover what changed, nothing more.
+  Existing code around it is not improved, even in the same file, unless the change cannot work
+  without it. Gaps and failures elsewhere go into the report, not the diff: do not turn the work
+  into more work.
 - When the task itself is to make a suite or a service healthy, the `diagnose-and-repair` skill
   applies: take the full broad baseline first, repair in dependency order, rerun the same baseline,
   repeat.

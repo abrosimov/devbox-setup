@@ -1,0 +1,748 @@
+diff --git a/package.json b/package.json
+index bcdba64..fbd79a0 100644
+--- a/package.json
++++ b/package.json
+@@ -36,6 +36,7 @@
+     "@opentelemetry/api": "^1.9.0",
+     "@opentelemetry/core": "^2.11.0",
+     "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
++    "@opentelemetry/otlp-transformer": "^0.222.0",
+     "@opentelemetry/resources": "^2.11.0",
+     "@opentelemetry/sdk-trace-base": "^2.11.0",
+     "@opentelemetry/sdk-trace-node": "^2.11.0",
+diff --git a/plugins/tracing/src/bounded-export.ts b/plugins/tracing/src/bounded-export.ts
+index 7b64ff8..bc20b52 100644
+--- a/plugins/tracing/src/bounded-export.ts
++++ b/plugins/tracing/src/bounded-export.ts
+@@ -1,8 +1,15 @@
++import * as http from "node:http";
++import * as https from "node:https";
++
+ import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
+ import type { Attributes, AttributeValue } from "@opentelemetry/api";
+ import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
++import { JsonTraceSerializer } from "@opentelemetry/otlp-transformer";
+ import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
+ 
++import { type OtlpSpool, SpoolWriteError } from "./otlp-spool.js";
++import { debugLog } from "./utils.js";
++
+ // Far below the edge's 128 MiB OTLP/HTTP body cap: the edge redacts every attribute value
+ // before it answers, at a few MB/s, and the Stop hook has 30 s for the whole run.
+ export const MAX_REQUEST_BYTES = 16 * 1024 * 1024;
+@@ -93,18 +100,21 @@ function reportOversized(span: ReadableSpan, bytes: number, maxBytes: number): v
+ type Request = { spans: ReadableSpan[]; bytes: number };
+ 
+ /**
+- * Sends each batch as OTLP requests of at most `maxBytes`, and remembers the first failure
+- * until `takeFailure`, because the batch processor reports a failed background export to no one.
++ * Sends each batch as OTLP requests of at most `maxBytes`, stages in `spool` each one the
++ * collector does not take unless it rejected it, and remembers the first failure until
++ * `takeFailure`, because the batch processor reports a failed background export to no one.
+  */
+ export class BoundedRequestExporter implements SpanExporter {
+   private readonly delegates = new Map<number, SpanExporter>();
+   private readonly waiting: Array<() => void> = [];
+   private inFlight = 0;
+   private failure: unknown;
++  private spoolFailureReported = false;
+ 
+   constructor(
+     private readonly exporterWithTimeout: (timeoutMillis: number) => SpanExporter,
+     private readonly maxBytes: number = MAX_REQUEST_BYTES,
++    private readonly spool?: OtlpSpool,
+   ) {}
+ 
+   export(spans: ReadableSpan[], resultCallback: (result: ExportResult) => void): void {
+@@ -133,7 +143,7 @@ export class BoundedRequestExporter implements SpanExporter {
+       this.requests(spans).map(async (request) => {
+         await this.acquire();
+         try {
+-          return await this.sendRequest(request);
++          return await this.deliver(request);
+         } finally {
+           this.release();
+         }
+@@ -167,6 +177,23 @@ export class BoundedRequestExporter implements SpanExporter {
+     return requests;
+   }
+ 
++  private async deliver(request: Request): Promise<ExportResult> {
++    const result = await this.sendRequest(request);
++    if (result.code === ExportResultCode.SUCCESS || !this.spool) return result;
++    if (exportFailureKind(result.error) === "rejected") return result;
++    try {
++      await this.spool.stage(request.spans);
++    } catch (error) {
++      if (!this.spoolFailureReported) {
++        this.spoolFailureReported = true;
++        process.stderr.write(`[langfuse-codex] ${asError(error).message}\n`);
++      }
++      return { code: ExportResultCode.FAILED, error: asError(error) };
++    }
++    debugLog(`spooled a request the collector did not take: ${result.error?.message ?? "failed"}`);
++    return { code: ExportResultCode.SUCCESS };
++  }
++
+   private sendRequest(request: Request): Promise<ExportResult> {
+     const timeoutMillis = requestTimeoutMillis(request.bytes);
+     let delegate = this.delegates.get(timeoutMillis);
+@@ -196,6 +223,74 @@ export class BoundedRequestExporter implements SpanExporter {
+ const asError = (error: unknown): Error =>
+   error instanceof Error ? error : new Error(String(error));
+ 
++export type OtlpEndpoint = { url: string; headers: Record<string, string> };
++
++function post(endpoint: OtlpEndpoint, body: Uint8Array, timeoutMillis: number): Promise<void> {
++  const send = endpoint.url.startsWith("https:") ? https.request : http.request;
++  return new Promise((resolve, reject) => {
++    const request = send(
++      endpoint.url,
++      {
++        method: "POST",
++        headers: {
++          ...endpoint.headers,
++          "Content-Type": "application/json",
++          "Content-Length": body.byteLength,
++        },
++      },
++      (response) => {
++        response.resume();
++        response.on("error", reject);
++        response.once("end", () => {
++          const status = response.statusCode ?? 0;
++          if (status >= 200 && status < 300) resolve();
++          else
++            reject(
++              Object.assign(new Error(`OTLP export failed with HTTP ${status}`), { code: status }),
++            );
++        });
++      },
++    );
++    const deadline = setTimeout(
++      () => request.destroy(new Error("Request timed out")),
++      timeoutMillis,
++    );
++    request.once("close", () => clearTimeout(deadline));
++    request.on("error", reject);
++    request.end(body);
++  });
++}
++
++/**
++ * One POST per request: the OTLP exporter's own transport retries a refused connection until
++ * the deadline, longer than the 3 s an `Interrupt` or `SessionEnd` hook has to reach the spool.
++ */
++export class SingleAttemptExporter implements SpanExporter {
++  constructor(
++    private readonly endpoint: OtlpEndpoint,
++    private readonly timeoutMillis: number,
++  ) {}
++
++  export(spans: ReadableSpan[], resultCallback: (result: ExportResult) => void): void {
++    const body = JsonTraceSerializer.serializeRequest(spans);
++    if (!body) {
++      resultCallback({
++        code: ExportResultCode.FAILED,
++        error: new Error("OTLP request could not be encoded"),
++      });
++      return;
++    }
++    post(this.endpoint, body, this.timeoutMillis).then(
++      () => resultCallback({ code: ExportResultCode.SUCCESS }),
++      (error: unknown) => resultCallback({ code: ExportResultCode.FAILED, error: asError(error) }),
++    );
++  }
++
++  async shutdown(): Promise<void> {}
++
++  async forceFlush(): Promise<void> {}
++}
++
+ export type ExportFailure = "unreachable" | "rejected" | "failed";
+ 
+ const UNREACHABLE_CODES = new Set([
+@@ -208,10 +303,12 @@ const UNREACHABLE_CODES = new Set([
+ const TRANSIENT_STATUSES = new Set([408, 429]);
+ 
+ /**
+- * `unreachable`: no collector answered, so the turn is not at fault. `rejected`: a 4xx the
+- * collector will repeat for the same body. `failed`: anything else, retried a bounded number of runs.
++ * `unreachable`: neither a collector nor the spool took the request, so the turn is not at
++ * fault. `rejected`: a 4xx the collector will repeat for the same body. `failed`: anything else,
++ * which a hook without a spool retries a bounded number of runs.
+  */
+ export function exportFailureKind(error: unknown): ExportFailure {
++  if (error instanceof SpoolWriteError) return "unreachable";
+   const code =
+     typeof error === "object" && error !== null ? (error as { code?: unknown }).code : undefined;
+   if (typeof code === "string" && UNREACHABLE_CODES.has(code)) return "unreachable";
+diff --git a/plugins/tracing/src/instrumentation.ts b/plugins/tracing/src/instrumentation.ts
+index db87595..9932243 100644
+--- a/plugins/tracing/src/instrumentation.ts
++++ b/plugins/tracing/src/instrumentation.ts
+@@ -2,7 +2,6 @@ import { createHash, randomBytes } from "node:crypto";
+ 
+ import { LangfuseSpanProcessor } from "@langfuse/otel";
+ import { setLangfuseTracerProvider } from "@langfuse/tracing";
+-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+ import {
+   defaultResource,
+   detectResources,
+@@ -11,8 +10,9 @@ import {
+ } from "@opentelemetry/resources";
+ import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+ 
+-import { BoundedRequestExporter } from "./bounded-export.js";
++import { BoundedRequestExporter, SingleAttemptExporter } from "./bounded-export.js";
+ import type { Config } from "./config.js";
++import { defaultSpoolDirectory, isLoopbackUrl, OtlpSpool } from "./otlp-spool.js";
+ 
+ const TRACE_ID_HEX_CHARS = 32;
+ const SPAN_ID_HEX_CHARS = 16;
+@@ -80,21 +80,24 @@ function buildResource() {
+  */
+ export function setupInstrumentation(
+   config: Config,
+-  limits: { maxRequestBytes?: number } = {},
++  limits: { maxRequestBytes?: number; spoolDirectory?: string; maxSpoolBytes?: number } = {},
+ ): Instrumentation {
+   const credentials = Buffer.from(`${config.public_key}:${config.secret_key}`).toString("base64");
++  const endpoint = {
++    url: `${config.base_url}/api/public/otel/v1/traces`,
++    headers: {
++      Authorization: `Basic ${credentials}`,
++      "x-langfuse-public-key": config.public_key ?? "",
++      "x-langfuse-ingestion-version": "4",
++    },
++  };
++  const spool = isLoopbackUrl(config.base_url)
++    ? new OtlpSpool(limits.spoolDirectory ?? defaultSpoolDirectory(), limits.maxSpoolBytes)
++    : undefined;
+   const exporter = new BoundedRequestExporter(
+-    (timeoutMillis) =>
+-      new OTLPTraceExporter({
+-        url: `${config.base_url}/api/public/otel/v1/traces`,
+-        headers: {
+-          Authorization: `Basic ${credentials}`,
+-          "x-langfuse-public-key": config.public_key ?? "",
+-          "x-langfuse-ingestion-version": "4",
+-        },
+-        timeoutMillis,
+-      }),
++    (timeoutMillis) => new SingleAttemptExporter(endpoint, timeoutMillis),
+     limits.maxRequestBytes,
++    spool,
+   );
+   const spanProcessor = new LangfuseSpanProcessor({
+     publicKey: config.public_key,
+@@ -105,7 +108,7 @@ export function setupInstrumentation(
+     exporter,
+     shouldExportSpan: () => true,
+   });
+-  const flush = async () => {
++  const exportBuffered = async () => {
+     let flushError: unknown;
+     try {
+       await spanProcessor.forceFlush();
+@@ -116,6 +119,15 @@ export function setupInstrumentation(
+     if (exportError !== undefined) throw exportError;
+     if (flushError !== undefined) throw flushError;
+   };
++  const flush = async () => {
++    try {
++      await exportBuffered();
++    } catch (error) {
++      await spool?.discard();
++      throw error;
++    }
++    await spool?.commit();
++  };
+ 
+   const provider = new NodeTracerProvider({
+     resource: buildResource(),
+@@ -133,7 +145,12 @@ export function setupInstrumentation(
+   return {
+     flush,
+     shutdown: async () => {
+-      await flush();
++      // What is still buffered belongs to no marked turn, so the next run exports it again.
++      try {
++        await exportBuffered();
++      } finally {
++        await spool?.discard();
++      }
+       await provider.shutdown();
+       setLangfuseTracerProvider(null);
+     },
+diff --git a/plugins/tracing/src/otlp-spool.ts b/plugins/tracing/src/otlp-spool.ts
+new file mode 100644
+index 0000000..2a71cc2
+--- /dev/null
++++ b/plugins/tracing/src/otlp-spool.ts
+@@ -0,0 +1,132 @@
++import { randomUUID } from "node:crypto";
++import * as fs from "node:fs/promises";
++import * as os from "node:os";
++import * as path from "node:path";
++
++import { ProtobufTraceSerializer } from "@opentelemetry/otlp-transformer";
++import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
++
++// The layout `~/.claude/bin/langfuse_replay.py` drains, as the Claude hook's spool writes it:
++// committed `<epoch ns>-<hex>.otlp` protobuf requests, staging per run under `.staging/`.
++export const SPOOL_MAX_BYTES = 2 * 1024 * 1024 * 1024;
++const STAGING = ".staging";
++const ENTRY_SUFFIX = ".otlp";
++
++export function defaultSpoolDirectory(home: string = process.env.HOME ?? os.homedir()): string {
++  return path.join(home, ".codex", "langfuse_state", "langfuse_otlp_spool");
++}
++
++/** The replay drains only to a loopback edge, so only a hook that exports to one spools. */
++export function isLoopbackUrl(url: string): boolean {
++  return url.startsWith("http://127.0.0.1:") || url.startsWith("http://localhost:");
++}
++
++export class SpoolWriteError extends Error {}
++
++const hex = () => randomUUID().replaceAll("-", "");
++
++async function namesIn(directory: string): Promise<string[]> {
++  try {
++    return await fs.readdir(directory);
++  } catch (error) {
++    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
++    throw error;
++  }
++}
++
++async function fsyncDirectory(directory: string): Promise<void> {
++  const handle = await fs.open(directory, "r");
++  try {
++    await handle.sync();
++  } finally {
++    await handle.close();
++  }
++}
++
++async function entryBytes(directory: string): Promise<number> {
++  let total = 0;
++  for (const name of await namesIn(directory)) {
++    if (!name.endsWith(ENTRY_SUFFIX)) continue;
++    total += (await fs.stat(path.join(directory, name)).catch(() => undefined))?.size ?? 0;
++  }
++  return total;
++}
++
++async function durableSave(directory: string, payload: Uint8Array): Promise<void> {
++  const name = `${(BigInt(Date.now()) * 1_000_000n).toString().padStart(20, "0")}-${hex()}`;
++  const temporary = path.join(directory, `.${name}.tmp`);
++  try {
++    const handle = await fs.open(temporary, "wx", 0o600);
++    try {
++      await handle.writeFile(payload);
++      await handle.sync();
++    } finally {
++      await handle.close();
++    }
++    await fs.rename(temporary, path.join(directory, `${name}${ENTRY_SUFFIX}`));
++    await fsyncDirectory(directory);
++  } finally {
++    await fs.rm(temporary, { force: true });
++  }
++}
++
++const asSpoolError = (error: unknown): SpoolWriteError =>
++  error instanceof SpoolWriteError
++    ? error
++    : new SpoolWriteError(
++        `Langfuse OTLP spool write failed: ${error instanceof Error ? error.message : String(error)}`,
++      );
++
++/**
++ * Requests staged by this run reach the spool only on `commit`, so a turn that is not marked
++ * leaves nothing behind for the replay to deliver a second time.
++ */
++export class OtlpSpool {
++  private readonly staging: string;
++
++  constructor(
++    readonly directory: string,
++    private readonly maxBytes: number = SPOOL_MAX_BYTES,
++  ) {
++    this.staging = path.join(directory, STAGING, hex());
++  }
++
++  async stage(spans: ReadableSpan[]): Promise<void> {
++    try {
++      const payload = ProtobufTraceSerializer.serializeRequest(spans);
++      if (!payload) throw new SpoolWriteError("the OTLP request could not be encoded");
++      await fs.mkdir(this.staging, { recursive: true, mode: 0o700 });
++      let queued = await entryBytes(this.directory);
++      for (const owner of await namesIn(path.join(this.directory, STAGING))) {
++        queued += await entryBytes(path.join(this.directory, STAGING, owner));
++      }
++      if (queued + payload.byteLength > this.maxBytes) {
++        throw new SpoolWriteError(
++          `Langfuse OTLP spool full: ${queued} bytes queued plus a ${payload.byteLength}-byte ` +
++            `request exceeds ${this.maxBytes} at ${this.directory}; nothing was deleted`,
++        );
++      }
++      await durableSave(this.staging, payload);
++    } catch (error) {
++      throw asSpoolError(error);
++    }
++  }
++
++  async commit(): Promise<void> {
++    try {
++      const staged = (await namesIn(this.staging)).filter((name) => name.endsWith(ENTRY_SUFFIX));
++      for (const name of staged.sort()) {
++        await fs.rename(path.join(this.staging, name), path.join(this.directory, name));
++      }
++      if (staged.length > 0) await fsyncDirectory(this.directory);
++      await fs.rm(this.staging, { recursive: true, force: true });
++    } catch (error) {
++      throw asSpoolError(error);
++    }
++  }
++
++  async discard(): Promise<void> {
++    // Staging left behind is never delivered, and the replay sweeps it after an hour.
++    await fs.rm(this.staging, { recursive: true, force: true }).catch(() => undefined);
++  }
++}
+diff --git a/plugins/tracing/test/hook-command.test.ts b/plugins/tracing/test/hook-command.test.ts
+index c772445..80830fa 100644
+--- a/plugins/tracing/test/hook-command.test.ts
++++ b/plugins/tracing/test/hook-command.test.ts
+@@ -1057,14 +1057,31 @@ describe("subagent turns that run after the spawning turn", () => {
+   });
+ });
+ 
+-describe("a turn whose export keeps failing", () => {
++describe("a turn the edge does not take", () => {
+   const event = (payload: Record<string, unknown>) =>
+     JSON.stringify({ timestamp: "2026-06-03T12:00:00.000Z", type: "event_msg", payload });
+ 
++  const spoolDir = (codexHome: string) =>
++    path.join(codexHome, ".codex", "langfuse_state", "langfuse_otlp_spool");
++
++  const spooled = (codexHome: string): string[] =>
++    fs.existsSync(spoolDir(codexHome))
++      ? fs
++          .readdirSync(spoolDir(codexHome))
++          .filter((name) => name.endsWith(".otlp"))
++          .sort()
++      : [];
++
++  const spooledBytes = (codexHome: string): Buffer =>
++    Buffer.concat(
++      spooled(codexHome).map((name) => fs.readFileSync(path.join(spoolDir(codexHome), name))),
++    );
++
+   async function runAgainstCollector(
+-    failingStatus: number,
++    edge: { failingStatus: number } | "down",
+     runs: number,
+-  ): Promise<{ rollout: string; sentAfterRun: string[][]; stderr: string[] }> {
++    beforeRun: (run: number, codexHome: string) => void = () => {},
++  ): Promise<{ rollout: string; codexHome: string; sentAfterRun: string[][]; stderr: string[] }> {
+     const codexHome = makeTempDir("lf-codex-home-");
+     const sessionCwd = makeTempDir("lf-codex-cwd-");
+     const sessionsDir = path.join(sessionCwd, "sessions", "2026", "06", "03");
+@@ -1093,18 +1110,22 @@ describe("a turn whose export keeps failing", () => {
+       const chunks: Buffer[] = [];
+       req.on("data", (chunk) => chunks.push(chunk as Buffer));
+       req.on("end", () => {
+-        const failing = Buffer.concat(chunks).toString("utf-8").includes("turn-stuck");
+-        res.writeHead(failing ? failingStatus : 200, { "content-type": "application/json" });
++        const failing =
++          edge !== "down" && Buffer.concat(chunks).toString("utf-8").includes("turn-stuck");
++        res.writeHead(failing ? edge.failingStatus : 200, { "content-type": "application/json" });
+         res.end("{}");
+       });
+     });
+     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+     const { port } = server.address() as { port: number };
++    const closeServer = () => new Promise<void>((resolve) => server.close(() => resolve()));
++    if (edge === "down") await closeServer();
+ 
+     const sentAfterRun: string[][] = [];
+     const stderr: string[] = [];
+     try {
+       for (let run = 0; run < runs; run++) {
++        beforeRun(run, codexHome);
+         const result = await runShellCommand(readHookCommand(), {
+           cwd: sessionCwd,
+           env: {
+@@ -1133,32 +1154,76 @@ describe("a turn whose export keeps failing", () => {
+         );
+       }
+     } finally {
+-      await new Promise<void>((resolve) => server.close(() => resolve()));
++      if (edge !== "down") await closeServer();
+     }
+-    return { rollout, sentAfterRun, stderr };
++    return { rollout, codexHome, sentAfterRun, stderr };
+   }
+ 
+   const failures = (rollout: string): string[] =>
+     fs.readFileSync(`${rollout}.langfuse-failures`, "utf-8").split("\n").filter(Boolean);
+ 
+-  it("retries a turn the collector fails, then gives it up after three runs", async () => {
+-    const { rollout, sentAfterRun, stderr } = await runAgainstCollector(500, 3);
++  it("spools a turn the collector fails, marks it, and counts no failure against it", async () => {
++    const { rollout, codexHome, sentAfterRun } = await runAgainstCollector(
++      { failingStatus: 500 },
++      1,
++    );
+ 
+-    expect(sentAfterRun).toEqual([[], [], ["turn-later"]]);
+-    expect(failures(rollout).map((line) => line.split("\t").slice(0, 2))).toEqual([
+-      ["turn-stuck", "failed"],
+-      ["turn-stuck", "failed"],
+-      ["turn-stuck", "failed"],
+-    ]);
+-    expect(stderr[2]).toContain("turn-stuck");
++    expect(sentAfterRun).toEqual([["turn-stuck", "turn-later"]]);
++    expect(fs.existsSync(`${rollout}.langfuse-failures`)).toBe(false);
++    expect(spooled(codexHome).length).toBeGreaterThan(0);
++    expect(spooledBytes(codexHome).includes("turn-stuck")).toBe(true);
++    expect(spooledBytes(codexHome).includes("turn-later")).toBe(false);
+   });
+ 
+-  it("gives up at once on a turn the collector rejects as malformed", async () => {
+-    const { rollout, sentAfterRun } = await runAgainstCollector(400, 2);
++  it("gives up at once on a turn the collector rejects as malformed, and spools nothing", async () => {
++    const { rollout, codexHome, sentAfterRun } = await runAgainstCollector(
++      { failingStatus: 400 },
++      2,
++    );
+ 
+     expect(sentAfterRun).toEqual([["turn-later"], ["turn-later"]]);
+     expect(failures(rollout).map((line) => line.split("\t").slice(0, 2))).toEqual([
+       ["turn-stuck", "rejected"],
+     ]);
++    expect(spooled(codexHome)).toEqual([]);
++  });
++
++  it("spools every turn while the edge is down, as private OTLP requests, and marks each", async () => {
++    const { rollout, codexHome, sentAfterRun } = await runAgainstCollector("down", 1);
++
++    expect(sentAfterRun).toEqual([["turn-stuck", "turn-later"]]);
++    expect(fs.existsSync(`${rollout}.langfuse-failures`)).toBe(false);
++    const entries = spooled(codexHome);
++    expect(entries.length).toBeGreaterThan(0);
++    for (const name of entries) {
++      expect(name).toMatch(/^\d{20}-[0-9a-f]{32}\.otlp$/);
++      expect(fs.statSync(path.join(spoolDir(codexHome), name)).mode & 0o777).toBe(0o600);
++    }
++    expect(fs.readdirSync(spoolDir(codexHome)).filter((name) => name.endsWith(".tmp"))).toEqual([]);
++    const staging = path.join(spoolDir(codexHome), ".staging");
++    const leftovers = fs.existsSync(staging) ? fs.readdirSync(staging) : [];
++    expect(leftovers).toEqual([]);
++    expect(spooledBytes(codexHome).includes("turn-stuck")).toBe(true);
++    expect(spooledBytes(codexHome).includes("turn-later")).toBe(true);
++  });
++
++  it("leaves a turn unmarked and uncounted while its requests cannot be spooled", async () => {
++    const state = (codexHome: string) => path.join(codexHome, ".codex", "langfuse_state");
++    const { rollout, codexHome, sentAfterRun, stderr } = await runAgainstCollector(
++      "down",
++      3,
++      (run, home) => {
++        if (run === 0) {
++          fs.mkdirSync(path.dirname(state(home)), { recursive: true });
++          fs.writeFileSync(state(home), "not a directory");
++        }
++        if (run === 2) fs.rmSync(state(home));
++      },
++    );
++
++    expect(sentAfterRun).toEqual([[], [], ["turn-stuck", "turn-later"]]);
++    expect(fs.existsSync(`${rollout}.langfuse-failures`)).toBe(false);
++    expect(stderr[0]).toContain("spool");
++    expect(spooledBytes(codexHome).includes("turn-stuck")).toBe(true);
+   });
+ });
+diff --git a/plugins/tracing/test/otlp-spool.test.ts b/plugins/tracing/test/otlp-spool.test.ts
+new file mode 100644
+index 0000000..78b113d
+--- /dev/null
++++ b/plugins/tracing/test/otlp-spool.test.ts
+@@ -0,0 +1,159 @@
++import * as fs from "node:fs";
++import * as http from "node:http";
++import * as os from "node:os";
++import * as path from "node:path";
++
++import { afterEach, describe, expect, it, vi } from "vitest";
++
++import type { Config } from "../src/config.js";
++import { setupInstrumentation } from "../src/instrumentation.js";
++import { loadAbandonedTurnIds, recordExportFailure } from "../src/sidecar.js";
++import { convertRollout } from "../src/trace.js";
++
++const events = vi.hoisted((): string[] => []);
++
++vi.mock("node:fs/promises", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("node:fs/promises")>();
++  const open: typeof actual.open = async (file, ...rest) => {
++    const handle = await actual.open(file, ...rest);
++    const sync = handle.sync.bind(handle);
++    handle.sync = async () => {
++      await sync();
++      events.push(`sync ${String(file)}`);
++    };
++    return handle;
++  };
++  return { ...actual, default: { ...actual, open }, open };
++});
++
++const tmpDirs: string[] = [];
++
++afterEach(() => {
++  events.length = 0;
++  vi.restoreAllMocks();
++  while (tmpDirs.length) fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
++});
++
++function makeTempDir(prefix: string): string {
++  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), prefix)));
++  tmpDirs.push(dir);
++  return dir;
++}
++
++async function closedPortUrl(): Promise<string> {
++  const server = http.createServer();
++  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++  const { port } = server.address() as { port: number };
++  await new Promise<void>((resolve) => server.close(() => resolve()));
++  return `http://127.0.0.1:${port}`;
++}
++
++function writeRollout(turnIds: string[]): string {
++  const day = path.join(makeTempDir("lf-codex-spool-"), "sessions", "2026", "06", "03");
++  fs.mkdirSync(day, { recursive: true });
++  const line = (type: string, payload: Record<string, unknown>) =>
++    JSON.stringify({ timestamp: "2026-06-03T12:00:00.000Z", type, payload });
++  const lines = [line("session_meta", { id: "sess-spool", cli_version: "0.163.0" })];
++  for (const id of turnIds) {
++    lines.push(
++      line("event_msg", { type: "task_started", turn_id: id }),
++      line("event_msg", { type: "user_message", message: `Prompt of ${id}` }),
++      line("event_msg", { type: "agent_message", message: `Answer to ${id}` }),
++      line("event_msg", { type: "task_complete", turn_id: id }),
++    );
++  }
++  const rollout = path.join(day, "rollout-spool.jsonl");
++  fs.writeFileSync(rollout, lines.join("\n") + "\n");
++  return rollout;
++}
++
++const configFor = (baseUrl: string): Config => ({
++  enabled: true,
++  public_key: "pk-lf-test",
++  secret_key: "sk-lf-test",
++  base_url: baseUrl,
++  skill_tags: true,
++  max_history_chars: 200_000,
++  debug: false,
++  fail_on_error: false,
++});
++
++const committed = (spool: string): string[] =>
++  fs.existsSync(spool) ? fs.readdirSync(spool).filter((name) => name.endsWith(".otlp")) : [];
++
++async function exportWhileEdgeIsDown(
++  limits: { maxSpoolBytes?: number } = {},
++): Promise<{ spool: string; marked: string[]; failure: unknown }> {
++  const spool = path.join(makeTempDir("lf-codex-state-"), "langfuse_otlp_spool");
++  const config = configFor(await closedPortUrl());
++  const instrumentation = setupInstrumentation(config, { spoolDirectory: spool, ...limits });
++  const marked: string[] = [];
++  let failure: unknown;
++  await convertRollout(writeRollout(["turn-1", "turn-2"]), {
++    config,
++    stoppedTurnId: "turn-2",
++    onTurnExported: async (turnId) => {
++      await instrumentation.flush();
++      events.push(`mark ${turnId}`);
++      marked.push(turnId);
++    },
++  }).catch((error: unknown) => {
++    failure = error;
++  });
++  await instrumentation.shutdown().catch(() => undefined);
++  return { spool, marked, failure };
++}
++
++describe("the OTLP spool a turn is marked against", () => {
++  it("fsyncs each request and the spool directory before the turn is marked", async () => {
++    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
++
++    const { spool, marked } = await exportWhileEdgeIsDown();
++
++    expect(marked).toEqual(["turn-1", "turn-2"]);
++    const entries = committed(spool);
++    expect(entries.length).toBeGreaterThanOrEqual(2);
++    const lastMark = events.lastIndexOf("mark turn-2");
++    for (const name of entries) {
++      const fileSync = events.findIndex((e) => e.endsWith(`/.${name.replace(/\.otlp$/, "")}.tmp`));
++      expect(fileSync, `no fsync of ${name} before it was committed`).toBeGreaterThanOrEqual(0);
++      expect(fileSync).toBeLessThan(lastMark);
++    }
++    const directorySyncs = events
++      .map((e, index) => (e === `sync ${spool}` ? index : -1))
++      .filter((index) => index >= 0);
++    const firstMark = events.indexOf("mark turn-1");
++    expect(directorySyncs.some((index) => index < firstMark)).toBe(true);
++    expect(directorySyncs.some((index) => index > firstMark && index < lastMark)).toBe(true);
++  });
++
++  it("refuses a request that would take the spool past its cap, and marks nothing", async () => {
++    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
++
++    const { spool, marked, failure } = await exportWhileEdgeIsDown({ maxSpoolBytes: 64 });
++
++    expect(marked).toEqual([]);
++    expect(committed(spool)).toEqual([]);
++    expect(String(failure)).toContain("spool full");
++    const alerts = stderr.mock.calls.map(([chunk]) => String(chunk));
++    expect(alerts.some((line) => line.includes(spool) && line.includes("64"))).toBe(true);
++  });
++});
++
++describe("export failures recorded in the sidecar", () => {
++  it("gives a turn up after three failed runs, and at once when it was rejected", async () => {
++    const rollout = path.join(makeTempDir("lf-codex-failures-"), "rollout.jsonl");
++
++    for (let run = 1; run <= 3; run++) {
++      expect(await recordExportFailure(rollout, "turn-failing", "failed", "HTTP 500")).toBe(
++        run === 3,
++      );
++    }
++    expect(await recordExportFailure(rollout, "turn-rejected", "rejected", "HTTP 400")).toBe(true);
++
++    expect([...(await loadAbandonedTurnIds(rollout))].sort()).toEqual([
++      "turn-failing",
++      "turn-rejected",
++    ]);
++  });
++});
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index cbe75e5..1596f7f 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -23,6 +23,9 @@ importers:
+       '@opentelemetry/exporter-trace-otlp-http':
+         specifier: ^0.222.0
+         version: 0.222.0(@opentelemetry/api@1.9.1)
++      '@opentelemetry/otlp-transformer':
++        specifier: ^0.222.0
++        version: 0.222.0(@opentelemetry/api@1.9.1)
+       '@opentelemetry/resources':
+         specifier: ^2.11.0
+         version: 2.11.0(@opentelemetry/api@1.9.1)

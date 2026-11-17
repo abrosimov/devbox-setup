@@ -1,9 +1,11 @@
 import { createRequire } from "node:module";
-import * as fs$1 from "node:fs/promises";
-import * as os$1 from "node:os";
-import * as path$1 from "node:path";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import * as http from "node:http";
+import * as https from "node:https";
 import * as fs from "fs";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import * as fs$1 from "node:fs/promises";
+import * as os from "node:os";
+import * as path$1 from "node:path";
 import * as zlib from "zlib";
 import { Readable } from "stream";
 import * as path from "path";
@@ -17875,8 +17877,7687 @@ var require_src$8 = /* @__PURE__ */ __commonJSMin(((exports) => {
 }));
 
 //#endregion
-//#region src/bounded-export.ts
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/index.js
+var require_metrics$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MetricsExporterMetricsHelper = void 0;
+	exports.MetricsExporterMetricsHelper = {
+		name: "metric_data_point",
+		countItems: (request) => {
+			let count = 0;
+			for (const scopeMetrics of request.scopeMetrics) for (const metric of scopeMetrics.metrics) count += metric.dataPoints.length;
+			return count;
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/index.js
+var require_trace$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.TraceExporterMetricsHelper = void 0;
+	exports.TraceExporterMetricsHelper = {
+		name: "span",
+		countItems: (request) => request.length
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/index.js
+var require_logs$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.LogsExporterMetricsHelper = void 0;
+	/**
+	* @experimental this helper may receive breaking changes in minor versions, pin this package's version when using this constant
+	*/
+	exports.LogsExporterMetricsHelper = {
+		name: "log",
+		countItems: (request) => request.length
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/utils.js
+var require_utils$4 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.estimateVarintSize = void 0;
+	/**
+	* Estimate size of a number encoded as varint.
+	* @param v value to calculate size for
+	* @returns size in bytes of the varint encoding of the value
+	*/
+	function estimateVarintSize(v) {
+		if (v < 0) return 10;
+		if (v < 128) return 1;
+		if (v < 16384) return 2;
+		if (v < 2097152) return 3;
+		if (v < 268435456) return 4;
+		if (v < 34359738368) return 5;
+		if (v < 4398046511104) return 6;
+		if (v < 562949953421312) return 7;
+		if (v < 72057594037927940) return 8;
+		return 9;
+	}
+	exports.estimateVarintSize = estimateVarintSize;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/protobuf-writer.js
+var require_protobuf_writer = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufWriter = exports.GROWING_BUFFER_DEBUG_MESSAGE = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const utils_1 = require_utils$4();
+	exports.GROWING_BUFFER_DEBUG_MESSAGE = "ProtobufWriter: estimated size was too small, growing buffer.";
+	/**
+	* bytes reserved for length in length-delimited fields
+	* using 1 to assume most length-delimited fields are small
+	*/
+	const RESERVED_LENGTH_BYTES = 1;
+	/**
+	* Primitive protobuf writer, optimized to avoid small object allocations.
+	* Grows buffer dynamically if initial size is exceeded.
+	*/
+	var ProtobufWriter = class {
+		_buffer;
+		_textEncoder;
+		_dataView;
+		pos = 0;
+		constructor(estimatedSize = 65536) {
+			this._buffer = new Uint8Array(estimatedSize);
+			this._textEncoder = new TextEncoder();
+			this._dataView = new DataView(this._buffer.buffer, this._buffer.byteOffset);
+		}
+		/**
+		* Ensure buffer has capacity for at least size more bytes
+		*/
+		_ensureCapacity(size) {
+			const needed = this.pos + size;
+			if (needed <= this._buffer.length) return;
+			api_1.diag.debug(exports.GROWING_BUFFER_DEBUG_MESSAGE);
+			let newSize = this._buffer.length * 2;
+			while (newSize < needed) newSize *= 2;
+			const newBuffer = new Uint8Array(newSize);
+			newBuffer.set(this._buffer);
+			this._buffer = newBuffer;
+			this._dataView = new DataView(this._buffer.buffer, this._buffer.byteOffset);
+		}
+		/**
+		* Get the written bytes as a Uint8Array
+		*/
+		finish() {
+			return this._buffer.subarray(0, this.pos);
+		}
+		/**
+		* Insert placeholder for length. Update later with {@link finishLengthDelimited}
+		* Returns the position where to write the length.
+		*/
+		startLengthDelimited() {
+			const lengthPos = this.pos;
+			this._ensureCapacity(RESERVED_LENGTH_BYTES);
+			this.pos += RESERVED_LENGTH_BYTES;
+			return lengthPos;
+		}
+		/**
+		* Write length varint at placeholder position and shift content forward if needed.
+		* Most messages are small (< 128 bytes), so we reserve 1 byte and only shift
+		* when the length needs more bytes.
+		*/
+		finishLengthDelimited(pos, length) {
+			const v = length >>> 0;
+			const varintSize = (0, utils_1.estimateVarintSize)(v);
+			if (varintSize > RESERVED_LENGTH_BYTES) {
+				const additionalBytes = varintSize - RESERVED_LENGTH_BYTES;
+				this._ensureCapacity(additionalBytes);
+				this._buffer.copyWithin(pos + varintSize, pos + RESERVED_LENGTH_BYTES, this.pos);
+				this.pos += additionalBytes;
+			}
+			let writePos = pos;
+			if (v < 128) this._buffer[writePos] = v;
+			else if (v < 16384) {
+				this._buffer[writePos++] = v & 127 | 128;
+				this._buffer[writePos] = v >>> 7;
+			} else if (v < 2097152) {
+				this._buffer[writePos++] = v & 127 | 128;
+				this._buffer[writePos++] = v >>> 7 & 127 | 128;
+				this._buffer[writePos] = v >>> 14;
+			} else if (v < 268435456) {
+				this._buffer[writePos++] = v & 127 | 128;
+				this._buffer[writePos++] = v >>> 7 & 127 | 128;
+				this._buffer[writePos++] = v >>> 14 & 127 | 128;
+				this._buffer[writePos] = v >>> 21;
+			} else {
+				this._buffer[writePos++] = v & 127 | 128;
+				this._buffer[writePos++] = v >>> 7 & 127 | 128;
+				this._buffer[writePos++] = v >>> 14 & 127 | 128;
+				this._buffer[writePos++] = v >>> 21 & 127 | 128;
+				this._buffer[writePos] = v >>> 28;
+			}
+		}
+		/**
+		* Write a sint32 value using zigzag encoding
+		*/
+		writeSint32(value) {
+			this.writeVarint((value << 1 ^ value >> 31) >>> 0);
+		}
+		/**
+		* Write a signed 64-bit fixed integer (sfixed64) from a JS number.
+		* Handles negative values via two's complement.
+		*/
+		writeSfixed64(value) {
+			let low;
+			let high;
+			if (value >= 0) {
+				low = value >>> 0;
+				high = value / 4294967296 >>> 0;
+			} else {
+				const abs = Math.abs(value);
+				low = abs >>> 0;
+				high = abs / 4294967296 >>> 0;
+				low = ~low >>> 0;
+				high = ~high >>> 0;
+				low = low + 1 >>> 0;
+				if (low === 0) high = high + 1 >>> 0;
+			}
+			this.writeFixed64(low, high);
+		}
+		/**
+		* Write a varint (variable-length integer)
+		*/
+		writeVarint(value) {
+			this._ensureCapacity((0, utils_1.estimateVarintSize)(value));
+			if (value >= 0 && value <= 4294967295) {
+				let v = value >>> 0;
+				while (v > 127) {
+					this._buffer[this.pos++] = v & 127 | 128;
+					v >>>= 7;
+				}
+				this._buffer[this.pos++] = v;
+			} else {
+				let low;
+				let high;
+				if (value >= 0) {
+					low = value >>> 0;
+					high = value / 4294967296 >>> 0;
+				} else {
+					const abs = Math.abs(value);
+					low = abs >>> 0;
+					high = abs / 4294967296 >>> 0;
+					low = ~low >>> 0;
+					high = ~high >>> 0;
+					low = low + 1 >>> 0;
+					if (low === 0) high = high + 1 >>> 0;
+				}
+				while (high > 0 || low > 127) {
+					this._buffer[this.pos++] = low & 127 | 128;
+					low = (low >>> 7 | high << 25) >>> 0;
+					high >>>= 7;
+				}
+				this._buffer[this.pos++] = low & 127;
+			}
+		}
+		/**
+		* Write a 32-bit fixed integer (little-endian)
+		*/
+		writeFixed32(value) {
+			this._ensureCapacity(4);
+			const v = value >>> 0;
+			this._buffer[this.pos++] = v & 255;
+			this._buffer[this.pos++] = v >>> 8 & 255;
+			this._buffer[this.pos++] = v >>> 16 & 255;
+			this._buffer[this.pos++] = v >>> 24 & 255;
+		}
+		/**
+		* Write a 64-bit fixed integer (little-endian)
+		* @param low - Low 32 bits
+		* @param high - High 32 bits
+		*/
+		writeFixed64(low, high) {
+			this._ensureCapacity(8);
+			const l = low >>> 0;
+			const h = high >>> 0;
+			this._buffer[this.pos++] = l & 255;
+			this._buffer[this.pos++] = l >>> 8 & 255;
+			this._buffer[this.pos++] = l >>> 16 & 255;
+			this._buffer[this.pos++] = l >>> 24 & 255;
+			this._buffer[this.pos++] = h & 255;
+			this._buffer[this.pos++] = h >>> 8 & 255;
+			this._buffer[this.pos++] = h >>> 16 & 255;
+			this._buffer[this.pos++] = h >>> 24 & 255;
+		}
+		/**
+		* Write length-delimited data (varint length + bytes)
+		*/
+		writeBytes(bytes) {
+			this.writeVarint(bytes.length);
+			this._ensureCapacity(bytes.length);
+			this._buffer.set(bytes, this.pos);
+			this.pos += bytes.length;
+		}
+		/**
+		* Write a field key (field number + wire type)
+		*/
+		writeTag(fieldNumber, wireType) {
+			this.writeVarint(fieldNumber << 3 | wireType);
+		}
+		/**
+		* Write a double (64-bit IEEE 754)
+		*/
+		writeDouble(value) {
+			this._ensureCapacity(8);
+			this._dataView.setFloat64(this.pos, value, true);
+			this.pos += 8;
+		}
+		/**
+		* Write a string as UTF-8 bytes (length-delimited)
+		*/
+		writeString(str) {
+			let isAscii = true;
+			const len = str.length;
+			for (let i = 0; i < len; i++) if (str.charCodeAt(i) > 127) {
+				isAscii = false;
+				break;
+			}
+			if (isAscii) {
+				this.writeVarint(len);
+				this._ensureCapacity(len);
+				for (let i = 0; i < len; i++) this._buffer[this.pos++] = str.charCodeAt(i);
+			} else {
+				const bytes = this._textEncoder.encode(str);
+				this.writeBytes(bytes);
+			}
+		}
+	};
+	exports.ProtobufWriter = ProtobufWriter;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/hex-to-binary.js
+var require_hex_to_binary = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.hexToBinary = void 0;
+	function intValue(charCode) {
+		if (charCode >= 48 && charCode <= 57) return charCode - 48;
+		if (charCode >= 97 && charCode <= 102) return charCode - 87;
+		return charCode - 55;
+	}
+	function hexToBinary(hexStr) {
+		const buf = new Uint8Array(hexStr.length / 2);
+		let offset = 0;
+		for (let i = 0; i < hexStr.length; i += 2) {
+			const hi = intValue(hexStr.charCodeAt(i));
+			const lo = intValue(hexStr.charCodeAt(i + 1));
+			buf[offset++] = hi << 4 | lo;
+		}
+		return buf;
+	}
+	exports.hexToBinary = hexToBinary;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/types/LogRecord.js
+var require_LogRecord = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.SeverityNumber = void 0;
+	var SeverityNumber;
+	(function(SeverityNumber) {
+		SeverityNumber[SeverityNumber["UNSPECIFIED"] = 0] = "UNSPECIFIED";
+		SeverityNumber[SeverityNumber["TRACE"] = 1] = "TRACE";
+		SeverityNumber[SeverityNumber["TRACE2"] = 2] = "TRACE2";
+		SeverityNumber[SeverityNumber["TRACE3"] = 3] = "TRACE3";
+		SeverityNumber[SeverityNumber["TRACE4"] = 4] = "TRACE4";
+		SeverityNumber[SeverityNumber["DEBUG"] = 5] = "DEBUG";
+		SeverityNumber[SeverityNumber["DEBUG2"] = 6] = "DEBUG2";
+		SeverityNumber[SeverityNumber["DEBUG3"] = 7] = "DEBUG3";
+		SeverityNumber[SeverityNumber["DEBUG4"] = 8] = "DEBUG4";
+		SeverityNumber[SeverityNumber["INFO"] = 9] = "INFO";
+		SeverityNumber[SeverityNumber["INFO2"] = 10] = "INFO2";
+		SeverityNumber[SeverityNumber["INFO3"] = 11] = "INFO3";
+		SeverityNumber[SeverityNumber["INFO4"] = 12] = "INFO4";
+		SeverityNumber[SeverityNumber["WARN"] = 13] = "WARN";
+		SeverityNumber[SeverityNumber["WARN2"] = 14] = "WARN2";
+		SeverityNumber[SeverityNumber["WARN3"] = 15] = "WARN3";
+		SeverityNumber[SeverityNumber["WARN4"] = 16] = "WARN4";
+		SeverityNumber[SeverityNumber["ERROR"] = 17] = "ERROR";
+		SeverityNumber[SeverityNumber["ERROR2"] = 18] = "ERROR2";
+		SeverityNumber[SeverityNumber["ERROR3"] = 19] = "ERROR3";
+		SeverityNumber[SeverityNumber["ERROR4"] = 20] = "ERROR4";
+		SeverityNumber[SeverityNumber["FATAL"] = 21] = "FATAL";
+		SeverityNumber[SeverityNumber["FATAL2"] = 22] = "FATAL2";
+		SeverityNumber[SeverityNumber["FATAL3"] = 23] = "FATAL3";
+		SeverityNumber[SeverityNumber["FATAL4"] = 24] = "FATAL4";
+	})(SeverityNumber || (exports.SeverityNumber = SeverityNumber = {}));
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/NoopLogger.js
+var require_NoopLogger = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.createNoopLogger = exports.NOOP_LOGGER = exports.NoopLogger = void 0;
+	var NoopLogger = class {
+		emit(_logRecord) {}
+		enabled() {
+			return false;
+		}
+	};
+	exports.NoopLogger = NoopLogger;
+	exports.NOOP_LOGGER = new NoopLogger();
+	/**
+	* Create a no-op Logger
+	*/
+	function createNoopLogger() {
+		return exports.NOOP_LOGGER;
+	}
+	exports.createNoopLogger = createNoopLogger;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/internal/global-utils.js
+var require_global_utils = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.API_BACKWARDS_COMPATIBILITY_VERSION = exports.makeGetter = exports._global = exports.GLOBAL_LOGS_API_KEY = void 0;
+	exports.GLOBAL_LOGS_API_KEY = Symbol.for("io.opentelemetry.js.api.logs");
+	exports._global = globalThis;
+	/**
+	* Make a function which accepts a version integer and returns the instance of an API if the version
+	* is compatible, or a fallback version (usually NOOP) if it is not.
+	*
+	* @param requiredVersion Backwards compatibility version which is required to return the instance
+	* @param instance Instance which should be returned if the required version is compatible
+	* @param fallback Fallback instance, usually NOOP, which will be returned if the required version is not compatible
+	*/
+	function makeGetter(requiredVersion, instance, fallback) {
+		return (version) => version === requiredVersion ? instance : fallback;
+	}
+	exports.makeGetter = makeGetter;
+	/**
+	* A number which should be incremented each time a backwards incompatible
+	* change is made to the API. This number is used when an API package
+	* attempts to access the global API to ensure it is getting a compatible
+	* version. If the global API is not compatible with the API package
+	* attempting to get it, a NOOP API implementation will be returned.
+	*/
+	exports.API_BACKWARDS_COMPATIBILITY_VERSION = 1;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/NoopLoggerProvider.js
+var require_NoopLoggerProvider = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.NOOP_LOGGER_PROVIDER = exports.NoopLoggerProvider = void 0;
+	const NoopLogger_1 = require_NoopLogger();
+	var NoopLoggerProvider = class {
+		getLogger(_name, _version, _options) {
+			return new NoopLogger_1.NoopLogger();
+		}
+	};
+	exports.NoopLoggerProvider = NoopLoggerProvider;
+	exports.NOOP_LOGGER_PROVIDER = new NoopLoggerProvider();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/ProxyLogger.js
+var require_ProxyLogger = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProxyLogger = void 0;
+	const NoopLogger_1 = require_NoopLogger();
+	var ProxyLogger = class {
+		constructor(provider, name, version, options) {
+			this._provider = provider;
+			this.name = name;
+			this.version = version;
+			this.options = options;
+		}
+		/**
+		* Emit a log record. This method should only be used by log appenders.
+		*
+		* @param logRecord
+		*/
+		emit(logRecord) {
+			this._getLogger().emit(logRecord);
+		}
+		enabled(options) {
+			return this._getLogger().enabled(options);
+		}
+		/**
+		* Try to get a logger from the proxy logger provider.
+		* If the proxy logger provider has no delegate, return a noop logger.
+		*/
+		_getLogger() {
+			if (this._delegate) return this._delegate;
+			const logger = this._provider._getDelegateLogger(this.name, this.version, this.options);
+			if (!logger) return NoopLogger_1.NOOP_LOGGER;
+			this._delegate = logger;
+			return this._delegate;
+		}
+	};
+	exports.ProxyLogger = ProxyLogger;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/ProxyLoggerProvider.js
+var require_ProxyLoggerProvider = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProxyLoggerProvider = void 0;
+	const NoopLoggerProvider_1 = require_NoopLoggerProvider();
+	const ProxyLogger_1 = require_ProxyLogger();
+	var ProxyLoggerProvider = class {
+		getLogger(name, version, options) {
+			var _a;
+			return (_a = this._getDelegateLogger(name, version, options)) !== null && _a !== void 0 ? _a : new ProxyLogger_1.ProxyLogger(this, name, version, options);
+		}
+		/**
+		* Get the delegate logger provider.
+		* Used by tests only.
+		* @internal
+		*/
+		_getDelegate() {
+			var _a;
+			return (_a = this._delegate) !== null && _a !== void 0 ? _a : NoopLoggerProvider_1.NOOP_LOGGER_PROVIDER;
+		}
+		/**
+		* Set the delegate logger provider
+		* @internal
+		*/
+		_setDelegate(delegate) {
+			this._delegate = delegate;
+		}
+		/**
+		* @internal
+		*/
+		_getDelegateLogger(name, version, options) {
+			var _a;
+			return (_a = this._delegate) === null || _a === void 0 ? void 0 : _a.getLogger(name, version, options);
+		}
+	};
+	exports.ProxyLoggerProvider = ProxyLoggerProvider;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/api/logs.js
+var require_logs$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.LogsAPI = void 0;
+	const global_utils_1 = require_global_utils();
+	const NoopLoggerProvider_1 = require_NoopLoggerProvider();
+	const ProxyLoggerProvider_1 = require_ProxyLoggerProvider();
+	var LogsAPI = class LogsAPI {
+		constructor() {
+			this._proxyLoggerProvider = new ProxyLoggerProvider_1.ProxyLoggerProvider();
+		}
+		static getInstance() {
+			if (!this._instance) this._instance = new LogsAPI();
+			return this._instance;
+		}
+		setGlobalLoggerProvider(provider) {
+			if (global_utils_1._global[global_utils_1.GLOBAL_LOGS_API_KEY]) return this.getLoggerProvider();
+			global_utils_1._global[global_utils_1.GLOBAL_LOGS_API_KEY] = (0, global_utils_1.makeGetter)(global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION, provider, NoopLoggerProvider_1.NOOP_LOGGER_PROVIDER);
+			this._proxyLoggerProvider._setDelegate(provider);
+			return provider;
+		}
+		/**
+		* Returns the global logger provider.
+		*
+		* @returns LoggerProvider
+		*/
+		getLoggerProvider() {
+			var _a, _b;
+			return (_b = (_a = global_utils_1._global[global_utils_1.GLOBAL_LOGS_API_KEY]) === null || _a === void 0 ? void 0 : _a.call(global_utils_1._global, global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION)) !== null && _b !== void 0 ? _b : this._proxyLoggerProvider;
+		}
+		/**
+		* Returns a Logger, creating one if one with the given name, version,
+		* schemaUrl, and attributes is not already created.
+		*
+		* Getting a Logger may be expensive, especially when `attributes` are
+		* provided. Reuse Logger instances where possible instead of calling
+		* `getLogger()` on hot paths.
+		*
+		* @param name The name of the logger or instrumentation library.
+		* @param version The version of the logger or instrumentation library.
+		* @param options The options of the logger or instrumentation library.
+		* @returns {@link Logger}
+		*/
+		getLogger(name, version, options) {
+			return this.getLoggerProvider().getLogger(name, version, options);
+		}
+		/** Remove the global logger provider */
+		disable() {
+			delete global_utils_1._global[global_utils_1.GLOBAL_LOGS_API_KEY];
+			this._proxyLoggerProvider = new ProxyLoggerProvider_1.ProxyLoggerProvider();
+		}
+	};
+	exports.LogsAPI = LogsAPI;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/index.js
+var require_src$7 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.logs = exports.createNoopLogger = exports.SeverityNumber = void 0;
+	var LogRecord_1 = require_LogRecord();
+	Object.defineProperty(exports, "SeverityNumber", {
+		enumerable: true,
+		get: function() {
+			return LogRecord_1.SeverityNumber;
+		}
+	});
+	var NoopLogger_1 = require_NoopLogger();
+	Object.defineProperty(exports, "createNoopLogger", {
+		enumerable: true,
+		get: function() {
+			return NoopLogger_1.createNoopLogger;
+		}
+	});
+	const logs_1 = require_logs$2();
+	exports.logs = logs_1.LogsAPI.getInstance();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/common-serializer.js
+var require_common_serializer = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.writeResource = exports.writeInstrumentationScope = exports.writeAnyValue = exports.writeKeyValue = exports.writeAttributes = exports.writeHrTimeAsFixed64 = void 0;
+	/**
+	* Write HrTime [seconds, nanoseconds] directly as fixed64 to the serializer.
+	* Converts to nanoseconds and writes as 64-bit little-endian integer without allocations.
+	*
+	* HrTime represents: total_nanos = seconds * 1_000_000_000 + nanoseconds
+	* We need to split this into low (bits 0-31) and high (bits 32-63).
+	*
+	* @param serializer - The protobuf writer
+	* @param hrTime - HrTime tuple [seconds, nanoseconds]
+	*/
+	function writeHrTimeAsFixed64(serializer, hrTime) {
+		const seconds = hrTime[0];
+		const nanos = hrTime[1];
+		const nanosPerSecond = 1e9;
+		const secondsLower16Bits = seconds & 65535;
+		const secondsUpperBits = seconds / 65536 >>> 0;
+		const nanosFromLower16Bits = secondsLower16Bits * nanosPerSecond;
+		const nanosFromUpperBits = secondsUpperBits * nanosPerSecond;
+		const lower16ContributionLow32 = nanosFromLower16Bits >>> 0;
+		const lower16ContributionHigh32 = Math.floor(nanosFromLower16Bits / 4294967296);
+		const upperBitsContributionLow32 = (nanosFromUpperBits & 65535) * 65536 >>> 0;
+		const upperBitsContributionHigh32 = nanosFromUpperBits / 65536 >>> 0;
+		const low32WithCarry = lower16ContributionLow32 + upperBitsContributionLow32 + nanos;
+		const totalLow = low32WithCarry >>> 0;
+		const carry = Math.floor(low32WithCarry / 4294967296);
+		const totalHigh = lower16ContributionHigh32 + upperBitsContributionHigh32 + carry >>> 0;
+		serializer.writeFixed64(totalLow, totalHigh);
+	}
+	exports.writeHrTimeAsFixed64 = writeHrTimeAsFixed64;
+	/**
+	* Write Attributes directly to protobuf as repeated KeyValue
+	*/
+	function writeAttributes(writer, attributes, fieldNumber) {
+		for (const key in attributes) {
+			if (!Object.prototype.hasOwnProperty.call(attributes, key)) continue;
+			const value = attributes[key];
+			writer.writeTag(fieldNumber, 2);
+			const kvStart = writer.startLengthDelimited();
+			const startPos = writer.pos;
+			writeKeyValue(writer, key, value);
+			writer.finishLengthDelimited(kvStart, writer.pos - startPos);
+		}
+	}
+	exports.writeAttributes = writeAttributes;
+	/**
+	* Write a KeyValue pair directly to protobuf
+	*/
+	function writeKeyValue(writer, key, value) {
+		writer.writeTag(1, 2);
+		writer.writeString(key);
+		writer.writeTag(2, 2);
+		const valueStart = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		writeAnyValue(writer, value);
+		writer.finishLengthDelimited(valueStart, writer.pos - startPos);
+	}
+	exports.writeKeyValue = writeKeyValue;
+	const MIN_64_BIT_INT = -(2 ** 63);
+	const MAX_64_BIT_INT = 2 ** 63;
+	/**
+	* Write an AnyValue directly from raw attribute value to protobuf
+	*/
+	function writeAnyValue(writer, value) {
+		const t = typeof value;
+		if (t === "string") {
+			writer.writeTag(1, 2);
+			writer.writeString(value);
+		} else if (t === "boolean") {
+			writer.writeTag(2, 0);
+			writer.writeVarint(value ? 1 : 0);
+		} else if (t === "number") {
+			const numValue = value;
+			if (Number.isInteger(numValue) && numValue >= MIN_64_BIT_INT && numValue < MAX_64_BIT_INT) {
+				writer.writeTag(3, 0);
+				writer.writeVarint(numValue);
+			} else {
+				writer.writeTag(4, 1);
+				writer.writeDouble(numValue);
+			}
+		} else if (value instanceof Uint8Array) {
+			writer.writeTag(7, 2);
+			writer.writeBytes(value);
+		} else if (Array.isArray(value)) {
+			writer.writeTag(5, 2);
+			const arrayStart = writer.startLengthDelimited();
+			const arrayStartPos = writer.pos;
+			for (const item of value) {
+				writer.writeTag(1, 2);
+				const itemStart = writer.startLengthDelimited();
+				const itemStartPos = writer.pos;
+				writeAnyValue(writer, item);
+				writer.finishLengthDelimited(itemStart, writer.pos - itemStartPos);
+			}
+			writer.finishLengthDelimited(arrayStart, writer.pos - arrayStartPos);
+		} else if (t === "object" && value != null) {
+			writer.writeTag(6, 2);
+			const kvlistStart = writer.startLengthDelimited();
+			const kvlistStartPos = writer.pos;
+			const obj = value;
+			for (const k in obj) {
+				if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+				const v = obj[k];
+				writer.writeTag(1, 2);
+				const kvStart = writer.startLengthDelimited();
+				const kvStartPos = writer.pos;
+				writer.writeTag(1, 2);
+				writer.writeString(k);
+				writer.writeTag(2, 2);
+				const valueStart = writer.startLengthDelimited();
+				const valueStartPos = writer.pos;
+				writeAnyValue(writer, v);
+				writer.finishLengthDelimited(valueStart, writer.pos - valueStartPos);
+				writer.finishLengthDelimited(kvStart, writer.pos - kvStartPos);
+			}
+			writer.finishLengthDelimited(kvlistStart, writer.pos - kvlistStartPos);
+		}
+	}
+	exports.writeAnyValue = writeAnyValue;
+	/**
+	* Write an InstrumentationScope message.
+	*
+	* Proto fields (InstrumentationScope):
+	*   1  name     string  (wire type 2)
+	*   2  version  string  (wire type 2)
+	*/
+	function writeInstrumentationScope(writer, scope, fieldNumber) {
+		writer.writeTag(fieldNumber, 2);
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		writer.writeTag(1, 2);
+		writer.writeString(scope.name);
+		if (scope.version) {
+			writer.writeTag(2, 2);
+			writer.writeString(scope.version);
+		}
+		if (scope.attributes) writeAttributes(writer, scope.attributes, 3);
+		if (scope.droppedAttributesCount) {
+			writer.writeTag(4, 0);
+			writer.writeVarint(scope.droppedAttributesCount);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	exports.writeInstrumentationScope = writeInstrumentationScope;
+	/**
+	* Write a Resource message and its enclosing tag.
+	*
+	* Proto fields (Resource):
+	*   1  attributes                repeated KeyValue  (wire type 2)
+	*   2  dropped_attributes_count  uint32             (wire type 0)
+	*/
+	function writeResource(writer, resource, fieldNumber) {
+		writer.writeTag(fieldNumber, 2);
+		const resourceStart = writer.startLengthDelimited();
+		const resourceStartPos = writer.pos;
+		if (resource.attributes) writeAttributes(writer, resource.attributes, 1);
+		writer.writeTag(2, 0);
+		writer.writeVarint(0);
+		writer.finishLengthDelimited(resourceStart, writer.pos - resourceStartPos);
+	}
+	exports.writeResource = writeResource;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/protobuf-size-estimator.js
+var require_protobuf_size_estimator = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufSizeEstimator = void 0;
+	const utils_1 = require_utils$4();
+	/**
+	* Calculate UTF-8 byte length without encoding
+	* @param str valid UTF-16 string
+	*/
+	function utf8ByteLength(str) {
+		const len = str.length;
+		let byteLen = 0;
+		for (let i = 0; i < len; i++) {
+			const code = str.charCodeAt(i);
+			if (code < 128) byteLen += 1;
+			else if (code < 2048) byteLen += 2;
+			else if (code < 55296 || code >= 57344) byteLen += 3;
+			else {
+				i++;
+				byteLen += 4;
+			}
+		}
+		return byteLen;
+	}
+	/**
+	* Size estimator for protobuf messages.
+	* Implements the same interface as ProtobufWriter but only counts bytes without allocating a buffer.
+	* @internal
+	*/
+	var ProtobufSizeEstimator = class {
+		pos = 0;
+		startLengthDelimited() {
+			return this.pos;
+		}
+		finishLengthDelimited(_, length) {
+			this.pos += (0, utils_1.estimateVarintSize)(length);
+		}
+		writeVarint(value) {
+			this.pos += (0, utils_1.estimateVarintSize)(value);
+		}
+		writeSint32(value) {
+			this.pos += (0, utils_1.estimateVarintSize)((value << 1 ^ value >> 31) >>> 0);
+		}
+		writeSfixed64(_value) {
+			this.pos += 8;
+		}
+		writeFixed32(_value) {
+			this.pos += 4;
+		}
+		writeFixed64(_low, _high) {
+			this.pos += 8;
+		}
+		writeBytes(bytes) {
+			this.pos += (0, utils_1.estimateVarintSize)(bytes.length);
+			this.pos += bytes.length;
+		}
+		writeTag(fieldNumber, wireType) {
+			this.writeVarint(fieldNumber << 3 | wireType);
+		}
+		writeDouble(_value) {
+			this.pos += 8;
+		}
+		writeString(str) {
+			const byteLen = utf8ByteLength(str);
+			this.pos += (0, utils_1.estimateVarintSize)(byteLen);
+			this.pos += byteLen;
+		}
+	};
+	exports.ProtobufSizeEstimator = ProtobufSizeEstimator;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/protobuf/logs-serializer.js
+var require_logs_serializer = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.serializeLogsExportRequest = void 0;
+	const protobuf_writer_1 = require_protobuf_writer();
+	const hex_to_binary_1 = require_hex_to_binary();
+	const api_logs_1 = require_src$7();
+	const common_serializer_1 = require_common_serializer();
+	const protobuf_size_estimator_1 = require_protobuf_size_estimator();
+	/**
+	* Serialize a single LogRecord directly from ReadableLogRecord
+	*/
+	function serializeLogRecord(writer, logRecord) {
+		const logStart = writer.startLengthDelimited();
+		const logStartPos = writer.pos;
+		writer.writeTag(1, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, logRecord.hrTime);
+		if (logRecord.severityNumber !== void 0 && logRecord.severityNumber !== api_logs_1.SeverityNumber.UNSPECIFIED) {
+			writer.writeTag(2, 0);
+			writer.writeVarint(logRecord.severityNumber);
+		}
+		if (logRecord.severityText) {
+			writer.writeTag(3, 2);
+			writer.writeString(logRecord.severityText);
+		}
+		if (logRecord.body !== void 0) {
+			writer.writeTag(5, 2);
+			const bodyStart = writer.startLengthDelimited();
+			const bodyStartPos = writer.pos;
+			(0, common_serializer_1.writeAnyValue)(writer, logRecord.body);
+			writer.finishLengthDelimited(bodyStart, writer.pos - bodyStartPos);
+		}
+		if (logRecord.attributes) (0, common_serializer_1.writeAttributes)(writer, logRecord.attributes, 6);
+		writer.writeTag(7, 0);
+		writer.writeVarint(logRecord.droppedAttributesCount);
+		if (logRecord.spanContext?.traceFlags) {
+			writer.writeTag(8, 5);
+			writer.writeFixed32(logRecord.spanContext.traceFlags);
+		}
+		if (logRecord.spanContext?.traceId) {
+			writer.writeTag(9, 2);
+			writer.writeBytes((0, hex_to_binary_1.hexToBinary)(logRecord.spanContext.traceId));
+		}
+		if (logRecord.spanContext?.spanId) {
+			writer.writeTag(10, 2);
+			writer.writeBytes((0, hex_to_binary_1.hexToBinary)(logRecord.spanContext.spanId));
+		}
+		writer.writeTag(11, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, logRecord.hrTimeObserved);
+		if (logRecord.eventName) {
+			writer.writeTag(12, 2);
+			writer.writeString(logRecord.eventName);
+		}
+		writer.finishLengthDelimited(logStart, writer.pos - logStartPos);
+	}
+	/**
+	* Serialize ScopeLogs directly from SDK types
+	*/
+	function serializeScopeLogs(writer, scope, logRecords) {
+		const scopeLogsStart = writer.startLengthDelimited();
+		const scopeLogsStartPos = writer.pos;
+		(0, common_serializer_1.writeInstrumentationScope)(writer, scope, 1);
+		for (const logRecord of logRecords) {
+			writer.writeTag(2, 2);
+			serializeLogRecord(writer, logRecord);
+		}
+		if (scope.schemaUrl) {
+			writer.writeTag(3, 2);
+			writer.writeString(scope.schemaUrl);
+		}
+		writer.finishLengthDelimited(scopeLogsStart, writer.pos - scopeLogsStartPos);
+	}
+	/**
+	* Serialize ResourceLogs directly from SDK Resource type
+	*/
+	function serializeResourceLogs(writer, resource, scopeMap) {
+		const resourceLogsStart = writer.startLengthDelimited();
+		const resourceLogsStartPos = writer.pos;
+		(0, common_serializer_1.writeResource)(writer, resource, 1);
+		for (const scopeLogs of scopeMap.values()) {
+			writer.writeTag(2, 2);
+			const scope = scopeLogs[0].instrumentationScope;
+			serializeScopeLogs(writer, scope, scopeLogs);
+		}
+		if (resource.schemaUrl) {
+			writer.writeTag(3, 2);
+			writer.writeString(resource.schemaUrl);
+		}
+		writer.finishLengthDelimited(resourceLogsStart, writer.pos - resourceLogsStartPos);
+	}
+	/**
+	* Group log records by resource and instrumentation scope
+	*/
+	function createResourceMap(logRecords) {
+		const resourceMap = /* @__PURE__ */ new Map();
+		for (const record of logRecords) {
+			const resource = record.resource;
+			const scope = record.instrumentationScope;
+			let ismMap = resourceMap.get(resource);
+			if (!ismMap) {
+				ismMap = /* @__PURE__ */ new Map();
+				resourceMap.set(resource, ismMap);
+			}
+			let records = ismMap.get(scope);
+			if (!records) {
+				records = [];
+				ismMap.set(scope, records);
+			}
+			records.push(record);
+		}
+		return resourceMap;
+	}
+	/**
+	* Serialize ExportLogsServiceRequest directly from ReadableLogRecord[]
+	*/
+	function serializeLogsExportRequest(logRecords) {
+		const resourceMap = createResourceMap(logRecords);
+		const estimator = new protobuf_size_estimator_1.ProtobufSizeEstimator();
+		for (const [resource, scopeMap] of resourceMap) {
+			estimator.writeTag(1, 2);
+			serializeResourceLogs(estimator, resource, scopeMap);
+		}
+		const writer = new protobuf_writer_1.ProtobufWriter(estimator.pos);
+		for (const [resource, scopeMap] of resourceMap) {
+			writer.writeTag(1, 2);
+			serializeResourceLogs(writer, resource, scopeMap);
+		}
+		return writer.finish();
+	}
+	exports.serializeLogsExportRequest = serializeLogsExportRequest;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/protobuf-reader.js
+var require_protobuf_reader = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufReader = void 0;
+	/**
+	* Minimal binary protobuf reader.
+	* Only implements the wire-types that we currently need; this is not intended
+	* to be a general-purpose protobuf reader.
+	*
+	* Since the values we parse are generally small and not very nested, it's public
+	* interface does not enforce the same low-allocation philosophy that ProtobufWriter does.
+	* If this is needed in the future, we should refactor this to fit the use-case.
+	*/
+	var ProtobufReader = class {
+		pos = 0;
+		_buf;
+		_textDecoder;
+		constructor(buf) {
+			this._buf = buf;
+			this._textDecoder = new TextDecoder();
+		}
+		isAtEnd() {
+			return this.pos >= this._buf.length;
+		}
+		/** Read a varint and decode it as a tag, returning field number and wire type. */
+		readTag() {
+			const raw = this.readVarint();
+			return {
+				fieldNumber: raw >>> 3,
+				wireType: raw & 7
+			};
+		}
+		/**
+		* Read a base-128 varint.
+		* Returns a JS `number`; precision above 2^53 is silently lost.
+		* Throws if the buffer is truncated mid-varint.
+		*/
+		readVarint() {
+			let result = 0;
+			let shift = 0;
+			let terminated = false;
+			while (this.pos < this._buf.length) {
+				const b = this._buf[this.pos++];
+				result += (b & 127) * Math.pow(2, shift);
+				shift += 7;
+				if ((b & 128) === 0) {
+					terminated = true;
+					break;
+				}
+			}
+			if (!terminated) throw new Error("Truncated buffer: unexpected end of data while reading varint");
+			return result;
+		}
+		/** Read a length-delimited byte sequence (bytes field or embedded message). */
+		readBytes() {
+			const len = this.readVarint();
+			if (this.pos + len > this._buf.length) throw new Error(`Truncated buffer: expected ${len} bytes at position ${this.pos}, but only ${this._buf.length - this.pos} available`);
+			const slice = this._buf.subarray(this.pos, this.pos + len);
+			this.pos += len;
+			return slice;
+		}
+		/** Read a length-delimited UTF-8 string. */
+		readString() {
+			return this._textDecoder.decode(this.readBytes());
+		}
+		/**
+		* Skip an unknown field.
+		* Handles wire types 0 (varint), 1 (64-bit), 2 (length-delimited),
+		* and 5 (32-bit).
+		*
+		* Wire types 3 and 4 (start-group / end-group) are deprecated in proto3
+		* and are not used by any OpenTelemetry proto definition. Encountering
+		* them is treated as an error.
+		*/
+		skip(wireType) {
+			switch (wireType) {
+				case 0:
+					this.readVarint();
+					break;
+				case 1:
+					this.pos += 8;
+					break;
+				case 2:
+					this.readBytes();
+					break;
+				case 5:
+					this.pos += 4;
+					break;
+				default: throw new Error(`Unknown wire type ${wireType}, cannot safely skip`);
+			}
+		}
+	};
+	exports.ProtobufReader = ProtobufReader;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/protobuf/response-deserializer.js
+var require_response_deserializer$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.deserializeExportLogsServiceResponse = void 0;
+	const protobuf_reader_1 = require_protobuf_reader();
+	/**
+	* Parse an ExportLogsPartialSuccess embedded message from raw bytes.
+	*
+	* Field map (opentelemetry/proto/collector/logs/v1/logs_service.proto):
+	*   1  rejected_log_records  int64   (varint)
+	*   2  error_message         string  (length-delimited)
+	*/
+	function deserializePartialSuccess(data) {
+		const reader = new protobuf_reader_1.ProtobufReader(data);
+		const result = {};
+		while (!reader.isAtEnd()) {
+			const { fieldNumber, wireType } = reader.readTag();
+			switch (fieldNumber) {
+				case 1:
+					if (wireType === 0) result.rejectedLogRecords = reader.readVarint();
+					else reader.skip(wireType);
+					break;
+				case 2:
+					if (wireType === 2) result.errorMessage = reader.readString();
+					else reader.skip(wireType);
+					break;
+				default: reader.skip(wireType);
+			}
+		}
+		return result;
+	}
+	/**
+	* Parse an ExportLogsServiceResponse protobuf message from raw bytes.
+	*
+	* Field map (opentelemetry/proto/collector/logs/v1/logs_service.proto):
+	*   1  partial_success  ExportLogsPartialSuccess  (length-delimited)
+	*/
+	function deserializeExportLogsServiceResponse(data) {
+		const reader = new protobuf_reader_1.ProtobufReader(data);
+		const result = {};
+		while (!reader.isAtEnd()) {
+			const { fieldNumber, wireType } = reader.readTag();
+			switch (fieldNumber) {
+				case 1:
+					if (wireType === 2) result.partialSuccess = deserializePartialSuccess(reader.readBytes());
+					else reader.skip(wireType);
+					break;
+				default: reader.skip(wireType);
+			}
+		}
+		return result;
+	}
+	exports.deserializeExportLogsServiceResponse = deserializeExportLogsServiceResponse;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/protobuf/logs.js
+var require_logs$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufLogsSerializer = void 0;
+	const logs_serializer_1 = require_logs_serializer();
+	const response_deserializer_1 = require_response_deserializer$2();
+	/**
+	* @experimental this serializer may receive breaking changes in minor versions, pin this package's version when using this constant
+	*/
+	exports.ProtobufLogsSerializer = {
+		serializeRequest: (arg) => {
+			return (0, logs_serializer_1.serializeLogsExportRequest)(arg);
+		},
+		deserializeResponse: (arg) => {
+			return (0, response_deserializer_1.deserializeExportLogsServiceResponse)(arg);
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/protobuf/index.js
+var require_protobuf$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufLogsSerializer = void 0;
+	var logs_1 = require_logs$1();
+	Object.defineProperty(exports, "ProtobufLogsSerializer", {
+		enumerable: true,
+		get: function() {
+			return logs_1.ProtobufLogsSerializer;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/AggregationTemporality.js
+var require_AggregationTemporality = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.AggregationTemporality = void 0;
+	/**
+	* AggregationTemporality indicates the way additive quantities are expressed.
+	*/
+	var AggregationTemporality;
+	(function(AggregationTemporality) {
+		AggregationTemporality[AggregationTemporality["DELTA"] = 0] = "DELTA";
+		AggregationTemporality[AggregationTemporality["CUMULATIVE"] = 1] = "CUMULATIVE";
+	})(AggregationTemporality || (exports.AggregationTemporality = AggregationTemporality = {}));
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/MetricData.js
+var require_MetricData = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.DataPointType = exports.InstrumentType = void 0;
+	/**
+	* Supported types of metric instruments.
+	*/
+	var InstrumentType;
+	(function(InstrumentType) {
+		InstrumentType["COUNTER"] = "COUNTER";
+		InstrumentType["GAUGE"] = "GAUGE";
+		InstrumentType["HISTOGRAM"] = "HISTOGRAM";
+		InstrumentType["UP_DOWN_COUNTER"] = "UP_DOWN_COUNTER";
+		InstrumentType["OBSERVABLE_COUNTER"] = "OBSERVABLE_COUNTER";
+		InstrumentType["OBSERVABLE_GAUGE"] = "OBSERVABLE_GAUGE";
+		InstrumentType["OBSERVABLE_UP_DOWN_COUNTER"] = "OBSERVABLE_UP_DOWN_COUNTER";
+	})(InstrumentType || (exports.InstrumentType = InstrumentType = {}));
+	/**
+	* The aggregated point data type.
+	*/
+	var DataPointType;
+	(function(DataPointType) {
+		/**
+		* A histogram data point contains a histogram statistics of collected
+		* values with a list of explicit bucket boundaries and statistics such
+		* as min, max, count, and sum of all collected values.
+		*/
+		DataPointType[DataPointType["HISTOGRAM"] = 0] = "HISTOGRAM";
+		/**
+		* An exponential histogram data point contains a histogram statistics of
+		* collected values where bucket boundaries are automatically calculated
+		* using an exponential function, and statistics such as min, max, count,
+		* and sum of all collected values.
+		*/
+		DataPointType[DataPointType["EXPONENTIAL_HISTOGRAM"] = 1] = "EXPONENTIAL_HISTOGRAM";
+		/**
+		* A gauge metric data point has only a single numeric value.
+		*/
+		DataPointType[DataPointType["GAUGE"] = 2] = "GAUGE";
+		/**
+		* A sum metric data point has a single numeric value and a
+		* monotonicity-indicator.
+		*/
+		DataPointType[DataPointType["SUM"] = 3] = "SUM";
+	})(DataPointType || (exports.DataPointType = DataPointType = {}));
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/utils.js
+var require_utils$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.equalsCaseInsensitive = exports.binarySearchUB = exports.setEquals = exports.callWithTimeout = exports.TimeoutError = exports.instrumentationScopeId = exports.hashAttributes = void 0;
+	/**
+	* Converting the unordered attributes into unique identifier string.
+	* @param attributes user provided unordered Attributes.
+	*/
+	function hashAttributes(attributes) {
+		let keys = Object.keys(attributes);
+		if (keys.length === 0) return "";
+		keys = keys.sort();
+		return JSON.stringify(keys.map((key) => [key, attributes[key]]));
+	}
+	exports.hashAttributes = hashAttributes;
+	/**
+	* Converting the instrumentation scope object to a unique identifier string.
+	* @param instrumentationScope
+	*/
+	function instrumentationScopeId(instrumentationScope) {
+		return `${instrumentationScope.name}:${instrumentationScope.version ?? ""}:${instrumentationScope.schemaUrl ?? ""}`;
+	}
+	exports.instrumentationScopeId = instrumentationScopeId;
+	/**
+	* Error that is thrown on timeouts.
+	*/
+	var TimeoutError = class TimeoutError extends Error {
+		constructor(message) {
+			super(message);
+			Object.setPrototypeOf(this, TimeoutError.prototype);
+		}
+	};
+	exports.TimeoutError = TimeoutError;
+	/**
+	* Adds a timeout to a promise and rejects if the specified timeout has elapsed. Also rejects if the specified promise
+	* rejects, and resolves if the specified promise resolves.
+	*
+	* <p> NOTE: this operation will continue even after it throws a {@link TimeoutError}.
+	*
+	* @param promise promise to use with timeout.
+	* @param timeout the timeout in milliseconds until the returned promise is rejected.
+	*/
+	function callWithTimeout(promise, timeout) {
+		let timeoutHandle;
+		const timeoutPromise = new Promise(function timeoutFunction(_resolve, reject) {
+			timeoutHandle = setTimeout(function timeoutHandler() {
+				reject(new TimeoutError("Operation timed out."));
+			}, timeout);
+		});
+		return Promise.race([promise, timeoutPromise]).then((result) => {
+			clearTimeout(timeoutHandle);
+			return result;
+		}, (reason) => {
+			clearTimeout(timeoutHandle);
+			throw reason;
+		});
+	}
+	exports.callWithTimeout = callWithTimeout;
+	function setEquals(lhs, rhs) {
+		if (lhs.size !== rhs.size) return false;
+		for (const item of lhs) if (!rhs.has(item)) return false;
+		return true;
+	}
+	exports.setEquals = setEquals;
+	/**
+	* Binary search the sorted array to the find upper bound for the value.
+	* @param arr
+	* @param value
+	* @returns
+	*/
+	function binarySearchUB(arr, value) {
+		let lo = 0;
+		let hi = arr.length - 1;
+		let ret = arr.length;
+		while (hi >= lo) {
+			const mid = lo + Math.trunc((hi - lo) / 2);
+			if (arr[mid] < value) lo = mid + 1;
+			else {
+				ret = mid;
+				hi = mid - 1;
+			}
+		}
+		return ret;
+	}
+	exports.binarySearchUB = binarySearchUB;
+	function equalsCaseInsensitive(lhs, rhs) {
+		return lhs.toLowerCase() === rhs.toLowerCase();
+	}
+	exports.equalsCaseInsensitive = equalsCaseInsensitive;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/types.js
+var require_types$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.AggregatorKind = void 0;
+	/** The kind of aggregator. */
+	var AggregatorKind;
+	(function(AggregatorKind) {
+		AggregatorKind[AggregatorKind["DROP"] = 0] = "DROP";
+		AggregatorKind[AggregatorKind["SUM"] = 1] = "SUM";
+		AggregatorKind[AggregatorKind["LAST_VALUE"] = 2] = "LAST_VALUE";
+		AggregatorKind[AggregatorKind["HISTOGRAM"] = 3] = "HISTOGRAM";
+		AggregatorKind[AggregatorKind["EXPONENTIAL_HISTOGRAM"] = 4] = "EXPONENTIAL_HISTOGRAM";
+	})(AggregatorKind || (exports.AggregatorKind = AggregatorKind = {}));
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/Drop.js
+var require_Drop = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.DropAggregator = void 0;
+	const types_1 = require_types$1();
+	/** Basic aggregator for None which keeps no recorded value. */
+	var DropAggregator = class {
+		kind = types_1.AggregatorKind.DROP;
+		createAccumulation() {}
+		merge(_previous, _delta) {}
+		diff(_previous, _current) {}
+		toMetricData(_descriptor, _aggregationTemporality, _accumulationByAttributes, _endTime) {}
+	};
+	exports.DropAggregator = DropAggregator;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/Histogram.js
+var require_Histogram = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.HistogramAggregator = exports.HistogramAccumulation = void 0;
+	const types_1 = require_types$1();
+	const MetricData_1 = require_MetricData();
+	const utils_1 = require_utils$3();
+	function createNewEmptyCheckpoint(boundaries) {
+		const counts = boundaries.map(() => 0);
+		counts.push(0);
+		return {
+			buckets: {
+				boundaries,
+				counts
+			},
+			sum: 0,
+			count: 0,
+			hasMinMax: false,
+			min: Infinity,
+			max: -Infinity
+		};
+	}
+	var HistogramAccumulation = class {
+		startTime;
+		_boundaries;
+		_recordMinMax;
+		_current;
+		constructor(startTime, boundaries, recordMinMax = true, current = createNewEmptyCheckpoint(boundaries)) {
+			this.startTime = startTime;
+			this._boundaries = boundaries;
+			this._recordMinMax = recordMinMax;
+			this._current = current;
+		}
+		record(value) {
+			if (Number.isNaN(value)) return;
+			this._current.count += 1;
+			this._current.sum += value;
+			if (this._recordMinMax) {
+				this._current.min = Math.min(value, this._current.min);
+				this._current.max = Math.max(value, this._current.max);
+				this._current.hasMinMax = true;
+			}
+			const idx = (0, utils_1.binarySearchUB)(this._boundaries, value);
+			this._current.buckets.counts[idx] += 1;
+		}
+		setStartTime(startTime) {
+			this.startTime = startTime;
+		}
+		toPointValue() {
+			return this._current;
+		}
+	};
+	exports.HistogramAccumulation = HistogramAccumulation;
+	/**
+	* Basic aggregator which observes events and counts them in pre-defined buckets
+	* and provides the total sum and count of all observations.
+	*/
+	var HistogramAggregator = class {
+		kind = types_1.AggregatorKind.HISTOGRAM;
+		_boundaries;
+		_recordMinMax;
+		/**
+		* @param _boundaries sorted upper bounds of recorded values.
+		* @param _recordMinMax If set to true, min and max will be recorded. Otherwise, min and max will not be recorded.
+		*/
+		constructor(boundaries, recordMinMax) {
+			this._boundaries = boundaries;
+			this._recordMinMax = recordMinMax;
+		}
+		createAccumulation(startTime) {
+			return new HistogramAccumulation(startTime, this._boundaries, this._recordMinMax);
+		}
+		/**
+		* Return the result of the merge of two histogram accumulations. As long as one Aggregator
+		* instance produces all Accumulations with constant boundaries we don't need to worry about
+		* merging accumulations with different boundaries.
+		*/
+		merge(previous, delta) {
+			const previousValue = previous.toPointValue();
+			const deltaValue = delta.toPointValue();
+			const previousCounts = previousValue.buckets.counts;
+			const deltaCounts = deltaValue.buckets.counts;
+			const mergedCounts = new Array(previousCounts.length);
+			for (let idx = 0; idx < previousCounts.length; idx++) mergedCounts[idx] = previousCounts[idx] + deltaCounts[idx];
+			let min = Infinity;
+			let max = -Infinity;
+			if (this._recordMinMax) {
+				if (previousValue.hasMinMax && deltaValue.hasMinMax) {
+					min = Math.min(previousValue.min, deltaValue.min);
+					max = Math.max(previousValue.max, deltaValue.max);
+				} else if (previousValue.hasMinMax) {
+					min = previousValue.min;
+					max = previousValue.max;
+				} else if (deltaValue.hasMinMax) {
+					min = deltaValue.min;
+					max = deltaValue.max;
+				}
+			}
+			return new HistogramAccumulation(previous.startTime, previousValue.buckets.boundaries, this._recordMinMax, {
+				buckets: {
+					boundaries: previousValue.buckets.boundaries,
+					counts: mergedCounts
+				},
+				count: previousValue.count + deltaValue.count,
+				sum: previousValue.sum + deltaValue.sum,
+				hasMinMax: this._recordMinMax && (previousValue.hasMinMax || deltaValue.hasMinMax),
+				min,
+				max
+			});
+		}
+		/**
+		* Returns a new DELTA aggregation by comparing two cumulative measurements.
+		*/
+		diff(previous, current) {
+			const previousValue = previous.toPointValue();
+			const currentValue = current.toPointValue();
+			const previousCounts = previousValue.buckets.counts;
+			const currentCounts = currentValue.buckets.counts;
+			const diffedCounts = new Array(previousCounts.length);
+			for (let idx = 0; idx < previousCounts.length; idx++) diffedCounts[idx] = currentCounts[idx] - previousCounts[idx];
+			return new HistogramAccumulation(current.startTime, previousValue.buckets.boundaries, this._recordMinMax, {
+				buckets: {
+					boundaries: previousValue.buckets.boundaries,
+					counts: diffedCounts
+				},
+				count: currentValue.count - previousValue.count,
+				sum: currentValue.sum - previousValue.sum,
+				hasMinMax: false,
+				min: Infinity,
+				max: -Infinity
+			});
+		}
+		toMetricData(descriptor, aggregationTemporality, accumulationByAttributes, endTime) {
+			return {
+				descriptor,
+				aggregationTemporality,
+				dataPointType: MetricData_1.DataPointType.HISTOGRAM,
+				dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
+					const pointValue = accumulation.toPointValue();
+					const allowsNegativeValues = descriptor.type === MetricData_1.InstrumentType.GAUGE || descriptor.type === MetricData_1.InstrumentType.UP_DOWN_COUNTER || descriptor.type === MetricData_1.InstrumentType.OBSERVABLE_GAUGE || descriptor.type === MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER;
+					return {
+						attributes,
+						startTime: accumulation.startTime,
+						endTime,
+						value: {
+							min: pointValue.hasMinMax ? pointValue.min : void 0,
+							max: pointValue.hasMinMax ? pointValue.max : void 0,
+							sum: !allowsNegativeValues ? pointValue.sum : void 0,
+							buckets: pointValue.buckets,
+							count: pointValue.count
+						}
+					};
+				})
+			};
+		}
+	};
+	exports.HistogramAggregator = HistogramAggregator;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/Buckets.js
+var require_Buckets = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.Buckets = void 0;
+	var Buckets = class Buckets {
+		backing;
+		indexBase;
+		indexStart;
+		indexEnd;
+		/**
+		* The term index refers to the number of the exponential histogram bucket
+		* used to determine its boundaries. The lower boundary of a bucket is
+		* determined by base ** index and the upper boundary of a bucket is
+		* determined by base ** (index + 1). index values are signed to account
+		* for values less than or equal to 1.
+		*
+		* indexBase is the index of the 0th position in the
+		* backing array, i.e., backing[0] is the count
+		* in the bucket with index `indexBase`.
+		*
+		* indexStart is the smallest index value represented
+		* in the backing array.
+		*
+		* indexEnd is the largest index value represented in
+		* the backing array.
+		*/
+		constructor(backing = new BucketsBacking(), indexBase = 0, indexStart = 0, indexEnd = 0) {
+			this.backing = backing;
+			this.indexBase = indexBase;
+			this.indexStart = indexStart;
+			this.indexEnd = indexEnd;
+		}
+		/**
+		* Offset is the bucket index of the smallest entry in the counts array
+		* @returns {number}
+		*/
+		get offset() {
+			return this.indexStart;
+		}
+		/**
+		* Buckets is a view into the backing array.
+		* @returns {number}
+		*/
+		get length() {
+			if (this.backing.length === 0) return 0;
+			if (this.indexEnd === this.indexStart && this.at(0) === 0) return 0;
+			return this.indexEnd - this.indexStart + 1;
+		}
+		/**
+		* An array of counts, where count[i] carries the count
+		* of the bucket at index (offset+i).  count[i] is the count of
+		* values greater than base^(offset+i) and less than or equal to
+		* base^(offset+i+1).
+		* @returns {number} The logical counts based on the backing array
+		*/
+		counts() {
+			return Array.from({ length: this.length }, (_, i) => this.at(i));
+		}
+		/**
+		* At returns the count of the bucket at a position in the logical
+		* array of counts.
+		* @param position
+		* @returns {number}
+		*/
+		at(position) {
+			const bias = this.indexBase - this.indexStart;
+			if (position < bias) position += this.backing.length;
+			position -= bias;
+			return this.backing.countAt(position);
+		}
+		/**
+		* incrementBucket increments the backing array index by `increment`
+		* @param bucketIndex
+		* @param increment
+		*/
+		incrementBucket(bucketIndex, increment) {
+			this.backing.increment(bucketIndex, increment);
+		}
+		/**
+		* decrementBucket decrements the backing array index by `decrement`
+		* if decrement is greater than the current value, it's set to 0.
+		* @param bucketIndex
+		* @param decrement
+		*/
+		decrementBucket(bucketIndex, decrement) {
+			this.backing.decrement(bucketIndex, decrement);
+		}
+		/**
+		* trim removes leading and / or trailing zero buckets (which can occur
+		* after diffing two histos) and rotates the backing array so that the
+		* smallest non-zero index is in the 0th position of the backing array
+		*/
+		trim() {
+			for (let i = 0; i < this.length; i++) if (this.at(i) !== 0) {
+				this.indexStart += i;
+				break;
+			} else if (i === this.length - 1) {
+				this.indexStart = this.indexEnd = this.indexBase = 0;
+				return;
+			}
+			for (let i = this.length - 1; i >= 0; i--) if (this.at(i) !== 0) {
+				this.indexEnd -= this.length - i - 1;
+				break;
+			}
+			this._rotate();
+		}
+		/**
+		* downscale first rotates, then collapses 2**`by`-to-1 buckets.
+		* @param by
+		*/
+		downscale(by) {
+			this._rotate();
+			const size = 1 + this.indexEnd - this.indexStart;
+			const each = 1 << by;
+			let inpos = 0;
+			let outpos = 0;
+			for (let pos = this.indexStart; pos <= this.indexEnd;) {
+				let mod = pos % each;
+				if (mod < 0) mod += each;
+				for (let i = mod; i < each && inpos < size; i++) {
+					this._relocateBucket(outpos, inpos);
+					inpos++;
+					pos++;
+				}
+				outpos++;
+			}
+			this.indexStart >>= by;
+			this.indexEnd >>= by;
+			this.indexBase = this.indexStart;
+		}
+		/**
+		* Clone returns a deep copy of Buckets
+		* @returns {Buckets}
+		*/
+		clone() {
+			return new Buckets(this.backing.clone(), this.indexBase, this.indexStart, this.indexEnd);
+		}
+		/**
+		* _rotate shifts the backing array contents so that indexStart ==
+		* indexBase to simplify the downscale logic.
+		*/
+		_rotate() {
+			const bias = this.indexBase - this.indexStart;
+			if (bias === 0) return;
+			else if (bias > 0) {
+				this.backing.reverse(0, this.backing.length);
+				this.backing.reverse(0, bias);
+				this.backing.reverse(bias, this.backing.length);
+			} else {
+				this.backing.reverse(0, this.backing.length);
+				this.backing.reverse(0, this.backing.length + bias);
+			}
+			this.indexBase = this.indexStart;
+		}
+		/**
+		* _relocateBucket adds the count in counts[src] to counts[dest] and
+		* resets count[src] to zero.
+		*/
+		_relocateBucket(dest, src) {
+			if (dest === src) return;
+			this.incrementBucket(dest, this.backing.emptyBucket(src));
+		}
+	};
+	exports.Buckets = Buckets;
+	/**
+	* BucketsBacking holds the raw buckets and some utility methods to
+	* manage them.
+	*/
+	var BucketsBacking = class BucketsBacking {
+		_counts;
+		constructor(counts = [0]) {
+			this._counts = counts;
+		}
+		/**
+		* length returns the physical size of the backing array, which
+		* is >= buckets.length()
+		*/
+		get length() {
+			return this._counts.length;
+		}
+		/**
+		* countAt returns the count in a specific bucket
+		*/
+		countAt(pos) {
+			return this._counts[pos];
+		}
+		/**
+		* growTo grows a backing array and copies old entries
+		* into their correct new positions.
+		*/
+		growTo(newSize, oldPositiveLimit, newPositiveLimit) {
+			const tmp = new Array(newSize).fill(0);
+			tmp.splice(newPositiveLimit, this._counts.length - oldPositiveLimit, ...this._counts.slice(oldPositiveLimit));
+			tmp.splice(0, oldPositiveLimit, ...this._counts.slice(0, oldPositiveLimit));
+			this._counts = tmp;
+		}
+		/**
+		* reverse the items in the backing array in the range [from, limit).
+		*/
+		reverse(from, limit) {
+			const num = Math.floor((from + limit) / 2) - from;
+			for (let i = 0; i < num; i++) {
+				const tmp = this._counts[from + i];
+				this._counts[from + i] = this._counts[limit - i - 1];
+				this._counts[limit - i - 1] = tmp;
+			}
+		}
+		/**
+		* emptyBucket empties the count from a bucket, for
+		* moving into another.
+		*/
+		emptyBucket(src) {
+			const tmp = this._counts[src];
+			this._counts[src] = 0;
+			return tmp;
+		}
+		/**
+		* increments a bucket by `increment`
+		*/
+		increment(bucketIndex, increment) {
+			this._counts[bucketIndex] += increment;
+		}
+		/**
+		* decrements a bucket by `decrement`
+		*/
+		decrement(bucketIndex, decrement) {
+			if (this._counts[bucketIndex] >= decrement) this._counts[bucketIndex] -= decrement;
+			else this._counts[bucketIndex] = 0;
+		}
+		/**
+		* clone returns a deep copy of BucketsBacking
+		*/
+		clone() {
+			return new BucketsBacking([...this._counts]);
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/ieee754.js
+var require_ieee754 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.isPowerOfTwo = exports.getNormalBase2 = exports.MIN_VALUE = exports.MAX_NORMAL_EXPONENT = exports.MIN_NORMAL_EXPONENT = void 0;
+	/**
+	* The functions and constants in this file allow us to interact
+	* with the internal representation of an IEEE 64-bit floating point
+	* number. We need to work with all 64-bits, thus, care needs to be
+	* taken when working with Javascript's bitwise operators (<<, >>, &,
+	* |, etc) as they truncate operands to 32-bits. In order to work around
+	* this we work with the 64-bits as two 32-bit halves and perform bitwise
+	* operations on each half independently.
+	*/
+	/**
+	* EXPONENT_MASK is set to 1 for the hi 32-bits of an IEEE 754
+	* floating point exponent: 0x7ff00000.
+	*/
+	const EXPONENT_MASK = 2146435072;
+	/**
+	* SIGNIFICAND_MASK is the mask for the significand portion of the hi 32-bits
+	* of an IEEE 754 double-precision floating-point value: 0xfffff
+	*/
+	const SIGNIFICAND_MASK = 1048575;
+	/**
+	* EXPONENT_BIAS is the exponent bias specified for encoding
+	* the IEEE 754 double-precision floating point exponent: 1023
+	*/
+	const EXPONENT_BIAS = 1023;
+	/**
+	* MIN_NORMAL_EXPONENT is the minimum exponent of a normalized
+	* floating point: -1022.
+	*/
+	exports.MIN_NORMAL_EXPONENT = -1022;
+	/**
+	* MAX_NORMAL_EXPONENT is the maximum exponent of a normalized
+	* floating point: 1023.
+	*/
+	exports.MAX_NORMAL_EXPONENT = EXPONENT_BIAS;
+	/**
+	* MIN_VALUE is the smallest normal number
+	*/
+	exports.MIN_VALUE = Math.pow(2, -1022);
+	const dv = /* @__PURE__ */ new DataView(/* @__PURE__ */ new ArrayBuffer(8));
+	/**
+	* floatBits writes value into the shared buffer and returns its two 32-bit
+	* halves.
+	* @param {number} value - the floating point number to read
+	* @returns {{hi: number, lo: number}} the high and low 32-bit halves
+	*/
+	function floatBits(value) {
+		dv.setFloat64(0, value);
+		return {
+			hi: dv.getUint32(0),
+			lo: dv.getUint32(4)
+		};
+	}
+	/**
+	* getNormalBase2 extracts the normalized base-2 fractional exponent.
+	* This returns k for the equation f x 2**k where f is
+	* in the range [1, 2).  Note that this function is not called for
+	* subnormal numbers.
+	* @param {number} value - the value to determine normalized base-2 fractional
+	*    exponent for
+	* @returns {number} the normalized base-2 exponent
+	*/
+	function getNormalBase2(value) {
+		const { hi } = floatBits(value);
+		return ((hi & EXPONENT_MASK) >> 20) - EXPONENT_BIAS;
+	}
+	exports.getNormalBase2 = getNormalBase2;
+	/**
+	* isPowerOfTwo reports whether value is an exact power of two, e.g. its 52-bit
+	* significand is all zeros. Only valid for positive, finite values.
+	* @param {number} value - the floating point number to test
+	* @returns {boolean} true if value is an exact power of two
+	*/
+	function isPowerOfTwo(value) {
+		const { hi, lo } = floatBits(value);
+		return (hi & SIGNIFICAND_MASK) === 0 && lo === 0;
+	}
+	exports.isPowerOfTwo = isPowerOfTwo;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/util.js
+var require_util = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.nextGreaterSquare = exports.ldexp = void 0;
+	/**
+	* Note: other languages provide this as a built in function. This is
+	* a naive, but functionally correct implementation. This is used sparingly,
+	* when creating a new mapping in a running application.
+	*
+	* ldexp returns frac × 2**exp. With the following special cases:
+	*   ldexp(±0, exp) = ±0
+	*   ldexp(±Inf, exp) = ±Inf
+	*   ldexp(NaN, exp) = NaN
+	* @param frac
+	* @param exp
+	* @returns {number}
+	*/
+	function ldexp(frac, exp) {
+		if (frac === 0 || frac === Number.POSITIVE_INFINITY || frac === Number.NEGATIVE_INFINITY || Number.isNaN(frac)) return frac;
+		return frac * Math.pow(2, exp);
+	}
+	exports.ldexp = ldexp;
+	/**
+	* Computes the next power of two that is greater than or equal to v.
+	* This implementation more efficient than, but functionally equivalent
+	* to Math.pow(2, Math.ceil(Math.log(x)/Math.log(2))).
+	* @param v
+	* @returns {number}
+	*/
+	function nextGreaterSquare(v) {
+		v--;
+		v |= v >> 1;
+		v |= v >> 2;
+		v |= v >> 4;
+		v |= v >> 8;
+		v |= v >> 16;
+		v++;
+		return v;
+	}
+	exports.nextGreaterSquare = nextGreaterSquare;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/types.js
+var require_types = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MappingError = void 0;
+	var MappingError = class extends Error {};
+	exports.MappingError = MappingError;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/ExponentMapping.js
+var require_ExponentMapping = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ExponentMapping = void 0;
+	const ieee754 = require_ieee754();
+	const util = require_util();
+	const types_1 = require_types();
+	/**
+	* ExponentMapping implements exponential mapping functions for
+	* scales <=0. For scales > 0 LogarithmMapping should be used.
+	*/
+	var ExponentMapping = class {
+		_shift;
+		constructor(scale) {
+			this._shift = -scale;
+		}
+		/**
+		* Maps positive floating point values to indexes corresponding to scale
+		* @param value
+		* @returns {number} index for provided value at the current scale
+		*/
+		mapToIndex(value) {
+			if (value < ieee754.MIN_VALUE) return this._minNormalLowerBoundaryIndex();
+			return ieee754.getNormalBase2(value) + (ieee754.isPowerOfTwo(value) ? -1 : 0) >> this._shift;
+		}
+		/**
+		* Returns the lower bucket boundary for the given index for scale
+		*
+		* @param index
+		* @returns {number}
+		*/
+		lowerBoundary(index) {
+			const minIndex = this._minNormalLowerBoundaryIndex();
+			if (index < minIndex) throw new types_1.MappingError(`underflow: ${index} is < minimum lower boundary: ${minIndex}`);
+			const maxIndex = this._maxNormalLowerBoundaryIndex();
+			if (index > maxIndex) throw new types_1.MappingError(`overflow: ${index} is > maximum lower boundary: ${maxIndex}`);
+			return util.ldexp(1, index << this._shift);
+		}
+		/**
+		* The scale used by this mapping
+		* @returns {number}
+		*/
+		get scale() {
+			if (this._shift === 0) return 0;
+			return -this._shift;
+		}
+		_minNormalLowerBoundaryIndex() {
+			let index = ieee754.MIN_NORMAL_EXPONENT >> this._shift;
+			if (this._shift < 2) index--;
+			return index;
+		}
+		_maxNormalLowerBoundaryIndex() {
+			return ieee754.MAX_NORMAL_EXPONENT >> this._shift;
+		}
+	};
+	exports.ExponentMapping = ExponentMapping;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/LogarithmMapping.js
+var require_LogarithmMapping = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.LogarithmMapping = void 0;
+	const ieee754 = require_ieee754();
+	const util = require_util();
+	const types_1 = require_types();
+	/**
+	* LogarithmMapping implements exponential mapping functions for scale > 0.
+	* For scales <= 0 the exponent mapping should be used.
+	*/
+	var LogarithmMapping = class {
+		_scale;
+		_scaleFactor;
+		_inverseFactor;
+		constructor(scale) {
+			this._scale = scale;
+			this._scaleFactor = util.ldexp(Math.LOG2E, scale);
+			this._inverseFactor = util.ldexp(Math.LN2, -scale);
+		}
+		/**
+		* Maps positive floating point values to indexes corresponding to scale
+		* @param value
+		* @returns {number} index for provided value at the current scale
+		*/
+		mapToIndex(value) {
+			if (value <= ieee754.MIN_VALUE) return this._minNormalLowerBoundaryIndex() - 1;
+			if (ieee754.isPowerOfTwo(value)) return (ieee754.getNormalBase2(value) << this._scale) - 1;
+			const index = Math.floor(Math.log(value) * this._scaleFactor);
+			const maxIndex = this._maxNormalLowerBoundaryIndex();
+			if (index >= maxIndex) return maxIndex;
+			return index;
+		}
+		/**
+		* Returns the lower bucket boundary for the given index for scale
+		*
+		* @param index
+		* @returns {number}
+		*/
+		lowerBoundary(index) {
+			const maxIndex = this._maxNormalLowerBoundaryIndex();
+			if (index >= maxIndex) {
+				if (index === maxIndex) return 2 * Math.exp((index - (1 << this._scale)) / this._scaleFactor);
+				throw new types_1.MappingError(`overflow: ${index} is > maximum lower boundary: ${maxIndex}`);
+			}
+			const minIndex = this._minNormalLowerBoundaryIndex();
+			if (index <= minIndex) {
+				if (index === minIndex) return ieee754.MIN_VALUE;
+				else if (index === minIndex - 1) return Math.exp((index + (1 << this._scale)) / this._scaleFactor) / 2;
+				throw new types_1.MappingError(`overflow: ${index} is < minimum lower boundary: ${minIndex}`);
+			}
+			return Math.exp(index * this._inverseFactor);
+		}
+		/**
+		* The scale used by this mapping
+		* @returns {number}
+		*/
+		get scale() {
+			return this._scale;
+		}
+		_minNormalLowerBoundaryIndex() {
+			return ieee754.MIN_NORMAL_EXPONENT << this._scale;
+		}
+		_maxNormalLowerBoundaryIndex() {
+			return (ieee754.MAX_NORMAL_EXPONENT + 1 << this._scale) - 1;
+		}
+	};
+	exports.LogarithmMapping = LogarithmMapping;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/getMapping.js
+var require_getMapping = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.getMapping = void 0;
+	const ExponentMapping_1 = require_ExponentMapping();
+	const LogarithmMapping_1 = require_LogarithmMapping();
+	const types_1 = require_types();
+	const MIN_SCALE = -10;
+	const MAX_SCALE = 20;
+	const PREBUILT_MAPPINGS = Array.from({ length: 31 }, (_, i) => {
+		if (i > 10) return new LogarithmMapping_1.LogarithmMapping(i - 10);
+		return new ExponentMapping_1.ExponentMapping(i - 10);
+	});
+	/**
+	* getMapping returns an appropriate mapping for the given scale. For scales -10
+	* to 0 the underlying type will be ExponentMapping. For scales 1 to 20 the
+	* underlying type will be LogarithmMapping.
+	* @param scale a number in the range [-10, 20]
+	* @returns {Mapping}
+	*/
+	function getMapping(scale) {
+		if (scale > MAX_SCALE || scale < MIN_SCALE) throw new types_1.MappingError(`expected scale >= ${MIN_SCALE} && <= ${MAX_SCALE}, got: ${scale}`);
+		return PREBUILT_MAPPINGS[scale + 10];
+	}
+	exports.getMapping = getMapping;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/ExponentialHistogram.js
+var require_ExponentialHistogram = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ExponentialHistogramAggregator = exports.ExponentialHistogramAccumulation = void 0;
+	const types_1 = require_types$1();
+	const MetricData_1 = require_MetricData();
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const Buckets_1 = require_Buckets();
+	const getMapping_1 = require_getMapping();
+	const util_1 = require_util();
+	var HighLow = class HighLow {
+		static combine(h1, h2) {
+			return new HighLow(Math.min(h1.low, h2.low), Math.max(h1.high, h2.high));
+		}
+		low;
+		high;
+		constructor(low, high) {
+			this.low = low;
+			this.high = high;
+		}
+	};
+	const MAX_SCALE = 20;
+	const DEFAULT_MAX_SIZE = 160;
+	const MIN_MAX_SIZE = 2;
+	var ExponentialHistogramAccumulation = class ExponentialHistogramAccumulation {
+		startTime;
+		_maxSize;
+		_recordMinMax;
+		_sum;
+		_count;
+		_zeroCount;
+		_min;
+		_max;
+		_positive;
+		_negative;
+		_mapping;
+		constructor(startTime, maxSize = DEFAULT_MAX_SIZE, recordMinMax = true, sum = 0, count = 0, zeroCount = 0, min = Number.POSITIVE_INFINITY, max = Number.NEGATIVE_INFINITY, positive = new Buckets_1.Buckets(), negative = new Buckets_1.Buckets(), mapping = (0, getMapping_1.getMapping)(MAX_SCALE)) {
+			this.startTime = startTime;
+			this._maxSize = maxSize;
+			this._recordMinMax = recordMinMax;
+			this._sum = sum;
+			this._count = count;
+			this._zeroCount = zeroCount;
+			this._min = min;
+			this._max = max;
+			this._positive = positive;
+			this._negative = negative;
+			this._mapping = mapping;
+			if (this._maxSize < MIN_MAX_SIZE) {
+				api_1.diag.warn(`Exponential Histogram Max Size set to ${this._maxSize}, \
+                changing to the minimum size of: ${MIN_MAX_SIZE}`);
+				this._maxSize = MIN_MAX_SIZE;
+			}
+		}
+		/**
+		* record updates a histogram with a single count
+		* @param {Number} value
+		*/
+		record(value) {
+			this.updateByIncrement(value, 1);
+		}
+		/**
+		* Sets the start time for this accumulation
+		* @param {HrTime} startTime
+		*/
+		setStartTime(startTime) {
+			this.startTime = startTime;
+		}
+		/**
+		* Returns the datapoint representation of this accumulation
+		* @param {HrTime} startTime
+		*/
+		toPointValue() {
+			return {
+				hasMinMax: this._recordMinMax,
+				min: this.min,
+				max: this.max,
+				sum: this.sum,
+				positive: {
+					offset: this.positive.offset,
+					bucketCounts: this.positive.counts()
+				},
+				negative: {
+					offset: this.negative.offset,
+					bucketCounts: this.negative.counts()
+				},
+				count: this.count,
+				scale: this.scale,
+				zeroCount: this.zeroCount
+			};
+		}
+		/**
+		* @returns {Number} The sum of values recorded by this accumulation
+		*/
+		get sum() {
+			return this._sum;
+		}
+		/**
+		* @returns {Number} The minimum value recorded by this accumulation
+		*/
+		get min() {
+			return this._min;
+		}
+		/**
+		* @returns {Number} The maximum value recorded by this accumulation
+		*/
+		get max() {
+			return this._max;
+		}
+		/**
+		* @returns {Number} The count of values recorded by this accumulation
+		*/
+		get count() {
+			return this._count;
+		}
+		/**
+		* @returns {Number} The number of 0 values recorded by this accumulation
+		*/
+		get zeroCount() {
+			return this._zeroCount;
+		}
+		/**
+		* @returns {Number} The scale used by this accumulation
+		*/
+		get scale() {
+			if (this._count === this._zeroCount) return 0;
+			return this._mapping.scale;
+		}
+		/**
+		* positive holds the positive values
+		* @returns {Buckets}
+		*/
+		get positive() {
+			return this._positive;
+		}
+		/**
+		* negative holds the negative values by their absolute value
+		* @returns {Buckets}
+		*/
+		get negative() {
+			return this._negative;
+		}
+		/**
+		* updateByIncr supports updating a histogram with a non-negative
+		* increment.
+		* @param value
+		* @param increment
+		*/
+		updateByIncrement(value, increment) {
+			if (!Number.isFinite(value)) return;
+			if (value > this._max) this._max = value;
+			if (value < this._min) this._min = value;
+			this._count += increment;
+			if (value === 0) {
+				this._zeroCount += increment;
+				return;
+			}
+			this._sum += value * increment;
+			if (value > 0) this._updateBuckets(this._positive, value, increment);
+			else this._updateBuckets(this._negative, -value, increment);
+		}
+		/**
+		* merge combines data from previous value into self
+		* @param {ExponentialHistogramAccumulation} previous
+		*/
+		merge(previous) {
+			if (this._count === 0) {
+				this._min = previous.min;
+				this._max = previous.max;
+			} else if (previous.count !== 0) {
+				if (previous.min < this.min) this._min = previous.min;
+				if (previous.max > this.max) this._max = previous.max;
+			}
+			this.startTime = previous.startTime;
+			this._sum += previous.sum;
+			this._count += previous.count;
+			this._zeroCount += previous.zeroCount;
+			const minScale = this._minScale(previous);
+			this._downscale(this.scale - minScale);
+			this._mergeBuckets(this.positive, previous, previous.positive, minScale);
+			this._mergeBuckets(this.negative, previous, previous.negative, minScale);
+		}
+		/**
+		* diff subtracts other from self
+		* @param {ExponentialHistogramAccumulation} other
+		*/
+		diff(other) {
+			this._min = Infinity;
+			this._max = -Infinity;
+			this._sum -= other.sum;
+			this._count -= other.count;
+			this._zeroCount -= other.zeroCount;
+			const minScale = this._minScale(other);
+			this._downscale(this.scale - minScale);
+			this._diffBuckets(this.positive, other, other.positive, minScale);
+			this._diffBuckets(this.negative, other, other.negative, minScale);
+		}
+		/**
+		* clone returns a deep copy of self
+		* @returns {ExponentialHistogramAccumulation}
+		*/
+		clone() {
+			return new ExponentialHistogramAccumulation(this.startTime, this._maxSize, this._recordMinMax, this._sum, this._count, this._zeroCount, this._min, this._max, this.positive.clone(), this.negative.clone(), this._mapping);
+		}
+		/**
+		* _updateBuckets maps the incoming value to a bucket index for the current
+		* scale. If the bucket index is outside of the range of the backing array,
+		* it will rescale the backing array and update the mapping for the new scale.
+		*/
+		_updateBuckets(buckets, value, increment) {
+			let index = this._mapping.mapToIndex(value);
+			let rescalingNeeded = false;
+			let high = 0;
+			let low = 0;
+			if (buckets.length === 0) {
+				buckets.indexStart = index;
+				buckets.indexEnd = buckets.indexStart;
+				buckets.indexBase = buckets.indexStart;
+			} else if (index < buckets.indexStart && buckets.indexEnd - index >= this._maxSize) {
+				rescalingNeeded = true;
+				low = index;
+				high = buckets.indexEnd;
+			} else if (index > buckets.indexEnd && index - buckets.indexStart >= this._maxSize) {
+				rescalingNeeded = true;
+				low = buckets.indexStart;
+				high = index;
+			}
+			if (rescalingNeeded) {
+				const change = this._changeScale(high, low);
+				this._downscale(change);
+				index = this._mapping.mapToIndex(value);
+			}
+			this._incrementIndexBy(buckets, index, increment);
+		}
+		/**
+		* _incrementIndexBy increments the count of the bucket specified by `index`.
+		* If the index is outside of the range [buckets.indexStart, buckets.indexEnd]
+		* the boundaries of the backing array will be adjusted and more buckets will
+		* be added if needed.
+		*/
+		_incrementIndexBy(buckets, index, increment) {
+			if (increment === 0) return;
+			if (buckets.length === 0) buckets.indexStart = buckets.indexEnd = buckets.indexBase = index;
+			if (index < buckets.indexStart) {
+				const span = buckets.indexEnd - index;
+				if (span >= buckets.backing.length) this._grow(buckets, span + 1);
+				buckets.indexStart = index;
+			} else if (index > buckets.indexEnd) {
+				const span = index - buckets.indexStart;
+				if (span >= buckets.backing.length) this._grow(buckets, span + 1);
+				buckets.indexEnd = index;
+			}
+			let bucketIndex = index - buckets.indexBase;
+			if (bucketIndex < 0) bucketIndex += buckets.backing.length;
+			buckets.incrementBucket(bucketIndex, increment);
+		}
+		/**
+		* grow resizes the backing array by doubling in size up to maxSize.
+		* This extends the array with a bunch of zeros and copies the
+		* existing counts to the same position.
+		*/
+		_grow(buckets, needed) {
+			const size = buckets.backing.length;
+			const bias = buckets.indexBase - buckets.indexStart;
+			const oldPositiveLimit = size - bias;
+			let newSize = (0, util_1.nextGreaterSquare)(needed);
+			if (newSize > this._maxSize) newSize = this._maxSize;
+			const newPositiveLimit = newSize - bias;
+			buckets.backing.growTo(newSize, oldPositiveLimit, newPositiveLimit);
+		}
+		/**
+		* _changeScale computes how much downscaling is needed by shifting the
+		* high and low values until they are separated by no more than size.
+		*/
+		_changeScale(high, low) {
+			let change = 0;
+			while (high - low >= this._maxSize) {
+				high >>= 1;
+				low >>= 1;
+				change++;
+			}
+			return change;
+		}
+		/**
+		* _downscale subtracts `change` from the current mapping scale.
+		*/
+		_downscale(change) {
+			if (change === 0) return;
+			if (change < 0) throw new Error(`impossible change of scale: ${this.scale}`);
+			const newScale = this._mapping.scale - change;
+			this._positive.downscale(change);
+			this._negative.downscale(change);
+			this._mapping = (0, getMapping_1.getMapping)(newScale);
+		}
+		/**
+		* _minScale is used by diff and merge to compute an ideal combined scale
+		*/
+		_minScale(other) {
+			const minScale = Math.min(this.scale, other.scale);
+			const highLowPos = HighLow.combine(this._highLowAtScale(this.positive, this.scale, minScale), this._highLowAtScale(other.positive, other.scale, minScale));
+			const highLowNeg = HighLow.combine(this._highLowAtScale(this.negative, this.scale, minScale), this._highLowAtScale(other.negative, other.scale, minScale));
+			return Math.min(minScale - this._changeScale(highLowPos.high, highLowPos.low), minScale - this._changeScale(highLowNeg.high, highLowNeg.low));
+		}
+		/**
+		* _highLowAtScale is used by diff and merge to compute an ideal combined scale.
+		*/
+		_highLowAtScale(buckets, currentScale, newScale) {
+			if (buckets.length === 0) return new HighLow(0, -1);
+			const shift = currentScale - newScale;
+			return new HighLow(buckets.indexStart >> shift, buckets.indexEnd >> shift);
+		}
+		/**
+		* _mergeBuckets translates index values from another histogram and
+		* adds the values into the corresponding buckets of this histogram.
+		*/
+		_mergeBuckets(ours, other, theirs, scale) {
+			const theirOffset = theirs.offset;
+			const theirChange = other.scale - scale;
+			for (let i = 0; i < theirs.length; i++) this._incrementIndexBy(ours, theirOffset + i >> theirChange, theirs.at(i));
+		}
+		/**
+		* _diffBuckets translates index values from another histogram and
+		* subtracts the values in the corresponding buckets of this histogram.
+		*/
+		_diffBuckets(ours, other, theirs, scale) {
+			const theirOffset = theirs.offset;
+			const theirChange = other.scale - scale;
+			for (let i = 0; i < theirs.length; i++) {
+				let bucketIndex = (theirOffset + i >> theirChange) - ours.indexBase;
+				if (bucketIndex < 0) bucketIndex += ours.backing.length;
+				ours.decrementBucket(bucketIndex, theirs.at(i));
+			}
+			ours.trim();
+		}
+	};
+	exports.ExponentialHistogramAccumulation = ExponentialHistogramAccumulation;
+	/**
+	* Aggregator for ExponentialHistogramAccumulations
+	*/
+	var ExponentialHistogramAggregator = class {
+		kind = types_1.AggregatorKind.EXPONENTIAL_HISTOGRAM;
+		_maxSize;
+		_recordMinMax;
+		/**
+		* @param _maxSize Maximum number of buckets for each of the positive
+		*    and negative ranges, exclusive of the zero-bucket.
+		* @param _recordMinMax If set to true, min and max will be recorded.
+		*    Otherwise, min and max will not be recorded.
+		*/
+		constructor(maxSize, recordMinMax) {
+			this._maxSize = maxSize;
+			this._recordMinMax = recordMinMax;
+		}
+		createAccumulation(startTime) {
+			return new ExponentialHistogramAccumulation(startTime, this._maxSize, this._recordMinMax);
+		}
+		/**
+		* Return the result of the merge of two exponential histogram accumulations.
+		*/
+		merge(previous, delta) {
+			const result = delta.clone();
+			result.merge(previous);
+			return result;
+		}
+		/**
+		* Returns a new DELTA aggregation by comparing two cumulative measurements.
+		*/
+		diff(previous, current) {
+			const result = current.clone();
+			result.diff(previous);
+			return result;
+		}
+		toMetricData(descriptor, aggregationTemporality, accumulationByAttributes, endTime) {
+			return {
+				descriptor,
+				aggregationTemporality,
+				dataPointType: MetricData_1.DataPointType.EXPONENTIAL_HISTOGRAM,
+				dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
+					const pointValue = accumulation.toPointValue();
+					const allowsNegativeValues = descriptor.type === MetricData_1.InstrumentType.GAUGE || descriptor.type === MetricData_1.InstrumentType.UP_DOWN_COUNTER || descriptor.type === MetricData_1.InstrumentType.OBSERVABLE_GAUGE || descriptor.type === MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER;
+					return {
+						attributes,
+						startTime: accumulation.startTime,
+						endTime,
+						value: {
+							min: pointValue.hasMinMax ? pointValue.min : void 0,
+							max: pointValue.hasMinMax ? pointValue.max : void 0,
+							sum: !allowsNegativeValues ? pointValue.sum : void 0,
+							positive: {
+								offset: pointValue.positive.offset,
+								bucketCounts: pointValue.positive.bucketCounts
+							},
+							negative: {
+								offset: pointValue.negative.offset,
+								bucketCounts: pointValue.negative.bucketCounts
+							},
+							count: pointValue.count,
+							scale: pointValue.scale,
+							zeroCount: pointValue.zeroCount
+						}
+					};
+				})
+			};
+		}
+	};
+	exports.ExponentialHistogramAggregator = ExponentialHistogramAggregator;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/LastValue.js
+var require_LastValue = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.LastValueAggregator = exports.LastValueAccumulation = void 0;
+	const types_1 = require_types$1();
+	const core_1 = require_src$8();
+	const MetricData_1 = require_MetricData();
+	var LastValueAccumulation = class {
+		startTime;
+		_current;
+		sampleTime;
+		constructor(startTime, current = 0, sampleTime = [0, 0]) {
+			this.startTime = startTime;
+			this._current = current;
+			this.sampleTime = sampleTime;
+		}
+		record(value) {
+			this._current = value;
+			this.sampleTime = (0, core_1.millisToHrTime)(Date.now());
+		}
+		setStartTime(startTime) {
+			this.startTime = startTime;
+		}
+		toPointValue() {
+			return this._current;
+		}
+	};
+	exports.LastValueAccumulation = LastValueAccumulation;
+	/** Basic aggregator which calculates a LastValue from individual measurements. */
+	var LastValueAggregator = class {
+		kind = types_1.AggregatorKind.LAST_VALUE;
+		createAccumulation(startTime) {
+			return new LastValueAccumulation(startTime);
+		}
+		/**
+		* Returns the result of the merge of the given accumulations.
+		*
+		* Return the newly captured (delta) accumulation for LastValueAggregator.
+		*/
+		merge(previous, delta) {
+			const latestAccumulation = (0, core_1.hrTimeToMicroseconds)(delta.sampleTime) >= (0, core_1.hrTimeToMicroseconds)(previous.sampleTime) ? delta : previous;
+			return new LastValueAccumulation(previous.startTime, latestAccumulation.toPointValue(), latestAccumulation.sampleTime);
+		}
+		/**
+		* Returns a new DELTA aggregation by comparing two cumulative measurements.
+		*
+		* A delta aggregation is not meaningful to LastValueAggregator, just return
+		* the newly captured (delta) accumulation for LastValueAggregator.
+		*/
+		diff(previous, current) {
+			const latestAccumulation = (0, core_1.hrTimeToMicroseconds)(current.sampleTime) >= (0, core_1.hrTimeToMicroseconds)(previous.sampleTime) ? current : previous;
+			return new LastValueAccumulation(current.startTime, latestAccumulation.toPointValue(), latestAccumulation.sampleTime);
+		}
+		toMetricData(descriptor, aggregationTemporality, accumulationByAttributes, endTime) {
+			return {
+				descriptor,
+				aggregationTemporality,
+				dataPointType: MetricData_1.DataPointType.GAUGE,
+				dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
+					return {
+						attributes,
+						startTime: accumulation.startTime,
+						endTime,
+						value: accumulation.toPointValue()
+					};
+				})
+			};
+		}
+	};
+	exports.LastValueAggregator = LastValueAggregator;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/Sum.js
+var require_Sum = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.SumAggregator = exports.SumAccumulation = void 0;
+	const types_1 = require_types$1();
+	const MetricData_1 = require_MetricData();
+	var SumAccumulation = class {
+		startTime;
+		monotonic;
+		_current;
+		reset;
+		constructor(startTime, monotonic, current = 0, reset = false) {
+			this.startTime = startTime;
+			this.monotonic = monotonic;
+			this._current = current;
+			this.reset = reset;
+		}
+		record(value) {
+			if (this.monotonic && value < 0) return;
+			this._current += value;
+		}
+		setStartTime(startTime) {
+			this.startTime = startTime;
+		}
+		toPointValue() {
+			return this._current;
+		}
+	};
+	exports.SumAccumulation = SumAccumulation;
+	/** Basic aggregator which calculates a Sum from individual measurements. */
+	var SumAggregator = class {
+		kind = types_1.AggregatorKind.SUM;
+		monotonic;
+		constructor(monotonic) {
+			this.monotonic = monotonic;
+		}
+		createAccumulation(startTime) {
+			return new SumAccumulation(startTime, this.monotonic);
+		}
+		/**
+		* Returns the result of the merge of the given accumulations.
+		*/
+		merge(previous, delta) {
+			const prevPv = previous.toPointValue();
+			const deltaPv = delta.toPointValue();
+			if (delta.reset) return new SumAccumulation(delta.startTime, this.monotonic, deltaPv, delta.reset);
+			return new SumAccumulation(previous.startTime, this.monotonic, prevPv + deltaPv);
+		}
+		/**
+		* Returns a new DELTA aggregation by comparing two cumulative measurements.
+		*/
+		diff(previous, current) {
+			const prevPv = previous.toPointValue();
+			const currPv = current.toPointValue();
+			/**
+			* If the SumAggregator is a monotonic one and the previous point value is
+			* greater than the current one, a reset is deemed to be happened.
+			* Return the current point value to prevent the value from been reset.
+			*/
+			if (this.monotonic && prevPv > currPv) return new SumAccumulation(current.startTime, this.monotonic, currPv, true);
+			return new SumAccumulation(current.startTime, this.monotonic, currPv - prevPv);
+		}
+		toMetricData(descriptor, aggregationTemporality, accumulationByAttributes, endTime) {
+			return {
+				descriptor,
+				aggregationTemporality,
+				dataPointType: MetricData_1.DataPointType.SUM,
+				dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
+					return {
+						attributes,
+						startTime: accumulation.startTime,
+						endTime,
+						value: accumulation.toPointValue()
+					};
+				}),
+				isMonotonic: this.monotonic
+			};
+		}
+	};
+	exports.SumAggregator = SumAggregator;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/index.js
+var require_aggregator = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.SumAggregator = exports.SumAccumulation = exports.LastValueAggregator = exports.LastValueAccumulation = exports.ExponentialHistogramAggregator = exports.ExponentialHistogramAccumulation = exports.HistogramAggregator = exports.HistogramAccumulation = exports.DropAggregator = void 0;
+	var Drop_1 = require_Drop();
+	Object.defineProperty(exports, "DropAggregator", {
+		enumerable: true,
+		get: function() {
+			return Drop_1.DropAggregator;
+		}
+	});
+	var Histogram_1 = require_Histogram();
+	Object.defineProperty(exports, "HistogramAccumulation", {
+		enumerable: true,
+		get: function() {
+			return Histogram_1.HistogramAccumulation;
+		}
+	});
+	Object.defineProperty(exports, "HistogramAggregator", {
+		enumerable: true,
+		get: function() {
+			return Histogram_1.HistogramAggregator;
+		}
+	});
+	var ExponentialHistogram_1 = require_ExponentialHistogram();
+	Object.defineProperty(exports, "ExponentialHistogramAccumulation", {
+		enumerable: true,
+		get: function() {
+			return ExponentialHistogram_1.ExponentialHistogramAccumulation;
+		}
+	});
+	Object.defineProperty(exports, "ExponentialHistogramAggregator", {
+		enumerable: true,
+		get: function() {
+			return ExponentialHistogram_1.ExponentialHistogramAggregator;
+		}
+	});
+	var LastValue_1 = require_LastValue();
+	Object.defineProperty(exports, "LastValueAccumulation", {
+		enumerable: true,
+		get: function() {
+			return LastValue_1.LastValueAccumulation;
+		}
+	});
+	Object.defineProperty(exports, "LastValueAggregator", {
+		enumerable: true,
+		get: function() {
+			return LastValue_1.LastValueAggregator;
+		}
+	});
+	var Sum_1 = require_Sum();
+	Object.defineProperty(exports, "SumAccumulation", {
+		enumerable: true,
+		get: function() {
+			return Sum_1.SumAccumulation;
+		}
+	});
+	Object.defineProperty(exports, "SumAggregator", {
+		enumerable: true,
+		get: function() {
+			return Sum_1.SumAggregator;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/Aggregation.js
+var require_Aggregation = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.DEFAULT_AGGREGATION = exports.EXPONENTIAL_HISTOGRAM_AGGREGATION = exports.HISTOGRAM_AGGREGATION = exports.LAST_VALUE_AGGREGATION = exports.SUM_AGGREGATION = exports.DROP_AGGREGATION = exports.DefaultAggregation = exports.ExponentialHistogramAggregation = exports.ExplicitBucketHistogramAggregation = exports.HistogramAggregation = exports.LastValueAggregation = exports.SumAggregation = exports.DropAggregation = void 0;
+	const api = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const aggregator_1 = require_aggregator();
+	const MetricData_1 = require_MetricData();
+	/**
+	* The default drop aggregation.
+	*/
+	var DropAggregation = class DropAggregation {
+		static DEFAULT_INSTANCE = new aggregator_1.DropAggregator();
+		createAggregator(_instrument) {
+			return DropAggregation.DEFAULT_INSTANCE;
+		}
+	};
+	exports.DropAggregation = DropAggregation;
+	/**
+	* The default sum aggregation.
+	*/
+	var SumAggregation = class SumAggregation {
+		static MONOTONIC_INSTANCE = new aggregator_1.SumAggregator(true);
+		static NON_MONOTONIC_INSTANCE = new aggregator_1.SumAggregator(false);
+		createAggregator(instrument) {
+			switch (instrument.type) {
+				case MetricData_1.InstrumentType.COUNTER:
+				case MetricData_1.InstrumentType.OBSERVABLE_COUNTER:
+				case MetricData_1.InstrumentType.HISTOGRAM: return SumAggregation.MONOTONIC_INSTANCE;
+				default: return SumAggregation.NON_MONOTONIC_INSTANCE;
+			}
+		}
+	};
+	exports.SumAggregation = SumAggregation;
+	/**
+	* The default last value aggregation.
+	*/
+	var LastValueAggregation = class LastValueAggregation {
+		static DEFAULT_INSTANCE = new aggregator_1.LastValueAggregator();
+		createAggregator(_instrument) {
+			return LastValueAggregation.DEFAULT_INSTANCE;
+		}
+	};
+	exports.LastValueAggregation = LastValueAggregation;
+	/**
+	* The default histogram aggregation.
+	
+	*/
+	var HistogramAggregation = class HistogramAggregation {
+		static DEFAULT_INSTANCE = new aggregator_1.HistogramAggregator([
+			0,
+			5,
+			10,
+			25,
+			50,
+			75,
+			100,
+			250,
+			500,
+			750,
+			1e3,
+			2500,
+			5e3,
+			7500,
+			1e4
+		], true);
+		createAggregator(_instrument) {
+			return HistogramAggregation.DEFAULT_INSTANCE;
+		}
+	};
+	exports.HistogramAggregation = HistogramAggregation;
+	/**
+	* The explicit bucket histogram aggregation.
+	*/
+	var ExplicitBucketHistogramAggregation = class {
+		_boundaries;
+		_recordMinMax;
+		/**
+		* @param boundaries the bucket boundaries of the histogram aggregation
+		* @param _recordMinMax If set to true, min and max will be recorded. Otherwise, min and max will not be recorded.
+		*/
+		constructor(boundaries, recordMinMax = true) {
+			if (boundaries == null) throw new Error("ExplicitBucketHistogramAggregation should be created with explicit boundaries, if a single bucket histogram is required, please pass an empty array");
+			boundaries = boundaries.concat();
+			boundaries = boundaries.sort((a, b) => a - b);
+			const minusInfinityIndex = boundaries.lastIndexOf(-Infinity);
+			let infinityIndex = boundaries.indexOf(Infinity);
+			if (infinityIndex === -1) infinityIndex = void 0;
+			this._boundaries = boundaries.slice(minusInfinityIndex + 1, infinityIndex);
+			this._recordMinMax = recordMinMax;
+		}
+		createAggregator(_instrument) {
+			return new aggregator_1.HistogramAggregator(this._boundaries, this._recordMinMax);
+		}
+	};
+	exports.ExplicitBucketHistogramAggregation = ExplicitBucketHistogramAggregation;
+	var ExponentialHistogramAggregation = class {
+		_maxSize;
+		_recordMinMax;
+		constructor(maxSize = 160, recordMinMax = true) {
+			this._maxSize = maxSize;
+			this._recordMinMax = recordMinMax;
+		}
+		createAggregator(_instrument) {
+			return new aggregator_1.ExponentialHistogramAggregator(this._maxSize, this._recordMinMax);
+		}
+	};
+	exports.ExponentialHistogramAggregation = ExponentialHistogramAggregation;
+	/**
+	* The default aggregation.
+	*/
+	var DefaultAggregation = class {
+		_resolve(instrument) {
+			switch (instrument.type) {
+				case MetricData_1.InstrumentType.COUNTER:
+				case MetricData_1.InstrumentType.UP_DOWN_COUNTER:
+				case MetricData_1.InstrumentType.OBSERVABLE_COUNTER:
+				case MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER: return exports.SUM_AGGREGATION;
+				case MetricData_1.InstrumentType.GAUGE:
+				case MetricData_1.InstrumentType.OBSERVABLE_GAUGE: return exports.LAST_VALUE_AGGREGATION;
+				case MetricData_1.InstrumentType.HISTOGRAM:
+					if (instrument.advice.explicitBucketBoundaries) return new ExplicitBucketHistogramAggregation(instrument.advice.explicitBucketBoundaries);
+					return exports.HISTOGRAM_AGGREGATION;
+			}
+			api.diag.warn(`Unable to recognize instrument type: ${instrument.type}`);
+			return exports.DROP_AGGREGATION;
+		}
+		createAggregator(instrument) {
+			return this._resolve(instrument).createAggregator(instrument);
+		}
+	};
+	exports.DefaultAggregation = DefaultAggregation;
+	exports.DROP_AGGREGATION = new DropAggregation();
+	exports.SUM_AGGREGATION = new SumAggregation();
+	exports.LAST_VALUE_AGGREGATION = new LastValueAggregation();
+	exports.HISTOGRAM_AGGREGATION = new HistogramAggregation();
+	exports.EXPONENTIAL_HISTOGRAM_AGGREGATION = new ExponentialHistogramAggregation();
+	exports.DEFAULT_AGGREGATION = new DefaultAggregation();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/AggregationOption.js
+var require_AggregationOption = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.toAggregation = exports.AggregationType = void 0;
+	const Aggregation_1 = require_Aggregation();
+	var AggregationType;
+	(function(AggregationType) {
+		AggregationType[AggregationType["DEFAULT"] = 0] = "DEFAULT";
+		AggregationType[AggregationType["DROP"] = 1] = "DROP";
+		AggregationType[AggregationType["SUM"] = 2] = "SUM";
+		AggregationType[AggregationType["LAST_VALUE"] = 3] = "LAST_VALUE";
+		AggregationType[AggregationType["EXPLICIT_BUCKET_HISTOGRAM"] = 4] = "EXPLICIT_BUCKET_HISTOGRAM";
+		AggregationType[AggregationType["EXPONENTIAL_HISTOGRAM"] = 5] = "EXPONENTIAL_HISTOGRAM";
+	})(AggregationType || (exports.AggregationType = AggregationType = {}));
+	function toAggregation(option) {
+		switch (option.type) {
+			case AggregationType.DEFAULT: return Aggregation_1.DEFAULT_AGGREGATION;
+			case AggregationType.DROP: return Aggregation_1.DROP_AGGREGATION;
+			case AggregationType.SUM: return Aggregation_1.SUM_AGGREGATION;
+			case AggregationType.LAST_VALUE: return Aggregation_1.LAST_VALUE_AGGREGATION;
+			case AggregationType.EXPONENTIAL_HISTOGRAM: {
+				const expOption = option;
+				return new Aggregation_1.ExponentialHistogramAggregation(expOption.options?.maxSize, expOption.options?.recordMinMax);
+			}
+			case AggregationType.EXPLICIT_BUCKET_HISTOGRAM: {
+				const expOption = option;
+				if (expOption.options == null) return Aggregation_1.HISTOGRAM_AGGREGATION;
+				else return new Aggregation_1.ExplicitBucketHistogramAggregation(expOption.options?.boundaries, expOption.options?.recordMinMax);
+			}
+			default: throw new Error("Unsupported Aggregation");
+		}
+	}
+	exports.toAggregation = toAggregation;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/AggregationSelector.js
+var require_AggregationSelector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR = exports.DEFAULT_AGGREGATION_SELECTOR = void 0;
+	const AggregationTemporality_1 = require_AggregationTemporality();
+	const AggregationOption_1 = require_AggregationOption();
+	const DEFAULT_AGGREGATION_SELECTOR = (_instrumentType) => {
+		return { type: AggregationOption_1.AggregationType.DEFAULT };
+	};
+	exports.DEFAULT_AGGREGATION_SELECTOR = DEFAULT_AGGREGATION_SELECTOR;
+	const DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR = (_instrumentType) => AggregationTemporality_1.AggregationTemporality.CUMULATIVE;
+	exports.DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR = DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/semconv.js
+var require_semconv$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ATTR_ERROR_TYPE = exports.METRIC_OTEL_SDK_METRIC_READER_COLLECTION_DURATION = exports.OTEL_COMPONENT_TYPE_VALUE_PERIODIC_METRIC_READER = exports.ATTR_OTEL_COMPONENT_TYPE = exports.ATTR_OTEL_COMPONENT_NAME = void 0;
+	/**
+	* A name uniquely identifying the instance of the OpenTelemetry component within its containing SDK instance.
+	*
+	* @example otlp_grpc_span_exporter/0
+	* @example custom-name
+	*
+	* @note Implementations **SHOULD** ensure a low cardinality for this attribute, even across application or SDK restarts.
+	* E.g. implementations **MUST NOT** use UUIDs as values for this attribute.
+	*
+	* Implementations **MAY** achieve these goals by following a `<otel.component.type>/<instance-counter>` pattern, e.g. `batching_span_processor/0`.
+	* Hereby `otel.component.type` refers to the corresponding attribute value of the component.
+	*
+	* The value of `instance-counter` **MAY** be automatically assigned by the component and uniqueness within the enclosing SDK instance **MUST** be guaranteed.
+	* For example, `<instance-counter>` **MAY** be implemented by using a monotonically increasing counter (starting with `0`), which is incremented every time an
+	* instance of the given component type is started.
+	*
+	* With this implementation, for example the first Batching Span Processor would have `batching_span_processor/0`
+	* as `otel.component.name`, the second one `batching_span_processor/1` and so on.
+	* These values will therefore be reused in the case of an application restart.
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_OTEL_COMPONENT_NAME = "otel.component.name";
+	/**
+	* A name identifying the type of the OpenTelemetry component.
+	*
+	* @example batching_span_processor
+	* @example com.example.MySpanExporter
+	*
+	* @note If none of the standardized values apply, implementations **SHOULD** use the language-defined name of the type.
+	* E.g. for Java the fully qualified classname **SHOULD** be used in this case.
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_OTEL_COMPONENT_TYPE = "otel.component.type";
+	/**
+	* Enum value "periodic_metric_reader" for attribute {@link ATTR_OTEL_COMPONENT_TYPE}.
+	*
+	* The builtin SDK periodically exporting metric reader
+	*
+	* @experimental This enum value is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.OTEL_COMPONENT_TYPE_VALUE_PERIODIC_METRIC_READER = "periodic_metric_reader";
+	/**
+	* The duration of the collect operation of the metric reader.
+	*
+	* @note For successful collections, `error.type` **MUST NOT** be set. For failed collections, `error.type` **SHOULD** contain the failure cause.
+	* It can happen that metrics collection is successful for some MetricProducers, while others fail. In that case `error.type` **SHOULD** be set to any of the failure causes.
+	*
+	* @experimental This metric is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.METRIC_OTEL_SDK_METRIC_READER_COLLECTION_DURATION = "otel.sdk.metric_reader.collection.duration";
+	/**
+	* Describes a class of error the operation ended with.
+	*
+	* @example timeout
+	* @example java.net.UnknownHostException
+	* @example server_certificate_invalid
+	* @example 500
+	*
+	* @note The `error.type` **SHOULD** be predictable, and **SHOULD** have low cardinality.
+	*
+	* When `error.type` is set to a type (e.g., an exception type), its
+	* canonical class name identifying the type within the artifact **SHOULD** be used.
+	*
+	* Instrumentations **SHOULD** document the list of errors they report.
+	*
+	* The cardinality of `error.type` within one instrumentation library **SHOULD** be low.
+	* Telemetry consumers that aggregate data from multiple instrumentation libraries and applications
+	* should be prepared for `error.type` to have high cardinality at query time when no
+	* additional filters are applied.
+	*
+	* If the operation has completed successfully, instrumentations **SHOULD NOT** set `error.type`.
+	*
+	* If a specific domain defines its own set of error identifiers (such as HTTP or RPC status codes),
+	* it's **RECOMMENDED** to:
+	*
+	*   - Use a domain-specific attribute
+	*   - Set `error.type` to capture all errors, regardless of whether they are defined within the domain-specific set or not.
+	*/
+	exports.ATTR_ERROR_TYPE = "error.type";
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/MetricReaderMetrics.js
+var require_MetricReaderMetrics = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MetricReaderMetrics = void 0;
+	const semconv_1 = require_semconv$3();
+	const componentCounter = /* @__PURE__ */ new Map();
+	/**
+	* Generates `otel.sdk.metric_reader.*` self-observability metrics.
+	* https://opentelemetry.io/docs/specs/semconv/otel/sdk-metrics/#metric-otelsdkmetric_readercollectionduration
+	*/
+	var MetricReaderMetrics = class {
+		collectionDuration;
+		standardAttrs;
+		constructor(componentType, meter) {
+			const counter = componentCounter.get(componentType) ?? 0;
+			componentCounter.set(componentType, counter + 1);
+			this.standardAttrs = {
+				[semconv_1.ATTR_OTEL_COMPONENT_TYPE]: componentType,
+				[semconv_1.ATTR_OTEL_COMPONENT_NAME]: `${componentType}/${counter}`
+			};
+			this.collectionDuration = meter.createHistogram(semconv_1.METRIC_OTEL_SDK_METRIC_READER_COLLECTION_DURATION, {
+				unit: "s",
+				description: "The duration of the collect operation of the metric reader.",
+				advice: { explicitBucketBoundaries: [] }
+			});
+		}
+		recordCollection(durationSecs, error) {
+			const attrs = error ? {
+				...this.standardAttrs,
+				[semconv_1.ATTR_ERROR_TYPE]: error
+			} : this.standardAttrs;
+			this.collectionDuration.record(durationSecs, attrs);
+		}
+	};
+	exports.MetricReaderMetrics = MetricReaderMetrics;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/version.js
+var require_version$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.VERSION = void 0;
+	exports.VERSION = "2.11.0";
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/MetricReader.js
+var require_MetricReader = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MetricReader = void 0;
+	const api = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const utils_1 = require_utils$3();
+	const AggregationSelector_1 = require_AggregationSelector();
+	const MetricReaderMetrics_1 = require_MetricReaderMetrics();
+	const version_1 = require_version$1();
+	const core_1 = require_src$8();
+	/**
+	* A registered reader of metrics that, when linked to a {@link MetricProducer}, offers global
+	* control over metrics.
+	*/
+	var MetricReader = class {
+		_shutdown = false;
+		_metricProducers;
+		_sdkMetricProducer;
+		_selfObsMetrics;
+		_aggregationTemporalitySelector;
+		_aggregationSelector;
+		_cardinalitySelector;
+		_otelComponentType;
+		constructor(options) {
+			this._aggregationSelector = options?.aggregationSelector ?? AggregationSelector_1.DEFAULT_AGGREGATION_SELECTOR;
+			this._aggregationTemporalitySelector = options?.aggregationTemporalitySelector ?? AggregationSelector_1.DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR;
+			this._metricProducers = options?.metricProducers ?? [];
+			this._cardinalitySelector = options?.cardinalitySelector;
+			this._otelComponentType = options?.otelComponentType ?? this.constructor.name;
+			this._selfObsMetrics = new MetricReaderMetrics_1.MetricReaderMetrics(this._otelComponentType, api.createNoopMeter());
+		}
+		setMetricProducer(metricProducer) {
+			if (this._sdkMetricProducer) throw new Error("MetricReader can not be bound to a MeterProvider again.");
+			this._sdkMetricProducer = metricProducer;
+			this.onInitialized();
+		}
+		_setSelfObsMeterProvider(meterProvider) {
+			const meter = meterProvider.getMeter("@opentelemetry/sdk-metrics", version_1.VERSION);
+			this._selfObsMetrics = new MetricReaderMetrics_1.MetricReaderMetrics(this._otelComponentType, meter);
+		}
+		selectAggregation(instrumentType) {
+			return this._aggregationSelector(instrumentType);
+		}
+		selectAggregationTemporality(instrumentType) {
+			return this._aggregationTemporalitySelector(instrumentType);
+		}
+		selectCardinalityLimit(instrumentType) {
+			return this._cardinalitySelector ? this._cardinalitySelector(instrumentType) : 2e3;
+		}
+		/**
+		* Handle once the SDK has initialized this {@link MetricReader}
+		* Overriding this method is optional.
+		*/
+		onInitialized() {}
+		async collect(options) {
+			if (this._sdkMetricProducer === void 0) throw new Error("MetricReader is not bound to a MetricProducer");
+			if (this._shutdown) throw new Error("MetricReader is shutdown");
+			const startTime = (0, core_1.hrTime)();
+			const [sdkCollectionResults, ...additionalCollectionResults] = await Promise.all([this._sdkMetricProducer.collect({ timeoutMillis: options?.timeoutMillis }), ...this._metricProducers.map((producer) => producer.collect({ timeoutMillis: options?.timeoutMillis }))]);
+			const endTime = (0, core_1.hrTime)();
+			const errors = sdkCollectionResults.errors.concat(additionalCollectionResults.flatMap((result) => result.errors));
+			const collectDuration = (0, core_1.hrTimeToSeconds)((0, core_1.hrTimeDuration)(startTime, endTime));
+			this._selfObsMetrics.recordCollection(collectDuration, errors.length > 0 ? errors[0].name ?? "collect_error" : void 0);
+			return {
+				resourceMetrics: {
+					resource: sdkCollectionResults.resourceMetrics.resource,
+					scopeMetrics: sdkCollectionResults.resourceMetrics.scopeMetrics.concat(additionalCollectionResults.flatMap((result) => result.resourceMetrics.scopeMetrics))
+				},
+				errors
+			};
+		}
+		async shutdown(options) {
+			if (this._shutdown) {
+				api.diag.error("Cannot call shutdown twice.");
+				return;
+			}
+			if (options?.timeoutMillis == null) await this.onShutdown();
+			else await (0, utils_1.callWithTimeout)(this.onShutdown(), options.timeoutMillis);
+			this._shutdown = true;
+		}
+		async forceFlush(options) {
+			if (this._shutdown) {
+				api.diag.warn("Cannot forceFlush on already shutdown MetricReader.");
+				return;
+			}
+			if (options?.timeoutMillis == null) {
+				await this.onForceFlush();
+				return;
+			}
+			await (0, utils_1.callWithTimeout)(this.onForceFlush(), options.timeoutMillis);
+		}
+	};
+	exports.MetricReader = MetricReader;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/MetricDataSplitter.js
+var require_MetricDataSplitter = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.splitMetricData = void 0;
+	/**
+	* Splits a ResourceMetrics object into smaller ResourceMetrics objects
+	* such that no batch exceeds maxExportBatchSize data points.
+	* @param resourceMetrics The metrics to split.
+	* @param maxExportBatchSize The maximum number of data points per batch.
+	* @internal
+	*/
+	function splitMetricData(resourceMetrics, maxExportBatchSize) {
+		if (!Number.isInteger(maxExportBatchSize) || maxExportBatchSize <= 0) throw new Error("maxExportBatchSize must be a positive integer");
+		const batches = [];
+		let currentBatchPoints = 0;
+		let currentScopeMetrics = [];
+		function flush() {
+			if (currentScopeMetrics.length > 0) {
+				batches.push({
+					resource: resourceMetrics.resource,
+					scopeMetrics: currentScopeMetrics
+				});
+				currentScopeMetrics = [];
+				currentBatchPoints = 0;
+			}
+		}
+		for (const scopeMetric of resourceMetrics.scopeMetrics) {
+			let scopeMetricCopy = null;
+			for (const metric of scopeMetric.metrics) {
+				const dataPoints = metric.dataPoints;
+				if (dataPoints.length === 0) {
+					if (!scopeMetricCopy) {
+						scopeMetricCopy = {
+							scope: scopeMetric.scope,
+							metrics: []
+						};
+						currentScopeMetrics.push(scopeMetricCopy);
+					}
+					scopeMetricCopy.metrics.push(metric);
+					continue;
+				}
+				let offset = 0;
+				while (offset < dataPoints.length) {
+					const spaceLeft = maxExportBatchSize - currentBatchPoints;
+					const take = Math.min(spaceLeft, dataPoints.length - offset);
+					if (!scopeMetricCopy) {
+						scopeMetricCopy = {
+							scope: scopeMetric.scope,
+							metrics: []
+						};
+						currentScopeMetrics.push(scopeMetricCopy);
+					}
+					const metricCopy = {
+						...metric,
+						dataPoints: dataPoints.slice(offset, offset + take)
+					};
+					scopeMetricCopy.metrics.push(metricCopy);
+					offset += take;
+					currentBatchPoints += take;
+					if (currentBatchPoints === maxExportBatchSize) {
+						flush();
+						scopeMetricCopy = null;
+					}
+				}
+			}
+		}
+		flush();
+		return batches;
+	}
+	exports.splitMetricData = splitMetricData;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/PeriodicExportingMetricReader.js
+var require_PeriodicExportingMetricReader = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.PeriodicExportingMetricReader = void 0;
+	const api = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const core_1 = require_src$8();
+	const MetricReader_1 = require_MetricReader();
+	const utils_1 = require_utils$3();
+	const MetricData_1 = require_MetricData();
+	const MetricDataSplitter_1 = require_MetricDataSplitter();
+	const semconv_1 = require_semconv$3();
+	/**
+	* {@link MetricReader} which collects metrics based on a user-configurable time interval, and passes the metrics to
+	* the configured {@link PushMetricExporter}
+	*/
+	var PeriodicExportingMetricReader = class extends MetricReader_1.MetricReader {
+		_interval;
+		_exporter;
+		_exportInterval;
+		_exportTimeout;
+		_maxExportBatchSize;
+		_ongoingExportPromise = null;
+		constructor(options) {
+			const { exporter, exportIntervalMillis = 6e4, metricProducers, cardinalityLimits, maxExportBatchSize } = options;
+			let { exportTimeoutMillis = 3e4 } = options;
+			super({
+				aggregationSelector: exporter.selectAggregation?.bind(exporter),
+				aggregationTemporalitySelector: exporter.selectAggregationTemporality?.bind(exporter),
+				otelComponentType: semconv_1.OTEL_COMPONENT_TYPE_VALUE_PERIODIC_METRIC_READER,
+				metricProducers,
+				cardinalitySelector: (instrumentType) => {
+					const limits = {
+						default: 2e3,
+						...cardinalityLimits
+					};
+					switch (instrumentType) {
+						case MetricData_1.InstrumentType.COUNTER: return limits.counter ?? limits.default;
+						case MetricData_1.InstrumentType.GAUGE: return limits.gauge ?? limits.default;
+						case MetricData_1.InstrumentType.HISTOGRAM: return limits.histogram ?? limits.default;
+						case MetricData_1.InstrumentType.OBSERVABLE_COUNTER: return limits.observableCounter ?? limits.default;
+						case MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER: return limits.observableUpDownCounter ?? limits.default;
+						case MetricData_1.InstrumentType.OBSERVABLE_GAUGE: return limits.observableGauge ?? limits.default;
+						case MetricData_1.InstrumentType.UP_DOWN_COUNTER: return limits.upDownCounter ?? limits.default;
+						default: return limits.default;
+					}
+				}
+			});
+			if (exportIntervalMillis <= 0) throw Error("exportIntervalMillis must be greater than 0");
+			if (exportTimeoutMillis <= 0) throw Error("exportTimeoutMillis must be greater than 0");
+			if (maxExportBatchSize !== void 0 && (!Number.isInteger(maxExportBatchSize) || maxExportBatchSize <= 0)) throw Error("maxExportBatchSize must be a positive integer");
+			if (exportIntervalMillis < exportTimeoutMillis) {
+				if ("exportIntervalMillis" in options && "exportTimeoutMillis" in options) throw Error("exportIntervalMillis must be greater than or equal to exportTimeoutMillis");
+				else {
+					api.diag.info(`Timeout of ${exportTimeoutMillis} exceeds the interval of ${exportIntervalMillis}. Clamping timeout to interval duration.`);
+					exportTimeoutMillis = exportIntervalMillis;
+				}
+			}
+			this._exportInterval = exportIntervalMillis;
+			this._exportTimeout = exportTimeoutMillis;
+			this._exporter = exporter;
+			this._maxExportBatchSize = maxExportBatchSize;
+		}
+		async _runOnce() {
+			try {
+				await this._doRun();
+			} catch (err) {
+				(0, core_1.globalErrorHandler)(err);
+			}
+		}
+		async _doRun() {
+			if (this._ongoingExportPromise) {
+				api.diag.debug("PeriodicExportingMetricReader: export already in progress, skipping");
+				return;
+			}
+			const currentRun = async () => {
+				const { resourceMetrics, errors } = await this.collect({ timeoutMillis: this._exportTimeout });
+				if (errors.length > 0) api.diag.error("PeriodicExportingMetricReader: metrics collection errors", ...errors);
+				if (resourceMetrics.resource.asyncAttributesPending) try {
+					await resourceMetrics.resource.waitForAsyncAttributes?.();
+				} catch (e) {
+					api.diag.debug("Error while resolving async portion of resource: ", e);
+					(0, core_1.globalErrorHandler)(e);
+				}
+				if (resourceMetrics.scopeMetrics.length === 0) return;
+				const batches = this._maxExportBatchSize ? (0, MetricDataSplitter_1.splitMetricData)(resourceMetrics, this._maxExportBatchSize) : [resourceMetrics];
+				let anyErr = null;
+				for (const batch of batches) try {
+					const result = await (0, utils_1.callWithTimeout)(core_1.internal._export(this._exporter, batch), this._exportTimeout);
+					if (result.code !== core_1.ExportResultCode.SUCCESS) anyErr = /* @__PURE__ */ new Error(`PeriodicExportingMetricReader: metrics export failed (error ${result.error})`);
+				} catch (e) {
+					if (e instanceof utils_1.TimeoutError) {
+						api.diag.error(`PeriodicExportingMetricReader: metrics export timed out after ${this._exportTimeout}ms`);
+						break;
+					} else {
+						api.diag.error("PeriodicExportingMetricReader: metrics export threw error", e);
+						anyErr = e instanceof Error ? e : new Error(String(e));
+					}
+				}
+				if (anyErr) throw anyErr;
+			};
+			this._ongoingExportPromise = currentRun();
+			try {
+				await this._ongoingExportPromise;
+			} finally {
+				this._ongoingExportPromise = null;
+			}
+		}
+		onInitialized() {
+			this._interval = setInterval(() => {
+				this._runOnce();
+			}, this._exportInterval);
+			if (typeof this._interval !== "number") this._interval.unref();
+		}
+		async onForceFlush() {
+			await this._awaitOngoingExport();
+			if (this._ongoingExportPromise) await this._awaitOngoingExport();
+			else await this._runOnce();
+			await this._exporter.forceFlush();
+		}
+		/**
+		* Helper function to wait for an ongoing export to complete.
+		* Errors are swallowed and handled by the original _runOnce().
+		*/
+		async _awaitOngoingExport() {
+			if (this._ongoingExportPromise) {
+				api.diag.debug("PeriodicExportingMetricReader: export already in progress, awaiting ongoing export");
+				try {
+					await this._ongoingExportPromise;
+				} catch {}
+			}
+		}
+		async onShutdown() {
+			if (this._interval) clearInterval(this._interval);
+			await this.onForceFlush();
+			await this._exporter.shutdown();
+		}
+	};
+	exports.PeriodicExportingMetricReader = PeriodicExportingMetricReader;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/InMemoryMetricExporter.js
+var require_InMemoryMetricExporter = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.InMemoryMetricExporter = void 0;
+	const core_1 = require_src$8();
+	/**
+	* In-memory Metrics Exporter is a Push Metric Exporter
+	* which accumulates metrics data in the local memory and
+	* allows to inspect it (useful for e.g. unit tests).
+	*/
+	var InMemoryMetricExporter = class {
+		_shutdown = false;
+		_aggregationTemporality;
+		_metrics = [];
+		constructor(aggregationTemporality) {
+			this._aggregationTemporality = aggregationTemporality;
+		}
+		/**
+		* @inheritedDoc
+		*/
+		export(metrics, resultCallback) {
+			if (this._shutdown) {
+				setTimeout(() => resultCallback({ code: core_1.ExportResultCode.FAILED }), 0);
+				return;
+			}
+			this._metrics.push(metrics);
+			setTimeout(() => resultCallback({ code: core_1.ExportResultCode.SUCCESS }), 0);
+		}
+		/**
+		* Returns all the collected resource metrics
+		* @returns ResourceMetrics[]
+		*/
+		getMetrics() {
+			return this._metrics;
+		}
+		forceFlush() {
+			return Promise.resolve();
+		}
+		reset() {
+			this._metrics = [];
+		}
+		selectAggregationTemporality(_instrumentType) {
+			return this._aggregationTemporality;
+		}
+		shutdown() {
+			this._shutdown = true;
+			return Promise.resolve();
+		}
+	};
+	exports.InMemoryMetricExporter = InMemoryMetricExporter;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/ConsoleMetricExporter.js
+var require_ConsoleMetricExporter = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ConsoleMetricExporter = void 0;
+	const core_1 = require_src$8();
+	const AggregationSelector_1 = require_AggregationSelector();
+	/**
+	* This is an implementation of {@link PushMetricExporter} that prints metrics to the
+	* console. This class can be used for diagnostic purposes.
+	*
+	* NOTE: This {@link PushMetricExporter} is intended for diagnostics use only, output rendered to the console may change at any time.
+	*/
+	var ConsoleMetricExporter = class ConsoleMetricExporter {
+		_shutdown = false;
+		_temporalitySelector;
+		constructor(options) {
+			this._temporalitySelector = options?.temporalitySelector ?? AggregationSelector_1.DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR;
+		}
+		export(metrics, resultCallback) {
+			if (this._shutdown) {
+				resultCallback({ code: core_1.ExportResultCode.FAILED });
+				return;
+			}
+			return ConsoleMetricExporter._sendMetrics(metrics, resultCallback);
+		}
+		forceFlush() {
+			return Promise.resolve();
+		}
+		selectAggregationTemporality(_instrumentType) {
+			return this._temporalitySelector(_instrumentType);
+		}
+		shutdown() {
+			this._shutdown = true;
+			return Promise.resolve();
+		}
+		static _sendMetrics(metrics, done) {
+			for (const scopeMetrics of metrics.scopeMetrics) for (const metric of scopeMetrics.metrics) console.dir({
+				descriptor: metric.descriptor,
+				dataPointType: metric.dataPointType,
+				dataPoints: metric.dataPoints
+			}, { depth: null });
+			done({ code: core_1.ExportResultCode.SUCCESS });
+		}
+	};
+	exports.ConsoleMetricExporter = ConsoleMetricExporter;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/default-service-name.js
+var require_default_service_name = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports._clearDefaultServiceNameCache = exports.defaultServiceName = void 0;
+	let serviceName;
+	/**
+	* Returns the default service name for OpenTelemetry resources.
+	* In Node.js environments, returns "unknown_service:<process.argv0>".
+	* In browser/edge environments, returns "unknown_service".
+	*/
+	function defaultServiceName() {
+		if (serviceName === void 0) try {
+			const argv0 = globalThis.process.argv0;
+			serviceName = argv0 ? `unknown_service:${argv0}` : "unknown_service";
+		} catch {
+			serviceName = "unknown_service";
+		}
+		return serviceName;
+	}
+	exports.defaultServiceName = defaultServiceName;
+	/** @internal For testing purposes only */
+	function _clearDefaultServiceNameCache() {
+		serviceName = void 0;
+	}
+	exports._clearDefaultServiceNameCache = _clearDefaultServiceNameCache;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/utils.js
+var require_utils$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.isPromiseLike = void 0;
+	const isPromiseLike = (val) => {
+		return val !== null && typeof val === "object" && typeof val.then === "function";
+	};
+	exports.isPromiseLike = isPromiseLike;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/ResourceImpl.js
+var require_ResourceImpl = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.defaultResource = exports.emptyResource = exports.resourceFromDetectedResource = exports.resourceFromAttributes = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const core_1 = require_src$8();
+	const semantic_conventions_1 = (init_esm$1(), __toCommonJS(esm_exports$1));
+	const default_service_name_1 = require_default_service_name();
+	const utils_1 = require_utils$2();
+	var ResourceImpl = class ResourceImpl {
+		_rawAttributes;
+		_asyncAttributesPending = false;
+		_schemaUrl;
+		_memoizedAttributes;
+		static FromAttributeList(attributes, options) {
+			const res = new ResourceImpl({}, options);
+			res._rawAttributes = guardedRawAttributes(attributes);
+			res._asyncAttributesPending = attributes.filter(([_, val]) => (0, utils_1.isPromiseLike)(val)).length > 0;
+			return res;
+		}
+		constructor(resource, options) {
+			const attributes = resource.attributes ?? {};
+			this._rawAttributes = Object.entries(attributes).map(([k, v]) => {
+				if ((0, utils_1.isPromiseLike)(v)) this._asyncAttributesPending = true;
+				return [k, v];
+			});
+			this._rawAttributes = guardedRawAttributes(this._rawAttributes);
+			this._schemaUrl = validateSchemaUrl(options?.schemaUrl);
+		}
+		get asyncAttributesPending() {
+			return this._asyncAttributesPending;
+		}
+		async waitForAsyncAttributes() {
+			if (!this.asyncAttributesPending) return;
+			for (let i = 0; i < this._rawAttributes.length; i++) {
+				const [k, v] = this._rawAttributes[i];
+				this._rawAttributes[i] = [k, (0, utils_1.isPromiseLike)(v) ? await v : v];
+			}
+			this._asyncAttributesPending = false;
+		}
+		get attributes() {
+			if (this.asyncAttributesPending) api_1.diag.error("Accessing resource attributes before async attributes settled");
+			if (this._memoizedAttributes) return this._memoizedAttributes;
+			const attrs = {};
+			for (const [k, v] of this._rawAttributes) {
+				if ((0, utils_1.isPromiseLike)(v)) {
+					api_1.diag.debug(`Unsettled resource attribute ${k} skipped`);
+					continue;
+				}
+				if (v != null) attrs[k] ??= v;
+			}
+			if (!this._asyncAttributesPending) this._memoizedAttributes = attrs;
+			return attrs;
+		}
+		getRawAttributes() {
+			return this._rawAttributes;
+		}
+		get schemaUrl() {
+			return this._schemaUrl;
+		}
+		merge(resource) {
+			if (resource == null) return this;
+			const mergedSchemaUrl = mergeSchemaUrl(this, resource);
+			const mergedOptions = mergedSchemaUrl ? { schemaUrl: mergedSchemaUrl } : void 0;
+			return ResourceImpl.FromAttributeList([...resource.getRawAttributes(), ...this.getRawAttributes()], mergedOptions);
+		}
+	};
+	function resourceFromAttributes(attributes, options) {
+		return ResourceImpl.FromAttributeList(Object.entries(attributes), options);
+	}
+	exports.resourceFromAttributes = resourceFromAttributes;
+	function resourceFromDetectedResource(detectedResource, options) {
+		return new ResourceImpl(detectedResource, options);
+	}
+	exports.resourceFromDetectedResource = resourceFromDetectedResource;
+	function emptyResource() {
+		return resourceFromAttributes({});
+	}
+	exports.emptyResource = emptyResource;
+	function defaultResource() {
+		return resourceFromAttributes({
+			[semantic_conventions_1.ATTR_SERVICE_NAME]: (0, default_service_name_1.defaultServiceName)(),
+			[semantic_conventions_1.ATTR_TELEMETRY_SDK_LANGUAGE]: core_1.SDK_INFO[semantic_conventions_1.ATTR_TELEMETRY_SDK_LANGUAGE],
+			[semantic_conventions_1.ATTR_TELEMETRY_SDK_NAME]: core_1.SDK_INFO[semantic_conventions_1.ATTR_TELEMETRY_SDK_NAME],
+			[semantic_conventions_1.ATTR_TELEMETRY_SDK_VERSION]: core_1.SDK_INFO[semantic_conventions_1.ATTR_TELEMETRY_SDK_VERSION]
+		});
+	}
+	exports.defaultResource = defaultResource;
+	function guardedRawAttributes(attributes) {
+		return attributes.map(([k, v]) => {
+			if ((0, utils_1.isPromiseLike)(v)) return [k, v.catch((err) => {
+				api_1.diag.debug("promise rejection for resource attribute: %s - %s", k, err);
+			})];
+			return [k, v];
+		});
+	}
+	function validateSchemaUrl(schemaUrl) {
+		if (typeof schemaUrl === "string" || schemaUrl === void 0) return schemaUrl;
+		api_1.diag.warn("Schema URL must be string or undefined, got %s. Schema URL will be ignored.", schemaUrl);
+	}
+	function mergeSchemaUrl(old, updating) {
+		const oldSchemaUrl = old?.schemaUrl;
+		const updatingSchemaUrl = updating?.schemaUrl;
+		const isOldEmpty = oldSchemaUrl === void 0 || oldSchemaUrl === "";
+		const isUpdatingEmpty = updatingSchemaUrl === void 0 || updatingSchemaUrl === "";
+		if (isOldEmpty) return updatingSchemaUrl;
+		if (isUpdatingEmpty) return oldSchemaUrl;
+		if (oldSchemaUrl === updatingSchemaUrl) return oldSchemaUrl;
+		api_1.diag.warn("Schema URL merge conflict: old resource has \"%s\", updating resource has \"%s\". Resulting resource will have undefined Schema URL.", oldSchemaUrl, updatingSchemaUrl);
+	}
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detect-resources.js
+var require_detect_resources = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.detectResources = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const ResourceImpl_1 = require_ResourceImpl();
+	/**
+	* Runs all resource detectors and returns the results merged into a single Resource.
+	*
+	* @param config Configuration for resource detection
+	*/
+	const detectResources = (config = {}) => {
+		return (config.detectors || []).map((d) => {
+			try {
+				const resource = (0, ResourceImpl_1.resourceFromDetectedResource)(d.detect(config));
+				api_1.diag.debug(`${d.constructor.name} found resource.`, resource);
+				return resource;
+			} catch (e) {
+				api_1.diag.debug(`${d.constructor.name} failed: ${e.message}`);
+				return (0, ResourceImpl_1.emptyResource)();
+			}
+		}).reduce((acc, resource) => acc.merge(resource), (0, ResourceImpl_1.emptyResource)());
+	};
+	exports.detectResources = detectResources;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/EnvDetector.js
+var require_EnvDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.envDetector = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const semantic_conventions_1 = (init_esm$1(), __toCommonJS(esm_exports$1));
+	const core_1 = require_src$8();
+	/**
+	* EnvDetector can be used to detect the presence of and create a Resource
+	* from the OTEL_RESOURCE_ATTRIBUTES environment variable.
+	*/
+	var EnvDetector = class {
+		_MAX_LENGTH = 255;
+		_COMMA_SEPARATOR = ",";
+		_LABEL_KEY_VALUE_SPLITTER = "=";
+		/**
+		* Returns a {@link Resource} populated with attributes from the
+		* OTEL_RESOURCE_ATTRIBUTES environment variable. Note this is an async
+		* function to conform to the Detector interface.
+		*
+		* @param config The resource detection config
+		*/
+		detect(_config) {
+			const attributes = {};
+			const rawAttributes = (0, core_1.getStringFromEnv)("OTEL_RESOURCE_ATTRIBUTES");
+			const serviceName = (0, core_1.getStringFromEnv)("OTEL_SERVICE_NAME");
+			if (rawAttributes) try {
+				const parsedAttributes = this._parseResourceAttributes(rawAttributes);
+				Object.assign(attributes, parsedAttributes);
+			} catch (e) {
+				api_1.diag.debug(`EnvDetector failed: ${e instanceof Error ? e.message : e}`);
+			}
+			if (serviceName) attributes[semantic_conventions_1.ATTR_SERVICE_NAME] = serviceName;
+			return { attributes };
+		}
+		/**
+		* Creates an attribute map from the OTEL_RESOURCE_ATTRIBUTES environment
+		* variable.
+		*
+		* OTEL_RESOURCE_ATTRIBUTES: A comma-separated list of attributes in the
+		* format "key1=value1,key2=value2". The ',' and '=' characters in keys
+		* and values MUST be percent-encoded. Other characters MAY be percent-encoded.
+		*
+		* Per the spec, on any error (e.g., decoding failure), the entire environment
+		* variable value is discarded.
+		*
+		* @param rawEnvAttributes The resource attributes as a comma-separated list
+		* of key/value pairs.
+		* @returns The parsed resource attributes.
+		* @throws Error if parsing fails (caller handles by discarding all attributes)
+		*/
+		_parseResourceAttributes(rawEnvAttributes) {
+			if (!rawEnvAttributes) return {};
+			const attributes = {};
+			const rawAttributes = rawEnvAttributes.split(this._COMMA_SEPARATOR).filter((attr) => attr.trim() !== "");
+			for (const rawAttribute of rawAttributes) {
+				const keyValuePair = rawAttribute.split(this._LABEL_KEY_VALUE_SPLITTER);
+				if (keyValuePair.length !== 2) throw new Error(`Invalid format for OTEL_RESOURCE_ATTRIBUTES: "${rawAttribute}". Expected format: key=value. The ',' and '=' characters must be percent-encoded in keys and values.`);
+				const [rawKey, rawValue] = keyValuePair;
+				const key = rawKey.trim();
+				const value = rawValue.trim();
+				if (key.length === 0) throw new Error(`Invalid OTEL_RESOURCE_ATTRIBUTES: empty attribute key in "${rawAttribute}".`);
+				let decodedKey;
+				let decodedValue;
+				try {
+					decodedKey = decodeURIComponent(key);
+					decodedValue = decodeURIComponent(value);
+				} catch (e) {
+					throw new Error(`Failed to percent-decode OTEL_RESOURCE_ATTRIBUTES entry "${rawAttribute}": ${e instanceof Error ? e.message : e}`, { cause: e });
+				}
+				if (decodedKey.length > this._MAX_LENGTH) throw new Error(`Attribute key exceeds the maximum length of ${this._MAX_LENGTH} characters: "${decodedKey}".`);
+				if (decodedValue.length > this._MAX_LENGTH) throw new Error(`Attribute value exceeds the maximum length of ${this._MAX_LENGTH} characters for key "${decodedKey}".`);
+				attributes[decodedKey] = decodedValue;
+			}
+			return attributes;
+		}
+	};
+	exports.envDetector = new EnvDetector();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/semconv.js
+var require_semconv$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ATTR_WEBENGINE_VERSION = exports.ATTR_WEBENGINE_NAME = exports.ATTR_WEBENGINE_DESCRIPTION = exports.ATTR_SERVICE_NAMESPACE = exports.ATTR_SERVICE_INSTANCE_ID = exports.ATTR_PROCESS_RUNTIME_VERSION = exports.ATTR_PROCESS_RUNTIME_NAME = exports.ATTR_PROCESS_RUNTIME_DESCRIPTION = exports.ATTR_PROCESS_PID = exports.ATTR_PROCESS_OWNER = exports.ATTR_PROCESS_EXECUTABLE_PATH = exports.ATTR_PROCESS_EXECUTABLE_NAME = exports.ATTR_PROCESS_COMMAND_ARGS = exports.ATTR_PROCESS_COMMAND = exports.ATTR_OS_VERSION = exports.ATTR_OS_TYPE = exports.ATTR_K8S_POD_NAME = exports.ATTR_K8S_NAMESPACE_NAME = exports.ATTR_K8S_DEPLOYMENT_NAME = exports.ATTR_K8S_CLUSTER_NAME = exports.ATTR_HOST_TYPE = exports.ATTR_HOST_NAME = exports.ATTR_HOST_IMAGE_VERSION = exports.ATTR_HOST_IMAGE_NAME = exports.ATTR_HOST_IMAGE_ID = exports.ATTR_HOST_ID = exports.ATTR_HOST_ARCH = exports.ATTR_CONTAINER_NAME = exports.ATTR_CONTAINER_IMAGE_TAGS = exports.ATTR_CONTAINER_IMAGE_NAME = exports.ATTR_CONTAINER_ID = exports.ATTR_CLOUD_REGION = exports.ATTR_CLOUD_PROVIDER = exports.ATTR_CLOUD_AVAILABILITY_ZONE = exports.ATTR_CLOUD_ACCOUNT_ID = void 0;
+	/**
+	* The cloud account ID the resource is assigned to.
+	*
+	* @example 111111111111
+	* @example opentelemetry
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_CLOUD_ACCOUNT_ID = "cloud.account.id";
+	/**
+	* Cloud regions often have multiple, isolated locations known as zones to increase availability. Availability zone represents the zone where the resource is running.
+	*
+	* @example us-east-1c
+	*
+	* @note Availability zones are called "zones" on Alibaba Cloud and Google Cloud.
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_CLOUD_AVAILABILITY_ZONE = "cloud.availability_zone";
+	/**
+	* Name of the cloud provider.
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_CLOUD_PROVIDER = "cloud.provider";
+	/**
+	* The geographical region the resource is running.
+	*
+	* @example us-central1
+	* @example us-east-1
+	*
+	* @note Refer to your provider's docs to see the available regions, for example [Alibaba Cloud regions](https://www.alibabacloud.com/help/doc-detail/40654.htm), [AWS regions](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/), [Azure regions](https://azure.microsoft.com/global-infrastructure/geographies/), [Google Cloud regions](https://cloud.google.com/about/locations), or [Tencent Cloud regions](https://www.tencentcloud.com/document/product/213/6091).
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_CLOUD_REGION = "cloud.region";
+	/**
+	* Container ID. Usually a UUID, as for example used to [identify Docker containers](https://docs.docker.com/engine/containers/run/#container-identification). The UUID might be abbreviated.
+	*
+	* @example a3bf90e006b2
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_CONTAINER_ID = "container.id";
+	/**
+	* Name of the image the container was built on.
+	*
+	* @example gcr.io/opentelemetry/operator
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_CONTAINER_IMAGE_NAME = "container.image.name";
+	/**
+	* Container image tags. An example can be found in [Docker Image Inspect](https://docs.docker.com/engine/api/v1.43/#tag/Image/operation/ImageInspect). Should be only the `<tag>` section of the full name for example from `registry.example.com/my-org/my-image:<tag>`.
+	*
+	* @example ["v1.27.1", "3.5.7-0"]
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_CONTAINER_IMAGE_TAGS = "container.image.tags";
+	/**
+	* Container name used by container runtime.
+	*
+	* @example opentelemetry-autoconf
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_CONTAINER_NAME = "container.name";
+	/**
+	* The CPU architecture the host system is running on.
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_HOST_ARCH = "host.arch";
+	/**
+	* Unique host ID. For Cloud, this must be the instance_id assigned by the cloud provider. For non-containerized systems, this should be the `machine-id`. See the table below for the sources to use to determine the `machine-id` based on operating system.
+	*
+	* @example fdbf79e8af94cb7f9e8df36789187052
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_HOST_ID = "host.id";
+	/**
+	* VM image ID or host OS image ID. For Cloud, this value is from the provider.
+	*
+	* @example ami-07b06b442921831e5
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_HOST_IMAGE_ID = "host.image.id";
+	/**
+	* Name of the VM image or OS install the host was instantiated from.
+	*
+	* @example infra-ami-eks-worker-node-7d4ec78312
+	* @example CentOS-8-x86_64-1905
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_HOST_IMAGE_NAME = "host.image.name";
+	/**
+	* The version string of the VM image or host OS as defined in [Version Attributes](/docs/resource/README.md#version-attributes).
+	*
+	* @example 0.1
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_HOST_IMAGE_VERSION = "host.image.version";
+	/**
+	* Name of the host. On Unix systems, it may contain what the hostname command returns, or the fully qualified hostname, or another name specified by the user.
+	*
+	* @example opentelemetry-test
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_HOST_NAME = "host.name";
+	/**
+	* Type of host. For Cloud, this must be the machine type.
+	*
+	* @example n1-standard-1
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_HOST_TYPE = "host.type";
+	/**
+	* The name of the cluster.
+	*
+	* @example opentelemetry-cluster
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_K8S_CLUSTER_NAME = "k8s.cluster.name";
+	/**
+	* The name of the Deployment.
+	*
+	* @example opentelemetry
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_K8S_DEPLOYMENT_NAME = "k8s.deployment.name";
+	/**
+	* The name of the namespace that the pod is running in.
+	*
+	* @example default
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_K8S_NAMESPACE_NAME = "k8s.namespace.name";
+	/**
+	* The name of the Pod.
+	*
+	* @example opentelemetry-pod-autoconf
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_K8S_POD_NAME = "k8s.pod.name";
+	/**
+	* The operating system type.
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_OS_TYPE = "os.type";
+	/**
+	* The version string of the operating system as defined in [Version Attributes](/docs/resource/README.md#version-attributes).
+	*
+	* @example 14.2.1
+	* @example 18.04.1
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_OS_VERSION = "os.version";
+	/**
+	* The command used to launch the process (i.e. the command name). On Linux based systems, can be set to the zeroth string in `proc/[pid]/cmdline`. On Windows, can be set to the first parameter extracted from `GetCommandLineW`.
+	*
+	* @example cmd/otelcol
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_COMMAND = "process.command";
+	/**
+	* All the command arguments (including the command/executable itself) as received by the process. On Linux-based systems (and some other Unixoid systems supporting procfs), can be set according to the list of null-delimited strings extracted from `proc/[pid]/cmdline`. For libc-based executables, this would be the full argv vector passed to `main`.
+	*
+	* @example ["cmd/otecol", "--config=config.yaml"]
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_COMMAND_ARGS = "process.command_args";
+	/**
+	* The name of the process executable. On Linux based systems, this **SHOULD** be set to the base name of the target of `/proc/[pid]/exe`. On Windows, this **SHOULD** be set to the base name of `GetProcessImageFileNameW`.
+	*
+	* @example otelcol
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_EXECUTABLE_NAME = "process.executable.name";
+	/**
+	* The full path to the process executable. On Linux based systems, can be set to the target of `proc/[pid]/exe`. On Windows, can be set to the result of `GetProcessImageFileNameW`.
+	*
+	* @example /usr/bin/cmd/otelcol
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_EXECUTABLE_PATH = "process.executable.path";
+	/**
+	* The username of the user that owns the process.
+	*
+	* @example root
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_OWNER = "process.owner";
+	/**
+	* Process identifier (PID).
+	*
+	* @example 1234
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_PID = "process.pid";
+	/**
+	* An additional description about the runtime of the process, for example a specific vendor customization of the runtime environment.
+	*
+	* @example "Eclipse OpenJ9 Eclipse OpenJ9 VM openj9-0.21.0"
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_RUNTIME_DESCRIPTION = "process.runtime.description";
+	/**
+	* The name of the runtime of this process.
+	*
+	* @example OpenJDK Runtime Environment
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_RUNTIME_NAME = "process.runtime.name";
+	/**
+	* The version of the runtime of this process, as returned by the runtime without modification.
+	*
+	* @example "14.0.2"
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_PROCESS_RUNTIME_VERSION = "process.runtime.version";
+	/**
+	* The string ID of the service instance.
+	*
+	* @example 627cc493-f310-47de-96bd-71410b7dec09
+	*
+	* @note **MUST** be unique for each instance of the same `service.namespace,service.name` pair (in other words
+	* `service.namespace,service.name,service.instance.id` triplet **MUST** be globally unique). The ID helps to
+	* distinguish instances of the same service that exist at the same time (e.g. instances of a horizontally scaled
+	* service).
+	*
+	* Implementations, such as SDKs, are recommended to generate a random Version 1 or Version 4 [RFC
+	* 4122](https://www.ietf.org/rfc/rfc4122.txt) UUID, but are free to use an inherent unique ID as the source of
+	* this value if stability is desirable. In that case, the ID **SHOULD** be used as source of a UUID Version 5 and
+	* **SHOULD** use the following UUID as the namespace: `4d63009a-8d0f-11ee-aad7-4c796ed8e320`.
+	*
+	* UUIDs are typically recommended, as only an opaque value for the purposes of identifying a service instance is
+	* needed. Similar to what can be seen in the man page for the
+	* [`/etc/machine-id`](https://www.freedesktop.org/software/systemd/man/latest/machine-id.html) file, the underlying
+	* data, such as pod name and namespace should be treated as confidential, being the user's choice to expose it
+	* or not via another resource attribute.
+	*
+	* For applications running behind an application server (like unicorn), we do not recommend using one identifier
+	* for all processes participating in the application. Instead, it's recommended each division (e.g. a worker
+	* thread in unicorn) to have its own instance.id.
+	*
+	* It's not recommended for a Collector to set `service.instance.id` if it can't unambiguously determine the
+	* service instance that is generating that telemetry. For instance, creating an UUID based on `pod.name` will
+	* likely be wrong, as the Collector might not know from which container within that pod the telemetry originated.
+	* However, Collectors can set the `service.instance.id` if they can unambiguously determine the service instance
+	* for that telemetry. This is typically the case for scraping receivers, as they know the target address and
+	* port.
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_SERVICE_INSTANCE_ID = "service.instance.id";
+	/**
+	* A namespace for `service.name`.
+	*
+	* @example Shop
+	*
+	* @note A string value having a meaning that helps to distinguish a group of services, for example the team name that owns a group of services. `service.name` is expected to be unique within the same namespace. If `service.namespace` is not specified in the Resource then `service.name` is expected to be unique for all services that have no explicit namespace defined (so the empty/unspecified namespace is simply one more valid namespace). Zero-length namespace string is assumed equal to unspecified namespace.
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_SERVICE_NAMESPACE = "service.namespace";
+	/**
+	* Additional description of the web engine (e.g. detailed version and edition information).
+	*
+	* @example WildFly Full 21.0.0.Final (WildFly Core 13.0.1.Final) - 2.2.2.Final
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_WEBENGINE_DESCRIPTION = "webengine.description";
+	/**
+	* The name of the web engine.
+	*
+	* @example WildFly
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_WEBENGINE_NAME = "webengine.name";
+	/**
+	* The version of the web engine.
+	*
+	* @example 21.0.0
+	*
+	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
+	*/
+	exports.ATTR_WEBENGINE_VERSION = "webengine.version";
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/execAsync.js
+var require_execAsync = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.execAsync = void 0;
+	const child_process = __require("child_process");
+	const util = __require("util");
+	exports.execAsync = util.promisify(child_process.exec);
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-darwin.js
+var require_getMachineId_darwin = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.getMachineId = void 0;
+	const execAsync_1 = require_execAsync();
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	async function getMachineId() {
+		try {
+			const idLine = (await (0, execAsync_1.execAsync)("ioreg -rd1 -c \"IOPlatformExpertDevice\"")).stdout.split("\n").find((line) => line.includes("IOPlatformUUID"));
+			if (!idLine) return;
+			const parts = idLine.split("\" = \"");
+			if (parts.length === 2) return parts[1].slice(0, -1);
+		} catch (e) {
+			api_1.diag.debug(`error reading machine id: ${e}`);
+		}
+	}
+	exports.getMachineId = getMachineId;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-linux.js
+var require_getMachineId_linux = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.getMachineId = void 0;
+	const fs_1$1 = __require("fs");
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	async function getMachineId() {
+		for (const path of ["/etc/machine-id", "/var/lib/dbus/machine-id"]) try {
+			return (await fs_1$1.promises.readFile(path, { encoding: "utf8" })).trim();
+		} catch (e) {
+			api_1.diag.debug(`error reading machine id: ${e}`);
+		}
+	}
+	exports.getMachineId = getMachineId;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-bsd.js
+var require_getMachineId_bsd = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.getMachineId = void 0;
+	const fs_1 = __require("fs");
+	const execAsync_1 = require_execAsync();
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	async function getMachineId() {
+		try {
+			return (await fs_1.promises.readFile("/etc/hostid", { encoding: "utf8" })).trim();
+		} catch (e) {
+			api_1.diag.debug(`error reading machine id: ${e}`);
+		}
+		try {
+			return (await (0, execAsync_1.execAsync)("kenv -q smbios.system.uuid")).stdout.trim();
+		} catch (e) {
+			api_1.diag.debug(`error reading machine id: ${e}`);
+		}
+	}
+	exports.getMachineId = getMachineId;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-win.js
+var require_getMachineId_win = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.getMachineId = void 0;
+	const process$2 = __require("process");
+	const execAsync_1 = require_execAsync();
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	async function getMachineId() {
+		const args = "QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid";
+		let command = "%windir%\\System32\\REG.exe";
+		if (process$2.arch === "ia32" && "PROCESSOR_ARCHITEW6432" in process$2.env) command = "%windir%\\sysnative\\cmd.exe /c " + command;
+		try {
+			const parts = (await (0, execAsync_1.execAsync)(`${command} ${args}`)).stdout.split("REG_SZ");
+			if (parts.length === 2) return parts[1].trim();
+		} catch (e) {
+			api_1.diag.debug(`error reading machine id: ${e}`);
+		}
+	}
+	exports.getMachineId = getMachineId;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-unsupported.js
+var require_getMachineId_unsupported = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.getMachineId = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	async function getMachineId() {
+		api_1.diag.debug("could not read machine-id: unsupported platform");
+	}
+	exports.getMachineId = getMachineId;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId.js
+var require_getMachineId = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.getMachineId = void 0;
+	const process$1 = __require("process");
+	let getMachineIdImpl;
+	async function getMachineId() {
+		if (!getMachineIdImpl) switch (process$1.platform) {
+			case "darwin":
+				getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_darwin()))).getMachineId;
+				break;
+			case "linux":
+				getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_linux()))).getMachineId;
+				break;
+			case "freebsd":
+				getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_bsd()))).getMachineId;
+				break;
+			case "win32":
+				getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_win()))).getMachineId;
+				break;
+			default: getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_unsupported()))).getMachineId;
+		}
+		return getMachineIdImpl();
+	}
+	exports.getMachineId = getMachineId;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/utils.js
+var require_utils$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.normalizeType = exports.normalizeArch = void 0;
+	const normalizeArch = (nodeArchString) => {
+		switch (nodeArchString) {
+			case "arm": return "arm32";
+			case "ppc": return "ppc32";
+			case "x64": return "amd64";
+			default: return nodeArchString;
+		}
+	};
+	exports.normalizeArch = normalizeArch;
+	const normalizeType = (nodePlatform) => {
+		switch (nodePlatform) {
+			case "sunos": return "solaris";
+			case "win32": return "windows";
+			default: return nodePlatform;
+		}
+	};
+	exports.normalizeType = normalizeType;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/HostDetector.js
+var require_HostDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.hostDetector = void 0;
+	const semconv_1 = require_semconv$2();
+	const os_1$1 = __require("os");
+	const getMachineId_1 = require_getMachineId();
+	const utils_1 = require_utils$1();
+	/**
+	* HostDetector detects the resources related to the host current process is
+	* running on. Currently only non-cloud-based attributes are included.
+	*/
+	var HostDetector = class {
+		detect(_config) {
+			return { attributes: {
+				[semconv_1.ATTR_HOST_NAME]: (0, os_1$1.hostname)(),
+				[semconv_1.ATTR_HOST_ARCH]: (0, utils_1.normalizeArch)((0, os_1$1.arch)()),
+				[semconv_1.ATTR_HOST_ID]: (0, getMachineId_1.getMachineId)()
+			} };
+		}
+	};
+	exports.hostDetector = new HostDetector();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/OSDetector.js
+var require_OSDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.osDetector = void 0;
+	const semconv_1 = require_semconv$2();
+	const os_1 = __require("os");
+	const utils_1 = require_utils$1();
+	/**
+	* OSDetector detects the resources related to the operating system (OS) on
+	* which the process represented by this resource is running.
+	*/
+	var OSDetector = class {
+		detect(_config) {
+			return { attributes: {
+				[semconv_1.ATTR_OS_TYPE]: (0, utils_1.normalizeType)((0, os_1.platform)()),
+				[semconv_1.ATTR_OS_VERSION]: (0, os_1.release)()
+			} };
+		}
+	};
+	exports.osDetector = new OSDetector();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/ProcessDetector.js
+var require_ProcessDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.processDetector = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const semconv_1 = require_semconv$2();
+	const os$1 = __require("os");
+	/**
+	* ProcessDetector will be used to detect the resources related current process running
+	* and being instrumented from the NodeJS Process module.
+	*/
+	var ProcessDetector = class {
+		detect(_config) {
+			const attributes = {
+				[semconv_1.ATTR_PROCESS_PID]: process.pid,
+				[semconv_1.ATTR_PROCESS_EXECUTABLE_NAME]: process.title,
+				[semconv_1.ATTR_PROCESS_EXECUTABLE_PATH]: process.execPath,
+				[semconv_1.ATTR_PROCESS_COMMAND_ARGS]: [
+					process.argv[0],
+					...process.execArgv,
+					...process.argv.slice(1)
+				],
+				[semconv_1.ATTR_PROCESS_RUNTIME_VERSION]: process.versions.node,
+				[semconv_1.ATTR_PROCESS_RUNTIME_NAME]: "nodejs",
+				[semconv_1.ATTR_PROCESS_RUNTIME_DESCRIPTION]: "Node.js"
+			};
+			if (process.argv.length > 1) attributes[semconv_1.ATTR_PROCESS_COMMAND] = process.argv[1];
+			try {
+				const userInfo = os$1.userInfo();
+				attributes[semconv_1.ATTR_PROCESS_OWNER] = userInfo.username;
+			} catch (e) {
+				api_1.diag.debug(`error obtaining process owner: ${e}`);
+			}
+			return { attributes };
+		}
+	};
+	exports.processDetector = new ProcessDetector();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/ServiceInstanceIdDetector.js
+var require_ServiceInstanceIdDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.serviceInstanceIdDetector = void 0;
+	const semconv_1 = require_semconv$2();
+	const crypto_1 = __require("crypto");
+	/**
+	* ServiceInstanceIdDetector detects the resources related to the service instance ID.
+	*/
+	var ServiceInstanceIdDetector = class {
+		_serviceInstanceId;
+		detect(_config) {
+			if (!this._serviceInstanceId) this._serviceInstanceId = (0, crypto_1.randomUUID)();
+			return { attributes: { [semconv_1.ATTR_SERVICE_INSTANCE_ID]: this._serviceInstanceId } };
+		}
+	};
+	/**
+	* @experimental
+	*/
+	exports.serviceInstanceIdDetector = new ServiceInstanceIdDetector();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/index.js
+var require_node$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.serviceInstanceIdDetector = exports.processDetector = exports.osDetector = exports.hostDetector = void 0;
+	var HostDetector_1 = require_HostDetector();
+	Object.defineProperty(exports, "hostDetector", {
+		enumerable: true,
+		get: function() {
+			return HostDetector_1.hostDetector;
+		}
+	});
+	var OSDetector_1 = require_OSDetector();
+	Object.defineProperty(exports, "osDetector", {
+		enumerable: true,
+		get: function() {
+			return OSDetector_1.osDetector;
+		}
+	});
+	var ProcessDetector_1 = require_ProcessDetector();
+	Object.defineProperty(exports, "processDetector", {
+		enumerable: true,
+		get: function() {
+			return ProcessDetector_1.processDetector;
+		}
+	});
+	var ServiceInstanceIdDetector_1 = require_ServiceInstanceIdDetector();
+	Object.defineProperty(exports, "serviceInstanceIdDetector", {
+		enumerable: true,
+		get: function() {
+			return ServiceInstanceIdDetector_1.serviceInstanceIdDetector;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/index.js
+var require_platform$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.serviceInstanceIdDetector = exports.processDetector = exports.osDetector = exports.hostDetector = void 0;
+	var node_1 = require_node$2();
+	Object.defineProperty(exports, "hostDetector", {
+		enumerable: true,
+		get: function() {
+			return node_1.hostDetector;
+		}
+	});
+	Object.defineProperty(exports, "osDetector", {
+		enumerable: true,
+		get: function() {
+			return node_1.osDetector;
+		}
+	});
+	Object.defineProperty(exports, "processDetector", {
+		enumerable: true,
+		get: function() {
+			return node_1.processDetector;
+		}
+	});
+	Object.defineProperty(exports, "serviceInstanceIdDetector", {
+		enumerable: true,
+		get: function() {
+			return node_1.serviceInstanceIdDetector;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/NoopDetector.js
+var require_NoopDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.noopDetector = exports.NoopDetector = void 0;
+	var NoopDetector = class {
+		detect() {
+			return { attributes: {} };
+		}
+	};
+	exports.NoopDetector = NoopDetector;
+	exports.noopDetector = new NoopDetector();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/index.js
+var require_detectors = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.noopDetector = exports.serviceInstanceIdDetector = exports.processDetector = exports.osDetector = exports.hostDetector = exports.envDetector = void 0;
+	var EnvDetector_1 = require_EnvDetector();
+	Object.defineProperty(exports, "envDetector", {
+		enumerable: true,
+		get: function() {
+			return EnvDetector_1.envDetector;
+		}
+	});
+	var platform_1 = require_platform$2();
+	Object.defineProperty(exports, "hostDetector", {
+		enumerable: true,
+		get: function() {
+			return platform_1.hostDetector;
+		}
+	});
+	Object.defineProperty(exports, "osDetector", {
+		enumerable: true,
+		get: function() {
+			return platform_1.osDetector;
+		}
+	});
+	Object.defineProperty(exports, "processDetector", {
+		enumerable: true,
+		get: function() {
+			return platform_1.processDetector;
+		}
+	});
+	Object.defineProperty(exports, "serviceInstanceIdDetector", {
+		enumerable: true,
+		get: function() {
+			return platform_1.serviceInstanceIdDetector;
+		}
+	});
+	var NoopDetector_1 = require_NoopDetector();
+	Object.defineProperty(exports, "noopDetector", {
+		enumerable: true,
+		get: function() {
+			return NoopDetector_1.noopDetector;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/index.js
+var require_src$6 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.defaultServiceName = exports.emptyResource = exports.defaultResource = exports.resourceFromAttributes = exports.serviceInstanceIdDetector = exports.processDetector = exports.osDetector = exports.hostDetector = exports.envDetector = exports.detectResources = void 0;
+	var detect_resources_1 = require_detect_resources();
+	Object.defineProperty(exports, "detectResources", {
+		enumerable: true,
+		get: function() {
+			return detect_resources_1.detectResources;
+		}
+	});
+	var detectors_1 = require_detectors();
+	Object.defineProperty(exports, "envDetector", {
+		enumerable: true,
+		get: function() {
+			return detectors_1.envDetector;
+		}
+	});
+	Object.defineProperty(exports, "hostDetector", {
+		enumerable: true,
+		get: function() {
+			return detectors_1.hostDetector;
+		}
+	});
+	Object.defineProperty(exports, "osDetector", {
+		enumerable: true,
+		get: function() {
+			return detectors_1.osDetector;
+		}
+	});
+	Object.defineProperty(exports, "processDetector", {
+		enumerable: true,
+		get: function() {
+			return detectors_1.processDetector;
+		}
+	});
+	Object.defineProperty(exports, "serviceInstanceIdDetector", {
+		enumerable: true,
+		get: function() {
+			return detectors_1.serviceInstanceIdDetector;
+		}
+	});
+	var ResourceImpl_1 = require_ResourceImpl();
+	Object.defineProperty(exports, "resourceFromAttributes", {
+		enumerable: true,
+		get: function() {
+			return ResourceImpl_1.resourceFromAttributes;
+		}
+	});
+	Object.defineProperty(exports, "defaultResource", {
+		enumerable: true,
+		get: function() {
+			return ResourceImpl_1.defaultResource;
+		}
+	});
+	Object.defineProperty(exports, "emptyResource", {
+		enumerable: true,
+		get: function() {
+			return ResourceImpl_1.emptyResource;
+		}
+	});
+	var default_service_name_1 = require_default_service_name();
+	Object.defineProperty(exports, "defaultServiceName", {
+		enumerable: true,
+		get: function() {
+			return default_service_name_1.defaultServiceName;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/ViewRegistry.js
+var require_ViewRegistry = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ViewRegistry = void 0;
+	var ViewRegistry = class {
+		_registeredViews = [];
+		addView(view) {
+			this._registeredViews.push(view);
+		}
+		findViews(instrument, meter) {
+			return this._registeredViews.filter((registeredView) => {
+				return this._matchInstrument(registeredView.instrumentSelector, instrument) && this._matchMeter(registeredView.meterSelector, meter);
+			});
+		}
+		_matchInstrument(selector, instrument) {
+			return (selector.getType() === void 0 || instrument.type === selector.getType()) && selector.getNameFilter().match(instrument.name) && selector.getUnitFilter().match(instrument.unit);
+		}
+		_matchMeter(selector, meter) {
+			return selector.getNameFilter().match(meter.name) && (meter.version === void 0 || selector.getVersionFilter().match(meter.version)) && (meter.schemaUrl === void 0 || selector.getSchemaUrlFilter().match(meter.schemaUrl));
+		}
+	};
+	exports.ViewRegistry = ViewRegistry;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/InstrumentDescriptor.js
+var require_InstrumentDescriptor = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.isValidName = exports.isDescriptorCompatibleWith = exports.createInstrumentDescriptorWithView = exports.createInstrumentDescriptor = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const utils_1 = require_utils$3();
+	function createInstrumentDescriptor(name, type, options) {
+		if (!isValidName(name)) api_1.diag.warn(`Invalid metric name: "${name}". The metric name should be a ASCII string with a length no greater than 255 characters.`);
+		return {
+			name,
+			type,
+			description: options?.description ?? "",
+			unit: options?.unit ?? "",
+			valueType: options?.valueType ?? api_1.ValueType.DOUBLE,
+			advice: options?.advice ?? {}
+		};
+	}
+	exports.createInstrumentDescriptor = createInstrumentDescriptor;
+	function createInstrumentDescriptorWithView(view, instrument) {
+		return {
+			name: view.name ?? instrument.name,
+			description: view.description ?? instrument.description,
+			type: instrument.type,
+			unit: instrument.unit,
+			valueType: instrument.valueType,
+			advice: instrument.advice
+		};
+	}
+	exports.createInstrumentDescriptorWithView = createInstrumentDescriptorWithView;
+	function isDescriptorCompatibleWith(descriptor, otherDescriptor) {
+		return (0, utils_1.equalsCaseInsensitive)(descriptor.name, otherDescriptor.name) && descriptor.unit === otherDescriptor.unit && descriptor.type === otherDescriptor.type && descriptor.valueType === otherDescriptor.valueType;
+	}
+	exports.isDescriptorCompatibleWith = isDescriptorCompatibleWith;
+	const NAME_REGEXP = /^[a-z][a-z0-9_.\-/]{0,254}$/i;
+	function isValidName(name) {
+		return NAME_REGEXP.test(name);
+	}
+	exports.isValidName = isValidName;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/Instruments.js
+var require_Instruments = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.isObservableInstrument = exports.ObservableUpDownCounterInstrument = exports.ObservableGaugeInstrument = exports.ObservableCounterInstrument = exports.ObservableInstrument = exports.HistogramInstrument = exports.GaugeInstrument = exports.CounterInstrument = exports.UpDownCounterInstrument = exports.SyncInstrument = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	var SyncInstrument = class {
+		_writableMetricStorage;
+		_descriptor;
+		constructor(writableMetricStorage, descriptor) {
+			this._writableMetricStorage = writableMetricStorage;
+			this._descriptor = descriptor;
+		}
+		_record(value, attributes = {}, context) {
+			if (typeof value !== "number") {
+				api_1.diag.warn(`non-number value provided to metric ${this._descriptor.name}: ${value}`);
+				return;
+			}
+			if (this._descriptor.valueType === api_1.ValueType.INT && !Number.isInteger(value)) {
+				api_1.diag.warn(`INT value type cannot accept a floating-point value for ${this._descriptor.name}, ignoring the fractional digits.`);
+				value = Math.trunc(value);
+				if (!Number.isInteger(value)) return;
+			}
+			this._writableMetricStorage.record(value, attributes, context, Date.now());
+		}
+	};
+	exports.SyncInstrument = SyncInstrument;
+	/**
+	* The class implements {@link UpDownCounter} interface.
+	*/
+	var UpDownCounterInstrument = class extends SyncInstrument {
+		/**
+		* Increment value of counter by the input. Inputs may be negative.
+		*/
+		add(value, attributes, ctx) {
+			this._record(value, attributes, ctx);
+		}
+	};
+	exports.UpDownCounterInstrument = UpDownCounterInstrument;
+	/**
+	* The class implements {@link Counter} interface.
+	*/
+	var CounterInstrument = class extends SyncInstrument {
+		/**
+		* Increment value of counter by the input. Inputs may not be negative.
+		*/
+		add(value, attributes, ctx) {
+			if (value < 0) {
+				api_1.diag.warn(`negative value provided to counter ${this._descriptor.name}: ${value}`);
+				return;
+			}
+			this._record(value, attributes, ctx);
+		}
+	};
+	exports.CounterInstrument = CounterInstrument;
+	/**
+	* The class implements {@link Gauge} interface.
+	*/
+	var GaugeInstrument = class extends SyncInstrument {
+		/**
+		* Records a measurement.
+		*/
+		record(value, attributes, ctx) {
+			this._record(value, attributes, ctx);
+		}
+	};
+	exports.GaugeInstrument = GaugeInstrument;
+	/**
+	* The class implements {@link Histogram} interface.
+	*/
+	var HistogramInstrument = class extends SyncInstrument {
+		/**
+		* Records a measurement. Value of the measurement must not be negative.
+		*/
+		record(value, attributes, ctx) {
+			if (value < 0) {
+				api_1.diag.warn(`negative value provided to histogram ${this._descriptor.name}: ${value}`);
+				return;
+			}
+			this._record(value, attributes, ctx);
+		}
+	};
+	exports.HistogramInstrument = HistogramInstrument;
+	var ObservableInstrument = class {
+		/** @internal */
+		_metricStorages;
+		/** @internal */
+		_descriptor;
+		_observableRegistry;
+		constructor(descriptor, metricStorages, observableRegistry) {
+			this._descriptor = descriptor;
+			this._metricStorages = metricStorages;
+			this._observableRegistry = observableRegistry;
+		}
+		/**
+		* @see {Observable.addCallback}
+		*/
+		addCallback(callback) {
+			this._observableRegistry.addCallback(callback, this);
+		}
+		/**
+		* @see {Observable.removeCallback}
+		*/
+		removeCallback(callback) {
+			this._observableRegistry.removeCallback(callback, this);
+		}
+	};
+	exports.ObservableInstrument = ObservableInstrument;
+	var ObservableCounterInstrument = class extends ObservableInstrument {};
+	exports.ObservableCounterInstrument = ObservableCounterInstrument;
+	var ObservableGaugeInstrument = class extends ObservableInstrument {};
+	exports.ObservableGaugeInstrument = ObservableGaugeInstrument;
+	var ObservableUpDownCounterInstrument = class extends ObservableInstrument {};
+	exports.ObservableUpDownCounterInstrument = ObservableUpDownCounterInstrument;
+	function isObservableInstrument(it) {
+		return it instanceof ObservableInstrument;
+	}
+	exports.isObservableInstrument = isObservableInstrument;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/Meter.js
+var require_Meter = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.Meter = void 0;
+	const InstrumentDescriptor_1 = require_InstrumentDescriptor();
+	const Instruments_1 = require_Instruments();
+	const MetricData_1 = require_MetricData();
+	/**
+	* This class implements the {@link IMeter} interface.
+	*/
+	var Meter = class {
+		_meterSharedState;
+		constructor(meterSharedState) {
+			this._meterSharedState = meterSharedState;
+		}
+		/**
+		* Create a {@link Gauge} instrument.
+		*/
+		createGauge(name, options) {
+			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.GAUGE, options);
+			const storage = this._meterSharedState.registerMetricStorage(descriptor);
+			return new Instruments_1.GaugeInstrument(storage, descriptor);
+		}
+		/**
+		* Create a {@link Histogram} instrument.
+		*/
+		createHistogram(name, options) {
+			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.HISTOGRAM, options);
+			const storage = this._meterSharedState.registerMetricStorage(descriptor);
+			return new Instruments_1.HistogramInstrument(storage, descriptor);
+		}
+		/**
+		* Create a {@link Counter} instrument.
+		*/
+		createCounter(name, options) {
+			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.COUNTER, options);
+			const storage = this._meterSharedState.registerMetricStorage(descriptor);
+			return new Instruments_1.CounterInstrument(storage, descriptor);
+		}
+		/**
+		* Create a {@link UpDownCounter} instrument.
+		*/
+		createUpDownCounter(name, options) {
+			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.UP_DOWN_COUNTER, options);
+			const storage = this._meterSharedState.registerMetricStorage(descriptor);
+			return new Instruments_1.UpDownCounterInstrument(storage, descriptor);
+		}
+		/**
+		* Create a {@link ObservableGauge} instrument.
+		*/
+		createObservableGauge(name, options) {
+			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.OBSERVABLE_GAUGE, options);
+			const storages = this._meterSharedState.registerAsyncMetricStorage(descriptor);
+			return new Instruments_1.ObservableGaugeInstrument(descriptor, storages, this._meterSharedState.observableRegistry);
+		}
+		/**
+		* Create a {@link ObservableCounter} instrument.
+		*/
+		createObservableCounter(name, options) {
+			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.OBSERVABLE_COUNTER, options);
+			const storages = this._meterSharedState.registerAsyncMetricStorage(descriptor);
+			return new Instruments_1.ObservableCounterInstrument(descriptor, storages, this._meterSharedState.observableRegistry);
+		}
+		/**
+		* Create a {@link ObservableUpDownCounter} instrument.
+		*/
+		createObservableUpDownCounter(name, options) {
+			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER, options);
+			const storages = this._meterSharedState.registerAsyncMetricStorage(descriptor);
+			return new Instruments_1.ObservableUpDownCounterInstrument(descriptor, storages, this._meterSharedState.observableRegistry);
+		}
+		/**
+		* @see {@link Meter.addBatchObservableCallback}
+		*/
+		addBatchObservableCallback(callback, observables) {
+			this._meterSharedState.observableRegistry.addBatchCallback(callback, observables);
+		}
+		/**
+		* @see {@link Meter.removeBatchObservableCallback}
+		*/
+		removeBatchObservableCallback(callback, observables) {
+			this._meterSharedState.observableRegistry.removeBatchCallback(callback, observables);
+		}
+	};
+	exports.Meter = Meter;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MetricStorage.js
+var require_MetricStorage = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MetricStorage = void 0;
+	const InstrumentDescriptor_1 = require_InstrumentDescriptor();
+	/**
+	* Internal interface.
+	*
+	* Represents a storage from which we can collect metrics.
+	*/
+	var MetricStorage = class {
+		_instrumentDescriptor;
+		constructor(instrumentDescriptor) {
+			this._instrumentDescriptor = instrumentDescriptor;
+		}
+		getInstrumentDescriptor() {
+			return this._instrumentDescriptor;
+		}
+		updateDescription(description) {
+			this._instrumentDescriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(this._instrumentDescriptor.name, this._instrumentDescriptor.type, {
+				description,
+				valueType: this._instrumentDescriptor.valueType,
+				unit: this._instrumentDescriptor.unit,
+				advice: this._instrumentDescriptor.advice
+			});
+		}
+	};
+	exports.MetricStorage = MetricStorage;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/HashMap.js
+var require_HashMap = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.AttributeHashMap = exports.HashMap = void 0;
+	const utils_1 = require_utils$3();
+	var HashMap = class {
+		_valueMap = /* @__PURE__ */ new Map();
+		_keyMap = /* @__PURE__ */ new Map();
+		_hash;
+		constructor(hash) {
+			this._hash = hash;
+		}
+		get(key, hashCode) {
+			hashCode ??= this._hash(key);
+			return this._valueMap.get(hashCode);
+		}
+		getOrDefault(key, defaultFactory) {
+			const hash = this._hash(key);
+			if (this._valueMap.has(hash)) return this._valueMap.get(hash);
+			const val = defaultFactory();
+			if (!this._keyMap.has(hash)) this._keyMap.set(hash, key);
+			this._valueMap.set(hash, val);
+			return val;
+		}
+		set(key, value, hashCode) {
+			hashCode ??= this._hash(key);
+			if (!this._keyMap.has(hashCode)) this._keyMap.set(hashCode, key);
+			this._valueMap.set(hashCode, value);
+		}
+		has(key, hashCode) {
+			hashCode ??= this._hash(key);
+			return this._valueMap.has(hashCode);
+		}
+		*keys() {
+			const keyIterator = this._keyMap.entries();
+			let next = keyIterator.next();
+			while (next.done !== true) {
+				yield [next.value[1], next.value[0]];
+				next = keyIterator.next();
+			}
+		}
+		*entries() {
+			const valueIterator = this._valueMap.entries();
+			let next = valueIterator.next();
+			while (next.done !== true) {
+				yield [
+					this._keyMap.get(next.value[0]),
+					next.value[1],
+					next.value[0]
+				];
+				next = valueIterator.next();
+			}
+		}
+		get size() {
+			return this._valueMap.size;
+		}
+	};
+	exports.HashMap = HashMap;
+	var AttributeHashMap = class extends HashMap {
+		constructor() {
+			super(utils_1.hashAttributes);
+		}
+	};
+	exports.AttributeHashMap = AttributeHashMap;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/DeltaMetricProcessor.js
+var require_DeltaMetricProcessor = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.DeltaMetricProcessor = void 0;
+	const core_1 = require_src$8();
+	const utils_1 = require_utils$3();
+	const HashMap_1 = require_HashMap();
+	/**
+	* Internal interface.
+	*
+	* Allows synchronous collection of metrics. This processor should allow
+	* allocation of new aggregation cells for metrics and convert cumulative
+	* recording to delta data points.
+	*/
+	var DeltaMetricProcessor = class {
+		_activeCollectionStorage = new HashMap_1.AttributeHashMap();
+		_cumulativeMemoStorage = new HashMap_1.AttributeHashMap();
+		_cardinalityLimit;
+		_overflowAttributes = { "otel.metric.overflow": true };
+		_overflowHashCode;
+		_aggregator;
+		constructor(aggregator, aggregationCardinalityLimit) {
+			this._aggregator = aggregator;
+			this._cardinalityLimit = (aggregationCardinalityLimit ?? 2e3) - 1;
+			this._overflowHashCode = (0, utils_1.hashAttributes)(this._overflowAttributes);
+		}
+		record(value, attributes, collectionTime) {
+			let accumulation = this._activeCollectionStorage.get(attributes);
+			if (!accumulation) {
+				const hrTime = (0, core_1.millisToHrTime)(collectionTime);
+				if (this._activeCollectionStorage.size >= this._cardinalityLimit) {
+					this._activeCollectionStorage.getOrDefault(this._overflowAttributes, () => this._aggregator.createAccumulation(hrTime))?.record(value);
+					return;
+				}
+				accumulation = this._aggregator.createAccumulation(hrTime);
+				this._activeCollectionStorage.set(attributes, accumulation);
+			}
+			accumulation?.record(value);
+		}
+		batchCumulate(measurements, collectionTime) {
+			for (const [originalAttributes, value, originalHashCode] of measurements.entries()) {
+				let attributes = originalAttributes;
+				let hashCode = originalHashCode;
+				const accumulation = this._aggregator.createAccumulation(collectionTime);
+				accumulation?.record(value);
+				let delta = accumulation;
+				if (this._cumulativeMemoStorage.has(attributes, hashCode)) {
+					const previous = this._cumulativeMemoStorage.get(attributes, hashCode);
+					delta = this._aggregator.diff(previous, accumulation);
+				} else if (this._cumulativeMemoStorage.size >= this._cardinalityLimit) {
+					attributes = this._overflowAttributes;
+					hashCode = this._overflowHashCode;
+					if (this._cumulativeMemoStorage.has(attributes, hashCode)) {
+						const previous = this._cumulativeMemoStorage.get(attributes, hashCode);
+						delta = this._aggregator.diff(previous, accumulation);
+					}
+				}
+				if (this._activeCollectionStorage.has(attributes, hashCode)) {
+					const active = this._activeCollectionStorage.get(attributes, hashCode);
+					delta = this._aggregator.merge(active, delta);
+				}
+				this._cumulativeMemoStorage.set(attributes, accumulation, hashCode);
+				this._activeCollectionStorage.set(attributes, delta, hashCode);
+			}
+		}
+		/**
+		* Returns a collection of delta metrics. Start time is the when first
+		* time event collected.
+		*/
+		collect() {
+			const unreportedDelta = this._activeCollectionStorage;
+			this._activeCollectionStorage = new HashMap_1.AttributeHashMap();
+			return unreportedDelta;
+		}
+	};
+	exports.DeltaMetricProcessor = DeltaMetricProcessor;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/TemporalMetricProcessor.js
+var require_TemporalMetricProcessor = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.TemporalMetricProcessor = void 0;
+	const AggregationTemporality_1 = require_AggregationTemporality();
+	const HashMap_1 = require_HashMap();
+	/**
+	* Internal interface.
+	*
+	* Provides unique reporting for each collector. Allows synchronous collection
+	* of metrics and reports given temporality values.
+	*/
+	var TemporalMetricProcessor = class TemporalMetricProcessor {
+		_aggregator;
+		_unreportedAccumulations = /* @__PURE__ */ new Map();
+		_reportHistory = /* @__PURE__ */ new Map();
+		constructor(aggregator, collectorHandles) {
+			this._aggregator = aggregator;
+			collectorHandles.forEach((handle) => {
+				this._unreportedAccumulations.set(handle, []);
+			});
+		}
+		/**
+		* Builds the {@link MetricData} streams to report against a specific MetricCollector.
+		* @param collector The information of the MetricCollector.
+		* @param collectors The registered collectors.
+		* @param instrumentDescriptor The instrumentation descriptor that these metrics generated with.
+		* @param currentAccumulations The current accumulation of metric data from instruments.
+		* @param collectionTime The current collection timestamp.
+		* @returns The {@link MetricData} points or `null`.
+		*/
+		buildMetrics(collector, instrumentDescriptor, currentAccumulations, collectionTime) {
+			this._stashAccumulations(currentAccumulations);
+			const unreportedAccumulations = this._getMergedUnreportedAccumulations(collector);
+			let result = unreportedAccumulations;
+			let aggregationTemporality;
+			if (this._reportHistory.has(collector)) {
+				const last = this._reportHistory.get(collector);
+				const lastCollectionTime = last.collectionTime;
+				aggregationTemporality = last.aggregationTemporality;
+				if (aggregationTemporality === AggregationTemporality_1.AggregationTemporality.CUMULATIVE) result = TemporalMetricProcessor.merge(last.accumulations, unreportedAccumulations, this._aggregator);
+				else result = TemporalMetricProcessor.calibrateStartTime(last.accumulations, unreportedAccumulations, lastCollectionTime);
+			} else aggregationTemporality = collector.selectAggregationTemporality(instrumentDescriptor.type);
+			this._reportHistory.set(collector, {
+				accumulations: result,
+				collectionTime,
+				aggregationTemporality
+			});
+			const accumulationRecords = AttributesMapToAccumulationRecords(result);
+			if (accumulationRecords.length === 0) return;
+			return this._aggregator.toMetricData(instrumentDescriptor, aggregationTemporality, accumulationRecords, collectionTime);
+		}
+		_stashAccumulations(currentAccumulation) {
+			const registeredCollectors = this._unreportedAccumulations.keys();
+			for (const collector of registeredCollectors) {
+				let stash = this._unreportedAccumulations.get(collector);
+				if (stash === void 0) {
+					stash = [];
+					this._unreportedAccumulations.set(collector, stash);
+				}
+				stash.push(currentAccumulation);
+			}
+		}
+		_getMergedUnreportedAccumulations(collector) {
+			let result = new HashMap_1.AttributeHashMap();
+			const unreportedList = this._unreportedAccumulations.get(collector);
+			this._unreportedAccumulations.set(collector, []);
+			if (unreportedList === void 0) return result;
+			for (const it of unreportedList) result = TemporalMetricProcessor.merge(result, it, this._aggregator);
+			return result;
+		}
+		static merge(last, current, aggregator) {
+			const result = last;
+			const iterator = current.entries();
+			let next = iterator.next();
+			while (next.done !== true) {
+				const [key, record, hash] = next.value;
+				if (last.has(key, hash)) {
+					const lastAccumulation = last.get(key, hash);
+					const accumulation = aggregator.merge(lastAccumulation, record);
+					result.set(key, accumulation, hash);
+				} else result.set(key, record, hash);
+				next = iterator.next();
+			}
+			return result;
+		}
+		/**
+		* Calibrate the reported metric streams' startTime to lastCollectionTime. Leaves
+		* the new stream to be the initial observation time unchanged.
+		*/
+		static calibrateStartTime(last, current, lastCollectionTime) {
+			for (const [key, hash] of last.keys()) current.get(key, hash)?.setStartTime(lastCollectionTime);
+			return current;
+		}
+	};
+	exports.TemporalMetricProcessor = TemporalMetricProcessor;
+	function AttributesMapToAccumulationRecords(map) {
+		return Array.from(map.entries());
+	}
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/AsyncMetricStorage.js
+var require_AsyncMetricStorage = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.AsyncMetricStorage = void 0;
+	const MetricStorage_1 = require_MetricStorage();
+	const DeltaMetricProcessor_1 = require_DeltaMetricProcessor();
+	const TemporalMetricProcessor_1 = require_TemporalMetricProcessor();
+	const HashMap_1 = require_HashMap();
+	/**
+	* Internal interface.
+	*
+	* Stores and aggregates {@link MetricData} for asynchronous instruments.
+	*/
+	var AsyncMetricStorage = class extends MetricStorage_1.MetricStorage {
+		_aggregationCardinalityLimit;
+		_deltaMetricStorage;
+		_temporalMetricStorage;
+		_attributesProcessor;
+		constructor(_instrumentDescriptor, aggregator, attributesProcessor, collectorHandles, aggregationCardinalityLimit) {
+			super(_instrumentDescriptor);
+			this._aggregationCardinalityLimit = aggregationCardinalityLimit;
+			this._deltaMetricStorage = new DeltaMetricProcessor_1.DeltaMetricProcessor(aggregator, this._aggregationCardinalityLimit);
+			this._temporalMetricStorage = new TemporalMetricProcessor_1.TemporalMetricProcessor(aggregator, collectorHandles);
+			this._attributesProcessor = attributesProcessor;
+		}
+		record(measurements, observationTime) {
+			if (this._attributesProcessor === void 0) {
+				this._deltaMetricStorage.batchCumulate(measurements, observationTime);
+				return;
+			}
+			const processed = new HashMap_1.AttributeHashMap();
+			for (const [attributes, value] of measurements.entries()) processed.set(this._attributesProcessor.process(attributes), value);
+			this._deltaMetricStorage.batchCumulate(processed, observationTime);
+		}
+		/**
+		* Collects the metrics from this storage. The ObservableCallback is invoked
+		* during the collection.
+		*
+		* Note: This is a stateful operation and may reset any interval-related
+		* state for the MetricCollector.
+		*/
+		collect(collector, collectionTime) {
+			const accumulations = this._deltaMetricStorage.collect();
+			return this._temporalMetricStorage.buildMetrics(collector, this._instrumentDescriptor, accumulations, collectionTime);
+		}
+	};
+	exports.AsyncMetricStorage = AsyncMetricStorage;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/RegistrationConflicts.js
+var require_RegistrationConflicts = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.getConflictResolutionRecipe = exports.getDescriptionResolutionRecipe = exports.getTypeConflictResolutionRecipe = exports.getUnitConflictResolutionRecipe = exports.getValueTypeConflictResolutionRecipe = exports.getIncompatibilityDetails = void 0;
+	function getIncompatibilityDetails(existing, otherDescriptor) {
+		let incompatibility = "";
+		if (existing.unit !== otherDescriptor.unit) incompatibility += `\t- Unit '${existing.unit}' does not match '${otherDescriptor.unit}'\n`;
+		if (existing.type !== otherDescriptor.type) incompatibility += `\t- Type '${existing.type}' does not match '${otherDescriptor.type}'\n`;
+		if (existing.valueType !== otherDescriptor.valueType) incompatibility += `\t- Value Type '${existing.valueType}' does not match '${otherDescriptor.valueType}'\n`;
+		if (existing.description !== otherDescriptor.description) incompatibility += `\t- Description '${existing.description}' does not match '${otherDescriptor.description}'\n`;
+		return incompatibility;
+	}
+	exports.getIncompatibilityDetails = getIncompatibilityDetails;
+	function getValueTypeConflictResolutionRecipe(existing, otherDescriptor) {
+		return `\t- use valueType '${existing.valueType}' on instrument creation or use an instrument name other than '${otherDescriptor.name}'`;
+	}
+	exports.getValueTypeConflictResolutionRecipe = getValueTypeConflictResolutionRecipe;
+	function getUnitConflictResolutionRecipe(existing, otherDescriptor) {
+		return `\t- use unit '${existing.unit}' on instrument creation or use an instrument name other than '${otherDescriptor.name}'`;
+	}
+	exports.getUnitConflictResolutionRecipe = getUnitConflictResolutionRecipe;
+	function getTypeConflictResolutionRecipe(existing, otherDescriptor) {
+		const selector = {
+			name: otherDescriptor.name,
+			type: otherDescriptor.type,
+			unit: otherDescriptor.unit
+		};
+		const selectorString = JSON.stringify(selector);
+		return `\t- create a new view with a name other than '${existing.name}' and InstrumentSelector '${selectorString}'`;
+	}
+	exports.getTypeConflictResolutionRecipe = getTypeConflictResolutionRecipe;
+	function getDescriptionResolutionRecipe(existing, otherDescriptor) {
+		const selector = {
+			name: otherDescriptor.name,
+			type: otherDescriptor.type,
+			unit: otherDescriptor.unit
+		};
+		const selectorString = JSON.stringify(selector);
+		return `\t- create a new view with a name other than '${existing.name}' and InstrumentSelector '${selectorString}'
+    \t- OR - create a new view with the name ${existing.name} and description '${existing.description}' and InstrumentSelector ${selectorString}
+    \t- OR - create a new view with the name ${otherDescriptor.name} and description '${existing.description}' and InstrumentSelector ${selectorString}`;
+	}
+	exports.getDescriptionResolutionRecipe = getDescriptionResolutionRecipe;
+	function getConflictResolutionRecipe(existing, otherDescriptor) {
+		if (existing.valueType !== otherDescriptor.valueType) return getValueTypeConflictResolutionRecipe(existing, otherDescriptor);
+		if (existing.unit !== otherDescriptor.unit) return getUnitConflictResolutionRecipe(existing, otherDescriptor);
+		if (existing.type !== otherDescriptor.type) return getTypeConflictResolutionRecipe(existing, otherDescriptor);
+		if (existing.description !== otherDescriptor.description) return getDescriptionResolutionRecipe(existing, otherDescriptor);
+		return "";
+	}
+	exports.getConflictResolutionRecipe = getConflictResolutionRecipe;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MetricStorageRegistry.js
+var require_MetricStorageRegistry = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MetricStorageRegistry = void 0;
+	const InstrumentDescriptor_1 = require_InstrumentDescriptor();
+	const api = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const RegistrationConflicts_1 = require_RegistrationConflicts();
+	/**
+	* Internal class for storing {@link MetricStorage}
+	*/
+	var MetricStorageRegistry = class MetricStorageRegistry {
+		_sharedRegistry = /* @__PURE__ */ new Map();
+		_perCollectorRegistry = /* @__PURE__ */ new Map();
+		static create() {
+			return new MetricStorageRegistry();
+		}
+		getStorages(collector) {
+			let storages = [];
+			for (const metricStorages of this._sharedRegistry.values()) storages = storages.concat(metricStorages);
+			const perCollectorStorages = this._perCollectorRegistry.get(collector);
+			if (perCollectorStorages != null) for (const metricStorages of perCollectorStorages.values()) storages = storages.concat(metricStorages);
+			return storages;
+		}
+		register(storage) {
+			this._registerStorage(storage, this._sharedRegistry);
+		}
+		registerForCollector(collector, storage) {
+			let storageMap = this._perCollectorRegistry.get(collector);
+			if (storageMap == null) {
+				storageMap = /* @__PURE__ */ new Map();
+				this._perCollectorRegistry.set(collector, storageMap);
+			}
+			this._registerStorage(storage, storageMap);
+		}
+		findOrUpdateCompatibleStorage(expectedDescriptor) {
+			const storages = this._sharedRegistry.get(expectedDescriptor.name);
+			if (storages === void 0) return null;
+			return this._findOrUpdateCompatibleStorage(expectedDescriptor, storages);
+		}
+		findOrUpdateCompatibleCollectorStorage(collector, expectedDescriptor) {
+			const storageMap = this._perCollectorRegistry.get(collector);
+			if (storageMap === void 0) return null;
+			const storages = storageMap.get(expectedDescriptor.name);
+			if (storages === void 0) return null;
+			return this._findOrUpdateCompatibleStorage(expectedDescriptor, storages);
+		}
+		_registerStorage(storage, storageMap) {
+			const descriptor = storage.getInstrumentDescriptor();
+			const storages = storageMap.get(descriptor.name);
+			if (storages === void 0) {
+				storageMap.set(descriptor.name, [storage]);
+				return;
+			}
+			storages.push(storage);
+		}
+		_findOrUpdateCompatibleStorage(expectedDescriptor, existingStorages) {
+			let compatibleStorage = null;
+			for (const existingStorage of existingStorages) {
+				const existingDescriptor = existingStorage.getInstrumentDescriptor();
+				if ((0, InstrumentDescriptor_1.isDescriptorCompatibleWith)(existingDescriptor, expectedDescriptor)) {
+					if (existingDescriptor.description !== expectedDescriptor.description) {
+						if (expectedDescriptor.description.length > existingDescriptor.description.length) existingStorage.updateDescription(expectedDescriptor.description);
+						api.diag.warn("A view or instrument with the name ", expectedDescriptor.name, " has already been registered, but has a different description and is incompatible with another registered view.\n", "Details:\n", (0, RegistrationConflicts_1.getIncompatibilityDetails)(existingDescriptor, expectedDescriptor), "The longer description will be used.\nTo resolve the conflict:", (0, RegistrationConflicts_1.getConflictResolutionRecipe)(existingDescriptor, expectedDescriptor));
+					}
+					compatibleStorage = existingStorage;
+				} else api.diag.warn("A view or instrument with the name ", expectedDescriptor.name, " has already been registered and is incompatible with another registered view.\n", "Details:\n", (0, RegistrationConflicts_1.getIncompatibilityDetails)(existingDescriptor, expectedDescriptor), "To resolve the conflict:\n", (0, RegistrationConflicts_1.getConflictResolutionRecipe)(existingDescriptor, expectedDescriptor));
+			}
+			return compatibleStorage;
+		}
+	};
+	exports.MetricStorageRegistry = MetricStorageRegistry;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MultiWritableMetricStorage.js
+var require_MultiWritableMetricStorage = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MultiMetricStorage = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	/**
+	* Internal interface.
+	*/
+	var MultiMetricStorage = class {
+		_backingStorages;
+		hasAttributeProcessor;
+		constructor(backingStorages) {
+			this._backingStorages = backingStorages;
+			this.hasAttributeProcessor = backingStorages.some((s) => s.hasAttributeProcessor);
+		}
+		record(value, attributes, context, recordTime) {
+			if (this.hasAttributeProcessor && context === void 0) context = api_1.context.active();
+			const storages = this._backingStorages;
+			for (let i = 0; i < storages.length; i++) storages[i].record(value, attributes, context, recordTime);
+		}
+	};
+	exports.MultiMetricStorage = MultiMetricStorage;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/ObservableResult.js
+var require_ObservableResult = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.BatchObservableResultImpl = exports.ObservableResultImpl = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const HashMap_1 = require_HashMap();
+	const Instruments_1 = require_Instruments();
+	/**
+	* The class implements {@link ObservableResult} interface.
+	*/
+	var ObservableResultImpl = class {
+		/**
+		* @internal
+		*/
+		_buffer = new HashMap_1.AttributeHashMap();
+		_instrumentName;
+		_valueType;
+		constructor(instrumentName, valueType) {
+			this._instrumentName = instrumentName;
+			this._valueType = valueType;
+		}
+		/**
+		* Observe a measurement of the value associated with the given attributes.
+		*/
+		observe(value, attributes = {}) {
+			if (typeof value !== "number") {
+				api_1.diag.warn(`non-number value provided to metric ${this._instrumentName}: ${value}`);
+				return;
+			}
+			if (this._valueType === api_1.ValueType.INT && !Number.isInteger(value)) {
+				api_1.diag.warn(`INT value type cannot accept a floating-point value for ${this._instrumentName}, ignoring the fractional digits.`);
+				value = Math.trunc(value);
+				if (!Number.isInteger(value)) return;
+			}
+			this._buffer.set(attributes, value);
+		}
+	};
+	exports.ObservableResultImpl = ObservableResultImpl;
+	/**
+	* The class implements {@link BatchObservableCallback} interface.
+	*/
+	var BatchObservableResultImpl = class {
+		/**
+		* @internal
+		*/
+		_buffer = /* @__PURE__ */ new Map();
+		/**
+		* Observe a measurement of the value associated with the given attributes.
+		*/
+		observe(metric, value, attributes = {}) {
+			if (!(0, Instruments_1.isObservableInstrument)(metric)) return;
+			let map = this._buffer.get(metric);
+			if (map == null) {
+				map = new HashMap_1.AttributeHashMap();
+				this._buffer.set(metric, map);
+			}
+			if (typeof value !== "number") {
+				api_1.diag.warn(`non-number value provided to metric ${metric._descriptor.name}: ${value}`);
+				return;
+			}
+			if (metric._descriptor.valueType === api_1.ValueType.INT && !Number.isInteger(value)) {
+				api_1.diag.warn(`INT value type cannot accept a floating-point value for ${metric._descriptor.name}, ignoring the fractional digits.`);
+				value = Math.trunc(value);
+				if (!Number.isInteger(value)) return;
+			}
+			map.set(attributes, value);
+		}
+	};
+	exports.BatchObservableResultImpl = BatchObservableResultImpl;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/ObservableRegistry.js
+var require_ObservableRegistry = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ObservableRegistry = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const Instruments_1 = require_Instruments();
+	const ObservableResult_1 = require_ObservableResult();
+	const utils_1 = require_utils$3();
+	/**
+	* An internal interface for managing ObservableCallbacks.
+	*
+	* Every registered callback associated with a set of instruments are be evaluated
+	* exactly once during collection prior to reading data for that instrument.
+	*/
+	var ObservableRegistry = class {
+		_callbacks = [];
+		_batchCallbacks = [];
+		addCallback(callback, instrument) {
+			if (this._findCallback(callback, instrument) >= 0) return;
+			this._callbacks.push({
+				callback,
+				instrument
+			});
+		}
+		removeCallback(callback, instrument) {
+			const idx = this._findCallback(callback, instrument);
+			if (idx < 0) return;
+			this._callbacks.splice(idx, 1);
+		}
+		addBatchCallback(callback, instruments) {
+			const observableInstruments = new Set(instruments.filter(Instruments_1.isObservableInstrument));
+			if (observableInstruments.size === 0) {
+				api_1.diag.error("BatchObservableCallback is not associated with valid instruments", instruments);
+				return;
+			}
+			if (this._findBatchCallback(callback, observableInstruments) >= 0) return;
+			this._batchCallbacks.push({
+				callback,
+				instruments: observableInstruments
+			});
+		}
+		removeBatchCallback(callback, instruments) {
+			const observableInstruments = new Set(instruments.filter(Instruments_1.isObservableInstrument));
+			const idx = this._findBatchCallback(callback, observableInstruments);
+			if (idx < 0) return;
+			this._batchCallbacks.splice(idx, 1);
+		}
+		/**
+		* @returns a promise of rejected reasons for invoking callbacks.
+		*/
+		async observe(collectionTime, timeoutMillis) {
+			const callbackFutures = this._observeCallbacks(collectionTime, timeoutMillis);
+			const batchCallbackFutures = this._observeBatchCallbacks(collectionTime, timeoutMillis);
+			return (await Promise.allSettled([...callbackFutures, ...batchCallbackFutures])).filter((result) => result.status === "rejected").map((result) => result.reason);
+		}
+		_observeCallbacks(observationTime, timeoutMillis) {
+			return this._callbacks.map(async ({ callback, instrument }) => {
+				const observableResult = new ObservableResult_1.ObservableResultImpl(instrument._descriptor.name, instrument._descriptor.valueType);
+				let callPromise = Promise.resolve(callback(observableResult));
+				if (timeoutMillis != null) callPromise = (0, utils_1.callWithTimeout)(callPromise, timeoutMillis);
+				await callPromise;
+				instrument._metricStorages.forEach((metricStorage) => {
+					metricStorage.record(observableResult._buffer, observationTime);
+				});
+			});
+		}
+		_observeBatchCallbacks(observationTime, timeoutMillis) {
+			return this._batchCallbacks.map(async ({ callback, instruments }) => {
+				const observableResult = new ObservableResult_1.BatchObservableResultImpl();
+				let callPromise = Promise.resolve(callback(observableResult));
+				if (timeoutMillis != null) callPromise = (0, utils_1.callWithTimeout)(callPromise, timeoutMillis);
+				await callPromise;
+				instruments.forEach((instrument) => {
+					const buffer = observableResult._buffer.get(instrument);
+					if (buffer == null) return;
+					instrument._metricStorages.forEach((metricStorage) => {
+						metricStorage.record(buffer, observationTime);
+					});
+				});
+			});
+		}
+		_findCallback(callback, instrument) {
+			return this._callbacks.findIndex((record) => {
+				return record.callback === callback && record.instrument === instrument;
+			});
+		}
+		_findBatchCallback(callback, instruments) {
+			return this._batchCallbacks.findIndex((record) => {
+				return record.callback === callback && (0, utils_1.setEquals)(record.instruments, instruments);
+			});
+		}
+	};
+	exports.ObservableRegistry = ObservableRegistry;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/SyncMetricStorage.js
+var require_SyncMetricStorage = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.SyncMetricStorage = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const MetricStorage_1 = require_MetricStorage();
+	const DeltaMetricProcessor_1 = require_DeltaMetricProcessor();
+	const TemporalMetricProcessor_1 = require_TemporalMetricProcessor();
+	/**
+	* Internal interface.
+	*
+	* Stores and aggregates {@link MetricData} for synchronous instruments.
+	*/
+	var SyncMetricStorage = class extends MetricStorage_1.MetricStorage {
+		_aggregationCardinalityLimit;
+		_deltaMetricStorage;
+		_temporalMetricStorage;
+		_attributesProcessor;
+		constructor(instrumentDescriptor, aggregator, attributesProcessor, collectorHandles, aggregationCardinalityLimit) {
+			super(instrumentDescriptor);
+			this._aggregationCardinalityLimit = aggregationCardinalityLimit;
+			this._deltaMetricStorage = new DeltaMetricProcessor_1.DeltaMetricProcessor(aggregator, this._aggregationCardinalityLimit);
+			this._temporalMetricStorage = new TemporalMetricProcessor_1.TemporalMetricProcessor(aggregator, collectorHandles);
+			this._attributesProcessor = attributesProcessor;
+			this.hasAttributeProcessor = attributesProcessor !== void 0;
+		}
+		hasAttributeProcessor;
+		record(value, attributes, context, recordTime) {
+			if (this._attributesProcessor !== void 0) attributes = this._attributesProcessor.process(attributes, context ?? api_1.context.active());
+			this._deltaMetricStorage.record(value, attributes, recordTime);
+		}
+		/**
+		* Collects the metrics from this storage.
+		*
+		* Note: This is a stateful operation and may reset any interval-related
+		* state for the MetricCollector.
+		*/
+		collect(collector, collectionTime) {
+			const accumulations = this._deltaMetricStorage.collect();
+			return this._temporalMetricStorage.buildMetrics(collector, this._instrumentDescriptor, accumulations, collectionTime);
+		}
+	};
+	exports.SyncMetricStorage = SyncMetricStorage;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MeterSharedState.js
+var require_MeterSharedState = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MeterSharedState = void 0;
+	const InstrumentDescriptor_1 = require_InstrumentDescriptor();
+	const Meter_1 = require_Meter();
+	const AsyncMetricStorage_1 = require_AsyncMetricStorage();
+	const MetricStorageRegistry_1 = require_MetricStorageRegistry();
+	const MultiWritableMetricStorage_1 = require_MultiWritableMetricStorage();
+	const ObservableRegistry_1 = require_ObservableRegistry();
+	const SyncMetricStorage_1 = require_SyncMetricStorage();
+	/**
+	* An internal record for shared meter provider states.
+	*/
+	var MeterSharedState = class {
+		metricStorageRegistry = new MetricStorageRegistry_1.MetricStorageRegistry();
+		observableRegistry = new ObservableRegistry_1.ObservableRegistry();
+		meter;
+		_meterProviderSharedState;
+		_instrumentationScope;
+		constructor(meterProviderSharedState, instrumentationScope) {
+			this.meter = new Meter_1.Meter(this);
+			this._meterProviderSharedState = meterProviderSharedState;
+			this._instrumentationScope = instrumentationScope;
+		}
+		registerMetricStorage(descriptor) {
+			const storages = this._registerMetricStorage(descriptor, SyncMetricStorage_1.SyncMetricStorage);
+			if (storages.length === 1) return storages[0];
+			return new MultiWritableMetricStorage_1.MultiMetricStorage(storages);
+		}
+		registerAsyncMetricStorage(descriptor) {
+			return this._registerMetricStorage(descriptor, AsyncMetricStorage_1.AsyncMetricStorage);
+		}
+		/**
+		* @param collector opaque handle of {@link MetricCollector} which initiated the collection.
+		* @param collectionTime the HrTime at which the collection was initiated.
+		* @param options options for collection.
+		* @returns the list of metric data collected.
+		*/
+		async collect(collector, collectionTime, options) {
+			/**
+			* 1. Call all observable callbacks first.
+			* 2. Collect metric result for the collector.
+			*/
+			const errors = await this.observableRegistry.observe(collectionTime, options?.timeoutMillis);
+			const storages = this.metricStorageRegistry.getStorages(collector);
+			if (storages.length === 0) return null;
+			const metricDataList = [];
+			storages.forEach((metricStorage) => {
+				const metricData = metricStorage.collect(collector, collectionTime);
+				if (metricData != null) metricDataList.push(metricData);
+			});
+			if (metricDataList.length === 0) return { errors };
+			return {
+				scopeMetrics: {
+					scope: this._instrumentationScope,
+					metrics: metricDataList
+				},
+				errors
+			};
+		}
+		_registerMetricStorage(descriptor, MetricStorageType) {
+			let storages = this._meterProviderSharedState.viewRegistry.findViews(descriptor, this._instrumentationScope).map((view) => {
+				const viewDescriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptorWithView)(view, descriptor);
+				const compatibleStorage = this.metricStorageRegistry.findOrUpdateCompatibleStorage(viewDescriptor);
+				if (compatibleStorage != null) return compatibleStorage;
+				const viewStorage = new MetricStorageType(viewDescriptor, view.aggregation.createAggregator(viewDescriptor), view.attributesProcessor, this._meterProviderSharedState.metricCollectors, view.aggregationCardinalityLimit);
+				this.metricStorageRegistry.register(viewStorage);
+				return viewStorage;
+			});
+			if (storages.length === 0) {
+				const collectorStorages = this._meterProviderSharedState.selectAggregations(descriptor.type).map(([collector, aggregation]) => {
+					const compatibleStorage = this.metricStorageRegistry.findOrUpdateCompatibleCollectorStorage(collector, descriptor);
+					if (compatibleStorage != null) return compatibleStorage;
+					const aggregator = aggregation.createAggregator(descriptor);
+					const cardinalityLimit = collector.selectCardinalityLimit(descriptor.type);
+					const storage = new MetricStorageType(descriptor, aggregator, void 0, [collector], cardinalityLimit);
+					this.metricStorageRegistry.registerForCollector(collector, storage);
+					return storage;
+				});
+				storages = storages.concat(collectorStorages);
+			}
+			return storages;
+		}
+	};
+	exports.MeterSharedState = MeterSharedState;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MeterProviderSharedState.js
+var require_MeterProviderSharedState = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MeterProviderSharedState = void 0;
+	const utils_1 = require_utils$3();
+	const ViewRegistry_1 = require_ViewRegistry();
+	const MeterSharedState_1 = require_MeterSharedState();
+	const AggregationOption_1 = require_AggregationOption();
+	/**
+	* An internal record for shared meter provider states.
+	*/
+	var MeterProviderSharedState = class {
+		viewRegistry = new ViewRegistry_1.ViewRegistry();
+		metricCollectors = [];
+		meterSharedStates = /* @__PURE__ */ new Map();
+		resource;
+		constructor(resource) {
+			this.resource = resource;
+		}
+		getMeterSharedState(instrumentationScope) {
+			const id = (0, utils_1.instrumentationScopeId)(instrumentationScope);
+			let meterSharedState = this.meterSharedStates.get(id);
+			if (meterSharedState == null) {
+				meterSharedState = new MeterSharedState_1.MeterSharedState(this, instrumentationScope);
+				this.meterSharedStates.set(id, meterSharedState);
+			}
+			return meterSharedState;
+		}
+		selectAggregations(instrumentType) {
+			const result = [];
+			for (const collector of this.metricCollectors) result.push([collector, (0, AggregationOption_1.toAggregation)(collector.selectAggregation(instrumentType))]);
+			return result;
+		}
+	};
+	exports.MeterProviderSharedState = MeterProviderSharedState;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MetricCollector.js
+var require_MetricCollector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MetricCollector = void 0;
+	const core_1 = require_src$8();
+	/**
+	* An internal opaque interface that the MetricReader receives as
+	* MetricProducer. It acts as the storage key to the internal metric stream
+	* state for each MetricReader.
+	*/
+	var MetricCollector = class {
+		_sharedState;
+		_metricReader;
+		constructor(sharedState, metricReader) {
+			this._sharedState = sharedState;
+			this._metricReader = metricReader;
+		}
+		async collect(options) {
+			const collectionTime = (0, core_1.millisToHrTime)(Date.now());
+			const scopeMetrics = [];
+			const errors = [];
+			const meterCollectionPromises = Array.from(this._sharedState.meterSharedStates.values()).map(async (meterSharedState) => {
+				const current = await meterSharedState.collect(this, collectionTime, options);
+				if (current?.scopeMetrics != null) scopeMetrics.push(current.scopeMetrics);
+				if (current?.errors != null) errors.push(...current.errors);
+			});
+			await Promise.all(meterCollectionPromises);
+			return {
+				resourceMetrics: {
+					resource: this._sharedState.resource,
+					scopeMetrics
+				},
+				errors
+			};
+		}
+		/**
+		* Delegates for MetricReader.forceFlush.
+		*/
+		async forceFlush(options) {
+			await this._metricReader.forceFlush(options);
+		}
+		/**
+		* Delegates for MetricReader.shutdown.
+		*/
+		async shutdown(options) {
+			await this._metricReader.shutdown(options);
+		}
+		selectAggregationTemporality(instrumentType) {
+			return this._metricReader.selectAggregationTemporality(instrumentType);
+		}
+		selectAggregation(instrumentType) {
+			return this._metricReader.selectAggregation(instrumentType);
+		}
+		/**
+		* Select the cardinality limit for the given {@link InstrumentType} for this
+		* collector.
+		*/
+		selectCardinalityLimit(instrumentType) {
+			return this._metricReader.selectCardinalityLimit?.(instrumentType) ?? 2e3;
+		}
+	};
+	exports.MetricCollector = MetricCollector;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/Predicate.js
+var require_Predicate = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ExactPredicate = exports.PatternPredicate = void 0;
+	const ESCAPE = /[\^$\\.+?()[\]{}|]/g;
+	/**
+	* Wildcard pattern predicate, supports patterns like `*`, `foo*`, `*bar`.
+	*/
+	var PatternPredicate = class PatternPredicate {
+		_matchAll;
+		_regexp;
+		constructor(pattern) {
+			if (pattern === "*") {
+				this._matchAll = true;
+				this._regexp = /.*/;
+			} else {
+				this._matchAll = false;
+				this._regexp = new RegExp(PatternPredicate.escapePattern(pattern));
+			}
+		}
+		match(str) {
+			if (this._matchAll) return true;
+			return this._regexp.test(str);
+		}
+		static escapePattern(pattern) {
+			return `^${pattern.replace(ESCAPE, "\\$&").replace("*", ".*")}$`;
+		}
+		static hasWildcard(pattern) {
+			return pattern.includes("*");
+		}
+	};
+	exports.PatternPredicate = PatternPredicate;
+	var ExactPredicate = class {
+		_matchAll;
+		_pattern;
+		constructor(pattern) {
+			this._matchAll = pattern === void 0;
+			this._pattern = pattern;
+		}
+		match(str) {
+			if (this._matchAll) return true;
+			if (str === this._pattern) return true;
+			return false;
+		}
+	};
+	exports.ExactPredicate = ExactPredicate;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/AttributesProcessor.js
+var require_AttributesProcessor = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.createDenyListAttributesProcessor = exports.createAllowListAttributesProcessor = exports.createMultiAttributesProcessor = exports.createNoopAttributesProcessor = void 0;
+	var NoopAttributesProcessor = class {
+		process(incoming, _context) {
+			return incoming;
+		}
+	};
+	var MultiAttributesProcessor = class {
+		_processors;
+		constructor(processors) {
+			this._processors = processors;
+		}
+		process(incoming, context) {
+			let filteredAttributes = incoming;
+			for (const processor of this._processors) filteredAttributes = processor.process(filteredAttributes, context);
+			return filteredAttributes;
+		}
+	};
+	var AllowListProcessor = class {
+		_allowedAttributeNames;
+		constructor(allowedAttributeNames) {
+			this._allowedAttributeNames = new Set(allowedAttributeNames);
+		}
+		process(incoming, _context) {
+			const filteredAttributes = {};
+			for (const attributeName in incoming) if (Object.prototype.hasOwnProperty.call(incoming, attributeName) && this._allowedAttributeNames.has(attributeName)) filteredAttributes[attributeName] = incoming[attributeName];
+			return filteredAttributes;
+		}
+	};
+	var DenyListProcessor = class {
+		_deniedAttributeNames;
+		constructor(deniedAttributeNames) {
+			this._deniedAttributeNames = new Set(deniedAttributeNames);
+		}
+		process(incoming, _context) {
+			const filteredAttributes = {};
+			for (const attributeName in incoming) if (Object.prototype.hasOwnProperty.call(incoming, attributeName) && !this._deniedAttributeNames.has(attributeName)) filteredAttributes[attributeName] = incoming[attributeName];
+			return filteredAttributes;
+		}
+	};
+	/**
+	* @internal
+	*
+	* Create an {@link IAttributesProcessor} that acts as a simple pass-through for attributes.
+	*/
+	function createNoopAttributesProcessor() {
+		return NOOP;
+	}
+	exports.createNoopAttributesProcessor = createNoopAttributesProcessor;
+	/**
+	* @internal
+	*
+	* Create an {@link IAttributesProcessor} that applies all processors from the provided list in order.
+	*
+	* @param processors Processors to apply in order.
+	*/
+	function createMultiAttributesProcessor(processors) {
+		return new MultiAttributesProcessor(processors);
+	}
+	exports.createMultiAttributesProcessor = createMultiAttributesProcessor;
+	/**
+	* Create an {@link IAttributesProcessor} that filters by allowed attribute names and drops any names that are not in the
+	* allow list.
+	*/
+	function createAllowListAttributesProcessor(attributeAllowList) {
+		return new AllowListProcessor(attributeAllowList);
+	}
+	exports.createAllowListAttributesProcessor = createAllowListAttributesProcessor;
+	/**
+	* Create an {@link IAttributesProcessor} that drops attributes based on the names provided in the deny list
+	*/
+	function createDenyListAttributesProcessor(attributeDenyList) {
+		return new DenyListProcessor(attributeDenyList);
+	}
+	exports.createDenyListAttributesProcessor = createDenyListAttributesProcessor;
+	const NOOP = new NoopAttributesProcessor();
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/InstrumentSelector.js
+var require_InstrumentSelector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.InstrumentSelector = void 0;
+	const Predicate_1 = require_Predicate();
+	var InstrumentSelector = class {
+		_nameFilter;
+		_type;
+		_unitFilter;
+		constructor(criteria) {
+			this._nameFilter = new Predicate_1.PatternPredicate(criteria?.name ?? "*");
+			this._type = criteria?.type;
+			this._unitFilter = new Predicate_1.ExactPredicate(criteria?.unit);
+		}
+		getType() {
+			return this._type;
+		}
+		getNameFilter() {
+			return this._nameFilter;
+		}
+		getUnitFilter() {
+			return this._unitFilter;
+		}
+	};
+	exports.InstrumentSelector = InstrumentSelector;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/MeterSelector.js
+var require_MeterSelector = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MeterSelector = void 0;
+	const Predicate_1 = require_Predicate();
+	var MeterSelector = class {
+		_nameFilter;
+		_versionFilter;
+		_schemaUrlFilter;
+		constructor(criteria) {
+			this._nameFilter = new Predicate_1.ExactPredicate(criteria?.name);
+			this._versionFilter = new Predicate_1.ExactPredicate(criteria?.version);
+			this._schemaUrlFilter = new Predicate_1.ExactPredicate(criteria?.schemaUrl);
+		}
+		getNameFilter() {
+			return this._nameFilter;
+		}
+		/**
+		* TODO: semver filter? no spec yet.
+		*/
+		getVersionFilter() {
+			return this._versionFilter;
+		}
+		getSchemaUrlFilter() {
+			return this._schemaUrlFilter;
+		}
+	};
+	exports.MeterSelector = MeterSelector;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/View.js
+var require_View = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.View = void 0;
+	const Predicate_1 = require_Predicate();
+	const AttributesProcessor_1 = require_AttributesProcessor();
+	const InstrumentSelector_1 = require_InstrumentSelector();
+	const MeterSelector_1 = require_MeterSelector();
+	const AggregationOption_1 = require_AggregationOption();
+	function isSelectorNotProvided(options) {
+		return options.instrumentName == null && options.instrumentType == null && options.instrumentUnit == null && options.meterName == null && options.meterVersion == null && options.meterSchemaUrl == null;
+	}
+	function validateViewOptions(viewOptions) {
+		if (isSelectorNotProvided(viewOptions)) throw new Error("Cannot create view with no selector arguments supplied");
+		if (viewOptions.name != null && (viewOptions?.instrumentName == null || Predicate_1.PatternPredicate.hasWildcard(viewOptions.instrumentName))) throw new Error("Views with a specified name must be declared with an instrument selector that selects at most one instrument per meter.");
+	}
+	/**
+	* Can be passed to a {@link MeterProvider} to select instruments and alter their metric stream.
+	*/
+	var View = class {
+		name;
+		description;
+		aggregation;
+		attributesProcessor;
+		instrumentSelector;
+		meterSelector;
+		aggregationCardinalityLimit;
+		/**
+		* Create a new {@link View} instance.
+		*
+		* Parameters can be categorized as two types:
+		*  Instrument selection criteria: Used to describe the instrument(s) this view will be applied to.
+		*  Will be treated as additive (the Instrument has to meet all the provided criteria to be selected).
+		*
+		*  Metric stream altering: Alter the metric stream of instruments selected by instrument selection criteria.
+		*
+		* @param viewOptions {@link ViewOptions} for altering the metric stream and instrument selection.
+		* @param viewOptions.name
+		* Alters the metric stream:
+		*  This will be used as the name of the metrics stream.
+		*  If not provided, the original Instrument name will be used.
+		* @param viewOptions.description
+		* Alters the metric stream:
+		*  This will be used as the description of the metrics stream.
+		*  If not provided, the original Instrument description will be used by default.
+		* @param viewOptions.attributesProcessors
+		* Alters the metric stream:
+		*  If provided, the attributes will be modified as defined by the added processors.
+		*  If not provided, all attribute keys will be used by default.
+		* @param viewOptions.aggregationCardinalityLimit
+		* Alters the metric stream:
+		*  Sets a limit on the number of unique attribute combinations (cardinality) that can be aggregated.
+		*  If not provided, the default limit of 2000 will be used.
+		* @param viewOptions.aggregation
+		* Alters the metric stream:
+		*  Alters the {@link Aggregation} of the metric stream.
+		* @param viewOptions.instrumentName
+		* Instrument selection criteria:
+		*  Original name of the Instrument(s) with wildcard support.
+		* @param viewOptions.instrumentType
+		* Instrument selection criteria:
+		*  The original type of the Instrument(s).
+		* @param viewOptions.instrumentUnit
+		* Instrument selection criteria:
+		*  The unit of the Instrument(s).
+		* @param viewOptions.meterName
+		* Instrument selection criteria:
+		*  The name of the Meter. No wildcard support, name must match the meter exactly.
+		* @param viewOptions.meterVersion
+		* Instrument selection criteria:
+		*  The version of the Meter. No wildcard support, version must match exactly.
+		* @param viewOptions.meterSchemaUrl
+		* Instrument selection criteria:
+		*  The schema URL of the Meter. No wildcard support, schema URL must match exactly.
+		*
+		* @example
+		* // Create a view that changes the Instrument 'my.instrument' to use to an
+		* // ExplicitBucketHistogramAggregation with the boundaries [20, 30, 40]
+		* new View({
+		*   aggregation: new ExplicitBucketHistogramAggregation([20, 30, 40]),
+		*   instrumentName: 'my.instrument'
+		* })
+		*/
+		constructor(viewOptions) {
+			validateViewOptions(viewOptions);
+			if (viewOptions.attributesProcessors != null) this.attributesProcessor = (0, AttributesProcessor_1.createMultiAttributesProcessor)(viewOptions.attributesProcessors);
+			else this.attributesProcessor = (0, AttributesProcessor_1.createNoopAttributesProcessor)();
+			this.name = viewOptions.name;
+			this.description = viewOptions.description;
+			this.aggregation = (0, AggregationOption_1.toAggregation)(viewOptions.aggregation ?? { type: AggregationOption_1.AggregationType.DEFAULT });
+			this.instrumentSelector = new InstrumentSelector_1.InstrumentSelector({
+				name: viewOptions.instrumentName,
+				type: viewOptions.instrumentType,
+				unit: viewOptions.instrumentUnit
+			});
+			this.meterSelector = new MeterSelector_1.MeterSelector({
+				name: viewOptions.meterName,
+				version: viewOptions.meterVersion,
+				schemaUrl: viewOptions.meterSchemaUrl
+			});
+			this.aggregationCardinalityLimit = viewOptions.aggregationCardinalityLimit;
+		}
+	};
+	exports.View = View;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/MeterProvider.js
+var require_MeterProvider = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.MeterProvider = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const resources_1 = require_src$6();
+	const MetricReader_1 = require_MetricReader();
+	const MeterProviderSharedState_1 = require_MeterProviderSharedState();
+	const MetricCollector_1 = require_MetricCollector();
+	const View_1 = require_View();
+	/**
+	* This class implements the {@link MeterProvider} interface.
+	*/
+	var MeterProvider = class {
+		_sharedState;
+		_shutdown = false;
+		constructor(options) {
+			this._sharedState = new MeterProviderSharedState_1.MeterProviderSharedState(options?.resource ?? (0, resources_1.defaultResource)());
+			if (options?.views != null && options.views.length > 0) for (const viewOption of options.views) this._sharedState.viewRegistry.addView(new View_1.View(viewOption));
+			if (options?.readers != null && options.readers.length > 0) for (const metricReader of options.readers) {
+				const collector = new MetricCollector_1.MetricCollector(this._sharedState, metricReader);
+				metricReader.setMetricProducer(collector);
+				this._sharedState.metricCollectors.push(collector);
+				if (options.sdkMetricsEnabled && metricReader instanceof MetricReader_1.MetricReader) metricReader._setSelfObsMeterProvider(this);
+			}
+		}
+		/**
+		* Get a meter with the configuration of the MeterProvider.
+		*/
+		getMeter(name, version = "", options = {}) {
+			if (this._shutdown) {
+				api_1.diag.warn("A shutdown MeterProvider cannot provide a Meter");
+				return (0, api_1.createNoopMeter)();
+			}
+			return this._sharedState.getMeterSharedState({
+				name,
+				version,
+				schemaUrl: options.schemaUrl
+			}).meter;
+		}
+		/**
+		* Shut down the MeterProvider and all registered
+		* MetricReaders.
+		*
+		* Returns a promise which is resolved when all flushes are complete.
+		*/
+		async shutdown(options) {
+			if (this._shutdown) {
+				api_1.diag.warn("shutdown may only be called once per MeterProvider");
+				return;
+			}
+			this._shutdown = true;
+			await Promise.all(this._sharedState.metricCollectors.map((collector) => {
+				return collector.shutdown(options);
+			}));
+		}
+		/**
+		* Notifies all registered MetricReaders to flush any buffered data.
+		*
+		* Returns a promise which is resolved when all flushes are complete.
+		*/
+		async forceFlush(options) {
+			if (this._shutdown) {
+				api_1.diag.warn("invalid attempt to force flush after MeterProvider shutdown");
+				return;
+			}
+			await Promise.all(this._sharedState.metricCollectors.map((collector) => {
+				return collector.forceFlush(options);
+			}));
+		}
+	};
+	exports.MeterProvider = MeterProvider;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/index.js
+var require_src$5 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.TimeoutError = exports.createDenyListAttributesProcessor = exports.createAllowListAttributesProcessor = exports.AggregationType = exports.MeterProvider = exports.ConsoleMetricExporter = exports.InMemoryMetricExporter = exports.PeriodicExportingMetricReader = exports.MetricReader = exports.InstrumentType = exports.DataPointType = exports.AggregationTemporality = void 0;
+	var AggregationTemporality_1 = require_AggregationTemporality();
+	Object.defineProperty(exports, "AggregationTemporality", {
+		enumerable: true,
+		get: function() {
+			return AggregationTemporality_1.AggregationTemporality;
+		}
+	});
+	var MetricData_1 = require_MetricData();
+	Object.defineProperty(exports, "DataPointType", {
+		enumerable: true,
+		get: function() {
+			return MetricData_1.DataPointType;
+		}
+	});
+	Object.defineProperty(exports, "InstrumentType", {
+		enumerable: true,
+		get: function() {
+			return MetricData_1.InstrumentType;
+		}
+	});
+	var MetricReader_1 = require_MetricReader();
+	Object.defineProperty(exports, "MetricReader", {
+		enumerable: true,
+		get: function() {
+			return MetricReader_1.MetricReader;
+		}
+	});
+	var PeriodicExportingMetricReader_1 = require_PeriodicExportingMetricReader();
+	Object.defineProperty(exports, "PeriodicExportingMetricReader", {
+		enumerable: true,
+		get: function() {
+			return PeriodicExportingMetricReader_1.PeriodicExportingMetricReader;
+		}
+	});
+	var InMemoryMetricExporter_1 = require_InMemoryMetricExporter();
+	Object.defineProperty(exports, "InMemoryMetricExporter", {
+		enumerable: true,
+		get: function() {
+			return InMemoryMetricExporter_1.InMemoryMetricExporter;
+		}
+	});
+	var ConsoleMetricExporter_1 = require_ConsoleMetricExporter();
+	Object.defineProperty(exports, "ConsoleMetricExporter", {
+		enumerable: true,
+		get: function() {
+			return ConsoleMetricExporter_1.ConsoleMetricExporter;
+		}
+	});
+	var MeterProvider_1 = require_MeterProvider();
+	Object.defineProperty(exports, "MeterProvider", {
+		enumerable: true,
+		get: function() {
+			return MeterProvider_1.MeterProvider;
+		}
+	});
+	var AggregationOption_1 = require_AggregationOption();
+	Object.defineProperty(exports, "AggregationType", {
+		enumerable: true,
+		get: function() {
+			return AggregationOption_1.AggregationType;
+		}
+	});
+	var AttributesProcessor_1 = require_AttributesProcessor();
+	Object.defineProperty(exports, "createAllowListAttributesProcessor", {
+		enumerable: true,
+		get: function() {
+			return AttributesProcessor_1.createAllowListAttributesProcessor;
+		}
+	});
+	Object.defineProperty(exports, "createDenyListAttributesProcessor", {
+		enumerable: true,
+		get: function() {
+			return AttributesProcessor_1.createDenyListAttributesProcessor;
+		}
+	});
+	var utils_1 = require_utils$3();
+	Object.defineProperty(exports, "TimeoutError", {
+		enumerable: true,
+		get: function() {
+			return utils_1.TimeoutError;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/protobuf/metrics-serializer.js
+var require_metrics_serializer = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.serializeMetricsExportRequest = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const sdk_metrics_1 = require_src$5();
+	const common_serializer_1 = require_common_serializer();
+	const protobuf_size_estimator_1 = require_protobuf_size_estimator();
+	const protobuf_writer_1 = require_protobuf_writer();
+	/**
+	* Serialize a NumberDataPoint directly from SDK DataPoint<number>
+	*
+	* Proto fields (NumberDataPoint):
+	*   7  attributes               repeated KeyValue  (wire type 2)
+	*   2  start_time_unix_nano     fixed64            (wire type 1)
+	*   3  time_unix_nano           fixed64            (wire type 1)
+	*   4  as_double                double             (wire type 1)
+	*   6  as_int                   sfixed64           (wire type 1)
+	*   5  exemplars                repeated Exemplar  (wire type 2)
+	*   8  flags                    uint32             (wire type 0)
+	*/
+	function serializeNumberDataPoint(writer, dataPoint, valueType) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		writer.writeTag(2, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.startTime);
+		writer.writeTag(3, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.endTime);
+		if (valueType === api_1.ValueType.INT) {
+			writer.writeTag(6, 1);
+			writer.writeSfixed64(dataPoint.value);
+		} else {
+			writer.writeTag(4, 1);
+			writer.writeDouble(dataPoint.value);
+		}
+		if (dataPoint.attributes) (0, common_serializer_1.writeAttributes)(writer, dataPoint.attributes, 7);
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	/**
+	* Serialize a HistogramDataPoint directly from SDK DataPoint<Histogram>
+	*
+	* Proto fields (HistogramDataPoint):
+	*   9  attributes               repeated KeyValue  (wire type 2)
+	*   2  start_time_unix_nano     fixed64            (wire type 1)
+	*   3  time_unix_nano           fixed64            (wire type 1)
+	*   4  count                    fixed64            (wire type 1)
+	*   5  sum                      optional double    (wire type 1)
+	*   6  bucket_counts            repeated fixed64   (packed, wire type 2)
+	*   7  explicit_bounds          repeated double    (packed, wire type 2)
+	*   8  exemplars                repeated Exemplar  (wire type 2)
+	*  10  flags                    uint32             (wire type 0)
+	*  11  min                      optional double    (wire type 1)
+	*  12  max                      optional double    (wire type 1)
+	*/
+	function serializeHistogramDataPoint(writer, dataPoint) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		const histogram = dataPoint.value;
+		writer.writeTag(2, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.startTime);
+		writer.writeTag(3, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.endTime);
+		writer.writeTag(4, 1);
+		writer.writeFixed64(histogram.count >>> 0, histogram.count / 4294967296 >>> 0);
+		if (histogram.sum !== void 0) {
+			writer.writeTag(5, 1);
+			writer.writeDouble(histogram.sum);
+		}
+		if (histogram.buckets.counts.length > 0) {
+			writer.writeTag(6, 2);
+			const countsStart = writer.startLengthDelimited();
+			const countsStartPos = writer.pos;
+			for (const count of histogram.buckets.counts) writer.writeFixed64(count >>> 0, count / 4294967296 >>> 0);
+			writer.finishLengthDelimited(countsStart, writer.pos - countsStartPos);
+		}
+		if (histogram.buckets.boundaries.length > 0) {
+			writer.writeTag(7, 2);
+			const boundsStart = writer.startLengthDelimited();
+			const boundsStartPos = writer.pos;
+			for (const bound of histogram.buckets.boundaries) writer.writeDouble(bound);
+			writer.finishLengthDelimited(boundsStart, writer.pos - boundsStartPos);
+		}
+		if (dataPoint.attributes) (0, common_serializer_1.writeAttributes)(writer, dataPoint.attributes, 9);
+		if (histogram.min !== void 0) {
+			writer.writeTag(11, 1);
+			writer.writeDouble(histogram.min);
+		}
+		if (histogram.max !== void 0) {
+			writer.writeTag(12, 1);
+			writer.writeDouble(histogram.max);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	/**
+	* Serialize ExponentialHistogramDataPoint.Buckets
+	*
+	* Proto fields (Buckets):
+	*   1  offset         sint32           (wire type 0, zigzag)
+	*   2  bucket_counts  repeated uint64  (packed, wire type 2)
+	*/
+	function serializeExponentialBuckets(writer, offset, bucketCounts) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		if (offset !== 0) {
+			writer.writeTag(1, 0);
+			writer.writeSint32(offset);
+		}
+		if (bucketCounts.length > 0) {
+			writer.writeTag(2, 2);
+			const bcStart = writer.startLengthDelimited();
+			const bcStartPos = writer.pos;
+			for (const count of bucketCounts) writer.writeVarint(count);
+			writer.finishLengthDelimited(bcStart, writer.pos - bcStartPos);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	/**
+	* Serialize an ExponentialHistogramDataPoint directly from SDK DataPoint<ExponentialHistogram>
+	*
+	* Proto fields (ExponentialHistogramDataPoint):
+	*   1  attributes               repeated KeyValue  (wire type 2)
+	*   2  start_time_unix_nano     fixed64            (wire type 1)
+	*   3  time_unix_nano           fixed64            (wire type 1)
+	*   4  count                    fixed64            (wire type 1)
+	*   5  sum                      optional double    (wire type 1)
+	*   6  scale                    sint32             (wire type 0, zigzag)
+	*   7  zero_count               fixed64            (wire type 1)
+	*   8  positive                 Buckets            (wire type 2)
+	*   9  negative                 Buckets            (wire type 2)
+	*  10  flags                    uint32             (wire type 0)
+	*  11  exemplars                repeated Exemplar  (wire type 2)
+	*  12  min                      optional double    (wire type 1)
+	*  13  max                      optional double    (wire type 1)
+	*/
+	function serializeExponentialHistogramDataPoint(writer, dataPoint) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		const histogram = dataPoint.value;
+		if (dataPoint.attributes) (0, common_serializer_1.writeAttributes)(writer, dataPoint.attributes, 1);
+		writer.writeTag(2, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.startTime);
+		writer.writeTag(3, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.endTime);
+		writer.writeTag(4, 1);
+		writer.writeFixed64(histogram.count >>> 0, histogram.count / 4294967296 >>> 0);
+		if (histogram.sum !== void 0) {
+			writer.writeTag(5, 1);
+			writer.writeDouble(histogram.sum);
+		}
+		if (histogram.scale !== 0) {
+			writer.writeTag(6, 0);
+			writer.writeSint32(histogram.scale);
+		}
+		writer.writeTag(7, 1);
+		writer.writeFixed64(histogram.zeroCount >>> 0, histogram.zeroCount / 4294967296 >>> 0);
+		writer.writeTag(8, 2);
+		serializeExponentialBuckets(writer, histogram.positive.offset, histogram.positive.bucketCounts);
+		writer.writeTag(9, 2);
+		serializeExponentialBuckets(writer, histogram.negative.offset, histogram.negative.bucketCounts);
+		if (histogram.min !== void 0) {
+			writer.writeTag(12, 1);
+			writer.writeDouble(histogram.min);
+		}
+		if (histogram.max !== void 0) {
+			writer.writeTag(13, 1);
+			writer.writeDouble(histogram.max);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	/**
+	* Serialize a Metric message with its data type
+	*
+	* Proto fields (Metric):
+	*   1  name                     string             (wire type 2)
+	*   2  description              string             (wire type 2)
+	*   3  unit                     string             (wire type 2)
+	*   5  gauge                    Gauge              (wire type 2)
+	*   7  sum                      Sum                (wire type 2)
+	*   9  histogram                Histogram          (wire type 2)
+	*  10  exponential_histogram    ExponentialHist    (wire type 2)
+	*  11  summary                  Summary            (wire type 2)
+	*/
+	function serializeMetric(writer, metricData) {
+		const metricStart = writer.startLengthDelimited();
+		const metricStartPos = writer.pos;
+		writer.writeTag(1, 2);
+		writer.writeString(metricData.descriptor.name);
+		if (metricData.descriptor.description) {
+			writer.writeTag(2, 2);
+			writer.writeString(metricData.descriptor.description);
+		}
+		if (metricData.descriptor.unit) {
+			writer.writeTag(3, 2);
+			writer.writeString(metricData.descriptor.unit);
+		}
+		switch (metricData.dataPointType) {
+			case sdk_metrics_1.DataPointType.GAUGE:
+				writer.writeTag(5, 2);
+				serializeGauge(writer, metricData);
+				break;
+			case sdk_metrics_1.DataPointType.SUM:
+				writer.writeTag(7, 2);
+				serializeSum(writer, metricData);
+				break;
+			case sdk_metrics_1.DataPointType.HISTOGRAM:
+				writer.writeTag(9, 2);
+				serializeHistogramMetric(writer, metricData);
+				break;
+			case sdk_metrics_1.DataPointType.EXPONENTIAL_HISTOGRAM:
+				writer.writeTag(10, 2);
+				serializeExponentialHistogramMetric(writer, metricData);
+		}
+		writer.finishLengthDelimited(metricStart, writer.pos - metricStartPos);
+	}
+	/**
+	* Proto fields (Gauge):
+	*   1  data_points  repeated NumberDataPoint  (wire type 2)
+	*/
+	function serializeGauge(writer, metricData) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		for (const dataPoint of metricData.dataPoints) {
+			writer.writeTag(1, 2);
+			serializeNumberDataPoint(writer, dataPoint, metricData.descriptor.valueType);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	/**
+	* Proto fields (Sum):
+	*   1  data_points               repeated NumberDataPoint  (wire type 2)
+	*   2  aggregation_temporality   AggregationTemporality    (wire type 0)
+	*   3  is_monotonic              bool                      (wire type 0)
+	*/
+	function serializeSum(writer, metricData) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		for (const dataPoint of metricData.dataPoints) {
+			writer.writeTag(1, 2);
+			serializeNumberDataPoint(writer, dataPoint, metricData.descriptor.valueType);
+		}
+		const temporality = toProtoAggregationTemporality(metricData.aggregationTemporality);
+		if (temporality !== 0) {
+			writer.writeTag(2, 0);
+			writer.writeVarint(temporality);
+		}
+		if (metricData.isMonotonic) {
+			writer.writeTag(3, 0);
+			writer.writeVarint(1);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	/**
+	* Proto fields (Histogram):
+	*   1  data_points               repeated HistogramDataPoint  (wire type 2)
+	*   2  aggregation_temporality   AggregationTemporality       (wire type 0)
+	*/
+	function serializeHistogramMetric(writer, metricData) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		for (const dataPoint of metricData.dataPoints) {
+			writer.writeTag(1, 2);
+			serializeHistogramDataPoint(writer, dataPoint);
+		}
+		const temporality = toProtoAggregationTemporality(metricData.aggregationTemporality);
+		if (temporality !== 0) {
+			writer.writeTag(2, 0);
+			writer.writeVarint(temporality);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	/**
+	* Proto fields (ExponentialHistogram):
+	*   1  data_points               repeated ExponentialHistogramDataPoint  (wire type 2)
+	*   2  aggregation_temporality   AggregationTemporality                 (wire type 0)
+	*/
+	function serializeExponentialHistogramMetric(writer, metricData) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		for (const dataPoint of metricData.dataPoints) {
+			writer.writeTag(1, 2);
+			serializeExponentialHistogramDataPoint(writer, dataPoint);
+		}
+		const temporality = toProtoAggregationTemporality(metricData.aggregationTemporality);
+		if (temporality !== 0) {
+			writer.writeTag(2, 0);
+			writer.writeVarint(temporality);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	/**
+	* Serialize ScopeMetrics directly from SDK types
+	*/
+	function serializeScopeMetrics(writer, scopeMetrics) {
+		const scopeStart = writer.startLengthDelimited();
+		const scopeStartPos = writer.pos;
+		(0, common_serializer_1.writeInstrumentationScope)(writer, scopeMetrics.scope, 1);
+		for (const metric of scopeMetrics.metrics) {
+			writer.writeTag(2, 2);
+			serializeMetric(writer, metric);
+		}
+		if (scopeMetrics.scope.schemaUrl) {
+			writer.writeTag(3, 2);
+			writer.writeString(scopeMetrics.scope.schemaUrl);
+		}
+		writer.finishLengthDelimited(scopeStart, writer.pos - scopeStartPos);
+	}
+	/**
+	* Serialize ResourceMetrics directly from SDK types
+	*
+	* Proto fields (ResourceMetrics):
+	*   1  resource       Resource           (wire type 2)
+	*   2  scope_metrics  repeated ScopeMetrics  (wire type 2)
+	*   3  schema_url     string             (wire type 2)
+	*/
+	function serializeResourceMetrics(writer, resourceMetrics) {
+		const start = writer.startLengthDelimited();
+		const startPos = writer.pos;
+		(0, common_serializer_1.writeResource)(writer, resourceMetrics.resource, 1);
+		for (const scopeMetrics of resourceMetrics.scopeMetrics) {
+			writer.writeTag(2, 2);
+			serializeScopeMetrics(writer, scopeMetrics);
+		}
+		if (resourceMetrics.resource.schemaUrl) {
+			writer.writeTag(3, 2);
+			writer.writeString(resourceMetrics.resource.schemaUrl);
+		}
+		writer.finishLengthDelimited(start, writer.pos - startPos);
+	}
+	function toProtoAggregationTemporality(temporality) {
+		switch (temporality) {
+			case sdk_metrics_1.AggregationTemporality.DELTA: return 1;
+			case sdk_metrics_1.AggregationTemporality.CUMULATIVE: return 2;
+			default: return 0;
+		}
+	}
+	/**
+	* Serialize ExportMetricsServiceRequest directly from ResourceMetrics
+	*/
+	function serializeMetricsExportRequest(resourceMetrics) {
+		const estimator = new protobuf_size_estimator_1.ProtobufSizeEstimator();
+		estimator.writeTag(1, 2);
+		serializeResourceMetrics(estimator, resourceMetrics);
+		const writer = new protobuf_writer_1.ProtobufWriter(estimator.pos);
+		writer.writeTag(1, 2);
+		serializeResourceMetrics(writer, resourceMetrics);
+		return writer.finish();
+	}
+	exports.serializeMetricsExportRequest = serializeMetricsExportRequest;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/protobuf/response-deserializer.js
+var require_response_deserializer$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.deserializeExportMetricsServiceResponse = void 0;
+	const protobuf_reader_1 = require_protobuf_reader();
+	/**
+	* Parse an ExportMetricsPartialSuccess embedded message from raw bytes.
+	*
+	* Field map (opentelemetry/proto/collector/metrics/v1/metrics_service.proto):
+	*   1  rejected_data_points  int64   (varint)
+	*   2  error_message         string  (length-delimited)
+	*/
+	function deserializePartialSuccess(data) {
+		const reader = new protobuf_reader_1.ProtobufReader(data);
+		const result = {};
+		while (!reader.isAtEnd()) {
+			const { fieldNumber, wireType } = reader.readTag();
+			switch (fieldNumber) {
+				case 1:
+					if (wireType === 0) result.rejectedDataPoints = reader.readVarint();
+					else reader.skip(wireType);
+					break;
+				case 2:
+					if (wireType === 2) result.errorMessage = reader.readString();
+					else reader.skip(wireType);
+					break;
+				default: reader.skip(wireType);
+			}
+		}
+		return result;
+	}
+	/**
+	* Parse an ExportMetricsServiceResponse protobuf message from raw bytes.
+	*
+	* Field map (opentelemetry/proto/collector/metrics/v1/metrics_service.proto):
+	*   1  partial_success  ExportMetricsPartialSuccess  (length-delimited)
+	*/
+	function deserializeExportMetricsServiceResponse(data) {
+		const reader = new protobuf_reader_1.ProtobufReader(data);
+		const result = {};
+		while (!reader.isAtEnd()) {
+			const { fieldNumber, wireType } = reader.readTag();
+			switch (fieldNumber) {
+				case 1:
+					if (wireType === 2) result.partialSuccess = deserializePartialSuccess(reader.readBytes());
+					else reader.skip(wireType);
+					break;
+				default: reader.skip(wireType);
+			}
+		}
+		return result;
+	}
+	exports.deserializeExportMetricsServiceResponse = deserializeExportMetricsServiceResponse;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/protobuf/metrics.js
+var require_metrics$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufMetricsSerializer = void 0;
+	const metrics_serializer_1 = require_metrics_serializer();
+	const response_deserializer_1 = require_response_deserializer$1();
+	exports.ProtobufMetricsSerializer = {
+		serializeRequest: (arg) => {
+			return (0, metrics_serializer_1.serializeMetricsExportRequest)(arg);
+		},
+		deserializeResponse: (arg) => {
+			return (0, response_deserializer_1.deserializeExportMetricsServiceResponse)(arg);
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/protobuf/index.js
+var require_protobuf$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufMetricsSerializer = void 0;
+	var metrics_1 = require_metrics$1();
+	Object.defineProperty(exports, "ProtobufMetricsSerializer", {
+		enumerable: true,
+		get: function() {
+			return metrics_1.ProtobufMetricsSerializer;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/protobuf/trace-serializer.js
+var require_trace_serializer = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.serializeTraceExportRequest = void 0;
+	const protobuf_writer_1 = require_protobuf_writer();
+	const hex_to_binary_1 = require_hex_to_binary();
+	const common_serializer_1 = require_common_serializer();
+	const protobuf_size_estimator_1 = require_protobuf_size_estimator();
+	const SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK = 256;
+	const SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK = 512;
+	function buildSpanFlags(traceFlags, isRemote) {
+		let flags = traceFlags & 255 | SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK;
+		if (isRemote) flags |= SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK;
+		return flags;
+	}
+	/**
+	* Serialize a Span.Status message
+	*
+	* Proto fields (Status):
+	*   1  (reserved)
+	*   2  message   string         (length-delimited)
+	*   3  code      StatusCode     (varint)
+	*/
+	function serializeStatus(writer, status) {
+		const statusStart = writer.startLengthDelimited();
+		const statusStartPos = writer.pos;
+		if (status.message) {
+			writer.writeTag(2, 2);
+			writer.writeString(status.message);
+		}
+		writer.writeTag(3, 0);
+		writer.writeVarint(status.code);
+		writer.finishLengthDelimited(statusStart, writer.pos - statusStartPos);
+	}
+	/**
+	* Serialize a Span.Event message
+	*
+	* Proto fields (Span.Event):
+	*   1  time_unix_nano           fixed64            (wire type 1)
+	*   2  name                     string             (wire type 2)
+	*   3  attributes               repeated KeyValue  (wire type 2)
+	*   4  dropped_attributes_count uint32             (wire type 0)
+	*/
+	function serializeEvent(writer, event) {
+		const eventStart = writer.startLengthDelimited();
+		const eventStartPos = writer.pos;
+		writer.writeTag(1, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, event.time);
+		writer.writeTag(2, 2);
+		writer.writeString(event.name);
+		if (event.attributes) (0, common_serializer_1.writeAttributes)(writer, event.attributes, 3);
+		writer.writeTag(4, 0);
+		writer.writeVarint(event.droppedAttributesCount || 0);
+		writer.finishLengthDelimited(eventStart, writer.pos - eventStartPos);
+	}
+	/**
+	* Serialize a Span.Link message
+	*
+	* Proto fields (Span.Link):
+	*   1  trace_id                 bytes              (wire type 2)
+	*   2  span_id                  bytes              (wire type 2)
+	*   3  trace_state              string             (wire type 2)
+	*   4  attributes               repeated KeyValue  (wire type 2)
+	*   5  dropped_attributes_count uint32             (wire type 0)
+	*   6  flags                    fixed32            (wire type 5)
+	*/
+	function serializeLink(writer, link) {
+		const linkStart = writer.startLengthDelimited();
+		const linkStartPos = writer.pos;
+		const context = link.context;
+		writer.writeTag(1, 2);
+		writer.writeBytes((0, hex_to_binary_1.hexToBinary)(context.traceId));
+		writer.writeTag(2, 2);
+		writer.writeBytes((0, hex_to_binary_1.hexToBinary)(context.spanId));
+		const linkTraceState = context.traceState?.serialize();
+		if (linkTraceState) {
+			writer.writeTag(3, 2);
+			writer.writeString(linkTraceState);
+		}
+		if (link.attributes) (0, common_serializer_1.writeAttributes)(writer, link.attributes, 4);
+		writer.writeTag(5, 0);
+		writer.writeVarint(link.droppedAttributesCount || 0);
+		const linkFlags = buildSpanFlags(context.traceFlags, context.isRemote);
+		if (linkFlags) {
+			writer.writeTag(6, 5);
+			writer.writeFixed32(linkFlags);
+		}
+		writer.finishLengthDelimited(linkStart, writer.pos - linkStartPos);
+	}
+	/**
+	* Serialize a single Span message directly from ReadableSpan
+	*
+	* Proto fields (Span):
+	*   1  trace_id                 bytes              (wire type 2)
+	*   2  span_id                  bytes              (wire type 2)
+	*   3  trace_state              string             (wire type 2)
+	*   4  parent_span_id           bytes              (wire type 2)
+	*   5  name                     string             (wire type 2)
+	*   6  kind                     SpanKind           (wire type 0)
+	*   7  start_time_unix_nano     fixed64            (wire type 1)
+	*   8  end_time_unix_nano       fixed64            (wire type 1)
+	*   9  attributes               repeated KeyValue  (wire type 2)
+	*  10  dropped_attributes_count uint32             (wire type 0)
+	*  11  events                   repeated Event     (wire type 2)
+	*  12  dropped_events_count     uint32             (wire type 0)
+	*  13  links                    repeated Link      (wire type 2)
+	*  14  dropped_links_count      uint32             (wire type 0)
+	*  15  status                   Status             (wire type 2)
+	*  16  flags                    fixed32            (wire type 5)
+	*/
+	function serializeSpan(writer, span) {
+		const spanStart = writer.startLengthDelimited();
+		const spanStartPos = writer.pos;
+		const ctx = span.spanContext();
+		writer.writeTag(1, 2);
+		writer.writeBytes((0, hex_to_binary_1.hexToBinary)(ctx.traceId));
+		writer.writeTag(2, 2);
+		writer.writeBytes((0, hex_to_binary_1.hexToBinary)(ctx.spanId));
+		const traceState = ctx.traceState?.serialize();
+		if (traceState) {
+			writer.writeTag(3, 2);
+			writer.writeString(traceState);
+		}
+		if (span.parentSpanContext?.spanId) {
+			writer.writeTag(4, 2);
+			writer.writeBytes((0, hex_to_binary_1.hexToBinary)(span.parentSpanContext.spanId));
+		}
+		writer.writeTag(5, 2);
+		writer.writeString(span.name);
+		const kind = span.kind == null ? 0 : span.kind + 1;
+		if (kind !== 0) {
+			writer.writeTag(6, 0);
+			writer.writeVarint(kind);
+		}
+		writer.writeTag(7, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, span.startTime);
+		writer.writeTag(8, 1);
+		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, span.endTime);
+		if (span.attributes) (0, common_serializer_1.writeAttributes)(writer, span.attributes, 9);
+		writer.writeTag(10, 0);
+		writer.writeVarint(span.droppedAttributesCount);
+		for (const event of span.events) {
+			writer.writeTag(11, 2);
+			serializeEvent(writer, event);
+		}
+		writer.writeTag(12, 0);
+		writer.writeVarint(span.droppedEventsCount);
+		for (const link of span.links) {
+			writer.writeTag(13, 2);
+			serializeLink(writer, link);
+		}
+		writer.writeTag(14, 0);
+		writer.writeVarint(span.droppedLinksCount);
+		writer.writeTag(15, 2);
+		serializeStatus(writer, span.status);
+		const flags = buildSpanFlags(ctx.traceFlags, span.parentSpanContext?.isRemote);
+		if (flags) {
+			writer.writeTag(16, 5);
+			writer.writeFixed32(flags);
+		}
+		writer.finishLengthDelimited(spanStart, writer.pos - spanStartPos);
+	}
+	/**
+	* Serialize ScopeSpans directly from SDK types
+	*/
+	function serializeScopeSpans(writer, scope, spans) {
+		const scopeSpansStart = writer.startLengthDelimited();
+		const scopeSpansStartPos = writer.pos;
+		(0, common_serializer_1.writeInstrumentationScope)(writer, scope, 1);
+		for (const span of spans) {
+			writer.writeTag(2, 2);
+			serializeSpan(writer, span);
+		}
+		if (scope.schemaUrl) {
+			writer.writeTag(3, 2);
+			writer.writeString(scope.schemaUrl);
+		}
+		writer.finishLengthDelimited(scopeSpansStart, writer.pos - scopeSpansStartPos);
+	}
+	/**
+	* Serialize ResourceSpans directly from SDK Resource type
+	*/
+	function serializeResourceSpans(writer, resource, scopeMap) {
+		const resourceSpansStart = writer.startLengthDelimited();
+		const resourceSpansStartPos = writer.pos;
+		(0, common_serializer_1.writeResource)(writer, resource, 1);
+		for (const scopeSpans of scopeMap.values()) {
+			writer.writeTag(2, 2);
+			const scope = scopeSpans[0].instrumentationScope;
+			serializeScopeSpans(writer, scope, scopeSpans);
+		}
+		if (resource.schemaUrl) {
+			writer.writeTag(3, 2);
+			writer.writeString(resource.schemaUrl);
+		}
+		writer.finishLengthDelimited(resourceSpansStart, writer.pos - resourceSpansStartPos);
+	}
+	/**
+	* Group spans by resource and instrumentation scope using identity comparison
+	*/
+	function createResourceMap(spans) {
+		const resourceMap = /* @__PURE__ */ new Map();
+		for (const span of spans) {
+			const resource = span.resource;
+			const scope = span.instrumentationScope;
+			let scopeMap = resourceMap.get(resource);
+			if (!scopeMap) {
+				scopeMap = /* @__PURE__ */ new Map();
+				resourceMap.set(resource, scopeMap);
+			}
+			let records = scopeMap.get(scope);
+			if (!records) {
+				records = [];
+				scopeMap.set(scope, records);
+			}
+			records.push(span);
+		}
+		return resourceMap;
+	}
+	/**
+	* Serialize ExportTraceServiceRequest directly from ReadableSpan[]
+	*/
+	function serializeTraceExportRequest(spans) {
+		const resourceMap = createResourceMap(spans);
+		const estimator = new protobuf_size_estimator_1.ProtobufSizeEstimator();
+		for (const [resource, scopeMap] of resourceMap) {
+			estimator.writeTag(1, 2);
+			serializeResourceSpans(estimator, resource, scopeMap);
+		}
+		const writer = new protobuf_writer_1.ProtobufWriter(estimator.pos);
+		for (const [resource, scopeMap] of resourceMap) {
+			writer.writeTag(1, 2);
+			serializeResourceSpans(writer, resource, scopeMap);
+		}
+		return writer.finish();
+	}
+	exports.serializeTraceExportRequest = serializeTraceExportRequest;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/protobuf/response-deserializer.js
+var require_response_deserializer = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.deserializeExportTraceServiceResponse = void 0;
+	const protobuf_reader_1 = require_protobuf_reader();
+	/**
+	* Parse an ExportTracePartialSuccess embedded message from raw bytes.
+	*
+	* Field map (opentelemetry/proto/collector/trace/v1/trace_service.proto):
+	*   1  rejected_spans   int64   (varint)
+	*   2  error_message    string  (length-delimited)
+	*/
+	function deserializePartialSuccess(data) {
+		const reader = new protobuf_reader_1.ProtobufReader(data);
+		const result = {};
+		while (!reader.isAtEnd()) {
+			const { fieldNumber, wireType } = reader.readTag();
+			switch (fieldNumber) {
+				case 1:
+					if (wireType === 0) result.rejectedSpans = reader.readVarint();
+					else reader.skip(wireType);
+					break;
+				case 2:
+					if (wireType === 2) result.errorMessage = reader.readString();
+					else reader.skip(wireType);
+					break;
+				default: reader.skip(wireType);
+			}
+		}
+		return result;
+	}
+	/**
+	* Parse an ExportTraceServiceResponse protobuf message from raw bytes.
+	*
+	* Field map (opentelemetry/proto/collector/trace/v1/trace_service.proto):
+	*   1  partial_success  ExportTracePartialSuccess  (length-delimited)
+	*/
+	function deserializeExportTraceServiceResponse(data) {
+		const reader = new protobuf_reader_1.ProtobufReader(data);
+		const result = {};
+		while (!reader.isAtEnd()) {
+			const { fieldNumber, wireType } = reader.readTag();
+			switch (fieldNumber) {
+				case 1:
+					if (wireType === 2) result.partialSuccess = deserializePartialSuccess(reader.readBytes());
+					else reader.skip(wireType);
+					break;
+				default: reader.skip(wireType);
+			}
+		}
+		return result;
+	}
+	exports.deserializeExportTraceServiceResponse = deserializeExportTraceServiceResponse;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/protobuf/trace.js
+var require_trace$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufTraceSerializer = void 0;
+	const trace_serializer_1 = require_trace_serializer();
+	const response_deserializer_1 = require_response_deserializer();
+	exports.ProtobufTraceSerializer = {
+		serializeRequest: (arg) => {
+			return (0, trace_serializer_1.serializeTraceExportRequest)(arg);
+		},
+		deserializeResponse: (arg) => {
+			return (0, response_deserializer_1.deserializeExportTraceServiceResponse)(arg);
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/protobuf/index.js
+var require_protobuf = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.ProtobufTraceSerializer = void 0;
+	var trace_1 = require_trace$1();
+	Object.defineProperty(exports, "ProtobufTraceSerializer", {
+		enumerable: true,
+		get: function() {
+			return trace_1.ProtobufTraceSerializer;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/internal.js
+var require_internal$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.toAnyValue = exports.toKeyValue = exports.toAttributes = exports.createInstrumentationScope = exports.createResource = void 0;
+	function createResource(resource, encoder) {
+		const result = {
+			attributes: toAttributes(resource.attributes, encoder),
+			droppedAttributesCount: 0
+		};
+		const schemaUrl = resource.schemaUrl;
+		if (schemaUrl && schemaUrl !== "") result.schemaUrl = schemaUrl;
+		return result;
+	}
+	exports.createResource = createResource;
+	function createInstrumentationScope(scope, encoder) {
+		const result = {
+			name: scope.name,
+			version: scope.version
+		};
+		if (scope.attributes && Object.keys(scope.attributes).length > 0) {
+			result.attributes = toAttributes(scope.attributes, encoder);
+			result.droppedAttributesCount = scope.droppedAttributesCount ?? 0;
+		}
+		return result;
+	}
+	exports.createInstrumentationScope = createInstrumentationScope;
+	function toAttributes(attributes, encoder) {
+		return Object.keys(attributes).map((key) => toKeyValue(key, attributes[key], encoder));
+	}
+	exports.toAttributes = toAttributes;
+	function toKeyValue(key, value, encoder) {
+		return {
+			key,
+			value: toAnyValue(value, encoder)
+		};
+	}
+	exports.toKeyValue = toKeyValue;
+	function toAnyValue(value, encoder) {
+		const t = typeof value;
+		if (t === "string") return { stringValue: value };
+		if (t === "number") {
+			if (!Number.isInteger(value)) return { doubleValue: value };
+			return { intValue: value };
+		}
+		if (t === "boolean") return { boolValue: value };
+		if (value instanceof Uint8Array) return { bytesValue: encoder.encodeUint8Array(value) };
+		if (Array.isArray(value)) {
+			const values = new Array(value.length);
+			for (let i = 0; i < value.length; i++) values[i] = toAnyValue(value[i], encoder);
+			return { arrayValue: { values } };
+		}
+		if (t === "object" && value != null) {
+			const keys = Object.keys(value);
+			const values = new Array(keys.length);
+			for (let i = 0; i < keys.length; i++) values[i] = {
+				key: keys[i],
+				value: toAnyValue(value[keys[i]], encoder)
+			};
+			return { kvlistValue: { values } };
+		}
+		return {};
+	}
+	exports.toAnyValue = toAnyValue;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/internal.js
+var require_internal$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.createExportLogsServiceRequest = void 0;
+	const internal_1 = require_internal$3();
+	function createExportLogsServiceRequest(logRecords, encoder) {
+		return { resourceLogs: logRecordsToResourceLogs(logRecords, encoder) };
+	}
+	exports.createExportLogsServiceRequest = createExportLogsServiceRequest;
+	function createResourceMap(logRecords) {
+		const resourceMap = /* @__PURE__ */ new Map();
+		for (const record of logRecords) {
+			const { resource, instrumentationScope } = record;
+			let ismMap = resourceMap.get(resource);
+			if (!ismMap) {
+				ismMap = /* @__PURE__ */ new Map();
+				resourceMap.set(resource, ismMap);
+			}
+			let records = ismMap.get(instrumentationScope);
+			if (!records) {
+				records = [];
+				ismMap.set(instrumentationScope, records);
+			}
+			records.push(record);
+		}
+		return resourceMap;
+	}
+	function logRecordsToResourceLogs(logRecords, encoder) {
+		const resourceMap = createResourceMap(logRecords);
+		return Array.from(resourceMap, ([resource, ismMap]) => {
+			const processedResource = (0, internal_1.createResource)(resource, encoder);
+			return {
+				resource: processedResource,
+				scopeLogs: Array.from(ismMap, ([, scopeLogs]) => {
+					return {
+						scope: (0, internal_1.createInstrumentationScope)(scopeLogs[0].instrumentationScope, encoder),
+						logRecords: scopeLogs.map((log) => toLogRecord(log, encoder)),
+						schemaUrl: scopeLogs[0].instrumentationScope.schemaUrl
+					};
+				}),
+				schemaUrl: processedResource.schemaUrl
+			};
+		});
+	}
+	function toLogRecord(log, encoder) {
+		return {
+			timeUnixNano: encoder.encodeHrTime(log.hrTime),
+			observedTimeUnixNano: encoder.encodeHrTime(log.hrTimeObserved),
+			severityNumber: toSeverityNumber(log.severityNumber),
+			severityText: log.severityText,
+			body: (0, internal_1.toAnyValue)(log.body, encoder),
+			eventName: log.eventName,
+			attributes: (0, internal_1.toAttributes)(log.attributes, encoder),
+			droppedAttributesCount: log.droppedAttributesCount,
+			flags: log.spanContext?.traceFlags,
+			traceId: encoder.encodeOptionalSpanContext(log.spanContext?.traceId),
+			spanId: encoder.encodeOptionalSpanContext(log.spanContext?.spanId)
+		};
+	}
+	function toSeverityNumber(severityNumber) {
+		return severityNumber;
+	}
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/utils.js
+var require_utils = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.JSON_ENCODER = exports.PROTOBUF_ENCODER = exports.encodeAsString = exports.encodeAsLongBits = exports.toLongBits = exports.hrTimeToNanos = void 0;
+	const core_1 = require_src$8();
+	const hex_to_binary_1 = require_hex_to_binary();
+	function hrTimeToNanos(hrTime) {
+		const NANOSECONDS = BigInt(1e9);
+		return BigInt(Math.trunc(hrTime[0])) * NANOSECONDS + BigInt(Math.trunc(hrTime[1]));
+	}
+	exports.hrTimeToNanos = hrTimeToNanos;
+	function toLongBits(value) {
+		return {
+			low: Number(BigInt.asUintN(32, value)),
+			high: Number(BigInt.asUintN(32, value >> BigInt(32)))
+		};
+	}
+	exports.toLongBits = toLongBits;
+	function encodeAsLongBits(hrTime) {
+		return toLongBits(hrTimeToNanos(hrTime));
+	}
+	exports.encodeAsLongBits = encodeAsLongBits;
+	function encodeAsString(hrTime) {
+		return hrTimeToNanos(hrTime).toString();
+	}
+	exports.encodeAsString = encodeAsString;
+	const encodeTimestamp = typeof BigInt !== "undefined" ? encodeAsString : core_1.hrTimeToNanoseconds;
+	function identity(value) {
+		return value;
+	}
+	function optionalHexToBinary(str) {
+		if (str === void 0) return void 0;
+		return (0, hex_to_binary_1.hexToBinary)(str);
+	}
+	/**
+	* Encoder for protobuf format.
+	* Uses { high, low } timestamps and binary for span/trace IDs, leaves Uint8Array attributes as-is.
+	*/
+	exports.PROTOBUF_ENCODER = {
+		encodeHrTime: encodeAsLongBits,
+		encodeSpanContext: hex_to_binary_1.hexToBinary,
+		encodeOptionalSpanContext: optionalHexToBinary,
+		encodeUint8Array: identity
+	};
+	/**
+	* Encoder for JSON format.
+	* Uses string timestamps, hex for span/trace IDs, and base64 for Uint8Array.
+	*/
+	exports.JSON_ENCODER = {
+		encodeHrTime: encodeTimestamp,
+		encodeSpanContext: identity,
+		encodeOptionalSpanContext: identity,
+		encodeUint8Array: (bytes) => {
+			if (typeof Buffer !== "undefined") return Buffer.from(bytes).toString("base64");
+			const chars = new Array(bytes.length);
+			for (let i = 0; i < bytes.length; i++) chars[i] = String.fromCharCode(bytes[i]);
+			return btoa(chars.join(""));
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/json/logs.js
+var require_logs = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.JsonLogsSerializer = void 0;
+	const internal_1 = require_internal$2();
+	const utils_1 = require_utils();
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	/**
+	* @experimental this serializer may receive breaking changes in minor versions, pin this package's version when using this constant
+	*/
+	exports.JsonLogsSerializer = {
+		serializeRequest: (arg) => {
+			const request = (0, internal_1.createExportLogsServiceRequest)(arg, utils_1.JSON_ENCODER);
+			return new TextEncoder().encode(JSON.stringify(request));
+		},
+		deserializeResponse: (arg) => {
+			if (arg.length === 0) return {};
+			const decoder = new TextDecoder();
+			try {
+				return JSON.parse(decoder.decode(arg));
+			} catch (err) {
+				api_1.diag.warn(`Failed to parse logs export response: ${err.message}. Returning empty response`);
+				return {};
+			}
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/json/index.js
+var require_json$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.JsonLogsSerializer = void 0;
+	var logs_1 = require_logs();
+	Object.defineProperty(exports, "JsonLogsSerializer", {
+		enumerable: true,
+		get: function() {
+			return logs_1.JsonLogsSerializer;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/internal-types.js
+var require_internal_types = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.EAggregationTemporality = void 0;
+	/**
+	* AggregationTemporality defines how a metric aggregator reports aggregated
+	* values. It describes how those values relate to the time interval over
+	* which they are aggregated.
+	*/
+	var EAggregationTemporality;
+	(function(EAggregationTemporality) {
+		EAggregationTemporality[EAggregationTemporality["AGGREGATION_TEMPORALITY_UNSPECIFIED"] = 0] = "AGGREGATION_TEMPORALITY_UNSPECIFIED";
+		/** DELTA is an AggregationTemporality for a metric aggregator which reports
+		changes since last report time. Successive metrics contain aggregation of
+		values from continuous and non-overlapping intervals.
+		
+		The values for a DELTA metric are based only on the time interval
+		associated with one measurement cycle. There is no dependency on
+		previous measurements like is the case for CUMULATIVE metrics.
+		
+		For example, consider a system measuring the number of requests that
+		it receives and reports the sum of these requests every second as a
+		DELTA metric:
+		
+		1. The system starts receiving at time=t_0.
+		2. A request is received, the system measures 1 request.
+		3. A request is received, the system measures 1 request.
+		4. A request is received, the system measures 1 request.
+		5. The 1 second collection cycle ends. A metric is exported for the
+		number of requests received over the interval of time t_0 to
+		t_0+1 with a value of 3.
+		6. A request is received, the system measures 1 request.
+		7. A request is received, the system measures 1 request.
+		8. The 1 second collection cycle ends. A metric is exported for the
+		number of requests received over the interval of time t_0+1 to
+		t_0+2 with a value of 2. */
+		EAggregationTemporality[EAggregationTemporality["AGGREGATION_TEMPORALITY_DELTA"] = 1] = "AGGREGATION_TEMPORALITY_DELTA";
+		/** CUMULATIVE is an AggregationTemporality for a metric aggregator which
+		reports changes since a fixed start time. This means that current values
+		of a CUMULATIVE metric depend on all previous measurements since the
+		start time. Because of this, the sender is required to retain this state
+		in some form. If this state is lost or invalidated, the CUMULATIVE metric
+		values MUST be reset and a new fixed start time following the last
+		reported measurement time sent MUST be used.
+		
+		For example, consider a system measuring the number of requests that
+		it receives and reports the sum of these requests every second as a
+		CUMULATIVE metric:
+		
+		1. The system starts receiving at time=t_0.
+		2. A request is received, the system measures 1 request.
+		3. A request is received, the system measures 1 request.
+		4. A request is received, the system measures 1 request.
+		5. The 1 second collection cycle ends. A metric is exported for the
+		number of requests received over the interval of time t_0 to
+		t_0+1 with a value of 3.
+		6. A request is received, the system measures 1 request.
+		7. A request is received, the system measures 1 request.
+		8. The 1 second collection cycle ends. A metric is exported for the
+		number of requests received over the interval of time t_0 to
+		t_0+2 with a value of 5.
+		9. The system experiences a fault and loses state.
+		10. The system recovers and resumes receiving at time=t_1.
+		11. A request is received, the system measures 1 request.
+		12. The 1 second collection cycle ends. A metric is exported for the
+		number of requests received over the interval of time t_1 to
+		t_0+1 with a value of 1.
+		
+		Note: Even though, when reporting changes since last report time, using
+		CUMULATIVE is valid, it is not recommended. This may cause problems for
+		systems that do not use start_time to determine when the aggregation
+		value was reset (e.g. Prometheus). */
+		EAggregationTemporality[EAggregationTemporality["AGGREGATION_TEMPORALITY_CUMULATIVE"] = 2] = "AGGREGATION_TEMPORALITY_CUMULATIVE";
+	})(EAggregationTemporality || (exports.EAggregationTemporality = EAggregationTemporality = {}));
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/internal.js
+var require_internal$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.createExportMetricsServiceRequest = exports.toMetric = exports.toScopeMetrics = exports.toResourceMetrics = void 0;
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	const sdk_metrics_1 = require_src$5();
+	const internal_types_1 = require_internal_types();
+	const internal_1 = require_internal$3();
+	function toResourceMetrics(resourceMetrics, encoder) {
+		const processedResource = (0, internal_1.createResource)(resourceMetrics.resource, encoder);
+		return {
+			resource: processedResource,
+			schemaUrl: processedResource.schemaUrl,
+			scopeMetrics: toScopeMetrics(resourceMetrics.scopeMetrics, encoder)
+		};
+	}
+	exports.toResourceMetrics = toResourceMetrics;
+	function toScopeMetrics(scopeMetrics, encoder) {
+		return Array.from(scopeMetrics.map((metrics) => ({
+			scope: (0, internal_1.createInstrumentationScope)(metrics.scope, encoder),
+			metrics: metrics.metrics.map((metricData) => toMetric(metricData, encoder)),
+			schemaUrl: metrics.scope.schemaUrl
+		})));
+	}
+	exports.toScopeMetrics = toScopeMetrics;
+	function toMetric(metricData, encoder) {
+		const out = {
+			name: metricData.descriptor.name,
+			description: metricData.descriptor.description,
+			unit: metricData.descriptor.unit
+		};
+		const aggregationTemporality = toAggregationTemporality(metricData.aggregationTemporality);
+		switch (metricData.dataPointType) {
+			case sdk_metrics_1.DataPointType.SUM:
+				out.sum = {
+					aggregationTemporality,
+					isMonotonic: metricData.isMonotonic,
+					dataPoints: toSingularDataPoints(metricData, encoder)
+				};
+				break;
+			case sdk_metrics_1.DataPointType.GAUGE:
+				out.gauge = { dataPoints: toSingularDataPoints(metricData, encoder) };
+				break;
+			case sdk_metrics_1.DataPointType.HISTOGRAM:
+				out.histogram = {
+					aggregationTemporality,
+					dataPoints: toHistogramDataPoints(metricData, encoder)
+				};
+				break;
+			case sdk_metrics_1.DataPointType.EXPONENTIAL_HISTOGRAM: out.exponentialHistogram = {
+				aggregationTemporality,
+				dataPoints: toExponentialHistogramDataPoints(metricData, encoder)
+			};
+		}
+		return out;
+	}
+	exports.toMetric = toMetric;
+	function toSingularDataPoint(dataPoint, valueType, encoder) {
+		const out = {
+			attributes: (0, internal_1.toAttributes)(dataPoint.attributes, encoder),
+			startTimeUnixNano: encoder.encodeHrTime(dataPoint.startTime),
+			timeUnixNano: encoder.encodeHrTime(dataPoint.endTime)
+		};
+		switch (valueType) {
+			case api_1.ValueType.INT:
+				out.asInt = dataPoint.value;
+				break;
+			case api_1.ValueType.DOUBLE: out.asDouble = dataPoint.value;
+		}
+		return out;
+	}
+	function toSingularDataPoints(metricData, encoder) {
+		return metricData.dataPoints.map((dataPoint) => {
+			return toSingularDataPoint(dataPoint, metricData.descriptor.valueType, encoder);
+		});
+	}
+	function toHistogramDataPoints(metricData, encoder) {
+		return metricData.dataPoints.map((dataPoint) => {
+			const histogram = dataPoint.value;
+			return {
+				attributes: (0, internal_1.toAttributes)(dataPoint.attributes, encoder),
+				bucketCounts: histogram.buckets.counts,
+				explicitBounds: histogram.buckets.boundaries,
+				count: histogram.count,
+				sum: histogram.sum,
+				min: histogram.min,
+				max: histogram.max,
+				startTimeUnixNano: encoder.encodeHrTime(dataPoint.startTime),
+				timeUnixNano: encoder.encodeHrTime(dataPoint.endTime)
+			};
+		});
+	}
+	function toExponentialHistogramDataPoints(metricData, encoder) {
+		return metricData.dataPoints.map((dataPoint) => {
+			const histogram = dataPoint.value;
+			return {
+				attributes: (0, internal_1.toAttributes)(dataPoint.attributes, encoder),
+				count: histogram.count,
+				min: histogram.min,
+				max: histogram.max,
+				sum: histogram.sum,
+				positive: {
+					offset: histogram.positive.offset,
+					bucketCounts: histogram.positive.bucketCounts
+				},
+				negative: {
+					offset: histogram.negative.offset,
+					bucketCounts: histogram.negative.bucketCounts
+				},
+				scale: histogram.scale,
+				zeroCount: histogram.zeroCount,
+				startTimeUnixNano: encoder.encodeHrTime(dataPoint.startTime),
+				timeUnixNano: encoder.encodeHrTime(dataPoint.endTime)
+			};
+		});
+	}
+	function toAggregationTemporality(temporality) {
+		switch (temporality) {
+			case sdk_metrics_1.AggregationTemporality.DELTA: return internal_types_1.EAggregationTemporality.AGGREGATION_TEMPORALITY_DELTA;
+			case sdk_metrics_1.AggregationTemporality.CUMULATIVE: return internal_types_1.EAggregationTemporality.AGGREGATION_TEMPORALITY_CUMULATIVE;
+		}
+	}
+	function createExportMetricsServiceRequest(resourceMetrics, encoder) {
+		return { resourceMetrics: resourceMetrics.map((metrics) => toResourceMetrics(metrics, encoder)) };
+	}
+	exports.createExportMetricsServiceRequest = createExportMetricsServiceRequest;
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/json/metrics.js
+var require_metrics = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.JsonMetricsSerializer = void 0;
+	const internal_1 = require_internal$1();
+	const utils_1 = require_utils();
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	exports.JsonMetricsSerializer = {
+		serializeRequest: (arg) => {
+			const request = (0, internal_1.createExportMetricsServiceRequest)([arg], utils_1.JSON_ENCODER);
+			return new TextEncoder().encode(JSON.stringify(request));
+		},
+		deserializeResponse: (arg) => {
+			if (arg.length === 0) return {};
+			const decoder = new TextDecoder();
+			try {
+				return JSON.parse(decoder.decode(arg));
+			} catch (err) {
+				api_1.diag.warn(`Failed to parse metrics export response: ${err.message}. Returning empty response`);
+				return {};
+			}
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/json/index.js
+var require_json$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.JsonMetricsSerializer = void 0;
+	var metrics_1 = require_metrics();
+	Object.defineProperty(exports, "JsonMetricsSerializer", {
+		enumerable: true,
+		get: function() {
+			return metrics_1.JsonMetricsSerializer;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/internal.js
+var require_internal = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.createExportTraceServiceRequest = exports.toOtlpSpanEvent = exports.toOtlpLink = exports.sdkSpanToOtlpSpan = void 0;
+	const internal_1 = require_internal$3();
+	const SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK = 256;
+	const SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK = 512;
+	/**
+	* Builds the 32-bit span flags value combining the low 8-bit W3C TraceFlags
+	* with the HAS_IS_REMOTE and IS_REMOTE bits according to the OTLP spec.
+	*/
+	function buildSpanFlagsFrom(traceFlags, isRemote) {
+		let flags = traceFlags & 255 | SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK;
+		if (isRemote) flags |= SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK;
+		return flags;
+	}
+	function sdkSpanToOtlpSpan(span, encoder) {
+		const ctx = span.spanContext();
+		const status = span.status;
+		const parentSpanId = span.parentSpanContext?.spanId ? encoder.encodeSpanContext(span.parentSpanContext?.spanId) : void 0;
+		return {
+			traceId: encoder.encodeSpanContext(ctx.traceId),
+			spanId: encoder.encodeSpanContext(ctx.spanId),
+			parentSpanId,
+			traceState: ctx.traceState?.serialize(),
+			name: span.name,
+			kind: span.kind == null ? 0 : span.kind + 1,
+			startTimeUnixNano: encoder.encodeHrTime(span.startTime),
+			endTimeUnixNano: encoder.encodeHrTime(span.endTime),
+			attributes: (0, internal_1.toAttributes)(span.attributes, encoder),
+			droppedAttributesCount: span.droppedAttributesCount,
+			events: span.events.map((event) => toOtlpSpanEvent(event, encoder)),
+			droppedEventsCount: span.droppedEventsCount,
+			status: {
+				code: status.code,
+				message: status.message
+			},
+			links: span.links.map((link) => toOtlpLink(link, encoder)),
+			droppedLinksCount: span.droppedLinksCount,
+			flags: buildSpanFlagsFrom(ctx.traceFlags, span.parentSpanContext?.isRemote)
+		};
+	}
+	exports.sdkSpanToOtlpSpan = sdkSpanToOtlpSpan;
+	function toOtlpLink(link, encoder) {
+		return {
+			attributes: link.attributes ? (0, internal_1.toAttributes)(link.attributes, encoder) : [],
+			spanId: encoder.encodeSpanContext(link.context.spanId),
+			traceId: encoder.encodeSpanContext(link.context.traceId),
+			traceState: link.context.traceState?.serialize(),
+			droppedAttributesCount: link.droppedAttributesCount || 0,
+			flags: buildSpanFlagsFrom(link.context.traceFlags, link.context.isRemote)
+		};
+	}
+	exports.toOtlpLink = toOtlpLink;
+	function toOtlpSpanEvent(timedEvent, encoder) {
+		return {
+			attributes: timedEvent.attributes ? (0, internal_1.toAttributes)(timedEvent.attributes, encoder) : [],
+			name: timedEvent.name,
+			timeUnixNano: encoder.encodeHrTime(timedEvent.time),
+			droppedAttributesCount: timedEvent.droppedAttributesCount || 0
+		};
+	}
+	exports.toOtlpSpanEvent = toOtlpSpanEvent;
+	function createExportTraceServiceRequest(spans, encoder) {
+		return { resourceSpans: spanRecordsToResourceSpans(spans, encoder) };
+	}
+	exports.createExportTraceServiceRequest = createExportTraceServiceRequest;
+	function createResourceMap(readableSpans) {
+		const resourceMap = /* @__PURE__ */ new Map();
+		for (const record of readableSpans) {
+			let ilsMap = resourceMap.get(record.resource);
+			if (!ilsMap) {
+				ilsMap = /* @__PURE__ */ new Map();
+				resourceMap.set(record.resource, ilsMap);
+			}
+			const instrumentationScopeKey = `${record.instrumentationScope.name}@${record.instrumentationScope.version || ""}:${record.instrumentationScope.schemaUrl || ""}`;
+			let records = ilsMap.get(instrumentationScopeKey);
+			if (!records) {
+				records = [];
+				ilsMap.set(instrumentationScopeKey, records);
+			}
+			records.push(record);
+		}
+		return resourceMap;
+	}
+	function spanRecordsToResourceSpans(readableSpans, encoder) {
+		const resourceMap = createResourceMap(readableSpans);
+		const out = [];
+		const entryIterator = resourceMap.entries();
+		let entry = entryIterator.next();
+		while (!entry.done) {
+			const [resource, ilmMap] = entry.value;
+			const scopeResourceSpans = [];
+			const ilmIterator = ilmMap.values();
+			let ilmEntry = ilmIterator.next();
+			while (!ilmEntry.done) {
+				const scopeSpans = ilmEntry.value;
+				if (scopeSpans.length > 0) {
+					const spans = scopeSpans.map((readableSpan) => sdkSpanToOtlpSpan(readableSpan, encoder));
+					scopeResourceSpans.push({
+						scope: (0, internal_1.createInstrumentationScope)(scopeSpans[0].instrumentationScope, encoder),
+						spans,
+						schemaUrl: scopeSpans[0].instrumentationScope.schemaUrl
+					});
+				}
+				ilmEntry = ilmIterator.next();
+			}
+			const processedResource = (0, internal_1.createResource)(resource, encoder);
+			const transformedSpans = {
+				resource: processedResource,
+				scopeSpans: scopeResourceSpans,
+				schemaUrl: processedResource.schemaUrl
+			};
+			out.push(transformedSpans);
+			entry = entryIterator.next();
+		}
+		return out;
+	}
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/json/trace.js
+var require_trace = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.JsonTraceSerializer = void 0;
+	const internal_1 = require_internal();
+	const utils_1 = require_utils();
+	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
+	exports.JsonTraceSerializer = {
+		serializeRequest: (arg) => {
+			const request = (0, internal_1.createExportTraceServiceRequest)(arg, utils_1.JSON_ENCODER);
+			return new TextEncoder().encode(JSON.stringify(request));
+		},
+		deserializeResponse: (arg) => {
+			if (arg.length === 0) return {};
+			const decoder = new TextDecoder();
+			try {
+				return JSON.parse(decoder.decode(arg));
+			} catch (err) {
+				api_1.diag.warn(`Failed to parse trace export response: ${err.message}. Returning empty response`);
+				return {};
+			}
+		}
+	};
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/json/index.js
+var require_json = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.JsonTraceSerializer = void 0;
+	var trace_1 = require_trace();
+	Object.defineProperty(exports, "JsonTraceSerializer", {
+		enumerable: true,
+		get: function() {
+			return trace_1.JsonTraceSerializer;
+		}
+	});
+}));
+
+//#endregion
+//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/index.js
+var require_src$4 = /* @__PURE__ */ __commonJSMin(((exports) => {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.JsonTraceSerializer = exports.JsonMetricsSerializer = exports.JsonLogsSerializer = exports.ProtobufTraceSerializer = exports.ProtobufMetricsSerializer = exports.ProtobufLogsSerializer = exports.LogsExporterMetricsHelper = exports.TraceExporterMetricsHelper = exports.MetricsExporterMetricsHelper = void 0;
+	var metrics_1 = require_metrics$2();
+	Object.defineProperty(exports, "MetricsExporterMetricsHelper", {
+		enumerable: true,
+		get: function() {
+			return metrics_1.MetricsExporterMetricsHelper;
+		}
+	});
+	var trace_1 = require_trace$2();
+	Object.defineProperty(exports, "TraceExporterMetricsHelper", {
+		enumerable: true,
+		get: function() {
+			return trace_1.TraceExporterMetricsHelper;
+		}
+	});
+	var logs_1 = require_logs$3();
+	Object.defineProperty(exports, "LogsExporterMetricsHelper", {
+		enumerable: true,
+		get: function() {
+			return logs_1.LogsExporterMetricsHelper;
+		}
+	});
+	var protobuf_1 = require_protobuf$2();
+	Object.defineProperty(exports, "ProtobufLogsSerializer", {
+		enumerable: true,
+		get: function() {
+			return protobuf_1.ProtobufLogsSerializer;
+		}
+	});
+	var protobuf_2 = require_protobuf$1();
+	Object.defineProperty(exports, "ProtobufMetricsSerializer", {
+		enumerable: true,
+		get: function() {
+			return protobuf_2.ProtobufMetricsSerializer;
+		}
+	});
+	var protobuf_3 = require_protobuf();
+	Object.defineProperty(exports, "ProtobufTraceSerializer", {
+		enumerable: true,
+		get: function() {
+			return protobuf_3.ProtobufTraceSerializer;
+		}
+	});
+	var json_1 = require_json$2();
+	Object.defineProperty(exports, "JsonLogsSerializer", {
+		enumerable: true,
+		get: function() {
+			return json_1.JsonLogsSerializer;
+		}
+	});
+	var json_2 = require_json$1();
+	Object.defineProperty(exports, "JsonMetricsSerializer", {
+		enumerable: true,
+		get: function() {
+			return json_2.JsonMetricsSerializer;
+		}
+	});
+	var json_3 = require_json();
+	Object.defineProperty(exports, "JsonTraceSerializer", {
+		enumerable: true,
+		get: function() {
+			return json_3.JsonTraceSerializer;
+		}
+	});
+}));
+
+//#endregion
+//#region src/otlp-spool.ts
 var import_src$7 = require_src$8();
+var import_src$8 = require_src$4();
+const SPOOL_MAX_BYTES = 2147483648;
+const STAGING = ".staging";
+const ENTRY_SUFFIX = ".otlp";
+function defaultSpoolDirectory(home = process.env.HOME ?? os.homedir()) {
+	return path$1.join(home, ".codex", "langfuse_state", "langfuse_otlp_spool");
+}
+/** The replay drains only to a loopback edge, so only a hook that exports to one spools. */
+function isLoopbackUrl(url) {
+	return url.startsWith("http://127.0.0.1:") || url.startsWith("http://localhost:");
+}
+var SpoolWriteError = class extends Error {};
+const hex = () => randomUUID().replaceAll("-", "");
+async function namesIn(directory) {
+	try {
+		return await fs$1.readdir(directory);
+	} catch (error) {
+		if (error.code === "ENOENT") return [];
+		throw error;
+	}
+}
+async function fsyncDirectory(directory) {
+	const handle = await fs$1.open(directory, "r");
+	try {
+		await handle.sync();
+	} finally {
+		await handle.close();
+	}
+}
+async function entryBytes(directory) {
+	let total = 0;
+	for (const name of await namesIn(directory)) {
+		if (!name.endsWith(ENTRY_SUFFIX)) continue;
+		total += (await fs$1.stat(path$1.join(directory, name)).catch(() => void 0))?.size ?? 0;
+	}
+	return total;
+}
+async function durableSave(directory, payload) {
+	const name = `${(BigInt(Date.now()) * 1000000n).toString().padStart(20, "0")}-${hex()}`;
+	const temporary = path$1.join(directory, `.${name}.tmp`);
+	try {
+		const handle = await fs$1.open(temporary, "wx", 384);
+		try {
+			await handle.writeFile(payload);
+			await handle.sync();
+		} finally {
+			await handle.close();
+		}
+		await fs$1.rename(temporary, path$1.join(directory, `${name}${ENTRY_SUFFIX}`));
+		await fsyncDirectory(directory);
+	} finally {
+		await fs$1.rm(temporary, { force: true });
+	}
+}
+const asSpoolError = (error) => error instanceof SpoolWriteError ? error : new SpoolWriteError(`Langfuse OTLP spool write failed: ${error instanceof Error ? error.message : String(error)}`);
+/**
+* Requests staged by this run reach the spool only on `commit`, so a turn that is not marked
+* leaves nothing behind for the replay to deliver a second time.
+*/
+var OtlpSpool = class {
+	directory;
+	maxBytes;
+	staging;
+	constructor(directory, maxBytes = SPOOL_MAX_BYTES) {
+		this.directory = directory;
+		this.maxBytes = maxBytes;
+		this.staging = path$1.join(directory, STAGING, hex());
+	}
+	async stage(spans) {
+		try {
+			const payload = import_src$8.ProtobufTraceSerializer.serializeRequest(spans);
+			if (!payload) throw new SpoolWriteError("the OTLP request could not be encoded");
+			await fs$1.mkdir(this.staging, {
+				recursive: true,
+				mode: 448
+			});
+			let queued = await entryBytes(this.directory);
+			for (const owner of await namesIn(path$1.join(this.directory, STAGING))) queued += await entryBytes(path$1.join(this.directory, STAGING, owner));
+			if (queued + payload.byteLength > this.maxBytes) throw new SpoolWriteError(`Langfuse OTLP spool full: ${queued} bytes queued plus a ${payload.byteLength}-byte request exceeds ${this.maxBytes} at ${this.directory}; nothing was deleted`);
+			await durableSave(this.staging, payload);
+		} catch (error) {
+			throw asSpoolError(error);
+		}
+	}
+	async commit() {
+		try {
+			const staged = (await namesIn(this.staging)).filter((name) => name.endsWith(ENTRY_SUFFIX));
+			for (const name of staged.sort()) await fs$1.rename(path$1.join(this.staging, name), path$1.join(this.directory, name));
+			if (staged.length > 0) await fsyncDirectory(this.directory);
+			await fs$1.rm(this.staging, {
+				recursive: true,
+				force: true
+			});
+		} catch (error) {
+			throw asSpoolError(error);
+		}
+	}
+	async discard() {
+		await fs$1.rm(this.staging, {
+			recursive: true,
+			force: true
+		}).catch(() => void 0);
+	}
+};
+
+//#endregion
+//#region src/utils.ts
+/** Read and JSON-parse the hook payload Codex writes to stdin. */
+function readStdin() {
+	return new Promise((resolve, reject) => {
+		let buffer = "";
+		process.stdin.setEncoding("utf-8");
+		process.stdin.on("data", (chunk) => buffer += chunk);
+		process.stdin.on("end", () => {
+			const trimmed = buffer.trim();
+			if (!trimmed) {
+				reject(/* @__PURE__ */ new Error("empty hook stdin"));
+				return;
+			}
+			try {
+				resolve(JSON.parse(trimmed));
+			} catch (error) {
+				reject(/* @__PURE__ */ new Error(`failed to parse hook stdin: ${error instanceof Error ? error.message : String(error)}`));
+			}
+		});
+		process.stdin.once("error", reject);
+	});
+}
+function isPrimitive(value) {
+	const t = typeof value;
+	return t === "string" || t === "number" || t === "boolean";
+}
+/** Stringify a value for display, leaving strings untouched. */
+function toText(value) {
+	if (value == null) return "";
+	if (typeof value === "string") return value;
+	if (isPrimitive(value)) return String(value);
+	try {
+		return JSON.stringify(value);
+	} catch {
+		return String(value);
+	}
+}
+let debugEnabled = false;
+function setDebug(enabled) {
+	debugEnabled = enabled;
+}
+function debugLog(...args) {
+	if (!debugEnabled) return;
+	console.error("[langfuse-codex]", ...args);
+}
+
+//#endregion
+//#region src/bounded-export.ts
 const MAX_REQUEST_BYTES = 16777216;
 const MAX_REQUESTS_IN_FLIGHT = 4;
 const BASE_TIMEOUT_MS = 5e3;
@@ -17938,19 +25619,23 @@ function reportOversized(span, bytes, maxBytes) {
 	process.stderr.write(`[langfuse-codex] ${span.name} ${span.spanContext().spanId} of session ${String(session)} is ${bytes} bytes, over the ${maxBytes}-byte request cap: exported without its content\n`);
 }
 /**
-* Sends each batch as OTLP requests of at most `maxBytes`, and remembers the first failure
-* until `takeFailure`, because the batch processor reports a failed background export to no one.
+* Sends each batch as OTLP requests of at most `maxBytes`, stages in `spool` each one the
+* collector does not take unless it rejected it, and remembers the first failure until
+* `takeFailure`, because the batch processor reports a failed background export to no one.
 */
 var BoundedRequestExporter = class {
 	exporterWithTimeout;
 	maxBytes;
+	spool;
 	delegates = /* @__PURE__ */ new Map();
 	waiting = [];
 	inFlight = 0;
 	failure;
-	constructor(exporterWithTimeout, maxBytes = MAX_REQUEST_BYTES) {
+	spoolFailureReported = false;
+	constructor(exporterWithTimeout, maxBytes = MAX_REQUEST_BYTES, spool) {
 		this.exporterWithTimeout = exporterWithTimeout;
 		this.maxBytes = maxBytes;
+		this.spool = spool;
 	}
 	export(spans, resultCallback) {
 		this.send(spans).then(resultCallback, (error) => {
@@ -17976,7 +25661,7 @@ var BoundedRequestExporter = class {
 		const failed = (await Promise.all(this.requests(spans).map(async (request) => {
 			await this.acquire();
 			try {
-				return await this.sendRequest(request);
+				return await this.deliver(request);
 			} finally {
 				this.release();
 			}
@@ -18012,6 +25697,25 @@ var BoundedRequestExporter = class {
 		if (current.spans.length > 0) requests.push(current);
 		return requests;
 	}
+	async deliver(request) {
+		const result = await this.sendRequest(request);
+		if (result.code === import_src$7.ExportResultCode.SUCCESS || !this.spool) return result;
+		if (exportFailureKind(result.error) === "rejected") return result;
+		try {
+			await this.spool.stage(request.spans);
+		} catch (error) {
+			if (!this.spoolFailureReported) {
+				this.spoolFailureReported = true;
+				process.stderr.write(`[langfuse-codex] ${asError(error).message}\n`);
+			}
+			return {
+				code: import_src$7.ExportResultCode.FAILED,
+				error: asError(error)
+			};
+		}
+		debugLog(`spooled a request the collector did not take: ${result.error?.message ?? "failed"}`);
+		return { code: import_src$7.ExportResultCode.SUCCESS };
+	}
 	sendRequest(request) {
 		const timeoutMillis = requestTimeoutMillis(request.bytes);
 		let delegate = this.delegates.get(timeoutMillis);
@@ -18036,6 +25740,59 @@ var BoundedRequestExporter = class {
 	}
 };
 const asError = (error) => error instanceof Error ? error : new Error(String(error));
+function post(endpoint, body, timeoutMillis) {
+	const send = endpoint.url.startsWith("https:") ? https.request : http.request;
+	return new Promise((resolve, reject) => {
+		const request = send(endpoint.url, {
+			method: "POST",
+			headers: {
+				...endpoint.headers,
+				"Content-Type": "application/json",
+				"Content-Length": body.byteLength
+			}
+		}, (response) => {
+			response.resume();
+			response.on("error", reject);
+			response.once("end", () => {
+				const status = response.statusCode ?? 0;
+				if (status >= 200 && status < 300) resolve();
+				else reject(Object.assign(/* @__PURE__ */ new Error(`OTLP export failed with HTTP ${status}`), { code: status }));
+			});
+		});
+		const deadline = setTimeout(() => request.destroy(/* @__PURE__ */ new Error("Request timed out")), timeoutMillis);
+		request.once("close", () => clearTimeout(deadline));
+		request.on("error", reject);
+		request.end(body);
+	});
+}
+/**
+* One POST per request: the OTLP exporter's own transport retries a refused connection until
+* the deadline, longer than the 3 s an `Interrupt` or `SessionEnd` hook has to reach the spool.
+*/
+var SingleAttemptExporter = class {
+	endpoint;
+	timeoutMillis;
+	constructor(endpoint, timeoutMillis) {
+		this.endpoint = endpoint;
+		this.timeoutMillis = timeoutMillis;
+	}
+	export(spans, resultCallback) {
+		const body = import_src$8.JsonTraceSerializer.serializeRequest(spans);
+		if (!body) {
+			resultCallback({
+				code: import_src$7.ExportResultCode.FAILED,
+				error: /* @__PURE__ */ new Error("OTLP request could not be encoded")
+			});
+			return;
+		}
+		post(this.endpoint, body, this.timeoutMillis).then(() => resultCallback({ code: import_src$7.ExportResultCode.SUCCESS }), (error) => resultCallback({
+			code: import_src$7.ExportResultCode.FAILED,
+			error: asError(error)
+		}));
+	}
+	async shutdown() {}
+	async forceFlush() {}
+};
 const UNREACHABLE_CODES = /* @__PURE__ */ new Set([
 	"ECONNREFUSED",
 	"ENOTFOUND",
@@ -18045,10 +25802,12 @@ const UNREACHABLE_CODES = /* @__PURE__ */ new Set([
 ]);
 const TRANSIENT_STATUSES = /* @__PURE__ */ new Set([408, 429]);
 /**
-* `unreachable`: no collector answered, so the turn is not at fault. `rejected`: a 4xx the
-* collector will repeat for the same body. `failed`: anything else, retried a bounded number of runs.
+* `unreachable`: neither a collector nor the spool took the request, so the turn is not at
+* fault. `rejected`: a 4xx the collector will repeat for the same body. `failed`: anything else,
+* which a hook without a spool retries a bounded number of runs.
 */
 function exportFailureKind(error) {
+	if (error instanceof SpoolWriteError) return "unreachable";
 	const code = typeof error === "object" && error !== null ? error.code : void 0;
 	if (typeof code === "string" && UNREACHABLE_CODES.has(code)) return "unreachable";
 	if (typeof code === "number" && code >= 400 && code < 500 && !TRANSIENT_STATUSES.has(code)) return "rejected";
@@ -23639,7 +31398,7 @@ function readEnvConfig(env) {
 		fail_on_error: parseBoolean(env.LANGFUSE_CODEX_FAIL_ON_ERROR)
 	}));
 }
-const getHomeDir = () => process.env.HOME ?? os$1.homedir();
+const getHomeDir = () => process.env.HOME ?? os.homedir();
 function getCodexAuthFile(home, env) {
 	const codexHome = env.CODEX_HOME?.trim();
 	return codexHome ? path$1.join(codexHome, "auth.json") : path$1.join(home, ".codex", "auth.json");
@@ -24034,7531 +31793,6 @@ var init_esm = __esmMin((() => {
 	init_legacy_node_configuration();
 	init_otlp_network_export_delegate();
 	init_ExporterMetrics();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/index.js
-var require_metrics$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MetricsExporterMetricsHelper = void 0;
-	exports.MetricsExporterMetricsHelper = {
-		name: "metric_data_point",
-		countItems: (request) => {
-			let count = 0;
-			for (const scopeMetrics of request.scopeMetrics) for (const metric of scopeMetrics.metrics) count += metric.dataPoints.length;
-			return count;
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/index.js
-var require_trace$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.TraceExporterMetricsHelper = void 0;
-	exports.TraceExporterMetricsHelper = {
-		name: "span",
-		countItems: (request) => request.length
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/index.js
-var require_logs$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.LogsExporterMetricsHelper = void 0;
-	/**
-	* @experimental this helper may receive breaking changes in minor versions, pin this package's version when using this constant
-	*/
-	exports.LogsExporterMetricsHelper = {
-		name: "log",
-		countItems: (request) => request.length
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/utils.js
-var require_utils$4 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.estimateVarintSize = void 0;
-	/**
-	* Estimate size of a number encoded as varint.
-	* @param v value to calculate size for
-	* @returns size in bytes of the varint encoding of the value
-	*/
-	function estimateVarintSize(v) {
-		if (v < 0) return 10;
-		if (v < 128) return 1;
-		if (v < 16384) return 2;
-		if (v < 2097152) return 3;
-		if (v < 268435456) return 4;
-		if (v < 34359738368) return 5;
-		if (v < 4398046511104) return 6;
-		if (v < 562949953421312) return 7;
-		if (v < 72057594037927940) return 8;
-		return 9;
-	}
-	exports.estimateVarintSize = estimateVarintSize;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/protobuf-writer.js
-var require_protobuf_writer = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufWriter = exports.GROWING_BUFFER_DEBUG_MESSAGE = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const utils_1 = require_utils$4();
-	exports.GROWING_BUFFER_DEBUG_MESSAGE = "ProtobufWriter: estimated size was too small, growing buffer.";
-	/**
-	* bytes reserved for length in length-delimited fields
-	* using 1 to assume most length-delimited fields are small
-	*/
-	const RESERVED_LENGTH_BYTES = 1;
-	/**
-	* Primitive protobuf writer, optimized to avoid small object allocations.
-	* Grows buffer dynamically if initial size is exceeded.
-	*/
-	var ProtobufWriter = class {
-		_buffer;
-		_textEncoder;
-		_dataView;
-		pos = 0;
-		constructor(estimatedSize = 65536) {
-			this._buffer = new Uint8Array(estimatedSize);
-			this._textEncoder = new TextEncoder();
-			this._dataView = new DataView(this._buffer.buffer, this._buffer.byteOffset);
-		}
-		/**
-		* Ensure buffer has capacity for at least size more bytes
-		*/
-		_ensureCapacity(size) {
-			const needed = this.pos + size;
-			if (needed <= this._buffer.length) return;
-			api_1.diag.debug(exports.GROWING_BUFFER_DEBUG_MESSAGE);
-			let newSize = this._buffer.length * 2;
-			while (newSize < needed) newSize *= 2;
-			const newBuffer = new Uint8Array(newSize);
-			newBuffer.set(this._buffer);
-			this._buffer = newBuffer;
-			this._dataView = new DataView(this._buffer.buffer, this._buffer.byteOffset);
-		}
-		/**
-		* Get the written bytes as a Uint8Array
-		*/
-		finish() {
-			return this._buffer.subarray(0, this.pos);
-		}
-		/**
-		* Insert placeholder for length. Update later with {@link finishLengthDelimited}
-		* Returns the position where to write the length.
-		*/
-		startLengthDelimited() {
-			const lengthPos = this.pos;
-			this._ensureCapacity(RESERVED_LENGTH_BYTES);
-			this.pos += RESERVED_LENGTH_BYTES;
-			return lengthPos;
-		}
-		/**
-		* Write length varint at placeholder position and shift content forward if needed.
-		* Most messages are small (< 128 bytes), so we reserve 1 byte and only shift
-		* when the length needs more bytes.
-		*/
-		finishLengthDelimited(pos, length) {
-			const v = length >>> 0;
-			const varintSize = (0, utils_1.estimateVarintSize)(v);
-			if (varintSize > RESERVED_LENGTH_BYTES) {
-				const additionalBytes = varintSize - RESERVED_LENGTH_BYTES;
-				this._ensureCapacity(additionalBytes);
-				this._buffer.copyWithin(pos + varintSize, pos + RESERVED_LENGTH_BYTES, this.pos);
-				this.pos += additionalBytes;
-			}
-			let writePos = pos;
-			if (v < 128) this._buffer[writePos] = v;
-			else if (v < 16384) {
-				this._buffer[writePos++] = v & 127 | 128;
-				this._buffer[writePos] = v >>> 7;
-			} else if (v < 2097152) {
-				this._buffer[writePos++] = v & 127 | 128;
-				this._buffer[writePos++] = v >>> 7 & 127 | 128;
-				this._buffer[writePos] = v >>> 14;
-			} else if (v < 268435456) {
-				this._buffer[writePos++] = v & 127 | 128;
-				this._buffer[writePos++] = v >>> 7 & 127 | 128;
-				this._buffer[writePos++] = v >>> 14 & 127 | 128;
-				this._buffer[writePos] = v >>> 21;
-			} else {
-				this._buffer[writePos++] = v & 127 | 128;
-				this._buffer[writePos++] = v >>> 7 & 127 | 128;
-				this._buffer[writePos++] = v >>> 14 & 127 | 128;
-				this._buffer[writePos++] = v >>> 21 & 127 | 128;
-				this._buffer[writePos] = v >>> 28;
-			}
-		}
-		/**
-		* Write a sint32 value using zigzag encoding
-		*/
-		writeSint32(value) {
-			this.writeVarint((value << 1 ^ value >> 31) >>> 0);
-		}
-		/**
-		* Write a signed 64-bit fixed integer (sfixed64) from a JS number.
-		* Handles negative values via two's complement.
-		*/
-		writeSfixed64(value) {
-			let low;
-			let high;
-			if (value >= 0) {
-				low = value >>> 0;
-				high = value / 4294967296 >>> 0;
-			} else {
-				const abs = Math.abs(value);
-				low = abs >>> 0;
-				high = abs / 4294967296 >>> 0;
-				low = ~low >>> 0;
-				high = ~high >>> 0;
-				low = low + 1 >>> 0;
-				if (low === 0) high = high + 1 >>> 0;
-			}
-			this.writeFixed64(low, high);
-		}
-		/**
-		* Write a varint (variable-length integer)
-		*/
-		writeVarint(value) {
-			this._ensureCapacity((0, utils_1.estimateVarintSize)(value));
-			if (value >= 0 && value <= 4294967295) {
-				let v = value >>> 0;
-				while (v > 127) {
-					this._buffer[this.pos++] = v & 127 | 128;
-					v >>>= 7;
-				}
-				this._buffer[this.pos++] = v;
-			} else {
-				let low;
-				let high;
-				if (value >= 0) {
-					low = value >>> 0;
-					high = value / 4294967296 >>> 0;
-				} else {
-					const abs = Math.abs(value);
-					low = abs >>> 0;
-					high = abs / 4294967296 >>> 0;
-					low = ~low >>> 0;
-					high = ~high >>> 0;
-					low = low + 1 >>> 0;
-					if (low === 0) high = high + 1 >>> 0;
-				}
-				while (high > 0 || low > 127) {
-					this._buffer[this.pos++] = low & 127 | 128;
-					low = (low >>> 7 | high << 25) >>> 0;
-					high >>>= 7;
-				}
-				this._buffer[this.pos++] = low & 127;
-			}
-		}
-		/**
-		* Write a 32-bit fixed integer (little-endian)
-		*/
-		writeFixed32(value) {
-			this._ensureCapacity(4);
-			const v = value >>> 0;
-			this._buffer[this.pos++] = v & 255;
-			this._buffer[this.pos++] = v >>> 8 & 255;
-			this._buffer[this.pos++] = v >>> 16 & 255;
-			this._buffer[this.pos++] = v >>> 24 & 255;
-		}
-		/**
-		* Write a 64-bit fixed integer (little-endian)
-		* @param low - Low 32 bits
-		* @param high - High 32 bits
-		*/
-		writeFixed64(low, high) {
-			this._ensureCapacity(8);
-			const l = low >>> 0;
-			const h = high >>> 0;
-			this._buffer[this.pos++] = l & 255;
-			this._buffer[this.pos++] = l >>> 8 & 255;
-			this._buffer[this.pos++] = l >>> 16 & 255;
-			this._buffer[this.pos++] = l >>> 24 & 255;
-			this._buffer[this.pos++] = h & 255;
-			this._buffer[this.pos++] = h >>> 8 & 255;
-			this._buffer[this.pos++] = h >>> 16 & 255;
-			this._buffer[this.pos++] = h >>> 24 & 255;
-		}
-		/**
-		* Write length-delimited data (varint length + bytes)
-		*/
-		writeBytes(bytes) {
-			this.writeVarint(bytes.length);
-			this._ensureCapacity(bytes.length);
-			this._buffer.set(bytes, this.pos);
-			this.pos += bytes.length;
-		}
-		/**
-		* Write a field key (field number + wire type)
-		*/
-		writeTag(fieldNumber, wireType) {
-			this.writeVarint(fieldNumber << 3 | wireType);
-		}
-		/**
-		* Write a double (64-bit IEEE 754)
-		*/
-		writeDouble(value) {
-			this._ensureCapacity(8);
-			this._dataView.setFloat64(this.pos, value, true);
-			this.pos += 8;
-		}
-		/**
-		* Write a string as UTF-8 bytes (length-delimited)
-		*/
-		writeString(str) {
-			let isAscii = true;
-			const len = str.length;
-			for (let i = 0; i < len; i++) if (str.charCodeAt(i) > 127) {
-				isAscii = false;
-				break;
-			}
-			if (isAscii) {
-				this.writeVarint(len);
-				this._ensureCapacity(len);
-				for (let i = 0; i < len; i++) this._buffer[this.pos++] = str.charCodeAt(i);
-			} else {
-				const bytes = this._textEncoder.encode(str);
-				this.writeBytes(bytes);
-			}
-		}
-	};
-	exports.ProtobufWriter = ProtobufWriter;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/hex-to-binary.js
-var require_hex_to_binary = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.hexToBinary = void 0;
-	function intValue(charCode) {
-		if (charCode >= 48 && charCode <= 57) return charCode - 48;
-		if (charCode >= 97 && charCode <= 102) return charCode - 87;
-		return charCode - 55;
-	}
-	function hexToBinary(hexStr) {
-		const buf = new Uint8Array(hexStr.length / 2);
-		let offset = 0;
-		for (let i = 0; i < hexStr.length; i += 2) {
-			const hi = intValue(hexStr.charCodeAt(i));
-			const lo = intValue(hexStr.charCodeAt(i + 1));
-			buf[offset++] = hi << 4 | lo;
-		}
-		return buf;
-	}
-	exports.hexToBinary = hexToBinary;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/types/LogRecord.js
-var require_LogRecord = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.SeverityNumber = void 0;
-	var SeverityNumber;
-	(function(SeverityNumber) {
-		SeverityNumber[SeverityNumber["UNSPECIFIED"] = 0] = "UNSPECIFIED";
-		SeverityNumber[SeverityNumber["TRACE"] = 1] = "TRACE";
-		SeverityNumber[SeverityNumber["TRACE2"] = 2] = "TRACE2";
-		SeverityNumber[SeverityNumber["TRACE3"] = 3] = "TRACE3";
-		SeverityNumber[SeverityNumber["TRACE4"] = 4] = "TRACE4";
-		SeverityNumber[SeverityNumber["DEBUG"] = 5] = "DEBUG";
-		SeverityNumber[SeverityNumber["DEBUG2"] = 6] = "DEBUG2";
-		SeverityNumber[SeverityNumber["DEBUG3"] = 7] = "DEBUG3";
-		SeverityNumber[SeverityNumber["DEBUG4"] = 8] = "DEBUG4";
-		SeverityNumber[SeverityNumber["INFO"] = 9] = "INFO";
-		SeverityNumber[SeverityNumber["INFO2"] = 10] = "INFO2";
-		SeverityNumber[SeverityNumber["INFO3"] = 11] = "INFO3";
-		SeverityNumber[SeverityNumber["INFO4"] = 12] = "INFO4";
-		SeverityNumber[SeverityNumber["WARN"] = 13] = "WARN";
-		SeverityNumber[SeverityNumber["WARN2"] = 14] = "WARN2";
-		SeverityNumber[SeverityNumber["WARN3"] = 15] = "WARN3";
-		SeverityNumber[SeverityNumber["WARN4"] = 16] = "WARN4";
-		SeverityNumber[SeverityNumber["ERROR"] = 17] = "ERROR";
-		SeverityNumber[SeverityNumber["ERROR2"] = 18] = "ERROR2";
-		SeverityNumber[SeverityNumber["ERROR3"] = 19] = "ERROR3";
-		SeverityNumber[SeverityNumber["ERROR4"] = 20] = "ERROR4";
-		SeverityNumber[SeverityNumber["FATAL"] = 21] = "FATAL";
-		SeverityNumber[SeverityNumber["FATAL2"] = 22] = "FATAL2";
-		SeverityNumber[SeverityNumber["FATAL3"] = 23] = "FATAL3";
-		SeverityNumber[SeverityNumber["FATAL4"] = 24] = "FATAL4";
-	})(SeverityNumber || (exports.SeverityNumber = SeverityNumber = {}));
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/NoopLogger.js
-var require_NoopLogger = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.createNoopLogger = exports.NOOP_LOGGER = exports.NoopLogger = void 0;
-	var NoopLogger = class {
-		emit(_logRecord) {}
-		enabled() {
-			return false;
-		}
-	};
-	exports.NoopLogger = NoopLogger;
-	exports.NOOP_LOGGER = new NoopLogger();
-	/**
-	* Create a no-op Logger
-	*/
-	function createNoopLogger() {
-		return exports.NOOP_LOGGER;
-	}
-	exports.createNoopLogger = createNoopLogger;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/internal/global-utils.js
-var require_global_utils = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.API_BACKWARDS_COMPATIBILITY_VERSION = exports.makeGetter = exports._global = exports.GLOBAL_LOGS_API_KEY = void 0;
-	exports.GLOBAL_LOGS_API_KEY = Symbol.for("io.opentelemetry.js.api.logs");
-	exports._global = globalThis;
-	/**
-	* Make a function which accepts a version integer and returns the instance of an API if the version
-	* is compatible, or a fallback version (usually NOOP) if it is not.
-	*
-	* @param requiredVersion Backwards compatibility version which is required to return the instance
-	* @param instance Instance which should be returned if the required version is compatible
-	* @param fallback Fallback instance, usually NOOP, which will be returned if the required version is not compatible
-	*/
-	function makeGetter(requiredVersion, instance, fallback) {
-		return (version) => version === requiredVersion ? instance : fallback;
-	}
-	exports.makeGetter = makeGetter;
-	/**
-	* A number which should be incremented each time a backwards incompatible
-	* change is made to the API. This number is used when an API package
-	* attempts to access the global API to ensure it is getting a compatible
-	* version. If the global API is not compatible with the API package
-	* attempting to get it, a NOOP API implementation will be returned.
-	*/
-	exports.API_BACKWARDS_COMPATIBILITY_VERSION = 1;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/NoopLoggerProvider.js
-var require_NoopLoggerProvider = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.NOOP_LOGGER_PROVIDER = exports.NoopLoggerProvider = void 0;
-	const NoopLogger_1 = require_NoopLogger();
-	var NoopLoggerProvider = class {
-		getLogger(_name, _version, _options) {
-			return new NoopLogger_1.NoopLogger();
-		}
-	};
-	exports.NoopLoggerProvider = NoopLoggerProvider;
-	exports.NOOP_LOGGER_PROVIDER = new NoopLoggerProvider();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/ProxyLogger.js
-var require_ProxyLogger = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProxyLogger = void 0;
-	const NoopLogger_1 = require_NoopLogger();
-	var ProxyLogger = class {
-		constructor(provider, name, version, options) {
-			this._provider = provider;
-			this.name = name;
-			this.version = version;
-			this.options = options;
-		}
-		/**
-		* Emit a log record. This method should only be used by log appenders.
-		*
-		* @param logRecord
-		*/
-		emit(logRecord) {
-			this._getLogger().emit(logRecord);
-		}
-		enabled(options) {
-			return this._getLogger().enabled(options);
-		}
-		/**
-		* Try to get a logger from the proxy logger provider.
-		* If the proxy logger provider has no delegate, return a noop logger.
-		*/
-		_getLogger() {
-			if (this._delegate) return this._delegate;
-			const logger = this._provider._getDelegateLogger(this.name, this.version, this.options);
-			if (!logger) return NoopLogger_1.NOOP_LOGGER;
-			this._delegate = logger;
-			return this._delegate;
-		}
-	};
-	exports.ProxyLogger = ProxyLogger;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/ProxyLoggerProvider.js
-var require_ProxyLoggerProvider = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProxyLoggerProvider = void 0;
-	const NoopLoggerProvider_1 = require_NoopLoggerProvider();
-	const ProxyLogger_1 = require_ProxyLogger();
-	var ProxyLoggerProvider = class {
-		getLogger(name, version, options) {
-			var _a;
-			return (_a = this._getDelegateLogger(name, version, options)) !== null && _a !== void 0 ? _a : new ProxyLogger_1.ProxyLogger(this, name, version, options);
-		}
-		/**
-		* Get the delegate logger provider.
-		* Used by tests only.
-		* @internal
-		*/
-		_getDelegate() {
-			var _a;
-			return (_a = this._delegate) !== null && _a !== void 0 ? _a : NoopLoggerProvider_1.NOOP_LOGGER_PROVIDER;
-		}
-		/**
-		* Set the delegate logger provider
-		* @internal
-		*/
-		_setDelegate(delegate) {
-			this._delegate = delegate;
-		}
-		/**
-		* @internal
-		*/
-		_getDelegateLogger(name, version, options) {
-			var _a;
-			return (_a = this._delegate) === null || _a === void 0 ? void 0 : _a.getLogger(name, version, options);
-		}
-	};
-	exports.ProxyLoggerProvider = ProxyLoggerProvider;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/api/logs.js
-var require_logs$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.LogsAPI = void 0;
-	const global_utils_1 = require_global_utils();
-	const NoopLoggerProvider_1 = require_NoopLoggerProvider();
-	const ProxyLoggerProvider_1 = require_ProxyLoggerProvider();
-	var LogsAPI = class LogsAPI {
-		constructor() {
-			this._proxyLoggerProvider = new ProxyLoggerProvider_1.ProxyLoggerProvider();
-		}
-		static getInstance() {
-			if (!this._instance) this._instance = new LogsAPI();
-			return this._instance;
-		}
-		setGlobalLoggerProvider(provider) {
-			if (global_utils_1._global[global_utils_1.GLOBAL_LOGS_API_KEY]) return this.getLoggerProvider();
-			global_utils_1._global[global_utils_1.GLOBAL_LOGS_API_KEY] = (0, global_utils_1.makeGetter)(global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION, provider, NoopLoggerProvider_1.NOOP_LOGGER_PROVIDER);
-			this._proxyLoggerProvider._setDelegate(provider);
-			return provider;
-		}
-		/**
-		* Returns the global logger provider.
-		*
-		* @returns LoggerProvider
-		*/
-		getLoggerProvider() {
-			var _a, _b;
-			return (_b = (_a = global_utils_1._global[global_utils_1.GLOBAL_LOGS_API_KEY]) === null || _a === void 0 ? void 0 : _a.call(global_utils_1._global, global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION)) !== null && _b !== void 0 ? _b : this._proxyLoggerProvider;
-		}
-		/**
-		* Returns a Logger, creating one if one with the given name, version,
-		* schemaUrl, and attributes is not already created.
-		*
-		* Getting a Logger may be expensive, especially when `attributes` are
-		* provided. Reuse Logger instances where possible instead of calling
-		* `getLogger()` on hot paths.
-		*
-		* @param name The name of the logger or instrumentation library.
-		* @param version The version of the logger or instrumentation library.
-		* @param options The options of the logger or instrumentation library.
-		* @returns {@link Logger}
-		*/
-		getLogger(name, version, options) {
-			return this.getLoggerProvider().getLogger(name, version, options);
-		}
-		/** Remove the global logger provider */
-		disable() {
-			delete global_utils_1._global[global_utils_1.GLOBAL_LOGS_API_KEY];
-			this._proxyLoggerProvider = new ProxyLoggerProvider_1.ProxyLoggerProvider();
-		}
-	};
-	exports.LogsAPI = LogsAPI;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+api-logs@0.222.0/node_modules/@opentelemetry/api-logs/build/src/index.js
-var require_src$7 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.logs = exports.createNoopLogger = exports.SeverityNumber = void 0;
-	var LogRecord_1 = require_LogRecord();
-	Object.defineProperty(exports, "SeverityNumber", {
-		enumerable: true,
-		get: function() {
-			return LogRecord_1.SeverityNumber;
-		}
-	});
-	var NoopLogger_1 = require_NoopLogger();
-	Object.defineProperty(exports, "createNoopLogger", {
-		enumerable: true,
-		get: function() {
-			return NoopLogger_1.createNoopLogger;
-		}
-	});
-	const logs_1 = require_logs$2();
-	exports.logs = logs_1.LogsAPI.getInstance();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/common-serializer.js
-var require_common_serializer = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.writeResource = exports.writeInstrumentationScope = exports.writeAnyValue = exports.writeKeyValue = exports.writeAttributes = exports.writeHrTimeAsFixed64 = void 0;
-	/**
-	* Write HrTime [seconds, nanoseconds] directly as fixed64 to the serializer.
-	* Converts to nanoseconds and writes as 64-bit little-endian integer without allocations.
-	*
-	* HrTime represents: total_nanos = seconds * 1_000_000_000 + nanoseconds
-	* We need to split this into low (bits 0-31) and high (bits 32-63).
-	*
-	* @param serializer - The protobuf writer
-	* @param hrTime - HrTime tuple [seconds, nanoseconds]
-	*/
-	function writeHrTimeAsFixed64(serializer, hrTime) {
-		const seconds = hrTime[0];
-		const nanos = hrTime[1];
-		const nanosPerSecond = 1e9;
-		const secondsLower16Bits = seconds & 65535;
-		const secondsUpperBits = seconds / 65536 >>> 0;
-		const nanosFromLower16Bits = secondsLower16Bits * nanosPerSecond;
-		const nanosFromUpperBits = secondsUpperBits * nanosPerSecond;
-		const lower16ContributionLow32 = nanosFromLower16Bits >>> 0;
-		const lower16ContributionHigh32 = Math.floor(nanosFromLower16Bits / 4294967296);
-		const upperBitsContributionLow32 = (nanosFromUpperBits & 65535) * 65536 >>> 0;
-		const upperBitsContributionHigh32 = nanosFromUpperBits / 65536 >>> 0;
-		const low32WithCarry = lower16ContributionLow32 + upperBitsContributionLow32 + nanos;
-		const totalLow = low32WithCarry >>> 0;
-		const carry = Math.floor(low32WithCarry / 4294967296);
-		const totalHigh = lower16ContributionHigh32 + upperBitsContributionHigh32 + carry >>> 0;
-		serializer.writeFixed64(totalLow, totalHigh);
-	}
-	exports.writeHrTimeAsFixed64 = writeHrTimeAsFixed64;
-	/**
-	* Write Attributes directly to protobuf as repeated KeyValue
-	*/
-	function writeAttributes(writer, attributes, fieldNumber) {
-		for (const key in attributes) {
-			if (!Object.prototype.hasOwnProperty.call(attributes, key)) continue;
-			const value = attributes[key];
-			writer.writeTag(fieldNumber, 2);
-			const kvStart = writer.startLengthDelimited();
-			const startPos = writer.pos;
-			writeKeyValue(writer, key, value);
-			writer.finishLengthDelimited(kvStart, writer.pos - startPos);
-		}
-	}
-	exports.writeAttributes = writeAttributes;
-	/**
-	* Write a KeyValue pair directly to protobuf
-	*/
-	function writeKeyValue(writer, key, value) {
-		writer.writeTag(1, 2);
-		writer.writeString(key);
-		writer.writeTag(2, 2);
-		const valueStart = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		writeAnyValue(writer, value);
-		writer.finishLengthDelimited(valueStart, writer.pos - startPos);
-	}
-	exports.writeKeyValue = writeKeyValue;
-	const MIN_64_BIT_INT = -(2 ** 63);
-	const MAX_64_BIT_INT = 2 ** 63;
-	/**
-	* Write an AnyValue directly from raw attribute value to protobuf
-	*/
-	function writeAnyValue(writer, value) {
-		const t = typeof value;
-		if (t === "string") {
-			writer.writeTag(1, 2);
-			writer.writeString(value);
-		} else if (t === "boolean") {
-			writer.writeTag(2, 0);
-			writer.writeVarint(value ? 1 : 0);
-		} else if (t === "number") {
-			const numValue = value;
-			if (Number.isInteger(numValue) && numValue >= MIN_64_BIT_INT && numValue < MAX_64_BIT_INT) {
-				writer.writeTag(3, 0);
-				writer.writeVarint(numValue);
-			} else {
-				writer.writeTag(4, 1);
-				writer.writeDouble(numValue);
-			}
-		} else if (value instanceof Uint8Array) {
-			writer.writeTag(7, 2);
-			writer.writeBytes(value);
-		} else if (Array.isArray(value)) {
-			writer.writeTag(5, 2);
-			const arrayStart = writer.startLengthDelimited();
-			const arrayStartPos = writer.pos;
-			for (const item of value) {
-				writer.writeTag(1, 2);
-				const itemStart = writer.startLengthDelimited();
-				const itemStartPos = writer.pos;
-				writeAnyValue(writer, item);
-				writer.finishLengthDelimited(itemStart, writer.pos - itemStartPos);
-			}
-			writer.finishLengthDelimited(arrayStart, writer.pos - arrayStartPos);
-		} else if (t === "object" && value != null) {
-			writer.writeTag(6, 2);
-			const kvlistStart = writer.startLengthDelimited();
-			const kvlistStartPos = writer.pos;
-			const obj = value;
-			for (const k in obj) {
-				if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
-				const v = obj[k];
-				writer.writeTag(1, 2);
-				const kvStart = writer.startLengthDelimited();
-				const kvStartPos = writer.pos;
-				writer.writeTag(1, 2);
-				writer.writeString(k);
-				writer.writeTag(2, 2);
-				const valueStart = writer.startLengthDelimited();
-				const valueStartPos = writer.pos;
-				writeAnyValue(writer, v);
-				writer.finishLengthDelimited(valueStart, writer.pos - valueStartPos);
-				writer.finishLengthDelimited(kvStart, writer.pos - kvStartPos);
-			}
-			writer.finishLengthDelimited(kvlistStart, writer.pos - kvlistStartPos);
-		}
-	}
-	exports.writeAnyValue = writeAnyValue;
-	/**
-	* Write an InstrumentationScope message.
-	*
-	* Proto fields (InstrumentationScope):
-	*   1  name     string  (wire type 2)
-	*   2  version  string  (wire type 2)
-	*/
-	function writeInstrumentationScope(writer, scope, fieldNumber) {
-		writer.writeTag(fieldNumber, 2);
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		writer.writeTag(1, 2);
-		writer.writeString(scope.name);
-		if (scope.version) {
-			writer.writeTag(2, 2);
-			writer.writeString(scope.version);
-		}
-		if (scope.attributes) writeAttributes(writer, scope.attributes, 3);
-		if (scope.droppedAttributesCount) {
-			writer.writeTag(4, 0);
-			writer.writeVarint(scope.droppedAttributesCount);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	exports.writeInstrumentationScope = writeInstrumentationScope;
-	/**
-	* Write a Resource message and its enclosing tag.
-	*
-	* Proto fields (Resource):
-	*   1  attributes                repeated KeyValue  (wire type 2)
-	*   2  dropped_attributes_count  uint32             (wire type 0)
-	*/
-	function writeResource(writer, resource, fieldNumber) {
-		writer.writeTag(fieldNumber, 2);
-		const resourceStart = writer.startLengthDelimited();
-		const resourceStartPos = writer.pos;
-		if (resource.attributes) writeAttributes(writer, resource.attributes, 1);
-		writer.writeTag(2, 0);
-		writer.writeVarint(0);
-		writer.finishLengthDelimited(resourceStart, writer.pos - resourceStartPos);
-	}
-	exports.writeResource = writeResource;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/protobuf-size-estimator.js
-var require_protobuf_size_estimator = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufSizeEstimator = void 0;
-	const utils_1 = require_utils$4();
-	/**
-	* Calculate UTF-8 byte length without encoding
-	* @param str valid UTF-16 string
-	*/
-	function utf8ByteLength(str) {
-		const len = str.length;
-		let byteLen = 0;
-		for (let i = 0; i < len; i++) {
-			const code = str.charCodeAt(i);
-			if (code < 128) byteLen += 1;
-			else if (code < 2048) byteLen += 2;
-			else if (code < 55296 || code >= 57344) byteLen += 3;
-			else {
-				i++;
-				byteLen += 4;
-			}
-		}
-		return byteLen;
-	}
-	/**
-	* Size estimator for protobuf messages.
-	* Implements the same interface as ProtobufWriter but only counts bytes without allocating a buffer.
-	* @internal
-	*/
-	var ProtobufSizeEstimator = class {
-		pos = 0;
-		startLengthDelimited() {
-			return this.pos;
-		}
-		finishLengthDelimited(_, length) {
-			this.pos += (0, utils_1.estimateVarintSize)(length);
-		}
-		writeVarint(value) {
-			this.pos += (0, utils_1.estimateVarintSize)(value);
-		}
-		writeSint32(value) {
-			this.pos += (0, utils_1.estimateVarintSize)((value << 1 ^ value >> 31) >>> 0);
-		}
-		writeSfixed64(_value) {
-			this.pos += 8;
-		}
-		writeFixed32(_value) {
-			this.pos += 4;
-		}
-		writeFixed64(_low, _high) {
-			this.pos += 8;
-		}
-		writeBytes(bytes) {
-			this.pos += (0, utils_1.estimateVarintSize)(bytes.length);
-			this.pos += bytes.length;
-		}
-		writeTag(fieldNumber, wireType) {
-			this.writeVarint(fieldNumber << 3 | wireType);
-		}
-		writeDouble(_value) {
-			this.pos += 8;
-		}
-		writeString(str) {
-			const byteLen = utf8ByteLength(str);
-			this.pos += (0, utils_1.estimateVarintSize)(byteLen);
-			this.pos += byteLen;
-		}
-	};
-	exports.ProtobufSizeEstimator = ProtobufSizeEstimator;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/protobuf/logs-serializer.js
-var require_logs_serializer = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.serializeLogsExportRequest = void 0;
-	const protobuf_writer_1 = require_protobuf_writer();
-	const hex_to_binary_1 = require_hex_to_binary();
-	const api_logs_1 = require_src$7();
-	const common_serializer_1 = require_common_serializer();
-	const protobuf_size_estimator_1 = require_protobuf_size_estimator();
-	/**
-	* Serialize a single LogRecord directly from ReadableLogRecord
-	*/
-	function serializeLogRecord(writer, logRecord) {
-		const logStart = writer.startLengthDelimited();
-		const logStartPos = writer.pos;
-		writer.writeTag(1, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, logRecord.hrTime);
-		if (logRecord.severityNumber !== void 0 && logRecord.severityNumber !== api_logs_1.SeverityNumber.UNSPECIFIED) {
-			writer.writeTag(2, 0);
-			writer.writeVarint(logRecord.severityNumber);
-		}
-		if (logRecord.severityText) {
-			writer.writeTag(3, 2);
-			writer.writeString(logRecord.severityText);
-		}
-		if (logRecord.body !== void 0) {
-			writer.writeTag(5, 2);
-			const bodyStart = writer.startLengthDelimited();
-			const bodyStartPos = writer.pos;
-			(0, common_serializer_1.writeAnyValue)(writer, logRecord.body);
-			writer.finishLengthDelimited(bodyStart, writer.pos - bodyStartPos);
-		}
-		if (logRecord.attributes) (0, common_serializer_1.writeAttributes)(writer, logRecord.attributes, 6);
-		writer.writeTag(7, 0);
-		writer.writeVarint(logRecord.droppedAttributesCount);
-		if (logRecord.spanContext?.traceFlags) {
-			writer.writeTag(8, 5);
-			writer.writeFixed32(logRecord.spanContext.traceFlags);
-		}
-		if (logRecord.spanContext?.traceId) {
-			writer.writeTag(9, 2);
-			writer.writeBytes((0, hex_to_binary_1.hexToBinary)(logRecord.spanContext.traceId));
-		}
-		if (logRecord.spanContext?.spanId) {
-			writer.writeTag(10, 2);
-			writer.writeBytes((0, hex_to_binary_1.hexToBinary)(logRecord.spanContext.spanId));
-		}
-		writer.writeTag(11, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, logRecord.hrTimeObserved);
-		if (logRecord.eventName) {
-			writer.writeTag(12, 2);
-			writer.writeString(logRecord.eventName);
-		}
-		writer.finishLengthDelimited(logStart, writer.pos - logStartPos);
-	}
-	/**
-	* Serialize ScopeLogs directly from SDK types
-	*/
-	function serializeScopeLogs(writer, scope, logRecords) {
-		const scopeLogsStart = writer.startLengthDelimited();
-		const scopeLogsStartPos = writer.pos;
-		(0, common_serializer_1.writeInstrumentationScope)(writer, scope, 1);
-		for (const logRecord of logRecords) {
-			writer.writeTag(2, 2);
-			serializeLogRecord(writer, logRecord);
-		}
-		if (scope.schemaUrl) {
-			writer.writeTag(3, 2);
-			writer.writeString(scope.schemaUrl);
-		}
-		writer.finishLengthDelimited(scopeLogsStart, writer.pos - scopeLogsStartPos);
-	}
-	/**
-	* Serialize ResourceLogs directly from SDK Resource type
-	*/
-	function serializeResourceLogs(writer, resource, scopeMap) {
-		const resourceLogsStart = writer.startLengthDelimited();
-		const resourceLogsStartPos = writer.pos;
-		(0, common_serializer_1.writeResource)(writer, resource, 1);
-		for (const scopeLogs of scopeMap.values()) {
-			writer.writeTag(2, 2);
-			const scope = scopeLogs[0].instrumentationScope;
-			serializeScopeLogs(writer, scope, scopeLogs);
-		}
-		if (resource.schemaUrl) {
-			writer.writeTag(3, 2);
-			writer.writeString(resource.schemaUrl);
-		}
-		writer.finishLengthDelimited(resourceLogsStart, writer.pos - resourceLogsStartPos);
-	}
-	/**
-	* Group log records by resource and instrumentation scope
-	*/
-	function createResourceMap(logRecords) {
-		const resourceMap = /* @__PURE__ */ new Map();
-		for (const record of logRecords) {
-			const resource = record.resource;
-			const scope = record.instrumentationScope;
-			let ismMap = resourceMap.get(resource);
-			if (!ismMap) {
-				ismMap = /* @__PURE__ */ new Map();
-				resourceMap.set(resource, ismMap);
-			}
-			let records = ismMap.get(scope);
-			if (!records) {
-				records = [];
-				ismMap.set(scope, records);
-			}
-			records.push(record);
-		}
-		return resourceMap;
-	}
-	/**
-	* Serialize ExportLogsServiceRequest directly from ReadableLogRecord[]
-	*/
-	function serializeLogsExportRequest(logRecords) {
-		const resourceMap = createResourceMap(logRecords);
-		const estimator = new protobuf_size_estimator_1.ProtobufSizeEstimator();
-		for (const [resource, scopeMap] of resourceMap) {
-			estimator.writeTag(1, 2);
-			serializeResourceLogs(estimator, resource, scopeMap);
-		}
-		const writer = new protobuf_writer_1.ProtobufWriter(estimator.pos);
-		for (const [resource, scopeMap] of resourceMap) {
-			writer.writeTag(1, 2);
-			serializeResourceLogs(writer, resource, scopeMap);
-		}
-		return writer.finish();
-	}
-	exports.serializeLogsExportRequest = serializeLogsExportRequest;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/protobuf/protobuf-reader.js
-var require_protobuf_reader = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufReader = void 0;
-	/**
-	* Minimal binary protobuf reader.
-	* Only implements the wire-types that we currently need; this is not intended
-	* to be a general-purpose protobuf reader.
-	*
-	* Since the values we parse are generally small and not very nested, it's public
-	* interface does not enforce the same low-allocation philosophy that ProtobufWriter does.
-	* If this is needed in the future, we should refactor this to fit the use-case.
-	*/
-	var ProtobufReader = class {
-		pos = 0;
-		_buf;
-		_textDecoder;
-		constructor(buf) {
-			this._buf = buf;
-			this._textDecoder = new TextDecoder();
-		}
-		isAtEnd() {
-			return this.pos >= this._buf.length;
-		}
-		/** Read a varint and decode it as a tag, returning field number and wire type. */
-		readTag() {
-			const raw = this.readVarint();
-			return {
-				fieldNumber: raw >>> 3,
-				wireType: raw & 7
-			};
-		}
-		/**
-		* Read a base-128 varint.
-		* Returns a JS `number`; precision above 2^53 is silently lost.
-		* Throws if the buffer is truncated mid-varint.
-		*/
-		readVarint() {
-			let result = 0;
-			let shift = 0;
-			let terminated = false;
-			while (this.pos < this._buf.length) {
-				const b = this._buf[this.pos++];
-				result += (b & 127) * Math.pow(2, shift);
-				shift += 7;
-				if ((b & 128) === 0) {
-					terminated = true;
-					break;
-				}
-			}
-			if (!terminated) throw new Error("Truncated buffer: unexpected end of data while reading varint");
-			return result;
-		}
-		/** Read a length-delimited byte sequence (bytes field or embedded message). */
-		readBytes() {
-			const len = this.readVarint();
-			if (this.pos + len > this._buf.length) throw new Error(`Truncated buffer: expected ${len} bytes at position ${this.pos}, but only ${this._buf.length - this.pos} available`);
-			const slice = this._buf.subarray(this.pos, this.pos + len);
-			this.pos += len;
-			return slice;
-		}
-		/** Read a length-delimited UTF-8 string. */
-		readString() {
-			return this._textDecoder.decode(this.readBytes());
-		}
-		/**
-		* Skip an unknown field.
-		* Handles wire types 0 (varint), 1 (64-bit), 2 (length-delimited),
-		* and 5 (32-bit).
-		*
-		* Wire types 3 and 4 (start-group / end-group) are deprecated in proto3
-		* and are not used by any OpenTelemetry proto definition. Encountering
-		* them is treated as an error.
-		*/
-		skip(wireType) {
-			switch (wireType) {
-				case 0:
-					this.readVarint();
-					break;
-				case 1:
-					this.pos += 8;
-					break;
-				case 2:
-					this.readBytes();
-					break;
-				case 5:
-					this.pos += 4;
-					break;
-				default: throw new Error(`Unknown wire type ${wireType}, cannot safely skip`);
-			}
-		}
-	};
-	exports.ProtobufReader = ProtobufReader;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/protobuf/response-deserializer.js
-var require_response_deserializer$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.deserializeExportLogsServiceResponse = void 0;
-	const protobuf_reader_1 = require_protobuf_reader();
-	/**
-	* Parse an ExportLogsPartialSuccess embedded message from raw bytes.
-	*
-	* Field map (opentelemetry/proto/collector/logs/v1/logs_service.proto):
-	*   1  rejected_log_records  int64   (varint)
-	*   2  error_message         string  (length-delimited)
-	*/
-	function deserializePartialSuccess(data) {
-		const reader = new protobuf_reader_1.ProtobufReader(data);
-		const result = {};
-		while (!reader.isAtEnd()) {
-			const { fieldNumber, wireType } = reader.readTag();
-			switch (fieldNumber) {
-				case 1:
-					if (wireType === 0) result.rejectedLogRecords = reader.readVarint();
-					else reader.skip(wireType);
-					break;
-				case 2:
-					if (wireType === 2) result.errorMessage = reader.readString();
-					else reader.skip(wireType);
-					break;
-				default: reader.skip(wireType);
-			}
-		}
-		return result;
-	}
-	/**
-	* Parse an ExportLogsServiceResponse protobuf message from raw bytes.
-	*
-	* Field map (opentelemetry/proto/collector/logs/v1/logs_service.proto):
-	*   1  partial_success  ExportLogsPartialSuccess  (length-delimited)
-	*/
-	function deserializeExportLogsServiceResponse(data) {
-		const reader = new protobuf_reader_1.ProtobufReader(data);
-		const result = {};
-		while (!reader.isAtEnd()) {
-			const { fieldNumber, wireType } = reader.readTag();
-			switch (fieldNumber) {
-				case 1:
-					if (wireType === 2) result.partialSuccess = deserializePartialSuccess(reader.readBytes());
-					else reader.skip(wireType);
-					break;
-				default: reader.skip(wireType);
-			}
-		}
-		return result;
-	}
-	exports.deserializeExportLogsServiceResponse = deserializeExportLogsServiceResponse;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/protobuf/logs.js
-var require_logs$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufLogsSerializer = void 0;
-	const logs_serializer_1 = require_logs_serializer();
-	const response_deserializer_1 = require_response_deserializer$2();
-	/**
-	* @experimental this serializer may receive breaking changes in minor versions, pin this package's version when using this constant
-	*/
-	exports.ProtobufLogsSerializer = {
-		serializeRequest: (arg) => {
-			return (0, logs_serializer_1.serializeLogsExportRequest)(arg);
-		},
-		deserializeResponse: (arg) => {
-			return (0, response_deserializer_1.deserializeExportLogsServiceResponse)(arg);
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/protobuf/index.js
-var require_protobuf$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufLogsSerializer = void 0;
-	var logs_1 = require_logs$1();
-	Object.defineProperty(exports, "ProtobufLogsSerializer", {
-		enumerable: true,
-		get: function() {
-			return logs_1.ProtobufLogsSerializer;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/AggregationTemporality.js
-var require_AggregationTemporality = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.AggregationTemporality = void 0;
-	/**
-	* AggregationTemporality indicates the way additive quantities are expressed.
-	*/
-	var AggregationTemporality;
-	(function(AggregationTemporality) {
-		AggregationTemporality[AggregationTemporality["DELTA"] = 0] = "DELTA";
-		AggregationTemporality[AggregationTemporality["CUMULATIVE"] = 1] = "CUMULATIVE";
-	})(AggregationTemporality || (exports.AggregationTemporality = AggregationTemporality = {}));
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/MetricData.js
-var require_MetricData = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.DataPointType = exports.InstrumentType = void 0;
-	/**
-	* Supported types of metric instruments.
-	*/
-	var InstrumentType;
-	(function(InstrumentType) {
-		InstrumentType["COUNTER"] = "COUNTER";
-		InstrumentType["GAUGE"] = "GAUGE";
-		InstrumentType["HISTOGRAM"] = "HISTOGRAM";
-		InstrumentType["UP_DOWN_COUNTER"] = "UP_DOWN_COUNTER";
-		InstrumentType["OBSERVABLE_COUNTER"] = "OBSERVABLE_COUNTER";
-		InstrumentType["OBSERVABLE_GAUGE"] = "OBSERVABLE_GAUGE";
-		InstrumentType["OBSERVABLE_UP_DOWN_COUNTER"] = "OBSERVABLE_UP_DOWN_COUNTER";
-	})(InstrumentType || (exports.InstrumentType = InstrumentType = {}));
-	/**
-	* The aggregated point data type.
-	*/
-	var DataPointType;
-	(function(DataPointType) {
-		/**
-		* A histogram data point contains a histogram statistics of collected
-		* values with a list of explicit bucket boundaries and statistics such
-		* as min, max, count, and sum of all collected values.
-		*/
-		DataPointType[DataPointType["HISTOGRAM"] = 0] = "HISTOGRAM";
-		/**
-		* An exponential histogram data point contains a histogram statistics of
-		* collected values where bucket boundaries are automatically calculated
-		* using an exponential function, and statistics such as min, max, count,
-		* and sum of all collected values.
-		*/
-		DataPointType[DataPointType["EXPONENTIAL_HISTOGRAM"] = 1] = "EXPONENTIAL_HISTOGRAM";
-		/**
-		* A gauge metric data point has only a single numeric value.
-		*/
-		DataPointType[DataPointType["GAUGE"] = 2] = "GAUGE";
-		/**
-		* A sum metric data point has a single numeric value and a
-		* monotonicity-indicator.
-		*/
-		DataPointType[DataPointType["SUM"] = 3] = "SUM";
-	})(DataPointType || (exports.DataPointType = DataPointType = {}));
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/utils.js
-var require_utils$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.equalsCaseInsensitive = exports.binarySearchUB = exports.setEquals = exports.callWithTimeout = exports.TimeoutError = exports.instrumentationScopeId = exports.hashAttributes = void 0;
-	/**
-	* Converting the unordered attributes into unique identifier string.
-	* @param attributes user provided unordered Attributes.
-	*/
-	function hashAttributes(attributes) {
-		let keys = Object.keys(attributes);
-		if (keys.length === 0) return "";
-		keys = keys.sort();
-		return JSON.stringify(keys.map((key) => [key, attributes[key]]));
-	}
-	exports.hashAttributes = hashAttributes;
-	/**
-	* Converting the instrumentation scope object to a unique identifier string.
-	* @param instrumentationScope
-	*/
-	function instrumentationScopeId(instrumentationScope) {
-		return `${instrumentationScope.name}:${instrumentationScope.version ?? ""}:${instrumentationScope.schemaUrl ?? ""}`;
-	}
-	exports.instrumentationScopeId = instrumentationScopeId;
-	/**
-	* Error that is thrown on timeouts.
-	*/
-	var TimeoutError = class TimeoutError extends Error {
-		constructor(message) {
-			super(message);
-			Object.setPrototypeOf(this, TimeoutError.prototype);
-		}
-	};
-	exports.TimeoutError = TimeoutError;
-	/**
-	* Adds a timeout to a promise and rejects if the specified timeout has elapsed. Also rejects if the specified promise
-	* rejects, and resolves if the specified promise resolves.
-	*
-	* <p> NOTE: this operation will continue even after it throws a {@link TimeoutError}.
-	*
-	* @param promise promise to use with timeout.
-	* @param timeout the timeout in milliseconds until the returned promise is rejected.
-	*/
-	function callWithTimeout(promise, timeout) {
-		let timeoutHandle;
-		const timeoutPromise = new Promise(function timeoutFunction(_resolve, reject) {
-			timeoutHandle = setTimeout(function timeoutHandler() {
-				reject(new TimeoutError("Operation timed out."));
-			}, timeout);
-		});
-		return Promise.race([promise, timeoutPromise]).then((result) => {
-			clearTimeout(timeoutHandle);
-			return result;
-		}, (reason) => {
-			clearTimeout(timeoutHandle);
-			throw reason;
-		});
-	}
-	exports.callWithTimeout = callWithTimeout;
-	function setEquals(lhs, rhs) {
-		if (lhs.size !== rhs.size) return false;
-		for (const item of lhs) if (!rhs.has(item)) return false;
-		return true;
-	}
-	exports.setEquals = setEquals;
-	/**
-	* Binary search the sorted array to the find upper bound for the value.
-	* @param arr
-	* @param value
-	* @returns
-	*/
-	function binarySearchUB(arr, value) {
-		let lo = 0;
-		let hi = arr.length - 1;
-		let ret = arr.length;
-		while (hi >= lo) {
-			const mid = lo + Math.trunc((hi - lo) / 2);
-			if (arr[mid] < value) lo = mid + 1;
-			else {
-				ret = mid;
-				hi = mid - 1;
-			}
-		}
-		return ret;
-	}
-	exports.binarySearchUB = binarySearchUB;
-	function equalsCaseInsensitive(lhs, rhs) {
-		return lhs.toLowerCase() === rhs.toLowerCase();
-	}
-	exports.equalsCaseInsensitive = equalsCaseInsensitive;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/types.js
-var require_types$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.AggregatorKind = void 0;
-	/** The kind of aggregator. */
-	var AggregatorKind;
-	(function(AggregatorKind) {
-		AggregatorKind[AggregatorKind["DROP"] = 0] = "DROP";
-		AggregatorKind[AggregatorKind["SUM"] = 1] = "SUM";
-		AggregatorKind[AggregatorKind["LAST_VALUE"] = 2] = "LAST_VALUE";
-		AggregatorKind[AggregatorKind["HISTOGRAM"] = 3] = "HISTOGRAM";
-		AggregatorKind[AggregatorKind["EXPONENTIAL_HISTOGRAM"] = 4] = "EXPONENTIAL_HISTOGRAM";
-	})(AggregatorKind || (exports.AggregatorKind = AggregatorKind = {}));
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/Drop.js
-var require_Drop = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.DropAggregator = void 0;
-	const types_1 = require_types$1();
-	/** Basic aggregator for None which keeps no recorded value. */
-	var DropAggregator = class {
-		kind = types_1.AggregatorKind.DROP;
-		createAccumulation() {}
-		merge(_previous, _delta) {}
-		diff(_previous, _current) {}
-		toMetricData(_descriptor, _aggregationTemporality, _accumulationByAttributes, _endTime) {}
-	};
-	exports.DropAggregator = DropAggregator;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/Histogram.js
-var require_Histogram = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.HistogramAggregator = exports.HistogramAccumulation = void 0;
-	const types_1 = require_types$1();
-	const MetricData_1 = require_MetricData();
-	const utils_1 = require_utils$3();
-	function createNewEmptyCheckpoint(boundaries) {
-		const counts = boundaries.map(() => 0);
-		counts.push(0);
-		return {
-			buckets: {
-				boundaries,
-				counts
-			},
-			sum: 0,
-			count: 0,
-			hasMinMax: false,
-			min: Infinity,
-			max: -Infinity
-		};
-	}
-	var HistogramAccumulation = class {
-		startTime;
-		_boundaries;
-		_recordMinMax;
-		_current;
-		constructor(startTime, boundaries, recordMinMax = true, current = createNewEmptyCheckpoint(boundaries)) {
-			this.startTime = startTime;
-			this._boundaries = boundaries;
-			this._recordMinMax = recordMinMax;
-			this._current = current;
-		}
-		record(value) {
-			if (Number.isNaN(value)) return;
-			this._current.count += 1;
-			this._current.sum += value;
-			if (this._recordMinMax) {
-				this._current.min = Math.min(value, this._current.min);
-				this._current.max = Math.max(value, this._current.max);
-				this._current.hasMinMax = true;
-			}
-			const idx = (0, utils_1.binarySearchUB)(this._boundaries, value);
-			this._current.buckets.counts[idx] += 1;
-		}
-		setStartTime(startTime) {
-			this.startTime = startTime;
-		}
-		toPointValue() {
-			return this._current;
-		}
-	};
-	exports.HistogramAccumulation = HistogramAccumulation;
-	/**
-	* Basic aggregator which observes events and counts them in pre-defined buckets
-	* and provides the total sum and count of all observations.
-	*/
-	var HistogramAggregator = class {
-		kind = types_1.AggregatorKind.HISTOGRAM;
-		_boundaries;
-		_recordMinMax;
-		/**
-		* @param _boundaries sorted upper bounds of recorded values.
-		* @param _recordMinMax If set to true, min and max will be recorded. Otherwise, min and max will not be recorded.
-		*/
-		constructor(boundaries, recordMinMax) {
-			this._boundaries = boundaries;
-			this._recordMinMax = recordMinMax;
-		}
-		createAccumulation(startTime) {
-			return new HistogramAccumulation(startTime, this._boundaries, this._recordMinMax);
-		}
-		/**
-		* Return the result of the merge of two histogram accumulations. As long as one Aggregator
-		* instance produces all Accumulations with constant boundaries we don't need to worry about
-		* merging accumulations with different boundaries.
-		*/
-		merge(previous, delta) {
-			const previousValue = previous.toPointValue();
-			const deltaValue = delta.toPointValue();
-			const previousCounts = previousValue.buckets.counts;
-			const deltaCounts = deltaValue.buckets.counts;
-			const mergedCounts = new Array(previousCounts.length);
-			for (let idx = 0; idx < previousCounts.length; idx++) mergedCounts[idx] = previousCounts[idx] + deltaCounts[idx];
-			let min = Infinity;
-			let max = -Infinity;
-			if (this._recordMinMax) {
-				if (previousValue.hasMinMax && deltaValue.hasMinMax) {
-					min = Math.min(previousValue.min, deltaValue.min);
-					max = Math.max(previousValue.max, deltaValue.max);
-				} else if (previousValue.hasMinMax) {
-					min = previousValue.min;
-					max = previousValue.max;
-				} else if (deltaValue.hasMinMax) {
-					min = deltaValue.min;
-					max = deltaValue.max;
-				}
-			}
-			return new HistogramAccumulation(previous.startTime, previousValue.buckets.boundaries, this._recordMinMax, {
-				buckets: {
-					boundaries: previousValue.buckets.boundaries,
-					counts: mergedCounts
-				},
-				count: previousValue.count + deltaValue.count,
-				sum: previousValue.sum + deltaValue.sum,
-				hasMinMax: this._recordMinMax && (previousValue.hasMinMax || deltaValue.hasMinMax),
-				min,
-				max
-			});
-		}
-		/**
-		* Returns a new DELTA aggregation by comparing two cumulative measurements.
-		*/
-		diff(previous, current) {
-			const previousValue = previous.toPointValue();
-			const currentValue = current.toPointValue();
-			const previousCounts = previousValue.buckets.counts;
-			const currentCounts = currentValue.buckets.counts;
-			const diffedCounts = new Array(previousCounts.length);
-			for (let idx = 0; idx < previousCounts.length; idx++) diffedCounts[idx] = currentCounts[idx] - previousCounts[idx];
-			return new HistogramAccumulation(current.startTime, previousValue.buckets.boundaries, this._recordMinMax, {
-				buckets: {
-					boundaries: previousValue.buckets.boundaries,
-					counts: diffedCounts
-				},
-				count: currentValue.count - previousValue.count,
-				sum: currentValue.sum - previousValue.sum,
-				hasMinMax: false,
-				min: Infinity,
-				max: -Infinity
-			});
-		}
-		toMetricData(descriptor, aggregationTemporality, accumulationByAttributes, endTime) {
-			return {
-				descriptor,
-				aggregationTemporality,
-				dataPointType: MetricData_1.DataPointType.HISTOGRAM,
-				dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
-					const pointValue = accumulation.toPointValue();
-					const allowsNegativeValues = descriptor.type === MetricData_1.InstrumentType.GAUGE || descriptor.type === MetricData_1.InstrumentType.UP_DOWN_COUNTER || descriptor.type === MetricData_1.InstrumentType.OBSERVABLE_GAUGE || descriptor.type === MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER;
-					return {
-						attributes,
-						startTime: accumulation.startTime,
-						endTime,
-						value: {
-							min: pointValue.hasMinMax ? pointValue.min : void 0,
-							max: pointValue.hasMinMax ? pointValue.max : void 0,
-							sum: !allowsNegativeValues ? pointValue.sum : void 0,
-							buckets: pointValue.buckets,
-							count: pointValue.count
-						}
-					};
-				})
-			};
-		}
-	};
-	exports.HistogramAggregator = HistogramAggregator;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/Buckets.js
-var require_Buckets = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.Buckets = void 0;
-	var Buckets = class Buckets {
-		backing;
-		indexBase;
-		indexStart;
-		indexEnd;
-		/**
-		* The term index refers to the number of the exponential histogram bucket
-		* used to determine its boundaries. The lower boundary of a bucket is
-		* determined by base ** index and the upper boundary of a bucket is
-		* determined by base ** (index + 1). index values are signed to account
-		* for values less than or equal to 1.
-		*
-		* indexBase is the index of the 0th position in the
-		* backing array, i.e., backing[0] is the count
-		* in the bucket with index `indexBase`.
-		*
-		* indexStart is the smallest index value represented
-		* in the backing array.
-		*
-		* indexEnd is the largest index value represented in
-		* the backing array.
-		*/
-		constructor(backing = new BucketsBacking(), indexBase = 0, indexStart = 0, indexEnd = 0) {
-			this.backing = backing;
-			this.indexBase = indexBase;
-			this.indexStart = indexStart;
-			this.indexEnd = indexEnd;
-		}
-		/**
-		* Offset is the bucket index of the smallest entry in the counts array
-		* @returns {number}
-		*/
-		get offset() {
-			return this.indexStart;
-		}
-		/**
-		* Buckets is a view into the backing array.
-		* @returns {number}
-		*/
-		get length() {
-			if (this.backing.length === 0) return 0;
-			if (this.indexEnd === this.indexStart && this.at(0) === 0) return 0;
-			return this.indexEnd - this.indexStart + 1;
-		}
-		/**
-		* An array of counts, where count[i] carries the count
-		* of the bucket at index (offset+i).  count[i] is the count of
-		* values greater than base^(offset+i) and less than or equal to
-		* base^(offset+i+1).
-		* @returns {number} The logical counts based on the backing array
-		*/
-		counts() {
-			return Array.from({ length: this.length }, (_, i) => this.at(i));
-		}
-		/**
-		* At returns the count of the bucket at a position in the logical
-		* array of counts.
-		* @param position
-		* @returns {number}
-		*/
-		at(position) {
-			const bias = this.indexBase - this.indexStart;
-			if (position < bias) position += this.backing.length;
-			position -= bias;
-			return this.backing.countAt(position);
-		}
-		/**
-		* incrementBucket increments the backing array index by `increment`
-		* @param bucketIndex
-		* @param increment
-		*/
-		incrementBucket(bucketIndex, increment) {
-			this.backing.increment(bucketIndex, increment);
-		}
-		/**
-		* decrementBucket decrements the backing array index by `decrement`
-		* if decrement is greater than the current value, it's set to 0.
-		* @param bucketIndex
-		* @param decrement
-		*/
-		decrementBucket(bucketIndex, decrement) {
-			this.backing.decrement(bucketIndex, decrement);
-		}
-		/**
-		* trim removes leading and / or trailing zero buckets (which can occur
-		* after diffing two histos) and rotates the backing array so that the
-		* smallest non-zero index is in the 0th position of the backing array
-		*/
-		trim() {
-			for (let i = 0; i < this.length; i++) if (this.at(i) !== 0) {
-				this.indexStart += i;
-				break;
-			} else if (i === this.length - 1) {
-				this.indexStart = this.indexEnd = this.indexBase = 0;
-				return;
-			}
-			for (let i = this.length - 1; i >= 0; i--) if (this.at(i) !== 0) {
-				this.indexEnd -= this.length - i - 1;
-				break;
-			}
-			this._rotate();
-		}
-		/**
-		* downscale first rotates, then collapses 2**`by`-to-1 buckets.
-		* @param by
-		*/
-		downscale(by) {
-			this._rotate();
-			const size = 1 + this.indexEnd - this.indexStart;
-			const each = 1 << by;
-			let inpos = 0;
-			let outpos = 0;
-			for (let pos = this.indexStart; pos <= this.indexEnd;) {
-				let mod = pos % each;
-				if (mod < 0) mod += each;
-				for (let i = mod; i < each && inpos < size; i++) {
-					this._relocateBucket(outpos, inpos);
-					inpos++;
-					pos++;
-				}
-				outpos++;
-			}
-			this.indexStart >>= by;
-			this.indexEnd >>= by;
-			this.indexBase = this.indexStart;
-		}
-		/**
-		* Clone returns a deep copy of Buckets
-		* @returns {Buckets}
-		*/
-		clone() {
-			return new Buckets(this.backing.clone(), this.indexBase, this.indexStart, this.indexEnd);
-		}
-		/**
-		* _rotate shifts the backing array contents so that indexStart ==
-		* indexBase to simplify the downscale logic.
-		*/
-		_rotate() {
-			const bias = this.indexBase - this.indexStart;
-			if (bias === 0) return;
-			else if (bias > 0) {
-				this.backing.reverse(0, this.backing.length);
-				this.backing.reverse(0, bias);
-				this.backing.reverse(bias, this.backing.length);
-			} else {
-				this.backing.reverse(0, this.backing.length);
-				this.backing.reverse(0, this.backing.length + bias);
-			}
-			this.indexBase = this.indexStart;
-		}
-		/**
-		* _relocateBucket adds the count in counts[src] to counts[dest] and
-		* resets count[src] to zero.
-		*/
-		_relocateBucket(dest, src) {
-			if (dest === src) return;
-			this.incrementBucket(dest, this.backing.emptyBucket(src));
-		}
-	};
-	exports.Buckets = Buckets;
-	/**
-	* BucketsBacking holds the raw buckets and some utility methods to
-	* manage them.
-	*/
-	var BucketsBacking = class BucketsBacking {
-		_counts;
-		constructor(counts = [0]) {
-			this._counts = counts;
-		}
-		/**
-		* length returns the physical size of the backing array, which
-		* is >= buckets.length()
-		*/
-		get length() {
-			return this._counts.length;
-		}
-		/**
-		* countAt returns the count in a specific bucket
-		*/
-		countAt(pos) {
-			return this._counts[pos];
-		}
-		/**
-		* growTo grows a backing array and copies old entries
-		* into their correct new positions.
-		*/
-		growTo(newSize, oldPositiveLimit, newPositiveLimit) {
-			const tmp = new Array(newSize).fill(0);
-			tmp.splice(newPositiveLimit, this._counts.length - oldPositiveLimit, ...this._counts.slice(oldPositiveLimit));
-			tmp.splice(0, oldPositiveLimit, ...this._counts.slice(0, oldPositiveLimit));
-			this._counts = tmp;
-		}
-		/**
-		* reverse the items in the backing array in the range [from, limit).
-		*/
-		reverse(from, limit) {
-			const num = Math.floor((from + limit) / 2) - from;
-			for (let i = 0; i < num; i++) {
-				const tmp = this._counts[from + i];
-				this._counts[from + i] = this._counts[limit - i - 1];
-				this._counts[limit - i - 1] = tmp;
-			}
-		}
-		/**
-		* emptyBucket empties the count from a bucket, for
-		* moving into another.
-		*/
-		emptyBucket(src) {
-			const tmp = this._counts[src];
-			this._counts[src] = 0;
-			return tmp;
-		}
-		/**
-		* increments a bucket by `increment`
-		*/
-		increment(bucketIndex, increment) {
-			this._counts[bucketIndex] += increment;
-		}
-		/**
-		* decrements a bucket by `decrement`
-		*/
-		decrement(bucketIndex, decrement) {
-			if (this._counts[bucketIndex] >= decrement) this._counts[bucketIndex] -= decrement;
-			else this._counts[bucketIndex] = 0;
-		}
-		/**
-		* clone returns a deep copy of BucketsBacking
-		*/
-		clone() {
-			return new BucketsBacking([...this._counts]);
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/ieee754.js
-var require_ieee754 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.isPowerOfTwo = exports.getNormalBase2 = exports.MIN_VALUE = exports.MAX_NORMAL_EXPONENT = exports.MIN_NORMAL_EXPONENT = void 0;
-	/**
-	* The functions and constants in this file allow us to interact
-	* with the internal representation of an IEEE 64-bit floating point
-	* number. We need to work with all 64-bits, thus, care needs to be
-	* taken when working with Javascript's bitwise operators (<<, >>, &,
-	* |, etc) as they truncate operands to 32-bits. In order to work around
-	* this we work with the 64-bits as two 32-bit halves and perform bitwise
-	* operations on each half independently.
-	*/
-	/**
-	* EXPONENT_MASK is set to 1 for the hi 32-bits of an IEEE 754
-	* floating point exponent: 0x7ff00000.
-	*/
-	const EXPONENT_MASK = 2146435072;
-	/**
-	* SIGNIFICAND_MASK is the mask for the significand portion of the hi 32-bits
-	* of an IEEE 754 double-precision floating-point value: 0xfffff
-	*/
-	const SIGNIFICAND_MASK = 1048575;
-	/**
-	* EXPONENT_BIAS is the exponent bias specified for encoding
-	* the IEEE 754 double-precision floating point exponent: 1023
-	*/
-	const EXPONENT_BIAS = 1023;
-	/**
-	* MIN_NORMAL_EXPONENT is the minimum exponent of a normalized
-	* floating point: -1022.
-	*/
-	exports.MIN_NORMAL_EXPONENT = -1022;
-	/**
-	* MAX_NORMAL_EXPONENT is the maximum exponent of a normalized
-	* floating point: 1023.
-	*/
-	exports.MAX_NORMAL_EXPONENT = EXPONENT_BIAS;
-	/**
-	* MIN_VALUE is the smallest normal number
-	*/
-	exports.MIN_VALUE = Math.pow(2, -1022);
-	const dv = /* @__PURE__ */ new DataView(/* @__PURE__ */ new ArrayBuffer(8));
-	/**
-	* floatBits writes value into the shared buffer and returns its two 32-bit
-	* halves.
-	* @param {number} value - the floating point number to read
-	* @returns {{hi: number, lo: number}} the high and low 32-bit halves
-	*/
-	function floatBits(value) {
-		dv.setFloat64(0, value);
-		return {
-			hi: dv.getUint32(0),
-			lo: dv.getUint32(4)
-		};
-	}
-	/**
-	* getNormalBase2 extracts the normalized base-2 fractional exponent.
-	* This returns k for the equation f x 2**k where f is
-	* in the range [1, 2).  Note that this function is not called for
-	* subnormal numbers.
-	* @param {number} value - the value to determine normalized base-2 fractional
-	*    exponent for
-	* @returns {number} the normalized base-2 exponent
-	*/
-	function getNormalBase2(value) {
-		const { hi } = floatBits(value);
-		return ((hi & EXPONENT_MASK) >> 20) - EXPONENT_BIAS;
-	}
-	exports.getNormalBase2 = getNormalBase2;
-	/**
-	* isPowerOfTwo reports whether value is an exact power of two, e.g. its 52-bit
-	* significand is all zeros. Only valid for positive, finite values.
-	* @param {number} value - the floating point number to test
-	* @returns {boolean} true if value is an exact power of two
-	*/
-	function isPowerOfTwo(value) {
-		const { hi, lo } = floatBits(value);
-		return (hi & SIGNIFICAND_MASK) === 0 && lo === 0;
-	}
-	exports.isPowerOfTwo = isPowerOfTwo;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/util.js
-var require_util = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.nextGreaterSquare = exports.ldexp = void 0;
-	/**
-	* Note: other languages provide this as a built in function. This is
-	* a naive, but functionally correct implementation. This is used sparingly,
-	* when creating a new mapping in a running application.
-	*
-	* ldexp returns frac × 2**exp. With the following special cases:
-	*   ldexp(±0, exp) = ±0
-	*   ldexp(±Inf, exp) = ±Inf
-	*   ldexp(NaN, exp) = NaN
-	* @param frac
-	* @param exp
-	* @returns {number}
-	*/
-	function ldexp(frac, exp) {
-		if (frac === 0 || frac === Number.POSITIVE_INFINITY || frac === Number.NEGATIVE_INFINITY || Number.isNaN(frac)) return frac;
-		return frac * Math.pow(2, exp);
-	}
-	exports.ldexp = ldexp;
-	/**
-	* Computes the next power of two that is greater than or equal to v.
-	* This implementation more efficient than, but functionally equivalent
-	* to Math.pow(2, Math.ceil(Math.log(x)/Math.log(2))).
-	* @param v
-	* @returns {number}
-	*/
-	function nextGreaterSquare(v) {
-		v--;
-		v |= v >> 1;
-		v |= v >> 2;
-		v |= v >> 4;
-		v |= v >> 8;
-		v |= v >> 16;
-		v++;
-		return v;
-	}
-	exports.nextGreaterSquare = nextGreaterSquare;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/types.js
-var require_types = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MappingError = void 0;
-	var MappingError = class extends Error {};
-	exports.MappingError = MappingError;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/ExponentMapping.js
-var require_ExponentMapping = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ExponentMapping = void 0;
-	const ieee754 = require_ieee754();
-	const util = require_util();
-	const types_1 = require_types();
-	/**
-	* ExponentMapping implements exponential mapping functions for
-	* scales <=0. For scales > 0 LogarithmMapping should be used.
-	*/
-	var ExponentMapping = class {
-		_shift;
-		constructor(scale) {
-			this._shift = -scale;
-		}
-		/**
-		* Maps positive floating point values to indexes corresponding to scale
-		* @param value
-		* @returns {number} index for provided value at the current scale
-		*/
-		mapToIndex(value) {
-			if (value < ieee754.MIN_VALUE) return this._minNormalLowerBoundaryIndex();
-			return ieee754.getNormalBase2(value) + (ieee754.isPowerOfTwo(value) ? -1 : 0) >> this._shift;
-		}
-		/**
-		* Returns the lower bucket boundary for the given index for scale
-		*
-		* @param index
-		* @returns {number}
-		*/
-		lowerBoundary(index) {
-			const minIndex = this._minNormalLowerBoundaryIndex();
-			if (index < minIndex) throw new types_1.MappingError(`underflow: ${index} is < minimum lower boundary: ${minIndex}`);
-			const maxIndex = this._maxNormalLowerBoundaryIndex();
-			if (index > maxIndex) throw new types_1.MappingError(`overflow: ${index} is > maximum lower boundary: ${maxIndex}`);
-			return util.ldexp(1, index << this._shift);
-		}
-		/**
-		* The scale used by this mapping
-		* @returns {number}
-		*/
-		get scale() {
-			if (this._shift === 0) return 0;
-			return -this._shift;
-		}
-		_minNormalLowerBoundaryIndex() {
-			let index = ieee754.MIN_NORMAL_EXPONENT >> this._shift;
-			if (this._shift < 2) index--;
-			return index;
-		}
-		_maxNormalLowerBoundaryIndex() {
-			return ieee754.MAX_NORMAL_EXPONENT >> this._shift;
-		}
-	};
-	exports.ExponentMapping = ExponentMapping;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/LogarithmMapping.js
-var require_LogarithmMapping = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.LogarithmMapping = void 0;
-	const ieee754 = require_ieee754();
-	const util = require_util();
-	const types_1 = require_types();
-	/**
-	* LogarithmMapping implements exponential mapping functions for scale > 0.
-	* For scales <= 0 the exponent mapping should be used.
-	*/
-	var LogarithmMapping = class {
-		_scale;
-		_scaleFactor;
-		_inverseFactor;
-		constructor(scale) {
-			this._scale = scale;
-			this._scaleFactor = util.ldexp(Math.LOG2E, scale);
-			this._inverseFactor = util.ldexp(Math.LN2, -scale);
-		}
-		/**
-		* Maps positive floating point values to indexes corresponding to scale
-		* @param value
-		* @returns {number} index for provided value at the current scale
-		*/
-		mapToIndex(value) {
-			if (value <= ieee754.MIN_VALUE) return this._minNormalLowerBoundaryIndex() - 1;
-			if (ieee754.isPowerOfTwo(value)) return (ieee754.getNormalBase2(value) << this._scale) - 1;
-			const index = Math.floor(Math.log(value) * this._scaleFactor);
-			const maxIndex = this._maxNormalLowerBoundaryIndex();
-			if (index >= maxIndex) return maxIndex;
-			return index;
-		}
-		/**
-		* Returns the lower bucket boundary for the given index for scale
-		*
-		* @param index
-		* @returns {number}
-		*/
-		lowerBoundary(index) {
-			const maxIndex = this._maxNormalLowerBoundaryIndex();
-			if (index >= maxIndex) {
-				if (index === maxIndex) return 2 * Math.exp((index - (1 << this._scale)) / this._scaleFactor);
-				throw new types_1.MappingError(`overflow: ${index} is > maximum lower boundary: ${maxIndex}`);
-			}
-			const minIndex = this._minNormalLowerBoundaryIndex();
-			if (index <= minIndex) {
-				if (index === minIndex) return ieee754.MIN_VALUE;
-				else if (index === minIndex - 1) return Math.exp((index + (1 << this._scale)) / this._scaleFactor) / 2;
-				throw new types_1.MappingError(`overflow: ${index} is < minimum lower boundary: ${minIndex}`);
-			}
-			return Math.exp(index * this._inverseFactor);
-		}
-		/**
-		* The scale used by this mapping
-		* @returns {number}
-		*/
-		get scale() {
-			return this._scale;
-		}
-		_minNormalLowerBoundaryIndex() {
-			return ieee754.MIN_NORMAL_EXPONENT << this._scale;
-		}
-		_maxNormalLowerBoundaryIndex() {
-			return (ieee754.MAX_NORMAL_EXPONENT + 1 << this._scale) - 1;
-		}
-	};
-	exports.LogarithmMapping = LogarithmMapping;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/exponential-histogram/mapping/getMapping.js
-var require_getMapping = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getMapping = void 0;
-	const ExponentMapping_1 = require_ExponentMapping();
-	const LogarithmMapping_1 = require_LogarithmMapping();
-	const types_1 = require_types();
-	const MIN_SCALE = -10;
-	const MAX_SCALE = 20;
-	const PREBUILT_MAPPINGS = Array.from({ length: 31 }, (_, i) => {
-		if (i > 10) return new LogarithmMapping_1.LogarithmMapping(i - 10);
-		return new ExponentMapping_1.ExponentMapping(i - 10);
-	});
-	/**
-	* getMapping returns an appropriate mapping for the given scale. For scales -10
-	* to 0 the underlying type will be ExponentMapping. For scales 1 to 20 the
-	* underlying type will be LogarithmMapping.
-	* @param scale a number in the range [-10, 20]
-	* @returns {Mapping}
-	*/
-	function getMapping(scale) {
-		if (scale > MAX_SCALE || scale < MIN_SCALE) throw new types_1.MappingError(`expected scale >= ${MIN_SCALE} && <= ${MAX_SCALE}, got: ${scale}`);
-		return PREBUILT_MAPPINGS[scale + 10];
-	}
-	exports.getMapping = getMapping;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/ExponentialHistogram.js
-var require_ExponentialHistogram = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ExponentialHistogramAggregator = exports.ExponentialHistogramAccumulation = void 0;
-	const types_1 = require_types$1();
-	const MetricData_1 = require_MetricData();
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const Buckets_1 = require_Buckets();
-	const getMapping_1 = require_getMapping();
-	const util_1 = require_util();
-	var HighLow = class HighLow {
-		static combine(h1, h2) {
-			return new HighLow(Math.min(h1.low, h2.low), Math.max(h1.high, h2.high));
-		}
-		low;
-		high;
-		constructor(low, high) {
-			this.low = low;
-			this.high = high;
-		}
-	};
-	const MAX_SCALE = 20;
-	const DEFAULT_MAX_SIZE = 160;
-	const MIN_MAX_SIZE = 2;
-	var ExponentialHistogramAccumulation = class ExponentialHistogramAccumulation {
-		startTime;
-		_maxSize;
-		_recordMinMax;
-		_sum;
-		_count;
-		_zeroCount;
-		_min;
-		_max;
-		_positive;
-		_negative;
-		_mapping;
-		constructor(startTime, maxSize = DEFAULT_MAX_SIZE, recordMinMax = true, sum = 0, count = 0, zeroCount = 0, min = Number.POSITIVE_INFINITY, max = Number.NEGATIVE_INFINITY, positive = new Buckets_1.Buckets(), negative = new Buckets_1.Buckets(), mapping = (0, getMapping_1.getMapping)(MAX_SCALE)) {
-			this.startTime = startTime;
-			this._maxSize = maxSize;
-			this._recordMinMax = recordMinMax;
-			this._sum = sum;
-			this._count = count;
-			this._zeroCount = zeroCount;
-			this._min = min;
-			this._max = max;
-			this._positive = positive;
-			this._negative = negative;
-			this._mapping = mapping;
-			if (this._maxSize < MIN_MAX_SIZE) {
-				api_1.diag.warn(`Exponential Histogram Max Size set to ${this._maxSize}, \
-                changing to the minimum size of: ${MIN_MAX_SIZE}`);
-				this._maxSize = MIN_MAX_SIZE;
-			}
-		}
-		/**
-		* record updates a histogram with a single count
-		* @param {Number} value
-		*/
-		record(value) {
-			this.updateByIncrement(value, 1);
-		}
-		/**
-		* Sets the start time for this accumulation
-		* @param {HrTime} startTime
-		*/
-		setStartTime(startTime) {
-			this.startTime = startTime;
-		}
-		/**
-		* Returns the datapoint representation of this accumulation
-		* @param {HrTime} startTime
-		*/
-		toPointValue() {
-			return {
-				hasMinMax: this._recordMinMax,
-				min: this.min,
-				max: this.max,
-				sum: this.sum,
-				positive: {
-					offset: this.positive.offset,
-					bucketCounts: this.positive.counts()
-				},
-				negative: {
-					offset: this.negative.offset,
-					bucketCounts: this.negative.counts()
-				},
-				count: this.count,
-				scale: this.scale,
-				zeroCount: this.zeroCount
-			};
-		}
-		/**
-		* @returns {Number} The sum of values recorded by this accumulation
-		*/
-		get sum() {
-			return this._sum;
-		}
-		/**
-		* @returns {Number} The minimum value recorded by this accumulation
-		*/
-		get min() {
-			return this._min;
-		}
-		/**
-		* @returns {Number} The maximum value recorded by this accumulation
-		*/
-		get max() {
-			return this._max;
-		}
-		/**
-		* @returns {Number} The count of values recorded by this accumulation
-		*/
-		get count() {
-			return this._count;
-		}
-		/**
-		* @returns {Number} The number of 0 values recorded by this accumulation
-		*/
-		get zeroCount() {
-			return this._zeroCount;
-		}
-		/**
-		* @returns {Number} The scale used by this accumulation
-		*/
-		get scale() {
-			if (this._count === this._zeroCount) return 0;
-			return this._mapping.scale;
-		}
-		/**
-		* positive holds the positive values
-		* @returns {Buckets}
-		*/
-		get positive() {
-			return this._positive;
-		}
-		/**
-		* negative holds the negative values by their absolute value
-		* @returns {Buckets}
-		*/
-		get negative() {
-			return this._negative;
-		}
-		/**
-		* updateByIncr supports updating a histogram with a non-negative
-		* increment.
-		* @param value
-		* @param increment
-		*/
-		updateByIncrement(value, increment) {
-			if (!Number.isFinite(value)) return;
-			if (value > this._max) this._max = value;
-			if (value < this._min) this._min = value;
-			this._count += increment;
-			if (value === 0) {
-				this._zeroCount += increment;
-				return;
-			}
-			this._sum += value * increment;
-			if (value > 0) this._updateBuckets(this._positive, value, increment);
-			else this._updateBuckets(this._negative, -value, increment);
-		}
-		/**
-		* merge combines data from previous value into self
-		* @param {ExponentialHistogramAccumulation} previous
-		*/
-		merge(previous) {
-			if (this._count === 0) {
-				this._min = previous.min;
-				this._max = previous.max;
-			} else if (previous.count !== 0) {
-				if (previous.min < this.min) this._min = previous.min;
-				if (previous.max > this.max) this._max = previous.max;
-			}
-			this.startTime = previous.startTime;
-			this._sum += previous.sum;
-			this._count += previous.count;
-			this._zeroCount += previous.zeroCount;
-			const minScale = this._minScale(previous);
-			this._downscale(this.scale - minScale);
-			this._mergeBuckets(this.positive, previous, previous.positive, minScale);
-			this._mergeBuckets(this.negative, previous, previous.negative, minScale);
-		}
-		/**
-		* diff subtracts other from self
-		* @param {ExponentialHistogramAccumulation} other
-		*/
-		diff(other) {
-			this._min = Infinity;
-			this._max = -Infinity;
-			this._sum -= other.sum;
-			this._count -= other.count;
-			this._zeroCount -= other.zeroCount;
-			const minScale = this._minScale(other);
-			this._downscale(this.scale - minScale);
-			this._diffBuckets(this.positive, other, other.positive, minScale);
-			this._diffBuckets(this.negative, other, other.negative, minScale);
-		}
-		/**
-		* clone returns a deep copy of self
-		* @returns {ExponentialHistogramAccumulation}
-		*/
-		clone() {
-			return new ExponentialHistogramAccumulation(this.startTime, this._maxSize, this._recordMinMax, this._sum, this._count, this._zeroCount, this._min, this._max, this.positive.clone(), this.negative.clone(), this._mapping);
-		}
-		/**
-		* _updateBuckets maps the incoming value to a bucket index for the current
-		* scale. If the bucket index is outside of the range of the backing array,
-		* it will rescale the backing array and update the mapping for the new scale.
-		*/
-		_updateBuckets(buckets, value, increment) {
-			let index = this._mapping.mapToIndex(value);
-			let rescalingNeeded = false;
-			let high = 0;
-			let low = 0;
-			if (buckets.length === 0) {
-				buckets.indexStart = index;
-				buckets.indexEnd = buckets.indexStart;
-				buckets.indexBase = buckets.indexStart;
-			} else if (index < buckets.indexStart && buckets.indexEnd - index >= this._maxSize) {
-				rescalingNeeded = true;
-				low = index;
-				high = buckets.indexEnd;
-			} else if (index > buckets.indexEnd && index - buckets.indexStart >= this._maxSize) {
-				rescalingNeeded = true;
-				low = buckets.indexStart;
-				high = index;
-			}
-			if (rescalingNeeded) {
-				const change = this._changeScale(high, low);
-				this._downscale(change);
-				index = this._mapping.mapToIndex(value);
-			}
-			this._incrementIndexBy(buckets, index, increment);
-		}
-		/**
-		* _incrementIndexBy increments the count of the bucket specified by `index`.
-		* If the index is outside of the range [buckets.indexStart, buckets.indexEnd]
-		* the boundaries of the backing array will be adjusted and more buckets will
-		* be added if needed.
-		*/
-		_incrementIndexBy(buckets, index, increment) {
-			if (increment === 0) return;
-			if (buckets.length === 0) buckets.indexStart = buckets.indexEnd = buckets.indexBase = index;
-			if (index < buckets.indexStart) {
-				const span = buckets.indexEnd - index;
-				if (span >= buckets.backing.length) this._grow(buckets, span + 1);
-				buckets.indexStart = index;
-			} else if (index > buckets.indexEnd) {
-				const span = index - buckets.indexStart;
-				if (span >= buckets.backing.length) this._grow(buckets, span + 1);
-				buckets.indexEnd = index;
-			}
-			let bucketIndex = index - buckets.indexBase;
-			if (bucketIndex < 0) bucketIndex += buckets.backing.length;
-			buckets.incrementBucket(bucketIndex, increment);
-		}
-		/**
-		* grow resizes the backing array by doubling in size up to maxSize.
-		* This extends the array with a bunch of zeros and copies the
-		* existing counts to the same position.
-		*/
-		_grow(buckets, needed) {
-			const size = buckets.backing.length;
-			const bias = buckets.indexBase - buckets.indexStart;
-			const oldPositiveLimit = size - bias;
-			let newSize = (0, util_1.nextGreaterSquare)(needed);
-			if (newSize > this._maxSize) newSize = this._maxSize;
-			const newPositiveLimit = newSize - bias;
-			buckets.backing.growTo(newSize, oldPositiveLimit, newPositiveLimit);
-		}
-		/**
-		* _changeScale computes how much downscaling is needed by shifting the
-		* high and low values until they are separated by no more than size.
-		*/
-		_changeScale(high, low) {
-			let change = 0;
-			while (high - low >= this._maxSize) {
-				high >>= 1;
-				low >>= 1;
-				change++;
-			}
-			return change;
-		}
-		/**
-		* _downscale subtracts `change` from the current mapping scale.
-		*/
-		_downscale(change) {
-			if (change === 0) return;
-			if (change < 0) throw new Error(`impossible change of scale: ${this.scale}`);
-			const newScale = this._mapping.scale - change;
-			this._positive.downscale(change);
-			this._negative.downscale(change);
-			this._mapping = (0, getMapping_1.getMapping)(newScale);
-		}
-		/**
-		* _minScale is used by diff and merge to compute an ideal combined scale
-		*/
-		_minScale(other) {
-			const minScale = Math.min(this.scale, other.scale);
-			const highLowPos = HighLow.combine(this._highLowAtScale(this.positive, this.scale, minScale), this._highLowAtScale(other.positive, other.scale, minScale));
-			const highLowNeg = HighLow.combine(this._highLowAtScale(this.negative, this.scale, minScale), this._highLowAtScale(other.negative, other.scale, minScale));
-			return Math.min(minScale - this._changeScale(highLowPos.high, highLowPos.low), minScale - this._changeScale(highLowNeg.high, highLowNeg.low));
-		}
-		/**
-		* _highLowAtScale is used by diff and merge to compute an ideal combined scale.
-		*/
-		_highLowAtScale(buckets, currentScale, newScale) {
-			if (buckets.length === 0) return new HighLow(0, -1);
-			const shift = currentScale - newScale;
-			return new HighLow(buckets.indexStart >> shift, buckets.indexEnd >> shift);
-		}
-		/**
-		* _mergeBuckets translates index values from another histogram and
-		* adds the values into the corresponding buckets of this histogram.
-		*/
-		_mergeBuckets(ours, other, theirs, scale) {
-			const theirOffset = theirs.offset;
-			const theirChange = other.scale - scale;
-			for (let i = 0; i < theirs.length; i++) this._incrementIndexBy(ours, theirOffset + i >> theirChange, theirs.at(i));
-		}
-		/**
-		* _diffBuckets translates index values from another histogram and
-		* subtracts the values in the corresponding buckets of this histogram.
-		*/
-		_diffBuckets(ours, other, theirs, scale) {
-			const theirOffset = theirs.offset;
-			const theirChange = other.scale - scale;
-			for (let i = 0; i < theirs.length; i++) {
-				let bucketIndex = (theirOffset + i >> theirChange) - ours.indexBase;
-				if (bucketIndex < 0) bucketIndex += ours.backing.length;
-				ours.decrementBucket(bucketIndex, theirs.at(i));
-			}
-			ours.trim();
-		}
-	};
-	exports.ExponentialHistogramAccumulation = ExponentialHistogramAccumulation;
-	/**
-	* Aggregator for ExponentialHistogramAccumulations
-	*/
-	var ExponentialHistogramAggregator = class {
-		kind = types_1.AggregatorKind.EXPONENTIAL_HISTOGRAM;
-		_maxSize;
-		_recordMinMax;
-		/**
-		* @param _maxSize Maximum number of buckets for each of the positive
-		*    and negative ranges, exclusive of the zero-bucket.
-		* @param _recordMinMax If set to true, min and max will be recorded.
-		*    Otherwise, min and max will not be recorded.
-		*/
-		constructor(maxSize, recordMinMax) {
-			this._maxSize = maxSize;
-			this._recordMinMax = recordMinMax;
-		}
-		createAccumulation(startTime) {
-			return new ExponentialHistogramAccumulation(startTime, this._maxSize, this._recordMinMax);
-		}
-		/**
-		* Return the result of the merge of two exponential histogram accumulations.
-		*/
-		merge(previous, delta) {
-			const result = delta.clone();
-			result.merge(previous);
-			return result;
-		}
-		/**
-		* Returns a new DELTA aggregation by comparing two cumulative measurements.
-		*/
-		diff(previous, current) {
-			const result = current.clone();
-			result.diff(previous);
-			return result;
-		}
-		toMetricData(descriptor, aggregationTemporality, accumulationByAttributes, endTime) {
-			return {
-				descriptor,
-				aggregationTemporality,
-				dataPointType: MetricData_1.DataPointType.EXPONENTIAL_HISTOGRAM,
-				dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
-					const pointValue = accumulation.toPointValue();
-					const allowsNegativeValues = descriptor.type === MetricData_1.InstrumentType.GAUGE || descriptor.type === MetricData_1.InstrumentType.UP_DOWN_COUNTER || descriptor.type === MetricData_1.InstrumentType.OBSERVABLE_GAUGE || descriptor.type === MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER;
-					return {
-						attributes,
-						startTime: accumulation.startTime,
-						endTime,
-						value: {
-							min: pointValue.hasMinMax ? pointValue.min : void 0,
-							max: pointValue.hasMinMax ? pointValue.max : void 0,
-							sum: !allowsNegativeValues ? pointValue.sum : void 0,
-							positive: {
-								offset: pointValue.positive.offset,
-								bucketCounts: pointValue.positive.bucketCounts
-							},
-							negative: {
-								offset: pointValue.negative.offset,
-								bucketCounts: pointValue.negative.bucketCounts
-							},
-							count: pointValue.count,
-							scale: pointValue.scale,
-							zeroCount: pointValue.zeroCount
-						}
-					};
-				})
-			};
-		}
-	};
-	exports.ExponentialHistogramAggregator = ExponentialHistogramAggregator;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/LastValue.js
-var require_LastValue = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.LastValueAggregator = exports.LastValueAccumulation = void 0;
-	const types_1 = require_types$1();
-	const core_1 = require_src$8();
-	const MetricData_1 = require_MetricData();
-	var LastValueAccumulation = class {
-		startTime;
-		_current;
-		sampleTime;
-		constructor(startTime, current = 0, sampleTime = [0, 0]) {
-			this.startTime = startTime;
-			this._current = current;
-			this.sampleTime = sampleTime;
-		}
-		record(value) {
-			this._current = value;
-			this.sampleTime = (0, core_1.millisToHrTime)(Date.now());
-		}
-		setStartTime(startTime) {
-			this.startTime = startTime;
-		}
-		toPointValue() {
-			return this._current;
-		}
-	};
-	exports.LastValueAccumulation = LastValueAccumulation;
-	/** Basic aggregator which calculates a LastValue from individual measurements. */
-	var LastValueAggregator = class {
-		kind = types_1.AggregatorKind.LAST_VALUE;
-		createAccumulation(startTime) {
-			return new LastValueAccumulation(startTime);
-		}
-		/**
-		* Returns the result of the merge of the given accumulations.
-		*
-		* Return the newly captured (delta) accumulation for LastValueAggregator.
-		*/
-		merge(previous, delta) {
-			const latestAccumulation = (0, core_1.hrTimeToMicroseconds)(delta.sampleTime) >= (0, core_1.hrTimeToMicroseconds)(previous.sampleTime) ? delta : previous;
-			return new LastValueAccumulation(previous.startTime, latestAccumulation.toPointValue(), latestAccumulation.sampleTime);
-		}
-		/**
-		* Returns a new DELTA aggregation by comparing two cumulative measurements.
-		*
-		* A delta aggregation is not meaningful to LastValueAggregator, just return
-		* the newly captured (delta) accumulation for LastValueAggregator.
-		*/
-		diff(previous, current) {
-			const latestAccumulation = (0, core_1.hrTimeToMicroseconds)(current.sampleTime) >= (0, core_1.hrTimeToMicroseconds)(previous.sampleTime) ? current : previous;
-			return new LastValueAccumulation(current.startTime, latestAccumulation.toPointValue(), latestAccumulation.sampleTime);
-		}
-		toMetricData(descriptor, aggregationTemporality, accumulationByAttributes, endTime) {
-			return {
-				descriptor,
-				aggregationTemporality,
-				dataPointType: MetricData_1.DataPointType.GAUGE,
-				dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
-					return {
-						attributes,
-						startTime: accumulation.startTime,
-						endTime,
-						value: accumulation.toPointValue()
-					};
-				})
-			};
-		}
-	};
-	exports.LastValueAggregator = LastValueAggregator;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/Sum.js
-var require_Sum = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.SumAggregator = exports.SumAccumulation = void 0;
-	const types_1 = require_types$1();
-	const MetricData_1 = require_MetricData();
-	var SumAccumulation = class {
-		startTime;
-		monotonic;
-		_current;
-		reset;
-		constructor(startTime, monotonic, current = 0, reset = false) {
-			this.startTime = startTime;
-			this.monotonic = monotonic;
-			this._current = current;
-			this.reset = reset;
-		}
-		record(value) {
-			if (this.monotonic && value < 0) return;
-			this._current += value;
-		}
-		setStartTime(startTime) {
-			this.startTime = startTime;
-		}
-		toPointValue() {
-			return this._current;
-		}
-	};
-	exports.SumAccumulation = SumAccumulation;
-	/** Basic aggregator which calculates a Sum from individual measurements. */
-	var SumAggregator = class {
-		kind = types_1.AggregatorKind.SUM;
-		monotonic;
-		constructor(monotonic) {
-			this.monotonic = monotonic;
-		}
-		createAccumulation(startTime) {
-			return new SumAccumulation(startTime, this.monotonic);
-		}
-		/**
-		* Returns the result of the merge of the given accumulations.
-		*/
-		merge(previous, delta) {
-			const prevPv = previous.toPointValue();
-			const deltaPv = delta.toPointValue();
-			if (delta.reset) return new SumAccumulation(delta.startTime, this.monotonic, deltaPv, delta.reset);
-			return new SumAccumulation(previous.startTime, this.monotonic, prevPv + deltaPv);
-		}
-		/**
-		* Returns a new DELTA aggregation by comparing two cumulative measurements.
-		*/
-		diff(previous, current) {
-			const prevPv = previous.toPointValue();
-			const currPv = current.toPointValue();
-			/**
-			* If the SumAggregator is a monotonic one and the previous point value is
-			* greater than the current one, a reset is deemed to be happened.
-			* Return the current point value to prevent the value from been reset.
-			*/
-			if (this.monotonic && prevPv > currPv) return new SumAccumulation(current.startTime, this.monotonic, currPv, true);
-			return new SumAccumulation(current.startTime, this.monotonic, currPv - prevPv);
-		}
-		toMetricData(descriptor, aggregationTemporality, accumulationByAttributes, endTime) {
-			return {
-				descriptor,
-				aggregationTemporality,
-				dataPointType: MetricData_1.DataPointType.SUM,
-				dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
-					return {
-						attributes,
-						startTime: accumulation.startTime,
-						endTime,
-						value: accumulation.toPointValue()
-					};
-				}),
-				isMonotonic: this.monotonic
-			};
-		}
-	};
-	exports.SumAggregator = SumAggregator;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/aggregator/index.js
-var require_aggregator = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.SumAggregator = exports.SumAccumulation = exports.LastValueAggregator = exports.LastValueAccumulation = exports.ExponentialHistogramAggregator = exports.ExponentialHistogramAccumulation = exports.HistogramAggregator = exports.HistogramAccumulation = exports.DropAggregator = void 0;
-	var Drop_1 = require_Drop();
-	Object.defineProperty(exports, "DropAggregator", {
-		enumerable: true,
-		get: function() {
-			return Drop_1.DropAggregator;
-		}
-	});
-	var Histogram_1 = require_Histogram();
-	Object.defineProperty(exports, "HistogramAccumulation", {
-		enumerable: true,
-		get: function() {
-			return Histogram_1.HistogramAccumulation;
-		}
-	});
-	Object.defineProperty(exports, "HistogramAggregator", {
-		enumerable: true,
-		get: function() {
-			return Histogram_1.HistogramAggregator;
-		}
-	});
-	var ExponentialHistogram_1 = require_ExponentialHistogram();
-	Object.defineProperty(exports, "ExponentialHistogramAccumulation", {
-		enumerable: true,
-		get: function() {
-			return ExponentialHistogram_1.ExponentialHistogramAccumulation;
-		}
-	});
-	Object.defineProperty(exports, "ExponentialHistogramAggregator", {
-		enumerable: true,
-		get: function() {
-			return ExponentialHistogram_1.ExponentialHistogramAggregator;
-		}
-	});
-	var LastValue_1 = require_LastValue();
-	Object.defineProperty(exports, "LastValueAccumulation", {
-		enumerable: true,
-		get: function() {
-			return LastValue_1.LastValueAccumulation;
-		}
-	});
-	Object.defineProperty(exports, "LastValueAggregator", {
-		enumerable: true,
-		get: function() {
-			return LastValue_1.LastValueAggregator;
-		}
-	});
-	var Sum_1 = require_Sum();
-	Object.defineProperty(exports, "SumAccumulation", {
-		enumerable: true,
-		get: function() {
-			return Sum_1.SumAccumulation;
-		}
-	});
-	Object.defineProperty(exports, "SumAggregator", {
-		enumerable: true,
-		get: function() {
-			return Sum_1.SumAggregator;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/Aggregation.js
-var require_Aggregation = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.DEFAULT_AGGREGATION = exports.EXPONENTIAL_HISTOGRAM_AGGREGATION = exports.HISTOGRAM_AGGREGATION = exports.LAST_VALUE_AGGREGATION = exports.SUM_AGGREGATION = exports.DROP_AGGREGATION = exports.DefaultAggregation = exports.ExponentialHistogramAggregation = exports.ExplicitBucketHistogramAggregation = exports.HistogramAggregation = exports.LastValueAggregation = exports.SumAggregation = exports.DropAggregation = void 0;
-	const api = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const aggregator_1 = require_aggregator();
-	const MetricData_1 = require_MetricData();
-	/**
-	* The default drop aggregation.
-	*/
-	var DropAggregation = class DropAggregation {
-		static DEFAULT_INSTANCE = new aggregator_1.DropAggregator();
-		createAggregator(_instrument) {
-			return DropAggregation.DEFAULT_INSTANCE;
-		}
-	};
-	exports.DropAggregation = DropAggregation;
-	/**
-	* The default sum aggregation.
-	*/
-	var SumAggregation = class SumAggregation {
-		static MONOTONIC_INSTANCE = new aggregator_1.SumAggregator(true);
-		static NON_MONOTONIC_INSTANCE = new aggregator_1.SumAggregator(false);
-		createAggregator(instrument) {
-			switch (instrument.type) {
-				case MetricData_1.InstrumentType.COUNTER:
-				case MetricData_1.InstrumentType.OBSERVABLE_COUNTER:
-				case MetricData_1.InstrumentType.HISTOGRAM: return SumAggregation.MONOTONIC_INSTANCE;
-				default: return SumAggregation.NON_MONOTONIC_INSTANCE;
-			}
-		}
-	};
-	exports.SumAggregation = SumAggregation;
-	/**
-	* The default last value aggregation.
-	*/
-	var LastValueAggregation = class LastValueAggregation {
-		static DEFAULT_INSTANCE = new aggregator_1.LastValueAggregator();
-		createAggregator(_instrument) {
-			return LastValueAggregation.DEFAULT_INSTANCE;
-		}
-	};
-	exports.LastValueAggregation = LastValueAggregation;
-	/**
-	* The default histogram aggregation.
-	
-	*/
-	var HistogramAggregation = class HistogramAggregation {
-		static DEFAULT_INSTANCE = new aggregator_1.HistogramAggregator([
-			0,
-			5,
-			10,
-			25,
-			50,
-			75,
-			100,
-			250,
-			500,
-			750,
-			1e3,
-			2500,
-			5e3,
-			7500,
-			1e4
-		], true);
-		createAggregator(_instrument) {
-			return HistogramAggregation.DEFAULT_INSTANCE;
-		}
-	};
-	exports.HistogramAggregation = HistogramAggregation;
-	/**
-	* The explicit bucket histogram aggregation.
-	*/
-	var ExplicitBucketHistogramAggregation = class {
-		_boundaries;
-		_recordMinMax;
-		/**
-		* @param boundaries the bucket boundaries of the histogram aggregation
-		* @param _recordMinMax If set to true, min and max will be recorded. Otherwise, min and max will not be recorded.
-		*/
-		constructor(boundaries, recordMinMax = true) {
-			if (boundaries == null) throw new Error("ExplicitBucketHistogramAggregation should be created with explicit boundaries, if a single bucket histogram is required, please pass an empty array");
-			boundaries = boundaries.concat();
-			boundaries = boundaries.sort((a, b) => a - b);
-			const minusInfinityIndex = boundaries.lastIndexOf(-Infinity);
-			let infinityIndex = boundaries.indexOf(Infinity);
-			if (infinityIndex === -1) infinityIndex = void 0;
-			this._boundaries = boundaries.slice(minusInfinityIndex + 1, infinityIndex);
-			this._recordMinMax = recordMinMax;
-		}
-		createAggregator(_instrument) {
-			return new aggregator_1.HistogramAggregator(this._boundaries, this._recordMinMax);
-		}
-	};
-	exports.ExplicitBucketHistogramAggregation = ExplicitBucketHistogramAggregation;
-	var ExponentialHistogramAggregation = class {
-		_maxSize;
-		_recordMinMax;
-		constructor(maxSize = 160, recordMinMax = true) {
-			this._maxSize = maxSize;
-			this._recordMinMax = recordMinMax;
-		}
-		createAggregator(_instrument) {
-			return new aggregator_1.ExponentialHistogramAggregator(this._maxSize, this._recordMinMax);
-		}
-	};
-	exports.ExponentialHistogramAggregation = ExponentialHistogramAggregation;
-	/**
-	* The default aggregation.
-	*/
-	var DefaultAggregation = class {
-		_resolve(instrument) {
-			switch (instrument.type) {
-				case MetricData_1.InstrumentType.COUNTER:
-				case MetricData_1.InstrumentType.UP_DOWN_COUNTER:
-				case MetricData_1.InstrumentType.OBSERVABLE_COUNTER:
-				case MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER: return exports.SUM_AGGREGATION;
-				case MetricData_1.InstrumentType.GAUGE:
-				case MetricData_1.InstrumentType.OBSERVABLE_GAUGE: return exports.LAST_VALUE_AGGREGATION;
-				case MetricData_1.InstrumentType.HISTOGRAM:
-					if (instrument.advice.explicitBucketBoundaries) return new ExplicitBucketHistogramAggregation(instrument.advice.explicitBucketBoundaries);
-					return exports.HISTOGRAM_AGGREGATION;
-			}
-			api.diag.warn(`Unable to recognize instrument type: ${instrument.type}`);
-			return exports.DROP_AGGREGATION;
-		}
-		createAggregator(instrument) {
-			return this._resolve(instrument).createAggregator(instrument);
-		}
-	};
-	exports.DefaultAggregation = DefaultAggregation;
-	exports.DROP_AGGREGATION = new DropAggregation();
-	exports.SUM_AGGREGATION = new SumAggregation();
-	exports.LAST_VALUE_AGGREGATION = new LastValueAggregation();
-	exports.HISTOGRAM_AGGREGATION = new HistogramAggregation();
-	exports.EXPONENTIAL_HISTOGRAM_AGGREGATION = new ExponentialHistogramAggregation();
-	exports.DEFAULT_AGGREGATION = new DefaultAggregation();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/AggregationOption.js
-var require_AggregationOption = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.toAggregation = exports.AggregationType = void 0;
-	const Aggregation_1 = require_Aggregation();
-	var AggregationType;
-	(function(AggregationType) {
-		AggregationType[AggregationType["DEFAULT"] = 0] = "DEFAULT";
-		AggregationType[AggregationType["DROP"] = 1] = "DROP";
-		AggregationType[AggregationType["SUM"] = 2] = "SUM";
-		AggregationType[AggregationType["LAST_VALUE"] = 3] = "LAST_VALUE";
-		AggregationType[AggregationType["EXPLICIT_BUCKET_HISTOGRAM"] = 4] = "EXPLICIT_BUCKET_HISTOGRAM";
-		AggregationType[AggregationType["EXPONENTIAL_HISTOGRAM"] = 5] = "EXPONENTIAL_HISTOGRAM";
-	})(AggregationType || (exports.AggregationType = AggregationType = {}));
-	function toAggregation(option) {
-		switch (option.type) {
-			case AggregationType.DEFAULT: return Aggregation_1.DEFAULT_AGGREGATION;
-			case AggregationType.DROP: return Aggregation_1.DROP_AGGREGATION;
-			case AggregationType.SUM: return Aggregation_1.SUM_AGGREGATION;
-			case AggregationType.LAST_VALUE: return Aggregation_1.LAST_VALUE_AGGREGATION;
-			case AggregationType.EXPONENTIAL_HISTOGRAM: {
-				const expOption = option;
-				return new Aggregation_1.ExponentialHistogramAggregation(expOption.options?.maxSize, expOption.options?.recordMinMax);
-			}
-			case AggregationType.EXPLICIT_BUCKET_HISTOGRAM: {
-				const expOption = option;
-				if (expOption.options == null) return Aggregation_1.HISTOGRAM_AGGREGATION;
-				else return new Aggregation_1.ExplicitBucketHistogramAggregation(expOption.options?.boundaries, expOption.options?.recordMinMax);
-			}
-			default: throw new Error("Unsupported Aggregation");
-		}
-	}
-	exports.toAggregation = toAggregation;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/AggregationSelector.js
-var require_AggregationSelector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR = exports.DEFAULT_AGGREGATION_SELECTOR = void 0;
-	const AggregationTemporality_1 = require_AggregationTemporality();
-	const AggregationOption_1 = require_AggregationOption();
-	const DEFAULT_AGGREGATION_SELECTOR = (_instrumentType) => {
-		return { type: AggregationOption_1.AggregationType.DEFAULT };
-	};
-	exports.DEFAULT_AGGREGATION_SELECTOR = DEFAULT_AGGREGATION_SELECTOR;
-	const DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR = (_instrumentType) => AggregationTemporality_1.AggregationTemporality.CUMULATIVE;
-	exports.DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR = DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/semconv.js
-var require_semconv$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ATTR_ERROR_TYPE = exports.METRIC_OTEL_SDK_METRIC_READER_COLLECTION_DURATION = exports.OTEL_COMPONENT_TYPE_VALUE_PERIODIC_METRIC_READER = exports.ATTR_OTEL_COMPONENT_TYPE = exports.ATTR_OTEL_COMPONENT_NAME = void 0;
-	/**
-	* A name uniquely identifying the instance of the OpenTelemetry component within its containing SDK instance.
-	*
-	* @example otlp_grpc_span_exporter/0
-	* @example custom-name
-	*
-	* @note Implementations **SHOULD** ensure a low cardinality for this attribute, even across application or SDK restarts.
-	* E.g. implementations **MUST NOT** use UUIDs as values for this attribute.
-	*
-	* Implementations **MAY** achieve these goals by following a `<otel.component.type>/<instance-counter>` pattern, e.g. `batching_span_processor/0`.
-	* Hereby `otel.component.type` refers to the corresponding attribute value of the component.
-	*
-	* The value of `instance-counter` **MAY** be automatically assigned by the component and uniqueness within the enclosing SDK instance **MUST** be guaranteed.
-	* For example, `<instance-counter>` **MAY** be implemented by using a monotonically increasing counter (starting with `0`), which is incremented every time an
-	* instance of the given component type is started.
-	*
-	* With this implementation, for example the first Batching Span Processor would have `batching_span_processor/0`
-	* as `otel.component.name`, the second one `batching_span_processor/1` and so on.
-	* These values will therefore be reused in the case of an application restart.
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_OTEL_COMPONENT_NAME = "otel.component.name";
-	/**
-	* A name identifying the type of the OpenTelemetry component.
-	*
-	* @example batching_span_processor
-	* @example com.example.MySpanExporter
-	*
-	* @note If none of the standardized values apply, implementations **SHOULD** use the language-defined name of the type.
-	* E.g. for Java the fully qualified classname **SHOULD** be used in this case.
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_OTEL_COMPONENT_TYPE = "otel.component.type";
-	/**
-	* Enum value "periodic_metric_reader" for attribute {@link ATTR_OTEL_COMPONENT_TYPE}.
-	*
-	* The builtin SDK periodically exporting metric reader
-	*
-	* @experimental This enum value is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.OTEL_COMPONENT_TYPE_VALUE_PERIODIC_METRIC_READER = "periodic_metric_reader";
-	/**
-	* The duration of the collect operation of the metric reader.
-	*
-	* @note For successful collections, `error.type` **MUST NOT** be set. For failed collections, `error.type` **SHOULD** contain the failure cause.
-	* It can happen that metrics collection is successful for some MetricProducers, while others fail. In that case `error.type` **SHOULD** be set to any of the failure causes.
-	*
-	* @experimental This metric is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.METRIC_OTEL_SDK_METRIC_READER_COLLECTION_DURATION = "otel.sdk.metric_reader.collection.duration";
-	/**
-	* Describes a class of error the operation ended with.
-	*
-	* @example timeout
-	* @example java.net.UnknownHostException
-	* @example server_certificate_invalid
-	* @example 500
-	*
-	* @note The `error.type` **SHOULD** be predictable, and **SHOULD** have low cardinality.
-	*
-	* When `error.type` is set to a type (e.g., an exception type), its
-	* canonical class name identifying the type within the artifact **SHOULD** be used.
-	*
-	* Instrumentations **SHOULD** document the list of errors they report.
-	*
-	* The cardinality of `error.type` within one instrumentation library **SHOULD** be low.
-	* Telemetry consumers that aggregate data from multiple instrumentation libraries and applications
-	* should be prepared for `error.type` to have high cardinality at query time when no
-	* additional filters are applied.
-	*
-	* If the operation has completed successfully, instrumentations **SHOULD NOT** set `error.type`.
-	*
-	* If a specific domain defines its own set of error identifiers (such as HTTP or RPC status codes),
-	* it's **RECOMMENDED** to:
-	*
-	*   - Use a domain-specific attribute
-	*   - Set `error.type` to capture all errors, regardless of whether they are defined within the domain-specific set or not.
-	*/
-	exports.ATTR_ERROR_TYPE = "error.type";
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/MetricReaderMetrics.js
-var require_MetricReaderMetrics = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MetricReaderMetrics = void 0;
-	const semconv_1 = require_semconv$3();
-	const componentCounter = /* @__PURE__ */ new Map();
-	/**
-	* Generates `otel.sdk.metric_reader.*` self-observability metrics.
-	* https://opentelemetry.io/docs/specs/semconv/otel/sdk-metrics/#metric-otelsdkmetric_readercollectionduration
-	*/
-	var MetricReaderMetrics = class {
-		collectionDuration;
-		standardAttrs;
-		constructor(componentType, meter) {
-			const counter = componentCounter.get(componentType) ?? 0;
-			componentCounter.set(componentType, counter + 1);
-			this.standardAttrs = {
-				[semconv_1.ATTR_OTEL_COMPONENT_TYPE]: componentType,
-				[semconv_1.ATTR_OTEL_COMPONENT_NAME]: `${componentType}/${counter}`
-			};
-			this.collectionDuration = meter.createHistogram(semconv_1.METRIC_OTEL_SDK_METRIC_READER_COLLECTION_DURATION, {
-				unit: "s",
-				description: "The duration of the collect operation of the metric reader.",
-				advice: { explicitBucketBoundaries: [] }
-			});
-		}
-		recordCollection(durationSecs, error) {
-			const attrs = error ? {
-				...this.standardAttrs,
-				[semconv_1.ATTR_ERROR_TYPE]: error
-			} : this.standardAttrs;
-			this.collectionDuration.record(durationSecs, attrs);
-		}
-	};
-	exports.MetricReaderMetrics = MetricReaderMetrics;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/version.js
-var require_version$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.VERSION = void 0;
-	exports.VERSION = "2.11.0";
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/MetricReader.js
-var require_MetricReader = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MetricReader = void 0;
-	const api = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const utils_1 = require_utils$3();
-	const AggregationSelector_1 = require_AggregationSelector();
-	const MetricReaderMetrics_1 = require_MetricReaderMetrics();
-	const version_1 = require_version$1();
-	const core_1 = require_src$8();
-	/**
-	* A registered reader of metrics that, when linked to a {@link MetricProducer}, offers global
-	* control over metrics.
-	*/
-	var MetricReader = class {
-		_shutdown = false;
-		_metricProducers;
-		_sdkMetricProducer;
-		_selfObsMetrics;
-		_aggregationTemporalitySelector;
-		_aggregationSelector;
-		_cardinalitySelector;
-		_otelComponentType;
-		constructor(options) {
-			this._aggregationSelector = options?.aggregationSelector ?? AggregationSelector_1.DEFAULT_AGGREGATION_SELECTOR;
-			this._aggregationTemporalitySelector = options?.aggregationTemporalitySelector ?? AggregationSelector_1.DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR;
-			this._metricProducers = options?.metricProducers ?? [];
-			this._cardinalitySelector = options?.cardinalitySelector;
-			this._otelComponentType = options?.otelComponentType ?? this.constructor.name;
-			this._selfObsMetrics = new MetricReaderMetrics_1.MetricReaderMetrics(this._otelComponentType, api.createNoopMeter());
-		}
-		setMetricProducer(metricProducer) {
-			if (this._sdkMetricProducer) throw new Error("MetricReader can not be bound to a MeterProvider again.");
-			this._sdkMetricProducer = metricProducer;
-			this.onInitialized();
-		}
-		_setSelfObsMeterProvider(meterProvider) {
-			const meter = meterProvider.getMeter("@opentelemetry/sdk-metrics", version_1.VERSION);
-			this._selfObsMetrics = new MetricReaderMetrics_1.MetricReaderMetrics(this._otelComponentType, meter);
-		}
-		selectAggregation(instrumentType) {
-			return this._aggregationSelector(instrumentType);
-		}
-		selectAggregationTemporality(instrumentType) {
-			return this._aggregationTemporalitySelector(instrumentType);
-		}
-		selectCardinalityLimit(instrumentType) {
-			return this._cardinalitySelector ? this._cardinalitySelector(instrumentType) : 2e3;
-		}
-		/**
-		* Handle once the SDK has initialized this {@link MetricReader}
-		* Overriding this method is optional.
-		*/
-		onInitialized() {}
-		async collect(options) {
-			if (this._sdkMetricProducer === void 0) throw new Error("MetricReader is not bound to a MetricProducer");
-			if (this._shutdown) throw new Error("MetricReader is shutdown");
-			const startTime = (0, core_1.hrTime)();
-			const [sdkCollectionResults, ...additionalCollectionResults] = await Promise.all([this._sdkMetricProducer.collect({ timeoutMillis: options?.timeoutMillis }), ...this._metricProducers.map((producer) => producer.collect({ timeoutMillis: options?.timeoutMillis }))]);
-			const endTime = (0, core_1.hrTime)();
-			const errors = sdkCollectionResults.errors.concat(additionalCollectionResults.flatMap((result) => result.errors));
-			const collectDuration = (0, core_1.hrTimeToSeconds)((0, core_1.hrTimeDuration)(startTime, endTime));
-			this._selfObsMetrics.recordCollection(collectDuration, errors.length > 0 ? errors[0].name ?? "collect_error" : void 0);
-			return {
-				resourceMetrics: {
-					resource: sdkCollectionResults.resourceMetrics.resource,
-					scopeMetrics: sdkCollectionResults.resourceMetrics.scopeMetrics.concat(additionalCollectionResults.flatMap((result) => result.resourceMetrics.scopeMetrics))
-				},
-				errors
-			};
-		}
-		async shutdown(options) {
-			if (this._shutdown) {
-				api.diag.error("Cannot call shutdown twice.");
-				return;
-			}
-			if (options?.timeoutMillis == null) await this.onShutdown();
-			else await (0, utils_1.callWithTimeout)(this.onShutdown(), options.timeoutMillis);
-			this._shutdown = true;
-		}
-		async forceFlush(options) {
-			if (this._shutdown) {
-				api.diag.warn("Cannot forceFlush on already shutdown MetricReader.");
-				return;
-			}
-			if (options?.timeoutMillis == null) {
-				await this.onForceFlush();
-				return;
-			}
-			await (0, utils_1.callWithTimeout)(this.onForceFlush(), options.timeoutMillis);
-		}
-	};
-	exports.MetricReader = MetricReader;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/MetricDataSplitter.js
-var require_MetricDataSplitter = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.splitMetricData = void 0;
-	/**
-	* Splits a ResourceMetrics object into smaller ResourceMetrics objects
-	* such that no batch exceeds maxExportBatchSize data points.
-	* @param resourceMetrics The metrics to split.
-	* @param maxExportBatchSize The maximum number of data points per batch.
-	* @internal
-	*/
-	function splitMetricData(resourceMetrics, maxExportBatchSize) {
-		if (!Number.isInteger(maxExportBatchSize) || maxExportBatchSize <= 0) throw new Error("maxExportBatchSize must be a positive integer");
-		const batches = [];
-		let currentBatchPoints = 0;
-		let currentScopeMetrics = [];
-		function flush() {
-			if (currentScopeMetrics.length > 0) {
-				batches.push({
-					resource: resourceMetrics.resource,
-					scopeMetrics: currentScopeMetrics
-				});
-				currentScopeMetrics = [];
-				currentBatchPoints = 0;
-			}
-		}
-		for (const scopeMetric of resourceMetrics.scopeMetrics) {
-			let scopeMetricCopy = null;
-			for (const metric of scopeMetric.metrics) {
-				const dataPoints = metric.dataPoints;
-				if (dataPoints.length === 0) {
-					if (!scopeMetricCopy) {
-						scopeMetricCopy = {
-							scope: scopeMetric.scope,
-							metrics: []
-						};
-						currentScopeMetrics.push(scopeMetricCopy);
-					}
-					scopeMetricCopy.metrics.push(metric);
-					continue;
-				}
-				let offset = 0;
-				while (offset < dataPoints.length) {
-					const spaceLeft = maxExportBatchSize - currentBatchPoints;
-					const take = Math.min(spaceLeft, dataPoints.length - offset);
-					if (!scopeMetricCopy) {
-						scopeMetricCopy = {
-							scope: scopeMetric.scope,
-							metrics: []
-						};
-						currentScopeMetrics.push(scopeMetricCopy);
-					}
-					const metricCopy = {
-						...metric,
-						dataPoints: dataPoints.slice(offset, offset + take)
-					};
-					scopeMetricCopy.metrics.push(metricCopy);
-					offset += take;
-					currentBatchPoints += take;
-					if (currentBatchPoints === maxExportBatchSize) {
-						flush();
-						scopeMetricCopy = null;
-					}
-				}
-			}
-		}
-		flush();
-		return batches;
-	}
-	exports.splitMetricData = splitMetricData;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/PeriodicExportingMetricReader.js
-var require_PeriodicExportingMetricReader = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.PeriodicExportingMetricReader = void 0;
-	const api = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const core_1 = require_src$8();
-	const MetricReader_1 = require_MetricReader();
-	const utils_1 = require_utils$3();
-	const MetricData_1 = require_MetricData();
-	const MetricDataSplitter_1 = require_MetricDataSplitter();
-	const semconv_1 = require_semconv$3();
-	/**
-	* {@link MetricReader} which collects metrics based on a user-configurable time interval, and passes the metrics to
-	* the configured {@link PushMetricExporter}
-	*/
-	var PeriodicExportingMetricReader = class extends MetricReader_1.MetricReader {
-		_interval;
-		_exporter;
-		_exportInterval;
-		_exportTimeout;
-		_maxExportBatchSize;
-		_ongoingExportPromise = null;
-		constructor(options) {
-			const { exporter, exportIntervalMillis = 6e4, metricProducers, cardinalityLimits, maxExportBatchSize } = options;
-			let { exportTimeoutMillis = 3e4 } = options;
-			super({
-				aggregationSelector: exporter.selectAggregation?.bind(exporter),
-				aggregationTemporalitySelector: exporter.selectAggregationTemporality?.bind(exporter),
-				otelComponentType: semconv_1.OTEL_COMPONENT_TYPE_VALUE_PERIODIC_METRIC_READER,
-				metricProducers,
-				cardinalitySelector: (instrumentType) => {
-					const limits = {
-						default: 2e3,
-						...cardinalityLimits
-					};
-					switch (instrumentType) {
-						case MetricData_1.InstrumentType.COUNTER: return limits.counter ?? limits.default;
-						case MetricData_1.InstrumentType.GAUGE: return limits.gauge ?? limits.default;
-						case MetricData_1.InstrumentType.HISTOGRAM: return limits.histogram ?? limits.default;
-						case MetricData_1.InstrumentType.OBSERVABLE_COUNTER: return limits.observableCounter ?? limits.default;
-						case MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER: return limits.observableUpDownCounter ?? limits.default;
-						case MetricData_1.InstrumentType.OBSERVABLE_GAUGE: return limits.observableGauge ?? limits.default;
-						case MetricData_1.InstrumentType.UP_DOWN_COUNTER: return limits.upDownCounter ?? limits.default;
-						default: return limits.default;
-					}
-				}
-			});
-			if (exportIntervalMillis <= 0) throw Error("exportIntervalMillis must be greater than 0");
-			if (exportTimeoutMillis <= 0) throw Error("exportTimeoutMillis must be greater than 0");
-			if (maxExportBatchSize !== void 0 && (!Number.isInteger(maxExportBatchSize) || maxExportBatchSize <= 0)) throw Error("maxExportBatchSize must be a positive integer");
-			if (exportIntervalMillis < exportTimeoutMillis) {
-				if ("exportIntervalMillis" in options && "exportTimeoutMillis" in options) throw Error("exportIntervalMillis must be greater than or equal to exportTimeoutMillis");
-				else {
-					api.diag.info(`Timeout of ${exportTimeoutMillis} exceeds the interval of ${exportIntervalMillis}. Clamping timeout to interval duration.`);
-					exportTimeoutMillis = exportIntervalMillis;
-				}
-			}
-			this._exportInterval = exportIntervalMillis;
-			this._exportTimeout = exportTimeoutMillis;
-			this._exporter = exporter;
-			this._maxExportBatchSize = maxExportBatchSize;
-		}
-		async _runOnce() {
-			try {
-				await this._doRun();
-			} catch (err) {
-				(0, core_1.globalErrorHandler)(err);
-			}
-		}
-		async _doRun() {
-			if (this._ongoingExportPromise) {
-				api.diag.debug("PeriodicExportingMetricReader: export already in progress, skipping");
-				return;
-			}
-			const currentRun = async () => {
-				const { resourceMetrics, errors } = await this.collect({ timeoutMillis: this._exportTimeout });
-				if (errors.length > 0) api.diag.error("PeriodicExportingMetricReader: metrics collection errors", ...errors);
-				if (resourceMetrics.resource.asyncAttributesPending) try {
-					await resourceMetrics.resource.waitForAsyncAttributes?.();
-				} catch (e) {
-					api.diag.debug("Error while resolving async portion of resource: ", e);
-					(0, core_1.globalErrorHandler)(e);
-				}
-				if (resourceMetrics.scopeMetrics.length === 0) return;
-				const batches = this._maxExportBatchSize ? (0, MetricDataSplitter_1.splitMetricData)(resourceMetrics, this._maxExportBatchSize) : [resourceMetrics];
-				let anyErr = null;
-				for (const batch of batches) try {
-					const result = await (0, utils_1.callWithTimeout)(core_1.internal._export(this._exporter, batch), this._exportTimeout);
-					if (result.code !== core_1.ExportResultCode.SUCCESS) anyErr = /* @__PURE__ */ new Error(`PeriodicExportingMetricReader: metrics export failed (error ${result.error})`);
-				} catch (e) {
-					if (e instanceof utils_1.TimeoutError) {
-						api.diag.error(`PeriodicExportingMetricReader: metrics export timed out after ${this._exportTimeout}ms`);
-						break;
-					} else {
-						api.diag.error("PeriodicExportingMetricReader: metrics export threw error", e);
-						anyErr = e instanceof Error ? e : new Error(String(e));
-					}
-				}
-				if (anyErr) throw anyErr;
-			};
-			this._ongoingExportPromise = currentRun();
-			try {
-				await this._ongoingExportPromise;
-			} finally {
-				this._ongoingExportPromise = null;
-			}
-		}
-		onInitialized() {
-			this._interval = setInterval(() => {
-				this._runOnce();
-			}, this._exportInterval);
-			if (typeof this._interval !== "number") this._interval.unref();
-		}
-		async onForceFlush() {
-			await this._awaitOngoingExport();
-			if (this._ongoingExportPromise) await this._awaitOngoingExport();
-			else await this._runOnce();
-			await this._exporter.forceFlush();
-		}
-		/**
-		* Helper function to wait for an ongoing export to complete.
-		* Errors are swallowed and handled by the original _runOnce().
-		*/
-		async _awaitOngoingExport() {
-			if (this._ongoingExportPromise) {
-				api.diag.debug("PeriodicExportingMetricReader: export already in progress, awaiting ongoing export");
-				try {
-					await this._ongoingExportPromise;
-				} catch {}
-			}
-		}
-		async onShutdown() {
-			if (this._interval) clearInterval(this._interval);
-			await this.onForceFlush();
-			await this._exporter.shutdown();
-		}
-	};
-	exports.PeriodicExportingMetricReader = PeriodicExportingMetricReader;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/InMemoryMetricExporter.js
-var require_InMemoryMetricExporter = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.InMemoryMetricExporter = void 0;
-	const core_1 = require_src$8();
-	/**
-	* In-memory Metrics Exporter is a Push Metric Exporter
-	* which accumulates metrics data in the local memory and
-	* allows to inspect it (useful for e.g. unit tests).
-	*/
-	var InMemoryMetricExporter = class {
-		_shutdown = false;
-		_aggregationTemporality;
-		_metrics = [];
-		constructor(aggregationTemporality) {
-			this._aggregationTemporality = aggregationTemporality;
-		}
-		/**
-		* @inheritedDoc
-		*/
-		export(metrics, resultCallback) {
-			if (this._shutdown) {
-				setTimeout(() => resultCallback({ code: core_1.ExportResultCode.FAILED }), 0);
-				return;
-			}
-			this._metrics.push(metrics);
-			setTimeout(() => resultCallback({ code: core_1.ExportResultCode.SUCCESS }), 0);
-		}
-		/**
-		* Returns all the collected resource metrics
-		* @returns ResourceMetrics[]
-		*/
-		getMetrics() {
-			return this._metrics;
-		}
-		forceFlush() {
-			return Promise.resolve();
-		}
-		reset() {
-			this._metrics = [];
-		}
-		selectAggregationTemporality(_instrumentType) {
-			return this._aggregationTemporality;
-		}
-		shutdown() {
-			this._shutdown = true;
-			return Promise.resolve();
-		}
-	};
-	exports.InMemoryMetricExporter = InMemoryMetricExporter;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/export/ConsoleMetricExporter.js
-var require_ConsoleMetricExporter = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ConsoleMetricExporter = void 0;
-	const core_1 = require_src$8();
-	const AggregationSelector_1 = require_AggregationSelector();
-	/**
-	* This is an implementation of {@link PushMetricExporter} that prints metrics to the
-	* console. This class can be used for diagnostic purposes.
-	*
-	* NOTE: This {@link PushMetricExporter} is intended for diagnostics use only, output rendered to the console may change at any time.
-	*/
-	var ConsoleMetricExporter = class ConsoleMetricExporter {
-		_shutdown = false;
-		_temporalitySelector;
-		constructor(options) {
-			this._temporalitySelector = options?.temporalitySelector ?? AggregationSelector_1.DEFAULT_AGGREGATION_TEMPORALITY_SELECTOR;
-		}
-		export(metrics, resultCallback) {
-			if (this._shutdown) {
-				resultCallback({ code: core_1.ExportResultCode.FAILED });
-				return;
-			}
-			return ConsoleMetricExporter._sendMetrics(metrics, resultCallback);
-		}
-		forceFlush() {
-			return Promise.resolve();
-		}
-		selectAggregationTemporality(_instrumentType) {
-			return this._temporalitySelector(_instrumentType);
-		}
-		shutdown() {
-			this._shutdown = true;
-			return Promise.resolve();
-		}
-		static _sendMetrics(metrics, done) {
-			for (const scopeMetrics of metrics.scopeMetrics) for (const metric of scopeMetrics.metrics) console.dir({
-				descriptor: metric.descriptor,
-				dataPointType: metric.dataPointType,
-				dataPoints: metric.dataPoints
-			}, { depth: null });
-			done({ code: core_1.ExportResultCode.SUCCESS });
-		}
-	};
-	exports.ConsoleMetricExporter = ConsoleMetricExporter;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/default-service-name.js
-var require_default_service_name = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports._clearDefaultServiceNameCache = exports.defaultServiceName = void 0;
-	let serviceName;
-	/**
-	* Returns the default service name for OpenTelemetry resources.
-	* In Node.js environments, returns "unknown_service:<process.argv0>".
-	* In browser/edge environments, returns "unknown_service".
-	*/
-	function defaultServiceName() {
-		if (serviceName === void 0) try {
-			const argv0 = globalThis.process.argv0;
-			serviceName = argv0 ? `unknown_service:${argv0}` : "unknown_service";
-		} catch {
-			serviceName = "unknown_service";
-		}
-		return serviceName;
-	}
-	exports.defaultServiceName = defaultServiceName;
-	/** @internal For testing purposes only */
-	function _clearDefaultServiceNameCache() {
-		serviceName = void 0;
-	}
-	exports._clearDefaultServiceNameCache = _clearDefaultServiceNameCache;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/utils.js
-var require_utils$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.isPromiseLike = void 0;
-	const isPromiseLike = (val) => {
-		return val !== null && typeof val === "object" && typeof val.then === "function";
-	};
-	exports.isPromiseLike = isPromiseLike;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/ResourceImpl.js
-var require_ResourceImpl = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.defaultResource = exports.emptyResource = exports.resourceFromDetectedResource = exports.resourceFromAttributes = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const core_1 = require_src$8();
-	const semantic_conventions_1 = (init_esm$1(), __toCommonJS(esm_exports$1));
-	const default_service_name_1 = require_default_service_name();
-	const utils_1 = require_utils$2();
-	var ResourceImpl = class ResourceImpl {
-		_rawAttributes;
-		_asyncAttributesPending = false;
-		_schemaUrl;
-		_memoizedAttributes;
-		static FromAttributeList(attributes, options) {
-			const res = new ResourceImpl({}, options);
-			res._rawAttributes = guardedRawAttributes(attributes);
-			res._asyncAttributesPending = attributes.filter(([_, val]) => (0, utils_1.isPromiseLike)(val)).length > 0;
-			return res;
-		}
-		constructor(resource, options) {
-			const attributes = resource.attributes ?? {};
-			this._rawAttributes = Object.entries(attributes).map(([k, v]) => {
-				if ((0, utils_1.isPromiseLike)(v)) this._asyncAttributesPending = true;
-				return [k, v];
-			});
-			this._rawAttributes = guardedRawAttributes(this._rawAttributes);
-			this._schemaUrl = validateSchemaUrl(options?.schemaUrl);
-		}
-		get asyncAttributesPending() {
-			return this._asyncAttributesPending;
-		}
-		async waitForAsyncAttributes() {
-			if (!this.asyncAttributesPending) return;
-			for (let i = 0; i < this._rawAttributes.length; i++) {
-				const [k, v] = this._rawAttributes[i];
-				this._rawAttributes[i] = [k, (0, utils_1.isPromiseLike)(v) ? await v : v];
-			}
-			this._asyncAttributesPending = false;
-		}
-		get attributes() {
-			if (this.asyncAttributesPending) api_1.diag.error("Accessing resource attributes before async attributes settled");
-			if (this._memoizedAttributes) return this._memoizedAttributes;
-			const attrs = {};
-			for (const [k, v] of this._rawAttributes) {
-				if ((0, utils_1.isPromiseLike)(v)) {
-					api_1.diag.debug(`Unsettled resource attribute ${k} skipped`);
-					continue;
-				}
-				if (v != null) attrs[k] ??= v;
-			}
-			if (!this._asyncAttributesPending) this._memoizedAttributes = attrs;
-			return attrs;
-		}
-		getRawAttributes() {
-			return this._rawAttributes;
-		}
-		get schemaUrl() {
-			return this._schemaUrl;
-		}
-		merge(resource) {
-			if (resource == null) return this;
-			const mergedSchemaUrl = mergeSchemaUrl(this, resource);
-			const mergedOptions = mergedSchemaUrl ? { schemaUrl: mergedSchemaUrl } : void 0;
-			return ResourceImpl.FromAttributeList([...resource.getRawAttributes(), ...this.getRawAttributes()], mergedOptions);
-		}
-	};
-	function resourceFromAttributes(attributes, options) {
-		return ResourceImpl.FromAttributeList(Object.entries(attributes), options);
-	}
-	exports.resourceFromAttributes = resourceFromAttributes;
-	function resourceFromDetectedResource(detectedResource, options) {
-		return new ResourceImpl(detectedResource, options);
-	}
-	exports.resourceFromDetectedResource = resourceFromDetectedResource;
-	function emptyResource() {
-		return resourceFromAttributes({});
-	}
-	exports.emptyResource = emptyResource;
-	function defaultResource() {
-		return resourceFromAttributes({
-			[semantic_conventions_1.ATTR_SERVICE_NAME]: (0, default_service_name_1.defaultServiceName)(),
-			[semantic_conventions_1.ATTR_TELEMETRY_SDK_LANGUAGE]: core_1.SDK_INFO[semantic_conventions_1.ATTR_TELEMETRY_SDK_LANGUAGE],
-			[semantic_conventions_1.ATTR_TELEMETRY_SDK_NAME]: core_1.SDK_INFO[semantic_conventions_1.ATTR_TELEMETRY_SDK_NAME],
-			[semantic_conventions_1.ATTR_TELEMETRY_SDK_VERSION]: core_1.SDK_INFO[semantic_conventions_1.ATTR_TELEMETRY_SDK_VERSION]
-		});
-	}
-	exports.defaultResource = defaultResource;
-	function guardedRawAttributes(attributes) {
-		return attributes.map(([k, v]) => {
-			if ((0, utils_1.isPromiseLike)(v)) return [k, v.catch((err) => {
-				api_1.diag.debug("promise rejection for resource attribute: %s - %s", k, err);
-			})];
-			return [k, v];
-		});
-	}
-	function validateSchemaUrl(schemaUrl) {
-		if (typeof schemaUrl === "string" || schemaUrl === void 0) return schemaUrl;
-		api_1.diag.warn("Schema URL must be string or undefined, got %s. Schema URL will be ignored.", schemaUrl);
-	}
-	function mergeSchemaUrl(old, updating) {
-		const oldSchemaUrl = old?.schemaUrl;
-		const updatingSchemaUrl = updating?.schemaUrl;
-		const isOldEmpty = oldSchemaUrl === void 0 || oldSchemaUrl === "";
-		const isUpdatingEmpty = updatingSchemaUrl === void 0 || updatingSchemaUrl === "";
-		if (isOldEmpty) return updatingSchemaUrl;
-		if (isUpdatingEmpty) return oldSchemaUrl;
-		if (oldSchemaUrl === updatingSchemaUrl) return oldSchemaUrl;
-		api_1.diag.warn("Schema URL merge conflict: old resource has \"%s\", updating resource has \"%s\". Resulting resource will have undefined Schema URL.", oldSchemaUrl, updatingSchemaUrl);
-	}
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detect-resources.js
-var require_detect_resources = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.detectResources = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const ResourceImpl_1 = require_ResourceImpl();
-	/**
-	* Runs all resource detectors and returns the results merged into a single Resource.
-	*
-	* @param config Configuration for resource detection
-	*/
-	const detectResources = (config = {}) => {
-		return (config.detectors || []).map((d) => {
-			try {
-				const resource = (0, ResourceImpl_1.resourceFromDetectedResource)(d.detect(config));
-				api_1.diag.debug(`${d.constructor.name} found resource.`, resource);
-				return resource;
-			} catch (e) {
-				api_1.diag.debug(`${d.constructor.name} failed: ${e.message}`);
-				return (0, ResourceImpl_1.emptyResource)();
-			}
-		}).reduce((acc, resource) => acc.merge(resource), (0, ResourceImpl_1.emptyResource)());
-	};
-	exports.detectResources = detectResources;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/EnvDetector.js
-var require_EnvDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.envDetector = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const semantic_conventions_1 = (init_esm$1(), __toCommonJS(esm_exports$1));
-	const core_1 = require_src$8();
-	/**
-	* EnvDetector can be used to detect the presence of and create a Resource
-	* from the OTEL_RESOURCE_ATTRIBUTES environment variable.
-	*/
-	var EnvDetector = class {
-		_MAX_LENGTH = 255;
-		_COMMA_SEPARATOR = ",";
-		_LABEL_KEY_VALUE_SPLITTER = "=";
-		/**
-		* Returns a {@link Resource} populated with attributes from the
-		* OTEL_RESOURCE_ATTRIBUTES environment variable. Note this is an async
-		* function to conform to the Detector interface.
-		*
-		* @param config The resource detection config
-		*/
-		detect(_config) {
-			const attributes = {};
-			const rawAttributes = (0, core_1.getStringFromEnv)("OTEL_RESOURCE_ATTRIBUTES");
-			const serviceName = (0, core_1.getStringFromEnv)("OTEL_SERVICE_NAME");
-			if (rawAttributes) try {
-				const parsedAttributes = this._parseResourceAttributes(rawAttributes);
-				Object.assign(attributes, parsedAttributes);
-			} catch (e) {
-				api_1.diag.debug(`EnvDetector failed: ${e instanceof Error ? e.message : e}`);
-			}
-			if (serviceName) attributes[semantic_conventions_1.ATTR_SERVICE_NAME] = serviceName;
-			return { attributes };
-		}
-		/**
-		* Creates an attribute map from the OTEL_RESOURCE_ATTRIBUTES environment
-		* variable.
-		*
-		* OTEL_RESOURCE_ATTRIBUTES: A comma-separated list of attributes in the
-		* format "key1=value1,key2=value2". The ',' and '=' characters in keys
-		* and values MUST be percent-encoded. Other characters MAY be percent-encoded.
-		*
-		* Per the spec, on any error (e.g., decoding failure), the entire environment
-		* variable value is discarded.
-		*
-		* @param rawEnvAttributes The resource attributes as a comma-separated list
-		* of key/value pairs.
-		* @returns The parsed resource attributes.
-		* @throws Error if parsing fails (caller handles by discarding all attributes)
-		*/
-		_parseResourceAttributes(rawEnvAttributes) {
-			if (!rawEnvAttributes) return {};
-			const attributes = {};
-			const rawAttributes = rawEnvAttributes.split(this._COMMA_SEPARATOR).filter((attr) => attr.trim() !== "");
-			for (const rawAttribute of rawAttributes) {
-				const keyValuePair = rawAttribute.split(this._LABEL_KEY_VALUE_SPLITTER);
-				if (keyValuePair.length !== 2) throw new Error(`Invalid format for OTEL_RESOURCE_ATTRIBUTES: "${rawAttribute}". Expected format: key=value. The ',' and '=' characters must be percent-encoded in keys and values.`);
-				const [rawKey, rawValue] = keyValuePair;
-				const key = rawKey.trim();
-				const value = rawValue.trim();
-				if (key.length === 0) throw new Error(`Invalid OTEL_RESOURCE_ATTRIBUTES: empty attribute key in "${rawAttribute}".`);
-				let decodedKey;
-				let decodedValue;
-				try {
-					decodedKey = decodeURIComponent(key);
-					decodedValue = decodeURIComponent(value);
-				} catch (e) {
-					throw new Error(`Failed to percent-decode OTEL_RESOURCE_ATTRIBUTES entry "${rawAttribute}": ${e instanceof Error ? e.message : e}`, { cause: e });
-				}
-				if (decodedKey.length > this._MAX_LENGTH) throw new Error(`Attribute key exceeds the maximum length of ${this._MAX_LENGTH} characters: "${decodedKey}".`);
-				if (decodedValue.length > this._MAX_LENGTH) throw new Error(`Attribute value exceeds the maximum length of ${this._MAX_LENGTH} characters for key "${decodedKey}".`);
-				attributes[decodedKey] = decodedValue;
-			}
-			return attributes;
-		}
-	};
-	exports.envDetector = new EnvDetector();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/semconv.js
-var require_semconv$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ATTR_WEBENGINE_VERSION = exports.ATTR_WEBENGINE_NAME = exports.ATTR_WEBENGINE_DESCRIPTION = exports.ATTR_SERVICE_NAMESPACE = exports.ATTR_SERVICE_INSTANCE_ID = exports.ATTR_PROCESS_RUNTIME_VERSION = exports.ATTR_PROCESS_RUNTIME_NAME = exports.ATTR_PROCESS_RUNTIME_DESCRIPTION = exports.ATTR_PROCESS_PID = exports.ATTR_PROCESS_OWNER = exports.ATTR_PROCESS_EXECUTABLE_PATH = exports.ATTR_PROCESS_EXECUTABLE_NAME = exports.ATTR_PROCESS_COMMAND_ARGS = exports.ATTR_PROCESS_COMMAND = exports.ATTR_OS_VERSION = exports.ATTR_OS_TYPE = exports.ATTR_K8S_POD_NAME = exports.ATTR_K8S_NAMESPACE_NAME = exports.ATTR_K8S_DEPLOYMENT_NAME = exports.ATTR_K8S_CLUSTER_NAME = exports.ATTR_HOST_TYPE = exports.ATTR_HOST_NAME = exports.ATTR_HOST_IMAGE_VERSION = exports.ATTR_HOST_IMAGE_NAME = exports.ATTR_HOST_IMAGE_ID = exports.ATTR_HOST_ID = exports.ATTR_HOST_ARCH = exports.ATTR_CONTAINER_NAME = exports.ATTR_CONTAINER_IMAGE_TAGS = exports.ATTR_CONTAINER_IMAGE_NAME = exports.ATTR_CONTAINER_ID = exports.ATTR_CLOUD_REGION = exports.ATTR_CLOUD_PROVIDER = exports.ATTR_CLOUD_AVAILABILITY_ZONE = exports.ATTR_CLOUD_ACCOUNT_ID = void 0;
-	/**
-	* The cloud account ID the resource is assigned to.
-	*
-	* @example 111111111111
-	* @example opentelemetry
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_CLOUD_ACCOUNT_ID = "cloud.account.id";
-	/**
-	* Cloud regions often have multiple, isolated locations known as zones to increase availability. Availability zone represents the zone where the resource is running.
-	*
-	* @example us-east-1c
-	*
-	* @note Availability zones are called "zones" on Alibaba Cloud and Google Cloud.
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_CLOUD_AVAILABILITY_ZONE = "cloud.availability_zone";
-	/**
-	* Name of the cloud provider.
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_CLOUD_PROVIDER = "cloud.provider";
-	/**
-	* The geographical region the resource is running.
-	*
-	* @example us-central1
-	* @example us-east-1
-	*
-	* @note Refer to your provider's docs to see the available regions, for example [Alibaba Cloud regions](https://www.alibabacloud.com/help/doc-detail/40654.htm), [AWS regions](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/), [Azure regions](https://azure.microsoft.com/global-infrastructure/geographies/), [Google Cloud regions](https://cloud.google.com/about/locations), or [Tencent Cloud regions](https://www.tencentcloud.com/document/product/213/6091).
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_CLOUD_REGION = "cloud.region";
-	/**
-	* Container ID. Usually a UUID, as for example used to [identify Docker containers](https://docs.docker.com/engine/containers/run/#container-identification). The UUID might be abbreviated.
-	*
-	* @example a3bf90e006b2
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_CONTAINER_ID = "container.id";
-	/**
-	* Name of the image the container was built on.
-	*
-	* @example gcr.io/opentelemetry/operator
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_CONTAINER_IMAGE_NAME = "container.image.name";
-	/**
-	* Container image tags. An example can be found in [Docker Image Inspect](https://docs.docker.com/engine/api/v1.43/#tag/Image/operation/ImageInspect). Should be only the `<tag>` section of the full name for example from `registry.example.com/my-org/my-image:<tag>`.
-	*
-	* @example ["v1.27.1", "3.5.7-0"]
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_CONTAINER_IMAGE_TAGS = "container.image.tags";
-	/**
-	* Container name used by container runtime.
-	*
-	* @example opentelemetry-autoconf
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_CONTAINER_NAME = "container.name";
-	/**
-	* The CPU architecture the host system is running on.
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_HOST_ARCH = "host.arch";
-	/**
-	* Unique host ID. For Cloud, this must be the instance_id assigned by the cloud provider. For non-containerized systems, this should be the `machine-id`. See the table below for the sources to use to determine the `machine-id` based on operating system.
-	*
-	* @example fdbf79e8af94cb7f9e8df36789187052
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_HOST_ID = "host.id";
-	/**
-	* VM image ID or host OS image ID. For Cloud, this value is from the provider.
-	*
-	* @example ami-07b06b442921831e5
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_HOST_IMAGE_ID = "host.image.id";
-	/**
-	* Name of the VM image or OS install the host was instantiated from.
-	*
-	* @example infra-ami-eks-worker-node-7d4ec78312
-	* @example CentOS-8-x86_64-1905
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_HOST_IMAGE_NAME = "host.image.name";
-	/**
-	* The version string of the VM image or host OS as defined in [Version Attributes](/docs/resource/README.md#version-attributes).
-	*
-	* @example 0.1
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_HOST_IMAGE_VERSION = "host.image.version";
-	/**
-	* Name of the host. On Unix systems, it may contain what the hostname command returns, or the fully qualified hostname, or another name specified by the user.
-	*
-	* @example opentelemetry-test
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_HOST_NAME = "host.name";
-	/**
-	* Type of host. For Cloud, this must be the machine type.
-	*
-	* @example n1-standard-1
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_HOST_TYPE = "host.type";
-	/**
-	* The name of the cluster.
-	*
-	* @example opentelemetry-cluster
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_K8S_CLUSTER_NAME = "k8s.cluster.name";
-	/**
-	* The name of the Deployment.
-	*
-	* @example opentelemetry
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_K8S_DEPLOYMENT_NAME = "k8s.deployment.name";
-	/**
-	* The name of the namespace that the pod is running in.
-	*
-	* @example default
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_K8S_NAMESPACE_NAME = "k8s.namespace.name";
-	/**
-	* The name of the Pod.
-	*
-	* @example opentelemetry-pod-autoconf
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_K8S_POD_NAME = "k8s.pod.name";
-	/**
-	* The operating system type.
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_OS_TYPE = "os.type";
-	/**
-	* The version string of the operating system as defined in [Version Attributes](/docs/resource/README.md#version-attributes).
-	*
-	* @example 14.2.1
-	* @example 18.04.1
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_OS_VERSION = "os.version";
-	/**
-	* The command used to launch the process (i.e. the command name). On Linux based systems, can be set to the zeroth string in `proc/[pid]/cmdline`. On Windows, can be set to the first parameter extracted from `GetCommandLineW`.
-	*
-	* @example cmd/otelcol
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_COMMAND = "process.command";
-	/**
-	* All the command arguments (including the command/executable itself) as received by the process. On Linux-based systems (and some other Unixoid systems supporting procfs), can be set according to the list of null-delimited strings extracted from `proc/[pid]/cmdline`. For libc-based executables, this would be the full argv vector passed to `main`.
-	*
-	* @example ["cmd/otecol", "--config=config.yaml"]
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_COMMAND_ARGS = "process.command_args";
-	/**
-	* The name of the process executable. On Linux based systems, this **SHOULD** be set to the base name of the target of `/proc/[pid]/exe`. On Windows, this **SHOULD** be set to the base name of `GetProcessImageFileNameW`.
-	*
-	* @example otelcol
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_EXECUTABLE_NAME = "process.executable.name";
-	/**
-	* The full path to the process executable. On Linux based systems, can be set to the target of `proc/[pid]/exe`. On Windows, can be set to the result of `GetProcessImageFileNameW`.
-	*
-	* @example /usr/bin/cmd/otelcol
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_EXECUTABLE_PATH = "process.executable.path";
-	/**
-	* The username of the user that owns the process.
-	*
-	* @example root
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_OWNER = "process.owner";
-	/**
-	* Process identifier (PID).
-	*
-	* @example 1234
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_PID = "process.pid";
-	/**
-	* An additional description about the runtime of the process, for example a specific vendor customization of the runtime environment.
-	*
-	* @example "Eclipse OpenJ9 Eclipse OpenJ9 VM openj9-0.21.0"
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_RUNTIME_DESCRIPTION = "process.runtime.description";
-	/**
-	* The name of the runtime of this process.
-	*
-	* @example OpenJDK Runtime Environment
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_RUNTIME_NAME = "process.runtime.name";
-	/**
-	* The version of the runtime of this process, as returned by the runtime without modification.
-	*
-	* @example "14.0.2"
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_PROCESS_RUNTIME_VERSION = "process.runtime.version";
-	/**
-	* The string ID of the service instance.
-	*
-	* @example 627cc493-f310-47de-96bd-71410b7dec09
-	*
-	* @note **MUST** be unique for each instance of the same `service.namespace,service.name` pair (in other words
-	* `service.namespace,service.name,service.instance.id` triplet **MUST** be globally unique). The ID helps to
-	* distinguish instances of the same service that exist at the same time (e.g. instances of a horizontally scaled
-	* service).
-	*
-	* Implementations, such as SDKs, are recommended to generate a random Version 1 or Version 4 [RFC
-	* 4122](https://www.ietf.org/rfc/rfc4122.txt) UUID, but are free to use an inherent unique ID as the source of
-	* this value if stability is desirable. In that case, the ID **SHOULD** be used as source of a UUID Version 5 and
-	* **SHOULD** use the following UUID as the namespace: `4d63009a-8d0f-11ee-aad7-4c796ed8e320`.
-	*
-	* UUIDs are typically recommended, as only an opaque value for the purposes of identifying a service instance is
-	* needed. Similar to what can be seen in the man page for the
-	* [`/etc/machine-id`](https://www.freedesktop.org/software/systemd/man/latest/machine-id.html) file, the underlying
-	* data, such as pod name and namespace should be treated as confidential, being the user's choice to expose it
-	* or not via another resource attribute.
-	*
-	* For applications running behind an application server (like unicorn), we do not recommend using one identifier
-	* for all processes participating in the application. Instead, it's recommended each division (e.g. a worker
-	* thread in unicorn) to have its own instance.id.
-	*
-	* It's not recommended for a Collector to set `service.instance.id` if it can't unambiguously determine the
-	* service instance that is generating that telemetry. For instance, creating an UUID based on `pod.name` will
-	* likely be wrong, as the Collector might not know from which container within that pod the telemetry originated.
-	* However, Collectors can set the `service.instance.id` if they can unambiguously determine the service instance
-	* for that telemetry. This is typically the case for scraping receivers, as they know the target address and
-	* port.
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_SERVICE_INSTANCE_ID = "service.instance.id";
-	/**
-	* A namespace for `service.name`.
-	*
-	* @example Shop
-	*
-	* @note A string value having a meaning that helps to distinguish a group of services, for example the team name that owns a group of services. `service.name` is expected to be unique within the same namespace. If `service.namespace` is not specified in the Resource then `service.name` is expected to be unique for all services that have no explicit namespace defined (so the empty/unspecified namespace is simply one more valid namespace). Zero-length namespace string is assumed equal to unspecified namespace.
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_SERVICE_NAMESPACE = "service.namespace";
-	/**
-	* Additional description of the web engine (e.g. detailed version and edition information).
-	*
-	* @example WildFly Full 21.0.0.Final (WildFly Core 13.0.1.Final) - 2.2.2.Final
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_WEBENGINE_DESCRIPTION = "webengine.description";
-	/**
-	* The name of the web engine.
-	*
-	* @example WildFly
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_WEBENGINE_NAME = "webengine.name";
-	/**
-	* The version of the web engine.
-	*
-	* @example 21.0.0
-	*
-	* @experimental This attribute is experimental and is subject to breaking changes in minor releases of `@opentelemetry/semantic-conventions`.
-	*/
-	exports.ATTR_WEBENGINE_VERSION = "webengine.version";
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/execAsync.js
-var require_execAsync = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.execAsync = void 0;
-	const child_process = __require("child_process");
-	const util = __require("util");
-	exports.execAsync = util.promisify(child_process.exec);
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-darwin.js
-var require_getMachineId_darwin = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getMachineId = void 0;
-	const execAsync_1 = require_execAsync();
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	async function getMachineId() {
-		try {
-			const idLine = (await (0, execAsync_1.execAsync)("ioreg -rd1 -c \"IOPlatformExpertDevice\"")).stdout.split("\n").find((line) => line.includes("IOPlatformUUID"));
-			if (!idLine) return;
-			const parts = idLine.split("\" = \"");
-			if (parts.length === 2) return parts[1].slice(0, -1);
-		} catch (e) {
-			api_1.diag.debug(`error reading machine id: ${e}`);
-		}
-	}
-	exports.getMachineId = getMachineId;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-linux.js
-var require_getMachineId_linux = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getMachineId = void 0;
-	const fs_1$1 = __require("fs");
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	async function getMachineId() {
-		for (const path of ["/etc/machine-id", "/var/lib/dbus/machine-id"]) try {
-			return (await fs_1$1.promises.readFile(path, { encoding: "utf8" })).trim();
-		} catch (e) {
-			api_1.diag.debug(`error reading machine id: ${e}`);
-		}
-	}
-	exports.getMachineId = getMachineId;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-bsd.js
-var require_getMachineId_bsd = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getMachineId = void 0;
-	const fs_1 = __require("fs");
-	const execAsync_1 = require_execAsync();
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	async function getMachineId() {
-		try {
-			return (await fs_1.promises.readFile("/etc/hostid", { encoding: "utf8" })).trim();
-		} catch (e) {
-			api_1.diag.debug(`error reading machine id: ${e}`);
-		}
-		try {
-			return (await (0, execAsync_1.execAsync)("kenv -q smbios.system.uuid")).stdout.trim();
-		} catch (e) {
-			api_1.diag.debug(`error reading machine id: ${e}`);
-		}
-	}
-	exports.getMachineId = getMachineId;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-win.js
-var require_getMachineId_win = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getMachineId = void 0;
-	const process$2 = __require("process");
-	const execAsync_1 = require_execAsync();
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	async function getMachineId() {
-		const args = "QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid";
-		let command = "%windir%\\System32\\REG.exe";
-		if (process$2.arch === "ia32" && "PROCESSOR_ARCHITEW6432" in process$2.env) command = "%windir%\\sysnative\\cmd.exe /c " + command;
-		try {
-			const parts = (await (0, execAsync_1.execAsync)(`${command} ${args}`)).stdout.split("REG_SZ");
-			if (parts.length === 2) return parts[1].trim();
-		} catch (e) {
-			api_1.diag.debug(`error reading machine id: ${e}`);
-		}
-	}
-	exports.getMachineId = getMachineId;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId-unsupported.js
-var require_getMachineId_unsupported = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getMachineId = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	async function getMachineId() {
-		api_1.diag.debug("could not read machine-id: unsupported platform");
-	}
-	exports.getMachineId = getMachineId;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/machine-id/getMachineId.js
-var require_getMachineId = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getMachineId = void 0;
-	const process$1 = __require("process");
-	let getMachineIdImpl;
-	async function getMachineId() {
-		if (!getMachineIdImpl) switch (process$1.platform) {
-			case "darwin":
-				getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_darwin()))).getMachineId;
-				break;
-			case "linux":
-				getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_linux()))).getMachineId;
-				break;
-			case "freebsd":
-				getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_bsd()))).getMachineId;
-				break;
-			case "win32":
-				getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_win()))).getMachineId;
-				break;
-			default: getMachineIdImpl = (await Promise.resolve().then(() => /* @__PURE__ */ __toESM(require_getMachineId_unsupported()))).getMachineId;
-		}
-		return getMachineIdImpl();
-	}
-	exports.getMachineId = getMachineId;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/utils.js
-var require_utils$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.normalizeType = exports.normalizeArch = void 0;
-	const normalizeArch = (nodeArchString) => {
-		switch (nodeArchString) {
-			case "arm": return "arm32";
-			case "ppc": return "ppc32";
-			case "x64": return "amd64";
-			default: return nodeArchString;
-		}
-	};
-	exports.normalizeArch = normalizeArch;
-	const normalizeType = (nodePlatform) => {
-		switch (nodePlatform) {
-			case "sunos": return "solaris";
-			case "win32": return "windows";
-			default: return nodePlatform;
-		}
-	};
-	exports.normalizeType = normalizeType;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/HostDetector.js
-var require_HostDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.hostDetector = void 0;
-	const semconv_1 = require_semconv$2();
-	const os_1$1 = __require("os");
-	const getMachineId_1 = require_getMachineId();
-	const utils_1 = require_utils$1();
-	/**
-	* HostDetector detects the resources related to the host current process is
-	* running on. Currently only non-cloud-based attributes are included.
-	*/
-	var HostDetector = class {
-		detect(_config) {
-			return { attributes: {
-				[semconv_1.ATTR_HOST_NAME]: (0, os_1$1.hostname)(),
-				[semconv_1.ATTR_HOST_ARCH]: (0, utils_1.normalizeArch)((0, os_1$1.arch)()),
-				[semconv_1.ATTR_HOST_ID]: (0, getMachineId_1.getMachineId)()
-			} };
-		}
-	};
-	exports.hostDetector = new HostDetector();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/OSDetector.js
-var require_OSDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.osDetector = void 0;
-	const semconv_1 = require_semconv$2();
-	const os_1 = __require("os");
-	const utils_1 = require_utils$1();
-	/**
-	* OSDetector detects the resources related to the operating system (OS) on
-	* which the process represented by this resource is running.
-	*/
-	var OSDetector = class {
-		detect(_config) {
-			return { attributes: {
-				[semconv_1.ATTR_OS_TYPE]: (0, utils_1.normalizeType)((0, os_1.platform)()),
-				[semconv_1.ATTR_OS_VERSION]: (0, os_1.release)()
-			} };
-		}
-	};
-	exports.osDetector = new OSDetector();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/ProcessDetector.js
-var require_ProcessDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.processDetector = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const semconv_1 = require_semconv$2();
-	const os = __require("os");
-	/**
-	* ProcessDetector will be used to detect the resources related current process running
-	* and being instrumented from the NodeJS Process module.
-	*/
-	var ProcessDetector = class {
-		detect(_config) {
-			const attributes = {
-				[semconv_1.ATTR_PROCESS_PID]: process.pid,
-				[semconv_1.ATTR_PROCESS_EXECUTABLE_NAME]: process.title,
-				[semconv_1.ATTR_PROCESS_EXECUTABLE_PATH]: process.execPath,
-				[semconv_1.ATTR_PROCESS_COMMAND_ARGS]: [
-					process.argv[0],
-					...process.execArgv,
-					...process.argv.slice(1)
-				],
-				[semconv_1.ATTR_PROCESS_RUNTIME_VERSION]: process.versions.node,
-				[semconv_1.ATTR_PROCESS_RUNTIME_NAME]: "nodejs",
-				[semconv_1.ATTR_PROCESS_RUNTIME_DESCRIPTION]: "Node.js"
-			};
-			if (process.argv.length > 1) attributes[semconv_1.ATTR_PROCESS_COMMAND] = process.argv[1];
-			try {
-				const userInfo = os.userInfo();
-				attributes[semconv_1.ATTR_PROCESS_OWNER] = userInfo.username;
-			} catch (e) {
-				api_1.diag.debug(`error obtaining process owner: ${e}`);
-			}
-			return { attributes };
-		}
-	};
-	exports.processDetector = new ProcessDetector();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/ServiceInstanceIdDetector.js
-var require_ServiceInstanceIdDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.serviceInstanceIdDetector = void 0;
-	const semconv_1 = require_semconv$2();
-	const crypto_1 = __require("crypto");
-	/**
-	* ServiceInstanceIdDetector detects the resources related to the service instance ID.
-	*/
-	var ServiceInstanceIdDetector = class {
-		_serviceInstanceId;
-		detect(_config) {
-			if (!this._serviceInstanceId) this._serviceInstanceId = (0, crypto_1.randomUUID)();
-			return { attributes: { [semconv_1.ATTR_SERVICE_INSTANCE_ID]: this._serviceInstanceId } };
-		}
-	};
-	/**
-	* @experimental
-	*/
-	exports.serviceInstanceIdDetector = new ServiceInstanceIdDetector();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/node/index.js
-var require_node$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.serviceInstanceIdDetector = exports.processDetector = exports.osDetector = exports.hostDetector = void 0;
-	var HostDetector_1 = require_HostDetector();
-	Object.defineProperty(exports, "hostDetector", {
-		enumerable: true,
-		get: function() {
-			return HostDetector_1.hostDetector;
-		}
-	});
-	var OSDetector_1 = require_OSDetector();
-	Object.defineProperty(exports, "osDetector", {
-		enumerable: true,
-		get: function() {
-			return OSDetector_1.osDetector;
-		}
-	});
-	var ProcessDetector_1 = require_ProcessDetector();
-	Object.defineProperty(exports, "processDetector", {
-		enumerable: true,
-		get: function() {
-			return ProcessDetector_1.processDetector;
-		}
-	});
-	var ServiceInstanceIdDetector_1 = require_ServiceInstanceIdDetector();
-	Object.defineProperty(exports, "serviceInstanceIdDetector", {
-		enumerable: true,
-		get: function() {
-			return ServiceInstanceIdDetector_1.serviceInstanceIdDetector;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/platform/index.js
-var require_platform$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.serviceInstanceIdDetector = exports.processDetector = exports.osDetector = exports.hostDetector = void 0;
-	var node_1 = require_node$2();
-	Object.defineProperty(exports, "hostDetector", {
-		enumerable: true,
-		get: function() {
-			return node_1.hostDetector;
-		}
-	});
-	Object.defineProperty(exports, "osDetector", {
-		enumerable: true,
-		get: function() {
-			return node_1.osDetector;
-		}
-	});
-	Object.defineProperty(exports, "processDetector", {
-		enumerable: true,
-		get: function() {
-			return node_1.processDetector;
-		}
-	});
-	Object.defineProperty(exports, "serviceInstanceIdDetector", {
-		enumerable: true,
-		get: function() {
-			return node_1.serviceInstanceIdDetector;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/NoopDetector.js
-var require_NoopDetector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.noopDetector = exports.NoopDetector = void 0;
-	var NoopDetector = class {
-		detect() {
-			return { attributes: {} };
-		}
-	};
-	exports.NoopDetector = NoopDetector;
-	exports.noopDetector = new NoopDetector();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/detectors/index.js
-var require_detectors = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.noopDetector = exports.serviceInstanceIdDetector = exports.processDetector = exports.osDetector = exports.hostDetector = exports.envDetector = void 0;
-	var EnvDetector_1 = require_EnvDetector();
-	Object.defineProperty(exports, "envDetector", {
-		enumerable: true,
-		get: function() {
-			return EnvDetector_1.envDetector;
-		}
-	});
-	var platform_1 = require_platform$2();
-	Object.defineProperty(exports, "hostDetector", {
-		enumerable: true,
-		get: function() {
-			return platform_1.hostDetector;
-		}
-	});
-	Object.defineProperty(exports, "osDetector", {
-		enumerable: true,
-		get: function() {
-			return platform_1.osDetector;
-		}
-	});
-	Object.defineProperty(exports, "processDetector", {
-		enumerable: true,
-		get: function() {
-			return platform_1.processDetector;
-		}
-	});
-	Object.defineProperty(exports, "serviceInstanceIdDetector", {
-		enumerable: true,
-		get: function() {
-			return platform_1.serviceInstanceIdDetector;
-		}
-	});
-	var NoopDetector_1 = require_NoopDetector();
-	Object.defineProperty(exports, "noopDetector", {
-		enumerable: true,
-		get: function() {
-			return NoopDetector_1.noopDetector;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+resources@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/resources/build/src/index.js
-var require_src$6 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.defaultServiceName = exports.emptyResource = exports.defaultResource = exports.resourceFromAttributes = exports.serviceInstanceIdDetector = exports.processDetector = exports.osDetector = exports.hostDetector = exports.envDetector = exports.detectResources = void 0;
-	var detect_resources_1 = require_detect_resources();
-	Object.defineProperty(exports, "detectResources", {
-		enumerable: true,
-		get: function() {
-			return detect_resources_1.detectResources;
-		}
-	});
-	var detectors_1 = require_detectors();
-	Object.defineProperty(exports, "envDetector", {
-		enumerable: true,
-		get: function() {
-			return detectors_1.envDetector;
-		}
-	});
-	Object.defineProperty(exports, "hostDetector", {
-		enumerable: true,
-		get: function() {
-			return detectors_1.hostDetector;
-		}
-	});
-	Object.defineProperty(exports, "osDetector", {
-		enumerable: true,
-		get: function() {
-			return detectors_1.osDetector;
-		}
-	});
-	Object.defineProperty(exports, "processDetector", {
-		enumerable: true,
-		get: function() {
-			return detectors_1.processDetector;
-		}
-	});
-	Object.defineProperty(exports, "serviceInstanceIdDetector", {
-		enumerable: true,
-		get: function() {
-			return detectors_1.serviceInstanceIdDetector;
-		}
-	});
-	var ResourceImpl_1 = require_ResourceImpl();
-	Object.defineProperty(exports, "resourceFromAttributes", {
-		enumerable: true,
-		get: function() {
-			return ResourceImpl_1.resourceFromAttributes;
-		}
-	});
-	Object.defineProperty(exports, "defaultResource", {
-		enumerable: true,
-		get: function() {
-			return ResourceImpl_1.defaultResource;
-		}
-	});
-	Object.defineProperty(exports, "emptyResource", {
-		enumerable: true,
-		get: function() {
-			return ResourceImpl_1.emptyResource;
-		}
-	});
-	var default_service_name_1 = require_default_service_name();
-	Object.defineProperty(exports, "defaultServiceName", {
-		enumerable: true,
-		get: function() {
-			return default_service_name_1.defaultServiceName;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/ViewRegistry.js
-var require_ViewRegistry = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ViewRegistry = void 0;
-	var ViewRegistry = class {
-		_registeredViews = [];
-		addView(view) {
-			this._registeredViews.push(view);
-		}
-		findViews(instrument, meter) {
-			return this._registeredViews.filter((registeredView) => {
-				return this._matchInstrument(registeredView.instrumentSelector, instrument) && this._matchMeter(registeredView.meterSelector, meter);
-			});
-		}
-		_matchInstrument(selector, instrument) {
-			return (selector.getType() === void 0 || instrument.type === selector.getType()) && selector.getNameFilter().match(instrument.name) && selector.getUnitFilter().match(instrument.unit);
-		}
-		_matchMeter(selector, meter) {
-			return selector.getNameFilter().match(meter.name) && (meter.version === void 0 || selector.getVersionFilter().match(meter.version)) && (meter.schemaUrl === void 0 || selector.getSchemaUrlFilter().match(meter.schemaUrl));
-		}
-	};
-	exports.ViewRegistry = ViewRegistry;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/InstrumentDescriptor.js
-var require_InstrumentDescriptor = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.isValidName = exports.isDescriptorCompatibleWith = exports.createInstrumentDescriptorWithView = exports.createInstrumentDescriptor = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const utils_1 = require_utils$3();
-	function createInstrumentDescriptor(name, type, options) {
-		if (!isValidName(name)) api_1.diag.warn(`Invalid metric name: "${name}". The metric name should be a ASCII string with a length no greater than 255 characters.`);
-		return {
-			name,
-			type,
-			description: options?.description ?? "",
-			unit: options?.unit ?? "",
-			valueType: options?.valueType ?? api_1.ValueType.DOUBLE,
-			advice: options?.advice ?? {}
-		};
-	}
-	exports.createInstrumentDescriptor = createInstrumentDescriptor;
-	function createInstrumentDescriptorWithView(view, instrument) {
-		return {
-			name: view.name ?? instrument.name,
-			description: view.description ?? instrument.description,
-			type: instrument.type,
-			unit: instrument.unit,
-			valueType: instrument.valueType,
-			advice: instrument.advice
-		};
-	}
-	exports.createInstrumentDescriptorWithView = createInstrumentDescriptorWithView;
-	function isDescriptorCompatibleWith(descriptor, otherDescriptor) {
-		return (0, utils_1.equalsCaseInsensitive)(descriptor.name, otherDescriptor.name) && descriptor.unit === otherDescriptor.unit && descriptor.type === otherDescriptor.type && descriptor.valueType === otherDescriptor.valueType;
-	}
-	exports.isDescriptorCompatibleWith = isDescriptorCompatibleWith;
-	const NAME_REGEXP = /^[a-z][a-z0-9_.\-/]{0,254}$/i;
-	function isValidName(name) {
-		return NAME_REGEXP.test(name);
-	}
-	exports.isValidName = isValidName;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/Instruments.js
-var require_Instruments = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.isObservableInstrument = exports.ObservableUpDownCounterInstrument = exports.ObservableGaugeInstrument = exports.ObservableCounterInstrument = exports.ObservableInstrument = exports.HistogramInstrument = exports.GaugeInstrument = exports.CounterInstrument = exports.UpDownCounterInstrument = exports.SyncInstrument = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	var SyncInstrument = class {
-		_writableMetricStorage;
-		_descriptor;
-		constructor(writableMetricStorage, descriptor) {
-			this._writableMetricStorage = writableMetricStorage;
-			this._descriptor = descriptor;
-		}
-		_record(value, attributes = {}, context) {
-			if (typeof value !== "number") {
-				api_1.diag.warn(`non-number value provided to metric ${this._descriptor.name}: ${value}`);
-				return;
-			}
-			if (this._descriptor.valueType === api_1.ValueType.INT && !Number.isInteger(value)) {
-				api_1.diag.warn(`INT value type cannot accept a floating-point value for ${this._descriptor.name}, ignoring the fractional digits.`);
-				value = Math.trunc(value);
-				if (!Number.isInteger(value)) return;
-			}
-			this._writableMetricStorage.record(value, attributes, context, Date.now());
-		}
-	};
-	exports.SyncInstrument = SyncInstrument;
-	/**
-	* The class implements {@link UpDownCounter} interface.
-	*/
-	var UpDownCounterInstrument = class extends SyncInstrument {
-		/**
-		* Increment value of counter by the input. Inputs may be negative.
-		*/
-		add(value, attributes, ctx) {
-			this._record(value, attributes, ctx);
-		}
-	};
-	exports.UpDownCounterInstrument = UpDownCounterInstrument;
-	/**
-	* The class implements {@link Counter} interface.
-	*/
-	var CounterInstrument = class extends SyncInstrument {
-		/**
-		* Increment value of counter by the input. Inputs may not be negative.
-		*/
-		add(value, attributes, ctx) {
-			if (value < 0) {
-				api_1.diag.warn(`negative value provided to counter ${this._descriptor.name}: ${value}`);
-				return;
-			}
-			this._record(value, attributes, ctx);
-		}
-	};
-	exports.CounterInstrument = CounterInstrument;
-	/**
-	* The class implements {@link Gauge} interface.
-	*/
-	var GaugeInstrument = class extends SyncInstrument {
-		/**
-		* Records a measurement.
-		*/
-		record(value, attributes, ctx) {
-			this._record(value, attributes, ctx);
-		}
-	};
-	exports.GaugeInstrument = GaugeInstrument;
-	/**
-	* The class implements {@link Histogram} interface.
-	*/
-	var HistogramInstrument = class extends SyncInstrument {
-		/**
-		* Records a measurement. Value of the measurement must not be negative.
-		*/
-		record(value, attributes, ctx) {
-			if (value < 0) {
-				api_1.diag.warn(`negative value provided to histogram ${this._descriptor.name}: ${value}`);
-				return;
-			}
-			this._record(value, attributes, ctx);
-		}
-	};
-	exports.HistogramInstrument = HistogramInstrument;
-	var ObservableInstrument = class {
-		/** @internal */
-		_metricStorages;
-		/** @internal */
-		_descriptor;
-		_observableRegistry;
-		constructor(descriptor, metricStorages, observableRegistry) {
-			this._descriptor = descriptor;
-			this._metricStorages = metricStorages;
-			this._observableRegistry = observableRegistry;
-		}
-		/**
-		* @see {Observable.addCallback}
-		*/
-		addCallback(callback) {
-			this._observableRegistry.addCallback(callback, this);
-		}
-		/**
-		* @see {Observable.removeCallback}
-		*/
-		removeCallback(callback) {
-			this._observableRegistry.removeCallback(callback, this);
-		}
-	};
-	exports.ObservableInstrument = ObservableInstrument;
-	var ObservableCounterInstrument = class extends ObservableInstrument {};
-	exports.ObservableCounterInstrument = ObservableCounterInstrument;
-	var ObservableGaugeInstrument = class extends ObservableInstrument {};
-	exports.ObservableGaugeInstrument = ObservableGaugeInstrument;
-	var ObservableUpDownCounterInstrument = class extends ObservableInstrument {};
-	exports.ObservableUpDownCounterInstrument = ObservableUpDownCounterInstrument;
-	function isObservableInstrument(it) {
-		return it instanceof ObservableInstrument;
-	}
-	exports.isObservableInstrument = isObservableInstrument;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/Meter.js
-var require_Meter = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.Meter = void 0;
-	const InstrumentDescriptor_1 = require_InstrumentDescriptor();
-	const Instruments_1 = require_Instruments();
-	const MetricData_1 = require_MetricData();
-	/**
-	* This class implements the {@link IMeter} interface.
-	*/
-	var Meter = class {
-		_meterSharedState;
-		constructor(meterSharedState) {
-			this._meterSharedState = meterSharedState;
-		}
-		/**
-		* Create a {@link Gauge} instrument.
-		*/
-		createGauge(name, options) {
-			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.GAUGE, options);
-			const storage = this._meterSharedState.registerMetricStorage(descriptor);
-			return new Instruments_1.GaugeInstrument(storage, descriptor);
-		}
-		/**
-		* Create a {@link Histogram} instrument.
-		*/
-		createHistogram(name, options) {
-			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.HISTOGRAM, options);
-			const storage = this._meterSharedState.registerMetricStorage(descriptor);
-			return new Instruments_1.HistogramInstrument(storage, descriptor);
-		}
-		/**
-		* Create a {@link Counter} instrument.
-		*/
-		createCounter(name, options) {
-			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.COUNTER, options);
-			const storage = this._meterSharedState.registerMetricStorage(descriptor);
-			return new Instruments_1.CounterInstrument(storage, descriptor);
-		}
-		/**
-		* Create a {@link UpDownCounter} instrument.
-		*/
-		createUpDownCounter(name, options) {
-			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.UP_DOWN_COUNTER, options);
-			const storage = this._meterSharedState.registerMetricStorage(descriptor);
-			return new Instruments_1.UpDownCounterInstrument(storage, descriptor);
-		}
-		/**
-		* Create a {@link ObservableGauge} instrument.
-		*/
-		createObservableGauge(name, options) {
-			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.OBSERVABLE_GAUGE, options);
-			const storages = this._meterSharedState.registerAsyncMetricStorage(descriptor);
-			return new Instruments_1.ObservableGaugeInstrument(descriptor, storages, this._meterSharedState.observableRegistry);
-		}
-		/**
-		* Create a {@link ObservableCounter} instrument.
-		*/
-		createObservableCounter(name, options) {
-			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.OBSERVABLE_COUNTER, options);
-			const storages = this._meterSharedState.registerAsyncMetricStorage(descriptor);
-			return new Instruments_1.ObservableCounterInstrument(descriptor, storages, this._meterSharedState.observableRegistry);
-		}
-		/**
-		* Create a {@link ObservableUpDownCounter} instrument.
-		*/
-		createObservableUpDownCounter(name, options) {
-			const descriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(name, MetricData_1.InstrumentType.OBSERVABLE_UP_DOWN_COUNTER, options);
-			const storages = this._meterSharedState.registerAsyncMetricStorage(descriptor);
-			return new Instruments_1.ObservableUpDownCounterInstrument(descriptor, storages, this._meterSharedState.observableRegistry);
-		}
-		/**
-		* @see {@link Meter.addBatchObservableCallback}
-		*/
-		addBatchObservableCallback(callback, observables) {
-			this._meterSharedState.observableRegistry.addBatchCallback(callback, observables);
-		}
-		/**
-		* @see {@link Meter.removeBatchObservableCallback}
-		*/
-		removeBatchObservableCallback(callback, observables) {
-			this._meterSharedState.observableRegistry.removeBatchCallback(callback, observables);
-		}
-	};
-	exports.Meter = Meter;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MetricStorage.js
-var require_MetricStorage = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MetricStorage = void 0;
-	const InstrumentDescriptor_1 = require_InstrumentDescriptor();
-	/**
-	* Internal interface.
-	*
-	* Represents a storage from which we can collect metrics.
-	*/
-	var MetricStorage = class {
-		_instrumentDescriptor;
-		constructor(instrumentDescriptor) {
-			this._instrumentDescriptor = instrumentDescriptor;
-		}
-		getInstrumentDescriptor() {
-			return this._instrumentDescriptor;
-		}
-		updateDescription(description) {
-			this._instrumentDescriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptor)(this._instrumentDescriptor.name, this._instrumentDescriptor.type, {
-				description,
-				valueType: this._instrumentDescriptor.valueType,
-				unit: this._instrumentDescriptor.unit,
-				advice: this._instrumentDescriptor.advice
-			});
-		}
-	};
-	exports.MetricStorage = MetricStorage;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/HashMap.js
-var require_HashMap = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.AttributeHashMap = exports.HashMap = void 0;
-	const utils_1 = require_utils$3();
-	var HashMap = class {
-		_valueMap = /* @__PURE__ */ new Map();
-		_keyMap = /* @__PURE__ */ new Map();
-		_hash;
-		constructor(hash) {
-			this._hash = hash;
-		}
-		get(key, hashCode) {
-			hashCode ??= this._hash(key);
-			return this._valueMap.get(hashCode);
-		}
-		getOrDefault(key, defaultFactory) {
-			const hash = this._hash(key);
-			if (this._valueMap.has(hash)) return this._valueMap.get(hash);
-			const val = defaultFactory();
-			if (!this._keyMap.has(hash)) this._keyMap.set(hash, key);
-			this._valueMap.set(hash, val);
-			return val;
-		}
-		set(key, value, hashCode) {
-			hashCode ??= this._hash(key);
-			if (!this._keyMap.has(hashCode)) this._keyMap.set(hashCode, key);
-			this._valueMap.set(hashCode, value);
-		}
-		has(key, hashCode) {
-			hashCode ??= this._hash(key);
-			return this._valueMap.has(hashCode);
-		}
-		*keys() {
-			const keyIterator = this._keyMap.entries();
-			let next = keyIterator.next();
-			while (next.done !== true) {
-				yield [next.value[1], next.value[0]];
-				next = keyIterator.next();
-			}
-		}
-		*entries() {
-			const valueIterator = this._valueMap.entries();
-			let next = valueIterator.next();
-			while (next.done !== true) {
-				yield [
-					this._keyMap.get(next.value[0]),
-					next.value[1],
-					next.value[0]
-				];
-				next = valueIterator.next();
-			}
-		}
-		get size() {
-			return this._valueMap.size;
-		}
-	};
-	exports.HashMap = HashMap;
-	var AttributeHashMap = class extends HashMap {
-		constructor() {
-			super(utils_1.hashAttributes);
-		}
-	};
-	exports.AttributeHashMap = AttributeHashMap;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/DeltaMetricProcessor.js
-var require_DeltaMetricProcessor = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.DeltaMetricProcessor = void 0;
-	const core_1 = require_src$8();
-	const utils_1 = require_utils$3();
-	const HashMap_1 = require_HashMap();
-	/**
-	* Internal interface.
-	*
-	* Allows synchronous collection of metrics. This processor should allow
-	* allocation of new aggregation cells for metrics and convert cumulative
-	* recording to delta data points.
-	*/
-	var DeltaMetricProcessor = class {
-		_activeCollectionStorage = new HashMap_1.AttributeHashMap();
-		_cumulativeMemoStorage = new HashMap_1.AttributeHashMap();
-		_cardinalityLimit;
-		_overflowAttributes = { "otel.metric.overflow": true };
-		_overflowHashCode;
-		_aggregator;
-		constructor(aggregator, aggregationCardinalityLimit) {
-			this._aggregator = aggregator;
-			this._cardinalityLimit = (aggregationCardinalityLimit ?? 2e3) - 1;
-			this._overflowHashCode = (0, utils_1.hashAttributes)(this._overflowAttributes);
-		}
-		record(value, attributes, collectionTime) {
-			let accumulation = this._activeCollectionStorage.get(attributes);
-			if (!accumulation) {
-				const hrTime = (0, core_1.millisToHrTime)(collectionTime);
-				if (this._activeCollectionStorage.size >= this._cardinalityLimit) {
-					this._activeCollectionStorage.getOrDefault(this._overflowAttributes, () => this._aggregator.createAccumulation(hrTime))?.record(value);
-					return;
-				}
-				accumulation = this._aggregator.createAccumulation(hrTime);
-				this._activeCollectionStorage.set(attributes, accumulation);
-			}
-			accumulation?.record(value);
-		}
-		batchCumulate(measurements, collectionTime) {
-			for (const [originalAttributes, value, originalHashCode] of measurements.entries()) {
-				let attributes = originalAttributes;
-				let hashCode = originalHashCode;
-				const accumulation = this._aggregator.createAccumulation(collectionTime);
-				accumulation?.record(value);
-				let delta = accumulation;
-				if (this._cumulativeMemoStorage.has(attributes, hashCode)) {
-					const previous = this._cumulativeMemoStorage.get(attributes, hashCode);
-					delta = this._aggregator.diff(previous, accumulation);
-				} else if (this._cumulativeMemoStorage.size >= this._cardinalityLimit) {
-					attributes = this._overflowAttributes;
-					hashCode = this._overflowHashCode;
-					if (this._cumulativeMemoStorage.has(attributes, hashCode)) {
-						const previous = this._cumulativeMemoStorage.get(attributes, hashCode);
-						delta = this._aggregator.diff(previous, accumulation);
-					}
-				}
-				if (this._activeCollectionStorage.has(attributes, hashCode)) {
-					const active = this._activeCollectionStorage.get(attributes, hashCode);
-					delta = this._aggregator.merge(active, delta);
-				}
-				this._cumulativeMemoStorage.set(attributes, accumulation, hashCode);
-				this._activeCollectionStorage.set(attributes, delta, hashCode);
-			}
-		}
-		/**
-		* Returns a collection of delta metrics. Start time is the when first
-		* time event collected.
-		*/
-		collect() {
-			const unreportedDelta = this._activeCollectionStorage;
-			this._activeCollectionStorage = new HashMap_1.AttributeHashMap();
-			return unreportedDelta;
-		}
-	};
-	exports.DeltaMetricProcessor = DeltaMetricProcessor;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/TemporalMetricProcessor.js
-var require_TemporalMetricProcessor = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.TemporalMetricProcessor = void 0;
-	const AggregationTemporality_1 = require_AggregationTemporality();
-	const HashMap_1 = require_HashMap();
-	/**
-	* Internal interface.
-	*
-	* Provides unique reporting for each collector. Allows synchronous collection
-	* of metrics and reports given temporality values.
-	*/
-	var TemporalMetricProcessor = class TemporalMetricProcessor {
-		_aggregator;
-		_unreportedAccumulations = /* @__PURE__ */ new Map();
-		_reportHistory = /* @__PURE__ */ new Map();
-		constructor(aggregator, collectorHandles) {
-			this._aggregator = aggregator;
-			collectorHandles.forEach((handle) => {
-				this._unreportedAccumulations.set(handle, []);
-			});
-		}
-		/**
-		* Builds the {@link MetricData} streams to report against a specific MetricCollector.
-		* @param collector The information of the MetricCollector.
-		* @param collectors The registered collectors.
-		* @param instrumentDescriptor The instrumentation descriptor that these metrics generated with.
-		* @param currentAccumulations The current accumulation of metric data from instruments.
-		* @param collectionTime The current collection timestamp.
-		* @returns The {@link MetricData} points or `null`.
-		*/
-		buildMetrics(collector, instrumentDescriptor, currentAccumulations, collectionTime) {
-			this._stashAccumulations(currentAccumulations);
-			const unreportedAccumulations = this._getMergedUnreportedAccumulations(collector);
-			let result = unreportedAccumulations;
-			let aggregationTemporality;
-			if (this._reportHistory.has(collector)) {
-				const last = this._reportHistory.get(collector);
-				const lastCollectionTime = last.collectionTime;
-				aggregationTemporality = last.aggregationTemporality;
-				if (aggregationTemporality === AggregationTemporality_1.AggregationTemporality.CUMULATIVE) result = TemporalMetricProcessor.merge(last.accumulations, unreportedAccumulations, this._aggregator);
-				else result = TemporalMetricProcessor.calibrateStartTime(last.accumulations, unreportedAccumulations, lastCollectionTime);
-			} else aggregationTemporality = collector.selectAggregationTemporality(instrumentDescriptor.type);
-			this._reportHistory.set(collector, {
-				accumulations: result,
-				collectionTime,
-				aggregationTemporality
-			});
-			const accumulationRecords = AttributesMapToAccumulationRecords(result);
-			if (accumulationRecords.length === 0) return;
-			return this._aggregator.toMetricData(instrumentDescriptor, aggregationTemporality, accumulationRecords, collectionTime);
-		}
-		_stashAccumulations(currentAccumulation) {
-			const registeredCollectors = this._unreportedAccumulations.keys();
-			for (const collector of registeredCollectors) {
-				let stash = this._unreportedAccumulations.get(collector);
-				if (stash === void 0) {
-					stash = [];
-					this._unreportedAccumulations.set(collector, stash);
-				}
-				stash.push(currentAccumulation);
-			}
-		}
-		_getMergedUnreportedAccumulations(collector) {
-			let result = new HashMap_1.AttributeHashMap();
-			const unreportedList = this._unreportedAccumulations.get(collector);
-			this._unreportedAccumulations.set(collector, []);
-			if (unreportedList === void 0) return result;
-			for (const it of unreportedList) result = TemporalMetricProcessor.merge(result, it, this._aggregator);
-			return result;
-		}
-		static merge(last, current, aggregator) {
-			const result = last;
-			const iterator = current.entries();
-			let next = iterator.next();
-			while (next.done !== true) {
-				const [key, record, hash] = next.value;
-				if (last.has(key, hash)) {
-					const lastAccumulation = last.get(key, hash);
-					const accumulation = aggregator.merge(lastAccumulation, record);
-					result.set(key, accumulation, hash);
-				} else result.set(key, record, hash);
-				next = iterator.next();
-			}
-			return result;
-		}
-		/**
-		* Calibrate the reported metric streams' startTime to lastCollectionTime. Leaves
-		* the new stream to be the initial observation time unchanged.
-		*/
-		static calibrateStartTime(last, current, lastCollectionTime) {
-			for (const [key, hash] of last.keys()) current.get(key, hash)?.setStartTime(lastCollectionTime);
-			return current;
-		}
-	};
-	exports.TemporalMetricProcessor = TemporalMetricProcessor;
-	function AttributesMapToAccumulationRecords(map) {
-		return Array.from(map.entries());
-	}
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/AsyncMetricStorage.js
-var require_AsyncMetricStorage = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.AsyncMetricStorage = void 0;
-	const MetricStorage_1 = require_MetricStorage();
-	const DeltaMetricProcessor_1 = require_DeltaMetricProcessor();
-	const TemporalMetricProcessor_1 = require_TemporalMetricProcessor();
-	const HashMap_1 = require_HashMap();
-	/**
-	* Internal interface.
-	*
-	* Stores and aggregates {@link MetricData} for asynchronous instruments.
-	*/
-	var AsyncMetricStorage = class extends MetricStorage_1.MetricStorage {
-		_aggregationCardinalityLimit;
-		_deltaMetricStorage;
-		_temporalMetricStorage;
-		_attributesProcessor;
-		constructor(_instrumentDescriptor, aggregator, attributesProcessor, collectorHandles, aggregationCardinalityLimit) {
-			super(_instrumentDescriptor);
-			this._aggregationCardinalityLimit = aggregationCardinalityLimit;
-			this._deltaMetricStorage = new DeltaMetricProcessor_1.DeltaMetricProcessor(aggregator, this._aggregationCardinalityLimit);
-			this._temporalMetricStorage = new TemporalMetricProcessor_1.TemporalMetricProcessor(aggregator, collectorHandles);
-			this._attributesProcessor = attributesProcessor;
-		}
-		record(measurements, observationTime) {
-			if (this._attributesProcessor === void 0) {
-				this._deltaMetricStorage.batchCumulate(measurements, observationTime);
-				return;
-			}
-			const processed = new HashMap_1.AttributeHashMap();
-			for (const [attributes, value] of measurements.entries()) processed.set(this._attributesProcessor.process(attributes), value);
-			this._deltaMetricStorage.batchCumulate(processed, observationTime);
-		}
-		/**
-		* Collects the metrics from this storage. The ObservableCallback is invoked
-		* during the collection.
-		*
-		* Note: This is a stateful operation and may reset any interval-related
-		* state for the MetricCollector.
-		*/
-		collect(collector, collectionTime) {
-			const accumulations = this._deltaMetricStorage.collect();
-			return this._temporalMetricStorage.buildMetrics(collector, this._instrumentDescriptor, accumulations, collectionTime);
-		}
-	};
-	exports.AsyncMetricStorage = AsyncMetricStorage;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/RegistrationConflicts.js
-var require_RegistrationConflicts = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getConflictResolutionRecipe = exports.getDescriptionResolutionRecipe = exports.getTypeConflictResolutionRecipe = exports.getUnitConflictResolutionRecipe = exports.getValueTypeConflictResolutionRecipe = exports.getIncompatibilityDetails = void 0;
-	function getIncompatibilityDetails(existing, otherDescriptor) {
-		let incompatibility = "";
-		if (existing.unit !== otherDescriptor.unit) incompatibility += `\t- Unit '${existing.unit}' does not match '${otherDescriptor.unit}'\n`;
-		if (existing.type !== otherDescriptor.type) incompatibility += `\t- Type '${existing.type}' does not match '${otherDescriptor.type}'\n`;
-		if (existing.valueType !== otherDescriptor.valueType) incompatibility += `\t- Value Type '${existing.valueType}' does not match '${otherDescriptor.valueType}'\n`;
-		if (existing.description !== otherDescriptor.description) incompatibility += `\t- Description '${existing.description}' does not match '${otherDescriptor.description}'\n`;
-		return incompatibility;
-	}
-	exports.getIncompatibilityDetails = getIncompatibilityDetails;
-	function getValueTypeConflictResolutionRecipe(existing, otherDescriptor) {
-		return `\t- use valueType '${existing.valueType}' on instrument creation or use an instrument name other than '${otherDescriptor.name}'`;
-	}
-	exports.getValueTypeConflictResolutionRecipe = getValueTypeConflictResolutionRecipe;
-	function getUnitConflictResolutionRecipe(existing, otherDescriptor) {
-		return `\t- use unit '${existing.unit}' on instrument creation or use an instrument name other than '${otherDescriptor.name}'`;
-	}
-	exports.getUnitConflictResolutionRecipe = getUnitConflictResolutionRecipe;
-	function getTypeConflictResolutionRecipe(existing, otherDescriptor) {
-		const selector = {
-			name: otherDescriptor.name,
-			type: otherDescriptor.type,
-			unit: otherDescriptor.unit
-		};
-		const selectorString = JSON.stringify(selector);
-		return `\t- create a new view with a name other than '${existing.name}' and InstrumentSelector '${selectorString}'`;
-	}
-	exports.getTypeConflictResolutionRecipe = getTypeConflictResolutionRecipe;
-	function getDescriptionResolutionRecipe(existing, otherDescriptor) {
-		const selector = {
-			name: otherDescriptor.name,
-			type: otherDescriptor.type,
-			unit: otherDescriptor.unit
-		};
-		const selectorString = JSON.stringify(selector);
-		return `\t- create a new view with a name other than '${existing.name}' and InstrumentSelector '${selectorString}'
-    \t- OR - create a new view with the name ${existing.name} and description '${existing.description}' and InstrumentSelector ${selectorString}
-    \t- OR - create a new view with the name ${otherDescriptor.name} and description '${existing.description}' and InstrumentSelector ${selectorString}`;
-	}
-	exports.getDescriptionResolutionRecipe = getDescriptionResolutionRecipe;
-	function getConflictResolutionRecipe(existing, otherDescriptor) {
-		if (existing.valueType !== otherDescriptor.valueType) return getValueTypeConflictResolutionRecipe(existing, otherDescriptor);
-		if (existing.unit !== otherDescriptor.unit) return getUnitConflictResolutionRecipe(existing, otherDescriptor);
-		if (existing.type !== otherDescriptor.type) return getTypeConflictResolutionRecipe(existing, otherDescriptor);
-		if (existing.description !== otherDescriptor.description) return getDescriptionResolutionRecipe(existing, otherDescriptor);
-		return "";
-	}
-	exports.getConflictResolutionRecipe = getConflictResolutionRecipe;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MetricStorageRegistry.js
-var require_MetricStorageRegistry = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MetricStorageRegistry = void 0;
-	const InstrumentDescriptor_1 = require_InstrumentDescriptor();
-	const api = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const RegistrationConflicts_1 = require_RegistrationConflicts();
-	/**
-	* Internal class for storing {@link MetricStorage}
-	*/
-	var MetricStorageRegistry = class MetricStorageRegistry {
-		_sharedRegistry = /* @__PURE__ */ new Map();
-		_perCollectorRegistry = /* @__PURE__ */ new Map();
-		static create() {
-			return new MetricStorageRegistry();
-		}
-		getStorages(collector) {
-			let storages = [];
-			for (const metricStorages of this._sharedRegistry.values()) storages = storages.concat(metricStorages);
-			const perCollectorStorages = this._perCollectorRegistry.get(collector);
-			if (perCollectorStorages != null) for (const metricStorages of perCollectorStorages.values()) storages = storages.concat(metricStorages);
-			return storages;
-		}
-		register(storage) {
-			this._registerStorage(storage, this._sharedRegistry);
-		}
-		registerForCollector(collector, storage) {
-			let storageMap = this._perCollectorRegistry.get(collector);
-			if (storageMap == null) {
-				storageMap = /* @__PURE__ */ new Map();
-				this._perCollectorRegistry.set(collector, storageMap);
-			}
-			this._registerStorage(storage, storageMap);
-		}
-		findOrUpdateCompatibleStorage(expectedDescriptor) {
-			const storages = this._sharedRegistry.get(expectedDescriptor.name);
-			if (storages === void 0) return null;
-			return this._findOrUpdateCompatibleStorage(expectedDescriptor, storages);
-		}
-		findOrUpdateCompatibleCollectorStorage(collector, expectedDescriptor) {
-			const storageMap = this._perCollectorRegistry.get(collector);
-			if (storageMap === void 0) return null;
-			const storages = storageMap.get(expectedDescriptor.name);
-			if (storages === void 0) return null;
-			return this._findOrUpdateCompatibleStorage(expectedDescriptor, storages);
-		}
-		_registerStorage(storage, storageMap) {
-			const descriptor = storage.getInstrumentDescriptor();
-			const storages = storageMap.get(descriptor.name);
-			if (storages === void 0) {
-				storageMap.set(descriptor.name, [storage]);
-				return;
-			}
-			storages.push(storage);
-		}
-		_findOrUpdateCompatibleStorage(expectedDescriptor, existingStorages) {
-			let compatibleStorage = null;
-			for (const existingStorage of existingStorages) {
-				const existingDescriptor = existingStorage.getInstrumentDescriptor();
-				if ((0, InstrumentDescriptor_1.isDescriptorCompatibleWith)(existingDescriptor, expectedDescriptor)) {
-					if (existingDescriptor.description !== expectedDescriptor.description) {
-						if (expectedDescriptor.description.length > existingDescriptor.description.length) existingStorage.updateDescription(expectedDescriptor.description);
-						api.diag.warn("A view or instrument with the name ", expectedDescriptor.name, " has already been registered, but has a different description and is incompatible with another registered view.\n", "Details:\n", (0, RegistrationConflicts_1.getIncompatibilityDetails)(existingDescriptor, expectedDescriptor), "The longer description will be used.\nTo resolve the conflict:", (0, RegistrationConflicts_1.getConflictResolutionRecipe)(existingDescriptor, expectedDescriptor));
-					}
-					compatibleStorage = existingStorage;
-				} else api.diag.warn("A view or instrument with the name ", expectedDescriptor.name, " has already been registered and is incompatible with another registered view.\n", "Details:\n", (0, RegistrationConflicts_1.getIncompatibilityDetails)(existingDescriptor, expectedDescriptor), "To resolve the conflict:\n", (0, RegistrationConflicts_1.getConflictResolutionRecipe)(existingDescriptor, expectedDescriptor));
-			}
-			return compatibleStorage;
-		}
-	};
-	exports.MetricStorageRegistry = MetricStorageRegistry;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MultiWritableMetricStorage.js
-var require_MultiWritableMetricStorage = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MultiMetricStorage = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	/**
-	* Internal interface.
-	*/
-	var MultiMetricStorage = class {
-		_backingStorages;
-		hasAttributeProcessor;
-		constructor(backingStorages) {
-			this._backingStorages = backingStorages;
-			this.hasAttributeProcessor = backingStorages.some((s) => s.hasAttributeProcessor);
-		}
-		record(value, attributes, context, recordTime) {
-			if (this.hasAttributeProcessor && context === void 0) context = api_1.context.active();
-			const storages = this._backingStorages;
-			for (let i = 0; i < storages.length; i++) storages[i].record(value, attributes, context, recordTime);
-		}
-	};
-	exports.MultiMetricStorage = MultiMetricStorage;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/ObservableResult.js
-var require_ObservableResult = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.BatchObservableResultImpl = exports.ObservableResultImpl = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const HashMap_1 = require_HashMap();
-	const Instruments_1 = require_Instruments();
-	/**
-	* The class implements {@link ObservableResult} interface.
-	*/
-	var ObservableResultImpl = class {
-		/**
-		* @internal
-		*/
-		_buffer = new HashMap_1.AttributeHashMap();
-		_instrumentName;
-		_valueType;
-		constructor(instrumentName, valueType) {
-			this._instrumentName = instrumentName;
-			this._valueType = valueType;
-		}
-		/**
-		* Observe a measurement of the value associated with the given attributes.
-		*/
-		observe(value, attributes = {}) {
-			if (typeof value !== "number") {
-				api_1.diag.warn(`non-number value provided to metric ${this._instrumentName}: ${value}`);
-				return;
-			}
-			if (this._valueType === api_1.ValueType.INT && !Number.isInteger(value)) {
-				api_1.diag.warn(`INT value type cannot accept a floating-point value for ${this._instrumentName}, ignoring the fractional digits.`);
-				value = Math.trunc(value);
-				if (!Number.isInteger(value)) return;
-			}
-			this._buffer.set(attributes, value);
-		}
-	};
-	exports.ObservableResultImpl = ObservableResultImpl;
-	/**
-	* The class implements {@link BatchObservableCallback} interface.
-	*/
-	var BatchObservableResultImpl = class {
-		/**
-		* @internal
-		*/
-		_buffer = /* @__PURE__ */ new Map();
-		/**
-		* Observe a measurement of the value associated with the given attributes.
-		*/
-		observe(metric, value, attributes = {}) {
-			if (!(0, Instruments_1.isObservableInstrument)(metric)) return;
-			let map = this._buffer.get(metric);
-			if (map == null) {
-				map = new HashMap_1.AttributeHashMap();
-				this._buffer.set(metric, map);
-			}
-			if (typeof value !== "number") {
-				api_1.diag.warn(`non-number value provided to metric ${metric._descriptor.name}: ${value}`);
-				return;
-			}
-			if (metric._descriptor.valueType === api_1.ValueType.INT && !Number.isInteger(value)) {
-				api_1.diag.warn(`INT value type cannot accept a floating-point value for ${metric._descriptor.name}, ignoring the fractional digits.`);
-				value = Math.trunc(value);
-				if (!Number.isInteger(value)) return;
-			}
-			map.set(attributes, value);
-		}
-	};
-	exports.BatchObservableResultImpl = BatchObservableResultImpl;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/ObservableRegistry.js
-var require_ObservableRegistry = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ObservableRegistry = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const Instruments_1 = require_Instruments();
-	const ObservableResult_1 = require_ObservableResult();
-	const utils_1 = require_utils$3();
-	/**
-	* An internal interface for managing ObservableCallbacks.
-	*
-	* Every registered callback associated with a set of instruments are be evaluated
-	* exactly once during collection prior to reading data for that instrument.
-	*/
-	var ObservableRegistry = class {
-		_callbacks = [];
-		_batchCallbacks = [];
-		addCallback(callback, instrument) {
-			if (this._findCallback(callback, instrument) >= 0) return;
-			this._callbacks.push({
-				callback,
-				instrument
-			});
-		}
-		removeCallback(callback, instrument) {
-			const idx = this._findCallback(callback, instrument);
-			if (idx < 0) return;
-			this._callbacks.splice(idx, 1);
-		}
-		addBatchCallback(callback, instruments) {
-			const observableInstruments = new Set(instruments.filter(Instruments_1.isObservableInstrument));
-			if (observableInstruments.size === 0) {
-				api_1.diag.error("BatchObservableCallback is not associated with valid instruments", instruments);
-				return;
-			}
-			if (this._findBatchCallback(callback, observableInstruments) >= 0) return;
-			this._batchCallbacks.push({
-				callback,
-				instruments: observableInstruments
-			});
-		}
-		removeBatchCallback(callback, instruments) {
-			const observableInstruments = new Set(instruments.filter(Instruments_1.isObservableInstrument));
-			const idx = this._findBatchCallback(callback, observableInstruments);
-			if (idx < 0) return;
-			this._batchCallbacks.splice(idx, 1);
-		}
-		/**
-		* @returns a promise of rejected reasons for invoking callbacks.
-		*/
-		async observe(collectionTime, timeoutMillis) {
-			const callbackFutures = this._observeCallbacks(collectionTime, timeoutMillis);
-			const batchCallbackFutures = this._observeBatchCallbacks(collectionTime, timeoutMillis);
-			return (await Promise.allSettled([...callbackFutures, ...batchCallbackFutures])).filter((result) => result.status === "rejected").map((result) => result.reason);
-		}
-		_observeCallbacks(observationTime, timeoutMillis) {
-			return this._callbacks.map(async ({ callback, instrument }) => {
-				const observableResult = new ObservableResult_1.ObservableResultImpl(instrument._descriptor.name, instrument._descriptor.valueType);
-				let callPromise = Promise.resolve(callback(observableResult));
-				if (timeoutMillis != null) callPromise = (0, utils_1.callWithTimeout)(callPromise, timeoutMillis);
-				await callPromise;
-				instrument._metricStorages.forEach((metricStorage) => {
-					metricStorage.record(observableResult._buffer, observationTime);
-				});
-			});
-		}
-		_observeBatchCallbacks(observationTime, timeoutMillis) {
-			return this._batchCallbacks.map(async ({ callback, instruments }) => {
-				const observableResult = new ObservableResult_1.BatchObservableResultImpl();
-				let callPromise = Promise.resolve(callback(observableResult));
-				if (timeoutMillis != null) callPromise = (0, utils_1.callWithTimeout)(callPromise, timeoutMillis);
-				await callPromise;
-				instruments.forEach((instrument) => {
-					const buffer = observableResult._buffer.get(instrument);
-					if (buffer == null) return;
-					instrument._metricStorages.forEach((metricStorage) => {
-						metricStorage.record(buffer, observationTime);
-					});
-				});
-			});
-		}
-		_findCallback(callback, instrument) {
-			return this._callbacks.findIndex((record) => {
-				return record.callback === callback && record.instrument === instrument;
-			});
-		}
-		_findBatchCallback(callback, instruments) {
-			return this._batchCallbacks.findIndex((record) => {
-				return record.callback === callback && (0, utils_1.setEquals)(record.instruments, instruments);
-			});
-		}
-	};
-	exports.ObservableRegistry = ObservableRegistry;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/SyncMetricStorage.js
-var require_SyncMetricStorage = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.SyncMetricStorage = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const MetricStorage_1 = require_MetricStorage();
-	const DeltaMetricProcessor_1 = require_DeltaMetricProcessor();
-	const TemporalMetricProcessor_1 = require_TemporalMetricProcessor();
-	/**
-	* Internal interface.
-	*
-	* Stores and aggregates {@link MetricData} for synchronous instruments.
-	*/
-	var SyncMetricStorage = class extends MetricStorage_1.MetricStorage {
-		_aggregationCardinalityLimit;
-		_deltaMetricStorage;
-		_temporalMetricStorage;
-		_attributesProcessor;
-		constructor(instrumentDescriptor, aggregator, attributesProcessor, collectorHandles, aggregationCardinalityLimit) {
-			super(instrumentDescriptor);
-			this._aggregationCardinalityLimit = aggregationCardinalityLimit;
-			this._deltaMetricStorage = new DeltaMetricProcessor_1.DeltaMetricProcessor(aggregator, this._aggregationCardinalityLimit);
-			this._temporalMetricStorage = new TemporalMetricProcessor_1.TemporalMetricProcessor(aggregator, collectorHandles);
-			this._attributesProcessor = attributesProcessor;
-			this.hasAttributeProcessor = attributesProcessor !== void 0;
-		}
-		hasAttributeProcessor;
-		record(value, attributes, context, recordTime) {
-			if (this._attributesProcessor !== void 0) attributes = this._attributesProcessor.process(attributes, context ?? api_1.context.active());
-			this._deltaMetricStorage.record(value, attributes, recordTime);
-		}
-		/**
-		* Collects the metrics from this storage.
-		*
-		* Note: This is a stateful operation and may reset any interval-related
-		* state for the MetricCollector.
-		*/
-		collect(collector, collectionTime) {
-			const accumulations = this._deltaMetricStorage.collect();
-			return this._temporalMetricStorage.buildMetrics(collector, this._instrumentDescriptor, accumulations, collectionTime);
-		}
-	};
-	exports.SyncMetricStorage = SyncMetricStorage;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MeterSharedState.js
-var require_MeterSharedState = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MeterSharedState = void 0;
-	const InstrumentDescriptor_1 = require_InstrumentDescriptor();
-	const Meter_1 = require_Meter();
-	const AsyncMetricStorage_1 = require_AsyncMetricStorage();
-	const MetricStorageRegistry_1 = require_MetricStorageRegistry();
-	const MultiWritableMetricStorage_1 = require_MultiWritableMetricStorage();
-	const ObservableRegistry_1 = require_ObservableRegistry();
-	const SyncMetricStorage_1 = require_SyncMetricStorage();
-	/**
-	* An internal record for shared meter provider states.
-	*/
-	var MeterSharedState = class {
-		metricStorageRegistry = new MetricStorageRegistry_1.MetricStorageRegistry();
-		observableRegistry = new ObservableRegistry_1.ObservableRegistry();
-		meter;
-		_meterProviderSharedState;
-		_instrumentationScope;
-		constructor(meterProviderSharedState, instrumentationScope) {
-			this.meter = new Meter_1.Meter(this);
-			this._meterProviderSharedState = meterProviderSharedState;
-			this._instrumentationScope = instrumentationScope;
-		}
-		registerMetricStorage(descriptor) {
-			const storages = this._registerMetricStorage(descriptor, SyncMetricStorage_1.SyncMetricStorage);
-			if (storages.length === 1) return storages[0];
-			return new MultiWritableMetricStorage_1.MultiMetricStorage(storages);
-		}
-		registerAsyncMetricStorage(descriptor) {
-			return this._registerMetricStorage(descriptor, AsyncMetricStorage_1.AsyncMetricStorage);
-		}
-		/**
-		* @param collector opaque handle of {@link MetricCollector} which initiated the collection.
-		* @param collectionTime the HrTime at which the collection was initiated.
-		* @param options options for collection.
-		* @returns the list of metric data collected.
-		*/
-		async collect(collector, collectionTime, options) {
-			/**
-			* 1. Call all observable callbacks first.
-			* 2. Collect metric result for the collector.
-			*/
-			const errors = await this.observableRegistry.observe(collectionTime, options?.timeoutMillis);
-			const storages = this.metricStorageRegistry.getStorages(collector);
-			if (storages.length === 0) return null;
-			const metricDataList = [];
-			storages.forEach((metricStorage) => {
-				const metricData = metricStorage.collect(collector, collectionTime);
-				if (metricData != null) metricDataList.push(metricData);
-			});
-			if (metricDataList.length === 0) return { errors };
-			return {
-				scopeMetrics: {
-					scope: this._instrumentationScope,
-					metrics: metricDataList
-				},
-				errors
-			};
-		}
-		_registerMetricStorage(descriptor, MetricStorageType) {
-			let storages = this._meterProviderSharedState.viewRegistry.findViews(descriptor, this._instrumentationScope).map((view) => {
-				const viewDescriptor = (0, InstrumentDescriptor_1.createInstrumentDescriptorWithView)(view, descriptor);
-				const compatibleStorage = this.metricStorageRegistry.findOrUpdateCompatibleStorage(viewDescriptor);
-				if (compatibleStorage != null) return compatibleStorage;
-				const viewStorage = new MetricStorageType(viewDescriptor, view.aggregation.createAggregator(viewDescriptor), view.attributesProcessor, this._meterProviderSharedState.metricCollectors, view.aggregationCardinalityLimit);
-				this.metricStorageRegistry.register(viewStorage);
-				return viewStorage;
-			});
-			if (storages.length === 0) {
-				const collectorStorages = this._meterProviderSharedState.selectAggregations(descriptor.type).map(([collector, aggregation]) => {
-					const compatibleStorage = this.metricStorageRegistry.findOrUpdateCompatibleCollectorStorage(collector, descriptor);
-					if (compatibleStorage != null) return compatibleStorage;
-					const aggregator = aggregation.createAggregator(descriptor);
-					const cardinalityLimit = collector.selectCardinalityLimit(descriptor.type);
-					const storage = new MetricStorageType(descriptor, aggregator, void 0, [collector], cardinalityLimit);
-					this.metricStorageRegistry.registerForCollector(collector, storage);
-					return storage;
-				});
-				storages = storages.concat(collectorStorages);
-			}
-			return storages;
-		}
-	};
-	exports.MeterSharedState = MeterSharedState;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MeterProviderSharedState.js
-var require_MeterProviderSharedState = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MeterProviderSharedState = void 0;
-	const utils_1 = require_utils$3();
-	const ViewRegistry_1 = require_ViewRegistry();
-	const MeterSharedState_1 = require_MeterSharedState();
-	const AggregationOption_1 = require_AggregationOption();
-	/**
-	* An internal record for shared meter provider states.
-	*/
-	var MeterProviderSharedState = class {
-		viewRegistry = new ViewRegistry_1.ViewRegistry();
-		metricCollectors = [];
-		meterSharedStates = /* @__PURE__ */ new Map();
-		resource;
-		constructor(resource) {
-			this.resource = resource;
-		}
-		getMeterSharedState(instrumentationScope) {
-			const id = (0, utils_1.instrumentationScopeId)(instrumentationScope);
-			let meterSharedState = this.meterSharedStates.get(id);
-			if (meterSharedState == null) {
-				meterSharedState = new MeterSharedState_1.MeterSharedState(this, instrumentationScope);
-				this.meterSharedStates.set(id, meterSharedState);
-			}
-			return meterSharedState;
-		}
-		selectAggregations(instrumentType) {
-			const result = [];
-			for (const collector of this.metricCollectors) result.push([collector, (0, AggregationOption_1.toAggregation)(collector.selectAggregation(instrumentType))]);
-			return result;
-		}
-	};
-	exports.MeterProviderSharedState = MeterProviderSharedState;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/state/MetricCollector.js
-var require_MetricCollector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MetricCollector = void 0;
-	const core_1 = require_src$8();
-	/**
-	* An internal opaque interface that the MetricReader receives as
-	* MetricProducer. It acts as the storage key to the internal metric stream
-	* state for each MetricReader.
-	*/
-	var MetricCollector = class {
-		_sharedState;
-		_metricReader;
-		constructor(sharedState, metricReader) {
-			this._sharedState = sharedState;
-			this._metricReader = metricReader;
-		}
-		async collect(options) {
-			const collectionTime = (0, core_1.millisToHrTime)(Date.now());
-			const scopeMetrics = [];
-			const errors = [];
-			const meterCollectionPromises = Array.from(this._sharedState.meterSharedStates.values()).map(async (meterSharedState) => {
-				const current = await meterSharedState.collect(this, collectionTime, options);
-				if (current?.scopeMetrics != null) scopeMetrics.push(current.scopeMetrics);
-				if (current?.errors != null) errors.push(...current.errors);
-			});
-			await Promise.all(meterCollectionPromises);
-			return {
-				resourceMetrics: {
-					resource: this._sharedState.resource,
-					scopeMetrics
-				},
-				errors
-			};
-		}
-		/**
-		* Delegates for MetricReader.forceFlush.
-		*/
-		async forceFlush(options) {
-			await this._metricReader.forceFlush(options);
-		}
-		/**
-		* Delegates for MetricReader.shutdown.
-		*/
-		async shutdown(options) {
-			await this._metricReader.shutdown(options);
-		}
-		selectAggregationTemporality(instrumentType) {
-			return this._metricReader.selectAggregationTemporality(instrumentType);
-		}
-		selectAggregation(instrumentType) {
-			return this._metricReader.selectAggregation(instrumentType);
-		}
-		/**
-		* Select the cardinality limit for the given {@link InstrumentType} for this
-		* collector.
-		*/
-		selectCardinalityLimit(instrumentType) {
-			return this._metricReader.selectCardinalityLimit?.(instrumentType) ?? 2e3;
-		}
-	};
-	exports.MetricCollector = MetricCollector;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/Predicate.js
-var require_Predicate = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ExactPredicate = exports.PatternPredicate = void 0;
-	const ESCAPE = /[\^$\\.+?()[\]{}|]/g;
-	/**
-	* Wildcard pattern predicate, supports patterns like `*`, `foo*`, `*bar`.
-	*/
-	var PatternPredicate = class PatternPredicate {
-		_matchAll;
-		_regexp;
-		constructor(pattern) {
-			if (pattern === "*") {
-				this._matchAll = true;
-				this._regexp = /.*/;
-			} else {
-				this._matchAll = false;
-				this._regexp = new RegExp(PatternPredicate.escapePattern(pattern));
-			}
-		}
-		match(str) {
-			if (this._matchAll) return true;
-			return this._regexp.test(str);
-		}
-		static escapePattern(pattern) {
-			return `^${pattern.replace(ESCAPE, "\\$&").replace("*", ".*")}$`;
-		}
-		static hasWildcard(pattern) {
-			return pattern.includes("*");
-		}
-	};
-	exports.PatternPredicate = PatternPredicate;
-	var ExactPredicate = class {
-		_matchAll;
-		_pattern;
-		constructor(pattern) {
-			this._matchAll = pattern === void 0;
-			this._pattern = pattern;
-		}
-		match(str) {
-			if (this._matchAll) return true;
-			if (str === this._pattern) return true;
-			return false;
-		}
-	};
-	exports.ExactPredicate = ExactPredicate;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/AttributesProcessor.js
-var require_AttributesProcessor = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.createDenyListAttributesProcessor = exports.createAllowListAttributesProcessor = exports.createMultiAttributesProcessor = exports.createNoopAttributesProcessor = void 0;
-	var NoopAttributesProcessor = class {
-		process(incoming, _context) {
-			return incoming;
-		}
-	};
-	var MultiAttributesProcessor = class {
-		_processors;
-		constructor(processors) {
-			this._processors = processors;
-		}
-		process(incoming, context) {
-			let filteredAttributes = incoming;
-			for (const processor of this._processors) filteredAttributes = processor.process(filteredAttributes, context);
-			return filteredAttributes;
-		}
-	};
-	var AllowListProcessor = class {
-		_allowedAttributeNames;
-		constructor(allowedAttributeNames) {
-			this._allowedAttributeNames = new Set(allowedAttributeNames);
-		}
-		process(incoming, _context) {
-			const filteredAttributes = {};
-			for (const attributeName in incoming) if (Object.prototype.hasOwnProperty.call(incoming, attributeName) && this._allowedAttributeNames.has(attributeName)) filteredAttributes[attributeName] = incoming[attributeName];
-			return filteredAttributes;
-		}
-	};
-	var DenyListProcessor = class {
-		_deniedAttributeNames;
-		constructor(deniedAttributeNames) {
-			this._deniedAttributeNames = new Set(deniedAttributeNames);
-		}
-		process(incoming, _context) {
-			const filteredAttributes = {};
-			for (const attributeName in incoming) if (Object.prototype.hasOwnProperty.call(incoming, attributeName) && !this._deniedAttributeNames.has(attributeName)) filteredAttributes[attributeName] = incoming[attributeName];
-			return filteredAttributes;
-		}
-	};
-	/**
-	* @internal
-	*
-	* Create an {@link IAttributesProcessor} that acts as a simple pass-through for attributes.
-	*/
-	function createNoopAttributesProcessor() {
-		return NOOP;
-	}
-	exports.createNoopAttributesProcessor = createNoopAttributesProcessor;
-	/**
-	* @internal
-	*
-	* Create an {@link IAttributesProcessor} that applies all processors from the provided list in order.
-	*
-	* @param processors Processors to apply in order.
-	*/
-	function createMultiAttributesProcessor(processors) {
-		return new MultiAttributesProcessor(processors);
-	}
-	exports.createMultiAttributesProcessor = createMultiAttributesProcessor;
-	/**
-	* Create an {@link IAttributesProcessor} that filters by allowed attribute names and drops any names that are not in the
-	* allow list.
-	*/
-	function createAllowListAttributesProcessor(attributeAllowList) {
-		return new AllowListProcessor(attributeAllowList);
-	}
-	exports.createAllowListAttributesProcessor = createAllowListAttributesProcessor;
-	/**
-	* Create an {@link IAttributesProcessor} that drops attributes based on the names provided in the deny list
-	*/
-	function createDenyListAttributesProcessor(attributeDenyList) {
-		return new DenyListProcessor(attributeDenyList);
-	}
-	exports.createDenyListAttributesProcessor = createDenyListAttributesProcessor;
-	const NOOP = new NoopAttributesProcessor();
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/InstrumentSelector.js
-var require_InstrumentSelector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.InstrumentSelector = void 0;
-	const Predicate_1 = require_Predicate();
-	var InstrumentSelector = class {
-		_nameFilter;
-		_type;
-		_unitFilter;
-		constructor(criteria) {
-			this._nameFilter = new Predicate_1.PatternPredicate(criteria?.name ?? "*");
-			this._type = criteria?.type;
-			this._unitFilter = new Predicate_1.ExactPredicate(criteria?.unit);
-		}
-		getType() {
-			return this._type;
-		}
-		getNameFilter() {
-			return this._nameFilter;
-		}
-		getUnitFilter() {
-			return this._unitFilter;
-		}
-	};
-	exports.InstrumentSelector = InstrumentSelector;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/MeterSelector.js
-var require_MeterSelector = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MeterSelector = void 0;
-	const Predicate_1 = require_Predicate();
-	var MeterSelector = class {
-		_nameFilter;
-		_versionFilter;
-		_schemaUrlFilter;
-		constructor(criteria) {
-			this._nameFilter = new Predicate_1.ExactPredicate(criteria?.name);
-			this._versionFilter = new Predicate_1.ExactPredicate(criteria?.version);
-			this._schemaUrlFilter = new Predicate_1.ExactPredicate(criteria?.schemaUrl);
-		}
-		getNameFilter() {
-			return this._nameFilter;
-		}
-		/**
-		* TODO: semver filter? no spec yet.
-		*/
-		getVersionFilter() {
-			return this._versionFilter;
-		}
-		getSchemaUrlFilter() {
-			return this._schemaUrlFilter;
-		}
-	};
-	exports.MeterSelector = MeterSelector;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/view/View.js
-var require_View = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.View = void 0;
-	const Predicate_1 = require_Predicate();
-	const AttributesProcessor_1 = require_AttributesProcessor();
-	const InstrumentSelector_1 = require_InstrumentSelector();
-	const MeterSelector_1 = require_MeterSelector();
-	const AggregationOption_1 = require_AggregationOption();
-	function isSelectorNotProvided(options) {
-		return options.instrumentName == null && options.instrumentType == null && options.instrumentUnit == null && options.meterName == null && options.meterVersion == null && options.meterSchemaUrl == null;
-	}
-	function validateViewOptions(viewOptions) {
-		if (isSelectorNotProvided(viewOptions)) throw new Error("Cannot create view with no selector arguments supplied");
-		if (viewOptions.name != null && (viewOptions?.instrumentName == null || Predicate_1.PatternPredicate.hasWildcard(viewOptions.instrumentName))) throw new Error("Views with a specified name must be declared with an instrument selector that selects at most one instrument per meter.");
-	}
-	/**
-	* Can be passed to a {@link MeterProvider} to select instruments and alter their metric stream.
-	*/
-	var View = class {
-		name;
-		description;
-		aggregation;
-		attributesProcessor;
-		instrumentSelector;
-		meterSelector;
-		aggregationCardinalityLimit;
-		/**
-		* Create a new {@link View} instance.
-		*
-		* Parameters can be categorized as two types:
-		*  Instrument selection criteria: Used to describe the instrument(s) this view will be applied to.
-		*  Will be treated as additive (the Instrument has to meet all the provided criteria to be selected).
-		*
-		*  Metric stream altering: Alter the metric stream of instruments selected by instrument selection criteria.
-		*
-		* @param viewOptions {@link ViewOptions} for altering the metric stream and instrument selection.
-		* @param viewOptions.name
-		* Alters the metric stream:
-		*  This will be used as the name of the metrics stream.
-		*  If not provided, the original Instrument name will be used.
-		* @param viewOptions.description
-		* Alters the metric stream:
-		*  This will be used as the description of the metrics stream.
-		*  If not provided, the original Instrument description will be used by default.
-		* @param viewOptions.attributesProcessors
-		* Alters the metric stream:
-		*  If provided, the attributes will be modified as defined by the added processors.
-		*  If not provided, all attribute keys will be used by default.
-		* @param viewOptions.aggregationCardinalityLimit
-		* Alters the metric stream:
-		*  Sets a limit on the number of unique attribute combinations (cardinality) that can be aggregated.
-		*  If not provided, the default limit of 2000 will be used.
-		* @param viewOptions.aggregation
-		* Alters the metric stream:
-		*  Alters the {@link Aggregation} of the metric stream.
-		* @param viewOptions.instrumentName
-		* Instrument selection criteria:
-		*  Original name of the Instrument(s) with wildcard support.
-		* @param viewOptions.instrumentType
-		* Instrument selection criteria:
-		*  The original type of the Instrument(s).
-		* @param viewOptions.instrumentUnit
-		* Instrument selection criteria:
-		*  The unit of the Instrument(s).
-		* @param viewOptions.meterName
-		* Instrument selection criteria:
-		*  The name of the Meter. No wildcard support, name must match the meter exactly.
-		* @param viewOptions.meterVersion
-		* Instrument selection criteria:
-		*  The version of the Meter. No wildcard support, version must match exactly.
-		* @param viewOptions.meterSchemaUrl
-		* Instrument selection criteria:
-		*  The schema URL of the Meter. No wildcard support, schema URL must match exactly.
-		*
-		* @example
-		* // Create a view that changes the Instrument 'my.instrument' to use to an
-		* // ExplicitBucketHistogramAggregation with the boundaries [20, 30, 40]
-		* new View({
-		*   aggregation: new ExplicitBucketHistogramAggregation([20, 30, 40]),
-		*   instrumentName: 'my.instrument'
-		* })
-		*/
-		constructor(viewOptions) {
-			validateViewOptions(viewOptions);
-			if (viewOptions.attributesProcessors != null) this.attributesProcessor = (0, AttributesProcessor_1.createMultiAttributesProcessor)(viewOptions.attributesProcessors);
-			else this.attributesProcessor = (0, AttributesProcessor_1.createNoopAttributesProcessor)();
-			this.name = viewOptions.name;
-			this.description = viewOptions.description;
-			this.aggregation = (0, AggregationOption_1.toAggregation)(viewOptions.aggregation ?? { type: AggregationOption_1.AggregationType.DEFAULT });
-			this.instrumentSelector = new InstrumentSelector_1.InstrumentSelector({
-				name: viewOptions.instrumentName,
-				type: viewOptions.instrumentType,
-				unit: viewOptions.instrumentUnit
-			});
-			this.meterSelector = new MeterSelector_1.MeterSelector({
-				name: viewOptions.meterName,
-				version: viewOptions.meterVersion,
-				schemaUrl: viewOptions.meterSchemaUrl
-			});
-			this.aggregationCardinalityLimit = viewOptions.aggregationCardinalityLimit;
-		}
-	};
-	exports.View = View;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/MeterProvider.js
-var require_MeterProvider = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.MeterProvider = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const resources_1 = require_src$6();
-	const MetricReader_1 = require_MetricReader();
-	const MeterProviderSharedState_1 = require_MeterProviderSharedState();
-	const MetricCollector_1 = require_MetricCollector();
-	const View_1 = require_View();
-	/**
-	* This class implements the {@link MeterProvider} interface.
-	*/
-	var MeterProvider = class {
-		_sharedState;
-		_shutdown = false;
-		constructor(options) {
-			this._sharedState = new MeterProviderSharedState_1.MeterProviderSharedState(options?.resource ?? (0, resources_1.defaultResource)());
-			if (options?.views != null && options.views.length > 0) for (const viewOption of options.views) this._sharedState.viewRegistry.addView(new View_1.View(viewOption));
-			if (options?.readers != null && options.readers.length > 0) for (const metricReader of options.readers) {
-				const collector = new MetricCollector_1.MetricCollector(this._sharedState, metricReader);
-				metricReader.setMetricProducer(collector);
-				this._sharedState.metricCollectors.push(collector);
-				if (options.sdkMetricsEnabled && metricReader instanceof MetricReader_1.MetricReader) metricReader._setSelfObsMeterProvider(this);
-			}
-		}
-		/**
-		* Get a meter with the configuration of the MeterProvider.
-		*/
-		getMeter(name, version = "", options = {}) {
-			if (this._shutdown) {
-				api_1.diag.warn("A shutdown MeterProvider cannot provide a Meter");
-				return (0, api_1.createNoopMeter)();
-			}
-			return this._sharedState.getMeterSharedState({
-				name,
-				version,
-				schemaUrl: options.schemaUrl
-			}).meter;
-		}
-		/**
-		* Shut down the MeterProvider and all registered
-		* MetricReaders.
-		*
-		* Returns a promise which is resolved when all flushes are complete.
-		*/
-		async shutdown(options) {
-			if (this._shutdown) {
-				api_1.diag.warn("shutdown may only be called once per MeterProvider");
-				return;
-			}
-			this._shutdown = true;
-			await Promise.all(this._sharedState.metricCollectors.map((collector) => {
-				return collector.shutdown(options);
-			}));
-		}
-		/**
-		* Notifies all registered MetricReaders to flush any buffered data.
-		*
-		* Returns a promise which is resolved when all flushes are complete.
-		*/
-		async forceFlush(options) {
-			if (this._shutdown) {
-				api_1.diag.warn("invalid attempt to force flush after MeterProvider shutdown");
-				return;
-			}
-			await Promise.all(this._sharedState.metricCollectors.map((collector) => {
-				return collector.forceFlush(options);
-			}));
-		}
-	};
-	exports.MeterProvider = MeterProvider;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+sdk-metrics@2.11.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/sdk-metrics/build/src/index.js
-var require_src$5 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.TimeoutError = exports.createDenyListAttributesProcessor = exports.createAllowListAttributesProcessor = exports.AggregationType = exports.MeterProvider = exports.ConsoleMetricExporter = exports.InMemoryMetricExporter = exports.PeriodicExportingMetricReader = exports.MetricReader = exports.InstrumentType = exports.DataPointType = exports.AggregationTemporality = void 0;
-	var AggregationTemporality_1 = require_AggregationTemporality();
-	Object.defineProperty(exports, "AggregationTemporality", {
-		enumerable: true,
-		get: function() {
-			return AggregationTemporality_1.AggregationTemporality;
-		}
-	});
-	var MetricData_1 = require_MetricData();
-	Object.defineProperty(exports, "DataPointType", {
-		enumerable: true,
-		get: function() {
-			return MetricData_1.DataPointType;
-		}
-	});
-	Object.defineProperty(exports, "InstrumentType", {
-		enumerable: true,
-		get: function() {
-			return MetricData_1.InstrumentType;
-		}
-	});
-	var MetricReader_1 = require_MetricReader();
-	Object.defineProperty(exports, "MetricReader", {
-		enumerable: true,
-		get: function() {
-			return MetricReader_1.MetricReader;
-		}
-	});
-	var PeriodicExportingMetricReader_1 = require_PeriodicExportingMetricReader();
-	Object.defineProperty(exports, "PeriodicExportingMetricReader", {
-		enumerable: true,
-		get: function() {
-			return PeriodicExportingMetricReader_1.PeriodicExportingMetricReader;
-		}
-	});
-	var InMemoryMetricExporter_1 = require_InMemoryMetricExporter();
-	Object.defineProperty(exports, "InMemoryMetricExporter", {
-		enumerable: true,
-		get: function() {
-			return InMemoryMetricExporter_1.InMemoryMetricExporter;
-		}
-	});
-	var ConsoleMetricExporter_1 = require_ConsoleMetricExporter();
-	Object.defineProperty(exports, "ConsoleMetricExporter", {
-		enumerable: true,
-		get: function() {
-			return ConsoleMetricExporter_1.ConsoleMetricExporter;
-		}
-	});
-	var MeterProvider_1 = require_MeterProvider();
-	Object.defineProperty(exports, "MeterProvider", {
-		enumerable: true,
-		get: function() {
-			return MeterProvider_1.MeterProvider;
-		}
-	});
-	var AggregationOption_1 = require_AggregationOption();
-	Object.defineProperty(exports, "AggregationType", {
-		enumerable: true,
-		get: function() {
-			return AggregationOption_1.AggregationType;
-		}
-	});
-	var AttributesProcessor_1 = require_AttributesProcessor();
-	Object.defineProperty(exports, "createAllowListAttributesProcessor", {
-		enumerable: true,
-		get: function() {
-			return AttributesProcessor_1.createAllowListAttributesProcessor;
-		}
-	});
-	Object.defineProperty(exports, "createDenyListAttributesProcessor", {
-		enumerable: true,
-		get: function() {
-			return AttributesProcessor_1.createDenyListAttributesProcessor;
-		}
-	});
-	var utils_1 = require_utils$3();
-	Object.defineProperty(exports, "TimeoutError", {
-		enumerable: true,
-		get: function() {
-			return utils_1.TimeoutError;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/protobuf/metrics-serializer.js
-var require_metrics_serializer = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.serializeMetricsExportRequest = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const sdk_metrics_1 = require_src$5();
-	const common_serializer_1 = require_common_serializer();
-	const protobuf_size_estimator_1 = require_protobuf_size_estimator();
-	const protobuf_writer_1 = require_protobuf_writer();
-	/**
-	* Serialize a NumberDataPoint directly from SDK DataPoint<number>
-	*
-	* Proto fields (NumberDataPoint):
-	*   7  attributes               repeated KeyValue  (wire type 2)
-	*   2  start_time_unix_nano     fixed64            (wire type 1)
-	*   3  time_unix_nano           fixed64            (wire type 1)
-	*   4  as_double                double             (wire type 1)
-	*   6  as_int                   sfixed64           (wire type 1)
-	*   5  exemplars                repeated Exemplar  (wire type 2)
-	*   8  flags                    uint32             (wire type 0)
-	*/
-	function serializeNumberDataPoint(writer, dataPoint, valueType) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		writer.writeTag(2, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.startTime);
-		writer.writeTag(3, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.endTime);
-		if (valueType === api_1.ValueType.INT) {
-			writer.writeTag(6, 1);
-			writer.writeSfixed64(dataPoint.value);
-		} else {
-			writer.writeTag(4, 1);
-			writer.writeDouble(dataPoint.value);
-		}
-		if (dataPoint.attributes) (0, common_serializer_1.writeAttributes)(writer, dataPoint.attributes, 7);
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	/**
-	* Serialize a HistogramDataPoint directly from SDK DataPoint<Histogram>
-	*
-	* Proto fields (HistogramDataPoint):
-	*   9  attributes               repeated KeyValue  (wire type 2)
-	*   2  start_time_unix_nano     fixed64            (wire type 1)
-	*   3  time_unix_nano           fixed64            (wire type 1)
-	*   4  count                    fixed64            (wire type 1)
-	*   5  sum                      optional double    (wire type 1)
-	*   6  bucket_counts            repeated fixed64   (packed, wire type 2)
-	*   7  explicit_bounds          repeated double    (packed, wire type 2)
-	*   8  exemplars                repeated Exemplar  (wire type 2)
-	*  10  flags                    uint32             (wire type 0)
-	*  11  min                      optional double    (wire type 1)
-	*  12  max                      optional double    (wire type 1)
-	*/
-	function serializeHistogramDataPoint(writer, dataPoint) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		const histogram = dataPoint.value;
-		writer.writeTag(2, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.startTime);
-		writer.writeTag(3, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.endTime);
-		writer.writeTag(4, 1);
-		writer.writeFixed64(histogram.count >>> 0, histogram.count / 4294967296 >>> 0);
-		if (histogram.sum !== void 0) {
-			writer.writeTag(5, 1);
-			writer.writeDouble(histogram.sum);
-		}
-		if (histogram.buckets.counts.length > 0) {
-			writer.writeTag(6, 2);
-			const countsStart = writer.startLengthDelimited();
-			const countsStartPos = writer.pos;
-			for (const count of histogram.buckets.counts) writer.writeFixed64(count >>> 0, count / 4294967296 >>> 0);
-			writer.finishLengthDelimited(countsStart, writer.pos - countsStartPos);
-		}
-		if (histogram.buckets.boundaries.length > 0) {
-			writer.writeTag(7, 2);
-			const boundsStart = writer.startLengthDelimited();
-			const boundsStartPos = writer.pos;
-			for (const bound of histogram.buckets.boundaries) writer.writeDouble(bound);
-			writer.finishLengthDelimited(boundsStart, writer.pos - boundsStartPos);
-		}
-		if (dataPoint.attributes) (0, common_serializer_1.writeAttributes)(writer, dataPoint.attributes, 9);
-		if (histogram.min !== void 0) {
-			writer.writeTag(11, 1);
-			writer.writeDouble(histogram.min);
-		}
-		if (histogram.max !== void 0) {
-			writer.writeTag(12, 1);
-			writer.writeDouble(histogram.max);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	/**
-	* Serialize ExponentialHistogramDataPoint.Buckets
-	*
-	* Proto fields (Buckets):
-	*   1  offset         sint32           (wire type 0, zigzag)
-	*   2  bucket_counts  repeated uint64  (packed, wire type 2)
-	*/
-	function serializeExponentialBuckets(writer, offset, bucketCounts) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		if (offset !== 0) {
-			writer.writeTag(1, 0);
-			writer.writeSint32(offset);
-		}
-		if (bucketCounts.length > 0) {
-			writer.writeTag(2, 2);
-			const bcStart = writer.startLengthDelimited();
-			const bcStartPos = writer.pos;
-			for (const count of bucketCounts) writer.writeVarint(count);
-			writer.finishLengthDelimited(bcStart, writer.pos - bcStartPos);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	/**
-	* Serialize an ExponentialHistogramDataPoint directly from SDK DataPoint<ExponentialHistogram>
-	*
-	* Proto fields (ExponentialHistogramDataPoint):
-	*   1  attributes               repeated KeyValue  (wire type 2)
-	*   2  start_time_unix_nano     fixed64            (wire type 1)
-	*   3  time_unix_nano           fixed64            (wire type 1)
-	*   4  count                    fixed64            (wire type 1)
-	*   5  sum                      optional double    (wire type 1)
-	*   6  scale                    sint32             (wire type 0, zigzag)
-	*   7  zero_count               fixed64            (wire type 1)
-	*   8  positive                 Buckets            (wire type 2)
-	*   9  negative                 Buckets            (wire type 2)
-	*  10  flags                    uint32             (wire type 0)
-	*  11  exemplars                repeated Exemplar  (wire type 2)
-	*  12  min                      optional double    (wire type 1)
-	*  13  max                      optional double    (wire type 1)
-	*/
-	function serializeExponentialHistogramDataPoint(writer, dataPoint) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		const histogram = dataPoint.value;
-		if (dataPoint.attributes) (0, common_serializer_1.writeAttributes)(writer, dataPoint.attributes, 1);
-		writer.writeTag(2, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.startTime);
-		writer.writeTag(3, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, dataPoint.endTime);
-		writer.writeTag(4, 1);
-		writer.writeFixed64(histogram.count >>> 0, histogram.count / 4294967296 >>> 0);
-		if (histogram.sum !== void 0) {
-			writer.writeTag(5, 1);
-			writer.writeDouble(histogram.sum);
-		}
-		if (histogram.scale !== 0) {
-			writer.writeTag(6, 0);
-			writer.writeSint32(histogram.scale);
-		}
-		writer.writeTag(7, 1);
-		writer.writeFixed64(histogram.zeroCount >>> 0, histogram.zeroCount / 4294967296 >>> 0);
-		writer.writeTag(8, 2);
-		serializeExponentialBuckets(writer, histogram.positive.offset, histogram.positive.bucketCounts);
-		writer.writeTag(9, 2);
-		serializeExponentialBuckets(writer, histogram.negative.offset, histogram.negative.bucketCounts);
-		if (histogram.min !== void 0) {
-			writer.writeTag(12, 1);
-			writer.writeDouble(histogram.min);
-		}
-		if (histogram.max !== void 0) {
-			writer.writeTag(13, 1);
-			writer.writeDouble(histogram.max);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	/**
-	* Serialize a Metric message with its data type
-	*
-	* Proto fields (Metric):
-	*   1  name                     string             (wire type 2)
-	*   2  description              string             (wire type 2)
-	*   3  unit                     string             (wire type 2)
-	*   5  gauge                    Gauge              (wire type 2)
-	*   7  sum                      Sum                (wire type 2)
-	*   9  histogram                Histogram          (wire type 2)
-	*  10  exponential_histogram    ExponentialHist    (wire type 2)
-	*  11  summary                  Summary            (wire type 2)
-	*/
-	function serializeMetric(writer, metricData) {
-		const metricStart = writer.startLengthDelimited();
-		const metricStartPos = writer.pos;
-		writer.writeTag(1, 2);
-		writer.writeString(metricData.descriptor.name);
-		if (metricData.descriptor.description) {
-			writer.writeTag(2, 2);
-			writer.writeString(metricData.descriptor.description);
-		}
-		if (metricData.descriptor.unit) {
-			writer.writeTag(3, 2);
-			writer.writeString(metricData.descriptor.unit);
-		}
-		switch (metricData.dataPointType) {
-			case sdk_metrics_1.DataPointType.GAUGE:
-				writer.writeTag(5, 2);
-				serializeGauge(writer, metricData);
-				break;
-			case sdk_metrics_1.DataPointType.SUM:
-				writer.writeTag(7, 2);
-				serializeSum(writer, metricData);
-				break;
-			case sdk_metrics_1.DataPointType.HISTOGRAM:
-				writer.writeTag(9, 2);
-				serializeHistogramMetric(writer, metricData);
-				break;
-			case sdk_metrics_1.DataPointType.EXPONENTIAL_HISTOGRAM:
-				writer.writeTag(10, 2);
-				serializeExponentialHistogramMetric(writer, metricData);
-		}
-		writer.finishLengthDelimited(metricStart, writer.pos - metricStartPos);
-	}
-	/**
-	* Proto fields (Gauge):
-	*   1  data_points  repeated NumberDataPoint  (wire type 2)
-	*/
-	function serializeGauge(writer, metricData) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		for (const dataPoint of metricData.dataPoints) {
-			writer.writeTag(1, 2);
-			serializeNumberDataPoint(writer, dataPoint, metricData.descriptor.valueType);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	/**
-	* Proto fields (Sum):
-	*   1  data_points               repeated NumberDataPoint  (wire type 2)
-	*   2  aggregation_temporality   AggregationTemporality    (wire type 0)
-	*   3  is_monotonic              bool                      (wire type 0)
-	*/
-	function serializeSum(writer, metricData) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		for (const dataPoint of metricData.dataPoints) {
-			writer.writeTag(1, 2);
-			serializeNumberDataPoint(writer, dataPoint, metricData.descriptor.valueType);
-		}
-		const temporality = toProtoAggregationTemporality(metricData.aggregationTemporality);
-		if (temporality !== 0) {
-			writer.writeTag(2, 0);
-			writer.writeVarint(temporality);
-		}
-		if (metricData.isMonotonic) {
-			writer.writeTag(3, 0);
-			writer.writeVarint(1);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	/**
-	* Proto fields (Histogram):
-	*   1  data_points               repeated HistogramDataPoint  (wire type 2)
-	*   2  aggregation_temporality   AggregationTemporality       (wire type 0)
-	*/
-	function serializeHistogramMetric(writer, metricData) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		for (const dataPoint of metricData.dataPoints) {
-			writer.writeTag(1, 2);
-			serializeHistogramDataPoint(writer, dataPoint);
-		}
-		const temporality = toProtoAggregationTemporality(metricData.aggregationTemporality);
-		if (temporality !== 0) {
-			writer.writeTag(2, 0);
-			writer.writeVarint(temporality);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	/**
-	* Proto fields (ExponentialHistogram):
-	*   1  data_points               repeated ExponentialHistogramDataPoint  (wire type 2)
-	*   2  aggregation_temporality   AggregationTemporality                 (wire type 0)
-	*/
-	function serializeExponentialHistogramMetric(writer, metricData) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		for (const dataPoint of metricData.dataPoints) {
-			writer.writeTag(1, 2);
-			serializeExponentialHistogramDataPoint(writer, dataPoint);
-		}
-		const temporality = toProtoAggregationTemporality(metricData.aggregationTemporality);
-		if (temporality !== 0) {
-			writer.writeTag(2, 0);
-			writer.writeVarint(temporality);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	/**
-	* Serialize ScopeMetrics directly from SDK types
-	*/
-	function serializeScopeMetrics(writer, scopeMetrics) {
-		const scopeStart = writer.startLengthDelimited();
-		const scopeStartPos = writer.pos;
-		(0, common_serializer_1.writeInstrumentationScope)(writer, scopeMetrics.scope, 1);
-		for (const metric of scopeMetrics.metrics) {
-			writer.writeTag(2, 2);
-			serializeMetric(writer, metric);
-		}
-		if (scopeMetrics.scope.schemaUrl) {
-			writer.writeTag(3, 2);
-			writer.writeString(scopeMetrics.scope.schemaUrl);
-		}
-		writer.finishLengthDelimited(scopeStart, writer.pos - scopeStartPos);
-	}
-	/**
-	* Serialize ResourceMetrics directly from SDK types
-	*
-	* Proto fields (ResourceMetrics):
-	*   1  resource       Resource           (wire type 2)
-	*   2  scope_metrics  repeated ScopeMetrics  (wire type 2)
-	*   3  schema_url     string             (wire type 2)
-	*/
-	function serializeResourceMetrics(writer, resourceMetrics) {
-		const start = writer.startLengthDelimited();
-		const startPos = writer.pos;
-		(0, common_serializer_1.writeResource)(writer, resourceMetrics.resource, 1);
-		for (const scopeMetrics of resourceMetrics.scopeMetrics) {
-			writer.writeTag(2, 2);
-			serializeScopeMetrics(writer, scopeMetrics);
-		}
-		if (resourceMetrics.resource.schemaUrl) {
-			writer.writeTag(3, 2);
-			writer.writeString(resourceMetrics.resource.schemaUrl);
-		}
-		writer.finishLengthDelimited(start, writer.pos - startPos);
-	}
-	function toProtoAggregationTemporality(temporality) {
-		switch (temporality) {
-			case sdk_metrics_1.AggregationTemporality.DELTA: return 1;
-			case sdk_metrics_1.AggregationTemporality.CUMULATIVE: return 2;
-			default: return 0;
-		}
-	}
-	/**
-	* Serialize ExportMetricsServiceRequest directly from ResourceMetrics
-	*/
-	function serializeMetricsExportRequest(resourceMetrics) {
-		const estimator = new protobuf_size_estimator_1.ProtobufSizeEstimator();
-		estimator.writeTag(1, 2);
-		serializeResourceMetrics(estimator, resourceMetrics);
-		const writer = new protobuf_writer_1.ProtobufWriter(estimator.pos);
-		writer.writeTag(1, 2);
-		serializeResourceMetrics(writer, resourceMetrics);
-		return writer.finish();
-	}
-	exports.serializeMetricsExportRequest = serializeMetricsExportRequest;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/protobuf/response-deserializer.js
-var require_response_deserializer$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.deserializeExportMetricsServiceResponse = void 0;
-	const protobuf_reader_1 = require_protobuf_reader();
-	/**
-	* Parse an ExportMetricsPartialSuccess embedded message from raw bytes.
-	*
-	* Field map (opentelemetry/proto/collector/metrics/v1/metrics_service.proto):
-	*   1  rejected_data_points  int64   (varint)
-	*   2  error_message         string  (length-delimited)
-	*/
-	function deserializePartialSuccess(data) {
-		const reader = new protobuf_reader_1.ProtobufReader(data);
-		const result = {};
-		while (!reader.isAtEnd()) {
-			const { fieldNumber, wireType } = reader.readTag();
-			switch (fieldNumber) {
-				case 1:
-					if (wireType === 0) result.rejectedDataPoints = reader.readVarint();
-					else reader.skip(wireType);
-					break;
-				case 2:
-					if (wireType === 2) result.errorMessage = reader.readString();
-					else reader.skip(wireType);
-					break;
-				default: reader.skip(wireType);
-			}
-		}
-		return result;
-	}
-	/**
-	* Parse an ExportMetricsServiceResponse protobuf message from raw bytes.
-	*
-	* Field map (opentelemetry/proto/collector/metrics/v1/metrics_service.proto):
-	*   1  partial_success  ExportMetricsPartialSuccess  (length-delimited)
-	*/
-	function deserializeExportMetricsServiceResponse(data) {
-		const reader = new protobuf_reader_1.ProtobufReader(data);
-		const result = {};
-		while (!reader.isAtEnd()) {
-			const { fieldNumber, wireType } = reader.readTag();
-			switch (fieldNumber) {
-				case 1:
-					if (wireType === 2) result.partialSuccess = deserializePartialSuccess(reader.readBytes());
-					else reader.skip(wireType);
-					break;
-				default: reader.skip(wireType);
-			}
-		}
-		return result;
-	}
-	exports.deserializeExportMetricsServiceResponse = deserializeExportMetricsServiceResponse;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/protobuf/metrics.js
-var require_metrics$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufMetricsSerializer = void 0;
-	const metrics_serializer_1 = require_metrics_serializer();
-	const response_deserializer_1 = require_response_deserializer$1();
-	exports.ProtobufMetricsSerializer = {
-		serializeRequest: (arg) => {
-			return (0, metrics_serializer_1.serializeMetricsExportRequest)(arg);
-		},
-		deserializeResponse: (arg) => {
-			return (0, response_deserializer_1.deserializeExportMetricsServiceResponse)(arg);
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/protobuf/index.js
-var require_protobuf$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufMetricsSerializer = void 0;
-	var metrics_1 = require_metrics$1();
-	Object.defineProperty(exports, "ProtobufMetricsSerializer", {
-		enumerable: true,
-		get: function() {
-			return metrics_1.ProtobufMetricsSerializer;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/protobuf/trace-serializer.js
-var require_trace_serializer = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.serializeTraceExportRequest = void 0;
-	const protobuf_writer_1 = require_protobuf_writer();
-	const hex_to_binary_1 = require_hex_to_binary();
-	const common_serializer_1 = require_common_serializer();
-	const protobuf_size_estimator_1 = require_protobuf_size_estimator();
-	const SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK = 256;
-	const SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK = 512;
-	function buildSpanFlags(traceFlags, isRemote) {
-		let flags = traceFlags & 255 | SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK;
-		if (isRemote) flags |= SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK;
-		return flags;
-	}
-	/**
-	* Serialize a Span.Status message
-	*
-	* Proto fields (Status):
-	*   1  (reserved)
-	*   2  message   string         (length-delimited)
-	*   3  code      StatusCode     (varint)
-	*/
-	function serializeStatus(writer, status) {
-		const statusStart = writer.startLengthDelimited();
-		const statusStartPos = writer.pos;
-		if (status.message) {
-			writer.writeTag(2, 2);
-			writer.writeString(status.message);
-		}
-		writer.writeTag(3, 0);
-		writer.writeVarint(status.code);
-		writer.finishLengthDelimited(statusStart, writer.pos - statusStartPos);
-	}
-	/**
-	* Serialize a Span.Event message
-	*
-	* Proto fields (Span.Event):
-	*   1  time_unix_nano           fixed64            (wire type 1)
-	*   2  name                     string             (wire type 2)
-	*   3  attributes               repeated KeyValue  (wire type 2)
-	*   4  dropped_attributes_count uint32             (wire type 0)
-	*/
-	function serializeEvent(writer, event) {
-		const eventStart = writer.startLengthDelimited();
-		const eventStartPos = writer.pos;
-		writer.writeTag(1, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, event.time);
-		writer.writeTag(2, 2);
-		writer.writeString(event.name);
-		if (event.attributes) (0, common_serializer_1.writeAttributes)(writer, event.attributes, 3);
-		writer.writeTag(4, 0);
-		writer.writeVarint(event.droppedAttributesCount || 0);
-		writer.finishLengthDelimited(eventStart, writer.pos - eventStartPos);
-	}
-	/**
-	* Serialize a Span.Link message
-	*
-	* Proto fields (Span.Link):
-	*   1  trace_id                 bytes              (wire type 2)
-	*   2  span_id                  bytes              (wire type 2)
-	*   3  trace_state              string             (wire type 2)
-	*   4  attributes               repeated KeyValue  (wire type 2)
-	*   5  dropped_attributes_count uint32             (wire type 0)
-	*   6  flags                    fixed32            (wire type 5)
-	*/
-	function serializeLink(writer, link) {
-		const linkStart = writer.startLengthDelimited();
-		const linkStartPos = writer.pos;
-		const context = link.context;
-		writer.writeTag(1, 2);
-		writer.writeBytes((0, hex_to_binary_1.hexToBinary)(context.traceId));
-		writer.writeTag(2, 2);
-		writer.writeBytes((0, hex_to_binary_1.hexToBinary)(context.spanId));
-		const linkTraceState = context.traceState?.serialize();
-		if (linkTraceState) {
-			writer.writeTag(3, 2);
-			writer.writeString(linkTraceState);
-		}
-		if (link.attributes) (0, common_serializer_1.writeAttributes)(writer, link.attributes, 4);
-		writer.writeTag(5, 0);
-		writer.writeVarint(link.droppedAttributesCount || 0);
-		const linkFlags = buildSpanFlags(context.traceFlags, context.isRemote);
-		if (linkFlags) {
-			writer.writeTag(6, 5);
-			writer.writeFixed32(linkFlags);
-		}
-		writer.finishLengthDelimited(linkStart, writer.pos - linkStartPos);
-	}
-	/**
-	* Serialize a single Span message directly from ReadableSpan
-	*
-	* Proto fields (Span):
-	*   1  trace_id                 bytes              (wire type 2)
-	*   2  span_id                  bytes              (wire type 2)
-	*   3  trace_state              string             (wire type 2)
-	*   4  parent_span_id           bytes              (wire type 2)
-	*   5  name                     string             (wire type 2)
-	*   6  kind                     SpanKind           (wire type 0)
-	*   7  start_time_unix_nano     fixed64            (wire type 1)
-	*   8  end_time_unix_nano       fixed64            (wire type 1)
-	*   9  attributes               repeated KeyValue  (wire type 2)
-	*  10  dropped_attributes_count uint32             (wire type 0)
-	*  11  events                   repeated Event     (wire type 2)
-	*  12  dropped_events_count     uint32             (wire type 0)
-	*  13  links                    repeated Link      (wire type 2)
-	*  14  dropped_links_count      uint32             (wire type 0)
-	*  15  status                   Status             (wire type 2)
-	*  16  flags                    fixed32            (wire type 5)
-	*/
-	function serializeSpan(writer, span) {
-		const spanStart = writer.startLengthDelimited();
-		const spanStartPos = writer.pos;
-		const ctx = span.spanContext();
-		writer.writeTag(1, 2);
-		writer.writeBytes((0, hex_to_binary_1.hexToBinary)(ctx.traceId));
-		writer.writeTag(2, 2);
-		writer.writeBytes((0, hex_to_binary_1.hexToBinary)(ctx.spanId));
-		const traceState = ctx.traceState?.serialize();
-		if (traceState) {
-			writer.writeTag(3, 2);
-			writer.writeString(traceState);
-		}
-		if (span.parentSpanContext?.spanId) {
-			writer.writeTag(4, 2);
-			writer.writeBytes((0, hex_to_binary_1.hexToBinary)(span.parentSpanContext.spanId));
-		}
-		writer.writeTag(5, 2);
-		writer.writeString(span.name);
-		const kind = span.kind == null ? 0 : span.kind + 1;
-		if (kind !== 0) {
-			writer.writeTag(6, 0);
-			writer.writeVarint(kind);
-		}
-		writer.writeTag(7, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, span.startTime);
-		writer.writeTag(8, 1);
-		(0, common_serializer_1.writeHrTimeAsFixed64)(writer, span.endTime);
-		if (span.attributes) (0, common_serializer_1.writeAttributes)(writer, span.attributes, 9);
-		writer.writeTag(10, 0);
-		writer.writeVarint(span.droppedAttributesCount);
-		for (const event of span.events) {
-			writer.writeTag(11, 2);
-			serializeEvent(writer, event);
-		}
-		writer.writeTag(12, 0);
-		writer.writeVarint(span.droppedEventsCount);
-		for (const link of span.links) {
-			writer.writeTag(13, 2);
-			serializeLink(writer, link);
-		}
-		writer.writeTag(14, 0);
-		writer.writeVarint(span.droppedLinksCount);
-		writer.writeTag(15, 2);
-		serializeStatus(writer, span.status);
-		const flags = buildSpanFlags(ctx.traceFlags, span.parentSpanContext?.isRemote);
-		if (flags) {
-			writer.writeTag(16, 5);
-			writer.writeFixed32(flags);
-		}
-		writer.finishLengthDelimited(spanStart, writer.pos - spanStartPos);
-	}
-	/**
-	* Serialize ScopeSpans directly from SDK types
-	*/
-	function serializeScopeSpans(writer, scope, spans) {
-		const scopeSpansStart = writer.startLengthDelimited();
-		const scopeSpansStartPos = writer.pos;
-		(0, common_serializer_1.writeInstrumentationScope)(writer, scope, 1);
-		for (const span of spans) {
-			writer.writeTag(2, 2);
-			serializeSpan(writer, span);
-		}
-		if (scope.schemaUrl) {
-			writer.writeTag(3, 2);
-			writer.writeString(scope.schemaUrl);
-		}
-		writer.finishLengthDelimited(scopeSpansStart, writer.pos - scopeSpansStartPos);
-	}
-	/**
-	* Serialize ResourceSpans directly from SDK Resource type
-	*/
-	function serializeResourceSpans(writer, resource, scopeMap) {
-		const resourceSpansStart = writer.startLengthDelimited();
-		const resourceSpansStartPos = writer.pos;
-		(0, common_serializer_1.writeResource)(writer, resource, 1);
-		for (const scopeSpans of scopeMap.values()) {
-			writer.writeTag(2, 2);
-			const scope = scopeSpans[0].instrumentationScope;
-			serializeScopeSpans(writer, scope, scopeSpans);
-		}
-		if (resource.schemaUrl) {
-			writer.writeTag(3, 2);
-			writer.writeString(resource.schemaUrl);
-		}
-		writer.finishLengthDelimited(resourceSpansStart, writer.pos - resourceSpansStartPos);
-	}
-	/**
-	* Group spans by resource and instrumentation scope using identity comparison
-	*/
-	function createResourceMap(spans) {
-		const resourceMap = /* @__PURE__ */ new Map();
-		for (const span of spans) {
-			const resource = span.resource;
-			const scope = span.instrumentationScope;
-			let scopeMap = resourceMap.get(resource);
-			if (!scopeMap) {
-				scopeMap = /* @__PURE__ */ new Map();
-				resourceMap.set(resource, scopeMap);
-			}
-			let records = scopeMap.get(scope);
-			if (!records) {
-				records = [];
-				scopeMap.set(scope, records);
-			}
-			records.push(span);
-		}
-		return resourceMap;
-	}
-	/**
-	* Serialize ExportTraceServiceRequest directly from ReadableSpan[]
-	*/
-	function serializeTraceExportRequest(spans) {
-		const resourceMap = createResourceMap(spans);
-		const estimator = new protobuf_size_estimator_1.ProtobufSizeEstimator();
-		for (const [resource, scopeMap] of resourceMap) {
-			estimator.writeTag(1, 2);
-			serializeResourceSpans(estimator, resource, scopeMap);
-		}
-		const writer = new protobuf_writer_1.ProtobufWriter(estimator.pos);
-		for (const [resource, scopeMap] of resourceMap) {
-			writer.writeTag(1, 2);
-			serializeResourceSpans(writer, resource, scopeMap);
-		}
-		return writer.finish();
-	}
-	exports.serializeTraceExportRequest = serializeTraceExportRequest;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/protobuf/response-deserializer.js
-var require_response_deserializer = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.deserializeExportTraceServiceResponse = void 0;
-	const protobuf_reader_1 = require_protobuf_reader();
-	/**
-	* Parse an ExportTracePartialSuccess embedded message from raw bytes.
-	*
-	* Field map (opentelemetry/proto/collector/trace/v1/trace_service.proto):
-	*   1  rejected_spans   int64   (varint)
-	*   2  error_message    string  (length-delimited)
-	*/
-	function deserializePartialSuccess(data) {
-		const reader = new protobuf_reader_1.ProtobufReader(data);
-		const result = {};
-		while (!reader.isAtEnd()) {
-			const { fieldNumber, wireType } = reader.readTag();
-			switch (fieldNumber) {
-				case 1:
-					if (wireType === 0) result.rejectedSpans = reader.readVarint();
-					else reader.skip(wireType);
-					break;
-				case 2:
-					if (wireType === 2) result.errorMessage = reader.readString();
-					else reader.skip(wireType);
-					break;
-				default: reader.skip(wireType);
-			}
-		}
-		return result;
-	}
-	/**
-	* Parse an ExportTraceServiceResponse protobuf message from raw bytes.
-	*
-	* Field map (opentelemetry/proto/collector/trace/v1/trace_service.proto):
-	*   1  partial_success  ExportTracePartialSuccess  (length-delimited)
-	*/
-	function deserializeExportTraceServiceResponse(data) {
-		const reader = new protobuf_reader_1.ProtobufReader(data);
-		const result = {};
-		while (!reader.isAtEnd()) {
-			const { fieldNumber, wireType } = reader.readTag();
-			switch (fieldNumber) {
-				case 1:
-					if (wireType === 2) result.partialSuccess = deserializePartialSuccess(reader.readBytes());
-					else reader.skip(wireType);
-					break;
-				default: reader.skip(wireType);
-			}
-		}
-		return result;
-	}
-	exports.deserializeExportTraceServiceResponse = deserializeExportTraceServiceResponse;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/protobuf/trace.js
-var require_trace$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufTraceSerializer = void 0;
-	const trace_serializer_1 = require_trace_serializer();
-	const response_deserializer_1 = require_response_deserializer();
-	exports.ProtobufTraceSerializer = {
-		serializeRequest: (arg) => {
-			return (0, trace_serializer_1.serializeTraceExportRequest)(arg);
-		},
-		deserializeResponse: (arg) => {
-			return (0, response_deserializer_1.deserializeExportTraceServiceResponse)(arg);
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/protobuf/index.js
-var require_protobuf = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.ProtobufTraceSerializer = void 0;
-	var trace_1 = require_trace$1();
-	Object.defineProperty(exports, "ProtobufTraceSerializer", {
-		enumerable: true,
-		get: function() {
-			return trace_1.ProtobufTraceSerializer;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/internal.js
-var require_internal$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.toAnyValue = exports.toKeyValue = exports.toAttributes = exports.createInstrumentationScope = exports.createResource = void 0;
-	function createResource(resource, encoder) {
-		const result = {
-			attributes: toAttributes(resource.attributes, encoder),
-			droppedAttributesCount: 0
-		};
-		const schemaUrl = resource.schemaUrl;
-		if (schemaUrl && schemaUrl !== "") result.schemaUrl = schemaUrl;
-		return result;
-	}
-	exports.createResource = createResource;
-	function createInstrumentationScope(scope, encoder) {
-		const result = {
-			name: scope.name,
-			version: scope.version
-		};
-		if (scope.attributes && Object.keys(scope.attributes).length > 0) {
-			result.attributes = toAttributes(scope.attributes, encoder);
-			result.droppedAttributesCount = scope.droppedAttributesCount ?? 0;
-		}
-		return result;
-	}
-	exports.createInstrumentationScope = createInstrumentationScope;
-	function toAttributes(attributes, encoder) {
-		return Object.keys(attributes).map((key) => toKeyValue(key, attributes[key], encoder));
-	}
-	exports.toAttributes = toAttributes;
-	function toKeyValue(key, value, encoder) {
-		return {
-			key,
-			value: toAnyValue(value, encoder)
-		};
-	}
-	exports.toKeyValue = toKeyValue;
-	function toAnyValue(value, encoder) {
-		const t = typeof value;
-		if (t === "string") return { stringValue: value };
-		if (t === "number") {
-			if (!Number.isInteger(value)) return { doubleValue: value };
-			return { intValue: value };
-		}
-		if (t === "boolean") return { boolValue: value };
-		if (value instanceof Uint8Array) return { bytesValue: encoder.encodeUint8Array(value) };
-		if (Array.isArray(value)) {
-			const values = new Array(value.length);
-			for (let i = 0; i < value.length; i++) values[i] = toAnyValue(value[i], encoder);
-			return { arrayValue: { values } };
-		}
-		if (t === "object" && value != null) {
-			const keys = Object.keys(value);
-			const values = new Array(keys.length);
-			for (let i = 0; i < keys.length; i++) values[i] = {
-				key: keys[i],
-				value: toAnyValue(value[keys[i]], encoder)
-			};
-			return { kvlistValue: { values } };
-		}
-		return {};
-	}
-	exports.toAnyValue = toAnyValue;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/internal.js
-var require_internal$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.createExportLogsServiceRequest = void 0;
-	const internal_1 = require_internal$3();
-	function createExportLogsServiceRequest(logRecords, encoder) {
-		return { resourceLogs: logRecordsToResourceLogs(logRecords, encoder) };
-	}
-	exports.createExportLogsServiceRequest = createExportLogsServiceRequest;
-	function createResourceMap(logRecords) {
-		const resourceMap = /* @__PURE__ */ new Map();
-		for (const record of logRecords) {
-			const { resource, instrumentationScope } = record;
-			let ismMap = resourceMap.get(resource);
-			if (!ismMap) {
-				ismMap = /* @__PURE__ */ new Map();
-				resourceMap.set(resource, ismMap);
-			}
-			let records = ismMap.get(instrumentationScope);
-			if (!records) {
-				records = [];
-				ismMap.set(instrumentationScope, records);
-			}
-			records.push(record);
-		}
-		return resourceMap;
-	}
-	function logRecordsToResourceLogs(logRecords, encoder) {
-		const resourceMap = createResourceMap(logRecords);
-		return Array.from(resourceMap, ([resource, ismMap]) => {
-			const processedResource = (0, internal_1.createResource)(resource, encoder);
-			return {
-				resource: processedResource,
-				scopeLogs: Array.from(ismMap, ([, scopeLogs]) => {
-					return {
-						scope: (0, internal_1.createInstrumentationScope)(scopeLogs[0].instrumentationScope, encoder),
-						logRecords: scopeLogs.map((log) => toLogRecord(log, encoder)),
-						schemaUrl: scopeLogs[0].instrumentationScope.schemaUrl
-					};
-				}),
-				schemaUrl: processedResource.schemaUrl
-			};
-		});
-	}
-	function toLogRecord(log, encoder) {
-		return {
-			timeUnixNano: encoder.encodeHrTime(log.hrTime),
-			observedTimeUnixNano: encoder.encodeHrTime(log.hrTimeObserved),
-			severityNumber: toSeverityNumber(log.severityNumber),
-			severityText: log.severityText,
-			body: (0, internal_1.toAnyValue)(log.body, encoder),
-			eventName: log.eventName,
-			attributes: (0, internal_1.toAttributes)(log.attributes, encoder),
-			droppedAttributesCount: log.droppedAttributesCount,
-			flags: log.spanContext?.traceFlags,
-			traceId: encoder.encodeOptionalSpanContext(log.spanContext?.traceId),
-			spanId: encoder.encodeOptionalSpanContext(log.spanContext?.spanId)
-		};
-	}
-	function toSeverityNumber(severityNumber) {
-		return severityNumber;
-	}
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/common/utils.js
-var require_utils = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.JSON_ENCODER = exports.PROTOBUF_ENCODER = exports.encodeAsString = exports.encodeAsLongBits = exports.toLongBits = exports.hrTimeToNanos = void 0;
-	const core_1 = require_src$8();
-	const hex_to_binary_1 = require_hex_to_binary();
-	function hrTimeToNanos(hrTime) {
-		const NANOSECONDS = BigInt(1e9);
-		return BigInt(Math.trunc(hrTime[0])) * NANOSECONDS + BigInt(Math.trunc(hrTime[1]));
-	}
-	exports.hrTimeToNanos = hrTimeToNanos;
-	function toLongBits(value) {
-		return {
-			low: Number(BigInt.asUintN(32, value)),
-			high: Number(BigInt.asUintN(32, value >> BigInt(32)))
-		};
-	}
-	exports.toLongBits = toLongBits;
-	function encodeAsLongBits(hrTime) {
-		return toLongBits(hrTimeToNanos(hrTime));
-	}
-	exports.encodeAsLongBits = encodeAsLongBits;
-	function encodeAsString(hrTime) {
-		return hrTimeToNanos(hrTime).toString();
-	}
-	exports.encodeAsString = encodeAsString;
-	const encodeTimestamp = typeof BigInt !== "undefined" ? encodeAsString : core_1.hrTimeToNanoseconds;
-	function identity(value) {
-		return value;
-	}
-	function optionalHexToBinary(str) {
-		if (str === void 0) return void 0;
-		return (0, hex_to_binary_1.hexToBinary)(str);
-	}
-	/**
-	* Encoder for protobuf format.
-	* Uses { high, low } timestamps and binary for span/trace IDs, leaves Uint8Array attributes as-is.
-	*/
-	exports.PROTOBUF_ENCODER = {
-		encodeHrTime: encodeAsLongBits,
-		encodeSpanContext: hex_to_binary_1.hexToBinary,
-		encodeOptionalSpanContext: optionalHexToBinary,
-		encodeUint8Array: identity
-	};
-	/**
-	* Encoder for JSON format.
-	* Uses string timestamps, hex for span/trace IDs, and base64 for Uint8Array.
-	*/
-	exports.JSON_ENCODER = {
-		encodeHrTime: encodeTimestamp,
-		encodeSpanContext: identity,
-		encodeOptionalSpanContext: identity,
-		encodeUint8Array: (bytes) => {
-			if (typeof Buffer !== "undefined") return Buffer.from(bytes).toString("base64");
-			const chars = new Array(bytes.length);
-			for (let i = 0; i < bytes.length; i++) chars[i] = String.fromCharCode(bytes[i]);
-			return btoa(chars.join(""));
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/json/logs.js
-var require_logs = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.JsonLogsSerializer = void 0;
-	const internal_1 = require_internal$2();
-	const utils_1 = require_utils();
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	/**
-	* @experimental this serializer may receive breaking changes in minor versions, pin this package's version when using this constant
-	*/
-	exports.JsonLogsSerializer = {
-		serializeRequest: (arg) => {
-			const request = (0, internal_1.createExportLogsServiceRequest)(arg, utils_1.JSON_ENCODER);
-			return new TextEncoder().encode(JSON.stringify(request));
-		},
-		deserializeResponse: (arg) => {
-			if (arg.length === 0) return {};
-			const decoder = new TextDecoder();
-			try {
-				return JSON.parse(decoder.decode(arg));
-			} catch (err) {
-				api_1.diag.warn(`Failed to parse logs export response: ${err.message}. Returning empty response`);
-				return {};
-			}
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/logs/json/index.js
-var require_json$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.JsonLogsSerializer = void 0;
-	var logs_1 = require_logs();
-	Object.defineProperty(exports, "JsonLogsSerializer", {
-		enumerable: true,
-		get: function() {
-			return logs_1.JsonLogsSerializer;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/internal-types.js
-var require_internal_types = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.EAggregationTemporality = void 0;
-	/**
-	* AggregationTemporality defines how a metric aggregator reports aggregated
-	* values. It describes how those values relate to the time interval over
-	* which they are aggregated.
-	*/
-	var EAggregationTemporality;
-	(function(EAggregationTemporality) {
-		EAggregationTemporality[EAggregationTemporality["AGGREGATION_TEMPORALITY_UNSPECIFIED"] = 0] = "AGGREGATION_TEMPORALITY_UNSPECIFIED";
-		/** DELTA is an AggregationTemporality for a metric aggregator which reports
-		changes since last report time. Successive metrics contain aggregation of
-		values from continuous and non-overlapping intervals.
-		
-		The values for a DELTA metric are based only on the time interval
-		associated with one measurement cycle. There is no dependency on
-		previous measurements like is the case for CUMULATIVE metrics.
-		
-		For example, consider a system measuring the number of requests that
-		it receives and reports the sum of these requests every second as a
-		DELTA metric:
-		
-		1. The system starts receiving at time=t_0.
-		2. A request is received, the system measures 1 request.
-		3. A request is received, the system measures 1 request.
-		4. A request is received, the system measures 1 request.
-		5. The 1 second collection cycle ends. A metric is exported for the
-		number of requests received over the interval of time t_0 to
-		t_0+1 with a value of 3.
-		6. A request is received, the system measures 1 request.
-		7. A request is received, the system measures 1 request.
-		8. The 1 second collection cycle ends. A metric is exported for the
-		number of requests received over the interval of time t_0+1 to
-		t_0+2 with a value of 2. */
-		EAggregationTemporality[EAggregationTemporality["AGGREGATION_TEMPORALITY_DELTA"] = 1] = "AGGREGATION_TEMPORALITY_DELTA";
-		/** CUMULATIVE is an AggregationTemporality for a metric aggregator which
-		reports changes since a fixed start time. This means that current values
-		of a CUMULATIVE metric depend on all previous measurements since the
-		start time. Because of this, the sender is required to retain this state
-		in some form. If this state is lost or invalidated, the CUMULATIVE metric
-		values MUST be reset and a new fixed start time following the last
-		reported measurement time sent MUST be used.
-		
-		For example, consider a system measuring the number of requests that
-		it receives and reports the sum of these requests every second as a
-		CUMULATIVE metric:
-		
-		1. The system starts receiving at time=t_0.
-		2. A request is received, the system measures 1 request.
-		3. A request is received, the system measures 1 request.
-		4. A request is received, the system measures 1 request.
-		5. The 1 second collection cycle ends. A metric is exported for the
-		number of requests received over the interval of time t_0 to
-		t_0+1 with a value of 3.
-		6. A request is received, the system measures 1 request.
-		7. A request is received, the system measures 1 request.
-		8. The 1 second collection cycle ends. A metric is exported for the
-		number of requests received over the interval of time t_0 to
-		t_0+2 with a value of 5.
-		9. The system experiences a fault and loses state.
-		10. The system recovers and resumes receiving at time=t_1.
-		11. A request is received, the system measures 1 request.
-		12. The 1 second collection cycle ends. A metric is exported for the
-		number of requests received over the interval of time t_1 to
-		t_0+1 with a value of 1.
-		
-		Note: Even though, when reporting changes since last report time, using
-		CUMULATIVE is valid, it is not recommended. This may cause problems for
-		systems that do not use start_time to determine when the aggregation
-		value was reset (e.g. Prometheus). */
-		EAggregationTemporality[EAggregationTemporality["AGGREGATION_TEMPORALITY_CUMULATIVE"] = 2] = "AGGREGATION_TEMPORALITY_CUMULATIVE";
-	})(EAggregationTemporality || (exports.EAggregationTemporality = EAggregationTemporality = {}));
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/internal.js
-var require_internal$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.createExportMetricsServiceRequest = exports.toMetric = exports.toScopeMetrics = exports.toResourceMetrics = void 0;
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	const sdk_metrics_1 = require_src$5();
-	const internal_types_1 = require_internal_types();
-	const internal_1 = require_internal$3();
-	function toResourceMetrics(resourceMetrics, encoder) {
-		const processedResource = (0, internal_1.createResource)(resourceMetrics.resource, encoder);
-		return {
-			resource: processedResource,
-			schemaUrl: processedResource.schemaUrl,
-			scopeMetrics: toScopeMetrics(resourceMetrics.scopeMetrics, encoder)
-		};
-	}
-	exports.toResourceMetrics = toResourceMetrics;
-	function toScopeMetrics(scopeMetrics, encoder) {
-		return Array.from(scopeMetrics.map((metrics) => ({
-			scope: (0, internal_1.createInstrumentationScope)(metrics.scope, encoder),
-			metrics: metrics.metrics.map((metricData) => toMetric(metricData, encoder)),
-			schemaUrl: metrics.scope.schemaUrl
-		})));
-	}
-	exports.toScopeMetrics = toScopeMetrics;
-	function toMetric(metricData, encoder) {
-		const out = {
-			name: metricData.descriptor.name,
-			description: metricData.descriptor.description,
-			unit: metricData.descriptor.unit
-		};
-		const aggregationTemporality = toAggregationTemporality(metricData.aggregationTemporality);
-		switch (metricData.dataPointType) {
-			case sdk_metrics_1.DataPointType.SUM:
-				out.sum = {
-					aggregationTemporality,
-					isMonotonic: metricData.isMonotonic,
-					dataPoints: toSingularDataPoints(metricData, encoder)
-				};
-				break;
-			case sdk_metrics_1.DataPointType.GAUGE:
-				out.gauge = { dataPoints: toSingularDataPoints(metricData, encoder) };
-				break;
-			case sdk_metrics_1.DataPointType.HISTOGRAM:
-				out.histogram = {
-					aggregationTemporality,
-					dataPoints: toHistogramDataPoints(metricData, encoder)
-				};
-				break;
-			case sdk_metrics_1.DataPointType.EXPONENTIAL_HISTOGRAM: out.exponentialHistogram = {
-				aggregationTemporality,
-				dataPoints: toExponentialHistogramDataPoints(metricData, encoder)
-			};
-		}
-		return out;
-	}
-	exports.toMetric = toMetric;
-	function toSingularDataPoint(dataPoint, valueType, encoder) {
-		const out = {
-			attributes: (0, internal_1.toAttributes)(dataPoint.attributes, encoder),
-			startTimeUnixNano: encoder.encodeHrTime(dataPoint.startTime),
-			timeUnixNano: encoder.encodeHrTime(dataPoint.endTime)
-		};
-		switch (valueType) {
-			case api_1.ValueType.INT:
-				out.asInt = dataPoint.value;
-				break;
-			case api_1.ValueType.DOUBLE: out.asDouble = dataPoint.value;
-		}
-		return out;
-	}
-	function toSingularDataPoints(metricData, encoder) {
-		return metricData.dataPoints.map((dataPoint) => {
-			return toSingularDataPoint(dataPoint, metricData.descriptor.valueType, encoder);
-		});
-	}
-	function toHistogramDataPoints(metricData, encoder) {
-		return metricData.dataPoints.map((dataPoint) => {
-			const histogram = dataPoint.value;
-			return {
-				attributes: (0, internal_1.toAttributes)(dataPoint.attributes, encoder),
-				bucketCounts: histogram.buckets.counts,
-				explicitBounds: histogram.buckets.boundaries,
-				count: histogram.count,
-				sum: histogram.sum,
-				min: histogram.min,
-				max: histogram.max,
-				startTimeUnixNano: encoder.encodeHrTime(dataPoint.startTime),
-				timeUnixNano: encoder.encodeHrTime(dataPoint.endTime)
-			};
-		});
-	}
-	function toExponentialHistogramDataPoints(metricData, encoder) {
-		return metricData.dataPoints.map((dataPoint) => {
-			const histogram = dataPoint.value;
-			return {
-				attributes: (0, internal_1.toAttributes)(dataPoint.attributes, encoder),
-				count: histogram.count,
-				min: histogram.min,
-				max: histogram.max,
-				sum: histogram.sum,
-				positive: {
-					offset: histogram.positive.offset,
-					bucketCounts: histogram.positive.bucketCounts
-				},
-				negative: {
-					offset: histogram.negative.offset,
-					bucketCounts: histogram.negative.bucketCounts
-				},
-				scale: histogram.scale,
-				zeroCount: histogram.zeroCount,
-				startTimeUnixNano: encoder.encodeHrTime(dataPoint.startTime),
-				timeUnixNano: encoder.encodeHrTime(dataPoint.endTime)
-			};
-		});
-	}
-	function toAggregationTemporality(temporality) {
-		switch (temporality) {
-			case sdk_metrics_1.AggregationTemporality.DELTA: return internal_types_1.EAggregationTemporality.AGGREGATION_TEMPORALITY_DELTA;
-			case sdk_metrics_1.AggregationTemporality.CUMULATIVE: return internal_types_1.EAggregationTemporality.AGGREGATION_TEMPORALITY_CUMULATIVE;
-		}
-	}
-	function createExportMetricsServiceRequest(resourceMetrics, encoder) {
-		return { resourceMetrics: resourceMetrics.map((metrics) => toResourceMetrics(metrics, encoder)) };
-	}
-	exports.createExportMetricsServiceRequest = createExportMetricsServiceRequest;
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/json/metrics.js
-var require_metrics = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.JsonMetricsSerializer = void 0;
-	const internal_1 = require_internal$1();
-	const utils_1 = require_utils();
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	exports.JsonMetricsSerializer = {
-		serializeRequest: (arg) => {
-			const request = (0, internal_1.createExportMetricsServiceRequest)([arg], utils_1.JSON_ENCODER);
-			return new TextEncoder().encode(JSON.stringify(request));
-		},
-		deserializeResponse: (arg) => {
-			if (arg.length === 0) return {};
-			const decoder = new TextDecoder();
-			try {
-				return JSON.parse(decoder.decode(arg));
-			} catch (err) {
-				api_1.diag.warn(`Failed to parse metrics export response: ${err.message}. Returning empty response`);
-				return {};
-			}
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/metrics/json/index.js
-var require_json$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.JsonMetricsSerializer = void 0;
-	var metrics_1 = require_metrics();
-	Object.defineProperty(exports, "JsonMetricsSerializer", {
-		enumerable: true,
-		get: function() {
-			return metrics_1.JsonMetricsSerializer;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/internal.js
-var require_internal = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.createExportTraceServiceRequest = exports.toOtlpSpanEvent = exports.toOtlpLink = exports.sdkSpanToOtlpSpan = void 0;
-	const internal_1 = require_internal$3();
-	const SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK = 256;
-	const SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK = 512;
-	/**
-	* Builds the 32-bit span flags value combining the low 8-bit W3C TraceFlags
-	* with the HAS_IS_REMOTE and IS_REMOTE bits according to the OTLP spec.
-	*/
-	function buildSpanFlagsFrom(traceFlags, isRemote) {
-		let flags = traceFlags & 255 | SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK;
-		if (isRemote) flags |= SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK;
-		return flags;
-	}
-	function sdkSpanToOtlpSpan(span, encoder) {
-		const ctx = span.spanContext();
-		const status = span.status;
-		const parentSpanId = span.parentSpanContext?.spanId ? encoder.encodeSpanContext(span.parentSpanContext?.spanId) : void 0;
-		return {
-			traceId: encoder.encodeSpanContext(ctx.traceId),
-			spanId: encoder.encodeSpanContext(ctx.spanId),
-			parentSpanId,
-			traceState: ctx.traceState?.serialize(),
-			name: span.name,
-			kind: span.kind == null ? 0 : span.kind + 1,
-			startTimeUnixNano: encoder.encodeHrTime(span.startTime),
-			endTimeUnixNano: encoder.encodeHrTime(span.endTime),
-			attributes: (0, internal_1.toAttributes)(span.attributes, encoder),
-			droppedAttributesCount: span.droppedAttributesCount,
-			events: span.events.map((event) => toOtlpSpanEvent(event, encoder)),
-			droppedEventsCount: span.droppedEventsCount,
-			status: {
-				code: status.code,
-				message: status.message
-			},
-			links: span.links.map((link) => toOtlpLink(link, encoder)),
-			droppedLinksCount: span.droppedLinksCount,
-			flags: buildSpanFlagsFrom(ctx.traceFlags, span.parentSpanContext?.isRemote)
-		};
-	}
-	exports.sdkSpanToOtlpSpan = sdkSpanToOtlpSpan;
-	function toOtlpLink(link, encoder) {
-		return {
-			attributes: link.attributes ? (0, internal_1.toAttributes)(link.attributes, encoder) : [],
-			spanId: encoder.encodeSpanContext(link.context.spanId),
-			traceId: encoder.encodeSpanContext(link.context.traceId),
-			traceState: link.context.traceState?.serialize(),
-			droppedAttributesCount: link.droppedAttributesCount || 0,
-			flags: buildSpanFlagsFrom(link.context.traceFlags, link.context.isRemote)
-		};
-	}
-	exports.toOtlpLink = toOtlpLink;
-	function toOtlpSpanEvent(timedEvent, encoder) {
-		return {
-			attributes: timedEvent.attributes ? (0, internal_1.toAttributes)(timedEvent.attributes, encoder) : [],
-			name: timedEvent.name,
-			timeUnixNano: encoder.encodeHrTime(timedEvent.time),
-			droppedAttributesCount: timedEvent.droppedAttributesCount || 0
-		};
-	}
-	exports.toOtlpSpanEvent = toOtlpSpanEvent;
-	function createExportTraceServiceRequest(spans, encoder) {
-		return { resourceSpans: spanRecordsToResourceSpans(spans, encoder) };
-	}
-	exports.createExportTraceServiceRequest = createExportTraceServiceRequest;
-	function createResourceMap(readableSpans) {
-		const resourceMap = /* @__PURE__ */ new Map();
-		for (const record of readableSpans) {
-			let ilsMap = resourceMap.get(record.resource);
-			if (!ilsMap) {
-				ilsMap = /* @__PURE__ */ new Map();
-				resourceMap.set(record.resource, ilsMap);
-			}
-			const instrumentationScopeKey = `${record.instrumentationScope.name}@${record.instrumentationScope.version || ""}:${record.instrumentationScope.schemaUrl || ""}`;
-			let records = ilsMap.get(instrumentationScopeKey);
-			if (!records) {
-				records = [];
-				ilsMap.set(instrumentationScopeKey, records);
-			}
-			records.push(record);
-		}
-		return resourceMap;
-	}
-	function spanRecordsToResourceSpans(readableSpans, encoder) {
-		const resourceMap = createResourceMap(readableSpans);
-		const out = [];
-		const entryIterator = resourceMap.entries();
-		let entry = entryIterator.next();
-		while (!entry.done) {
-			const [resource, ilmMap] = entry.value;
-			const scopeResourceSpans = [];
-			const ilmIterator = ilmMap.values();
-			let ilmEntry = ilmIterator.next();
-			while (!ilmEntry.done) {
-				const scopeSpans = ilmEntry.value;
-				if (scopeSpans.length > 0) {
-					const spans = scopeSpans.map((readableSpan) => sdkSpanToOtlpSpan(readableSpan, encoder));
-					scopeResourceSpans.push({
-						scope: (0, internal_1.createInstrumentationScope)(scopeSpans[0].instrumentationScope, encoder),
-						spans,
-						schemaUrl: scopeSpans[0].instrumentationScope.schemaUrl
-					});
-				}
-				ilmEntry = ilmIterator.next();
-			}
-			const processedResource = (0, internal_1.createResource)(resource, encoder);
-			const transformedSpans = {
-				resource: processedResource,
-				scopeSpans: scopeResourceSpans,
-				schemaUrl: processedResource.schemaUrl
-			};
-			out.push(transformedSpans);
-			entry = entryIterator.next();
-		}
-		return out;
-	}
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/json/trace.js
-var require_trace = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.JsonTraceSerializer = void 0;
-	const internal_1 = require_internal();
-	const utils_1 = require_utils();
-	const api_1 = (init_esm$2(), __toCommonJS(esm_exports$2));
-	exports.JsonTraceSerializer = {
-		serializeRequest: (arg) => {
-			const request = (0, internal_1.createExportTraceServiceRequest)(arg, utils_1.JSON_ENCODER);
-			return new TextEncoder().encode(JSON.stringify(request));
-		},
-		deserializeResponse: (arg) => {
-			if (arg.length === 0) return {};
-			const decoder = new TextDecoder();
-			try {
-				return JSON.parse(decoder.decode(arg));
-			} catch (err) {
-				api_1.diag.warn(`Failed to parse trace export response: ${err.message}. Returning empty response`);
-				return {};
-			}
-		}
-	};
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/trace/json/index.js
-var require_json = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.JsonTraceSerializer = void 0;
-	var trace_1 = require_trace();
-	Object.defineProperty(exports, "JsonTraceSerializer", {
-		enumerable: true,
-		get: function() {
-			return trace_1.JsonTraceSerializer;
-		}
-	});
-}));
-
-//#endregion
-//#region ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.222.0_@opentelemetry+api@1.9.1/node_modules/@opentelemetry/otlp-transformer/build/src/index.js
-var require_src$4 = /* @__PURE__ */ __commonJSMin(((exports) => {
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.JsonTraceSerializer = exports.JsonMetricsSerializer = exports.JsonLogsSerializer = exports.ProtobufTraceSerializer = exports.ProtobufMetricsSerializer = exports.ProtobufLogsSerializer = exports.LogsExporterMetricsHelper = exports.TraceExporterMetricsHelper = exports.MetricsExporterMetricsHelper = void 0;
-	var metrics_1 = require_metrics$2();
-	Object.defineProperty(exports, "MetricsExporterMetricsHelper", {
-		enumerable: true,
-		get: function() {
-			return metrics_1.MetricsExporterMetricsHelper;
-		}
-	});
-	var trace_1 = require_trace$2();
-	Object.defineProperty(exports, "TraceExporterMetricsHelper", {
-		enumerable: true,
-		get: function() {
-			return trace_1.TraceExporterMetricsHelper;
-		}
-	});
-	var logs_1 = require_logs$3();
-	Object.defineProperty(exports, "LogsExporterMetricsHelper", {
-		enumerable: true,
-		get: function() {
-			return logs_1.LogsExporterMetricsHelper;
-		}
-	});
-	var protobuf_1 = require_protobuf$2();
-	Object.defineProperty(exports, "ProtobufLogsSerializer", {
-		enumerable: true,
-		get: function() {
-			return protobuf_1.ProtobufLogsSerializer;
-		}
-	});
-	var protobuf_2 = require_protobuf$1();
-	Object.defineProperty(exports, "ProtobufMetricsSerializer", {
-		enumerable: true,
-		get: function() {
-			return protobuf_2.ProtobufMetricsSerializer;
-		}
-	});
-	var protobuf_3 = require_protobuf();
-	Object.defineProperty(exports, "ProtobufTraceSerializer", {
-		enumerable: true,
-		get: function() {
-			return protobuf_3.ProtobufTraceSerializer;
-		}
-	});
-	var json_1 = require_json$2();
-	Object.defineProperty(exports, "JsonLogsSerializer", {
-		enumerable: true,
-		get: function() {
-			return json_1.JsonLogsSerializer;
-		}
-	});
-	var json_2 = require_json$1();
-	Object.defineProperty(exports, "JsonMetricsSerializer", {
-		enumerable: true,
-		get: function() {
-			return json_2.JsonMetricsSerializer;
-		}
-	});
-	var json_3 = require_json();
-	Object.defineProperty(exports, "JsonTraceSerializer", {
-		enumerable: true,
-		get: function() {
-			return json_3.JsonTraceSerializer;
-		}
-	});
 }));
 
 //#endregion
@@ -35075,15 +35309,16 @@ function buildResource() {
 */
 function setupInstrumentation(config, limits = {}) {
 	const credentials = Buffer.from(`${config.public_key}:${config.secret_key}`).toString("base64");
-	const exporter = new BoundedRequestExporter((timeoutMillis) => new import_src$2.OTLPTraceExporter({
+	const endpoint = {
 		url: `${config.base_url}/api/public/otel/v1/traces`,
 		headers: {
 			Authorization: `Basic ${credentials}`,
 			"x-langfuse-public-key": config.public_key ?? "",
 			"x-langfuse-ingestion-version": "4"
-		},
-		timeoutMillis
-	}), limits.maxRequestBytes);
+		}
+	};
+	const spool = isLoopbackUrl(config.base_url) ? new OtlpSpool(limits.spoolDirectory ?? defaultSpoolDirectory(), limits.maxSpoolBytes) : void 0;
+	const exporter = new BoundedRequestExporter((timeoutMillis) => new SingleAttemptExporter(endpoint, timeoutMillis), limits.maxRequestBytes, spool);
 	const spanProcessor = new LangfuseSpanProcessor({
 		publicKey: config.public_key,
 		secretKey: config.secret_key,
@@ -35093,7 +35328,7 @@ function setupInstrumentation(config, limits = {}) {
 		exporter,
 		shouldExportSpan: () => true
 	});
-	const flush = async () => {
+	const exportBuffered = async () => {
 		let flushError;
 		try {
 			await spanProcessor.forceFlush();
@@ -35103,6 +35338,15 @@ function setupInstrumentation(config, limits = {}) {
 		const exportError = exporter.takeFailure();
 		if (exportError !== void 0) throw exportError;
 		if (flushError !== void 0) throw flushError;
+	};
+	const flush = async () => {
+		try {
+			await exportBuffered();
+		} catch (error) {
+			await spool?.discard();
+			throw error;
+		}
+		await spool?.commit();
 	};
 	const provider = new import_src$1.NodeTracerProvider({
 		resource: buildResource(),
@@ -35117,58 +35361,15 @@ function setupInstrumentation(config, limits = {}) {
 	return {
 		flush,
 		shutdown: async () => {
-			await flush();
+			try {
+				await exportBuffered();
+			} finally {
+				await spool?.discard();
+			}
 			await provider.shutdown();
 			setLangfuseTracerProvider(null);
 		}
 	};
-}
-
-//#endregion
-//#region src/utils.ts
-/** Read and JSON-parse the hook payload Codex writes to stdin. */
-function readStdin() {
-	return new Promise((resolve, reject) => {
-		let buffer = "";
-		process.stdin.setEncoding("utf-8");
-		process.stdin.on("data", (chunk) => buffer += chunk);
-		process.stdin.on("end", () => {
-			const trimmed = buffer.trim();
-			if (!trimmed) {
-				reject(/* @__PURE__ */ new Error("empty hook stdin"));
-				return;
-			}
-			try {
-				resolve(JSON.parse(trimmed));
-			} catch (error) {
-				reject(/* @__PURE__ */ new Error(`failed to parse hook stdin: ${error instanceof Error ? error.message : String(error)}`));
-			}
-		});
-		process.stdin.once("error", reject);
-	});
-}
-function isPrimitive(value) {
-	const t = typeof value;
-	return t === "string" || t === "number" || t === "boolean";
-}
-/** Stringify a value for display, leaving strings untouched. */
-function toText(value) {
-	if (value == null) return "";
-	if (typeof value === "string") return value;
-	if (isPrimitive(value)) return String(value);
-	try {
-		return JSON.stringify(value);
-	} catch {
-		return String(value);
-	}
-}
-let debugEnabled = false;
-function setDebug(enabled) {
-	debugEnabled = enabled;
-}
-function debugLog(...args) {
-	if (!debugEnabled) return;
-	console.error("[langfuse-codex]", ...args);
 }
 
 //#endregion

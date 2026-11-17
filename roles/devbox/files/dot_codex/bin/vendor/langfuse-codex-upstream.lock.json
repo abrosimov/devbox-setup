@@ -7,7 +7,7 @@
   "node_major": 22,
   "pnpm_version": "9.5.0",
   "artifact_path": "plugins/tracing/dist/index.mjs",
-  "output_git_blob_sha1": "a1d64f4c45eac6b15a3c5fc694e275af8d76a53c",
+  "output_git_blob_sha1": "9d4515853cfa72ab3d483848a8e160af580ddfa9",
   "patches": [
     "0001-export-interrupted-and-ended-turns.patch",
     "0002-one-hook-run-per-rollout.patch",
@@ -20,6 +20,7 @@
     "0009-take-credentials-only-from-the-global-config.patch",
     "0010-continue-id-draws-after-subagents-and-name-interrupted-agents.patch",
     "0011-bound-each-export-request-and-give-up-on-stuck-turns.patch",
-    "0012-keep-the-newest-message-of-every-generation-input.patch"
+    "0012-keep-the-newest-message-of-every-generation-input.patch",
+    "0013-spool-each-request-the-edge-does-not-take.patch"
   ]
 }

@@ -38,6 +38,7 @@ SPOOL_MAX_BYTES_ENV = "CC_LANGFUSE_SPOOL_MAX_BYTES"
 # Fills only while the loopback edge is unreachable: a week of heavy Langfuse output.
 DEFAULT_SPOOL_MAX_BYTES = 2 * 1024 * 1024 * 1024
 OTLP_TRACE_PATH = "/api/public/otel/v1/traces"
+QUARANTINE_DIRECTORY = "langfuse_otlp_quarantine"
 STAGING_DIRECTORY = ".staging"
 OVERSIZED_STAGING = "oversized"
 SESSION_ATTRIBUTE = "session.id"
@@ -79,7 +80,7 @@ def spool_directory() -> Path:
 
 
 def quarantine_directory() -> Path:
-    return spool_directory().parent / "langfuse_otlp_quarantine"
+    return spool_directory().parent / QUARANTINE_DIRECTORY
 
 
 def hook_log_path() -> Path:
@@ -253,7 +254,7 @@ def _is_permanent_rejection(status: int) -> bool:
 
 
 def _quarantine(path: Path, status: int) -> None:
-    quarantine = quarantine_directory()
+    quarantine = path.parent.parent / QUARANTINE_DIRECTORY
     quarantine.mkdir(parents=True, exist_ok=True, mode=0o700)
     path.replace(quarantine / path.name)
     _fsync_directory(quarantine)
@@ -286,16 +287,20 @@ def _sweep_stale_staging(directory: Path) -> None:
                 shutil.rmtree(owner)
 
 
-def drain_spool(base_url: str, timeout: float = DRAIN_TIMEOUT_SECONDS) -> tuple[int, int]:
-    """Return (delivered, pending).
+def drain_spool(
+    base_url: str,
+    timeout: float = DRAIN_TIMEOUT_SECONDS,
+    directory: Path | None = None,
+) -> tuple[int, int]:
+    """Return (delivered, pending) for `directory`, the Claude spool by default.
 
     A transient failure stops the pass to preserve order and says so on stderr;
-    a permanently rejected batch is quarantined so that it cannot block the
-    batches behind it.
+    a permanently rejected batch is quarantined beside the spool so that it
+    cannot block the batches behind it.
     """
     if not base_url.startswith(("http://127.0.0.1:", "http://localhost:")):
         raise ValueError("OTLP replay must target a loopback receiver")
-    directory = spool_directory()
+    directory = directory or spool_directory()
     if not directory.exists():
         return 0, 0
     _sweep_stale_staging(directory)

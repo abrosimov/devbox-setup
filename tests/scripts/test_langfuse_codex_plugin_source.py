@@ -122,6 +122,7 @@ def test_deployed_bundle_matches_pin() -> None:
         "0010-continue-id-draws-after-subagents-and-name-interrupted-agents.patch",
         "0011-bound-each-export-request-and-give-up-on-stuck-turns.patch",
         "0012-keep-the-newest-message-of-every-generation-input.patch",
+        "0013-spool-each-request-the-edge-does-not-take.patch",
     ]
     assert info["artifact_path"] == ARTIFACT_PATH
     assert module.LICENSE.read_text(encoding="utf-8").startswith("MIT License")

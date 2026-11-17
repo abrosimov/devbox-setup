@@ -13,7 +13,7 @@ Third-party code built from a pinned upstream commit and committed here. Files u
 | Licence | MIT (`langfuse-codex/LICENSE`, copied from the upstream root) |
 | Upstream Git tree SHA-1 | `dc624bae569783627507f292490e079820029938` |
 | Build toolchain | Node 22, pnpm 9.5.0 |
-| Output Git blob SHA-1 | `a1d64f4c45eac6b15a3c5fc694e275af8d76a53c` (upstream plus the patches below) |
+| Output Git blob SHA-1 | `9d4515853cfa72ab3d483848a8e160af580ddfa9` (upstream plus the patches below) |
 | Artifact pin | `langfuse-codex-upstream.lock.json` (authoritative when this table disagrees) |
 
 ### Why it is vendored rather than installed as a plugin
@@ -36,6 +36,29 @@ The hook reads `~/.codex/langfuse.json`, rendered from `../../langfuse.json.j2`,
 loopback-only sentinel credentials. Its keys and base URL come only from that file and
 the `LANGFUSE_CODEX_*` variables, so an inherited `LANGFUSE_*` environment or a
 repository's `.codex/langfuse.json` cannot redirect traces away from the loopback edge.
+
+### Delivery
+
+A turn is marked in `<rollout>.langfuse` only once each of its OTLP requests has been
+accepted by the edge (HTTP 2xx) or fsynced into the spool,
+`~/.codex/langfuse_state/langfuse_otlp_spool/`. The hook sends each request once. A
+request the edge does not take (a refused connection, a timeout, a 5xx, 408 or 429) is
+written whole to a private staging directory as an OTLP/protobuf request, and moves into
+the spool when the turn's flush succeeds, so a turn left unmarked leaves nothing there
+to be delivered twice. A 4xx other than 408 and 429 is not spooled: the turn is given up
+in `<rollout>.langfuse-failures`, as before. A request the spool cannot take, because the
+write fails or because it would take the spool past 2 GiB, leaves the turn unmarked and
+uncounted, for a later run to export from the rollout; one stderr line names the spool
+and the reason.
+
+The spool uses the layout of the Claude hook's spool, and the replay LaunchAgent
+`local.langfuse-replay` (`../../../dot_claude/bin/langfuse_replay.py`) drains it every
+300 seconds and at login, to the `base_url` in `~/.codex/langfuse.json`, by the Claude
+spool's rules: a 2xx deletes the entry, a 4xx other than 408 and 429 moves it to
+`~/.codex/langfuse_state/langfuse_otlp_quarantine/`, and anything else ends the pass,
+for the next one to retry. Only a loopback `base_url` (`http://127.0.0.1:` or
+`http://localhost:`) spools, because the replay sends to nothing else. Operating it:
+`docs/runbooks/langfuse-replay.md`.
 
 ### Registration
 
@@ -84,6 +107,7 @@ this order:
 | `0010-continue-id-draws-after-subagents-and-name-interrupted-agents.patch` | after nesting a subagent's turns, the spawning turn resumes its own id seed at the draw it had reached, instead of re-seeding it at the first draw, so a span it drew afterwards would not reuse an id already given to one of its observations; nothing draws there today, so existing observation ids are unchanged. Give an `interrupt_agent` call that a `SubAgentActivity` item of kind `interrupted` shares its id with the same `codex.target_thread_id` and `codex.target_agent_path` as `send_message` and `followup_task`. No span is added |
 | `0011-bound-each-export-request-and-give-up-on-stuck-turns.patch` | send each export batch as OTLP/JSON requests of at most 16 MiB by an upper size estimate, up to four in flight, each with a timeout of 5 s plus 1 s per 2 MiB, at most 20 s; the edge accepts 128 MiB, but it runs every attribute value through the redaction regexes before it answers, at a few MB/s, and a request must finish inside the Stop hook's 30 s. A span over 16 MiB is sent with the same ids and every attribute over 4 KiB removed, at level `WARNING`, with `codex.oversized_bytes` and a status message, and one line on stderr names it. Requests go straight to the OTLP exporter with `Authorization`, `x-langfuse-public-key` and `x-langfuse-ingestion-version: 4`, as the Claude hook's replay sends them. A failed background export now fails the turn's flush. When a turn's flush fails, `<rollout>.langfuse-failures` records it: a 4xx other than 408 or 429 gives the turn up at once, any other failure after three runs, and an unreachable collector (`ECONNREFUSED` and the like) is not counted. A run stops at a failed turn as before; a given-up turn is skipped, named on stderr, and later turns go ahead. Observation ids are unchanged |
 | `0012-keep-the-newest-message-of-every-generation-input.patch` | a generation's input always carries its newest message whole, even when that message alone is longer than `max_history_chars`; upstream then kept only the "earlier message(s) omitted" marker, so the input lost the prompt or tool output the model was answering. Older messages are still dropped oldest-first behind the marker, and the system prompt and tool definitions, which were never counted against the limit, are attached as before. Observation ids are unchanged |
+| `0013-spool-each-request-the-edge-does-not-take.patch` | send each bounded request once, as a POST with the same OTLP/JSON body and headers, instead of through the OTLP exporter, whose transport retries a refused connection until the request's deadline, longer than the 3 s an `Interrupt` or `SessionEnd` hook has. Each request the edge does not take, unless it rejected it, is written to `~/.codex/langfuse_state/langfuse_otlp_spool/` as an fsynced OTLP/protobuf request, staged per run and committed when the turn's flush succeeds, before the turn is marked; the replay LaunchAgent drains it (see *Delivery*). A spool write that fails, or that would take the spool past 2 GiB, leaves the turn unmarked and uncounted. Only a loopback `base_url` spools. `@opentelemetry/otlp-transformer`, already locked as a dependency of the OTLP exporter, becomes a direct dependency for the two encoders. Observation ids and request bodies are unchanged |
 
 The input hash is the Git tree SHA-1 of the whole upstream tree, computed from the
 fetched files exactly as `git write-tree` would. It equals `<commit>^{tree}` upstream,

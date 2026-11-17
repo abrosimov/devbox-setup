@@ -12,6 +12,10 @@ Replay re-runs a firing as it ran. The run-scoped options — `CC_LANGFUSE_TRACE
 
 Observation content is not truncated: prompts, replies, thinking, tool inputs and tool results are exported whole unless `CC_LANGFUSE_MAX_CHARS` is set, in which case text longer than that many characters is cut as upstream does (vendored patch `0009`).
 
+### Codex
+
+The same LaunchAgent drains the Codex hook's spool, `~/.codex/langfuse_state/langfuse_otlp_spool/`, before anything else in a pass and whether or not Claude's settings are readable. The Codex hook sends each OTLP request to the edge once and spools, fsynced, every request the edge does not take, except a 4xx other than 408 and 429; it marks a turn in `<rollout>.langfuse` only after each of its requests was accepted or spooled (`roles/devbox/files/dot_codex/bin/vendor/README.md`, *Delivery*). Replay delivers those entries to the `base_url` in `~/.codex/langfuse.json`, which must be a loopback URL, by the rules of the Claude spool: a 2xx deletes an entry, a 4xx other than 408 and 429 moves it to `~/.codex/langfuse_state/langfuse_otlp_quarantine/`, and any other answer ends the pass for the next one. A Codex hook keeps no pending marker or transcript snapshot: its rollout stays the source of any turn it did not mark, and a later hook run on that rollout exports it.
+
 This is **at-least-once**, not exactly once: after a crash between spooling a firing's batches and saving its checkpoint, replay re-emits that firing. Every observation id is derived from the transcript, so a re-emission repeats the original trace id, span id, parent span id and times exactly; Langfuse v4 still stores it as a second observation until deduplication lands at the otelbox gateway (`docs/design/langfuse-durable-handoff.md`). `Langfuse.flush()` is not assumed to be an end-to-end durable backend ACK: the hook acknowledges only fsynced spool files, and only an edge HTTP 2xx deletes one. The gateway's independent durable fan-out contract is addressed in `setup_lab/docs/rfcs/0001-durable-telemetry-fanout.md`.
 
 ## Disk budget
@@ -22,10 +26,12 @@ Both local stores are capped. A full store never deletes undelivered data to mak
 | --- | --- | --- | --- |
 | OTLP spool (spans fsynced, awaiting the edge) | `~/.claude/state/langfuse_otlp_spool/` | `CC_LANGFUSE_SPOOL_MAX_BYTES` | 2 GiB |
 | Transcript snapshots and pending markers | `~/.claude/state/langfuse_pending/` | `CC_LANGFUSE_PENDING_MAX_BYTES` | 2 GiB |
+| Codex OTLP spool (requests the edge did not take) | `~/.codex/langfuse_state/langfuse_otlp_spool/` | none; fixed in the vendored hook | 2 GiB |
 
 The spool fills only while the loopback edge is unreachable; the edge carries its own WAL, sized for a 72-hour gateway outage. A snapshot outlives its Stop only when that hook failed, so the pending store is normally near empty. Both values are bytes. To change one, set it in the `env` block of Claude's settings (`roles/devbox/files/dot_claude/settings.json.j2`): the hook reads it from there, and the replay runner forwards it from the same file to the hook runs it starts.
 
 - **Spool full:** the firing's spans are refused, its staging is dropped and its checkpoint does not advance, so its pending snapshot keeps the turns for replay. Stderr: `durable_otel_exporter: Langfuse OTLP spool full: ... exceeds CC_LANGFUSE_SPOOL_MAX_BYTES=<cap> at <path> ...`.
+- **Codex spool full:** the request is refused, the turn stays unmarked and is not counted against it, and a later Codex hook run exports it from the rollout. Stderr: `[langfuse-codex] Langfuse OTLP spool full: ... exceeds <cap> at <path>; nothing was deleted`.
 - **Pending store full:** no snapshot is taken for this firing, the turns are still exported to the spool, and the hook exits 1. Stderr: `langfuse_trace_hook: Langfuse pending store full: ... exceeds CC_LANGFUSE_PENDING_MAX_BYTES=<cap> at <path> ...`. The re-registration of a session does not count the snapshot it replaces.
 
 ## Oversized spans
@@ -37,6 +43,7 @@ A single span whose OTLP encoding exceeds `MAX_BATCH_BYTES` (96 MiB, below the e
 ```sh
 launchctl print "gui/$(id -u)/local.langfuse-replay"
 find ~/.claude/state/langfuse_pending -maxdepth 1 -name '*.json' -type f -print
+find ~/.codex/langfuse_state/langfuse_otlp_spool -maxdepth 1 -name '*.otlp' -type f -print
 tail -100 ~/Library/Logs/langfuse-replay.log
 ```
 
@@ -48,7 +55,7 @@ Only marker **filenames** should be shared. Do not paste pending JSON, transcrip
 ~/.claude/bin/.venv/bin/python ~/.claude/bin/langfuse_replay.py
 ```
 
-Exit 0 means that this pass processed the currently readable pending registry. Nonzero means at least one item remains pending or local replay configuration is unavailable; it does **not** mean the item should be deleted. After the edge returns, repeat the command and confirm the pending count declines.
+Exit 0 means that this pass processed the currently readable pending registry and left neither spool with entries. Nonzero means at least one item remains pending or local replay configuration is unavailable; it does **not** mean the item should be deleted. The summary line counts the Codex spool separately (`codex_otlp_sent`, `codex_otlp_pending`). After the edge returns, repeat the command and confirm the pending count declines.
 
 The worker may see `Stop` and `SessionEnd` pending work concurrently with live Claude. Each attempt uses the vendored hook's per-session file lock and only deletes a marker with the same nonce it read; a newer marker survives.
 
@@ -64,6 +71,7 @@ The worker may see `Stop` and `SessionEnd` pending work concurrently with live C
 | Malformed marker / missing snapshot | Do not delete marker silently; inspect local spool and investigate |
 | `... over the <cap>-byte batch cap: quarantined whole` | The rest of the session was delivered; the named span sits in `langfuse_otlp_quarantine/`. Keep the file; it needs a larger receiver envelope to be delivered |
 | Backlog does not drain | Check current hook log and edge metrics; never `rm -rf` the pending directory as a recovery step |
+| `Codex Langfuse spool not drained: ...` | `~/.codex/langfuse.json` is missing, unreadable or names a non-loopback `base_url`; redeploy the Codex configuration. The entries stay in the Codex spool |
 
 No automatic TTL-based deletion is enabled; this deliberately prioritises not deleting undelivered snapshots. The caps above bound the disk the stores can take instead.
 

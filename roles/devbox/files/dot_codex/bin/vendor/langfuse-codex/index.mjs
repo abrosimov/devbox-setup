@@ -35313,9 +35313,13 @@ function sessionMetaFrom(line) {
 		agentRole: nonEmptyText(p.agent_role) ?? nonEmptyText(spawn.agent_role),
 		agentPath: nonEmptyText(p.agent_path) ?? nonEmptyText(spawn.agent_path),
 		agentNickname: nonEmptyText(p.agent_nickname) ?? nonEmptyText(spawn.agent_nickname),
-		depth: Number.isSafeInteger(spawn.depth) ? spawn.depth : void 0
+		depth: Number.isSafeInteger(spawn.depth) ? spawn.depth : void 0,
+		cwd: nonEmptyText(p.cwd),
+		gitBranch: nonEmptyText(p.git?.branch),
+		gitCommit: nonEmptyText(p.git?.commit_hash)
 	};
 }
+const milliseconds = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : void 0;
 function parseSession(lines) {
 	const ownHeader = lines.find((line) => line.type === "session_meta");
 	const sessionMeta = ownHeader ? sessionMetaFrom(ownHeader) : { sessionId: "unknown" };
@@ -35431,6 +35435,7 @@ function parseSession(lines) {
 			t.model = p.model ?? t.model;
 			const effort = typeof p.effort === "string" ? p.effort : p.reasoning_effort;
 			if (typeof effort === "string") t.reasoningEffort = effort;
+			t.cwd = nonEmptyText(p.cwd) ?? t.cwd;
 			t.invocationParams = line.payload;
 			continue;
 		}
@@ -35598,15 +35603,19 @@ function parseSession(lines) {
 				else pushUsageOnlyStep(ts, last);
 			} else if (et === "task_complete") {
 				if (typeof p.last_agent_message === "string" && p.last_agent_message) turn.reportedFinalAnswer = p.last_agent_message;
+				turn.durationMs = milliseconds(p.duration_ms);
+				turn.timeToFirstTokenMs = milliseconds(p.time_to_first_token_ms);
 				finishTurn(ts, {
 					completed: true,
 					aborted: false
 				});
-			} else if (et === "turn_aborted") finishTurn(ts, {
-				completed: true,
-				aborted: true
-			});
-			else {
+			} else if (et === "turn_aborted") {
+				turn.durationMs = milliseconds(p.duration_ms);
+				finishTurn(ts, {
+					completed: true,
+					aborted: true
+				});
+			} else {
 				if (et === "collab_agent_spawn_end" && typeof p.new_thread_id === "string") recordSubagentThread(p.new_thread_id, p.call_id);
 				if (et === "sub_agent_activity" && p.kind === "started" && typeof p.agent_thread_id === "string") recordSubagentThread(p.agent_thread_id, p.event_id);
 				if ((et === "mcp_tool_call_begin" || et === "mcp_tool_call_end") && typeof p.call_id === "string") {
@@ -35971,6 +35980,7 @@ function generationEnd(step) {
 }
 async function emitTurn(turn, sessionMeta, ctx) {
 	const isSubagent = sessionMeta.isSubagentThread === true || ctx.parentObservation != null;
+	const cwd = turn.cwd ?? sessionMeta.cwd;
 	const outerSeed = currentIdSeed();
 	seedIds(`${sessionMeta.sessionId}:${turn.turnId ?? "no-turn-id"}`);
 	const root = startObservation(isSubagent ? "Codex Subagent Turn" : "Codex Turn", {
@@ -35985,6 +35995,13 @@ async function emitTurn(turn, sessionMeta, ctx) {
 			"codex.reasoning_effort": turn.reasoningEffort,
 			"codex.model_provider": sessionMeta.modelProvider,
 			"codex.cli_version": sessionMeta.cliVersion,
+			"codex.turn_number": ctx.turnNumber,
+			"codex.cwd": cwd,
+			"codex.project": cwd ? path$1.basename(cwd) : void 0,
+			"codex.git_branch": sessionMeta.gitBranch,
+			"codex.git_commit": sessionMeta.gitCommit,
+			"codex.transcript_path": path$1.basename(ctx.rolloutFile),
+			"codex.duration_ms": turn.durationMs,
 			...sessionMeta.isSubagentThread ? {
 				"codex.agent_role": sessionMeta.agentRole,
 				"codex.agent_path": sessionMeta.agentPath,
@@ -36016,22 +36033,26 @@ async function emitTurn(turn, sessionMeta, ctx) {
 		const codeModeCalls = [];
 		const user = userMessage(turn);
 		const turnMessages = user ? [user] : [];
-		const startGeneration = (step, stepIndex, conversation) => startObservation(isSubagent ? "LLM Subagent" : "LLM", {
-			input: attachToolDefinitions(generationInput(systemMessage, conversation), turn.toolDefinitions),
-			output: buildGenerationOutput(step),
-			model: turn.model,
-			...turn.reasoningEffort ? { modelParameters: { reasoning_effort: turn.reasoningEffort } } : {},
-			usageDetails: toUsageDetails(step.usage),
-			metadata: {
-				"codex.step_index": stepIndex,
-				"codex.reasoning_effort": turn.reasoningEffort,
-				"codex.response_id": step.responseId
-			}
-		}, {
-			asType: "generation",
-			startTime: new Date(step.startTime),
-			parentSpanContext: root.otelSpan.spanContext()
-		});
+		const startGeneration = (step, stepIndex, conversation) => {
+			const firstTokenMs = stepIndex === 0 ? turn.timeToFirstTokenMs : void 0;
+			return startObservation(isSubagent ? "LLM Subagent" : "LLM", {
+				input: attachToolDefinitions(generationInput(systemMessage, conversation), turn.toolDefinitions),
+				output: buildGenerationOutput(step),
+				model: turn.model,
+				...turn.reasoningEffort ? { modelParameters: { reasoning_effort: turn.reasoningEffort } } : {},
+				usageDetails: toUsageDetails(step.usage),
+				...firstTokenMs !== void 0 ? { completionStartTime: new Date(turn.startTime + firstTokenMs) } : {},
+				metadata: {
+					"codex.step_index": stepIndex,
+					"codex.reasoning_effort": turn.reasoningEffort,
+					"codex.response_id": step.responseId
+				}
+			}, {
+				asType: "generation",
+				startTime: new Date(firstTokenMs !== void 0 ? turn.startTime : step.startTime),
+				parentSpanContext: root.otelSpan.spanContext()
+			});
+		};
 		const usageOnly = [];
 		for (let i = 0; i < turn.steps.length; i++) {
 			const step = turn.steps[i];
@@ -36184,12 +36205,15 @@ async function convertRollout(rolloutFile, options) {
 		carriedSubagents.length = 0;
 		return all.length > 0 ? all : void 0;
 	};
+	const isInherited = (turn) => turn.turnId != null && ancestorTurnIds?.has(turn.turnId) === true;
 	const skipInherited = (turn, turnIndex) => {
-		if (!turn.turnId || !ancestorTurnIds?.has(turn.turnId)) return false;
+		if (!isInherited(turn)) return false;
 		debugLog(`skipping turn ${turn.turnId}: inherited from an ancestor thread`);
 		carriedSubagents.push(...byTurn.get(turnIndex) ?? []);
 		return true;
 	};
+	const turnNumbers = [];
+	for (const turn of turns) turnNumbers.push((turnNumbers.at(-1) ?? 0) + (isInherited(turn) ? 0 : 1));
 	const inheritableTurnIds = new Set(ancestorTurnIds);
 	for (const turn of turns) if (turn.turnId) inheritableTurnIds.add(turn.turnId);
 	const uploaded = await loadUploadedTurnIds(rolloutFile);
@@ -36218,7 +36242,8 @@ async function convertRollout(rolloutFile, options) {
 				unannouncedSubagents: subagentsFor(turnIndex),
 				inheritableTurnIds,
 				historyPrefix: historyPrefixes[turnIndex],
-				nested
+				nested,
+				turnNumber: turnNumbers[turnIndex]
 			});
 			if (turn.turnId != null) {
 				nested.turns.push({
@@ -36262,7 +36287,8 @@ async function convertRollout(rolloutFile, options) {
 				unannouncedSubagents: subagentsFor(turnIndex),
 				inheritableTurnIds,
 				historyPrefix: historyPrefixes[turnIndex],
-				nested
+				nested,
+				turnNumber: turnNumbers[turnIndex]
 			});
 			const attributes = spawn ? spawn.attributes : attached ? void 0 : traceAttributes(options.config, sessionMeta, turn, subagentIndex);
 			if (attributes) await propagateAttributes(attributes, emit);

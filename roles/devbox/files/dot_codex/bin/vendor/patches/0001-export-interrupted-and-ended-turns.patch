@@ -1,0 +1,275 @@
+diff --git a/plugins/tracing/src/index.ts b/plugins/tracing/src/index.ts
+index ffe7a87..338970e 100644
+--- a/plugins/tracing/src/index.ts
++++ b/plugins/tracing/src/index.ts
+@@ -9,7 +9,7 @@ import { debugLog, readStdin, setDebug } from "./utils.js";
+ let failOnError = process.env.LANGFUSE_CODEX_FAIL_ON_ERROR === "true";
+ 
+ /**
+- * Entry point for the Codex `Stop` hook.
++ * Entry point for the Codex `Stop`, `Interrupt` and `SessionEnd` hooks.
+  *
+  * Codex pipes a JSON payload to stdin after every turn. We resolve config,
+  * bail out unless tracing is explicitly enabled, then convert the rollout
+@@ -52,13 +52,17 @@ export async function runHook(): Promise<void> {
+ 
+   const instrumentation = setupInstrumentation(config);
+   const transcriptPath = hookInput.transcript_path;
++  const hookTurnId = hookInput.turn_id ?? undefined;
+   let failure: unknown;
+ 
+   try {
+     await convertRollout(transcriptPath, {
+       config,
+       parentSpanContext,
+-      stoppedTurnId: hookInput.turn_id ?? undefined,
++      stoppedTurnId: hookTurnId,
++      // Codex fires Interrupt, and no Stop, just before it writes `turn_aborted`.
++      interruptedTurnId: hookInput.hook_event_name === "Interrupt" ? hookTurnId : undefined,
++      sessionEnded: hookInput.hook_event_name === "SessionEnd",
+       // Flush and record each turn before converting the next: a backlog is
+       // delivered incrementally instead of all-or-nothing, and only one turn's
+       // spans are held in memory at a time. Record delivery only after the
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index b0de00d..8840838 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -631,9 +631,10 @@ function isFinal(
+   turn: Turn,
+   stoppedTurnId: string | undefined,
+   supersededByLaterTurn: boolean,
++  sessionEnded: boolean,
+ ): turn is Turn & { turnId: string } {
+   if (turn.turnId == null) return false;
+-  return turn.completed || supersededByLaterTurn || turn.turnId === stoppedTurnId;
++  return turn.completed || supersededByLaterTurn || sessionEnded || turn.turnId === stoppedTurnId;
+ }
+ 
+ async function readTurnIds(file: string): Promise<Set<string>> {
+@@ -681,6 +682,8 @@ export async function convertRollout(
+     seenThreadIds?: Set<string>;
+     ancestorTurnIds?: ReadonlySet<string>;
+     stoppedTurnId?: string;
++    interruptedTurnId?: string;
++    sessionEnded?: boolean;
+     /** Awaited after each exported turn, before the next one is converted. */
+     onTurnExported?: (turnId: string) => Promise<void>;
+   },
+@@ -771,11 +774,22 @@ export async function convertRollout(
+   const attached = options.parentSpanContext != null;
+ 
+   for (let turnIndex = 0; turnIndex < turns.length; turnIndex++) {
+-    const turn = turns[turnIndex];
++    const parsed = turns[turnIndex];
++    const turn =
++      options.interruptedTurnId !== undefined && parsed.turnId === options.interruptedTurnId
++        ? { ...parsed, aborted: true }
++        : parsed;
+ 
+     if (skipInherited(turn, turnIndex)) continue;
+ 
+-    if (!isFinal(turn, options.stoppedTurnId, turnIndex < turns.length - 1)) {
++    if (
++      !isFinal(
++        turn,
++        options.stoppedTurnId,
++        turnIndex < turns.length - 1,
++        options.sessionEnded === true,
++      )
++    ) {
+       debugLog(`skipping turn ${turn.turnId ?? "(no turn id)"}: not final`);
+       continue;
+     }
+diff --git a/plugins/tracing/test/hook-command.test.ts b/plugins/tracing/test/hook-command.test.ts
+index f68cb9c..32e90f7 100644
+--- a/plugins/tracing/test/hook-command.test.ts
++++ b/plugins/tracing/test/hook-command.test.ts
+@@ -310,3 +310,188 @@ describe("bundled Stop hook command", () => {
+     expect(readHookCommand().replaceAll("${PLUGIN_ROOT}", "")).not.toContain("$");
+   });
+ });
++
++type OtlpValue = { stringValue?: string; boolValue?: boolean; intValue?: number | string };
++type OtlpSpan = { name: string; attributes?: Array<{ key: string; value: OtlpValue }> };
++type OtlpBody = { resourceSpans?: Array<{ scopeSpans?: Array<{ spans?: OtlpSpan[] }> }> };
++
++function exportedTurnRoots(bodies: string[]): Array<Record<string, string>> {
++  return bodies
++    .flatMap((body) => (JSON.parse(body) as OtlpBody).resourceSpans ?? [])
++    .flatMap((resource) => resource.scopeSpans ?? [])
++    .flatMap((scope) => scope.spans ?? [])
++    .filter((span) => span.name === "Codex Turn")
++    .map((span) =>
++      Object.fromEntries(
++        (span.attributes ?? []).map(({ key, value }) => [
++          key,
++          String(value.stringValue ?? value.boolValue ?? value.intValue ?? ""),
++        ]),
++      ),
++    );
++}
++
++describe("hook events that end a turn or a session without Stop", () => {
++  const event = (ts: string, payload: Record<string, unknown>) =>
++    JSON.stringify({ timestamp: ts, type: "event_msg", payload });
++  const sessionMeta = (id: string) =>
++    JSON.stringify({
++      timestamp: "2026-06-03T12:00:00.000Z",
++      type: "session_meta",
++      payload: { id, cli_version: "0.160.1" },
++    });
++
++  async function withCollector(
++    run: (hook: (payload: Record<string, unknown>) => Promise<string[]>) => Promise<void>,
++  ): Promise<void> {
++    const codexHome = makeTempDir("lf-codex-home-");
++    const sessionCwd = makeTempDir("lf-codex-cwd-");
++    let received: string[] = [];
++    const server = http.createServer((req, res) => {
++      const chunks: Buffer[] = [];
++      req.on("data", (chunk) => chunks.push(chunk as Buffer));
++      req.on("end", () => {
++        received.push(Buffer.concat(chunks).toString("utf-8"));
++        res.writeHead(200, { "content-type": "application/json" });
++        res.end("{}");
++      });
++    });
++    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++    const { port } = server.address() as { port: number };
++
++    const hook = async (payload: Record<string, unknown>): Promise<string[]> => {
++      received = [];
++      const { code } = await runShellCommand(readHookCommand(), {
++        cwd: sessionCwd,
++        env: {
++          ...process.env,
++          PLUGIN_ROOT: pluginRootDir,
++          CODEX_HOME: codexHome,
++          HOME: codexHome,
++          TRACE_TO_LANGFUSE: "true",
++          LANGFUSE_PUBLIC_KEY: "pk-lf-test",
++          LANGFUSE_SECRET_KEY: "sk-lf-test",
++          LANGFUSE_BASE_URL: `http://127.0.0.1:${port}`,
++        },
++        input: JSON.stringify(payload),
++      });
++      expect(code).toBe(0);
++      return received;
++    };
++
++    try {
++      await run(hook);
++    } finally {
++      await new Promise<void>((resolve) => server.close(() => resolve()));
++    }
++  }
++
++  function stageRollout(lines: string[]): string {
++    const sessionsDir = path.join(
++      makeTempDir("lf-codex-sessions-"),
++      "sessions",
++      "2026",
++      "06",
++      "03",
++    );
++    fs.mkdirSync(sessionsDir, { recursive: true });
++    const rollout = path.join(sessionsDir, "rollout.jsonl");
++    fs.writeFileSync(rollout, lines.join("\n") + "\n");
++    return rollout;
++  }
++
++  const sidecar = (rollout: string): string[] =>
++    fs.readFileSync(`${rollout}.langfuse`, "utf-8").split("\n").filter(Boolean);
++
++  it("exports an interrupted turn as aborted before turn_aborted reaches the rollout, once", async () => {
++    const rollout = stageRollout([
++      sessionMeta("sess-interrupt"),
++      event("2026-06-03T12:00:01.000Z", { type: "task_started", turn_id: "turn-int" }),
++      event("2026-06-03T12:00:01.100Z", { type: "user_message", message: "Count to a million" }),
++      event("2026-06-03T12:00:02.000Z", { type: "agent_message", message: "1, 2, 3" }),
++    ]);
++
++    await withCollector(async (hook) => {
++      const interrupted = exportedTurnRoots(
++        await hook({
++          hook_event_name: "Interrupt",
++          session_id: "sess-interrupt",
++          turn_id: "turn-int",
++          transcript_path: rollout,
++        }),
++      );
++      expect(
++        interrupted.map((root) => root["langfuse.observation.metadata.codex.turn_id"]),
++      ).toEqual(["turn-int"]);
++      expect(interrupted[0]["langfuse.observation.level"]).toBe("WARNING");
++      expect(interrupted[0]["langfuse.observation.status_message"]).toBe(
++        "Turn interrupted by user",
++      );
++      expect(interrupted[0]["langfuse.observation.metadata.codex.aborted"]).toBe("true");
++      expect(sidecar(rollout)).toEqual(["turn-int"]);
++
++      fs.appendFileSync(
++        rollout,
++        [
++          event("2026-06-03T12:00:02.004Z", { type: "turn_aborted", turn_id: "turn-int" }),
++          event("2026-06-03T12:01:00.000Z", { type: "task_started", turn_id: "turn-next" }),
++          event("2026-06-03T12:01:00.100Z", { type: "user_message", message: "Stop there" }),
++          event("2026-06-03T12:01:01.000Z", { type: "agent_message", message: "Stopped." }),
++          event("2026-06-03T12:01:01.100Z", { type: "task_complete", turn_id: "turn-next" }),
++        ].join("\n") + "\n",
++      );
++      const stopped = exportedTurnRoots(
++        await hook({
++          hook_event_name: "Stop",
++          session_id: "sess-interrupt",
++          turn_id: "turn-next",
++          transcript_path: rollout,
++        }),
++      );
++      expect(stopped.map((root) => root["langfuse.observation.metadata.codex.turn_id"])).toEqual([
++        "turn-next",
++      ]);
++      expect(sidecar(rollout)).toEqual(["turn-int", "turn-next"]);
++    });
++  });
++
++  it("exports a turn still pending when the session ends, once", async () => {
++    const rollout = stageRollout([
++      sessionMeta("sess-end"),
++      event("2026-06-03T12:00:01.000Z", { type: "task_started", turn_id: "turn-1" }),
++      event("2026-06-03T12:00:01.100Z", { type: "user_message", message: "First" }),
++      event("2026-06-03T12:00:02.000Z", { type: "agent_message", message: "One" }),
++      event("2026-06-03T12:00:02.100Z", { type: "task_complete", turn_id: "turn-1" }),
++      event("2026-06-03T12:01:00.000Z", { type: "task_started", turn_id: "turn-2" }),
++      event("2026-06-03T12:01:00.100Z", { type: "user_message", message: "Second" }),
++      event("2026-06-03T12:01:01.000Z", { type: "agent_message", message: "Two, so far" }),
++    ]);
++    const turnIds = (bodies: string[]) =>
++      exportedTurnRoots(bodies).map((root) => root["langfuse.observation.metadata.codex.turn_id"]);
++
++    await withCollector(async (hook) => {
++      expect(
++        turnIds(
++          await hook({
++            hook_event_name: "Stop",
++            session_id: "sess-end",
++            turn_id: "turn-1",
++            transcript_path: rollout,
++          }),
++        ),
++      ).toEqual(["turn-1"]);
++
++      const sessionEnd = {
++        hook_event_name: "SessionEnd",
++        session_id: "sess-end",
++        transcript_path: rollout,
++        reason: "other",
++      };
++      expect(turnIds(await hook(sessionEnd))).toEqual(["turn-2"]);
++      expect(sidecar(rollout)).toEqual(["turn-1", "turn-2"]);
++
++      expect(turnIds(await hook(sessionEnd))).toEqual([]);
++      expect(sidecar(rollout)).toEqual(["turn-1", "turn-2"]);
++    });
++  });
++});

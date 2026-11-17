@@ -216,21 +216,24 @@ def test_codex_langfuse_hook_is_vendored_rather_than_installed_as_a_plugin() -> 
 def test_codex_langfuse_hook_runs_the_vendored_bundle_under_pinned_node() -> None:
     config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
     packages = yaml.safe_load(PACKAGES.read_text(encoding="utf-8"))
-    registered = {
-        event: hook
+    registered = [
+        (event, hook)
         for event in config["hooks"]
         for hook in _codex_hooks(event)
         if "langfuse-codex" in str(hook["command"])
+    ]
+    upload = {
+        "command": CODEX_LANGFUSE_HOOK,
+        "statusMessage": "Uploading Codex trace to Langfuse",
+        "type": "command",
     }
 
-    assert registered == {
-        "Stop": {
-            "command": CODEX_LANGFUSE_HOOK,
-            "statusMessage": "Uploading Codex trace to Langfuse",
-            "timeout": 30,
-            "type": "command",
-        }
-    }
+    # Codex clamps Interrupt and SessionEnd hooks to 3 seconds, with a warning on load.
+    assert sorted(registered, key=lambda entry: entry[0]) == [
+        ("Interrupt", {**upload, "timeout": 3}),
+        ("SessionEnd", {**upload, "timeout": 3}),
+        ("Stop", {**upload, "timeout": 30}),
+    ]
     assert "node@22" in packages["devbox_brew_secondary"]
 
 

@@ -109,7 +109,7 @@ def test_deployed_bundle_matches_pin() -> None:
     info = module.manifest()
 
     assert module.git_blob_sha1(module.OUTPUT.read_bytes()) == info["output_git_blob_sha1"]
-    assert info["patches"] == []
+    assert info["patches"] == ["0001-export-interrupted-and-ended-turns.patch"]
     assert info["artifact_path"] == ARTIFACT_PATH
     assert module.LICENSE.read_text(encoding="utf-8").startswith("MIT License")
 

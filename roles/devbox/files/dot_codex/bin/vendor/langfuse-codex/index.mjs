@@ -35833,9 +35833,9 @@ function emitToolCall(tc, parent, fallbackEnd) {
 	tool.end(new Date(tc.endTime ?? fallbackEnd));
 	return tool;
 }
-function isFinal(turn, stoppedTurnId, supersededByLaterTurn) {
+function isFinal(turn, stoppedTurnId, supersededByLaterTurn, sessionEnded) {
 	if (turn.turnId == null) return false;
-	return turn.completed || supersededByLaterTurn || turn.turnId === stoppedTurnId;
+	return turn.completed || supersededByLaterTurn || sessionEnded || turn.turnId === stoppedTurnId;
 }
 async function readTurnIds(file) {
 	const ids = /* @__PURE__ */ new Set();
@@ -35926,9 +35926,13 @@ async function convertRollout(rolloutFile, options) {
 	const exportedTurnIds = [];
 	const attached = options.parentSpanContext != null;
 	for (let turnIndex = 0; turnIndex < turns.length; turnIndex++) {
-		const turn = turns[turnIndex];
+		const parsed = turns[turnIndex];
+		const turn = options.interruptedTurnId !== void 0 && parsed.turnId === options.interruptedTurnId ? {
+			...parsed,
+			aborted: true
+		} : parsed;
 		if (skipInherited(turn, turnIndex)) continue;
-		if (!isFinal(turn, options.stoppedTurnId, turnIndex < turns.length - 1)) {
+		if (!isFinal(turn, options.stoppedTurnId, turnIndex < turns.length - 1, options.sessionEnded === true)) {
 			debugLog(`skipping turn ${turn.turnId ?? "(no turn id)"}: not final`);
 			continue;
 		}
@@ -35967,7 +35971,7 @@ async function convertRollout(rolloutFile, options) {
 //#region src/index.ts
 let failOnError = process.env.LANGFUSE_CODEX_FAIL_ON_ERROR === "true";
 /**
-* Entry point for the Codex `Stop` hook.
+* Entry point for the Codex `Stop`, `Interrupt` and `SessionEnd` hooks.
 *
 * Codex pipes a JSON payload to stdin after every turn. We resolve config,
 * bail out unless tracing is explicitly enabled, then convert the rollout
@@ -36004,12 +36008,15 @@ async function runHook() {
 	if (parentSpanContext && config.trace_seed) debugLog("trace_seed ignored: an external parent trace context takes precedence");
 	const instrumentation = setupInstrumentation(config);
 	const transcriptPath = hookInput.transcript_path;
+	const hookTurnId = hookInput.turn_id ?? void 0;
 	let failure;
 	try {
 		await convertRollout(transcriptPath, {
 			config,
 			parentSpanContext,
-			stoppedTurnId: hookInput.turn_id ?? void 0,
+			stoppedTurnId: hookTurnId,
+			interruptedTurnId: hookInput.hook_event_name === "Interrupt" ? hookTurnId : void 0,
+			sessionEnded: hookInput.hook_event_name === "SessionEnd",
 			onTurnExported: async (turnId) => {
 				await instrumentation.flush();
 				await markTurnUploaded(transcriptPath, turnId);

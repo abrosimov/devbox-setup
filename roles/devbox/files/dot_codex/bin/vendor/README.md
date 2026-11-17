@@ -13,7 +13,7 @@ Third-party code built from a pinned upstream commit and committed here. Files u
 | Licence | MIT (`langfuse-codex/LICENSE`, copied from the upstream root) |
 | Upstream Git tree SHA-1 | `dc624bae569783627507f292490e079820029938` |
 | Build toolchain | Node 22, pnpm 9.5.0 |
-| Output Git blob SHA-1 | `b40f6a66fc835b33549d3bd1769c3c3a32fd5091` (upstream build, no patches) |
+| Output Git blob SHA-1 | `5f3ce6f94d5ed960507eecaa104bb02c4f9eee63` (upstream plus the patches below) |
 | Artifact pin | `langfuse-codex-upstream.lock.json` (authoritative when this table disagrees) |
 
 ### Why it is vendored rather than installed as a plugin
@@ -37,12 +37,21 @@ loopback-only sentinel credentials.
 
 ### Registration
 
-`../../config.toml.j2` registers the hook on `Stop`, the event upstream registers, with
-upstream's 30-second timeout and status message:
+`../../config.toml.j2` registers the same command on three events, with upstream's
+status message:
 
 ```text
 /opt/homebrew/opt/node@22/bin/node ~/.codex/bin/vendor/langfuse-codex/index.mjs
 ```
+
+| Event | Timeout | Why |
+| --- | --- | --- |
+| `Stop` | 30 s, upstream's | the event upstream registers |
+| `Interrupt` | 3 s | Codex fires no `Stop` for a turn that ends in `turn_aborted` |
+| `SessionEnd` | 3 s | uploads a turn that no `Stop` or `Interrupt` finalised |
+
+Codex clamps `Interrupt` and `SessionEnd` hooks to 3 seconds and warns on load when a
+longer timeout is declared, so the declared value is the one that applies.
 
 `/opt/homebrew/opt/node@22` is the keg of the `node@22` Homebrew formula in
 `defaults/main/packages.yml`. It is keg-only, so this path is stable whatever `node` on
@@ -55,8 +64,12 @@ of `install_codex_configs.yml`.
 `langfuse-codex-upstream.lock.json` records the upstream commit, the Git tree SHA-1 of
 that commit, the Node major and pnpm version the build runs under, the path of the build
 output inside the upstream tree, its expected Git blob SHA-1, and an ordered list of
-`git apply` patches under `patches/` (currently empty). Ordinary provisioning stays
-offline.
+`git apply` patches under `patches/`. Ordinary provisioning stays offline. Applied in
+this order:
+
+| Patch | Change |
+| --- | --- |
+| `0001-export-interrupted-and-ended-turns.patch` | on `Interrupt`, export the hook's turn as final and aborted before `turn_aborted` reaches the rollout; on `SessionEnd`, export every turn with an id not yet in the sidecar |
 
 The input hash is the Git tree SHA-1 of the whole upstream tree, computed from the
 fetched files exactly as `git write-tree` would. It equals `<commit>^{tree}` upstream,

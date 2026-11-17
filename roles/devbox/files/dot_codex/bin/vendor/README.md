@@ -13,7 +13,7 @@ Third-party code built from a pinned upstream commit and committed here. Files u
 | Licence | MIT (`langfuse-codex/LICENSE`, copied from the upstream root) |
 | Upstream Git tree SHA-1 | `dc624bae569783627507f292490e079820029938` |
 | Build toolchain | Node 22, pnpm 9.5.0 |
-| Output Git blob SHA-1 | `5d7209b1db3763102aeb11ac88a13c55961732f6` (upstream plus the patches below) |
+| Output Git blob SHA-1 | `7f8f4ad1260de43b84a2078906f7d80df04c184f` (upstream plus the patches below) |
 | Artifact pin | `langfuse-codex-upstream.lock.json` (authoritative when this table disagrees) |
 
 ### Why it is vendored rather than installed as a plugin
@@ -37,7 +37,7 @@ loopback-only sentinel credentials.
 
 ### Registration
 
-`../../config.toml.j2` registers the same command on three events, with upstream's
+`../../config.toml.j2` registers the same command on four events, with upstream's
 status message:
 
 ```text
@@ -49,6 +49,7 @@ status message:
 | `Stop` | 30 s, upstream's | the event upstream registers |
 | `Interrupt` | 3 s | Codex fires no `Stop` for a turn that ends in `turn_aborted` |
 | `SessionEnd` | 3 s | uploads a turn that no `Stop` or `Interrupt` finalised |
+| `SubagentStop` | 30 s | uploads a subagent turn that ran after its spawning turn was exported |
 
 Codex clamps `Interrupt` and `SessionEnd` hooks to 3 seconds and warns on load when a
 longer timeout is declared, so the declared value is the one that applies.
@@ -70,7 +71,8 @@ this order:
 | Patch | Change |
 | --- | --- |
 | `0001-export-interrupted-and-ended-turns.patch` | on `Interrupt`, export the hook's turn as final and aborted before `turn_aborted` reaches the rollout; on `SessionEnd`, export every turn with an id not yet in the sidecar |
-| `0002-one-hook-run-per-rollout.patch` | hold `<rollout>.langfuse.lock` from parse to the last sidecar mark; wait at most 10 s on `Stop` and 1 s on other events, then exit without exporting; take over a lock older than 60 s |
+| `0002-one-hook-run-per-rollout.patch` | hold `<rollout>.langfuse.lock` from parse to the last sidecar mark; wait at most 10 s on `Stop` (and, from `0003`, `SubagentStop`) and 1 s on other events, then exit without exporting; take over a lock older than 60 s |
+| `0003-export-subagent-turns-after-the-spawning-turn.patch` | on `SubagentStop`, export the child rollout's unexported final turns under its spawning turn's `spawn_agent` span, with the ids that turn's export draws; child turns nested with their spawning turn are recorded in the child's sidecar under the child's lock, so neither path exports a turn twice |
 
 The input hash is the Git tree SHA-1 of the whole upstream tree, computed from the
 fetched files exactly as `git write-tree` would. It equals `<commit>^{tree}` upstream,

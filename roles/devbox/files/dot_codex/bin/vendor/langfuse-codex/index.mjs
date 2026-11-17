@@ -34855,10 +34855,13 @@ function seedIds(seed) {
 function currentIdSeed() {
 	return idSeed;
 }
+function seededIdAt(seed, kind, draw) {
+	return createHash("sha256").update(`${seed}:${kind}:${draw}`).digest("hex").slice(0, kind === "trace" ? TRACE_ID_HEX_CHARS : SPAN_ID_HEX_CHARS);
+}
 function seededId(kind) {
 	const hexChars = kind === "trace" ? TRACE_ID_HEX_CHARS : SPAN_ID_HEX_CHARS;
 	if (idSeed === void 0) return randomBytes(hexChars / 2).toString("hex");
-	return createHash("sha256").update(`${idSeed}:${kind}:${idCounter++}`).digest("hex").slice(0, hexChars);
+	return seededIdAt(idSeed, kind, idCounter++);
 }
 const DEFAULT_SERVICE_NAME = "codex";
 function buildResource() {
@@ -35502,6 +35505,7 @@ async function loadSession(file) {
 	}
 	return lines;
 }
+const CHILD_LOCK_WAIT_MS = 1e3;
 async function readSessionMeta(file) {
 	let handle;
 	try {
@@ -35872,13 +35876,20 @@ async function emitTurn(turn, sessionMeta, ctx) {
 		for (const sub of [...announced, ...ctx.unannouncedSubagents ?? []]) {
 			if (ctx.seenThreadIds.has(sub.threadId)) continue;
 			ctx.seenThreadIds.add(sub.threadId);
+			const releaseChild = await acquireRolloutLock(sub.file, CHILD_LOCK_WAIT_MS);
+			if (!releaseChild) {
+				debugLog(`subagent ${sub.threadId} is locked by another hook run; leaving it to that run`);
+				continue;
+			}
+			ctx.nested.releases.push(releaseChild);
 			const seedBeforeChild = currentIdSeed();
 			await convertRollout(sub.file, {
 				config: ctx.config,
 				parentObservation: spawnObservations.get(turn.subagentSpawnCallIds[sub.threadId]) ?? root,
 				subagentIndex: ctx.subagentIndex,
 				seenThreadIds: ctx.seenThreadIds,
-				ancestorTurnIds: ctx.inheritableTurnIds
+				ancestorTurnIds: ctx.inheritableTurnIds,
+				nested: ctx.nested
 			});
 			seedIds(seedBeforeChild);
 		}
@@ -35984,10 +35995,23 @@ async function convertRollout(rolloutFile, options) {
 	};
 	const inheritableTurnIds = new Set(ancestorTurnIds);
 	for (const turn of turns) if (turn.turnId) inheritableTurnIds.add(turn.turnId);
+	const uploaded = await loadUploadedTurnIds(rolloutFile);
 	if (options.parentObservation) {
+		const nested = options.nested ?? {
+			turns: [],
+			releases: []
+		};
+		const exported = [];
 		for (let turnIndex = 0; turnIndex < turns.length; turnIndex++) {
 			const turn = turns[turnIndex];
 			if (skipInherited(turn, turnIndex)) continue;
+			if (turn.turnId != null) {
+				if (!isFinal(turn, void 0, turnIndex < turns.length - 1, false)) {
+					debugLog(`deferring subagent turn ${turn.turnId}: not final`);
+					continue;
+				}
+				if (uploaded.has(turn.turnId)) continue;
+			}
 			await emitTurn(turn, sessionMeta, {
 				config: options.config,
 				rolloutFile,
@@ -35996,14 +36020,23 @@ async function convertRollout(rolloutFile, options) {
 				seenThreadIds,
 				unannouncedSubagents: subagentsFor(turnIndex),
 				inheritableTurnIds,
-				historyPrefix: historyPrefixes[turnIndex]
+				historyPrefix: historyPrefixes[turnIndex],
+				nested
 			});
+			if (turn.turnId != null) {
+				nested.turns.push({
+					rolloutFile,
+					turnId: turn.turnId
+				});
+				exported.push(turn.turnId);
+			}
 		}
-		return [];
+		return exported;
 	}
-	const uploaded = await loadUploadedTurnIds(rolloutFile);
 	const exportedTurnIds = [];
-	const attached = options.parentSpanContext != null;
+	const spawn = options.attachToSpawningTurn && sessionMeta.isSubagentThread ? await spawnContextOf(sessionMeta, subagentIndex, options.config, options.parentSpanContext) : void 0;
+	if (options.attachToSpawningTurn && sessionMeta.isSubagentThread && !spawn) debugLog(`spawning turn of ${sessionMeta.sessionId} not found; exporting its turns on their own`);
+	const attached = spawn == null && options.parentSpanContext != null;
 	for (let turnIndex = 0; turnIndex < turns.length; turnIndex++) {
 		const parsed = turns[turnIndex];
 		const turn = options.interruptedTurnId !== void 0 && parsed.turnId === options.interruptedTurnId ? {
@@ -36016,34 +36049,98 @@ async function convertRollout(rolloutFile, options) {
 			continue;
 		}
 		if (uploaded.has(turn.turnId)) continue;
-		const parentSpanContext = options.parentSpanContext ?? await seededTraceParent(options.config, sessionMeta, turnIndex + 1);
-		const emit = () => emitTurn(turn, sessionMeta, {
-			config: options.config,
-			rolloutFile,
-			parentSpanContext,
-			attached,
-			subagentIndex,
-			seenThreadIds,
-			unannouncedSubagents: subagentsFor(turnIndex),
-			inheritableTurnIds,
-			historyPrefix: historyPrefixes[turnIndex]
-		});
-		if (attached) await emit();
-		else {
-			const tags = traceTags(options.config, turn);
-			await propagateAttributes({
-				sessionId: sessionMeta.sessionId,
-				traceName: sessionMeta.isSubagentThread ? "Codex Subagent Turn" : "Codex Turn",
-				...options.config.user_id ? { userId: options.config.user_id } : {},
-				...tags.length > 0 ? { tags } : {},
-				...options.config.metadata ? { metadata: options.config.metadata } : {}
-			}, emit);
+		const parentSpanContext = spawn?.spanContext ?? options.parentSpanContext ?? await seededTraceParent(options.config, sessionMeta, turnIndex + 1);
+		const nested = {
+			turns: [],
+			releases: []
+		};
+		try {
+			const emit = () => emitTurn(turn, sessionMeta, {
+				config: options.config,
+				rolloutFile,
+				parentSpanContext,
+				attached,
+				subagentIndex,
+				seenThreadIds,
+				unannouncedSubagents: subagentsFor(turnIndex),
+				inheritableTurnIds,
+				historyPrefix: historyPrefixes[turnIndex],
+				nested
+			});
+			const attributes = spawn ? spawn.attributes : attached ? void 0 : traceAttributes(options.config, sessionMeta, turn);
+			if (attributes) await propagateAttributes(attributes, emit);
+			else await emit();
+			uploaded.add(turn.turnId);
+			exportedTurnIds.push(turn.turnId);
+			await options.onTurnExported?.(turn.turnId, nested.turns);
+		} finally {
+			for (const release of nested.releases) await release();
 		}
-		uploaded.add(turn.turnId);
-		exportedTurnIds.push(turn.turnId);
-		await options.onTurnExported?.(turn.turnId);
 	}
 	return exportedTurnIds;
+}
+function traceAttributes(config, sessionMeta, turn) {
+	const tags = traceTags(config, turn);
+	return {
+		sessionId: sessionMeta.sessionId,
+		traceName: sessionMeta.isSubagentThread ? "Codex Subagent Turn" : "Codex Turn",
+		...config.user_id ? { userId: config.user_id } : {},
+		...tags.length > 0 ? { tags } : {},
+		...config.metadata ? { metadata: config.metadata } : {}
+	};
+}
+/**
+* The span a subagent's turns nest under when its spawning turn is exported: that turn's
+* `spawn_agent` tool span, or its root. Recomputes the ids `emitTurn` draws for the
+* spawning turn, so a child turn exported later lands in the same trace.
+*/
+async function spawnContextOf(child, index, config, externalParent, visited = /* @__PURE__ */ new Set()) {
+	const parentRollout = child.parentThreadId ? index.byThread.get(child.parentThreadId) : void 0;
+	if (!parentRollout || visited.has(parentRollout.threadId)) return void 0;
+	visited.add(parentRollout.threadId);
+	const { sessionMeta: parentMeta, turns } = parseSession(await loadSession(parentRollout.file));
+	let turnIndex = turns.findIndex((turn) => turn.subagentThreadIds.includes(child.sessionId));
+	if (turnIndex === -1) {
+		const self = index.byThread.get(child.sessionId);
+		if (!self || turns.length === 0) return void 0;
+		turnIndex = (self.nickname !== void 0 ? turnIndexByNickname(turns).get(self.nickname) : void 0) ?? turnIndexAt(turns, self.startTime);
+	}
+	const turn = turns[turnIndex];
+	let inheritedTraceId;
+	let attributes;
+	if (parentMeta.isSubagentThread) {
+		const grandparent = await spawnContextOf(parentMeta, index, config, externalParent, visited);
+		if (!grandparent) return void 0;
+		inheritedTraceId = grandparent.spanContext.traceId;
+		attributes = grandparent.attributes;
+	} else {
+		inheritedTraceId = (externalParent ?? await seededTraceParent(config, parentMeta, turnIndex + 1))?.traceId;
+		attributes = externalParent ? void 0 : traceAttributes(config, parentMeta, turn);
+	}
+	const seed = `${parentMeta.sessionId}:${turn.turnId ?? "no-turn-id"}`;
+	let draw = 0;
+	let spanId = seededIdAt(seed, "span", draw++);
+	const traceId = inheritedTraceId ?? seededIdAt(seed, "trace", draw++);
+	const spawnCallId = turn.subagentSpawnCallIds[child.sessionId];
+	findSpawn: for (const step of turn.steps) {
+		draw++;
+		for (const tc of step.toolCalls) {
+			const toolSpanId = seededIdAt(seed, "span", draw++);
+			if (spawnCallId !== void 0 && tc.callId === spawnCallId) {
+				spanId = toolSpanId;
+				break findSpawn;
+			}
+		}
+	}
+	return {
+		spanContext: {
+			traceId,
+			spanId,
+			traceFlags: TraceFlags.SAMPLED,
+			isRemote: true
+		},
+		attributes
+	};
 }
 
 //#endregion
@@ -36079,17 +36176,18 @@ async function runHook() {
 		debugLog("missing LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY; skipping");
 		return;
 	}
-	if (!hookInput.transcript_path) {
-		debugLog("hook payload missing transcript_path; skipping");
+	const subagentStopped = hookInput.hook_event_name === "SubagentStop";
+	const transcriptPath = subagentStopped ? hookInput.agent_transcript_path : hookInput.transcript_path;
+	if (!transcriptPath) {
+		debugLog(`hook payload missing ${subagentStopped ? "agent_transcript_path" : "transcript_path"}; skipping`);
 		return;
 	}
 	const parentSpanContext = readExternalParentSpanContext(process.env, config.fail_on_error);
 	if (parentSpanContext && config.trace_seed) debugLog("trace_seed ignored: an external parent trace context takes precedence");
 	const instrumentation = setupInstrumentation(config);
-	const transcriptPath = hookInput.transcript_path;
 	const hookTurnId = hookInput.turn_id ?? void 0;
 	let failure;
-	const lockWaitMs = hookInput.hook_event_name === "Stop" ? 1e4 : 1e3;
+	const lockWaitMs = hookInput.hook_event_name === "Stop" || subagentStopped ? 1e4 : 1e3;
 	const releaseLock = await acquireRolloutLock(transcriptPath, lockWaitMs);
 	if (!releaseLock) {
 		debugLog("another hook run holds the rollout lock; leaving its turns to that run or the next");
@@ -36103,8 +36201,10 @@ async function runHook() {
 			stoppedTurnId: hookTurnId,
 			interruptedTurnId: hookInput.hook_event_name === "Interrupt" ? hookTurnId : void 0,
 			sessionEnded: hookInput.hook_event_name === "SessionEnd",
-			onTurnExported: async (turnId) => {
+			attachToSpawningTurn: subagentStopped,
+			onTurnExported: async (turnId, nestedTurns) => {
 				await instrumentation.flush();
+				for (const nested of nestedTurns) await markTurnUploaded(nested.rolloutFile, nested.turnId);
 				await markTurnUploaded(transcriptPath, turnId);
 			}
 		});

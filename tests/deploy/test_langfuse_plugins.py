@@ -233,6 +233,7 @@ def test_codex_langfuse_hook_runs_the_vendored_bundle_under_pinned_node() -> Non
         ("Interrupt", {**upload, "timeout": 3}),
         ("SessionEnd", {**upload, "timeout": 3}),
         ("Stop", {**upload, "timeout": 30}),
+        ("SubagentStop", {**upload, "timeout": 30}),
     ]
     assert "node@22" in packages["devbox_brew_secondary"]
 

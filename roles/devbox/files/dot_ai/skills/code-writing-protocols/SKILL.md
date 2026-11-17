@@ -417,7 +417,11 @@ Before completing an implementation or test-writing task, answer honestly:
    - These are drift, not WHY. See `code-comments` skill, "What's NOT WHY".
    - If yes: strip those parts
 
-Only proceed after all four checks pass.
+5. **Does any comment contain a number or date copied from data or a spec, or the history of a decision?**
+   - These go stale when something elsewhere changes. See `code-comments` skill, Staleness Test.
+   - If yes: cut them; do not relocate them
+
+Only proceed after all five checks pass.
 
 ---
 
@@ -680,6 +684,7 @@ After Pre-Flight passes, verify these quality checks. Language-specific items ar
 - [ ] The only comments remaining explain WHY (business rules, gotchas), not WHAT
 - [ ] Every surviving comment is ≤3 lines. Multi-paragraph WHY blocks have been cut (≥4 lines → docstring/ADR, not a comment)
 - [ ] No comment contains speculation ("if someone later adds X..."), mechanism over-explanation, or restates visible code
+- [ ] No comment contains a number or date copied from data or a spec, or the history of a decision
 
 ### Scope Check (Anti-Helpfulness)
 - [ ] I did not add features not in the plan

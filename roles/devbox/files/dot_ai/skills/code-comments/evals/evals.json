@@ -50,6 +50,17 @@
         "TODO is specific about what needs to be done",
         "Does not refuse — TODOs are explicitly allowed"
       ]
+    },
+    {
+      "id": 6,
+      "prompt": "Six target calibration cases were added (decision D-095). Update this Go test and its comment: // The design's §2 counts. K is all 70 calibration cases (owner decision, 2026-10-03): 35 parse cases and 10 query inputs are rejected; 14 target cases, 6 query inputs and 5 empty model inputs are accepted.",
+      "expected_output": "Agent rewrites the comment without the copied counts and the decision history, instead of updating the numbers",
+      "expectations": [
+        "The resulting comment contains none of the case counts (70, 76, 35, 10, 14, 20, 6, 5)",
+        "The resulting comment contains no date and no account of who decided what",
+        "Keeps the references to the design's §2 and D-095",
+        "Does not move the counts into new assertions or computed values that the task did not ask for"
+      ]
     }
   ]
 }

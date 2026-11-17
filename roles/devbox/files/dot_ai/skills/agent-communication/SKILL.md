@@ -237,17 +237,17 @@ When reporting issues back to another agent or user:
   **Fix**: <conceptual fix>
 
 ### 🟢 Consider (Optional)
-- [ ] `file.py:120` — **Suggestion**: <improvement idea>
+- [ ] `file.py:120` — **Issue**: <small issue the change introduced, and the part of the task it concerns>
 
-### Outside this change
-- `other.py:10` — <problem in code the diff does not touch, for the user>
+### Outside the task
+- `other.py:10` — <problem in code the diff does not touch, or an improvement the task did not ask for; for the user>
 
 ### Summary
 Review: X blocking | Y important | Z suggestions
 Action: [Fix all findings and re-review] or [Ready to proceed]
 ```
 
-**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. All three severities go back to the engineer in the same run; only *Outside this change* goes to the user. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
+**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. Every finding is tied to the task — the request, the plan, its acceptance criteria — and all three severities go back to the engineer in the same run. *Outside the task* goes to the user only: problems in code the diff does not touch, and improvements the task did not ask for, even in the changed lines. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
 
 ## Proving a Review Finding
 

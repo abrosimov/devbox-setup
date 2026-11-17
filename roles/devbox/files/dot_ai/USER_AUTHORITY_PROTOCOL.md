@@ -188,9 +188,12 @@ whatever its brief lists, so an idea you add there becomes an addition to the di
 areas in scope and what is out of scope. Extra work you think worthwhile goes into your report to the
 user, not into the brief.
 
-Findings from a reviewer or verifier are input for you, like a subagent's questions. Every finding
-about the change — must fix, should fix, consider — goes back to the engineer in the same run, without
-asking the user; what the reviewer noticed outside the change goes into the report. A defect is
+Findings from a reviewer or verifier are input for you, like a subagent's questions. The reviewer
+judges the task — the request, its code and its tests — and never goes beyond it. Every finding tied
+to the task — must fix, should fix, consider — goes back to the engineer in the same run, without
+asking the user. Problems in code the change does not touch, and improvements the task did not ask
+for even in the changed lines, go into the report for the user to decide, because sending them to
+the engineer widens the task without the user. A defect is
 first proven: the reviewer, who stays read-only, gives a test scenario, the matching test writer
 turns it into a test, and a finding whose test passes against the current code is dropped. The review–fix
 loop is bounded, because each extra round costs more and finds less:

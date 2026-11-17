@@ -574,6 +574,8 @@
 # are not dotfile-shape and must NOT be copied into the user's home.
 # `local/vars/<profile>.yml` is likewise excluded: it holds private template
 # variables that `scripts/ai-config` layers over `profiles/<profile>.yml`.
+# `local/tamias/config.json` is excluded too: darwin/configure_tamias_client.yml
+# deploys it, before the Go tools step, to ~/Library/Application Support/tamias/.
 # =============================================================================
 
 - name: Check if local overlay directory exists
@@ -642,8 +644,10 @@
     - item.state == 'directory'
     - not item.path.startswith('host_state/')
     - not item.path.startswith('vars/')
+    - not item.path.startswith('tamias/')
     - item.path != 'host_state'
     - item.path != 'vars'
+    - item.path != 'tamias'
   tags: [configs, local]
 
 - name: Copy local overlay files
@@ -660,6 +664,7 @@
     - not item.path.endswith('.j2')
     - not item.path.startswith('host_state/')
     - not item.path.startswith('vars/')
+    - not item.path.startswith('tamias/')
     - item.path != '.config/otelbox/edge/client/client.crt'
     - item.path != '.config/otelbox/edge/client/client.key'
   tags: [configs, local]
@@ -778,5 +783,6 @@
     - item.path.endswith('.j2')
     - not item.path.startswith('host_state/')
     - not item.path.startswith('vars/')
+    - not item.path.startswith('tamias/')
     - item.path != '.config/otelbox/edge/client/client.crt.j2'
     - item.path != '.config/otelbox/edge/client/client.key.j2'

@@ -1,0 +1,58 @@
+---
+# Tamias client profiles — the config.json that tells `tamias login`,
+# `tamias goauth` and `tamias mcp-headers` which proxy, issuer, OIDC client and
+# scope to use. Without it every one of them fails with "credential proxy URL
+# is required".
+#
+# The file comes from the gitignored local overlay at
+# roles/devbox/local/tamias/config.json, so the identity endpoints and client
+# IDs stay out of the repository. It is deployed here rather than by the
+# generic overlay copy in install_configs.yml (which skips `tamias/`) because
+# Go module fetches need it before the Go tools step, and because the target
+# is under ~/Library, whose parent directories the generic copy must not
+# re-create with overlay modes.
+#
+# Guarded by the include in main_darwin.yml (Darwin, not dev_mode,
+# devbox_packages.tamias.enabled).
+
+- name: "Tamias client — deploy the client profiles from the local overlay"
+  tags: [tamias, go-proxy]
+  vars:
+    # Test seams only; never set in defaults or profiles.
+    devbox_tamias_client_config_src: >-
+      {{ devbox_tamias_client_config_src_override
+         | default(role_path ~ '/local/tamias/config.json') }}
+    devbox_tamias_client_config_dest: >-
+      {{ devbox_tamias_client_config_dest_override
+         | default(ansible_facts['env']['HOME'] ~ '/Library/Application Support/tamias/config.json') }}
+  block:
+    - name: "Tamias client — look for the local overlay config"
+      ansible.builtin.stat:
+        path: "{{ devbox_tamias_client_config_src }}"
+      register: devbox_tamias_client_config_overlay
+      delegate_to: localhost
+
+    - name: "Tamias client — require the local overlay config"
+      ansible.builtin.assert:
+        that:
+          - devbox_tamias_client_config_overlay.stat.exists | default(false)
+          - devbox_tamias_client_config_overlay.stat.isreg | default(false)
+        fail_msg: >-
+          Tamias is enabled but roles/devbox/local/tamias/config.json is missing.
+          Every Go module fetch goes through the private proxy and needs it.
+          Create it from the example in README.md § Go Module Proxy, or set
+          devbox_packages.tamias.enabled to false.
+        quiet: true
+
+    - name: "Tamias client — ensure the private configuration directory"
+      ansible.builtin.file:
+        path: "{{ devbox_tamias_client_config_dest | dirname }}"
+        state: directory
+        mode: "0700"
+
+    - name: "Tamias client — install the client profiles"
+      ansible.builtin.copy:
+        src: "{{ devbox_tamias_client_config_src }}"
+        dest: "{{ devbox_tamias_client_config_dest }}"
+        mode: "0600"
+      diff: false

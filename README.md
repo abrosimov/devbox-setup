@@ -299,7 +299,25 @@ Every Go module fetch goes through the private proxy at `https://go.abrosimov.te
 
 **Installation.** `tasks/darwin/install_tamias.yml` installs the release pinned in `devbox_packages.tamias` (`defaults/main/packages.yml`) to `~/.local/bin/tamias`. It uses the already authenticated `gh` CLI and admits only a published, immutable release with exactly one asset for the machine's architecture. The asset is staged in a temporary directory and checked with `gh release verify-asset`. Its digest must also equal the one the release reports, and only then is it swapped into place atomically. No checksum is declared here: the immutable release attestation is the integrity authority. Any failure fails the run and leaves the previously installed binary untouched. There is no fallback to a source build, `go install`, Homebrew or an unchecked download.
 
-**Go client.** `tasks/darwin/configure_go_module_proxy.yml` writes `GOAUTH=<home>/.local/bin/tamias goauth`, `GOPROXY`, `GONOPROXY=none`, `GONOSUMDB` and `GOSUMDB` into the user's `go env` file, rewriting only keys that diverge. It runs after the Go tools step. From then on, every module fetch, `go install` included, needs a Tamias credential.
+**Client profiles.** `tasks/darwin/configure_tamias_client.yml` copies `roles/devbox/local/tamias/config.json` from the gitignored local overlay to `~/Library/Application Support/tamias/config.json` (directory `0700`, file `0600`). The file names the proxy, the OIDC issuer, client and scope; without it `tamias login` and `tamias goauth` fail with "credential proxy URL is required". A run with Tamias enabled and no overlay file fails. The generic overlay copy skips `local/tamias/`. Example:
+
+```json
+{
+  "credential_profiles": [
+    {
+      "ecosystem": "go",
+      "proxy_url": "https://go.example",
+      "issuer": "https://identity.example",
+      "client_id": "go-proxy-developer-cli",
+      "resource": "https://go.example",
+      "scope": "go:read",
+      "authentication_method": "device"
+    }
+  ]
+}
+```
+
+**Go client.** `tasks/darwin/configure_go_module_proxy.yml` writes `GOAUTH=<home>/.local/bin/tamias goauth`, `GOPROXY`, `GONOPROXY=none`, `GONOSUMDB` and `GOSUMDB` into the user's `go env` file, rewriting only keys that diverge. Tamias, its client profiles and the go env are set up before the Go tools step, because from then on every module fetch, `go install` included, needs a Tamias credential.
 
 **On/off switch.** `devbox_packages.tamias.enabled` controls the whole client. When it is `false`, the Tamias step is skipped. The Go step removes, with `go env -u`, every line of the `go env` file that is exactly what it would write when enabled, so Go falls back to its defaults. Lines with any other value are left alone. The installed binary and any Keychain credential stay where they are.
 

@@ -467,6 +467,15 @@
       {
         "hooks": [
           {
+            "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/pre_edit_file_ownership_guard.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
+      },
+      {
+        "hooks": [
+          {
             "command": "~/.claude/bin/.venv/bin/python ~/.claude/bin/universal_logger.py PreToolUse",
             "type": "command"
           }

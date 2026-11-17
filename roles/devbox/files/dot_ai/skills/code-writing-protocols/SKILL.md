@@ -71,6 +71,29 @@ These hold in every project and every language; the reviewer checks them as defe
   dependency bump then breaks the build. Commit the sources, the generator configuration and the
   pin. If a consumer that cannot run the generator needs the output (a Go library fetched with
   `go get`), say so and return it to the main thread as an open item instead of committing it.
+- **Tests belong to the test writers.** `unit-test-writer` owns unit tests,
+  `integration-tests-writer-{go,python}` own integration tests, `fuzzing-tests-writer` owns fuzz
+  targets. A software engineer never creates, edits, renames or deletes a test file, a test helper
+  or test data: the `!` patterns in its `globs` name those files, and in Claude Code the
+  `pre_edit_file_ownership_guard` hook denies the edit. A test written by the author of the code
+  shares the author's blind spots, and a test edited to match new code proves nothing.
+
+### Test Ownership
+
+**Software engineer.**
+
+- Write no tests, even when a skill, a checklist or the brief seems to ask for them. A behaviour
+  the change needs covered goes into your report as a scenario (input, expected outcome) for the
+  test writer.
+- Run the existing suite. When a test fails after your change and the code is wrong, fix the code.
+  When the test asserts behaviour the task deliberately changes, leave the test alone and report
+  it: the test, its exact output, and the behaviour change that explains it. The test writer
+  updates it.
+- Never make a failing test pass by changing, skipping or deleting it.
+
+**Test writer.** You own the test files of your kind, including updating tests that a deliberate
+behaviour change broke. You do not edit production code: a test that exposes a defect goes back to
+the engineer, with the failing test as the proof.
 
 ## Decision Classification Protocol
 
@@ -497,7 +520,7 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 
 ## No Ad-Hoc Validation
 
-**Rule.** Do not run tools to "check that something works". If it can break — write a test. If it can't break — trust the framework guarantee. There is no legitimate middle ground.
+**Rule.** Do not run tools to "check that something works". If it can break — it needs a test: a test writer writes it, an engineer names the scenario in its report (Test Ownership). If it can't break — trust the framework guarantee. There is no legitimate middle ground.
 
 Ad-hoc validation burns context, invites workaround escalation (e.g. cache overrides when the check happens to fail), and substitutes for real coverage. It also masquerades as diligence — that's why it feels tempting.
 
@@ -561,7 +584,7 @@ The following phrases in Pre-Flight reports or SE output artifacts indicate the 
 
 1. Report the **exact** error message — do not paraphrase or summarise
 2. Decide whose failure it is (core §8):
-   - **Introduced by this change, or in code the change touches** — fix the root cause. It blocks completion.
+   - **Introduced by this change, or in code the change touches** — fix the root cause. It blocks completion. For a failing test, the root cause is fixed in the code or, when the change deliberately alters the tested behaviour, by the test writer; an engineer reports it and leaves the test alone (Test Ownership).
    - **Pre-existing, elsewhere** — it lies in files and behaviour your diff does not touch, or fails the same way on the base commit. Report it (command, exact error, why you believe it predates the change) and do not fix it. It does not block completion.
 3. Environment or configuration fixes outside the task (dependency upgrades, tool or CI configuration, project settings) need approval: return them to the orchestrator with a recommendation instead of applying them
 4. For sandbox-related failures: use the language-specific env var workarounds below
@@ -585,60 +608,6 @@ Each row in the Pre-Flight verification table must include:
 - The exit code
 - For failures: the first 5 lines of error output
 - Status must reflect the actual exit code, not the agent's opinion
-
----
-
-## TDD RED-GREEN Evidence Protocol
-
-### When This Applies
-
-Applies when writing new tests (unit or integration). Does not apply to fixing existing tests or non-test code changes.
-
-### Protocol
-
-When adding a new test:
-
-1. **RED phase**: Write the test first. Run it and confirm it fails (proving it tests something real).
-2. **Implement**: Write the production code to make the test pass.
-3. **GREEN phase**: Run the test again and confirm it passes.
-
-### Evidence Format
-
-Each new test must include RED-GREEN evidence in the SE output artifact:
-
-```
-### Test: test_name
-**RED** (before implementation):
-  Command: <exact command>
-  Exit code: <non-zero>
-  Output (first 5 lines):
-    <output>
-
-**GREEN** (after implementation):
-  Command: <exact command>
-  Exit code: 0
-  Output (first 5 lines):
-    <output>
-```
-
-### Forbidden Shortcuts
-
-The following are not acceptable as RED evidence:
-
-- "test would fail because the function doesn't exist yet"
-- Showing only the GREEN result
-- RED from a compilation error (the test itself must compile — the assertion must fail)
-- "verified by inspection that test covers the requirement"
-
-### When RED Is Not Possible
-
-If a test cannot meaningfully fail first (e.g., testing existing behaviour that already works), document why:
-
-```
-### Test: test_existing_behaviour
-**RED skip reason**: Testing existing correct behaviour — no implementation change needed.
-**GREEN**: Command: ..., Exit code: 0
-```
 
 ---
 

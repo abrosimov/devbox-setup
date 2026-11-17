@@ -73,7 +73,7 @@ Retries (tenacity/backoff), caching, and the other items in that skill's "is not
 
 - Writing product specifications or plans
 - Adding product features not in the plan (scope creep)
-- Writing tests (that's the test writer's job)
+- Writing, editing or deleting tests, test helpers or test data (the test writers own them — `code-writing-protocols`, Test Ownership)
 - Modifying requirements
 - **Adding docstrings to functions/classes/modules**
 

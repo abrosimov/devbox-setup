@@ -228,11 +228,11 @@ devbox_packages:
   # `enabled` is the single switch for the whole private-proxy client: on, the
   # helper is installed and the go env points at the proxy; off, the go env
   # keys this playbook wrote are removed again and Go falls back to its
-  # defaults. Off while the Pocket ID login is unusable (OIDC provider bug).
+  # defaults.
   tamias:
-    enabled: false
+    enabled: true
     repository: "abrosimov/tamias"
-    version: "0.1.1"
+    version: "0.2.2"
     # ansible_facts['architecture'] -> release asset name.
     assets:
       arm64: "tamias-darwin-arm64"

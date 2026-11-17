@@ -65,6 +65,9 @@ def _proxy() -> Doc:
     return copy.deepcopy(_defaults()["devbox_go_module_proxy"])
 
 
+TAG = f"v{_packages()['tamias']['version']}"
+
+
 def _find(tasks: list[Doc], needle: str) -> Doc:
     return next(task for task in _flatten(tasks) if needle in str(task.get("name", "")))
 
@@ -92,7 +95,7 @@ class TestPackageDeclaration:
         tamias = _packages()["tamias"]
         assert isinstance(tamias["enabled"], bool)
         assert tamias["repository"] == "abrosimov/tamias"
-        assert tamias["version"] == "0.1.1"
+        assert tamias["version"] == "0.2.2"
         assert tamias["assets"] == {"arm64": ASSET}
         assert tamias["install_path"] == "~/.local/bin/tamias"
 
@@ -237,7 +240,7 @@ sys.exit(97)
 
     def release(self, **overrides: object) -> Doc:
         release: Doc = {
-            "tagName": "v0.1.1",
+            "tagName": TAG,
             "isDraft": False,
             "isImmutable": True,
             "assets": [{"name": ASSET, "digest": self.digest(self.asset_bytes)}],
@@ -371,8 +374,8 @@ class TestInstallAdmission:
         [
             {"isImmutable": False},
             {"isDraft": True},
-            {"tagName": "v0.1.2"},
-            {"tagName": "v0.1.10"},
+            {"tagName": "v0.2.3"},
+            {"tagName": f"{TAG}0"},
             {"assets": []},
             {"assets": [{"name": "tamias-darwin-amd64", "digest": "sha256:" + "a" * 64}]},
             {"assets": [{"name": ASSET}]},
@@ -470,7 +473,7 @@ class TestInstallAdmission:
         staging = download[download.index("--dir") + 1]
         assert staging.startswith(str(gh.tmpdir))
         [verify] = gh.calls_of("release", "verify-asset")
-        assert verify[2:4] == ["v0.1.1", f"{staging}/{ASSET}"]
+        assert verify[2:4] == [TAG, f"{staging}/{ASSET}"]
         assert verify[verify.index("--repo") + 1] == "abrosimov/tamias"
         assert gh.calls().index(download) < gh.calls().index(verify)
         assert gh.leftovers() == []

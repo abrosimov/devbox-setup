@@ -35190,6 +35190,85 @@ function extractToolError(payload) {
 	if (streams) return streams;
 	if (typeof payload.exit_code === "number") return `Exit code: ${payload.exit_code}`;
 }
+const TOOL_ITEM_TYPES = /* @__PURE__ */ new Set([
+	"CommandExecution",
+	"McpToolCall",
+	"FileChange",
+	"Extension"
+]);
+const EXTENSION_ITEM_ENVELOPE = /* @__PURE__ */ new Set([
+	"type",
+	"id",
+	"results"
+]);
+const CODE_MODE_TOOL = "exec";
+function finiteOr(value, fallback) {
+	return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+function mcpItemError(item) {
+	const { error, result } = item;
+	if (typeof error === "string" && error) return error;
+	if (error != null && typeof error === "object") {
+		const message = error.message;
+		return typeof message === "string" && message ? message : JSON.stringify(error);
+	}
+	if (result == null || typeof result !== "object") return void 0;
+	const { structuredContent, content } = result;
+	if (typeof structuredContent?.error === "string" && structuredContent.error) return structuredContent.error;
+	return extractMessageText(content) || void 0;
+}
+function toolItemError(item) {
+	if (item.status !== "failed" && item.status !== "declined") return void 0;
+	if (item.type === "CommandExecution") return typeof item.exit_code === "number" ? `Exit code: ${item.exit_code}` : `Command ${item.status}`;
+	if (item.type === "McpToolCall") return mcpItemError(item) ?? `MCP tool call ${item.status}`;
+	return item.stderr || `${item.type} ${item.status}`;
+}
+function toolItemCall(item, payload, ts) {
+	if (typeof item.id !== "string" || !item.id) return void 0;
+	if (item.source === "user_shell") return void 0;
+	const startTime = finiteOr(payload.started_at_ms, ts);
+	const call = {
+		callId: item.id,
+		startTime,
+		endTime: Math.max(startTime, finiteOr(payload.completed_at_ms, ts)),
+		error: toolItemError(item)
+	};
+	switch (item.type) {
+		case "CommandExecution": return {
+			...call,
+			name: "exec_command",
+			args: {
+				command: item.command,
+				cwd: item.cwd
+			},
+			output: item.aggregated_output ?? void 0
+		};
+		case "McpToolCall":
+			if (typeof item.server !== "string" || typeof item.tool !== "string") return void 0;
+			return {
+				...call,
+				name: `${item.server}.${item.tool}`,
+				args: item.arguments,
+				output: item.result ?? void 0,
+				mcp: {
+					server: item.server,
+					tool: item.tool
+				}
+			};
+		case "FileChange": return {
+			...call,
+			name: "apply_patch",
+			args: { changes: item.changes },
+			output: item.stdout
+		};
+		default: return {
+			...call,
+			name: item.kind || "extension",
+			args: Object.fromEntries(Object.entries(item).filter(([key]) => !EXTENSION_ITEM_ENVELOPE.has(key))),
+			output: item.results
+		};
+	}
+}
 const TURN_OPENING_EVENTS = /* @__PURE__ */ new Set([
 	"user_message",
 	"item_completed",
@@ -35201,6 +35280,7 @@ function newTurn(startTime) {
 		startTime,
 		endTime: startTime,
 		steps: [],
+		detachedToolCalls: [],
 		subagentThreadIds: [],
 		subagentSpawnCallIds: {},
 		promptSkills: [],
@@ -35228,6 +35308,7 @@ function parseSession(lines) {
 	let turn = null;
 	let step = null;
 	let toolCallsById = /* @__PURE__ */ new Map();
+	let openCodeModeCall = null;
 	let lastTimestamp = Date.now();
 	const developerMessages = [];
 	const injectedContext = [];
@@ -35286,6 +35367,18 @@ function parseSession(lines) {
 		}
 		turn = null;
 		toolCallsById = /* @__PURE__ */ new Map();
+		openCodeModeCall = null;
+	};
+	const recordToolItem = (item, payload, ts) => {
+		const call = toolItemCall(item, payload, ts);
+		if (!call) return;
+		const visible = toolCallsById.get(call.callId);
+		if (visible) {
+			visible.error ??= call.error;
+			visible.mcp ??= call.mcp;
+			if (visible.output == null) visible.output = call.output;
+		} else if (openCodeModeCall) (openCodeModeCall.children ??= []).push(call);
+		else turn.detachedToolCalls.push(call);
 	};
 	for (const line of lines) {
 		const ts = Number.isFinite(Date.parse(line.timestamp)) ? Date.parse(line.timestamp) : lastTimestamp;
@@ -35339,6 +35432,7 @@ function parseSession(lines) {
 				};
 				s.toolCalls.push(tc);
 				toolCallsById.set(tc.callId, tc);
+				if (tc.name === CODE_MODE_TOOL) openCodeModeCall = tc;
 			} else if (p.type === "local_shell_call") {
 				const call = p;
 				const s = ensureStep(ts);
@@ -35370,6 +35464,7 @@ function parseSession(lines) {
 				}
 			} else if (p.type === "function_call_output" || p.type === "custom_tool_call_output") {
 				const out = p;
+				if (p.type === "custom_tool_call_output" && out.call_id === openCodeModeCall?.callId) openCodeModeCall = null;
 				const tc = toolCallsById.get(out.call_id);
 				if (tc) {
 					if (tc.output == null) tc.output = out.output;
@@ -35428,7 +35523,8 @@ function parseSession(lines) {
 				if (text && !turn.userInput) turn.userInput = text;
 			} else if (et === "item_completed" && p.item?.type === "SubAgentActivity") {
 				if (p.item.kind === "started" && typeof p.item.agent_thread_id === "string") recordSubagentThread(p.item.agent_thread_id, p.item.id);
-			} else if (et === "agent_message" && typeof p.message === "string") turn.lastAgentMessage = p.message;
+			} else if (et === "item_completed" && p.item && TOOL_ITEM_TYPES.has(p.item.type ?? "")) recordToolItem(p.item, p, ts);
+			else if (et === "agent_message" && typeof p.message === "string") turn.lastAgentMessage = p.message;
 			else if (et === "token_count") {
 				if (p.info?.total_token_usage) turn.totalUsage = p.info.total_token_usage;
 				closeStep(ts, p.info?.last_token_usage ?? void 0);
@@ -35837,6 +35933,7 @@ async function emitTurn(turn, sessionMeta, ctx) {
 		const systemMessage = systemPromptText(turn.systemPrompt);
 		const historyPrefix = ctx.historyPrefix ?? [];
 		const spawnObservations = /* @__PURE__ */ new Map();
+		const codeModeCalls = [];
 		const user = userMessage(turn);
 		const turnMessages = user ? [user] : [];
 		for (let i = 0; i < turn.steps.length; i++) {
@@ -35860,10 +35957,16 @@ async function emitTurn(turn, sessionMeta, ctx) {
 			for (const tc of step.toolCalls) {
 				const observation = emitToolCall(tc, root, step.endTime);
 				if (tc.name === "spawn_agent") spawnObservations.set(tc.callId, observation);
+				if (tc.children) codeModeCalls.push({
+					observation,
+					children: tc.children
+				});
 			}
 			generation.end(new Date(generationEnd(step)));
 			turnMessages.push(assistantMessage(step), ...toolMessages(step));
 		}
+		for (const { observation, children } of codeModeCalls) for (const child of children) emitToolCall(child, observation, child.startTime);
+		for (const tc of turn.detachedToolCalls) emitToolCall(tc, root, tc.startTime);
 		const announced = [];
 		for (const threadId of turn.subagentThreadIds) {
 			const rollout = ctx.subagentIndex.byThread.get(threadId);

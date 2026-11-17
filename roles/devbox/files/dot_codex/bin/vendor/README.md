@@ -13,7 +13,7 @@ Third-party code built from a pinned upstream commit and committed here. Files u
 | Licence | MIT (`langfuse-codex/LICENSE`, copied from the upstream root) |
 | Upstream Git tree SHA-1 | `dc624bae569783627507f292490e079820029938` |
 | Build toolchain | Node 22, pnpm 9.5.0 |
-| Output Git blob SHA-1 | `7f8f4ad1260de43b84a2078906f7d80df04c184f` (upstream plus the patches below) |
+| Output Git blob SHA-1 | `9e1592d91982f4b7e141b60194bb4dc46b433100` (upstream plus the patches below) |
 | Artifact pin | `langfuse-codex-upstream.lock.json` (authoritative when this table disagrees) |
 
 ### Why it is vendored rather than installed as a plugin
@@ -73,6 +73,7 @@ this order:
 | `0001-export-interrupted-and-ended-turns.patch` | on `Interrupt`, export the hook's turn as final and aborted before `turn_aborted` reaches the rollout; on `SessionEnd`, export every turn with an id not yet in the sidecar |
 | `0002-one-hook-run-per-rollout.patch` | hold `<rollout>.langfuse.lock` from parse to the last sidecar mark; wait at most 10 s on `Stop` (and, from `0003`, `SubagentStop`) and 1 s on other events, then exit without exporting; take over a lock older than 60 s |
 | `0003-export-subagent-turns-after-the-spawning-turn.patch` | on `SubagentStop`, export the child rollout's unexported final turns under its spawning turn's `spawn_agent` span, with the ids that turn's export draws; child turns nested with their spawning turn are recorded in the child's sidecar under the child's lock, so neither path exports a turn twice |
+| `0004-trace-tool-items-nested-in-code-mode.patch` | read the shell, MCP, patch and extension calls that Codex 0.162 and later report only as `item_completed` items: an item completed while a code-mode `exec` call is open becomes a child tool observation of that call, named `exec_command`, `<server>.<tool>`, `apply_patch` or the extension kind, with the item's own start and end; a `failed` or `declined` item is `ERROR` with the exit code or MCP error as its status message, without marking `exec`; an item sharing a model-visible call's id enriches that call; any other item attaches to the turn root. Child ids are drawn after every step, so existing observation ids are unchanged |
 
 The input hash is the Git tree SHA-1 of the whole upstream tree, computed from the
 fetched files exactly as `git write-tree` would. It equals `<commit>^{tree}` upstream,

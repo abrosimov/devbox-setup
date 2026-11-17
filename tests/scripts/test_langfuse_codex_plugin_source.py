@@ -113,6 +113,7 @@ def test_deployed_bundle_matches_pin() -> None:
         "0001-export-interrupted-and-ended-turns.patch",
         "0002-one-hook-run-per-rollout.patch",
         "0003-export-subagent-turns-after-the-spawning-turn.patch",
+        "0004-trace-tool-items-nested-in-code-mode.patch",
     ]
     assert info["artifact_path"] == ARTIFACT_PATH
     assert module.LICENSE.read_text(encoding="utf-8").startswith("MIT License")

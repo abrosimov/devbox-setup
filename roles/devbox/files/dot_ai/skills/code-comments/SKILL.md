@@ -39,6 +39,10 @@ If ANY one source carries the content, the comment is duplication. **Cut.**
 
 Default lean: **drop**. The longer you have to justify keeping a comment, the more likely it should be dropped. Only keep when you can name in one phrase the unique signal the comment carries that all four sources miss.
 
+### The Staleness Test
+
+A comment may state only what stays true as long as the lines it sits beside are unchanged. Counts, sizes and dates copied from data, fixtures or specs, and the history of how a decision was reached, go stale when something elsewhere changes, and nothing fails when they do. **Cut them; do not relocate them.** The data is their source of truth, and the history lives in version control.
+
 ## Acceptable Comments
 
 Comments are justified ONLY when explaining something **non-obvious**: WHY something is done, import/init ordering constraints, non-obvious side effects, thread safety caveats, complex protocols.
@@ -74,6 +78,8 @@ These look like WHY but are filler. Cut them.
 | **Restating the code** | `# Pop both alias ("type") and python-attr name ("secrets_type"): request bodies serialise with by_alias=True...` | The pop calls are visible. The serialisation is one line of context, not three. | `# pop both alias and attr name to keep the immutability guard` |
 | **Recursive WHY** | `# We do X because Y, because Z, because W...` | Each "because" drifts further from the load-bearing reason. | One level deep: `# We do X because Y.` |
 | **Pointer into the plan or conversation** | `# kept minimal, per the second requirement of the plan` | The plan and the conversation that numbered its items are gone by the time anyone reads the code, so the pointer explains nothing. | Write the reason itself: `# kept minimal; per-process restore is not needed yet`. A Jira key or an issue number is fine, because anyone can open it. |
+| **Mirrored facts** | `// K is all 76 calibration cases: 35 parse cases and 10 query inputs are rejected` | The numbers live in the data. When the data changes, the comment is silently wrong or has to be edited in step with it. | Cut the numbers: `// K is all calibration cases.` |
+| **History and provenance** | `// owner decision, 2026-10-03`, `// was 70 before the review` | Who decided what and when is already in version control, and the chronicle grows with every change. | Cut. |
 | **Branch-label narration** | `if not self.__vault.is_encryption_enabled():` `    # FF off — alias holds plaintext as-is` | The branch condition is self-labelling. The `if not is_encryption_enabled()` already says "FF off". Repeating the label inside the branch is narration in disguise. | Cut the in-branch label. If a WHY exists (e.g. about stale ciphers), place it *above* the `if`, not inside it. |
 
 ## Before / After Examples
@@ -145,5 +151,6 @@ Before completing any code task:
 3. **For each surviving comment, can I cut it by ≥50% without losing the load-bearing part?** If YES → Cut it NOW
 4. **Does any comment contain speculation ("if someone later adds X..."), mechanism over-explanation, or restate visible code?** If YES → Strip those parts NOW
 5. **Are there any section markers or dividers?** If YES → Remove them NOW
+6. **Does any comment contain a number or date copied from data or a spec, or the history of a decision?** If YES → Cut it NOW (Staleness Test)
 
-Only proceed after all five checks pass.
+Only proceed after all six checks pass.

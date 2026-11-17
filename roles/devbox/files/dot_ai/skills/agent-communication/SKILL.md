@@ -260,8 +260,8 @@ finding no test can show (a race the suite cannot provoke, a deployment concern)
 triggering conditions instead and carries no Test line.
 
 **Main session.** Send each Test line to the matching writer: unit → `unit-test-writer`;
-integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e → the
-frontend engineer with the `playwright-e2e` skill, because there is no e2e writer.
+integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e →
+`unit-test-writer`, which owns the e2e files and loads the `playwright-e2e` skill.
 
 **Test writer.** Write only that test, in the place and style the suite already uses, and run it.
 Return one of:

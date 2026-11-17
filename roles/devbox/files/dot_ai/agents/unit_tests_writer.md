@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: sonnet
 effort: high
 permissionMode: acceptEdits
-skills: go-engineer, go-testing, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
+skills: go-engineer, go-testing, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
 globs: ["**/*_test.go", "**/testdata/**", "**/test_*.py", "**/*_test.py", "**/conftest.py", "**/tests/**", "**/test/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", "**/__mocks__/**", "**/e2e/**"]
 updated: 2026-11-17
 problem: "Unit tests chase coverage lines instead of actively hunting bugs, missing edge cases and error paths across stacks."

@@ -34,8 +34,8 @@ to verify nothing regressed.
 
 | Key | Action |
 |-----|--------|
-| `Cmd+D` | Vertical split (side by side) |
-| `Cmd+Shift+D` | Horizontal split (top/bottom) |
+| `Cmd+S` | Vertical split (side by side) |
+| `Cmd+Shift+S` | Horizontal split (top/bottom) |
 | `Ctrl+Shift+R` | Resize the active split |
 | `Cmd+Opt+←/→/↑/↓` | Move focus between splits |
 | `Cmd+Shift+Enter` | Zoom active split fullscreen (toggle layout stack); press again to revert |

@@ -3,9 +3,11 @@
 
 - name: "Install configs"
   ansible.builtin.include_tasks: install_configs.yml
+  tags: [always]
 
 - name: "Apply configs"
   ansible.builtin.include_tasks: apply_configs.yml
+  tags: [always]
 
 - name: "Finish user polishing"
   ansible.builtin.include_tasks: prepare_user.yml

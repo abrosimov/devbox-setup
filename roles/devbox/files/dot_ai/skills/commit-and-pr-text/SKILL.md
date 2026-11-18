@@ -59,6 +59,9 @@ core.hooksPath` and `.git/hooks/`). When one does, do not add the key yourself.
   merge, a related PR in another repository.
 - Follow a `PULL_REQUEST_TEMPLATE.md` in the repository when there is one, keeping each of its
   sections as short as the rules above.
+- For an MR description that links Jira, Confluence or pinned code, the `jira-text` skill decides
+  the link formats and the text rules (backticks, semicolons, internal labels, HTML entities): run
+  its checker before handing the description over.
 
 ## 4. What stays out
 

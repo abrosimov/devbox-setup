@@ -96,6 +96,7 @@ ENTITY_RE = re.compile(r"&(?:lt|gt);")
 ANY_ENTITY_RE = re.compile(r"&(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z]+);")
 QUARTER_RE = re.compile(r"Q[1-4]$")
 YEAR_AFTER_RE = re.compile(r"^\s+(?:20)?\d{2}\b")
+SECOND_PERSON_RE = re.compile(r"\b(?:you|your|yours)\b", re.IGNORECASE)
 
 FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
 HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+\S")
@@ -268,18 +269,6 @@ def frontmatter_end(lines: Sequence[str]) -> int:
     return 0
 
 
-def is_section_start(line: str) -> bool:
-    if HEADING_RE.match(line):
-        return True
-    stripped = line.strip()
-    return (
-        len(stripped) > 4
-        and stripped.startswith("**")
-        and stripped.endswith("**")
-        and "**" not in stripped[2:-2]
-    )
-
-
 def _apply_markers(lines: Sequence[str], body_start: int, checked: list[bool]) -> bool:
     marker_at = {
         idx: m.group(1).lower()
@@ -403,7 +392,7 @@ def mentions(view: LineView) -> list[tuple[int, str, str]]:
 
 
 def quote_spans(text: str) -> list[tuple[int, int]]:
-    """Spans of quoted words: someone else's text, which the author cannot link or reword."""
+    """Spans of quoted words: someone else's text, which the author cannot reword."""
     spans: list[tuple[int, int]] = []
     straight = [i for i, ch in enumerate(text) if ch == '"']
     spans.extend((straight[i], straight[i + 1] + 1) for i in range(0, len(straight) - 1, 2))
@@ -418,19 +407,8 @@ def blank_spans(text: str, spans: Iterable[tuple[int, int]]) -> str:
     return "".join(chars)
 
 
-def _already_seen(kind: str, ident: str, seen: set[str]) -> bool:
-    if ident in seen:
-        return True
-    # A bare "BR-69" after "TENRES-BR-69" in the same section repeats a mention already made.
-    return kind == "spec" and ident.startswith("BR-") and any(s.endswith("-" + ident) for s in seen)
-
-
-def check_mentions(view: LineView, seen: set[str], emit: _Emit) -> None:
-    quoted = quote_spans(view.text)
+def check_mentions(view: LineView, emit: _Emit) -> None:
     for pos, kind, ident in mentions(view):
-        if _in_spans(pos, quoted) or _already_seen(kind, ident, seen):
-            continue
-        seen.add(ident)
         link = view.link_at(pos)
         if _mention_linked(kind, ident, link):
             continue
@@ -439,11 +417,18 @@ def check_mentions(view: LineView, seen: set[str], emit: _Emit) -> None:
             "the spec page section that holds it" if kind == "spec" else f"its /browse/{ident} page"
         )
         where = "sits in a link to somewhere else" if link else "is not linked"
-        emit(rule, f"first mention of {ident} in this section {where}. Link it to {target}")
+        emit(rule, f"{ident} {where}. Link every mention to {target}")
 
 
-def check_link_texts(view: LineView, emit: _Emit) -> None:
+def check_link_texts(view: LineView, emit: _Emit, *, allow_code_links: bool) -> None:
     for link in view.links:
+        if not allow_code_links and find_code_spans(link.text):
+            emit(
+                "code-in-link-text",
+                f"link text [{link.text}] holds inline code, and Jira drops such a link and "
+                "keeps only the code. Put the code outside the link or drop the backticks "
+                "inside the link text",
+            )
         text = link.text.replace("`", "").strip()
         if (
             text.startswith(":")
@@ -518,12 +503,22 @@ def check_prose(
     for match in ENTITY_RE.finditer(url_free):
         emit(
             "html-entity",
-            f"{match.group(0)} shows literally in Jira. Write the character inside backticks",
+            f"{match.group(0)} shows literally in Jira. Write the literal < or >",
         )
     for target in view.wikilinks:
         emit(
             "wikilink",
             f"[[{target}]] is a vault link and does not render in Jira. Use a URL link or drop it",
+        )
+
+
+def check_second_person(view: LineView, emit: _Emit) -> None:
+    unquoted = blank_spans(view.text, quote_spans(view.text))
+    for match in SECOND_PERSON_RE.finditer(unquoted):
+        emit(
+            "second-person",
+            f'"{match.group(0)}" addresses one reader, but a document has many. '
+            "Name the person or the group instead",
         )
 
 
@@ -543,6 +538,8 @@ def check_text(
     *,
     whole: bool = False,
     label_patterns: Iterable[str] = DEFAULT_LABEL_PATTERNS,
+    allow_code_links: bool = False,
+    document: bool = False,
 ) -> list[Finding]:
     lines = content.splitlines()
     body_start = frontmatter_end(lines)
@@ -553,21 +550,18 @@ def check_text(
 
     findings: list[Finding] = []
     emit = _Emit(path, findings)
-    seen: set[str] = set()
     for idx, line in enumerate(lines):
-        if idx < body_start or fenced[idx]:
-            continue
-        if is_section_start(line):
-            seen = set()
         if not checked[idx]:
             continue
         emit.line = idx + 1
         view = build_view(line)
-        check_mentions(view, seen, emit)
-        check_link_texts(view, emit)
+        check_mentions(view, emit)
+        check_link_texts(view, emit, allow_code_links=allow_code_links)
         check_urls(view, pins, emit)
         check_code_like(view, emit)
         check_prose(view, line, label_res, emit)
+        if document:
+            check_second_person(view, emit)
     return findings
 
 
@@ -588,6 +582,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         metavar="REGEX",
         help="internal-label regex; repeatable; replaces the defaults when given",
     )
+    parser.add_argument(
+        "--allow-code-links",
+        action="store_true",
+        help="allow inline code in link text (PR/MR descriptions not pasted into Jira)",
+    )
+    parser.add_argument(
+        "--document",
+        action="store_true",
+        help="text published as a document: flag second-person words",
+    )
     args = parser.parse_args(argv)
 
     patterns = args.label_pattern or list(DEFAULT_LABEL_PATTERNS)
@@ -605,7 +609,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (OSError, UnicodeDecodeError) as err:
             print(f"{path}: cannot read: {err}", file=sys.stderr)
             return 2
-        for finding in check_text(str(path), content, whole=args.whole, label_patterns=patterns):
+        findings = check_text(
+            str(path),
+            content,
+            whole=args.whole,
+            label_patterns=patterns,
+            allow_code_links=args.allow_code_links,
+            document=args.document,
+        )
+        for finding in findings:
             print(finding.render())
             total += 1
     return 1 if total else 0

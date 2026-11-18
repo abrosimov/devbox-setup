@@ -16,6 +16,9 @@ devbox_fish_plugins:
 devbox_shell:
   env:
     - { name: EDITOR, value: nvim }
+    # The tide prompt shows the active venv on the right, so the `(name)` prefix
+    # a venv's activate script would add on the left only repeats it.
+    - { name: VIRTUAL_ENV_DISABLE_PROMPT, value: "1" }
     - { name: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, value: "1" }
     # Homebrew bottle attestation enforcement (sigstore/cosign provenance via
     # GitHub's `gh` CLI). Introduced in 4.3.0, must be set explicitly even for

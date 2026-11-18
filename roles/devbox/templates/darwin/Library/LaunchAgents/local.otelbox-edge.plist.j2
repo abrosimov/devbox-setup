@@ -35,11 +35,13 @@
         <key>OTELBOX_AUTH_RETRY_INTERVAL</key>
         <string>1h</string>
         <!--
-          Sized to hold a 72-hour gateway outage without loss. `sizer: bytes`
-          counts UNCOMPRESSED proto, so the rate that matters is the
-          uncompressed one: ~1.1-2.1 GiB/h of traces (the traces WAL crossed
+          Sized to hold a 72-hour gateway outage without loss. Sized from the
+          uncompressed rate, ~1.1-2.1 GiB/h of traces (the traces WAL crossed
           100 MiB about every 320 s), not the ~48 MB/h of compressed wire
-          throughput an earlier sizing used. 72 h x 2 GiB/h = 144 GiB of queue;
+          throughput an earlier sizing used. Since 2.8.0 the queue counts the
+          zstd bytes it stores, so the same budget now holds several times that
+          outage; the disk claimed stays bounded by the same numbers.
+          72 h x 2 GiB/h = 144 GiB of queue;
           less the 768 MiB in-flight headroom under `batch` in edge.yaml it
           still covers ~71.6 h at that rate. Storage is 1.5 x queue = 216 GiB,
           the margin for bbolt page, freelist and churn overhead that keeps the

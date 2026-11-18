@@ -1,6 +1,8 @@
 devbox_projects_dir: "$HOME/Projects"
 devbox_active_profile: "personal"
 devbox_langfuse_user_id: "abrosimov.k.a@gmail.com"
+# Every Go module fetch goes through the private Athens proxy via Tamias.
+devbox_tamias_enabled: true
 
 # Profile-specific extras (concatenated with base lists in task files).
 # devbox_extra_brew: []

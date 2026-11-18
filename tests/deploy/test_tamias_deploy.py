@@ -27,6 +27,10 @@ CONFIGURE = TASKS_DIR / "configure_go_module_proxy.yml"
 VERIFY = TASKS_DIR / "verify_go_module_proxy.yml"
 MAIN_DARWIN = ROOT / "roles/devbox/tasks/main_darwin.yml"
 PACKAGES = ROOT / "roles/devbox/defaults/main/packages.yml"
+DEFAULTS_DIR = ROOT / "roles/devbox/defaults/main"
+PROFILES_DIR = ROOT / "profiles"
+ROLE_TASKS_DIR = ROOT / "roles/devbox/tasks"
+SWITCH = "devbox_tamias_enabled"
 
 ASSET = "tamias-darwin-arm64"
 AUTH_MARKER = "AUTH-STATUS-SECRET-MARKER"
@@ -65,6 +69,31 @@ def _proxy() -> Doc:
     return copy.deepcopy(_defaults()["devbox_go_module_proxy"])
 
 
+def _role_defaults() -> Doc:
+    merged: Doc = {}
+    for path in sorted(DEFAULTS_DIR.glob("*.yml")):
+        merged.update(yaml.safe_load(path.read_text(encoding="utf-8")) or {})
+    return merged
+
+
+def _profile(name: str) -> Doc:
+    return yaml.safe_load((PROFILES_DIR / f"{name}.yml").read_text(encoding="utf-8")) or {}
+
+
+def _profile_names() -> list[str]:
+    return sorted(path.stem for path in PROFILES_DIR.glob("*.yml"))
+
+
+def _resolved_switch(profile: str | None = None) -> bool:
+    variables = _role_defaults()
+    if profile is not None:
+        variables.update(_profile(profile))
+    rendered = _render_env(Path("/nonexistent")).from_string(
+        variables["devbox_packages"]["tamias"]["enabled"]
+    )
+    return rendered.render(variables) == "True"
+
+
 TAG = f"v{_packages()['tamias']['version']}"
 
 
@@ -93,7 +122,7 @@ class TestPackageDeclaration:
 
     def test_declaration_is_well_formed(self) -> None:
         tamias = _packages()["tamias"]
-        assert isinstance(tamias["enabled"], bool)
+        assert tamias["enabled"] == "{{ devbox_tamias_enabled | bool }}"
         assert tamias["repository"] == "abrosimov/tamias"
         assert tamias["version"] == "0.2.2"
         assert tamias["assets"] == {"arm64": ASSET}
@@ -105,6 +134,61 @@ class TestPackageDeclaration:
     def test_tamias_enabled_is_the_only_switch(self) -> None:
         assert [key for key in _proxy() if "enabled" in key.lower()] == []
         assert [key for key in _defaults() if "enabled" in key.lower()] == []
+        assert [key for key in _packages()["tamias"] if "enabled" in key.lower()] == ["enabled"]
+
+    def test_profile_variable_is_the_only_other_declaration_of_the_switch(self) -> None:
+        declared = [
+            key for key in _role_defaults() if "tamias" in key.lower() and "enabled" in key.lower()
+        ]
+        assert declared == [SWITCH]
+        for name in _profile_names():
+            assert [
+                key for key in _profile(name) if "tamias" in key.lower() and key != SWITCH
+            ] == []
+
+    def test_tasks_read_the_package_switch_not_the_profile_variable(self) -> None:
+        offenders: list[str] = []
+        for path in sorted(ROLE_TASKS_DIR.rglob("*.yml")):
+            loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+            if not isinstance(loaded, list):
+                continue
+            for task in _flatten(loaded):
+                conditions = [task.get("when", [])]
+                conditions.append(task.get("ansible.builtin.assert", {}).get("that", []))
+                if SWITCH in json.dumps(conditions):
+                    offenders.append(f"{path.relative_to(ROOT)}: {task.get('name')}")
+        assert offenders == []
+
+    def test_switch_default_is_a_literal_false(self) -> None:
+        assert _role_defaults()[SWITCH] is False
+
+    def test_personal_profile_sets_the_switch_to_a_literal_true(self) -> None:
+        assert _profile("personal")[SWITCH] is True
+
+    def test_work_profile_does_not_set_the_switch(self) -> None:
+        assert SWITCH not in _profile("work")
+
+    def test_switch_resolves_true_for_personal(self) -> None:
+        assert _resolved_switch("personal") is True
+
+    def test_switch_resolves_false_for_work(self) -> None:
+        assert _resolved_switch("work") is False
+
+    def test_switch_resolves_false_for_bare_defaults(self) -> None:
+        assert _resolved_switch() is False
+
+    @pytest.mark.parametrize("name", _profile_names())
+    def test_only_the_personal_profile_enables_the_client(self, name: str) -> None:
+        assert _resolved_switch(name) is (name == "personal")
+
+    def test_switch_follows_the_profile_variable_not_a_constant(self) -> None:
+        variables = _role_defaults()
+        template = variables["devbox_packages"]["tamias"]["enabled"]
+        environment = _render_env(Path("/nonexistent"))
+        for value, expected in ((True, "True"), (False, "False")):
+            assert (
+                environment.from_string(template).render({**variables, SWITCH: value}) == expected
+            )
 
     def test_no_checksum_like_field_anywhere(self) -> None:
         def keys(node: object) -> Iterator[str]:

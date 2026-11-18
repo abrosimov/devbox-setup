@@ -319,7 +319,7 @@ Every Go module fetch goes through the private proxy at `https://go.abrosimov.te
 
 **Go client.** `tasks/darwin/configure_go_module_proxy.yml` writes `GOAUTH=<home>/.local/bin/tamias goauth`, `GOPROXY`, `GONOPROXY=none`, `GONOSUMDB` and `GOSUMDB` into the user's `go env` file, rewriting only keys that diverge. Tamias, its client profiles and the go env are set up before the Go tools step, because from then on every module fetch, `go install` included, needs a Tamias credential.
 
-**On/off switch.** `devbox_packages.tamias.enabled` controls the whole client. When it is `false`, the Tamias step is skipped. The Go step removes, with `go env -u`, every line of the `go env` file that is exactly what it would write when enabled, so Go falls back to its defaults. Lines with any other value are left alone. The installed binary and any Keychain credential stay where they are.
+**On/off switch.** `devbox_packages.tamias.enabled` controls the whole client. Its value is the profile variable `devbox_tamias_enabled`: `false` in `defaults/main/core.yml`, `true` in `profiles/personal.yml`, so only the personal profile uses the private proxy. When it is `false`, the Tamias step is skipped. The Go step removes, with `go env -u`, every line of the `go env` file that is exactly what it would write when enabled, so Go falls back to its defaults. Lines with any other value are left alone. The installed binary and any Keychain credential stay where they are.
 
 **Credentials.** Sign-in is interactive and never part of `make personal`/`make work`. Run `~/.local/bin/tamias login` once, then check the whole chain:
 

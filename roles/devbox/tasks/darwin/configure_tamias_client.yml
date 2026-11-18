@@ -41,7 +41,7 @@
           Tamias is enabled but roles/devbox/local/tamias/config.json is missing.
           Every Go module fetch goes through the private proxy and needs it.
           Create it from the example in README.md § Go Module Proxy, or set
-          devbox_packages.tamias.enabled to false.
+          devbox_tamias_enabled to false in the profile.
         quiet: true
 
     - name: "Tamias client — ensure the private configuration directory"

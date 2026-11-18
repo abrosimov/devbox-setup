@@ -228,9 +228,10 @@ devbox_packages:
   # `enabled` is the single switch for the whole private-proxy client: on, the
   # helper is installed and the go env points at the proxy; off, the go env
   # keys this playbook wrote are removed again and Go falls back to its
-  # defaults.
+  # defaults. Its value is the profile-level devbox_tamias_enabled (core.yml),
+  # because a profile cannot override one key inside devbox_packages.
   tamias:
-    enabled: true
+    enabled: "{{ devbox_tamias_enabled | bool }}"
     repository: "abrosimov/tamias"
     version: "0.2.2"
     # ansible_facts['architecture'] -> release asset name.

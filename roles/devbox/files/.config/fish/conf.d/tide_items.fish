@@ -4,8 +4,11 @@
 # Left prompt: use proj_pwd instead of pwd for project-aware display
 set -g tide_left_prompt_items vi_mode os proj_pwd git
 
-# Right prompt: useful items only (removed rarely-used language indicators)
-set -g tide_right_prompt_items status cmd_duration context jobs node python go kubectl time
+# Right prompt: useful items only (removed rarely-used language indicators).
+# venv_python replaces tide's python item, which appends the venv's directory
+# name that proj_pwd already shows; it keeps tide's tide_python_* styling. It
+# needs its own name because `fisher update` rewrites tide's _tide_item_python.
+set -g tide_right_prompt_items status cmd_duration context jobs node venv_python go kubectl time
 
 # Treat orbstack as a "default" docker context (hides indicator when using orbstack)
 set -g tide_docker_default_contexts default colima orbstack

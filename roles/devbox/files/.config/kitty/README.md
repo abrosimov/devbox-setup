@@ -150,7 +150,10 @@ The terminal is treated as **always-on**. Two principles:
    focused OS window. If every tab is just an idle shell (`fish`, `bash`,
    `zsh`, `sh`, `dash`, `ksh`), the window closes silently. If any tab has a
    non-shell foreground process (claude, vim, htop, …), a confirmation
-   prompt lists the busy tabs and asks `[y/N]`.
+   prompt lists the busy tabs and asks `[y/N]`. `y` closes; any other key,
+   `Esc` or `Ctrl+C` cancels. Left unanswered, the prompt counts down from
+   5 minutes and then closes the window as if confirmed (snapshot included),
+   so an unattended quit is never blocked.
 
 Scope of `Cmd+Q` is **the current OS window only** — other kitty OS windows
 are untouched.
@@ -159,9 +162,12 @@ are untouched.
 an editor in a new OS window, and the config is owned by this repo, so editing
 the deployed copy is a dead end.
 
-As a defence-in-depth, `confirm_os_window_close -1` is set, which makes
-kitty's built-in close paths (window-manager close button, remote-control
-`close-window`) also confirm when active processes are present.
+kitty's own close confirmation is switched off (`confirm_os_window_close 0`).
+Its prompt has no timeout, so when macOS asks kitty to quit (system update,
+restart, logout) it waited for an answer and blocked the update. The red close
+button, Dock → Quit, system quit and remote-control `close-window` therefore
+close without asking, and without taking a session snapshot; only `Cmd+Q`
+confirms.
 
 ## Session save / restore
 

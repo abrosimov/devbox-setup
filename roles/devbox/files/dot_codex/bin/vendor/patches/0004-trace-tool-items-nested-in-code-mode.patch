@@ -1,0 +1,615 @@
+diff --git a/plugins/tracing/src/parse.ts b/plugins/tracing/src/parse.ts
+index 5c70645..6809f7a 100644
+--- a/plugins/tracing/src/parse.ts
++++ b/plugins/tracing/src/parse.ts
+@@ -12,6 +12,7 @@ import type {
+   RolloutLine,
+   SessionMeta,
+   SystemPrompt,
++  ThreadItem,
+   ToolDefinition,
+   TokenUsage,
+   ToolCall,
+@@ -92,6 +93,90 @@ function extractToolError(payload: EventMsgPayload): string | undefined {
+   return undefined;
+ }
+ 
++const TOOL_ITEM_TYPES = new Set(["CommandExecution", "McpToolCall", "FileChange", "Extension"]);
++
++const EXTENSION_ITEM_ENVELOPE = new Set(["type", "id", "results"]);
++
++const CODE_MODE_TOOL = "exec";
++
++function finiteOr(value: number | undefined, fallback: number): number {
++  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
++}
++
++function mcpItemError(item: ThreadItem): string | undefined {
++  const { error, result } = item;
++  if (typeof error === "string" && error) return error;
++  if (error != null && typeof error === "object") {
++    const message = (error as { message?: unknown }).message;
++    return typeof message === "string" && message ? message : JSON.stringify(error);
++  }
++  if (result == null || typeof result !== "object") return undefined;
++  const { structuredContent, content } = result as {
++    structuredContent?: { error?: unknown } | null;
++    content?: MessageContentPart[];
++  };
++  if (typeof structuredContent?.error === "string" && structuredContent.error) {
++    return structuredContent.error;
++  }
++  return extractMessageText(content) || undefined;
++}
++
++function toolItemError(item: ThreadItem): string | undefined {
++  if (item.status !== "failed" && item.status !== "declined") return undefined;
++  if (item.type === "CommandExecution") {
++    return typeof item.exit_code === "number"
++      ? `Exit code: ${item.exit_code}`
++      : `Command ${item.status}`;
++  }
++  if (item.type === "McpToolCall") return mcpItemError(item) ?? `MCP tool call ${item.status}`;
++  return item.stderr || `${item.type} ${item.status}`;
++}
++
++function toolItemCall(
++  item: ThreadItem,
++  payload: EventMsgPayload,
++  ts: number,
++): ToolCall | undefined {
++  if (typeof item.id !== "string" || !item.id) return undefined;
++  if (item.source === "user_shell") return undefined;
++  const startTime = finiteOr(payload.started_at_ms, ts);
++  const call = {
++    callId: item.id,
++    startTime,
++    endTime: Math.max(startTime, finiteOr(payload.completed_at_ms, ts)),
++    error: toolItemError(item),
++  };
++  switch (item.type) {
++    case "CommandExecution":
++      return {
++        ...call,
++        name: "exec_command",
++        args: { command: item.command, cwd: item.cwd },
++        output: item.aggregated_output ?? undefined,
++      };
++    case "McpToolCall":
++      if (typeof item.server !== "string" || typeof item.tool !== "string") return undefined;
++      return {
++        ...call,
++        name: `${item.server}.${item.tool}`,
++        args: item.arguments,
++        output: item.result ?? undefined,
++        mcp: { server: item.server, tool: item.tool },
++      };
++    case "FileChange":
++      return { ...call, name: "apply_patch", args: { changes: item.changes }, output: item.stdout };
++    default:
++      return {
++        ...call,
++        name: item.kind || "extension",
++        args: Object.fromEntries(
++          Object.entries(item).filter(([key]) => !EXTENSION_ITEM_ENVELOPE.has(key)),
++        ),
++        output: item.results,
++      };
++  }
++}
++
+ type MutableTurn = Turn & { lastAgentMessage?: string; userInputFallback?: string };
+ 
+ const TURN_OPENING_EVENTS = new Set(["user_message", "item_completed", "agent_message"]);
+@@ -102,6 +187,7 @@ function newTurn(startTime: number): MutableTurn {
+     startTime,
+     endTime: startTime,
+     steps: [],
++    detachedToolCalls: [],
+     subagentThreadIds: [],
+     subagentSpawnCallIds: {},
+     promptSkills: [],
+@@ -144,6 +230,7 @@ export function parseSession(lines: RolloutLine[]): {
+   let turn: MutableTurn | null = null;
+   let step: ModelStep | null = null;
+   let toolCallsById = new Map<string, ToolCall>();
++  let openCodeModeCall: ToolCall | null = null;
+   let lastTimestamp = Date.now();
+ 
+   const developerMessages: string[] = [];
+@@ -214,6 +301,22 @@ export function parseSession(lines: RolloutLine[]): {
+     }
+     turn = null;
+     toolCallsById = new Map();
++    openCodeModeCall = null;
++  };
++
++  const recordToolItem = (item: ThreadItem, payload: EventMsgPayload, ts: number) => {
++    const call = toolItemCall(item, payload, ts);
++    if (!call) return;
++    const visible = toolCallsById.get(call.callId);
++    if (visible) {
++      visible.error ??= call.error;
++      visible.mcp ??= call.mcp;
++      if (visible.output == null) visible.output = call.output;
++    } else if (openCodeModeCall) {
++      (openCodeModeCall.children ??= []).push(call);
++    } else {
++      turn!.detachedToolCalls.push(call);
++    }
+   };
+ 
+   for (const line of lines) {
+@@ -284,6 +387,7 @@ export function parseSession(lines: RolloutLine[]): {
+         };
+         s.toolCalls.push(tc);
+         toolCallsById.set(tc.callId, tc);
++        if (tc.name === CODE_MODE_TOOL) openCodeModeCall = tc;
+       } else if (p.type === "local_shell_call") {
+         const call = p as unknown as ResponseItemLocalShellCall;
+         const s = ensureStep(ts);
+@@ -315,6 +419,9 @@ export function parseSession(lines: RolloutLine[]): {
+         }
+       } else if (p.type === "function_call_output" || p.type === "custom_tool_call_output") {
+         const out = p as unknown as ResponseItemFunctionCallOutput;
++        if (p.type === "custom_tool_call_output" && out.call_id === openCodeModeCall?.callId) {
++          openCodeModeCall = null;
++        }
+         const tc = toolCallsById.get(out.call_id);
+         if (tc) {
+           if (tc.output == null) tc.output = out.output;
+@@ -381,6 +488,8 @@ export function parseSession(lines: RolloutLine[]): {
+         if (p.item.kind === "started" && typeof p.item.agent_thread_id === "string") {
+           recordSubagentThread(p.item.agent_thread_id, p.item.id);
+         }
++      } else if (et === "item_completed" && p.item && TOOL_ITEM_TYPES.has(p.item.type ?? "")) {
++        recordToolItem(p.item, p, ts);
+       } else if (et === "agent_message" && typeof p.message === "string") {
+         turn!.lastAgentMessage = p.message;
+       } else if (et === "token_count") {
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index 12e6e0a..be230db 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -529,6 +529,7 @@ async function emitTurn(
+     const systemMessage = systemPromptText(turn.systemPrompt);
+     const historyPrefix = ctx.historyPrefix ?? [];
+     const spawnObservations = new Map<string, LangfuseObservation>();
++    const codeModeCalls: Array<{ observation: LangfuseObservation; children: ToolCall[] }> = [];
+     const user = userMessage(turn);
+     const turnMessages: ChatMlMessage[] = user ? [user] : [];
+ 
+@@ -567,12 +568,19 @@ async function emitTurn(
+       for (const tc of step.toolCalls) {
+         const observation = emitToolCall(tc, root, step.endTime);
+         if (tc.name === "spawn_agent") spawnObservations.set(tc.callId, observation);
++        if (tc.children) codeModeCalls.push({ observation, children: tc.children });
+       }
+ 
+       generation.end(new Date(generationEnd(step)));
+       turnMessages.push(assistantMessage(step), ...toolMessages(step));
+     }
+ 
++    // Drawn after every step, so the span ids spawnContextOf replays stay as they were.
++    for (const { observation, children } of codeModeCalls) {
++      for (const child of children) emitToolCall(child, observation, child.startTime);
++    }
++    for (const tc of turn.detachedToolCalls) emitToolCall(tc, root, tc.startTime);
++
+     const announced: SubagentRollout[] = [];
+     for (const threadId of turn.subagentThreadIds) {
+       const rollout = ctx.subagentIndex.byThread.get(threadId);
+diff --git a/plugins/tracing/src/types.ts b/plugins/tracing/src/types.ts
+index 53685d5..c9a9520 100644
+--- a/plugins/tracing/src/types.ts
++++ b/plugins/tracing/src/types.ts
+@@ -118,6 +118,33 @@ export type TokenUsage = {
+   reasoning_output_tokens?: number;
+ };
+ 
++/**
++ * An `item_completed` item. From Codex 0.162, shell, MCP, patch and extension calls report
++ * their status here rather than in `*_end` events, including calls nested inside code mode.
++ */
++export type ThreadItem = {
++  type?: string;
++  id?: string;
++  kind?: string;
++  agent_thread_id?: string;
++  content?: MessageContentPart[];
++  status?: string;
++  source?: string;
++  command?: unknown;
++  cwd?: string;
++  aggregated_output?: string | null;
++  exit_code?: number | null;
++  server?: string;
++  tool?: string;
++  arguments?: unknown;
++  result?: unknown;
++  error?: unknown;
++  changes?: unknown;
++  stdout?: string;
++  stderr?: string;
++  [key: string]: unknown;
++};
++
+ export type EventMsgPayload = {
+   type: string;
+   turn_id?: string | null;
+@@ -127,13 +154,9 @@ export type EventMsgPayload = {
+     last_token_usage?: TokenUsage;
+     model_context_window?: number;
+   } | null;
+-  item?: {
+-    type?: string;
+-    id?: string;
+-    kind?: string;
+-    agent_thread_id?: string;
+-    content?: MessageContentPart[];
+-  } | null;
++  item?: ThreadItem | null;
++  started_at_ms?: number;
++  completed_at_ms?: number;
+   new_thread_id?: string | null;
+   event_id?: string;
+   kind?: string;
+@@ -197,6 +220,8 @@ export type ToolCall = {
+   output?: unknown;
+   error?: string;
+   mcp?: { server: string; tool: string };
++  /** Tool items completed while this code-mode call was running. */
++  children?: ToolCall[];
+ };
+ 
+ export type ModelStep = {
+@@ -218,6 +243,8 @@ export type Turn = {
+   userInput?: string;
+   finalOutput?: string;
+   steps: ModelStep[];
++  /** Tool items completed outside any model-visible or code-mode call. */
++  detachedToolCalls: ToolCall[];
+   subagentThreadIds: string[];
+   subagentSpawnCallIds: Record<string, string>;
+   promptSkills: string[];
+diff --git a/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-code-mode-main.jsonl b/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-code-mode-main.jsonl
+new file mode 100644
+index 0000000..a01c97f
+--- /dev/null
++++ b/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-code-mode-main.jsonl
+@@ -0,0 +1,36 @@
++{"timestamp":"2026-11-15T20:55:34.369Z","type":"session_meta","payload":{"id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","timestamp":"2026-11-15T20:54:37.300Z","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","originator":"codex-tui","cli_version":"0.169.0","source":"vscode","thread_source":"user","model_provider":"openai"}}
++{"timestamp":"2026-11-15T20:55:34.369Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","started_at":1794776134}}
++{"timestamp":"2026-11-15T20:55:34.655Z","type":"turn_context","payload":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T20:55:57.947Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa1c59fa4487d28eb4a786ba8ef040","status":"completed","call_id":"call_d9b3c7bc8ebc41d7818e476fb0c5575d","name":"exec","input":"text(ALL_TOOLS.filter(x=> /github_(fetch_file|get_pull_request|fetch_pull_request|fetch_issue)/.test(x.name)));\ntext(await tools.exec_command({cmd:\"cat roles/ru…","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776153.984895}}}
++{"timestamp":"2026-11-15T20:55:58.070Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-4f7b2a19-22bc-4ba0-b873-265dd2ccd275","process_id":"77698","command":["/bin/zsh","-lc","cat roles/runtime_pins/defaults/main.yml; cat roles/pocket_id/defaults/main.yml; cat roles/pocket_id/templates/pocket-id.container.j2; rg -n 'pocket|identity' M…"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"read","cmd":"cat roles/runtime_pins/defaults/main.yml","name":"main.yml","path":"roles/runtime_pins/defaults/main.yml"},{"type":"read","cmd":"cat roles/pocket_id/defaults/main.yml","name":"main.yml","path":"roles/pocket_id/defaults/main.yml"},{"type":"read","cmd":"cat roles/pocket_id/templates/pocket-id.container.j2","name":"pocket-id.container.j2","path":"roles/pocket_id/templates/pocket-id.container.j2"},{"type":"search","cmd":"rg -n 'pocket|identity' Makefile pyproject.toml","query":"pocket|identity","path":"Makefile"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"---\nruntime_pins_clickstack_app_image: >-\n  docker.io/hyperdx/hyperdx:2.42.0@sha256:409af6d989595376507283c7703b04912a2f66042af434e830ca4b410fc5a716\nruntime_pin…","exit_code":0,"duration":{"secs":0,"nanos":11208}},"started_at_ms":1794776158070,"completed_at_ms":1794776158070}}
++{"timestamp":"2026-11-15T20:55:59.402Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"Extension","kind":"web.search","id":"exec-79b5c364-2cd2-45ee-9c3d-9267eca21426","query":"https://github.com/pocket-id/pocket-id/pull/1840","action":{"type":"openPage","url":"https://github.com/pocket-id/pocket-id/pull/1840"},"results":[{"type":"text_result","ref_id":"turn0view0","title":"Internal Error"},{"type":"text_result","ref_id":"turn0view1","title":"Internal Error"},{"type":"text_result","domain":"github.com","ref_id":"turn0view2","snippet":"Total lines: 180","thumbnail_url":"https://images.openai.com/static-rsc-1/G34nBObcG4664JyVRnGyXfu-twuE8BLFVe-jfsgTeyE4LOgNmigsRV7ZB3rGyrNK8kgDigcUYTbLNg1u3CC8-WzpiYxJSf6g5z8e7HjkKaPGocJ9lSMONgNuk…","title":"Release v2.19.2 · pocket-id/pocket-id · GitHub","url":"https://github.com/pocket-id/pocket-id/releases/tag/v2.19.2"}]},"started_at_ms":1794776158119,"completed_at_ms":1794776159402}}
++{"timestamp":"2026-11-15T20:55:59.415Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e0fe-d4b7-7532-8749-f45d8f688ece","call_id":"call_d9b3c7bc8ebc41d7818e476fb0c5575d","output":[{"type":"input_text","text":"Script completed\nWall time 1.5 seconds\nOutput:\n"},{"type":"input_text","text":"[{\"name\":\"mcp__codex_apps__github_fetch_file\",\"description\":\"Fetch file content by repository path, using the default branch when ref is omitted. This tool is p…"},{"type":"input_text","text":"{\"chunk_id\":\"299cb2\",\"wall_time_seconds\":0.000011208,\"exit_code\":0,\"original_token_count\":4422,\"output\":\"---\\nruntime_pins_clickstack_app_image: >-\\n  docker.io…"},{"type":"input_text","text":"Internal Error ()\nciteturn0view0 [wordlim: 200] Source: open({\"ref_id\":\"https://github.com/pocket-id/pocket-id/pull/1840\",\"lineno\":null}); \nFailed to fetch h…"}],"internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776159.415417}}}
++{"timestamp":"2026-11-15T20:55:59.417Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":127796,"cached_input_tokens":88192,"cache_write_input_tokens":0,"output_tokens":677,"reasoning_output_tokens":15,"total_tokens":128473},"last_token_usage":{"input_tokens":46492,"cached_input_tokens":46336,"cache_write_input_tokens":0,"output_tokens":211,"reasoning_output_tokens":0,"total_tokens":46703},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T20:56:17.170Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa1c6a78c887d28e61a889b7882572","status":"completed","call_id":"call_f781f7cab30240c7ba72b641e7edaddf","name":"exec","input":"const rr=await Promise.allSettled([\ntools.mcp__codex_apps__github_fetch_file({path:\"handler/rfc8628/device_auth_response.go\",ref:\"v1.4.3\",repository_full_name:\"…","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776170.4754844}}}
++{"timestamp":"2026-11-15T20:56:17.317Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-a1351a76-a004-4584-9238-72c7676f55b2","process_id":"52158","command":["/bin/zsh","-lc","rg -n 'pocket|identity' tests/test_runtime_pins.py tests/test_pocket_oidc_runtime_contract.py config/observability-image-identity-policy.yml; sed -n '1,120p' te…"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"rg -n 'pocket|identity' tests/test_runtime_pins.py tests/test_pocket_oidc_runtime_contract.py config/observability-image-identity-policy.yml; sed -n '1,120p' te…"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"rg: config/observability-image-identity-policy.yml: No such file or directory (os error 2)\ntests/test_runtime_pins.py:63:def test_unrelated_pin_changes_preserve…","exit_code":0,"duration":{"secs":0,"nanos":11333}},"started_at_ms":1794776177317,"completed_at_ms":1794776177317}}
++{"timestamp":"2026-11-15T20:56:17.704Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"McpToolCall","id":"exec-db81a730-1a22-4475-8daf-0c6046d3ec11","server":"codex_apps","tool":"github.fetch_file","arguments":{"path":"handler/rfc8628/device_auth_response.go","ref":"v1.4.3","repository_full_name":"pocket-id/fosite"},"connectorId":"connector_76869538009648d5b282a4bb21c3d157","linkId":"link_6abbd74ed9548191b41df510c0de4578","appName":"GitHub","actionName":"fetch_file","readOnlyHint":true,"status":"failed","result":{"content":[{"type":"text","text":"GitHub API error 404: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#get-repository-content\",\"status\":\"404\"}"}],"structuredContent":{"error":"GitHub API error 404: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#get-repository-content\",\"status\":\"404\"}","error_code":"NOT_FOUND","error_data":{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/contents#get-repository-content","status":"404"}},"isError":true},"duration":{"secs":0,"nanos":463164042}},"started_at_ms":1794776177240,"completed_at_ms":1794776177703}}
++{"timestamp":"2026-11-15T20:56:17.715Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-3b788a7f-999b-45c9-899e-7ff89186ec30","process_id":"89121","command":["/bin/zsh","-lc","skopeo inspect --format '{{.Digest}}' docker://ghcr.io/pocket-id/pocket-id:v2.19.2"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"skopeo inspect --format '{{.Digest}}' docker://ghcr.io/pocket-id/pocket-id:v2.19.2"}],"source":"unified_exec_startup","status":"failed","aggregated_output":"Error: parsing manifest for image: choosing image instance: no image found in image index for architecture \"arm64\", variant \"v8\", OS \"darwin\"\n","exit_code":1,"duration":{"secs":0,"nanos":324575667}},"started_at_ms":1794776177390,"completed_at_ms":1794776177715}}
++{"timestamp":"2026-11-15T20:56:17.733Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"McpToolCall","id":"exec-6f139f55-44f3-4888-a05d-8e23a2a27b1d","server":"codex_apps","tool":"github.fetch_file","arguments":{"path":"backend/go.mod","ref":"v2.18.0","repository_full_name":"pocket-id/pocket-id"},"connectorId":"connector_76869538009648d5b282a4bb21c3d157","linkId":"link_6abbd74ed9548191b41df510c0de4578","appName":"GitHub","actionName":"fetch_file","readOnlyHint":true,"status":"completed","result":{"content":[{"type":"text","text":"Action completed."}],"structuredContent":{"content":"module github.com/pocket-id/pocket-id/backend\n\ngo 1.27.1\n\nrequire (\n\tgithub.com/aws/aws-sdk-go-v2 v1.47.1\n\tgithub.com/aws/aws-sdk-go-v2/config v1.33.6\n\tgithub.c…","encoding":"utf-8","sha":"5511d66dd88e90c16e22e6b7383bbef26970ad54","display_url":"https://github.com/pocket-id/pocket-id/blob/v2.18.0/backend/go.mod","display_title":"go.mod"},"isError":false},"duration":{"secs":0,"nanos":492680875}},"started_at_ms":1794776177240,"completed_at_ms":1794776177733}}
++{"timestamp":"2026-11-15T20:56:17.790Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"McpToolCall","id":"exec-53420620-258a-4f49-b9e3-136974da0023","server":"codex_apps","tool":"github.fetch_issue_comments","arguments":{"issue_number":1840,"repo_full_name":"pocket-id/pocket-id"},"connectorId":"connector_76869538009648d5b282a4bb21c3d157","linkId":"link_6abbd74ed9548191b41df510c0de4578","appName":"GitHub","actionName":"fetch_issue_comments","readOnlyHint":true,"status":"completed","result":{"content":[{"type":"text","text":"Action completed."}],"structuredContent":{"comments":[{"url":"https://github.com/pocket-id/pocket-id/pull/1840#issuecomment-6154691994","body":"Thanks, I'm closing this in favor of https://github.com/pocket-id/fosite/pull/3, since it's cleaner to store the resource.","user":{"login":"stonith404","name":"stonith404","email":null,"avatar_url":"https://avatars.githubusercontent.com/u/58886915?v=4","id":58886915},"id":6154691994,"pull_request_review_id":null,"in_reply_to_id":null,"created_at":null,"updated_at":null,"review":null,"side":null,"line":null,"start_line":null,"path":null,"body_html":"<p dir=\"auto\">Thanks, I'm closing this in favor of <a class=\"issue-link js-issue-link\" data-error-text=\"Failed to load title\" data-id=\"5822440085\" data-permissi…"}],"url":"https://github.com/pocket-id/pocket-id/issues/1840","title":"pocket-id/pocket-id Issue #1840 comments","display_url":"https://github.com/pocket-id/pocket-id/issues/1840","display_title":"pocket-id/pocket-id Issue #1840 comments"},"isError":false},"duration":{"secs":0,"nanos":554598417}},"started_at_ms":1794776177235,"completed_at_ms":1794776177790}}
++{"timestamp":"2026-11-15T20:56:17.793Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e0ff-1c81-7230-9cf4-f85fec8d4578","call_id":"call_f781f7cab30240c7ba72b641e7edaddf","output":[{"type":"input_text","text":"Script completed\nWall time 0.6 seconds\nOutput:\n"},{"type":"input_text","text":"{\"i\":0,\"result\":{\"status\":\"fulfilled\",\"value\":{\"content\":[{\"type\":\"text\",\"text\":\"GitHub API error 404: {\\\"message\\\":\\\"Not Found\\\",\\\"documentation_url\\\":\\\"https:…"},{"type":"input_text","text":"{\"i\":1,\"dependency\":[\"\\tgithub.com/ory/fosite v0.49.1-0.20250703093431-a5f0b09bf31c\",\"replace github.com/ory/fosite => github.com/pocket-id/fosite v1.3.0\"]}"},{"type":"input_text","text":"{\"i\":2,\"result\":{\"status\":\"fulfilled\",\"value\":{\"content\":[{\"type\":\"text\",\"text\":\"Action completed.\"}],\"structuredContent\":{\"comments\":[{\"url\":\"https://github.co…"}],"internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776177.793782}}}
++{"timestamp":"2026-11-15T20:56:17.794Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":249143,"cached_input_tokens":190336,"cache_write_input_tokens":0,"output_tokens":1255,"reasoning_output_tokens":25,"total_tokens":250398},"last_token_usage":{"input_tokens":65716,"cached_input_tokens":55680,"cache_write_input_tokens":0,"output_tokens":357,"reasoning_output_tokens":10,"total_tokens":66073},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T20:56:28.374Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa1c789f5c87d29a755a2c899668c4","status":"completed","call_id":"call_efeb9ba2ea0346bdabf2a4de23d5deb1","name":"exec","input":"text(await tools.mcp__codex_apps__github_search({query:\"Sanitize nonce resource\",repository_name:\"pocket-id/fosite\",topn:5}));\ntext(await tools.exec_command({cm…","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776184.6308522}}}
++{"timestamp":"2026-11-15T20:56:29.199Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"McpToolCall","id":"exec-b10b5a96-a559-43da-9de1-73f99a73a180","server":"codex_apps","tool":"github.search","arguments":{"query":"Sanitize nonce resource","repository_name":"pocket-id/fosite","topn":5},"connectorId":"connector_76869538009648d5b282a4bb21c3d157","linkId":"link_6abbd74ed9548191b41df510c0de4578","appName":"GitHub","actionName":"search","readOnlyHint":true,"status":"completed","result":{"content":[{"type":"text","text":"Action completed."}],"structuredContent":{"results":[]},"isError":false},"duration":{"secs":0,"nanos":775597375}},"started_at_ms":1794776188423,"completed_at_ms":1794776189199}}
++{"timestamp":"2026-11-15T20:56:30.518Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-d9896cbb-e186-42f3-9244-bdaf25a04223","process_id":"21365","command":["/bin/zsh","-lc","rg -n 'pocket|identity' config rehearsal .github/workflows/ci.yml | head -70; sed -n '95,175p' docs/runbooks/go-module-proxy-runbook.md; sed -n '1,180p' playboo…"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"search","cmd":"rg -n 'pocket|identity' config rehearsal .github/workflows/ci.yml","query":"pocket|identity","path":"config"},{"type":"read","cmd":"sed -n '95,175p' docs/runbooks/go-module-proxy-runbook.md","name":"go-module-proxy-runbook.md","path":"docs/runbooks/go-module-proxy-runbook.md"},{"type":"read","cmd":"sed -n '1,180p' playbooks/identity_stack.yml","name":"identity_stack.yml","path":"playbooks/identity_stack.yml"},{"type":"read","cmd":"sed -n '1,200p' roles/pocket_id/tasks/main.yml","name":"main.yml","path":"roles/pocket_id/tasks/main.yml"}],"source":"unified_exec_startup","status":"completed","aggregated_output":".github/workflows/ci.yml:24:      identity_runtime_affected: ${{ steps.runtime-impact.outputs.identity_runtime_affected }}\n.github/workflows/ci.yml:40:      ima…","exit_code":0,"duration":{"secs":0,"nanos":10583}},"started_at_ms":1794776190518,"completed_at_ms":1794776190518}}
++{"timestamp":"2026-11-15T20:56:30.522Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e0ff-4e3a-7f51-8505-00f808bafa20","call_id":"call_efeb9ba2ea0346bdabf2a4de23d5deb1","output":[{"type":"input_text","text":"Script completed\nWall time 2.1 seconds\nOutput:\n"},{"type":"input_text","text":"{\"content\":[{\"type\":\"text\",\"text\":\"Action completed.\"}],\"structuredContent\":{\"results\":[]},\"isError\":false}"},{"type":"input_text","text":"{\"chunk_id\":\"6a1014\",\"wall_time_seconds\":1.001572292,\"session_id\":12658,\"original_token_count\":0,\"output\":\"\"}"},{"type":"input_text","text":"{\"chunk_id\":\"371220\",\"wall_time_seconds\":0.000010583,\"exit_code\":0,\"original_token_count\":4830,\"output\":\".github/workflows/ci.yml:24:      identity_runtime_affe…"}],"internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776190.522778}}}
++{"timestamp":"2026-11-15T20:56:30.523Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":318025,"cached_input_tokens":256256,"cache_write_input_tokens":0,"output_tokens":1451,"reasoning_output_tokens":25,"total_tokens":319476},"last_token_usage":{"input_tokens":68882,"cached_input_tokens":65920,"cache_write_input_tokens":0,"output_tokens":196,"reasoning_output_tokens":0,"total_tokens":69078},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T20:56:31.900Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-6d6a6c84-e21b-48bf-97ad-76a39a4edde5","process_id":"12658","command":["/bin/zsh","-lc","skopeo inspect --override-os linux --override-arch amd64 --format '{{.Digest}}' docker://ghcr.io/pocket-id/pocket-id:v2.19.2"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"skopeo inspect --override-os linux --override-arch amd64 --format '{{.Digest}}' docker://ghcr.io/pocket-id/pocket-id:v2.19.2"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"sha256:3ee23895d6a3adb5dd5de801a4fd31fc31b960e6dfbea9b5200e33cf477695eb\n","exit_code":0,"duration":{"secs":2,"nanos":487099625}},"started_at_ms":1794776189412,"completed_at_ms":1794776191900}}
++{"timestamp":"2026-11-15T20:57:05.560Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa1c9b9cdc87d28b0655c0eee56960","status":"completed","call_id":"call_8dc8cd45c4c84dbba9af369a0f1040d7","name":"exec","input":"text(await tools.apply_patch(\"*** Begin Patch\\n*** Update File: /Users/kirillabrosimov/Projects/remote_server_setup/master/roles/runtime_pins/defaults/main.yml\\…","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776219.6294603}}}
++{"timestamp":"2026-11-15T20:57:05.641Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"FileChange","id":"exec-0b69fd36-f681-41cc-b920-a3f4b9350be5","changes":{"/Users/kirillabrosimov/Projects/remote_server_setup/master/roles/runtime_pins/defaults/main.yml":{"type":"update","unified_diff":"@@ -48,3 +48,3 @@\n runtime_pins_pocket_id_image: >-\n-  ghcr.io/pocket-id/pocket-id:v2.18.0@sha256:323e7ef5bfacf7cf32f22f3d10ccdf48e0c97c94d67e7e40b0b996830deb51…","move_path":null}},"status":"completed","stdout":"Success. Updated the following files:\nM /Users/kirillabrosimov/Projects/remote_server_setup/master/roles/runtime_pins/defaults/main.yml\n","stderr":""},"started_at_ms":1794776225610,"completed_at_ms":1794776225641}}
++{"timestamp":"2026-11-15T20:57:06.056Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-8f53ccce-76ec-4bdc-83c4-bb79aa333851","process_id":"2282","command":["/bin/zsh","-lc","make ci-test-plan"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"make ci-test-plan"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"uv sync --locked --all-groups --check --offline --no-cache --no-python-downloads --quiet || { echo \"Prepare the project environment with:\" \"uv sync --locked --a…","exit_code":0,"duration":{"secs":0,"nanos":215747084}},"started_at_ms":1794776225840,"completed_at_ms":1794776226056}}
++{"timestamp":"2026-11-15T20:57:06.161Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-cca8f1b8-e336-43ab-b06f-0deeaff33d03","process_id":"62067","command":["/bin/zsh","-lc","sed -n '40,115p' docs/runbooks/pocket-id-bootstrap.md; rg -n 'backup|snapshot|rollback' docs/runbooks/pocket-id-bootstrap.md roles/pocket_id docs/runbooks/share…"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"sed -n '40,115p' docs/runbooks/pocket-id-bootstrap.md; rg -n 'backup|snapshot|rollback' docs/runbooks/pocket-id-bootstrap.md roles/pocket_id docs/runbooks/share…"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"the pinned release exposes no setting to extend that native duration. Active\napplication use renews that session, but a 30-day absence can require the\nClickStac…","exit_code":0,"duration":{"secs":0,"nanos":15417}},"started_at_ms":1794776226160,"completed_at_ms":1794776226161}}
++{"timestamp":"2026-11-15T20:57:06.164Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e0ff-d974-7e33-8ff2-5f9359785f26","call_id":"call_8dc8cd45c4c84dbba9af369a0f1040d7","output":[{"type":"input_text","text":"Script completed\nWall time 0.6 seconds\nOutput:\n"},{"type":"input_text","text":"{}"},{"type":"input_text","text":"{\"chunk_id\":\"62a9bc\",\"wall_time_seconds\":0.21579825,\"exit_code\":0,\"original_token_count\":675,\"output\":\"uv sync --locked --all-groups --check --offline --no-cach…"},{"type":"input_text","text":"{\"chunk_id\":\"525bd3\",\"wall_time_seconds\":0.000015417,\"exit_code\":0,\"original_token_count\":2480,\"output\":\"the pinned release exposes no setting to extend that na…"}],"internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776226.164748}}}
++{"timestamp":"2026-11-15T20:57:06.165Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":643330,"cached_input_tokens":566528,"cache_write_input_tokens":0,"output_tokens":2291,"reasoning_output_tokens":54,"total_tokens":645621},"last_token_usage":{"input_tokens":83911,"cached_input_tokens":83584,"cache_write_input_tokens":0,"output_tokens":310,"reasoning_output_tokens":0,"total_tokens":84221},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T20:57:15.394Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa1ca7265c87d29582f9883129901e","status":"completed","call_id":"call_179c1976d8624cf88a2c0a4d000a710b","name":"exec","input":"const rr = await Promise.allSettled([\ntools.exec_command({cmd:\"make ci-source-checks\",\"yield_time_ms\":1000,\"max_output_tokens\":2000}),\ntools.exec_command({cmd:\"…","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776231.1537402}}}
++{"timestamp":"2026-11-15T20:57:16.346Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-f7732562-d42b-4001-b71a-145ed237d355","process_id":"8857","command":["/bin/zsh","-lc","gh api repos/pocket-id/pocket-id/compare/v2.18.0...v2.19.2 --jq '[.files[] | select(.filename|startswith(\"backend/resources/migrations/postgres/\")) | {filename,…"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"gh api repos/pocket-id/pocket-id/compare/v2.18.0...v2.19.2 --jq '[.files[] | select(.filename|startswith(\"backend/resources/migrations/postgres/\")) | {filename,…"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"[{\"filename\":\"backend/resources/migrations/postgres/20261006120000_sqlite_postgres_schema_alignment.down.sql\",\"patch\":\"@@ -0,0 +1,7 @@\\n+ALTER TABLE audit_logs …","exit_code":0,"duration":{"secs":0,"nanos":741362417}},"started_at_ms":1794776235604,"completed_at_ms":1794776236346}}
++{"timestamp":"2026-11-15T20:57:16.609Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e100-0241-78e3-af5f-a7024ea652f9","call_id":"call_179c1976d8624cf88a2c0a4d000a710b","output":[{"type":"input_text","text":"Script completed\nWall time 1.2 seconds\nOutput:\n"},{"type":"input_text","text":"{\"i\":0,\"result\":{\"status\":\"fulfilled\",\"value\":{\"chunk_id\":\"aa3450\",\"wall_time_seconds\":1.002431583,\"session_id\":66640,\"original_token_count\":103,\"output\":\"uv sy…"},{"type":"input_text","text":"{\"i\":1,\"result\":{\"status\":\"fulfilled\",\"value\":{\"chunk_id\":\"1cc2f5\",\"wall_time_seconds\":1.00079675,\"session_id\":64225,\"original_token_count\":102,\"output\":\"uv syn…"},{"type":"input_text","text":"{\"i\":2,\"result\":{\"status\":\"fulfilled\",\"value\":{\"chunk_id\":\"3bfba7\",\"wall_time_seconds\":1.002345041,\"session_id\":20600,\"original_token_count\":65,\"output\":\"warnin…"}],"internal_chat_message_metadata_passthrough":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","create_time":1794776236.60904}}}
++{"timestamp":"2026-11-15T20:57:16.609Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":731195,"cached_input_tokens":650624,"cache_write_input_tokens":0,"output_tokens":2603,"reasoning_output_tokens":109,"total_tokens":733798},"last_token_usage":{"input_tokens":87865,"cached_input_tokens":84096,"cache_write_input_tokens":0,"output_tokens":312,"reasoning_output_tokens":55,"total_tokens":88177},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T20:57:18.497Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-2fd1167f-59e8-4811-901b-ef0973e1a9e5","process_id":"64225","command":["/bin/zsh","-lc","make ci-ansible-tests-identity"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"make ci-ansible-tests-identity"}],"source":"unified_exec_startup","status":"failed","aggregated_output":"uv sync --locked --all-groups --check --offline --no-cache --no-python-downloads --quiet || { echo \"Prepare the project environment with:\" \"uv sync --locked --a…","exit_code":2,"duration":{"secs":2,"nanos":890860542}},"started_at_ms":1794776235606,"completed_at_ms":1794776238497}}
++{"timestamp":"2026-11-15T20:57:19.545Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-0f16e38f-58ab-48f5-b032-c2669a0d2275","process_id":"20600","command":["/bin/zsh","-lc","uv run --locked pytest -q tests/test_runtime_pins.py tests/test_pocket_oidc_runtime_contract.py"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"uv run --locked pytest -q tests/test_runtime_pins.py tests/test_pocket_oidc_runtime_contract.py"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"warning: `VIRTUAL_ENV=/Users/kirillabrosimov/Projects/remote_server_setup/base/.venv` does not match the project environment path `.venv` and will be ignored; u…","exit_code":0,"duration":{"secs":3,"nanos":940870208}},"started_at_ms":1794776235604,"completed_at_ms":1794776239545}}
++{"timestamp":"2026-11-15T20:57:20.257Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-5ac03e81-bf81-4b17-ac27-cddaffac7779","process_id":"66640","command":["/bin/zsh","-lc","make ci-source-checks"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"make ci-source-checks"}],"source":"unified_exec_startup","status":"failed","aggregated_output":"uv sync --locked --all-groups --check --offline --no-cache --no-python-downloads --quiet || { echo \"Prepare the project environment with:\" \"uv sync --locked --a…","exit_code":2,"duration":{"secs":4,"nanos":652898166}},"started_at_ms":1794776235604,"completed_at_ms":1794776240257}}
++{"timestamp":"2026-11-15T21:03:37.698Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c"}}
+diff --git a/plugins/tracing/test/hook-command.test.ts b/plugins/tracing/test/hook-command.test.ts
+index ca3d3c1..1ae7508 100644
+--- a/plugins/tracing/test/hook-command.test.ts
++++ b/plugins/tracing/test/hook-command.test.ts
+@@ -868,4 +868,62 @@ describe("subagent turns that run after the spawning turn", () => {
+ 
+     expectEachChildTurnOnceUnderSpawn(bodies, child);
+   });
++
++  it("keeps the spawn_agent span id when a code-mode call before it has nested tool items", async () => {
++    const codeMode = [
++      line("2026-06-03T12:00:01.200Z", "response_item", {
++        type: "custom_tool_call",
++        call_id: "call-exec",
++        name: "exec",
++        input: "text(await tools.exec_command({cmd: 'ls missing'}));",
++      }),
++      event("2026-06-03T12:00:01.400Z", {
++        type: "item_completed",
++        item: {
++          type: "CommandExecution",
++          id: "exec-ls",
++          command: ["/bin/zsh", "-lc", "ls missing"],
++          status: "failed",
++          aggregated_output: "ls: missing: No such file or directory\n",
++          exit_code: 1,
++        },
++        started_at_ms: Date.parse("2026-06-03T12:00:01.300Z"),
++        completed_at_ms: Date.parse("2026-06-03T12:00:01.400Z"),
++      }),
++      line("2026-06-03T12:00:01.500Z", "response_item", {
++        type: "custom_tool_call_output",
++        call_id: "call-exec",
++        output: "Script completed",
++      }),
++    ];
++    const parentT1WithCodeMode = [...parentT1.slice(0, 3), ...codeMode, ...parentT1.slice(3)];
++
++    const { bodies, child } = await runHooks(async ({ parent, child, write, hook }) => {
++      write(parent, parentT1WithCodeMode);
++      write(child, childC1);
++      await hook({ hook_event_name: "Stop", turn_id: "parent-t1" });
++
++      write(parent, [...parentT1WithCodeMode, ...parentT2.slice(0, 4)]);
++      write(child, [...childC1, ...childC2]);
++      await hook({
++        hook_event_name: "SubagentStop",
++        turn_id: "child-c2",
++        agent_transcript_path: child,
++      });
++
++      write(parent, [...parentT1WithCodeMode, ...parentT2]);
++      await hook({ hook_event_name: "Stop", turn_id: "parent-t2" });
++    });
++
++    expectEachChildTurnOnceUnderSpawn(bodies, child);
++    const byCallId = (callId: string) =>
++      exportedSpans(bodies).filter(
++        (span) => span.attributes["langfuse.observation.metadata.codex.call_id"] === callId,
++      );
++    const [exec] = byCallId("call-exec");
++    const nested = byCallId("exec-ls");
++    expect(nested).toHaveLength(1);
++    expect(nested[0].parentSpanId).toBe(exec.spanId);
++    expect(nested[0].attributes["langfuse.observation.level"]).toBe("ERROR");
++  });
+ });
+diff --git a/plugins/tracing/test/skills.test.ts b/plugins/tracing/test/skills.test.ts
+index e4719e7..9b4c2a8 100644
+--- a/plugins/tracing/test/skills.test.ts
++++ b/plugins/tracing/test/skills.test.ts
+@@ -18,6 +18,7 @@ function turnWith(toolCalls: ToolCall[], promptSkills: string[] = []): Turn {
+     startTime: 0,
+     endTime: 1,
+     steps: [{ startTime: 0, endTime: 1, toolCalls }],
++    detachedToolCalls: [],
+     subagentThreadIds: [],
+     subagentSpawnCallIds: {},
+     promptSkills,
+diff --git a/plugins/tracing/test/trace.test.ts b/plugins/tracing/test/trace.test.ts
+index fd8c1be..27d1e9c 100644
+--- a/plugins/tracing/test/trace.test.ts
++++ b/plugins/tracing/test/trace.test.ts
+@@ -11,7 +11,7 @@ import {
+   SimpleSpanProcessor,
+ } from "@opentelemetry/sdk-trace-base";
+ import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
++import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+ 
+ import type { Config } from "../src/config.js";
+ import { markTurnUploaded } from "../src/sidecar.js";
+@@ -993,6 +993,206 @@ describe("skill observations", () => {
+   });
+ });
+ 
++describe("tool items completed inside code mode", () => {
++  const epoch = Date.parse("2026-11-15T20:00:00.000Z");
++  const at = (seconds: number): number => epoch + seconds * 1000;
++  const line = (seconds: number, type: string, payload: Record<string, unknown>) => ({
++    timestamp: new Date(at(seconds)).toISOString(),
++    type,
++    payload,
++  });
++  const execCall = (seconds: number, callId: string) =>
++    line(seconds, "response_item", {
++      type: "custom_tool_call",
++      call_id: callId,
++      name: "exec",
++      input: "text(await tools.exec_command({cmd: 'make test'}));",
++    });
++  const execOutput = (seconds: number, callId: string) =>
++    line(seconds, "response_item", {
++      type: "custom_tool_call_output",
++      call_id: callId,
++      output: [{ type: "input_text", text: "Script completed" }],
++    });
++  const itemCompleted = (started: number, completed: number, item: Record<string, unknown>) =>
++    line(completed, "event_msg", {
++      type: "item_completed",
++      item,
++      started_at_ms: at(started),
++      completed_at_ms: at(completed),
++    });
++  const failedCommand = {
++    type: "CommandExecution",
++    id: "exec-make-test",
++    command: ["/bin/zsh", "-lc", "make test"],
++    cwd: "file:///repo",
++    source: "unified_exec_startup",
++    status: "failed",
++    aggregated_output: "make: *** [test] Error 2\n",
++    exit_code: 2,
++  };
++  const fetchFile = {
++    type: "McpToolCall",
++    id: "exec-fetch-file",
++    server: "codex_apps",
++    tool: "github.fetch_file",
++    arguments: { path: "go.mod", repository_full_name: "pocket-id/pocket-id" },
++    status: "completed",
++    result: { content: [{ type: "text", text: "module github.com/pocket-id/pocket-id" }] },
++  };
++
++  const dirs: string[] = [];
++  afterEach(() => {
++    while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
++  });
++
++  function writeRollout(body: unknown[]): string {
++    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-code-mode-"));
++    dirs.push(dir);
++    const day = path.join(dir, "sessions", "2026", "11", "15");
++    fs.mkdirSync(day, { recursive: true });
++    const file = path.join(day, "rollout-code-mode.jsonl");
++    const lines = [
++      line(0, "session_meta", { id: "sess-code-mode", cli_version: "0.169.0" }),
++      line(0, "event_msg", { type: "task_started", turn_id: "turn-code-mode" }),
++      ...body,
++      line(60, "event_msg", { type: "task_complete", turn_id: "turn-code-mode" }),
++    ];
++    fs.writeFileSync(file, lines.map((l) => JSON.stringify(l)).join("\n"));
++    return file;
++  }
++
++  const tools = () => exporter.getFinishedSpans().filter((s) => obsType(s) === "tool");
++  const byCallId = (callId: string) =>
++    tools().filter((s) => attr(s, "langfuse.observation.metadata.codex.call_id") === callId);
++
++  it("nests a failed command under its exec call at ERROR, leaving exec itself unmarked", async () => {
++    const file = writeRollout([
++      execCall(1, "call-exec"),
++      itemCompleted(2, 4, failedCommand),
++      execOutput(5, "call-exec"),
++    ]);
++
++    await convertRollout(file, { config: baseConfig });
++
++    const [exec] = byCallId("call-exec");
++    const command = byCallId("exec-make-test");
++    expect(command).toHaveLength(1);
++    expect(command[0].name).toBe("exec_command");
++    expect(parentId(command[0])).toBe(exec.spanContext().spanId);
++    expect(attr(command[0], "langfuse.observation.level")).toBe("ERROR");
++    expect(attr(command[0], "langfuse.observation.status_message")).toContain("Exit code: 2");
++    expect(attr(command[0], "langfuse.observation.input")).toContain("make test");
++    expect(attr(command[0], "langfuse.observation.output")).toContain("Error 2");
++    expect(attr(exec, "langfuse.observation.level")).toBe("");
++    expect(attr(exec, "langfuse.observation.status_message")).toBe("");
++  });
++
++  it("names an MCP call inside exec server.tool, with the item's own start and end", async () => {
++    const file = writeRollout([
++      execCall(1, "call-exec"),
++      itemCompleted(2, 3.5, fetchFile),
++      execOutput(5, "call-exec"),
++    ]);
++
++    await convertRollout(file, { config: baseConfig });
++
++    const [exec] = byCallId("call-exec");
++    const mcp = byCallId("exec-fetch-file");
++    expect(mcp).toHaveLength(1);
++    expect(mcp[0].name).toBe("codex_apps.github.fetch_file");
++    expect(parentId(mcp[0])).toBe(exec.spanContext().spanId);
++    expect(startMs(mcp[0])).toBe(at(2));
++    expect(endMs(mcp[0])).toBe(at(3.5));
++    expect(attr(mcp[0], "langfuse.observation.input")).toContain("go.mod");
++    expect(attr(mcp[0], "langfuse.observation.output")).toContain("module github.com");
++    expect(attr(mcp[0], "langfuse.observation.level")).toBe("");
++  });
++
++  it("attaches an item completed outside any exec call to the turn root", async () => {
++    const file = writeRollout([
++      execCall(1, "call-exec"),
++      execOutput(2, "call-exec"),
++      itemCompleted(1.5, 9, failedCommand),
++    ]);
++
++    await convertRollout(file, { config: baseConfig });
++
++    const root = turnRoots()[0];
++    const command = byCallId("exec-make-test");
++    expect(command).toHaveLength(1);
++    expect(parentId(command[0])).toBe(root.spanContext().spanId);
++    expect(startMs(command[0])).toBe(at(1.5));
++    expect(endMs(command[0])).toBe(at(9));
++    expect(attr(command[0], "langfuse.observation.level")).toBe("ERROR");
++    expect(attr(byCallId("call-exec")[0], "langfuse.observation.level")).toBe("");
++  });
++
++  it("enriches the model-visible call an item shares its id with, adding no child", async () => {
++    const file = writeRollout([
++      line(1, "response_item", {
++        type: "function_call",
++        name: "mcp__codex_apps__github_fetch_file",
++        call_id: "call-fetch",
++        arguments: JSON.stringify(fetchFile.arguments),
++      }),
++      itemCompleted(1, 2, {
++        ...fetchFile,
++        id: "call-fetch",
++        status: "failed",
++        error: { message: "user cancelled MCP tool call" },
++        result: null,
++      }),
++      line(2, "response_item", {
++        type: "function_call_output",
++        call_id: "call-fetch",
++        output: "user cancelled MCP tool call",
++      }),
++    ]);
++
++    await convertRollout(file, { config: baseConfig });
++
++    expect(tools()).toHaveLength(1);
++    const [call] = byCallId("call-fetch");
++    expect(call.name).toBe("codex_apps.github.fetch_file");
++    expect(attr(call, "langfuse.observation.level")).toBe("ERROR");
++    expect(attr(call, "langfuse.observation.status_message")).toContain(
++      "user cancelled MCP tool call",
++    );
++  });
++
++  it("reports every failed item of a real Codex 0.169 code-mode turn at ERROR", async () => {
++    const dir = stageFixtures();
++    await convertRollout(path.join(dir, "../../11/15/rollout-code-mode-main.jsonl"), {
++      config: baseConfig,
++    });
++
++    const root = turnRoots()[0];
++    const execIds = new Set(
++      tools()
++        .filter((s) => s.name === "exec")
++        .map((s) => s.spanContext().spanId),
++    );
++    const failed = tools().filter((s) => attr(s, "langfuse.observation.level") === "ERROR");
++    expect(execIds.size).toBe(5);
++    expect(tools()).toHaveLength(22);
++    expect(failed.map((s) => s.name).sort()).toEqual([
++      "codex_apps.github.fetch_file",
++      "exec_command",
++      "exec_command",
++      "exec_command",
++    ]);
++    expect(failed.filter((s) => execIds.has(parentId(s)!))).toHaveLength(2);
++    expect(failed.filter((s) => parentId(s) === root.spanContext().spanId)).toHaveLength(2);
++    expect(failed.map((s) => attr(s, "langfuse.observation.status_message")).sort()).toEqual([
++      "Exit code: 1",
++      "Exit code: 2",
++      "Exit code: 2",
++      expect.stringContaining("GitHub API error 404"),
++    ]);
++  });
++});
++
+ describe("Stop hook turn lifecycle", () => {
+   const exportedTurnIds = (): string[] =>
+     exporter

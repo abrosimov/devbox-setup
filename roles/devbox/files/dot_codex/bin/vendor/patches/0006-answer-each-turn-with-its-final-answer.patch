@@ -1,0 +1,214 @@
+diff --git a/plugins/tracing/src/parse.ts b/plugins/tracing/src/parse.ts
+index 5218722..f246fdd 100644
+--- a/plugins/tracing/src/parse.ts
++++ b/plugins/tracing/src/parse.ts
+@@ -178,7 +178,20 @@ function toolItemCall(
+   }
+ }
+ 
+-type MutableTurn = Turn & { lastAgentMessage?: string; userInputFallback?: string };
++function agentMessageText(item: ThreadItem): string {
++  if (!Array.isArray(item.content)) return "";
++  return item.content
++    .map((part) => (part && typeof part.text === "string" ? part.text : ""))
++    .filter(Boolean)
++    .join("\n");
++}
++
++type MutableTurn = Turn & {
++  lastAgentMessage?: string;
++  finalAnswerItem?: string;
++  reportedFinalAnswer?: string;
++  userInputFallback?: string;
++};
+ 
+ const TURN_OPENING_EVENTS = new Set(["user_message", "item_completed", "agent_message"]);
+ 
+@@ -306,7 +319,13 @@ export function parseSession(lines: RolloutLine[]): {
+     turn.completed = opts.completed;
+     turn.aborted = opts.aborted;
+     turn.userInput = turn.userInput ?? turn.userInputFallback;
+-    turn.finalOutput = turn.lastAgentMessage ?? turn.steps.filter((s) => s.text).at(-1)?.text;
++    turn.finalOutput =
++      turn.reportedFinalAnswer ??
++      turn.finalAnswerItem ??
++      turn.lastAgentMessage ??
++      turn.steps.filter((s) => s.text).at(-1)?.text;
++    delete turn.reportedFinalAnswer;
++    delete turn.finalAnswerItem;
+     delete turn.lastAgentMessage;
+     delete turn.userInputFallback;
+     const isUnannouncedAndEmpty =
+@@ -523,6 +542,9 @@ export function parseSession(lines: RolloutLine[]): {
+         if (p.item.kind === "started" && typeof p.item.agent_thread_id === "string") {
+           recordSubagentThread(p.item.agent_thread_id, p.item.id);
+         }
++      } else if (et === "item_completed" && p.item?.type === "AgentMessage") {
++        const text = agentMessageText(p.item);
++        if (p.item.phase === "final_answer" && text) turn!.finalAnswerItem = text;
+       } else if (et === "item_completed" && p.item && TOOL_ITEM_TYPES.has(p.item.type ?? "")) {
+         recordToolItem(p.item, p, ts);
+       } else if (et === "agent_message" && typeof p.message === "string") {
+@@ -541,6 +563,9 @@ export function parseSession(lines: RolloutLine[]): {
+         else if (step || !last || reEmitted) closeStep(ts, last);
+         else pushUsageOnlyStep(ts, last);
+       } else if (et === "task_complete") {
++        if (typeof p.last_agent_message === "string" && p.last_agent_message) {
++          turn!.reportedFinalAnswer = p.last_agent_message;
++        }
+         finishTurn(ts, { completed: true, aborted: false });
+       } else if (et === "turn_aborted") {
+         finishTurn(ts, { completed: true, aborted: true });
+diff --git a/plugins/tracing/src/types.ts b/plugins/tracing/src/types.ts
+index a4ac0c4..635bb7d 100644
+--- a/plugins/tracing/src/types.ts
++++ b/plugins/tracing/src/types.ts
+@@ -138,6 +138,8 @@ export type ThreadItem = {
+   kind?: string;
+   agent_thread_id?: string;
+   content?: MessageContentPart[];
++  /** `AgentMessage` only: `commentary` for progress updates, `final_answer` for the answer. */
++  phase?: string;
+   status?: string;
+   source?: string;
+   command?: unknown;
+diff --git a/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-final-answer-main.jsonl b/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-final-answer-main.jsonl
+new file mode 100644
+index 0000000..0e5d76d
+--- /dev/null
++++ b/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-final-answer-main.jsonl
+@@ -0,0 +1,21 @@
++{"timestamp":"2026-11-15T20:55:34.369Z","type":"session_meta","payload":{"id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","timestamp":"2026-11-15T20:54:37.300Z","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","originator":"codex-tui","cli_version":"0.169.0","source":"vscode","thread_source":"user","model_provider":"openai"}}
++{"timestamp":"2026-11-15T23:28:43.810Z","type":"event_msg","payload":{"type":"task_started","turn_attribution":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","turn_trigger":"user","parent_turn_id":null,"initiating_agent_path":null,"root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece"},"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","started_at":1794785323,"model_context_window":258400,"collaboration_mode_kind":"default"}}
++{"timestamp":"2026-11-15T23:28:43.827Z","type":"turn_context","payload":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:28:43.867Z","type":"response_item","payload":{"type":"message","id":"msg_01a1e18a-ab5b-7a20-97b6-003b09200770","role":"user","content":[{"type":"input_text","text":"CI упал: https://github.com/abrosimov/setup_lab/actions/runs/43761453274/job/132958801795?pr=100"}]}}
++{"timestamp":"2026-11-15T23:28:43.868Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"UserMessage","id":"01a1e18a-ab5b-7a20-97b6-004fd1402569","client_id":"b33a1551-c7e1-44a4-8a00-5b293e422d23","content":[{"type":"text","text":"CI упал: https://github.com/abrosimov/setup_lab/actions/runs/43761453274/job/132958801795?pr=100","text_elements":[]}]},"started_at_ms":1794785323868,"completed_at_ms":1794785323868}}
++{"timestamp":"2026-11-15T23:30:03.713Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"Reasoning","id":"rs_0e0dc6cdffebbb43016afa407b99dc87d2ad7a144fb496780d","summary_text":[],"raw_content":[]},"started_at_ms":1794785403713,"completed_at_ms":1794785403713}}
++{"timestamp":"2026-11-15T23:30:03.714Z","type":"response_item","payload":{"type":"reasoning","id":"rs_0e0dc6cdffebbb43016afa407b99dc87d2ad7a144fb496780d","summary":[],"encrypted_content":"gAAAAABq-kB7OFt0H3BOw8LpsV4wkP8aKTuvKAcNhBSKTJlYpRtCtn6fyjBTKKRnYlJr8Xqr4JDSUhCLTHF1MxYNXNb2zQWndP8UbQitDtN_TUS1_lOManlKYEls56g4B3ynxcOSgwpbGbyP905ersQG5snPYcyq…"}}
++{"timestamp":"2026-11-15T23:30:03.866Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e0dc6cdffebbb43016afa407bc7d887d293b3a73fdfc15a2c","name":"wait_agent","namespace":"collaboration","arguments":"{\"timeout_ms\":60000}","call_id":"call_3ab0da48f9424352869d3366e254988d"}}
++{"timestamp":"2026-11-15T23:30:03.880Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","response_id":"resp_0e0dc6cdffebbb43016afa4079696487d2b7bc05763830f9e6","usage":{"input_tokens":130699,"cached_input_tokens":130304,"cache_write_input_tokens":0,"output_tokens":35,"reasoning_output_tokens":12,"total_tokens":130734},"turn_token_usage":{"input_tokens":987338,"cached_input_tokens":963840,"cache_write_input_tokens":0,"output_tokens":1391,"reasoning_output_tokens":192,"total_tokens":988729},"thread_token_usage":{"input_tokens":3645068,"cached_input_tokens":3521408,"cache_write_input_tokens":0,"output_tokens":8277,"reasoning_output_tokens":1230,"total_tokens":3653345}}}
++{"timestamp":"2026-11-15T23:30:21.043Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"subagent-completed-01a1e18b-3512-7511-a16a-9fadf004ef45","kind":"completed","agent_thread_id":"01a1e18b-34be-7363-9295-8e590743048f","agent_path":"/root/scan_delta_diagnosis"},"started_at_ms":1794785421043,"completed_at_ms":1794785421043}}
++{"timestamp":"2026-11-15T23:30:21.045Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"CollabAgentToolCall","id":"call_3ab0da48f9424352869d3366e254988d","tool":"wait","status":"completed","sender_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","receiver_thread_ids":[],"receiver_agents":[],"agents_states":{}},"started_at_ms":1794785403906,"completed_at_ms":1794785421045}}
++{"timestamp":"2026-11-15T23:30:21.047Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e18c-26f7-7b03-bb35-90c5cf6e316c","call_id":"call_3ab0da48f9424352869d3366e254988d","output":"{\"message\":\"Wait completed.\",\"timed_out\":false}"}}
++{"timestamp":"2026-11-15T23:30:21.047Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3645068,"cached_input_tokens":3521408,"cache_write_input_tokens":0,"output_tokens":8277,"reasoning_output_tokens":1230,"total_tokens":3653345},"last_token_usage":{"input_tokens":130699,"cached_input_tokens":130304,"cache_write_input_tokens":0,"output_tokens":35,"reasoning_output_tokens":12,"total_tokens":130734},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-15T23:30:21.048Z","type":"response_item","payload":{"type":"agent_message","id":"amsg_01a1e18c-26f8-7a41-9952-936d16ac8823","author":"/root/scan_delta_diagnosis","recipient":"/root","content":[{"type":"input_text","text":"Message Type: FINAL_ANSWER\nTask name: /root\nSender: /root/scan_delta_diagnosis\nPayload:\nConfirmed cause: the impact classifier and delta scanner use different i…"}]}}
++{"timestamp":"2026-11-15T23:30:28.426Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"Reasoning","id":"rs_0e0dc6cdffebbb43016afa409462ec87d29439b00fce26b5c4","summary_text":[],"raw_content":[]},"started_at_ms":1794785428426,"completed_at_ms":1794785428426}}
++{"timestamp":"2026-11-15T23:30:28.432Z","type":"response_item","payload":{"type":"reasoning","id":"rs_0e0dc6cdffebbb43016afa409462ec87d29439b00fce26b5c4","summary":[],"encrypted_content":"gAAAAABq-kCUvw5jWbmgUFR-KEKEiu7JdHWYJyu0bP1aK6Hbz-NQ43s4Zyt9i4hPzZwRP7iIjKihtKT94BmBHngX7ofCISx-RYCsnrqIwUbdamrSigK8hrWYD2Vq4RcTJ7tmbrm40V8Tzv3loemDhNNFjPideSw7…"}}
++{"timestamp":"2026-11-15T23:30:36.280Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"AgentMessage","id":"msg_0e0dc6cdffebbb43016afa409462e087d2a8dd12ca04c62f98","content":[{"type":"Text","text":"Причина — **ошибка в CI-сканере образов**. Job Caddy из твоей ссылки отменён вследствие другого падения.\n\nВ [image-scan job](https://github.com/abrosimov/setup_lab/actions/runs/43761453274/job/132958801729) первая ошибка:\n```text\ncomparison contains no changed image references\nexit code 65\n```\n\nПричина подтверждена локальным воспроизведением:\n\n- [Классификатор изменений](/Users/kirillabrosimov/Projects/remote_server_setup/master/src/remote_server_setup/image_scan_impact.py:63) знает про Pocket и обнаруживает обновление `2.18.0 → 2.19.2`.\n- [Delta-сканер](/Users/kirillabrosimov/Projects/remote_server_setup/master/src/remote_server_setup/image_scan_delta.py:45) использует отдельный список образов, в котором **Pocket отсутствует**. Поэтому получает пустой список изменений и завершает работу с ошибкой.\n- После этого CI отменяет остальные проверки. Pocket OIDC не завершился, поэтому runtime-подтверждения обновления пока нет.\n\nИсправление: добавить Pocket в delta-сканер и регрессионный тест на изменение только его pin. Есть нюанс: CI запускает delta-сканер из базовой ветки, поэтому нужно также проверить выбор стратегии для PR с исправлением — простой правки файла в PR недостаточно.\n\nФайлы не менял, CI не перезапускал, сервер не трогал.\n\n"}],"phase":"final_answer","memory_citation":{"entries":[{"path":"MEMORY.md","lineStart":1501,"lineEnd":1501,"note":"Separated primary CI failure from cancellation cascade"}],"rolloutIds":["01a0bfcc-b039-7461-87e6-93dc2e265641"]}},"content_token_count":411,"started_at_ms":1794785428434,"completed_at_ms":1794785436279}}
++{"timestamp":"2026-11-15T23:30:36.281Z","type":"response_item","payload":{"type":"message","status":"completed","id":"msg_0e0dc6cdffebbb43016afa409462e087d2a8dd12ca04c62f98","role":"assistant","content":[{"type":"output_text","text":"Причина — **ошибка в CI-сканере образов**. Job Caddy из твоей ссылки отменён вследствие другого падения.\n\nВ [image-scan job](https://github.com/abrosimov/setup_lab/actions/runs/43761453274/job/132958801729) первая ошибка:\n```text\ncomparison contains no changed image references\nexit code 65\n```\n\nПричина подтверждена локальным воспроизведением:\n\n- [Классификатор изменений](/Users/kirillabrosimov/Projects/remote_server_setup/master/src/remote_server_setup/image_scan_impact.py:63) знает про Pocket и обнаруживает обновление `2.18.0 → 2.19.2`.\n- [Delta-сканер](/Users/kirillabrosimov/Projects/remote_server_setup/master/src/remote_server_setup/image_scan_delta.py:45) использует отдельный список образов, в котором **Pocket отсутствует**. Поэтому получает пустой список изменений и завершает работу с ошибкой.\n- После этого CI отменяет остальные проверки. Pocket OIDC не завершился, поэтому runtime-подтверждения обновления пока нет.\n\nИсправление: добавить Pocket в delta-сканер и регрессионный тест на изменение только его pin. Есть нюанс: CI запускает delta-сканер из базовой ветки, поэтому нужно также проверить выбор стратегии для PR с исправлением — простой правки файла в PR недостаточно.\n\nФайлы не менял, CI не перезапускал, сервер не трогал.\n\n<oai-mem-citation>\n<citation_entries>\nMEMORY.md:1501-1501|note=[Separated primary CI failure from cancellation cascade]\n</citation_entries>\n<rollout_ids>\n01a0bfcc-b039-7461-87e6-93dc2e265641\n</rollout_ids>\n</oai-mem-citation>","annotations":[],"logprobs":[]}],"phase":"final_answer"}}
++{"timestamp":"2026-11-15T23:30:36.289Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","response_id":"resp_0e0dc6cdffebbb43016afa408d495487d2b18632c0a972eb89","usage":{"input_tokens":131259,"cached_input_tokens":130560,"cache_write_input_tokens":0,"output_tokens":471,"reasoning_output_tokens":55,"total_tokens":131730},"turn_token_usage":{"input_tokens":1118597,"cached_input_tokens":1094400,"cache_write_input_tokens":0,"output_tokens":1862,"reasoning_output_tokens":247,"total_tokens":1120459},"thread_token_usage":{"input_tokens":3776327,"cached_input_tokens":3651968,"cache_write_input_tokens":0,"output_tokens":8748,"reasoning_output_tokens":1285,"total_tokens":3785075}}}
++{"timestamp":"2026-11-15T23:30:36.290Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3776327,"cached_input_tokens":3651968,"cache_write_input_tokens":0,"output_tokens":8748,"reasoning_output_tokens":1285,"total_tokens":3785075},"last_token_usage":{"input_tokens":131259,"cached_input_tokens":130560,"cache_write_input_tokens":0,"output_tokens":471,"reasoning_output_tokens":55,"total_tokens":131730},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-15T23:30:36.802Z","type":"event_msg","payload":{"type":"task_complete","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","last_agent_message":"Причина — **ошибка в CI-сканере образов**. Job Caddy из твоей ссылки отменён вследствие другого падения.\n\nВ [image-scan job](https://github.com/abrosimov/setup_lab/actions/runs/43761453274/job/132958801729) первая ошибка:\n```text\ncomparison contains no changed image references\nexit code 65\n```\n\nПричина подтверждена локальным воспроизведением:\n\n- [Классификатор изменений](/Users/kirillabrosimov/Projects/remote_server_setup/master/src/remote_server_setup/image_scan_impact.py:63) знает про Pocket и обнаруживает обновление `2.18.0 → 2.19.2`.\n- [Delta-сканер](/Users/kirillabrosimov/Projects/remote_server_setup/master/src/remote_server_setup/image_scan_delta.py:45) использует отдельный список образов, в котором **Pocket отсутствует**. Поэтому получает пустой список изменений и завершает работу с ошибкой.\n- После этого CI отменяет остальные проверки. Pocket OIDC не завершился, поэтому runtime-подтверждения обновления пока нет.\n\nИсправление: добавить Pocket в delta-сканер и регрессионный тест на изменение только его pin. Есть нюанс: CI запускает delta-сканер из базовой ветки, поэтому нужно также проверить выбор стратегии для PR с исправлением — простой правки файла в PR недостаточно.\n\nФайлы не менял, CI не перезапускал, сервер не трогал.\n\n","started_at":1794785323,"completed_at":1794785436,"duration_ms":112993,"time_to_first_token_ms":4446}}
+diff --git a/plugins/tracing/test/trace.test.ts b/plugins/tracing/test/trace.test.ts
+index 93691dc..26f6b14 100644
+--- a/plugins/tracing/test/trace.test.ts
++++ b/plugins/tracing/test/trace.test.ts
+@@ -1336,6 +1336,108 @@ describe("token usage of every model response", () => {
+   });
+ });
+ 
++describe("turn output", () => {
++  const epoch = Date.parse("2026-11-15T22:00:00.000Z");
++  const line = (seconds: number, type: string, payload: Record<string, unknown>) => ({
++    timestamp: new Date(epoch + seconds * 1000).toISOString(),
++    type,
++    payload,
++  });
++  const assistantText = (seconds: number, phase: string, text: string) =>
++    line(seconds, "response_item", {
++      type: "message",
++      role: "assistant",
++      phase,
++      content: [{ type: "output_text", text }],
++    });
++  const agentMessageItem = (seconds: number, phase: string, text: string) =>
++    line(seconds, "event_msg", {
++      type: "item_completed",
++      item: {
++        type: "AgentMessage",
++        id: `msg-${seconds}`,
++        phase,
++        content: [{ type: "Text", text }],
++      },
++    });
++  const commentaryThenAnswer = [
++    agentMessageItem(1, "commentary", "Checking the logs."),
++    assistantText(1, "commentary", "Checking the logs."),
++    agentMessageItem(2, "final_answer", "All green."),
++    assistantText(2, "final_answer", "All green."),
++  ];
++
++  const dirs: string[] = [];
++  afterEach(() => {
++    while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
++  });
++
++  async function rootOutputOf(body: unknown[], end: Record<string, unknown>): Promise<string> {
++    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-output-"));
++    dirs.push(dir);
++    const day = path.join(dir, "sessions", "2026", "11", "15");
++    fs.mkdirSync(day, { recursive: true });
++    const file = path.join(day, "rollout-output.jsonl");
++    const lines = [
++      line(0, "session_meta", { id: "sess-output", cli_version: "0.169.0" }),
++      line(0, "event_msg", { type: "task_started", turn_id: "turn-output" }),
++      ...body,
++      line(60, "event_msg", { turn_id: "turn-output", ...end }),
++    ];
++    fs.writeFileSync(file, lines.map((l) => JSON.stringify(l)).join("\n"));
++    await convertRollout(file, { config: baseConfig });
++    return attr(turnRoots()[0], "langfuse.observation.output");
++  }
++
++  it("answers with the final_answer item, not the commentary before it in the same step", async () => {
++    const output = await rootOutputOf(commentaryThenAnswer, {
++      type: "task_complete",
++      last_agent_message: null,
++    });
++
++    expect(output).toBe("All green.");
++  });
++
++  it("prefers the last_agent_message task_complete reports over every message item", async () => {
++    const output = await rootOutputOf(commentaryThenAnswer, {
++      type: "task_complete",
++      last_agent_message: "All green, and the PR is open.",
++    });
++
++    expect(output).toBe("All green, and the PR is open.");
++  });
++
++  it("keeps the last step's text when the turn reports neither", async () => {
++    const output = await rootOutputOf([assistantText(1, "commentary", "Checking the logs.")], {
++      type: "task_complete",
++    });
++
++    expect(output).toBe("Checking the logs.");
++  });
++
++  it("answers an interrupted turn with its final_answer item", async () => {
++    const output = await rootOutputOf(commentaryThenAnswer, { type: "turn_aborted" });
++
++    expect(output).toBe("All green.");
++  });
++
++  it("answers with last_agent_message in a real Codex 0.169 turn whose answer carries a citation", async () => {
++    const dir = stageFixtures();
++    const file = path.join(dir, "../../11/15/rollout-final-answer-main.jsonl");
++    const lastAgentMessage = fs
++      .readFileSync(file, "utf-8")
++      .split("\n")
++      .filter(Boolean)
++      .map((raw) => JSON.parse(raw) as { payload: { type?: string; last_agent_message?: string } })
++      .find((l) => l.payload.type === "task_complete")?.payload.last_agent_message;
++
++    await convertRollout(file, { config: baseConfig });
++
++    expect(lastAgentMessage).toMatch(/\S/);
++    expect(attr(turnRoots()[0], "langfuse.observation.output")).toBe(lastAgentMessage);
++  });
++});
++
+ describe("Stop hook turn lifecycle", () => {
+   const exportedTurnIds = (): string[] =>
+     exporter

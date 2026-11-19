@@ -1,0 +1,154 @@
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index 005acdc..b6a88f7 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -381,10 +381,11 @@ function serializedChars(message: ChatMlMessage): number {
+ }
+ 
+ /**
+- * The conversation a generation saw, keeping only the most recent messages
+- * that fit in `maxChars` (0 = unbounded). Every generation serializes its
+- * input onto its span, so an unbounded history costs memory quadratic in the
+- * session length and can crash the hook on long sessions.
++ * The conversation a generation saw: the newest message whole, whatever its
++ * size, and the most recent messages before it that fit in `maxChars`
++ * (0 = unbounded). Every generation serializes its input onto its span, so an
++ * unbounded history costs memory quadratic in the session length and can
++ * crash the hook on long sessions.
+  */
+ function boundedConversation(
+   earlier: readonly ChatMlMessage[],
+@@ -397,7 +398,7 @@ function boundedConversation(
+   let start = all.length;
+   while (start > 0) {
+     const chars = serializedChars(all[start - 1]);
+-    if (used + chars > maxChars) break;
++    if (start < all.length && used + chars > maxChars) break;
+     used += chars;
+     start--;
+   }
+diff --git a/plugins/tracing/test/trace.test.ts b/plugins/tracing/test/trace.test.ts
+index 7580c13..6ad397d 100644
+--- a/plugins/tracing/test/trace.test.ts
++++ b/plugins/tracing/test/trace.test.ts
+@@ -359,6 +359,120 @@ describe("convertRollout", () => {
+     fs.rmSync(dir, { recursive: true, force: true });
+   });
+ 
++  it("keeps the newest message whole in a generation input when it alone exceeds max_history_chars", async () => {
++    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-bounded-"));
++    const day = path.join(dir, "sessions", "2026", "06", "03");
++    fs.mkdirSync(day, { recursive: true });
++    const file = path.join(day, "rollout-oversized-newest.jsonl");
++    const ts = (n: number): string => `2026-06-03T10:00:${String(n).padStart(2, "0")}.000Z`;
++    const LONG_PROMPT = "p".repeat(1000);
++    const LONG_SECOND_PROMPT = "q".repeat(1000);
++    const LONG_OUTPUT = "o".repeat(1000);
++    const lines: unknown[] = [
++      { timestamp: ts(0), type: "session_meta", payload: { id: "sess-oversized-newest" } },
++      { timestamp: ts(1), type: "event_msg", payload: { type: "task_started", turn_id: "t1" } },
++      {
++        timestamp: ts(1),
++        type: "event_msg",
++        payload: { type: "user_message", message: LONG_PROMPT },
++      },
++      {
++        timestamp: ts(2),
++        type: "response_item",
++        payload: {
++          type: "message",
++          role: "assistant",
++          content: [{ type: "output_text", text: "Noted" }],
++        },
++      },
++      { timestamp: ts(2), type: "event_msg", payload: { type: "token_count", info: {} } },
++      { timestamp: ts(3), type: "event_msg", payload: { type: "task_complete", turn_id: "t1" } },
++      { timestamp: ts(4), type: "event_msg", payload: { type: "task_started", turn_id: "t2" } },
++      {
++        timestamp: ts(4),
++        type: "event_msg",
++        payload: { type: "user_message", message: LONG_SECOND_PROMPT },
++      },
++      {
++        timestamp: ts(5),
++        type: "response_item",
++        payload: { type: "function_call", name: "exec_command", call_id: "c1", arguments: "{}" },
++      },
++      {
++        timestamp: ts(6),
++        type: "response_item",
++        payload: { type: "function_call_output", call_id: "c1", output: LONG_OUTPUT },
++      },
++      { timestamp: ts(6), type: "event_msg", payload: { type: "token_count", info: {} } },
++      {
++        timestamp: ts(7),
++        type: "response_item",
++        payload: {
++          type: "message",
++          role: "assistant",
++          content: [{ type: "output_text", text: "Done" }],
++        },
++      },
++      { timestamp: ts(7), type: "event_msg", payload: { type: "token_count", info: {} } },
++      { timestamp: ts(8), type: "event_msg", payload: { type: "task_complete", turn_id: "t2" } },
++    ];
++    fs.writeFileSync(file, lines.map((l) => JSON.stringify(l)).join("\n"));
++
++    await convertRollout(file, { config: { ...baseConfig, max_history_chars: 500 } });
++    const inputs = exporter
++      .getFinishedSpans()
++      .filter((s) => obsType(s) === "generation")
++      .sort((a, b) => startMs(a) - startMs(b))
++      .map((s) => JSON.parse(attr(s, "langfuse.observation.input")));
++
++    expect(inputs).toHaveLength(3);
++    expect(inputs[0]).toEqual([{ role: "user", content: LONG_PROMPT }]);
++    expect(inputs[1]).toEqual([
++      {
++        role: "system",
++        content: "[2 earlier message(s) omitted: the conversation exceeds max_history_chars (500)]",
++      },
++      { role: "user", content: LONG_SECOND_PROMPT },
++    ]);
++    expect(inputs[2]).toEqual([
++      {
++        role: "system",
++        content: "[4 earlier message(s) omitted: the conversation exceeds max_history_chars (500)]",
++      },
++      expect.objectContaining({ role: "tool", tool_call_id: "c1", content: LONG_OUTPUT }),
++    ]);
++
++    fs.rmSync(dir, { recursive: true, force: true });
++  });
++
++  it("ends every generation input of a real session with the message an unbounded export ends with", async () => {
++    const dir = stageFixtures();
++    const file = path.join(dir, "../../11/15/rollout-usage-main.jsonl");
++    const limit = 500;
++    const generationInputs = (): unknown[][] =>
++      exporter
++        .getFinishedSpans()
++        .filter((s) => obsType(s) === "generation")
++        .map((s) => {
++          const input = attr(s, "langfuse.observation.input");
++          return input ? (JSON.parse(input) as unknown[]) : [];
++        });
++
++    await convertRollout(file, { config: { ...baseConfig, max_history_chars: 0 } });
++    const unbounded = generationInputs();
++    exporter.reset();
++    fs.rmSync(`${file}.langfuse`, { force: true });
++    await convertRollout(file, { config: { ...baseConfig, max_history_chars: limit } });
++    const bounded = generationInputs();
++
++    const oversizedNewest = unbounded.filter(
++      (input) => input.length > 1 && JSON.stringify(input.at(-1)).length > limit,
++    );
++    expect(oversizedNewest.length).toBeGreaterThan(0);
++    expect(bounded).toHaveLength(unbounded.length);
++    expect(bounded.map((input) => input.at(-1))).toEqual(unbounded.map((input) => input.at(-1)));
++  });
++
+   it("sends attached images as multimodal content and the loaded tools on the call", async () => {
+     const URI = "data:image/png;base64,iVBORw0KGgo=";
+     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-media-"));

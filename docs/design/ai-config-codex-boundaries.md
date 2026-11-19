@@ -1,5 +1,10 @@
 # Codex configuration boundaries
 
+## Delta, 17 November 2026 — the Langfuse tracing plugin is vendored
+
+1. **`tracing@codex-observability-plugin` is no longer a plugin declaration.** The template's `plugins` table drops it, so the inventory of `plugins.<id>.enabled=true` below has one entry fewer. The Langfuse hook is a command hook in the `[hooks]` block (`Stop`), running a bundle built from a pinned upstream commit (`roles/devbox/files/dot_codex/bin/vendor/README.md`) with an absolute-path Node 22.
+2. **No desired marketplace or plugin pin remains in Ansible data.** `defaults/main/codex.yml` no longer carries `devbox_codex_plugin_marketplaces` or `devbox_codex_plugins`. `install_codex_configs.yml` runs native marketplace and plugin commands only to remove that retired plugin and its marketplace where they are still installed. `marketplaces` stays runtime scope, and the hook-trust allowlist (`scripts/codex-hook-trust.py`) is now the `[hooks]` block alone.
+
 ## Delta, 21 September 2026 — rendering replaced the profile binding
 
 The conclusions below stand; three recorded facts about the ai-config side do not.

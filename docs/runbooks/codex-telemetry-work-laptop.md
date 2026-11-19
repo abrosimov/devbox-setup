@@ -16,8 +16,8 @@ Codex native logs and metrics
   -> otelbox gateway with a bearer credential
   -> observability backends
 
-Codex Langfuse plugin traces
-  -> trusted plugin Stop hook
+Codex Langfuse hook traces
+  -> trusted Stop hook running the vendored bundle under Node 22
   -> 127.0.0.1:14318/api/public/otel/v1/traces
   -> otelbox edge, classified as llm
   -> the same Caddy and gateway
@@ -31,10 +31,12 @@ Important facts:
   laptop if that is the applied profile.
 - The managed Codex configuration deliberately sets native
   `trace_exporter = "none"`. Native Codex logs and metrics still go to port
-  `4317`; Langfuse traces come from the separate plugin.
-- The Langfuse plugin sends after a completed Codex turn through its trusted
-  `Stop` hook. A long parent turn that has not stopped is not a valid delivery
-  test, even if subagents ran during it.
+  `4317`; Langfuse traces come from the separate Langfuse hook, vendored from
+  `langfuse/codex-observability-plugin` (see
+  `roles/devbox/files/dot_codex/bin/vendor/README.md`).
+- The Langfuse hook sends after a completed Codex turn, as a trusted `Stop`
+  hook declared in `~/.codex/config.toml`. A long parent turn that has not
+  stopped is not a valid delivery test, even if subagents ran during it.
 - `make personal` and `make work` run the edge smoke non-fatally. Always run
   `make otelbox-edge-test` explicitly for this diagnosis.
 
@@ -77,11 +79,11 @@ otelbox-edge: all checks passed
 This proves the pinned binary is present, the LaunchAgent is loaded, health and
 self-metrics respond, local OTLP/HTTP accepts a test log, and no exporter send,
 enqueue, receiver, or high-queue failure is currently visible. It is the
-baseline; the controlled trace below proves the plugin path specifically.
+baseline; the controlled trace below proves the Langfuse hook path specifically.
 
 If this step fails, keep the full output and continue with sections 4 and 6.
 
-## 3. Check the effective Codex and plugin configuration
+## 3. Check the effective Codex and Langfuse hook configuration
 
 Show only the managed OTel fields:
 
@@ -106,12 +108,15 @@ with `--profile <name>`. If such a file exists, inspect only its `[otel]`
 section and account for any override. Do not treat the word `personal` itself
 as the failure.
 
-Check the installed tracing plugin and its safe runtime fields:
+Check the Langfuse hook declaration, its interpreter and bundle, and its safe
+runtime fields:
 
 ```bash
-codex plugin list --available --json | \
-  jq '.installed[] | select(.pluginId == "tracing@codex-observability-plugin") |
-      {pluginId, version, enabled}'
+rg -n 'langfuse-codex/index.mjs' ~/.codex/config.toml
+/opt/homebrew/opt/node@22/bin/node --version
+ls -l ~/.codex/bin/vendor/langfuse-codex/index.mjs
+codex plugin list --json | \
+  jq '[.installed[].pluginId | select(. == "tracing@codex-observability-plugin")]'
 
 jq '{enabled, base_url, environment, debug, fail_on_error}' \
   ~/.codex/langfuse.json
@@ -124,20 +129,28 @@ fi
 env | rg '^(TRACE_TO_LANGFUSE|LANGFUSE_CODEX_(BASE_URL|ENVIRONMENT|DEBUG|FAIL_ON_ERROR)|LANGFUSE_(BASE_URL|TRACING_ENVIRONMENT))='
 ```
 
-Expected values are an enabled plugin, base URL
-`http://127.0.0.1:14318`, and the intended environment. A project-local
-`.codex/langfuse.json` or one of the listed environment variables can override
-the user-level file. The command deliberately excludes Langfuse keys.
+Expected values are one `Stop` hook line naming
+`~/.codex/bin/vendor/langfuse-codex/index.mjs`, a `v22` Node version, the
+bundle present, an empty list for the retired marketplace plugin, `enabled:
+true`, base URL `http://127.0.0.1:14318`, and the intended environment. A
+listed `tracing@codex-observability-plugin` means the plugin from before the
+hook was vendored is still installed and would upload every turn twice; the
+next provisioning run removes it. A project-local `.codex/langfuse.json` or one of
+the listed environment variables can override the user-level file. The command
+deliberately excludes Langfuse keys.
 
-If `codex plugin list` is unavailable in the installed CLI, open `/plugins` in
-Codex and confirm that `tracing@codex-observability-plugin` is installed and
-enabled.
+Now check that the Langfuse `Stop` hook is trusted. Provisioning grants that
+trust; this reports drift without writing:
 
-Now open `/hooks` in Codex. Review and trust the current `Stop` hook belonging
-to `tracing@codex-observability-plugin`. Trust is hash-specific and is not
-automated by the devbox playbook.
+```bash
+uv run --no-project --python '>=3.12' scripts/codex-hook-trust.py \
+  --check --fail-on-drift
+```
 
-Check recent normal Stop events and plugin sidecars:
+In the TUI, `/hooks` shows the same hook, sourced from `~/.codex/config.toml`.
+Trust is hash-specific, so any change to the hook command needs it granted again.
+
+Check recent normal Stop events and hook sidecars:
 
 ```bash
 jq -r 'select(.event == "Stop") | [.timestamp, .event] | @tsv' \
@@ -147,8 +160,8 @@ find ~/.codex/sessions -type f -name '*.langfuse' -mmin -1440 -print | tail -20
 ```
 
 The universal hook log proves that a normal `Stop` event occurred. It does not
-prove that the plugin hook is trusted. A new `.langfuse` sidecar is evidence
-that the plugin processed a session, but it is not proof of remote delivery.
+prove that the Langfuse hook is trusted. A new `.langfuse` sidecar is evidence
+that the Langfuse hook processed a session, but it is not proof of remote delivery.
 
 ## 4. Check the local collector and machine-local inputs
 
@@ -211,7 +224,7 @@ curl -fsS http://127.0.0.1:8888/metrics | rg \
   '^otelcol_(receiver_accepted_(spans|log_records|metric_points)|receiver_refused_(spans|log_records|metric_points)|exporter_(sent|send_failed|enqueue_failed)_(spans|log_records|metric_points)|exporter_queue_(size|capacity))'
 ```
 
-Start a fresh Codex CLI with temporary plugin diagnostics:
+Start a fresh Codex CLI with temporary Langfuse hook diagnostics:
 
 ```bash
 LANGFUSE_CODEX_DEBUG=true LANGFUSE_CODEX_FAIL_ON_ERROR=true codex
@@ -226,7 +239,7 @@ Reply only with: telemetry-check-2026-08-31T05:00:00Z
 Wait for the answer and for the turn to finish. Then end the CLI normally so
 the asynchronous native exporter can flush. Do not kill the process. The
 temporary environment variables apply only to this CLI process and make a
-normally swallowed plugin conversion or flush error visible.
+normally swallowed hook conversion or flush error visible.
 
 After five to ten seconds, run the counter command again:
 
@@ -257,7 +270,7 @@ Classify the newest errors after `CODEX_TELEMETRY_CHECK_START`:
 
 | Evidence | Likely boundary |
 | --- | --- |
-| No plugin `receiver_accepted_spans` increase | Codex plugin, hook trust, override, or local port `14318` |
+| No `otlp/langfuse_plugins` `receiver_accepted_spans` increase | Langfuse hook (Node 22, bundle), hook trust, override, or local port `14318` |
 | Accepted spans increase; queue grows or send fails | Edge to Caddy/gateway leg |
 | TLS, certificate, or handshake error | Caddy mTLS: missing, expired, mismatched, or untrusted client certificate |
 | `Unauthenticated`, authentication failure, or HTTP 401 | Gateway bearer credential mismatch |
@@ -337,11 +350,11 @@ transport problem.
 
 - [ ] `make otelbox-edge-test` passes when run explicitly.
 - [ ] Live Codex OTel export points to `127.0.0.1:4317`.
-- [ ] Langfuse plugin is enabled and points to `127.0.0.1:14318`.
-- [ ] No project file or environment variable overrides the plugin unexpectedly.
-- [ ] The current plugin `Stop` hook is trusted in `/hooks`.
+- [ ] The Langfuse hook configuration is enabled and points to `127.0.0.1:14318`.
+- [ ] No project file or environment variable overrides it unexpectedly.
+- [ ] The Langfuse `Stop` hook is trusted (`codex-hook-trust.py --check` or `/hooks`).
 - [ ] A controlled turn produces a normal `Stop` event.
-- [ ] The collector accepts plugin spans.
+- [ ] The collector accepts spans on `otlp/langfuse_plugins`.
 - [ ] The collector sends spans and its queue drains.
 - [ ] The direct TLS probe completes Caddy mTLS, if run.
 - [ ] Caddy and gateway journals agree with the laptop counters, if inspected.
@@ -356,8 +369,8 @@ Workstation/profile:
 Codex version:
 
 Explicit edge smoke: PASS / FAIL
-Plugin installed and enabled: YES / NO
-Plugin Stop hook trusted: YES / NO
+Langfuse hook declared, bundle present: YES / NO
+Langfuse Stop hook trusted: YES / NO
 Latest controlled Stop timestamp:
 Local 4317 and 14318 listeners: YES / NO
 Endpoint present: YES / NO
@@ -365,7 +378,7 @@ Keychain token present: YES / NO
 Certificate check: PASS / FAIL
 Certificate SHA-256 fingerprint:
 
-Plugin accepted-spans before -> after:
+Langfuse hook accepted-spans before -> after:
 Exporter sent-spans before -> after:
 Send/enqueue/refused counters before -> after:
 Queue size before -> after:
@@ -391,5 +404,6 @@ complete configuration files, or an unreviewed environment dump.
 - [edge smoke implementation](../../scripts/otelbox-edge-test.py)
 - [certificate/key validation](../../scripts/otelbox-edge-cert-check.py)
 - [managed Codex configuration](../../roles/devbox/files/dot_codex/config.toml.j2)
-- [managed Langfuse plugin configuration](../../roles/devbox/files/dot_codex/langfuse.json.j2)
+- [managed Langfuse hook configuration](../../roles/devbox/files/dot_codex/langfuse.json.j2)
+- [vendored Langfuse hook and its pin](../../roles/devbox/files/dot_codex/bin/vendor/README.md)
 - [edge collector profile](../../roles/devbox/files/.config/otelbox/edge/edge.yaml)

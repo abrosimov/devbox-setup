@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "source": "langfuse/codex-observability-plugin",
+  "version": "0.4.3",
+  "commit": "e1d02be28e6bacbfe350a1bc1ccf861e54edee17",
+  "upstream_tree_sha1": "dc624bae569783627507f292490e079820029938",
+  "node_major": 22,
+  "pnpm_version": "9.5.0",
+  "artifact_path": "plugins/tracing/dist/index.mjs",
+  "output_git_blob_sha1": "9d4515853cfa72ab3d483848a8e160af580ddfa9",
+  "patches": [
+    "0001-export-interrupted-and-ended-turns.patch",
+    "0002-one-hook-run-per-rollout.patch",
+    "0003-export-subagent-turns-after-the-spawning-turn.patch",
+    "0004-trace-tool-items-nested-in-code-mode.patch",
+    "0005-record-usage-of-every-model-response.patch",
+    "0006-answer-each-turn-with-its-final-answer.patch",
+    "0007-attribute-subagent-turns-to-their-agent.patch",
+    "0008-describe-each-turn-with-its-place-and-timing.patch",
+    "0009-take-credentials-only-from-the-global-config.patch",
+    "0010-continue-id-draws-after-subagents-and-name-interrupted-agents.patch",
+    "0011-bound-each-export-request-and-give-up-on-stuck-turns.patch",
+    "0012-keep-the-newest-message-of-every-generation-input.patch",
+    "0013-spool-each-request-the-edge-does-not-take.patch"
+  ]
+}

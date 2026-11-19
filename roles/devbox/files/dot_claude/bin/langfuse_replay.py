@@ -8,6 +8,7 @@ project secrets or user prompts in a LaunchAgent configuration.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import subprocess
@@ -31,6 +32,7 @@ LEGACY_MARKER_FIELDS = {
     "CC_LANGFUSE_TRACE_SEED": "trace_seed",
     "CC_LANGFUSE_TRACEPARENT": "traceparent",
 }
+LOOPBACK_PREFIXES = ("http://127.0.0.1:", "http://localhost:")
 
 
 def replay_environment() -> dict[str, str]:
@@ -43,7 +45,7 @@ def replay_environment() -> dict[str, str]:
         message = "Missing local-edge Langfuse runtime configuration"
         raise ValueError(message)
     url = configured["CC_LANGFUSE_BASE_URL"]
-    if not url.startswith(("http://127.0.0.1:", "http://localhost:")):
+    if not url.startswith(LOOPBACK_PREFIXES):
         message = "Replay exporter must target a loopback collector"
         raise ValueError(message)
     environment = dict(os.environ)
@@ -122,7 +124,36 @@ def replay_one(marker: Path, base_env: dict[str, str]) -> bool:
     return True
 
 
+def codex_spool() -> Path:
+    # The vendored Codex hook resolves its configuration and spool from HOME the same way.
+    return Path.home() / ".codex" / "langfuse_state" / "langfuse_otlp_spool"
+
+
+def codex_base_url() -> str:
+    config = json.loads((Path.home() / ".codex" / "langfuse.json").read_text(encoding="utf-8"))
+    url = config.get("base_url") if isinstance(config, dict) else None
+    if not isinstance(url, str) or not url.startswith(LOOPBACK_PREFIXES):
+        message = "Codex Langfuse base_url must target a loopback collector"
+        raise ValueError(message)
+    return url
+
+
+def drain_codex_spool() -> tuple[int, int]:
+    spool = codex_spool()
+    if not spool.is_dir():
+        return 0, 0
+    try:
+        base_url = codex_base_url()
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"Codex Langfuse spool not drained: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 0, len(list(spool.glob("*.otlp")))
+    exporter = importlib.import_module("vendor.durable_otel_exporter")
+    return exporter.drain_spool(base_url, directory=spool)
+
+
 def main() -> int:
+    # The Codex spool needs nothing from Claude's settings, so their absence does not hold it up.
+    codex_sent, codex_pending = drain_codex_spool()
     try:
         environment = replay_environment()
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -150,9 +181,10 @@ def main() -> int:
     print(
         f"Langfuse replay: sessions_attempted={attempted}, "
         f"sessions_pending={failed}, otlp_sent={sent_before + sent_after}, "
-        f"otlp_pending={pending_batches}"
+        f"otlp_pending={pending_batches}, codex_otlp_sent={codex_sent}, "
+        f"codex_otlp_pending={codex_pending}"
     )
-    return 1 if failed or pending_batches else 0
+    return 1 if failed or pending_batches or codex_pending else 0
 
 
 if __name__ == "__main__":

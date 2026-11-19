@@ -206,105 +206,10 @@
   check_mode: false
   tags: [configs, ai, codex]
 
-- name: Inspect configured Codex plugin marketplaces
-  ansible.builtin.command:
-    argv:
-      - "{{ devbox_codex_cli_path.stdout }}"
-      - plugin
-      - marketplace
-      - list
-      - --json
-  environment:
-    CODEX_HOME: "{{ devbox_codex_home }}"
-  register: devbox_codex_marketplaces_before
-  when: devbox_codex_cli_path.rc == 0
-  changed_when: false
-  check_mode: false
-  tags: [configs, ai, codex]
-
-- name: Add pinned Codex plugin marketplaces
-  ansible.builtin.command:
-    argv:
-      - "{{ devbox_codex_cli_path.stdout }}"
-      - plugin
-      - marketplace
-      - add
-      - "{{ item.repo }}"
-      - --ref
-      - "{{ item.ref }}"
-      - --json
-  environment:
-    CODEX_HOME: "{{ devbox_codex_home }}"
-  loop: "{{ devbox_codex_plugin_marketplaces }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: devbox_codex_marketplaces_added
-  when:
-    - devbox_codex_cli_path.rc == 0
-    - not ansible_check_mode
-    - >-
-      item.name not in
-      (devbox_codex_marketplaces_before.stdout | from_json).marketplaces
-      | map(attribute='name') | list
-  changed_when: true
-  tags: [configs, ai, codex]
-
-- name: Verify configured Codex plugin marketplaces
-  ansible.builtin.command:
-    argv:
-      - "{{ devbox_codex_cli_path.stdout }}"
-      - plugin
-      - marketplace
-      - list
-      - --json
-  environment:
-    CODEX_HOME: "{{ devbox_codex_home }}"
-  register: devbox_codex_marketplaces_after
-  when: devbox_codex_cli_path.rc == 0
-  changed_when: false
-  check_mode: false
-  tags: [configs, ai, codex]
-
-- name: Inspect pinned Codex marketplace revisions
-  ansible.builtin.command:
-    argv:
-      - git
-      - -C
-      - >-
-        {{ ((devbox_codex_marketplaces_after.stdout | from_json).marketplaces
-             | selectattr('name', 'equalto', item.name) | first).root }}
-      - rev-parse
-      - HEAD
-  loop: "{{ devbox_codex_plugin_marketplaces }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: devbox_codex_marketplace_revisions
-  when:
-    - devbox_codex_cli_path.rc == 0
-    - not ansible_check_mode
-    - >-
-      item.name in
-      ((devbox_codex_marketplaces_after.stdout | from_json).marketplaces
-       | map(attribute='name') | list)
-  changed_when: false
-  tags: [configs, ai, codex]
-
-- name: Assert Codex marketplaces resolve to their pinned revisions
-  ansible.builtin.assert:
-    that:
-      - item.stdout == item.item.ref
-    fail_msg: >-
-      Codex marketplace {{ item.item.name }} resolved to {{ item.stdout }},
-      expected {{ item.item.ref }}
-  loop: "{{ devbox_codex_marketplace_revisions.results | default([]) }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-  when:
-    - not ansible_check_mode
-    - not (item.skipped | default(false))
-  tags: [configs, ai, codex]
-
-- name: Inspect available Codex plugins
+# One-off migration: the Langfuse tracing plugin used to come from its marketplace
+# and is now vendored (dot_codex/bin/vendor/README.md). Left installed, its own
+# Stop hook would upload every turn a second time.
+- name: Inspect installed Codex plugins for the retired Langfuse tracing plugin
   ansible.builtin.command:
     argv:
       - "{{ devbox_codex_cli_path.stdout }}"
@@ -320,70 +225,71 @@
   check_mode: false
   tags: [configs, ai, codex]
 
-- name: Install Codex plugins
+- name: Remove the retired Langfuse tracing plugin
   ansible.builtin.command:
     argv:
       - "{{ devbox_codex_cli_path.stdout }}"
       - plugin
-      - add
-      - "{{ item.name }}@{{ item.marketplace }}"
+      - remove
+      - "{{ devbox_codex_retired_plugin }}"
       - --json
   environment:
     CODEX_HOME: "{{ devbox_codex_home }}"
-  loop: "{{ devbox_codex_plugins }}"
-  loop_control:
-    label: "{{ item.name }}@{{ item.marketplace }}"
-  register: devbox_codex_plugins_installed
   when:
     - devbox_codex_cli_path.rc == 0
     - not ansible_check_mode
     - >-
-      item.name ~ '@' ~ item.marketplace not in
+      devbox_codex_retired_plugin in
       ((devbox_codex_plugins_before.stdout | from_json).installed
        | map(attribute='pluginId') | list)
   changed_when: true
+  vars:
+    devbox_codex_retired_plugin: tracing@codex-observability-plugin
   tags: [configs, ai, codex]
 
-- name: Verify installed Codex plugins
+- name: Inspect configured Codex plugin marketplaces for the retired Langfuse marketplace
   ansible.builtin.command:
     argv:
       - "{{ devbox_codex_cli_path.stdout }}"
       - plugin
+      - marketplace
       - list
-      - --available
       - --json
   environment:
     CODEX_HOME: "{{ devbox_codex_home }}"
-  register: devbox_codex_plugins_after
+  register: devbox_codex_marketplaces_before
   when: devbox_codex_cli_path.rc == 0
   changed_when: false
   check_mode: false
   tags: [configs, ai, codex]
 
-- name: Assert required Codex plugins are installed and enabled
-  ansible.builtin.assert:
-    that:
-      - >-
-        item.name ~ '@' ~ item.marketplace in
-        ((devbox_codex_plugins_after.stdout | from_json).installed
-         | selectattr('enabled', 'equalto', true)
-         | selectattr('version', 'equalto', item.version)
-         | map(attribute='pluginId') | list)
-    fail_msg: >-
-      Codex plugin {{ item.name }}@{{ item.marketplace }} version {{ item.version }}
-      is not installed and enabled
-  loop: "{{ devbox_codex_plugins }}"
-  loop_control:
-    label: "{{ item.name }}@{{ item.marketplace }}"
+- name: Remove the retired Langfuse tracing marketplace
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - remove
+      - "{{ devbox_codex_retired_marketplace }}"
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
   when:
     - devbox_codex_cli_path.rc == 0
     - not ansible_check_mode
+    - >-
+      devbox_codex_retired_marketplace in
+      ((devbox_codex_marketplaces_before.stdout | from_json).marketplaces
+       | map(attribute='name') | list)
+  changed_when: true
+  vars:
+    devbox_codex_retired_marketplace: codex-observability-plugin
   tags: [configs, ai, codex]
 
 # Codex silently drops any hook whose recorded trusted_hash does not match the one
 # it recomputes from the live definition, so a fresh machine disables every hook we
-# provision until a human visits /hooks. Runs last: the reconcile above and the
-# plugin installs both change what hooks/list reports. See dot_codex/README.md.
+# provision until a human visits /hooks. Runs last: the reconcile and the plugin
+# removal above both change what hooks/list reports. See dot_codex/README.md.
 - name: Grant Codex hook trust for repository-declared hooks
   ansible.builtin.command:
     argv: >-
@@ -399,19 +305,12 @@
   check_mode: false
   when: devbox_codex_cli_path.rc == 0
   vars:
-    devbox_codex_hook_trust_plugin_ids: >-
-      {{ devbox_codex_plugins
-         | map(attribute='name')
-         | zip(devbox_codex_plugins | map(attribute='marketplace'))
-         | map('join', '@')
-         | list }}
     devbox_codex_hook_trust_argv: >-
       {{ ['uv', 'run', '--no-project', '--python', '>=3.12',
           devbox_codex_repo_root ~ '/scripts/codex-hook-trust.py',
           '--repo-root', devbox_codex_repo_root,
           '--codex-home', devbox_codex_home,
-          '--json']
-         + (['--plugin'] | product(devbox_codex_hook_trust_plugin_ids) | flatten) }}
+          '--json'] }}
   tags: [configs, ai, codex]
 
 # Codex's app-server daemon auto-updates into a new release directory (~320 MB)

@@ -64,6 +64,7 @@ devbox_brew_secondary:
   - go
   - go-task
   - node
+  - node@22        # Keg-only Node 22 — runs the vendored Codex Langfuse hook (dot_codex/bin/vendor)
   # uv moved to devbox_brew_always_latest.
   - helm
   - opentofu       # OpenTofu (`tofu`) — open-source Terraform fork for infrastructure as code

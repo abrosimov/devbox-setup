@@ -20,8 +20,8 @@ Currently managed:
 - `[otel]`, with the active devbox profile as the environment, semantic log
   export and metrics enabled, and noisy native Rust trace export disabled;
 - selected plugin declarations captured during bootstrap;
-- the SHA-pinned Langfuse tracing marketplace and loopback-only runtime config;
-- hook trust for the hooks declared here and for pinned plugins (see below);
+- the vendored Langfuse tracing hook and its loopback-only runtime config;
+- hook trust for the hooks declared here (see below);
 - the blocking `Stop` hook `bin/stop_user_actions_guard.py`, a byte-identical
   copy of the Claude hook (a test enforces parity), which enforces the final
   "What I need from you" section;
@@ -68,17 +68,23 @@ Intentionally not copied from a workstation:
 - MCP entries containing app-version-specific or machine-local paths;
 - history, logs, memories, state databases, and telemetry queues.
 
-## Langfuse tracing plugin
+## Langfuse tracing hook
 
-Provisioning adds `langfuse/codex-observability-plugin` at the exact revision
-declared in `defaults/main/codex.yml`, installs
-`tracing@codex-observability-plugin`, and verifies the checked-out Git commit.
-The plugin sends OTLP/HTTP traces to `http://127.0.0.1:14318` with non-secret
-sentinel credentials; real Langfuse project credentials remain on the remote
-gateway.
+The `Stop` hook of `langfuse/codex-observability-plugin` is built from a pinned
+upstream commit and committed as `bin/vendor/langfuse-codex/index.mjs`; it is not
+installed as a Codex plugin. `config.toml.j2` declares it directly and runs it with
+the keg-only Homebrew Node 22 (`/opt/homebrew/opt/node@22/bin/node`), and the
+"Sync Codex bin directory" task deploys it to `~/.codex/bin/vendor/`. The pin, the
+rebuild procedure and the update steps are in `bin/vendor/README.md`.
 
-A pin update must also account for the upstream plugin version because the cache
-path is versioned. The plugin's hooks are trusted by the step below.
+The hook reads `~/.codex/langfuse.json`, rendered from `langfuse.json.j2`, and sends
+OTLP/HTTP traces to `http://127.0.0.1:14318` with non-secret sentinel credentials;
+real Langfuse project credentials remain on the remote gateway.
+
+Machines provisioned before the hook was vendored still carry the marketplace
+install. `install_codex_configs.yml` removes `tracing@codex-observability-plugin`
+and the `codex-observability-plugin` marketplace when it finds them, because the
+plugin's own `Stop` hook would otherwise upload every turn a second time.
 
 ## Hook trust
 
@@ -101,8 +107,8 @@ Only hooks this repository declares are eligible:
 
 - command hooks whose event and command appear in `config.toml.j2`'s `[hooks]`
   block and whose `sourcePath` is the live `config.toml`;
-- hooks belonging to a plugin passed via `--plugin`, which Ansible derives from
-  `devbox_codex_plugins`.
+- hooks belonging to a plugin passed via `--plugin`. Provisioning passes none: the
+  only hooks it deploys are the ones in `config.toml.j2`.
 
 Anything else is **refused** and fails the play — blanket-trusting whatever
 `hooks/list` returns would auto-trust any hook that got injected. A hook the
@@ -119,8 +125,7 @@ To audit without writing:
 
 ```sh
 uv run --no-project --python '>=3.12' scripts/codex-hook-trust.py \
-  --check --fail-on-drift \
-  --plugin tracing@codex-observability-plugin
+  --check --fail-on-drift
 ```
 
 `--check` alone reports drift and exits `0`; `--fail-on-drift` turns pending

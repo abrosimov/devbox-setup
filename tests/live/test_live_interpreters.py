@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -40,6 +41,9 @@ pytestmark = pytest.mark.live
 _SYNC_TIMEOUT_SECONDS: Final = 600.0
 _IGNORED_IN_HOOK_DIRECTORY: Final = shutil.ignore_patterns(".venv", "__pycache__", ".DS_Store")
 AGY_HOOKS_TEMPLATE: Final = REPO_ROOT / "roles/devbox/files/dot_agy/config/hooks.json.j2"
+# Homebrew, not this deployment, materialises a keg interpreter, and the Linux runner has
+# none; tests/deploy/test_hook_interpreters.py checks the package list installs it.
+_KEG_INTERPRETER: Final = re.compile(r"/opt/homebrew/opt/[^/\s]+@\d+/bin/[^/\s]+")
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,7 +152,10 @@ def test_the_generated_configuration_declares_hooks(deployed: Deployed) -> None:
 
 def test_every_declared_command_resolves_to_an_executable_file(deployed: Deployed) -> None:
     for command in deployed.commands:
-        executable = deployed.declared(shlex.split(command)[0])
+        token = shlex.split(command)[0]
+        if _KEG_INTERPRETER.fullmatch(token):
+            continue
+        executable = deployed.declared(token)
         assert executable.is_file(), f"{command}: {executable} does not exist"
         assert os.access(executable, os.X_OK), f"{command}: {executable} is not executable"
 

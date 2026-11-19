@@ -1,0 +1,523 @@
+diff --git a/plugins/tracing/src/parse.ts b/plugins/tracing/src/parse.ts
+index 6809f7a..5218722 100644
+--- a/plugins/tracing/src/parse.ts
++++ b/plugins/tracing/src/parse.ts
+@@ -15,6 +15,7 @@ import type {
+   ThreadItem,
+   ToolDefinition,
+   TokenUsage,
++  TokenUsageRecordPayload,
+   ToolCall,
+   Turn,
+   TurnContextPayload,
+@@ -232,6 +233,9 @@ export function parseSession(lines: RolloutLine[]): {
+   let toolCallsById = new Map<string, ToolCall>();
+   let openCodeModeCall: ToolCall | null = null;
+   let lastTimestamp = Date.now();
++  let usageFromRecords = false;
++  let cumulativeTotalTokens: number | undefined;
++  let unopenedResponseStart: number | undefined;
+ 
+   const developerMessages: string[] = [];
+   const injectedContext: string[] = [];
+@@ -271,6 +275,7 @@ export function parseSession(lines: RolloutLine[]): {
+   };
+ 
+   const closeStep = (ts: number, usage?: TokenUsage) => {
++    unopenedResponseStart = undefined;
+     if (!step) return;
+     step.endTime = Math.max(step.endTime, ts);
+     if (usage) step.usage = usage;
+@@ -278,6 +283,22 @@ export function parseSession(lines: RolloutLine[]): {
+     step = null;
+   };
+ 
++  const pushUsageOnlyStep = (ts: number, usage: TokenUsage, responseId?: string) => {
++    const startTime = unopenedResponseStart ?? ts;
++    turn!.steps.push({ startTime, endTime: ts, toolCalls: [], usage, responseId, usageOnly: true });
++    unopenedResponseStart = undefined;
++  };
++
++  const recordResponseUsage = (ts: number, usage: TokenUsage, responseId?: string) => {
++    if (step && !step.usage) {
++      step.usage = usage;
++      step.responseId = responseId;
++      return;
++    }
++    closeStep(ts);
++    pushUsageOnlyStep(ts, usage, responseId);
++  };
++
+   const finishTurn = (ts: number, opts: { completed: boolean; aborted: boolean }) => {
+     if (!turn) return;
+     closeStep(ts);
+@@ -460,11 +481,25 @@ export function parseSession(lines: RolloutLine[]): {
+         if (reasoning) {
+           const s = ensureStep(ts);
+           s.reasoning = s.reasoning ? `${s.reasoning}\n${reasoning}` : reasoning;
++        } else if (!step) {
++          unopenedResponseStart ??= ts;
+         }
+       }
+       continue;
+     }
+ 
++    if (line.type === "token_usage_record") {
++      const p = line.payload as TokenUsageRecordPayload;
++      if (!turn || !p.usage) continue;
++      usageFromRecords = true;
++      recordResponseUsage(
++        ts,
++        p.usage,
++        typeof p.response_id === "string" ? p.response_id : undefined,
++      );
++      continue;
++    }
++
+     if (line.type === "event_msg") {
+       const p = line.payload as EventMsgPayload;
+       const et = p.type;
+@@ -493,8 +528,18 @@ export function parseSession(lines: RolloutLine[]): {
+       } else if (et === "agent_message" && typeof p.message === "string") {
+         turn!.lastAgentMessage = p.message;
+       } else if (et === "token_count") {
+-        if (p.info?.total_token_usage) turn!.totalUsage = p.info.total_token_usage;
+-        closeStep(ts, p.info?.last_token_usage ?? undefined);
++        const cumulative = p.info?.total_token_usage;
++        const last = p.info?.last_token_usage ?? undefined;
++        const reEmitted =
++          cumulative?.total_tokens !== undefined &&
++          cumulative.total_tokens === cumulativeTotalTokens;
++        if (cumulative) {
++          turn!.totalUsage = cumulative;
++          cumulativeTotalTokens = cumulative.total_tokens;
++        }
++        if (usageFromRecords) closeStep(ts);
++        else if (step || !last || reEmitted) closeStep(ts, last);
++        else pushUsageOnlyStep(ts, last);
+       } else if (et === "task_complete") {
+         finishTurn(ts, { completed: true, aborted: false });
+       } else if (et === "turn_aborted") {
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index be230db..d8f3f78 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -368,6 +368,7 @@ function turnHistoryMessages(turn: Turn): ChatMlMessage[] {
+   const user = userMessage(turn);
+   if (user) messages.push(user);
+   for (const step of turn.steps) {
++    if (step.usageOnly) continue;
+     messages.push(assistantMessage(step));
+     messages.push(...toolMessages(step));
+   }
+@@ -533,14 +534,8 @@ async function emitTurn(
+     const user = userMessage(turn);
+     const turnMessages: ChatMlMessage[] = user ? [user] : [];
+ 
+-    for (let i = 0; i < turn.steps.length; i++) {
+-      const step = turn.steps[i];
+-      const conversation = boundedConversation(
+-        historyPrefix,
+-        turnMessages,
+-        ctx.config.max_history_chars,
+-      );
+-      const generation = startObservation(
++    const startGeneration = (step: ModelStep, stepIndex: number, conversation: ChatMlMessage[]) =>
++      startObservation(
+         isSubagent ? "LLM Subagent" : "LLM",
+         {
+           input: attachToolDefinitions(
+@@ -554,8 +549,9 @@ async function emitTurn(
+             : {}),
+           usageDetails: toUsageDetails(step.usage),
+           metadata: {
+-            "codex.step_index": i,
++            "codex.step_index": stepIndex,
+             "codex.reasoning_effort": turn.reasoningEffort,
++            "codex.response_id": step.responseId,
+           },
+         },
+         {
+@@ -564,6 +560,21 @@ async function emitTurn(
+           parentSpanContext: root.otelSpan.spanContext(),
+         },
+       );
++    const usageOnly: Array<{ step: ModelStep; stepIndex: number; conversation: ChatMlMessage[] }> =
++      [];
++
++    for (let i = 0; i < turn.steps.length; i++) {
++      const step = turn.steps[i];
++      const conversation = boundedConversation(
++        historyPrefix,
++        turnMessages,
++        ctx.config.max_history_chars,
++      );
++      if (step.usageOnly) {
++        usageOnly.push({ step, stepIndex: i, conversation });
++        continue;
++      }
++      const generation = startGeneration(step, i, conversation);
+ 
+       for (const tc of step.toolCalls) {
+         const observation = emitToolCall(tc, root, step.endTime);
+@@ -580,6 +591,9 @@ async function emitTurn(
+       for (const child of children) emitToolCall(child, observation, child.startTime);
+     }
+     for (const tc of turn.detachedToolCalls) emitToolCall(tc, root, tc.startTime);
++    for (const { step, stepIndex, conversation } of usageOnly) {
++      startGeneration(step, stepIndex, conversation).end(new Date(step.endTime));
++    }
+ 
+     const announced: SubagentRollout[] = [];
+     for (const threadId of turn.subagentThreadIds) {
+@@ -951,6 +965,7 @@ async function spawnContextOf(
+   const traceId = inheritedTraceId ?? seededIdAt(seed, "trace", draw++);
+   const spawnCallId = turn.subagentSpawnCallIds[child.sessionId];
+   findSpawn: for (const step of turn.steps) {
++    if (step.usageOnly) continue;
+     draw++;
+     for (const tc of step.toolCalls) {
+       const toolSpanId = seededIdAt(seed, "span", draw++);
+diff --git a/plugins/tracing/src/types.ts b/plugins/tracing/src/types.ts
+index c9a9520..a4ac0c4 100644
+--- a/plugins/tracing/src/types.ts
++++ b/plugins/tracing/src/types.ts
+@@ -118,6 +118,16 @@ export type TokenUsage = {
+   reasoning_output_tokens?: number;
+ };
+ 
++/**
++ * A `token_usage_record` line: one per model response, compaction calls included, which
++ * `token_count` events do not report.
++ */
++export type TokenUsageRecordPayload = {
++  response_id?: string;
++  usage?: TokenUsage | null;
++  [key: string]: unknown;
++};
++
+ /**
+  * An `item_completed` item. From Codex 0.162, shell, MCP, patch and extension calls report
+  * their status here rather than in `*_end` events, including calls nested inside code mode.
+@@ -231,6 +241,9 @@ export type ModelStep = {
+   text?: string;
+   toolCalls: ToolCall[];
+   usage?: TokenUsage;
++  responseId?: string;
++  /** A response whose usage was reported but whose output the rollout does not show. */
++  usageOnly?: boolean;
+ };
+ 
+ export type Turn = {
+diff --git a/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-usage-main.jsonl b/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-usage-main.jsonl
+new file mode 100644
+index 0000000..804e301
+--- /dev/null
++++ b/plugins/tracing/test/fixtures/sessions/2026/11/15/rollout-usage-main.jsonl
+@@ -0,0 +1,76 @@
++{"timestamp":"2026-11-15T20:55:34.369Z","type":"session_meta","payload":{"id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","timestamp":"2026-11-15T20:54:37.300Z","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","originator":"codex-tui","cli_version":"0.169.0","source":"vscode","thread_source":"user","model_provider":"openai"}}
++{"timestamp":"2026-11-15T20:55:34.369Z","type":"event_msg","payload":{"type":"task_started","turn_attribution":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","turn_trigger":"user","parent_turn_id":null,"initiating_agent_path":null,"root_turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c"},"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","root_turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","started_at":1794776134,"model_context_window":258400,"collaboration_mode_kind":"default"}}
++{"timestamp":"2026-11-15T20:55:34.655Z","type":"turn_context","payload":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T20:56:48.618Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa1c8d849487d29a859386040bc512","status":"completed","call_id":"call_c587a74463574abda82f39248ced29c8","name":"exec","input":"const r=await tools.mcp__codex_apps__github_fetch_file({path:\"handler/rfc8628/auth_handler.go\",ref:\"v1.4.3\",repository_full_name:\"pocket-id/fosite\"});text(r.str…"}}
++{"timestamp":"2026-11-15T20:56:48.637Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","response_id":"resp_0e0dc6cdffebbb43016afa1c89729887d2a0258f21f6c368fb","usage":{"input_tokens":83418,"cached_input_tokens":74368,"cache_write_input_tokens":0,"output_tokens":168,"reasoning_output_tokens":0,"total_tokens":83586},"turn_token_usage":{"input_tokens":475685,"cached_input_tokens":399488,"cache_write_input_tokens":0,"output_tokens":1956,"reasoning_output_tokens":43,"total_tokens":477641},"thread_token_usage":{"input_tokens":475685,"cached_input_tokens":399488,"cache_write_input_tokens":0,"output_tokens":1956,"reasoning_output_tokens":43,"total_tokens":477641}}}
++{"timestamp":"2026-11-15T20:56:49.174Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"McpToolCall","id":"exec-3b387b7d-65e8-41bc-9c65-df4ec83ff361","server":"codex_apps","tool":"github.fetch_file","arguments":{"path":"handler/rfc8628/auth_handler.go","ref":"v1.4.3","repository_full_name":"pocket-id/fosite"},"connectorId":"connector_76869538009648d5b282a4bb21c3d157","linkId":"link_6abbd74ed9548191b41df510c0de4578","appName":"GitHub","actionName":"fetch_file","readOnlyHint":true,"status":"completed","result":{"content":[{"type":"text","text":"Action completed."}],"structuredContent":{"content":"// Copyright © 2025 Ory Corp\n// Modified by contributors to the Pocket ID fork.\n// SPDX-License-Identifier: Apache-2.0\n\npackage rfc8628\n\nimport (\n\t\"context\"\n\t\"f…","encoding":"utf-8","sha":"285e46c060e24265d7496f3e42aec9fda7bd545d","display_url":"https://github.com/pocket-id/fosite/blob/v1.4.3/handler/rfc8628/auth_handler.go","display_title":"auth_handler.go"},"isError":false},"duration":{"secs":0,"nanos":511377042}},"started_at_ms":1794776208662,"completed_at_ms":1794776209174}}
++{"timestamp":"2026-11-15T20:56:49.623Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"CommandExecution","id":"exec-b8ed4f36-5183-468d-8f4d-f0b2134d283e","process_id":"48607","command":["/bin/zsh","-lc","skopeo inspect --raw docker://ghcr.io/pocket-id/pocket-id:v2.19.2 | shasum -a 256; rg -n 'pocket' roles/observability_stack/vars/image_runtime_identity.yml; git…"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"skopeo inspect --raw docker://ghcr.io/pocket-id/pocket-id:v2.19.2 | shasum -a 256; rg -n 'pocket' roles/observability_stack/vars/image_runtime_identity.yml; git…"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"3ee23895d6a3adb5dd5de801a4fd31fc31b960e6dfbea9b5200e33cf477695eb  -\n","exit_code":0,"duration":{"secs":0,"nanos":246247458}},"started_at_ms":1794776209377,"completed_at_ms":1794776209623}}
++{"timestamp":"2026-11-15T20:56:49.629Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e0ff-98dd-7f03-aaac-6998107afaf8","call_id":"call_c587a74463574abda82f39248ced29c8","output":[{"type":"input_text","text":"Script completed\nWall time 1.0 seconds\nOutput:\n"},{"type":"input_text","text":"[{\"line\":82,\"text\":\"\\t\\terr = d.Storage.DeviceAuthStorage().CreateDeviceAuthSession(ctx, deviceCodeSignature, userCodeSignature, dar.Sanitize([]string{\\\"nonce\\\"…"},{"type":"input_text","text":"{\"chunk_id\":\"6fa191\",\"wall_time_seconds\":0.246286875,\"exit_code\":0,\"original_token_count\":17,\"output\":\"3ee23895d6a3adb5dd5de801a4fd31fc31b960e6dfbea9b5200e33cf4…"}]}}
++{"timestamp":"2026-11-15T20:56:49.633Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":475685,"cached_input_tokens":399488,"cache_write_input_tokens":0,"output_tokens":1956,"reasoning_output_tokens":43,"total_tokens":477641},"last_token_usage":{"input_tokens":83418,"cached_input_tokens":74368,"cache_write_input_tokens":0,"output_tokens":168,"reasoning_output_tokens":0,"total_tokens":83586},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-15T20:56:53.102Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","item":{"type":"Reasoning","id":"rs_0e0dc6cdffebbb43016afa1c95008887d29c6b715a9469364c","summary_text":[],"raw_content":[]},"started_at_ms":1794776213102,"completed_at_ms":1794776213102}}
++{"timestamp":"2026-11-15T20:56:53.103Z","type":"response_item","payload":{"type":"reasoning","id":"rs_0e0dc6cdffebbb43016afa1c95008887d29c6b715a9469364c","summary":[],"encrypted_content":"gAAAAABq-hyVylu30rg1P-Nr_x4hWT5bBYPT_SbeD_NIZht-KKbSK7O7XBGqJ8ZeB-WCOqmTXsVkW5eCjepJOb48arlW36wHa7EjRTJkWDaqOJxLo9WnwhXqqtOF5NLTSWQJQLmM2EZZevsuv9maYthAvmMXutF-…"}}
++{"timestamp":"2026-11-15T20:56:53.404Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","response_id":"resp_0e0dc6cdffebbb43016afa1c91d0a887d28c155e35db6b8262","usage":{"input_tokens":83734,"cached_input_tokens":83456,"cache_write_input_tokens":0,"output_tokens":25,"reasoning_output_tokens":11,"total_tokens":83759},"turn_token_usage":{"input_tokens":559419,"cached_input_tokens":482944,"cache_write_input_tokens":0,"output_tokens":1981,"reasoning_output_tokens":54,"total_tokens":561400},"thread_token_usage":{"input_tokens":559419,"cached_input_tokens":482944,"cache_write_input_tokens":0,"output_tokens":1981,"reasoning_output_tokens":54,"total_tokens":561400}}}
++{"timestamp":"2026-11-15T20:56:53.405Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":559419,"cached_input_tokens":482944,"cache_write_input_tokens":0,"output_tokens":1981,"reasoning_output_tokens":54,"total_tokens":561400},"last_token_usage":{"input_tokens":83734,"cached_input_tokens":83456,"cache_write_input_tokens":0,"output_tokens":25,"reasoning_output_tokens":11,"total_tokens":83759},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-15T20:58:49.841Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa1d08a87887d2806f69fd014f59e3","status":"completed","call_id":"call_5ce366d574e24e459d57a92c2754832f","name":"exec","input":"text(await tools.exec_command({cmd:\"git rev-parse HEAD origin/master; cat /Users/kirillabrosimov/Projects/remote_server_setup/base/.git/hooks/prepare-commit-msg…"}}
++{"timestamp":"2026-11-15T20:58:49.861Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","response_id":"resp_0e0dc6cdffebbb43016afa1d057da887d2bc511246c3ccca4b","usage":{"input_tokens":102949,"cached_input_tokens":102528,"cache_write_input_tokens":0,"output_tokens":72,"reasoning_output_tokens":0,"total_tokens":103021},"turn_token_usage":{"input_tokens":1611162,"cached_input_tokens":1515008,"cache_write_input_tokens":0,"output_tokens":4724,"reasoning_output_tokens":593,"total_tokens":1615886},"thread_token_usage":{"input_tokens":1611162,"cached_input_tokens":1515008,"cache_write_input_tokens":0,"output_tokens":4724,"reasoning_output_tokens":593,"total_tokens":1615886}}}
++{"timestamp":"2026-11-15T20:58:49.971Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e101-6ef3-75a0-8e6f-cd498664b3a5","call_id":"call_5ce366d574e24e459d57a92c2754832f","output":[{"type":"input_text","text":"Script completed\nWall time 0.1 seconds\nOutput:\n"},{"type":"input_text","text":"{\"chunk_id\":\"b914d1\",\"wall_time_seconds\":0,\"exit_code\":128,\"original_token_count\":204,\"output\":\"e11c7353a0bfc0cdc41d3a1bb52baceec0e1f19b\\ne11c7353a0bfc0cdc41d3a…"}]}}
++{"timestamp":"2026-11-15T20:58:49.972Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1611162,"cached_input_tokens":1515008,"cache_write_input_tokens":0,"output_tokens":4724,"reasoning_output_tokens":593,"total_tokens":1615886},"last_token_usage":{"input_tokens":102949,"cached_input_tokens":102528,"cache_write_input_tokens":0,"output_tokens":72,"reasoning_output_tokens":0,"total_tokens":103021},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-15T20:58:56.429Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","response_id":"resp_0e0dc6cdffebbb43016afa1d0a2f6c87d2b2c5230d4ea5e96d","usage":{"input_tokens":103382,"cached_input_tokens":102784,"cache_write_input_tokens":0,"output_tokens":190,"reasoning_output_tokens":0,"total_tokens":103572},"turn_token_usage":{"input_tokens":1714544,"cached_input_tokens":1617792,"cache_write_input_tokens":0,"output_tokens":4914,"reasoning_output_tokens":593,"total_tokens":1719458},"thread_token_usage":{"input_tokens":1714544,"cached_input_tokens":1617792,"cache_write_input_tokens":0,"output_tokens":4914,"reasoning_output_tokens":593,"total_tokens":1719458}}}
++{"timestamp":"2026-11-15T20:58:56.430Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1714544,"cached_input_tokens":1617792,"cache_write_input_tokens":0,"output_tokens":4914,"reasoning_output_tokens":593,"total_tokens":1719458},"last_token_usage":{"input_tokens":103382,"cached_input_tokens":102784,"cache_write_input_tokens":0,"output_tokens":190,"reasoning_output_tokens":0,"total_tokens":103572},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-15T21:03:37.698Z","type":"event_msg","payload":{"type":"task_complete","root_turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","last_agent_message":"Создал [PR #100 — обновление Pocket ID до v2.19.2](https://github.com/abrosimov/setup_lab/pull/100). Фикс подтверждён в [Fosite v1.4.3](https://github.com/pocke…","started_at":1794776134,"completed_at":1794776617,"duration_ms":483356,"time_to_first_token_ms":2639}}
++{"timestamp":"2026-11-15T23:35:38.768Z","type":"event_msg","payload":{"type":"task_started","turn_attribution":{"turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","turn_trigger":"user","parent_turn_id":null,"initiating_agent_path":null,"root_turn_id":"01a1e191-0005-7070-969d-55ec0232f21b"},"turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","root_turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","started_at":1794785738,"model_context_window":258400,"collaboration_mode_kind":"default"}}
++{"timestamp":"2026-11-15T23:35:38.784Z","type":"turn_context","payload":{"turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:35:38.825Z","type":"response_item","payload":{"type":"message","id":"msg_01a1e191-0049-7033-90cc-79cebd72a95b","role":"user","content":[{"type":"input_text","text":"Ну так может нужно проверить, и убедиться как так выходит что src/remote_server_setup/image_scan_impact.py знает, а src/remote_server_setup/image_scan_delta.py …"}]}}
++{"timestamp":"2026-11-15T23:35:38.826Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","item":{"type":"UserMessage","id":"01a1e191-0049-7033-90cc-79dc76356185","client_id":"a7865140-8600-4401-a10a-1758a3c8b199","content":[{"type":"text","text":"Ну так может нужно проверить, и убедиться как так выходит что src/remote_server_setup/image_scan_impact.py знает, а src/remote_server_setup/image_scan_delta.py …","text_elements":[]}]},"started_at_ms":1794785738826,"completed_at_ms":1794785738826}}
++{"timestamp":"2026-11-15T23:35:41.954Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","item":{"type":"AgentMessage","id":"msg_0e0dc6cdffebbb43016afa41ccdebc87d283b5a252c4842f9f","content":[{"type":"Text","text":"Проверю, где задаются оба списка образов, почему они разошлись и что проверяют тесты. Пока только исследование, без правок.\n\n"}],"phase":"commentary"},"content_token_count":34,"started_at_ms":1794785740903,"completed_at_ms":1794785741954}}
++{"timestamp":"2026-11-15T23:35:41.956Z","type":"response_item","payload":{"type":"message","status":"completed","id":"msg_0e0dc6cdffebbb43016afa41ccdebc87d283b5a252c4842f9f","role":"assistant","content":[{"type":"output_text","text":"Проверю, где задаются оба списка образов, почему они разошлись и что проверяют тесты. Пока только исследование, без правок.\n\n","annotations":[],"logprobs":[]}],"phase":"commentary"}}
++{"timestamp":"2026-11-15T23:35:43.274Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa41cdea1087d2b4702611fbdc5c42","status":"completed","call_id":"call_8a480f94f8a343cda8cd1a218bb79ab1","name":"exec","input":"text(await tools.exec_command({cmd:\"git status --short; sed -n '1,210p' src/remote_server_setup/image_scan_impact.py; sed -n '1,310p' src/remote_server_setup/im…"}}
++{"timestamp":"2026-11-15T23:35:43.298Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","response_id":"resp_0e0dc6cdffebbb43016afa41cb126487d2a5fd4d63bf58adb0","usage":{"input_tokens":131790,"cached_input_tokens":131584,"cache_write_input_tokens":0,"output_tokens":125,"reasoning_output_tokens":0,"total_tokens":131915},"turn_token_usage":{"input_tokens":131790,"cached_input_tokens":131584,"cache_write_input_tokens":0,"output_tokens":125,"reasoning_output_tokens":0,"total_tokens":131915},"thread_token_usage":{"input_tokens":3908117,"cached_input_tokens":3783552,"cache_write_input_tokens":0,"output_tokens":8873,"reasoning_output_tokens":1285,"total_tokens":3916990}}}
++{"timestamp":"2026-11-15T23:35:43.420Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","item":{"type":"CommandExecution","id":"exec-4fc5dfef-1d73-43fd-b580-219e6f0b06d2","process_id":"98899","command":["/bin/zsh","-lc","git status --short; sed -n '1,210p' src/remote_server_setup/image_scan_impact.py; sed -n '1,310p' src/remote_server_setup/image_scan_delta.py; sed -n '1,270p' t…"],"cwd":"file:///Users/kirillabrosimov/Projects/remote_server_setup/master","parsed_cmd":[{"type":"unknown","cmd":"git status --short; sed -n '1,210p' src/remote_server_setup/image_scan_impact.py; sed -n '1,310p' src/remote_server_setup/image_scan_delta.py; sed -n '1,270p' t…"}],"source":"unified_exec_startup","status":"completed","aggregated_output":"\"\"\"Select the immutable application images that need security scanning.\"\"\"\n\nimport argparse\nimport ast\nimport csv\nimport hashlib\nimport json\nimport re\nimport sh…","exit_code":0,"duration":{"secs":0,"nanos":10250}},"started_at_ms":1794785743419,"completed_at_ms":1794785743420}}
++{"timestamp":"2026-11-15T23:35:43.424Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e191-1240-7bb3-b516-b453a185227e","call_id":"call_8a480f94f8a343cda8cd1a218bb79ab1","output":[{"type":"input_text","text":"Script completed\nWall time 0.1 seconds\nOutput:\n"},{"type":"input_text","text":"{\"chunk_id\":\"364b96\",\"wall_time_seconds\":0.00001025,\"exit_code\":0,\"original_token_count\":7688,\"output\":\"Warning: truncated output (original token count: 7688)\\n…"}]}}
++{"timestamp":"2026-11-15T23:35:43.425Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3908117,"cached_input_tokens":3783552,"cache_write_input_tokens":0,"output_tokens":8873,"reasoning_output_tokens":1285,"total_tokens":3916990},"last_token_usage":{"input_tokens":131790,"cached_input_tokens":131584,"cache_write_input_tokens":0,"output_tokens":125,"reasoning_output_tokens":0,"total_tokens":131915},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-15T23:35:43.716Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3908117,"cached_input_tokens":3783552,"cache_write_input_tokens":0,"output_tokens":8873,"reasoning_output_tokens":1285,"total_tokens":3916990},"last_token_usage":{"input_tokens":131790,"cached_input_tokens":131584,"cache_write_input_tokens":0,"output_tokens":125,"reasoning_output_tokens":0,"total_tokens":131915},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-15T23:35:43.720Z","type":"response_item","payload":{"type":"message","id":"msg_01a1e191-1368-75f1-8d53-1c06fe16db85","role":"developer","content":[{"type":"input_text","text":"<turn_aborted>\nThe previous turn was interrupted on purpose. Any running unified exec processes may still be running in the background. If any tools/commands we…"}]}}
++{"timestamp":"2026-11-15T23:35:43.769Z","type":"event_msg","payload":{"type":"turn_aborted","root_turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","turn_id":"01a1e191-0005-7070-969d-55ec0232f21b","reason":"interrupted","started_at":1794785738,"completed_at":1794785743,"duration_ms":5000}}
++{"timestamp":"2026-11-15T23:44:02.599Z","type":"event_msg","payload":{"type":"task_started","turn_attribution":{"turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","turn_trigger":"user","parent_turn_id":null,"initiating_agent_path":null,"root_turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801"},"turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","root_turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","started_at":1794786242,"model_context_window":258400,"collaboration_mode_kind":"default"}}
++{"timestamp":"2026-11-15T23:44:02.615Z","type":"turn_context","payload":{"turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-16T00:41:41.773Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","item":{"type":"Reasoning","id":"rs_0e0dc6cdffebbb43016afa5145b2c487d2bdd4f20c07e7951a","summary_text":[],"raw_content":[]},"started_at_ms":1794789701772,"completed_at_ms":1794789701772}}
++{"timestamp":"2026-11-16T00:41:41.777Z","type":"response_item","payload":{"type":"reasoning","id":"rs_0e0dc6cdffebbb43016afa5145b2c487d2bdd4f20c07e7951a","summary":[],"encrypted_content":"gAAAAABq-lFFDIYJHDQIeKo_TL9CUfDUffsYH8CbINrcwlqk8n_UmGmTOBMI341yUWDNy1aEYtX3gTRzRhGp_bNIwRJxfvtOgvcszArErGRK5kz4ApTB6tmpumMSk99whR2rF7C-n_ZTJ5E2Cvl_1pVlcHsHkN5x…"}}
++{"timestamp":"2026-11-16T00:41:47.024Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa5145fa4887d2b94c2a9c63d22c22","status":"completed","call_id":"call_f0c870f41fa24deeb7e00812548ed7e0","name":"exec","input":"const rr=await Promise.allSettled([\ntools.mcp__codex_apps__github_fetch_workflow_job_logs({repo_full_name:\"abrosimov/setup_lab\",job_id:133018105909}),\ntools.mcp…"}}
++{"timestamp":"2026-11-16T00:41:47.062Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","response_id":"resp_0e0dc6cdffebbb43016afa5142877087d2948aa9596cf1f2b7","usage":{"input_tokens":243125,"cached_input_tokens":242432,"cache_write_input_tokens":0,"output_tokens":309,"reasoning_output_tokens":35,"total_tokens":243434},"turn_token_usage":{"input_tokens":36896923,"cached_input_tokens":36811648,"cache_write_input_tokens":0,"output_tokens":24602,"reasoning_output_tokens":9510,"total_tokens":36921525},"thread_token_usage":{"input_tokens":42474192,"cached_input_tokens":42242432,"cache_write_input_tokens":0,"output_tokens":37527,"reasoning_output_tokens":11873,"total_tokens":42511719}}}
++{"timestamp":"2026-11-16T00:41:47.916Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","item":{"type":"McpToolCall","id":"exec-8cfca151-9511-4930-a685-c0b6eaf17eaf","server":"codex_apps","tool":"github.fetch_workflow_run_jobs","arguments":{"repo_full_name":"abrosimov/setup_lab","run_id":43778457459},"connectorId":"connector_76869538009648d5b282a4bb21c3d157","linkId":"link_6abbd74ed9548191b41df510c0de4578","appName":"GitHub","actionName":"fetch_workflow_run_jobs","readOnlyHint":true,"status":"completed","result":{"content":[{"type":"text","text":"Action completed."}],"structuredContent":{"jobs":[{"id":133011080555,"name":"Fast CI topology contract","status":"completed","conclusion":"success","run_id":43778457459,"logs_url":null,"steps":[{"name":"Set up job","status":"completed","conclusion":"success","number":1},{"name":"Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1","status":"completed","conclusion":"success","number":2},{"name":"Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2","status":"completed","conclusion":"success","number":3},{"name":"Guard the CI topology before expensive work","status":"completed","conclusion":"success","number":4}]},{"id":133011145890,"name":"Static repository contracts","status":"completed","conclusion":"success","run_id":43778457459,"logs_url":null,"steps":[{"name":"Set up job","status":"completed","conclusion":"success","number":1},{"name":"Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1","status":"completed","conclusion":"success","number":2},{"name":"Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2","status":"completed","conclusion":"success","number":3},{"name":"Plan the affected Ansible component tests","status":"completed","conclusion":"success","number":4}]},{"id":133018105904,"name":"Caddy lifecycle and layer-migration recovery across a QEMU KVM reboot","status":"completed","conclusion":"cancelled","run_id":43778457459,"logs_url":null,"steps":[{"name":"Set up job","status":"completed","conclusion":"success","number":1},{"name":"Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1","status":"completed","conclusion":"success","number":2},{"name":"Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2","status":"completed","conclusion":"success","number":3},{"name":"Prepare KVM access for the hosted runner","status":"completed","conclusion":"success","number":4}]},{"id":133018105909,"name":"Image vulnerability report and runtime identity","status":"completed","conclusion":"cancelled","run_id":43778457459,"logs_url":null,"steps":[{"name":"Set up job","status":"completed","conclusion":"success","number":1},{"name":"Checkout the exact image scan candidate","status":"completed","conclusion":"success","number":2},{"name":"Checkout the exact base-owned delta runner","status":"completed","conclusion":"skipped","number":3},{"name":"Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2","status":"completed","conclusion":"success","number":4}]}]},"isError":false},"duration":{"secs":0,"nanos":820189750}},"started_at_ms":1794789707090,"completed_at_ms":1794789707911}}
++{"timestamp":"2026-11-16T00:42:05.752Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","item":{"type":"McpToolCall","id":"exec-440994b5-57b3-40cc-a466-226a7e141e12","server":"codex_apps","tool":"github.fetch_workflow_job_logs","arguments":{"repo_full_name":"abrosimov/setup_lab","job_id":133018105909},"connectorId":"connector_76869538009648d5b282a4bb21c3d157","linkId":"link_6abbd74ed9548191b41df510c0de4578","appName":"GitHub","actionName":"fetch_workflow_job_logs","readOnlyHint":true,"status":"completed","result":{"content":[{"type":"text","text":"{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"Action completed.\\\"}],\\\"structuredContent\\\":{\\\"content\\\":\\\"﻿2026-11-16T00:33:22.4…"}],"isError":false},"duration":{"secs":18,"nanos":533893959}},"started_at_ms":1794789707091,"completed_at_ms":1794789725747}}
++{"timestamp":"2026-11-16T00:42:06.443Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e1cd-d8eb-7dd2-9a06-360903ece885","call_id":"call_f0c870f41fa24deeb7e00812548ed7e0","output":[{"type":"input_text","text":"Script completed\nWall time 19.4 seconds\nOutput:\n"},{"type":"input_text","text":"Warning: truncated output (original token count: 262145)\nTotal output lines: 8995\n\n2026-11-16T00:33:27.7653172Z   repository: abrosimov/setup_lab\n2026-11-16T00:…"},{"type":"input_text","text":"[Code Mode session output limit reached: omitted 201046 text bytes; discarded 0 text segments, 0 images, 0 audio items]"},{"type":"input_text","text":"0:36:54.6411155Z                             \"ID\": \"opentelemetry-otlp@0.33.0\",\n2026-11-16T00:36:54.6411246Z                             \"Identifier\": {\n2026-11…"}]}}
++{"timestamp":"2026-11-16T00:42:06.444Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":42474192,"cached_input_tokens":42242432,"cache_write_input_tokens":0,"output_tokens":37527,"reasoning_output_tokens":11873,"total_tokens":42511719},"last_token_usage":{"input_tokens":243125,"cached_input_tokens":242432,"cache_write_input_tokens":0,"output_tokens":309,"reasoning_output_tokens":35,"total_tokens":243434},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-16T00:43:16.101Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","response_id":"resp_0e0dc6cdffebbb43016afa515ea64887d2a57484d8b9b9e0c8","usage":{"input_tokens":243471,"cached_input_tokens":243200,"cache_write_input_tokens":0,"output_tokens":3381,"reasoning_output_tokens":0,"total_tokens":246852},"turn_token_usage":{"input_tokens":37140394,"cached_input_tokens":37054848,"cache_write_input_tokens":0,"output_tokens":27983,"reasoning_output_tokens":9510,"total_tokens":37168377},"thread_token_usage":{"input_tokens":42717663,"cached_input_tokens":42485632,"cache_write_input_tokens":0,"output_tokens":40908,"reasoning_output_tokens":11873,"total_tokens":42758571}}}
++{"timestamp":"2026-11-16T00:43:16.115Z","type":"compacted","payload":{"message":""}}
++{"timestamp":"2026-11-16T00:43:16.116Z","type":"turn_context","payload":{"turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-16T00:43:16.122Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":42474192,"cached_input_tokens":42242432,"cache_write_input_tokens":0,"output_tokens":37527,"reasoning_output_tokens":11873,"total_tokens":42511719},"last_token_usage":{"input_tokens":0,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":0,"reasoning_output_tokens":0,"total_tokens":49054},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-16T00:43:16.124Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","item":{"type":"ContextCompaction","id":"01a1e1cd-d911-7201-a17c-c2146394a123"},"started_at_ms":1794789726481,"completed_at_ms":1794789796124}}
++{"timestamp":"2026-11-16T00:43:20.424Z","type":"response_item","payload":{"type":"custom_tool_call","id":"ctc_0e0dc6cdffebbb43016afa51a6ec6c87d2b39a0cdd7fda504c","status":"completed","call_id":"call_426d0a48ab7e482aa21dc294094e40f9","name":"exec","input":"const r=load(\"ci_catalogue_attempt2_0\"); const s=r?.structuredContent?.content; text(s ? s.split(\"\\n\").slice(-110).join(\"\\n\") : Object.keys(r??{}));\ntext(load(\"…"}}
++{"timestamp":"2026-11-16T00:43:20.441Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","response_id":"resp_0e0dc6cdffebbb43016afa51a4ce1087d2beb97ca348a2db10","usage":{"input_tokens":38769,"cached_input_tokens":6784,"cache_write_input_tokens":0,"output_tokens":90,"reasoning_output_tokens":0,"total_tokens":38859},"turn_token_usage":{"input_tokens":37179163,"cached_input_tokens":37061632,"cache_write_input_tokens":0,"output_tokens":28073,"reasoning_output_tokens":9510,"total_tokens":37207236},"thread_token_usage":{"input_tokens":42756432,"cached_input_tokens":42492416,"cache_write_input_tokens":0,"output_tokens":40998,"reasoning_output_tokens":11873,"total_tokens":42797430}}}
++{"timestamp":"2026-11-16T00:43:20.643Z","type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1e1ce-fac3-7380-ba7e-6dec9319296e","call_id":"call_426d0a48ab7e482aa21dc294094e40f9","output":[{"type":"input_text","text":"Script completed\nWall time 0.2 seconds\nOutput:\n"},{"type":"input_text","text":"2026-11-16T00:40:36.5788249Z  - jsonschema-specifications==2025.9.1\n2026-11-16T00:40:36.5788569Z  - markupsafe==3.0.4\n2026-11-16T00:40:36.5788861Z  - mypy-exten…"},{"type":"input_text","text":"[{\"id\":133011080555,\"name\":\"Fast CI topology contract\",\"conclusion\":\"success\"},{\"id\":133011145890,\"name\":\"Static repository contracts\",\"conclusion\":\"success\"},{…"}]}}
++{"timestamp":"2026-11-16T00:43:20.644Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":42512961,"cached_input_tokens":42249216,"cache_write_input_tokens":0,"output_tokens":37617,"reasoning_output_tokens":11873,"total_tokens":42550578},"last_token_usage":{"input_tokens":38769,"cached_input_tokens":6784,"cache_write_input_tokens":0,"output_tokens":90,"reasoning_output_tokens":0,"total_tokens":38859},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-16T03:02:04.440Z","type":"event_msg","payload":{"type":"task_complete","root_turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","turn_id":"01a1e198-b01b-7821-b995-ea2bd0455801","last_agent_message":"Рефакторинг завершён в [PR #100](https://github.com/abrosimov/setup_lab/pull/100). **Все 11 проверок CI прошли.**\n\nПричина расхождений — независимые копии катал…","started_at":1794786242,"completed_at":1794798124,"duration_ms":11881814,"time_to_first_token_ms":3741}}
++{"timestamp":"2026-11-16T14:26:50.687Z","type":"event_msg","payload":{"type":"task_started","turn_attribution":{"turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","turn_trigger":"user","parent_turn_id":null,"initiating_agent_path":null,"root_turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b"},"turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","root_turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","started_at":1794839210,"model_context_window":258400,"collaboration_mode_kind":"default"}}
++{"timestamp":"2026-11-16T14:26:50.705Z","type":"turn_context","payload":{"turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-16T14:30:16.182Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"subagent-completed-01a1e4c2-37a7-7e40-b03c-849fa2d60f36","kind":"completed","agent_thread_id":"01a1e4c2-378a-7c03-b26f-103650f98e98","agent_path":"/root/metadata_static"},"started_at_ms":1794839416182,"completed_at_ms":1794839416182}}
++{"timestamp":"2026-11-16T14:30:24.436Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"subagent-completed-01a1e4c2-07f3-7af1-9688-6d5f8b3ca830","kind":"completed","agent_thread_id":"01a1e4c2-07d5-7091-8604-f6f5e553d12d","agent_path":"/root/metadata_discovery"},"started_at_ms":1794839424436,"completed_at_ms":1794839424436}}
++{"timestamp":"2026-11-16T14:30:46.113Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","item":{"type":"Reasoning","id":"rs_0e0dc6cdffebbb43016afb1396143087d2895a3469d4672344","summary_text":[],"raw_content":[]},"started_at_ms":1794839446108,"completed_at_ms":1794839446113}}
++{"timestamp":"2026-11-16T14:30:46.120Z","type":"response_item","payload":{"type":"reasoning","id":"rs_0e0dc6cdffebbb43016afb1396143087d2895a3469d4672344","summary":[],"encrypted_content":"gAAAAABq-xOWiS0BNiPKY3UcupY4p5vK8ptT_pSo_4n4imCgkY8mcMGqBLxKNCx5lAwYHWoYcE5cM-7Cj-CSf4lh5fbfn5DZcOOBNu0jlDP-t0lHyLqhdPUVnZN2FAZA36ly0zgfmF__7i8uEK_X5EQ41J6_nPXQ…"}}
++{"timestamp":"2026-11-16T14:30:46.318Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","response_id":"resp_0e0dc6cdffebbb43016afb13767ab087d2a02a8850a1ea42d6","usage":{"input_tokens":200090,"cached_input_tokens":194944,"cache_write_input_tokens":0,"output_tokens":516,"reasoning_output_tokens":516,"total_tokens":200606},"turn_token_usage":{"input_tokens":2352145,"cached_input_tokens":2161024,"cache_write_input_tokens":0,"output_tokens":4783,"reasoning_output_tokens":2043,"total_tokens":2356928},"thread_token_usage":{"input_tokens":81320401,"cached_input_tokens":80725248,"cache_write_input_tokens":0,"output_tokens":80643,"reasoning_output_tokens":23680,"total_tokens":81401044}}}
++{"timestamp":"2026-11-16T14:30:46.321Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":81076930,"cached_input_tokens":80482048,"cache_write_input_tokens":0,"output_tokens":77262,"reasoning_output_tokens":23680,"total_tokens":81154192},"last_token_usage":{"input_tokens":200090,"cached_input_tokens":194944,"cache_write_input_tokens":0,"output_tokens":516,"reasoning_output_tokens":516,"total_tokens":200606},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-16T14:30:46.323Z","type":"response_item","payload":{"type":"agent_message","id":"amsg_01a1e4c4-8333-7463-982e-b08f3815cbd3","author":"/root/metadata_static","recipient":"/root","content":[{"type":"input_text","text":"Message Type: FINAL_ANSWER\nTask name: /root\nSender: /root/metadata_static\nPayload:\n**OPT-3 — Colocated static descriptors with stable IDs** is viable and strong…"}]}}
++{"timestamp":"2026-11-16T14:30:46.325Z","type":"response_item","payload":{"type":"agent_message","id":"amsg_01a1e4c4-8335-71a0-8aef-aaa419431fd1","author":"/root/metadata_discovery","recipient":"/root","content":[{"type":"input_text","text":"Message Type: FINAL_ANSWER\nTask name: /root\nSender: /root/metadata_discovery\nPayload:\n**OPT-2 — discover declarations and infer dependency edges from tracked co…"}]}}
++{"timestamp":"2026-11-16T14:30:50.090Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"subagent-completed-01a1e4c3-76ab-7842-8374-a394fd6f0cae","kind":"completed","agent_thread_id":"01a1e4c3-7685-7791-a6a9-85bac3def153","agent_path":"/root/metadata_executable"},"started_at_ms":1794839450090,"completed_at_ms":1794839450090}}
++{"timestamp":"2026-11-16T14:30:51.369Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","item":{"type":"Reasoning","id":"rs_0e0dc6cdffebbb43016afb139b563c87d2a236ea64d3ba06ea","summary_text":[],"raw_content":[]},"started_at_ms":1794839451368,"completed_at_ms":1794839451368}}
++{"timestamp":"2026-11-16T14:30:51.376Z","type":"response_item","payload":{"type":"reasoning","id":"rs_0e0dc6cdffebbb43016afb139b563c87d2a236ea64d3ba06ea","summary":[],"encrypted_content":"gAAAAABq-xObaCT9yRaItRlEo5DjUi_Em1ZM1pTiNArucTh0Hdy-aOlaz_J-0aeU2hlwiiJyOgYwuYg0Phmc7cV3SmCFMlvP_dKU7alJ2qRwcbE41SUkstyeYR4GlxpD1IU6y7FbtXBOw-GgOywR_jFtfLKey93v…"}}
++{"timestamp":"2026-11-16T14:30:51.576Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","response_id":"resp_0e0dc6cdffebbb43016afb1396d2ac87d2a00e016b1c992b73","usage":{"input_tokens":203659,"cached_input_tokens":199936,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":32,"total_tokens":203704},"turn_token_usage":{"input_tokens":2555804,"cached_input_tokens":2360960,"cache_write_input_tokens":0,"output_tokens":4828,"reasoning_output_tokens":2075,"total_tokens":2560632},"thread_token_usage":{"input_tokens":81524060,"cached_input_tokens":80925184,"cache_write_input_tokens":0,"output_tokens":80688,"reasoning_output_tokens":23712,"total_tokens":81604748}}}
++{"timestamp":"2026-11-16T14:30:51.578Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":81280589,"cached_input_tokens":80681984,"cache_write_input_tokens":0,"output_tokens":77307,"reasoning_output_tokens":23712,"total_tokens":81357896},"last_token_usage":{"input_tokens":203659,"cached_input_tokens":199936,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":32,"total_tokens":203704},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-16T14:30:51.583Z","type":"response_item","payload":{"type":"agent_message","id":"amsg_01a1e4c4-97be-7e93-9c63-673fc9b04584","author":"/root/metadata_executable","recipient":"/root","content":[{"type":"input_text","text":"Message Type: FINAL_ANSWER\nTask name: /root\nSender: /root/metadata_executable\nPayload:\n**OPT-4 — исполняемый `--describe` полезен как единый интерфейс для челов…"}]}}
++{"timestamp":"2026-11-16T14:31:10.355Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e0dc6cdffebbb43016afb13a0d43c87d28fd6b8d5825e0b80","name":"spawn_agent","namespace":"collaboration","arguments":"{\"task_name\":\"metadata_hybrid\",\"agent_type\":\"architect\",\"fork_turns\":\"none\",\"message\":\"gAAAAABq-xOudmFYan1gTrf0eYEPB_XpHKCvKehnV-e7kHFE1MQ1lz-4k5g7Smy1SbAWSPGDf…","call_id":"call_2b5c584592bc4b89811bab415d7c8248"}}
++{"timestamp":"2026-11-16T14:31:10.414Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","response_id":"resp_0e0dc6cdffebbb43016afb139c156887d29ae8a0121d7107f3","usage":{"input_tokens":205038,"cached_input_tokens":203520,"cache_write_input_tokens":0,"output_tokens":347,"reasoning_output_tokens":0,"total_tokens":205385},"turn_token_usage":{"input_tokens":2760842,"cached_input_tokens":2564480,"cache_write_input_tokens":0,"output_tokens":5175,"reasoning_output_tokens":2075,"total_tokens":2766017},"thread_token_usage":{"input_tokens":81729098,"cached_input_tokens":81128704,"cache_write_input_tokens":0,"output_tokens":81035,"reasoning_output_tokens":23712,"total_tokens":81810133}}}
++{"timestamp":"2026-11-16T14:31:10.464Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","item":{"type":"SubAgentActivity","model":"gpt-6-astra","reasoning_effort":"high","id":"call_2b5c584592bc4b89811bab415d7c8248","kind":"started","agent_thread_id":"01a1e4c4-e156-7a42-a01b-83b4db3d13e1","agent_path":"/root/metadata_hybrid"},"started_at_ms":1794839470464,"completed_at_ms":1794839470464}}
++{"timestamp":"2026-11-16T14:31:10.469Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e4c4-e185-7002-b237-8a7ec96f2354","call_id":"call_2b5c584592bc4b89811bab415d7c8248","output":"{\"task_name\":\"/root/metadata_hybrid\"}"}}
++{"timestamp":"2026-11-16T14:31:10.470Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":81485627,"cached_input_tokens":80885504,"cache_write_input_tokens":0,"output_tokens":77654,"reasoning_output_tokens":23712,"total_tokens":81563281},"last_token_usage":{"input_tokens":205038,"cached_input_tokens":203520,"cache_write_input_tokens":0,"output_tokens":347,"reasoning_output_tokens":0,"total_tokens":205385},"last_usage_includes_reasoning":true,"model_context_window":258400}}}
++{"timestamp":"2026-11-16T14:35:37.505Z","type":"event_msg","payload":{"type":"task_complete","root_turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","turn_id":"01a1e4c0-eaa0-77d1-8444-a60ecd56335b","last_agent_message":"Да, это имеет смысл. **Рекомендую сочетание автоматического обнаружения, локальных декларативных метаданных и стабильных ID.** А `--describe` может возвращать т…","started_at":1794839210,"completed_at":1794839737,"duration_ms":526814,"time_to_first_token_ms":6240}}
+diff --git a/plugins/tracing/test/hook-command.test.ts b/plugins/tracing/test/hook-command.test.ts
+index 1ae7508..7f96422 100644
+--- a/plugins/tracing/test/hook-command.test.ts
++++ b/plugins/tracing/test/hook-command.test.ts
+@@ -926,4 +926,71 @@ describe("subagent turns that run after the spawning turn", () => {
+     expect(nested[0].parentSpanId).toBe(exec.spanId);
+     expect(nested[0].attributes["langfuse.observation.level"]).toBe("ERROR");
+   });
++
++  describe("with a response before the spawn that reported only usage", () => {
++    const usage = { input_tokens: 900, output_tokens: 100, total_tokens: 1000 };
++    const usageOnlyResponse = [
++      line("2026-06-03T12:00:01.200Z", "response_item", {
++        type: "reasoning",
++        summary: [],
++        content: null,
++        encrypted_content: "gAAAAABq-hyV…",
++      }),
++      event("2026-06-03T12:00:01.300Z", {
++        type: "token_count",
++        info: { total_token_usage: usage, last_token_usage: usage },
++      }),
++    ];
++    const parentT1WithUsage = [...parentT1.slice(0, 3), ...usageOnlyResponse, ...parentT1.slice(3)];
++    const usageDetailsOf = (bodies: string[]) =>
++      exportedSpans(bodies)
++        .map((span) => span.attributes["langfuse.observation.usage_details"])
++        .filter((details): details is string => Boolean(details))
++        .map((details) => JSON.parse(details) as { total_tokens: number });
++
++    it("leaves the ids of the turn's other observations as they were without it", async () => {
++      const exportParentT1 = (lines: string[]) =>
++        runHooks(async ({ parent, child, write, hook }) => {
++          write(parent, lines);
++          write(child, childC1);
++          await hook({ hook_event_name: "Stop", turn_id: "parent-t1" });
++        });
++      const ids = (bodies: string[]) =>
++        exportedSpans(bodies)
++          .filter((span) => !span.attributes["langfuse.observation.usage_details"])
++          .map((span) => `${span.name} ${span.traceId} ${span.spanId} ${span.parentSpanId}`)
++          .sort();
++
++      const without = await exportParentT1(parentT1);
++      const withUsage = await exportParentT1(parentT1WithUsage);
++
++      expect(usageDetailsOf(withUsage.bodies)).toEqual([
++        expect.objectContaining({ total_tokens: 1000 }),
++      ]);
++      expect(ids(without.bodies).length).toBeGreaterThan(2);
++      expect(ids(withUsage.bodies)).toEqual(ids(without.bodies));
++    });
++
++    it("keeps the spawn_agent span id a later SubagentStop nests under", async () => {
++      const { bodies, child } = await runHooks(async ({ parent, child, write, hook }) => {
++        write(parent, parentT1WithUsage);
++        write(child, childC1);
++        await hook({ hook_event_name: "Stop", turn_id: "parent-t1" });
++
++        write(parent, [...parentT1WithUsage, ...parentT2.slice(0, 4)]);
++        write(child, [...childC1, ...childC2]);
++        await hook({
++          hook_event_name: "SubagentStop",
++          turn_id: "child-c2",
++          agent_transcript_path: child,
++        });
++
++        write(parent, [...parentT1WithUsage, ...parentT2]);
++        await hook({ hook_event_name: "Stop", turn_id: "parent-t2" });
++      });
++
++      expectEachChildTurnOnceUnderSpawn(bodies, child);
++      expect(usageDetailsOf(bodies)).toEqual([expect.objectContaining({ total_tokens: 1000 })]);
++    });
++  });
+ });
+diff --git a/plugins/tracing/test/trace.test.ts b/plugins/tracing/test/trace.test.ts
+index 27d1e9c..93691dc 100644
+--- a/plugins/tracing/test/trace.test.ts
++++ b/plugins/tracing/test/trace.test.ts
+@@ -1193,6 +1193,149 @@ describe("tool items completed inside code mode", () => {
+   });
+ });
+ 
++describe("token usage of every model response", () => {
++  const epoch = Date.parse("2026-11-15T21:00:00.000Z");
++  const at = (seconds: number): number => epoch + seconds * 1000;
++  const line = (seconds: number, type: string, payload: Record<string, unknown>) => ({
++    timestamp: new Date(at(seconds)).toISOString(),
++    type,
++    payload,
++  });
++  const usage = (input: number, output: number) => ({
++    input_tokens: input,
++    cached_input_tokens: 0,
++    output_tokens: output,
++    reasoning_output_tokens: 0,
++    total_tokens: input + output,
++  });
++  const tokenCount = (seconds: number, last: number, cumulative: number) =>
++    line(seconds, "event_msg", {
++      type: "token_count",
++      info: {
++        total_token_usage: usage(cumulative - 100, 100),
++        last_token_usage: usage(last - 100, 100),
++      },
++    });
++  const usageRecord = (seconds: number, responseId: string, total: number) =>
++    line(seconds, "token_usage_record", {
++      turn_id: "turn-usage",
++      response_id: responseId,
++      usage: usage(total - 100, 100),
++    });
++  const encryptedReasoning = (seconds: number) =>
++    line(seconds, "response_item", {
++      type: "reasoning",
++      summary: [],
++      content: null,
++      encrypted_content: "gAAAAABq-hyVylu30rg1P-Nr_x4hWT5b…",
++    });
++  const assistantText = (seconds: number, text: string) =>
++    line(seconds, "response_item", {
++      type: "message",
++      role: "assistant",
++      content: [{ type: "output_text", text }],
++    });
++
++  const dirs: string[] = [];
++  afterEach(() => {
++    while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
++  });
++
++  function writeRollout(body: unknown[]): string {
++    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-usage-"));
++    dirs.push(dir);
++    const day = path.join(dir, "sessions", "2026", "11", "15");
++    fs.mkdirSync(day, { recursive: true });
++    const file = path.join(day, "rollout-usage.jsonl");
++    const lines = [
++      line(0, "session_meta", { id: "sess-usage", cli_version: "0.169.0" }),
++      line(0, "event_msg", { type: "task_started", turn_id: "turn-usage" }),
++      ...body,
++      line(60, "event_msg", { type: "task_complete", turn_id: "turn-usage" }),
++    ];
++    fs.writeFileSync(file, lines.map((l) => JSON.stringify(l)).join("\n"));
++    return file;
++  }
++
++  const generations = () =>
++    exporter
++      .getFinishedSpans()
++      .filter((s) => obsType(s) === "generation")
++      .sort((a, b) => startMs(a) - startMs(b));
++  const totalTokens = (span: ReadableSpan): number =>
++    Number(JSON.parse(attr(span, "langfuse.observation.usage_details") || "{}").total_tokens ?? 0);
++  const responseId = (span: ReadableSpan): string =>
++    attr(span, "langfuse.observation.metadata.codex.response_id");
++
++  it("gives a response that produced only encrypted reasoning a generation with its usage", async () => {
++    const file = writeRollout([encryptedReasoning(1), tokenCount(2, 1000, 1000)]);
++
++    await convertRollout(file, { config: baseConfig });
++
++    expect(generations().map(totalTokens)).toEqual([1000]);
++  });
++
++  it("keeps the usage of a response reported right after the previous one", async () => {
++    const file = writeRollout([
++      assistantText(1, "Checking"),
++      tokenCount(2, 1000, 1000),
++      tokenCount(3, 1500, 2500),
++    ]);
++
++    await convertRollout(file, { config: baseConfig });
++
++    expect(generations().map(totalTokens)).toEqual([1000, 1500]);
++  });
++
++  it("counts a re-emitted token_count once", async () => {
++    const file = writeRollout([
++      assistantText(1, "Checking"),
++      tokenCount(2, 1000, 1000),
++      tokenCount(2.1, 1000, 1000),
++    ]);
++
++    await convertRollout(file, { config: baseConfig });
++
++    expect(generations().map(totalTokens)).toEqual([1000]);
++  });
++
++  it("takes a compaction's usage from its record, not from the context estimate after it", async () => {
++    const file = writeRollout([
++      assistantText(1, "Checking"),
++      usageRecord(1.5, "resp-answer", 1000),
++      tokenCount(2, 1000, 1000),
++      usageRecord(3, "resp-compaction", 3000),
++      line(3, "compacted", { message: "" }),
++      tokenCount(3.1, 400, 1000),
++    ]);
++
++    await convertRollout(file, { config: baseConfig });
++
++    expect(generations().map(totalTokens)).toEqual([1000, 3000]);
++    expect(generations().map(responseId)).toEqual(["resp-answer", "resp-compaction"]);
++  });
++
++  it("puts every usage record of a real Codex 0.169 session on exactly one generation", async () => {
++    const dir = stageFixtures();
++    const file = path.join(dir, "../../11/15/rollout-usage-main.jsonl");
++    const records = fs
++      .readFileSync(file, "utf-8")
++      .split("\n")
++      .filter(Boolean)
++      .map((raw) => JSON.parse(raw) as { type: string; payload: Record<string, unknown> })
++      .filter((l) => l.type === "token_usage_record")
++      .map((l) => l.payload as { response_id: string; usage: { total_tokens: number } });
++
++    await convertRollout(file, { config: baseConfig });
++
++    const recorded = records.reduce((sum, r) => sum + r.usage.total_tokens, 0);
++    expect(generations().reduce((sum, g) => sum + totalTokens(g), 0)).toBe(recorded);
++    expect(generations().map(responseId).filter(Boolean).sort()).toEqual(
++      records.map((r) => r.response_id).sort(),
++    );
++  });
++});
++
+ describe("Stop hook turn lifecycle", () => {
+   const exportedTurnIds = (): string[] =>
+     exporter

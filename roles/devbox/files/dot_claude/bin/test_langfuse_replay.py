@@ -6,15 +6,25 @@ from __future__ import annotations
 import ast
 import io
 import json
+import shutil
 import sys
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 import langfuse_replay
 import langfuse_trace_hook
 import pytest
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceRequest
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 BIN = Path(__file__).parent
+# Written by the vendored Codex hook (dot_codex/bin/vendor) while its edge was down.
+CODEX_SPOOL_ENTRY = BIN / "testdata" / "codex_spool_entry.otlp"
 OPTION_SOURCES = (
     BIN / "vendor" / "langfuse_hook.py",
     BIN / "vendor" / "durable_otel_exporter.py",
@@ -353,3 +363,105 @@ def test_transcript_removed_during_hook_retains_pending_snapshot(
     assert len(markers) == 1
     record = json.loads(markers[0].read_text(encoding="utf-8"))
     assert Path(record["snapshot_path"]).is_file()
+
+
+@pytest.fixture
+def collector() -> Iterator[SimpleNamespace]:
+    edge = SimpleNamespace(url="", status=200, received=[])
+
+    class Receiver(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            body = self.rfile.read(int(self.headers["Content-Length"]))
+            edge.received.append((self.path, self.headers["Content-Type"], body))
+            self.send_response(edge.status)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Receiver)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    edge.url = f"http://127.0.0.1:{server.server_port}"
+    yield edge
+    server.shutdown()
+    server.server_close()
+    thread.join()
+
+
+@pytest.fixture
+def codex_spool(
+    monkeypatch: pytest.MonkeyPatch,
+    pending_environment: Path,
+    tmp_path: Path,
+    collector: SimpleNamespace,
+) -> Path:
+    home = tmp_path / "home"
+    monkeypatch.setenv("HOME", str(home))
+    (home / ".codex").mkdir(parents=True)
+    (home / ".codex" / "langfuse.json").write_text(
+        json.dumps({"enabled": True, "base_url": collector.url}), encoding="utf-8"
+    )
+    spool = home / ".codex" / "langfuse_state" / "langfuse_otlp_spool"
+    spool.mkdir(parents=True)
+    shutil.copyfile(CODEX_SPOOL_ENTRY, spool / f"{0:020d}-{'0' * 32}.otlp")
+    settings = tmp_path / "settings.json"
+    configured = {
+        "CC_LANGFUSE_BASE_URL": collector.url,
+        "CC_LANGFUSE_PUBLIC_KEY": "pk",
+        "CC_LANGFUSE_SECRET_KEY": "sk",
+    }
+    settings.write_text(json.dumps({"env": configured}), encoding="utf-8")
+    monkeypatch.setattr(langfuse_replay, "SETTINGS", settings)
+    return spool
+
+
+def span_names(body: bytes) -> list[str]:
+    request = ExportTraceServiceRequest.FromString(body)
+    return [
+        span.name
+        for resource in request.resource_spans
+        for scope in resource.scope_spans
+        for span in scope.spans
+    ]
+
+
+def test_replay_delivers_a_codex_spool_entry_to_the_edge_and_removes_it(
+    codex_spool: Path,
+    collector: SimpleNamespace,
+) -> None:
+    assert langfuse_replay.main() == 0
+
+    assert [(path, content_type) for path, content_type, _ in collector.received] == [
+        ("/api/public/otel/v1/traces", "application/x-protobuf"),
+    ]
+    assert collector.received[0][2] == CODEX_SPOOL_ENTRY.read_bytes()
+    assert "Codex Turn" in span_names(collector.received[0][2])
+    assert not list(codex_spool.glob("*.otlp"))
+
+
+def test_replay_quarantines_a_codex_spool_entry_the_edge_rejects(
+    codex_spool: Path,
+    collector: SimpleNamespace,
+) -> None:
+    collector.status = 400
+    (entry,) = codex_spool.glob("*.otlp")
+
+    assert langfuse_replay.main() == 0
+
+    assert len(collector.received) == 1
+    assert not list(codex_spool.glob("*.otlp"))
+    quarantined = codex_spool.parent / "langfuse_otlp_quarantine" / entry.name
+    assert quarantined.read_bytes() == CODEX_SPOOL_ENTRY.read_bytes()
+
+
+def test_replay_drains_the_codex_spool_when_claude_settings_are_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+    codex_spool: Path,
+    collector: SimpleNamespace,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(langfuse_replay, "SETTINGS", tmp_path / "missing-settings.json")
+
+    assert langfuse_replay.main() == 1
+
+    assert len(collector.received) == 1
+    assert not list(codex_spool.glob("*.otlp"))

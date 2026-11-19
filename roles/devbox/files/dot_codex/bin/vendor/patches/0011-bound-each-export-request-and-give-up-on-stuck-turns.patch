@@ -1,0 +1,765 @@
+diff --git a/plugins/tracing/src/bounded-export.ts b/plugins/tracing/src/bounded-export.ts
+new file mode 100644
+index 0000000..7b64ff8
+--- /dev/null
++++ b/plugins/tracing/src/bounded-export.ts
+@@ -0,0 +1,222 @@
++import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
++import type { Attributes, AttributeValue } from "@opentelemetry/api";
++import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
++import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
++
++// Far below the edge's 128 MiB OTLP/HTTP body cap: the edge redacts every attribute value
++// before it answers, at a few MB/s, and the Stop hook has 30 s for the whole run.
++export const MAX_REQUEST_BYTES = 16 * 1024 * 1024;
++const MAX_REQUESTS_IN_FLIGHT = 4;
++const BASE_TIMEOUT_MS = 5_000;
++const BYTES_PER_EXTRA_SECOND = 2 * 1024 * 1024;
++const MAX_TIMEOUT_MS = 20_000;
++// Bounds the OTLP JSON fields an estimate leaves out: ids, times, status, flags, counts.
++const SPAN_ENVELOPE_BYTES = 1024;
++const PLACEHOLDER_ATTRIBUTE_BYTES = 4096;
++const OVERSIZED_METADATA = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.codex.oversized_bytes`;
++
++export function requestTimeoutMillis(bytes: number): number {
++  return Math.min(
++    MAX_TIMEOUT_MS,
++    BASE_TIMEOUT_MS + Math.ceil(bytes / BYTES_PER_EXTRA_SECOND) * 1000,
++  );
++}
++
++const jsonBytes = (value: unknown): number => Buffer.byteLength(JSON.stringify(value ?? null));
++
++function attributesBytes(attributes: Attributes): number {
++  let bytes = 0;
++  for (const [key, value] of Object.entries(attributes)) {
++    bytes += jsonBytes(key) + jsonBytes(value) + 48;
++  }
++  return bytes;
++}
++
++/** An upper estimate of the span's size in an OTLP/JSON request that holds it alone. */
++export function estimatedRequestBytes(span: ReadableSpan): number {
++  let bytes = SPAN_ENVELOPE_BYTES + jsonBytes(span.name) + attributesBytes(span.attributes);
++  for (const event of span.events) {
++    bytes += 128 + jsonBytes(event.name) + attributesBytes(event.attributes ?? {});
++  }
++  for (const link of span.links) bytes += 128 + attributesBytes(link.attributes ?? {});
++  bytes += attributesBytes(span.resource.attributes);
++  bytes += jsonBytes(span.instrumentationScope);
++  return bytes;
++}
++
++function withoutContent(span: ReadableSpan, bytes: number, maxBytes: number): ReadableSpan {
++  const attributes: Attributes = {};
++  let dropped = 0;
++  for (const [key, value] of Object.entries(span.attributes)) {
++    if (jsonBytes(value) <= PLACEHOLDER_ATTRIBUTE_BYTES) attributes[key] = value;
++    else dropped++;
++  }
++  const level = LangfuseOtelSpanAttributes.OBSERVATION_LEVEL;
++  if (attributes[level] !== "ERROR") attributes[level] = "WARNING";
++  const status = LangfuseOtelSpanAttributes.OBSERVATION_STATUS_MESSAGE;
++  attributes[status] = [
++    attributes[status],
++    `Exported without its content: ${bytes} bytes, over the ${maxBytes}-byte request cap`,
++  ]
++    .filter(Boolean)
++    .join("; ");
++  attributes[OVERSIZED_METADATA] = String(bytes);
++  return {
++    name: span.name,
++    kind: span.kind,
++    spanContext: () => span.spanContext(),
++    parentSpanContext: span.parentSpanContext,
++    startTime: span.startTime,
++    endTime: span.endTime,
++    status: span.status,
++    attributes,
++    links: span.links,
++    events: [],
++    duration: span.duration,
++    ended: span.ended,
++    resource: span.resource,
++    instrumentationScope: span.instrumentationScope,
++    droppedAttributesCount: span.droppedAttributesCount + dropped,
++    droppedEventsCount: span.droppedEventsCount + span.events.length,
++    droppedLinksCount: span.droppedLinksCount,
++  };
++}
++
++function reportOversized(span: ReadableSpan, bytes: number, maxBytes: number): void {
++  const session = span.attributes["session.id"] ?? "unknown";
++  process.stderr.write(
++    `[langfuse-codex] ${span.name} ${span.spanContext().spanId} of session ${String(session)} is ` +
++      `${bytes} bytes, over the ${maxBytes}-byte request cap: exported without its content\n`,
++  );
++}
++
++type Request = { spans: ReadableSpan[]; bytes: number };
++
++/**
++ * Sends each batch as OTLP requests of at most `maxBytes`, and remembers the first failure
++ * until `takeFailure`, because the batch processor reports a failed background export to no one.
++ */
++export class BoundedRequestExporter implements SpanExporter {
++  private readonly delegates = new Map<number, SpanExporter>();
++  private readonly waiting: Array<() => void> = [];
++  private inFlight = 0;
++  private failure: unknown;
++
++  constructor(
++    private readonly exporterWithTimeout: (timeoutMillis: number) => SpanExporter,
++    private readonly maxBytes: number = MAX_REQUEST_BYTES,
++  ) {}
++
++  export(spans: ReadableSpan[], resultCallback: (result: ExportResult) => void): void {
++    this.send(spans).then(resultCallback, (error: unknown) => {
++      this.failure ??= error;
++      resultCallback({ code: ExportResultCode.FAILED, error: asError(error) });
++    });
++  }
++
++  takeFailure(): unknown {
++    const failure = this.failure;
++    this.failure = undefined;
++    return failure;
++  }
++
++  async forceFlush(): Promise<void> {
++    await Promise.all([...this.delegates.values()].map((delegate) => delegate.forceFlush?.()));
++  }
++
++  async shutdown(): Promise<void> {
++    await Promise.all([...this.delegates.values()].map((delegate) => delegate.shutdown()));
++  }
++
++  private async send(spans: ReadableSpan[]): Promise<ExportResult> {
++    const results = await Promise.all(
++      this.requests(spans).map(async (request) => {
++        await this.acquire();
++        try {
++          return await this.sendRequest(request);
++        } finally {
++          this.release();
++        }
++      }),
++    );
++    const failed = results.find((result) => result.code !== ExportResultCode.SUCCESS);
++    if (!failed) return { code: ExportResultCode.SUCCESS };
++    this.failure ??= failed.error ?? new Error("OTLP export failed");
++    return failed;
++  }
++
++  private requests(spans: ReadableSpan[]): Request[] {
++    const requests: Request[] = [];
++    let current: Request = { spans: [], bytes: 0 };
++    for (const span of spans) {
++      let sent = span;
++      let bytes = estimatedRequestBytes(span);
++      if (bytes > this.maxBytes) {
++        reportOversized(span, bytes, this.maxBytes);
++        sent = withoutContent(span, bytes, this.maxBytes);
++        bytes = estimatedRequestBytes(sent);
++      }
++      if (current.spans.length > 0 && current.bytes + bytes > this.maxBytes) {
++        requests.push(current);
++        current = { spans: [], bytes: 0 };
++      }
++      current.spans.push(sent);
++      current.bytes += bytes;
++    }
++    if (current.spans.length > 0) requests.push(current);
++    return requests;
++  }
++
++  private sendRequest(request: Request): Promise<ExportResult> {
++    const timeoutMillis = requestTimeoutMillis(request.bytes);
++    let delegate = this.delegates.get(timeoutMillis);
++    if (!delegate) {
++      delegate = this.exporterWithTimeout(timeoutMillis);
++      this.delegates.set(timeoutMillis, delegate);
++    }
++    const target = delegate;
++    return new Promise((resolve) => target.export(request.spans, resolve));
++  }
++
++  private acquire(): Promise<void> {
++    if (this.inFlight < MAX_REQUESTS_IN_FLIGHT) {
++      this.inFlight++;
++      return Promise.resolve();
++    }
++    return new Promise((resolve) => this.waiting.push(resolve));
++  }
++
++  private release(): void {
++    const next = this.waiting.shift();
++    if (next) next();
++    else this.inFlight--;
++  }
++}
++
++const asError = (error: unknown): Error =>
++  error instanceof Error ? error : new Error(String(error));
++
++export type ExportFailure = "unreachable" | "rejected" | "failed";
++
++const UNREACHABLE_CODES = new Set([
++  "ECONNREFUSED",
++  "ENOTFOUND",
++  "EHOSTUNREACH",
++  "ENETUNREACH",
++  "EAI_AGAIN",
++]);
++const TRANSIENT_STATUSES = new Set([408, 429]);
++
++/**
++ * `unreachable`: no collector answered, so the turn is not at fault. `rejected`: a 4xx the
++ * collector will repeat for the same body. `failed`: anything else, retried a bounded number of runs.
++ */
++export function exportFailureKind(error: unknown): ExportFailure {
++  const code =
++    typeof error === "object" && error !== null ? (error as { code?: unknown }).code : undefined;
++  if (typeof code === "string" && UNREACHABLE_CODES.has(code)) return "unreachable";
++  if (typeof code === "number" && code >= 400 && code < 500 && !TRANSIENT_STATUSES.has(code)) {
++    return "rejected";
++  }
++  return "failed";
++}
+diff --git a/plugins/tracing/src/index.ts b/plugins/tracing/src/index.ts
+index 53fb481..aa2aa74 100644
+--- a/plugins/tracing/src/index.ts
++++ b/plugins/tracing/src/index.ts
+@@ -1,13 +1,27 @@
++import { exportFailureKind } from "./bounded-export.js";
+ import { getConfig } from "./config.js";
+ import { setupInstrumentation } from "./instrumentation.js";
+ import { readExternalParentSpanContext } from "./parent-context.js";
+-import { acquireRolloutLock, markTurnUploaded } from "./sidecar.js";
++import { acquireRolloutLock, markTurnUploaded, recordExportFailure } from "./sidecar.js";
+ import { convertRollout } from "./trace.js";
+ import type { HookInput } from "./types.js";
+ import { debugLog, readStdin, setDebug } from "./utils.js";
+ 
+ let failOnError = process.env.LANGFUSE_CODEX_FAIL_ON_ERROR === "true";
+ 
++/** Resolves to whether later turns may go ahead without this one. */
++async function giveUpOnTurn(rolloutFile: string, turnId: string, error: unknown): Promise<boolean> {
++  const kind = exportFailureKind(error);
++  if (kind === "unreachable") return false;
++  const reason = error instanceof Error ? error.message : String(error);
++  if (!(await recordExportFailure(rolloutFile, turnId, kind, reason))) return false;
++  process.stderr.write(
++    `[langfuse-codex] turn ${turnId} of ${rolloutFile} is not exported (${kind}: ${reason}); ` +
++      `later turns go ahead, see ${rolloutFile}.langfuse-failures\n`,
++  );
++  return true;
++}
++
+ /**
+  * Entry point for the Codex `Stop`, `Interrupt` and `SessionEnd` hooks.
+  *
+@@ -86,7 +100,12 @@ export async function runHook(): Promise<void> {
+       // flush: a turn marked despite a failed export is lost silently, while
+       // an unmarked one is retried.
+       onTurnExported: async (turnId, nestedTurns) => {
+-        await instrumentation.flush();
++        try {
++          await instrumentation.flush();
++        } catch (error) {
++          if (!(await giveUpOnTurn(transcriptPath, turnId, error))) throw error;
++          return;
++        }
+         for (const nested of nestedTurns) await markTurnUploaded(nested.rolloutFile, nested.turnId);
+         await markTurnUploaded(transcriptPath, turnId);
+       },
+diff --git a/plugins/tracing/src/instrumentation.ts b/plugins/tracing/src/instrumentation.ts
+index c520a97..db87595 100644
+--- a/plugins/tracing/src/instrumentation.ts
++++ b/plugins/tracing/src/instrumentation.ts
+@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
+ 
+ import { LangfuseSpanProcessor } from "@langfuse/otel";
+ import { setLangfuseTracerProvider } from "@langfuse/tracing";
++import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+ import {
+   defaultResource,
+   detectResources,
+@@ -10,6 +11,7 @@ import {
+ } from "@opentelemetry/resources";
+ import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+ 
++import { BoundedRequestExporter } from "./bounded-export.js";
+ import type { Config } from "./config.js";
+ 
+ const TRACE_ID_HEX_CHARS = 32;
+@@ -76,15 +78,44 @@ function buildResource() {
+  * between turns keeps a backlog of pending turns from piling up in memory.
+  * `shutdown()` below calls `forceFlush()` before the process exits.
+  */
+-export function setupInstrumentation(config: Config): Instrumentation {
++export function setupInstrumentation(
++  config: Config,
++  limits: { maxRequestBytes?: number } = {},
++): Instrumentation {
++  const credentials = Buffer.from(`${config.public_key}:${config.secret_key}`).toString("base64");
++  const exporter = new BoundedRequestExporter(
++    (timeoutMillis) =>
++      new OTLPTraceExporter({
++        url: `${config.base_url}/api/public/otel/v1/traces`,
++        headers: {
++          Authorization: `Basic ${credentials}`,
++          "x-langfuse-public-key": config.public_key ?? "",
++          "x-langfuse-ingestion-version": "4",
++        },
++        timeoutMillis,
++      }),
++    limits.maxRequestBytes,
++  );
+   const spanProcessor = new LangfuseSpanProcessor({
+     publicKey: config.public_key,
+     secretKey: config.secret_key,
+     baseUrl: config.base_url,
+     environment: config.environment,
+     exportMode: "batched",
++    exporter,
+     shouldExportSpan: () => true,
+   });
++  const flush = async () => {
++    let flushError: unknown;
++    try {
++      await spanProcessor.forceFlush();
++    } catch (error) {
++      flushError = error;
++    }
++    const exportError = exporter.takeFailure();
++    if (exportError !== undefined) throw exportError;
++    if (flushError !== undefined) throw flushError;
++  };
+ 
+   const provider = new NodeTracerProvider({
+     resource: buildResource(),
+@@ -100,9 +131,9 @@ export function setupInstrumentation(config: Config): Instrumentation {
+   setLangfuseTracerProvider(provider);
+ 
+   return {
+-    flush: () => spanProcessor.forceFlush(),
++    flush,
+     shutdown: async () => {
+-      await spanProcessor.forceFlush();
++      await flush();
+       await provider.shutdown();
+       setLangfuseTracerProvider(null);
+     },
+diff --git a/plugins/tracing/src/sidecar.ts b/plugins/tracing/src/sidecar.ts
+index 1e4b548..044bbbc 100644
+--- a/plugins/tracing/src/sidecar.ts
++++ b/plugins/tracing/src/sidecar.ts
+@@ -24,6 +24,48 @@ export async function markTurnUploaded(rolloutFile: string, turnId: string): Pro
+   }
+ }
+ 
++const FAILED_RUNS_BEFORE_GIVING_UP = 3;
++
++export type RecordedFailure = "rejected" | "failed";
++
++const failuresFile = (rolloutFile: string) => `${rolloutFile}.langfuse-failures`;
++
++/** Turns no later run exports: rejected once, or failed in `FAILED_RUNS_BEFORE_GIVING_UP` runs. */
++export async function loadAbandonedTurnIds(rolloutFile: string): Promise<Set<string>> {
++  const failedRuns = new Map<string, number>();
++  const abandoned = new Set<string>();
++  for (const line of ((await readIfPresent(failuresFile(rolloutFile))) ?? "").split("\n")) {
++    const [turnId, kind] = line.split("\t");
++    if (!turnId) continue;
++    const runs = (failedRuns.get(turnId) ?? 0) + 1;
++    failedRuns.set(turnId, runs);
++    if (kind === "rejected" || runs >= FAILED_RUNS_BEFORE_GIVING_UP) abandoned.add(turnId);
++  }
++  return abandoned;
++}
++
++export async function loadSettledTurnIds(rolloutFile: string): Promise<Set<string>> {
++  const settled = await loadUploadedTurnIds(rolloutFile);
++  for (const turnId of await loadAbandonedTurnIds(rolloutFile)) settled.add(turnId);
++  return settled;
++}
++
++/** Resolves to whether the turn is now abandoned; a failed write leaves it to be retried. */
++export async function recordExportFailure(
++  rolloutFile: string,
++  turnId: string,
++  kind: RecordedFailure,
++  reason: string,
++): Promise<boolean> {
++  const line = [turnId, kind, new Date().toISOString(), reason.replace(/\s+/g, " ")].join("\t");
++  try {
++    await fs.appendFile(failuresFile(rolloutFile), `${line}\n`, "utf-8");
++  } catch {
++    return false;
++  }
++  return (await loadAbandonedTurnIds(rolloutFile)).has(turnId);
++}
++
+ // Twice the longest hook budget (Stop, 30 s): no live hook run holds the lock this long.
+ const ROLLOUT_LOCK_STALE_MS = 60_000;
+ const ROLLOUT_LOCK_POLL_MS = 50;
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index 03af6fa..005acdc 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -16,7 +16,7 @@ import { TraceFlags, type SpanContext } from "@opentelemetry/api";
+ import type { Config } from "./config.js";
+ import { currentIdDraws, resumeIdDraws, seededIdAt, seedIds } from "./instrumentation.js";
+ import { parseArgs, parseSession, sessionMetaFrom } from "./parse.js";
+-import { acquireRolloutLock, loadUploadedTurnIds } from "./sidecar.js";
++import { acquireRolloutLock, loadSettledTurnIds } from "./sidecar.js";
+ import { skillsForToolCall, traceTags } from "./skills.js";
+ import type {
+   EventMsgPayload,
+@@ -819,7 +819,7 @@ export async function convertRollout(
+     if (turn.turnId) inheritableTurnIds.add(turn.turnId);
+   }
+ 
+-  const uploaded = await loadUploadedTurnIds(rolloutFile);
++  const settled = await loadSettledTurnIds(rolloutFile);
+ 
+   if (options.parentObservation) {
+     const nested = options.nested ?? { turns: [], releases: [] };
+@@ -832,7 +832,7 @@ export async function convertRollout(
+           debugLog(`deferring subagent turn ${turn.turnId}: not final`);
+           continue;
+         }
+-        if (uploaded.has(turn.turnId)) continue;
++        if (settled.has(turn.turnId)) continue;
+       }
+       await emitTurn(turn, sessionMeta, {
+         config: options.config,
+@@ -886,7 +886,7 @@ export async function convertRollout(
+       debugLog(`skipping turn ${turn.turnId ?? "(no turn id)"}: not final`);
+       continue;
+     }
+-    if (uploaded.has(turn.turnId)) {
++    if (settled.has(turn.turnId)) {
+       continue;
+     }
+ 
+@@ -923,7 +923,7 @@ export async function convertRollout(
+         await emit();
+       }
+ 
+-      uploaded.add(turn.turnId);
++      settled.add(turn.turnId);
+       exportedTurnIds.push(turn.turnId);
+       await options.onTurnExported?.(turn.turnId, nested.turns);
+     } finally {
+diff --git a/plugins/tracing/test/hook-command.test.ts b/plugins/tracing/test/hook-command.test.ts
+index b1ba0d0..c772445 100644
+--- a/plugins/tracing/test/hook-command.test.ts
++++ b/plugins/tracing/test/hook-command.test.ts
+@@ -1056,3 +1056,109 @@ describe("subagent turns that run after the spawning turn", () => {
+     });
+   });
+ });
++
++describe("a turn whose export keeps failing", () => {
++  const event = (payload: Record<string, unknown>) =>
++    JSON.stringify({ timestamp: "2026-06-03T12:00:00.000Z", type: "event_msg", payload });
++
++  async function runAgainstCollector(
++    failingStatus: number,
++    runs: number,
++  ): Promise<{ rollout: string; sentAfterRun: string[][]; stderr: string[] }> {
++    const codexHome = makeTempDir("lf-codex-home-");
++    const sessionCwd = makeTempDir("lf-codex-cwd-");
++    const sessionsDir = path.join(sessionCwd, "sessions", "2026", "06", "03");
++    fs.mkdirSync(sessionsDir, { recursive: true });
++    const rollout = path.join(sessionsDir, "rollout.jsonl");
++    fs.writeFileSync(
++      rollout,
++      [
++        JSON.stringify({
++          timestamp: "2026-06-03T12:00:00.000Z",
++          type: "session_meta",
++          payload: { id: "sess-stuck", cli_version: "0.160.1" },
++        }),
++        event({ type: "task_started", turn_id: "turn-stuck" }),
++        event({ type: "user_message", message: "First" }),
++        event({ type: "agent_message", message: "One" }),
++        event({ type: "task_complete", turn_id: "turn-stuck" }),
++        event({ type: "task_started", turn_id: "turn-later" }),
++        event({ type: "user_message", message: "Second" }),
++        event({ type: "agent_message", message: "Two" }),
++        event({ type: "task_complete", turn_id: "turn-later" }),
++      ].join("\n") + "\n",
++    );
++
++    const server = http.createServer((req, res) => {
++      const chunks: Buffer[] = [];
++      req.on("data", (chunk) => chunks.push(chunk as Buffer));
++      req.on("end", () => {
++        const failing = Buffer.concat(chunks).toString("utf-8").includes("turn-stuck");
++        res.writeHead(failing ? failingStatus : 200, { "content-type": "application/json" });
++        res.end("{}");
++      });
++    });
++    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++    const { port } = server.address() as { port: number };
++
++    const sentAfterRun: string[][] = [];
++    const stderr: string[] = [];
++    try {
++      for (let run = 0; run < runs; run++) {
++        const result = await runShellCommand(readHookCommand(), {
++          cwd: sessionCwd,
++          env: {
++            ...process.env,
++            PLUGIN_ROOT: pluginRootDir,
++            CODEX_HOME: codexHome,
++            HOME: codexHome,
++            TRACE_TO_LANGFUSE: "true",
++            LANGFUSE_CODEX_PUBLIC_KEY: "pk-lf-test",
++            LANGFUSE_CODEX_SECRET_KEY: "sk-lf-test",
++            LANGFUSE_CODEX_BASE_URL: `http://127.0.0.1:${port}`,
++          },
++          input: JSON.stringify({
++            hook_event_name: "Stop",
++            session_id: "sess-stuck",
++            turn_id: "turn-later",
++            transcript_path: rollout,
++          }),
++        });
++        expect(result.code).toBe(0);
++        stderr.push(result.stderr);
++        sentAfterRun.push(
++          fs.existsSync(`${rollout}.langfuse`)
++            ? fs.readFileSync(`${rollout}.langfuse`, "utf-8").split("\n").filter(Boolean)
++            : [],
++        );
++      }
++    } finally {
++      await new Promise<void>((resolve) => server.close(() => resolve()));
++    }
++    return { rollout, sentAfterRun, stderr };
++  }
++
++  const failures = (rollout: string): string[] =>
++    fs.readFileSync(`${rollout}.langfuse-failures`, "utf-8").split("\n").filter(Boolean);
++
++  it("retries a turn the collector fails, then gives it up after three runs", async () => {
++    const { rollout, sentAfterRun, stderr } = await runAgainstCollector(500, 3);
++
++    expect(sentAfterRun).toEqual([[], [], ["turn-later"]]);
++    expect(failures(rollout).map((line) => line.split("\t").slice(0, 2))).toEqual([
++      ["turn-stuck", "failed"],
++      ["turn-stuck", "failed"],
++      ["turn-stuck", "failed"],
++    ]);
++    expect(stderr[2]).toContain("turn-stuck");
++  });
++
++  it("gives up at once on a turn the collector rejects as malformed", async () => {
++    const { rollout, sentAfterRun } = await runAgainstCollector(400, 2);
++
++    expect(sentAfterRun).toEqual([["turn-later"], ["turn-later"]]);
++    expect(failures(rollout).map((line) => line.split("\t").slice(0, 2))).toEqual([
++      ["turn-stuck", "rejected"],
++    ]);
++  });
++});
+diff --git a/plugins/tracing/test/request-bound.test.ts b/plugins/tracing/test/request-bound.test.ts
+new file mode 100644
+index 0000000..bbaec0c
+--- /dev/null
++++ b/plugins/tracing/test/request-bound.test.ts
+@@ -0,0 +1,190 @@
++import * as fs from "node:fs";
++import * as http from "node:http";
++import * as os from "node:os";
++import * as path from "node:path";
++
++import { afterEach, describe, expect, it, vi } from "vitest";
++
++import { exportFailureKind, requestTimeoutMillis } from "../src/bounded-export.js";
++import type { Config } from "../src/config.js";
++import { setupInstrumentation } from "../src/instrumentation.js";
++import { convertRollout } from "../src/trace.js";
++
++const CAP = 64 * 1024;
++// The stub refuses what the edge would: a body over its receiver limit.
++const RECEIVER_LIMIT = 2 * CAP;
++
++type OtlpAttribute = { key: string; value: { stringValue?: string; intValue?: string } };
++type OtlpSpan = { name: string; spanId: string; attributes?: OtlpAttribute[] };
++type OtlpBody = { resourceSpans?: Array<{ scopeSpans?: Array<{ spans?: OtlpSpan[] }> }> };
++type Request = { bytes: number; spans: OtlpSpan[] };
++
++const tmpDirs: string[] = [];
++const servers: http.Server[] = [];
++
++afterEach(async () => {
++  vi.restoreAllMocks();
++  while (servers.length) {
++    const server = servers.pop()!;
++    await new Promise<void>((resolve) => server.close(() => resolve()));
++  }
++  while (tmpDirs.length) fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
++});
++
++async function startCollector(): Promise<{ baseUrl: string; requests: Request[] }> {
++  const requests: Request[] = [];
++  const server = http.createServer((req, res) => {
++    const chunks: Buffer[] = [];
++    req.on("data", (chunk) => chunks.push(chunk as Buffer));
++    req.on("end", () => {
++      const body = Buffer.concat(chunks);
++      if (body.length > RECEIVER_LIMIT) {
++        res.writeHead(413, { "content-type": "text/plain" });
++        res.end("request body too large");
++        return;
++      }
++      const parsed = JSON.parse(body.toString("utf-8")) as OtlpBody;
++      const spans = (parsed.resourceSpans ?? [])
++        .flatMap((r) => r.scopeSpans ?? [])
++        .flatMap((s) => s.spans ?? []);
++      requests.push({ bytes: body.length, spans });
++      res.writeHead(200, { "content-type": "application/json" });
++      res.end("{}");
++    });
++  });
++  servers.push(server);
++  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++  const { port } = server.address() as { port: number };
++  return { baseUrl: `http://127.0.0.1:${port}`, requests };
++}
++
++function writeRollout(turns: Array<{ id: string; prompt: string }>): string {
++  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-bound-"));
++  tmpDirs.push(dir);
++  const day = path.join(dir, "sessions", "2026", "06", "03");
++  fs.mkdirSync(day, { recursive: true });
++  const line = (type: string, payload: Record<string, unknown>) =>
++    JSON.stringify({ timestamp: "2026-06-03T12:00:00.000Z", type, payload });
++  const lines = [line("session_meta", { id: "sess-bound", cli_version: "0.163.0" })];
++  for (const turn of turns) {
++    lines.push(
++      line("event_msg", { type: "task_started", turn_id: turn.id }),
++      line("event_msg", { type: "user_message", message: turn.prompt }),
++      line("response_item", {
++        type: "message",
++        role: "assistant",
++        content: [{ type: "output_text", text: `Answer to ${turn.id}.` }],
++      }),
++      line("event_msg", { type: "task_complete", turn_id: turn.id }),
++    );
++  }
++  const rollout = path.join(day, "rollout-bound.jsonl");
++  fs.writeFileSync(rollout, lines.join("\n") + "\n");
++  return rollout;
++}
++
++const configFor = (baseUrl: string): Config => ({
++  enabled: true,
++  public_key: "pk-lf-test",
++  secret_key: "sk-lf-test",
++  base_url: baseUrl,
++  skill_tags: true,
++  max_history_chars: 200_000,
++  debug: false,
++  fail_on_error: false,
++});
++
++const attr = (span: OtlpSpan, key: string): string | undefined => {
++  const value = span.attributes?.find((a) => a.key === key)?.value;
++  return value?.stringValue ?? value?.intValue;
++};
++
++describe("OTLP requests bounded by bytes", () => {
++  it("splits a turn larger than the request cap across requests that each fit under it", async () => {
++    const { baseUrl, requests } = await startCollector();
++    const config = configFor(baseUrl);
++    const rollout = writeRollout([{ id: "turn-big", prompt: "a".repeat(40_000) }]);
++    const instrumentation = setupInstrumentation(config, { maxRequestBytes: CAP });
++
++    await convertRollout(rollout, {
++      config,
++      stoppedTurnId: "turn-big",
++      onTurnExported: () => instrumentation.flush(),
++    });
++    await instrumentation.shutdown();
++
++    expect(requests.length).toBeGreaterThan(1);
++    for (const request of requests) expect(request.bytes).toBeLessThanOrEqual(CAP);
++    const names = requests.flatMap((r) => r.spans.map((s) => s.name)).sort();
++    expect(names).toEqual(["Codex Turn", "LLM"]);
++  });
++
++  it("exports a span larger than the cap without its content, and the turns after it", async () => {
++    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
++    const { baseUrl, requests } = await startCollector();
++    const config = configFor(baseUrl);
++    const rollout = writeRollout([
++      { id: "turn-1", prompt: "First" },
++      { id: "turn-2", prompt: "x".repeat(100_000) },
++      { id: "turn-3", prompt: "Third" },
++    ]);
++    const instrumentation = setupInstrumentation(config, { maxRequestBytes: CAP });
++    const exported: string[] = [];
++
++    await convertRollout(rollout, {
++      config,
++      stoppedTurnId: "turn-3",
++      onTurnExported: async (turnId) => {
++        await instrumentation.flush();
++        exported.push(turnId);
++      },
++    }).catch(() => undefined);
++    await instrumentation.shutdown().catch(() => undefined);
++
++    expect(exported).toEqual(["turn-1", "turn-2", "turn-3"]);
++    for (const request of requests) expect(request.bytes).toBeLessThanOrEqual(CAP);
++    const spans = requests.flatMap((r) => r.spans);
++    const oversized = spans.filter(
++      (s) => attr(s, "langfuse.observation.metadata.codex.oversized_bytes") !== undefined,
++    );
++    // Turn 3's generation repeats turn 2's prompt in its history.
++    expect(oversized.map((s) => s.name).sort()).toEqual(["Codex Turn", "LLM", "LLM"]);
++    for (const span of oversized) {
++      expect(
++        Number(attr(span, "langfuse.observation.metadata.codex.oversized_bytes")),
++      ).toBeGreaterThan(CAP);
++      expect(attr(span, "langfuse.observation.input")).toBeUndefined();
++      expect(attr(span, "langfuse.observation.level")).toBe("WARNING");
++      expect(attr(span, "langfuse.observation.status_message")).toContain(`${CAP}-byte`);
++    }
++    const turnRoot = oversized.find((s) => s.name === "Codex Turn")!;
++    expect(attr(turnRoot, "langfuse.observation.metadata.codex.turn_id")).toBe("turn-2");
++    const alerts = stderr.mock.calls.map(([chunk]) => String(chunk));
++    expect(alerts.filter((line) => line.includes(`over the ${CAP}-byte request cap`))).toHaveLength(
++      oversized.length,
++    );
++  });
++});
++
++describe("export failures", () => {
++  const withCode = (code: string | number) => Object.assign(new Error("export failed"), { code });
++
++  it("does not hold an unreachable collector against the turn", () => {
++    expect(exportFailureKind(withCode("ECONNREFUSED"))).toBe("unreachable");
++  });
++
++  it("treats a 4xx other than 408 and 429 as a rejection of the request itself", () => {
++    expect(exportFailureKind(withCode(413))).toBe("rejected");
++    expect(exportFailureKind(withCode(400))).toBe("rejected");
++    expect(exportFailureKind(withCode(408))).toBe("failed");
++    expect(exportFailureKind(withCode(429))).toBe("failed");
++    expect(exportFailureKind(withCode(500))).toBe("failed");
++    expect(exportFailureKind(new Error("Request timed out"))).toBe("failed");
++  });
++
++  it("gives a request more time the larger it is, within the Stop hook's budget", () => {
++    expect(requestTimeoutMillis(1024)).toBe(6_000);
++    expect(requestTimeoutMillis(16 * 1024 * 1024)).toBe(13_000);
++    expect(requestTimeoutMillis(96 * 1024 * 1024)).toBe(20_000);
++  });
++});

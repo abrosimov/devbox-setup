@@ -1,0 +1,403 @@
+diff --git a/plugins/tracing/src/parse.ts b/plugins/tracing/src/parse.ts
+index 1358679..c4f3d2f 100644
+--- a/plugins/tracing/src/parse.ts
++++ b/plugins/tracing/src/parse.ts
+@@ -233,6 +233,8 @@ export function sessionMetaFrom(line: RolloutLine): SessionMeta {
+     agent_path?: unknown;
+     agent_nickname?: unknown;
+     source?: unknown;
++    cwd?: unknown;
++    git?: { branch?: unknown; commit_hash?: unknown } | null;
+   };
+   const spawn = threadSpawnOf(p.source);
+   return {
+@@ -246,9 +248,15 @@ export function sessionMetaFrom(line: RolloutLine): SessionMeta {
+     agentPath: nonEmptyText(p.agent_path) ?? nonEmptyText(spawn.agent_path),
+     agentNickname: nonEmptyText(p.agent_nickname) ?? nonEmptyText(spawn.agent_nickname),
+     depth: Number.isSafeInteger(spawn.depth) ? (spawn.depth as number) : undefined,
++    cwd: nonEmptyText(p.cwd),
++    gitBranch: nonEmptyText(p.git?.branch),
++    gitCommit: nonEmptyText(p.git?.commit_hash),
+   };
+ }
+ 
++const milliseconds = (value: unknown): number | undefined =>
++  typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
++
+ export function parseSession(lines: RolloutLine[]): {
+   sessionMeta: SessionMeta;
+   turns: Turn[];
+@@ -389,6 +397,7 @@ export function parseSession(lines: RolloutLine[]): {
+       t.model = p.model ?? t.model;
+       const effort = typeof p.effort === "string" ? p.effort : p.reasoning_effort;
+       if (typeof effort === "string") t.reasoningEffort = effort;
++      t.cwd = nonEmptyText(p.cwd) ?? t.cwd;
+       t.invocationParams = line.payload as Record<string, unknown>;
+       continue;
+     }
+@@ -588,8 +597,11 @@ export function parseSession(lines: RolloutLine[]): {
+         if (typeof p.last_agent_message === "string" && p.last_agent_message) {
+           turn!.reportedFinalAnswer = p.last_agent_message;
+         }
++        turn!.durationMs = milliseconds(p.duration_ms);
++        turn!.timeToFirstTokenMs = milliseconds(p.time_to_first_token_ms);
+         finishTurn(ts, { completed: true, aborted: false });
+       } else if (et === "turn_aborted") {
++        turn!.durationMs = milliseconds(p.duration_ms);
+         finishTurn(ts, { completed: true, aborted: true });
+       } else {
+         if (et === "collab_agent_spawn_end" && typeof p.new_thread_id === "string") {
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index 1f5e7d8..a6d3ca1 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -472,9 +472,11 @@ async function emitTurn(
+     inheritableTurnIds?: ReadonlySet<string>;
+     historyPrefix?: ChatMlMessage[];
+     nested: NestedExports;
++    turnNumber: number;
+   },
+ ): Promise<void> {
+   const isSubagent = sessionMeta.isSubagentThread === true || ctx.parentObservation != null;
++  const cwd = turn.cwd ?? sessionMeta.cwd;
+ 
+   const outerSeed = currentIdSeed();
+   seedIds(`${sessionMeta.sessionId}:${turn.turnId ?? "no-turn-id"}`);
+@@ -493,6 +495,13 @@ async function emitTurn(
+         "codex.reasoning_effort": turn.reasoningEffort,
+         "codex.model_provider": sessionMeta.modelProvider,
+         "codex.cli_version": sessionMeta.cliVersion,
++        "codex.turn_number": ctx.turnNumber,
++        "codex.cwd": cwd,
++        "codex.project": cwd ? path.basename(cwd) : undefined,
++        "codex.git_branch": sessionMeta.gitBranch,
++        "codex.git_commit": sessionMeta.gitCommit,
++        "codex.transcript_path": path.basename(ctx.rolloutFile),
++        "codex.duration_ms": turn.durationMs,
+         ...(sessionMeta.isSubagentThread
+           ? {
+               "codex.agent_role": sessionMeta.agentRole,
+@@ -537,8 +546,10 @@ async function emitTurn(
+     const user = userMessage(turn);
+     const turnMessages: ChatMlMessage[] = user ? [user] : [];
+ 
+-    const startGeneration = (step: ModelStep, stepIndex: number, conversation: ChatMlMessage[]) =>
+-      startObservation(
++    const startGeneration = (step: ModelStep, stepIndex: number, conversation: ChatMlMessage[]) => {
++      // Codex measures time to first token from the turn's start, when the first request goes out.
++      const firstTokenMs = stepIndex === 0 ? turn.timeToFirstTokenMs : undefined;
++      return startObservation(
+         isSubagent ? "LLM Subagent" : "LLM",
+         {
+           input: attachToolDefinitions(
+@@ -551,6 +562,9 @@ async function emitTurn(
+             ? { modelParameters: { reasoning_effort: turn.reasoningEffort } }
+             : {}),
+           usageDetails: toUsageDetails(step.usage),
++          ...(firstTokenMs !== undefined
++            ? { completionStartTime: new Date(turn.startTime + firstTokenMs) }
++            : {}),
+           metadata: {
+             "codex.step_index": stepIndex,
+             "codex.reasoning_effort": turn.reasoningEffort,
+@@ -559,10 +573,11 @@ async function emitTurn(
+         },
+         {
+           asType: "generation",
+-          startTime: new Date(step.startTime),
++          startTime: new Date(firstTokenMs !== undefined ? turn.startTime : step.startTime),
+           parentSpanContext: root.otelSpan.spanContext(),
+         },
+       );
++    };
+     const usageOnly: Array<{ step: ModelStep; stepIndex: number; conversation: ChatMlMessage[] }> =
+       [];
+ 
+@@ -786,12 +801,18 @@ export async function convertRollout(
+     return all.length > 0 ? all : undefined;
+   };
+ 
++  const isInherited = (turn: Turn): boolean =>
++    turn.turnId != null && ancestorTurnIds?.has(turn.turnId) === true;
+   const skipInherited = (turn: Turn, turnIndex: number): boolean => {
+-    if (!turn.turnId || !ancestorTurnIds?.has(turn.turnId)) return false;
++    if (!isInherited(turn)) return false;
+     debugLog(`skipping turn ${turn.turnId}: inherited from an ancestor thread`);
+     carriedSubagents.push(...(byTurn.get(turnIndex) ?? []));
+     return true;
+   };
++  const turnNumbers: number[] = [];
++  for (const turn of turns) {
++    turnNumbers.push((turnNumbers.at(-1) ?? 0) + (isInherited(turn) ? 0 : 1));
++  }
+ 
+   const inheritableTurnIds = new Set(ancestorTurnIds);
+   for (const turn of turns) {
+@@ -823,6 +844,7 @@ export async function convertRollout(
+         inheritableTurnIds,
+         historyPrefix: historyPrefixes[turnIndex],
+         nested,
++        turnNumber: turnNumbers[turnIndex],
+       });
+       if (turn.turnId != null) {
+         nested.turns.push({ rolloutFile, turnId: turn.turnId });
+@@ -887,6 +909,7 @@ export async function convertRollout(
+           inheritableTurnIds,
+           historyPrefix: historyPrefixes[turnIndex],
+           nested,
++          turnNumber: turnNumbers[turnIndex],
+         });
+ 
+       const attributes = spawn
+diff --git a/plugins/tracing/src/types.ts b/plugins/tracing/src/types.ts
+index 10fd1e5..c46244d 100644
+--- a/plugins/tracing/src/types.ts
++++ b/plugins/tracing/src/types.ts
+@@ -213,6 +213,9 @@ export type SessionMeta = {
+   agentPath?: string;
+   agentNickname?: string;
+   depth?: number;
++  cwd?: string;
++  gitBranch?: string;
++  gitCommit?: string;
+ };
+ 
+ export type ToolDefinition = {
+@@ -262,6 +265,10 @@ export type Turn = {
+   model?: string;
+   reasoningEffort?: string;
+   invocationParams?: Record<string, unknown>;
++  cwd?: string;
++  /** From `task_complete` or `turn_aborted`, measured from `task_started`. */
++  durationMs?: number;
++  timeToFirstTokenMs?: number;
+   userInput?: string;
+   finalOutput?: string;
+   steps: ModelStep[];
+diff --git a/plugins/tracing/test/fixtures/trace-metadata/rollout-trace-metadata-explorer.jsonl b/plugins/tracing/test/fixtures/trace-metadata/rollout-trace-metadata-explorer.jsonl
+new file mode 100644
+index 0000000..b610eca
+--- /dev/null
++++ b/plugins/tracing/test/fixtures/trace-metadata/rollout-trace-metadata-explorer.jsonl
+@@ -0,0 +1,27 @@
++{"timestamp":"2026-11-15T23:29:19.091Z","type":"session_meta","payload":{"id":"01a1e18b-34be-7363-9295-8e590743048f","parent_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","timestamp":"2026-11-15T23:29:19.066Z","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","originator":"codex-tui","cli_version":"0.169.0","source":{"subagent":{"thread_spawn":{"parent_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","depth":1,"agent_path":"/root/scan_delta_diagnosis","agent_nickname":"Boole","agent_role":"explorer"}}},"thread_source":"subagent","agent_nickname":"Boole","agent_role":"explorer","agent_path":"/root/scan_delta_diagnosis","model_provider":"openai","git":{"commit_hash":"375c5fac31c1073824165e9efe14844a1dc2f7ca","branch":"pocket_id_2_19_2","repository_url":"git@github.com:abrosimov/setup_lab.git"}}}
++{"timestamp":"2026-11-15T23:29:19.091Z","type":"session_meta","payload":{"id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","timestamp":"2026-11-15T20:54:37.300Z","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","originator":"codex-tui","cli_version":"0.169.0","source":"vscode","thread_source":"user","model_provider":"openai","git":{"commit_hash":"e11c7353a0bfc0cdc41d3a1bb52baceec0e1f19b","branch":"master","repository_url":"git@github.com:abrosimov/setup_lab.git"}}}
++{"timestamp":"2026-11-15T23:29:19.091Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","started_at":1794776134}}
++{"timestamp":"2026-11-15T23:29:19.091Z","type":"turn_context","payload":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:29:19.093Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","duration_ms":483356,"time_to_first_token_ms":2639}}
++{"timestamp":"2026-11-15T23:29:19.093Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","started_at":1794785323}}
++{"timestamp":"2026-11-15T23:29:19.093Z","type":"turn_context","payload":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:29:19.094Z","type":"event_msg","payload":{"type":"turn_aborted","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","reason":"interrupted"}}
++{"timestamp":"2026-11-15T23:29:19.129Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","started_at":1794785359}}
++{"timestamp":"2026-11-15T23:29:20.139Z","type":"turn_context","payload":{"turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:30:01.114Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e9bc79f0b010129016afa4076c46887d2983250e171e20e54","name":"send_message","namespace":"collaboration","arguments":"{\"target\":\"/root\",\"message\":\"gAAAAABq-kB50vCXoieU_N1tp3SrlFxl6BCYgmnrCZZWLFXawLw6h9AF5DDFVA3Je-E4dQ33h3jZAisskcVATVpFr9fFAxwIw0utkbidFFPsPByjqeWlEkOzJce3EjVjYN2…","call_id":"call_06c14964013f4253961aa267866c32d7","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","create_time":1794785398.7723148}}}
++{"timestamp":"2026-11-15T23:30:01.165Z","type":"token_usage_record","payload":{"thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","response_id":"resp_0e9bc79f0b010129016afa4073544487d298328eea7a87a681","usage":{"input_tokens":149262,"cached_input_tokens":147968,"cache_write_input_tokens":0,"output_tokens":131,"reasoning_output_tokens":0,"total_tokens":149393},"turn_token_usage":{"input_tokens":855115,"cached_input_tokens":833152,"cache_write_input_tokens":0,"output_tokens":1133,"reasoning_output_tokens":73,"total_tokens":856248},"thread_token_usage":{"input_tokens":855115,"cached_input_tokens":833152,"cache_write_input_tokens":0,"output_tokens":1133,"reasoning_output_tokens":73,"total_tokens":856248}}}
++{"timestamp":"2026-11-15T23:30:01.208Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"call_06c14964013f4253961aa267866c32d7","kind":"interacted","agent_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","agent_path":"/root"},"started_at_ms":1794785401208,"completed_at_ms":1794785401208}}
++{"timestamp":"2026-11-15T23:30:01.210Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e18b-d97a-7252-aab3-7b52e0a71f12","call_id":"call_06c14964013f4253961aa267866c32d7","output":"","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","create_time":1794785401.210562}}}
++{"timestamp":"2026-11-15T23:30:01.211Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":855115,"cached_input_tokens":833152,"cache_write_input_tokens":0,"output_tokens":1133,"reasoning_output_tokens":73,"total_tokens":856248},"last_token_usage":{"input_tokens":149262,"cached_input_tokens":147968,"cache_write_input_tokens":0,"output_tokens":131,"reasoning_output_tokens":0,"total_tokens":149393},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T23:30:20.971Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","item":{"type":"AgentMessage","id":"msg_0e9bc79f0b010129016afa4082072c87d2b22d48975607d205","content":[{"type":"Text","text":"Confirmed cause: the impact classifier and delta scanner use different image catalogues.\n\n- `src/remote_server_setup/image_scan_impact.py:63` includes `roles/po…"}],"phase":"final_answer"},"content_token_count":459,"started_at_ms":1794785410079,"completed_at_ms":1794785420971}}
++{"timestamp":"2026-11-15T23:30:20.978Z","type":"response_item","payload":{"type":"message","status":"completed","id":"msg_0e9bc79f0b010129016afa4082072c87d2b22d48975607d205","role":"assistant","content":[{"type":"output_text","text":"Confirmed cause: the impact classifier and delta scanner use different image catalogues.\n\n- `src/remote_server_setup/image_scan_impact.py:63` includes `roles/po…","annotations":[],"logprobs":[]}],"phase":"final_answer","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","create_time":1794785410.0313718,"content_item_kinds":["unknown"]}}}
++{"timestamp":"2026-11-15T23:30:21.042Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e18b-3512-7511-a16a-9fadf004ef45","duration_ms":61913,"time_to_first_token_ms":4273}}
++{"timestamp":"2026-11-15T23:36:58.477Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","started_at":1794785818}}
++{"timestamp":"2026-11-15T23:36:58.493Z","type":"turn_context","payload":{"turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:37:43.266Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e9bc79f0b010129016afa42433ec487d2bce86acb7eafa3cb","name":"send_message","namespace":"collaboration","arguments":"{\"target\":\"/root\",\"message\":\"gAAAAABq-kJH4UXWsz7ZafBdRZWfHKOAp1Ngz6-PYaDuSQPE-xSvGbBWDR6-GcT5WjBchL-F8GufUlPjBgh3HKvqP4nFf1f09zEjBDQ6PKslcs_cpFomc_VmJ8wdyfCXrmm…","call_id":"call_aca51bdb38e04940b131148edfd23918","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","create_time":1794785859.2586482}}}
++{"timestamp":"2026-11-15T23:37:43.269Z","type":"token_usage_record","payload":{"thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e192-133e-76a2-bff3-2aa75ca64651","response_id":"resp_0e9bc79f0b010129016afa4240990087d28eeed35b0083335f","usage":{"input_tokens":168846,"cached_input_tokens":167424,"cache_write_input_tokens":0,"output_tokens":249,"reasoning_output_tokens":9,"total_tokens":169095},"turn_token_usage":{"input_tokens":798706,"cached_input_tokens":780288,"cache_write_input_tokens":0,"output_tokens":1577,"reasoning_output_tokens":181,"total_tokens":800283},"thread_token_usage":{"input_tokens":1803226,"cached_input_tokens":1762688,"cache_write_input_tokens":0,"output_tokens":3360,"reasoning_output_tokens":440,"total_tokens":1806586}}}
++{"timestamp":"2026-11-15T23:37:43.307Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"call_aca51bdb38e04940b131148edfd23918","kind":"interacted","agent_thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","agent_path":"/root"},"started_at_ms":1794785863307,"completed_at_ms":1794785863307}}
++{"timestamp":"2026-11-15T23:37:43.309Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e192-e68d-7c73-ae54-1c0935cf9efd","call_id":"call_aca51bdb38e04940b131148edfd23918","output":"","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","create_time":1794785863.309744}}}
++{"timestamp":"2026-11-15T23:38:27.268Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e18b-34be-7363-9295-8e590743048f","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","item":{"type":"AgentMessage","id":"msg_0e9bc79f0b010129016afa42613c9487d2a72cfeedddabdb8b","content":[{"type":"Text","text":"Git history identifies when and how the divergence arose. It is older than the layer refactor and is not an intentional Pocket exclusion.\n\n| Change | Verified e…"}],"phase":"final_answer"},"content_token_count":834,"started_at_ms":1794785889251,"completed_at_ms":1794785907268}}
++{"timestamp":"2026-11-15T23:38:27.269Z","type":"response_item","payload":{"type":"message","status":"completed","id":"msg_0e9bc79f0b010129016afa42613c9487d2a72cfeedddabdb8b","role":"assistant","content":[{"type":"output_text","text":"Git history identifies when and how the divergence arose. It is older than the layer refactor and is not an intentional Pocket exclusion.\n\n| Change | Verified e…","annotations":[],"logprobs":[]}],"phase":"final_answer","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","create_time":1794785889.2521625,"content_item_kinds":["unknown"]}}}
++{"timestamp":"2026-11-15T23:38:27.318Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e192-3767-7ea3-9193-4c40e1ad7b82","duration_ms":88848,"time_to_first_token_ms":4508}}
+diff --git a/plugins/tracing/test/fixtures/trace-metadata/rollout-trace-metadata-parent.jsonl b/plugins/tracing/test/fixtures/trace-metadata/rollout-trace-metadata-parent.jsonl
+new file mode 100644
+index 0000000..2c982c7
+--- /dev/null
++++ b/plugins/tracing/test/fixtures/trace-metadata/rollout-trace-metadata-parent.jsonl
+@@ -0,0 +1,17 @@
++{"timestamp":"2026-11-15T20:55:34.369Z","type":"session_meta","payload":{"id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","timestamp":"2026-11-15T20:54:37.300Z","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","originator":"codex-tui","cli_version":"0.169.0","source":"vscode","thread_source":"user","model_provider":"openai","git":{"commit_hash":"e11c7353a0bfc0cdc41d3a1bb52baceec0e1f19b","branch":"master","repository_url":"git@github.com:abrosimov/setup_lab.git"}}}
++{"timestamp":"2026-11-15T20:55:34.369Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","started_at":1794776134}}
++{"timestamp":"2026-11-15T20:55:34.655Z","type":"turn_context","payload":{"turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T21:03:37.698Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e0fe-72b2-7170-919f-e50f80a8d59c","duration_ms":483356,"time_to_first_token_ms":2639}}
++{"timestamp":"2026-11-15T23:28:43.810Z","type":"event_msg","payload":{"type":"task_started","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","started_at":1794785323}}
++{"timestamp":"2026-11-15T23:28:43.827Z","type":"turn_context","payload":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","cwd":"/Users/kirillabrosimov/Projects/remote_server_setup/master","model":"gpt-6-astra","effort":"high"}}
++{"timestamp":"2026-11-15T23:29:18.967Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e0dc6cdffebbb43016afa404a427487d293b75d4b17453c58","name":"spawn_agent","namespace":"collaboration","arguments":"{\"task_name\":\"scan_delta_diagnosis\",\"agent_type\":\"explorer\",\"message\":\"gAAAAABq-kBO_3ZzAuNHQXN5YeMXJvViyVlm8sTu9230GOHmgtXI-_uWX6F8GjZKNd7d6tYDIEisEV7VkbsTB1vHJ…","call_id":"call_56747e59474041369232fcc7d5df38da","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","create_time":1794785354.2631128}}}
++{"timestamp":"2026-11-15T23:29:18.972Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","response_id":"resp_0e0dc6cdffebbb43016afa4045f08c87d28f243a81e14c1164","usage":{"input_tokens":127120,"cached_input_tokens":124288,"cache_write_input_tokens":0,"output_tokens":235,"reasoning_output_tokens":30,"total_tokens":127355},"turn_token_usage":{"input_tokens":468631,"cached_input_tokens":448512,"cache_write_input_tokens":0,"output_tokens":778,"reasoning_output_tokens":85,"total_tokens":469409},"thread_token_usage":{"input_tokens":3126361,"cached_input_tokens":3006080,"cache_write_input_tokens":0,"output_tokens":7664,"reasoning_output_tokens":1123,"total_tokens":3134025}}}
++{"timestamp":"2026-11-15T23:29:19.122Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"SubAgentActivity","model":"gpt-6-astra","reasoning_effort":"high","id":"call_56747e59474041369232fcc7d5df38da","kind":"started","agent_thread_id":"01a1e18b-34be-7363-9295-8e590743048f","agent_path":"/root/scan_delta_diagnosis"},"started_at_ms":1794785359122,"completed_at_ms":1794785359122}}
++{"timestamp":"2026-11-15T23:29:19.126Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e18b-3516-7a70-8247-e17c0b3ce994","call_id":"call_56747e59474041369232fcc7d5df38da","output":"{\"task_name\":\"/root/scan_delta_diagnosis\"}","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","create_time":1794785359.126259}}}
++{"timestamp":"2026-11-15T23:29:19.127Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3126361,"cached_input_tokens":3006080,"cache_write_input_tokens":0,"output_tokens":7664,"reasoning_output_tokens":1123,"total_tokens":3134025},"last_token_usage":{"input_tokens":127120,"cached_input_tokens":124288,"cache_write_input_tokens":0,"output_tokens":235,"reasoning_output_tokens":30,"total_tokens":127355},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T23:29:34.832Z","type":"response_item","payload":{"type":"function_call","status":"completed","id":"fc_0e0dc6cdffebbb43016afa405c474087d2a699eb175ce327f9","name":"send_message","namespace":"collaboration","arguments":"{\"target\":\"scan_delta_diagnosis\",\"message\":\"gAAAAABq-kBeP28eQs_6AM94W7IFpc7AnZHnwvL7GHyD10MTiLm-Q9QBbSLrpcEfI4Ldg2m0cYXqE2ybLOBHqWzUA0W8Ym80MXkDRqswEv9LI4bRmC1F…","call_id":"call_1591e8ea5aaa4356b3c7a5a8af03719a","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","create_time":1794785372.2820592}}}
++{"timestamp":"2026-11-15T23:29:34.854Z","type":"token_usage_record","payload":{"thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","session_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","root_turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","response_id":"resp_0e0dc6cdffebbb43016afa4056fbf487d28fca828df7072a45","usage":{"input_tokens":130183,"cached_input_tokens":127488,"cache_write_input_tokens":0,"output_tokens":250,"reasoning_output_tokens":37,"total_tokens":130433},"turn_token_usage":{"input_tokens":726194,"cached_input_tokens":703232,"cache_write_input_tokens":0,"output_tokens":1275,"reasoning_output_tokens":122,"total_tokens":727469},"thread_token_usage":{"input_tokens":3383924,"cached_input_tokens":3260800,"cache_write_input_tokens":0,"output_tokens":8161,"reasoning_output_tokens":1160,"total_tokens":3392085}}}
++{"timestamp":"2026-11-15T23:29:34.879Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1e0fd-93c9-75a3-ae93-7277ca3a53f8","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","item":{"type":"SubAgentActivity","model":null,"reasoning_effort":null,"id":"call_1591e8ea5aaa4356b3c7a5a8af03719a","kind":"interacted","agent_thread_id":"01a1e18b-34be-7363-9295-8e590743048f","agent_path":"/root/scan_delta_diagnosis"},"started_at_ms":1794785374879,"completed_at_ms":1794785374879}}
++{"timestamp":"2026-11-15T23:29:34.882Z","type":"response_item","payload":{"type":"function_call_output","id":"fco_01a1e18b-72a2-71d2-a385-277fe9f71cd2","call_id":"call_1591e8ea5aaa4356b3c7a5a8af03719a","output":"","internal_chat_message_metadata_passthrough":{"turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","create_time":1794785374.882215}}}
++{"timestamp":"2026-11-15T23:29:34.882Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3383924,"cached_input_tokens":3260800,"cache_write_input_tokens":0,"output_tokens":8161,"reasoning_output_tokens":1160,"total_tokens":3392085},"last_token_usage":{"input_tokens":130183,"cached_input_tokens":127488,"cache_write_input_tokens":0,"output_tokens":250,"reasoning_output_tokens":37,"total_tokens":130433},"last_usage_includes_reasoning":true,"model_context_window":258400},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1795035946},"secondary":null,"credits":{"has_credits":true,"unlimited":false,"balance":"62500.0000000000"},"individual_limit":null,"spend_control_reached":null,"plan_type":"pro","rate_limit_reached_type":null}}}
++{"timestamp":"2026-11-15T23:30:36.802Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a1e18a-aaf8-7d82-bc47-d4d25c091ece","duration_ms":112993,"time_to_first_token_ms":4446}}
+diff --git a/plugins/tracing/test/trace.test.ts b/plugins/tracing/test/trace.test.ts
+index c8486a3..7580c13 100644
+--- a/plugins/tracing/test/trace.test.ts
++++ b/plugins/tracing/test/trace.test.ts
+@@ -1520,6 +1520,166 @@ describe("subagent attribution", () => {
+   });
+ });
+ 
++describe("turn metadata", () => {
++  const fixtures = path.join(
++    path.dirname(fileURLToPath(import.meta.url)),
++    "fixtures/trace-metadata",
++  );
++  const cwd = "/Users/kirillabrosimov/Projects/remote_server_setup/master";
++  const keys = [
++    "turn_id",
++    "turn_number",
++    "cwd",
++    "project",
++    "git_branch",
++    "git_commit",
++    "transcript_path",
++    "duration_ms",
++  ];
++
++  const dirs: string[] = [];
++  afterEach(() => {
++    while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
++  });
++
++  function stageDay(): string {
++    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lf-codex-turn-metadata-"));
++    dirs.push(dir);
++    const day = path.join(dir, "sessions", "2026", "11", "15");
++    fs.mkdirSync(day, { recursive: true });
++    return day;
++  }
++
++  function stageRealFragment(): { parent: string; child: string } {
++    const day = stageDay();
++    fs.cpSync(fixtures, day, { recursive: true });
++    return {
++      parent: path.join(day, "rollout-trace-metadata-parent.jsonl"),
++      child: path.join(day, "rollout-trace-metadata-explorer.jsonl"),
++    };
++  }
++
++  const metadataOf = (roots: ReadableSpan[]) =>
++    roots.map((root) =>
++      Object.fromEntries(
++        keys.map((key) => [key, attr(root, `langfuse.observation.metadata.codex.${key}`)]),
++      ),
++    );
++  const mainTurns = [
++    {
++      turn_id: "01a1e0fe-72b2-7170-919f-e50f80a8d59c",
++      turn_number: "1",
++      cwd,
++      project: "master",
++      git_branch: "master",
++      git_commit: "e11c7353a0bfc0cdc41d3a1bb52baceec0e1f19b",
++      transcript_path: "rollout-trace-metadata-parent.jsonl",
++      duration_ms: "483356",
++    },
++    {
++      turn_id: "01a1e18a-aaf8-7d82-bc47-d4d25c091ece",
++      turn_number: "2",
++      cwd,
++      project: "master",
++      git_branch: "master",
++      git_commit: "e11c7353a0bfc0cdc41d3a1bb52baceec0e1f19b",
++      transcript_path: "rollout-trace-metadata-parent.jsonl",
++      duration_ms: "112993",
++    },
++  ];
++  const childTurn = (turnId: string, turnNumber: string, durationMs: string) => ({
++    turn_id: turnId,
++    turn_number: turnNumber,
++    cwd,
++    project: "master",
++    git_branch: "pocket_id_2_19_2",
++    git_commit: "375c5fac31c1073824165e9efe14844a1dc2f7ca",
++    transcript_path: "rollout-trace-metadata-explorer.jsonl",
++    duration_ms: durationMs,
++  });
++  const childTurns = [
++    childTurn("01a1e18b-3512-7511-a16a-9fadf004ef45", "1", "61913"),
++    childTurn("01a1e192-3767-7ea3-9193-4c40e1ad7b82", "2", "88848"),
++  ];
++
++  it("describes every main and nested subagent turn root, numbering a fork's own turns only", async () => {
++    const { parent } = stageRealFragment();
++
++    await convertRollout(parent, { config: baseConfig });
++
++    expect(metadataOf(turnRoots().filter((s) => s.name === "Codex Turn"))).toEqual(mainTurns);
++    expect(metadataOf(turnRoots().filter((s) => s.name === "Codex Subagent Turn"))).toEqual(
++      childTurns,
++    );
++  });
++
++  it("describes a subagent turn attached after its spawning turn in the same way", async () => {
++    const { child } = stageRealFragment();
++
++    await convertRollout(child, { config: baseConfig, attachToSpawningTurn: true });
++
++    expect(metadataOf(turnRoots())).toEqual(childTurns);
++  });
++
++  it("starts the first generation at the turn start and marks its first token", async () => {
++    const { parent } = stageRealFragment();
++    const turnStart = Date.parse("2026-11-15T23:28:43.810Z");
++
++    await convertRollout(parent, { config: baseConfig });
++
++    const [root] = turnRoots().filter(
++      (s) =>
++        attr(s, "langfuse.observation.metadata.codex.turn_id") ===
++        "01a1e18a-aaf8-7d82-bc47-d4d25c091ece",
++    );
++    const generations = exporter
++      .getFinishedSpans()
++      .filter((s) => obsType(s) === "generation" && parentId(s) === root.spanContext().spanId)
++      .sort((a, b) => startMs(a) - startMs(b));
++    const completionStart = (s: ReadableSpan) =>
++      attr(s, "langfuse.observation.completion_start_time");
++    expect(generations.length).toBeGreaterThan(1);
++    expect(startMs(generations[0])).toBe(turnStart);
++    expect(completionStart(generations[0])).toBe(JSON.stringify(new Date(turnStart + 4446)));
++    for (const later of generations.slice(1)) expect(completionStart(later)).toBe("");
++  });
++
++  it("falls back to the session's cwd and times an interrupted turn", async () => {
++    const day = stageDay();
++    const file = path.join(day, "rollout-cwd-fallback.jsonl");
++    const line = (second: number, type: string, payload: Record<string, unknown>) =>
++      JSON.stringify({
++        timestamp: new Date(Date.UTC(2026, 10, 15, 22, 0, second)).toISOString(),
++        type,
++        payload,
++      });
++    fs.writeFileSync(
++      file,
++      [
++        line(0, "session_meta", { id: "sess-cwd", cwd: "/work/llm-tools-configuration/base" }),
++        line(1, "event_msg", { type: "task_started", turn_id: "turn-cwd" }),
++        line(2, "turn_context", { model: "gpt-6-astra" }),
++        line(5, "event_msg", { type: "turn_aborted", turn_id: "turn-cwd", duration_ms: 4000 }),
++      ].join("\n") + "\n",
++    );
++
++    await convertRollout(file, { config: baseConfig });
++
++    expect(metadataOf(turnRoots())).toEqual([
++      {
++        turn_id: "turn-cwd",
++        turn_number: "1",
++        cwd: "/work/llm-tools-configuration/base",
++        project: "base",
++        git_branch: "",
++        git_commit: "",
++        transcript_path: "rollout-cwd-fallback.jsonl",
++        duration_ms: "4000",
++      },
++    ]);
++  });
++});
++
+ describe("Stop hook turn lifecycle", () => {
+   const exportedTurnIds = (): string[] =>
+     exporter

@@ -1,0 +1,592 @@
+diff --git a/plugins/tracing/src/index.ts b/plugins/tracing/src/index.ts
+index b7c648d..e3023db 100644
+--- a/plugins/tracing/src/index.ts
++++ b/plugins/tracing/src/index.ts
+@@ -40,8 +40,14 @@ export async function runHook(): Promise<void> {
+     debugLog("missing LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY; skipping");
+     return;
+   }
+-  if (!hookInput.transcript_path) {
+-    debugLog("hook payload missing transcript_path; skipping");
++  const subagentStopped = hookInput.hook_event_name === "SubagentStop";
++  const transcriptPath = subagentStopped
++    ? hookInput.agent_transcript_path
++    : hookInput.transcript_path;
++  if (!transcriptPath) {
++    debugLog(
++      `hook payload missing ${subagentStopped ? "agent_transcript_path" : "transcript_path"}; skipping`,
++    );
+     return;
+   }
+ 
+@@ -51,12 +57,11 @@ export async function runHook(): Promise<void> {
+   }
+ 
+   const instrumentation = setupInstrumentation(config);
+-  const transcriptPath = hookInput.transcript_path;
+   const hookTurnId = hookInput.turn_id ?? undefined;
+   let failure: unknown;
+ 
+-  // Codex gives Stop 30 s and caps Interrupt and SessionEnd at 3 s.
+-  const lockWaitMs = hookInput.hook_event_name === "Stop" ? 10_000 : 1_000;
++  // Codex gives Stop and SubagentStop 30 s and caps Interrupt and SessionEnd at 3 s.
++  const lockWaitMs = hookInput.hook_event_name === "Stop" || subagentStopped ? 10_000 : 1_000;
+   const releaseLock = await acquireRolloutLock(transcriptPath, lockWaitMs);
+   if (!releaseLock) {
+     debugLog("another hook run holds the rollout lock; leaving its turns to that run or the next");
+@@ -72,13 +77,15 @@ export async function runHook(): Promise<void> {
+       // Codex fires Interrupt, and no Stop, just before it writes `turn_aborted`.
+       interruptedTurnId: hookInput.hook_event_name === "Interrupt" ? hookTurnId : undefined,
+       sessionEnded: hookInput.hook_event_name === "SessionEnd",
++      attachToSpawningTurn: subagentStopped,
+       // Flush and record each turn before converting the next: a backlog is
+       // delivered incrementally instead of all-or-nothing, and only one turn's
+       // spans are held in memory at a time. Record delivery only after the
+       // flush: a turn marked despite a failed export is lost silently, while
+       // an unmarked one is retried.
+-      onTurnExported: async (turnId) => {
++      onTurnExported: async (turnId, nestedTurns) => {
+         await instrumentation.flush();
++        for (const nested of nestedTurns) await markTurnUploaded(nested.rolloutFile, nested.turnId);
+         await markTurnUploaded(transcriptPath, turnId);
+       },
+     });
+diff --git a/plugins/tracing/src/instrumentation.ts b/plugins/tracing/src/instrumentation.ts
+index 715cc6b..07fc1d7 100644
+--- a/plugins/tracing/src/instrumentation.ts
++++ b/plugins/tracing/src/instrumentation.ts
+@@ -27,13 +27,17 @@ export function currentIdSeed(): string | undefined {
+   return idSeed;
+ }
+ 
++export function seededIdAt(seed: string, kind: "trace" | "span", draw: number): string {
++  return createHash("sha256")
++    .update(`${seed}:${kind}:${draw}`)
++    .digest("hex")
++    .slice(0, kind === "trace" ? TRACE_ID_HEX_CHARS : SPAN_ID_HEX_CHARS);
++}
++
+ function seededId(kind: "trace" | "span"): string {
+   const hexChars = kind === "trace" ? TRACE_ID_HEX_CHARS : SPAN_ID_HEX_CHARS;
+   if (idSeed === undefined) return randomBytes(hexChars / 2).toString("hex");
+-  return createHash("sha256")
+-    .update(`${idSeed}:${kind}:${idCounter++}`)
+-    .digest("hex")
+-    .slice(0, hexChars);
++  return seededIdAt(idSeed, kind, idCounter++);
+ }
+ 
+ export type Instrumentation = {
+diff --git a/plugins/tracing/src/trace.ts b/plugins/tracing/src/trace.ts
+index 8840838..12e6e0a 100644
+--- a/plugins/tracing/src/trace.ts
++++ b/plugins/tracing/src/trace.ts
+@@ -14,9 +14,9 @@ import {
+ import { TraceFlags, type SpanContext } from "@opentelemetry/api";
+ 
+ import type { Config } from "./config.js";
+-import { currentIdSeed, seedIds } from "./instrumentation.js";
++import { currentIdSeed, seededIdAt, seedIds } from "./instrumentation.js";
+ import { parseArgs, parseSession } from "./parse.js";
+-import { loadUploadedTurnIds } from "./sidecar.js";
++import { acquireRolloutLock, loadUploadedTurnIds } from "./sidecar.js";
+ import { skillsForToolCall, traceTags } from "./skills.js";
+ import type {
+   EventMsgPayload,
+@@ -59,6 +59,13 @@ export type SubagentIndex = {
+   byThread: Map<string, SubagentRollout>;
+ };
+ 
++export type NestedTurn = { rolloutFile: string; turnId: string };
++
++/** Child turns exported inside one top-level turn, and the child rollout locks held for them. */
++type NestedExports = { turns: NestedTurn[]; releases: Array<() => Promise<void>> };
++
++const CHILD_LOCK_WAIT_MS = 1_000;
++
+ async function readSessionMeta(
+   file: string,
+ ): Promise<
+@@ -469,6 +476,7 @@ async function emitTurn(
+     unannouncedSubagents?: SubagentRollout[];
+     inheritableTurnIds?: ReadonlySet<string>;
+     historyPrefix?: ChatMlMessage[];
++    nested: NestedExports;
+   },
+ ): Promise<void> {
+   const isSubagent = sessionMeta.isSubagentThread === true || ctx.parentObservation != null;
+@@ -577,6 +585,12 @@ async function emitTurn(
+     for (const sub of [...announced, ...(ctx.unannouncedSubagents ?? [])]) {
+       if (ctx.seenThreadIds.has(sub.threadId)) continue;
+       ctx.seenThreadIds.add(sub.threadId);
++      const releaseChild = await acquireRolloutLock(sub.file, CHILD_LOCK_WAIT_MS);
++      if (!releaseChild) {
++        debugLog(`subagent ${sub.threadId} is locked by another hook run; leaving it to that run`);
++        continue;
++      }
++      ctx.nested.releases.push(releaseChild);
+       const seedBeforeChild = currentIdSeed();
+       await convertRollout(sub.file, {
+         config: ctx.config,
+@@ -584,6 +598,7 @@ async function emitTurn(
+         subagentIndex: ctx.subagentIndex,
+         seenThreadIds: ctx.seenThreadIds,
+         ancestorTurnIds: ctx.inheritableTurnIds,
++        nested: ctx.nested,
+       });
+       seedIds(seedBeforeChild);
+     }
+@@ -684,8 +699,10 @@ export async function convertRollout(
+     stoppedTurnId?: string;
+     interruptedTurnId?: string;
+     sessionEnded?: boolean;
++    attachToSpawningTurn?: boolean;
++    nested?: NestedExports;
+     /** Awaited after each exported turn, before the next one is converted. */
+-    onTurnExported?: (turnId: string) => Promise<void>;
++    onTurnExported?: (turnId: string, nestedTurns: NestedTurn[]) => Promise<void>;
+   },
+ ): Promise<string[]> {
+   const { sessionMeta, turns } = parseSession(await loadSession(rolloutFile));
+@@ -751,10 +768,21 @@ export async function convertRollout(
+     if (turn.turnId) inheritableTurnIds.add(turn.turnId);
+   }
+ 
++  const uploaded = await loadUploadedTurnIds(rolloutFile);
++
+   if (options.parentObservation) {
++    const nested = options.nested ?? { turns: [], releases: [] };
++    const exported: string[] = [];
+     for (let turnIndex = 0; turnIndex < turns.length; turnIndex++) {
+       const turn = turns[turnIndex];
+       if (skipInherited(turn, turnIndex)) continue;
++      if (turn.turnId != null) {
++        if (!isFinal(turn, undefined, turnIndex < turns.length - 1, false)) {
++          debugLog(`deferring subagent turn ${turn.turnId}: not final`);
++          continue;
++        }
++        if (uploaded.has(turn.turnId)) continue;
++      }
+       await emitTurn(turn, sessionMeta, {
+         config: options.config,
+         rolloutFile,
+@@ -764,14 +792,27 @@ export async function convertRollout(
+         unannouncedSubagents: subagentsFor(turnIndex),
+         inheritableTurnIds,
+         historyPrefix: historyPrefixes[turnIndex],
++        nested,
+       });
++      if (turn.turnId != null) {
++        nested.turns.push({ rolloutFile, turnId: turn.turnId });
++        exported.push(turn.turnId);
++      }
+     }
+-    return [];
++    return exported;
+   }
+ 
+-  const uploaded = await loadUploadedTurnIds(rolloutFile);
+   const exportedTurnIds: string[] = [];
+-  const attached = options.parentSpanContext != null;
++  const spawn =
++    options.attachToSpawningTurn && sessionMeta.isSubagentThread
++      ? await spawnContextOf(sessionMeta, subagentIndex, options.config, options.parentSpanContext)
++      : undefined;
++  if (options.attachToSpawningTurn && sessionMeta.isSubagentThread && !spawn) {
++    debugLog(
++      `spawning turn of ${sessionMeta.sessionId} not found; exporting its turns on their own`,
++    );
++  }
++  const attached = spawn == null && options.parentSpanContext != null;
+ 
+   for (let turnIndex = 0; turnIndex < turns.length; turnIndex++) {
+     const parsed = turns[turnIndex];
+@@ -798,42 +839,122 @@ export async function convertRollout(
+     }
+ 
+     const parentSpanContext =
++      spawn?.spanContext ??
+       options.parentSpanContext ??
+       (await seededTraceParent(options.config, sessionMeta, turnIndex + 1));
+ 
+-    const emit = () =>
+-      emitTurn(turn, sessionMeta, {
+-        config: options.config,
+-        rolloutFile,
+-        parentSpanContext,
+-        attached,
+-        subagentIndex,
+-        seenThreadIds,
+-        unannouncedSubagents: subagentsFor(turnIndex),
+-        inheritableTurnIds,
+-        historyPrefix: historyPrefixes[turnIndex],
+-      });
++    const nested: NestedExports = { turns: [], releases: [] };
++    try {
++      const emit = () =>
++        emitTurn(turn, sessionMeta, {
++          config: options.config,
++          rolloutFile,
++          parentSpanContext,
++          attached,
++          subagentIndex,
++          seenThreadIds,
++          unannouncedSubagents: subagentsFor(turnIndex),
++          inheritableTurnIds,
++          historyPrefix: historyPrefixes[turnIndex],
++          nested,
++        });
+ 
+-    if (attached) {
+-      await emit();
+-    } else {
+-      const tags = traceTags(options.config, turn);
+-      await propagateAttributes(
+-        {
+-          sessionId: sessionMeta.sessionId,
+-          traceName: sessionMeta.isSubagentThread ? "Codex Subagent Turn" : "Codex Turn",
+-          ...(options.config.user_id ? { userId: options.config.user_id } : {}),
+-          ...(tags.length > 0 ? { tags } : {}),
+-          ...(options.config.metadata ? { metadata: options.config.metadata } : {}),
+-        },
+-        emit,
+-      );
++      const attributes = spawn
++        ? spawn.attributes
++        : attached
++          ? undefined
++          : traceAttributes(options.config, sessionMeta, turn);
++      if (attributes) {
++        await propagateAttributes(attributes, emit);
++      } else {
++        await emit();
++      }
++
++      uploaded.add(turn.turnId);
++      exportedTurnIds.push(turn.turnId);
++      await options.onTurnExported?.(turn.turnId, nested.turns);
++    } finally {
++      for (const release of nested.releases) await release();
+     }
+-
+-    uploaded.add(turn.turnId);
+-    exportedTurnIds.push(turn.turnId);
+-    await options.onTurnExported?.(turn.turnId);
+   }
+ 
+   return exportedTurnIds;
+ }
++
++type TraceAttributes = Parameters<typeof propagateAttributes>[0];
++
++function traceAttributes(config: Config, sessionMeta: SessionMeta, turn: Turn): TraceAttributes {
++  const tags = traceTags(config, turn);
++  return {
++    sessionId: sessionMeta.sessionId,
++    traceName: sessionMeta.isSubagentThread ? "Codex Subagent Turn" : "Codex Turn",
++    ...(config.user_id ? { userId: config.user_id } : {}),
++    ...(tags.length > 0 ? { tags } : {}),
++    ...(config.metadata ? { metadata: config.metadata } : {}),
++  };
++}
++
++type SpawnContext = { spanContext: SpanContext; attributes: TraceAttributes | undefined };
++
++/**
++ * The span a subagent's turns nest under when its spawning turn is exported: that turn's
++ * `spawn_agent` tool span, or its root. Recomputes the ids `emitTurn` draws for the
++ * spawning turn, so a child turn exported later lands in the same trace.
++ */
++async function spawnContextOf(
++  child: SessionMeta,
++  index: SubagentIndex,
++  config: Config,
++  externalParent: SpanContext | undefined,
++  visited: Set<string> = new Set(),
++): Promise<SpawnContext | undefined> {
++  const parentRollout = child.parentThreadId ? index.byThread.get(child.parentThreadId) : undefined;
++  if (!parentRollout || visited.has(parentRollout.threadId)) return undefined;
++  visited.add(parentRollout.threadId);
++
++  const { sessionMeta: parentMeta, turns } = parseSession(await loadSession(parentRollout.file));
++  let turnIndex = turns.findIndex((turn) => turn.subagentThreadIds.includes(child.sessionId));
++  if (turnIndex === -1) {
++    const self = index.byThread.get(child.sessionId);
++    if (!self || turns.length === 0) return undefined;
++    const viaNickname =
++      self.nickname !== undefined ? turnIndexByNickname(turns).get(self.nickname) : undefined;
++    turnIndex = viaNickname ?? turnIndexAt(turns, self.startTime);
++  }
++  const turn = turns[turnIndex];
++
++  let inheritedTraceId: string | undefined;
++  let attributes: TraceAttributes | undefined;
++  if (parentMeta.isSubagentThread) {
++    const grandparent = await spawnContextOf(parentMeta, index, config, externalParent, visited);
++    if (!grandparent) return undefined;
++    inheritedTraceId = grandparent.spanContext.traceId;
++    attributes = grandparent.attributes;
++  } else {
++    const outer = externalParent ?? (await seededTraceParent(config, parentMeta, turnIndex + 1));
++    inheritedTraceId = outer?.traceId;
++    attributes = externalParent ? undefined : traceAttributes(config, parentMeta, turn);
++  }
++
++  // OpenTelemetry draws a span's id before its trace id, and a trace id only for a new root.
++  const seed = `${parentMeta.sessionId}:${turn.turnId ?? "no-turn-id"}`;
++  let draw = 0;
++  let spanId = seededIdAt(seed, "span", draw++);
++  const traceId = inheritedTraceId ?? seededIdAt(seed, "trace", draw++);
++  const spawnCallId = turn.subagentSpawnCallIds[child.sessionId];
++  findSpawn: for (const step of turn.steps) {
++    draw++;
++    for (const tc of step.toolCalls) {
++      const toolSpanId = seededIdAt(seed, "span", draw++);
++      if (spawnCallId !== undefined && tc.callId === spawnCallId) {
++        spanId = toolSpanId;
++        break findSpawn;
++      }
++    }
++  }
++
++  return {
++    spanContext: { traceId, spanId, traceFlags: TraceFlags.SAMPLED, isRemote: true },
++    attributes,
++  };
++}
+diff --git a/plugins/tracing/src/types.ts b/plugins/tracing/src/types.ts
+index 298bcc8..53685d5 100644
+--- a/plugins/tracing/src/types.ts
++++ b/plugins/tracing/src/types.ts
+@@ -162,6 +162,7 @@ export type HookInput = {
+   session_id?: string;
+   turn_id?: string | null;
+   transcript_path?: string | null;
++  agent_transcript_path?: string | null;
+   hook_event_name?: string;
+ };
+ 
+diff --git a/plugins/tracing/test/hook-command.test.ts b/plugins/tracing/test/hook-command.test.ts
+index 1c7e7e9..ca3d3c1 100644
+--- a/plugins/tracing/test/hook-command.test.ts
++++ b/plugins/tracing/test/hook-command.test.ts
+@@ -653,3 +653,219 @@ describe("one hook run at a time per rollout", () => {
+     });
+   });
+ });
++
++type OtlpIdentifiedSpan = OtlpSpan & { traceId?: string; spanId?: string; parentSpanId?: string };
++
++function exportedSpans(bodies: string[]) {
++  return bodies
++    .flatMap((body) => (JSON.parse(body) as OtlpBody).resourceSpans ?? [])
++    .flatMap((resource) => resource.scopeSpans ?? [])
++    .flatMap((scope) => (scope.spans ?? []) as OtlpIdentifiedSpan[])
++    .map((span) => ({
++      name: span.name,
++      traceId: span.traceId ?? "",
++      spanId: span.spanId ?? "",
++      parentSpanId: span.parentSpanId ?? "",
++      attributes: Object.fromEntries(
++        (span.attributes ?? []).map(({ key, value }) => [
++          key,
++          String(value.stringValue ?? value.boolValue ?? value.intValue ?? ""),
++        ]),
++      ),
++    }));
++}
++
++describe("subagent turns that run after the spawning turn", () => {
++  const line = (ts: string, type: string, payload: Record<string, unknown>) =>
++    JSON.stringify({ timestamp: ts, type, payload });
++  const event = (ts: string, payload: Record<string, unknown>) => line(ts, "event_msg", payload);
++  const toolCall = (ts: string, name: string, callId: string, args: Record<string, unknown>) =>
++    line(ts, "response_item", {
++      type: "function_call",
++      name,
++      call_id: callId,
++      arguments: JSON.stringify(args),
++    });
++  const toolOutput = (ts: string, callId: string, output: Record<string, unknown>) =>
++    line(ts, "response_item", {
++      type: "function_call_output",
++      call_id: callId,
++      output: JSON.stringify(output),
++    });
++
++  const parentId = "sess-parent";
++  const childId = "sess-child";
++
++  const parentT1 = [
++    line("2026-06-03T12:00:00.000Z", "session_meta", { id: parentId, cli_version: "0.160.1" }),
++    event("2026-06-03T12:00:01.000Z", { type: "task_started", turn_id: "parent-t1" }),
++    event("2026-06-03T12:00:01.100Z", { type: "user_message", message: "Ask a helper" }),
++    toolCall("2026-06-03T12:00:02.000Z", "spawn_agent", "call-spawn", { task_name: "helper" }),
++    toolOutput("2026-06-03T12:00:02.100Z", "call-spawn", { agent_id: childId, nickname: "Ada" }),
++    event("2026-06-03T12:00:05.000Z", { type: "agent_message", message: "The helper answered" }),
++    event("2026-06-03T12:00:05.100Z", { type: "task_complete", turn_id: "parent-t1" }),
++  ];
++  const parentT2 = [
++    event("2026-06-03T12:01:00.000Z", { type: "task_started", turn_id: "parent-t2" }),
++    event("2026-06-03T12:01:00.100Z", { type: "user_message", message: "Ask it again" }),
++    toolCall("2026-06-03T12:01:01.000Z", "followup_task", "call-followup", { target: "helper" }),
++    toolOutput("2026-06-03T12:01:01.100Z", "call-followup", { ok: true }),
++    event("2026-06-03T12:01:05.000Z", { type: "agent_message", message: "Asked again" }),
++    event("2026-06-03T12:01:05.100Z", { type: "task_complete", turn_id: "parent-t2" }),
++  ];
++  const childC1 = [
++    line("2026-06-03T12:00:02.200Z", "session_meta", {
++      id: childId,
++      parent_thread_id: parentId,
++      thread_source: "subagent",
++      agent_nickname: "Ada",
++    }),
++    event("2026-06-03T12:00:02.300Z", { type: "task_started", turn_id: "child-c1" }),
++    event("2026-06-03T12:00:02.400Z", { type: "user_message", message: "First task" }),
++    event("2026-06-03T12:00:04.000Z", { type: "agent_message", message: "First answer" }),
++    event("2026-06-03T12:00:04.100Z", { type: "task_complete", turn_id: "child-c1" }),
++  ];
++  const childC2 = [
++    event("2026-06-03T12:01:01.200Z", { type: "task_started", turn_id: "child-c2" }),
++    event("2026-06-03T12:01:01.300Z", { type: "user_message", message: "Follow-up task" }),
++    event("2026-06-03T12:01:03.000Z", { type: "agent_message", message: "Follow-up answer" }),
++    event("2026-06-03T12:01:03.100Z", { type: "task_complete", turn_id: "child-c2" }),
++  ];
++
++  type Session = {
++    parent: string;
++    child: string;
++    write: (file: string, lines: string[]) => void;
++    hook: (payload: Record<string, unknown>) => Promise<void>;
++  };
++
++  async function runHooks(script: (session: Session) => Promise<void>) {
++    const sessionsDir = path.join(
++      makeTempDir("lf-codex-sessions-"),
++      "sessions",
++      "2026",
++      "06",
++      "03",
++    );
++    fs.mkdirSync(sessionsDir, { recursive: true });
++    const parent = path.join(sessionsDir, "rollout-parent.jsonl");
++    const child = path.join(sessionsDir, "rollout-child.jsonl");
++    const write = (file: string, lines: string[]) =>
++      fs.writeFileSync(file, lines.join("\n") + "\n");
++
++    const codexHome = makeTempDir("lf-codex-home-");
++    const sessionCwd = makeTempDir("lf-codex-cwd-");
++    const bodies: string[] = [];
++    const server = http.createServer((req, res) => {
++      const chunks: Buffer[] = [];
++      req.on("data", (chunk) => chunks.push(chunk as Buffer));
++      req.on("end", () => {
++        bodies.push(Buffer.concat(chunks).toString("utf-8"));
++        res.writeHead(200, { "content-type": "application/json" });
++        res.end("{}");
++      });
++    });
++    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++    const { port } = server.address() as { port: number };
++    const hook = async (payload: Record<string, unknown>): Promise<void> => {
++      const { code } = await runShellCommand(readHookCommand(), {
++        cwd: sessionCwd,
++        env: {
++          ...process.env,
++          PLUGIN_ROOT: pluginRootDir,
++          CODEX_HOME: codexHome,
++          HOME: codexHome,
++          TRACE_TO_LANGFUSE: "true",
++          LANGFUSE_PUBLIC_KEY: "pk-lf-test",
++          LANGFUSE_SECRET_KEY: "sk-lf-test",
++          LANGFUSE_BASE_URL: `http://127.0.0.1:${port}`,
++        },
++        input: JSON.stringify({ session_id: parentId, transcript_path: parent, ...payload }),
++      });
++      expect(code).toBe(0);
++    };
++
++    try {
++      await script({ parent, child, write, hook });
++    } finally {
++      await new Promise<void>((resolve) => server.close(() => resolve()));
++    }
++    return { bodies, child };
++  }
++
++  function expectEachChildTurnOnceUnderSpawn(bodies: string[], child: string): void {
++    const spans = exportedSpans(bodies);
++    const turnRoot = (name: string, turnId: string) =>
++      spans.filter(
++        (span) =>
++          span.name === name &&
++          span.attributes["langfuse.observation.metadata.codex.turn_id"] === turnId,
++      );
++    const t1 = turnRoot("Codex Turn", "parent-t1");
++    const spawn = spans.filter(
++      (span) => span.attributes["langfuse.observation.metadata.codex.call_id"] === "call-spawn",
++    );
++    const c1 = turnRoot("Codex Subagent Turn", "child-c1");
++    const c2 = turnRoot("Codex Subagent Turn", "child-c2");
++
++    expect([t1.length, spawn.length, c1.length, c2.length]).toEqual([1, 1, 1, 1]);
++    expect(turnRoot("Codex Turn", "parent-t2")).toHaveLength(1);
++    for (const childTurn of [c1[0], c2[0]]) {
++      expect(childTurn.traceId).toBe(t1[0].traceId);
++      expect(childTurn.parentSpanId).toBe(spawn[0].spanId);
++    }
++    expect(fs.readFileSync(`${child}.langfuse`, "utf-8").split("\n").filter(Boolean)).toEqual([
++      "child-c1",
++      "child-c2",
++    ]);
++  }
++
++  it("exports a follow-up child turn once, under the spawning turn's spawn_agent span", async () => {
++    const { bodies, child } = await runHooks(async ({ parent, child, write, hook }) => {
++      write(parent, parentT1);
++      write(child, childC1);
++      await hook({ hook_event_name: "Stop", turn_id: "parent-t1" });
++
++      write(parent, [...parentT1, ...parentT2.slice(0, 4)]);
++      write(child, [...childC1, ...childC2]);
++      await hook({
++        hook_event_name: "SubagentStop",
++        turn_id: "child-c2",
++        agent_transcript_path: child,
++      });
++
++      write(parent, [...parentT1, ...parentT2]);
++      await hook({ hook_event_name: "Stop", turn_id: "parent-t2" });
++    });
++
++    expectEachChildTurnOnceUnderSpawn(bodies, child);
++  });
++
++  it("does not nest a child turn again that SubagentStop exported before the spawning turn ended", async () => {
++    const { bodies, child } = await runHooks(async ({ parent, child, write, hook }) => {
++      write(parent, parentT1.slice(0, 5));
++      write(child, childC1);
++      await hook({
++        hook_event_name: "SubagentStop",
++        turn_id: "child-c1",
++        agent_transcript_path: child,
++      });
++
++      write(parent, parentT1);
++      await hook({ hook_event_name: "Stop", turn_id: "parent-t1" });
++
++      write(parent, [...parentT1, ...parentT2.slice(0, 4)]);
++      write(child, [...childC1, ...childC2]);
++      await hook({
++        hook_event_name: "SubagentStop",
++        turn_id: "child-c2",
++        agent_transcript_path: child,
++      });
++
++      write(parent, [...parentT1, ...parentT2]);
++      await hook({ hook_event_name: "Stop", turn_id: "parent-t2" });
++    });
++
++    expectEachChildTurnOnceUnderSpawn(bodies, child);
++  });
++});

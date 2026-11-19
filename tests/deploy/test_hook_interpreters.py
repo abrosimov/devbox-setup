@@ -9,7 +9,9 @@ The interpreters are venvs — `~/.claude/bin/.venv/bin/python` and its Codex an
 agy counterparts — materialised by a `uv sync` task that is separate from the
 task deploying the configuration naming them. This module is the static half of
 the check: the declared executable must be the venv that a `uv sync` task in
-this repository actually builds, or a file the same directory ships. The live
+this repository actually builds, a file the same directory ships, or the keg of a
+versioned Homebrew formula the package list installs (`/opt/homebrew/opt/node@22`
+for the vendored Codex Langfuse hook), handed a script that directory ships. The live
 half (`tests/live/test_live_interpreters.py`) runs that `uv sync` and confirms
 the path it produces is the path declared here.
 """
@@ -17,6 +19,7 @@ the path it produces is the path declared here.
 from __future__ import annotations
 
 import json
+import re
 import shlex
 import tomllib
 from dataclasses import dataclass
@@ -35,6 +38,9 @@ TASK_FILES: Final = (
     REPO_ROOT / "roles/devbox/tasks/install_configs.yml",
     REPO_ROOT / "roles/devbox/tasks/install_codex_configs.yml",
 )
+PACKAGES: Final = REPO_ROOT / "roles/devbox/defaults/main/packages.yml"
+# A versioned keg path does not move when `brew upgrade` changes the unversioned formula.
+_KEG_INTERPRETER: Final = re.compile(r"/opt/homebrew/opt/(?P<formula>[^/\s]+@\d+)/bin/[^/\s]+")
 
 # The marker each config spells the deploy root as, normalised to one token so a
 # declared command and a playbook `chdir` can be compared.
@@ -153,7 +159,18 @@ def test_the_repository_declares_hooks_for_every_engine(engine: Engine) -> None:
 def test_every_declared_command_runs_out_of_the_engines_deployed_bin(engine: Engine) -> None:
     prefix = f"{HOME}/{engine.bin_directory}/"
     for command in engine.commands:
-        assert shlex.split(command)[0].startswith(prefix), command
+        executable, *arguments = shlex.split(command)
+        if _KEG_INTERPRETER.fullmatch(executable):
+            assert any(argument.startswith(prefix) for argument in arguments), command
+        else:
+            assert executable.startswith(prefix), command
+
+
+def test_every_keg_interpreter_is_a_formula_the_package_list_installs(engine: Engine) -> None:
+    packages = yaml.safe_load(PACKAGES.read_text(encoding="utf-8"))
+    for command in engine.commands:
+        if keg := _KEG_INTERPRETER.fullmatch(shlex.split(command)[0]):
+            assert keg["formula"] in packages["devbox_brew_secondary"], command
 
 
 def test_every_declared_interpreter_is_a_venv_the_playbook_builds(engine: Engine) -> None:
@@ -176,7 +193,7 @@ def test_every_declared_command_that_is_not_the_interpreter_is_a_shipped_executa
 ) -> None:
     for command in engine.commands:
         executable = shlex.split(command)[0]
-        if executable == engine.interpreter:
+        if executable == engine.interpreter or _KEG_INTERPRETER.fullmatch(executable):
             continue
         shipped = engine.repo_bin / executable.removeprefix(f"{HOME}/{engine.bin_directory}/")
         assert shipped.is_file(), executable
@@ -187,7 +204,7 @@ def test_every_script_the_interpreter_is_handed_is_shipped_beside_it(engine: Eng
     prefix = f"{HOME}/{engine.bin_directory}/"
     for command in engine.commands:
         executable, *arguments = shlex.split(command)
-        if executable != engine.interpreter:
+        if executable != engine.interpreter and not _KEG_INTERPRETER.fullmatch(executable):
             continue
         script = next(argument for argument in arguments if argument.startswith(prefix))
         assert (engine.repo_bin / script.removeprefix(prefix)).is_file(), command

@@ -6,19 +6,41 @@ none are busy, closes the OS window immediately. If any are busy, shows a
 confirmation prompt listing tab name + foreground process.
 
 Scope is intentionally limited to the CURRENT OS window — quitting one
-window does not affect other kitty OS windows.
+window does not affect other kitty OS windows. Before the window closes, it is
+snapshotted to the session file kitty restores on its next launch.
 """
 
 from __future__ import annotations
 
+import importlib
 import json
+import logging
 import subprocess
-from typing import Protocol
+from typing import TYPE_CHECKING, Final, Protocol
 
 from kittens.tui.handler import Handler, result_handler
 from kittens.tui.loop import Loop
 
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from types import ModuleType
+
 IDLE_SHELLS = frozenset({"fish", "bash", "zsh", "sh", "dash", "ksh"})
+KITTY_LS_TIMEOUT_SECONDS: Final = 2
+_LOGGER: Final = logging.getLogger(__name__)
+
+
+def _load_kitty_session() -> ModuleType | None:
+    try:
+        return importlib.import_module("kitty_session")
+    except Exception:
+        _LOGGER.exception("kitty_session failed to load; Cmd+Q closes without a snapshot")
+        return None
+
+
+# kitty puts this file's directory on sys.path only while it executes the module
+# body, so the sibling module must be loaded here, not inside a function.
+_KITTY_SESSION: Final = _load_kitty_session()
 
 
 # Duck-typed slices of the kitty API surface — kitty does not ship type stubs
@@ -37,13 +59,20 @@ class _Boss(Protocol):
     def close_os_window(self, os_window_id: int) -> None: ...
 
 
-def _foreground_command(window: dict) -> tuple[str, str] | None:
+def _mappings(value: object) -> list[Mapping[str, object]]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def _foreground_command(window: Mapping[str, object]) -> tuple[str, str] | None:
     """Return (short_name, display_cmd) of the first non-idle foreground
     process inside a kitty window, or None if everything is idle."""
-    for proc in window.get("foreground_processes", []) or []:
-        cmdline = proc.get("cmdline") or []
-        if not cmdline:
+    for proc in _mappings(window.get("foreground_processes")):
+        raw_cmdline = proc.get("cmdline")
+        if not isinstance(raw_cmdline, list) or not raw_cmdline:
             continue
+        cmdline = [str(arg) for arg in raw_cmdline]
         short = cmdline[0].rsplit("/", 1)[-1]
         if short in IDLE_SHELLS:
             continue
@@ -61,23 +90,24 @@ def _busy_tabs_in_focused_window() -> list[tuple[str, str]]:
             ["kitty", "@", "ls"],
             capture_output=True,
             text=True,
-            timeout=2,
+            timeout=KITTY_LS_TIMEOUT_SECONDS,
             check=True,
         )
-        data = json.loads(result.stdout)
-    except (subprocess.SubprocessError, json.JSONDecodeError, OSError):
+        data: object = json.loads(result.stdout)
+    except (subprocess.SubprocessError, ValueError, OSError):
         return []
 
-    focused = next((ow for ow in data if ow.get("is_focused")), None)
-    if focused is None and data:
-        focused = data[0]
+    os_windows = _mappings(data)
+    focused = next((ow for ow in os_windows if ow.get("is_focused") is True), None)
+    if focused is None and os_windows:
+        focused = os_windows[0]
     if focused is None:
         return []
 
     busy: list[tuple[str, str]] = []
-    for tab in focused.get("tabs", []):
-        tab_label = tab.get("title") or f"tab {tab.get('id')}"
-        for window in tab.get("windows", []):
+    for tab in _mappings(focused.get("tabs")):
+        tab_label = str(tab.get("title") or f"tab {tab.get('id')}")
+        for window in _mappings(tab.get("windows")):
             found = _foreground_command(window)
             if found is not None:
                 busy.append((tab_label, found[1]))
@@ -121,12 +151,25 @@ class QuitDialog(Handler):
 def main(args: list[str]) -> str:
     _ = args  # part of kitten main() API contract
     busy = _busy_tabs_in_focused_window()
-    if not busy:
-        return "close"
-    loop = Loop()
-    dialog = QuitDialog(busy)
-    loop.loop(dialog)
-    return dialog.answer
+    if busy:
+        loop = Loop()
+        dialog = QuitDialog(busy)
+        loop.loop(dialog)
+        if dialog.answer != "close":
+            return dialog.answer
+    _save_snapshot()
+    return "close"
+
+
+# Saved from main, not handle_result: that runs inside kitty's event loop, which
+# would have to answer the snapshot's own `kitty @ ls`.
+def _save_snapshot() -> None:
+    if _KITTY_SESSION is None:
+        return
+    try:
+        _KITTY_SESSION.save_snapshot()
+    except Exception:
+        _LOGGER.exception("kitty session snapshot failed; closing without it")
 
 
 # Signature is fixed by kitty's @result_handler decorator contract.

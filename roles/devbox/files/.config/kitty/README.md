@@ -165,15 +165,36 @@ kitty's built-in close paths (window-manager close button, remote-control
 
 ## Session save / restore
 
-R1 — minimal layout snapshot, no per-process persistence:
+The focused OS window is snapshotted to `~/.config/kitty/last-session.conf`
+by `kitty_session.py`, which runs under kitty's own interpreter:
 
-| Command | Effect |
+| Trigger | Effect |
 |---------|--------|
-| `kitty-save-session` (abbr `kss`) | Snapshot the focused OS window's tabs + per-tab `cwd` to `~/.config/kitty/last-session.conf` |
-| (automatic on next launch) | `startup_session ~/.config/kitty/last-session.conf` restores the tabs at their saved `cwd`. Commands are **not** re-launched |
+| `kitty-save-session` (abbr `kss`) | Snapshot now, e.g. before a planned reboot |
+| `Cmd+Q` | Snapshot just before the window closes (after confirmation, if one was asked). A failed snapshot never stops the window closing |
+| (automatic on next launch) | `startup_session ~/.config/kitty/last-session.conf` restores the snapshot |
 
-Run `kss` before a planned reboot. To upgrade to full per-process restore
-(tmux/zellij + resurrect), see `macos_tooling_setup.md` Phase 3.
+What a snapshot keeps:
+
+- every tab, with its title and layout, and every split in it;
+- each split's working directory, taken from its foreground process, so a split
+  running a program comes back where that program was, not where its shell started;
+- Claude Code conversations: a split that was running Claude Code reopens fish in
+  the conversation's directory and runs `claude --resume <session id>` there;
+  quitting Claude leaves you in that fish.
+
+Other programs (vim, htop, …) are **not** relaunched: their split reopens as fish
+in the program's directory. Split sizes, OS window geometry and other OS windows
+are not saved. For full per-process restore (tmux/zellij + resurrect), see
+`macos_tooling_setup.md` Phase 3.
+
+Claude Code is recognised through the record it keeps for each running
+interactive session in `~/.claude/sessions/<pid>.json`. That file is Claude
+Code's undocumented internal state: if it is missing or its shape changes, the
+split is restored as a plain fish in its directory.
+
+A snapshot is written atomically, and a failed `kitty @ ls` (for instance without
+`allow_remote_control yes`) leaves the previous snapshot in place.
 
 ## Layout-independent scancode reference
 

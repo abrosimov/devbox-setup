@@ -127,3 +127,16 @@
 	path = ~/.config/git/identity-personal.gitconfig
 [includeIf "gitdir:~/Work/"]
 	path = ~/.config/git/identity-work.gitconfig
+#
+# Personal GitHub repositories cloned on a work machine (under ~/Work/) keep the
+# personal identity: GitHub verifies a signed commit only when the committer
+# email belongs to the account that holds the signing key. Later includes win,
+# so these rules must stay below the directory rules.
+[includeIf "hasconfig:remote.*.url:git@github.com:abrosimov/**"]
+	path = ~/.config/git/identity-personal.gitconfig
+[includeIf "hasconfig:remote.*.url:https://github.com/abrosimov/**"]
+	path = ~/.config/git/identity-personal.gitconfig
+[includeIf "hasconfig:remote.*.url:git@github.com:abrosimov-tech/**"]
+	path = ~/.config/git/identity-personal.gitconfig
+[includeIf "hasconfig:remote.*.url:https://github.com/abrosimov-tech/**"]
+	path = ~/.config/git/identity-personal.gitconfig

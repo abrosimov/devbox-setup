@@ -365,17 +365,6 @@
     label: "{{ item }}/"
   tags: [configs, dotfiles]
 
-# The directory copy above has no --delete, so a function dropped from the repo
-# lingers in ~/.config/fish/functions/ until removed here.
-- name: Remove retired fish prompt functions
-  ansible.builtin.file:
-    path: "{{ devbox_paths.dotfiles_root_dir }}/.config/fish/functions/{{ item }}"
-    state: absent
-  loop:
-    - _tide_item_fpf_drift.fish
-    - _tide_item_narrative_drift.fish
-  tags: [configs, dotfiles]
-
 # Edit rule logic in assets/complex_modifications/*.json (portable source of
 # truth, deployed by the copy loop above); karabiner.json's complex_modifications
 # must mirror it. Karabiner owns karabiner.json at runtime (machine-local
@@ -538,6 +527,52 @@
     - { src: .config/fish/conf.d/_init_env.fish.j2, dest: .config/fish/conf.d/_init_env.fish }
   loop_control:
     label: "{{ item.dest }}"
+  tags: [configs, dotfiles]
+
+# tide renders every prompt in a background `fish -c` that iterates the
+# universal _tide_left_items/_tide_right_items and calls _tide_item_<name> for
+# each. Only an interactive shell start recomputes those lists, so after a
+# deploy every open shell keeps rendering the old item list. Recompute it here,
+# once the item list (conf.d/tide_items.fish), the item functions and PATH
+# (conf.d/_init_env.fish) are in place; running shells pick it up on their next
+# prompt. Skipped in dev_mode, which must not touch the live session, and on a
+# first run where fisher has not installed tide yet.
+- name: Find fish path for the tide prompt item refresh
+  ansible.builtin.command: "command -v fish"
+  register: devbox_dotfiles_fish_path
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  when: not (dev_mode | default(false) | bool)
+  tags: [configs, dotfiles]
+
+- name: Refresh tide's cached prompt item list
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_dotfiles_fish_path.stdout }}"
+      - -c
+      - |
+        functions -q _tide_remove_unusable_items; or exit 0
+        set -l before "$_tide_left_items|$_tide_right_items"
+        _tide_remove_unusable_items
+        test "$before" = "$_tide_left_items|$_tide_right_items"; or echo changed
+  register: devbox_tide_item_refresh
+  changed_when: "'changed' in devbox_tide_item_refresh.stdout"
+  when:
+    - not (dev_mode | default(false) | bool)
+    - devbox_dotfiles_fish_path.rc == 0
+  tags: [configs, dotfiles]
+
+# The directory copy in Block 3 has no --delete, so a function dropped from the
+# repo lingers in ~/.config/fish/functions/ until removed here. It runs after
+# the refresh above: until then the cached item list may still name it.
+- name: Remove retired fish prompt functions
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.config/fish/functions/{{ item }}"
+    state: absent
+  loop:
+    - _tide_item_fpf_drift.fish
+    - _tide_item_narrative_drift.fish
   tags: [configs, dotfiles]
 
 # OS-specific git overlay. Included from ~/.config/git/config via [include]

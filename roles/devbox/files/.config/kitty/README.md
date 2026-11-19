@@ -32,6 +32,7 @@ to verify nothing regressed.
 | `Cmd+Shift+T` | New tab at current `cwd` |
 | `Cmd+1` … `Cmd+9` | Jump to tab N |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Ctrl+Shift+.` / `Ctrl+Shift+,` | Move the tab right / left |
 | `Cmd+W` | **Disabled** (no-op) to prevent browser-muscle-memory accidents |
 
 ## Splits
@@ -191,4 +192,4 @@ discover a code for a key, run `kitty --debug-input` and press the key.
 | G   | 0x05 | P   | 0x23 | Y   | 0x10 |
 | H   | 0x04 | Q   | 0x0C | Z   | 0x06 |
 | I   | 0x22 | R   | 0x0F | Enter | 0x24 |
-| /   | 0x2C | |   | |     | |
+| /   | 0x2C | ,   | 0x2B | .   | 0x2F |

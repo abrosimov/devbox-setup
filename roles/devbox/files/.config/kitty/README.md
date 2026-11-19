@@ -32,7 +32,10 @@ to verify nothing regressed.
 | `Cmd+Shift+T` | New tab at current `cwd` |
 | `Cmd+1` … `Cmd+9` | Jump to tab N |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Cmd+Shift+]` / `Cmd+Shift+[` | Next / previous tab |
+| `Ctrl+Shift+→` / `Ctrl+Shift+←` | Next / previous tab |
 | `Ctrl+Shift+.` / `Ctrl+Shift+,` | Move the tab right / left |
+| `Cmd+Shift+I` | Rename the tab |
 | `Cmd+W` | **Disabled** (no-op) to prevent browser-muscle-memory accidents |
 
 ## Splits
@@ -122,6 +125,12 @@ prompts" restore them at the physical-key layer.
 | `Ctrl+Shift+X` | Jump to next shell prompt |
 | `Ctrl+Shift+F` | Search the scrollback |
 | `Shift+PgUp` / `Shift+PgDn` | Scroll a page |
+| `Cmd+Home` / `Cmd+End` | Top / bottom of the scrollback |
+| `Cmd+↑` / `Cmd+↓` | Scroll a line |
+| `Cmd+PgUp` / `Cmd+PgDn` | Scroll a page |
+| `Cmd+L` | Erase the last command's output |
+| `Cmd+Opt+K` | Clear the scrollback |
+| `Ctrl+Cmd+L` | Clear the screen up to the cursor, moving it into the scrollback |
 | `Ctrl+Shift+↑` / `Ctrl+Shift+↓` | Scroll a line |
 
 `shell_integration` is set to `no-cursor` — all features enabled except
@@ -140,6 +149,21 @@ cursor-shape reset, so vim/nvim manage their own cursor.
 | `Cmd+=` | Larger |
 | `Cmd+-` | Smaller |
 | `Cmd+0` | Reset |
+
+## macOS window basics
+
+kitty's own macOS defaults, restored on the physical keys after
+`clear_all_shortcuts`.
+
+| Key | Action |
+|-----|--------|
+| `Cmd+H` / `Cmd+Opt+H` | Hide kitty / hide the other apps |
+| `Cmd+M` | Minimise the window |
+| `Cmd+N` | New kitty window |
+| `` Cmd+` `` / `` Cmd+Shift+` `` | Cycle through kitty windows |
+| `Ctrl+Cmd+F` | Toggle fullscreen |
+| `Ctrl+Cmd+,` | Reload `kitty.conf` |
+| `Ctrl+Cmd+Space` | Unicode character input |
 
 ## Close & quit policy
 
@@ -193,3 +217,5 @@ discover a code for a key, run `kitty --debug-input` and press the key.
 | H   | 0x04 | Q   | 0x0C | Z   | 0x06 |
 | I   | 0x22 | R   | 0x0F | Enter | 0x24 |
 | /   | 0x2C | ,   | 0x2B | .   | 0x2F |
+| [   | 0x21 | ]   | 0x1E | `   | 0x32 |
+| Space | 0x31 | |   | |     | |

@@ -6,6 +6,10 @@ they work identically on English, Russian, or any other input source. Without
 this, Cyrillic-active `Cmd+T` would not match `cmd+t` because the OS produces
 `е` not `t`.
 
+The clipboard keys are the exception: they repeat kitty's own defaults with
+`--allow-fallback=shifted,ascii`, which falls back to the physical key on a
+non-Latin layout and so is layout-independent too.
+
 Where a binding is referenced by character below (e.g. `Cmd+C`), it is the
 **physical** key on the US-QWERTY position. On Russian, that's `С` on physical
 C, `В` on physical D, etc — same physical key.
@@ -44,7 +48,7 @@ to verify nothing regressed.
 
 | Key | Action |
 |-----|--------|
-| `Cmd+C` | Copy selection to clipboard |
+| `Cmd+C` | Copy kitty's selection to clipboard; with none, pass the key to the application (Claude Code copies its own selection) |
 | `Cmd+V` | Paste from clipboard |
 | `Cmd+X` | Cut selection |
 | `Ctrl+Shift+C` / `Ctrl+Shift+V` | Copy / paste (Linux terminal habit) |
@@ -95,7 +99,8 @@ Intentionally not remapped:
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+Shift+E` | URL hints — open in browser |
+| `Ctrl+Shift+E` / `Ctrl+Shift+U` | URL hints (URLs written out in the text) — open in browser |
+| `Ctrl+Shift+L` | Hyperlink hints (OSC 8 links such as Claude Code's `#113`) — open |
 | `Cmd+Shift+P` | File-path hints — paste into command line |
 | `Cmd+Shift+G` | `file:line` hints — open in editor at that line |
 | `Cmd+Shift+H` | Git SHA / hash hints — copy to clipboard |

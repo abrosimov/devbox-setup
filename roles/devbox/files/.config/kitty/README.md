@@ -6,9 +6,14 @@ they work identically on English, Russian, or any other input source. Without
 this, Cyrillic-active `Cmd+T` would not match `cmd+t` because the OS produces
 `е` not `t`.
 
-The clipboard keys are the exception: they repeat kitty's own defaults with
+The clipboard keys, the previous/next tab keys and the macOS window basics are
+the exception: they are mapped by character with
 `--allow-fallback=shifted,ascii`, which falls back to the physical key on a
-non-Latin layout and so is layout-independent too.
+non-Latin layout and so is layout-independent too. Those actions also appear
+in kitty's macOS menu bar, and kitty gives the menu item the map's key as a
+character: a native code such as `0x32` becomes the character `2`, so
+`cmd+0x32` would put `Cmd+2` on "Cycle Through OS Windows" and AppKit would
+take `Cmd+2` away from the tab switch.
 
 Where a binding is referenced by character below (e.g. `Cmd+C`), it is the
 **physical** key on the US-QWERTY position. On Russian, that's `С` on physical
@@ -152,8 +157,8 @@ cursor-shape reset, so vim/nvim manage their own cursor.
 
 ## macOS window basics
 
-kitty's own macOS defaults, restored on the physical keys after
-`clear_all_shortcuts`.
+kitty's own macOS defaults, restored by character (with the ASCII fallback)
+after `clear_all_shortcuts`, because they also sit in the macOS menu bar.
 
 | Key | Action |
 |-----|--------|

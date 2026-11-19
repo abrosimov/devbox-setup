@@ -15,6 +15,14 @@ character: a native code such as `0x32` becomes the character `2`, so
 `cmd+0x32` would put `Cmd+2` on "Cycle Through OS Windows" and AppKit would
 take `Cmd+2` away from the tab switch.
 
+The fallback alone does not cover a menu action on a Russian layout: the menu
+item holds the Latin character and does not match the Cyrillic letter the
+layout produces, so the key does nothing. Each of these actions is therefore
+also bound to the ЙЦУКЕН letter on the same physical key (`Cmd+С`, `Cmd+М`,
+`Cmd+Ч`, `Cmd+Р`, …). The Cyrillic binding comes first in `kitty.conf`,
+because kitty gives the menu the last binding of an action and the menu keeps
+the Latin one.
+
 Where a binding is referenced by character below (e.g. `Cmd+C`), it is the
 **physical** key on the US-QWERTY position. On Russian, that's `С` on physical
 C, `В` on physical D, etc — same physical key.

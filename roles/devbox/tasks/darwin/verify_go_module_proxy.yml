@@ -19,7 +19,7 @@
     that:
       - devbox_packages.tamias.enabled | default(false) | bool
     fail_msg: >-
-      devbox_packages.tamias.enabled is false, so the private proxy client is
+      devbox_tamias_enabled is false for this profile, so the private proxy client is
       switched off and its go env keys are removed; there is nothing to verify.
     quiet: true
   tags: [go-proxy]

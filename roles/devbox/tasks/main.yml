@@ -24,11 +24,16 @@
   when: not (dev_mode | default(false) | bool)
   tags: [git, sanitize]
 
+# A dynamic include runs only when its own tags match `--tags`, so every
+# include a tag-scoped run has to pass through is tagged `always`; the tasks
+# inside are still selected by their own tags.
 - name: "Install necessary homebrew packages for MacOS"
   ansible.builtin.include_tasks: main_darwin.yml
+  tags: [always]
   when: ansible_facts['os_family'] == "Darwin"
 - name: "Install necessary homebrew packages for Linux"
   ansible.builtin.include_tasks: main_linux.yml
+  tags: [always]
   when: ansible_facts['os_family'] == "Linux"
 # Re-login policy: nothing here needs a reboot. Touch ID, pmset, DevToolsSecurity,
 # hidutil Caps Lock LaunchAgent and Night Shift apply immediately;

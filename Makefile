@@ -371,9 +371,9 @@ lint-yaml: $(DEV_SENTINEL)
 #
 # Scope: the client/shared AI trees plus deploy and live tests. dot_agy is named as
 # bin/ rather than as a whole tree because that is where all of its Python lives — the
-# rest is TOML/Markdown config — matching the path `typecheck` already uses. Other
-# Python files in the repo (.config/kitty/) are not project code; pyrefly's
-# project-includes handles those.
+# rest is TOML/Markdown config — matching the path `typecheck` already uses. The
+# kittens in .config/kitty/ import kitty's runtime-only `kittens` package and are
+# not project code; kitty_session.py there is stdlib-only and is.
 #
 # The three invocations below (ruff check, ruff format, pyrefly) used to spell
 # their path lists out in full, which drifted: four paths that no longer existed
@@ -382,6 +382,7 @@ lint-yaml: $(DEV_SENTINEL)
 PY_PATHS_COMMON := \
   roles/devbox/files/dot_agy/bin/ \
   roles/devbox/files/.local/bin/pub-lease.py \
+  roles/devbox/files/.config/kitty/kitty_session.py \
   scripts/ai_config_cli.py scripts/ai_config/ \
   scripts/otelbox-edge-*.py scripts/otelbox_edge/ \
   scripts/codex-hook-trust.py scripts/codex_hook_trust/ \
@@ -394,6 +395,8 @@ PY_PATHS_COMMON := \
   tests/scripts/test_codex_hook_trust*.py \
   tests/scripts/test_langfuse_codex_plugin_source.py \
   tests/scripts/test_pub_lease.py \
+  tests/scripts/test_kitty_quit_confirm.py \
+  tests/scripts/test_kitty_session.py \
   tests/scripts/test_pub_mode_test.py \
   tests/scripts/test_sync_upstream_docs.py
 

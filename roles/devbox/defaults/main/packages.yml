@@ -71,6 +71,7 @@ devbox_brew_secondary:
   - tree-sitter-cli
   # orbstack moved to profile overrides (work uses orbstack, personal uses docker-desktop).
   - k9s
+  - kubelogin     # kubectl oidc-login plugin (`kubectl-oidc_login`) for clusters that sign in through OIDC
   - skopeo        # Daemonless OCI image inspect/copy/sync between registries
   - fzf
   - tmux
@@ -209,7 +210,7 @@ devbox_packages:
   # collector's. The role profile and binary move together as one contract.
   otelbox_edge:
     enabled: true
-    version: "2.7.0"
+    version: "2.8.0"
     # Wire codec for the gateway leg, rendered into the LaunchAgent. zstd is
     # upstream's 2.x default and holds only while the gateway is the same
     # binary — a gRPC codec has to be registered in the peer's build. Drop to
@@ -229,11 +230,12 @@ devbox_packages:
   # `enabled` is the single switch for the whole private-proxy client: on, the
   # helper is installed and the go env points at the proxy; off, the go env
   # keys this playbook wrote are removed again and Go falls back to its
-  # defaults. Off while the Pocket ID login is unusable (OIDC provider bug).
+  # defaults. Its value is the profile-level devbox_tamias_enabled (core.yml),
+  # because a profile cannot override one key inside devbox_packages.
   tamias:
-    enabled: false
+    enabled: "{{ devbox_tamias_enabled | bool }}"
     repository: "abrosimov/tamias"
-    version: "0.1.1"
+    version: "0.2.2"
     # ansible_facts['architecture'] -> release asset name.
     assets:
       arm64: "tamias-darwin-arm64"

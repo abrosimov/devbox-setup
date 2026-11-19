@@ -61,9 +61,9 @@ Add **production necessities** to the code the task changes, even if the plan do
 
 | Category | Examples |
 |----------|----------|
-| Error handling | Exception chaining, custom exceptions, context |
+| Error handling | Each package exposes its own domain exceptions; at the package boundary, internal and third-party exceptions are translated into them with `raise PackageError(...) from err`, so callers never depend on what the package uses inside |
 | Logging | Log statements at boundaries, structured fields |
-| Timeouts | Request and connection timeouts on calls the changed code makes |
+| Timeouts | Request and connection timeouts on calls the changed code makes, sized from what the call is (see `code-writing-protocols`) |
 | Input validation | None checks, type validation, bounds at the API boundary |
 | Resource cleanup | Context managers, proper cleanup |
 
@@ -73,7 +73,7 @@ Retries (tenacity/backoff), caching, and the other items in that skill's "is not
 
 - Writing product specifications or plans
 - Adding product features not in the plan (scope creep)
-- Writing tests (that's the test writer's job)
+- Writing, editing or deleting tests, test helpers or test data (the test writers own them — `code-writing-protocols`, Test Ownership)
 - Modifying requirements
 - **Adding docstrings to functions/classes/modules**
 

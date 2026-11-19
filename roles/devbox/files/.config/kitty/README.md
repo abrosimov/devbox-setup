@@ -6,6 +6,10 @@ they work identically on English, Russian, or any other input source. Without
 this, Cyrillic-active `Cmd+T` would not match `cmd+t` because the OS produces
 `е` not `t`.
 
+The clipboard keys are the exception: they repeat kitty's own defaults with
+`--allow-fallback=shifted,ascii`, which falls back to the physical key on a
+non-Latin layout and so is layout-independent too.
+
 Where a binding is referenced by character below (e.g. `Cmd+C`), it is the
 **physical** key on the US-QWERTY position. On Russian, that's `С` on physical
 C, `В` on physical D, etc — same physical key.
@@ -28,14 +32,18 @@ to verify nothing regressed.
 | `Cmd+Shift+T` | New tab at current `cwd` |
 | `Cmd+1` … `Cmd+9` | Jump to tab N |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Cmd+Shift+]` / `Cmd+Shift+[` | Next / previous tab |
+| `Ctrl+Shift+→` / `Ctrl+Shift+←` | Next / previous tab |
+| `Ctrl+Shift+.` / `Ctrl+Shift+,` | Move the tab right / left |
+| `Cmd+Shift+I` | Rename the tab |
 | `Cmd+W` | **Disabled** (no-op) to prevent browser-muscle-memory accidents |
 
 ## Splits
 
 | Key | Action |
 |-----|--------|
-| `Cmd+D` | Vertical split (side by side) |
-| `Cmd+Shift+D` | Horizontal split (top/bottom) |
+| `Cmd+S` | Vertical split (side by side) |
+| `Cmd+Shift+S` | Horizontal split (top/bottom) |
 | `Ctrl+Shift+R` | Resize the active split |
 | `Cmd+Opt+←/→/↑/↓` | Move focus between splits |
 | `Cmd+Shift+Enter` | Zoom active split fullscreen (toggle layout stack); press again to revert |
@@ -44,7 +52,7 @@ to verify nothing regressed.
 
 | Key | Action |
 |-----|--------|
-| `Cmd+C` | Copy selection to clipboard |
+| `Cmd+C` | Copy kitty's selection to clipboard; with none, pass the key to the application (Claude Code copies its own selection) |
 | `Cmd+V` | Paste from clipboard |
 | `Cmd+X` | Cut selection |
 | `Ctrl+Shift+C` / `Ctrl+Shift+V` | Copy / paste (Linux terminal habit) |
@@ -95,7 +103,8 @@ Intentionally not remapped:
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+Shift+E` | URL hints — open in browser |
+| `Ctrl+Shift+E` / `Ctrl+Shift+U` | URL hints (URLs written out in the text) — open in browser |
+| `Ctrl+Shift+L` | Hyperlink hints (OSC 8 links such as Claude Code's `#113`) — open |
 | `Cmd+Shift+P` | File-path hints — paste into command line |
 | `Cmd+Shift+G` | `file:line` hints — open in editor at that line |
 | `Cmd+Shift+H` | Git SHA / hash hints — copy to clipboard |
@@ -116,6 +125,12 @@ prompts" restore them at the physical-key layer.
 | `Ctrl+Shift+X` | Jump to next shell prompt |
 | `Ctrl+Shift+F` | Search the scrollback |
 | `Shift+PgUp` / `Shift+PgDn` | Scroll a page |
+| `Cmd+Home` / `Cmd+End` | Top / bottom of the scrollback |
+| `Cmd+↑` / `Cmd+↓` | Scroll a line |
+| `Cmd+PgUp` / `Cmd+PgDn` | Scroll a page |
+| `Cmd+L` | Erase the last command's output |
+| `Cmd+Opt+K` | Clear the scrollback |
+| `Ctrl+Cmd+L` | Clear the screen up to the cursor, moving it into the scrollback |
 | `Ctrl+Shift+↑` / `Ctrl+Shift+↓` | Scroll a line |
 
 `shell_integration` is set to `no-cursor` — all features enabled except
@@ -135,6 +150,21 @@ cursor-shape reset, so vim/nvim manage their own cursor.
 | `Cmd+-` | Smaller |
 | `Cmd+0` | Reset |
 
+## macOS window basics
+
+kitty's own macOS defaults, restored on the physical keys after
+`clear_all_shortcuts`.
+
+| Key | Action |
+|-----|--------|
+| `Cmd+H` / `Cmd+Opt+H` | Hide kitty / hide the other apps |
+| `Cmd+M` | Minimise the window |
+| `Cmd+N` | New kitty window |
+| `` Cmd+` `` / `` Cmd+Shift+` `` | Cycle through kitty windows |
+| `Ctrl+Cmd+F` | Toggle fullscreen |
+| `Ctrl+Cmd+,` | Reload `kitty.conf` |
+| `Ctrl+Cmd+Space` | Unicode character input |
+
 ## Close & quit policy
 
 The terminal is treated as **always-on**. Two principles:
@@ -145,7 +175,10 @@ The terminal is treated as **always-on**. Two principles:
    focused OS window. If every tab is just an idle shell (`fish`, `bash`,
    `zsh`, `sh`, `dash`, `ksh`), the window closes silently. If any tab has a
    non-shell foreground process (claude, vim, htop, …), a confirmation
-   prompt lists the busy tabs and asks `[y/N]`.
+   prompt lists the busy tabs and asks `[y/N]`. `y` closes; any other key,
+   `Esc` or `Ctrl+C` cancels. Left unanswered, the prompt counts down from
+   5 minutes and then closes the window as if confirmed (snapshot included),
+   so an unattended quit is never blocked.
 
 Scope of `Cmd+Q` is **the current OS window only** — other kitty OS windows
 are untouched.
@@ -154,21 +187,45 @@ are untouched.
 an editor in a new OS window, and the config is owned by this repo, so editing
 the deployed copy is a dead end.
 
-As a defence-in-depth, `confirm_os_window_close -1` is set, which makes
-kitty's built-in close paths (window-manager close button, remote-control
-`close-window`) also confirm when active processes are present.
+kitty's own close confirmation is switched off (`confirm_os_window_close 0`).
+Its prompt has no timeout, so when macOS asks kitty to quit (system update,
+restart, logout) it waited for an answer and blocked the update. The red close
+button, Dock → Quit, system quit and remote-control `close-window` therefore
+close without asking, and without taking a session snapshot; only `Cmd+Q`
+confirms.
 
 ## Session save / restore
 
-R1 — minimal layout snapshot, no per-process persistence:
+The focused OS window is snapshotted to `~/.config/kitty/last-session.conf`
+by `kitty_session.py`, which runs under kitty's own interpreter:
 
-| Command | Effect |
+| Trigger | Effect |
 |---------|--------|
-| `kitty-save-session` (abbr `kss`) | Snapshot the focused OS window's tabs + per-tab `cwd` to `~/.config/kitty/last-session.conf` |
-| (automatic on next launch) | `startup_session ~/.config/kitty/last-session.conf` restores the tabs at their saved `cwd`. Commands are **not** re-launched |
+| `kitty-save-session` (abbr `kss`) | Snapshot now, e.g. before a planned reboot |
+| `Cmd+Q` | Snapshot just before the window closes (after confirmation, if one was asked). A failed snapshot never stops the window closing |
+| (automatic on next launch) | `startup_session ~/.config/kitty/last-session.conf` restores the snapshot |
 
-Run `kss` before a planned reboot. To upgrade to full per-process restore
-(tmux/zellij + resurrect), see `macos_tooling_setup.md` Phase 3.
+What a snapshot keeps:
+
+- every tab, with its title and layout, and every split in it;
+- each split's working directory, taken from its foreground process, so a split
+  running a program comes back where that program was, not where its shell started;
+- Claude Code conversations: a split that was running Claude Code reopens fish in
+  the conversation's directory and runs `claude --resume <session id>` there;
+  quitting Claude leaves you in that fish.
+
+Other programs (vim, htop, …) are **not** relaunched: their split reopens as fish
+in the program's directory. Split sizes, OS window geometry and other OS windows
+are not saved. For full per-process restore (tmux/zellij + resurrect), see
+`macos_tooling_setup.md` Phase 3.
+
+Claude Code is recognised through the record it keeps for each running
+interactive session in `~/.claude/sessions/<pid>.json`. That file is Claude
+Code's undocumented internal state: if it is missing or its shape changes, the
+split is restored as a plain fish in its directory.
+
+A snapshot is written atomically, and a failed `kitty @ ls` (for instance without
+`allow_remote_control yes`) leaves the previous snapshot in place.
 
 ## Layout-independent scancode reference
 
@@ -186,4 +243,6 @@ discover a code for a key, run `kitty --debug-input` and press the key.
 | G   | 0x05 | P   | 0x23 | Y   | 0x10 |
 | H   | 0x04 | Q   | 0x0C | Z   | 0x06 |
 | I   | 0x22 | R   | 0x0F | Enter | 0x24 |
-| /   | 0x2C | |   | |     | |
+| /   | 0x2C | ,   | 0x2B | .   | 0x2F |
+| [   | 0x21 | ]   | 0x1E | `   | 0x32 |
+| Space | 0x31 | |   | |     | |

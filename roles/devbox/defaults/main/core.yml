@@ -81,6 +81,9 @@ devbox_extra_brew_casks: []
 # installer into /usr/local/bin, so the user-facing surface is unchanged.
 devbox_extra_brew_casks_no_binaries: []
 devbox_extra_mcp_http_servers: []
+# Private Go module proxy client (Tamias + go env), the value of
+# devbox_packages.tamias.enabled. Off unless a profile switches it on.
+devbox_tamias_enabled: false
 # Claude Code plugins added to devbox_claude_plugins (claude.yml); same entry shape.
 devbox_extra_claude_plugins: []
 # Remote owners the Claude auto-mode classifier treats as trusted, added to

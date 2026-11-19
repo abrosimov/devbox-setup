@@ -71,7 +71,6 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 | **Consistency Checker** | all `agents/*.md`, all `skills/*/SKILL.md`, all `commands/*.md` | `<audit-findings scope="library">` XML (inline) |
 | **DSS (via /techne-options)** | `spec.md`, `domain_analysis.md`, `plan.md`?, `design.md`? | `dss_output.json` |
 | **Architect** | `spec.md`, `domain_analysis.md`, `plan.md`? | *(architecture analysis — inline)* |
-| **TDD Guide** | *(user query)* | *(TDD guidance — inline)* |
 | **Build Resolver (Go)** | *(build error logs)* | *(code fixes — direct edits)* |
 | **Doc Updater** | *(code changes)* | *(documentation file updates)* |
 | **Database Reviewer** | `schema_design.md`, `migrations/` | *(review feedback — inline)* |
@@ -175,7 +174,7 @@ Classify decisions before acting:
 | 2 | Standard | Quick consideration, check precedent, proceed; state the choice in one line |
 | 3 | Design (core §2 threshold holds) | Explore, then show 3–7 candidates as the decision card (`response-templates` T2), led by the recommendation; a subagent returns the card to the orchestrator, which takes the recommendation itself unless the choice passes the stop list |
 
-### Tier 1 Examples (Just Do It, in the lines and files the task already changes)
+### Tier 1 Examples (Just Do It, in the hunks the task already changes)
 - Apply formatting
 - Fix style violations
 - Remove narration comments
@@ -237,17 +236,17 @@ When reporting issues back to another agent or user:
   **Fix**: <conceptual fix>
 
 ### 🟢 Consider (Optional)
-- [ ] `file.py:120` — **Suggestion**: <improvement idea>
+- [ ] `file.py:120` — **Issue**: <small issue the change introduced, and the part of the task it concerns>
 
-### Outside this change
-- `other.py:10` — <problem in code the diff does not touch, for the user>
+### Outside the task
+- `other.py:10` — <problem in code the diff does not touch, or an improvement the task did not ask for; for the user>
 
 ### Summary
 Review: X blocking | Y important | Z suggestions
 Action: [Fix all findings and re-review] or [Ready to proceed]
 ```
 
-**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. All three severities go back to the engineer in the same run; only *Outside this change* goes to the user. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
+**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. Every finding is tied to the task — the request, the plan, its acceptance criteria — and all three severities go back to the engineer in the same run. *Outside the task* goes to the user only: problems in code the diff does not touch, and improvements the task did not ask for, even in the changed lines. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
 
 ## Proving a Review Finding
 
@@ -260,8 +259,8 @@ finding no test can show (a race the suite cannot provoke, a deployment concern)
 triggering conditions instead and carries no Test line.
 
 **Main session.** Send each Test line to the matching writer: unit → `unit-test-writer`;
-integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e → the
-frontend engineer with the `playwright-e2e` skill, because there is no e2e writer.
+integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e →
+`unit-test-writer`, which owns the e2e files and loads the `playwright-e2e` skill.
 
 **Test writer.** Write only that test, in the place and style the suite already uses, and run it.
 Return one of:

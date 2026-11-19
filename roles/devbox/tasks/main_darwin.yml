@@ -33,19 +33,18 @@
       ansible.builtin.include_tasks: darwin/install_from_brew_secondary.yml
 - name: "De-quarantine trusted unsigned casks (post-brew, before first launch)"
   ansible.builtin.include_tasks: darwin/dequarantine_casks.yml
-- name: "Install Go tools"
-  ansible.builtin.include_tasks: darwin/install_from_go.yml
-- name: "Install Python tools via uv"
-  ansible.builtin.include_tasks: darwin/install_from_uv.yml
-- name: "Install kubectl"
-  ansible.builtin.include_tasks: darwin/install_kubectl.yml
-- name: "Install TLA+ tools"
-  ansible.builtin.include_tasks: darwin/install_tlaplus.yml
-# After "Install Go tools" on purpose: once the go env points at the private
-# proxy, every module fetch needs a Tamias credential, which only an interactive
-# `tamias login` creates. A fresh machine still bootstraps its Go tools first.
+# Tamias, its client profiles and the go env come before "Install Go tools":
+# with the proxy enabled every module fetch, `go install` included, goes
+# through it, so the helper and its configuration must already be in place.
+# The fetches still need a credential from an interactive `tamias login`.
 - name: "Install Tamias (Go module proxy credential helper)"
   ansible.builtin.include_tasks: darwin/install_tamias.yml
+  when:
+    - not (dev_mode | default(false) | bool)
+    - devbox_packages.tamias.enabled | default(false) | bool
+  tags: [tamias, go-proxy]
+- name: "Configure the Tamias client profiles (from the local overlay)"
+  ansible.builtin.include_tasks: darwin/configure_tamias_client.yml
   when:
     - not (dev_mode | default(false) | bool)
     - devbox_packages.tamias.enabled | default(false) | bool
@@ -56,6 +55,14 @@
   ansible.builtin.include_tasks: darwin/configure_go_module_proxy.yml
   when: not (dev_mode | default(false) | bool)
   tags: [go-proxy]
+- name: "Install Go tools"
+  ansible.builtin.include_tasks: darwin/install_from_go.yml
+- name: "Install Python tools via uv"
+  ansible.builtin.include_tasks: darwin/install_from_uv.yml
+- name: "Install kubectl"
+  ansible.builtin.include_tasks: darwin/install_kubectl.yml
+- name: "Install TLA+ tools"
+  ansible.builtin.include_tasks: darwin/install_tlaplus.yml
 - name: "Configure macOS basics (Touch ID for sudo, clamshell, dev mode)"
   ansible.builtin.include_tasks: darwin/configure_macos_basics.yml
 - name: "Configure Docker Desktop UDP networking for WARP"
@@ -85,12 +92,16 @@
   when: not (dev_mode | default(false) | bool)
 - name: "Install configs"
   ansible.builtin.include_tasks: install_configs.yml
+  tags: [always]
 - name: "Install portable Codex config"
   ansible.builtin.include_tasks: install_codex_configs.yml
+  tags: [always]
 - name: "Configure Gemini CLI settings (keep sessions)"
   ansible.builtin.include_tasks: darwin/configure_gemini_cli.yml
+  tags: [always]
 - name: "Apply configs"
   ansible.builtin.include_tasks: apply_configs.yml
+  tags: [always]
 - name: "Finish user polishing"
   ansible.builtin.include_tasks: prepare_user.yml
 - name: "Configure SSH keychain (login-keychain passphrase + LaunchAgent)"

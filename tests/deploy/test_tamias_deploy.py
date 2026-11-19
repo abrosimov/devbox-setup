@@ -27,6 +27,10 @@ CONFIGURE = TASKS_DIR / "configure_go_module_proxy.yml"
 VERIFY = TASKS_DIR / "verify_go_module_proxy.yml"
 MAIN_DARWIN = ROOT / "roles/devbox/tasks/main_darwin.yml"
 PACKAGES = ROOT / "roles/devbox/defaults/main/packages.yml"
+DEFAULTS_DIR = ROOT / "roles/devbox/defaults/main"
+PROFILES_DIR = ROOT / "profiles"
+ROLE_TASKS_DIR = ROOT / "roles/devbox/tasks"
+SWITCH = "devbox_tamias_enabled"
 
 ASSET = "tamias-darwin-arm64"
 AUTH_MARKER = "AUTH-STATUS-SECRET-MARKER"
@@ -65,6 +69,34 @@ def _proxy() -> Doc:
     return copy.deepcopy(_defaults()["devbox_go_module_proxy"])
 
 
+def _role_defaults() -> Doc:
+    merged: Doc = {}
+    for path in sorted(DEFAULTS_DIR.glob("*.yml")):
+        merged.update(yaml.safe_load(path.read_text(encoding="utf-8")) or {})
+    return merged
+
+
+def _profile(name: str) -> Doc:
+    return yaml.safe_load((PROFILES_DIR / f"{name}.yml").read_text(encoding="utf-8")) or {}
+
+
+def _profile_names() -> list[str]:
+    return sorted(path.stem for path in PROFILES_DIR.glob("*.yml"))
+
+
+def _resolved_switch(profile: str | None = None) -> bool:
+    variables = _role_defaults()
+    if profile is not None:
+        variables.update(_profile(profile))
+    rendered = _render_env(Path("/nonexistent")).from_string(
+        variables["devbox_packages"]["tamias"]["enabled"]
+    )
+    return rendered.render(variables) == "True"
+
+
+TAG = f"v{_packages()['tamias']['version']}"
+
+
 def _find(tasks: list[Doc], needle: str) -> Doc:
     return next(task for task in _flatten(tasks) if needle in str(task.get("name", "")))
 
@@ -90,9 +122,9 @@ class TestPackageDeclaration:
 
     def test_declaration_is_well_formed(self) -> None:
         tamias = _packages()["tamias"]
-        assert isinstance(tamias["enabled"], bool)
+        assert tamias["enabled"] == "{{ devbox_tamias_enabled | bool }}"
         assert tamias["repository"] == "abrosimov/tamias"
-        assert tamias["version"] == "0.1.1"
+        assert tamias["version"] == "0.2.2"
         assert tamias["assets"] == {"arm64": ASSET}
         assert tamias["install_path"] == "~/.local/bin/tamias"
 
@@ -102,6 +134,61 @@ class TestPackageDeclaration:
     def test_tamias_enabled_is_the_only_switch(self) -> None:
         assert [key for key in _proxy() if "enabled" in key.lower()] == []
         assert [key for key in _defaults() if "enabled" in key.lower()] == []
+        assert [key for key in _packages()["tamias"] if "enabled" in key.lower()] == ["enabled"]
+
+    def test_profile_variable_is_the_only_other_declaration_of_the_switch(self) -> None:
+        declared = [
+            key for key in _role_defaults() if "tamias" in key.lower() and "enabled" in key.lower()
+        ]
+        assert declared == [SWITCH]
+        for name in _profile_names():
+            assert [
+                key for key in _profile(name) if "tamias" in key.lower() and key != SWITCH
+            ] == []
+
+    def test_tasks_read_the_package_switch_not_the_profile_variable(self) -> None:
+        offenders: list[str] = []
+        for path in sorted(ROLE_TASKS_DIR.rglob("*.yml")):
+            loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+            if not isinstance(loaded, list):
+                continue
+            for task in _flatten(loaded):
+                conditions = [task.get("when", [])]
+                conditions.append(task.get("ansible.builtin.assert", {}).get("that", []))
+                if SWITCH in json.dumps(conditions):
+                    offenders.append(f"{path.relative_to(ROOT)}: {task.get('name')}")
+        assert offenders == []
+
+    def test_switch_default_is_a_literal_false(self) -> None:
+        assert _role_defaults()[SWITCH] is False
+
+    def test_personal_profile_sets_the_switch_to_a_literal_true(self) -> None:
+        assert _profile("personal")[SWITCH] is True
+
+    def test_work_profile_does_not_set_the_switch(self) -> None:
+        assert SWITCH not in _profile("work")
+
+    def test_switch_resolves_true_for_personal(self) -> None:
+        assert _resolved_switch("personal") is True
+
+    def test_switch_resolves_false_for_work(self) -> None:
+        assert _resolved_switch("work") is False
+
+    def test_switch_resolves_false_for_bare_defaults(self) -> None:
+        assert _resolved_switch() is False
+
+    @pytest.mark.parametrize("name", _profile_names())
+    def test_only_the_personal_profile_enables_the_client(self, name: str) -> None:
+        assert _resolved_switch(name) is (name == "personal")
+
+    def test_switch_follows_the_profile_variable_not_a_constant(self) -> None:
+        variables = _role_defaults()
+        template = variables["devbox_packages"]["tamias"]["enabled"]
+        environment = _render_env(Path("/nonexistent"))
+        for value, expected in ((True, "True"), (False, "False")):
+            assert (
+                environment.from_string(template).render({**variables, SWITCH: value}) == expected
+            )
 
     def test_no_checksum_like_field_anywhere(self) -> None:
         def keys(node: object) -> Iterator[str]:
@@ -237,7 +324,7 @@ sys.exit(97)
 
     def release(self, **overrides: object) -> Doc:
         release: Doc = {
-            "tagName": "v0.1.1",
+            "tagName": TAG,
             "isDraft": False,
             "isImmutable": True,
             "assets": [{"name": ASSET, "digest": self.digest(self.asset_bytes)}],
@@ -371,8 +458,8 @@ class TestInstallAdmission:
         [
             {"isImmutable": False},
             {"isDraft": True},
-            {"tagName": "v0.1.2"},
-            {"tagName": "v0.1.10"},
+            {"tagName": "v0.2.3"},
+            {"tagName": f"{TAG}0"},
             {"assets": []},
             {"assets": [{"name": "tamias-darwin-amd64", "digest": "sha256:" + "a" * 64}]},
             {"assets": [{"name": ASSET}]},
@@ -470,7 +557,7 @@ class TestInstallAdmission:
         staging = download[download.index("--dir") + 1]
         assert staging.startswith(str(gh.tmpdir))
         [verify] = gh.calls_of("release", "verify-asset")
-        assert verify[2:4] == ["v0.1.1", f"{staging}/{ASSET}"]
+        assert verify[2:4] == [TAG, f"{staging}/{ASSET}"]
         assert verify[verify.index("--repo") + 1] == "abrosimov/tamias"
         assert gh.calls().index(download) < gh.calls().index(verify)
         assert gh.leftovers() == []
@@ -907,4 +994,406 @@ class TestVerifyEntryPoint:
             "GONOPROXY": "",
             "GONOSUMDB": "",
             "GOSUMDB": "",
+        }
+
+
+CLIENT = TASKS_DIR / "configure_tamias_client.yml"
+INSTALL_CONFIGS = ROOT / "roles/devbox/tasks/install_configs.yml"
+
+CLIENT_MARKER = "TAMIAS-CLIENT-ISSUER-SECRET-MARKER"
+CLIENT_CONFIG = (
+    '{"profiles": {"default": {"proxy": "https://go.example.test",'
+    f' "issuer": "https://id.example.test/é", "client_id": "{CLIENT_MARKER}"}}}}'
+).encode()
+
+
+def _main_includes() -> list[str]:
+    return [
+        task["ansible.builtin.include_tasks"]
+        for task in _flatten(_load(MAIN_DARWIN))
+        if isinstance(task.get("ansible.builtin.include_tasks"), str)
+    ]
+
+
+def _include_task(name: str) -> Doc:
+    return next(
+        task
+        for task in _flatten(_load(MAIN_DARWIN))
+        if task.get("ansible.builtin.include_tasks") == name
+    )
+
+
+def _holds(task: Doc, **context: object) -> bool:
+    conditions = task.get("when", [])
+    conditions = conditions if isinstance(conditions, list) else [conditions]
+    environment = _render_env(Path())
+    return all(bool(environment.compile_expression(str(c))(**context)) for c in conditions)
+
+
+class TestMainDarwinOrdering:
+    def test_tamias_and_proxy_steps_precede_every_module_fetching_step(self) -> None:
+        includes = _main_includes()
+        chain = [
+            "darwin/install_tamias.yml",
+            "darwin/configure_tamias_client.yml",
+            "darwin/configure_go_module_proxy.yml",
+            "darwin/install_from_go.yml",
+        ]
+        assert [includes.count(name) for name in chain] == [1, 1, 1, 1]
+        positions = [includes.index(name) for name in chain]
+        assert positions == sorted(positions)
+
+    @pytest.mark.parametrize(
+        "later",
+        [
+            "darwin/install_from_uv.yml",
+            "darwin/install_kubectl.yml",
+            "darwin/install_tlaplus.yml",
+        ],
+    )
+    def test_other_installers_stay_after_the_go_proxy_configuration(self, later: str) -> None:
+        includes = _main_includes()
+        assert includes.index("darwin/configure_go_module_proxy.yml") < includes.index(later)
+
+    @pytest.mark.parametrize(
+        "name",
+        ["darwin/install_tamias.yml", "darwin/configure_tamias_client.yml"],
+    )
+    @pytest.mark.parametrize("dev_mode", [None, False, True], ids=["unset", "false", "true"])
+    @pytest.mark.parametrize("enabled", [False, True], ids=["disabled", "enabled"])
+    def test_tamias_includes_run_only_outside_dev_mode_and_when_enabled(
+        self, name: str, *, dev_mode: bool | None, enabled: bool
+    ) -> None:
+        context: Doc = {"devbox_packages": {"tamias": {"enabled": enabled}}}
+        if dev_mode is not None:
+            context["dev_mode"] = dev_mode
+        assert _holds(_include_task(name), **context) is (enabled and not dev_mode)
+
+    def test_tamias_package_switch_absent_means_not_run(self) -> None:
+        task = _include_task("darwin/configure_tamias_client.yml")
+        assert _holds(task, devbox_packages={"tamias": {}}) is False
+
+    @pytest.mark.parametrize("dev_mode", [None, False, True], ids=["unset", "false", "true"])
+    @pytest.mark.parametrize("enabled", [False, True], ids=["disabled", "enabled"])
+    def test_go_proxy_configuration_ignores_the_tamias_switch_but_not_dev_mode(
+        self, *, dev_mode: bool | None, enabled: bool
+    ) -> None:
+        context: Doc = {"devbox_packages": {"tamias": {"enabled": enabled}}}
+        if dev_mode is not None:
+            context["dev_mode"] = dev_mode
+        task = _include_task("darwin/configure_go_module_proxy.yml")
+        assert _holds(task, **context) is (not dev_mode)
+
+    @pytest.mark.parametrize(
+        "name",
+        ["darwin/install_tamias.yml", "darwin/configure_tamias_client.yml"],
+    )
+    def test_tamias_includes_are_selectable_by_both_tags(self, name: str) -> None:
+        assert {"tamias", "go-proxy"} <= set(_include_task(name)["tags"])
+
+
+class TestClientConfigTaskShape:
+    def test_steps_run_in_order_before_any_write(self) -> None:
+        modules = [_module(task) for task in _flatten(_load(CLIENT)) if _module(task)]
+        assert modules == [
+            "ansible.builtin.stat",
+            "ansible.builtin.assert",
+            "ansible.builtin.file",
+            "ansible.builtin.copy",
+        ]
+
+    def test_private_modes_and_no_diff(self) -> None:
+        tasks = list(_flatten(_load(CLIENT)))
+        directory = _find(tasks, "private configuration directory")["ansible.builtin.file"]
+        install = _find(tasks, "install the client profiles")
+        assert directory["state"] == "directory"
+        assert directory["mode"] == "0700"
+        assert install["ansible.builtin.copy"]["mode"] == "0600"
+        assert install["diff"] is False
+
+    def test_the_task_is_tagged_for_both_selectors(self) -> None:
+        assert {"tamias", "go-proxy"} <= set(_load(CLIENT)[0]["tags"])
+
+
+@pytest.mark.integration
+class TestClientConfigDeploy:
+    @pytest.fixture
+    def env(self, tmp_path: Path) -> Doc:
+        role = tmp_path / "role"
+        home = tmp_path / "home"
+        overlay = role / "local/tamias/config.json"
+        overlay.parent.mkdir(parents=True)
+        overlay.write_bytes(CLIENT_CONFIG)
+        overlay.chmod(0o644)
+        home.mkdir()
+        return {
+            "root": tmp_path,
+            "role": role,
+            "home": home,
+            "overlay": overlay,
+            "dest": home / "Library/Application Support/tamias/config.json",
+        }
+
+    def run(
+        self,
+        env: Doc,
+        *,
+        extra_vars: Doc | None = None,
+        check: bool = False,
+        diff: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
+        play = {
+            "gather_facts": False,
+            "vars": {
+                "ansible_python_interpreter": sys.executable,
+                "ansible_facts": {"env": {"HOME": str(env["home"]), "PATH": os.environ["PATH"]}},
+                "role_path": str(env["role"]),
+                **(extra_vars or {}),
+            },
+            "tasks": [{"ansible.builtin.include_tasks": str(CLIENT)}],
+        }
+        result = _run_playbook(
+            env["root"],
+            play,
+            env={"HOME": str(env["home"]), **({"ANSIBLE_DIFF_ALWAYS": "1"} if diff else {})},
+            check=check,
+        )
+        assert CLIENT_MARKER not in result.stdout + result.stderr
+        return result
+
+    @staticmethod
+    def mode(path: Path) -> int:
+        return stat.S_IMODE(path.stat().st_mode)
+
+    def test_deploys_exact_bytes_with_private_modes(self, env: Doc) -> None:
+        result = self.run(env, diff=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert env["dest"].read_bytes() == CLIENT_CONFIG
+        assert self.mode(env["dest"]) == 0o600
+        assert self.mode(env["dest"].parent) == 0o700
+        assert _changed(result) >= 1
+
+    def test_overlay_is_left_untouched(self, env: Doc) -> None:
+        assert self.run(env).returncode == 0
+        assert env["overlay"].read_bytes() == CLIENT_CONFIG
+        assert self.mode(env["overlay"]) == 0o644
+
+    def test_second_run_reports_no_change(self, env: Doc) -> None:
+        assert self.run(env).returncode == 0
+        result = self.run(env, diff=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert _changed(result) == 0
+        assert env["dest"].read_bytes() == CLIENT_CONFIG
+
+    def test_changed_overlay_replaces_the_deployed_file_without_a_diff(self, env: Doc) -> None:
+        assert self.run(env).returncode == 0
+        updated = CLIENT_CONFIG.replace(b"go.example.test", b"other.example.test")
+        env["overlay"].write_bytes(updated)
+        result = self.run(env, diff=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert _changed(result) == 1
+        assert env["dest"].read_bytes() == updated
+
+    def test_loose_existing_modes_are_tightened(self, env: Doc) -> None:
+        env["dest"].parent.mkdir(parents=True)
+        env["dest"].write_bytes(CLIENT_CONFIG)
+        env["dest"].parent.chmod(0o755)
+        env["dest"].chmod(0o644)
+        result = self.run(env)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert _changed(result) == 2
+        assert self.mode(env["dest"]) == 0o600
+        assert self.mode(env["dest"].parent) == 0o700
+        assert env["dest"].read_bytes() == CLIENT_CONFIG
+
+    def test_stale_deployed_file_with_other_content_is_overwritten(self, env: Doc) -> None:
+        env["dest"].parent.mkdir(parents=True)
+        env["dest"].write_bytes(b"{}")
+        assert self.run(env).returncode == 0
+        assert env["dest"].read_bytes() == CLIENT_CONFIG
+
+    def test_overrides_take_precedence_over_the_defaults(self, env: Doc) -> None:
+        src = env["root"] / "elsewhere/source.json"
+        dest = env["root"] / "elsewhere/out/dest.json"
+        src.parent.mkdir()
+        src.write_bytes(b'{"from": "override"}')
+        result = self.run(
+            env,
+            extra_vars={
+                "devbox_tamias_client_config_src_override": str(src),
+                "devbox_tamias_client_config_dest_override": str(dest),
+            },
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert dest.read_bytes() == b'{"from": "override"}'
+        assert self.mode(dest) == 0o600
+        assert self.mode(dest.parent) == 0o700
+        assert not env["dest"].exists()
+
+    def test_missing_overlay_fails_and_writes_nothing(self, env: Doc) -> None:
+        env["overlay"].unlink()
+        result = self.run(env)
+        assert result.returncode != 0
+        assert "local/tamias/config.json" in result.stdout + result.stderr
+        assert not (env["home"] / "Library").exists()
+
+    def test_missing_overlay_keeps_the_previously_deployed_file(self, env: Doc) -> None:
+        env["dest"].parent.mkdir(parents=True)
+        env["dest"].write_bytes(b"previous")
+        env["dest"].parent.chmod(0o755)
+        env["overlay"].unlink()
+        assert self.run(env).returncode != 0
+        assert env["dest"].read_bytes() == b"previous"
+        assert self.mode(env["dest"].parent) == 0o755
+
+    def test_overlay_directory_in_place_of_the_file_fails_and_writes_nothing(
+        self, env: Doc
+    ) -> None:
+        env["overlay"].unlink()
+        env["overlay"].mkdir()
+        result = self.run(env)
+        assert result.returncode != 0
+        assert not (env["home"] / "Library").exists()
+
+    def test_dangling_overlay_symlink_fails_and_writes_nothing(self, env: Doc) -> None:
+        env["overlay"].unlink()
+        env["overlay"].symlink_to(env["root"] / "nowhere.json")
+        result = self.run(env)
+        assert result.returncode != 0
+        assert not (env["home"] / "Library").exists()
+
+    def test_check_mode_creates_nothing(self, env: Doc) -> None:
+        result = self.run(env, check=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert not (env["home"] / "Library").exists()
+
+    def test_check_mode_with_missing_overlay_still_fails(self, env: Doc) -> None:
+        env["overlay"].unlink()
+        assert self.run(env, check=True).returncode != 0
+
+
+OVERLAY_TASK_NAMES = (
+    "Check if local overlay directory exists",
+    "Collect files from local overlay",
+    "Create directories from local overlay",
+    "Copy local overlay files",
+    "Render local overlay templates",
+)
+
+
+def _overlay_task(name: str) -> Doc:
+    return next(task for task in _load(INSTALL_CONFIGS) if task.get("name") == name)
+
+
+def _overlay_runs(task_name: str, path: str, state: str) -> bool:
+    return _holds(
+        _overlay_task(task_name),
+        devbox_local_overlay_dir={"stat": {"exists": True}},
+        item={"path": path, "state": state},
+    )
+
+
+class TestOverlayLoopsLeaveTamiasToItsOwnTask:
+    @pytest.mark.parametrize(
+        ("task_name", "path", "state"),
+        [
+            ("Create directories from local overlay", "tamias", "directory"),
+            ("Create directories from local overlay", "tamias/nested", "directory"),
+            ("Copy local overlay files", "tamias/config.json", "file"),
+            ("Copy local overlay files", "tamias/nested/other.json", "file"),
+            ("Render local overlay templates", "tamias/config.json.j2", "file"),
+            ("Render local overlay templates", "tamias/nested/x.j2", "file"),
+        ],
+    )
+    def test_tamias_paths_are_skipped(self, task_name: str, path: str, state: str) -> None:
+        assert _overlay_runs(task_name, path, state) is False
+
+    @pytest.mark.parametrize(
+        ("task_name", "path", "state"),
+        [
+            ("Create directories from local overlay", ".config/tamias", "directory"),
+            ("Create directories from local overlay", "tamias-extra", "directory"),
+            ("Create directories from local overlay", "tamiasx", "directory"),
+            ("Create directories from local overlay", ".config/fish", "directory"),
+            ("Copy local overlay files", ".config/tamias/config.json", "file"),
+            ("Copy local overlay files", "tamias-notes.txt", "file"),
+            ("Copy local overlay files", ".config/fish/config.fish", "file"),
+            ("Render local overlay templates", ".config/tamias/x.j2", "file"),
+            ("Render local overlay templates", "tamiasx/x.j2", "file"),
+            ("Render local overlay templates", ".bashrc.j2", "file"),
+        ],
+    )
+    def test_lookalike_and_unrelated_paths_are_still_deployed(
+        self, task_name: str, path: str, state: str
+    ) -> None:
+        assert _overlay_runs(task_name, path, state) is True
+
+    @pytest.mark.parametrize(
+        ("task_name", "path", "state"),
+        [
+            ("Create directories from local overlay", "vars", "directory"),
+            ("Create directories from local overlay", "host_state/sub", "directory"),
+            ("Copy local overlay files", "vars/personal.yml", "file"),
+            ("Copy local overlay files", "host_state/x.plist", "file"),
+            ("Render local overlay templates", "vars/x.j2", "file"),
+        ],
+    )
+    def test_existing_exclusions_still_hold(self, task_name: str, path: str, state: str) -> None:
+        assert _overlay_runs(task_name, path, state) is False
+
+
+COLLECTIONS = Path(os.environ.get("ANSIBLE_COLLECTIONS_PATH", Path.home() / ".ansible/collections"))
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not (COLLECTIONS / "ansible_collections/community/general").is_dir(),
+    reason="community.general collection is required for the filetree lookup",
+)
+class TestOverlayDeployLeavesTamiasAlone:
+    def test_only_tamias_paths_stay_out_of_the_dotfiles_tree(self, tmp_path: Path) -> None:
+        role = tmp_path / "role"
+        dotfiles = tmp_path / "dotfiles"
+        dotfiles.mkdir()
+        files = {
+            "tamias/config.json": CLIENT_CONFIG,
+            "tamias/nested/other.json": b"{}",
+            "tamias/template.j2": b"rendered",
+            ".config/tamias/config.json": b"lookalike",
+            "tamias-notes.txt": b"notes",
+            ".config/tool/settings.conf": b"setting",
+            ".config/tool/rendered.conf.j2": b"rendered {{ 1 + 1 }}",
+        }
+        for relative, content in files.items():
+            target = role / "local" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+        (role / "local/tamias/empty").mkdir()
+        play = {
+            "gather_facts": False,
+            "vars": {
+                "ansible_python_interpreter": sys.executable,
+                "role_path": str(role),
+                "devbox_paths": {"dotfiles_root_dir": str(dotfiles)},
+            },
+            "tasks": [_overlay_task(name) for name in OVERLAY_TASK_NAMES],
+        }
+        result = _run_playbook(
+            tmp_path,
+            play,
+            env={"HOME": str(tmp_path), "ANSIBLE_COLLECTIONS_PATH": str(COLLECTIONS)},
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        deployed = {
+            str(path.relative_to(dotfiles)): path.read_bytes() if path.is_file() else None
+            for path in dotfiles.rglob("*")
+        }
+        assert deployed == {
+            ".config": None,
+            ".config/tamias": None,
+            ".config/tamias/config.json": b"lookalike",
+            ".config/tool": None,
+            ".config/tool/settings.conf": b"setting",
+            ".config/tool/rendered.conf": b"rendered 2",
+            "tamias-notes.txt": b"notes",
         }

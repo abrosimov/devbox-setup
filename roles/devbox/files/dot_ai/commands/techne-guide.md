@@ -84,7 +84,7 @@ Agents are mandatory for all code edits — every change to `.go`, `.py`, `.ts`,
 **Planners:** Implementation planner (Go, Python, Python monolith)
 **Designers:** API designer, Database designer, UI/UX designer, Domain modeller
 **Architecture:** Architect, Technical product manager, Domain expert
-**Quality:** Build resolver (Go), Refactor/cleaner, TDD guide, Doc updater, Observability engineer
+**Quality:** Build resolver (Go), Refactor/cleaner, Doc updater, Observability engineer
 **Meta:** Agent builder, Skill builder, Meta reviewer, Freshness auditor, Consistency checker
 
 ---

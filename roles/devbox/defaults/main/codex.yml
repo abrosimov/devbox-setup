@@ -19,6 +19,7 @@ devbox_codex_shared_skills:
   - go-observability
   - go-review-checklist
   - go-testing
+  - jira-text
   - lint-discipline
   - narrative-thinking
   - playwright-e2e
@@ -64,7 +65,6 @@ devbox_codex_agents:
   - software-engineer-frontend
   - software-engineer-go
   - software-engineer-python
-  - tdd-guide
   - technical-product-manager
   - unit-test-writer
 

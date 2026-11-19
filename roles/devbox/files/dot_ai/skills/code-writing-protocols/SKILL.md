@@ -71,6 +71,29 @@ These hold in every project and every language; the reviewer checks them as defe
   dependency bump then breaks the build. Commit the sources, the generator configuration and the
   pin. If a consumer that cannot run the generator needs the output (a Go library fetched with
   `go get`), say so and return it to the main thread as an open item instead of committing it.
+- **Tests belong to the test writers.** `unit-test-writer` owns unit tests,
+  `integration-tests-writer-{go,python}` own integration tests, `fuzzing-tests-writer` owns fuzz
+  targets. A software engineer never creates, edits, renames or deletes a test file, a test helper
+  or test data: the `!` patterns in its `globs` name those files, and in Claude Code the
+  `pre_edit_file_ownership_guard` hook denies the edit. A test written by the author of the code
+  shares the author's blind spots, and a test edited to match new code proves nothing.
+
+### Test Ownership
+
+**Software engineer.**
+
+- Write no tests, even when a skill, a checklist or the brief seems to ask for them. A behaviour
+  the change needs covered goes into your report as a scenario (input, expected outcome) for the
+  test writer.
+- Run the existing suite. When a test fails after your change and the code is wrong, fix the code.
+  When the test asserts behaviour the task deliberately changes, leave the test alone and report
+  it: the test, its exact output, and the behaviour change that explains it. The test writer
+  updates it.
+- Never make a failing test pass by changing, skipping or deleting it.
+
+**Test writer.** You own the test files of your kind, including updating tests that a deliberate
+behaviour change broke. You do not edit production code: a test that exposes a defect goes back to
+the engineer, with the failing test as the proof.
 
 ## Decision Classification Protocol
 
@@ -84,12 +107,12 @@ Tasks with deterministic solutions from established rules.
 - No trade-offs to consider
 - Outcome is predictable
 
-**Examples** (within the lines and files the task already changes, or the files a routine task names):
+**Examples** (within the hunks the task already changes, or the files a routine task names):
 - Apply formatting
 - Remove narration comments (policy: no narration)
 - Fix style violations
 - Delete dead code that the change leaves unused
-- Add error context wrapping
+- Add error context to errors the changed code returns
 
 **Action:** Apply rule. No alternatives needed. Do not ask "should I continue?"
 
@@ -300,25 +323,35 @@ I believe this may be over-engineered because: [specific reason]
 
 This table is the single source of truth for what a code-writing agent adds without explicit approval. Language skills (`go-engineer`, `python-engineer`, `frontend-engineer`) and `workflow` defer to it rather than keeping their own lists.
 
-A production necessity applies only to the code the task already changes: provide it in the files you are already in, with the tools the project already has (core §8). Gaps elsewhere go into the report.
+**The unit is the task's diff.** A production necessity applies only to the code the task writes or changes, the hunks of its diff, with the tools the project already has (core §8). Existing code around those hunks is not improved, even in the same file, unless the change cannot work without it; a gap there goes into the report.
 
 | Is a production necessity | Is not (needs approval unless the plan names it) |
 |-------------------------|----------------------------|
-| Error handling and error context wrapping | Retry logic |
-| Timeouts on outbound calls the changed code makes | Circuit breakers |
+| Error handling, in the idiom of the stack's skill (`go-engineer`, `python-engineer`, `frontend-engineer`) | Retry logic |
+| Timeouts on outbound calls the changed code makes, sized from the call (below) | Circuit breakers |
 | Logging at boundaries (request in/out, errors) | Caching |
-| Context propagation | Rate limiting |
-| Resource cleanup (defer/close/finally) | Feature flags |
-| Input validation at API boundary | New interfaces/abstractions |
-| OTel instrumentation (see conditional rule below) | Configuration options |
+| Resource cleanup (defer/close/finally) | Rate limiting |
+| Input validation at API boundary | Feature flags |
+| OTel instrumentation (see conditional rule below) | New interfaces/abstractions |
+| | Configuration options |
 | | New UI states or wrappers (loading, error, empty states, error boundaries) |
 | | "Defensive" code for impossible cases |
+
+Language-specific guarantees, such as Go's context propagation, live in the stack's skill, not here.
+
+**List every production necessity you added** in your hand-off, one line each with the hunk it is in, so the user sees what was added without being asked for.
+
+### Timeouts Are Sized, Not Guessed
+
+A timeout is set from what the call is: its target (a local service, a third-party API, a database), the expected latency, and the weight of the request and response. Find these in the code, the client's configuration, the contract or the plan. A timeout of the same magnitude elsewhere in the project for the same target is the strongest evidence. When none of it can be found, do not invent a number: name the call in the report as missing a timeout, with what you would need to size it.
 
 ### Conditional: OTel Instrumentation
 
 If the codebase has the OTel SDK initialised (TracerProvider/MeterProvider in main or startup), adding spans and metrics to new code is a production necessity — do not ask for approval.
 
 If the codebase does not have OTel set up, adding instrumentation is an unrequested addition: leave it out and mention it at the end (core §0).
+
+Telemetry never fails the request it observes: an error while recording a span, a metric or a log is swallowed or logged, never returned or raised to the caller.
 
 **The test:** if you're unsure whether something is a production necessity, it is not. Leave it out and mention it in the report.
 
@@ -338,15 +371,15 @@ If you catch yourself thinking any of these, stop and reconsider:
 Once you start implementing, your scope is **locked** to:
 1. What the plan explicitly requests
 2. Production necessities (narrow definition above)
-3. Tier 1 routine fixes in the lines and files the task already changes
+3. Tier 1 routine fixes in the hunks the task already changes
 
-Additions outside this scope are not implemented. Mention them at the end of the report (core §0), so the user can ask for them; they are not a question.
+Initiative to improve is limited to this list: "it would be better" is not a reason to change code. Additions outside this scope are not implemented. Mention them at the end of the report (core §0), so the user can ask for them; they are not a question.
 
 ---
 
 ## Routine Task Mode — Complete Without Interruption
 
-When a task is classified as **Tier 1 (Routine)**, enter Routine Mode. Routine Mode changes how you work, not what you touch: its scope is the lines and files the task already changes, or the files a routine task (such as "remove narration comments in package X") names.
+When a task is classified as **Tier 1 (Routine)**, enter Routine Mode. Routine Mode changes how you work, not what you touch: its scope is the hunks the task already changes, or the files a routine task (such as "remove narration comments in package X") names.
 
 ### Behaviour in Routine Mode
 
@@ -417,7 +450,11 @@ Before completing an implementation or test-writing task, answer honestly:
    - These are drift, not WHY. See `code-comments` skill, "What's NOT WHY".
    - If yes: strip those parts
 
-Only proceed after all four checks pass.
+5. **Does any comment contain a number or date copied from data or a spec, or the history of a decision?**
+   - These go stale when something elsewhere changes. See `code-comments` skill, Staleness Test.
+   - If yes: cut them; do not relocate them
+
+Only proceed after all five checks pass.
 
 ---
 
@@ -493,7 +530,7 @@ Before writing code for **Tier 2 or Tier 3** decisions, complete this checklist:
 
 ## No Ad-Hoc Validation
 
-**Rule.** Do not run tools to "check that something works". If it can break — write a test. If it can't break — trust the framework guarantee. There is no legitimate middle ground.
+**Rule.** Do not run tools to "check that something works". If it can break — it needs a test: a test writer writes it, an engineer names the scenario in its report (Test Ownership). If it can't break — trust the framework guarantee. There is no legitimate middle ground.
 
 Ad-hoc validation burns context, invites workaround escalation (e.g. cache overrides when the check happens to fail), and substitutes for real coverage. It also masquerades as diligence — that's why it feels tempting.
 
@@ -541,23 +578,17 @@ Two "yes/no" of the above pointing at "don't run" is a hard stop.
 
 Every SE agent runs the build, test, and lint commands before reporting completion. Self-assessed results like "manual review passed" or "verified by inspection" are not evidence.
 
-### Forbidden Excuse Patterns
+### A Pass Covers Only What It Executed
 
-The following phrases in Pre-Flight reports or SE output artifacts indicate the agent skipped verification, and a report that relies on them is sent back:
+A green command proves the code it ran, nothing more. For each changed file or code path, the report says which command executed it. A changed path that no command executed (a verifier, a template, a migration, a deploy-time assertion, a branch the tests never reach) is listed as **unverified** with the reason, never folded into "all checks pass". When a command can exercise it (a render, a `--check` run, a targeted test the test writer can add), run it or ask for it before reporting.
 
-- "manual review passed"
-- "manually verified"
-- "verified by inspection" / "verified by reading"
-- "sandbox blocks..." / "sandbox restricts..."
-- "unable to run" / "could not execute" / "could not run"
-- "appears correct" / "looks correct" / "should work"
-- "tests appear" / "would succeed" / "would work outside"
+Reading the code is not a check: "verified by inspection", "looks correct" and "should work" are not results. A command that could not run is reported as such, with the exact command and error (below); that is an honest result, not a pass.
 
 ### When Commands Fail
 
 1. Report the **exact** error message — do not paraphrase or summarise
 2. Decide whose failure it is (core §8):
-   - **Introduced by this change, or in code the change touches** — fix the root cause. It blocks completion.
+   - **Introduced by this change, or in code the change touches** — fix the root cause. It blocks completion. For a failing test, the root cause is fixed in the code or, when the change deliberately alters the tested behaviour, by the test writer; an engineer reports it and leaves the test alone (Test Ownership).
    - **Pre-existing, elsewhere** — it lies in files and behaviour your diff does not touch, or fails the same way on the base commit. Report it (command, exact error, why you believe it predates the change) and do not fix it. It does not block completion.
 3. Environment or configuration fixes outside the task (dependency upgrades, tool or CI configuration, project settings) need approval: return them to the orchestrator with a recommendation instead of applying them
 4. For sandbox-related failures: use the language-specific env var workarounds below
@@ -581,60 +612,6 @@ Each row in the Pre-Flight verification table must include:
 - The exit code
 - For failures: the first 5 lines of error output
 - Status must reflect the actual exit code, not the agent's opinion
-
----
-
-## TDD RED-GREEN Evidence Protocol
-
-### When This Applies
-
-Applies when writing new tests (unit or integration). Does not apply to fixing existing tests or non-test code changes.
-
-### Protocol
-
-When adding a new test:
-
-1. **RED phase**: Write the test first. Run it and confirm it fails (proving it tests something real).
-2. **Implement**: Write the production code to make the test pass.
-3. **GREEN phase**: Run the test again and confirm it passes.
-
-### Evidence Format
-
-Each new test must include RED-GREEN evidence in the SE output artifact:
-
-```
-### Test: test_name
-**RED** (before implementation):
-  Command: <exact command>
-  Exit code: <non-zero>
-  Output (first 5 lines):
-    <output>
-
-**GREEN** (after implementation):
-  Command: <exact command>
-  Exit code: 0
-  Output (first 5 lines):
-    <output>
-```
-
-### Forbidden Shortcuts
-
-The following are not acceptable as RED evidence:
-
-- "test would fail because the function doesn't exist yet"
-- Showing only the GREEN result
-- RED from a compilation error (the test itself must compile — the assertion must fail)
-- "verified by inspection that test covers the requirement"
-
-### When RED Is Not Possible
-
-If a test cannot meaningfully fail first (e.g., testing existing behaviour that already works), document why:
-
-```
-### Test: test_existing_behaviour
-**RED skip reason**: Testing existing correct behaviour — no implementation change needed.
-**GREEN**: Command: ..., Exit code: 0
-```
 
 ---
 
@@ -680,6 +657,7 @@ After Pre-Flight passes, verify these quality checks. Language-specific items ar
 - [ ] The only comments remaining explain WHY (business rules, gotchas), not WHAT
 - [ ] Every surviving comment is ≤3 lines. Multi-paragraph WHY blocks have been cut (≥4 lines → docstring/ADR, not a comment)
 - [ ] No comment contains speculation ("if someone later adds X..."), mechanism over-explanation, or restates visible code
+- [ ] No comment contains a number or date copied from data or a spec, or the history of a decision
 
 ### Scope Check (Anti-Helpfulness)
 - [ ] I did not add features not in the plan

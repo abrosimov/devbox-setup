@@ -33,6 +33,12 @@ looks. Work directly only when no agent covers the work (non-code agent, skill o
 configuration), for edits that change no behaviour in files the owning agent already changed in this
 run, or in the single turn in which the user explicitly says to edit directly.
 
+Tests belong to the test writers, never to an engineer: `unit-test-writer` owns unit tests, the
+integration-test agents own integration tests. After an engineer changes behaviour, delegate the
+tests for it to `unit-test-writer` (and the integration-test agent when integration scenarios are
+named), passing the engineer's hand-off, including any tests it reported as broken by a deliberate
+behaviour change. A defect the test writer finds goes back to the engineer.
+
 Choose the narrowest configured role for other delegated work, such as `implementation-planner`,
 `code-reviewer`, `unit-test-writer`, or the stack-specific integration-test agents. Give each agent an
 outcome, explicit scope or file ownership, constraints, and expected evidence; do not prescribe shell

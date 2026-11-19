@@ -1,6 +1,6 @@
-function k --description "kubectl helper; expects KUBECONFIG to be set by wrapper (kstg/kprd/...)"
+function k --description "kubectl helper; expects KUBECONFIG to be set by wrapper (kstg/kprod/...)"
     if not set -q KUBECONFIG
-        echo "KUBECONFIG is not set. Use a wrapper like: kstg ..., kprd ..."
+        echo "KUBECONFIG is not set. Use a wrapper like: kstg ..., kprod ..."
         return 2
     end
 

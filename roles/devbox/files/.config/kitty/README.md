@@ -6,7 +6,7 @@ they work identically on English, Russian, or any other input source. Without
 this, Cyrillic-active `Cmd+T` would not match `cmd+t` because the OS produces
 `е` not `t`.
 
-The clipboard keys, the previous/next tab keys and the macOS window basics are
+The clipboard keys and the macOS window basics are
 the exception: they are mapped by character with
 `--allow-fallback=shifted,ascii`, which falls back to the physical key on a
 non-Latin layout and so is layout-independent too. Those actions also appear
@@ -37,7 +37,6 @@ to verify nothing regressed.
 | `Cmd+Shift+T` | New tab at current `cwd` |
 | `Cmd+1` … `Cmd+9` | Jump to tab N |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
-| `Cmd+Shift+]` / `Cmd+Shift+[` | Next / previous tab |
 | `Ctrl+Shift+→` / `Ctrl+Shift+←` | Next / previous tab |
 | `Ctrl+Shift+.` / `Ctrl+Shift+,` | Move the tab right / left |
 | `Cmd+Shift+I` | Rename the tab |

@@ -70,6 +70,7 @@ devbox_brew_secondary:
   - tree-sitter-cli
   # orbstack moved to profile overrides (work uses orbstack, personal uses docker-desktop).
   - k9s
+  - kubelogin     # kubectl oidc-login plugin (`kubectl-oidc_login`) for clusters that sign in through OIDC
   - skopeo        # Daemonless OCI image inspect/copy/sync between registries
   - fzf
   - tmux

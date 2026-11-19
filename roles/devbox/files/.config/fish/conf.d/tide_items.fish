@@ -18,12 +18,13 @@ set -g tide_right_prompt_items
 set -a tide_right_prompt_items status # the last command failed: its exit status
 set -a tide_right_prompt_items cmd_duration # the last command ran longer than 3 s
 set -a tide_right_prompt_items context # over SSH or as root: user@host
+set -a tide_right_prompt_items private_mode # `fish --private`: history is not saved
+set -a tide_right_prompt_items shlvl # nested shell (SHLVL above 1): nesting depth
 set -a tide_right_prompt_items jobs # background jobs are running
 set -a tide_right_prompt_items node # package.json above: Node version
 set -a tide_right_prompt_items venv_python # active venv or Python project marker: Python version
 set -a tide_right_prompt_items go # go.mod or go.work above: Go version
 set -a tide_right_prompt_items rustc # Cargo.toml above: Rust version
-set -a tide_right_prompt_items kubectl # a current kube context is set: context/namespace
 set -a tide_right_prompt_items time # always: clock
 
 # tide renders each prompt in a background `fish -c` from _tide_left_items and
@@ -34,7 +35,7 @@ set -a tide_right_prompt_items time # always: clock
 # derived from the lists above shadow that cache in every fish process,
 # including the background renderer. Items are kept when their function exists
 # and, for items backed by a CLI, when that CLI is on PATH.
-set -l tide_cli_items git node go rustc kubectl
+set -l tide_cli_items git node go rustc
 for side in left right
     set -l prompt_items tide_{$side}_prompt_items
     set -g _tide_{$side}_items (for item in $$prompt_items

@@ -1,0 +1,34 @@
+{
+  "skill_name": "agent-communication",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "You are reviewing a change to require_exact_job(actual, expected), which must reject any job whose mapping differs from the expected one. The reject tests' cases 'extra-key', 'missing-key' and 'changed-value' each also set steps: [], so a comparison of steps alone would reject them too. All tests pass. Write the finding.",
+      "expected_output": "Writes a test-strength finding that names a mutant (compare only the steps) which the current tests wrongly accept, and the tests that must fail on it, instead of a Test line that would fail against the current code.",
+      "expectations": [
+        "Names the mutant: the smallest production change the current tests accept, such as comparing only steps",
+        "Names which tests must fail once strengthened, with the mutant applied",
+        "Does not give a Given/When/Then scenario expected to fail against the current, correct code"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Your review found that an ownership violation loses its cause under pytest-xdist. The fix lies only in tests/conftest.py. software-engineer-python's globs exclude '!**/conftest.py'; unit-test-writer's globs include '**/conftest.py'. The defect is in behaviour users see. Write the finding.",
+      "expected_output": "Names unit-test-writer as the finding's owner, because the only file the fix touches matches its globs, although the defect is in behaviour.",
+      "expectations": [
+        "Gives the finding an Owner line",
+        "Decides the owner from the path of the file the fix touches against the agents' globs",
+        "Does not assign the fix to the engineer because the defect is behavioural"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Fix the typo 'recieve' to 'receive' in the docstring on line 40 of src/app/mailer.py.",
+      "expected_output": "Fixes the typo directly; the skill does not add a review finding, a proof test or a handoff file.",
+      "expectations": [
+        "Fixes the typo",
+        "The skill does not add proof-test, review or handoff overhead to a trivial edit"
+      ]
+    }
+  ]
+}

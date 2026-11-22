@@ -45,6 +45,18 @@ In uv/poetry projects, these will FAIL (tool not on system PATH):
 | `pip install X` | `uv add X` | `poetry add X` |
 | `python -m venv` | *(uv manages .venv automatically)* | — |
 
+## Test runs you report
+
+A run whose result goes into a handoff uses the command the brief or plan states. Do not add
+`-x`/`--exitfirst` (it hides every failure after the first), and do not pass `-p no:<plugin>` or
+options for plugins the project does not install. If the environment forces a flag (a cache
+directory the sandbox cannot write), name the flag and the reason next to the result. In a git
+worktree, run `uv run python -m pytest` (the allowed module form; bare `python -m` is refused by
+the Bash gate): the `pytest` entry point of a shared `.venv` can belong to another checkout. When the
+shell's `VIRTUAL_ENV` points at another checkout, state which environment ran next to the result
+(`uv run python --version` and the project's `.venv` path), and never activate or change the other
+checkout's environment.
+
 ## Go — System toolchain, no prefix needed
 
 - Build: `go build ./...`

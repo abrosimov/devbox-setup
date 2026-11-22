@@ -83,6 +83,48 @@
         "Names the user's earlier statement as the source of the formalisation step, and states in one line how 'one agent per step, a reviewer after each' maps onto formaliser, executor and reviewer",
         "Does not ask the user to confirm or choose the process, and starts the run in the same turn"
       ]
+    },
+    {
+      "id": 9,
+      "prompt": "Review round 1 returned R1-1 (must fix): 'an ownership violation loses its cause under xdist' — the fix is in tests/conftest.py, functions component_owner and pytest_collection_modifyitems; the reviewer labelled it a production-behaviour defect. software-engineer-python globs: ['**/*.py', '!**/test_*.py', '!**/conftest.py', '!**/tests/**']. unit-test-writer globs include '**/conftest.py' and '**/tests/**'. Dispatch the fix round.",
+      "expected_output": "Routes R1-1 to the unit test writer, because the only file the fix touches matches the test writer's globs and is excluded from the engineer's, and says so in the dispatch.",
+      "expectations": [
+        "Checks the fix's file path against each agent's globs before choosing the owner",
+        "Sends R1-1 to the test writer, not to the engineer",
+        "Does not route by the finding's 'production behaviour' label"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Review round 1 of step 5 returned: R1-1 must fix (engineer), R1-2 must fix (engineer), R1-3 must fix (test writer, follows R1-2), R1-4 consider (engineer, a paragraph break in docs). Write the fix-round dispatch, and after the fix round and re-review (which closes R1-1 to R1-3 and leaves R1-4 open), write the acceptance brief.",
+      "expected_output": "The fix dispatch lists all four findings with owner and whether each is sent; the acceptance brief names R1-4 as open with its disposition instead of an empty list of open findings.",
+      "expectations": [
+        "Includes the consider item R1-4 in the fix dispatch, sent to the engineer or marked 'not sent' with a reason",
+        "Does not filter findings by severity without recording the decision",
+        "Gives the acceptor every finding still open with its disposition (taken, dropped with reason, or owner report)",
+        "Never passes 'open findings: none' while the latest review lists an open item"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "The review-fix loop for the CI docs is bounded at three rounds. Round-3 review just returned: one should-fix ('select none' has no object in task-orchestration.md:663, and the plain reading contradicts the paragraph above) and four considers. Nothing else is open. What happens next?",
+      "expected_output": "Runs one bounded fix pass for the should-fix (deciding each consider: take or drop with a reason) and then acceptance, rather than sending acceptance a tree with a known open should-fix.",
+      "expectations": [
+        "Does not go straight to acceptance with an open should-fix",
+        "Dispatches a fix for the should-fix and records a decision for each consider",
+        "Re-checks the fixed passage (and the lines the fix touched) before acceptance, without a full new review round"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "Step 3's review-fix loop stopped because round 2 closed no finding (the bound says stop and report). The engineer has since prepared a patch for the remaining must-fix, unreviewed. The acceptor rejected the step citing that must-fix. Decide what happens next.",
+      "expected_output": "Recognises that the loop bound has fired, reports to the user what was obtained, the open must-fix with its evidence and the ready patch, with a recommendation, instead of silently starting another round.",
+      "expectations": [
+        "Names the stop condition that fired",
+        "Reports the open finding, its evidence and the prepared patch",
+        "Gives a recommended decision (for example one more bounded round for that finding)",
+        "Does not quietly restart the loop as if the bound had not fired"
+      ]
     }
   ]
 }

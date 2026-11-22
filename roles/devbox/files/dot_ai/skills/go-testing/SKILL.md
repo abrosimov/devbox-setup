@@ -12,6 +12,15 @@ related: [go-engineer]
 
 Write idiomatic Go tests using testify suites, table-driven tests, and mockery mocks. You already know these tools -- this skill defines the agent-system expectations.
 
+## Property-Based Tests (rapid)
+
+A rule that must hold for every input of a shape (a round trip, an invariant) is tested as a
+property with `pgregory.net/rapid`: `rapid.Check(t, func(t *rapid.T) { ... })` inside an ordinary
+`TestXxx` in the package's `*_test.go` file, written by the unit test writer. `testing/quick` is
+frozen; do not use it for new tests. rapid writes failing cases under `testdata/rapid/`. Only a
+`FuzzXxx` target that drives the fuzzing engine (one wrapping a property with `rapid.MakeFuzz`
+included) is a fuzzing artefact, in its own `fuzz_test.go` (`go-fuzzing`).
+
 ## Time: One Clock Per Test
 
 **Every instant in a test derives from one clock.** A test that passes today and fails next week without a code change is a defect in the test, and the Go test cache hides it: a result is replayed while sources, flags, environment and files read stay the same, and the clock is none of them.

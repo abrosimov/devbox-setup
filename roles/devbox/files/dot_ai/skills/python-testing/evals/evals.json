@@ -1,0 +1,35 @@
+{
+  "skill_name": "python-testing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a unit test for the planner rule: 'a suite is selected when a changed source module is imported by a test file marked with that suite' (reason text: '<module>: imported by <test file>'). In your fixture, tests/test_marked.py is marked billing and imports app.alpha; the change set contains both src/app/alpha.py and tests/test_marked.py. Changed test files also select their own marked suite (reason: '<test file>: changed test').",
+      "expected_output": "Asserts the reason produced by the import rule, or removes the second path from the fixture, so the test cannot pass through the changed-test rule.",
+      "expectations": [
+        "Notices that the changed test file selects billing by itself",
+        "Asserts the 'imported by' reason, or changes the fixture so only the rule under test can select the suite",
+        "Does not rely only on 'billing' being in the selected set"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write parametrised reject tests for require_exact_job(actual, expected, name) which raises ValidationError('<name> does not match the required execution shape') unless actual == expected after normalising action SHAs. expected = {'runs-on': 'ubuntu-26.04', 'steps': [{'uses': 'actions/checkout'}]}. Case ids: extra-key, missing-key, changed-value, changed-action.",
+      "expected_output": "Derives every reject case from an accepted actual (steps kept, SHA-pinned) with exactly one change matching its id, and states a mutation that the cases must catch.",
+      "expectations": [
+        "Each case differs from the accepted input only in the key its id names",
+        "Keeps steps identical (for example actions/checkout@<sha>) in the extra-key, missing-key and changed-value cases",
+        "Asserts the specific exception type",
+        "Names a mutant (for example comparing only steps) that the cases would fail"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Write a table-driven Go test for func Add(a, b int) int.",
+      "expected_output": "Writes a Go test; the python-testing skill does not interfere with Go tasks.",
+      "expectations": [
+        "Writes Go code (not Python)",
+        "python-testing skill does not interfere with Go tasks"
+      ]
+    }
+  ]
+}

@@ -7,7 +7,11 @@ description: Assess a target, input domain and oracle for a scoped fuzzing inves
 
 Return an evidenced target/method/oracle choice, a bounded check of a missing prerequisite, or a
 reasoned non-fuzz disposition. Work within the requested area and permitted effects. This workflow
-does not create PBT, mutation analysis, product fixes or another testing programme.
+does not create PBT, mutation analysis, product fixes or another testing programme. Property-based
+tests are ordinary unit tests owned by the unit test writer; only a coverage-guided fuzz harness,
+including a bridge that drives an engine over a property, is a fuzzing artefact. Its path names it:
+Go `fuzz_test.go` or `*_fuzz_test.go` with `testdata/fuzz/`, Python `fuzz_*.py` or `*_fuzzer.py`,
+Rust the cargo-fuzz crate under `fuzz/`, JavaScript and TypeScript `*.fuzz.js` or `*.fuzz.ts`.
 
 ## Recover the assignment
 

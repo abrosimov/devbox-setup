@@ -92,6 +92,14 @@ test("shows user list", async () => {
 - Assert dates rendered in a fixed zone and locale (pass `timeZone` / `locale`, or set `TZ=UTC` in the test config), never in whatever the runner's machine uses.
 - Time-relative UI gets a boundary case: just inside and just outside the threshold.
 
+### Property-Based Tests (fast-check)
+
+A rule that must hold for every input of a shape (a parser, a formatter round trip, a reducer
+invariant) is tested as a property with fast-check: `fc.assert(fc.property(...))`, or `test.prop`
+from `@fast-check/vitest`. Property-based tests are ordinary unit tests: they live in the
+co-located `*.test.ts(x)` files and are written by the unit test writer. A Jazzer.js `*.fuzz.js` or
+`*.fuzz.ts` file is a fuzzing artefact, not a unit test.
+
 ---
 
 ## E2E Tests (Playwright)

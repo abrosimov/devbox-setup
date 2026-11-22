@@ -19,6 +19,13 @@ Idiomatic Python testing with pytest, fixtures, and mocking.
 - Check exception types, not string messages (`pytest.raises(SpecificError)`)
 - Test through public API — never test private methods directly
 
+## Tests That Discriminate
+
+- When two code paths could produce the expected outcome, assert the one under test (the reason,
+  the source), not only the outcome, or change the fixture so only that path can produce it.
+- Each reject case in a parametrised set differs from an accepted input in exactly the one key or
+  value its id names; a case that changes two things passes a check that tests only one.
+
 ## What NOT to Test
 
 Do not write tests for type system guarantees:
@@ -36,6 +43,15 @@ For EVERY function, systematically test:
 | Single | One element, one character |
 | Boundary | Max value, exactly at limit |
 | Beyond | Limit+1, negative when positive expected |
+
+## Property-Based Tests (Hypothesis)
+
+A rule that must hold for every input of a shape (a round trip, an invariant, a parser that never
+crashes) is tested as a property with Hypothesis (`@given` and strategies). Property-based tests are
+ordinary unit tests: they live in the usual `test_*.py` files and are written by the unit test
+writer. Only a harness that drives a coverage-guided engine over a property (Atheris over
+`.hypothesis.fuzz_one_input`) is a fuzzing artefact (`python-fuzzing`). Keep `.hypothesis/`
+git-ignored; pin a found regression with `@example`.
 
 ## Time: One Clock Per Test
 

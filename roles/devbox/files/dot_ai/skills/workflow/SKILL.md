@@ -152,8 +152,9 @@ out. These rules make it work in practice.
 - **A defect is proven before it is fixed.** The read-only reviewer gives each defect a test
   scenario and a level; the matching test writer turns it into a test and confirms it fails for the
   stated reason (`agent-communication`, *Proving a Review Finding*). A finding whose test passes
-  against the current code is dropped. Only confirmed defects and the non-defect findings go to the
-  engineer.
+  against the current code is dropped; a test-strength finding is proven by a mutant instead. Only
+  confirmed defects and the non-defect findings go on, each to the owner its file path names
+  (`agent-communication`, *Feedback Format*).
 - **Each finding is tracked on its own**, with its severity and what closes it: for a defect, the
   confirmed failing test; otherwise the concrete condition the fix must satisfy. A finding closes
   when that test passes or that condition holds on re-review, not when the engineer says so.
@@ -188,7 +189,7 @@ Specialist agents available via `/techne-*` commands. Each is invoked one-shot f
 | Database design | `database_designer` | `schema_design.md`, migrations |
 | API design | `api_designer` | `api_design.md`, `api_spec.yaml` |
 | Implementation | `software_engineer_{go,python,frontend}` | source code, `se_{lang}_output.json` |
-| Observability | `observability_engineer` | `observability_audit.md`, `observability_design.md`, instrumentation, `observability/` (dashboards as Go, rules, promtool tests, runbooks) |
+| Observability | `observability_engineer` | `observability_audit.md`, `observability_design.md` (the instrumentation specification; the engineer implements it), `observability/` (dashboards as Go, rules, promtool tests, runbooks) |
 | Unit tests | `unit_tests_writer_{go,python,frontend}` | test files |
 | Integration tests | `integration_tests_writer_{go,python}` | test files |
 | Review | `code_reviewer` | review report (inline) |

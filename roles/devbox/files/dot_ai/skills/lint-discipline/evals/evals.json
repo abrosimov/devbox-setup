@@ -69,6 +69,15 @@
         "Uses specific rule name (//nolint:errcheck not blanket //nolint)",
         "Adds justification comment explaining why"
       ]
+    },
+    {
+      "id": 8,
+      "prompt": "Tests need to call the validator rules _require_exact_job and _without_action_commit_refs in src/app/validation.py directly, but ruff's SLF001 forbids private member access from tests. Make them testable without changing behaviour.",
+      "expected_output": "Fixes the code instead of suppressing the rule: renames the functions to public names with no change to their bodies or messages and updates every caller.",
+      "expectations": [
+        "Does not add a lint suppression for SLF001",
+        "Fixes the code so the rule passes instead of suppressing it"
+      ]
     }
   ]
 }

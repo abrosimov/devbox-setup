@@ -9,8 +9,7 @@ Produce a native harness, observed qualification results and replayable inputs f
 Go target. Work within the existing research scope and effort limits. A new corpus may warrant
 bounded reconnaissance before a precise hypothesis exists. Property-based tests (`rapid`) are
 ordinary unit tests owned by the unit test writer (`go-testing`); only a `FuzzXxx` target that
-drives the engine, including one wrapping a rapid property with `rapid.MakeFuzz`, belongs here. Keep
-mutation analysis out of this workflow; ordinary fuzz-input mutation remains in scope.
+drives the engine, including one wrapping a rapid property with `rapid.MakeFuzz`, belongs here.
 
 ## Establish the local basis
 

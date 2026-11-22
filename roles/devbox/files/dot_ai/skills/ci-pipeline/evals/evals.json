@@ -147,7 +147,7 @@
     },
     {
       "id": 13,
-      "prompt": "Write acceptance criteria for replacing 700 slow mutation tests in tests/test_validation.py (currently 145 s) with direct rule tests. Every validator rule family that the old tests reached must still be reached, and the unit stage must get faster. My estimate is 40-60 new cases running under 1 s.",
+      "prompt": "Write acceptance criteria for replacing 700 slow tests in tests/test_validation.py (currently 145 s) with direct rule tests. Every validator rule family that the old tests reached must still be reached, and the unit stage must get faster. My estimate is 40-60 new cases running under 1 s.",
       "expected_output": "Writes the timing criterion as a ceiling on the file or stage time, checkable locally, and keeps the 40-60 cases and 1 s figure as a labelled forecast that the coverage criteria override.",
       "expectations": [
         "States the timing criterion on the whole file or stage, not on the new tests alone",

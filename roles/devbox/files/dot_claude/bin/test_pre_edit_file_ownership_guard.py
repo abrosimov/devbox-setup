@@ -379,6 +379,7 @@ def test_decide_denies_engineer_edit_of_test_file(
         (GO_ENGINEER, "cmd/testing.go"),
         (PYTHON_ENGINEER, "src/pkg/a.py"),
         (PYTHON_ENGINEER, "src/pkg/testing_utils.py"),
+        (GO_ENGINEER, "internal/observability/tracer.go"),
         (FRONTEND_ENGINEER, "src/app.ts"),
         (FRONTEND_ENGINEER, "src/components/latest.tsx"),
     ],
@@ -476,25 +477,25 @@ def test_decide_unit_test_writer_is_allowed_on_its_own_and_unclaimed_paths(
         (
             GO_ENGINEER,
             "pkg/x_integration_test.go",
-            "its globs exclude it (!**/*_test.go) and it is owned by integration-tests-writer-go",
+            "its globs exclude it (!**/*_test.go) and it is owned by unit-test-writer",
         ),
         (
             GO_ENGINEER,
             "tests/integration/x_integration_test.go",
-            "its globs exclude it (!**/*_test.go) and it is owned by integration-tests-writer-go",
+            "its globs exclude it (!**/*_test.go)",
         ),
         (
             UNIT_TEST_WRITER,
             "tests/integration/x_integration_test.go",
-            (
-                "its globs exclude it (!**/tests/integration/**) and it is owned by "
-                "integration-tests-writer-go"
-            ),
+            "its globs exclude it (!**/tests/integration/**)",
         ),
         (
             GO_ENGINEER,
-            "observability/x.go",
-            "its globs exclude it (!**/observability/**) and it is owned by observability-engineer",
+            "observability/dashboards/main.go",
+            (
+                "its globs exclude it (!observability/dashboards/**) and it is owned by "
+                "observability-engineer"
+            ),
         ),
         (
             FRONTEND_ENGINEER,
@@ -537,7 +538,7 @@ def test_decide_shipped_roles_deny_paths_of_another_owner(
     ("agent", "relative"),
     [
         (PYTHON_ENGINEER, "pkg/x.go"),
-        (GO_ENGINEER, "observability/x.go"),
+        (GO_ENGINEER, "observability/dashboards/main.go"),
         (UNIT_TEST_WRITER, "src/app.ts"),
     ],
 )

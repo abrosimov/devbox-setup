@@ -89,8 +89,9 @@ These hold in every project and every language; the reviewer checks them as defe
   model, integration, observability) owns its own artefact kind and is used only where the task
   needs that kind, never as a route for ordinary code or unit tests. A software engineer never
   creates, edits, renames or deletes a test file, a test helper or test data: the `!` patterns in
-  its `globs` name those files, and in Claude Code the `pre_edit_file_ownership_guard` hook denies
-  the edit. A test written by the author of the code shares the author's blind spots, and a test
+  its `globs` name those files. The rule holds in every engine because ownership is declared in
+  the agents' `globs`; Claude Code also enforces it with a hook (`pre_edit_file_ownership_guard`).
+  A test written by the author of the code shares the author's blind spots, and a test
   edited to match new code proves nothing.
 
 ### Test Ownership
@@ -579,7 +580,6 @@ These are the only legitimate reasons to run a "checking" command:
 2. **Preflight per `sandbox-toolchain`** — `go version && go build ./...`, `uv sync`, `pnpm install` at task start. This is environment diagnosis, not code validation.
 3. **Recovering environment state after modification** — `env | grep UV_CACHE` when you suspect a var was clobbered. Diagnostic, not validation.
 4. **Real test execution as part of the workflow** — `uv run pytest tests/`, `go test ./...`, `pnpm test`. These are running the suite, not one-off checks.
-5. **A mutation or base-copy run** that shows a test or a fix discriminates (the test writers' check that each test can fail; a review finding's mutation check). It changes nothing in the repository.
 
 Nothing else. If you're about to type "let me quickly verify that…", stop — either write a test or move on.
 

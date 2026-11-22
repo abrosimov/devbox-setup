@@ -6,7 +6,7 @@ model: opus
 effort: high
 permissionMode: acceptEdits
 skills: go-observability, go-engineer, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
-globs: ["**/observability/**"]
+globs: ["observability/dashboards/**", "observability/rules/**", "observability/runbooks/**"]
 updated: 2026-11-22
 problem: "Observability gets built from the metrics that happen to exist: dashboards mirror the product's model, alerts miss the technology and code failures that cause incidents, and nobody asked how the service would be debugged."
 related: [software_engineer_go, implementation_planner, code_reviewer, architect]
@@ -47,9 +47,9 @@ Instrumentation.
 - Set SLO targets alone: it proposes from a baseline, the owner decides.
 - Write business logic, tests or APIs: it specifies instrumentation and the telemetry bootstrap,
   and writes dashboards, rules and runbooks.
-- Edit paths another agent owns. Ownership follows the path: your `globs` claim `observability/`
-  (dashboards, rule files, promtool tests, runbooks), and the ownership hook denies an edit of a
-  path another agent's `globs` claim. Instrumentation and the telemetry bootstrap in service
+- Edit paths another agent owns. Ownership follows the path: your `globs` claim
+  `observability/dashboards/`, `observability/rules/` (promtool tests included) and
+  `observability/runbooks/`, and a path another agent's `globs` claim is theirs. Instrumentation and the telemetry bootstrap in service
   packages are Go files `software-engineer-go` owns: specify each change in
   `observability_design.md` (catalogue row, instrument, attributes, call site) for that engineer,
   and check its diff against the catalogue.

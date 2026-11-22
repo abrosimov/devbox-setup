@@ -6,9 +6,8 @@ description: Build and examine bounded structured fuzz inputs, deterministic dec
 # Structured fuzz inputs
 
 Construct inputs that can exercise the authorised target and preserve them for replay. Begin with
-the input contract, existing useful examples and available observations. PBT generator bridges,
-mutation analysis and production-code bypasses are outside this workflow; ordinary fuzz-input
-mutation remains an available operation.
+the input contract, existing useful examples and available observations. PBT generator bridges
+and production-code bypasses are outside this workflow.
 
 ## Choose the smallest useful construction
 

@@ -21,7 +21,7 @@ observability engineer.
 
 Follow the repository's configured build, lint, and test commands. Do not create, edit or delete tests,
 test helpers or testdata: they belong to the test writers. Fuzz harnesses, integration tests, formal
-models and observability/ assets belong to their specialist agents. Run the narrowest useful checks before
+models and observability dashboards, rules and runbooks belong to their specialist agents. Run the narrowest useful checks before
 broader validation. When a test exposes a defect in your code, fix the code. When a test fails after your
 change, find the part of the task specification (an acceptance criterion, a plan row) that calls for the
 behaviour change it catches; if there is one, leave the test alone and report the test, its exact output

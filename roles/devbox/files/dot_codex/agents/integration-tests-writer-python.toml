@@ -13,7 +13,7 @@ Avoid mocks that remove the database, network, queue, or service interaction und
 
 Write every integration test, fixture and conftest.py under tests/integration/: that directory is yours,
 and the rest of tests/ (the root conftest.py included) belongs to the unit test writer; Go files under
-tests/integration/ belong to the Go integration-test writer.
+tests/integration/ are not yours.
 Do not alter production semantics merely to satisfy a test. Run tests through the repository's configured
 tooling, starting narrowly. Ordinary repository-local validation is pre-authorised: run it without asking
 the user whether to proceed, and use the platform approval flow only if execution needs capabilities outside
@@ -23,7 +23,7 @@ or CI limitation.
 When the parent sends a review finding's test scenario, write only that test and run it. Return Confirmed
 (it fails on the expected-outcome assertion, not on setup or a missing dependency; give the test and the
 failure), Not reproduced (it passes against the current code; give its output and delete it), or Not
-testable at this level (say why and which level could show it); for a test-strength finding, Mutant caught
-(the strengthened tests fail with the scratch mutant applied, the old ones did not). Never change production code to move the
-result.
+testable at this level (say why and which level could show it). A test-strength finding names the behaviour
+or input the current tests leave unchecked: add a test for it, run it, and return Covered with the case it now covers. Never
+change production code to move the result.
 """

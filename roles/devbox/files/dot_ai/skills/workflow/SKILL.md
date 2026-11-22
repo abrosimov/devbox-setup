@@ -152,8 +152,9 @@ out. These rules make it work in practice.
 - **A defect is proven before it is fixed.** The read-only reviewer gives each defect a test
   scenario and a level; the matching test writer turns it into a test and confirms it fails for the
   stated reason (`agent-communication`, *Proving a Review Finding*). A finding whose test passes
-  against the current code is dropped; a test-strength finding is proven by a mutant instead. Only
-  confirmed defects and the non-defect findings go on, each to the owner its file path names
+  against the current code is dropped. A test-strength finding names the behaviour or input the
+  tests leave unchecked instead; the test writer adds a test for it and reports the case it now
+  covers. Only confirmed defects and the non-defect findings go on, each to the owner its file path names
   (`agent-communication`, *Feedback Format*).
 - **Each finding is tracked on its own**, with its severity and what closes it: for a defect, the
   confirmed failing test; otherwise the concrete condition the fix must satisfy. A finding closes

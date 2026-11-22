@@ -14,12 +14,12 @@
     {
       "id": 2,
       "prompt": "Write parametrised reject tests for require_exact_job(actual, expected, name) which raises ValidationError('<name> does not match the required execution shape') unless actual == expected after normalising action SHAs. expected = {'runs-on': 'ubuntu-26.04', 'steps': [{'uses': 'actions/checkout'}]}. Case ids: extra-key, missing-key, changed-value, changed-action.",
-      "expected_output": "Derives every reject case from an accepted actual (steps kept, SHA-pinned) with exactly one change matching its id, and states a mutation that the cases must catch.",
+      "expected_output": "Derives every reject case from an accepted actual (steps kept, SHA-pinned) with exactly one change matching its id, so each case can be rejected only by the difference its id names.",
       "expectations": [
         "Each case differs from the accepted input only in the key its id names",
         "Keeps steps identical (for example actions/checkout@<sha>) in the extra-key, missing-key and changed-value cases",
         "Asserts the specific exception type",
-        "Names a mutant (for example comparing only steps) that the cases would fail"
+        "Includes an accepted case so the reject cases cannot pass by rejecting everything"
       ]
     },
     {

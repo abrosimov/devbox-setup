@@ -10,7 +10,7 @@ Python target. Use the existing research scope and effort limits. Bounded reconn
 discover a question from unfamiliar inputs without predicting a bug. Property-based tests
 (Hypothesis) are ordinary unit tests owned by the unit test writer (`python-testing`); only a harness
 that drives the engine, including an Atheris script over a Hypothesis test's
-`.hypothesis.fuzz_one_input`, belongs here. Mutation analysis is outside this workflow.
+`.hypothesis.fuzz_one_input`, belongs here.
 
 Name a harness `fuzz_<target>.py` (or `<target>_fuzzer.py` where the repository already uses that
 form) and keep harnesses, corpora and artefacts in a `fuzz/` directory, outside `tests/`, so the path

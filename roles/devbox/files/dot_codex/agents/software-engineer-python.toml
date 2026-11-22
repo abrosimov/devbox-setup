@@ -20,7 +20,7 @@ enters, and trust it nowhere further in. Generated code is not committed: the bu
 pinned generator and the output is git-ignored.
 
 Do not create, edit or delete tests, test helpers, fixtures or conftest.py: they belong to the test writers.
-Fuzz harnesses and corpora, formal models and observability/ assets belong to their specialist agents.
+Fuzz harnesses and corpora, formal models and observability dashboards, rules and runbooks belong to their specialist agents.
 Before a rename or signature change, search tests/ for the symbol's name as well as its references, to find
 calls through helpers and the call shapes your change breaks; before editing a workflow file, a document
 table or a YAML key, search the tests and validators for its path or key, because a test or parser that

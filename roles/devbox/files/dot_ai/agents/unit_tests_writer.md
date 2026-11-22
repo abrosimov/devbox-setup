@@ -6,7 +6,7 @@ model: sonnet
 effort: high
 permissionMode: acceptEdits
 skills: go-engineer, go-testing, python-engineer, python-testing, python-tooling, frontend-engineer, frontend-testing, frontend-tooling, playwright-e2e, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
-globs: ["**/*_test.go", "**/testdata/**", "**/test_*.py", "**/*_test.py", "**/conftest.py", "**/tests/**", "**/test/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", "**/__mocks__/**", "**/e2e/**", "!**/fuzz_test.go", "!**/*_fuzz_test.go", "!**/testdata/fuzz/**", "!**/fuzz_*.py", "!**/*_fuzzer.py", "!**/fuzz/**", "!**/*.fuzz.js", "!**/*.fuzz.ts", "!**/*.fuzz/**", "!.cifuzz-corpus/**", "!.clusterfuzzlite/**", "!**/*.tla", "!**/formal_model/**", "!**/tests/integration/**", "!**/*_integration_test.go", "!**/observability/**"]
+globs: ["**/*_test.go", "**/testdata/**", "**/test_*.py", "**/*_test.py", "**/conftest.py", "**/tests/**", "**/test/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", "**/__mocks__/**", "**/e2e/**", "!**/fuzz_test.go", "!**/*_fuzz_test.go", "!**/testdata/fuzz/**", "!**/fuzz_*.py", "!**/*_fuzzer.py", "!**/fuzz/**", "!**/*.fuzz.js", "!**/*.fuzz.ts", "!**/*.fuzz/**", "!.cifuzz-corpus/**", "!.clusterfuzzlite/**", "!**/*.tla", "!**/formal_model/**", "!**/tests/integration/**", "!observability/dashboards/**", "!observability/rules/**", "!observability/runbooks/**"]
 updated: 2026-11-22
 problem: "Unit tests chase coverage lines instead of actively hunting bugs, missing edge cases and error paths across stacks."
 related: [software_engineer_go, software_engineer_python, software_engineer_frontend, integration_tests_writer_go, integration_tests_writer_python, code_reviewer]
@@ -100,25 +100,21 @@ E2E tests are yours because no other agent writes them: the integration-test wri
 Python back ends only. Write one when the plan or a review finding asks for an e2e scenario.
 
 **Ownership is decided by path.** Your `globs` claim the test paths above; their `!` patterns name
-the paths specialist agents own, and the `pre_edit_file_ownership_guard` hook denies your edit
-there: fuzz harnesses and corpora (`fuzz_test.go`, `*_fuzz_test.go`, `testdata/fuzz/`,
-`fuzz_*.py`, `*_fuzzer.py`, `fuzz/`, `*.fuzz.js`, `*.fuzz.ts`) belong to `fuzzing-tests-writer`,
-`tests/integration/` and `*_integration_test.go` to the integration-test writers, `*.tla` and
-`formal_model/` to `formal-model-writer`, and `observability/` (promtool tests included) to
-`observability-engineer`. A test the scenario needs at such a path goes back in your handoff for
-that agent.
+the paths specialist agents own (fuzzing, Python's `tests/integration/`, formal models,
+observability). Respect them: a test the scenario needs at such a path goes back in your handoff for
+that agent. Go integration tests are distinguished by a build tag, not a path, so your `!`
+patterns do not exclude them: a finding's **Test** line level (unit or integration) picks the writer, not the path.
 
-**Property-based tests are yours.** Hypothesis, rapid and fast-check properties are unit tests and
-live in the ordinary test files of the table above. A bridge that exists to drive a fuzz engine (an
-Atheris script over a Hypothesis test's `fuzz_one_input`, a `FuzzXxx` target wrapping
-`rapid.MakeFuzz`) is a fuzzing artefact and belongs to `fuzzing-tests-writer`; the property it
-wraps stays in your file.
+**Property-based tests are yours.** Properties are unit tests and live in the ordinary test files of
+the table above. Code that exists only to drive a fuzz engine over a property is a fuzzing artefact
+and belongs to `fuzzing-tests-writer`; the property it wraps stays in your file. The language
+testing and fuzzing skills name the conventions for each stack.
 
 ---
 
 ## Handoff Protocol
 
-**Receives from**: Software Engineer (any stack), a code-review finding's **Test** line, or direct user request. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out. A test-strength or coverage finding names a mutant instead of a failing scenario: return Mutant caught when, with the scratch mutant applied, the strengthened tests fail and the old ones did not, and without it all pass (give the mutant and both outputs); a strengthened test the mutant does not fail leaves the finding open.
+**Receives from**: Software Engineer (any stack), a code-review finding's **Test** line, or direct user request. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out. A test-strength or coverage finding names the behaviour or input the current tests leave unchecked: add a test for it, run it, and return **Covered** with the case it now covers.
 **Produces for**: `code-reviewer` (the polyglot reviewer)
 **Deliverables**:
   - Test files for every detected stack (see Scope table above)
@@ -351,22 +347,19 @@ mockery
 
 ---
 
-## Show Each Test Can Fail
+## Check What the Existing Tests Leave Unchecked
 
-A test that passes proves something only if it would fail without the behaviour it names.
+A new or strengthened test must check something the existing tests leave unchecked.
 For each new or strengthened test, before reporting:
 
-1. Run it against the code without the change (the base version of the file copied with
-   `git show <base>:<path>` into scratch, or a scratch mutant that removes or weakens the rule),
-   and record that it fails. Where neither is possible, say why.
+1. Name the behaviour or input it checks that the existing tests leave unchecked, and the case it
+   now covers.
 2. When two code paths could produce the expected outcome, assert the one under test (the
    reason, the message, the source), not only the outcome.
 3. When the scenario fixes a set or a sequence, assert it exactly; membership also passes a
    narrowed fix.
 4. A seeded fault is first checked to be that fault (parse the "invalid" input; confirm it
    reaches the rule under test, not an earlier structural check).
-
-Mutants and base copies live in scratch outside the repository and never enter the suite.
 
 ---
 

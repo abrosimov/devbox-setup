@@ -4,10 +4,10 @@
     {
       "id": 1,
       "prompt": "You are reviewing a change to require_exact_job(actual, expected), which must reject any job whose mapping differs from the expected one. The reject tests' cases 'extra-key', 'missing-key' and 'changed-value' each also set steps: [], so a comparison of steps alone would reject them too. All tests pass. Write the finding.",
-      "expected_output": "Writes a test-strength finding that names a mutant (compare only the steps) which the current tests wrongly accept, and the tests that must fail on it, instead of a Test line that would fail against the current code.",
+      "expected_output": "Writes a test-strength finding that names what the current tests leave unchecked (a mapping difference with steps kept identical) and the case the test writer should add, instead of a Test line that would fail against the current code.",
       "expectations": [
-        "Names the mutant: the smallest production change the current tests accept, such as comparing only steps",
-        "Names which tests must fail once strengthened, with the mutant applied",
+        "Names the unchecked behaviour or input: a job that differs from the expected mapping only outside steps",
+        "Says which case the test writer should add, such as extra-key with steps identical to the expected job",
         "Does not give a Given/When/Then scenario expected to fail against the current, correct code"
       ]
     },

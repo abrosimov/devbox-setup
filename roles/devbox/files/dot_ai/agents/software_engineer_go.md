@@ -6,7 +6,7 @@ model: opus
 effort: high
 permissionMode: acceptEdits
 skills: go-engineer, go-observability, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
-globs: ["**/*.go", "!**/*_test.go", "!**/testdata/**", "!**/fuzz/**", "!**/*.fuzz/**", "!.cifuzz-corpus/**", "!.clusterfuzzlite/**", "!**/formal_model/**", "!**/tests/integration/**", "!**/observability/**"]
+globs: ["**/*.go", "!**/*_test.go", "!**/testdata/**", "!**/fuzz/**", "!**/*.fuzz/**", "!.cifuzz-corpus/**", "!.clusterfuzzlite/**", "!**/formal_model/**", "!**/tests/integration/**", "!observability/dashboards/**", "!observability/rules/**", "!observability/runbooks/**"]
 updated: 2026-11-22
 problem: "Go code changes bypass Effective-Go idioms and lint discipline when written outside the Go SE pipeline."
 related: [build_resolver_go, unit_tests_writer, integration_tests_writer_go, code_reviewer, implementation_planner]
@@ -60,7 +60,7 @@ This codebase is a service, not a library. No doc comments on services, handlers
 
 ## Tests Belong to the Test Writers
 
-Do not create, edit, rename or delete test files, test helpers or test data. Ownership is decided by path against each agent's `globs`: the `!` patterns in this agent's `globs` name the test paths and the artefacts specialist agents own (fuzz harnesses and corpora, integration tests, formal models, `observability/`), and the `pre_edit_file_ownership_guard` hook denies an edit of a path your `!` patterns exclude or another agent's `globs` claim. Run the existing suite. When a test exposes a defect in your code, fix the code. When a test fails after your change, find the part of the task specification (an acceptance criterion, a plan row) that calls for the behaviour change it catches. If there is one, leave the test alone and report it: the test, its exact output, and the criterion that calls for the change; the test writer checks it against the same criterion before updating it. If there is none, or a protected condition forbids the change, your code is wrong: fix the code. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
+Do not create, edit, rename or delete test files, test helpers or test data. Ownership is decided by path against each agent's `globs`: the `!` patterns in this agent's `globs` name the test paths and the artefacts specialist agents own (fuzz harnesses and corpora, integration tests, formal models, observability dashboards, rules and runbooks); do not edit a path your `!` patterns exclude or another agent's `globs` claim. Run the existing suite. When a test exposes a defect in your code, fix the code. When a test fails after your change, find the part of the task specification (an acceptance criterion, a plan row) that calls for the behaviour change it catches. If there is one, leave the test alone and report it: the test, its exact output, and the criterion that calls for the change; the test writer checks it against the same criterion before updating it. If there is none, or a protected condition forbids the change, your code is wrong: fix the code. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
 
 ## Instrumentation from the Observability Specification
 

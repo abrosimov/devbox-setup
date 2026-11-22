@@ -7,7 +7,7 @@ description: Conduct and resume fuzzing research, retain useful corpora and just
 
 Carry a scoped investigation from available material to a supported answer or explicit limit.
 Research can span commits, experiments, datasets and agent sessions. Its identity, evidence and
-effort survive those sessions. PBT, mutation analysis and product repair are outside this workflow.
+effort survive those sessions. PBT and product repair are outside this workflow.
 
 ## Recover before continuing
 

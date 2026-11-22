@@ -259,14 +259,16 @@ stays read-only and judges; a test writer, who knows the stack's test convention
 **Reviewer.** For each correctness defect, add a **Test** line: the level (unit, integration or
 e2e) and a Given/When/Then scenario precise enough to write without reading the review twice. A
 finding no test can show (a race the suite cannot provoke, a deployment concern) states its
-triggering conditions instead and carries no Test line. A finding that a test is too weak to
-catch a defect (test strength, missing coverage of changed behaviour) names a **mutant** instead:
-the smallest change to production code that the current tests wrongly accept, and which tests must
-fail on it.
+triggering conditions instead and carries no Test line. A finding that the tests are too weak
+(test strength, missing coverage of changed behaviour) has no failing test to give, because the
+code may be correct: it names the behaviour or input the current tests leave unchecked, so the
+test writer can add a test for exactly that case.
 
 **Main session.** Send each Test line to the matching writer: unit → `unit-test-writer`;
 integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e →
-`unit-test-writer`, which owns the e2e files and loads the `playwright-e2e` skill.
+`unit-test-writer`, which owns the e2e files and loads the `playwright-e2e` skill. The level on the
+Test line picks the writer, not the file path: a Go integration test differs from a unit test by
+its build tag, not by its name.
 
 **Test writer.** Write only that test, in the place and style the suite already uses, and run it.
 Return one of:
@@ -276,9 +278,9 @@ Return one of:
 - **Not reproduced** — the test passes against the current code. Give the test and its output. The
   finding is dropped unless the reviewer shows what the scenario missed; the test is deleted.
 - **Not testable at this level** — say why, and which level could show it.
-- **Mutant caught** (test-strength findings) — with the scratch mutant applied, the strengthened
-  tests fail and the old tests did not; without it, all pass. Give the mutant and both outputs.
-  A strengthened test that the mutant does not fail leaves the finding open.
+- **Covered** (test-strength findings) — the test for the unchecked behaviour or input is added
+  and runs. Name the case it now covers; the finding closes when that case is the one the finding
+  named.
 
 Never change production code to make the test pass or fail. The engineer's fix is done when the
 confirmed test passes; the test stays in the suite as a regression test.

@@ -1,0 +1,6 @@
+interface:
+  display_name: "CI Pipeline"
+  short_description: "Measure CI on recorded runs and a local bench, confirm with one run"
+  default_prompt: >-
+    Use $ci-pipeline to measure the pipeline from recorded runs and local timing, choose the
+    change on the bench, and confirm it with one CI run.

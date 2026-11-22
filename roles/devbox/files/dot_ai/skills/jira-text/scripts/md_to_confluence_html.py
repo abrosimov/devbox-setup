@@ -99,6 +99,7 @@ def inline(text: str, number: int) -> str:
     i = 0
     while i < len(text):
         rendered: str | None = None
+        end = i
         if text[i] == "`":
             end = _code_span_end(text, i)
             if end == -1:

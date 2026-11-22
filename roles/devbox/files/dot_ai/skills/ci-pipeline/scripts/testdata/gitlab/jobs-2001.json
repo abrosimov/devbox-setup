@@ -1,0 +1,93 @@
+[
+  {
+    "id": 301,
+    "name": "build",
+    "stage": "build",
+    "status": "success",
+    "created_at": "2026-01-06T09:00:05Z",
+    "started_at": "2026-01-06T09:00:12Z",
+    "finished_at": "2026-01-06T09:01:12Z",
+    "queued_duration": 2.0,
+    "pipeline": {
+      "id": 2001
+    }
+  },
+  {
+    "id": 302,
+    "name": "test",
+    "stage": "test",
+    "status": "failed",
+    "created_at": "2026-01-06T09:00:05Z",
+    "started_at": "2026-01-06T09:01:20Z",
+    "finished_at": "2026-01-06T09:02:00Z",
+    "queued_duration": 1.5,
+    "pipeline": {
+      "id": 2001
+    }
+  },
+  {
+    "id": 303,
+    "name": "test",
+    "stage": "test",
+    "status": "success",
+    "created_at": "2026-01-06T09:00:05Z",
+    "started_at": "2026-01-06T09:02:10Z",
+    "finished_at": "2026-01-06T09:04:40Z",
+    "queued_duration": 3.5,
+    "pipeline": {
+      "id": 2001
+    }
+  },
+  {
+    "id": 304,
+    "name": "deploy",
+    "stage": "deploy",
+    "status": "skipped",
+    "created_at": "2026-01-06T09:00:05Z",
+    "started_at": null,
+    "finished_at": null,
+    "queued_duration": null,
+    "pipeline": {
+      "id": 2001
+    }
+  },
+  {
+    "id": 305,
+    "name": "notify",
+    "stage": ".post",
+    "status": "created",
+    "created_at": "2026-01-06T09:00:05Z",
+    "started_at": null,
+    "finished_at": null,
+    "queued_duration": null,
+    "pipeline": {
+      "id": 2001
+    }
+  },
+  {
+    "id": 306,
+    "name": "release",
+    "stage": "deploy",
+    "status": "manual",
+    "created_at": "2026-01-06T09:00:05Z",
+    "started_at": null,
+    "finished_at": null,
+    "queued_duration": null,
+    "pipeline": {
+      "id": 2001
+    }
+  },
+  {
+    "id": 307,
+    "name": "smoke",
+    "stage": "test",
+    "status": "running",
+    "created_at": "2026-01-06T09:00:05Z",
+    "started_at": "2026-01-06T09:01:30Z",
+    "finished_at": null,
+    "queued_duration": 1.0,
+    "pipeline": {
+      "id": 2001
+    }
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "id": 1002,
+  "workflow_id": 5,
+  "run_attempt": 1,
+  "head_branch": "main",
+  "head_sha": "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432",
+  "status": "completed",
+  "conclusion": "success",
+  "created_at": "2026-01-05T11:00:00Z",
+  "run_started_at": "2026-01-05T11:00:00Z",
+  "updated_at": "2026-01-05T11:02:32Z"
+}

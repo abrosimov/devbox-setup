@@ -291,6 +291,7 @@ search-path = [
     "roles/devbox/files/dot_claude/bin",
     "roles/devbox/files/dot_agy/bin",
     "roles/devbox/files/dot_ai/skills/techne-fewer-permission-prompts/scripts",
+    "roles/devbox/files/dot_ai/skills/ci-pipeline/scripts",
     "scripts",
     # tests/scripts/ is a flat directory too: the ai-config tests import the
     # shared builder helper (ai_config_fixtures) as a sibling, the way pytest's

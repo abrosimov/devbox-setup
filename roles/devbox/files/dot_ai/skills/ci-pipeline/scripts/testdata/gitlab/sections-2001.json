@@ -1,0 +1,100 @@
+{
+  "301": [
+    {
+      "name": "prepare_executor",
+      "start": 1767690012,
+      "end": 1767690014,
+      "depth": 0
+    },
+    {
+      "name": "get_sources",
+      "start": 1767690014,
+      "end": 1767690018,
+      "depth": 0
+    },
+    {
+      "name": "step_script",
+      "start": 1767690018,
+      "end": 1767690068,
+      "depth": 0
+    },
+    {
+      "name": "compile",
+      "start": 1767690020,
+      "end": 1767690060,
+      "depth": 1
+    },
+    {
+      "name": "upload_artifacts_on_success",
+      "start": 1767690068,
+      "end": 1767690070,
+      "depth": 0
+    },
+    {
+      "name": "cleanup_file_variables",
+      "start": 1767690070,
+      "end": 1767690072,
+      "depth": 0
+    }
+  ],
+  "302": [
+    {
+      "name": "prepare_executor",
+      "start": 1767690080,
+      "end": 1767690082,
+      "depth": 0
+    },
+    {
+      "name": "step_script",
+      "start": 1767690082,
+      "end": 1767690115,
+      "depth": 0
+    },
+    {
+      "name": "after_script",
+      "start": 1767690115,
+      "end": 1767690118,
+      "depth": 0
+    }
+  ],
+  "303": [
+    {
+      "name": "prepare_executor",
+      "start": 1767690130,
+      "end": 1767690135,
+      "depth": 0
+    },
+    {
+      "name": "get_sources",
+      "start": 1767690135,
+      "end": 1767690140,
+      "depth": 0
+    },
+    {
+      "name": "step_script",
+      "start": 1767690140,
+      "end": 1767690270,
+      "depth": 0
+    },
+    {
+      "name": "archive_cache",
+      "start": 1767690270,
+      "end": 1767690275,
+      "depth": 0
+    },
+    {
+      "name": "cleanup_file_variables",
+      "start": 1767690275,
+      "end": 1767690278,
+      "depth": 0
+    }
+  ],
+  "307": [
+    {
+      "name": "step_script",
+      "start": 1767690090,
+      "end": null,
+      "depth": 0
+    }
+  ]
+}

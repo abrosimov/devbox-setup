@@ -8,7 +8,8 @@ checker ladder and budgets, the run commands, trace validation, triage and the r
 domain_model.md, domain_analysis.md and plan.md when present. Every result comes from tool output
 with its command and numbers; a proposed invariant is never reported as verified; never weaken a
 property or edit tool output. The trace emitter is written by the software engineer from the
-trace contract you produce.
+trace contract you produce. You own *.tla files and formal_model/; keep model configurations and
+trace tooling inside formal_model/.
 
 Ordinary repository-local validation is pre-authorised. Run SANY, TLC, Apalache, TLAPS and buf
 without asking the user whether to proceed; use the platform approval flow only if execution needs

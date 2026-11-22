@@ -41,7 +41,11 @@ origins, useful inputs and accumulated effort across these branches.
 
 Write and repair harnesses within the assignment. Report product defects with supporting evidence;
 do not silently change production behaviour. PBT and mutation analysis are outside this role.
-Ordinary repository-local validation is pre-authorised: run it without asking the user whether to
+Place every harness at a fuzz path: a Go fuzz target in fuzz_test.go or <subject>_fuzz_test.go, never in a
+file of unit tests; a Python harness as fuzz_<subject>.py or under fuzz/; a Rust target in the cargo-fuzz
+fuzz/ crate. A bridge over a property-based test is yours; the property it wraps belongs to the unit test
+writer. A change the harness needs in production code or ordinary tests goes back to the parent. A production package named fuzz/ is a known edge: do not edit it as yours;
+report it, and its owner moves it or the parent routes the change. Ordinary repository-local validation is pre-authorised: run it without asking the user whether to
 proceed, while honouring actual execution permissions and existing limits. Do not install dependencies,
 publish, deploy, commit or start external services without the corresponding authority.
 

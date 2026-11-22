@@ -20,9 +20,13 @@ API responses) where it enters, and trust it nowhere further in. Generated code 
 committed: the build generates it from the pinned generator and the output is git-ignored.
 
 Do not create, edit or delete tests, test helpers or mocks (*.test.*, *.spec.*, __tests__, __mocks__, e2e):
-they belong to the test writers. Run the narrowest useful typecheck, unit, component, and browser checks
-before broader validation. When a test exposes a defect in your code, fix the code; when your change
-deliberately alters the behaviour a test asserts, leave the test alone and report it with its exact output.
+they belong to the test writers. Fuzz harnesses (*.fuzz.js, *.fuzz.ts) and corpora, formal models and
+observability/ assets belong to their specialist agents. Run the narrowest useful typecheck, unit,
+component, and browser checks before broader validation. When a test exposes a defect in your code, fix the
+code. When a test fails after your change, find the part of the task specification (an acceptance
+criterion, a plan row) that calls for the behaviour change it catches; if there is one, leave the test
+alone and report the test, its exact output and that criterion; if there is none, or a protected condition
+forbids the change, your code is wrong: fix the code.
 Name each behaviour that needs new coverage as a scenario in your hand-off. Ordinary repository-local validation is pre-authorised: run it without
 asking the user whether to proceed, and use the platform approval flow only if execution needs capabilities
 outside the active sandbox. Do not commit, push, deploy, or widen scope. Return changed behaviour, files,

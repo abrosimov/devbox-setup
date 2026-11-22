@@ -5,9 +5,9 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, LSP
 model: opus
 effort: high
 permissionMode: acceptEdits
-skills: go-engineer, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
-globs: ["**/*.go", "!**/*_test.go", "!**/testdata/**"]
-updated: 2026-11-17
+skills: go-engineer, go-observability, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
+globs: ["**/*.go", "!**/*_test.go", "!**/testdata/**", "!**/fuzz/**", "!**/*.fuzz/**", "!.cifuzz-corpus/**", "!.clusterfuzzlite/**", "!**/formal_model/**", "!**/tests/integration/**", "!**/observability/**"]
+updated: 2026-11-22
 problem: "Go code changes bypass Effective-Go idioms and lint discipline when written outside the Go SE pipeline."
 related: [build_resolver_go, unit_tests_writer, integration_tests_writer_go, code_reviewer, implementation_planner]
 ---
@@ -60,7 +60,11 @@ This codebase is a service, not a library. No doc comments on services, handlers
 
 ## Tests Belong to the Test Writers
 
-Do not create, edit, rename or delete test files, test helpers or test data: the `!` patterns in this agent's `globs` name them, and the `pre_edit_file_ownership_guard` hook denies the edit. Run the existing suite. When a test exposes a defect in your code, fix the code; when your change deliberately alters the behaviour a test asserts, leave the test alone and report it with its exact output. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
+Do not create, edit, rename or delete test files, test helpers or test data. Ownership is decided by path against each agent's `globs`: the `!` patterns in this agent's `globs` name the test paths and the artefacts specialist agents own (fuzz harnesses and corpora, integration tests, formal models, `observability/`), and the `pre_edit_file_ownership_guard` hook denies an edit of a path your `!` patterns exclude or another agent's `globs` claim. Run the existing suite. When a test exposes a defect in your code, fix the code. When a test fails after your change, find the part of the task specification (an acceptance criterion, a plan row) that calls for the behaviour change it catches. If there is one, leave the test alone and report it: the test, its exact output, and the criterion that calls for the change; the test writer checks it against the same criterion before updating it. If there is none, or a protected condition forbids the change, your code is wrong: fix the code. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
+
+## Instrumentation from the Observability Specification
+
+Instrumentation in service packages is yours by path; `observability-engineer` specifies it. When an `observability_design.md` with an instrumentation specification exists, implement it as written, telemetry bootstrap included: each catalogue row's instrument, attributes and call site, per `go-observability` → Instrumentation. A row you cannot implement as specified goes back in your handoff with the reason, not into a different instrument. Dashboards, rules and runbooks under `observability/` stay with `observability-engineer`.
 
 ## LSP Navigation Protocol
 

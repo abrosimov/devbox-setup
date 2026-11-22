@@ -5,7 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
 skills: go-engineer, go-testing, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol
-updated: 2026-02-10
+globs: ["**/*_integration_test.go"]
+updated: 2026-11-22
 problem: "Go integration coverage stays thin because writers default to unit-style mocks instead of testcontainers and real dependencies."
 related: [software_engineer_go, unit_tests_writer]
 ---
@@ -67,9 +68,15 @@ If no plan exists, proceed with normal test discovery from git diff.
 
 ## Testing Patterns
 
-### Build Tags
+### File Names and Build Tags
 
-Every integration test file must have:
+Name every integration test file `<subject>_integration_test.go`. Go itself has no naming
+convention for integration tests; this library uses one so that ownership follows the path: your
+`globs` claim `*_integration_test.go`, every other `_test.go` file belongs to `unit-test-writer`,
+and the ownership hook denies an edit of a path another agent's `globs` claim. A shared helper the
+tests need goes in a `*_integration_test.go` file too.
+
+Every integration test file must also have:
 
 ```go
 //go:build integration
@@ -206,9 +213,9 @@ func TestAPIEndpoints(t *testing.T) {
 
 ## Handoff Protocol
 
-**Receives from**: Software Engineer (implementation), Unit Test Writer (unit tests done), or a code-review finding's **Test** line. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out.
+**Receives from**: Software Engineer (implementation), Unit Test Writer (unit tests done), or a code-review finding's **Test** line. For a review finding, write only that test and return Confirmed, Not reproduced, Not testable at this level or, for a test-strength finding, Mutant caught, as `agent-communication`, *Proving a Review Finding*, sets out.
 **Produces for**: Code Reviewer (for review)
-**Deliverable**: Integration test files with `//go:build integration` tag
+**Deliverable**: Integration test files named `*_integration_test.go` with the `//go:build integration` tag
 **Completion criteria**: All integration points tested with real dependencies
 
 ## After Completion

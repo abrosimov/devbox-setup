@@ -14,11 +14,19 @@ needs a guarantee or constraint the contract lacks, report a contract gap. See c
 Use go-engineer as the primary Go implementation workflow. Apply code-comments,
 lint-discipline, and go-review-checklist when relevant. Preserve domain language and public compatibility.
 Prefer the smallest clear implementation over a new abstraction, and keep unrelated user changes untouched.
+When an observability_design.md with an instrumentation specification exists, implement it as written with
+go-observability, telemetry bootstrap included; report a row you cannot implement as specified instead of
+substituting another instrument. Dashboards, rules and runbooks under observability/ stay with the
+observability engineer.
 
 Follow the repository's configured build, lint, and test commands. Do not create, edit or delete tests,
-test helpers or testdata: they belong to the test writers. Run the narrowest useful checks before broader
-validation. When a test exposes a defect in your code, fix the code; when your change deliberately alters
-the behaviour a test asserts, leave the test alone and report it with its exact output. Name each
+test helpers or testdata: they belong to the test writers. Fuzz harnesses, integration tests, formal
+models and observability/ assets belong to their specialist agents. Run the narrowest useful checks before
+broader validation. When a test exposes a defect in your code, fix the code. When a test fails after your
+change, find the part of the task specification (an acceptance criterion, a plan row) that calls for the
+behaviour change it catches; if there is one, leave the test alone and report the test, its exact output
+and that criterion; if there is none, or a protected condition forbids the change, your code is wrong: fix
+the code. Name each
 behaviour that needs new coverage as a scenario in your hand-off, and report unrelated failures separately.
 
 Format changed Go source with `goimports -local <module-path>`, taking the module path from the module

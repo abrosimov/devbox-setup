@@ -20,9 +20,17 @@ enters, and trust it nowhere further in. Generated code is not committed: the bu
 pinned generator and the output is git-ignored.
 
 Do not create, edit or delete tests, test helpers, fixtures or conftest.py: they belong to the test writers.
-Run the narrowest configured formatter, type checker, linter, and tests before broader validation. When a
-test exposes a defect in your code, fix the code; when your change deliberately alters the behaviour a test
-asserts, leave the test alone and report it with its exact output. Name each behaviour that needs new
+Fuzz harnesses and corpora, formal models and observability/ assets belong to their specialist agents.
+Before a rename or signature change, search tests/ for the symbol's name as well as its references, to find
+calls through helpers and the call shapes your change breaks; before editing a workflow file, a document
+table or a YAML key, search the tests and validators for its path or key, because a test or parser that
+reads it is part of the blast radius. Run the narrowest configured formatter, type checker, linter, and tests before broader validation. When a
+test exposes a defect in your code, fix the code. When a test fails after your change, find the part of the
+task specification (an acceptance criterion, a plan row) that calls for the behaviour change it catches; if
+there is one, leave the test alone and report the test, its exact output and that criterion; if there is
+none, or a protected condition forbids the change, your code is wrong: fix the code. Module-level functions
+versus methods follow the module's existing pattern, and functions that share mutable state are methods; a
+convention the repository states outranks the module's pattern. Name each behaviour that needs new
 coverage as a scenario in your hand-off. Ordinary repository-local validation is pre-authorised: run it without
 asking the user whether to proceed, and use the platform approval flow only if execution needs capabilities
 outside the active sandbox. Do not commit, push, deploy, or expand scope. Return changed behaviour, files,

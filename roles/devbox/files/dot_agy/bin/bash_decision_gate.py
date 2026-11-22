@@ -18,12 +18,12 @@ Three phases:
       nested in command substitutions, process substitutions, and the
       argument of ``bash -c`` recursively parsed), five checks:
         (a) interpreter inline-exec (python -c, eval, ...) → deny
-            with hint pointing at .gemini/antigravity-cli/agy_written_scripts/
+            with hint pointing at ai/scripts/<slug>/
         (b) shell inline-exec (bash -c) → recursive bashlex.parse on
             the inner script; inner failures propagate
         (c) system-protected path (~/.ssh, /etc/shadow, *.pem) → deny
         (d) audit-dir protection — deleting/overwriting
-            ./.gemini/antigravity-cli/agy_written_scripts/** → deny
+            <repository root>/ai/scripts/** → deny
         (e) write-escape — known write commands targeting paths outside
             (effective_cwd, allowed_dirs, /tmp, $TMPDIR) → deny
         (f) redundant-cd — leading ``cd <path>`` whose resolved target is
@@ -184,7 +184,7 @@ SECRET_GLOBS: Final[tuple[str, ...]] = (
     "**/*.key",
 )
 
-AUDIT_DIR_REL: Final[str] = ".gemini/antigravity-cli/agy_written_scripts"
+AUDIT_DIR_REL: Final[str] = "ai/scripts"
 
 # Commands whose argv targets are paths and which mutate the filesystem.
 # Conservative: known writes only; unknown commands skip (e) and fall through
@@ -782,11 +782,10 @@ def evaluate_phase1_legacy(cmd: str) -> _Phase1LegacyDecision:
 
 
 _INTERP_DENY_REASON: Final[str] = (
-    "Inline-exec via interpreter (-c/-e/-m) или eval/exec/source запрещён. "
-    "Сохрани скрипт в ./.gemini/antigravity-cli/agy_written_scripts/<name>.<ext> "
-    "(директория является audit trail — удаление и перезапись запрещены) "
-    "и запусти его по пути. Если скрипт нужен повторно, переиспользуй файл; "
-    "иначе создай новый с уникальным именем."
+    "Inline execution via an interpreter (-c/-e/-m) or eval/exec/source is not "
+    "allowed. Put the script in ai/scripts/<slug>/ at the repository root, with "
+    "its README.md and a line in the index ai/scripts/README.md, and run it by "
+    "path. Change an existing script there with the Edit/Write tools."
 )
 
 _SENSITIVE_PATH_DENY_REASON: Final[str] = (
@@ -795,8 +794,10 @@ _SENSITIVE_PATH_DENY_REASON: Final[str] = (
 )
 
 _AUDIT_DENY_REASON: Final[str] = (
-    "Path '{path}' внутри ./.gemini/antigravity-cli/agy_written_scripts/ — это audit trail "
-    "запущенных скриптов. Удаление и перезапись запрещены."
+    "Path '{path}' is inside ai/scripts/, the committed home of agent-written "
+    "scripts; deleting, moving or overwriting it from the shell is not allowed. "
+    "Change a script there with the Edit/Write tools; a new script goes in "
+    "ai/scripts/<slug>/ with its README.md and a line in ai/scripts/README.md."
 )
 
 _WRITE_ESCAPE_REASON: Final[str] = (
@@ -1115,6 +1116,18 @@ def _within(path: Path, ancestor: Path) -> bool:
         return False
     else:
         return True
+
+
+def _audit_root(eff_cwd: Path) -> Path:
+    for ancestor in (eff_cwd, *eff_cwd.parents):
+        try:
+            # .exists(), not .is_dir(): .git is a file in worktrees and submodules.
+            is_repo_root = (ancestor / ".git").exists()
+        except OSError:
+            is_repo_root = False
+        if is_repo_root:
+            return (ancestor / AUDIT_DIR_REL).resolve(strict=False)
+    return (eff_cwd / AUDIT_DIR_REL).resolve(strict=False)
 
 
 def check_audit_dir(
@@ -1578,7 +1591,7 @@ def evaluate(
         return DEFER_DECISION
 
     eff_cwd = Path(cwd).resolve()
-    audit_root = (eff_cwd / AUDIT_DIR_REL).resolve(strict=False)
+    audit_root = _audit_root(eff_cwd)
     extra_writable = _writable_paths(allowed_dirs)
 
     segments: list[tuple[object, Path]] = []

@@ -1,6 +1,6 @@
 ---
 name: response-templates
-description: Reply templates for the end of a turn — T1 final report with "Decisions I made", T2 decision card (3–7 candidates with trade-offs), T3 "What I need from you" block with ai_written_scripts conventions and Python/Go script templates, T4 discussion ledger for multi-turn lists. Use when writing a final report, presenting options or alternatives, handing a manual step, command, or script to the user, or tracking a numbered list across turns.
+description: Reply templates for the end of a turn — T1 final report with "Decisions I made", T2 decision card (3–7 candidates with trade-offs), T3 "What I need from you" block with the ai/scripts home for agent-written scripts and Python/Go script templates, T4 discussion ledger for multi-turn lists. Use when writing a final report, presenting options or alternatives, handing a manual step, command, or script to the user, or tracking a numbered list across turns.
 version: 1
 triggers:
   - final report
@@ -9,7 +9,8 @@ triggers:
   - options
   - candidates
   - trade-offs
-  - ai_written_scripts
+  - ai/scripts
+  - agent-written script
   - manual step
   - ledger
 alwaysApply: false
@@ -53,7 +54,7 @@ Open: G2 — rotate the staging token (waiting for you) · G3 — alert on empty
 ## What I need from you
 
 1. **Rotate the staging write token**, because the old one is in the leaked CI log.
-   Run: `uv run ai_written_scripts/rotate-staging-token/main.py`
+   Run: `uv run ai/scripts/rotate-staging-token/main.py`
    Verify: the script ends with `VERIFY OK`.
 ```
 
@@ -112,14 +113,25 @@ Each item carries:
 - **the exact command or script invocation**;
 - **how to verify** the result.
 
-Size rule: one single-line command may sit inline in a fenced block. Anything longer becomes a script
-under `ai_written_scripts/<slug>/` at the root of the current repository, committed with the rest of
-the work, so it is reviewable, rerunnable, and versioned.
+Size rule: one single-line command may sit inline in a fenced block. Anything longer becomes a script.
+
+### Where agent-written scripts live
+
+Every script an agent writes — a step handed to the user, a probe, a one-off check — lives in one
+engine-neutral home, committed with the rest of the work, so it is reviewable, rerunnable and
+versioned:
+
+- `ai/scripts/<slug>/` at the repository root holds the script, its test when it has logic, and a
+  short `README.md` saying what the script does and why it exists.
+- `ai/scripts/README.md` is the index: one line per script, its slug and its purpose. Add the line
+  in the same change that adds the script.
+- Never `$TMPDIR`, an engine-specific directory or an unlisted path: the OS may purge `$TMPDIR`, and
+  a script no one can find cannot be reviewed or rerun.
 
 | Repository root has | Language | Files | Run | Test |
 |---|---|---|---|---|
-| `go.mod` | Go | `main.go`, `main_test.go` | `go run ./ai_written_scripts/<slug>` | `go test ./ai_written_scripts/<slug>` |
-| no `go.mod` | Python | `main.py` (PEP 723 inline metadata), `test_main.py` | `uv run ai_written_scripts/<slug>/main.py` | `uv run --with pytest pytest ai_written_scripts/<slug>` |
+| `go.mod` | Go | `main.go`, `main_test.go`, `README.md` | `go run ./ai/scripts/<slug>` | `go test ./ai/scripts/<slug>` |
+| no `go.mod` | Python | `main.py` (PEP 723 inline metadata), `test_main.py`, `README.md` | `uv run ai/scripts/<slug>/main.py` | `uv run --with pytest pytest ai/scripts/<slug>` |
 
 Never shell scripts: quoting, error handling, and portability between macOS and Linux fail silently in
 shell, and they cannot be unit-tested in the same way.
@@ -141,10 +153,10 @@ tested), an `execute` step, a `verify` step, and the flags above. Show the user 
 
 1. **Grant the deploy bot read access to the `billing` schema**, because the nightly export now reads
    invoices and only a database owner can grant it.
-   Preview: `uv run ai_written_scripts/grant-billing-read/main.py --dry-run`
-   Apply: `uv run ai_written_scripts/grant-billing-read/main.py`
+   Preview: `uv run ai/scripts/grant-billing-read/main.py --dry-run`
+   Apply: `uv run ai/scripts/grant-billing-read/main.py`
    Verify: the last line reads `VERIFY OK: deploy_bot can SELECT billing.invoices`.
-   Test: `uv run --with pytest pytest ai_written_scripts/grant-billing-read`
+   Test: `uv run --with pytest pytest ai/scripts/grant-billing-read`
 2. **Click "Allow" on the macOS firewall prompt for `otelcol`**, because only a GUI click can grant
    incoming connections and the collector cannot receive telemetry without it.
    Verify: `curl -fsS localhost:13133` prints `{"status":"Server available"}`.

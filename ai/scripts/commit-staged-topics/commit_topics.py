@@ -4,8 +4,8 @@
 # ///
 """Split the staged changes into topic commits on master and push them.
 
-Run:   uv run ai_written_scripts/commit-staged-topics/commit_topics.py [--dry-run] [--no-push]
-Test:  uv run pytest ai_written_scripts/commit-staged-topics
+Run:   uv run ai/scripts/commit-staged-topics/commit_topics.py [--dry-run] [--no-push]
+Test:  uv run pytest ai/scripts/commit-staged-topics
 """
 
 import argparse

@@ -4,12 +4,13 @@
 # ///
 """Ensure every line in TARGET_LINES is present in a text file.
 
-Template for ai_written_scripts/<slug>/main.py. Replace the planning,
+Template for ai/scripts/<slug>/main.py. Replace the planning,
 execution and verification bodies with the real task, keeping the shape:
 plan (pure, tested) -> print plan -> execute unless --dry-run -> verify.
+Add ai/scripts/<slug>/README.md and a line in ai/scripts/README.md.
 
-Run:   uv run ai_written_scripts/<slug>/main.py [--dry-run] --file PATH
-Test:  uv run --with pytest pytest ai_written_scripts/<slug>
+Run:   uv run ai/scripts/<slug>/main.py [--dry-run] --file PATH
+Test:  uv run --with pytest pytest ai/scripts/<slug>
 """
 
 import argparse

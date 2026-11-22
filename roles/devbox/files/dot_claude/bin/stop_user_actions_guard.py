@@ -182,7 +182,7 @@ def find_violations(message: str) -> list[str]:
         if problems:
             violations.append(
                 f'R2: command block {number} in "{SECTION_TITLE}" {" and ".join(problems)}. '
-                "Turn it into a script under ai_written_scripts/<slug>/ (Go if go.mod is at "
+                "Turn it into a script under ai/scripts/<slug>/ (Go if go.mod is at "
                 "the repository root, else Python run via uv), with a test when it has logic, "
                 "and ask the user to run that single command.",
             )

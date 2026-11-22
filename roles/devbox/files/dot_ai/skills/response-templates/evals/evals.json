@@ -27,29 +27,32 @@
     {
       "id": 3,
       "prompt": "The user must run five commands with sudo to grant database access. The repository root has no go.mod. Hand this over.",
-      "expected_output": "Writes a Python script under ai_written_scripts/<slug>/ with PEP 723 metadata, --dry-run, verification output and a test, and references it from the 'What I need from you' section",
+      "expected_output": "Writes a Python script under ai/scripts/<slug>/ with PEP 723 metadata, --dry-run, verification output, a test and a README, lists it in ai/scripts/README.md, and references it from the 'What I need from you' section",
       "expectations": [
         "Does not paste the five commands inline and does not write a shell script",
-        "Creates ai_written_scripts/<slug>/main.py with PEP 723 inline metadata and test_main.py",
+        "Creates ai/scripts/<slug>/main.py with PEP 723 inline metadata, test_main.py and a README.md saying what and why",
+        "Adds the script and its purpose to the index ai/scripts/README.md",
+        "Does not put the script under $TMPDIR, ai_written_scripts/ or an engine-specific directory",
         "Script supports --dry-run, is idempotent, and ends by printing a verification result",
-        "Invocation shown as 'uv run ai_written_scripts/<slug>/main.py' plus how to run the test"
+        "Invocation shown as 'uv run ai/scripts/<slug>/main.py' plus how to run the test"
       ]
     },
     {
       "id": 4,
       "prompt": "Same hand-over, but the repository root contains go.mod.",
-      "expected_output": "Writes main.go and main_test.go under ai_written_scripts/<slug>/ and gives 'go run ./ai_written_scripts/<slug>' as the invocation",
+      "expected_output": "Writes main.go, main_test.go and README.md under ai/scripts/<slug>/ and gives 'go run ./ai/scripts/<slug>' as the invocation",
       "expectations": [
         "Chooses Go because the repository root has go.mod",
-        "Creates main.go and main_test.go in ai_written_scripts/<slug>/",
-        "Invocation is 'go run ./ai_written_scripts/<slug>' with a -dry-run option"
+        "Creates main.go, main_test.go and README.md in ai/scripts/<slug>/",
+        "Invocation is 'go run ./ai/scripts/<slug>' with a -dry-run option"
       ]
     },
     {
       "id": 5,
       "prompt": "We are reviewing nine checkout items over several turns. Drop item C3 because the provider is too expensive.",
-      "expected_output": "Updates the ledger at $TMPDIR/ledger-<topic>.md, marks C3 'dropped: <reason>' without renumbering, and closes with the status of open IDs",
+      "expected_output": "Updates the ledger at .hermetic/state/ledger-<topic>.md in the current worktree, marks C3 'dropped: <reason>' without renumbering, and closes with the status of open IDs",
       "expectations": [
+        "Keeps the ledger at .hermetic/state/ledger-<topic>.md, not under $TMPDIR",
         "C3 remains in the ledger marked 'dropped: provider cost' or similar",
         "No other item is renumbered, reordered, or merged",
         "Every ID mentioned is paired with its name",

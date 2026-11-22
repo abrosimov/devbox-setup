@@ -158,7 +158,8 @@ Keep the user's manual work minimal:
    repository, beside a short `README.md` on what it does and why, listed in the index
    `ai/scripts/README.md`, and committed with the rest of the work. The same home holds every
    script an agent writes, whatever the engine; never `$TMPDIR`. Never shell scripts. Scripts with
-   logic ship with a test. Language, layout and run commands: `response-templates` skill, template T3.
+   logic ship with a test, and the repository's linters, type checker and test targets cover them
+   like any other code. Language, layout and run commands: `response-templates` skill, template T3.
 
 ## 5. Lists that span several turns
 

@@ -125,6 +125,10 @@ versioned:
   short `README.md` saying what the script does and why it exists.
 - `ai/scripts/README.md` is the index: one line per script, its slug and its purpose. Add the line
   in the same change that adds the script.
+- The scripts are code: the repository's linters, type checker and test targets cover
+  `ai/scripts/` like any other source. When they do not reach it yet, wire it in (the lint and
+  type-check paths, a test target in the quality gate) in the same change that adds the first
+  script, and make every script pass them.
 - Never `$TMPDIR`, an engine-specific directory or an unlisted path: the OS may purge `$TMPDIR`, and
   a script no one can find cannot be reviewed or rerun.
 

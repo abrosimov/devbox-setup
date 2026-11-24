@@ -1352,7 +1352,7 @@ class TestPreferenceOperations:
         tree.paths.repository.write_bytes(source)
         copy_template_variables(tree.repo_root)
         operate(tree)
-        assert tomllib.loads(tree.paths.live.read_text())["model"] == "gpt-6-astra"
+        assert tomllib.loads(tree.paths.live.read_text())["model"] == "gpt-5.6-sol"
         assert tree.paths.repository.read_bytes() == source
 
     @pytest.mark.parametrize("mode", [OperationMode.APPLY, OperationMode.RECONCILE])
@@ -1367,10 +1367,10 @@ class TestPreferenceOperations:
                 EngineKind.CODEX, profile="work", home=tree.home, state_root=tree.state_root
             ).base.unlink()
         live_text = tree.paths.live.read_text(encoding="utf-8")
-        assert 'model = "gpt-6-astra"' in live_text
+        assert 'model = "gpt-5.6-sol"' in live_text
         assert 'model_reasoning_effort = "medium"' in live_text
         tree.paths.live.write_text(
-            live_text.replace('model = "gpt-6-astra"', 'model = "gpt-5.6-sol"').replace(
+            live_text.replace('model = "gpt-5.6-sol"', 'model = "gpt-6-astra"').replace(
                 'model_reasoning_effort = "medium"', 'model_reasoning_effort = "max"'
             ),
             encoding="utf-8",
@@ -1378,7 +1378,7 @@ class TestPreferenceOperations:
         result = operate(tree, mode=mode)
         live = tomllib.loads(tree.paths.live.read_text())
         assert result.captured == 0
-        assert live["model"] == "gpt-6-astra"
+        assert live["model"] == "gpt-5.6-sol"
         assert live["model_reasoning_effort"] == "max"
         assert tree.paths.repository.read_bytes() == source
         assert not operate(tree).changed
@@ -1391,7 +1391,7 @@ class TestPreferenceOperations:
         )
         state = json.loads(paths.base.read_bytes())
         state["manifest_digest"] = digest_manifest_source(previous_manifest.read_bytes())
-        state["snapshot"]["model"] = "gpt-6-astra"
+        state["snapshot"]["model"] = "gpt-5.6-sol"
         if previous_manifest == OLD_MANIFEST:
             state["snapshot"]["model_reasoning_effort"] = "medium"
         paths.base.write_text(json.dumps(state))
@@ -1640,7 +1640,7 @@ class TestPreferenceOperations:
         snapshot = {
             key: value
             for key, value in {
-                "model": "gpt-6-astra",
+                "model": "gpt-5.6-sol",
                 "model_reasoning_effort": "high",
                 "service_tier": "default",
                 "features": {"hooks": True},

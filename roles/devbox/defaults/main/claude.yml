@@ -27,7 +27,7 @@ devbox_auto_mode_trusted_remote_owners:
 # every model change is a reviewed commit. agy names models by display name.
 devbox_ai_models:
   claude: claude-opus-5-5
-  codex: gpt-6-astra
+  codex: gpt-5.6-sol
   agy: Gemini 3.1 Pro (High)
 
 devbox_claude_managed_dirs:

@@ -24,7 +24,7 @@ from ai_config_fixtures import REPO_ROOT
 MANIFEST_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_codex" / ("config.ai-config.json")
 CONFIG_TEMPLATE_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_codex" / ("config.toml.j2")
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "ai_config" / "codex"
-PINNED_MODEL = "gpt-6-astra"
+PINNED_MODEL = "gpt-5.6-sol"
 
 
 def repository_document(profile: str) -> RepositoryDocument:
@@ -385,7 +385,7 @@ class TestCodexManifestReconciliation:
             base=SemanticSnapshot.from_value({}) if base_state == "recorded" else None,
             repo=document.rendered,
             live=SemanticSnapshot.from_value(
-                {"model": "gpt-5.6-sol", "model_reasoning_effort": "max"}
+                {"model": "gpt-6-astra", "model_reasoning_effort": "max"}
             ),
             manifest=manifest,
             templated_paths=document.templated_paths,

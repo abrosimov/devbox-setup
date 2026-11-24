@@ -528,7 +528,9 @@ def _operation_json(result: OperationResult) -> dict[str, object]:
         "check_mode": result.check_mode,
         "converged": converged,
         "applied": result.applied,
+        "applied_paths": [list(path) for path in result.applied_paths],
         "captured": result.captured,
+        "captured_paths": [list(path) for path in result.captured_paths],
         "preserved": result.preserved,
         "unknown": 0,
         "conflicts": 0,
@@ -565,9 +567,19 @@ def _print_operation_result(result: OperationResult, output_format: str) -> None
     if output_format == "json":
         print(json.dumps(_operation_json(result), indent=2, sort_keys=True))
         return
+    applied = frozenset(result.applied_paths)
+    captured = frozenset(result.captured_paths)
     for change in result.plan.changes:
-        if change.kind in _WRITTEN_KINDS:
-            _print_change(change)
+        directions = tuple(
+            marker
+            for marker, paths in ((_TO_LIVE, applied), (_TO_REPO, captured))
+            if change.path in paths
+        )
+        if not directions:
+            continue
+        print("\t".join((_change_header(change), *directions)))
+        for line in _value_block(change):
+            print(line)
     state = (
         "would change"
         if result.check_mode and result.changed
@@ -684,15 +696,8 @@ def _print_paths_with_values(
 
 
 _HIDDEN_BY_DEFAULT: Final = frozenset({ChangeKind.UNCHANGED, ChangeKind.PRESERVE_LOCAL})
-_WRITTEN_KINDS: Final = frozenset(
-    {
-        ChangeKind.APPLY_REPO,
-        ChangeKind.CAPTURE_LIVE,
-        ChangeKind.CONFLICT,
-        ChangeKind.INITIALISATION_REQUIRED,
-        ChangeKind.MERGE,
-    }
-)
+_TO_LIVE: Final = "→ live"
+_TO_REPO: Final = "→ repo"
 _VALUE_WIDTH: Final = 100
 _ELLIPSIS: Final = "…"
 _REDACTED: Final = "<redacted>"

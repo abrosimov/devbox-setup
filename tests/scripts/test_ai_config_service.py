@@ -467,6 +467,24 @@ class TestLiveBootstrapService:
         assert follow_up.applied == 1
         assert follow_up.captured == 0
 
+    @pytest.mark.parametrize("written", [False, True])
+    def test_operation_reports_only_the_captured_paths(
+        self, tree: ServiceTree, *, written: bool
+    ) -> None:
+        preview = bootstrap(tree, write=False)
+        result = (
+            bootstrap(tree, write=True, preview_token=preview.preview_token) if written else preview
+        )
+
+        captured = tuple(
+            change.path for change in result.changes if change.action is BootstrapAction.CAPTURE
+        )
+        assert captured == (("liveOnly",), ("shared",))
+        assert result.operation.captured_paths == captured
+        assert result.operation.applied_paths == ()
+        assert result.operation.captured == len(captured)
+        assert result.operation.applied == 0
+
     def test_refuses_to_replace_an_existing_base(self, tree: ServiceTree) -> None:
         preview = bootstrap(tree, write=False)
         bootstrap(tree, write=True, preview_token=preview.preview_token)
@@ -685,6 +703,141 @@ class TestDecisionService:
             operate(tree, mode=OperationMode.RECONCILE, decisions=decision)
 
         assert read_json(tree.paths.live) == {"setting": "old"}
+
+
+ORDERED_SET_MANIFEST = """{
+  "schema_version": 1,
+  "engine": "claude",
+  "fields": [
+    {"path": "list", "scope": "shared", "strategy": "ordered-set"}
+  ]
+}
+"""
+
+
+class TestOperationPaths:
+    @staticmethod
+    def settled_tree(tmp_path: Path, document: str, manifest: str = SHARED_MANIFEST) -> ServiceTree:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source=document,
+            manifest_source=manifest,
+        )
+        operate(tree)
+        return tree
+
+    def test_a_missing_live_file_is_applied_from_the_repository(self, tmp_path: Path) -> None:
+        tree = create_tree(
+            tmp_path,
+            EngineKind.CLAUDE,
+            repository_source='{"setting": "old"}\n',
+            manifest_source=SHARED_MANIFEST,
+        )
+
+        result = operate(tree)
+
+        assert result.applied_paths == (("setting",),)
+        assert result.captured_paths == ()
+
+    def test_a_repository_change_is_listed_as_applied(self, tmp_path: Path) -> None:
+        tree = self.settled_tree(tmp_path, '{"setting": "old"}\n')
+        write_json(tree.paths.repository, {"setting": "new"})
+
+        result = operate(tree)
+
+        assert result.applied_paths == (("setting",),)
+        assert result.captured_paths == ()
+        assert result.applied == len(result.applied_paths)
+        assert result.captured == len(result.captured_paths)
+
+    @pytest.mark.parametrize(
+        ("source", "applied", "captured"),
+        [
+            (DecisionSource.REPO, (("setting",),), ()),
+            (DecisionSource.LIVE, (), (("setting",),)),
+        ],
+    )
+    def test_a_decided_live_only_change_is_listed_on_the_winning_side(
+        self,
+        tmp_path: Path,
+        source: DecisionSource,
+        applied: tuple[tuple[str, ...], ...],
+        captured: tuple[tuple[str, ...], ...],
+    ) -> None:
+        tree = self.settled_tree(tmp_path, '{"setting": "old"}\n')
+        write_json(tree.paths.live, {"setting": "new"})
+        decisions = DecisionSet(decisions=(FieldDecision(path=("setting",), source=source),))
+
+        result = operate(tree, mode=OperationMode.RECONCILE, decisions=decisions)
+
+        assert result.plan.count(ChangeKind.CAPTURE_LIVE) == 1
+        assert result.applied_paths == applied
+        assert result.captured_paths == captured
+
+    @pytest.mark.parametrize(
+        ("source", "applied", "captured"),
+        [
+            (DecisionSource.REPO, (("setting",),), ()),
+            (DecisionSource.LIVE, (), (("setting",),)),
+        ],
+    )
+    def test_a_decided_conflict_is_listed_on_the_winning_side(
+        self,
+        tmp_path: Path,
+        source: DecisionSource,
+        applied: tuple[tuple[str, ...], ...],
+        captured: tuple[tuple[str, ...], ...],
+    ) -> None:
+        tree = self.settled_tree(tmp_path, '{"setting": "old"}\n')
+        write_json(tree.paths.repository, {"setting": "repository-new"})
+        write_json(tree.paths.live, {"setting": "live-new"})
+        decisions = DecisionSet(decisions=(FieldDecision(path=("setting",), source=source),))
+
+        result = operate(tree, mode=OperationMode.RECONCILE, decisions=decisions)
+
+        assert result.plan.count(ChangeKind.CONFLICT) == 1
+        assert result.applied_paths == applied
+        assert result.captured_paths == captured
+
+    def test_a_merge_is_listed_on_both_sides(self, tmp_path: Path) -> None:
+        tree = self.settled_tree(tmp_path, '{"list": ["a"]}\n', ORDERED_SET_MANIFEST)
+        write_json(tree.paths.repository, {"list": ["a", "r"]})
+        write_json(tree.paths.live, {"list": ["a", "l"]})
+
+        result = operate(tree)
+
+        assert result.plan.count(ChangeKind.MERGE) == 1
+        assert result.applied_paths == (("list",),)
+        assert result.captured_paths == (("list",),)
+
+    def test_check_mode_reports_the_same_paths_without_writing(self, tmp_path: Path) -> None:
+        tree = self.settled_tree(tmp_path, '{"setting": "old"}\n')
+        write_json(tree.paths.repository, {"setting": "new"})
+        live_before = tree.paths.live.read_bytes()
+
+        result = operate(tree, check=True)
+
+        assert result.check_mode is True
+        assert result.applied_paths == (("setting",),)
+        assert result.captured_paths == ()
+        assert tree.paths.live.read_bytes() == live_before
+
+    def test_a_converged_run_and_a_preserved_local_change_list_no_paths(
+        self, tmp_path: Path
+    ) -> None:
+        tree = self.settled_tree(
+            tmp_path,
+            '{"setting": "same", "machine": "repo-machine"}\n',
+            LOCAL_STATE_MANIFEST,
+        )
+        write_json(tree.paths.live, {"setting": "same", "machine": "live-machine"})
+
+        result = operate(tree)
+
+        assert result.preserved == 1
+        assert result.applied_paths == ()
+        assert result.captured_paths == ()
 
 
 class TestWriteSafety:

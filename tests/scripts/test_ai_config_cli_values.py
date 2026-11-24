@@ -10,7 +10,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 import yaml
@@ -145,6 +145,56 @@ def inspect(tmp_path: Path) -> EngineInspection:
         profile="work",
         state_root=tmp_path / "state",
     )
+
+
+SETTING_FIELD = '{"path": "setting", "scope": "shared"}'
+ORDERED_SET_FIELD = '{"path": "v", "scope": "shared", "strategy": "ordered-set"}'
+TO_LIVE = "→ live"
+TO_REPO = "→ repo"
+
+
+def settled(
+    cli: Cli,
+    tmp_path: Path,
+    *,
+    repository: str,
+    manifest_fields: str = SETTING_FIELD,
+    variables: Mapping[str, object] | None = None,
+) -> list[str]:
+    arguments = engine_tree(
+        tmp_path,
+        repository=repository,
+        manifest_fields=manifest_fields,
+        variables=variables,
+    )
+    assert cli.run("apply", *arguments).code == 0
+    return arguments
+
+
+def engine_files(tmp_path: Path) -> tuple[Path, Path]:
+    paths = resolve_engine_paths(
+        EngineKind.CLAUDE, repo_root=tmp_path / "repository", home=tmp_path / "home"
+    )
+    return paths.repository, paths.live
+
+
+def decide(tmp_path: Path, *, path: str, source: str) -> Path:
+    decisions = tmp_path / "decisions.json"
+    decisions.write_text(
+        json.dumps({"decisions": [{"path": path.split("."), "source": source}]}) + "\n",
+        encoding="utf-8",
+    )
+    return decisions
+
+
+def result_json(result: Run) -> dict[str, object]:
+    loaded: object = json.loads(result.out)
+    assert isinstance(loaded, dict)
+    return cast("dict[str, object]", loaded)
+
+
+def header_paths(output: str) -> list[str]:
+    return [line.split("\t")[1] for line in output.splitlines() if "\t" in line]
 
 
 class TestDiffVisibility:
@@ -677,7 +727,8 @@ class TestOperationResultListing:
 
         assert result.code == 0
         assert result.out == (
-            'initialisation-required\tsetting\n  - repo: "repository"\n  + live: <missing>\n'
+            'initialisation-required\tsetting\t→ live\n  - repo: "repository"\n'
+            "  + live: <missing>\n"
             "claude: changed applied=1 captured=0 preserved=0\n"
         )
 
@@ -694,7 +745,8 @@ class TestOperationResultListing:
 
         assert result.code == 0
         assert result.out == (
-            'initialisation-required\tsetting\n  - repo: "repository"\n  + live: <missing>\n'
+            'initialisation-required\tsetting\t→ live\n  - repo: "repository"\n'
+            "  + live: <missing>\n"
             "claude: would change applied=1 captured=0 preserved=0\n"
         )
         assert not (tmp_path / "state").exists()
@@ -751,7 +803,7 @@ class TestOperationResultListing:
 
         assert result.code == 0
         assert result.out == (
-            'initialisation-required\tmodel\n  - repo: "repository"\n  + live: "live"\n'
+            'initialisation-required\tmodel\t→ repo\n  - repo: "repository"\n  + live: "live"\n'
             "claude: changed applied=0 captured=1 preserved=0\n"
         )
 
@@ -789,7 +841,404 @@ class TestOperationResultListing:
         assert result.code == 0
         assert LIVE_SENSITIVE not in result.out + result.err
         assert str(tmp_path / "home") not in result.out + result.err
-        assert "apply-repo\ttoken\n  - repo: <redacted>\n  + live: <redacted>\n" in result.out
+        assert (
+            "apply-repo\ttoken\t→ live\n  - repo: <redacted>\n  + live: <redacted>\n" in result.out
+        )
+
+
+class TestChangeDirectionMarkers:
+    def test_a_repository_value_written_to_live_is_marked_to_live(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = settled(cli, tmp_path, repository='{"setting": "old"}')
+        repository, live = engine_files(tmp_path)
+        repository.write_text('{"setting": "new"}\n', encoding="utf-8")
+
+        result = cli.run("apply", *arguments)
+
+        assert result.code == 0
+        assert result.out == (
+            'apply-repo\tsetting\t→ live\n  - repo: "new"\n  + live: "old"\n'
+            "claude: changed applied=1 captured=0 preserved=0\n"
+        )
+        assert json.loads(live.read_text(encoding="utf-8")) == {"setting": "new"}
+
+    @pytest.mark.parametrize(
+        ("source", "marker", "counts", "live_after"),
+        [
+            ("live", TO_REPO, "applied=0 captured=1", "new"),
+            ("repo", TO_LIVE, "applied=1 captured=0", "old"),
+        ],
+    )
+    def test_a_decided_live_only_change_is_marked_by_where_it_went(
+        self, tmp_path: Path, cli: Cli, source: str, marker: str, counts: str, live_after: str
+    ) -> None:
+        arguments = settled(cli, tmp_path, repository='{"setting": "old"}')
+        repository, live = engine_files(tmp_path)
+        live.write_text('{"setting": "new"}\n', encoding="utf-8")
+        decisions = decide(tmp_path, path="setting", source=source)
+
+        result = cli.run("reconcile", "--decisions", decisions, *arguments)
+
+        assert result.code == 0
+        assert result.out == (
+            f'capture-live\tsetting\t{marker}\n  - repo: "old"\n  + live: "new"\n'
+            f"claude: changed {counts} preserved=0\n"
+        )
+        assert json.loads(live.read_text(encoding="utf-8")) == {"setting": live_after}
+        assert json.loads(repository.read_text(encoding="utf-8")) == {"setting": live_after}
+
+    @pytest.mark.parametrize(
+        ("source", "marker", "counts"),
+        [
+            ("repo", TO_LIVE, "applied=1 captured=0"),
+            ("live", TO_REPO, "applied=0 captured=1"),
+        ],
+    )
+    def test_a_decided_conflict_is_marked_by_the_winning_side(
+        self, tmp_path: Path, cli: Cli, source: str, marker: str, counts: str
+    ) -> None:
+        arguments = settled(cli, tmp_path, repository='{"setting": "old"}')
+        repository, live = engine_files(tmp_path)
+        repository.write_text('{"setting": "repo-new"}\n', encoding="utf-8")
+        live.write_text('{"setting": "live-new"}\n', encoding="utf-8")
+        decisions = decide(tmp_path, path="setting", source=source)
+
+        result = cli.run("reconcile", "--decisions", decisions, *arguments)
+
+        assert result.code == 0
+        assert result.out == (
+            f'conflict\tsetting\t{marker}\n    base: "old"\n  - repo: "repo-new"\n'
+            f'  + live: "live-new"\nclaude: changed {counts} preserved=0\n'
+        )
+
+    @pytest.mark.parametrize(
+        ("source", "marker", "counts"),
+        [
+            ("repo", TO_LIVE, "applied=1 captured=0"),
+            ("live", TO_REPO, "applied=0 captured=1"),
+        ],
+    )
+    def test_an_initialisation_decision_is_marked_by_the_winning_side(
+        self, tmp_path: Path, cli: Cli, source: str, marker: str, counts: str
+    ) -> None:
+        arguments = model_tree(tmp_path)
+        decisions = decide(tmp_path, path="model", source=source)
+
+        result = cli.run("reconcile", "--decisions", decisions, *arguments)
+
+        assert result.code == 0
+        assert result.out == (
+            f'initialisation-required\tmodel\t{marker}\n  - repo: "repository"\n'
+            f'  + live: "live"\nclaude: changed {counts} preserved=0\n'
+        )
+
+    def test_a_missing_live_file_is_filled_from_the_repository_and_marked_to_live(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = engine_tree(
+            tmp_path, repository='{"setting": "repository"}', manifest_fields=SETTING_FIELD
+        )
+
+        result = cli.run("reconcile", *arguments)
+
+        assert result.code == 0
+        assert result.out.splitlines()[0] == f"initialisation-required\tsetting\t{TO_LIVE}"
+
+    @pytest.mark.parametrize("answer", ["repo", "live"])
+    def test_an_interactive_answer_is_marked_by_the_side_it_chose(
+        self,
+        tmp_path: Path,
+        cli: Cli,
+        monkeypatch: pytest.MonkeyPatch,
+        answer: str,
+    ) -> None:
+        arguments = model_tree(tmp_path)
+        monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+        monkeypatch.setattr("builtins.input", lambda _prompt: answer)
+
+        result = cli.run("reconcile", *arguments)
+
+        assert result.code == 0
+        marker = TO_LIVE if answer == "repo" else TO_REPO
+        assert result.out.splitlines()[0] == f"initialisation-required\tmodel\t{marker}"
+
+    def test_a_merge_is_one_block_marked_both_ways_with_the_merged_value(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = settled(
+            cli, tmp_path, repository='{"v": ["a"]}', manifest_fields=ORDERED_SET_FIELD
+        )
+        repository, live = engine_files(tmp_path)
+        repository.write_text('{"v": ["a", "r"]}\n', encoding="utf-8")
+        live.write_text('{"v": ["a", "l"]}\n', encoding="utf-8")
+
+        result = cli.run("apply", *arguments)
+
+        assert result.code == 0
+        assert result.out == (
+            f"merge\tv\t{TO_LIVE}\t{TO_REPO}\n"
+            '  - repo: ["a","r"]\n  + live: ["a","l"]\n    merged: ["a","r","l"]\n'
+            "claude: changed applied=1 captured=1 preserved=0\n"
+        )
+        assert json.loads(live.read_text(encoding="utf-8")) == {"v": ["a", "r", "l"]}
+        assert json.loads(repository.read_text(encoding="utf-8")) == {"v": ["a", "r", "l"]}
+
+    def test_a_templated_change_keeps_the_templated_flag_before_the_marker(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = settled(
+            cli,
+            tmp_path,
+            repository='{"model": "{{ devbox_model }}"}',
+            manifest_fields=MODEL_FIELD,
+            variables={"devbox_model": "rendered"},
+        )
+        _, live = engine_files(tmp_path)
+        live.write_text('{"model": "tampered"}\n', encoding="utf-8")
+
+        result = cli.run("apply", *arguments)
+
+        assert result.code == 0
+        assert result.out == (
+            f'apply-repo\tmodel\ttemplated\t{TO_LIVE}\n  - repo: "rendered"\n  + live: "tampered"\n'
+            "claude: changed applied=1 captured=0 preserved=0\n"
+        )
+
+    def test_check_mode_prints_the_same_markers_and_writes_nothing(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = settled(cli, tmp_path, repository='{"setting": "old"}')
+        repository, live = engine_files(tmp_path)
+        repository.write_text('{"setting": "new"}\n', encoding="utf-8")
+        repository_before = repository.read_bytes()
+        live_before = live.read_bytes()
+
+        result = cli.run("apply", "--check", *arguments)
+
+        assert result.code == 0
+        assert result.out == (
+            'apply-repo\tsetting\t→ live\n  - repo: "new"\n  + live: "old"\n'
+            "claude: would change applied=1 captured=0 preserved=0\n"
+        )
+        assert repository.read_bytes() == repository_before
+        assert live.read_bytes() == live_before
+
+    def test_check_mode_marks_a_decision_for_live_as_going_to_the_repository(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = settled(cli, tmp_path, repository='{"setting": "old"}')
+        repository, live = engine_files(tmp_path)
+        live.write_text('{"setting": "new"}\n', encoding="utf-8")
+        decisions = decide(tmp_path, path="setting", source="live")
+        repository_before = repository.read_bytes()
+
+        result = cli.run("reconcile", "--check", "--decisions", decisions, *arguments)
+
+        assert result.code == 0
+        assert result.out == (
+            'capture-live\tsetting\t→ repo\n  - repo: "old"\n  + live: "new"\n'
+            "claude: would change applied=0 captured=1 preserved=0\n"
+        )
+        assert repository.read_bytes() == repository_before
+
+    def test_only_written_changes_are_listed_and_keep_the_plan_order_of_diff(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = settled(
+            cli,
+            tmp_path,
+            repository='{"zebra": "z", "alpha": "a", "same": "s", "cache": "c"}',
+            manifest_fields=(
+                '{"path": "zebra", "scope": "shared"},'
+                '{"path": "alpha", "scope": "shared"},'
+                '{"path": "same", "scope": "shared"},'
+                '{"path": "cache", "scope": "local-state"}'
+            ),
+        )
+        repository, live = engine_files(tmp_path)
+        repository.write_text(
+            '{"zebra": "z2", "alpha": "a2", "same": "s", "cache": "c"}\n', encoding="utf-8"
+        )
+        live.write_text(
+            '{"zebra": "z", "alpha": "a", "same": "s", "cache": "newer"}\n', encoding="utf-8"
+        )
+        planned = [
+            path
+            for path in header_paths(cli.run("diff", "--all", *arguments).out)
+            if path in {"zebra", "alpha"}
+        ]
+
+        result = cli.run("apply", *arguments)
+
+        assert result.code == 0
+        assert len(planned) == 2
+        assert header_paths(result.out) == planned
+        assert result.out.count(TO_LIVE) == 2
+        assert TO_REPO not in result.out
+        assert result.out.splitlines()[-1] == "claude: changed applied=2 captured=0 preserved=1"
+
+    def test_json_names_the_applied_path_segments_and_keeps_the_existing_keys(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = settled(
+            cli,
+            tmp_path,
+            repository='{"permissions": {"mode": "old"}}',
+            manifest_fields='{"path": "permissions.mode", "scope": "shared"}',
+        )
+        repository, _ = engine_files(tmp_path)
+        repository.write_text('{"permissions": {"mode": "new"}}\n', encoding="utf-8")
+
+        result = cli.run("apply", "--json", *arguments)
+
+        assert result.code == 0
+        assert result_json(result) == {
+            "schema_version": 1,
+            "engine": "claude",
+            "profile": "work",
+            "changed": True,
+            "check_mode": False,
+            "converged": True,
+            "applied": 1,
+            "applied_paths": [["permissions", "mode"]],
+            "captured": 0,
+            "captured_paths": [],
+            "preserved": 0,
+            "unknown": 0,
+            "conflicts": 0,
+            "initialisation_required": 0,
+            "state_initialised": False,
+        }
+
+    def test_json_names_the_captured_path(self, tmp_path: Path, cli: Cli) -> None:
+        arguments = settled(cli, tmp_path, repository='{"setting": "old"}')
+        _, live = engine_files(tmp_path)
+        live.write_text('{"setting": "new"}\n', encoding="utf-8")
+        decisions = decide(tmp_path, path="setting", source="live")
+
+        result = cli.run("reconcile", "--json", "--decisions", decisions, *arguments)
+
+        document = result_json(result)
+        assert document["applied_paths"] == []
+        assert document["captured_paths"] == [["setting"]]
+        assert document["applied"] == 0
+        assert document["captured"] == 1
+
+    def test_json_lists_a_merged_path_on_both_sides(self, tmp_path: Path, cli: Cli) -> None:
+        arguments = settled(
+            cli, tmp_path, repository='{"v": ["a"]}', manifest_fields=ORDERED_SET_FIELD
+        )
+        repository, live = engine_files(tmp_path)
+        repository.write_text('{"v": ["a", "r"]}\n', encoding="utf-8")
+        live.write_text('{"v": ["a", "l"]}\n', encoding="utf-8")
+
+        result = cli.run("apply", "--json", *arguments)
+
+        document = result_json(result)
+        assert document["applied_paths"] == [["v"]]
+        assert document["captured_paths"] == [["v"]]
+
+    def test_json_check_mode_still_lists_the_paths(self, tmp_path: Path, cli: Cli) -> None:
+        arguments = settled(cli, tmp_path, repository='{"setting": "old"}')
+        repository, _ = engine_files(tmp_path)
+        repository.write_text('{"setting": "new"}\n', encoding="utf-8")
+
+        result = cli.run("apply", "--check", "--json", *arguments)
+
+        document = result_json(result)
+        assert document["check_mode"] is True
+        assert document["converged"] is False
+        assert document["applied_paths"] == [["setting"]]
+        assert document["captured_paths"] == []
+
+    def test_json_of_a_converged_run_has_empty_path_lists(self, tmp_path: Path, cli: Cli) -> None:
+        arguments = settled(cli, tmp_path, repository='{"setting": "old"}')
+
+        result = cli.run("apply", "--json", *arguments)
+
+        document = result_json(result)
+        assert document["applied_paths"] == []
+        assert document["captured_paths"] == []
+
+    def test_a_sensitive_value_in_a_marked_block_stays_redacted(
+        self, tmp_path: Path, cli: Cli
+    ) -> None:
+        arguments = engine_tree(
+            tmp_path,
+            repository=json.dumps({"token": "@home@/.claude/secret-source"}),
+            manifest_fields=(
+                '{"path": "token", "scope": "environment",'
+                ' "binding": "home:.claude/secret-source", "secret": true}'
+            ),
+            live=json.dumps({"token": LIVE_SENSITIVE}),
+        )
+
+        result = cli.run("reconcile", *arguments)
+
+        assert result.code == 0
+        assert LIVE_SENSITIVE not in result.out + result.err
+        assert result.out.splitlines()[:3] == [
+            f"apply-repo\ttoken\t{TO_LIVE}",
+            "  - repo: <redacted>",
+            "  + live: <redacted>",
+        ]
+
+
+class TestBootstrapOutputHasNoDirectionMarkers:
+    def test_bootstrap_text_and_json_are_unchanged(self, tmp_path: Path, cli: Cli) -> None:
+        arguments = engine_tree(
+            tmp_path,
+            repository='{"setting": "repository"}',
+            manifest_fields=SETTING_FIELD,
+            live='{"setting": "live"}',
+        )
+
+        preview = cli.run("bootstrap", "--from-live", *arguments)
+
+        assert preview.code == 0
+        lines = preview.out.splitlines()
+        assert lines[0] == "capture\tsetting"
+        assert lines[1] == (
+            "claude: bootstrap preview capture=1 keep-repo=0 preserve-local=0 ignore-runtime=0"
+        )
+        assert lines[2].startswith("preview-token\tsha256:")
+        assert len(lines) == 3
+        assert "→" not in preview.out
+
+        token = lines[2].split("\t")[1]
+        written = cli.run(
+            "bootstrap", "--from-live", "--write", "--preview-token", token, *arguments
+        )
+
+        assert written.code == 0
+        assert "→" not in written.out
+        assert written.out.splitlines()[0] == "capture\tsetting"
+
+    def test_bootstrap_json_gains_no_path_lists(self, tmp_path: Path, cli: Cli) -> None:
+        arguments = engine_tree(
+            tmp_path,
+            repository='{"setting": "repository"}',
+            manifest_fields=SETTING_FIELD,
+            live='{"setting": "live"}',
+        )
+
+        result = cli.run("bootstrap", "--from-live", "--json", *arguments)
+
+        assert set(result_json(result)) == {
+            "schema_version",
+            "engine",
+            "profile",
+            "source",
+            "write",
+            "changed",
+            "check_mode",
+            "state_initialised",
+            "preview_token",
+            "counts",
+            "changes",
+            "written_paths",
+        }
 
 
 class TestStoppedOperations:
@@ -992,7 +1441,7 @@ class TestInteractiveReconcile:
             )
         ]
         assert result.out == (
-            'initialisation-required\tmodel\n  - repo: "repository"\n  + live: "live"\n'
+            'initialisation-required\tmodel\t→ repo\n  - repo: "repository"\n  + live: "live"\n'
             "claude: changed applied=0 captured=1 preserved=0\n"
         )
 

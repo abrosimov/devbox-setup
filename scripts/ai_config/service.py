@@ -128,6 +128,8 @@ class OperationResult:
     preserved: int
     state_initialised: bool
     written_paths: tuple[Path, ...]
+    applied_paths: tuple[FieldPath, ...]
+    captured_paths: tuple[FieldPath, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -434,6 +436,8 @@ def _operate_inspection(
         preserved=inspection.plan.count(ChangeKind.PRESERVE_LOCAL),
         state_initialised=inspection.base_state is None,
         written_paths=written_paths,
+        applied_paths=resolved.applied_paths,
+        captured_paths=resolved.captured_paths,
     )
 
 
@@ -538,6 +542,8 @@ def _bootstrap_from_live(
         preserved=inspection.plan.count(ChangeKind.PRESERVE_LOCAL),
         state_initialised=True,
         written_paths=written_paths,
+        applied_paths=(),
+        captured_paths=captured_paths,
     )
 
 

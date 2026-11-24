@@ -3,3 +3,8 @@ devbox:
     localhost:
       user: kabrosimov
       ansible_host: 127.0.0.1
+      # Run modules with the interpreter that runs Ansible itself. Discovery
+      # (`interpreter_python=auto_silent`) takes the first `python3.N` on PATH,
+      # which can be a version-manager shim (mise, pyenv) with no version
+      # selected outside a project directory, and then every module fails.
+      ansible_python_interpreter: "{{ ansible_playbook_python }}"

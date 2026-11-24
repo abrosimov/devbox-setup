@@ -86,3 +86,25 @@
   changed_when: false
   failed_when: false
   tags: [macos, spotlight]
+
+# AppleSymbolicHotKeys is not an Apple API: re-read both entries from the plist
+# after the write (and the cfprefsd flush above, which puts it on disk) and fail
+# the run unless each is a real boolean false, so a write macOS ignored or
+# rewrote does not leave Spotlight holding Cmd+Space. Skipped in check mode,
+# where nothing was written.
+- name: "Verify Spotlight hotkeys are disabled"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/plutil
+      - -extract
+      - "AppleSymbolicHotKeys.{{ item }}.enabled"
+      - raw
+      - -o
+      - "-"
+      - "{{ ansible_facts['env']['HOME'] }}/Library/Preferences/com.apple.symbolichotkeys.plist"
+  loop: ["64", "65"]
+  register: devbox_sh_check
+  changed_when: false
+  failed_when: devbox_sh_check.rc != 0 or (devbox_sh_check.stdout | trim) != 'false'
+  when: not ansible_check_mode
+  tags: [macos, spotlight]

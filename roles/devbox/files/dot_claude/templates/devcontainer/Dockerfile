@@ -1,7 +1,7 @@
 # Devcontainer for Claude Code sandboxed development.
 # Language toolchains are conditionally installed via build args.
 
-FROM node:26-bookworm@sha256:b7087bc4d973034b30854b378ba107f9fab622b47514cb7e2592e41b8bab8d49
+FROM node:26-bookworm@sha256:0a7c0471c10988ef5ab64718fa58bf8d5be578b4d20cf42b10b5fa6ccda39ae1
 
 # --- Language toggle flags ---
 ARG INSTALL_GO=false

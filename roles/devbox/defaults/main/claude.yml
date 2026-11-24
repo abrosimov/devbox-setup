@@ -19,12 +19,16 @@ devbox_auto_mode_trusted_remote_owners:
   - host: github.com
     owner: abrosimov
 
-# Default model written to `model` in ~/.claude/settings.json. The value is a
-# template expression, so `scripts/ai-config apply claude` always re-applies it
-# and a model chosen live with /model is reset on the next run instead of
-# stopping the run for a decision. Pinned to a full model ID, not an alias, so
-# a model change is a reviewed commit.
-devbox_claude_model: claude-opus-5-5
+# Model each engine starts with, rendered into `model` of its settings file
+# (~/.claude/settings.json, ~/.codex/config.toml, agy settings.json). Each is a
+# template expression, so `scripts/ai-config apply <engine>` always re-applies it:
+# a model chosen live inside an engine lasts until the next run instead of
+# stopping that run for a decision. Pinned to full model names, not aliases, so
+# every model change is a reviewed commit. agy names models by display name.
+devbox_ai_models:
+  claude: claude-opus-5-5
+  codex: gpt-6-astra
+  agy: Gemini 3.1 Pro (High)
 
 devbox_claude_managed_dirs:
   - schemas

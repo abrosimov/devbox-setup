@@ -11,6 +11,7 @@ from ai_config import (
     FieldManifest,
     FieldScope,
     ReconciliationPlan,
+    RepositoryDocument,
     SemanticSnapshot,
     build_repository_document,
     load_template_variables,
@@ -23,6 +24,15 @@ from ai_config_fixtures import REPO_ROOT
 MANIFEST_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_codex" / ("config.ai-config.json")
 CONFIG_TEMPLATE_PATH = REPO_ROOT / "roles" / "devbox" / "files" / "dot_codex" / ("config.toml.j2")
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "ai_config" / "codex"
+PINNED_MODEL = "gpt-6-astra"
+
+
+def repository_document(profile: str) -> RepositoryDocument:
+    return build_repository_document(
+        CONFIG_TEMPLATE_PATH.read_bytes(),
+        ConfigurationFormat.TOML,
+        load_template_variables(REPO_ROOT, profile),
+    )
 
 
 class TestCodexManifestCoverage:
@@ -58,21 +68,35 @@ class TestCodexManifestCoverage:
         assert values[("tui", "raw_output_mode")] is False
 
     @pytest.mark.parametrize("profile", ["personal", "work"])
-    def test_environment_renders_the_selected_profile_and_is_the_only_templated_path(
+    def test_environment_renders_the_selected_profile_and_model_is_the_only_other_templated_path(
         self,
         profile: str,
     ) -> None:
-        document = build_repository_document(
-            CONFIG_TEMPLATE_PATH.read_bytes(),
-            ConfigurationFormat.TOML,
-            load_template_variables(REPO_ROOT, profile),
-        )
+        document = repository_document(profile)
         values = {
             field.path: to_plain_value(field.value) for field in document.rendered.semantic_fields()
         }
 
-        assert document.templated_paths == {("otel", "environment")}
+        assert document.templated_paths == {("otel", "environment"), ("model",)}
         assert values[("otel", "environment")] == profile
+
+    @pytest.mark.parametrize("profile", ["personal", "work"])
+    def test_model_renders_the_pinned_name_in_every_profile(self, profile: str) -> None:
+        document = repository_document(profile)
+        values = {
+            field.path: to_plain_value(field.value) for field in document.rendered.semantic_fields()
+        }
+
+        assert values[("model",)] == PINNED_MODEL
+        assert ("model",) in document.templated_paths
+
+    def test_unrendered_template_keeps_the_model_inside_a_quoted_placeholder(
+        self,
+        repository: SemanticSnapshot,
+    ) -> None:
+        values = {field.path: to_plain_value(field.value) for field in repository.semantic_fields()}
+
+        assert values[("model",)] == "{{ devbox_ai_models.codex }}"
 
     def test_every_current_repository_field_is_classified(
         self,
@@ -90,7 +114,7 @@ class TestCodexManifestCoverage:
     @pytest.mark.parametrize(
         ("path", "expected_scope"),
         [
-            (("model",), FieldScope.PREFERENCE),
+            (("model",), FieldScope.SHARED),
             (("model_reasoning_effort",), FieldScope.PREFERENCE),
             (("service_tier",), FieldScope.SHARED),
             (("sandbox_mode",), FieldScope.SHARED),
@@ -312,6 +336,64 @@ class TestCodexManifestReconciliation:
         assert templated_change.kind is ChangeKind.APPLY_REPO
         assert templated_change.templated is True
         assert templated_change.scope is FieldScope.SHARED
+
+    @pytest.mark.parametrize("base_state", ["recorded", "absent"])
+    @pytest.mark.parametrize("live_model", ["gpt-5.6-sol", "o3", "gpt-6-astra"])
+    @pytest.mark.parametrize("profile", ["personal", "work"])
+    def test_pinned_model_is_applied_over_any_live_model_without_a_decision(
+        self,
+        profile: str,
+        live_model: str,
+        base_state: str,
+    ) -> None:
+        path = ("model",)
+        document = repository_document(profile)
+        manifest = parse_engine_manifest(EngineKind.CODEX, MANIFEST_PATH.read_bytes())
+        pinned = SemanticSnapshot.from_value({"model": PINNED_MODEL})
+
+        plan = plan_reconciliation(
+            base=pinned if base_state == "recorded" else None,
+            repo=document.rendered,
+            live=SemanticSnapshot.from_value({"model": live_model}),
+            manifest=manifest,
+            templated_paths=document.templated_paths,
+        )
+
+        change = next(change for change in plan.changes if change.path == path)
+        assert change.templated is True
+        assert change.scope is FieldScope.SHARED
+        if live_model == PINNED_MODEL:
+            assert change.kind is ChangeKind.UNCHANGED
+        else:
+            assert change.kind is ChangeKind.APPLY_REPO
+        assert change.kind not in {
+            ChangeKind.CAPTURE_LIVE,
+            ChangeKind.CONFLICT,
+            ChangeKind.INITIALISATION_REQUIRED,
+        }
+
+    @pytest.mark.parametrize("base_state", ["recorded", "absent"])
+    def test_live_reasoning_effort_is_preserved_next_to_the_pinned_model(
+        self,
+        base_state: str,
+    ) -> None:
+        path = ("model_reasoning_effort",)
+        document = repository_document("personal")
+        manifest = parse_engine_manifest(EngineKind.CODEX, MANIFEST_PATH.read_bytes())
+
+        plan = plan_reconciliation(
+            base=SemanticSnapshot.from_value({}) if base_state == "recorded" else None,
+            repo=document.rendered,
+            live=SemanticSnapshot.from_value(
+                {"model": "gpt-5.6-sol", "model_reasoning_effort": "max"}
+            ),
+            manifest=manifest,
+            templated_paths=document.templated_paths,
+        )
+
+        change = next(change for change in plan.changes if change.path == path)
+        assert change.scope is FieldScope.PREFERENCE
+        assert change.kind not in {ChangeKind.APPLY_REPO, ChangeKind.CAPTURE_LIVE}
 
     @pytest.mark.parametrize(
         "path",

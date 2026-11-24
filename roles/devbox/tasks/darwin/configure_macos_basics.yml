@@ -124,7 +124,7 @@
 
 - name: "Caps Lock delay — deploy hidutil LaunchAgent plist"
   ansible.builtin.template:
-    src: darwin/Library/LaunchAgents/local.hidutil-capslock.plist.j2
+    src: "{{ role_path }}/templates/darwin/Library/LaunchAgents/local.hidutil-capslock.plist.j2"
     dest: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.hidutil-capslock.plist"
     mode: '0644'
   register: devbox_hidutil_launchagent

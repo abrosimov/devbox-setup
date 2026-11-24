@@ -1,15 +1,17 @@
 ---
-# Fast-path: re-apply macOS basics — Touch ID for sudo, pmset disablesleep,
-# DevToolsSecurity. Reuses roles/devbox/tasks/darwin/configure_macos_basics.yml
-# under the `macos` tag.
+# Fast-path: re-apply macOS settings — Touch ID for sudo, pmset disablesleep,
+# DevToolsSecurity and the Caps Lock remap (configure_macos_basics.yml), then the
+# user defaults list and Night Shift (configure_macos_defaults.yml), under the
+# `macos` tag.
 #
 # Sudo IS required: tasks write to /etc/pam.d/sudo_local and call pmset.
 # No vault. Invoked via `make macos-defaults`.
 
-- name: Apply macOS basics
+- name: Apply macOS settings
   hosts: 127.0.0.1
   connection: local
-  gather_facts: false
+  # The LaunchAgent tasks read ansible_facts['env'] and ansible_facts['user_uid'].
+  gather_facts: true
 
   # Sudo comes from the macOS login keychain slot `devbox-sudo` via
   # `become_password_file` (ansible.cfg [privilege_escalation]). Seeded by
@@ -20,9 +22,16 @@
 
   vars_files:
     - "../roles/devbox/defaults/main/core.yml"
+    - "../roles/devbox/defaults/main/macos_defaults.yml"
 
   tasks:
     - name: Apply macOS configuration tasks
       ansible.builtin.import_tasks: "../roles/devbox/tasks/darwin/configure_macos_basics.yml"
       vars:
         role_path: "{{ playbook_dir }}/../roles/devbox"
+    - name: Apply macOS user defaults and Night Shift
+      ansible.builtin.import_tasks: "../roles/devbox/tasks/darwin/configure_macos_defaults.yml"
+
+  handlers:
+    - name: Load the role handlers the defaults tasks notify
+      ansible.builtin.import_tasks: "../roles/devbox/handlers/main.yml"

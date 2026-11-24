@@ -6,7 +6,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Final, cast
 
 from .adapters import EngineKind, load_engine_plan
 from .bindings import BindingResolutionError
@@ -51,6 +51,7 @@ class CommandArguments:
     write: bool
     preview_token: str | None
     output_format: str
+    show_all: bool
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -93,6 +94,13 @@ def build_parser() -> argparse.ArgumentParser:
             type=Path,
             help="Manifest for low-level explicit-file mode",
         )
+        if command == "diff":
+            command_parser.add_argument(
+                "--all",
+                action="store_true",
+                dest="show_all",
+                help="Also list unchanged and preserve-local fields in text output",
+            )
         _add_output_options(command_parser)
     apply_parser = subparsers.add_parser(
         "apply",
@@ -258,6 +266,7 @@ def _command_arguments(namespace: argparse.Namespace) -> CommandArguments:
         write=cast("bool", getattr(namespace, "write", False)),
         preview_token=cast("str | None", getattr(namespace, "preview_token", None)),
         output_format=cast("str", namespace.output_format),
+        show_all=cast("bool", getattr(namespace, "show_all", False)),
     )
 
 
@@ -277,7 +286,7 @@ def _run_read_only(arguments: CommandArguments) -> int:
     elif arguments.command == "status":
         _print_status(plan, state_missing=state_missing)
     else:
-        _print_diff(plan)
+        _print_diff(plan, show_all=arguments.show_all, state_missing=state_missing)
     return 0 if converged else 1
 
 
@@ -417,6 +426,9 @@ def collect_decisions(
             decisions.append(FieldDecision(path=path, source=already))
             continue
         prompt = f"{'.'.join(path)} ({change.kind.value}) [repo/live]: "
+        notify(_change_header(change))
+        for line in _value_block(change):
+            notify(line)
         while True:
             try:
                 source, applies_to_rest = _parse_answer(ask(prompt).strip().lower())
@@ -516,7 +528,9 @@ def _operation_json(result: OperationResult) -> dict[str, object]:
         "check_mode": result.check_mode,
         "converged": converged,
         "applied": result.applied,
+        "applied_paths": [list(path) for path in result.applied_paths],
         "captured": result.captured,
+        "captured_paths": [list(path) for path in result.captured_paths],
         "preserved": result.preserved,
         "unknown": 0,
         "conflicts": 0,
@@ -553,6 +567,19 @@ def _print_operation_result(result: OperationResult, output_format: str) -> None
     if output_format == "json":
         print(json.dumps(_operation_json(result), indent=2, sort_keys=True))
         return
+    applied = frozenset(result.applied_paths)
+    captured = frozenset(result.captured_paths)
+    for change in result.plan.changes:
+        directions = tuple(
+            marker
+            for marker, paths in ((_TO_LIVE, applied), (_TO_REPO, captured))
+            if change.path in paths
+        )
+        if not directions:
+            continue
+        print("\t".join((_change_header(change), *directions)))
+        for line in _value_block(change):
+            print(line)
     state = (
         "would change"
         if result.check_mode and result.changed
@@ -604,9 +631,7 @@ def _print_decisions_required(error: DecisionsRequiredError, output_format: str)
         output["decision_paths"] = [list(path) for path in error.paths]
         print(json.dumps(output, indent=2, sort_keys=True))
         return
-    print(str(error), file=sys.stderr)
-    for path in error.paths:
-        print(f"  {'.'.join(path)}", file=sys.stderr)
+    _print_paths_with_values(error.inspection.plan, error.paths, str(error))
 
 
 def _print_unknown_fields(error: UnknownFieldsError, output_format: str) -> None:
@@ -620,9 +645,7 @@ def _print_unknown_fields(error: UnknownFieldsError, output_format: str) -> None
         output["unknown_paths"] = [list(path) for path in error.paths]
         print(json.dumps(output, indent=2, sort_keys=True))
         return
-    print(str(error), file=sys.stderr)
-    for path in error.paths:
-        print(f"  {'.'.join(path)}", file=sys.stderr)
+    _print_paths_with_values(error.inspection.plan, error.paths, str(error))
 
 
 def _print_error(error: Exception, output_format: str) -> None:
@@ -650,10 +673,69 @@ def _print_status(plan: ReconciliationPlan, *, state_missing: bool) -> None:
     print(f"{state} {counts}".rstrip())
 
 
-def _print_diff(plan: ReconciliationPlan) -> None:
+def _print_diff(plan: ReconciliationPlan, *, show_all: bool, state_missing: bool) -> None:
     for change in plan.changes:
-        path = ".".join(change.path)
-        # Naming the provenance is the whole report for a templated path: the
-        # live value is about to be overwritten and will not reach the source.
-        origin = "\ttemplated" if change.templated else ""
-        print(f"{change.kind.value}\t{path}{origin}")
+        if show_all or change.kind not in _HIDDEN_BY_DEFAULT:
+            _print_change(change)
+    _print_status(plan, state_missing=state_missing)
+
+
+def _print_paths_with_values(
+    plan: ReconciliationPlan,
+    paths: Sequence[FieldPath],
+    message: str,
+) -> None:
+    changes = {change.path: change for change in plan.changes}
+    print(message, file=sys.stderr)
+    for path in paths:
+        print(f"  {'.'.join(path)}", file=sys.stderr)
+        change = changes.get(path)
+        if change is not None:
+            for line in _value_block(change, indent="    "):
+                print(line, file=sys.stderr)
+
+
+_HIDDEN_BY_DEFAULT: Final = frozenset({ChangeKind.UNCHANGED, ChangeKind.PRESERVE_LOCAL})
+_TO_LIVE: Final = "→ live"
+_TO_REPO: Final = "→ repo"
+_VALUE_WIDTH: Final = 100
+_ELLIPSIS: Final = "…"
+_REDACTED: Final = "<redacted>"
+_MISSING: Final = "<missing>"
+
+
+def _print_change(change: Change) -> None:
+    print(_change_header(change))
+    for line in _value_block(change):
+        print(line)
+
+
+def _change_header(change: Change) -> str:
+    # Naming the provenance matters for a templated path: the live value is
+    # about to be overwritten and will not reach the source.
+    origin = "\ttemplated" if change.templated else ""
+    return f"{change.kind.value}\t{'.'.join(change.path)}{origin}"
+
+
+def _value_block(change: Change, *, indent: str = "  ") -> tuple[str, ...]:
+    if change.kind is ChangeKind.UNCHANGED:
+        return (f"{indent}  value: {_display_value(change, change.repo)}",)
+    lines: list[str] = []
+    if change.kind is ChangeKind.CONFLICT:
+        lines.append(f"{indent}  base: {_display_value(change, change.base)}")
+    lines.append(f"{indent}- repo: {_display_value(change, change.repo)}")
+    lines.append(f"{indent}+ live: {_display_value(change, change.live)}")
+    if change.kind is ChangeKind.MERGE and change.merged is not None:
+        lines.append(f"{indent}  merged: {_display_value(change, change.merged)}")
+    return tuple(lines)
+
+
+def _display_value(change: Change, value: SemanticValue | MissingValue) -> str:
+    if change.sensitive:
+        return _REDACTED
+    if value is MissingValue.MISSING:
+        return _MISSING
+    rendered = json.dumps(to_plain_value(value), ensure_ascii=False, separators=(",", ":"))
+    if len(rendered) <= _VALUE_WIDTH:
+        return rendered
+    return rendered[: _VALUE_WIDTH - len(_ELLIPSIS)] + _ELLIPSIS

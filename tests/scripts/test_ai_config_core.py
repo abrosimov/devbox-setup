@@ -576,7 +576,12 @@ class TestReadOnlyCli:
         )
 
         assert result.returncode == 1
-        assert result.stdout == "initialisation-required\tpermissions.allow\n"
+        assert result.stdout == (
+            "initialisation-required\tpermissions.allow\n"
+            '  - repo: ["Read"]\n'
+            '  + live: ["Write"]\n'
+            "drift initialisation-required=1\n"
+        )
 
     def test_status_accepts_an_engine_as_the_single_user_facing_handle(
         self,

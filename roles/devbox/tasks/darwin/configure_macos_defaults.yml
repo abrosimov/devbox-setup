@@ -23,6 +23,21 @@
     - Restart Finder
   tags: [macos, defaults]
 
+# Read the Spaces keys back with `defaults read`, the same view the Dock gets,
+# so a write that landed in the wrong plist or was overridden fails the run
+# instead of leaving windows switching Spaces. Skipped in check mode, where
+# nothing was written.
+- name: "Verify Spaces stay in place"
+  ansible.builtin.command: "defaults read com.apple.dock {{ item }}"
+  loop:
+    - workspaces-auto-swoosh
+    - mru-spaces
+  register: devbox_spaces_check
+  changed_when: false
+  failed_when: devbox_spaces_check.rc != 0 or (devbox_spaces_check.stdout | trim) != '0'
+  when: not ansible_check_mode
+  tags: [macos, defaults]
+
 # NOTE: devbox_macos_defaults_result feeds the re-login gate in main.yml. Most
 # defaults here apply via the killall handlers above or take effect immediately,
 # so they never need a fresh login. The exception is login-cached NSGlobalDomain

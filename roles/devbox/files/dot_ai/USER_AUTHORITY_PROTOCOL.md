@@ -253,6 +253,13 @@ delivers.
 - **Protected branches** (`main`, `master`, `develop`, `release-*`, `release/*`). Never commit,
   merge, rebase or push on one; first create a feature branch from it. Rebasing your own feature
   branch and pushing it with `--force-with-lease` is part of delivery.
+- **Auto-merge.** The standing go covers merging the user's own PR/MR once its required checks are
+  green, so delivery enables the forge's auto-merge on the PR/MR it opens or updates: squash for a
+  single commit, a merge commit for several, so that atomic commits stay reachable. Enable it only
+  when the base branch requires status checks, because with none required auto-merge merges at
+  once, without CI; then leave the PR/MR ready for review and say why in the report. Leave it off
+  when the user asks to review first or when the PR/MR is a draft. Merging by hand, or merging
+  someone else's PR/MR, still needs the user's go.
 
 ## 8. Evidence and repair scope
 

@@ -62,8 +62,8 @@ Obtain explicit confirmation before:
 - deleting or irreversibly overwriting material data;
 - force-pushing, rewriting shared history, or bypassing verification hooks;
 - publishing, deploying, merging pull requests, or writing to external systems when the user did
-  not request that action (opening or updating the task's own PR/MR falls under the core's §7
-  standing go);
+  not request that action (opening or updating the task's own PR/MR, and enabling auto-merge on
+  it, fall under the core's §7 standing go);
 - purchasing, changing access controls or credentials, or taking another consequential external
   action.
 
@@ -99,7 +99,9 @@ Use the `fpf-thinking` and `narrative-thinking` skills only when the user names 
 - Prefer repository-provided commands, toolchain configuration, and validation over invented
   one-off workflows.
 - Deliver through git under the core's §7 standing go: commit, push the feature branch, and open or
-  update its PR/MR ready for review once the checks pass. A push that needs capabilities outside the
+  update its PR/MR ready for review once the checks pass, with auto-merge enabled where the base
+  requires status checks (`gh pr merge <number> --auto --squash`, or `--merge` for several
+  commits). A push that needs capabilities outside the
   sandbox goes through the platform's approval mechanism, not a conversational question. Never
   deploy or connect to a managed host unless the user explicitly requests it.
 - Avoid destructive Git commands. If recovery is needed, choose a reversible approach or ask.

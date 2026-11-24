@@ -15,6 +15,11 @@ CORE_AUTHORITY = AI_ROOT / "USER_AUTHORITY_PROTOCOL.md"
 CORE_LOOKUP = "/dot_ai/USER_AUTHORITY_PROTOCOL.md"
 
 EXPECTED_AGENTS = {
+    "adr-acceptor",
+    "adr-editor",
+    "adr-explorer",
+    "adr-goal-setter",
+    "adr-reviewer",
     "agent-builder",
     "api-designer",
     "architect",

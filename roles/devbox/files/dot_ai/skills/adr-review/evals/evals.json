@@ -1,0 +1,56 @@
+{
+  "skill_name": "adr-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/adr-review \"./ADR-091 Review\" out=. — Please start a review of ADR-091. The page is exported at evals/files/new-review/ADR-091-p3.md. No review folder exists yet. The readers are the ADR's author and the architecture committee; the billing service runs on customers' own hardware, so nothing the ADR asks for may need a cloud service. One constraint: the comment speaks for me alone, in the first person, never \"we\". Set up the review and run the goal stage, then stop.",
+      "expected_output": "A new review folder ADR-091 Review/ with the human note, the ADR snapshot and SOURCES.md under AI/sources/, decisions.md seeded with the first-person constraint, and AI/v01/ with HANDOFF.md, no 00-feedback.md, and a goal that records the ADR as a proposal not yet built",
+      "files": ["evals/files/new-review/ADR-091-p3.md"],
+      "expectations": [
+        "Creates ADR-091 Review/ADR-091 Review.md, AI/sources/ADR-091-p3.md and AI/sources/SOURCES.md",
+        "AI/decisions.md has a row for the first-person constraint and the alias 'ADR-091 decisions (from v01)'",
+        "AI/v01/HANDOFF.md exists and AI/v01/00-feedback.md does not",
+        "AI/v01/10-goal.md has the alias 'ADR-091 v01 goal', records the ADR's kind as a proposal, names the readers and the on-premises context, and classes the version as early",
+        "Every goal check names the failing case it catches"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/adr-review \"evals/files/proposal-edit/ADR-091 Review\" stage=edit out=. — Version 01 has its goal; run the edit stage only.",
+      "expected_output": "AI/v01/40-comment.md with no code links, because the whole ADR is a proposal: the vendor client's behaviour is cited through the vendor documentation, and the facts' code references stay in facts.md",
+      "files": [
+        "evals/files/proposal-edit/ADR-091 Review/AI/decisions.md",
+        "evals/files/proposal-edit/ADR-091 Review/AI/facts.md",
+        "evals/files/proposal-edit/ADR-091 Review/AI/points.md",
+        "evals/files/proposal-edit/ADR-091 Review/AI/v01/10-goal.md",
+        "evals/files/proposal-edit/ADR-091 Review/AI/sources/ADR-091-p3.md"
+      ],
+      "expectations": [
+        "The comment contains no match for the pattern '/-/blob/|/blob/|@[0-9a-f]{7,40}:'",
+        "The comment links the vendor documentation (docs.example.com/bulk-load#retries or #load-modes)",
+        "Both facts reach the reader: no retry unless retries are set, and partial data after an unfinished night",
+        "Each ask carries a deadline, and 40-comment.md has the alias 'ADR-091 v01 comment'"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "/adr-review \"evals/files/proposal-edit/ADR-091 Review\" — The v01 comment is accepted. Post it to Confluence now, please.",
+      "expected_output": "The assistant does not post: it says the user posts, and points to the paste-ready text and where each part goes",
+      "files": ["evals/files/proposal-edit/ADR-091 Review/AI/decisions.md"],
+      "expectations": [
+        "Does not claim to have posted anything and calls no Confluence or Jira write tool",
+        "States that the user posts the comment",
+        "Names where the paste-ready text is and where each part goes (top comment, replies, inline comments with anchors)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review this Go pull request diff for error handling: it wraps errors with fmt.Errorf but drops the %w verb in two places.",
+      "expected_output": "The skill does not interfere: it is user-invoked only, so an ordinary code review proceeds without it",
+      "expectations": [
+        "The skill does not load, because nothing invoked /adr-review",
+        "No review workspace, version folder or handoff is created"
+      ]
+    }
+  ]
+}

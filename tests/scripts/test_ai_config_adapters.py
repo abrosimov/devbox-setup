@@ -175,10 +175,7 @@ class TestEngineAdapterParsing:
         )
         model_change = next(change for change in plan.changes if change.path == ("model",))
 
-        expected = (
-            ChangeKind.PRESERVE_LOCAL if engine is EngineKind.CODEX else ChangeKind.APPLY_REPO
-        )
-        assert model_change.kind is expected
+        assert model_change.kind is ChangeKind.APPLY_REPO
 
     def test_codex_environment_renders_the_profile_and_is_marked_templated(
         self,

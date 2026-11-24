@@ -89,6 +89,19 @@ devbox_macos_defaults:
     key: launchanim
     type: bool
     value: false
+  # Spaces stay put. workspaces-auto-swoosh=false stops macOS from switching to
+  # another Space (and display) when an app with a window there is activated,
+  # so a window no longer pulls focus across screens. mru-spaces=false stops
+  # Spaces from being reordered by most recent use. They are the keys behind the
+  # two Mission Control toggles in System Settings → Desktop & Dock.
+  - domain: com.apple.dock
+    key: workspaces-auto-swoosh
+    type: bool
+    value: false
+  - domain: com.apple.dock
+    key: mru-spaces
+    type: bool
+    value: false
 
   # --- Text input substitutions -------------------------------------------
   # All of these mangle source code (smart quotes break string literals,

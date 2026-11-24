@@ -221,7 +221,7 @@ help:
 	@echo "  make shell-push       - refresh fish + fisher plugins + tide preset + font cache (no sudo)"
 	@echo "  make mcp-sync         - re-register Claude Code MCP servers (no sudo)"
 	@echo "  make local-push       - deploy only gitignored local/ overlay (surgical; already included in dotfiles-push)"
-	@echo "  make macos-defaults   - re-apply Touch ID / pmset / DevToolsSecurity (sudo required)"
+	@echo "  make macos-defaults   - re-apply Touch ID / pmset / DevToolsSecurity / user defaults / Night Shift (sudo required)"
 	@echo "  make sync-upstream-docs - sync the pinned FPF, Narrative and Engineering DPF bundle (ARGS=--check for preview)"
 	@echo ""
 	@echo "Test / introspection:"

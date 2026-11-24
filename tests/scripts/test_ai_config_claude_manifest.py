@@ -34,6 +34,7 @@ FIXTURES_PATH = Path(__file__).parent / "fixtures" / "ai_config" / "claude"
 # reconciling machine can supply; the leaf is templated for the same reason the
 # profile-dependent ones are.
 PROFILE_TEMPLATED_PATHS = {
+    ("model",),
     ("env", "CC_LANGFUSE_TRACE_TAGS"),
     ("env", "LANGFUSE_TRACING_ENVIRONMENT"),
     ("env", "LANGFUSE_USER_ID"),
@@ -179,6 +180,44 @@ class TestClaudeFieldManifest:
         document = repository_document("personal")
 
         assert document.templated_paths == PROFILE_TEMPLATED_PATHS
+
+    @pytest.mark.parametrize("base_state", ["recorded", "absent"])
+    @pytest.mark.parametrize("live_model", ["opus", "claude-sonnet-4-6", "claude-opus-5-5"])
+    @pytest.mark.parametrize("profile", ["personal", "work"])
+    def test_pinned_model_is_applied_over_any_live_model_without_a_decision(
+        self,
+        manifest: FieldManifest,
+        profile: str,
+        live_model: str,
+        base_state: str,
+    ) -> None:
+        path = ("model",)
+        document = repository_document(profile)
+        rendered = snapshot_mapping(document.rendered)
+        pinned = SemanticSnapshot.from_value({"model": "claude-opus-5-5"})
+
+        plan = plan_reconciliation(
+            base=pinned if base_state == "recorded" else None,
+            repo=document.rendered,
+            live=SemanticSnapshot.from_value({"model": live_model}),
+            manifest=manifest,
+            templated_paths=document.templated_paths,
+        )
+
+        change = next(change for change in plan.changes if change.path == path)
+        assert rendered["model"] == "claude-opus-5-5"
+        assert path in document.templated_paths
+        assert change.templated is True
+        assert change.scope is FieldScope.SHARED
+        if live_model == "claude-opus-5-5":
+            assert change.kind is ChangeKind.UNCHANGED
+        else:
+            assert change.kind is ChangeKind.APPLY_REPO
+        assert change.kind not in {
+            ChangeKind.CAPTURE_LIVE,
+            ChangeKind.CONFLICT,
+            ChangeKind.INITIALISATION_REQUIRED,
+        }
 
     def test_personal_renders_langfuse_skill_access(self) -> None:
         rendered = snapshot_mapping(repository_document("personal").rendered)

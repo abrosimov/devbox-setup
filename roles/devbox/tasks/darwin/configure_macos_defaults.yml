@@ -23,6 +23,35 @@
     - Restart Finder
   tags: [macos, defaults]
 
+# None of these keys is an Apple API: each is an implementation detail of the
+# app that owns the domain, so a macOS update can rename, relocate or ignore it
+# and the write above still succeeds. Read every key back with `defaults read`,
+# the view the owning app gets, and fail the run on a missing key or a different
+# value. `defaults read` prints booleans as 1/0 and numbers in their shortest
+# form, so booleans and integers compare as text and floats numerically.
+# Skipped in check mode, where nothing was written.
+- name: "Verify macOS user defaults read back as written"
+  ansible.builtin.command:
+    argv: >-
+      {{ ['defaults']
+         + (['-currentHost'] if (item.host | default('')) == 'currentHost' else [])
+         + ['read', item.domain, item.key] }}
+  loop: "{{ devbox_macos_defaults + (devbox_extra_macos_defaults | default([])) }}"
+  loop_control:
+    label: "{{ item.domain }}.{{ item.key }}"
+  register: devbox_macos_defaults_check
+  changed_when: false
+  failed_when: >-
+    devbox_macos_defaults_check.rc != 0
+    or (
+      (((devbox_macos_defaults_check.stdout | trim | float) - (item.value | float)) | abs) > 0.000001
+      if item.type == 'float'
+      else (devbox_macos_defaults_check.stdout | trim)
+        != ((('1' if item.value else '0') if item.type == 'bool' else (item.value | string)))
+    )
+  when: not ansible_check_mode
+  tags: [macos, defaults]
+
 # NOTE: devbox_macos_defaults_result feeds the re-login gate in main.yml. Most
 # defaults here apply via the killall handlers above or take effect immediately,
 # so they never need a fresh login. The exception is login-cached NSGlobalDomain
@@ -108,4 +137,38 @@
     - devbox_night_shift.enabled | default(false)
     - (devbox_ns_temp.stdout | default('') | trim | int) != (devbox_night_shift.temperature | int)
   changed_when: true
+  tags: [macos, defaults, nightshift]
+
+# CoreBrightness is private: nightlight drives it through undocumented calls, and
+# a call macOS ignores still exits 0. Read all three dimensions back after the
+# writes, with the same normalisation as the set tasks, and fail the run on any
+# difference. Under a 12-hour clock (see the locale note above) the schedule
+# never matches and this task fails, rather than the set task silently firing on
+# every run. Skipped in check mode, where nothing was written.
+- name: "Night Shift — verify status, schedule and temperature"
+  ansible.builtin.shell: |
+    set -eu
+    printf 'status=%s\n' "$(nightlight status)"
+    printf 'schedule=%s\n' "$(nightlight schedule)"
+    printf 'temp=%s\n' "$(nightlight temp)"
+  vars:
+    _devbox_ns_from_h: "{{ devbox_night_shift.schedule.split()[0].split(':')[0] | int }}"
+    _devbox_ns_from_m: "{{ devbox_night_shift.schedule.split()[0].split(':')[1] }}"
+    _devbox_ns_to_h: "{{ devbox_night_shift.schedule.split()[1].split(':')[0] | int }}"
+    _devbox_ns_to_m: "{{ devbox_night_shift.schedule.split()[1].split(':')[1] }}"
+    _devbox_ns_expected_schedule: >-
+      {{ 'sunset to sunrise' if devbox_night_shift.schedule == 'sunset'
+         else _devbox_ns_from_h ~ ':' ~ _devbox_ns_from_m ~ ' to ' ~ _devbox_ns_to_h ~ ':' ~ _devbox_ns_to_m }}
+  register: devbox_ns_check
+  changed_when: false
+  failed_when: >-
+    devbox_ns_check.rc != 0
+    or devbox_ns_check.stdout is search('(?m)^status=off\b')
+    or ('schedule=' ~ (_devbox_ns_expected_schedule | trim))
+      not in (devbox_ns_check.stdout_lines | map('trim') | list)
+    or ('temp=' ~ (devbox_night_shift.temperature | int))
+      not in (devbox_ns_check.stdout_lines | map('trim') | list)
+  when:
+    - devbox_night_shift.enabled | default(false)
+    - not ansible_check_mode
   tags: [macos, defaults, nightshift]

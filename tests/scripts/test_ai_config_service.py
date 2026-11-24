@@ -1281,13 +1281,25 @@ CODEX_REASONING_SUMMARY_RULES = b"""    {
       "scope": "shared"
     },
 """
-CODEX_APPS_MANIFEST = MANIFEST.read_bytes().replace(CODEX_REASONING_SUMMARY_RULES, b"", 1)
+CODEX_MODEL_RULE = b"""    {
+      "path": "model",
+      "scope": "shared"
+    },
+"""
+CODEX_MODEL_PREFERENCE_RULE = CODEX_MODEL_RULE.replace(b'"shared"', b'"preference"')
+CODEX_REASONING_SUMMARY_MANIFEST = MANIFEST.read_bytes().replace(
+    CODEX_MODEL_RULE, CODEX_MODEL_PREFERENCE_RULE, 1
+)
+CODEX_APPS_MANIFEST = CODEX_REASONING_SUMMARY_MANIFEST.replace(
+    CODEX_REASONING_SUMMARY_RULES, b"", 1
+)
 CODEX_MANIFEST_SOURCES = {
     "pre-preference": OLD_MANIFEST.read_bytes(),
     "reasoning-preference": REASONING_MANIFEST.read_bytes(),
     "model-and-reasoning-preferences": CODEX_APPS_MANIFEST.replace(CODEX_APPS_RULE, b"", 1),
     "apps": CODEX_APPS_MANIFEST,
-    "reasoning-summary": MANIFEST.read_bytes(),
+    "reasoning-summary": CODEX_REASONING_SUMMARY_MANIFEST,
+    "model-pinned": MANIFEST.read_bytes(),
 }
 CODEX_MANIFEST_DIGESTS = {
     "pre-preference": "3d48d94721e35a3ae8dcefbc70659f28fc974d03e64954f182666a529b933411",
@@ -1297,6 +1309,7 @@ CODEX_MANIFEST_DIGESTS = {
     ),
     "apps": "2f4f8960fc9d93533b79bd6b26031907e43ccbdd6ad5cbe4990b4d9cdca879e9",
     "reasoning-summary": "723844aa8bbe8d9d48abf2828b759fc87eb5a8d4c8be0aca88f139f46f3ea483",
+    "model-pinned": "d66a65c6394155ae6a18b89b14cbbab2b68b419557dd1f06bd554a883fd5847e",
 }
 CLAUDE_MANIFEST = ROOT / "roles/devbox/files/dot_claude/settings.ai-config.json"
 CLAUDE_PRE_HOOKS_MANIFEST = (
@@ -1450,44 +1463,78 @@ class TestClaudeManifestMigrations:
 
 
 class TestPreferenceOperations:
-    @pytest.mark.parametrize("live_model", [None, "gpt-6-astra"])
-    def test_model_bootstrap_preserves_source_and_defers_missing_default(self, tree, live_model):
-        tree.paths.repository.write_text('model = "gpt-5.6-sol"\n')
+    @pytest.mark.parametrize("live_effort", [None, "high"])
+    def test_effort_bootstrap_preserves_source_and_defers_missing_default(self, tree, live_effort):
+        tree.paths.repository.write_text('model_reasoning_effort = "medium"\n')
         tree.paths.live.parent.mkdir(parents=True)
-        tree.paths.live.write_text(f'model = "{live_model}"\n' if live_model else "")
+        tree.paths.live.write_text(
+            f'model_reasoning_effort = "{live_effort}"\n' if live_effort else ""
+        )
         source_before = tree.paths.repository.read_bytes()
         live_before = tree.paths.live.read_bytes()
         preview = bootstrap(tree, write=False)
-        choice = next(change for change in preview.changes if change.path == ("model",))
+        choice = next(
+            change for change in preview.changes if change.path == ("model_reasoning_effort",)
+        )
         assert choice.action is (
-            BootstrapAction.PRESERVE_LOCAL if live_model else BootstrapAction.KEEP_REPO
+            BootstrapAction.PRESERVE_LOCAL if live_effort else BootstrapAction.KEEP_REPO
         )
         bootstrap(tree, write=True, preview_token=preview.preview_token)
         assert tree.paths.repository.read_bytes() == source_before
         assert tree.paths.live.read_bytes() == live_before
         operate(tree)
-        assert tomllib.loads(tree.paths.live.read_text())["model"] == (live_model or "gpt-5.6-sol")
+        assert tomllib.loads(tree.paths.live.read_text())["model_reasoning_effort"] == (
+            live_effort or "medium"
+        )
 
-    @pytest.mark.parametrize("model", ["gpt-5.6-sol", "gpt-6-astra"])
-    def test_local_model_survives_repeated_apply_and_reconcile(self, tree, model):
-        tree.paths.repository.write_text('model = "gpt-5.6-sol"\n')
+    @pytest.mark.parametrize("effort", ["medium", "max"])
+    def test_local_effort_survives_repeated_apply_and_reconcile(self, tree, effort):
+        tree.paths.repository.write_text('model_reasoning_effort = "medium"\n')
         tree.paths.live.parent.mkdir(parents=True)
-        tree.paths.live.write_text(f'model = "{model}"\n')
+        tree.paths.live.write_text(f'model_reasoning_effort = "{effort}"\n')
         original = tree.paths.repository.read_bytes()
         for mode in (OperationMode.APPLY, OperationMode.RECONCILE, OperationMode.APPLY):
             result = operate(tree, mode=mode)
             assert result.captured == 0
-            assert tomllib.loads(tree.paths.live.read_text())["model"] == model
+            assert tomllib.loads(tree.paths.live.read_text())["model_reasoning_effort"] == effort
             assert tree.paths.repository.read_bytes() == original
         assert not operate(tree).changed
 
-    def test_fresh_model_uses_actual_repository_sol_default(self, tree):
+    def test_fresh_model_uses_the_pinned_repository_default(self, tree):
         source = (MANIFEST.parent / "config.toml.j2").read_bytes()
         tree.paths.repository.write_bytes(source)
         copy_template_variables(tree.repo_root)
         operate(tree)
         assert tomllib.loads(tree.paths.live.read_text())["model"] == "gpt-5.6-sol"
         assert tree.paths.repository.read_bytes() == source
+
+    @pytest.mark.parametrize("mode", [OperationMode.APPLY, OperationMode.RECONCILE])
+    @pytest.mark.parametrize("recorded_base", [False, True])
+    def test_live_model_is_reset_to_the_pin_without_a_decision(self, tree, mode, recorded_base):
+        source = (MANIFEST.parent / "config.toml.j2").read_bytes()
+        tree.paths.repository.write_bytes(source)
+        copy_template_variables(tree.repo_root)
+        operate(tree)
+        if not recorded_base:
+            resolve_state_paths(
+                EngineKind.CODEX, profile="work", home=tree.home, state_root=tree.state_root
+            ).base.unlink()
+        live_text = tree.paths.live.read_text(encoding="utf-8")
+        assert 'model = "gpt-5.6-sol"' in live_text
+        assert 'model_reasoning_effort = "medium"' in live_text
+        tree.paths.live.write_text(
+            live_text.replace('model = "gpt-5.6-sol"', 'model = "gpt-6-astra"').replace(
+                'model_reasoning_effort = "medium"', 'model_reasoning_effort = "max"'
+            ),
+            encoding="utf-8",
+        )
+        result = operate(tree, mode=mode)
+        live = tomllib.loads(tree.paths.live.read_text())
+        assert result.captured == 0
+        assert live["model"] == "gpt-5.6-sol"
+        assert live["model_reasoning_effort"] == "max"
+        assert tree.paths.repository.read_bytes() == source
+        assert not operate(tree).changed
 
     @pytest.mark.parametrize("previous_manifest", [OLD_MANIFEST, REASONING_MANIFEST])
     def test_migration_only_persists_once(self, tree, previous_manifest):
@@ -1497,7 +1544,7 @@ class TestPreferenceOperations:
         )
         state = json.loads(paths.base.read_bytes())
         state["manifest_digest"] = digest_manifest_source(previous_manifest.read_bytes())
-        state["snapshot"]["model"] = "gpt-6-astra"
+        state["snapshot"]["model"] = "gpt-5.6-sol"
         if previous_manifest == OLD_MANIFEST:
             state["snapshot"]["model_reasoning_effort"] = "medium"
         paths.base.write_text(json.dumps(state))
@@ -1529,7 +1576,14 @@ class TestPreferenceOperations:
 
     @pytest.mark.parametrize(
         "previous_manifest",
-        [None, "pre-preference", "reasoning-preference", "model-and-reasoning-preferences", "apps"],
+        [
+            None,
+            "pre-preference",
+            "reasoning-preference",
+            "model-and-reasoning-preferences",
+            "apps",
+            "reasoning-summary",
+        ],
     )
     def test_preserves_choice_applies_other_update_and_excludes_baseline(
         self, tree, previous_manifest
@@ -1550,19 +1604,14 @@ class TestPreferenceOperations:
                         snapshot=SemanticSnapshot.from_value(
                             {
                                 "service_tier": "old",
-                                "model": "gpt-6-astra",
                                 "model_reasoning_effort": "medium",
                             }
                         ),
                     )
                 )
             )
-        tree.paths.live.write_text(
-            'service_tier = "old"\nmodel = "gpt-5.6-sol"\nmodel_reasoning_effort = "max"\n'
-        )
-        tree.paths.repository.write_text(
-            'service_tier = "new"\nmodel = "gpt-6-astra"\nmodel_reasoning_effort = "low"\n'
-        )
+        tree.paths.live.write_text('service_tier = "old"\nmodel_reasoning_effort = "max"\n')
+        tree.paths.repository.write_text('service_tier = "new"\nmodel_reasoning_effort = "low"\n')
         original = tree.paths.repository.read_bytes()
         base_before = paths.base.read_bytes()
         live_before = tree.paths.live.read_bytes()
@@ -1573,9 +1622,7 @@ class TestPreferenceOperations:
         assert result.captured == 0
         live = tomllib.loads(tree.paths.live.read_text())
         assert live["service_tier"] == "new"
-        assert live["model"] == "gpt-5.6-sol"
         assert live["model_reasoning_effort"] == "max"
-        assert "model" not in json.loads(paths.base.read_text())["snapshot"]
         assert "model_reasoning_effort" not in json.loads(paths.base.read_text())["snapshot"]
         assert tree.paths.repository.read_bytes() == original
         assert not operate(tree).changed
@@ -1701,16 +1748,18 @@ class TestPreferenceOperations:
         assert tomllib.loads(tree.paths.live.read_text())["model_reasoning_effort"] == "medium"
 
     @pytest.mark.parametrize(
-        ("source", "target", "demoted"),
+        ("source", "target", "demoted", "promoted"),
         [
-            ("pre-preference", "reasoning-preference", ("model_reasoning_effort",)),
-            ("pre-preference", "reasoning-summary", ("model", "model_reasoning_effort")),
-            ("reasoning-preference", "reasoning-summary", ("model",)),
-            ("model-and-reasoning-preferences", "reasoning-summary", ()),
-            ("apps", "reasoning-summary", ()),
+            ("pre-preference", "model-pinned", ("model_reasoning_effort",), ()),
+            ("reasoning-preference", "model-pinned", (), ()),
+            ("model-and-reasoning-preferences", "model-pinned", (), ("model",)),
+            ("apps", "model-pinned", (), ("model",)),
+            ("reasoning-summary", "model-pinned", (), ("model",)),
         ],
     )
-    def test_recognised_migration_changes_only_preference_scope(self, source, target, demoted):
+    def test_recognised_migration_changes_only_preference_scope(
+        self, source, target, demoted, promoted
+    ):
         source_bytes = CODEX_MANIFEST_SOURCES[source]
         target_bytes = CODEX_MANIFEST_SOURCES[target]
         assert digest_manifest_source(source_bytes) == CODEX_MANIFEST_DIGESTS[source]
@@ -1721,6 +1770,10 @@ class TestPreferenceOperations:
             rule = next(rule for rule in old["fields"] if rule["path"] == field_name)
             assert rule["scope"] == "shared"
             rule["scope"] = "preference"
+        for field_name in promoted:
+            rule = next(rule for rule in old["fields"] if rule["path"] == field_name)
+            assert rule["scope"] == "preference"
+            rule["scope"] = "shared"
         # otel.environment also left the manifest on the way to the current one:
         # the value is a Jinja expression in config.toml.j2 now, and provenance
         # comes from the render. It carries no preference semantics, so the
@@ -1738,10 +1791,14 @@ class TestPreferenceOperations:
             new["fields"] = [rule for rule in new["fields"] if rule["path"] not in joined]
         assert old == new
         snapshot = {
-            "model": "gpt-6-astra",
-            "model_reasoning_effort": "high",
-            "service_tier": "default",
-            "features": {"hooks": True},
+            key: value
+            for key, value in {
+                "model": "gpt-5.6-sol",
+                "model_reasoning_effort": "high",
+                "service_tier": "default",
+                "features": {"hooks": True},
+            }.items()
+            if key not in promoted
         }
         state = BaseState(
             engine=EngineKind.CODEX,

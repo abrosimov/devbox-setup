@@ -37,9 +37,9 @@ _CODEX_MODEL_AND_REASONING_PREFERENCES = (
     "f6de9f0d247548b2dfb5c991c5a2db8424c16d71751633c81c03ea823d612f61"
 )
 _CODEX_APPS = "2f4f8960fc9d93533b79bd6b26031907e43ccbdd6ad5cbe4990b4d9cdca879e9"
-# Tracks the current codex manifest: `model_reasoning_summary` and
-# `hide_agent_reasoning` joined as shared fields.
 _CODEX_REASONING_SUMMARY = "723844aa8bbe8d9d48abf2828b759fc87eb5a8d4c8be0aca88f139f46f3ea483"
+# Tracks the current codex manifest: `model` became a shared, repository-pinned field.
+_CODEX_MODEL_PINNED = "d66a65c6394155ae6a18b89b14cbbab2b68b419557dd1f06bd554a883fd5847e"
 # Exact transitions retain baseline history without accepting unrelated manifests.
 _MANIFEST_MIGRATIONS = {
     ("claude", _CLAUDE_PRE_HOOKS, _CLAUDE_THINKING_SUMMARIES): (),
@@ -52,13 +52,11 @@ _MANIFEST_MIGRATIONS = {
     ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_PREFERENCE): (
         "model_reasoning_effort",
     ),
-    ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_REASONING_SUMMARY): (
-        "model",
-        "model_reasoning_effort",
-    ),
-    ("codex", _CODEX_REASONING_PREFERENCE, _CODEX_REASONING_SUMMARY): ("model",),
-    ("codex", _CODEX_MODEL_AND_REASONING_PREFERENCES, _CODEX_REASONING_SUMMARY): (),
-    ("codex", _CODEX_APPS, _CODEX_REASONING_SUMMARY): (),
+    ("codex", _CODEX_SHARED_MODEL_AND_REASONING, _CODEX_MODEL_PINNED): ("model_reasoning_effort",),
+    ("codex", _CODEX_REASONING_PREFERENCE, _CODEX_MODEL_PINNED): (),
+    ("codex", _CODEX_MODEL_AND_REASONING_PREFERENCES, _CODEX_MODEL_PINNED): (),
+    ("codex", _CODEX_APPS, _CODEX_MODEL_PINNED): (),
+    ("codex", _CODEX_REASONING_SUMMARY, _CODEX_MODEL_PINNED): (),
 }
 
 

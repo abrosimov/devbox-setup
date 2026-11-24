@@ -83,8 +83,13 @@
       }}
 - name: "Configure macOS defaults (UI prefs, Night Shift)"
   ansible.builtin.include_tasks: darwin/configure_macos_defaults.yml
+  # A dynamic include is skipped unless it matches --tags itself; the tasks
+  # inside keep their own tags, so `--tags defaults` or `--tags nightshift`
+  # selects only their part.
+  tags: [macos, defaults, nightshift]
 - name: "Configure Spotlight global hotkeys (release Cmd+Space for Raycast)"
   ansible.builtin.include_tasks: darwin/configure_spotlight_hotkeys.yml
+  tags: [macos, spotlight]
 - name: "Configure BetterDisplay (import display arrangement from local overlay if present)"
   ansible.builtin.include_tasks: darwin/configure_betterdisplay.yml
 - name: "Configure macOS login items (autostart GUI apps)"

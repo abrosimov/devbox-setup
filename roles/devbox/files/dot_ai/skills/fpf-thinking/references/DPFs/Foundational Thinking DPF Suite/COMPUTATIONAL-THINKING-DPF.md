@@ -5,7 +5,7 @@
 > A pattern language for constructing, understanding, analyzing and transforming algorithms, including their interpretation and interaction.
 
 - **Author:** Anatoly Levenchuk, with AI-assisted development and review
-- **Version:** 24 October 2026
+- **Version:** 22 November 2026
 - **Status:** Eternal alpha: a repertoire open to correction and extension.
 - **License:** © 2026 Anatoly Levenchuk. Original framework text: [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Cited sources retain their own terms.
 - **Publication:** [FPF Library repository](https://github.com/ailev/FPF)
@@ -89,7 +89,7 @@ The examples below show how one method's result makes another method usable, inc
 
 For example, [CMP.10 - Choose a Computational Representation for Its Access and Update Operations](#cmp10---choose-a-computational-representation-for-its-access-and-update-operations) can settle how to make one membership query in an existing unsorted list: a scan may suffice, with no new index to build. Many later queries or a different update workload can change that choice.
 
-You can ask an assisting agent: “Explain this and give me your comments in the language of my work, without framework jargon.” Ask it to follow an input through the proposed operations, retain the assumptions needed by the next method, and explain what the result permits.
+You can ask an assisting agent, “Explain this and give me your comments in the language of my work, without framework jargon.” For a question about a run, ask it to follow the input through the operations and say what observation answers the question. For help designing the computation yourself, give it the recipient's use and the operations already available. Try your own choice of units and connections, then ask which allowed inputs or interactions might give a wrong result with that choice. When entrusting design to a capable agent with the needed access, ask for the construction and its grounds over the commissioned cases.
 
 ### CP-DESCRIPTION-TO-BEHAVIOR - A notification rule becomes an ongoing service
 
@@ -105,7 +105,7 @@ The word *immediate* introduces a further obligation. Decide whether the receive
 
 Now the transport may repeat a message. Re-executing `Notify` can duplicate an external effect, even if rule evaluation is a pure function. A message identifier and retained delivery state can support a changed operation, but recording before or after sending leaves different crash cases. CMP.14 develops the interaction and failure conditions; the Readme's retry case below shows why a repeated logical request needs a different argument from a cached function result. CMP.10 helps select storage only after the required identity and retention conditions are known. Deleting delivery state after an arbitrary interval cannot preserve a promise covering later repetitions.
 
-If messages must instead be classified by urgency inferred from content, the known sender test no longer supplies the decision rule. CMP.7 constructs the learner, its candidate rule family, feedback and conditions of further use; CMP.4 or CMP.6 can supply its search or update. Better training fit does not establish the future error rate, and classifier quality does not establish delivery behavior. A change to inference can therefore preserve the notification protocol while reopening the evidence for classification.
+If messages must instead be classified by urgency inferred from content, the known sender test no longer supplies the decision rule. An agreed content rule may already define urgency. Interpret it and establish what to return on the admitted messages. Where the receiving work instead calls for learning a rule from examples or feedback, CMP.7 constructs the learner, its candidate rule family, feedback and conditions of further use; CMP.4 or CMP.6 can supply its search or update. Better training fit does not establish the future error rate, and classifier quality does not establish delivery behavior. A change to inference can therefore preserve the notification protocol while reopening the evidence for classification.
 
 This one use can involve an interpreted description, learned behavior and an interacting realization without making all three compulsory. Their connection follows from what the service must do and what its environment supplies. The full methods explain the respective constructions.
 
@@ -298,7 +298,7 @@ These methods do not form a compulsory sequence. A reader with an adequate formu
 
 Updating a visited set can be part of executing a graph-search algorithm while a route-finding task is under way. Changing the required answer from any route to a route with the fewest edges changes which frontier-selection discipline suffices; a successful visited-set update alone does not establish the stronger result. The practitioner needs to connect the local update, the algorithm's invariant and the route requirement, while retaining its representation and memory conditions. Knowing set operations and the desired route can leave that intermediate algorithmic reasoning missing.
 
-FPF B.1.5.EW helps recover these constituent–whole connections; B.1.5.RS examines a proposed replacement. Examine the connections needed to settle the present question. Performing a method described here can require capability, support and compatible resources for its constituent operations and for the larger work.
+If the task is to design the route calculation, first ask what the traveller counts. Fewest links in a supplied unweighted graph and fewest vehicle boardings can select different routes. A single ride can pass several stops. For the latter use, represent being aboard a particular journey where that affects the remaining options. Count entering a vehicle as one boarding and continuing aboard as zero. Allow a transfer only where and when it can be made. Minimize the sum over feasible journeys and recover the boardings from the chosen path. For a question limited to the fewest edges of the given graph, its vertices and edges already specify the units. FPF B.1.5.EW and B.1.5.RS help when the practitioner must determine which executions contributed to the service or whether different operations can supply it.
 
 ## CMP.Reference:4 - Worked connection - One best selection becomes every best selection
 
@@ -334,7 +334,7 @@ The worked cases use small inputs and explicit operations so that a reader can r
 
 For a combination of methods, check these questions:
 
-- Does the original question require a value, a witness, complete enumeration, an approximation or a continuing behavior?
+- Does each recipient need a value, a witness, complete enumeration, an approximation or a continuing response? If observations must describe the same run, or requests must be served together, which relations must the computation preserve among them?
 - Can each contribution obtain what the next one consumes, under the same input, meaning and resource conditions?
 - What is retained or discarded by sharing, compression, relaxation, sampling, learning or translation, and can that change the requested answer?
 - Which argument covers correctness and which covers termination or continuing progress? Are their operations and assumptions available in this setting?
@@ -351,7 +351,7 @@ Use the relevant body's checks where its operation enters; an unchanged supplier
 | A translation or composition is checked only by its final value | Include the intermediate observations, failures and progress on which its context relies. |
 | A model-specific limit is treated as an unrestricted impossibility | State the access and cost model, error and input promises, then examine which change escapes the bound. |
 
-To assess transfer, use evidence from a task with a changed input promise, required output or execution rule. If a new trial is needed, vary a condition that tests the contribution in question. Establish who recovered the affected construction and what assistance they used. Attribute the result to the performer whose contribution the changed task exposed. If the question concerns a learner’s own skill, identify what the learner did with the permitted help. To assess a learned rule’s statistical generalization, examine its performance on further cases.
+To assess transfer, use evidence from a task with a changed input promise, required output or execution rule. If a new trial is needed, vary a condition that tests the contribution in question. Establish who recovered the affected construction and what assistance they used. Attribute the result to the performer whose contribution the changed task exposed. If the question concerns a learner’s own skill, identify what the learner did with the permitted help. To establish development, compare with the same learner's earlier work under comparable assistance. A team that can now use a new solver may have acquired a capability through that provision. To credit a teaching intervention, establish what change it explains. For a population-risk claim, justify transfer under the data law, sampling conditions and rule family. A generalization bound can settle a threshold under its stated assumptions. Examine performance on a further sample when the commission calls for that observation or the bound leaves the decision open.
 
 ## CMP.Reference:6 - Consequences and Architectural Rationale
 
@@ -725,7 +725,7 @@ If equal subproblems recur, CMP.3 can identify and share them. If the decomposit
 
 #### CMP.2:4.6 - Use the result and revisit the assumption that changed
 
-Run a small case through the complete procedure, including the use of its returned answer. Change one condition that stresses the construction: empty input, a boundary case, a different output request or a resource limit. Follow the affected base, join and progress arguments.
+Follow the procedure to the result the recipient can use. When a concrete run helps establish the base, join or progress argument, choose an input on which the disputed condition matters. A proof covering the promised domain can settle the general claim. If the actual implementation or its use is in question, establish that it realizes the proved construction under the relevant conditions.
 
 The result may be a working procedure, an unaffordable but informative construction, or a located missing operation. Use that difference to choose the next algorithmic move. Formal proof or additional testing is chosen for the uncertainty that matters to the receiving use.
 
@@ -1081,7 +1081,7 @@ On finding a witness, return it with the meaning of its admissibility. For optim
 
 On interruption, return the available candidate and unresolved possibility. “No witness found within this run” is useful information but does not establish that no witness exists. If the recipient requested only a satisfactory candidate, finding one can finish the work before the search is exhausted.
 
-Use an initial and changed-condition case to check which conclusion the recipient can use. Changing an output from one optimum to all optima, or changing a domain, directly tests the exclusion's scope.
+Check the conclusion against the requested output. Changing the request from one optimum to all optima can expose an exclusion that was sufficient only for naming one. Use such a contrast when the scope of the argument is open. A verified witness completes a request for one, and a general exclusion applies throughout the domain its premises cover.
 
 ### CMP.4:5 - Archetypal Grounding
 
@@ -1199,7 +1199,7 @@ The designer must construct both directions of use: how original candidates are 
 
 ### CMP.5:4 - Solution
 
-**State the original problem → construct the easier comparison → obtain its informative result → recover an admissible answer → bound the loss → choose the next use.**
+**State the original question → build the easier comparison and establish its relation to the original problem → derive the required bound, recover and verify a feasible candidate, or supply both when the answer requires them.**
 
 #### CMP.5:4.1 - State what the original candidate must satisfy
 
@@ -1247,7 +1247,7 @@ Recovery can fail or produce no better candidate. Retain an already admissible b
 
 #### CMP.5:4.5 - Return to the original problem and choose the next move
 
-Return the recovered candidate under its original conditions and the bound that applies to the original objective. For minimization, an additive gap `C-L` bounds how much the candidate can still improve. A ratio uses additional conditions, such as a positive denominator; a zero or negative lower bound does not support a generic ratio claim.
+Return the conclusion the bound supports about the original objective. A bound on a relaxed problem can decide a threshold for every original candidate. If the commission requires an admissible candidate, return one and establish its feasibility. If it also requires a performance guarantee, supply the corresponding bound. For minimization, an additive gap `C-L` bounds how much the candidate can still improve. A ratio uses additional conditions, such as a positive denominator; a zero or negative lower bound does not support a generic ratio claim.
 
 Use the result to adopt the candidate, stop at an adequate gap, guide a branch of CMP.4, tighten the relaxation, revise recovery or choose a different algorithm. The stronger relaxation is worthwhile only if its expected contribution warrants the extra work.
 
@@ -1591,11 +1591,11 @@ For a finite discrete neighborhood, direct gain calculation may be simpler than 
 
 ### CMP.7:1 - Problem frame
 
-**Use this when** examples or feedback are available and the required rule for further cases is missing, or an existing learning procedure must be changed for a different target, kind of feedback or resource limit. You need to construct the procedure that obtains the rule, rather than leave “learn the model” as an unexplained operation.
+**Use this when** the receiver needs a procedure that can turn specified kinds of examples or feedback into a rule for further cases. Design it from the intended use, the permitted evidence and how the learner will obtain that evidence. To fit a rule now, use the actual available examples or feedback. An existing procedure may need revision for a different target, kind of feedback or resource limit.
 
 The situation occurs when learning a classifier, estimating a response, constructing a surrogate, discovering a program or updating a policy. The output may be a symbolic rule, a function represented by weights, a distribution or a retained set of candidate rules. Its required form follows from the intended use.
 
-The gain is a learning procedure with explicit inputs, selection or update operations and a learned result that can be applied at its warranted scope. The reader needs functions, finite examples and a loss or another stated comparison. Probabilistic guarantees require the corresponding additional probability model.
+A receiver commissioning a learning procedure needs its inputs, selection or update operations, and grounds for what they produce under the stated conditions. When a trained rule is due, deliver a rule that fits the agreed inputs, restrictions and use. Use a suitable existing fit where the terms allow it. Carry out the specified training when a new run is commissioned or the required fit is still missing. The necessary mathematics depends on the selected rule family and how candidate rules will be compared. Probabilistic guarantees require the corresponding additional probability model.
 
 Use an existing rule directly when it already serves the purpose. Use an established learner when its inputs, target, restrictions and costs fit. This pattern is needed when those choices or their connection to further use must be constructed or revised. Explaining a learned rule and teaching a person to apply it are distinct tasks, supplied by the explanation and development methods when required.
 
@@ -1618,7 +1618,7 @@ Many rules can agree on the available examples and disagree elsewhere. Faster op
 
 ### CMP.7:4 - Solution
 
-**State the further use → identify available feedback → restrict the rule family → construct selection or update → establish its result → apply and revise.**
+**State the further use → identify available feedback → restrict the rule family → construct selection or update → establish what the procedure delivers → fit, apply or revise the rule as the receiving work requires.**
 
 #### CMP.7:4.1 - State what a further application must obtain
 
@@ -1630,7 +1630,7 @@ State whether the recipient needs one rule, a set of alternatives, an uncertaint
 
 #### CMP.7:4.2 - Recover the examples and feedback actually available
 
-Identify the supplied inputs, labels, rewards, demonstrations or other observations and how they were obtained. For missing labels, delayed feedback, selection effects or dependence between examples, state what the learning procedure can observe. MMP.7 supplies the probability model of recorded data when such a model is needed.
+Identify the supplied inputs, labels, rewards, demonstrations or other observations and how they were obtained. For missing labels, delayed feedback, selection effects or dependence between examples, state what the learning procedure can observe. Distinguish information available when the prediction is due from feedback for later predictions. If a probability model of the records is needed, use one that fits their actual selection and recording, or use MMP.7 to build it.
 
 Choose the feedback regime before deriving the update. In supervised learning, the supplied target response can evaluate a candidate prediction directly. In bandit feedback, only the consequence of a chosen action is observed; an update requiring all unchosen consequences is unavailable. A self-produced label remains the output of another rule and can propagate its errors.
 
@@ -1674,11 +1674,35 @@ When available examples leave candidates disagreeing at a consequential input, r
 
 #### CMP.7:4.6 - Apply the result and revise the part that fails
 
-Use the learned output on the intended further case. A discrepancy can come from the rule family, data law, target definition, optimization, representation or application. Follow the dependency that failed rather than reflexively requesting more training examples or more optimization steps.
+For a commission to make a decision on a further case, interpret the learned output in that case. A commission to design a learning procedure or establish a generalization guarantee can be answered before the future use, given sufficient grounds for its assumptions. A discrepancy can come from the rule family, data law, target definition, optimization, representation or application. Follow the dependency that failed rather than reflexively requesting more training examples or more optimization steps.
 
 If the target changes over time, choose a forgetting, reweighting, windowing or adaptation procedure together with the relation to the new target. C.11.DUA helps decide whether a discrepancy warrants more examples or a changed procedure; the common portfolio methods can retain several useful rules. This pattern constructs the learning operation used in that arrangement.
 
-Return the learned rule, its application method, the conditions material to its use and the narrow reason for reopening it.
+Return the learning procedure and its assumptions when the receiver will use it to fit a rule. If a trained rule was commissioned, deliver that rule with its application method, the conditions material to its use and the reason to revisit it.
+
+#### CMP.7:4.7 - Train a primer for a fixed responder
+
+Use this when a capable responder can produce worthwhile alternatives, yet direct requests repeatedly elicit similar answers. Keep a direct request and an adequate hand-written prompt as baselines. The adjustable component is a policy that writes an additional prompt, the *primer*. The original task and primer go to the fixed responder. Its response is what the recipient uses.
+
+During training, sample several primers per task and several responses to each primer. Evaluate their quality, their difference from a declared reference collection and diversity among responses. Use the responses to give credit to the policy that produced each primer. Keep the responder fixed during that update. On held-out tasks, apply the trained primer policy and the same responder. For comparison with direct generation and the adequate hand-written prompt, give each task the same reference collection and acceptance criteria. Keep responses that meet both the quality criterion and the required difference from that collection, then count the semantically distinct responses among those retained. Report quality losses that matter to the recipient. Use comparable sampling budgets. Count policy training, responder samples, scoring and both calls at use. If an adequate supplied primer still fails, examine the responder's capability. A search over prompt text through an API is another implementation with its own update and cost.
+
+[Albalak et al.](https://arxiv.org/html/2611.11740v1) used a reference set fixed before training. A distance from that set can reward repeated discoveries made after it was frozen. For a claim about continuing novelty, retain a common comparable set of tasks and update each practice’s own history under a stated rule. At each observation, establish how many different responses meet both its quality and novelty criteria. Compare those results and their costs under the same task conditions. Distances from different histories express different comparisons. Use a shared reference as well when the judgement requires novelty relative to the same prior collection. The extra cost of two-stage generation can make direct generation preferable for the intended use.
+
+#### CMP.7:4.8 - Generate with restricted topic knowledge and refine with a knowledgeable model
+
+Use this when familiar answers dominate and there is a way to assess proposals that depart from them. Specify which knowledge is restricted in the generator and how to check the restriction. Retain its ability to express a coherent proposal. In [D’Ambrosio et al.](https://arxiv.org/html/2611.11725v1), filtering topic material during training and continued training that induces partial forgetting were distinct interventions. Delaying access to documents or asking a knowledgeable model to simulate unfamiliarity makes a different intervention. Keep a knowledgeable generator as a comparator.
+
+Give the original task and the initial proposal to a knowledgeable reviser. Ask it to preserve the proposal's distinctive idea while correcting errors or supplying missing conditions. Retain both versions. Examine what survived, then assess originality, fitness for use and feasibility separately. A replacement idea can enter a new branch. An incoherent initial proposal, an idea lost during revision and a preserved but infeasible idea call for changes to different components. Compare the complete arrangement with direct expert generation and with knowledgeable generation given the same revision and assessment budget. Count model preparation, generation, revision, judging and the cost of testing a proposal.
+
+The experiments used model judgements of proposals. A feasibility judgement can select a trial. Feasibility in the intended practice needs its own demonstration. The study found no scoring advantage in neuroevolution at 1B or backpropagation at 7B under the reported conditions. Check the intended domain and the generator's capacity before paying for training.
+
+#### CMP.7:4.9 - Train a function while changing its internal representation
+
+Use this when current predictions fit but later changes or generalization matter, and the learner's internal computation can be examined and changed. Define the next task and any earlier responses that must survive. Compare ordinary training and an adequate familiar regularizer under stated budgets. Decide whether you need generalization to new inputs, adaptation within the present family, retention through an update or learning a new family. These require different observations.
+
+A Unified Factored Organizer (UFO) is a low-capacity nonlinear autoencoder used during training. Choose the primary network's internal quantities, such as node activations or attention weights, and normalize them across the training batch by component. For intracomponent regularization, each vector records one component's responses at fixed input positions. Preserve those positions across batches. In the reported finite-domain experiment, absent inputs occupy zero-filled positions and contribute no reconstruction loss. Reordering a minibatch must preserve which input each position denotes. An intercomponent vector records one input's responses across a layer's fixed components. For attention, identify heads and query/key positions consistently. The reported fixed-length sequences preserve these roles; variable lengths require a further construction. Choose coordinates and storage that are feasible for the domain. Train the primary network on task loss plus a weighted reconstruction loss. Hold the organizer's parameters fixed in that update while passing the gradient through it. In a separate update, keep the primary network fixed. Within each intracomponent vector, select the lowest-error entries. For intercomponent regularization, select the lowest-error complete vectors within each layer. The organizer receives the complete vectors; selection determines which reconstruction errors contribute to its update. Specify the selection rule and how the reconstruction weight increases from its initial value. The primary network can then perform the task without running the organizer.
+
+Compare the ability to solve the declared next task, retention of protected responses, successful runs and total training cost, including the organizer, its activations and both updates. A reduction in steps to a threshold can still be costly per step. Reconstruction loss alone cannot establish the ability to learn a different family. [Sheppard et al.](https://arxiv.org/html/2611.11862v1) give the training construction and its experimental conditions. [Lehman and Stanley](https://arxiv.org/html/2611.11020v1) separately compare how compatible and incompatible changes and the size of an update affect retention. Use a change whose required effect you can identify to decide whether the next intervention belongs in the representation, the update or the new training task.
 
 ### CMP.7:5 - Archetypal Grounding
 
@@ -1688,9 +1712,9 @@ On nonnegative integer inputs, consider the two rules `f(x)=x` and `g(x)=x mod 2
 
 A learner can evaluate both rules and return the minimizing set `{f,g}`. The returned set retains the ambiguity. It can also return one rule under a declared preference, but the zero training loss alone gives no reason to prefer f over g at input 2. Their predictions there are 2 and 0.
 
-Suppose the receiving task needs a prediction at 2 and an additional observed response is available for a cost that could be justified. If that response is 2, the same selection procedure prefers f; if it is 0, it prefers g. If the observation is not worth obtaining, use a selected rule under the remaining assumption or retain both possible responses for the downstream decision. Better minimization of the original two-example loss cannot distinguish them.
+Suppose a prediction at 2 is due before its response is revealed. The two original examples leave both 2 and 0 possible. Give a point prediction under a stated selection rule, or return both if the recipient can use that answer. With a fixed noiseless target in {f, g}, an earlier observation at 3 can settle the prediction. A response of 3 selects f and predicts 2 at input 2. A response of 1 selects g and predicts 0 there. Once the response at 2 arrives, it can answer a request for the observed value and update the rule for later inputs. To evaluate the prediction, compare the answer recorded before the deadline with the response subsequently observed at input 2.
 
-**Changed response:** suppose the response at 2 is 1. Neither rule fits all three observations. Revisit the two-rule family or the assumption of deterministic noiseless responses. Repeatedly fitting the original family more accurately cannot create the absent continuation.
+**Changed response:** consider only the original two observations and a response of 1 at input 2. Each rule has mean squared loss 1/3 on these three observations. If an exact fit is required, revisit the two-rule family or the noiseless-target assumption.
 
 #### CMP.7:5.2 - Construct an online learner and derive its mistake bound
 
@@ -1738,7 +1762,7 @@ The method can also expose a limit that further optimization cannot remove. New 
 
 The learning algorithm and learned rule must remain distinct because their costs, inputs and failure modes differ. Inductive restriction belongs with the algorithm's construction: without it, agreement on examples leaves the future rule unspecified. Base the performance argument on the feedback and use in question.
 
-MMP supplies data and subject-model accounts. CMP.4 and CMP.6 supply effective search or update; CMP.7 assembles those contributions into a learner. Further model assessment, explanation, development and portfolio choice use their existing methods.
+MMP provides methods for modeling the subject and how the data were obtained. Obtain the observations from their source. Use CMP.4 or CMP.6 when a search or update procedure needs constructing, and combine the actual inputs and procedures into a learner under CMP.7. Further model assessment, explanation, development and portfolio choice use their existing methods.
 
 ### CMP.7:11 - SoTA-Echoing
 
@@ -1812,7 +1836,7 @@ Choose what to simplify and provide the operations that obtain the simplified an
 
 Let a parameter control the discarded information. It can be a rounding interval, polynomial degree, mesh size, retained rank, iteration count or arithmetic precision. Describe how changing it alters both the algorithm and the information retained. One parameter need not control every source of error.
 
-If the construction changes the feasible set, provide a recovery procedure and its feasibility argument. If it changes only the objective used to select an answer, establish how that selection compares under the original objective. CMP.2 and CMP.3 can construct and schedule the resulting subproblems.
+If the construction changes the feasible set, determine which inference the change permits. An outer bound may settle a question about the optimum. When an original feasible solution is commissioned, supply a recovery procedure and its feasibility argument. If it changes only the objective used to select an answer, establish how that selection compares under the original objective. CMP.2 and CMP.3 can construct and schedule the resulting subproblems.
 
 Try the simplest family that can meet the receiving requirement. A parameterized approximation scheme is unnecessary when one cheap direct calculation or an available bound settles the question.
 
@@ -1822,7 +1846,7 @@ Relate the computed intermediate object to the original target. MATH.20 supplies
 
 For example, if an intermediate approximation has distance at most e from its target and the next operation G obeys `d(G(u),G(v))≤L*d(u,v)` on the relevant inputs, this contribution to final error is at most L\*e. Add another error term only when it measures a comparable discrepancy and an argument, such as a triangle inequality, permits that addition. A probability of failure and a numerical error are different quantities.
 
-For an optimization construction, compare the original objective of the recovered candidate with the original optimum. Follow every inequality in its proper direction. Rounding values can bound objective loss while leaving constraints unchanged; rounding constraint coefficients needs a separate admissibility argument.
+For a claim about how well a feasible candidate performs, compare its original objective with the original optimum. For a value or threshold question, propagate the bounds on that value in the direction the question needs. Follow every inequality in its proper direction. Rounding values can bound objective loss while leaving constraints unchanged; rounding constraint coefficients needs a separate admissibility argument.
 
 When several approximations are composed, carry their bounds through the downstream operations used. Allocate finer resolution where it changes the final bound most usefully. An unbounded sensitivity or a lost discontinuous distinction can require another formulation rather than further use of the same family.
 
@@ -1936,7 +1960,7 @@ For the numerical branch, **adopt** Higham's separation of [conditioning](https:
 - **CMP.3:** constructs shared computation and storage for finite stages; **CMP.5** supplies relaxation and recovery; **CMP.6** supplies iterative updates.
 - **C.29.2:** fixes the computational answer, representation and resource conditions.
 - **C.29 and MMP.9:** preserve the separate subject correspondence and model-reduction question when this algorithm computes a model's consequence.
-- **C.11.DUA:** compares the value of further refinement with its cost and remaining uncertainty.
+- **C.11.DUA:** compare the cost of another computation with what a tighter error bound could let the recipient decide or guarantee. If the present bound already settles that use, stop unless another obligation applies.
 
 ### CMP.8:End
 
@@ -1983,13 +2007,13 @@ State whether the result is a random object, a subset, an expectation, an event 
 
 Describe access: an indexed collection, a one-pass stream, evaluable weights, a generative operation, or neighbors of a current state. An evaluable probability density does not necessarily provide a cheap sampler. An unnormalized density does not supply its normalization constant.
 
-If the inputs describe observations, MMP.7 supplies the relevant recording and inclusion law. Sampling uniformly from recorded rows remains different from sampling uniformly from the people, events or other objects those rows describe.
+For observations, choose the sampling unit from the intended use and show that the procedure gives it the promised probability. If each recorded event is to be equally likely, a uniform draw of rows works when every event has the same positive number of rows and the selected row identifies the event to return. With unequal multiplicities, a uniform row gives an event with three rows three times the probability of an event with one row. Grouping by a reliable event identity and drawing uniformly from the groups is one repair. All events in a period form a different population if some can leave no record. MMP.7 supplies the recording and inclusion law when that connection matters. For several draws, construct their joint law too. Sending both recipients the outcome of the same uniform draw gives each a uniform result. With more than one possible outcome, it does not give them independent draws.
 
 #### CMP.9:4.2 - Construct the random operation and its output law
 
 Start with a random primitive whose assumptions are explicit, such as independent uniform bits or uniform integers in a bounded range. A finite generator supplies a particular implementation. Its period, correlations, state reuse or exposure to an adversary matter when the receiving claim depends on them.
 
-For a finite categorical law with known probabilities, a cumulative-probability partition can transform a uniform draw. When generating a uniform integer from b bits for a range of size m, simply taking the remainder can bias the result unless m divides `2^b`. One repair accepts only bit values below `floor(2^b/m)*m`, then takes their remainder; rejected draws are repeated. Choosing `2^b≥m` makes this an effective rejection construction with acceptance greater than one half.
+For a finite categorical law with known probabilities, a cumulative-probability partition can transform a uniform draw. When generating a uniform integer from b bits for a range of size m, simply taking the remainder can bias the result unless m divides `2^b`. One repair accepts only bit values below `floor(2^b/m)*m`, then takes their remainder; rejected draws are repeated. For `2^b≥m` the acceptance probability exceeds one half. With independent draws this procedure terminates almost surely, with fewer than two attempts on average. It gives no fixed upper bound on attempts when rejections are possible. For a hard deadline, a cap introduces an outcome with no draw. Account for that probability if the commission permits failure. If every execution has to return a uniform choice using at most B independent fair bits as its only random source, extend every shorter bit history to length B. The resulting `2^B` equally likely histories must divide evenly among the m outcomes. Equal allocation is possible exactly when m divides `2^B`.
 
 For a stream, maintain a distributional invariant that survives one new record; :5.1 derives such an update. For a proposal distribution q different from p, either correct the output distribution through an acceptance rule or correct the estimated contribution through weights. Derive which of those results the procedure returns.
 
@@ -2033,9 +2057,9 @@ A changed inclusion rule, target statistic, proposal, random source or stopping 
 
 #### CMP.9:5.1 - Keep one uniform record from a stream of unknown length
 
-Store the first record. At record t, replace the stored record with probability `1/t`; otherwise retain it. Use a uniform integer in 1 through t to make this decision.
+Store the first record. At record t, use a fresh uniform integer in 1 through t to replace the stored record with probability `1/t`. The guarantee below concerns each fixed input prefix. It also applies conditional on a completed stream when the input and its endpoint are independent of the sampler's random choices.
 
-After t records, the new record has probability `1/t`. Every earlier record had probability `1/(t-1)` before this step and survives with probability `(t-1)/t`, giving `1/t` as well. This establishes the invariant inductively. The procedure needs one record, a counter, and one update decision per arrival; counter and record representation costs remain visible.
+After t records, the new record has probability `1/t`. Every earlier record had probability `1/(t-1)` before this step and survives with probability `(t-1)/t`, giving `1/t` as well. This establishes the invariant inductively for each fixed prefix. If a sender ends a stream of distinct records A, B immediately after the second record whenever A is retained, and otherwise sends C, every observed stream of length two ends with A retained. Uniformity at a fixed prefix alone cannot establish uniformity conditional on this stopping event. A different stopping policy can preserve uniformity if its effect is accounted for. The procedure needs one record, a counter and one update decision per arrival. Counter and record representation costs remain visible.
 
 For the stream A, A, B, the resulting value is A with probability 2/3 and B with probability 1/3. This is correct uniform sampling of record positions. If the new request is uniform sampling of distinct values, the old invariant answers a different question. One construction keeps a set of already seen values and applies the same update only on a first occurrence. That requires storage for the distinct-value set or another algorithm with its own access and error assumptions.
 
@@ -2067,7 +2091,9 @@ For this uniform target, accept an end-to-middle move with probability 1/2 and a
 
 Its rows and columns each sum to one, so the uniform law is stationary. The finite chain is connected and has self-transitions, hence converges from any start. Its other eigenvalues are 1/2 and -1/2; for this small matrix, powers give an explicit decreasing transient. For instance, starting at 0 gives `(1/2,1/2,0)` after one step and `(1/2,1/4,1/4)` after two, which is not uniform.
 
-If the three target weights change to `(1,2,1)`, the original uncorrected neighbor walk has that stationary law. Reusing the former uniform-target acceptance probabilities would now be wrong. In either case, adjacent states are dependent observations; an independent-draw variance formula cannot be justified by the stationary law alone.
+Now change the target weights to `(1,2,1)`. Their normalized law is `(1/4,1/2,1/4)`, which the uncorrected neighbor walk preserves. Starting at 0, however, that walk is at the middle state after every odd step and at an endpoint after every even step. No fixed number of steps from 0 gives the requested single draw. A walk initialized with the target law preserves it at every step.
+
+For this three-state problem there is also an exact readout from the stated start. Independently choose step one or step two with equal probability. Step one gives the middle state. At step two the walk chooses either end with equal probability. The readout therefore gives the three states with probabilities `(1/4,1/2,1/4)`. Reusing observations from one trajectory for an estimate still requires accounting for their dependence.
 
 ### CMP.9:6 - Bias-Annotation
 
@@ -2296,7 +2322,7 @@ When memory transfers dominate, **adapt** the external-memory and cache-obliviou
 
 ### CMP.11:1 - Problem frame
 
-**Use this when** repeated attempts to accelerate a computation leave a question about what any algorithm could achieve under the available access. You can construct different admitted inputs that require different answers but remain indistinguishable before enough queries, comparisons, communication or stored information.
+**Use this when** attempts to accelerate a computation leave a question about what any algorithm could achieve with the available observations. State what an input may be and what output the recipient will accept. A useful limit follows when a procedure can still see the same query replies on inputs for which no one answer works.
 
 The gain is a lower bound tied to an explicit computational model, or a concrete change of access or requested answer that escapes that bound. This can stop fruitless optimization, reveal a needed index or observation, and separate an intrinsic restriction of the chosen model from a poor implementation.
 
@@ -2335,17 +2361,19 @@ State whether the bound concerns worst-case or expected cost, deterministic or r
 
 #### CMP.11:4.2 - Construct alternatives that the available observations have not separated
 
-Describe a transcript: the sequence of queries and replies, or messages and observations, available to the procedure. Consider all inputs still consistent with it. If two of those inputs require incompatible answers, a deterministic procedure seeing that transcript cannot correctly finish on both.
+A transcript is the sequence of replies, messages and observations available to the procedure at its next choice. Consider the admitted inputs consistent with that transcript. For an exact value, two such inputs with different values prevent a deterministic procedure from returning a correct value on both. For a choice among several acceptable outputs, a single output returned at this point must be acceptable on every input still possible.
 
 Construct those alternatives rather than simply counting unknown data. For a bit query, place a decisive difference at an unread position. For a comparison algorithm, retain different orders compatible with the observed comparisons. For a communication or streaming algorithm, find different earlier inputs that lead to the same message or stored state but require different outputs after one common continuation.
 
-Adapt the construction to the permitted answer. Distinct inputs do not need separate transcripts when the same answer is acceptable for both. A common approximation interval or permitted error can therefore weaken the lower bound.
+For a guaranteed choice, take the intersection of the acceptable output sets for the entire group of possible inputs. Suppose three devices accept formats {A,B}, {B,C} and {A,C} respectively, and the available replies leave all three devices possible. Every pair accepts a common file format. No format works for all three. A timely reply that separates the third device from the first two suffices for this choice. Send B in the first group and A for the third. A device identification is unnecessary. If risk is allowed, use its specified error criterion and probability assumptions.
+
+An unused reply pattern entails no obligation to return an answer for the stated input family. If it actually arrives, check how the reply was read and whether the input promise holds. For a current reachable transcript, an available common output can finish the task. To deliver an algorithm for the entire family, give one procedure that reaches a decision on every admitted input within the promised budget. Before it stops it may request another permitted observation. Whenever it stops, the output must work for every input compatible with the transcript at that stopping point. Its existence as a permissible value on each input alone gives no running-time or computability result.
 
 #### CMP.11:4.3 - Turn indistinguishability into a resource bound
 
 Use the form that fits the access:
 
-- **Adversary:** answer queries while retaining incompatible possible inputs. Show how many queries are needed before no such pair remains.
+- **Adversary:** for every allowed deterministic query strategy limited to the proposed budget, exhibit a reachable stopping point, or follow its queries until it uses up the budget, with no common acceptable output for the remaining inputs. Two inputs requiring different exact values are sufficient. Failure of a particular querying strategy establishes a limit for that strategy.
 - **Counting:** if each observation has at most b possible replies, q observations have at most `b^q` transcripts. If N input classes require mutually different outputs, then `b^q≥N`, giving `q≥log_b N` for a worst-case depth bound.
 - **State or message collision:** with fewer than N distinguishable retained states or messages, two of N necessary input classes collide. A shared continuation then forces an error.
 
@@ -2401,7 +2429,7 @@ A practical consequence is to compare representations and access before spending
 
 One agent has an n-bit string x and sends one fixed-length binary message to another agent holding y. The receiver must decide whether x=y with no error. If two different strings x and x' produce the same message, take the common receiver input y=x. The receiver sees identical information in both cases but must answer differently. All `2^n` strings therefore need distinct messages, requiring at least n bits. Sending x achieves it.
 
-If public independent random masks and an error probability are admitted, the task changes. For each mask r, send the parity of the positions where both x and r are one; the receiver compares with its parity from y. Equal strings always match. For unequal strings, choose one differing position: toggling its independent mask bit pairs masks with opposite comparison outcomes, so the parities match with probability 1/2. After k independent masks, falsely accepting equality has probability `2^-k` and the message has k bits. The shared random masks and local parity-computation cost are explicit resources, not information transmitted by the message.
+If a one-sided error is allowed, fix the two inputs independently of the public random choices. In each of k rounds the agents share a fresh uniform n-bit mask with independent fair bits. The sender transmits the parity of x on the selected positions. The receiver compares it with the parity of y on those positions. A mismatch certifies inequality. For a fixed unequal pair, condition on all mask bits except one where the strings differ. The remaining fair bit makes the parities agree with probability 1/2. Equal strings always pass. An unequal pair passes all k independent rounds with probability `2^-k`. This protocol uses k message bits, kn shared random bits and local parity computations. If inputs may be chosen after seeing the masks, the per-pair bound no longer follows. If sending x itself fits the budget, the agents can obtain an exact answer without random choices.
 
 ### CMP.11:6 - Bias-Annotation
 
@@ -2411,7 +2439,7 @@ The word “impossible” can obscure the condition that makes a lower bound tru
 
 - Inputs, promises, observations, preprocessing and required outputs are specified.
 - The cost and error claim has explicit worst-case, expected or probabilistic quantifiers.
-- Indistinguishable alternatives are admitted inputs requiring incompatible answers.
+- For an information lower bound, identify a reachable set of replies where the procedure must answer and the compatible inputs have no common acceptable output. A cost bound for computing or writing a known answer needs its own argument. A lower bound for every allowed procedure covers the choices it can make before it must answer. An ambiguous intermediate reply alone leaves it free to ask another permitted question.
 - The adversary, counting or collision argument covers adaptive behavior allowed by the model.
 - Randomized claims use an argument valid for randomization and the stated cost convention.
 - The conclusion names both its restriction and a useful continuation or unresolved gap.
@@ -2421,7 +2449,7 @@ The word “impossible” can obscure the condition that makes a lower bound tru
 | Tempting move | Failure | Useful repair |
 | --- | --- | --- |
 | Generalize from a slow implementation | Another algorithm may avoid its work. | Prove a requirement for every admitted transcript or procedure. |
-| Count distinct inputs without considering acceptable answers | Several inputs may share one output. | Count output-distinct classes. |
+| Count distinct inputs or check only pairs with a common choice | Several inputs may share an output, and different pairs may rely on different outputs. | Test whether the whole group can accept one answer. Use counting when the required outputs really are distinct. |
 | Supply an inconsistent adversary | No admitted input could produce its replies. | Retain a nonempty compatible input family. |
 | Fix randomness, then choose a different hard input for each seed | This can miss a successful randomized algorithm. | Use one prior input distribution or a valid coupled argument. |
 | Ignore input-dependent preprocessing or stronger access | The algorithm already acquired the supposedly missing information. | Charge or expose that resource and restate the model. |
@@ -2494,15 +2522,15 @@ A mathematical interpretation can assign a meaning without providing an algorith
 
 ### CMP.12:4 - Solution
 
-**Recover expression structure and observations → construct evaluation rules → make control and binding effective → construct the translation → establish the needed correspondence → execute and revise the changed rule.**
+**Recover the expression structure and observations → derive effective rules for evaluation or translation → establish the behavior the recipient needs → deliver the procedure or carry out the commissioned execution.**
 
 #### CMP.12:4.1 - Recover the expression structure and the intended observations
 
-Identify the constructors of admitted expressions and how their parts bind and compose. Work with a parsed structure when precedence, grouping or scope matters. A name occurrence must reach the declaration or external input intended by the language. If the supplied text admits different parses that change the answer, resolve that difference before constructing one evaluator.
+Identify the constructors of admitted expressions and how their parts bind and compose. Work with a parsed structure when precedence, grouping or scope matters. Trace a name occurrence to its declaration or external input under the applicable rules. If several parses remain admissible, derive what they imply for the requested observations. Agreement can settle that use. Where they differ, a language rule or supplied context may select a reading. An evaluator asked to report all permitted results must cover the alternatives. Report unresolved ambiguity when a single intended reading is needed and its selection is still open.
 
 Specify what evaluation receives and what its user can observe. Inputs can include the expression, name bindings, stored state and external responses. Outputs can include a value, changed state, a sequence of interactions or a failure. Distinguish a language-defined error from the absence of a defined operation; a translator can be required to preserve the former without being required to assign a meaning to the latter.
 
-Choose the required relation between source and target observations. Equal returned values may suffice for a terminating pure expression. An interactive program may require the same ordered events. A source with several permitted behaviors may allow the target to choose among them; retaining every source possibility is a stronger requirement. Timing, memory use or a probability law belongs in this relation only when the receiving question uses it.
+For a direct interpreter, specify which observations its evaluation must produce under the source language rules. For a translation, choose the required relation between source and target observations. Equal returned values may suffice for a terminating pure expression. An interactive program may require the same ordered events. A source with several permitted behaviors may allow the target to choose among them; retaining every source possibility is a stronger requirement. Timing, memory use or a probability law belongs in this relation only when the receiving question uses it.
 
 #### CMP.12:4.2 - Derive effective evaluation rules for each constructor
 
@@ -2524,7 +2552,7 @@ Count consequential dispatch, environment lookup, retained continuations, arithm
 
 #### CMP.12:4.4 - Construct translation from the evaluation structure
 
-Choose a target instruction or expression language with defined execution rules. For each source constructor, generate the target operations that perform its required evaluation. Construct the translation of subexpressions and then their combination, retaining temporary results until their consumers use them.
+A direct evaluator can fulfill a commission for an executable procedure when its rules, available operations and resource needs support the promised behavior. For a commissioned execution, use the procedure to obtain and return the required observation. When the work calls for a translation, choose a target instruction or expression language with defined execution rules. For each source constructor, generate the target operations that perform its required evaluation. Construct the translation of subexpressions and then their combination, retaining temporary results until their consumers use them.
 
 Preserve binding and control at this construction step. Allocate fresh temporary names or use addresses whose scopes cannot capture unrelated bindings. Place conditional branches behind the appropriate control transfer. Pass arguments and return results through agreed locations. An operator with effects requires the relevant order and number of executions; algebraic reassociation alone does not supply that permission.
 
@@ -2534,7 +2562,7 @@ When several translation passes are used, connect their input and output relatio
 
 #### CMP.12:4.5 - Establish the correspondence at the scope needed
 
-For a structurally recursive translation of a terminating expression language, use induction on expression construction. Include the context that surrounding code can supply: an arbitrary admitted environment, earlier stored values and the continuation after the translated fragment. A claim that works only with an empty stack may fail as soon as two fragments are composed. Section :5.1 derives the stronger usable claim.
+For a direct evaluator, derive the required observation from its rules for the constructors, bindings and execution contexts the language admits. For a structurally recursive translation of a terminating expression language, use induction on expression construction. Include the context that surrounding code can supply, such as an arbitrary admitted environment, earlier stored values and the continuation after the translated fragment. A claim that works only with an empty stack may fail when two fragments are composed. Section :5.1 derives a claim that supports this composition.
 
 For stateful or interacting languages, relate source and target states and the observations their transitions produce. Explain how matching transitions reestablish the relation. If several internal steps implement one visible step, account for their completion; an infinite internal loop must not masquerade as successful preservation of a terminating computation. Choose the simulation direction or behavior relation that supports the requested conclusion. Showing that one source run has a target counterpart alone leaves other target behavior unresolved.
 
@@ -2544,7 +2572,7 @@ Separate a general preservation claim from a check on selected translations. A s
 
 #### CMP.12:4.6 - Run the construction and revise the failed correspondence
 
-Evaluate or translate a meaningful input and use the resulting value or behavior. Return the construction together with the input, binding, execution and recovery conditions needed by its recipient. When comparison fails, locate the changed constructor, binding, primitive, control rule or value correspondence.
+Return the commissioned result. When the evaluator or translator is itself a deliverable, supply it with the input, binding, execution and recovery conditions its recipient needs. For a requested execution, obtain and return the required observation. A trial on a meaningful input can also help resolve an outstanding design question. If a comparison fails, locate the changed constructor, binding, primitive, control rule or value correspondence.
 
 A changed language feature or execution context reopens its dependent translations. Preserve unaffected rules. Adding assignment requires revisiting captured bindings; changing integer arithmetic requires revisiting arithmetic correspondence; allowing externally supplied code requires examining the contexts with which translated components interact.
 
@@ -2621,12 +2649,12 @@ A familiar implementation language can silently supply truth tests, numeric limi
 
 ### CMP.12:7 - Conformance Checklist
 
-- Expression formation, binding and needed observations are recoverable.
+- Expression formation and binding support the requested observations across the readings the language and its context admit. A choice of one reading has the grounds the use requires.
 - Every required evaluation step has an available operation and an explicit control rule.
-- Translation terminates on its admitted descriptions; execution progress has its own stated scope.
-- Source and target values, bindings, states and observations have the correspondence required by the use.
+- Execution progress has the scope promised for the admitted programs and inputs. A promised translation terminates on the descriptions it must translate.
+- A direct evaluator implements the required source observations. A translation establishes the required correspondence between source and target values, bindings, states and observations.
 - The preservation argument includes the surrounding state or context needed for composition.
-- Cost includes translation and execution under the actual arithmetic and storage assumptions.
+- Cost includes the operations the proposed evaluator or translator actually performs, under the applicable arithmetic and storage assumptions.
 - A changed rule or failed comparison leads to a specific reconstruction.
 
 ### CMP.12:8 - Common Anti-Patterns and How to Avoid Them
@@ -2705,7 +2733,7 @@ A summary can combine possibilities that never occur together. A sequence of ind
 
 ### CMP.13:4 - Solution
 
-**Choose the property; describe the represented possibilities; derive the abstract operations; compute a sufficient closure; interpret the answer; refine the distinction that blocks its use.**
+**Choose the property and direction of inference. Build operations that preserve the required coverage or realizability. Derive the answer at that scope and restore any distinction its use still needs.**
 
 #### CMP.13:4.1 - Choose the observation and the direction of inference
 
@@ -2713,7 +2741,7 @@ Specify the original states, initial possibilities and transitions. Include the 
 
 Choose what an abstract value represents. Write `gamma(a)` for the original possibilities represented by abstract value `a`. It can be a set of integer values, environments, graph states or complete traces. The concrete domain in this construction is the process being analyzed; it need not consist of physical objects.
 
-For an overapproximation, every original possibility must remain among the represented ones. If the calculated possibilities exclude a bad outcome, that outcome is excluded from the original process. An included bad outcome may require reconstruction before it supports a counterexample. For an underapproximation, represented possibilities must be realizable: a retained witness can establish existence, while a missing witness leaves other executions unresolved. Choose the direction for the question and maintain it through the operations. The remaining steps develop the overapproximation branch.
+For an overapproximation, every original possibility must remain among the represented ones. If the calculated possibilities exclude a bad outcome, that outcome is excluded from the original process. An included bad outcome may require reconstruction before it supports a counterexample. For an underapproximation, represented possibilities must be realizable: a retained witness can establish existence, while a missing witness leaves other executions unresolved. Choose the direction for the question and maintain it through the operations. For an existence claim, build from a permitted starting state and retain the choices that make the whole proposed path possible. Adjacent abstract steps may each have a realization yet require incompatible values in the shared intermediate state. Establish a single permitted realization of the complete witness. Its existence can settle that question even when other runs were omitted. Sections :4.2–4.4 develop coverage for the outer approximation and the return of its results.
 
 #### CMP.13:4.2 - Derive computable operations on the summaries
 
@@ -2759,7 +2787,7 @@ Loops and infinite-path properties require their own path and recurrence conditi
 
 Locate where the reported execution or answer became impossible. Restore the distinction responsible: separate a merged state, retain a relation, distinguish a calling context, or make an abstract operation more precise. A false path through one merged class can suggest splitting its reachable dead ends from the states that supply its outgoing edge.
 
-Recompute affected dependencies and reuse results whose inputs and interpretation remain valid. Confirm that the revised construction removes the spurious result and still covers all original behavior. Removing one false path may leave others.
+Recompute affected dependencies and reuse results whose inputs and interpretation remain valid. An outer approximation must still cover the required original behaviors. To establish that it refines the previous approximation, also check that each behavior it now permits, read in the earlier terms, was permitted before. If the change rules out the reported path but admits a new one elsewhere, the new approximation can still settle the property in question. A separate exclusion proved with the earlier sound approximation can still be used within its scope. For an inner approximation, check that the witnesses used for the claim have compatible realizations in the original process.
 
 Choose further refinement by what it can change in the receiving work. A coarse result can settle the question. A real counterexample changes the original construction or its allowed use; improving the analyzer cannot make that execution disappear. When refinement remains too costly or inconclusive, return the unresolved property and the condition under which another calculation or direct execution would help. C.11.DUA governs the worth of that additional work.
 
@@ -2811,10 +2839,10 @@ An alarming abstract result can draw attention away from whether its states form
 
 - The initial possibilities, transitions and requested observation identify the computation being analyzed.
 - Each abstract value has an interpretation, and the inference direction supports the claimed conclusion.
-- Abstract operations and joins cover their original counterparts; the obtaining algorithm has a justified completion or bounded-result condition.
+- For an outer approximation, the abstract operations and joins cover the original steps they represent. For an inner approximation, the behaviors used as witnesses have compatible realizations in the original process. The obtaining algorithm justifies the result returned at its stopping point.
 - A whole-reachability conclusion uses initial containment and transition closure.
 - A claimed concrete counterexample has a consecutive realization; a failed reconstruction identifies the lost distinction or remaining uncertainty.
-- Refinement preserves the original possibilities and changes a result relevant to the receiving work.
+- A revised outer approximation still covers every required original possibility. A revised inner approximation preserves the realizability of the witnesses it claims. Choose the distinctions the receiving question needs.
 
 ### CMP.13:8 - Common Anti-Patterns and How to Avoid Them
 
@@ -2869,7 +2897,7 @@ How should cyclic abstract computations be scheduled? **Adapt** the question rai
 
 **Use this when** computations that work separately must run together, but shared state, communication or scheduling can change their results. You need to construct their interaction, repair a failing interleaving, or replace a component while retaining the behavior on which the rest relies.
 
-The reader can describe each component's operations and the results expected from their combination. This method adds the shared state, communication and ordering rules needed to reason about the whole. It applies to concurrent algorithms and protocols, including computations performed by cooperating software agents. The implementation language, machine and operating environment determine which operations are available and which failures the composition must allow for.
+Start from what the recipients must observe and what may occur between their observations. If the components are given, recover their operations and interaction. When their boundaries are yours to design, try dividing the work, then let each part meet its local promise. What state, event or responsibility must they share to make the combined observation possible? Move a boundary, keep a common revision, or add an interaction where the separate results lose that relation. This applies to concurrent algorithms and protocols, including computations performed by cooperating software agents. The implementation language, machine and operating environment determine which operations are available and which failures the composition must allow for.
 
 The first useful result is a composed procedure with a trace or invariant explaining how it obtains the required observation, or a counterexample that identifies the interaction to change. A small shared-state example needs only a few explicit steps. A general guarantee over an implementation needs the corresponding memory, scheduling and failure assumptions.
 
@@ -2897,7 +2925,7 @@ Two correct increments can lose an update. Retrying a request can repeat its eff
 
 #### CMP.14:4.1 - Specify what the combined computation must make observable
 
-State the allowed inputs and required results. Include the observations a receiving component can make while work is in progress: returned values, shared-state reads, messages, failures or completed operations. Distinguish a request from each attempt to transmit or execute it when retries are possible.
+State the allowed inputs and required results. Include the observations a receiving component can make while work is in progress, such as returned values, shared-state reads, messages, failures or completed operations. Distinguish a request from each attempt to transmit or execute it when retries are possible. For example, two reports taken on opposite sides of a member's transfer between teams can each give the correct local roster and count that member twice across the reports. If the request is for a combined roster as recorded at one instant, choose a shared revision or another procedure that reconstructs both rosters for that instant. Reports requested as of each team's own observation can use their respective revisions. The promised use decides which histories are acceptable.
 
 Choose the required ordering. For a concurrent object, **linearizability** compares a history of calls and responses with legal sequential behavior. A finite history can contain pending calls. Append responses to any selected pending calls, then omit those still pending. Keep every originally completed operation, including its arguments and returned value. Seek a legal sequential order of the retained operations that respects every case where one operation returned before another was called. Each retained operation appears to take effect between its call and response in this extended history.
 
@@ -2921,7 +2949,7 @@ Construct the relation that must survive composition. For example, the shared co
 
 Establish that relation initially and inspect each allowed transition that can affect it. Local predicates must survive permitted environment steps. **Rely/guarantee reasoning** makes this explicit: a component assumes a stated interference relation from its environment and establishes a stated relation for its own steps. Its neighbors' possible steps must fit that assumption. Check the step-level conditions and their initial basis; mutually assuming that the other component eventually succeeds supplies no initial progress.
 
-For a finite construction, explore enabled interleavings until a failure or the relevant closed state set is obtained. CMP.4 supplies search and CMP.13 supplies a qualified abstraction when the state space is too large. A counterexample should retain enough state and ordering to reproduce the offending interaction.
+When finite exploration is the chosen proof or diagnostic method, follow enabled interleavings until the required counterexample or a closed set covering the permitted runs is obtained. An established invariant may already prove the safety property over that entire set. CMP.4 supplies search and CMP.13 supplies a qualified abstraction when the state space is too large. A counterexample should retain enough state and ordering to reproduce the offending interaction.
 
 When operations commute under the observations of interest, exploit that property: some orders can be combined or avoided in exploration. Include intermediate observations in the comparison. Equality of the final store is insufficient if a neighboring read distinguishes the swapped operations.
 
@@ -2935,9 +2963,9 @@ Construct a repair from the failed premise. Common choices have different costs:
 | Intermediate state is observed inconsistently | Serialize the affected operation, protect its critical region or publish an immutable result. | Waiting, ownership or retained copies replace the former interference. |
 | A repeated message repeats an effect | Identify the logical request and combine effect application with remembering its result. | Identifier lifetime and failure recovery must preserve the relation. |
 | Components wait in a resource cycle | Impose a shared acquisition order or another cycle-breaking protocol. | All participating acquisitions must follow the rule; starvation remains a separate question. |
-| Coordination costs more than the required consistency is worth | Change the result specification to a weaker observation the receiver can use. | Revalidate the receiving algorithm under that weaker result. |
+| The cost of the proposed coordination threatens the intended use | Determine whether a cheaper implementation can still supply the promised observation. If the observation itself must change, establish what the existing commission already permits. For a change outside those terms, obtain the decision of whoever holds that right, including a joint decision when required. | Establish what the receiving algorithm can conclude under the agreed result specification. |
 
-Execute the original failing trace against the repair, then inspect the transition family that caused it. This both explains the changed behavior and identifies what a more general argument must cover.
+For a repair, use the original failing trace to explain the changed behavior when that trace is available and informative. Justify the property over the interaction family the receiver needs. A new composition may admit a direct argument from its transition rules before any run has taken place.
 
 #### CMP.14:4.5 - Establish the progress actually promised
 
@@ -3035,7 +3063,7 @@ Sequential intuition can hide an interleaving between a read and its use. An ato
 
 ### CMP.14:7 - Conformance Checklist
 
-- The combined result includes the intermediate observations and eventual responses its user needs.
+- The combined result includes the intermediate observations and eventual responses its recipients need. Observations that must refer to one revision, request or execution retain that connection in the joint history.
 - The model states atomicity, visibility, communication and admitted environment changes where they affect the argument.
 - Initial conditions and each relevant component or environment step support the shared invariant or protocol relation.
 - A proposed repair changes the offending interaction and its general transition family.
@@ -3137,7 +3165,7 @@ Reuse adequate constructor meanings and operation rules. If these remain unclear
 
 #### CMP.15:4.2 - Assign and provide the joining contribution
 
-A data-extension author supplies the new variant and the operations that the extension promises. An operation-extension author supplies that operation for the variants it promises. For a required intersection unknown to both, one contributor who understands both agreements supplies the missing body. This can be either author or the application's integrator. The application must have a way to obtain that body; merely naming a future contributor leaves the combination unsupported.
+A data-extension author supplies the new variant and the operations that the extension promises. An operation-extension author supplies that operation for the variants it promises. For a required intersection unknown to both authors, obtain a body whose behaviour satisfies both agreements. Either author or an integrator can supply it. Several contributors can also produce it together when the meanings of the variant and the operation reach the implementation and its check. Establish how the application obtains the body and why its behaviour follows from those meanings.
 
 The joining contribution contains an implementation and the grounds for using it: the accepted variant, operation meaning, required context, dependent operations and a case that distinguishes it from a plausible wrong implementation. Place it in a module that can depend on both additions without making either old module depend on its future users. The original contributions remain independently usable on their established cases.
 
@@ -3224,7 +3252,7 @@ Preserve the old meanings as well as the old files. For each established operati
 
 For a pure tree interpreter with exact keys, a useful preservation argument is available. Suppose the old keys still select the same bodies, the old expressions contain only old constructors, and primitives, environments and dependent operations retain their meaning. A leaf obtains the same result. At a compound old node, induction gives the same child results, and the unchanged body combines them in the same way. Every finite old expression therefore retains its result. This argument depends on those premises; unchanged source text alone does not prove them.
 
-Test a new form beneath an old constructor as a different obligation. It was not an old expression, so the preservation argument does not establish its new meaning. This case checks whether open recursion reaches the supplied intersection and whether the resulting composition obeys the new rules.
+If the input grammar admits a new form under an old constructor, establish what that combination means. Old-use preservation only covered expressions admitted before the extension. A trace of the new call or an argument about all reachable calls can show how recursion reaches the intended implementation. A flat family of forms may require only its admitted operation–form pairs.
 
 When effects, failures or concurrent replacement matter, use the observations and correspondence from CMP.12 and the interaction method in CMP.14. Preserving a returned number may leave an extra effect or a changed failure observable. Selected tests can expose such differences; a promise for an entire class of executions needs an argument at that scope.
 
@@ -3482,13 +3510,13 @@ The method also makes integration work visible. Contributors who each test only 
 ### CMP.15:7 - Conformance Checklist
 
 - The data variants, operation meanings and admitted receiving uses determine the required combinations, including nested forms and dependent operations.
-- Every required new intersection has an obtainable body or an explicit unsupported-use boundary; its supplier understands both sides.
+- For each required new intersection, the application can obtain a body with grounds covering the variant and the operation, or its available uses explicitly exclude that combination.
 - Generic derivation is justified by the operation's meaning, with binding, control or identity distinctions retained where material.
 - The composition defines selection, reports missing support and rejects or resolves conflicts without accidental loading-order semantics.
 - Recursive and dependent calls reach the implementation selected for the composition.
 - Unchanged sources, separate checking and compilation, early coverage and behavior preservation have distinct stated grounds.
 - A semantic counterexample can distinguish a present, uniquely selected but wrong body from a correct one.
-- Old-use preservation covers the promised observations and assumptions; a new form below an old constructor is exercised separately.
+- Old-use preservation covers the promised observations and assumptions. Where the new combinations admit nesting, its meaning and reachable calls are accounted for.
 - The full cost is compared with an adequate closed alternative, and a changed required pair or binding condition has a clear return.
 
 ### CMP.15:8 - Common Anti-Patterns and How to Avoid Them
@@ -3551,7 +3579,7 @@ The semantic rule remains necessary under every realization. The wrong free-vari
 
 **Use this when** you can state behavior that a computation must obtain, but the available units and operations do not yet give a workable way to obtain it. The difficulty can appear before implementation or after a change: separately sensible steps do not compose, a small unit discards information the join needs, or every client must repair the same invalid intermediate arrangement.
 
-The useful move is to design the units and their permitted operations together. Try constructing the required whole, recover what a failed join needs, and change the unit, the operation or the conditions of assembly. Then connect that computational abstraction to an obtainable implementation. The result is a usable level of operations with grounds for its whole behavior.
+Design the computational units and their permitted operations together. Assemble the required whole and establish what its clients can do with it. If a join fails, determine what it needs and revise the unit, the operation or the conditions of assembly. Connect the chosen abstraction to an obtainable implementation. The result is a usable set of operations with grounds for the behavior of the whole.
 
 For example, deciding whether each text fragment is locally balanced loses information needed to decide whether their concatenation is balanced. A richer fragment meaning can make the join both simple and general. In a continuing service, exposing separate count reads and writes can invite invalid combinations; a state-changing operation with an explicit admission rule can make a capacity condition maintainable. Neither remedy is selected by choosing a storage format alone.
 
@@ -3578,7 +3606,7 @@ Starting only from small familiar operations can make the whole unnecessarily di
 
 ### CMP.16:4 - Solution
 
-Construct a provisional whole with proposed units and operations, use its first consequential failure to revise them together, and justify the resulting level against both its clients and its implementation. The moves below can return to one another. Use an existing interface when it meets the requirements.
+Construct a whole with proposed units and operations and establish what its clients can obtain under its implementation conditions. If the first construction suffices, its justification can complete the design. When a join or a permitted use reveals a missing contribution, revise the units and operations together. An existing interface can supply the result when it meets the requirements.
 
 #### CMP.16:4.1 - Recover the behavior and the freedom to change its construction
 
@@ -3586,7 +3614,7 @@ State what a recipient must observe or do with the result. Include consequential
 
 Recover the admitted cases and the available operations through C.29.2. Separate required behavior from an inherited implementation choice. A requirement to preserve order does not require an array; a capacity limit does not necessarily require exposing a mutable counter. Conversely, a physical coupling, a particular external format or an existing client's observation can be binding. Do not change those requirements merely to make the preferred construction easier.
 
-Choose one whole use that exposes the difficulty and a consequential variation. These are design probes, not the scope of the method. If the proposed change would answer a different question, make that difference explicit and return it to the receiver instead of presenting the changed answer as preservation.
+Begin with a whole use that exposes the difficulty. If several uses are promised, determine which must succeed together, which may be served independently and what results or resources they share. Hold a proposed unit fixed and change an allowed input, continuation or interaction that could change one of those uses. Keep distinctions whose loss would change the required observation or prevent its timely production. A direct argument covering the uses can already settle the choice. If a proposed change would answer a different question, return that difference to the receiver.
 
 #### CMP.16:4.2 - Try the whole before fixing the units
 
@@ -3600,7 +3628,7 @@ Suppose each proposed part has supplied exactly its promised result. Attempt the
 - Pass context or postpone a choice when a part cannot correctly decide without information available at the join.
 - Change the decomposition when obtaining the missing contribution would repeat the original difficulty or exceed the resource limit.
 
-Try a simple alternative alongside the favored design. Keeping the original units and checking the final result can be cheaper when invalid assemblies are rare and harmless. A stronger constructor is useful when it makes repeated use or reasoning materially easier.
+When the choice is still open or a comparison is commissioned, try a simple alternative alongside the favored design. Keeping the original units and checking the final result can be cheaper when invalid assemblies are rare and harmless. A stronger constructor is useful when it makes repeated use or reasoning materially easier.
 
 #### CMP.16:4.3 - Give the proposed unit a meaning through its uses
 
@@ -3732,11 +3760,11 @@ Recognition asks whether the units and operations themselves need construction f
 
 For assurance of the selected construction, establish the consequential claims:
 
-- the required observations, admitted continuations and coverage conditions;
+- the required observations and continuations, including the conditions under which results must be obtained together and the argument covering those conditions,
 - obtainable constructors and operations, including any required external primitive;
 - the reason their permitted assembly preserves meaning and any claimed invariant;
 - progress and resource conditions distinct from value correspondence;
-- the first changed action or representation under a consequential variation.
+- the action or representation that must change under a consequential variation, or the ground showing the existing construction still serves the changed use.
 
 Use evidence suited to the conclusion. A trace can refute a claim; a general preservation claim needs its applicable argument; an actual realization needs its implementation basis.
 

@@ -1,242 +1,242 @@
 {
   "schema_version": 1,
   "repository": "ailev/FPF",
-  "commit": "2aea46c8a8ad57c56a81423184fd0d2e19d19cca",
+  "commit": "423f9d3fef92bafec7b092b910e8ce056a0f607d",
   "files": [
     {
       "source": "DPFs/DECISION-DESIGN-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/DECISION-DESIGN-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "a723cd7e91a686adf1a952e54d894a7614faced634fc14c3b39c65d69832d764"
+      "sha256": "6445ac14b3af85033e1749b6208835506667116f79db2299d379b01131b60c07"
     },
     {
       "source": "DPFs/DEFENSE-AND-TRANSMISSION-MODELING-DPF.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/DEFENSE-AND-TRANSMISSION-MODELING-DPF.md",
-      "sha256": "2433b25aed52690c9c303fde731196d49dffe3a5a66027c8051867c51a103470"
+      "sha256": "e9d3e23e4321c8e0b8f8721d0ee80fc2b98bee375af2e7d3e72a02b92a2bde97"
     },
     {
       "source": "DPFs/ECONOMIC-REASONING-AND-COORDINATION-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/ECONOMIC-REASONING-AND-COORDINATION-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "5d215746bd459515c2886c27b3f4c66790b5e0c7de895eda0502964c36b135e5"
+      "sha256": "e690683e49a0cc1149956daa54665dd3445d757e35ae3a214f06162444b8cbe4"
     },
     {
       "source": "DPFs/EMBODIED-RHYTHMICS-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/EMBODIED-RHYTHMICS-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "e13bf9563bfde4e693ead5ded1941aabec4aa45553f7e345b7209022d12f954d"
+      "sha256": "5a4d5b82e8b29604222e79a072004ba25da55ed884b3c00c1c92b904113c6667"
     },
     {
       "source": "DPFs/EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/EXPLANATION-DESIGN-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "56717f7dbeded184a60899706ba08309b923d24235f2c9c10d62aa8e7661a5b7"
+      "sha256": "7f9d37bfcb4f04ad85bf4c55dba85752a931ee22524073ae24abded8fa84dada"
     },
     {
       "source": "DPFs/Engineering DPF Suite/CONTROL-ARCHITECTURE-DESIGN-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Engineering DPF Suite/CONTROL-ARCHITECTURE-DESIGN-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "da1ca1d9732bc389b51d677bad6f1466f8947630ee63eca00e99896d9edd18b3"
+      "sha256": "33bdbdf16efe44c195a2cf4f52435a5da313ff003dea5a8b8c40bcfa99375bb7"
     },
     {
       "source": "DPFs/Engineering DPF Suite/ENGINEERING-DPF-SUITE-REFERENCE.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Engineering DPF Suite/ENGINEERING-DPF-SUITE-REFERENCE.md",
-      "sha256": "0305102a40a5a21c4f8553ee0d2f775d61d1dd0e70f4b6f135d2dce05bf6cf0a"
+      "sha256": "dcb61bb3c83aeb96b46d89056570da1bd7c59c7d1e21da1face25a79ca1b5954"
     },
     {
       "source": "DPFs/Engineering DPF Suite/KNOWLEDGE-CORPUS-ACCESS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Engineering DPF Suite/KNOWLEDGE-CORPUS-ACCESS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "73abbf8661649cd959789f4b415fc795c05bf45a1a7d96e206cd60cfcfe5dbf2"
+      "sha256": "4b014eb925aec148dcf4524e2f6bcf36ba752c7140444a3670b65c5723883c41"
     },
     {
       "source": "DPFs/Engineering DPF Suite/MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Engineering DPF Suite/MAINTENANCE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "36eb0ad7a861b180f5b2a200dc1ad7a78e22378c1deda2481d820289f63a1cc5"
+      "sha256": "8e1014c1bab245458a93d1f7cd18c69391cc59a65e60dcdf1001535785e85e83"
     },
     {
       "source": "DPFs/Engineering DPF Suite/README.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Engineering DPF Suite/README.md",
-      "sha256": "f8309760ebda3a8f3e7cc9b4909f0720b980d42338a84a27d60910eac831f495"
+      "sha256": "2daf16a6b589f9591b6ac04ce0548a9a3a255e4d3660c2b59c47d296e50a4d50"
     },
     {
       "source": "DPFs/Engineering DPF Suite/SEMANTIC-INTEGRATION-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Engineering DPF Suite/SEMANTIC-INTEGRATION-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "772bc80205036500eff8d01436103f02af149e24bdd6e86ed487f472f0a23af0"
+      "sha256": "69b82b5486639bfbbb7ae46b3a4e89159c4285fd9bef063063c5b4a0bb4fc238"
     },
     {
       "source": "DPFs/Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Engineering DPF Suite/SYSTEMS-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "7f5ffcff1ee951940a410de4812582205fc9b100145feb8b466e90141be35863"
+      "sha256": "03e546fa2692bd5edc32ef70f60959114b6c2e0aa007d12647238af8647141f8"
     },
     {
       "source": "DPFs/FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/FINANCIAL-DOMAIN-MODELING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "68ae930c2ae2bfebe18d3d685ee09518cc92668e37ba29c7138dc72d5f796178"
+      "sha256": "6fc6d6c48d1a7772c5bf2216721009785248c831621f226ee64478e0877fe23a"
     },
     {
       "source": "DPFs/Foundational Thinking DPF Suite/COMPUTATIONAL-THINKING-DPF.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Foundational Thinking DPF Suite/COMPUTATIONAL-THINKING-DPF.md",
-      "sha256": "5af0675d5221e6f61443b61ad20074472d5227be615ea65fdcc64fc26836918b"
+      "sha256": "a0a0e5180e4914d7893ae214d2b2736aa8d295824734914c334f2afe97c2d697"
     },
     {
       "source": "DPFs/Foundational Thinking DPF Suite/FOUNDATIONAL-THINKING-DPF-SUITE-REFERENCE.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Foundational Thinking DPF Suite/FOUNDATIONAL-THINKING-DPF-SUITE-REFERENCE.md",
-      "sha256": "6f54b88a8adf401ba4fbd703f8245276f12bf91678bed255787e8d6966e7f8b9"
+      "sha256": "6989f9a17de665d267a94ee31ada054529c90f95d30b12d954a229085ddf51fa"
     },
     {
       "source": "DPFs/Foundational Thinking DPF Suite/MATHEMATICAL-MODELING-PRACTICE-DPF.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Foundational Thinking DPF Suite/MATHEMATICAL-MODELING-PRACTICE-DPF.md",
-      "sha256": "d013184eac442bb35c4f9f2c0a2f5e361996e75afc27a4dfa5ac08385493b1c6"
+      "sha256": "99627eba62353b80d6c6294e4a14c57c2bc97b89670b2921a4d93218053af3f1"
     },
     {
       "source": "DPFs/Foundational Thinking DPF Suite/MATHEMATICAL-PRACTICE-DPF.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Foundational Thinking DPF Suite/MATHEMATICAL-PRACTICE-DPF.md",
-      "sha256": "1a0143f70d4cb24e2802cdf811db4327752ef497e762e76c4744652d611c0ed3"
+      "sha256": "bc4192016525a90c02a40523348d81bf47102e7dea2b8eeb09b249a6bfaf9433"
     },
     {
       "source": "DPFs/Foundational Thinking DPF Suite/NOTATIONAL-ENGINEERING-DPF.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Foundational Thinking DPF Suite/NOTATIONAL-ENGINEERING-DPF.md",
-      "sha256": "0c31fbc6413535c1f030bfb693238bae0de7aa371e8ab8161c5a7b7664e14e0d"
+      "sha256": "92b2189904c8b2a4db320ff9722a40ed635bd11179ec303390cdba3587f79fca"
     },
     {
       "source": "DPFs/Foundational Thinking DPF Suite/PHYSICAL-THINKING-DPF.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Foundational Thinking DPF Suite/PHYSICAL-THINKING-DPF.md",
-      "sha256": "4beffe2632c9edca7a7e8ba76bb97af5f145820f857e24891869619108e9a78e"
+      "sha256": "30fc7c2da1634def42f82470c2f5df90dcf075e849c77b70bb237955f33da7dd"
     },
     {
       "source": "DPFs/Foundational Thinking DPF Suite/README.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Foundational Thinking DPF Suite/README.md",
-      "sha256": "b8e7802d743ecc4d25bf0e4dd97dc6b0b2782fd43e95e782a4ebd310b0466bf1"
+      "sha256": "ebae0af6f534a2b26505152d3b41eec77d362c945d5c5ed32e3629f6eda69d44"
     },
     {
       "source": "DPFs/Human Capability Engineering DPF Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Human Capability Engineering DPF Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "efed3cb7feef11bc2eb04e05aa060fef40095f215bca9a2104c44a0895b11337"
+      "sha256": "743d91aa43081d1903606e1aa16b61ad0989f748a6f97a43ce3fdbeb13939cea"
     },
     {
       "source": "DPFs/Human Capability Engineering DPF Suite/HUMAN-CAPABILITY-ENGINEERING-DPF-SUITE-REFERENCE.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Human Capability Engineering DPF Suite/HUMAN-CAPABILITY-ENGINEERING-DPF-SUITE-REFERENCE.md",
-      "sha256": "e2be1cba8a260f5ad5fe349e7b9f98d7b661999a0fcc20524c13cba95e75c684"
+      "sha256": "6fe8a4945f010399cdcca436336e24d2f99d333608e39b3fa4d862a8ef53c0ae"
     },
     {
       "source": "DPFs/Human Capability Engineering DPF Suite/README.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Human Capability Engineering DPF Suite/README.md",
-      "sha256": "423c302ca3fb63b6df20e033d9c968025783adf1d4515c54c3ddb59791b207ab"
+      "sha256": "6adb69377b974be89c07c04a074514c260dcfab9171e0c0b3d45cd7eb250541c"
     },
     {
       "source": "DPFs/Human Capability Engineering DPF Suite/SOMATIC-MOVEMENT-MODELING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Human Capability Engineering DPF Suite/SOMATIC-MOVEMENT-MODELING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "a6d058918405f5fa29f5f2a09ca7091c4a16ff93f6cfb66bd3cb0eec7646ae0f"
+      "sha256": "961426fc89d7802769625bdcb888faa7165c58c75e1e2dfeb06f86654c788e81"
     },
     {
       "source": "DPFs/IMPLEMENTATION-FACILITATION-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/IMPLEMENTATION-FACILITATION-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "3a54a37ae379e0c3677d3e8a9f2995f8715aff02c57bdeabc243a1e6409b5125"
+      "sha256": "3665179e4ecc276eb433a82d9b0ddff56b26c7d573850a0a620d887c6df280a0"
     },
     {
       "source": "DPFs/MUSIC-AND-DANCE-PRACTICE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/MUSIC-AND-DANCE-PRACTICE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "0ea786123f71c7576ba1b383ac3f73d17560dbc1d7b06e09b69e61c37b3acfa5"
+      "sha256": "4dd7355f4f60f5fe181ba9274f9a09ac292ae65d3a653ff88db67b1a765c17ed"
     },
     {
       "source": "DPFs/Management DPF Suite/COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "8719db713e8483529d5730d317720849f88ab5ae4231a4809956ec4e9a9d0f18"
+      "sha256": "ebdfb3592e2dc959ff5f9180a270736edcdd9cf9137591b7b2c569902b5adade"
     },
     {
       "source": "DPFs/Management DPF Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/CORPORATE-FINANCE-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "d4e568900b39eba1cc3917b427008df2074b110fa25e8c05d0603a1989f55796"
+      "sha256": "da8c284909c3742b4c2c16c49e7da72bb44f2f574f5e7e0c691fb2912d79718d"
     },
     {
       "source": "DPFs/Management DPF Suite/CORPORATE-GOVERNANCE-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/CORPORATE-GOVERNANCE-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "4bab992aa18047fc721a87bc2da28e1046ceb558a6a87e3efb197826868591ed"
+      "sha256": "2b4534c0ecf6d8f79df60025f57559cf9734dc2a173f24ee55e5bc87bae9c84a"
     },
     {
       "source": "DPFs/Management DPF Suite/CUSTOMIZATION-AND-PRODUCTIZATION-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/CUSTOMIZATION-AND-PRODUCTIZATION-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "db839d5895fdd36d153b0a863ac1e83b6f81f8985ea9d13be30ba0597ad9bf04"
+      "sha256": "66c33b1b5ee784171d2f819c75aee7858b815f9dec51c6e311f75498958c6707"
     },
     {
       "source": "DPFs/Management DPF Suite/ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/ENGINEERING-ASSET-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "c5b7d4a8b5dc1dba99972b17c261c5f60fddeef52f2f03ffedd985d6983487c2"
+      "sha256": "338347ea8c922756eb31c3ffc863adc2a51b4e6c0802bcc7a178b8794212fba5"
     },
     {
       "source": "DPFs/Management DPF Suite/GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/GOAL-CONSTRUCTION-AND-REGULATION-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "2a1bf16bc2ab73e302c31e6963f777d620d8b8d40436c6d46eb0500eb14a8fe7"
+      "sha256": "a8fe50683d1e4bbf9bb95f1f2a3daf42ca05024d6a59e03ddebe028d3cc8c52b"
     },
     {
       "source": "DPFs/Management DPF Suite/HUMAN-RESOURCE-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/HUMAN-RESOURCE-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "06f39901c6d8b635e0ef46f2b9e267998936407654293e0abc0680b777c0a48d"
+      "sha256": "6972ce9aea65aea6023d20c9fc11ecf7dc00e57e956790d3d989bdcb314ab160"
     },
     {
       "source": "DPFs/Management DPF Suite/LEADERSHIP-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/LEADERSHIP-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "44305e322833647d4989edfd62c151651d7bb55173e3a0431e94363f58be9629"
+      "sha256": "bb5bb4e1770402cfe3f995639687a1f468d4b0316091aebaae6be44214a13446"
     },
     {
       "source": "DPFs/Management DPF Suite/MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/MANAGEMENT-ACCOUNTING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "20047687fb260e503dbee23ca4cadc2d45c6f3232b038373807e0a27f8e7e773"
+      "sha256": "b2bd2a96e2d4aa17def7ced9b892efd63bc5cca9d6d9f7d0537d1129a189c91c"
     },
     {
       "source": "DPFs/Management DPF Suite/MANAGEMENT-DPF-SUITE-REFERENCE.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/MANAGEMENT-DPF-SUITE-REFERENCE.md",
-      "sha256": "6f162fa452b061c5f5924c121e3db7b36cf04f9629c86f4c8fdd5321c76a520b"
+      "sha256": "4ede78de751bc5b18a0b1c18663c9b94fdce3472957ce908dfeb83ab438d168c"
     },
     {
       "source": "DPFs/Management DPF Suite/MARKETING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/MARKETING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "becca3e0f4a1dd959c8b96ebdf4e1ce0292ba2db7b6664063ba3229d7c08c7df"
+      "sha256": "a9ddc5746ca4e540f7b4f11ec2bc627c5f4445c9d7ca1d38b413f64a1459b5be"
     },
     {
       "source": "DPFs/Management DPF Suite/OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/OPERATIONS-MANAGEMENT-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "4be1a9a3d382dec90c817ef6e0f422387045b5428879cbfe35d71bd0b26bde55"
+      "sha256": "5eb52a7c36478889ffd222ead542c76c1b4ade9a618ed6c8928ab7f394678f82"
     },
     {
       "source": "DPFs/Management DPF Suite/ORGANIZATION-ADMINISTRATION-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/ORGANIZATION-ADMINISTRATION-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "b56d7eab1c6a1bd6b246bc0f7deaca607891c4baaed118470cbd20d9a172f0d4"
+      "sha256": "aa4756f1add5ffca94996a7876fe975d6eb30360653fb080aa9767efeaf62712"
     },
     {
       "source": "DPFs/Management DPF Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "1f26602b4d6efd79feb27ade0275cf04746bd84a58887c72fa8c83b8dbb0b662"
+      "sha256": "22f4898d094c3d0c3aa7131e16fd01ae6872044f910d24af7407116d01fc8672"
     },
     {
       "source": "DPFs/Management DPF Suite/README.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/README.md",
-      "sha256": "c3ecefd77025d173857d4857033f29f5235711832dc8325af5d39042cc6a15de"
+      "sha256": "6d96bc04261afdf438faf5258b1844e09f03db1e4b56a93a45b5916eb71f2626"
     },
     {
       "source": "DPFs/Management DPF Suite/STRATEGY-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Management DPF Suite/STRATEGY-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "e8a91158f4b1bf26989ef889cc64dd40edb3c9bfe3056587f823f162d4d61c76"
+      "sha256": "6a2012c4afc79903d5a52f76fe2b806caf05d8cf27a937a220cf63bdd0caf67f"
     },
     {
       "source": "DPFs/Narrativization-and-Narrative-Studies-Principles-Framework.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/Narrativization-and-Narrative-Studies-Principles-Framework.md",
-      "sha256": "2b818eea1fbbdc0fbdc086c1154eb927e0e81fce763f9a4af21a8a3392a2ccb1"
+      "sha256": "09c01fabfa88d5edece1185f4c2391cb4d2738d15819651e59cf472f93e5c256"
     },
     {
       "source": "DPFs/README.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/README.md",
-      "sha256": "7f76b0d88615d1d56e768c16a28ce1c952d8ac53f15a9826a622300564cc80cd"
+      "sha256": "2f65a86a825c688228a8c4573e5396fe28ce63034db0861a502d712e126fa521"
     },
     {
       "source": "DPFs/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/DPFs/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md",
-      "sha256": "a0010b819046181b4fcb87bf9a4eb676dfc307b1ac197e4e24aa5c02b4c6ae71"
+      "sha256": "4729947d7b509f70eb8b89f504a48901c66a83a0c1bf34b6b16e457c873251a7"
     },
     {
       "source": "FPF-LIBRARY-REFERENCE.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-LIBRARY-REFERENCE.md",
-      "sha256": "67663013e39ed736d0c3aa0b8be6d40682211120085c31db0fdd0ff6242c93d4"
+      "sha256": "c7d6203b668d879db5850f569168aec0c5282dc0eac41bb160c7aaabf0870d10"
     },
     {
       "source": "FPF-Spec.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/FPF-Spec.md",
-      "sha256": "e1f6150f1e1cf999ba0d5e7ad8e9d507a6713d939c0862de557b0dcaf81afbc3"
+      "sha256": "a9b40b3dd83bfe91776f488d0308112ae1ecb9b6b321d238078a66c29455753c"
     },
     {
       "source": "LICENSE",
@@ -246,17 +246,17 @@
     {
       "source": "LICENSING.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/LICENSING.md",
-      "sha256": "686ee0b66f8564b6a51b21b2007e5572989d2a20f6ebf51f60129f73108e15e2"
+      "sha256": "870a69c92b36a5f74fae9078c907ce1fcd1c7ef19bf70920e4f964a0f38b14e8"
     },
     {
       "source": "Readme.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/Readme.md",
-      "sha256": "e11c2133f73edc6746f198fbcb4123a8164f27a21d7ba20c34f656a8210056d6"
+      "sha256": "239924993626900225000f972ceadef1971115df3f7ff1e5a92c1a5d918977dc"
     },
     {
       "source": "USING-FPF.md",
       "destination": "roles/devbox/files/dot_ai/skills/fpf-thinking/references/USING-FPF.md",
-      "sha256": "b0a58fdac452133306ded6b6cffea745efd85cf2c4294102212c6da45e246ae4"
+      "sha256": "cb10228182812299e8efcbc51d5d7796ac4a4cdac5fa0cbdab5dca7126b87a9d"
     }
   ]
 }

@@ -229,6 +229,19 @@ def test_run_creates_settings_file(tmp_path: Path) -> None:
     assert report.detected == []
 
 
+def test_run_from_empty_settings_allows_pr_merge_but_denies_pr_close(tmp_path: Path) -> None:
+    target = tmp_path / afp.SETTINGS_RELATIVE
+    target.parent.mkdir(parents=True)
+    target.write_text("{}", encoding="utf-8")
+
+    code, _ = afp.run(["--no-detect"], tmp_path)
+
+    assert code == 0
+    deny = json.loads(target.read_text(encoding="utf-8"))["permissions"]["deny"]
+    assert "Bash(gh pr merge *)" not in deny
+    assert "Bash(gh pr close *)" in deny
+
+
 def test_run_preserves_existing_rules(tmp_path: Path) -> None:
     target = tmp_path / afp.SETTINGS_RELATIVE
     target.parent.mkdir(parents=True)

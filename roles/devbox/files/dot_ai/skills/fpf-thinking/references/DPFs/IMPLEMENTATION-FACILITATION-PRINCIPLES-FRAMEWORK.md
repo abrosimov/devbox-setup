@@ -2,7 +2,7 @@
 
 **DocID:** `IS` within **FPF Library**.
 
-Edition: [Implementation Facilitation, 12 October 2026](#edition-and-use).
+Edition: [Implementation Facilitation, 22 November 2026](#edition-and-use).
 
 # Table of Contents
 
@@ -32,7 +32,7 @@ Further architectural and source sections: [IS.Reference:11 - Supplier availabil
 
 # IS.Readme - Find the first useful contribution
 
-Use implementation facilitation when a participant needs help making an evidence-informed practice usable in its setting. The participant may also want to develop the ability to conduct later changes. Enter at the missing contribution. The examples below and the [pattern index](#table-of-contents) identify starting points.
+Use implementation facilitation when a participant needs help making an evidence-informed practice usable in its setting. The participant may also want to develop the ability to conduct later changes. Start with what the recipient wants to obtain, explain or become able to do. An episode can show where one attempt broke down. A question about the service that several participants rely on may turn on how their work fits together, even if each can obtain help on a quiet day. Use the [pattern index](#table-of-contents) or the examples below to find the contribution that answers your question.
 
 **A tool cannot open the older of two source editions.** Use IS.2 to establish what the comparison requires. Try an available, permitted copy that contains the needed material. If access depends on the source owner, obtain that access or report the limit. When the source does not exist, the practice responsible for the comparison can consider a qualified substitute or state which conclusion remains open.
 
@@ -66,13 +66,13 @@ For an uncomplicated access failure, use IS.2 or [FPF A.15.8.MS](https://github.
 
 A discussion can supply the whole contribution when its participants need to resolve a question together. An undertaking that also depends on evidence interpretation, changed provision, protected participation or later capability needs those contributions. Use [FPF C.32.MWA.PP](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c32mwapp---construct-and-compare-method-performance-and-provision-arrangements) to compare whole arrangements and [OCE.6](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce6---establish-holder-assignments-and-enabling-relations-for-organization-change) to establish needed organizational relations. Obtain technical judgement from the target profession. Internal, external and distributed provision are possible.
 
-Implementation can finish while development continues. A useful result may expose a more demanding attainable problem, a changed aim or a missing Method. Use [FPF C.40.OD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40od---construct-and-continue-open-ended-development) to construct a development opportunity, [FPF C.40.JD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40jd---develop-a-way-its-holder-and-its-provision-together) to relate changes in the way, its holder and its provision, and [FPF C.40.NP](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40np---continue-from-a-result-to-new-attainable-problems) to continue to another worthwhile problem when one arises.
+Implementation can finish when the recipient has the agreed result. Participants may pass on a new opportunity. When those responsible choose to pursue it, or continuing development already belongs to their work, use [FPF C.40.OD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40od---construct-and-continue-open-ended-development) to construct a development opportunity, [FPF C.40.JD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40jd---develop-a-way-its-holder-and-its-provision-together) to relate changes in the way, its holder and its provision, and [FPF C.40.NP](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40np---continue-from-a-result-to-new-attainable-problems) to choose a worthwhile problem the recipient can now address.
 
 ## IS.Reference:2 - Make useful practice obtainable in real work
 
 Use these helping Methods when a person or system is expected to use a practice and a description, invitation, tool or training has left an important contribution unavailable. The practice may be new, difficult to continue or still being evaluated for local use. The support practitioner can help obtain the contribution, examine what happened or revise or end the help, according to the undertaking.
 
-Start with the result the receiving work needs and the occasion when it needs it. Use an available account, observe the work or ask its performer when their contribution is needed. Establish which requirement, if any, is unmet. A decision may supply permission, an expert may settle a difficult judgement, and practice with feedback may develop personal ability. A method unsuitable for the work may need revision or replacement. One restored contribution can be sufficient.
+Start with the work the recipient must carry out and the result on which others will rely. Identify the occasion, recurring occasions or connected uses the commission covers. A step can belong to the target method, an outside specialist can supply a result it uses, and several people can perform work that together keeps a service available. These relationships can call for different changes. Hold a local success fixed and consider a permitted change in the surrounding work. Could the service then fail, or could a different explanation account for the success? Follow the relation as far as the recipient’s decision requires. At each scale, retain the distinctions the answer or its grounds depend on. An available agreement, record or account from a participant can already settle the question. Establish which requirement, if any, is unmet. A decision may supply permission, an expert may settle a difficult judgement, and practice with feedback may develop personal ability. A method unsuitable for the work may need revision or replacement. One restored contribution can be sufficient.
 
 Implementation facilitation helps establish, restore, adapt or continue a recipient’s practice. When an existing service supplies the result the recipient needs, use it directly. A support practitioner may arrange for a qualified provider to perform the whole target operation. Delivery can complete the provider’s task. If the recipient is to learn that operation, arrange the recipient’s own practice and feedback. Those responsible for the target practice, organizational design or the recipient’s wider development strategy retain decisions within their respective remits.
 
@@ -82,16 +82,18 @@ Understand the proposed support and establish what the receiving work requires. 
 
 The **target practice** is what the receiving performers are trying to do. The **support strategy** is the proposed way of helping them establish, use or revise it. The **support arrangement** supplies the people, systems, time, tools, access and decisions needed for that strategy. A **support undertaking** is the bounded work and commitments through which that help is provided.
 
+Identify the recipient and provider by the contributions needed. A teacher, colleague, consultant or technical agent may supply part of the help, within the applicable competence and rights. Library.Reference:9.2 connects these role names to actual operations, intended capability changes and retained provision. Receiving help does not by itself establish recipient Work or acquisition of a capability.
+
 These distinctions change action. A different explanation of a target method may repair its description without changing the method. Replacing a classroom session with rehearsal changes the support strategy. Repairing an unavailable reference changes the arrangement. Changing the target's decision criterion can change the method itself. To attribute a successful result to one of these changes, establish its causal contribution.
 
-Establish which of the following results the recipient needs. An undertaking can require more than one.
+Establish which results the recipient needs and which decisions they entrust to the facilitator. For a design, identify what is already fixed and what the designer must choose about the work and its support. A proposal can be assessed before the service starts. To claim that the service ran or that a participant learned to design it, establish the corresponding performance or change. An undertaking can require several of the results below.
 
 | Wanted result | What must actually be obtained |
 | --- | --- |
 | A useful result from the target practice | The result and conditions the receiver needs, including the result of qualified external performance when that route is used. |
 | A person's independent or appropriately supported ability | That person's contribution in representative work under the promised support conditions, using the applicable human-development and assessment methods. |
 | A continuing organizational contribution | The combined work, effective relations, means and ordinary provision conditions that allow the organization to deliver it. |
-| Ability to arrange later implementation | The intended holder's performance of noticing a difficulty, obtaining suitable help, making permitted decisions and using the result, at the promised scope. |
+| Ability to arrange later implementation | What the holder can decide and carry out on the implementation tasks entrusted to them, with the support promised. If a specialist supplies a diagnosis and the holder is to design support, assess the holder's choice and design. If the holder must arrange further help, assess how they make it available to its intended recipient under the required conditions. When the undertaking includes use of that help, establish who used it and how. |
 | Continuation among other carriers | Evidence of access, use and the particular cultural relation claimed, at the scale of the claim. A record of one material handover can establish who received the material. Evidence of receiving use supports a claim about the practice itself. |
 
 Selection, construction and adaptation of the target practice can remain open. For a particular attempt, recover the intended contribution, the intended operations, their conditions and the result the receiving work needs. To report a completed attempt, establish which operations took place. Preserve the status of a proposed method account. A.3.1.MI explains the stronger Method, Work and evidence distinctions when the use relies on them.
@@ -124,7 +126,15 @@ Use C.32.MWA.PP when the question requires a comparison of materially different 
 
 A plan, delivered workshop, configured tool, attempted use and successful receiving result are different findings. A record of activity can be complete while a required condition is missing. Report the result the evidence establishes for the question asked.
 
-For ordinary help, identify the difficulty, the contribution supplied and what it made possible, at the level the question requires. Report remaining conditions or further action when relevant. Use stronger models or evidence where the requested conclusion needs them. For capability, identify the holder and work conditions. For cultural continuation, establish the carriers and relations claimed. For causal attribution, use C.28.
+Start with who must use the help, what they must accomplish and when. For one handover, evidence of receipt by the intended recipient may settle a delivery question. To establish use, examine what the recipient did with the result. For a recurring service, establish which requests it must handle, when their results are due and which resources or decisions connect them. Requests can coincide, or an earlier use can leave too little time or capacity for a later one. A single piece of advice may serve all recipients. Each may also need a separate examination. Find out which the order promises, when each result must be available and whether the performers responsible for each necessary contribution can act in time.
+
+Follow the work far enough to distinguish outcomes that would change the decision. When two confirmations are required, establish which contributions must be independent. Two reviewers can make separate judgements on one recorded comparison. If the order calls for independent measurements, trace both reports to their measurements and to any shared source of error. If the order concerns one authorized handover and its receipt is established, that question can stop there. For capability, examine the holder's own contribution under the agreed help. If the manager asks how many offices or people used a method, establish what counts as use and count distinct qualifying users in the relevant period. A complete use record that distinguishes them can supply the count. For a share of eligible offices, use or bound the number of eligible offices that used the method and the total eligible in that period. For a threshold, any justified bound on their ratio that decides it can suffice. For a one-by-one follow-up, establish the identities that the follow-up needs. One office can issue many reports. An office that received the instructions may have had no occasion to use them.
+
+Keep track of who could have appeared in each report. A rise in the share of offices using a method can come from newcomers, a change in who reported, or a change of practice within offices that stayed. Suppose the same four offices were eligible in both periods and had comparable work. Complete counts of two user offices earlier and three now establish that at least one of the earlier nonusers used the method in the later period. At most two made this change, since only two were earlier nonusers. They could have used it before both periods. If one office has been replaced, a newcomer can account for the entire gain. A decision that requires three current user offices can still be made. For a threshold, use the lowest or highest number consistent with the records if it settles the decision. A missing return can leave use and nonuse possible. An empty log establishes zero uses when any use would have produced an entry available by the decision date. An estimate from a sample or an incomplete log needs grounds for how the jobs were selected or how reliably use was detected.
+
+The period matters as much as the unit. Two dated jobs can show that a team used the method again. To establish use on every qualifying job, look for evidence covering those jobs, including what the records would show if the team skipped one. During a period with no qualifying jobs, a question about readiness can turn on who was available to do the work with the agreed support. C.36:4 explains how to qualify claims about the groups that carry a practice.
+
+Trace a source when the decision depends on where the practice came from. A dated handover can establish receipt. To establish that another office used the transferred method, identify the operation it took from the source and used in its own work. To judge usefulness, follow the result to the recipient's decision and deadline. One report can arrive in time for one shift and too late for the next decision of another. OCE.13 and CB.10 help establish the benefits and burdens for those affected from adequate existing records or accounts. If asked whether the change improved the service, consider what comparable work would otherwise have delivered. A change of recipients, jobs or recording practice can alter the figures. Use C.28 when the decision depends on distinguishing these explanations.
 
 Use C.11.DUA to judge whether the value of an attainable answer warrants the work, delay and interruption of obtaining it. An existing bounded answer can suffice when the competing explanations leave its conclusion and grounds intact. Mandatory protections stay in force unless an effective authorized change applies.
 
@@ -136,7 +146,7 @@ The [2020 conceptual account](https://link.springer.com/article/10.1186/s12913-0
 
 An implementer can use A.3.1.MI to introduce a practice without a separate helping relationship. Use it to distinguish observations of implementation, adaptation of the target, changes to the support strategy and causal claims. HCD, OCE, CB and the Core Method-development family supply their own Methods. The constructed cases illustrate reasoning under their stated conditions.
 
-Obtain the relevant technical Method, learning contribution, organizational arrangement or development direction from the practice that can provide it. Preserve its conditions of use and identify any gap for the recipient. Reduce a service promise when it depends on expertise that cannot be supplied.
+Obtain the relevant technical Method, learning contribution, organizational arrangement or development direction from the practice that can provide it. Preserve its conditions of use and identify any gap for the recipient. If the available expertise cannot support the promise, identify the affected work. Those who control the undertaking can agree different terms or arrange another qualified source.
 
 The short entries identify the receiving work and a contribution that could help. Use the relevant Method or the supplying practice in IS.Reference:1 when an operation, condition or evidence claim remains unresolved. The examples show selected combinations.
 
@@ -153,7 +163,7 @@ The links and PatternIDs locate the relevant publications and sections. For a re
 | [Human Capability Development (HCD)](https://github.com/ailev/FPF/blob/main/DPFs/Human%20Capability%20Engineering%20DPF%20Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md) | HCD.1/3 relate later work and a possible human limitation; its programme, practice, provider and assessment Methods obtain wanted personal acquisition; HCD.15 sustains continuing development. | Use when the intended human must acquire or demonstrate a contribution. Qualify the person’s own contribution under the support actually received. Changed work, preparation or support reopens the relevant HCD question. |
 | [Organization Change Engineering (OCE)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md) | OCE.6 establishes actual assignments and enabling relations; OCE.9 supplies organization-capability realization; OCE.10 diagnoses and handles participation difficulties; OCE.11 reconciles change with continuing service. | Use where a local support undertaking depends on organizational contribution, sanction, authority, workload or coexistence. A changed relation or demand can invalidate a strategy even when its participants have adequate skills. |
 | [Leadership (LDR)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/LEADERSHIP-PRINCIPLES-FRAMEWORK.md) | [LDR.1:4.4](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/LEADERSHIP-PRINCIPLES-FRAMEWORK.md#ldr144---perform-the-smallest-sufficient-working-conversation) supplies working conversations; [LDR.4 (LDR.4:4)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/LEADERSHIP-PRINCIPLES-FRAMEWORK.md#ldr44---solution) connects examination, objections, effective decisions and commitments to first useful work. | Use when joint work lacks the conversation or preparation that makes the support proposal actionable. A sufficient prepared and authorized arrangement can be used directly. |
-| [Community Management (CB)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | CB.7 develops distributed organizing; CB.12 supplies repeated participation; CB.14 maintains a shared repertoire; CB.15 connects practices through a joint contribution; CB.16 establishes actual collective representation. | Reuse a sufficient community-supported arrangement directly. For a claim of broader continuation, establish which carriers used the practice and how they were connected. Independent carriers can continue it outside an organized community. |
+| [Community Management (CB)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md) | CB.7 develops distributed organizing; CB.12 supplies repeated participation; CB.14 maintains a shared repertoire; CB.15 connects practices through a joint contribution; CB.16 establishes actual collective representation. | Reuse a sufficient community-supported arrangement directly. To extend access, establish what the new recipients need to use the practice. To find how far use has already spread, establish coverage among eligible recipients in the period at issue. A bound may suffice for that question. To establish a handover in use, trace the operation the recipient obtained and used. Individual practitioners and groups can continue the practice outside an organized community. |
 | [Research Method Practice (RMP)](https://github.com/ailev/FPF/blob/main/DPFs/RESEARCH-METHOD-PRACTICE-PRINCIPLES-FRAMEWORK.md) | RMP.1 qualifies a knowledge question and a sufficient available answer; RMP.2/3 construct the selected attainable inquiry and its operationalization; the remaining Methods govern the material, knowledge account and return it needs. | Use when a consequential uncertainty warrants inquiry. Reconsider a supported claim when changed evidence affects its grounds. |
 | [FPF C.40.OD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40od---construct-and-continue-open-ended-development), [FPF C.40.JD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40jd---develop-a-way-its-holder-and-its-provision-together) and [FPF C.40.NP](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40np---continue-from-a-result-to-new-attainable-problems) in Core | Construct a development opportunity, develop the way/holder/provision together, and continue from a result to another attainable problem. B.5.PI and C.40.CD supply problem formation and revision. | Return a changed desired result or an insufficiently formed opportunity; successful implementation does not exhaust development. |
 | [Marketing (MKT)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/MARKETING-PRINCIPLES-FRAMEWORK.md), current MKT.11 body | MKT.11 joins the commercial promise, actual supplier contributions, their conditions and failure response. | Use when the implementation-support service is a commercial promise whose feasibility must be established. Changes in supplier provision or customer terms reopen that promise. |
@@ -207,7 +217,7 @@ The [current source questions](#issources2---follow-the-current-source-questions
 
 **Use this when** a request for help, a service offer or a proposed change leaves it unclear what the help must make possible or what it can provide. Also use it when a previously sensible agreement no longer fits the target, recipient, provider or available means.
 
-Identify one receiving use. What result is required, on what occasion, and does the offered help supply it? A request for a course may reflect a learning need, unavailable time, inaccessible material or a target that does not fit the work.
+Establish the use or uses the parties are asking the undertaking to support. For one occasion, what result does the receiver need? For a service, what has to be available to each recipient, under which conditions, and what must the providers and recipients obtain together? A request for a course may reflect a learning need, unavailable time, inaccessible material or a target that does not fit the work.
 
 A support undertaking comprises the bounded work and commitments through which help is provided. A conversation, work note or service specification can establish what the parties agreed when it records an effective commitment.
 
@@ -238,13 +248,13 @@ Start with the receiving result. Identify the help, contributions and decisions 
 
 #### IS.1:4.1 - Recover the request through the receiving work
 
-Use a recent case or the next intended use to establish the input, action, receiver and consequence. Ask the requester to show or describe the case when their knowledge is needed. For example, a reviewer may need to find which source edition supports a claim before recommending release.
+Read the request with the work to which its terms apply. Recover the result and the choices left open for each party. A recent case can establish what one person lacked, a service agreement can establish what every shift is owed, and the work schedule can show which demands compete. Use the source or combination that bears on the actual question. Ask the requester to show or describe a case when that can settle a missing premise. For example, a reviewer may need to find which source edition supports a claim before recommending release.
 
 Establish what the performer currently does, where the proposed contribution would enter and what makes its result usable by the receiver. Use the available work and accounts. When the performer or receiver holds missing information, obtain it from them where possible. A single practitioner may both perform the work and use its result.
 
 Compare the request with the evidence. Keep the proposed training when the recipient needs to learn the operation and the training can support that learning. If a capable performer lacks access to the source, repairing access can meet the immediate need. If the benefit is disputed, use an applicable target decision, seek a new decision from its holder if needed, or use IS.2 to investigate the disputed claim.
 
-Keep the detail that affects the agreement, the proposed work or the grounds for the promised result.
+Agree who will make the consequential choices. A recipient may ask for a ready answer, the design of a support service, or an opportunity to learn how to diagnose a difficulty. A designer can use a diagnosis already supplied by a specialist. If the facilitator is commissioned to diagnose the difficulty, the facilitator must establish the grounds for the finding. If a team is to learn to diagnose such difficulties, arrange for it to make the relevant judgements with the support available in its later work. Supplying the team with a well-founded diagnosis can help it act today. Its own diagnostic work can be assessed when that judgement is still open to it.
 
 #### IS.1:4.2 - Distinguish the promised result from the help
 
@@ -255,12 +265,12 @@ Specify the provider’s contribution. The following requests illustrate differe
 | Requested help | Contribution to make explicit |
 | --- | --- |
 | “Coach us.” | Which action or judgement the coach helps the performer construct, when help is available and what remains the performer's work. |
-| “Train the team.” | Which later work each intended learner must become able to perform, with what practice, feedback and assessment. |
+| “Train the team.” | Which work a person, a team, or both must become able to do. Identify who must make which choices and what the members need to accomplish together. Arrange practice, feedback and assessment for that work. |
 | “Implement the tool.” | Which configuration, integration, access and receiving-use conditions the provider establishes, and who holds any required technical decisions. |
 | “Help us introduce the practice.” | Which local conditions, explanation, participation, trial, observation or revision work the helper supplies. |
 | “Make us independent.” | Which contributions the recipient must perform or arrange without this particular helper, and which continuing services remain legitimate dependencies. |
 
-One undertaking can combine several of these or other contributions. Explain how they work together to obtain the promised result.
+One undertaking can combine several of these or other contributions. Explain how they work together to obtain the promised result. Identify which operations the provider and recipient actually perform; they can use the same Method or different Methods. An adequate existing contribution can be used within its grounds and rights without inventing a new promise.
 
 Establish that the decisive operation can be supplied with the required competence, access and evidence. The helper can perform it, use an applicable existing result or obtain it from a qualified provider. If useful delivery still depends on a provider’s unconfirmed commitment or unavailable evidence, state that condition.
 
@@ -274,13 +284,13 @@ Agree what information the helper receives, how it will be used and who will rec
 
 For voluntary participation, establish consent from the participant’s applicable agreement. Membership and the sponsor’s enthusiasm do not establish it. For an employee or contracted provider, distinguish an existing obligation from optional participation. Use the governing rule to settle a question of rights, or obtain the missing decision from its holder.
 
-#### IS.1:4.4 - Construct the smallest useful undertaking
+#### IS.1:4.4 - Agree a support undertaking that fits the receiving work
 
-Choose an initial result the receiver can use. For a failed source lookup, this might mean establishing where it failed, agreeing on a permitted repair and making the repaired route available to the reviewer on the next case. A meeting is useful where it supplies the needed contribution.
+Choose a result that meets the undertaking the parties can agree to. If they agree to start with part of the work, establish what it supplies and who remains responsible for the rest. For a failed source lookup, this might mean establishing where it failed, agreeing on a permitted repair and making the repaired route available to the reviewer on the next case. A meeting is useful where it supplies the needed contribution.
 
-Name the minimum inputs and contributions needed for that result. Check that they can be supplied together at the relevant time. If they cannot, compare changing the first result, rescheduling, obtaining another supplier, using a qualified incumbent or stopping.
+Establish which inputs and contributions a feasible undertaking needs. Look for a smaller arrangement when it would help the recipient make a choice or meet a constraint. Check that they can be supplied together at the relevant time. If they cannot, compare changing the first result, rescheduling, obtaining another supplier, using a qualified incumbent or stopping.
 
-Agree the scope of the first attempt and the conditions that could change it. A short engagement can end with a repaired condition. An inquiry can return a qualified question or an established finding, with a decision available when needed. A larger implementation promise needs a workable support strategy and provision. Use IS.3 where either remains open.
+Agree the reach of the undertaking. When a first attempt is useful, agree what it can settle and what commitments extend beyond it. A short engagement can end with a repaired condition. An inquiry can return a qualified question or an established finding, with a decision available when needed. A larger implementation promise needs a workable support strategy and provision. Use IS.3 where either remains open.
 
 Put the agreement where the parties can use it, such as their ordinary work note or service request. Identify the receiving result, the provider’s contribution, any contribution required of the recipient, applicable decisions and protections, and the conditions for revising the promise.
 
@@ -328,22 +338,22 @@ The examples emphasize professional services. In a personal use, the same questi
 
 ### IS.1:7 - Conformance Checklist
 
-- The first receiving use and useful result are recognizable without knowing the provider's service catalogue.
+- The parties can identify the receiving work, its extent and the result owed, including any connections between uses on which delivery depends.
 - The provider’s contribution and any work required of the recipient are clear enough to act.
 - Any claimed decision or information use has an established basis. If an authority remains unknown or a permission is missing, the limit on the undertaking is clear.
 - The required contributions can be obtained together, or the promise retains the exact missing condition.
-- A changed aim, provider, burden or protection condition can revise or end the undertaking.
+- When an aim, provider, burden or protection condition changes, the parties can identify what remains feasible and owed. Revision or termination follows the terms in force or an authorized decision.
 - If delivery is claimed, evidence shows that the result reached the recipient or was made available as promised. Any claim of mastery rests on the recipient’s own performance under the applicable conditions.
 
 ### IS.1:8 - Common Anti-Patterns and How to Avoid Them
 
 | Misuse | Repair |
 | --- | --- |
-| Sell the standard workshop before recovering the receiving work. | Inspect one intended use and compare what the workshop would supply. |
+| Sell the standard workshop before recovering the receiving work. | Compare what a workshop supplies with what the recipients must obtain across the uses in the request. A particular instance can settle the question when its conditions cover what matters. |
 | Promise that the client will become independent without naming independent work. | State which contribution will transfer and which support remains. |
 | Treat a sponsor's request as every participant's consent. | Recover the actual right or agreement for the contribution. |
 | Gather candid failures while leaving their assessment use undisclosed. | Agree information use and resolve incompatible support/evaluation roles before collection. |
-| Keep the broad promise after a necessary provider becomes unavailable. | Narrow the undertaking, obtain a substitute or stop the dependent result. |
+| Rely on a provider who can no longer supply a required contribution. | Seek an eligible substitute or an authorized change of terms. Identify any work that remains due and what prevents its delivery. Apply a governing stop condition where it holds. |
 
 ### IS.1:9 - Consequences
 
@@ -369,7 +379,7 @@ A stable standard service with agreed rights and inputs can answer the request. 
 
 Use IS.2 where a receiving difficulty remains unexplained and IS.3 when support still needs to be designed or adapted. A.3.1.MI helps establish what happened during introduction or later use and which conclusions follow. Use IS.5 for continued provision, transfer or closure.
 
-Use MKT.11 to establish whether a commercial service promise can be met, [OCE.6 (OCE.6:4)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce64---solution) for organizational assignments and enabling relations, and [LDR.4 (LDR.4:4)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/LEADERSHIP-PRINCIPLES-FRAMEWORK.md#ldr44---solution) when a decision or first use requires preparation. Use HCD when personal acquisition is promised. Use C.39 when construction or qualification of a target or support Method remains open.
+Use MKT.11 to establish whether a commercial service promise can be met, [OCE.6 (OCE.6:4)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce64---solution) for organizational assignments and enabling relations, and [LDR.4 (LDR.4:4)](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/LEADERSHIP-PRINCIPLES-FRAMEWORK.md#ldr44---solution) when a decision or first use requires preparation. Use HCD when personal acquisition is promised. Use A.3.1.FT with evidence from the practice when the question is whether a known target or support Method fits the receiving setting. Use C.39 when an operation or a connection needed in that setting must still be developed.
 
 ### IS.1:End
 
@@ -382,13 +392,13 @@ Use MKT.11 to establish whether a commercial service promise can be met, [OCE.6 
 
 ### IS.2:1 - Problem frame
 
-**Use this when** a practice cannot begin, a later use fails or the help appears inadequate, and you need to establish what happened, why it matters or what response is warranted. The target can be established or still under examination. Start from a concrete intended or observed use.
+**Use this when** a practice cannot begin, a later use fails or the help appears inadequate, and you need to establish what happened, why it matters or what response is warranted. The target can be established or still under examination. Recover the intended or observed uses and the conclusion the recipient needs. A difficulty can arise in one performance, in the way several performances fit together or in how a method serves the range of work to which it is assigned.
 
-Examine one episode. What result was needed? What was available, what was attempted and where did the difficulty arise? Use a suitable record or observation, or ask the performer to show the difficult point when their knowledge is needed. An inaccessible input, unavailable time, a missing operation and an unsuitable target can call for different responses.
+For a question about one episode, ask what result was needed, what was available and what the parties did. For a question about provision across a service, establish the applicable commitments and the conditions under which the work must fit together. One failed episode can refute a promise that covers it. To explain the failure or design a remedy, follow the relevant connections. Use a suitable record or observation, or ask the performer to show the difficult point when their knowledge is needed. An inaccessible input, unavailable time, a missing operation and an unsuitable target can call for different responses.
 
 Investigate the implementation difficulty and any response the task requires. Use a qualified current finding directly when it settles the question. An interview, observation or small comparison can resolve a remaining uncertainty. The result may explain the episode, supply useful help, specify an obtainable contribution or identify a limit.
 
-Use an adequate known response directly. When an unexpected result after an intervention needs explanation before adaptation, A.3.1.MI:4.5 supplies that developed comparison. When the question is already a human capability diagnosis or an organizational participation difficulty, use HCD.3 or OCE.10, or apply a sufficient diagnosis already available from that practice.
+When the commission is to restore the work, use an adequate known response directly. If the recipient also asks why the difficulty arose, establish the cause or say which explanations remain possible after the repair. When an unexpected result after an intervention needs explanation before adaptation, A.3.1.MI:4.5 supplies that developed comparison. When the question is already a human capability diagnosis or an organizational participation difficulty, use HCD.3 or OCE.10, or apply a sufficient diagnosis already available from that practice.
 
 ### IS.2:2 - Problem
 
@@ -411,28 +421,28 @@ Distinguish the explanations that matter to the requested finding, the grounds f
 
 ### IS.2:4 - Solution
 
-Reconstruct the receiving episode. Compare plausible explanations by what should differ in the evidence or in the response. Report what they support and where uncertainty limits the conclusion. If the task requires further help, obtain the smallest contribution that makes the needed use possible.
+Establish which difficulty the recipient is trying to understand or resolve. Reconstruct the relevant performance, arrangement or range of work. Compare plausible explanations by what would differ in the evidence, in the grounds for an answer or in a warranted response. Report what they support and where uncertainty limits the conclusion. When further help is needed, obtain the contribution called for by the undertaking. Where the allocation is open, compare what each workable arrangement supplies and the work it leaves to the recipient and the provider.
 
-#### IS.2:4.1 - Follow the episode through the intended result
+#### IS.2:4.1 - Trace the difficulty through the work that needs the result
 
-Establish the occasion, relevant input, interpretation, action, output and receiver as far as the evidence allows. If the question depends on what a participant understood or expected, use an appropriate account from them. Compare it with permitted evidence from the work, such as an input, tool response, product or receiving decision.
+For a particular attempt, establish the occasion, relevant input, interpretation, action, output and receiver as far as the evidence allows. When the problem arises across attempts, determine which performances make up the work being judged and what relates them. Two offices can each deliver their review while no one is assigned to reconcile conflicting conclusions before release. Checking the two reports can establish local delivery. To explain the missing decision, inspect the required reconciliation, whose work it is and what the decision maker received. If the question depends on what a participant understood or expected, use an appropriate account from them. Compare it with permitted evidence from the work, such as an input, tool response, product or receiving decision.
 
 Trace the actual or proposed work to the result the receiver needs. Locate a blocked step or a completed step whose output fails to meet that need. Use suitable records, observations or the performer’s explanation. Trace the relevant dependency back to its inputs and forward to its consequences. Use B.1.5.EW when the action’s contribution to the encompassing work remains unclear.
 
-Finding a source edition can support a judgement about a claim which, in turn, informs a release recommendation. Check whether the retrieved passage supports the claim. If the source is unavailable, identify which part of the recommendation depended on it. Use any independent evidence that supports the claim, and qualify the remainder.
+Finding a source edition can support a judgement about a claim which, in turn, informs a release recommendation. Check whether the retrieved passage supports the claim. If the source is unavailable, identify which part of the recommendation depended on it. Use any independent evidence that supports the claim, and qualify the remainder. If two reports agree, establish what the release rule requires. Two authorized reviewers can independently judge the same recorded comparison. Two repetitions with a common faulty reference may share the error the measurement check was meant to detect. Trace the judgements or measurements to their origins and test the relevant common dependence. A single comparison may settle the source question. Obtain an additional contribution when the particular independence required for release is still missing.
 
 Include a successful contrast when it can distinguish the failure. The same performer using a different source route may reveal an access problem; success with an expert present may instead reveal the expert's missing contribution. Report the assistance supplied in each episode when interpreting the result.
 
-If the intended event has not occurred, use an explicit prospective case and keep its status clear. A walkthrough can identify a contradiction or unavailable input without proving that later work will succeed.
+Before an intended use, the governing rule or a known resource bound may settle whether the arrangement can serve the promised work. If a dependency remains unclear, a walkthrough of a permitted situation can expose a contradiction or a missing input. Report what this establishes for future use. A conclusion about an actual event requires evidence of that event.
 
 #### IS.2:4.2 - Distinguish explanations that matter to the finding or response
 
-State explanations as working claims about the episode. “The lookup route cannot retrieve this edition” is more useful than “technology barrier”. State what evidence would distinguish the claim and which response, if any, would depend on it.
+State the explanations at the extent of the question. They may concern how one episode went, which recurring condition prevents use or why a proposed service cannot meet its obligations. “The lookup route cannot retrieve this edition” is more useful than “technology barrier”. State what evidence would distinguish the claim and which response, if any, would depend on it.
 
 | Possible explanation | Observation that could distinguish the explanation | Different response |
 | --- | --- | --- |
 | The needed source or tool cannot be used. | Can the qualified performer proceed when effective access is supplied? | Repair access or select another qualified obtaining way. |
-| An operation or judgement is missing. | What contribution does an expert make that is absent from the ordinary attempt? | Use an adequate judgement or obtain it from a qualified provider. If the performer must acquire the operation, arrange suitable explanation, practice and feedback. |
+| An operation or judgement is missing. | What contribution does an expert make that is absent from the ordinary attempt? | Use an adequate judgement or obtain it from a qualified provider. If the performer must acquire the operation, select a development or provision Method appropriate to that holder. When learning is the selected way, arrange the contributions that its Method requires, such as practice with feedback for a person or training data for a technical system. |
 | The target does not fit the receiving case. | Which relied-on condition differs, and does the known alternative address it? | Reconsider the target or qualify a variant through the subject practice and A.3.1.MV. |
 | Correct work conflicts with current commitments. | What occupies the necessary interval, and who can change the allocation? | Establish the conflict. If it must be resolved, obtain a feasible arrangement under the applicable authority. |
 | Correct participation brings adverse consequences. | What actually follows the action, compared with the stated rule? | Establish the adverse consequence. If intervention is required, use or obtain a change that can alter it. |
@@ -454,7 +464,7 @@ Where causal reliance exceeds what the local contrast supports, use A.3.1.MI:4.5
 
 #### IS.2:4.4 - Obtain the response through its actual supplier
 
-If the response requires another contribution, specify the case, the question to answer or condition to change, the receiving result, timing and necessary qualification. First establish whether a suitable result is already available.
+If the response requires another contribution, tell the provider which work it must cover, what question to answer or condition to change, who needs the result and when, and what qualification the work requires. First establish whether a suitable result is already available.
 
 For a missing judgement, apply a qualified result that covers the case or obtain it from a competent performer. A demonstration can help when the task requires understanding how the comparison works. For a learning need, give the provider the later-work action and evidence of the difficulty. For an allocation conflict, establish the overlapping commitments and identify any decision needed from their holders.
 
@@ -480,7 +490,7 @@ Observe a subsequent use when the task or proposed claim calls for it. Distingui
 
 A support investigation can reveal that the target is no longer appropriate, that a new possible result is more valuable, or that a needed Method does not exist. State the discovery and the grounds for reconsidering the target.
 
-Where a target decision is needed, use the evidence, existing results and receiving consequence to decide within your authority or return the question to its holder. C.39 and the subject practice can construct or qualify a way. C.40.OD can help compare development directions; B.5.PI/C.40.CD can help form a question when the initial interpretation fails. Implementation support can continue independent useful work while the dependent branch remains open or stopped.
+Where a target decision is needed, use the evidence, existing results and receiving consequence to decide within your authority or return the question to its holder. Use the relevant professional evidence and A.3.1.FT to qualify a known way for this use. If an operation is missing, develop it using C.39 and the subject practice. C.40.OD can help compare development directions; B.5.PI/C.40.CD can help form a question when the initial interpretation fails. Implementation support can continue independent useful work while the dependent branch remains open or stopped.
 
 Return the supported finding or response. State its conditions, any unresolved question and the next action when the receiving work requires one. If no permissible contribution can meet the current promise, identify that limit.
 
@@ -500,7 +510,7 @@ The source owner repairs the portal. The responsible manager and technical lead 
 
 Suppose the next supported episode succeeds with one analyst, while a second still cannot compare the two revisions. That different finding opens a bounded HCD question about the second analyst's operation. It does not retrospectively turn the portal failure into a learning defect.
 
-If the manager refuses the needed change, the helper reports that the promised early-challenge practice remains unsupported. The source repair can still be useful.
+If the manager refuses the change, establish whether another authorized route can get an early challenge considered. Report the shortfall if none can meet the promise. The source repair can still be useful.
 
 #### IS.2:5.2 - An independent carrier needs a different input, not a community
 
@@ -508,7 +518,7 @@ A freelance repairer obtains a diagnostic procedure from a publisher. The new in
 
 The support practitioner asks for an allowed sample and follows it through the lookup. A subject expert can map the new identifier unambiguously. The existing instruction assumed the older format. The immediate response is a qualified input adapter and an explanation of its boundary.
 
-If two new identifiers map to the same older code, the mapping is no longer sufficient. That changed condition returns to the target Method and subject expert. Keep the ambiguous mapping open until there is a qualified way to distinguish the identifiers.
+Suppose two new identifiers map to one older code. To select a diagnostic instruction, ask whether that instruction is suitable for both instruments under the customer’s conditions. If it is, the adapter can return it directly. Otherwise, check whether another permitted instruction fits both. When no common action meets the order, use the original identifiers before reducing them to the old code or obtain another distinction in time for the repair. For a request to recover the exact original identifier, a retained original can suffice.
 
 #### IS.2:5.3 - Preserve uncertainty when the response does not depend on it
 
@@ -518,15 +528,15 @@ The local response can proceed on this basis. If a later decision concerns reduc
 
 ### IS.2:6 - Bias-Annotation
 
-The helper may favor explanations that match their own service: trainers see learning gaps, tool providers see configuration gaps and managers see motivation. Use the episode, recipient account and actual contribution to challenge that preference.
+The helper may favor explanations that match their own service: trainers see learning gaps, tool providers see configuration gaps and managers see motivation. For one attempt, use the participants’ accounts and the work they did. For a difficulty in the service, examine how its terms and the contributions across attempts could produce it, including among people who could never use the service.
 
 A successful contrast can also mislead when it changes several conditions. Keep expert assistance, case difficulty and effective access visible; their combined result does not isolate one cause.
 
 ### IS.2:7 - Conformance Checklist
 
-- A concrete intended or actual receiving use grounds the difficulty.
+- The difficulty is located in the performance, arrangement or range of receiving work the question concerns.
 - Live explanations differ in the action or warranted conclusion they imply.
-- An adequate current response can end diagnosis without another observation.
+- Does the finding settle the question the recipient asked? One response may work under several explanations. It can complete a commission to restore service while the cause still requires investigation.
 - A selected inquiry can answer a consequential question about the finding, its grounds or a decision, and warrants its burden.
 - The finding answers the receiving question within its evidence. When a further contribution or action is needed, its scope and availability are clear.
 - The explanation distinguishes capability, organizational conditions, target fitness and support wherever they call for different conclusions.
@@ -536,21 +546,21 @@ A successful contrast can also mislead when it changes several conditions. Keep 
 
 | Misuse | Repair |
 | --- | --- |
-| Score a barrier inventory and call the highest score the cause. | Recover the case and compare explanations through their different expected observations and actions. |
+| Score a barrier inventory and call the highest score the cause. | Recover the difficulty at the reach of the question. Compare what each explanation implies for the work and what would distinguish them. |
 | Diagnose a missing skill whenever a person does not perform. | Inspect access, task conditions, consequences and the actual operation. |
 | Ask for more evidence without saying what it changes. | State what the answer could change about the finding, its grounds or the subsequent work. |
-| Forward a problem to “an expert” without a usable request. | Supply the case, needed result, timing and receiving condition. |
+| Forward a problem to “an expert” without a usable request. | Explain what the recipient needs to decide or do, what the provider must establish and when and how the result can be used. |
 | Repeat an adequate OCE or HCD diagnosis under a new label. | Use the existing result if it fits. Act on a remaining question when there is one. |
 
 ### IS.2:9 - Consequences
 
 The next intervention can address the contribution that actually limits use. Some requests become smaller repairs; others correctly return to a target decision or a professional supplier.
 
-The conclusion depends on the relevant task evidence and, where needed, participants’ knowledge of the episode. State what remains open if these are unavailable. A narrow response can be justified with the cause still uncertain.
+The conclusion depends on the relevant task evidence and, where needed, participants’ knowledge of the work. State what remains open if these are unavailable. A narrow response can be justified with the cause still uncertain.
 
 ### IS.2:10 - Architectural Rationale
 
-Examine a receiving episode to see how the occasion, action and means affected the result. For a prospective difficulty, specify the corresponding intended use. A label about an individual or organization can hide those connections.
+For a difficulty in one performance, reconstruct how the occasion, action and means affected it. For a difficulty in the way work is organized, identify the relation that can produce the difficulty and the conditions under which it does. A service may exclude a whole group before anyone in it makes an attempt. A label about an individual or organization can hide those connections.
 
 The Method separates explanation from response selection. More than one explanation can support the same response, while one generic symptom can require very different actions. That distinction makes the work useful under uncertainty and limits unnecessary inquiry.
 
@@ -613,7 +623,7 @@ Establish the contribution the receiver needs and whether existing provision mee
 
 #### IS.3:4.1 - Recover the contribution and preserve a sufficient incumbent
 
-Use the IS.1 undertaking and IS.2 response or equivalent inputs when available. Establish the target practice, receiving result, intended performer, starting conditions, protection and material uncertainty. A qualified result about an existing strategy or service can settle the present question.
+Use the IS.1 undertaking and IS.2 response or equivalent inputs when available. Establish the target practice, receiving result, intended performer, starting conditions, protection and material uncertainty. If a suitable arrangement is already known, use it for a request it meets. When the recipient must design one, identify which operations they may change, which specialist results they can obtain and what each user must be able to do with the combined provision.
 
 Establish whether the next use requires a change. If a reference has moved, restoring the route may suffice. When a person needs to acquire an operation, arrange appropriate demonstration, practice and feedback on that person’s work. When the task needs the result, use qualified provision that meets the conditions, or compare available ways if selection remains open. An explanation may help someone use the delivered result. Reconsider an unsuitable target with the practice responsible for it.
 
@@ -628,7 +638,7 @@ Establish the baseline from what the current arrangement can provide, what it le
 - develop a person’s ability through an appropriate HCD arrangement when the undertaking calls for human acquisition;
 - make a tacit operation recoverable through an explanation, demonstration or usable tool;
 - solve an open problem together when the required knowledge or decisions are distributed;
-- choose a different target or reduce the promised use when the needed contribution is unavailable.
+- propose a different target or a smaller undertaking to the parties entitled to agree it. For an existing commitment, establish which terms still apply.
 
 For an option whose operation is unclear, follow a relevant input to the output the receiver needs. For example, a coach may ask a reviewer to compare two source editions, identify a changed claim and explain its effect before giving feedback. An adequate instruction or qualified service account can already identify the operation.
 
@@ -648,7 +658,7 @@ Distinguish the support strategy from the target. Changing the time of a briefin
 
 #### IS.3:4.4 - Construct the local way with its recipients and providers
 
-Trace the contribution from the input the provider needs to the result the receiver can use. An existing instruction, service result or observation may establish that connection. If you are designing an unfamiliar arrangement and the handoff or operation remains unclear, work through a representative case with those who hold the needed knowledge. Establish where the input, explanation, tool or help enters and what must reach the receiver.
+Trace the contribution from the input the provider needs to the result the receiver can use. An existing instruction, service result or observation may establish that connection. If you are designing an unfamiliar arrangement and the handoff or operation remains unclear, work through a representative case with those who hold the needed knowledge. Establish where the input, explanation, tool or help enters and what must reach the receiver. For a service used in different settings, try varying the local practice while keeping the proposed help the same. A change in the result owed, its timing or who must act can require a different arrangement. A common rule can cover the settings when its conditions hold throughout.
 
 Revise the arrangement where the evidence exposes a problem. For an inaccessible input, obtain it, use a compatible operation or identify the unresolved target condition. If the result would arrive too late, examine another time or way of obtaining it. If a participant identifies a harmful consequence, preserve the objection and consider an arrangement that addresses it.
 
@@ -670,9 +680,9 @@ For the option or options under consideration, identify who would perform each d
 
 Use C.32.MWA.PP to compare materially different arrangements for performance and provision. Examples include shared specialist service and provision within each branch, or expert execution and supported local performance. Consider where the work falls, simultaneous demands and dependencies. Use an applicable existing comparison or selected configuration. A proposal that depends on new relations still needs those relations to become effective. Use C.32.MWA, A.15.8.MS or OCE where the question concerns interacting structures, method-use support or organizational change. Continue with the helping operations and a receiving instruction where either is missing.
 
-Check demand at the times people or resources are needed. Count shared preparation once per arrangement and include recurring case-specific interpretation and help. Two independent demands cannot both use the same expert hour. A single joint review may supply service and coaching. Count its time once for each person involved, include any additional preparation and instruction, and assess the service and learning results separately. A replacement provider, including a qualified AI system, is an option when it can meet the receiving conditions.
+Check demand at the times people or resources are needed. Count shared preparation once per arrangement and include recurring case-specific interpretation and help. Include separate demands together when the agreement lets them fall in the same interval. They can both be met if their full work fits the interval under a feasible assignment. A single joint review may supply service and coaching. Count its time once for each person involved, include any additional preparation and instruction, and assess the service and learning results separately. A replacement provider, including a qualified AI system, is an option when it can meet the receiving conditions. Where recipients can use the same prepared answer separately, test delivery and time for local use at each site. Where attendance at the same activity is required, establish an interval common to everyone whose presence matters. Different tasks may place demands on the same person even when the sites can otherwise act independently.
 
-Use the commitments and permissions already in force. Obtain any additional access, staff time, voluntary participation or provider response window the selected work needs. Where continuing service competes with the change, use a sufficient coexistence arrangement or develop one with OCE.11.
+Use the commitments and permissions already in force. Obtain any additional access, staff time, voluntary participation or provider response window the selected work needs. Where continuing service competes with the change, use a sufficient coexistence arrangement or develop one with OCE.11. For a recurring promise, identify how the shared contribution is allocated, which decisions have already been fixed and what each decision maker can know when the remaining choices are due. Separate reservations for two shifts or a common service using current requests may supply a workable arrangement. Check that the allocation covers the permitted requests, including later work that an early commitment could displace.
 
 If a required condition remains unavailable, compare a smaller slice, another provider, staggered work, another strategy or a revised promise. An option that violates a binding protection or authorization condition is ineligible while that condition applies.
 
@@ -750,7 +760,7 @@ The arithmetic case favors a small initial slice because that is the stated rece
 - An adequate existing service or strategy can supply the requested result.
 - Target changes and changes to its introduction or support are distinguishable.
 - Local instructions preserve the decisive operation and its input and receiving conditions.
-- The necessary performers, means, access, time and permissions can be supplied together, or the shortfall is explicit.
+- A feasible arrangement connects the necessary performers, means, access and authority at the times their contributions are needed, or identifies the shortfall. For a recurring commitment it also accounts for the choices each party may make and the information available when they must act.
 - A comparison includes the additional work of each alternative and distinguishes the results each promises.
 - If a start is promised, it has a defined scope, effective protection and suitable observations. Report a start as completed when the work has begun.
 - Where an unavailable Method or provider leaves a required contribution missing, its effect on the result is explicit.
@@ -826,7 +836,7 @@ How can a practitioner establish what will remain possible when help changes or 
 
 - **Visible performance and hidden rescue.** A recipient can appear independent while another performer resolves every difficult case, repairs inputs or absorbs delay.
 - **Continuity and dependence.** A continuing supplier may be the best way to obtain the result. Reliance becomes a problem when the promised contribution cannot be supplied under the required conditions.
-- **Economy and capability.** Acquiring a capability can reduce some later dependencies but consumes present learning opportunities, feedback and qualified support.
+- **Economy and capability.** Acquiring a capability can reduce some later dependencies while requiring present development and provision. The burden depends on the holder and Method: learning may require practice and feedback, while a technical change may require installation, configuration and verification.
 - **Local success and new settings.** An adequate local result can justify reuse without establishing the same result for another population, workflow or consequence.
 - **Ending help and ending practice.** These are different changes with different affected parties and remaining obligations.
 - **Cultural continuation and control.** Independent carriers can preserve a practice without a service office. Establish the authority for any proposed changes to their work.
@@ -844,7 +854,7 @@ Use the undertaking and the available evidence of work to establish which result
 
 Choosing to keep a practice leaves its provision to be established. Ending a grant may leave obligations to receivers. Use sufficient evidence from A.3.1.MI or another source, including evidence of non-use or adverse results. Reopen the introduction only if its evidence leaves the present question unresolved.
 
-Use an ordinary case and, where it could expose a consequential dependency, a relevant variation. For example, a specialist may be absent, an input ambiguous, a source changed or two demands simultaneous. Use an existing account when it already establishes the condition that matters.
+Start with what the recipient relies on continuing. A record of ordinary work may show an existing dependency. Terms of a service or a proposed design can establish what must be available for future work. Examine a variation when it could reveal a condition the current grounds leave open. For example, a specialist may be absent, an input ambiguous, a source changed or two demands simultaneous. Use an existing account when it already establishes the condition that matters.
 
 Trace the actual contributions on which the work relies. They might include settling a difficult judgement, restoring access, selecting a method variant, correcting an obsolete instruction, answering a late question or authorizing an exception. Establish who supplied each relevant contribution and who could supply it under the proposed conditions.
 
@@ -857,7 +867,7 @@ Use a sufficient current arrangement directly. Where provision remains open, ass
 | Retain the present help | A dependable contribution under ordinary demand and agreed terms. | The provider cannot continue, the contribution no longer matters, or its burden exceeds its benefit. |
 | Reduce or make help conditional | Recipients can handle the ordinary cases, recognize the named exception and reach support when it occurs. | Apparent independence still relies on unobserved rescue or exceptions cannot be recognized. |
 | Transfer provision | Another provider can obtain the required inputs, perform the operation and supply its result in a form the continuing work can use. | Only files or a role title have moved. |
-| Develop recipient capability | Suitable practice, feedback and evidence of performing the required operation. | Personal acquisition is not wanted, or the needed opportunities and time cannot be supplied. |
+| Develop recipient capability | Development or provision appropriate to the holder, with evidence of performing the required operation under the intended conditions. | Acquisition by this holder is not wanted, or the necessary development, provision or time cannot be supplied. |
 | Replace the obtaining way | A different qualified source, tool, service or Method can supply the result. | Its limits or access exclude the actual cases. |
 | Extend use to another setting | The target and its support fit that setting, or an appropriate adaptation can be qualified. | Local results are treated as a universal adoption instruction. |
 | End support or practice | Remaining work and affected dependencies have a legitimate disposition. | A date or funding decision is being used as evidence that dependent work is complete. |
@@ -866,15 +876,15 @@ Continued specialist provision can be preferable to local acquisition. A qualifi
 
 Compare alternatives against the promised result. A service can supply a specialist answer. For a promise of independent later performance, establish what the recipient can already do under the required conditions. Arrange learning or demonstration where suitable existing evidence leaves a relevant gap. Use IS.3 for the strategy and full work comparison when continuation calls for a new arrangement.
 
-#### IS.5:4.3 - Make transfer a performed receiving connection
+#### IS.5:4.3 - Establish what must pass to the successor and the receiver
 
-For a planned transfer, identify the contribution to move, what the successor needs to do and what the receiver needs from it. Include material exceptions, unfinished cases and the grounds of the current qualification. Delivery of a folder establishes a material handover. A claim of transferred practice requires evidence about the successor’s contribution.
+For a planned transfer, identify the contribution to move, what the successor needs to do and what the receiver needs from it. Include material exceptions, unfinished cases and the grounds of the current qualification. Establish what is being transferred. An authorized appointment can transfer responsibility before the first request. Delivery of the agreed files may complete a handover of materials. An undertaking to keep a service working also needs a usable connection between those who now provide and receive each necessary contribution.
 
-Establish whether the successor can provide a representative contribution under the intended conditions. Use a sufficient observed case if one exists. Where demonstration is still needed, arrange one with the required access and authority. For a completed transfer, establish that the successor supplied the promised result and that it reached the receiver in usable form. If subsequent use matters to the claim, establish what the receiver did with it. In source review, the successor needs to obtain the relevant source, compare it and return an interpretable judgement in time.
+For a promise of continuing service, establish what the successor can provide across the requests and combinations the undertaking covers. Existing arrangements or previous work may establish that. If a demonstration would resolve a remaining question, arrange one with the necessary access and authority. If the undertaking includes the successor’s first delivery, establish that the promised result reached the receiver as agreed. If the question concerns subsequent use, establish what the receiver did with it. For example, a source-review service may owe a comparison and an interpretable judgement by the release deadline.
 
 Identify any continuing dependence on the old provider. A planned overlap may be appropriate. If the outgoing provider still performs the decisive work, qualify the claim that the successor has taken it over. Use HCD if a person needs to learn an operation. Obtain missing permission, staffing, protected time or access from an appropriate source. The ability to perform does not itself supply authority or an absent historical record.
 
-Establish who is responsible for late questions from earlier work. Use the old provider’s surviving obligation only where it can still be met. Where the obligation must continue, obtain a successor who has accepted it and can receive the open cases. Otherwise establish their authorized disposition or report the unresolved obligation. Use an adequate OCE.11 coexistence or exit arrangement when the change is organizational.
+For late questions from earlier work, establish which obligations the governing terms leave with the outgoing provider and which an authorized change transfers. For obligations that continue, arrange a provider able and authorized to take the questions and complete the work. Otherwise establish their authorized disposition or report the unresolved obligation. Use an adequate OCE.11 coexistence or exit arrangement when the change is organizational.
 
 #### IS.5:4.4 - Qualify ordinary use and maintain the contributions that can change
 
@@ -886,7 +896,7 @@ Provide a correction route proportionate to the consequential change. The perfor
 
 Different contributions need different maintenance. A target-specific explanation can become obsolete when the target Method changes. A local access instruction can fail after a software change. A support strategy can become unsuitable when recipient preparation or workload changes. A source of research evidence can change the claim about why the practice works. Establish which claim or provision the change affects. Make an authorized change within your remit or take the open question to the relevant holder.
 
-Where the organization needs a continuing capability to arrange such help, distinguish that capability from the supported subject capability. Its performers must be able to recognize implementation difficulties, obtain qualified contributions and arrange actual support in later cases. Use HCD for any human acquisition required. Establish the organization’s continuing contribution from representative work and the conditions that enable it.
+Where the organization needs a continuing capability to arrange such help, distinguish that capability from the supported subject capability. Establish how the organization can recognize implementation difficulties, obtain qualified contributions and arrange support in later cases. Several participants can supply these operations together. An individual ability claim concerns the operations entrusted to that participant. Use HCD for any human acquisition required. For a prospective assignment, establish how the contributions available from qualified internal or external performers, their authority and means can supply the service across the work promised. Use relevant existing work when it supplies part of those grounds. For a claim about what the organization delivered, examine the work actually done.
 
 #### IS.5:4.5 - Extend through changed conditions, not through a success label
 
@@ -926,7 +936,7 @@ Harbor Design has introduced source-revision comparison. Four analysts already p
 
 The first proposal is to close support after a final webinar. Following actual use changes the decision: analysts do not know how to resolve an inaccessible superseded source, and the specialist has answered three such questions privately. The ordinary practice therefore depends on source recovery as well as comparison capability.
 
-The source owner can maintain access. A specialist is available for unusual source interpretation on named days. The technical lead agrees to hold affected release recommendations until a qualified response arrives. Urgent work needs a separately qualified route. The plan assigns particular contributions now supplied by the outgoing specialist.
+The source owner can maintain access. A specialist is available for unusual source interpretation on named days. The technical lead agrees to hold affected release recommendations until a qualified response arrives. Urgent work needs a separately qualified route. The plan assigns particular contributions now supplied by the outgoing specialist. The permitted hold lets the lead make a timely decision on an ordinary case before the specialist replies. For an urgent promise, inspect when the specialist and the lead would need to act, including any allowed coincidence of urgent requests. Separate reviews compete for time. A reusable interpretation can cover several cases if each case meets its conditions and the teams can use it by their deadlines.
 
 A representative transfer case includes an unavailable edition. The analyst returns the missing input, the source owner supplies the recoverable edition, the subject specialist interprets the consequential ambiguity, and the technical lead uses that result. This establishes receipt and use for that case. A failure rate or qualification across other technical subjects needs additional evidence.
 
@@ -960,7 +970,7 @@ Recipients may reasonably prefer dependable provision to mastery of a rare opera
 - Hidden rescue and important exception handling are considered where they affect continued use.
 - Retain, reduce, transfer, develop, replace, extend and end are possible responses. The choice or assessment fits the continuing need.
 - The assessment identifies whether continuing provision is feasible under ordinary conditions. Where a continuation is selected, its dependencies and unresolved conditions are clear.
-- A transfer includes a usable receiving connection and the disposition of unfinished work.
+- The handover meets its terms. Responsibility, usable materials, continuing provision and actual delivery each have grounds where the undertaking includes them. Open work has an authorized disposition or an identified holder and remaining need.
 - Evidence supports the actual claim about joint performance, recipient capability or provider substitution.
 - Extension reuses sufficient contributions and reopens conditions whose change matters.
 - An assessment identifies the disposition of remaining obligations, including unresolved ones. For a completed exit, the disposition is authorized and any required stopping procedure has a professional basis.
@@ -972,7 +982,7 @@ Recipients may reasonably prefer dependable provision to mastery of a rare opera
 | --- | --- |
 | Declare sustainability because supported performance was good. | Establish what support ordinary use requires and whether that support remains available. Use a new observation where existing evidence is insufficient and the result warrants its cost. |
 | Require every recipient to become self-sufficient. | Compare wanted capability with dependable external supply. |
-| Transfer a folder and assume the role has transferred. | Establish that the successor can perform and the receiver can use the contribution. |
+| Transfer a folder and assume the role has transferred. | Identify the action that assigns responsibility. For a continuing service, also establish how the successor can provide what receivers need. |
 | Scale a successful local strategy unchanged. | Recover the new receiving work and consequential differences. |
 | Close on a calendar date while late cases still depend on the old provider. | Transfer, complete or legitimately withdraw the actual obligation. |
 | Treat community formation as a repair of a missing technical operation. | Identify and obtain the qualified subject contribution; use community work when it helps supply that result. |
@@ -1011,9 +1021,9 @@ Use C.39, A.3.1.MV and C.32.MWA.PP for target-method development, variant qualif
 
 ### IS.6:1 - Problem frame
 
-Use this Method when a practice change depends on knowledge, decisions or resources that cannot reach the people or organizations that need them, and unequal influence contributes to the difficulty. A referral service can count a referral that its intended user cannot complete. Staff may withhold relevant knowledge because reporting has had adverse consequences. Establish what happened to the contribution. Where a change is required, make the connection workable or identify the authority or condition that is missing.
+Use this Method when a practice change depends on knowledge, decisions or resources that cannot reach the people or organizations that need them, and unequal influence contributes to the difficulty. A referral service can count a referral that its intended user cannot complete. Staff may withhold relevant knowledge because reporting has had adverse consequences. Establish what happens to the contribution under the current arrangement and whose use or decision this affects. Where a change is required, make the connection workable or identify the authority or condition that is missing.
 
-Use suitable evidence about the receiving episode. If new participation is needed, establish a legitimate way to involve the affected parties. Use an adequate existing exchange directly. [CB.15](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#cb15---connect-practices-through-a-useful-joint-contribution) can support a joint contribution between practices. Use this Method when influence affects whether a contribution reaches implementation.
+For a claim about one person’s experience, use evidence about that experience. For a question about whose knowledge can influence a decision across a service, examine the routes to that decision, who controls them and whose work they can reach. If new participation is needed, establish a legitimate way to involve the affected parties. Use an adequate existing exchange directly. [CB.15](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#cb15---connect-practices-through-a-useful-joint-contribution) can support a joint contribution between practices. Use this Method when influence affects whether a contribution reaches implementation.
 
 ### IS.6:2 - Problem
 
@@ -1030,9 +1040,9 @@ A meeting can leave influence unchanged. The account of exclusion matters when i
 
 ### IS.6:4 - Solution
 
-#### IS.6:4.1 - Find the broken connection in a real use
+#### IS.6:4.1 - Locate the connection that participation requires
 
-Trace an observed or proposed episode from the practice to the result its recipient needs. Establish where the contribution was lost, delayed or made unusable, or where that could happen. Identify who has evidence, who can act if a change is required and who bears the consequences.
+Start with the decision or practice that could use the contribution. Identify who holds the relevant knowledge or authority, how their contribution could reach the decision and which rule or interaction permits or prevents its use. A witnessed episode can establish an actual loss. The terms of participation may establish that a group has no route into a decision even before anyone tries. To say how particular people experienced that exclusion, obtain grounds about their experience.
 
 Use [PSDA.12](https://github.com/ailev/FPF/blob/main/DPFs/DECISION-DESIGN-PRINCIPLES-FRAMEWORK.md#psda12---recover-participants-concerns-and-affected-systems-for-a-decision-support-inquiry) when the inquiry lacks an account of affected parties, concerns or representation. Establish what their contributions could change. If separate practices need to exchange and use a contribution, use a sufficient connection or develop one with [CB.15](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/COMMUNITY-MANAGEMENT-PRINCIPLES-FRAMEWORK.md#cb15---connect-practices-through-a-useful-joint-contribution). Establish the receiving operation and any permission it needs.
 
@@ -1068,9 +1078,9 @@ Return the result to the affected parties or other receivers within the agreed p
 
 In a constructed community-service example, staff report that 30 referrals were issued. Recipients report that the only appointment window overlaps with their work, and the receiving agency rejects incomplete requests. The service sponsor proposes a reminder campaign. Separate conversations under PSDA.13 show that staff had stopped reporting rejections after being blamed for low completion. Before asking staff to report further cases, the responsible manager uses OCE.10 to stop treating rejection reports as individual performance failures and provide a separate review of contested treatment. Staff decide which details from their accounts may be shared; identifiable cases retain their disclosure limits.
 
-The broker and the two agencies use CB.15 to follow a de-identified referral together. The receiving agency distinguishes a necessary input from information that can be obtained at the first contact. The responsible owners compare a revised request, a later appointment window and the reminder-only incumbent. The latter cannot address either observed failure. One agency accepts a bounded change to its intake. The other supplies the revised request and an escalation contact under its own authority.
+The broker and the two agencies use CB.15 to follow a de-identified referral together. The receiving agency distinguishes a necessary input from information that can be obtained at the first contact. The responsible owners compare a revised request, a later appointment window and the reminder-only incumbent. A reminder that identifies missing information could help staff complete a request. Even a complete request leaves the problem for people who cannot attend the only appointment window. One agency accepts a bounded change to its intake. The other supplies the revised request and an escalation contact under its own authority.
 
-The arrangement establishes that the revised requests can be received under the agreed conditions. Use evidence of subsequent service to determine whether recipients actually obtained it. The 30 earlier referrals establish issuance. If a later appointment window cannot be staffed, return that provision question to IS.3.
+Issuing 30 referrals establishes the number issued. The agreed intake change supports receipt of qualifying requests under the new conditions. Whether people obtained an appointment in time depends on staffing, hours and subsequent use. An account from one authorized representative can settle the group's decision within that mandate. To attribute a preference or an outcome to individual recipients, obtain evidence about those recipients. The tested referral can establish what happened to its recipient. Reopen the staffing decision if the later window that people need cannot be provided.
 
 #### IS.6:5.2 - A community without managerial authority
 
@@ -1143,15 +1153,15 @@ A list of barriers identifies neither the response nor its owner. Training staff
 
 ### IS.7:4 - Solution
 
-#### IS.7:4.1 - Recover the intended practice through a receiving episode
+#### IS.7:4.1 - Recover the practice and the work in which it must be useful
 
-Use the undertaking from IS.1 and a sufficient IS.2 diagnosis when available. Establish the target operation, intended benefit, affected participants and the receiving episode. Recover the technical grounds, required function, permitted variation and conditions needing renewed judgement from appropriate sources. Seek a practitioner’s judgement or recipient’s account when the needed knowledge or experience lies with them.
+Use the undertaking from IS.1 and a sufficient IS.2 diagnosis when available. Identify the intended benefit and the target operations that could produce it across the receiving work. Which part of the practice, which participants and which decisions about provision can make a difference to that benefit? Follow each as far as the question requires. Recover the technical grounds, required function, permitted variation and conditions needing renewed judgement from appropriate sources. Seek a practitioner’s judgement or recipient’s account when the needed knowledge or experience lies with them.
 
 Research supports claims under the conditions studied. Professional observations can identify an operation or failure absent from those studies. Affected people can identify experienced benefit, burden or exclusion omitted from a service indicator. Connect each source to the claim it supports. Where a consequential difference remains unresolved, use subject expertise or an attainable inquiry when warranted. Technical validity and reported experience require evidence appropriate to each.
 
 #### IS.7:4.2 - Explain the interaction that affects the result
 
-Trace the practice, participants and setting through the episode. Find what the target operation depends on and whether that contribution was or could be obtained. Examine local, organizational and external conditions that affect the result or its grounds. A roster, an organizational incentive and an external eligibility rule can impose different conditions under different authorities.
+Identify the interaction on which the finding depends. For one performance, trace how the operation obtained its inputs and how its result was used. For a service across settings, consider two arrangements that yield the same result in one setting. A different authority for exceptions, a dependency between performances or different access for other participants can change the answer for the service. Retain distinctions that affect that answer or its explanation. Connect an external rule to the operations it actually governs and the participants whose work it changes.
 
 Use [FPF C.40.JD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40jd---develop-a-way-its-holder-and-its-provision-together) when the way of working, its holder and its provision may need to change together. Relate the intervention’s warranted function, the recipient experience and the service conditions. An absence of use might reflect an unavailable occasion, burdensome work, a justified rejection or missing help. Distinguish plausible competing explanations where the finding or response depends on them. A.3.1.MI:4.5 can help compare delivery, mechanism and context and identify evidence that would distinguish the explanations.
 
@@ -1167,7 +1177,7 @@ Use the established account of the dependency. If a response is wanted, assess e
 | A local variant changes a relied-on function or condition. | Obtain subject judgement and [FPF A.3.1.MV](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#a31mv---construct-and-maintain-a-method-variant)/[FPF A.3.1.FT](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#a31ft---qualify-method-fit-and-transfer); keep the variant's status and fit limits. |
 | A required condition belongs to another organization or external authority. | Use an applicable result already supplied under that authority. If a required contribution remains missing, identify the dependent limit and take a usable request to the holder where needed. |
 
-The table identifies possible responses to a dependency established from the episode. A staff objection may correctly expose an unsuitable practice. A shortage may be real or a consequence of the chosen workflow. Trace the episode before treating either as a training need.
+The table helps choose a response once the relevant dependency has been established. A staff objection may expose an unsuitable practice. A shortage may result from the way work is assigned. Examine the grounds for the particular interaction before deciding whether training could address it.
 
 #### IS.7:4.4 - Fit the facilitation to the work and the people
 
@@ -1187,7 +1197,7 @@ Use A.3.1.MI for a bounded introduction or for evidence about an earlier one. Ke
 
 Interpret relevant observations with A.3.1.MI:4.5. A missing facilitator action may expose a provision problem. An unsuitable result after delivery can raise a question about the proposed mechanism or local fit. A recipient’s account can change the grounds for the target. Use existing observations where they answer the question. Preserve a supported response and the limit on causal attribution if the cause remains unresolved.
 
-Where continuing provision is at issue, use IS.5 to assess whether to retain, transfer, extend or end the arrangement. Use IS.8 when participants are to conduct a subsequent change themselves. If successful use reveals that the next useful result requires a different aim or a not-yet-developed Method, return to [FPF C.40.OD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40od---construct-and-continue-open-ended-development), [FPF C.40.NP](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40np---continue-from-a-result-to-new-attainable-problems) and the relevant profession. The end of one implementation is compatible with continuing inquiry and development.
+Where continuing provision is at issue, use IS.5 to assess whether to retain, transfer, extend or end the arrangement. Use IS.8 when participants are to conduct a subsequent change themselves. If the agreed result still requires an operation that nobody can yet supply, use [FPF C.39](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c39---find-and-develop-a-way-to-obtain-a-result) with the relevant profession to construct and check that operation. When a different result becomes worth pursuing, establish whether the existing undertaking already covers it. If the choice is open, identify who is authorized to make it and which further commitments or agreement the new work requires. [FPF C.40.OD](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40od---construct-and-continue-open-ended-development) and [FPF C.40.NP](https://github.com/ailev/FPF/blob/main/FPF-Spec.md#c40np---continue-from-a-result-to-new-attainable-problems) support that development from the work already achieved.
 
 ### IS.7:5 - Archetypal Grounding
 
@@ -1201,15 +1211,17 @@ After the enabling conditions are supplied, use A.3.1.MI to establish whether th
 
 #### IS.7:5.2 - Choosing a shared or a local facilitator
 
-In a constructed comparison, two sites each need three hours of local episode work per week. One external specialist is available for four hours in total. Six hours of specialist work cannot fit in the four-hour window, even under one contract. Suppose each site's existing local facilitator can perform its three hours with one hour of specialist consultation. The joint arrangement then demands two specialist hours and six local hours, plus any actual shared preparation. It is feasible only if those local performers, permissions and protected hours exist. If one site's decisive judgement remains beyond its local performer, the paired arrangement does not meet the same promise.
+Two sites each need three hours of local case work in the week. One external specialist has four hours available. If the specialist must perform both sets of case work separately, the required six hours exceed four. Suppose each local facilitator can perform the work in three hours including a one-hour consultation. In this comparison the local leads have the competence, authority and protected time for those judgements, and the shared preparation is already complete. There are six local hours and two specialist-hours to arrange. If fresh common preparation is required, add its time once and establish that its result can reach both sites before use. The consultations fit only if the relevant people can meet before their site’s result is due. If both consultations must occur separately in the same sole hour, the weekly totals conceal a conflict.
+
+The form of service can change that answer. One common consultation in that hour can fit if both leads can attend and it resolves both issues within the hour. If the order accepts one reusable finding, the specialist can instead prepare it early enough for each lead to use within their local hours. A site requiring its own review still needs time for that review. For a promise that the leads can design future help, examine their choice of a support arrangement and its grounds under the assistance they are meant to retain.
 
 ### IS.7:6 - Bias-Annotation
 
-A familiar framework can make every difficulty look like one of its dimensions. A successful past intervention can make the target seem immune to revision. An enthusiastic local champion can hide a supply constraint. Relate each proposed response to the episode, the relevant authority and its required conditions.
+A familiar framework can make every difficulty look like one of its dimensions. A successful past intervention can make the target seem immune to revision. An enthusiastic local champion can hide a supply constraint. Relate each proposed response to the interaction it would change, the relevant authority and the conditions it requires.
 
 ### IS.7:7 - Conformance Checklist
 
-- The target, its professional basis, the affected participants and the observed or proposed receiving episode are clear.
+- The account identifies the target practice, its professional basis, the affected participants and the receiving work at the reach of the question.
 - The account identifies which interaction matters to the finding and any action or outside contribution still required.
 - Target adaptation, facilitation, preparation and contextual change retain their separate claims and owners.
 - Evidence of the required competence, position, discretion, time and receiving connection supports the claimed feasibility or identifies its limit.
@@ -1272,7 +1284,7 @@ A team can complete a change with an expert who recognizes the difficulty, asks 
 
 #### IS.8:4.1 - Specify the subsequent facilitation work and its holder
 
-Identify the later work, its holder and the support that will remain available. A person might recognize and refer a problem. A team might divide the entire facilitation job, or an organization might keep a combination of specialists available. Choose an episode that calls for the promised contribution.
+Identify the later work, its holder and the support that will remain available. A person might recognize and refer a problem. A team might divide the entire facilitation job, or an organization might keep a combination of specialists available. For a performance assessment, select evidence in which the holder makes the decisions the claim entrusts to them. If the team is to design support for later changes, give it the recipients’ needs and the available evidence while its choice of approach is still open. Establish what the team must decide together and which choices it can divide. Earlier work may already show this.
 
 Use [HCD.1](https://github.com/ailev/FPF/blob/main/DPFs/Human%20Capability%20Engineering%20DPF%20Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md#hcd1--derive-human-capability-demand-from-representative-later-work) to identify the human capability required and [HCD.3](https://github.com/ailev/FPF/blob/main/DPFs/Human%20Capability%20Engineering%20DPF%20Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md#hcd3--diagnose-whether-a-capability-misconception-or-behaviour-limits-work) when the cause of a present difficulty is unclear. Use [OCE.9](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce9---realize-a-bounded-organization-capability-increment) for the capability of an organization. Establish how that organization can keep the qualified people and other needed contributions available together. Reuse the capability already established. Specify any specialist judgement, AI assistance or tools included in the claim.
 
@@ -1282,9 +1294,11 @@ Identify the operations the capability claim concerns. Use IS.6 for bringing exc
 
 When a joint episode will help the recipient learn a decision, make the reasoning available while it can inform the attempt. The experienced performer can explain the observation, a plausible alternative interpretation, the chosen action and the stopping condition. Give the recipient a relevant operation to perform, such as reconstructing a lost referral, identifying who can resolve an external constraint, protecting a participant’s account or explaining what an unsuccessful result establishes. Understanding the demonstration can prepare the recipient for that work. Evidence of performing it comes from the recipient’s contribution.
 
+Assign the choice at the scope the undertaking promises. If the lead is learning to design support, the expert may supply a warranted diagnosis. The lead can still decide whose work should change, what help the service will offer and how to tell whether it is usable. If independent diagnosis is also commissioned, give the lead the available evidence. The lead may establish the cause from it. When alternatives remain consequential, let the lead formulate or select explanations and decide what further check would distinguish them before receiving the mentor’s result. Note which decisions the lead made with the permitted help.
+
 #### IS.8:4.3 - Arrange practice, feedback and real receiving conditions
 
-For a person learning the operation, use [HCD.9](https://github.com/ailev/FPF/blob/main/DPFs/Human%20Capability%20Engineering%20DPF%20Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md#hcd9---perform-deliberate-practice-with-feedback) to arrange practice and feedback. Use programme or provider Methods if the work requires them. Give the person providing feedback the attempt and the criteria that matter in the receiving work. A useful correction identifies an operation the learner can change, such as including a missing participant, explaining an adaptation, revising an infeasible demand or limiting a conclusion to the observation.
+For a person learning the operation, use [HCD.9](https://github.com/ailev/FPF/blob/main/DPFs/Human%20Capability%20Engineering%20DPF%20Suite/HUMAN-CAPABILITY-DEVELOPMENT-PRINCIPLES-FRAMEWORK.md#hcd9---perform-deliberate-practice-with-feedback) to arrange practice and feedback. Use programme or provider Methods if the work requires them. Give the qualified feedback provider the attempt and the criteria that matter in the receiving work. A useful correction identifies an operation the learner can change, such as including a missing participant, explaining an adaptation, revising an infeasible demand or limiting a conclusion to the observation.
 
 Use [OCE.18](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce18---arrange-capability-development-and-receiving-work-in-an-organizational-transition) to secure practice time and real receiving work in an organizational transition and [OCE.11](https://github.com/ailev/FPF/blob/main/DPFs/Management%20DPF%20Suite/ORGANIZATION-CHANGE-ENGINEERING-PRINCIPLES-FRAMEWORK.md#oce11---coordinate-organization-change-work-with-continuing-service) to keep the service available alongside practice. Identify who can take over when an attempt exceeds its allowed risk. Obtain agreement if the fallback is still open. Preserve needed assistance and distinguish the recipient’s work from any operation a mentor takes over.
 
@@ -1298,7 +1312,7 @@ For an organizational claim, use a result from OCE.9:4.4–4.7 covering the inte
 
 When an assessment needs a new attempt, have the recipient perform the promised operations under the intended support conditions. These may include recognizing the issue, choosing a response, obtaining a contribution and interpreting the result. If the mentor supplies the decisive diagnosis, report the joint performance and what this episode establishes about the recipient’s work. Use other relevant evidence to assess independent diagnosis. A recipient who recognizes the need for a specialist and obtains a usable answer may demonstrate the promised coordinating ability. Assess specialist judgement from evidence of that judgement.
 
-When deciding about future assistance, use the finding to keep it, make it conditional or change the contribution supplied. For a continuing dependence, identify where the recipient can obtain help with an exception. Establish the end of a contract from its terms and events, and acquisition of an ability from the recipient’s performance.
+When deciding about future assistance, use the finding to keep it, make it conditional or change the contribution supplied. For a continuing dependence, identify where the recipient can obtain help with an exception. Use the contract’s terms and events to establish when it ended. Present performance under the agreed support can justify the next assignment. To establish acquisition, compare the holder’s earlier and later ability on the relevant work, taking differences in support into account. To attribute the change to the assistance, also examine other credible reasons for the change.
 
 #### IS.8:4.5 - Make further development possible in ordinary practice
 
@@ -1314,13 +1328,13 @@ Report the capability supported by the evidence, its conditions and any unresolv
 
 Suppose an external facilitator and a service team repair a referral process. The expert notices that the incomplete requests contain a field that only the receiving agency can fill. The team supplies examples. This case establishes a joint repair and identifies the expert’s diagnosis. It leaves open whether the team can diagnose a later problem independently.
 
-The parties agree that the local lead should reconstruct a failed referral, identify the missing contribution and obtain a response from whoever can supply it. The mentor demonstrates the earlier reasoning. In a new case the lead first interprets a need for clarification of an eligibility rule as an employee’s knowledge gap. Following feedback under HCD.9, the lead revises the inquiry and obtains an interpretable answer from the rule owner. A later unfamiliar case tests recognition without the mentor’s prompt.
+The parties agree that the local lead should reconstruct a failed referral, identify the missing contribution and obtain a response from whoever can supply it. The mentor demonstrates the earlier reasoning. In a new case the lead first interprets a need for clarification of an eligibility rule as an employee’s knowledge gap. Following feedback under HCD.9, the lead revises the inquiry and obtains an interpretable answer from the rule owner. A later unfamiliar case tests recognition without the mentor’s prompt. If the commission is to design help using a confirmed finding about a missing field, supply that finding. The lead can independently decide between changing the intake, providing access or arranging expert response and justify the choice to the agency. For independent diagnosis, look for the lead’s own use of sufficient evidence or their choice of a further inquiry when it was needed. For independent research design, establish which explanations and comparisons the lead developed before receiving an answer.
 
 If the lead performs that coordinating operation and a specialist must still assess a proposed technical adaptation, the service can retain specialist assessment. The lead’s performance supports the bounded coordination claim. A claim about a wider capability requires evidence about its other operations.
 
 #### IS.8:5.2 - Useful AI assistance and the holder's own contribution
 
-Suppose a facilitator uses an authorized AI service to compare de-identified episode accounts. The service proposes three explanations. If the facilitator is learning to judge them, observe the facilitator’s judgement and its consequences. If the undertaking promises AI-assisted facilitation, assess the combined work under its access, competence and protection conditions. Reassess an affected conclusion if the model changes or the service becomes unavailable. To establish how the AI acquires a capability, examine that system’s learning.
+Suppose a facilitator uses an authorized AI service to compare de-identified episode accounts. The service proposes three explanations. If the facilitator is learning to judge them, observe the facilitator’s judgement and its consequences. If the undertaking promises AI-assisted facilitation, assess the combined work under its access, competence and protection conditions. Reassess an affected conclusion if the model changes or the service becomes unavailable. For a claim that the AI gained a capability, identify the changed system and conditions, whether the change involved training, configuration or altered provision, and evidence of the relevant performance.
 
 ### IS.8:6 - Bias-Annotation
 
@@ -1330,7 +1344,7 @@ An expert may infer mastery when recipients repeat a new vocabulary. Recipients 
 
 - The intended holder, subsequent work and retained assistance define the capability claim.
 - A proposed learning arrangement supplies the facilitation operation to be taught and its necessary professional prerequisites.
-- When acquisition is needed, the recipient can practise the required operation and receive feedback under legitimate conditions. A performance claim identifies what the recipient did and under what conditions.
+- Needed acquisition has a development or provision Method appropriate to the holder. Where learning is intended, identify the learner's necessary contribution and available feedback or other support. A performance claim identifies what the recipient did and under what conditions.
 - The evidence identifies the recipient’s own work, any coordination undertaken, what specialists supplied and what a mentor took over.
 - A decision about future help uses the supported scope of performance. If development is to continue, the holder can help identify a worthwhile next problem.
 
@@ -1403,9 +1417,15 @@ If the historical edition cannot be recovered, a Method that requires it may be 
 
 ### IS.Application:1.4 - Continue the practice without preserving every temporary service
 
-Suppose the temporary specialist is due to leave after further qualified use. The team uses IS.5 to establish that unusual cases still require specialist recovery and interpretation of sources. As in IS.5:5.1, it secures a successor’s contribution and verifies that the receiving team can obtain it. The two learners continue their own development.
+Suppose the temporary specialist is due to leave after further qualified use. The team uses IS.5 to establish that unusual cases still require specialist recovery and interpretation of sources. As in IS.5:5.1, it secures a successor’s contribution and verifies that the receiving team can obtain it. The two learners continue their own development. When a source is missing on a nonurgent case, the technical lead can exercise the agreed hold. To promise urgent interpretation to two teams, the coordinator must show how each can obtain and use it by its own deadline if requests coincide. If the same conclusion serves both, confirm its applicability to both. If each commissioned a new examination, allocate time to each. A single settled case can close its own transfer.
 
-The coordinator can arrange the transition and later organize ordinary programmes or service. Identify what that person actually did, the project or service role in which they did it, and whether the people and means shared between simultaneous commitments can cover both.
+The coordinator can arrange the transition and later organize ordinary programmes or service. Identify what that person actually did, the project or service role in which they did it, and whether the people and means available can cover the combination of commitments at the times each falls due.
+
+**Try this with a local commission first.** Take an actual request to decide whether to keep, change or stop the support for a practice. Use the request and the work records available to the person who must decide. Give that person your recommendation and enough grounds to act on it. Make your first attempt before consulting the worked comparison below. If you are to design the enquiry yourself, start with the recipient's decision while the method of assessment is still open. What differences in how the work was done could change the action that person takes? Use the work itself to choose who or what to follow, how far back to look and which observations would distinguish those alternatives. A division, a job and a dated obligation can have different histories. If every history still possible supports the same action, explain why the recipient can decide now. If the distinction matters and a useful check is available in time, propose it. When reviewing the attempt, credit the choices you made with the help available. If a supplied form already chose the unit, interval and evidence, its correct use can finish that order. For a separate assignment to design an enquiry, use a commission that leaves those choices to you.
+
+**A comparison to use after the attempt.** Six design offices were eligible in October and November. Each had release work on which to compare the old and new editions. In October, North documented a comparison in one release. East, South and West confirmed that they had made none. Hill and Port sent no return. In November, Hill and Port each documented a comparison. East, South and West again confirmed none. North sent no return. Each submitted return covers that office's work for the month. The director can retain the support desk if at least two offices used the comparison in November. She has also been asked whether any office began because another showed it how. Hill used Port's form. Its analyst's signed work notes show that the comparison rule came from Hill's earlier instruction. One recipient used Hill's alert at 16:00 for a decision due at 17:00. A second recipient had commissioned the same alert for a decision that closed at 15:00. This recipient first received it at 16:00.
+
+The director can retain the desk under the stated condition. Two or three offices used the comparison in November. North's missing return prevents an exact count. North, Hill and Port could have used the method in both months. The records leave open whether Hill or Port began using it in November and what prompted that decision. Hill received Port's form and used a rule already set out in Hill's instruction. An office can learn a procedure from a colleague, or a colleague's demonstration can prompt it to use a procedure it knew already. To establish transfer of the rule, trace a specific operation from the source into the recipient's work. For a claim about a first use, specify how far back it reaches. A November use after a documented October gap can be a return to a practice last used in September. To establish first use since the office opened, the grounds must exclude any earlier use in that history. A meeting record can establish the reason the office gave for starting. A claim that the office would have acted differently without the demonstration requires grounds for that causal comparison. The first recipient used the alert in time. This delivery missed the second recipient's deadline. Both judgements can stand while the effect of keeping the desk on future releases remains open. If the original commission only asks about keeping the desk under the two-office condition, the two November records of use suffice.
 
 If a later question exceeds the comparison Method’s scope, determine what would answer it. It may require research or development of a new subject Method. When the existing result still meets the need, continue ordinary provision if that service is wanted.
 
@@ -1435,11 +1455,13 @@ Use the [supplier-availability account](#isreference11---supplier-availability-a
 
 ## IS.Edition:1 - Edition and citation
 
-**Implementation Facilitation — edition of 12 October 2026.** Framework reference code: `IS`.
+**Implementation Facilitation — edition of 22 November 2026.** Framework reference code: `IS`. This revision builds on the edition of 21 November 2026.
 
 This edition includes seven Methods, a Readme, an Architectural Reference, the Harbor Design application and an account of the sources and related frameworks. Use it when helping a recipient establish, restore, adapt or continue a practice under its working conditions. A practitioner introducing a Method independently can use A.3.1.MI. When the undertaking calls for a result supplied by a service, use a qualified service that can deliver it. When it calls for the recipient to learn an operation, establish what the recipient can do under the promised conditions.
 
 Use the framework code IS and a pattern number to cite a Method, for example IS.2. Cite Implementation Facilitation, the edition and, when the wording matters, the particular revision.
+
+Five sections keep their identifiers under revised titles. Use [IS.1:4.4](https://fpf.tools/IS.1:4.4), [IS.2:4.1](https://fpf.tools/IS.2:4.1), [IS.5:4.3](https://fpf.tools/IS.5:4.3), [IS.6:4.1](https://fpf.tools/IS.6:4.1), [IS.7:4.1](https://fpf.tools/IS.7:4.1) for the current wording. The [21 November edition](https://github.com/ailev/FPF/blob/be3c008f1b4e86b522eaa02ed2718a45e40341b3/DPFs/IMPLEMENTATION-FACILITATION-PRINCIPLES-FRAMEWORK.md) retains the earlier headings and their bookmarks.
 
 ## IS.Edition:2 - Product-series rule
 

@@ -81,9 +81,9 @@ ADM helps administrators examine administrative requests, give justified refusal
 
 Organization Administration connects the condition a participant needs for its work with the rule that governs it and the provider able to supply it. For archive access, an eligibility result can support a grant. The grant specifies what the provider can enable. Use evidence of the effect to establish what the recipient obtained and, under the applicable terms, what the provider still owes. If provision fails or its conditions change, return to the question affected.
 
-The examples below show how to start from different questions and connect the needed contributions. An ordinary request with adequate inputs can use its existing instruction directly. For a small ambiguity, [ADM.1 - Frame the Administrative Condition Needed for the Work](#adm1---frame-the-administrative-condition-needed-for-the-work) may suffice: arranged transport and accommodation can be complete even when the traveller's negotiations fail. The next negotiating decision belongs to the person responsible for that work.
+The examples below show how to start from different questions and connect the needed contributions. An ordinary request with adequate inputs can use its existing instruction directly. For a small ambiguity, [ADM.1 - Frame the Administrative Condition Needed for the Work](#adm1---frame-the-administrative-condition-needed-for-the-work) may suffice: arranged transport and accommodation can be complete even when the traveller's negotiations fail. The mandate for the negotiations determines who can change the offer or end the talks.
 
-Use the Table of Contents for other questions. You can ask an assisting agent to explain a pattern or comment on your case in ordinary language. In `ADM.15:4.3`, `15` identifies the pattern and `4.3` its section; the Parts and `§` positions give publication order.
+Use the Table of Contents for other questions. If you involve an assisting agent, commission administrative work it can carry out under the applicable terms. A service with access to the records may recover an existing grant or arrange provision under it. Ask for an explanation in ordinary language when that is what the recipient needs. In `ADM.15:4.3`, `15` identifies the pattern and `4.3` its section; the Parts and `§` positions give publication order.
 
 ### ADM-E2 — A future appointment is being used for today's access request
 
@@ -97,10 +97,10 @@ Use the Table of Contents for other questions. You can ask an assisting agent to
 
 - **Stop or return:** Apply the service rule to an established positive or negative condition. Keep adequate results. If a condition remains unresolved, direct the question to the source, provider or authority able to settle it.
 
-1. **Match the basis to the intended use.** In the constructed archive case, the supplied appointment begins on 1 October and the rule requires an effective appointment. It therefore does not satisfy that condition for 25 September. A directory entry made earlier does not advance the effective date. This negative result settles the question about this appointment; another inquiry is needed only if a different basis is actually claimed or another relevant condition remains unresolved.
+1. **Match the basis to the intended use.** In the constructed archive case, the supplied appointment begins on 1 October and the rule requires an effective appointment. It therefore does not satisfy that condition for 25 September. A directory entry made earlier does not advance the effective date. This settles whether the appointment satisfies the eligibility condition on 25 September. To decide whether reading was permitted that day, consider the applicable grants and standing rules. A prohibition covering every permitted route can settle that question. Whether the researcher could open D also depends on the access provided.
 2. **Pass the established conditions to provision.** Change the requested use to 2 October. Suppose the appointment now covers the work, an accepted identity result exists, and the custodian has granted reading of document D that day. [ADM.8 - Establish and Exercise the Required Permission for an Administrative Action](#adm8---establish-and-exercise-the-required-permission-for-an-administrative-action) supplies the bounds for the actual performer and action. The appointment supports eligibility. The credential is one technical means the researcher uses to attempt the read. Whether D opens depends on the provision under the custodian’s grant.
 3. **Find the failed provider contribution.** If the researcher cannot open D, [ADM.9 - Provide a Usable Administrative Result](#adm9---provide-a-usable-administrative-result) uses the grant and failed attempt to direct recovery. In its case, the provider corrects an account mapping and the researcher then opens D. That result supports the named use; an administrator's successful login would not establish the same fact. A permitted alternative reading channel may suffice, while a download falls outside a read-only grant.
-4. **Return a changed condition to the decision it affects.** If recovery moves use to 4 October, the 2 October grant no longer answers the permission question. If two otherwise ready cases instead need the same specialist's two-hour window and each requires two hours, [ADM.11 - Join Providers Around the Administrative Result](#adm11---join-providers-around-the-administrative-result) exposes the four-hour demand. The responsible parties must change timing, priorities or qualified provision before promising both. The valid appointments and grants need not be reconstructed unless that change affects their conditions.
+4. **Return a changed condition to the decision it affects.** If recovery moves use to 4 October, the 2 October grant no longer answers the permission question. If both cases are entitled to separate two-hour performances in one two-hour window and currently depend on the same specialist, [ADM.11 - Join Providers Around the Administrative Result](#adm11---join-providers-around-the-administrative-result) exposes the four-hour demand. Changing priority can choose which request gets the two hours. Additional qualified help can cover both only if substitution is allowed and the help is available in that window. When each case is entitled to the named person, the parties need an agreed change to the work or its timing. For an existing obligation, follow the applicable terms for performance and remedy. The valid appointments and grants need not be reconstructed unless that change affects their conditions.
 
 ### ADM-E3 — One party says “payment” and the other says “receipt”
 
@@ -115,8 +115,8 @@ Use the Table of Contents for other questions. You can ask an assisting agent to
 - **Stop or return:** Retain both correct accounts of one event. Correct a record through its authorized procedure, supply established missing performance under the applicable permission, or preserve an unknown effect before a potentially duplicate action.
 
 1. **Determine what each account asserts.** An outgoing payment and an incoming receipt can describe one transfer from different positions. An issued instruction, a credited amount and discharge of an obligation are different facts. ADM.4 establishes the correspondence using the participants, event evidence, amount, time and relevant local meanings; the shared word “paid” cannot supply it.
-2. **Ask for the fact that can change the next action.** In the constructed case of 1,000 units owed, 600 are confirmed credited and a second instruction for 400 has an unknown effect. [ADM.7 - Check the Claim Needed for This Administrative Decision](#adm7---check-the-claim-needed-for-this-administrative-decision) isolates the missing claim: whether that second attempt credited the intended account. Another receipt upload or a changed status label would not answer it. Use ADM.9 to send the original attempt reference through the provider's recovery channel.
-3. **Use the recovered effect under the actual terms.** [ADM.10 - Reconcile Administrative Obligations, Performance and Records](#adm10---reconcile-administrative-obligations-performance-and-records) applies the supplied rule that credited amounts discharge the corresponding obligation. Confirmed credit of the 400 establishes full fulfillment. Confirmed failure before credit leaves 400 outstanding and permits the applicable authorized continuation. Continued uncertainty establishes neither full fulfillment nor a definitely unpaid 400.
+2. **Ask for the fact that can change the next action.** In the constructed case of 1,000 units owed, 600 are confirmed credited and a second instruction for 400 has an unknown effect. [ADM.7 - Check the Claim Needed for This Administrative Decision](#adm7---check-the-claim-needed-for-this-administrative-decision) isolates the missing claim: whether that second attempt credited the intended account. Another receipt upload or a changed status label would not answer it. Use a sufficiently reliable confirmation tied to this attempt and account if one is available. Otherwise use ADM.9 to take the unresolved question and original reference to a provider able to answer it.
+3. **Use the recovered effect under the actual terms.** [ADM.10 - Reconcile Administrative Obligations, Performance and Records](#adm10---reconcile-administrative-obligations-performance-and-records) applies the supplied rule that credited amounts discharge the corresponding obligation. Confirmed credit of the full 400 establishes fulfilment. If the second attempt credited only part, subtract that part from the 400 remaining after the first credit. Confirmed failure before credit leaves 400 outstanding and permits the applicable authorized continuation. Continued uncertainty establishes neither full fulfillment nor a definitely unpaid 400.
 4. **Preserve the history needed for correction.** A provider report arriving on 12 September can establish that credit occurred on 10 September. [ADM.13 - Keep Administrative Records Fit for Their Uses](#adm13---keep-administrative-records-fit-for-their-uses) preserves the earlier grounds, later evidence and their correspondence. Correcting the account neither repeats the credit nor changes its event time. A new fee or allocation dispute returns to the terms and competent interpretation it affects.
 
 ### ADM-E7 — A new policy starts while earlier cases remain open
@@ -132,9 +132,9 @@ Use the Table of Contents for other questions. You can ask an assisting agent to
 - **Stop or return:** Finish the selected change with the promised provision and continued support for the earlier cases that still need it; identify any unresolved cases and their next responsible action. A new form, successful data import or quiet old queue does not settle a grant, obligation or required historical use.
 
 1. **Use service consequences to judge the proposed change.** [ADM.15 - Judge Administrative Consequences](#adm15---judge-administrative-consequences) separates usable provision, correct and mistaken refusal, unresolved effects and work shifted to applicants. Its access-service case has 70 closures among 80 registered requests, but only 60 confirmed provisions; twenty additional requests failed before registration. Such an account can justify correcting an established defect without waiting for a general effectiveness study. A proposed policy change still needs its own grounds and competent decision.
-2. **Apply the adopted transition to the fact that selects the regime.** In ADM.16's constructed allowance case, journeys authorized before 1 November retain receipt-based terms; later authorizations use the allowance. A journey authorized on 28 October, performed on 3 November and claimed on 6 November therefore keeps the earlier terms. A recorded election before disbursement can select the permitted variant only with the confirmation required by the adopted rule. Unknown authorization or election facts remain specific questions, not guesses from the form version.
+2. **Apply the adopted transition to the fact that selects the regime.** In ADM.16's constructed allowance case, the ordinary rule assigns receipt-based terms to journeys authorized before 1 November and the allowance to those authorized from that date. Authorization on 28 October places the journey in the earlier cohort, even if performed on 3 November and claimed on 6 November. A valid election before disbursement, with the required confirmation, can change the terms for that journey. Unknown authorization or election facts remain specific questions, not guesses from the form version. If the permitted regimes give the same authorized payment under the present facts, the handler can decide that payment. Identifying which regime governed, or completing a separately required check, can still require the missing date or election.
 3. **Turn that decision into usable handling.** [ADM.5 - Design Reusable Instructions for Administrative Requests](#adm5---design-reusable-instructions-for-administrative-requests) uses the policy and its transition conditions to specify the minimum request, necessary checks, competent decision, provider action, completion evidence and exceptions. ADM.11 obtains the provider contributions and resolves their joins. If a control gives the wrong response, [ADM.14 - Connect an Administrative Control to Its Purpose and Competent Decision](#adm14---connect-an-administrative-control-to-its-purpose-and-competent-decision) distinguishes a defective test or implementation from a policy requiring authorized change.
-4. **Establish usable handling and preserve unresolved effects.** For the changed provision, perform the bounded trial or rehearsal required before widening reliance: include an old-regime case, a new-regime case and the consequential election or unknown-payment branch. The recipient must obtain the promised result; a converted record is only one input. For an unchanged use, reuse adequate existing observations. Use a new staff exercise when its attainable result about independent handling or required support justifies the work. ADM.9 guides recovery of an earlier payment effect before another payment or conversion that could duplicate it; ADM.10 guides reconciliation with the obligation and records when that question remains open. ADM.13 retains the grounds needed for active disputes and legitimate historical use. Ending new requests through an old form does not by itself authorize disposal of those records.
+4. **Establish usable handling and preserve unresolved effects.** Establish which uses change under the new terms. For this allowance transition the selected rehearsal covers an old-regime case, a new-regime case and a consequential election or unknown-payment branch. For another change, use sufficient earlier evidence and the applicable rule, and perform a trial when it is required or can settle a consequential uncertainty at a justified cost. The recipient must obtain the promised result; a converted record is only one input. For an unchanged use, reuse adequate existing observations. Use a new staff exercise when its attainable result about independent handling or required support justifies the work. ADM.9 guides recovery of an earlier payment effect before another payment or conversion that could duplicate it; ADM.10 guides reconciliation with the obligation and records when that question remains open. ADM.13 retains the grounds needed for active disputes and legitimate historical use. Ending new requests through an old form does not by itself authorize disposal of those records.
 
 The [Architectural Reference](#organization-administration-principles-framework-architectural-reference) explains the common boundaries and the wider provider relationships. When ordinary handling cannot resolve a missing rule, authority or effect, [ADM.6 - Resolve an Administrative Exception](#adm6---resolve-an-administrative-exception) helps the handler put an answerable question to the competent participant. Work that does not depend on the answer can continue within its permission.
 
@@ -142,7 +142,7 @@ The [Architectural Reference](#organization-administration-principles-framework-
 
 ## ADM.Reference:1 - The working problem
 
-Organization Administration concerns the institutional conditions and services that enable participants to do organizational work. A researcher needs legitimate access to an archive. A traveller needs an approved journey and usable accommodation. A supplier needs the agreed payment to arrive. The administrator's useful result is the particular condition supplied to the relevant participant under the applicable rules.
+Organization Administration concerns the institutional conditions and services that enable participants to do organizational work. A researcher needs legitimate access to an archive. A traveller needs an approved journey and usable accommodation. A supplier needs the agreed payment to arrive. Establish which contribution the participant requested. They may need a ruling about eligibility, an account of a past transfer, usable provision by a deadline or a specified act such as issuing a certificate. If several are due, determine what completes each and how the recipient uses them together.
 
 The work enabled can have a different outcome. A correctly administered journey can end in unsuccessful negotiations. Conversely, someone may complete the business task despite a failed administrative service by spending personal time or obtaining an improvised workaround. Judging only the business result conceals the service failure; judging only closed requests conceals the burden on the person trying to work.
 
@@ -180,7 +180,7 @@ Several arrangements can concern the same participants and have different bounda
 
 Consider two projects whose researchers need archive access during the same morning. In this constructed case, each request has an adequate appointment, identity result and valid grant, but each still needs an account mapping before the archive provider can configure usable access. That mapping is a prerequisite of configuration; it is not a prerequisite of the identity check that has already supplied its result.
 
-Both requests are ready for mapping. The same qualified specialist has one two-hour window, and each mapping requires two hours of that specialist's work under the supplied method. Each request fits alone; together they require four hours. The responsible service parties must resolve priorities, timing or qualified additional provision under their actual commitments before promising both in that window. ADM.11 identifies the shared contribution and its receiving inputs. ADM.9 establishes the usable access after provision, and ADM.15 accounts for the recipients' waiting and any displaced work.
+Both requests are ready for mapping. The same qualified specialist has one two-hour window, and each mapping requires two hours of that specialist's work under the supplied method. Each request fits alone; together they require four hours. The responsible parties can choose an order under their authority. Both mappings can be promised only with timely qualified capacity for both, a permitted way of doing the work with less demand, or an agreed change of terms. ADM.11 identifies the shared contribution and its receiving inputs. ADM.9 establishes the usable access after provision, and ADM.15 accounts for the recipients' waiting and any displaced work.
 
 The projects, requests, providers and grants therefore have different boundaries. The appointment and grant results can remain adequate while the combined provider promise is unsupported. A larger window or qualified additional capacity changes that promise question; reuse earlier results only within their scope and effective time. If the revised use exceeds those conditions, return to ADM.3 or ADM.8 for the relevant time or permission question. Use C.32.MWA when the decision needs a fuller comparison of such structures.
 
@@ -274,7 +274,7 @@ The earlier [ADM.15:4.5](https://github.com/ailev/FPF/blob/1e57ccda08ebbb9d49b7b
 
 ### ADM.1:0 - Use this when
 
-Use this pattern when an administrative request is hard to interpret, several providers call their part “done”, or one word such as “trip” hides different results. Begin with the participant’s intended work and the condition the administration is expected to supply.
+Use this pattern when an administrative request is hard to interpret, several providers call their part “done”, or one word such as “trip” hides different results. Begin with the participant’s intended work and what the service has been asked to decide, perform or provide.
 
 The pattern governs the relation between the work intended and its needed administrative condition. Its first result is a bounded enabling question: what condition is needed, for whom, from whom and by when. This lets the handler select the relevant service instruction or return a business question to whoever is responsible for that work.
 
@@ -282,7 +282,7 @@ If those facts are already clear and an adequate instruction covers the request,
 
 ### ADM.1:1 - Problem frame
 
-A participant asks for travel, access, reimbursement, an appointment or another administrative result because it makes some work possible. The request may name a form or portal operation instead of the needed condition: “close the ticket”, “create an account”, or “approve the trip”. A local provider can perform that operation while the participant still cannot do the intended work.
+A participant asks for travel, access, reimbursement, an appointment or another administrative result because it makes some work possible. “Create an account” can name a way of obtaining access, an account the service was specifically asked to create, or part of an order for both. Creating the account can fulfil one obligation while access for the intended work still needs provision.
 
 The relevant participants may belong to different units or organizations. A research group requests access, an archive owner decides eligibility, and a technical provider provisions a credential. The administrative question connects their contributions to the needed condition across those unit or organizational boundaries.
 
@@ -302,11 +302,11 @@ These pressures favour a small explicit question. Expand it only where a missing
 
 #### ADM.1:4.1 - Recover the needed condition from the request
 
-Identify the participant’s intended work and the condition needed for it from the request or existing account. Resolve unclear points from the available evidence or ask the participant when their contribution is needed. “I need to examine the archive before the experiment” is more useful than beginning with the account-creation form.
+Identify the participant’s intended work and the condition needed for it from the request or existing account. Resolve unclear points from the available evidence or ask the participant when their contribution is needed. Find out who may choose the means. If the researcher needs to read the archive and the terms leave the route open, an authorized reading room can suffice. A grant may require the researcher to use a named account. Establish who must supply it. If the service accepted an order to create it, that provision is due even when the reading room is available.
 
-Then name the condition that would make the administrative part usable. For archive work this may be permitted read access for the named researcher during the necessary interval. For a journey it may be authorized travel with usable transport and accommodation. Include conditions that determine whether or how the recipient can use the service.
+Identify what would complete each commissioned contribution. For archive work this may be permitted read access for the named researcher during the necessary interval. For a journey it may be authorized travel with usable transport and accommodation. Include conditions that determine whether or how the recipient can use the service.
 
-Distinguish the condition from its usual evidence. A booking confirmation supports a claim about accommodation; establish that the accommodation is usable for the traveller when the claim concerns provision. Once the authorized decision maker approves the stated journey and expenditure under the travel rule, that authorization is established. The providers still have to supply usable transport and accommodation.
+Distinguish the condition from its usual evidence. A booking confirmation supports a claim about accommodation; establish that the accommodation is usable for the traveller when the claim concerns provision. Approval by the authorized decision maker establishes that the decision was made. The traveller may rely on it when it takes effect under the travel rule. If provision was also commissioned, the providers still owe usable transport and accommodation.
 
 #### ADM.1:4.2 - Separate the subjects hidden by the label
 
@@ -330,7 +330,7 @@ That statement is sufficient to locate the next service or eligibility question.
 
 When the requested condition, recipient, provider and needed time are identified, and the applicable service instruction's prerequisites for the next handling action are established, the handler uses that instruction to obtain or verify provision. Reuse adequate supplied facts and decisions. If a required fact or decision is unresolved, identify the missing contribution. Use available evidence to settle a factual question or direct it to the appropriate source. Obtain decisions from the holder of the relevant authority.
 
-For a missing administrative condition, state what the participant still cannot use and why the local “done” evidence is insufficient. For a failed business result after the administrative condition was supplied, return the next business decision to whoever has responsibility for the business work. An administrative provider can still examine its own contribution if new evidence connects it to that failure.
+For a missing administrative condition, state what the participant still cannot use and why the local “done” evidence is insufficient. For a failed business result after the administrative condition was supplied, identify which decision about that work, if any, is now needed and who has authority to make it. An administrative provider can still examine its own contribution if new evidence connects it to that failure.
 
 Framing finishes when its recipient can use the statement of the needed condition or the identified gap. Completion of the enabled work is a separate question.
 
@@ -347,10 +347,10 @@ In this constructed case, an employee travels to negotiate a supply agreement. T
 | Subject | Stipulated result | Next action |
 | --- | --- | --- |
 | Journey and stay | The employee travelled and used the accommodation. | Retain the relevant provision evidence for its intended administrative use. |
-| Negotiating work | The parties reached no agreement. | The person responsible for the negotiating work decides whether to revise the offer, continue negotiations or stop. |
+| Negotiating work | The parties reached no agreement. | Use the negotiating mandate to determine who may revise the offer, continue talks or end them. The traveller may be authorized to pursue only some of those choices. |
 | Administrative handling | The stated travel conditions and required expense settlement were satisfied. | The handler may report that administrative result complete under the supplied rule. |
 
-Report the completed travel service and the failed negotiation separately. The negotiating decision returns to the party responsible for the agreement. If the accommodation had been unusable and the employee had arranged a replacement personally, the administrative account would instead retain that failure and the displaced effort even if the negotiations later succeeded.
+Report the completed travel service and the failed negotiation separately. The service can close even while the parties entitled to revise the offer or continue talks have yet to decide. If the accommodation had been unusable and the employee had arranged a replacement personally, the administrative account would instead retain that failure and the displaced effort even if the negotiations later succeeded.
 
 #### ADM.1:5.2 - An ordinary request that needs no reframing
 
@@ -366,7 +366,7 @@ A participant may be unable to disclose the full business purpose. Request only 
 
 For the actual enabling question, examine whether:
 
-1. The participant's intended work and the administrative condition are identifiable in ordinary language.
+1. The participant's intended work, the result due and any separately required action or form are identifiable in ordinary language.
 2. Each completion or failure claim refers to the relevant subject.
 3. The recipient, provider, needed time and conditions on which the requested use depends are supplied or named as unresolved.
 4. Evidence such as an approval or provider message is interpreted against the promised condition.
@@ -467,7 +467,7 @@ For the intended action, ask which relation supplies each necessary condition. A
 
 These facts can be supplied together in a well-designed service instruction. Keep them separately recoverable when a failure, restriction or later use depends on the difference. A.2.8.PER supplies the distinctions between granted permission, actual exercise and a finding of non-prohibition. A finding that no prohibition was located cannot fill a missing grant where the applicable rule requires one.
 
-When a grant and another governing requirement imply incompatible conclusions for the same participant's action, identify the conflicting claims and their overlapping scope and time. First apply an existing precedence rule when its stated conditions select which claim governs that use. If the rule does not settle the conflict, reuse an adequate existing authorized decision or ask the holder of authority over this conflict to decide which claim governs the specified action, scope and interval. Until a rule or such a decision settles it, return that question as unresolved. Do not infer precedence from record recency, seniority or technical capability alone.
+When a grant and another governing requirement imply incompatible conclusions for the same participant's action, identify the conflicting claims and their overlapping scope and time. First apply an existing precedence rule when its stated conditions select which claim governs that use. If the rule does not settle the conflict, reuse an adequate existing authorized decision or ask the holder of authority over this conflict to decide which claim governs the specified action, scope and interval. Until a rule or such a decision settles it, return that question as unresolved. Record recency, seniority and technical capability alone establish no priority. Apply the ruling to the participants, action and period it covers. To change the standing rule, follow [ADM.16:4.3](#adm1643---obtain-the-competent-transition-decision).
 
 #### ADM.2:4.4 - Return the usable participant account or the specific gap
 
@@ -509,7 +509,7 @@ In both branches of this constructed case, Mara has the valid October read grant
 
 In the first branch, an applicable policy explicitly gives that temporary security restriction precedence over read grants during the stated interval. The handler applies the rule and returns its result: the restriction governs Mara's 09:30 read, so that action cannot proceed under the grant. No further discretionary decision is needed to settle this inquiry. The result concerns the stated overlap; it does not rewrite the October grant.
 
-In the second branch, the same grant, restriction, intended action and decision authority are supplied, but no applicable precedence rule or existing resolving decision is available. The handler returns the particular unresolved question to the archive policy owner: which claim governs Mara's read of R at 09:30 within the 09:00–11:00 restriction? Naming that person does not supply the answer. The handler does not authorize the disputed read from these inputs.
+In the second branch, the same grant, restriction, intended action and decision authority are supplied, but no applicable precedence rule or existing resolving decision is available. The handler returns the particular unresolved question to the archive policy owner: which claim governs Mara's read of R at 09:30 within the 09:00–11:00 restriction? Naming that person does not supply the answer. The handler does not authorize the disputed read from these inputs. If the owner under that mandate upholds the restriction for this request, the handler can issue Mara that decision. Another researcher’s request later that morning still depends on the restriction and any ruling that actually covers the new request. A proposed standing change follows ADM.16.
 
 ### ADM.2:6 - Bias-Annotation
 
@@ -858,7 +858,7 @@ If evidence establishes a 300 gross transfer and a 10 fee, those quantities can 
 
 A traveller says “the trip was unsuccessful”; the travel desk says “the trip is complete”. The traveller means the negotiations produced no agreement. The desk means the travel conditions were supplied and the expense handling completed. ADM.1 separates those subjects and their connection. Treating them as two conflicting measurements of one result would send the next action to the wrong person.
 
-In another case, two records both show “reference 17”, but the numbers belong to different issuing systems. The handler cannot combine them until identity is established. The shared numeral is insufficient correspondence.
+In another case, two records both show “reference 17”, but the numbers belong to different issuing systems. Treat the identity as open when the shared numeral is the only link. For an exact total, distinguish a duplicate from a second transfer. For a threshold, check both possibilities. Suppose the obligation starts at 300, only these credits can reduce it, and each credited unit reduces it by one. If both records attest 100 credited to the same account, the outstanding amount is at least 100 under either reading.
 
 ### ADM.4:6 - Bias-Annotation
 
@@ -933,7 +933,7 @@ The responsible handler uses the correspondence with the applicable service or s
 
 Use this pattern when a service owner has an administrative result to supply repeatedly and the policy that governs it, and handlers need a usable instruction for receiving, checking, deciding, providing and closing individual requests. A new reimbursement service, for example, needs more than a form and a list of approvers.
 
-Return a service instruction that identifies what the handler, decision holder and provider do for an ordinary request and for a failed condition. Include specialist contributions where the case requires them. Start with one representative request and the condition promised to its recipient. Follow it far enough to identify the decision, provision and evidence of completion.
+Return a service instruction that identifies what the handler, decision holder and provider do for an ordinary request and for a failed condition. Include specialist contributions where the case requires them. A representative request can expose a missing handoff. To design for the class, recover from the service terms which differences between permitted requests change the decision, the party who may act, the work due or its deadline.
 
 Use an adequate existing instruction directly. This pattern is unnecessary for each later request and does not itself approve a request, appoint a provider or authorize an exception. Obtain missing policy from the authority responsible for it. A form field can collect an input once the applicable rule is known.
 
@@ -967,7 +967,7 @@ The opposite response leaves all handling discretionary. Skilled staff may resol
 
 Name the condition to be supplied, its recipient, applicable time and supported request class. Recover the applicable policy and who is authorized to decide, perform and correct each action. Distinguish a supplied rule from an assumption that still needs its competent source.
 
-Keep the work enabled separate. A travel reimbursement service supplies an authorized reimbursement; it does not determine whether the traveller's negotiations succeeded. If the policy makes a particular business condition relevant, include that condition and the person or evidence that can establish it.
+Keep the work enabled separate. A travel reimbursement service supplies an authorized reimbursement; it does not determine whether the traveller's negotiations succeeded. If the policy makes a business condition relevant, identify evidence that would establish it. A decision reserved to a particular party requires its effective act, which a suitable existing record may establish.
 
 An unavailable policy, unassigned payment provider or missing qualified test is a design gap. State the exact missing contribution and who can supply it before promising the affected result.
 
@@ -975,7 +975,7 @@ An unavailable policy, unassigned payment provider or missing qualified test is 
 
 For each condition on which the handling or its conclusion depends, identify the fact, evidence or existing result that the handler needs. Reuse a sufficiently current assignment, permission or prior check within its actual scope. Ask the applicant only for information that cannot adequately be recovered and that matters to handling.
 
-Specify how the handler relates the evidence to the actual claimant and request. A receipt must concern this expense; an assignment must cover the relevant person and time. “Upload documents” leaves these questions unanswered. ADM.7 supplies the case check when the correspondence or support is disputed.
+Specify how the handler relates the evidence to the claimant and request. A receipt must concern this expense; an assignment must cover the relevant participant and time. “Upload documents” leaves these questions unanswered. ADM.7 supplies the case check when the correspondence or support is disputed.
 
 Specify where the request enters, how the applicant can correct an ordinary omission, and what the handler returns when the request is outside the supported class. Collect and expose personal information only for the stated handling need under the applicable information rules.
 
@@ -1005,11 +1005,11 @@ For potentially duplicate actions, include recovery of the earlier attempt befor
 
 #### ADM.5:4.6 - Exercise and publish the usable instruction
 
-Use a walkthrough or applicable earlier evidence to establish whether the instruction can be followed for a representative request. Check the handoffs among the prospective handler, decision holder, provider and recipient. Include the consequential branches the instruction must handle, such as an omission, a settled refusal, a missing authority or an uncertain provider effect.
+Judge the instruction against the service it is meant to cover. Derive from the governing terms which differences can change the required response, who may decide or when a result is due. For each request the service undertakes to handle under those terms, the handler needs a permitted, timely way to act or to obtain the decision from the authority the policy designates. One rule can cover many requests when its premises hold across them. If two requests look alike to the handler at the time of choice yet require incompatible responses, give the handler a way to distinguish them in time or revise what the instruction promises. Where requests can be made together, check whether the permitted responses can also be provided together.
 
 When a walkthrough is needed, use a representative case to check whether the instruction identifies each participant’s next action. A human handler can explain what they would do, and an automated handoff can be examined against its stated inputs and outputs. Repair missing handoffs and unnecessary requests. To establish that a person or service can perform the work and that the provider can deliver the promised condition, use applicable evidence of performance or a trial that covers the claimed result.
 
-Return the instruction with its supported class, applicable policy, effective conditions and known gaps. Use the organization's existing place for such instructions. On the first real request, use the applicable instruction. Reopen its design when a condition changes or actual handling reveals a defect.
+Return the instruction with the class of requests covered, its governing policy and the conditions it relies on. A decision on an individual case can remain open by design if the instruction reaches the party entitled to decide, with the means to reach a decision in time. For a panel, that can depend on whether the required members can examine the case and act under the applicable voting rule. If a promised class has no supported response, identify who must resolve that gap and the cases that can already be handled. A commission for a draft may allow such a choice to be returned to the service owner. To put an instruction into use for the whole class, cover each response the terms require. Publish it where handlers look for service instructions. Reopen its design when conditions or evidence of actual handling change the answer.
 
 ### ADM.5:5 - Archetypal Grounding
 
@@ -1026,7 +1026,7 @@ The service owner and participants develop this instruction:
 | What ordinary correction applies? | If the receipt is missing, ask the claimant for the correction P allows. Apply P's response to an established excluded category, including the available challenge route. |
 | Who decides? | The finance approver applies P and makes the required decision for the exact claim and amount. The handler's completed preparation supplies input to that person. |
 | Who performs? | Treasury receives the approved claim and the account information through the authorized channel, then issues the permitted payment. |
-| When is provision complete? | Adequate provider evidence establishes the approved credit to the intended account. An instruction acknowledgement alone leaves the effect to be established. |
+| When is provision complete? | Under P, the approved amount must reach the claimant's designated account. The credit date determines when provision occurred. A suitable bank statement or other reliable evidence can establish it later. An acknowledgement of the payment instruction leaves credit open. |
 | What is returned? | The claimant receives the decision and actual provision result or precise remaining condition. Finance and treasury retain the corresponding evidence needed for their duties. |
 | What requires resolution? | Conflicting assignment evidence, unclear approving authority or an unknown earlier payment effect goes to its competent resolver through ADM.6. Recover the earlier effect before a possible duplicate payment. |
 
@@ -1046,7 +1046,7 @@ The example assumes an explicit policy and identifiable decision makers. An info
 
 **Recognition.** The result is a reusable instruction for a bounded class. It connects entry and evidence to actual deciding and performing participants, a usable completion condition, the returned account and meaningful failure branches.
 
-**Assurance for reliance.** Trace a supported request and a relevant failing variation. Can the participants recover their own next action without inventing authority, supplying a needless fact or mistaking an intermediate acknowledgement for completion? Check any consequential dependency against its actual policy, source or provider capability. Describe a walkthrough and an operational trial according to what each establishes.
+**Assurance for reliance.** Can the participants recover their next action for the variations the service promises to handle? Use a rule that covers the class, adequate evidence of the relevant branches, or both. An author walking through one request can find a missing handoff. When a handler works from the instruction with the support normally available, their choices show what that handler recovered in that situation. To rely on independent handling across the class, account for the variations in decisions, authority and available support. A promise to deliver the service also depends on the applicable policy, authority and timely provider capacity.
 
 ### ADM.5:8 - Common Anti-Patterns and How to Avoid Them
 
@@ -1464,7 +1464,7 @@ The title of an office, the presence of two records or the handler's preferred o
 
 State which action by which performer is permitted, under which conditions and limits, or why the required basis is absent or unresolved. Include the relevant source or decision reference where the recipient needs it to rely on the result.
 
-Apply the ordinary service response to an established negative condition. If a distinct alternative basis is actually claimed, investigate that question. A missing grant, conflicting evidence and a settled prohibition need not receive the same response.
+Apply the ordinary service response to an established negative condition. When the recipient asks about one named basis, its terms may settle the inquiry. When deciding whether the intended action is permitted, consider other applicable grants or rules, including ones the requester did not name. Refusal on every basis requires grounds that cover them all. A missing grant, conflicting evidence and a settled prohibition need not receive the same response.
 
 Keep a request for permission separate from the received grant. Use ADM.6 to obtain a missing competent answer or resolve an unavailable authority arrangement. Report the unresolved authority when nobody can supply the needed decision.
 
@@ -1807,14 +1807,15 @@ Organization P owes supplier Q 1,000 units for invoice I. The supplied terms say
 
 Evidence confirms a 600-unit credit to that account. A second instruction for 400 units was issued, but its effect is unknown. The case record says “paid 1,000” because both instructions were sent.
 
-The handler establishes that the confirmed 600 discharges that portion under the supplied terms. The second instruction establishes an attempted payment, not its credit. The remaining 400 has an unresolved effect; the available evidence does not establish whether the actual outstanding amount is now 400 or zero. The record's closed status cannot settle the question.
+The confirmed 600 discharges that portion under the supplied terms. Issuing the second instruction establishes the attempt. Let the amount actually credited from it be x, from 0 to 400 units. The outstanding amount is 400 − x. A ceiling of 400 is already established. An exact balance or a decision to issue the remainder calls for grounds about x. Closing the case record supplies no such grounds.
 
-The handler uses the original second-attempt reference to ask the payment provider whether and when Q's account was credited. The possible returns have different consequences:
+For the exact balance, establish how much of the second instruction reached the designated account. A qualified statement of credit tied to this attempt can suffice. If that contribution is missing, the handler uses the original reference to ask the provider. The possible returns have different consequences.
 
 | Provider result | Reconciliation and next action |
 | --- | --- |
 | The 400 was credited to Q's designated account | The supplied terms establish full fulfillment. The authorized handler corrects the account or evidence linkage as needed; there is no remaining payment to issue. |
 | The attempt failed without a credit | The available evidence establishes 400 still outstanding under the stated assumptions. The competent participants arrange the properly authorized remaining provision. |
+| Only 150 of the second instruction was credited | A further 250 remains under these terms. Establish any permissible next payment without duplicating the credit already made. |
 | The effect still cannot be established | Retain the confirmed 600 and the 400-unit uncertainty. Keep any potentially duplicate payment on hold. Pursue the effect inquiry while an authorized, attainable route remains. |
 
 Suppose the confirmed second credit occurred on 10 September but the provider's report arrived on 12 September. The event time remains 10 September. A report made on 11 September with only the earlier evidence should have stated uncertainty. The later evidence supports a better historical account, not a new credit on 12 September.
@@ -1945,17 +1946,17 @@ Distinguish transferred work from transferred responsibility. A provider may fin
 
 #### ADM.11:4.4 - Arrange continuity and recovery where failure matters
 
-Identify the failure that can defeat the combined result: a missing specialist answer, invalid scope, delayed provider, lost correspondence or uncertain earlier effect. Identify the participant capable and authorized to resolve it, and the result the next action needs. Use the existing assignment or seek one from its holder where needed.
+Identify the failure that can defeat the combined result: a missing specialist answer, invalid scope, delayed provider, lost correspondence or uncertain earlier effect. Establish what the next action needs and who can supply it with the required competence, authority and timing. Several providers can resolve a failure together when each receives the contribution they need. Use existing assignments and obtain any missing one from its holder.
 
 Keep completed contributions available within the conditions they still meet. Independent work can proceed under its own permission, as when a price inquiry is ready while booking authority is pending.
 
-For overlapping cases, inspect relevant resource windows, priorities, repeated work and existing commitments. OPS.8 supplies operational joins and protection; OPS.12–OPS.13 supply material burden and promise questions. A shared specialist already committed elsewhere is not additional simultaneous capacity.
+For a proposed service, establish the combinations recipients may request and who controls each timely response. For a promise to complete each eligible request, a decision fixed before the recipient is known must leave a timely response for every possibility still open to the decision maker. For a period-level proportion or accepted risk, assess the timely responses against that criterion and retain any individual obligations that also apply. For overlapping cases, account for resource windows, priorities, repeated work and existing commitments. OPS.8 supplies operational joins and protection; OPS.12–OPS.13 supply material burden and promise questions. A shared specialist already committed elsewhere is not additional simultaneous capacity.
 
 If the effect of an earlier attempt is unknown, use ADM.9–ADM.10 to look for evidence of the effect. If it remains unknown and another action could duplicate it, hold that action and report the unresolved condition, even if individual providers have closed their tasks.
 
 #### ADM.11:4.5 - Establish what the connection supports
 
-Use an applicable earlier check or walk a case through the contributions to establish whether the receiving provider can identify the next action. Examine a failing connection when its handling matters. For a claim about provision, use evidence that the recipient obtained the promised condition, including the recipient’s account when needed.
+Use an applicable earlier check or walk a case through the contributions to establish whether the receiving provider can identify the next action. Examine a failing connection when its handling matters. For a deadline, establish when access became usable. A supported latest time can settle that question. For a promise of continuous access, establish availability across the promised interval. One successful use leaves other times open. A claim that timely service can be promised in future cases uses the terms and feasible responses established above. Timely configuration and continuing availability can establish readiness even if first use came later. If use itself was promised, establish the required use at the relevant time. The recipient’s account may supply either result under the appropriate conditions.
 
 A description walkthrough tests the arrangement's intelligibility. A bounded operational trial can establish actual transfer, performance and use under its observed conditions. A reliability claim needs evidence covering the providers and conditions to which it applies.
 
@@ -1971,20 +1972,20 @@ The appointment office supplies a decision effective on 1 October. The identity 
 
 The first three contributions are adequate within their stated conditions. The missing input is the correspondence between M and the account that will actually read D. The coordinator sends the bounded mapping question to the assigned access provider, which can recover the account binding through its authorized directory procedure.
 
-After establishing that binding, the archive provider configures the permitted account. Mira opens D, and the available evidence supports the promised condition. The original appointment, identity result and grant remain applicable to Mira and D.
+After establishing that binding, the archive provider configures the permitted account. At 09:55 on 2 October Mira opens D with that account, establishing access by 10:00. An opening observed only at 10:20 would establish access by 10:20. It could also support the earlier deadline if records established that the usable configuration and other necessary conditions already held at 10:00. The original appointment, identity result and grant remain applicable to Mira and D.
 
 | Join | What the receiver actually uses |
 | --- | --- |
 | Appointment to grant decision | The relevant person, effective assignment and scope required by the supplied access rule. |
 | Identity result to grant decision | The accepted person result for that beneficiary under the rule's conditions. |
 | Grant to archive provision | The permitted action and resource, effective time, beneficiary and supported account correspondence. |
-| Archive provision to service completion | Evidence that the intended recipient can use D within the grant. |
+| Archive provision to service completion | Evidence that Mira could use D under the grant by 10:00 on 2 October. |
 
 If the provider cannot recover the mapping, the service retains that precise gap and the accountable recovery action. The coordinator's assignment does not authorize inventing a mapping or broadening the grant.
 
 #### ADM.11:5.2 - Shared provision does not establish shared capacity
 
-Two services rely on the same specialist during a two-hour window. Each local plan assumes that the specialist is available for its full two-hour job. Together the jobs require four specialist-hours within a two-hour window.
+The provider has promised two separate two-hour performances by one specialist in the same two-hour window. They require four specialist-hours. If the agreement instead permits both recipients to use one common result and a single performance meets both needs, two hours can suffice. For a promise to serve either one, establish who may choose, whether both requests can become due and what the party committing the first allocation can know when the booking becomes binding. If the room must be booked before the requester is known, the booking must work for either eligible requester or allow a timely adjustment.
 
 The responsible parties use the actual service priorities and commitments to resolve the resource question. They may change timing or obtain qualified additional provision where authorized. The administrative join account supplies the affected cases, needed specialist results and obligations. A claim that a new shared-service arrangement will solve the problem remains conditional until its actual capability and timing are established.
 
@@ -2258,7 +2259,7 @@ Reuse an adequate qualified procedure or specialist result within its conditions
 
 Use [SYSE.28][SYSE] when the test's placement or enforcement needs design. Determine where the checked property can change, where another subject can be substituted, and where the result can still prevent the prohibited reliance. An earlier successful check may remain sufficient through controlled steps that cannot defeat it.
 
-Keep test qualification, implementation and authority distinct. A software provider can implement a supplied rule without being competent to define its legal or security criterion. A specialist result can qualify a test without appointing the person authorized to waive the requirement.
+Keep test qualification, implementation and authority distinct. A software provider can implement a supplied rule without being competent to define its legal or security criterion. A specialist result can qualify a test without appointing the participant authorized to waive the requirement.
 
 #### ADM.14:4.4 - Provide an intelligible response for each consequential outcome
 
@@ -2296,7 +2297,7 @@ The service owner recovers P and the adequate existing expense-correspondence pr
 
 For the reusable repair, the assigned provider implements the supplied correspondence and effect check where the payment decision uses it. The design retains the actual expense identity and evidence needed by the qualified procedure. Two distinct expenses can have the same amount.
 
-The exercise includes the same expense with a different photograph, two distinct expenses with equal amounts, and an unavailable prior-payment source. The first must retain the earlier reimbursement result; the second must preserve the distinct expenses; the third must return the missing effect evidence rather than pass the check. Use these expected outcomes to judge what the trial actually demonstrates.
+The exercise includes the same expense with a different photograph, two distinct expenses with equal amounts, and an unavailable prior-payment source. The first must retain the earlier reimbursement result; the second must preserve the distinct expenses; for the third, use an independent adequate reconciliation if one exists. If the earlier payment remains unknown and the decision depends on it, return the outstanding question. Use these expected outcomes to judge what the trial actually demonstrates.
 
 #### ADM.14:5.2 - A paper requirement and an existing policy answer
 
@@ -2425,14 +2426,14 @@ For the laboratory shorthand `T+N`, choose the start T for the receiving questio
 
 Define the usable ending condition and the evidence for its time. State the time unit and calendar; retain a missing time as unknown or as a supported bound. For an unprovided result, report elapsed time to a stated observation cutoff with its unfinished status. N measures elapsed time, not the sum of provider and recipient labor.
 
-For a constructed access example, the owner wants to see how much delay a registered-handling report leaves outside its scope. Use elapsed hours on a 24-hour calendar; all dates are in October 2026 and all times are UTC+03:00. In an interview at 16:00 on 5 October, Noor reports that the need for document D began between 09:00 and 10:00 that day. The portal log records registration at 09:00 on 6 October. The selected usable end is the first confirmed successful read under Noor's valid grant: a test with Noor and the archive log establish it at 12:00 on 7 October.
+For a constructed access example, the owner wants to see how much delay a registered-handling report leaves outside its scope. Use elapsed hours on a 24-hour calendar; all dates are in October 2026 and all times are UTC+03:00. In an interview at 16:00 on 5 October, Noor reports that the need for document D began between 09:00 and 10:00 that day. The portal log records registration at 09:00 on 6 October. The selected usable end is the first confirmed successful read under Noor's valid grant: a test with Noor and the archive log establish it at 12:00 on 7 October. If the commission instead concerns readiness to read, the successful read establishes availability by that time. Earlier configuration evidence could establish an earlier start of availability.
 
 | Duration question | Selected start and source | Elapsed time to that usable end |
 | --- | --- | --- |
 | Need-to-result | Noor's reported onset, 5 October 09:00–10:00, retained separately from the interview's 16:00 timestamp. | 50–51 hours, conditional on that reported onset interval. |
 | Registered handling | Portal registration, 6 October 09:00, from the request log. | 27 hours; the 23–24 hours from reported need to registration are outside this clock. |
 
-If this request's earlier need time were unavailable, the account would retain 27 registered hours and an unknown need-to-result duration. If the access test instead established that provision was still unfinished at the 7 October 12:00 cutoff, the account would show 50–51 hours since the reported need and 27 hours since registration, both to that cutoff. Neither would be reported as a completed-result duration.
+To answer how much elapsed time registration left out, compare the two starts. The difference is 23–24 hours for any common ending event. If the need is known only to have arisen no later than registration, its time to the confirmed read is at least 27 hours, even though the exact duration remains open. If the access test instead established that provision was still unfinished at the 7 October 12:00 cutoff, the account would show 50–51 hours since the reported need and 27 hours since registration, both to that cutoff. Neither would be reported as a completed-result duration.
 
 To judge an improvement, interpret a shorter duration alongside relevant correctness, protection, recovery and effort. Changing the portal’s registration time can shorten its recorded interval while leaving the recipient’s whole delay unchanged. If immediate provision is proposed, judge its feasibility and value under the service’s conditions.
 
@@ -2586,7 +2587,7 @@ For a change proposal, identify the object and intended difference: rule, contro
 
 Identify the materially different open and foreseeable case groups, active grants, obligations, unresolved effects, disputes and required historical uses. Use evidence about dependencies as well as current traffic. For example, a quiet week may precede an outstanding annual payment.
 
-For each group whose treatment or protected conditions may differ, recover the old conditions, intended new result, relevant authority and the fact that will determine its treatment. Preserve an unknown cohort classification when that determining fact is unavailable.
+For each group whose treatment or protected conditions may differ, recover the old conditions, intended new result, relevant authority and the fact that will determine its treatment. Preserve an unknown cohort classification when that determining fact is unavailable. If the permitted classifications all justify the same present action, that action can be taken on the common grounds. Retain any separately required classification or record.
 
 Use ADM.2–ADM.3 to establish the relation or its effective conditions when needed and ADM.13 for required record use. An inventory label is not evidence that a grant expired, an obligation ended or a disputed claim was resolved.
 
@@ -2594,7 +2595,7 @@ Use ADM.2–ADM.3 to establish the relation or its effective conditions when nee
 
 Use an applicable transition decision already in force. Where one is needed, obtain it from the participant authorized to adopt the change and decide which conditions apply to each group, or identify what remains undecided. Obtain the qualified legal, tax, contractual, security or other contribution only where that substantive question matters and is not already adequately answered.
 
-State when the decision takes effect, which cases it covers and any permitted election, exception, coexistence or termination. Apply those conditions to the known case facts and identify any fact still missing.
+State when the decision takes effect, which cases it covers and any permitted election, exception, coexistence or termination. Apply those conditions to the known case facts and identify any missing fact that affects the action or a separately required determination.
 
 Keep a proposal, authorized decision and implementation distinct. Until a valid decision changes an existing condition, the handler continues to apply the condition that governs that case. An internal forecast or deployment date does not revise a participant's right or obligation.
 
@@ -2643,10 +2644,10 @@ The expense-policy owner’s decision establishes the applicable terms. The serv
 
 | Case | Applicable continuation under the supplied decision |
 | --- | --- |
-| Journey authorized on 28 October, performed on 3 November, claim submitted on 6 November | Use the earlier terms unless the permitted election is established. The submission date does not select the new regime. |
+| Journey authorized on 28 October, performed on 3 November, claim submitted on 6 November | Use the earlier terms when there was no effective election. Apply the allowance for a valid election. If the election records are unavailable, keep the regimes still possible for this case. The submission date does not select the new regime. |
 | Journey authorized on 2 November | Use the allowance instruction with its applicable eligibility and payment conditions. |
 | Earlier journey with a valid recorded election and required confirmation before disbursement | Apply that authorized variant; it is not an erroneous workaround merely because the ordinary earlier terms differ. |
-| Authorization date or election basis cannot be established | Use available evidence of the missing decision or fact. If it remains unknown, return that question to the competent source where available and leave the regime unresolved. |
+| Authorization date or election basis cannot be established | Check the authorized action, amount, timing and required records under the regimes still possible. If all support the same payment and the terms permit proceeding, provide it. Seek further evidence when the disposition differs or when identifying the governing regime is itself due. |
 | Payment instruction already issued, effect unknown | Recover evidence of that attempt’s effect. Hold a further payment or conversion that could duplicate it while the effect remains unknown. |
 
 The provider's initial proposal disables the receipt route on 1 November. The case comparison shows that the route still serves an authorized population. The responsible parties arrange bounded old-regime support or a qualified replacement that preserves its required inputs, decisions and recovery. Keep the earlier terms usable for that population, through the existing route or its qualified replacement.
@@ -2659,7 +2660,7 @@ Suppose adequate current observations show that two handlers apply the adopted a
 
 Now a different receiving use requires a new relief handler to work independently. Existing attendance at a presentation does not answer that question. A bounded practice exercise is feasible before the assignment, and its result can change the supported work the handler receives. The maintainer selects an equivalent case that preserves the old/new-regime distinction and the applicable return, and observes the handler's unaided disposition.
 
-A correct result supports that observed application with the available instruction and prior preparation. It does not isolate the cause of success or establish long-term retention. An error selecting by submission date calls for a focused correction to the instruction, support or learning contribution that actually failed. A legitimate election under the transition rule must remain distinguishable from that error.
+A correct result supports that observed application with the available instruction and prior preparation. It does not isolate the cause of success or establish long-term retention. Correct the decision if the handler used the submission date in error. Before changing the instruction, support or training, establish which contribution failed. A one-off error can occur even with an adequate rule and a capable handler. A legitimate election under the transition rule must remain distinguishable from that error.
 
 
 

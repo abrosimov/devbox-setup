@@ -151,10 +151,16 @@
         mode: "0644"
 
     - name: "Rift — unpack the archive in staging"
-      ansible.builtin.unarchive:
-        src: "{{ devbox_rift_staging.path }}/{{ devbox_rift_asset_name }}"
-        dest: "{{ devbox_rift_staging.path }}"
-        remote_src: true
+      # Not ansible.builtin.unarchive: it insists on GNU tar, and macOS ships
+      # bsdtar, which extracts this archive fine.
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/tar
+          - -xzf
+          - "{{ devbox_rift_staging.path }}/{{ devbox_rift_asset_name }}"
+          - -C
+          - "{{ devbox_rift_staging.path }}"
+      changed_when: true
 
     - name: "Rift — require the app bundle and the CLI in the archive"
       ansible.builtin.stat:
@@ -193,11 +199,16 @@
           - "{{ devbox_rift_app }}.new"
       changed_when: true
 
+    - name: "Rift — inspect the installed app bundle"
+      ansible.builtin.stat:
+        path: "{{ devbox_rift_app }}"
+      register: devbox_rift_app_before
+
     - name: "Rift — move the installed app bundle aside"
       ansible.builtin.command:
         argv: [/bin/mv, "{{ devbox_rift_app }}", "{{ devbox_rift_app }}.old"]
-        removes: "{{ devbox_rift_app }}"
       changed_when: true
+      when: devbox_rift_app_before.stat.exists
 
     - name: "Rift — put the new app bundle in place"
       ansible.builtin.command:
@@ -228,12 +239,21 @@
         devbox_rift_replaced: true
 
   rescue:
+    - name: "Rift — inspect the app bundles after the failure"
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ devbox_rift_app }}.old"
+        - "{{ devbox_rift_app }}"
+      register: devbox_rift_rescue_bundles
+
     - name: "Rift — put the previous app bundle back"
       ansible.builtin.command:
         argv: [/bin/mv, "{{ devbox_rift_app }}.old", "{{ devbox_rift_app }}"]
-        removes: "{{ devbox_rift_app }}.old"
-        creates: "{{ devbox_rift_app }}"
       changed_when: true
+      when:
+        - devbox_rift_rescue_bundles.results[0].stat.exists
+        - not devbox_rift_rescue_bundles.results[1].stat.exists
 
     - name: "Rift — fail the run"
       ansible.builtin.fail:
@@ -479,6 +499,7 @@
   when:
     - devbox_wm == 'rift'
     - devbox_rift_plist.changed or devbox_rift_agent.rc != 0
+  register: devbox_rift_bootstrapped
   tags: [wm, rift]
 
 - name: "Window manager — check whether Rift is running now"
@@ -516,7 +537,8 @@
   delay: 1
   when:
     - devbox_wm == 'rift'
-    - devbox_rift_started is not skipped
+    - devbox_rift_started is not skipped or devbox_rift_bootstrapped is not skipped
+    - not ansible_check_mode
   tags: [wm, rift]
 
 - name: "Window manager — report a Rift that did not come up"

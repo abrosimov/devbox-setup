@@ -380,6 +380,8 @@ class Machine:
     aerospace_running: bool = False
     aerospace_login_item_on: bool = False
     aerospace_exits: bool = True
+    app_installed: bool = True
+    bootstrap_starts_rift: bool = False
     reload_rc: int = 0
     check_mode: bool = False
 
@@ -434,13 +436,16 @@ def _outcome(machine: Machine, register: str, context: Doc) -> Doc:
     survives = (
         not replaced and not stray_stopped and not (machine.plist_changed and machine.agent_loaded)
     )
+    autostarted = machine.bootstrap_starts_rift and not context.get(
+        "devbox_rift_bootstrapped", {"skipped": True}
+    ).get("skipped")
     backup = (
         {"backup_file": f"{HOME}/.config/rift/config.toml.1~"} if machine.config_changed else {}
     )
     outcomes: dict[str, Doc] = {
         "devbox_rift_brew": {"rc": 1, "stdout": ""},
         "devbox_rift_running": _probe(found=machine.rift_running),
-        "devbox_rift_running_now": _probe(found=machine.rift_running and survives),
+        "devbox_rift_running_now": _probe(found=(machine.rift_running and survives) or autostarted),
         "devbox_rift_agent": _probe(found=machine.agent_loaded),
         "devbox_rift_config": {"changed": machine.config_changed, **backup},
         "devbox_rift_plist": {"changed": machine.plist_changed},
@@ -450,6 +455,7 @@ def _outcome(machine: Machine, register: str, context: Doc) -> Doc:
             "stderr": "invalid config",
             "stdout": "",
         },
+        "devbox_rift_app_before": {"stat": {"exists": machine.app_installed}},
         "devbox_aerospace_toml": {"stat": {"exists": True}},
         "devbox_aerospace_login_off": {"changed": machine.aerospace_login_item_on},
         "devbox_aerospace_running_wm": _probe(found=machine.aerospace_running),
@@ -720,6 +726,47 @@ class TestWindowManagerGating:
 
         assert [s.ran for s in steps if _STRAY_STOP(s.task)] == [False]
         assert [s.ran for s in steps if _STRAY_WAIT(s.task)] == [False]
+
+    def test_a_fresh_machine_confirms_that_rift_answers(self) -> None:
+        steps = _simulate(
+            _WM_TASKS, Machine(current=False, plist_changed=True, config_changed=True)
+        )
+
+        assert _ran(steps, _BOOTSTRAP) == [True]
+        assert _ran(steps, _QUERY) == [True]
+
+    def test_a_rift_started_only_by_the_bootstrap_is_still_confirmed(self) -> None:
+        machine = Machine(plist_changed=True, bootstrap_starts_rift=True)
+        steps = _simulate(_WM_TASKS, machine)
+
+        assert _ran(steps, _BOOTSTRAP) == [True]
+        assert _ran(steps, _KICKSTART) == [False]
+        assert _ran(steps, _QUERY) == [True]
+
+    def test_a_kickstart_without_a_bootstrap_is_still_confirmed(self) -> None:
+        steps = _simulate(_WM_TASKS, Machine(rift_running=False, agent_loaded=True))
+
+        assert _ran(steps, _BOOTSTRAP) == [False]
+        assert _ran(steps, _KICKSTART) == [True]
+        assert _ran(steps, _QUERY) == [True]
+
+    def test_a_healthy_running_rift_with_a_loaded_agent_is_not_queried(self) -> None:
+        steps = _simulate(_WM_TASKS, Machine(rift_running=True, agent_loaded=True))
+
+        assert _ran(steps, _QUERY) == [False]
+
+    @pytest.mark.parametrize(
+        "machine",
+        [
+            Machine(wm="aerospace", current=False, plist_changed=True),
+            Machine(current=False, plist_changed=True, check_mode=True),
+        ],
+        ids=["aerospace", "check-mode"],
+    )
+    def test_no_liveness_check_with_aerospace_chosen_or_in_check_mode(
+        self, machine: Machine
+    ) -> None:
+        assert _ran(_simulate(_WM_TASKS, machine), _QUERY) == [False]
 
     def test_with_rift_chosen_a_rift_that_exited_cleanly_is_started_again(self) -> None:
         steps = _simulate(_WM_TASKS, Machine(rift_running=False, agent_loaded=True))
@@ -1190,17 +1237,59 @@ class TestPinAndInstaller:
         modules = [
             next(key for key in task if key.startswith("ansible.builtin.")) for task in block
         ]
+        unpack = next(
+            i for i, task in enumerate(block) if _argv(task)[:2] == ["/usr/bin/tar", "-xzf"]
+        )
         first_replace = next(
             i
             for i, task in enumerate(block)
             if _argv(task)[:1] in (["/usr/bin/ditto"], ["/bin/mv"])
         )
 
-        assert (
-            modules.index("ansible.builtin.get_url")
-            < modules.index("ansible.builtin.unarchive")
-            < first_replace
+        assert modules.index("ansible.builtin.get_url") < unpack < first_replace
+
+    @pytest.mark.parametrize(("app_installed", "aside_ran"), [(True, True), (False, False)])
+    def test_a_first_install_has_no_bundle_to_move_aside_but_still_places_the_new_one(
+        self, *, app_installed: bool, aside_ran: bool
+    ) -> None:
+        steps = _simulate(_WM_TASKS, Machine(current=False, app_installed=app_installed))
+        aside = [s.ran for s in steps if _argv(s.task)[-1:] == ["{{ devbox_rift_app }}.old"]]
+        place = [
+            s.ran for s in steps if _argv(s.task)[:2] == ["/bin/mv", "{{ devbox_rift_app }}.new"]
+        ]
+
+        assert aside == [aside_ran]
+        assert place == [True]
+
+    def test_the_archive_is_unpacked_with_the_system_tar_from_staging_into_staging(self) -> None:
+        block = self._install_block()["block"]
+        argv = next(_argv(t) for t in block if _argv(t)[:2] == ["/usr/bin/tar", "-xzf"])
+        download = next(t for t in block if "ansible.builtin.get_url" in t)[
+            "ansible.builtin.get_url"
+        ]
+
+        assert argv[2] == download["dest"]
+        assert argv[3:] == ["-C", "{{ devbox_rift_staging.path }}"]
+        assert not any("ansible.builtin.unarchive" in t for t in block)
+
+    def test_the_installed_bundle_is_inspected_before_it_is_moved_aside_and_only_then_moved(
+        self,
+    ) -> None:
+        block = self._install_block()["block"]
+        inspect = next(
+            i for i, t in enumerate(block) if t.get("register") == "devbox_rift_app_before"
         )
+        aside = next(
+            i
+            for i, t in enumerate(block)
+            if _argv(t)[:3] == ["/bin/mv", "{{ devbox_rift_app }}", "{{ devbox_rift_app }}.old"]
+        )
+        conditions = _conditions(block[aside])
+
+        assert inspect < aside
+        assert block[inspect]["ansible.builtin.stat"]["path"] == "{{ devbox_rift_app }}"
+        assert _holds(conditions, {"devbox_rift_app_before": {"stat": {"exists": True}}})
+        assert not _holds(conditions, {"devbox_rift_app_before": {"stat": {"exists": False}}})
 
     def test_a_running_rift_is_saved_and_has_exited_before_the_bundle_moves(self) -> None:
         block = self._install_block()["block"]
@@ -1249,12 +1338,35 @@ class TestPinAndInstaller:
 
     def test_a_failed_install_puts_the_previous_bundle_back_and_fails_the_run(self) -> None:
         rescue = self._install_block()["rescue"]
-        restore = rescue[0]["ansible.builtin.command"]
+        inspect = next(t for t in rescue if t.get("register") == "devbox_rift_rescue_bundles")
+        restore = next(t for t in rescue if _argv(t)[:1] == ["/bin/mv"])
+        paths = [
+            _render_env().from_string(item).render(devbox_rift_app="/a/Rift.app")
+            for item in inspect["loop"]
+        ]
 
-        assert restore["argv"] == ["/bin/mv", "{{ devbox_rift_app }}.old", "{{ devbox_rift_app }}"]
-        assert restore["removes"] == "{{ devbox_rift_app }}.old"
-        assert restore["creates"] == "{{ devbox_rift_app }}"
+        assert paths == ["/a/Rift.app.old", "/a/Rift.app"]
+        assert rescue.index(inspect) < rescue.index(restore)
+        assert _argv(restore) == ["/bin/mv", "{{ devbox_rift_app }}.old", "{{ devbox_rift_app }}"]
         assert "ansible.builtin.fail" in rescue[-1]
+
+    @pytest.mark.parametrize(
+        ("old_exists", "app_exists", "restores"),
+        [(True, False, True), (True, True, False), (False, False, False), (False, True, False)],
+        ids=["old-only", "both", "neither", "app-only"],
+    )
+    def test_the_previous_bundle_is_restored_only_when_it_exists_and_the_app_is_missing(
+        self, *, old_exists: bool, app_exists: bool, restores: bool
+    ) -> None:
+        rescue = self._install_block()["rescue"]
+        restore = next(t for t in rescue if _argv(t)[:1] == ["/bin/mv"])
+        context: Doc = {
+            "devbox_rift_rescue_bundles": {
+                "results": [{"stat": {"exists": old_exists}}, {"stat": {"exists": app_exists}}]
+            }
+        }
+
+        assert _holds(_conditions(restore), context) is restores
 
     def test_staging_and_the_half_copied_bundle_are_removed_on_every_path(self) -> None:
         removal = self._install_block()["always"][0]

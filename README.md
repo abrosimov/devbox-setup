@@ -129,18 +129,19 @@ Keybindings and usage for each tool:
 
 ## Window Manager (Rift)
 
-Rift ([acsandmann/rift](https://github.com/acsandmann/rift)) is the tiling window
-manager; AeroSpace stays installed as the fallback. `devbox_wm` in
-`roles/devbox/defaults/main/core.yml` chooses which one runs (`rift` or
-`aerospace`), and `roles/devbox/tasks/darwin/configure_window_manager.yml` keeps
-the other one stopped and out of the login items.
+Rift ([acsandmann/rift](https://github.com/acsandmann/rift)) is installed beside
+AeroSpace. `devbox_wm` in `roles/devbox/defaults/main/core.yml` chooses which one
+runs (`aerospace` by default, or `rift`), and
+`roles/devbox/tasks/darwin/configure_window_manager.yml` keeps the other one
+stopped and out of the login items.
 
 - **Install.** Rift.app goes to `~/Applications`, `rift-cli` to `~/.local/bin`,
   from the release pinned in `devbox_packages.rift` (version and the asset's
   sha256). Homebrew's Rift is refused: its upgrade hook restarts Rift without
   restoring the layout.
 - **Service.** The LaunchAgent `local.rift` starts Rift with `--restore`, so the
-  layout saved at the last clean exit comes back. An upgrade runs
+  layout saved at the last clean exit comes back, and restarts it only after a
+  crash. It exists only while Rift is the window manager. An upgrade runs
   `rift-cli execute save-and-exit` before replacing the app.
 - **Config.** `~/.config/rift/config.toml` is rendered from
   `roles/devbox/templates/darwin/.config/rift/config.toml.j2`: global
@@ -149,12 +150,46 @@ the other one stopped and out of the login items.
   on one Super modifier (`devbox_rift_super`, default Cmd+Alt). A running Rift
   is reloaded after a change; if it rejects the file, the previous one
   (`config.toml.prev`) is put back and the run fails.
-- **Switching.** With `rift`, AeroSpace's `start-at-login` is turned off and
-  AeroSpace quits; "Displays have separate Spaces" is switched on, which needs
-  a new login. With `aerospace`, Rift saves its layout and exits, and AeroSpace
-  is deployed and launched as before.
-- **First start.** Grant Accessibility to `~/Applications/Rift.app` in System
-  Settings › Privacy & Security › Accessibility. Logs: `~/Library/Logs/rift.log`.
+- **Switching to Rift** takes two runs and one manual step, because Rift needs
+  two things the playbook cannot give it in a running session:
+  1. Set `devbox_wm: rift` and run the playbook. It stores "Displays have
+     separate Spaces" (Rift refuses to start without it), leaves AeroSpace
+     running and prints that a new login is needed.
+  2. Grant Accessibility to `~/Applications/Rift.app` in System Settings ›
+     Privacy & Security › Accessibility (add it with "+"). Only the user (or
+     MDM on a supervised Mac) can grant it. The grant survives Rift upgrades:
+     every release is signed with the same certificate.
+  3. Log out and back in, then run the playbook again. AeroSpace is taken off
+     its login items and quits, and Rift is started. If Rift lacks the grant,
+     it shows the system prompt and the playbook opens the Accessibility
+     settings; turning Rift on within 30 s completes the switch. If Rift does
+     not answer within 40 s, the switch is undone: the Rift LaunchAgent is
+     removed, AeroSpace is started again, and the run prints why.
+  While the switch runs (up to about 45 s) no window manager is active, so run
+  step 3 when that does not get in the way.
+- **Switching back.** With `aerospace`, Rift saves its layout and exits, its
+  LaunchAgent is booted out and removed, and AeroSpace is deployed and launched
+  as before. Logs: `~/Library/Logs/rift.log`.
+
+### Trying Rift by hand
+
+With `devbox_wm: aerospace` the playbook installs Rift and its config without
+running it, so Rift can be tried while AeroSpace stays the login default.
+Steps 1 and 2 of the switch above (separate Spaces, then a new login, and the
+Accessibility grant) are needed once. Launch Rift with `open`, not by running
+its binary from a terminal: macOS checks the permission of the app that
+launched the binary, which would be the terminal.
+
+```sh
+osascript -e 'quit app "AeroSpace"'     # AeroSpace puts its hidden windows back
+open ~/Applications/Rift.app
+~/.local/bin/rift-cli query displays    # display names for devbox_rift_display_*
+~/.local/bin/rift-cli execute config reload   # after editing ~/.config/rift/config.toml
+~/.local/bin/rift-cli execute save-and-exit; open -a AeroSpace   # back to AeroSpace
+```
+
+Edits to `~/.config/rift/config.toml` last until the next playbook run; keep
+the ones worth having in the template.
 
 ## Pub Mode
 

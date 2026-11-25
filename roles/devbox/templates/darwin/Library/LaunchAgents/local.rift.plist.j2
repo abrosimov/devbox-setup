@@ -5,7 +5,11 @@
   Runs the Rift window manager installed by darwin/configure_window_manager.yml.
   Replaces Rift's own `rift service install` plist, which starts it without
   restore: here Rift reloads the layout it saved at its last clean exit.
-  A clean exit (save_and_exit) is not restarted; a crash is.
+  Only a crash is restarted. Rift exits with an error when it lacks the
+  Accessibility permission or separate Spaces per display, and restarting it
+  then would only repeat the system prompt.
+  Deployed only while Rift is the window manager: launchd loads every plist in
+  ~/Library/LaunchAgents at login.
 -->
 <plist version="1.0">
 <dict>
@@ -32,8 +36,6 @@
 
     <key>KeepAlive</key>
     <dict>
-        <key>SuccessfulExit</key>
-        <false/>
         <key>Crashed</key>
         <true/>
     </dict>

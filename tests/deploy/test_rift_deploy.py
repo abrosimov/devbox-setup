@@ -4,13 +4,16 @@ Four artefacts have to agree: the pinned release in devbox_packages.rift, the Ri
 config template, the local.rift LaunchAgent, and tasks/darwin/configure_window_manager.yml
 together with the AeroSpace tasks that devbox_wm now gates. Nothing here starts a
 process: templates are rendered under StrictUndefined with Ansible's trim_blocks, task
-files are loaded as YAML, and their `when` conditions are evaluated against modelled
-machine states, so a gate that is spelled differently but behaves the same still passes.
+files are loaded as YAML, and their `when` conditions and `set_fact` expressions are
+evaluated in file order against modelled machine states, so a gate that is spelled
+differently but behaves the same still passes. A block's rescue is never simulated; it
+is checked statically.
 """
 
 from __future__ import annotations
 
 import base64
+import itertools
 import json
 import plistlib
 import posixpath
@@ -46,7 +49,7 @@ USER_UID: Final = 501
 SERVICE_LABEL: Final = "local.rift"
 INSTALL_BLOCK: Final = "download, verify and install the pinned Rift"
 ROLLBACK_BLOCK: Final = "roll back a config Rift rejected"
-STOP_AEROSPACE_BLOCK: Final = "stop AeroSpace and remove its login item"
+SWITCH_BLOCK: Final = "switch from AeroSpace to Rift"
 LITERAL_MODIFIERS: Final = frozenset({"meta", "alt", "cmd", "command", "option", "opt"})
 
 Doc = dict
@@ -372,16 +375,19 @@ class Machine:
     """What the playbook finds on the host, and the devbox_wm it was asked for."""
 
     wm: str = "rift"
+    spaces_ready: bool = True
     current: bool = True
     rift_running: bool = False
     agent_loaded: bool = False
     config_changed: bool = False
     plist_changed: bool = False
+    aerospace_toml_exists: bool = True
     aerospace_running: bool = False
     aerospace_login_item_on: bool = False
     aerospace_exits: bool = True
     app_installed: bool = True
-    bootstrap_starts_rift: bool = False
+    rift_answers_quickly: bool = True
+    rift_answers_slowly: bool = True
     reload_rc: int = 0
     check_mode: bool = False
 
@@ -392,6 +398,7 @@ class Step:
     ran: bool
     ancestors: tuple[str, ...]
     section: str
+    failed: bool = False
 
 
 def _conditions(task: Doc) -> tuple[str, ...]:
@@ -430,25 +437,21 @@ def _probe(*, found: bool) -> Doc:
     return {"rc": 0 if found else 1, "changed": False}
 
 
-def _outcome(machine: Machine, register: str, context: Doc) -> Doc:
-    replaced = bool(context.get("devbox_rift_replaced"))
-    stray_stopped = not context.get("devbox_rift_stray_stop", {"skipped": True}).get("skipped")
-    survives = (
-        not replaced and not stray_stopped and not (machine.plist_changed and machine.agent_loaded)
-    )
-    autostarted = machine.bootstrap_starts_rift and not context.get(
-        "devbox_rift_bootstrapped", {"skipped": True}
-    ).get("skipped")
+def _outcome(machine: Machine, register: str) -> Doc:
     backup = (
         {"backup_file": f"{HOME}/.config/rift/config.toml.1~"} if machine.config_changed else {}
     )
     outcomes: dict[str, Doc] = {
         "devbox_rift_brew": {"rc": 1, "stdout": ""},
         "devbox_rift_running": _probe(found=machine.rift_running),
-        "devbox_rift_running_now": _probe(found=(machine.rift_running and survives) or autostarted),
         "devbox_rift_agent": _probe(found=machine.agent_loaded),
+        "devbox_wm_session_spaces": {
+            "rc": 0,
+            "stdout": "true\n" if machine.spaces_ready else "false\n",
+            "changed": False,
+        },
         "devbox_rift_config": {"changed": machine.config_changed, **backup},
-        "devbox_rift_plist": {"changed": machine.plist_changed},
+        "devbox_rift_plist_drift": {"changed": machine.plist_changed},
         "devbox_rift_reload": {
             "rc": machine.reload_rc,
             "changed": True,
@@ -456,10 +459,12 @@ def _outcome(machine: Machine, register: str, context: Doc) -> Doc:
             "stdout": "",
         },
         "devbox_rift_app_before": {"stat": {"exists": machine.app_installed}},
-        "devbox_aerospace_toml": {"stat": {"exists": True}},
+        "devbox_aerospace_toml": {"stat": {"exists": machine.aerospace_toml_exists}},
         "devbox_aerospace_login_off": {"changed": machine.aerospace_login_item_on},
         "devbox_aerospace_running_wm": _probe(found=machine.aerospace_running),
         "devbox_aerospace_exit_wait": _probe(found=not machine.aerospace_exits),
+        "devbox_rift_quick": _probe(found=machine.rift_answers_quickly),
+        "devbox_rift_alive": _probe(found=machine.rift_answers_slowly),
     }
     return outcomes.get(register, {"rc": 0, "changed": False})
 
@@ -480,23 +485,30 @@ def _base_context(machine: Machine) -> Doc:
     }
 
 
+def _render_fact(expression: str, context: Doc) -> object:
+    rendered = _logic_env().from_string(expression).render(**context)
+    return {"True": True, "False": False}.get(rendered, rendered)
+
+
 def _simulate(tasks: list[Doc], machine: Machine) -> list[Step]:
     context = _base_context(machine)
     steps: list[Step] = []
     for task, conditions, ancestors, section in _leaves(tasks):
         ran = section != "rescue" and _holds(conditions, context)
-        steps.append(Step(task, ran, ancestors, section))
+        assertion = task.get("ansible.builtin.assert")
+        failed = bool(ran and assertion and not _holds(tuple(assertion["that"]), context))
+        steps.append(Step(task, ran, ancestors, section, failed))
         if "register" in task:
             skipped: Doc = {"changed": False, "skipped": True}
-            context[task["register"]] = (
-                _outcome(machine, task["register"], context) if ran else skipped
-            )
+            context[task["register"]] = _outcome(machine, task["register"]) if ran else skipped
         facts = task.get("ansible.builtin.set_fact")
         if ran and facts:
             for key, value in facts.items():
                 if key == "devbox_rift_is_current":
-                    context[key] = "True" if machine.current else "False"
-                elif not isinstance(value, str) or "{{" not in value:
+                    context[key] = machine.current
+                elif isinstance(value, str) and "{{" in value:
+                    context[key] = _render_fact(value, context)
+                else:
                     context[key] = value
     return steps
 
@@ -533,6 +545,7 @@ def _mentions_aerospace(task: Doc) -> bool:
         "notify",
         "ansible.builtin.assert",
         "ansible.builtin.fail",
+        "ansible.builtin.debug",
         "community.general.osx_defaults",
     }
     body = {key: value for key, value in task.items() if key not in ignored}
@@ -544,12 +557,10 @@ def _in_block(step: Step, name: str) -> bool:
 
 
 def _ran(
-    steps: list[Step], predicate: Callable[[Doc], bool], *, outside_install: bool = False
+    steps: list[Step], predicate: Callable[[Doc], bool], *, top_level: bool = False
 ) -> list[bool]:
     return [
-        step.ran
-        for step in steps
-        if predicate(step.task) and not (outside_install and _in_block(step, INSTALL_BLOCK))
+        step.ran for step in steps if predicate(step.task) and not (top_level and step.ancestors)
     ]
 
 
@@ -561,16 +572,16 @@ _BOOTSTRAP: Final = _launchctl("bootstrap")
 _KICKSTART: Final = _launchctl("kickstart")
 _BOOTOUT: Final = _launchctl("bootout")
 _SAVE_AND_EXIT: Final = _rift_cli("execute", "save-and-exit")
+_RELOAD: Final = _rift_cli("execute", "config", "reload")
+_QUERY: Final = _rift_cli("query", "workspaces")
 
 
 def _named(fragment: str) -> Callable[[Doc], bool]:
     return lambda task: fragment in task["name"]
 
 
-_STRAY_STOP: Final = _named("outside the LaunchAgent")
-_STRAY_WAIT: Final = _named("stray Rift to exit")
-_RELOAD: Final = _rift_cli("execute", "config", "reload")
-_QUERY: Final = _rift_cli("query", "workspaces")
+def _registers(name: str) -> Callable[[Doc], bool]:
+    return lambda task: task.get("register") == name
 
 
 def _starts_rift(task: Doc) -> bool:
@@ -579,6 +590,113 @@ def _starts_rift(task: Doc) -> bool:
 
 def _aerospace_reload(task: Doc) -> bool:
     return bool(_argv(task)) and _argv(task)[0].endswith("/aerospace")
+
+
+def _opens_aerospace(task: Doc) -> bool:
+    return _argv(task)[:1] == ["open"] and "bobko.aerospace" in _argv(task)
+
+
+def _opens_accessibility_settings(task: Doc) -> bool:
+    return _argv(task)[:1] == ["open"] and any(
+        arg.startswith("x-apple.systempreferences:") and arg.endswith("Privacy_Accessibility")
+        for arg in _argv(task)
+    )
+
+
+def _plist_template(task: Doc) -> Doc | None:
+    module = task.get("ansible.builtin.template")
+    if isinstance(module, dict) and module.get("dest") == "{{ devbox_rift_plist_path }}":
+        return module
+    return None
+
+
+def _writes_plist(task: Doc) -> bool:
+    return _plist_template(task) is not None and task.get("check_mode") is not True
+
+
+def _checks_plist_drift(task: Doc) -> bool:
+    return _plist_template(task) is not None and task.get("check_mode") is True
+
+
+def _removes_plist(task: Doc) -> bool:
+    module = task.get("ansible.builtin.file")
+    return (
+        isinstance(module, dict)
+        and module.get("state") == "absent"
+        and module.get("path") == "{{ devbox_rift_plist_path }}"
+    )
+
+
+_SESSION_SPACES: Final = _registers("devbox_wm_session_spaces")
+_WAITS_FOR_LOGIN: Final = _named("Rift waits for a new login")
+_WAITS_FOR_SAVED_RIFT: Final = _registers("devbox_rift_exit_after_save")
+
+_SWITCH_STEPS: Final[dict[str, Callable[[Doc], bool]]] = {
+    "inspect_toml": _registers("devbox_aerospace_toml"),
+    "login_off": lambda task: "ansible.builtin.replace" in task,
+    "probe_aerospace": _registers("devbox_aerospace_running_wm"),
+    "open_aerospace": _opens_aerospace,
+    "reload_aerospace": _aerospace_reload,
+    "quit_aerospace": lambda task: (
+        _argv(task)[:1] == ["/usr/bin/osascript"]
+        and any("bobko.aerospace" in a for a in _argv(task))
+    ),
+    "wait_aerospace_exit": _registers("devbox_aerospace_exit_wait"),
+    "terminate_aerospace": lambda task: _argv(task) == ["pkill", "-x", "AeroSpace"],
+    "save_rift": _SAVE_AND_EXIT,
+    "wait_rift_exit": _registers("devbox_rift_exit_before_start"),
+    "bootout": _BOOTOUT,
+    "deploy_plist": _writes_plist,
+    "bootstrap": _BOOTSTRAP,
+    "kickstart": _KICKSTART,
+    "quick_query": _registers("devbox_rift_quick"),
+    "open_settings": _opens_accessibility_settings,
+    "wait_query": _registers("devbox_rift_alive"),
+    "assert_answers": lambda task: "ansible.builtin.assert" in task,
+}
+
+_SWITCH_ORDER: Final = [
+    "inspect_toml",
+    "login_off",
+    "probe_aerospace",
+    "open_aerospace",
+    "reload_aerospace",
+    "quit_aerospace",
+    "wait_aerospace_exit",
+    "terminate_aerospace",
+    "save_rift",
+    "wait_rift_exit",
+    "bootout",
+    "deploy_plist",
+    "bootstrap",
+    "kickstart",
+    "quick_query",
+    "open_settings",
+    "wait_query",
+    "assert_answers",
+]
+
+
+def _switch_key(task: Doc) -> str:
+    keys = [key for key, probe in _SWITCH_STEPS.items() if probe(task)]
+    assert len(keys) == 1, (task["name"], keys)
+    return keys[0]
+
+
+def _switch_block() -> Doc:
+    return next(t for t in _WM_TASKS if SWITCH_BLOCK in t["name"])
+
+
+def _trace(machine: Machine) -> list[str]:
+    return [
+        _switch_key(step.task)
+        for step in _simulate(_WM_TASKS, machine)
+        if step.ran and _in_block(step, SWITCH_BLOCK) and step.section == "block"
+    ]
+
+
+def _switch_ran(steps: list[Step]) -> bool:
+    return any(step.ran for step in steps if _in_block(step, SWITCH_BLOCK))
 
 
 _BUSY_MACHINE: Final = Machine(
@@ -590,26 +708,48 @@ _BUSY_MACHINE: Final = Machine(
     aerospace_running=True,
     aerospace_login_item_on=True,
 )
+_HEALTHY: Final = Machine(rift_running=True, agent_loaded=True)
+_EVERYTHING: Final = Machine(
+    rift_running=True,
+    agent_loaded=True,
+    plist_changed=True,
+    aerospace_login_item_on=True,
+    aerospace_exits=False,
+    rift_answers_quickly=False,
+)
+
+_AEROSPACE_STOPPED: Final = ["reload_aerospace", "quit_aerospace", "wait_aerospace_exit"]
+_AEROSPACE_SURVEYED: Final = ["inspect_toml", "login_off", "probe_aerospace"]
+_RIFT_STARTED: Final = ["deploy_plist", "bootstrap", "kickstart", "quick_query"]
 
 
-class TestWindowManagerGating:
+class TestWindowManagerChoice:
     def test_the_probes_find_the_tasks_they_name(self) -> None:
-        steps = _simulate(_WM_TASKS, Machine())
+        steps = _simulate(_WM_TASKS, _EVERYTHING)
 
         assert len(_ran(steps, _BOOTSTRAP)) == 1
         assert len(_ran(steps, _KICKSTART)) == 1
-        assert len(_ran(steps, _BOOTOUT)) == 2
+        assert len(_ran(steps, _BOOTOUT)) == 3
         assert len(_ran(steps, _RELOAD)) == 2
         assert len(_ran(steps, _SAVE_AND_EXIT)) == 3
-        assert len([s for s in steps if _STRAY_STOP(s.task)]) == 1
-        assert len([s for s in steps if _STRAY_WAIT(s.task)]) == 1
-        assert len([s for s in steps if _mentions_aerospace(s.task)]) >= 8
+        assert len(_ran(steps, _QUERY)) == 2
+        assert len(_ran(steps, _writes_plist)) == 1
+        assert len(_ran(steps, _checks_plist_drift)) == 1
+        assert len(_ran(steps, _removes_plist)) == 2
+        assert len(_ran(steps, _SESSION_SPACES)) == 1
+        assert len(_ran(steps, _WAITS_FOR_LOGIN)) == 1
+        assert len(_ran(steps, _WAITS_FOR_SAVED_RIFT)) == 1
+        assert len([s for s in steps if _mentions_aerospace(s.task)]) == 11
 
-    def test_default_window_manager_is_rift_and_the_allowed_values_are_the_two(self) -> None:
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_nothing_switches_by_default(self, profile: str) -> None:
+        assert _DEFAULTS["devbox_wm"] == "aerospace"
+        assert _profile_vars(profile)["devbox_wm"] == "aerospace"
+
+    def test_the_allowed_values_are_the_two(self) -> None:
         guard = _WM_TASKS[0]["ansible.builtin.assert"]["that"]
         env = _logic_env()
 
-        assert _DEFAULTS["devbox_wm"] == "rift"
         assert all(env.compile_expression(expr)(devbox_wm="rift") for expr in guard)
         assert all(env.compile_expression(expr)(devbox_wm="aerospace") for expr in guard)
 
@@ -620,175 +760,330 @@ class TestWindowManagerGating:
 
         assert not all(env.compile_expression(expr)(devbox_wm=wm) for expr in guard)
 
-    @pytest.mark.parametrize(
-        "machine",
-        [
-            _BUSY_MACHINE,
-            replace(_BUSY_MACHINE, current=True),
-            replace(_BUSY_MACHINE, rift_running=False, agent_loaded=False),
-            replace(_BUSY_MACHINE, aerospace_running=False),
-        ],
-        ids=["busy", "busy-and-current", "rift-idle", "aerospace-idle"],
-    )
-    def test_with_aerospace_chosen_nothing_starts_rift_or_touches_aerospace(
-        self, machine: Machine
-    ) -> None:
-        steps = _simulate(_WM_TASKS, replace(machine, wm="aerospace"))
-
-        started = [s.task["name"] for s in steps if s.ran and _starts_rift(s.task)]
-        aerospace = [s.task["name"] for s in steps if s.ran and _mentions_aerospace(s.task)]
-
-        assert started == []
-        assert aerospace == []
-
-    def test_with_aerospace_chosen_a_running_rift_is_saved_and_its_agent_booted_out(self) -> None:
-        steps = _simulate(_WM_TASKS, replace(_BUSY_MACHINE, wm="aerospace", current=True))
-
-        assert _ran(steps, _SAVE_AND_EXIT, outside_install=True) == [False, True]
-        assert _ran(steps, _BOOTOUT) == [False, True]
-
-    def test_with_aerospace_chosen_an_idle_rift_is_left_alone(self) -> None:
-        steps = _simulate(
-            _WM_TASKS, Machine(wm="aerospace", rift_running=False, agent_loaded=False)
-        )
-
-        assert _ran(steps, _SAVE_AND_EXIT, outside_install=True) == [False, False]
-        assert _ran(steps, _BOOTOUT) == [False, False]
-
     def test_rift_is_installed_in_both_modes(self) -> None:
         steps = _simulate(_WM_TASKS, Machine(wm="aerospace", current=False))
         download = next(s for s in steps if "ansible.builtin.get_url" in s.task)
 
         assert download.ran
 
-    def test_with_rift_chosen_a_stale_agent_is_booted_out_before_it_is_bootstrapped(self) -> None:
-        steps = _simulate(_WM_TASKS, Machine(agent_loaded=True, plist_changed=True))
-        bootout_on_change = [
-            s
+    @pytest.mark.parametrize("wm", ["rift", "aerospace"])
+    def test_the_rift_config_is_written_in_both_modes(self, wm: str) -> None:
+        steps = _simulate(_WM_TASKS, Machine(wm=wm))
+
+        written = [
+            s.task["register"]
             for s in steps
-            if _BOOTOUT(s.task) and "devbox_rift_plist.changed" in " ".join(_conditions(s.task))
+            if s.ran and "ansible.builtin.template" in s.task and _plist_template(s.task) is None
         ]
 
-        assert [s.ran for s in bootout_on_change] == [True]
-        assert _index(steps, _BOOTOUT) < _index(steps, _BOOTSTRAP)
-        assert _ran(steps, _BOOTSTRAP) == [True]
+        assert written == ["devbox_rift_config"]
 
-    def test_with_rift_chosen_a_fresh_machine_bootstraps_and_starts_rift(self) -> None:
-        steps = _simulate(
-            _WM_TASKS, Machine(current=False, plist_changed=True, config_changed=True)
+    def test_config_template_keeps_a_backup_for_the_rollback(self) -> None:
+        task = next(
+            t
+            for t, *_ in _leaves(_WM_TASKS)
+            if "ansible.builtin.template" in t and "config.toml" in str(t)
         )
 
-        assert _ran(steps, _BOOTSTRAP) == [True]
-        assert _ran(steps, _KICKSTART) == [True]
-        assert _ran(steps, _BOOTOUT) == [False, False]
-        assert _ran(steps, _SAVE_AND_EXIT, outside_install=True) == [False, False]
+        assert task["ansible.builtin.template"]["backup"] is True
+        assert task["register"] == "devbox_rift_config"
 
-    def test_with_rift_chosen_a_healthy_running_rift_is_not_disturbed(self) -> None:
-        steps = _simulate(_WM_TASKS, Machine(rift_running=True, agent_loaded=True))
+    def test_the_include_runs_after_apply_configs_and_never_in_dev_mode(self) -> None:
+        tasks = _task_list(MAIN_DARWIN)
+        names = [t.get("name") for t in tasks]
+        include = next(
+            t
+            for t in tasks
+            if t.get("ansible.builtin.include_tasks") == "darwin/configure_window_manager.yml"
+        )
+        env = _logic_env()
+        conditions = _conditions(include)
 
-        assert not any(s.ran for s in steps if _starts_rift(s.task))
-        assert _ran(steps, _BOOTOUT) == [False, False]
-        assert _ran(steps, _SAVE_AND_EXIT) == [False, False, False]
-        assert not any(s.ran for s in steps if _STRAY_STOP(s.task) or _STRAY_WAIT(s.task))
+        assert names.index(include["name"]) == names.index("Apply configs") + 1
+        assert not all(env.compile_expression(c)(dev_mode=True) for c in conditions)
+        assert all(env.compile_expression(c)(dev_mode=False) for c in conditions)
+        assert {"wm", "rift"} <= set(include["tags"])
 
-    def test_with_rift_chosen_a_hand_started_rift_is_stopped_before_the_agent_is_bootstrapped(
+
+_AEROSPACE_MACHINES: Final = [
+    pytest.param(replace(_BUSY_MACHINE, wm="aerospace"), id="busy"),
+    pytest.param(replace(_BUSY_MACHINE, wm="aerospace", current=True), id="busy-and-current"),
+    pytest.param(
+        replace(_BUSY_MACHINE, wm="aerospace", aerospace_running=False), id="aerospace-idle"
+    ),
+    pytest.param(replace(_BUSY_MACHINE, wm="aerospace", spaces_ready=False), id="no-spaces"),
+    pytest.param(Machine(wm="aerospace"), id="idle"),
+    pytest.param(replace(_BUSY_MACHINE, wm="aerospace", check_mode=True), id="check-mode"),
+]
+
+
+class TestAerospaceMode:
+    @pytest.mark.parametrize("machine", _AEROSPACE_MACHINES)
+    def test_the_switch_never_runs_and_aerospace_is_never_touched(self, machine: Machine) -> None:
+        steps = _simulate(_WM_TASKS, machine)
+
+        assert not _switch_ran(steps)
+        assert [s.task["name"] for s in steps if s.ran and _starts_rift(s.task)] == []
+        assert [s.task["name"] for s in steps if s.ran and _mentions_aerospace(s.task)] == []
+
+    @pytest.mark.parametrize("machine", _AEROSPACE_MACHINES)
+    def test_the_agent_plist_is_never_written(self, machine: Machine) -> None:
+        steps = _simulate(_WM_TASKS, machine)
+
+        assert _ran(steps, _writes_plist) == [False]
+        assert _ran(steps, _checks_plist_drift) == [False]
+
+    @pytest.mark.parametrize("machine", _AEROSPACE_MACHINES)
+    def test_the_agent_plist_file_is_removed_so_login_does_not_start_rift(
+        self, machine: Machine
+    ) -> None:
+        steps = _simulate(_WM_TASKS, machine)
+
+        assert _ran(steps, _removes_plist, top_level=True) == [True]
+
+    @pytest.mark.parametrize("machine", _AEROSPACE_MACHINES)
+    def test_no_rift_probe_or_warning_runs(self, machine: Machine) -> None:
+        steps = _simulate(_WM_TASKS, machine)
+
+        assert _ran(steps, _SESSION_SPACES) == [False]
+        assert _ran(steps, _WAITS_FOR_LOGIN) == [False]
+        assert _ran(steps, _RELOAD) == [False, False]
+
+    @pytest.mark.parametrize(
+        ("rift_running", "agent_loaded"),
+        [(True, True), (True, False), (False, True), (False, False)],
+        ids=["both", "hand-started", "agent-only", "neither"],
+    )
+    def test_a_running_rift_is_saved_and_a_loaded_agent_booted_out(
+        self, *, rift_running: bool, agent_loaded: bool
+    ) -> None:
+        steps = _simulate(
+            _WM_TASKS,
+            Machine(wm="aerospace", rift_running=rift_running, agent_loaded=agent_loaded),
+        )
+
+        assert _ran(steps, _SAVE_AND_EXIT, top_level=True) == [rift_running]
+        assert _ran(steps, _BOOTOUT, top_level=True) == [agent_loaded]
+
+    @pytest.mark.parametrize("agent_loaded", [True, False])
+    def test_the_exit_is_awaited_only_when_rift_was_running(self, *, agent_loaded: bool) -> None:
+        running = _simulate(
+            _WM_TASKS, Machine(wm="aerospace", rift_running=True, agent_loaded=agent_loaded)
+        )
+        stopped = _simulate(
+            _WM_TASKS, Machine(wm="aerospace", rift_running=False, agent_loaded=agent_loaded)
+        )
+
+        assert _ran(running, _WAITS_FOR_SAVED_RIFT) == [True]
+        assert _ran(stopped, _WAITS_FOR_SAVED_RIFT) == [False]
+
+    @pytest.mark.parametrize("machine", [_HEALTHY, _BUSY_MACHINE, Machine()])
+    def test_the_exit_is_never_awaited_in_rift_mode(self, machine: Machine) -> None:
+        assert _ran(_simulate(_WM_TASKS, machine), _WAITS_FOR_SAVED_RIFT) == [False]
+
+    def test_the_wait_polls_for_a_rift_process_until_it_is_gone(self) -> None:
+        wait = next(t for t, *_ in _leaves(_WM_TASKS) if _WAITS_FOR_SAVED_RIFT(t))
+
+        assert _argv(wait) == ["pgrep", "-x", "rift"]
+        assert wait["until"] == "devbox_rift_exit_after_save.rc != 0"
+        assert wait["retries"] == 10
+        assert wait["failed_when"] is False
+        assert wait["changed_when"] is False
+        assert _conditions(wait) == (
+            "devbox_wm == 'aerospace'",
+            "devbox_rift_running.rc == 0",
+        )
+
+    def test_the_layout_is_saved_and_the_exit_awaited_before_bootout_and_plist_removal(
         self,
     ) -> None:
-        steps = _simulate(_WM_TASKS, Machine(rift_running=True, agent_loaded=False))
+        top = [s for s in _simulate(_WM_TASKS, Machine(wm="aerospace")) if not s.ancestors]
 
-        assert [s.ran for s in steps if _STRAY_STOP(s.task)] == [True]
-        assert [s.ran for s in steps if _STRAY_WAIT(s.task)] == [True]
-        assert _ran(steps, _BOOTSTRAP) == [True]
-        stop = _index(steps, _STRAY_STOP)
-        assert stop < _index(steps, _STRAY_WAIT) < _index(steps, _BOOTSTRAP)
+        save = _index(top, _SAVE_AND_EXIT)
+        wait = _index(top, _WAITS_FOR_SAVED_RIFT)
+        bootout = _index(top, _BOOTOUT)
+        remove = _index(top, _removes_plist)
 
-    def test_the_stray_stop_saves_the_layout_with_the_cli(self) -> None:
-        stop = next(s.task for s in _simulate(_WM_TASKS, Machine()) if _STRAY_STOP(s.task))
+        assert save < wait < bootout < remove
 
-        assert _SAVE_AND_EXIT(stop)
-        assert stop["register"] == "devbox_rift_stray_stop"
+    def test_the_removal_is_gated_on_aerospace_alone(self) -> None:
+        removal = next(t for t, *_ in _leaves(_WM_TASKS) if _removes_plist(t) and "when" in t)
+
+        assert _conditions(removal) == ("devbox_wm == 'aerospace'",)
+
+
+class TestSessionWithoutSeparateSpaces:
+    _MACHINES: Final = [
+        pytest.param(Machine(spaces_ready=False), id="fresh"),
+        pytest.param(replace(_BUSY_MACHINE, spaces_ready=False), id="busy"),
+        pytest.param(
+            Machine(spaces_ready=False, rift_running=True, agent_loaded=True), id="healthy-looking"
+        ),
+        pytest.param(Machine(spaces_ready=False, check_mode=True), id="check-mode"),
+    ]
+
+    @pytest.mark.parametrize("machine", _MACHINES)
+    def test_rift_is_not_switched_on_and_aerospace_is_left_alone(self, machine: Machine) -> None:
+        steps = _simulate(_WM_TASKS, machine)
+
+        assert not _switch_ran(steps)
+        assert [s.task["name"] for s in steps if s.ran and _starts_rift(s.task)] == []
+        assert [s.task["name"] for s in steps if s.ran and _mentions_aerospace(s.task)] == []
+
+    @pytest.mark.parametrize("machine", _MACHINES)
+    def test_the_agent_plist_is_not_written(self, machine: Machine) -> None:
+        steps = _simulate(_WM_TASKS, machine)
+
+        assert _ran(steps, _writes_plist) == [False]
+
+    @pytest.mark.parametrize("machine", _MACHINES)
+    def test_the_run_warns_that_a_new_login_is_needed(self, machine: Machine) -> None:
+        steps = _simulate(_WM_TASKS, machine)
+        warning = next(s.task for s in steps if _WAITS_FOR_LOGIN(s.task))
+        message = " ".join(warning["ansible.builtin.debug"]["msg"].split())
+
+        assert _ran(steps, _WAITS_FOR_LOGIN) == [True]
+        assert message.startswith("WARNING: Rift was not switched on.")
+        assert "log out and back in" in message
+        assert "AeroSpace stays the window manager" in message
 
     @pytest.mark.parametrize(
         "machine",
-        [
-            Machine(rift_running=True, agent_loaded=True),
-            Machine(rift_running=False, agent_loaded=False),
-            Machine(wm="aerospace", rift_running=True, agent_loaded=False),
-            Machine(rift_running=True, agent_loaded=False, check_mode=True),
-            Machine(current=False, rift_running=True, agent_loaded=False),
-        ],
-        ids=["agent-loaded", "not-running", "aerospace", "check-mode", "replaced-this-run"],
+        [Machine(), replace(_BUSY_MACHINE), Machine(wm="aerospace", spaces_ready=False)],
+        ids=["fresh", "busy", "aerospace-mode"],
     )
-    def test_no_stray_stop_unless_rift_is_chosen_hand_started_and_not_just_replaced(
+    def test_no_warning_when_the_session_is_ready_or_rift_is_not_chosen(
         self, machine: Machine
     ) -> None:
-        steps = _simulate(_WM_TASKS, machine)
+        assert _ran(_simulate(_WM_TASKS, machine), _WAITS_FOR_LOGIN) == [False]
 
-        assert [s.ran for s in steps if _STRAY_STOP(s.task)] == [False]
-        assert [s.ran for s in steps if _STRAY_WAIT(s.task)] == [False]
+    def test_the_session_is_read_not_the_stored_default(self) -> None:
+        probe = next(t for t, *_ in _leaves(_WM_TASKS) if _SESSION_SPACES(t))
 
-    def test_a_fresh_machine_confirms_that_rift_answers(self) -> None:
-        steps = _simulate(
-            _WM_TASKS, Machine(current=False, plist_changed=True, config_changed=True)
-        )
+        assert _argv(probe)[:4] == ["/usr/bin/osascript", "-l", "JavaScript", "-e"]
+        assert "screensHaveSeparateSpaces" in _argv(probe)[4]
+        assert probe["check_mode"] is False
+        assert probe["changed_when"] is False
+        assert probe["failed_when"] is False
+        assert _conditions(probe) == ("devbox_wm == 'rift'",)
 
-        assert _ran(steps, _BOOTSTRAP) == [True]
-        assert _ran(steps, _QUERY) == [True]
-
-    def test_a_rift_started_only_by_the_bootstrap_is_still_confirmed(self) -> None:
-        machine = Machine(plist_changed=True, bootstrap_starts_rift=True)
-        steps = _simulate(_WM_TASKS, machine)
-
-        assert _ran(steps, _BOOTSTRAP) == [True]
-        assert _ran(steps, _KICKSTART) == [False]
-        assert _ran(steps, _QUERY) == [True]
-
-    def test_a_kickstart_without_a_bootstrap_is_still_confirmed(self) -> None:
-        steps = _simulate(_WM_TASKS, Machine(rift_running=False, agent_loaded=True))
-
-        assert _ran(steps, _BOOTSTRAP) == [False]
-        assert _ran(steps, _KICKSTART) == [True]
-        assert _ran(steps, _QUERY) == [True]
-
-    def test_a_healthy_running_rift_with_a_loaded_agent_is_not_queried(self) -> None:
-        steps = _simulate(_WM_TASKS, Machine(rift_running=True, agent_loaded=True))
-
-        assert _ran(steps, _QUERY) == [False]
+    def test_the_session_is_read_in_check_mode_and_only_when_rift_is_chosen(self) -> None:
+        assert _ran(_simulate(_WM_TASKS, Machine(check_mode=True)), _SESSION_SPACES) == [True]
+        assert _ran(_simulate(_WM_TASKS, Machine(wm="aerospace")), _SESSION_SPACES) == [False]
 
     @pytest.mark.parametrize(
-        "machine",
+        ("stdout", "ready"),
         [
-            Machine(wm="aerospace", current=False, plist_changed=True),
-            Machine(current=False, plist_changed=True, check_mode=True),
+            ("true\n", True),
+            ("true", True),
+            (" true \n", True),
+            ("false\n", False),
+            ("", False),
+            ("1", False),
+            ("True", False),
+            ("truefalse", False),
         ],
-        ids=["aerospace", "check-mode"],
+        ids=["newline", "bare", "padded", "false", "empty", "one", "capitalised", "concatenated"],
     )
-    def test_no_liveness_check_with_aerospace_chosen_or_in_check_mode(
-        self, machine: Machine
+    def test_only_the_word_true_counts_as_separate_spaces(
+        self, stdout: str, *, ready: bool
     ) -> None:
-        assert _ran(_simulate(_WM_TASKS, machine), _QUERY) == [False]
+        context = {"devbox_wm_session_spaces": {"stdout": stdout, "rc": 0}}
 
-    def test_with_rift_chosen_a_rift_that_exited_cleanly_is_started_again(self) -> None:
-        steps = _simulate(_WM_TASKS, Machine(rift_running=False, agent_loaded=True))
+        assert _evaluate_fact("devbox_wm_spaces_ready", context) is ready
 
-        assert _ran(steps, _BOOTSTRAP) == [False]
-        assert _ran(steps, _KICKSTART) == [True]
+    def test_a_failed_or_skipped_read_counts_as_not_ready(self) -> None:
+        failed = {"devbox_wm_session_spaces": {"rc": 1, "stderr": "boom"}}
+        skipped = {"devbox_wm_session_spaces": {"changed": False, "skipped": True}}
 
-    def test_kickstart_never_kills_a_running_rift(self) -> None:
-        kickstart = next(s.task for s in _simulate(_WM_TASKS, Machine()) if _KICKSTART(s.task))
+        assert _evaluate_fact("devbox_wm_spaces_ready", failed) is False
+        assert _evaluate_fact("devbox_wm_spaces_ready", skipped) is False
 
-        assert "-k" not in _argv(kickstart)
 
-    def test_a_changed_config_is_reloaded_only_in_a_running_rift(self) -> None:
-        running = _simulate(
-            _WM_TASKS, Machine(rift_running=True, agent_loaded=True, config_changed=True)
-        )
-        stopped = _simulate(_WM_TASKS, Machine(rift_running=False, config_changed=True))
-        unchanged = _simulate(_WM_TASKS, Machine(rift_running=True, agent_loaded=True))
+def _evaluate_fact(name: str, context: Doc) -> bool:
+    task = next(t for t in _WM_TASKS if name in t.get("ansible.builtin.set_fact", {}))
+    expression = task["ansible.builtin.set_fact"][name]
+    return _to_bool(_logic_env().from_string(expression).render(**context))
 
-        assert _ran(running, _RELOAD)[0] is True
-        assert _ran(stopped, _RELOAD)[0] is False
+
+class TestSwitchDecision:
+    @pytest.mark.parametrize(
+        ("running", "agent", "replaced", "drift"),
+        list(itertools.product([True, False], repeat=4)),
+    )
+    def test_rift_is_healthy_only_when_running_loaded_current_and_unchanged(
+        self, *, running: bool, agent: bool, replaced: bool, drift: bool
+    ) -> None:
+        context: Doc = {
+            "devbox_rift_running": _probe(found=running),
+            "devbox_rift_agent": _probe(found=agent),
+            "devbox_rift_plist_drift": {"changed": drift},
+        }
+        if replaced:
+            context["devbox_rift_replaced"] = True
+
+        healthy = running and agent and not replaced and not drift
+
+        assert _evaluate_fact("devbox_rift_healthy", context) is healthy
+
+    def test_a_skipped_drift_check_and_an_unset_replaced_flag_do_not_block_health(self) -> None:
+        context: Doc = {
+            "devbox_rift_running": _probe(found=True),
+            "devbox_rift_agent": _probe(found=True),
+            "devbox_rift_plist_drift": {"changed": False, "skipped": True},
+        }
+
+        assert _evaluate_fact("devbox_rift_healthy", context) is True
+
+    @pytest.mark.parametrize(
+        ("wm", "ready", "healthy"),
+        list(itertools.product(["rift", "aerospace"], [True, False], [True, False])),
+    )
+    def test_the_switch_needs_rift_chosen_a_ready_session_and_an_unhealthy_rift(
+        self, wm: str, *, ready: bool, healthy: bool
+    ) -> None:
+        context: Doc = {
+            "devbox_wm": wm,
+            "devbox_wm_spaces_ready": ready,
+            "devbox_rift_healthy": healthy,
+        }
+
+        expected = wm == "rift" and ready and not healthy
+
+        assert _evaluate_fact("devbox_rift_switch", context) is expected
+
+    def test_the_decision_runs_after_the_drift_check_and_before_the_switch(self) -> None:
+        names = [t["name"] for t in _WM_TASKS]
+        drift = next(i for i, t in enumerate(_WM_TASKS) if _checks_plist_drift(t))
+        agent = names.index("Window manager — check the Rift LaunchAgent")
+        health = next(i for i, n in enumerate(names) if "decide what Rift needs" in n)
+        switch = next(i for i, n in enumerate(names) if "decide whether to switch" in n)
+        block = next(i for i, n in enumerate(names) if SWITCH_BLOCK in n)
+
+        assert agent < drift < health < switch < block
+
+
+class TestHealthyRift:
+    def test_a_healthy_rift_is_not_switched_or_disturbed(self) -> None:
+        steps = _simulate(_WM_TASKS, _HEALTHY)
+
+        assert not _switch_ran(steps)
+        assert not any(s.ran for s in steps if _starts_rift(s.task))
+        assert _ran(steps, _BOOTOUT) == [False, False, False]
+        assert _ran(steps, _SAVE_AND_EXIT) == [False, False, False]
+        assert _ran(steps, _writes_plist) == [False]
+        assert not any(s.ran for s in steps if _mentions_aerospace(s.task))
+
+    def test_a_changed_config_is_reloaded_only_in_a_healthy_rift(self) -> None:
+        healthy = _simulate(_WM_TASKS, replace(_HEALTHY, config_changed=True))
+        unchanged = _simulate(_WM_TASKS, _HEALTHY)
+        stopped = _simulate(_WM_TASKS, Machine(config_changed=True))
+        hand_started = _simulate(_WM_TASKS, Machine(rift_running=True, config_changed=True))
+
+        assert _ran(healthy, _RELOAD)[0] is True
         assert _ran(unchanged, _RELOAD)[0] is False
+        assert _ran(stopped, _RELOAD)[0] is False
+        assert _ran(hand_started, _RELOAD)[0] is False
 
     def test_a_config_changed_while_rift_was_replaced_is_not_reloaded_into_the_new_instance(
         self,
@@ -801,15 +1096,22 @@ class TestWindowManagerGating:
         assert _ran(steps, _RELOAD)[0] is False
         assert _ran(steps, _KICKSTART) == [True]
 
-    def test_the_reload_is_skipped_in_check_mode(self) -> None:
-        machine = Machine(
-            rift_running=True, agent_loaded=True, config_changed=True, check_mode=True
+    def test_a_config_changed_with_an_outdated_plist_is_left_to_the_switch(self) -> None:
+        steps = _simulate(
+            _WM_TASKS,
+            replace(_HEALTHY, config_changed=True, plist_changed=True),
         )
+
+        assert _ran(steps, _RELOAD)[0] is False
+        assert _ran(steps, _KICKSTART) == [True]
+
+    def test_the_reload_is_skipped_in_check_mode(self) -> None:
+        machine = replace(_HEALTHY, config_changed=True, check_mode=True)
 
         assert _ran(_simulate(_WM_TASKS, machine), _RELOAD)[0] is False
 
     def test_a_rejected_config_is_rolled_back_reloaded_and_fails_the_run(self) -> None:
-        machine = Machine(rift_running=True, agent_loaded=True, config_changed=True, reload_rc=1)
+        machine = replace(_HEALTHY, config_changed=True, reload_rc=1)
         steps = _simulate(_WM_TASKS, machine)
         rollback = [s for s in steps if _in_block(s, ROLLBACK_BLOCK)]
 
@@ -821,7 +1123,7 @@ class TestWindowManagerGating:
         assert "ansible.builtin.fail" in rollback[2].task
 
     def test_an_accepted_config_does_not_trigger_the_rollback(self) -> None:
-        machine = Machine(rift_running=True, agent_loaded=True, config_changed=True, reload_rc=0)
+        machine = replace(_HEALTHY, config_changed=True, reload_rc=0)
         steps = _simulate(_WM_TASKS, machine)
 
         assert not any(s.ran for s in steps if _in_block(s, ROLLBACK_BLOCK))
@@ -831,79 +1133,305 @@ class TestWindowManagerGating:
 
         assert not any(s.ran for s in steps if _in_block(s, ROLLBACK_BLOCK))
 
-    def test_config_template_keeps_a_backup_for_the_rollback(self) -> None:
-        task = next(
-            t
-            for t, *_ in _leaves(_WM_TASKS)
-            if "ansible.builtin.template" in t and "config.toml" in str(t)
+
+class TestSwitchToRift:
+    def test_the_switch_steps_are_those_the_probes_know_in_the_stated_order(self) -> None:
+        block = _switch_block()["block"]
+
+        assert [_switch_key(task) for task in block] == _SWITCH_ORDER
+        assert list(_SWITCH_STEPS) == _SWITCH_ORDER
+
+    def test_every_step_runs_in_the_stated_order_when_nothing_is_skippable(self) -> None:
+        assert _trace(_EVERYTHING) == _SWITCH_ORDER
+
+    @pytest.mark.parametrize(
+        ("machine", "expected"),
+        [
+            pytest.param(
+                Machine(current=False, plist_changed=True),
+                [*_AEROSPACE_SURVEYED, "wait_rift_exit", *_RIFT_STARTED, "assert_answers"],
+                id="fresh-machine",
+            ),
+            pytest.param(
+                Machine(aerospace_running=True, aerospace_login_item_on=True),
+                [
+                    *_AEROSPACE_SURVEYED,
+                    *_AEROSPACE_STOPPED,
+                    "wait_rift_exit",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="aerospace-running-login-item-edited",
+            ),
+            pytest.param(
+                Machine(aerospace_running=True),
+                [
+                    *_AEROSPACE_SURVEYED,
+                    *_AEROSPACE_STOPPED,
+                    "wait_rift_exit",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="aerospace-running-login-item-already-off",
+            ),
+            pytest.param(
+                Machine(aerospace_running=True, aerospace_exits=False),
+                [
+                    *_AEROSPACE_SURVEYED,
+                    *_AEROSPACE_STOPPED,
+                    "terminate_aerospace",
+                    "wait_rift_exit",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="aerospace-does-not-quit",
+            ),
+            pytest.param(
+                Machine(aerospace_login_item_on=True),
+                [
+                    *_AEROSPACE_SURVEYED,
+                    "open_aerospace",
+                    *_AEROSPACE_STOPPED,
+                    "wait_rift_exit",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="aerospace-idle-login-item-edited",
+            ),
+            pytest.param(
+                Machine(),
+                [*_AEROSPACE_SURVEYED, "wait_rift_exit", *_RIFT_STARTED, "assert_answers"],
+                id="aerospace-idle-login-item-off",
+            ),
+            pytest.param(
+                Machine(aerospace_toml_exists=False, aerospace_running=True),
+                [
+                    "inspect_toml",
+                    "probe_aerospace",
+                    *_AEROSPACE_STOPPED,
+                    "wait_rift_exit",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="no-aerospace-config-aerospace-running",
+            ),
+            pytest.param(
+                Machine(aerospace_toml_exists=False, aerospace_login_item_on=True),
+                [
+                    "inspect_toml",
+                    "probe_aerospace",
+                    "wait_rift_exit",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="no-aerospace-config-aerospace-idle",
+            ),
+            pytest.param(
+                Machine(rift_running=True, agent_loaded=False),
+                [
+                    *_AEROSPACE_SURVEYED,
+                    "save_rift",
+                    "wait_rift_exit",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="hand-started-rift",
+            ),
+            pytest.param(
+                Machine(rift_running=True, agent_loaded=True, plist_changed=True),
+                [
+                    *_AEROSPACE_SURVEYED,
+                    "save_rift",
+                    "wait_rift_exit",
+                    "bootout",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="outdated-plist",
+            ),
+            pytest.param(
+                Machine(current=False, rift_running=True, agent_loaded=True),
+                [
+                    *_AEROSPACE_SURVEYED,
+                    "wait_rift_exit",
+                    "bootout",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="rift-replaced-this-run",
+            ),
+            pytest.param(
+                Machine(rift_running=False, agent_loaded=True),
+                [
+                    *_AEROSPACE_SURVEYED,
+                    "wait_rift_exit",
+                    "bootout",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="agent-loaded-rift-gone",
+            ),
+            pytest.param(
+                _BUSY_MACHINE,
+                [
+                    *_AEROSPACE_SURVEYED,
+                    *_AEROSPACE_STOPPED,
+                    "wait_rift_exit",
+                    "bootout",
+                    *_RIFT_STARTED,
+                    "assert_answers",
+                ],
+                id="busy-machine",
+            ),
+        ],
+    )
+    def test_each_step_runs_only_for_the_state_it_answers(
+        self, machine: Machine, expected: list[str]
+    ) -> None:
+        assert _trace(machine) == expected
+
+    def test_the_semantic_order_of_the_switch(self) -> None:
+        order = _SWITCH_ORDER
+
+        assert (
+            order.index("login_off")
+            < order.index("reload_aerospace")
+            < order.index("quit_aerospace")
+            < order.index("terminate_aerospace")
+            < order.index("deploy_plist")
+            < order.index("bootstrap")
+            < order.index("kickstart")
+            < order.index("quick_query")
+            < order.index("assert_answers")
+        )
+        assert (
+            order.index("save_rift")
+            < order.index("wait_rift_exit")
+            < order.index("bootout")
+            < order.index("deploy_plist")
+        )
+        assert order.index("quick_query") < order.index("open_settings") < order.index("wait_query")
+        assert order.index("open_aerospace") < order.index("reload_aerospace")
+
+    def test_the_login_item_is_switched_off_before_aerospace_is_asked_to_reload(self) -> None:
+        steps = _simulate(_WM_TASKS, Machine(aerospace_login_item_on=True))
+
+        assert _index(steps, lambda t: "ansible.builtin.replace" in t) < _index(
+            steps, _aerospace_reload
         )
 
-        assert task["ansible.builtin.template"]["backup"] is True
-        assert task["register"] == "devbox_rift_config"
-
-    @pytest.mark.parametrize("wm", ["rift", "aerospace"])
-    def test_config_and_agent_templates_deploy_in_both_modes(self, wm: str) -> None:
-        steps = _simulate(_WM_TASKS, Machine(wm=wm))
-
-        deployed = [
-            s.task["register"] for s in steps if s.ran and "ansible.builtin.template" in s.task
-        ]
-
-        assert deployed == ["devbox_rift_config", "devbox_rift_plist"]
-
-    def test_check_mode_installs_starts_and_stops_nothing(self) -> None:
-        steps = _simulate(_WM_TASKS, replace(_BUSY_MACHINE, check_mode=True))
-
-        assert not any(s.ran for s in steps if _in_block(s, INSTALL_BLOCK) and s.section == "block")
-        assert not any(s.ran for s in steps if _in_block(s, STOP_AEROSPACE_BLOCK))
-        assert not any(s.ran for s in steps if _KICKSTART(s.task) or _RELOAD(s.task))
-
-    def test_the_aerospace_stop_block_runs_when_aerospace_runs_or_would_log_in(self) -> None:
-        def block(machine: Machine) -> list[bool]:
-            return [
-                s.ran for s in _simulate(_WM_TASKS, machine) if _in_block(s, STOP_AEROSPACE_BLOCK)
-            ]
-
-        assert block(Machine(aerospace_running=True)) == [False, True, True, True, False]
-        assert block(Machine(aerospace_running=True, aerospace_exits=False)) == [
-            False,
-            True,
-            True,
-            True,
-            True,
-        ]
-        assert block(Machine(aerospace_running=False, aerospace_login_item_on=True)) == [
-            True,
-            True,
-            True,
-            True,
-            False,
-        ]
-        assert block(Machine(aerospace_running=False, aerospace_login_item_on=False)) == [False] * 5
-
     def test_aerospace_is_stopped_before_rift_starts(self) -> None:
-        steps = _simulate(_WM_TASKS, Machine(aerospace_running=True))
-        pkill = _index(steps, lambda t: "pkill" in _argv(t))
-        osascript = _index(steps, lambda t: any("osascript" in a for a in _argv(t)))
+        steps = _simulate(_WM_TASKS, Machine(aerospace_running=True, aerospace_exits=False))
+        pkill = _index(steps, _SWITCH_STEPS["terminate_aerospace"])
+        osascript = _index(steps, _SWITCH_STEPS["quit_aerospace"])
         reload_config = _index(steps, _aerospace_reload)
 
         assert reload_config < osascript < pkill
         assert pkill < _index(steps, _BOOTSTRAP)
         assert pkill < _index(steps, _KICKSTART)
 
-    def test_the_login_item_is_switched_off_before_aerospace_is_asked_to_reload(self) -> None:
-        steps = _simulate(_WM_TASKS, Machine())
+    def test_the_aerospace_reload_waits_for_an_answer(self) -> None:
+        reload_task = next(t for t, *_ in _leaves(_switch_block()["block"]) if _aerospace_reload(t))
 
-        assert _index(steps, lambda t: "ansible.builtin.replace" in t) < _index(
-            steps, _aerospace_reload
+        assert reload_task["until"] == "devbox_aerospace_reload.rc == 0"
+        assert reload_task["retries"] >= 1
+
+    def test_a_rift_still_running_is_saved_only_when_it_was_not_just_replaced(self) -> None:
+        save = next(t for t in _switch_block()["block"] if _SAVE_AND_EXIT(t))
+        running = {"devbox_rift_running": {"rc": 0}}
+
+        assert _holds(_conditions(save), {**running, "devbox_rift_replaced": False})
+        assert not _holds(_conditions(save), {**running, "devbox_rift_replaced": True})
+        assert not _holds(
+            _conditions(save), {"devbox_rift_running": {"rc": 1}, "devbox_rift_replaced": False}
         )
 
-    def test_the_login_item_edit_only_flips_start_at_login_in_the_real_aerospace_config(
+    def test_the_agent_is_booted_out_only_when_loaded(self) -> None:
+        bootout = next(t for t in _switch_block()["block"] if _BOOTOUT(t))
+
+        assert _argv(bootout)[2] == "{{ devbox_rift_service }}"
+        assert _holds(_conditions(bootout), {"devbox_rift_agent": {"rc": 0}})
+        assert not _holds(_conditions(bootout), {"devbox_rift_agent": {"rc": 113}})
+        assert bootout["failed_when"] is False
+
+    def test_kickstart_never_kills_a_running_rift(self) -> None:
+        kickstart = next(t for t in _switch_block()["block"] if _KICKSTART(t))
+
+        assert "-k" not in _argv(kickstart)
+
+    def test_a_rift_that_answers_at_once_does_not_open_the_settings_or_wait(self) -> None:
+        steps = _simulate(_WM_TASKS, Machine(rift_answers_quickly=True))
+        final = [s for s in steps if _in_block(s, SWITCH_BLOCK) and s.section == "block"][-1]
+
+        assert _ran(steps, _opens_accessibility_settings) == [False]
+        assert _ran(steps, _registers("devbox_rift_alive")) == [False]
+        assert final.ran
+        assert not final.failed
+
+    def test_a_rift_that_answers_after_the_grant_opens_the_settings_and_waits(self) -> None:
+        steps = _simulate(_WM_TASKS, Machine(rift_answers_quickly=False, rift_answers_slowly=True))
+
+        final = [s for s in steps if _in_block(s, SWITCH_BLOCK) and s.section == "block"][-1]
+
+        assert _ran(steps, _opens_accessibility_settings) == [True]
+        assert _ran(steps, _registers("devbox_rift_alive")) == [True]
+        assert final.ran
+        assert not final.failed
+
+    def test_a_rift_that_never_answers_fails_the_switch_so_the_rescue_runs(self) -> None:
+        steps = _simulate(_WM_TASKS, Machine(rift_answers_quickly=False, rift_answers_slowly=False))
+        final = [s for s in steps if _in_block(s, SWITCH_BLOCK) and s.section == "block"][-1]
+
+        assert _ran(steps, _opens_accessibility_settings) == [True]
+        assert "ansible.builtin.assert" in final.task
+        assert final.failed
+
+    def test_the_quick_and_the_long_wait_ask_rift_the_same_question(self) -> None:
+        quick = next(t for t in _switch_block()["block"] if _registers("devbox_rift_quick")(t))
+        alive = next(t for t in _switch_block()["block"] if _registers("devbox_rift_alive")(t))
+
+        assert _argv(quick) == _argv(alive) == ["{{ devbox_rift_cli }}", "query", "workspaces"]
+        assert quick["failed_when"] is False
+        assert alive["failed_when"] is False
+        assert quick["retries"] * quick["delay"] < 10
+        assert alive["retries"] * alive["delay"] == 40
+        assert alive["until"] == "devbox_rift_alive.rc == 0"
+        assert _conditions(alive) == ("devbox_rift_quick.rc != 0",)
+
+    def test_the_settings_page_is_the_accessibility_pane_and_opens_only_after_a_slow_answer(
         self,
     ) -> None:
-        edit = next(t for t, *_ in _leaves(_WM_TASKS) if "ansible.builtin.replace" in t)[
-            "ansible.builtin.replace"
-        ]
+        settings = next(t for t in _switch_block()["block"] if _opens_accessibility_settings(t))
+
+        assert _argv(settings)[1] == (
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        )
+        assert settings["failed_when"] is False
+        assert _conditions(settings) == ("devbox_rift_quick.rc != 0",)
+
+    def test_the_final_assertion_accepts_either_answer(self) -> None:
+        final = _switch_block()["block"][-1]
+        that = tuple(final["ansible.builtin.assert"]["that"])
+
+        assert _holds(that, {"devbox_rift_quick": {"rc": 0}})
+        assert _holds(that, {"devbox_rift_quick": {"rc": 1}, "devbox_rift_alive": {"rc": 0}})
+        assert not _holds(that, {"devbox_rift_quick": {"rc": 1}, "devbox_rift_alive": {"rc": 1}})
+
+    @pytest.mark.parametrize(
+        "machine",
+        [_BUSY_MACHINE, _EVERYTHING, Machine(), Machine(rift_answers_quickly=False)],
+        ids=["busy", "everything", "fresh", "slow"],
+    )
+    def test_check_mode_runs_no_part_of_the_switch_or_the_install(self, machine: Machine) -> None:
+        steps = _simulate(_WM_TASKS, replace(machine, check_mode=True))
+
+        assert not _switch_ran(steps)
+        assert not any(s.ran for s in steps if _in_block(s, INSTALL_BLOCK) and s.section == "block")
+        assert not any(s.ran for s in steps if _KICKSTART(s.task) or _RELOAD(s.task))
+        assert _ran(steps, _writes_plist) == [False]
+
+    def test_the_login_item_edit_flips_start_at_login_in_the_real_aerospace_config(self) -> None:
+        edit = _forward_edit()
         source = AEROSPACE_TOML.read_text(encoding="utf-8")
 
         result = re.sub(edit["regexp"], edit["replace"], source, flags=re.MULTILINE)
@@ -921,27 +1449,212 @@ class TestWindowManagerGating:
         "line", ["start-at-login = false", "# start-at-login = true", "other-key = true"]
     )
     def test_the_login_item_edit_leaves_other_lines_alone(self, line: str) -> None:
-        edit = next(t for t, *_ in _leaves(_WM_TASKS) if "ansible.builtin.replace" in t)[
-            "ansible.builtin.replace"
-        ]
+        edit = _forward_edit()
 
         assert re.sub(edit["regexp"], edit["replace"], line, flags=re.MULTILINE) == line
 
-    def test_the_include_runs_after_apply_configs_and_never_in_dev_mode(self) -> None:
-        tasks = _task_list(MAIN_DARWIN)
-        names = [t.get("name") for t in tasks]
-        include = next(
-            t
-            for t in tasks
-            if t.get("ansible.builtin.include_tasks") == "darwin/configure_window_manager.yml"
-        )
-        env = _logic_env()
-        conditions = _conditions(include)
 
-        assert names.index(include["name"]) == names.index("Apply configs") + 1
-        assert not all(env.compile_expression(c)(dev_mode=True) for c in conditions)
-        assert all(env.compile_expression(c)(dev_mode=False) for c in conditions)
-        assert {"wm", "rift"} <= set(include["tags"])
+def _forward_edit() -> Doc:
+    task = next(t for t in _switch_block()["block"] if "ansible.builtin.replace" in t)
+    return task["ansible.builtin.replace"]
+
+
+def _rescue() -> list[Doc]:
+    return _switch_block()["rescue"]
+
+
+class TestSwitchRescue:
+    def test_the_rescue_undoes_the_switch_in_order(self) -> None:
+        rescue = _rescue()
+        kinds = [
+            "bootout"
+            if _BOOTOUT(t)
+            else "remove_plist"
+            if _removes_plist(t)
+            else "pkill_rift"
+            if _argv(t) == ["pkill", "-x", "rift"]
+            else "restore_login"
+            if "ansible.builtin.replace" in t
+            else "open_aerospace"
+            if _opens_aerospace(t)
+            else "reload_aerospace"
+            if _aerospace_reload(t)
+            else "warn"
+            if "ansible.builtin.debug" in t
+            else "?"
+            for t in rescue
+        ]
+
+        assert kinds == [
+            "bootout",
+            "remove_plist",
+            "pkill_rift",
+            "restore_login",
+            "open_aerospace",
+            "reload_aerospace",
+            "warn",
+        ]
+
+    def test_the_rescue_does_not_stop_on_a_failed_undo_step(self) -> None:
+        by_kind = {
+            "bootout": next(t for t in _rescue() if _BOOTOUT(t)),
+            "pkill": next(t for t in _rescue() if _argv(t) == ["pkill", "-x", "rift"]),
+            "reload": next(t for t in _rescue() if _aerospace_reload(t)),
+        }
+
+        assert {kind: task["failed_when"] for kind, task in by_kind.items()} == {
+            "bootout": False,
+            "pkill": False,
+            "reload": False,
+        }
+
+    def test_the_plist_is_removed_and_the_agent_booted_out_by_service_name(self) -> None:
+        bootout = next(t for t in _rescue() if _BOOTOUT(t))
+        remove = next(t for t in _rescue() if _removes_plist(t))
+
+        assert _argv(bootout)[2] == "{{ devbox_rift_service }}"
+        assert _conditions(bootout) == ()
+        assert _conditions(remove) == ()
+
+    def test_aerospace_is_asked_until_it_answers_and_the_result_is_kept_for_the_warning(
+        self,
+    ) -> None:
+        reload_task = next(t for t in _rescue() if _aerospace_reload(t))
+
+        assert reload_task["register"] == "devbox_aerospace_back"
+        assert reload_task["until"] == "devbox_aerospace_back.rc == 0"
+        assert reload_task["retries"] >= 1
+
+    @pytest.mark.parametrize(("exists", "restores"), [(True, True), (False, False)])
+    def test_the_login_item_is_restored_only_when_the_config_existed(
+        self, *, exists: bool, restores: bool
+    ) -> None:
+        restore = next(t for t in _rescue() if "ansible.builtin.replace" in t)
+        context: Doc = {"devbox_aerospace_toml": {"stat": {"exists": exists}}}
+
+        assert _holds(_conditions(restore), context) is restores
+
+    def test_the_restore_regexp_undoes_the_forward_edit_on_exactly_one_line(self) -> None:
+        forward = _forward_edit()
+        restore = next(t for t in _rescue() if "ansible.builtin.replace" in t)[
+            "ansible.builtin.replace"
+        ]
+        source = AEROSPACE_TOML.read_text(encoding="utf-8")
+
+        edited = re.sub(forward["regexp"], forward["replace"], source, flags=re.MULTILINE)
+        restored = re.sub(restore["regexp"], restore["replace"], edited, flags=re.MULTILINE)
+        changed = [
+            after
+            for before, after in zip(edited.splitlines(), restored.splitlines(), strict=True)
+            if before != after
+        ]
+
+        assert len(re.findall(restore["regexp"], edited, flags=re.MULTILINE)) == 1
+        assert changed == ["start-at-login = true"]
+        assert restored == source
+        assert restore["path"] == forward["path"]
+
+    @pytest.mark.parametrize(
+        "line", ["start-at-login = true", "# start-at-login = false", "other-key = false"]
+    )
+    def test_the_restore_regexp_leaves_other_lines_alone(self, line: str) -> None:
+        restore = next(t for t in _rescue() if "ansible.builtin.replace" in t)[
+            "ansible.builtin.replace"
+        ]
+
+        assert re.sub(restore["regexp"], restore["replace"], line, flags=re.MULTILINE) == line
+
+    @pytest.mark.parametrize(
+        ("back_rc", "unanswered"), [(0, False), (1, True)], ids=["answers", "silent"]
+    )
+    def test_the_warning_names_the_accessibility_grant_and_a_silent_aerospace(
+        self, back_rc: int, *, unanswered: bool
+    ) -> None:
+        warning = next(t for t in _rescue() if "ansible.builtin.debug" in t)
+        message = " ".join(
+            _logic_env()
+            .from_string(warning["ansible.builtin.debug"]["msg"])
+            .render(
+                devbox_aerospace_back={"rc": back_rc},
+                devbox_rift_app=f"{HOME}/Applications/Rift.app",
+            )
+            .split()
+        )
+
+        assert message.startswith(
+            "WARNING: Rift did not start, so AeroSpace is the window manager again"
+        )
+        assert "Accessibility" in message
+        assert f"{HOME}/Applications/Rift.app" in message
+        assert ("AeroSpace did not answer either" in message) is unanswered
+
+    def test_the_rescue_ends_the_run_normally_with_the_warning(self) -> None:
+        last = _rescue()[-1]
+
+        assert "ansible.builtin.debug" in last
+        assert not any("ansible.builtin.fail" in t for t in _rescue())
+
+
+class TestPlistOwnership:
+    def test_the_plist_is_written_only_inside_the_switch_block(self) -> None:
+        writers = [
+            (ancestors, section)
+            for task, _, ancestors, section in _leaves(_WM_TASKS)
+            if _writes_plist(task)
+        ]
+
+        assert len(writers) == 1
+        assert writers[0][1] == "block"
+        assert SWITCH_BLOCK in writers[0][0][0]
+
+    def test_nothing_else_creates_or_edits_the_plist_file(self) -> None:
+        other_modules = (
+            "ansible.builtin.copy",
+            "ansible.builtin.lineinfile",
+            "ansible.builtin.blockinfile",
+            "ansible.builtin.replace",
+            "ansible.builtin.file",
+        )
+        offenders = [
+            task["name"]
+            for task, *_ in _leaves(_WM_TASKS)
+            for module in other_modules
+            if module in task
+            and "{{ devbox_rift_plist_path }}" in json.dumps(task[module])
+            and not _removes_plist(task)
+        ]
+
+        assert offenders == []
+
+    def test_the_drift_check_renders_the_switchs_template_without_writing(self) -> None:
+        leaves = [task for task, *_ in _leaves(_WM_TASKS)]
+        drift = next(t for t in leaves if _checks_plist_drift(t))
+        deploy = next(t for t in leaves if _writes_plist(t))
+
+        assert drift["ansible.builtin.template"] == deploy["ansible.builtin.template"]
+        assert drift["check_mode"] is True
+        assert "check_mode" not in deploy
+        assert drift["register"] == "devbox_rift_plist_drift"
+        assert _conditions(drift) == ("devbox_wm == 'rift'",)
+
+    def test_the_drift_check_runs_in_rift_mode_even_in_check_mode(self) -> None:
+        assert _ran(_simulate(_WM_TASKS, Machine()), _checks_plist_drift) == [True]
+        assert _ran(_simulate(_WM_TASKS, Machine(check_mode=True)), _checks_plist_drift) == [True]
+
+    @pytest.mark.parametrize(
+        ("machine", "redeployed"),
+        [
+            (replace(_HEALTHY, plist_changed=True), True),
+            (_HEALTHY, False),
+            (Machine(plist_changed=True), True),
+            (replace(_HEALTHY, plist_changed=True, spaces_ready=False), False),
+        ],
+        ids=["drift", "unchanged", "fresh", "drift-without-spaces"],
+    )
+    def test_a_changed_plist_triggers_a_redeploy_only_where_the_switch_runs(
+        self, machine: Machine, *, redeployed: bool
+    ) -> None:
+        assert _ran(_simulate(_WM_TASKS, machine), _writes_plist) == [redeployed]
 
 
 def _aerospace_tasks(path: Path) -> list[tuple[Doc, tuple[str, ...]]]:
@@ -1053,11 +1766,11 @@ class TestLaunchAgent:
 
         assert _render_plist()["ProgramArguments"][0] in rendered
 
-    def test_a_crash_is_restarted_and_a_clean_exit_is_not(self) -> None:
+    def test_only_a_crash_is_restarted(self) -> None:
         plist = _render_plist()
 
         assert plist["RunAtLoad"] is True
-        assert plist["KeepAlive"] == {"SuccessfulExit": False, "Crashed": True}
+        assert plist["KeepAlive"] == {"Crashed": True}
 
     def test_both_streams_go_to_the_log_the_playbook_names(self) -> None:
         plist = _render_plist()

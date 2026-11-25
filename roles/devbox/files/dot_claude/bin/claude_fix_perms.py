@@ -33,7 +33,6 @@ BASE_DENY: Final[list[str]] = [
     "Bash(docker rmi *)",
     "Bash(pip uninstall *)",
     "Bash(gh pr close *)",
-    "Bash(gh pr merge *)",
     "Bash(gh issue close *)",
     # WARNING: path-scoped file rules must use Edit(...) — Claude Code's file
     # permission checks ignore Write(path) rules, and Edit(path) already covers

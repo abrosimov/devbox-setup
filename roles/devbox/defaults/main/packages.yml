@@ -219,6 +219,19 @@ devbox_packages:
     upstream_compression: "zstd"
     release_base: "https://github.com/abrosimov/otelcol-otelbox/releases/download"
 
+  # Rift — tiling window manager (acsandmann/rift), installed by
+  # tasks/darwin/configure_window_manager.yml from the universal app archive of
+  # the pinned GitHub release: Rift.app goes to ~/Applications, rift-cli to
+  # ~/.local/bin. No Homebrew: the formula's post_install restarts Rift without
+  # --restore, which loses the layout, so the task refuses to run beside it.
+  # `sha256` is the digest GitHub reports for the asset; bump it with `version`.
+  # Whether Rift actually runs is devbox_wm (core.yml), not this entry.
+  rift:
+    repository: "acsandmann/rift"
+    version: "0.8.6"
+    asset: "rift-app-universal-macos-{version}.tar.gz"
+    sha256: "f7160c70492c209b4d15f6524c51d5870de6b0f334393d361f546bffe5e5bdb8"
+
   # Tamias — Go module proxy credential helper (`tamias goauth`) for the private
   # Athens gateway. Installed by tasks/darwin/install_tamias.yml from a GitHub
   # Release asset fetched through the authenticated `gh` CLI. Nothing is built

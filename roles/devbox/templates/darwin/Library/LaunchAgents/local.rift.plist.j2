@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed by devbox (roles/devbox/templates/darwin/Library/LaunchAgents/local.rift.plist.j2).
+  Runs the Rift window manager installed by darwin/configure_window_manager.yml.
+  Replaces Rift's own `rift service install` plist, which starts it without
+  restore: here Rift reloads the layout it saved at its last clean exit.
+  A clean exit (save_and_exit) is not restarted; a crash is.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.rift</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ devbox_rift_app }}/Contents/MacOS/rift</string>
+        <string>--restore</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- `exec` bindings spawn without a shell, so PATH must name the tools. -->
+        <key>PATH</key>
+        <string>{{ ansible_facts['env']['HOME'] }}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>RUST_LOG</key>
+        <string>error,warn,info</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
+
+    <key>StandardOutPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/rift.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/rift.log</string>
+</dict>
+</plist>

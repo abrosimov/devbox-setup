@@ -121,10 +121,40 @@ Keybindings and usage for each tool:
 
 - [Neovim](roles/devbox/files/.config/nvim/README.md) — LSP, completion, navigation, testing, debugging
 - [Kitty](roles/devbox/files/.config/kitty/README.md) — layout-independent bindings, readline-on-cyrillic, smart Cmd+Q, session save/restore
+- [Window manager](#window-manager-rift) — Rift (the default) or AeroSpace, chosen by `devbox_wm`
 - [AeroSpace](roles/devbox/files/.config/aerospace/README.md) — i3-style tiling WM, ijlm bindings, workspace→monitor auto-assignment
 - [Fish](roles/devbox/files/.config/fish/README.md) — abbreviations, functions, plugins
 - [Claude Config](roles/devbox/files/dot_claude/README.md) — Claude runtime, hooks, schemas, and templates
 - [Codex Config](roles/devbox/files/dot_codex/README.md) — portable settings, global guidance, native agents, FPF references, and ownership boundaries
+
+## Window Manager (Rift)
+
+Rift ([acsandmann/rift](https://github.com/acsandmann/rift)) is the tiling window
+manager; AeroSpace stays installed as the fallback. `devbox_wm` in
+`roles/devbox/defaults/main/core.yml` chooses which one runs (`rift` or
+`aerospace`), and `roles/devbox/tasks/darwin/configure_window_manager.yml` keeps
+the other one stopped and out of the login items.
+
+- **Install.** Rift.app goes to `~/Applications`, `rift-cli` to `~/.local/bin`,
+  from the release pinned in `devbox_packages.rift` (version and the asset's
+  sha256). Homebrew's Rift is refused: its upgrade hook restarts Rift without
+  restoring the layout.
+- **Service.** The LaunchAgent `local.rift` starts Rift with `--restore`, so the
+  layout saved at the last clean exit comes back. An upgrade runs
+  `rift-cli execute save-and-exit` before replacing the app.
+- **Config.** `~/.config/rift/config.toml` is rendered from
+  `roles/devbox/templates/darwin/.config/rift/config.toml.j2`: global
+  workspaces 1–9, `master_stack` everywhere, workspaces 1–5 on the main display
+  and 6–9 on the side one (`devbox_rift_display_main` / `_side`), every binding
+  on one Super modifier (`devbox_rift_super`, default Cmd+Alt). A running Rift
+  is reloaded after a change; if it rejects the file, the previous one
+  (`config.toml.prev`) is put back and the run fails.
+- **Switching.** With `rift`, AeroSpace's `start-at-login` is turned off and
+  AeroSpace quits; "Displays have separate Spaces" is switched on, which needs
+  a new login. With `aerospace`, Rift saves its layout and exits, and AeroSpace
+  is deployed and launched as before.
+- **First start.** Grant Accessibility to `~/Applications/Rift.app` in System
+  Settings › Privacy & Security › Accessibility. Logs: `~/Library/Logs/rift.log`.
 
 ## Pub Mode
 

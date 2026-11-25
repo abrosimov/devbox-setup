@@ -401,7 +401,9 @@
 # aerospace.toml keybindings invoke the built console-script at
 # ~/.config/aerospace/layouts/.venv/bin/aerospace-layouts by ABSOLUTE path
 # (exec-and-forget runs via /bin/bash -c with no uv on PATH), so the venv must
-# exist for the layout binds to work.
+# exist for the layout binds to work. Skipped unless devbox_wm is aerospace:
+# configure_window_manager.yml turns off start-at-login in the deployed copy,
+# and a sync would turn it back on.
 # =============================================================================
 
 - name: Sync AeroSpace config tree (one-way, --delete; excludes venv/build artefacts)
@@ -419,6 +421,7 @@
       - "--exclude=.hypothesis"
       - "--exclude=.ruff_cache"
   delegate_to: localhost
+  when: devbox_wm == 'aerospace'
   tags: [configs, dotfiles]
 
 # Self-contained uv discovery so this works under `--tags dotfiles` alone (the
@@ -429,6 +432,7 @@
   changed_when: false
   check_mode: false
   failed_when: devbox_uv_path_aerospace.rc != 0
+  when: devbox_wm == 'aerospace'
   tags: [configs, dotfiles]
 
 - name: Bootstrap AeroSpace layouts venv via uv sync
@@ -446,7 +450,9 @@
   # abort for real rather than skip. A dry run cannot predict the result of
   # syncing into a directory that does not yet exist, so skipping is the
   # truthful outcome.
-  when: not ansible_check_mode
+  when:
+    - devbox_wm == 'aerospace'
+    - not ansible_check_mode
   tags: [configs, dotfiles]
 
 # =============================================================================

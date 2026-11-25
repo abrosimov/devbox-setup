@@ -13,3 +13,9 @@
   ansible.builtin.command: killall Finder
   failed_when: false
   changed_when: true
+
+- name: Report that the Spaces change needs a new login
+  ansible.builtin.debug:
+    msg: >-
+      "Displays have separate Spaces" changed for devbox_wm={{ devbox_wm }}.
+      Log out and back in for it to take effect.

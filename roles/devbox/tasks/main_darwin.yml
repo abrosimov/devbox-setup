@@ -107,6 +107,10 @@
 - name: "Apply configs"
   ansible.builtin.include_tasks: apply_configs.yml
   tags: [always]
+- name: "Window manager (Rift or AeroSpace, chosen by devbox_wm)"
+  ansible.builtin.include_tasks: darwin/configure_window_manager.yml
+  when: not (dev_mode | default(false) | bool)
+  tags: [wm, rift]
 - name: "Finish user polishing"
   ansible.builtin.include_tasks: prepare_user.yml
 - name: "Configure SSH keychain (login-keychain passphrase + LaunchAgent)"

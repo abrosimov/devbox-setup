@@ -174,11 +174,36 @@ def test_uv_sync_bootstrap_skips_under_check_mode(task_name: str) -> None:
     # branch), so a dry run into a directory an earlier, merely-simulated
     # file/synchronize task never actually created aborts for real instead
     # of skipping. `creates:` cannot fix this, since it is evaluated after
-    # the chdir has already failed. `when: not ansible_check_mode` is the
+    # the chdir has already failed. `not ansible_check_mode` is the
     # guard that keeps these three `--check` runs honest.
-    task = _task(task_name)
+    conditions = _conditions(_task(task_name))
 
-    assert task["when"] == "not ansible_check_mode"
+    assert "not ansible_check_mode" in conditions
+    for wm in ("aerospace", "rift"):
+        assert not _holds(conditions, devbox_wm=wm, ansible_check_mode=True)
+
+
+def test_aerospace_layouts_venv_bootstrap_runs_only_for_aerospace_outside_check_mode() -> None:
+    conditions = _conditions(_task("Bootstrap AeroSpace layouts venv via uv sync"))
+
+    assert conditions == ["devbox_wm == 'aerospace'", "not ansible_check_mode"]
+    assert _holds(conditions, devbox_wm="aerospace", ansible_check_mode=False)
+    assert not _holds(conditions, devbox_wm="rift", ansible_check_mode=False)
+
+
+def _conditions(task: dict[str, object]) -> list[str]:
+    when = task["when"]
+    return list(when) if isinstance(when, list) else [str(when)]
+
+
+def _holds(conditions: list[str], **context: object) -> bool:
+    return all(
+        bool(
+            Template("{{ " + condition + " }}", undefined=StrictUndefined).render(**context)
+            == "True"
+        )
+        for condition in conditions
+    )
 
 
 def test_otelbox_client_reconciliation_requires_the_overlay() -> None:

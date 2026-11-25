@@ -1,0 +1,130 @@
+# Managed by devbox (roles/devbox/templates/darwin/.config/rift/config.toml.j2).
+# Edits here are overwritten on the next run. The playbook reloads Rift after
+# writing this file and restores the previous one if Rift rejects it, so
+# hot_reload is off.
+#
+# Workspaces, display rules and commands are zero-based: workspace 0 is "1".
+
+[settings]
+animate = false
+default_disable = false
+focus_follows_mouse = false
+mouse_follows_focus = true
+mouse_hides_on_focus = false
+# Activation of these apps never switches the workspace.
+auto_focus_blacklist = [
+{% for bundle_id in devbox_rift_auto_focus_blacklist %}
+  "{{ bundle_id }}",
+{% endfor %}
+]
+run_on_start = []
+hot_reload = false
+
+[settings.layout]
+mode = "master_stack"
+window_insertion_point = "next_to_selection"
+
+[settings.layout.master_stack]
+master_ratio = 0.6
+master_count = 1
+master_side = "left"
+new_window_placement = "master"
+
+[settings.layout.gaps.outer]
+top = 1
+left = 1
+bottom = 1
+right = 1
+
+[settings.layout.gaps.inner]
+horizontal = 1
+vertical = 1
+
+[settings.ui.menu_bar]
+enabled = false
+
+[virtual_workspaces]
+# One fixed set of workspaces across all displays: Super+N always goes to N.
+mode = "global"
+enabled = true
+default_workspace_count = 9
+auto_assign_windows = true
+preserve_focus_per_workspace = true
+workspace_auto_back_and_forth = false
+prevent_wrapping = false
+reapply_app_rules_on_title_change = false
+workspace_names = [{% for n in range(1, 10) %}"{{ n }}"{{ ", " if not loop.last }}{% endfor %}]
+# Every workspace has a rule: Rift re-places only ruled workspaces when a
+# display connects or disconnects. Display names are matched exactly; confirm
+# them with `rift-cli query displays`.
+workspace_rules = [
+{% for ws in range(9) %}
+{%   set display = devbox_rift_display_main if ws < 5 else devbox_rift_display_side %}
+  { workspace = {{ ws }}, layout = "master_stack", display = [{% for d in display %}"{{ d }}"{{ ", " if not loop.last }}{% endfor %}] },
+{% endfor %}
+]
+
+app_rules = [
+  { app_id = "app.zen-browser.zen", workspace = 0 },
+]
+
+[modifier_combinations]
+super = "{{ devbox_rift_super }}"
+
+[keys]
+# Focus: two spatial clusters, j/i/l/comma and s/e/f/c.
+"super + J" = { move_focus = "left" }
+"super + I" = { move_focus = "up" }
+"super + L" = { move_focus = "right" }
+"super + Comma" = { move_focus = "down" }
+"super + S" = { move_focus = "left" }
+"super + E" = { move_focus = "up" }
+"super + F" = { move_focus = "right" }
+"super + C" = { move_focus = "down" }
+
+"super + Shift + J" = { move_node = "left" }
+"super + Shift + I" = { move_node = "up" }
+"super + Shift + L" = { move_node = "right" }
+"super + Shift + Comma" = { move_node = "down" }
+"super + Shift + S" = { move_node = "left" }
+"super + Shift + E" = { move_node = "up" }
+"super + Shift + F" = { move_node = "right" }
+"super + Shift + C" = { move_node = "down" }
+
+"super + Ctrl + J" = { join_window = "left" }
+"super + Ctrl + I" = { join_window = "up" }
+"super + Ctrl + L" = { join_window = "right" }
+"super + Ctrl + Comma" = { join_window = "down" }
+"super + Ctrl + S" = { join_window = "left" }
+"super + Ctrl + E" = { join_window = "up" }
+"super + Ctrl + F" = { join_window = "right" }
+"super + Ctrl + C" = { join_window = "down" }
+
+# Master-stack.
+"super + Enter" = "promote_to_master"
+"super + Shift + Minus" = { adjust_master_count = { delta = -1 } }
+"super + Shift + Equal" = { adjust_master_count = { delta = 1 } }
+
+"super + Z" = "toggle_fullscreen"
+"super + T" = "toggle_window_floating"
+"super + Minus" = { resize_window_shrink = "smart" }
+"super + Equal" = { resize_window_grow = "smart" }
+"super + 0" = "balance"
+
+{% for n in range(1, 10) %}
+"super + {{ n }}" = { switch_to_workspace = {{ n - 1 }} }
+{% endfor %}
+{% for n in range(1, 10) %}
+"super + Shift + {{ n }}" = { move_window_to_workspace = {{ n - 1 }} }
+{% endfor %}
+
+"super + Tab" = "switch_to_last_workspace"
+"super + Shift + Tab" = { move_workspace_to_display = { selector = "right", wrap_around = true } }
+
+"super + Shift + Semicolon" = { binding_mode = "service" }
+
+# Binding modes come after every [keys] entry: a table header scopes the keys
+# that follow it.
+[binding_modes.service]
+"Escape" = ["reload_config", { binding_mode = "default" }]
+"F" = ["toggle_window_floating", { binding_mode = "default" }]

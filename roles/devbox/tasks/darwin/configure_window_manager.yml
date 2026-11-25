@@ -1,0 +1,699 @@
+---
+# Window manager: installs Rift from its pinned GitHub release and runs exactly
+# one of Rift and AeroSpace, chosen by devbox_wm.
+#
+# Rift is installed in both modes; switching is one variable. The inactive WM
+# is stopped and kept from starting at the next login:
+#   rift      — switched on only when this session already has separate Spaces
+#               per display (Rift exits without them) and Rift answers after a
+#               trial start (it needs Accessibility, which only the user can
+#               grant). Otherwise AeroSpace stays or is put back, the Rift
+#               LaunchAgent is removed, and the run prints why.
+#   aerospace — Rift saves its layout and exits, and the local.rift LaunchAgent
+#               is booted out and removed. AeroSpace itself is deployed and
+#               launched by install_configs.yml (Block 3c) and apply_configs.yml,
+#               both gated on devbox_wm.
+#
+# Rift's config is written with a backup; when Rift is running it is reloaded,
+# and a rejected file is replaced by the previous one and fails the run.
+#
+# Guarded by the include in main_darwin.yml (Darwin, not dev_mode). Runs after
+# apply_configs.yml, so AeroSpace's own tasks have already run.
+
+- name: "Window manager — refuse an unknown window manager"
+  ansible.builtin.assert:
+    that:
+      - devbox_wm in ['rift', 'aerospace']
+    fail_msg: "devbox_wm must be 'rift' or 'aerospace', not '{{ devbox_wm }}'."
+    quiet: true
+  tags: [wm, rift]
+
+- name: "Window manager — resolve Rift paths"
+  ansible.builtin.set_fact:
+    devbox_rift_home: "{{ ansible_facts['env']['HOME'] }}"
+    devbox_rift_app: "{{ ansible_facts['env']['HOME'] }}/Applications/Rift.app"
+    devbox_rift_cli: "{{ ansible_facts['env']['HOME'] }}/.local/bin/rift-cli"
+    devbox_rift_conf_dir: "{{ ansible_facts['env']['HOME'] }}/.config/rift"
+    devbox_rift_marker: "{{ ansible_facts['env']['HOME'] }}/.local/share/rift/.release-digest"
+    devbox_rift_plist_path: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.rift.plist"
+    devbox_rift_service: "gui/{{ ansible_facts['user_uid'] }}/local.rift"
+    devbox_rift_asset_name: >-
+      {{ devbox_packages.rift.asset | replace('{version}', devbox_packages.rift.version) }}
+  tags: [wm, rift]
+
+# Separate set_fact: keys in one set_fact cannot see their siblings.
+- name: "Window manager — resolve the Rift download URL"
+  ansible.builtin.set_fact:
+    devbox_rift_url: >-
+      https://github.com/{{ devbox_packages.rift.repository }}/releases/download/v{{
+      devbox_packages.rift.version }}/{{ devbox_rift_asset_name }}
+  tags: [wm, rift]
+
+- name: "Window manager — refuse a malformed Rift pin"
+  ansible.builtin.assert:
+    that:
+      - devbox_packages.rift.sha256 is match('^[0-9a-f]{64}\\Z')
+      - devbox_rift_asset_name is match('^[A-Za-z0-9._-]+\\Z')
+    fail_msg: >-
+      devbox_packages.rift needs a 64-hex sha256 and a plain asset file name.
+    quiet: true
+  tags: [wm, rift]
+
+- name: "Window manager — check for a Homebrew Rift"
+  # The Homebrew formula's post_install restarts Rift without --restore, and two
+  # copies would leave launchd running the one this playbook did not install.
+  ansible.builtin.command:
+    argv: [brew, list, --versions, rift]
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_rift_brew
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [wm, rift]
+
+- name: "Window manager — refuse to run alongside a Homebrew Rift"
+  ansible.builtin.fail:
+    msg: >-
+      Rift is installed via Homebrew ({{ devbox_rift_brew.stdout | default('') | trim }}),
+      and this playbook installs it into ~/Applications. Remove it with
+      `brew uninstall rift` (and `rift service uninstall` if its own LaunchAgent
+      is installed), then re-run.
+  when: devbox_rift_brew.rc == 0
+  tags: [wm, rift]
+
+- name: "Window manager — ensure Rift directories exist"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ devbox_rift_home }}/Applications"
+    - "{{ devbox_rift_home }}/.local/bin"
+    - "{{ devbox_rift_marker | dirname }}"
+    - "{{ devbox_rift_conf_dir }}"
+    - "{{ devbox_rift_home }}/Library/LaunchAgents"
+    - "{{ devbox_rift_home }}/Library/Logs"
+  tags: [wm, rift]
+
+- name: "Window manager — inspect the installed Rift"
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ devbox_rift_app }}/Contents/MacOS/rift"
+    - "{{ devbox_rift_cli }}"
+  register: devbox_rift_installed_files
+  tags: [wm, rift]
+
+- name: "Window manager — read the installed Rift release digest"
+  ansible.builtin.slurp:
+    src: "{{ devbox_rift_marker }}"
+  register: devbox_rift_marker_content
+  failed_when: false
+  tags: [wm, rift]
+
+- name: "Window manager — decide whether the pinned Rift is installed"
+  ansible.builtin.set_fact:
+    devbox_rift_is_current: >-
+      {{
+        (devbox_rift_installed_files.results | selectattr('stat.exists') | list | length) == 2
+        and ((devbox_rift_marker_content.content | default('') | b64decode | trim)
+             == devbox_packages.rift.sha256)
+      }}
+  tags: [wm, rift]
+
+- name: "Window manager — check whether Rift is running"
+  ansible.builtin.command:
+    argv: [pgrep, -x, rift]
+  register: devbox_rift_running
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [wm, rift]
+
+- name: "Window manager — download, verify and install the pinned Rift"
+  when:
+    - not (devbox_rift_is_current | bool)
+    - not ansible_check_mode
+  tags: [wm, rift]
+  block:
+    - name: "Rift — create the staging directory"
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: devbox-rift.
+      register: devbox_rift_staging
+
+    - name: "Rift — download the release archive and check its sha256"
+      # get_url verifies the checksum before it reports success; a mismatch
+      # fails here and nothing is installed.
+      ansible.builtin.get_url:
+        url: "{{ devbox_rift_url }}"
+        dest: "{{ devbox_rift_staging.path }}/{{ devbox_rift_asset_name }}"
+        checksum: "sha256:{{ devbox_packages.rift.sha256 }}"
+        mode: "0644"
+
+    - name: "Rift — unpack the archive in staging"
+      # Not ansible.builtin.unarchive: it insists on GNU tar, and macOS ships
+      # bsdtar, which extracts this archive fine.
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/tar
+          - -xzf
+          - "{{ devbox_rift_staging.path }}/{{ devbox_rift_asset_name }}"
+          - -C
+          - "{{ devbox_rift_staging.path }}"
+      changed_when: true
+
+    - name: "Rift — require the app bundle and the CLI in the archive"
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ devbox_rift_staging.path }}/Rift.app/Contents/MacOS/rift"
+        - "{{ devbox_rift_staging.path }}/rift-cli"
+      register: devbox_rift_staged_files
+      failed_when: not devbox_rift_staged_files.stat.exists
+
+    - name: "Rift — save the layout and stop the running Rift before replacing it"
+      # --restore on the next start reads what save-and-exit writes. A clean
+      # exit is not restarted by launchd (KeepAlive.SuccessfulExit = false).
+      ansible.builtin.command:
+        argv: ["{{ devbox_rift_cli }}", execute, save-and-exit]
+      changed_when: true
+      failed_when: false
+      when: devbox_rift_running.rc == 0
+
+    - name: "Rift — wait for Rift to exit"
+      ansible.builtin.command:
+        argv: [pgrep, -x, rift]
+      register: devbox_rift_exit_wait
+      changed_when: false
+      failed_when: false
+      until: devbox_rift_exit_wait.rc != 0
+      retries: 10
+      delay: 1
+      when: devbox_rift_running.rc == 0
+
+    - name: "Rift — copy the new app bundle next to the installed one"
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/ditto
+          - "{{ devbox_rift_staging.path }}/Rift.app"
+          - "{{ devbox_rift_app }}.new"
+      changed_when: true
+
+    - name: "Rift — inspect the installed app bundle"
+      ansible.builtin.stat:
+        path: "{{ devbox_rift_app }}"
+      register: devbox_rift_app_before
+
+    - name: "Rift — move the installed app bundle aside"
+      ansible.builtin.command:
+        argv: [/bin/mv, "{{ devbox_rift_app }}", "{{ devbox_rift_app }}.old"]
+      changed_when: true
+      when: devbox_rift_app_before.stat.exists
+
+    - name: "Rift — put the new app bundle in place"
+      ansible.builtin.command:
+        argv: [/bin/mv, "{{ devbox_rift_app }}.new", "{{ devbox_rift_app }}"]
+      changed_when: true
+
+    - name: "Rift — remove the previous app bundle"
+      ansible.builtin.file:
+        path: "{{ devbox_rift_app }}.old"
+        state: absent
+
+    - name: "Rift — install rift-cli"
+      # ansible.builtin.copy renames a temporary file into place: atomic.
+      ansible.builtin.copy:
+        src: "{{ devbox_rift_staging.path }}/rift-cli"
+        dest: "{{ devbox_rift_cli }}"
+        remote_src: true
+        mode: "0755"
+
+    - name: "Rift — record the installed release digest"
+      ansible.builtin.copy:
+        content: "{{ devbox_packages.rift.sha256 }}\n"
+        dest: "{{ devbox_rift_marker }}"
+        mode: "0644"
+
+    - name: "Rift — note that Rift was replaced"
+      ansible.builtin.set_fact:
+        devbox_rift_replaced: true
+
+  rescue:
+    - name: "Rift — inspect the app bundles after the failure"
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ devbox_rift_app }}.old"
+        - "{{ devbox_rift_app }}"
+      register: devbox_rift_rescue_bundles
+
+    - name: "Rift — put the previous app bundle back"
+      ansible.builtin.command:
+        argv: [/bin/mv, "{{ devbox_rift_app }}.old", "{{ devbox_rift_app }}"]
+      changed_when: true
+      when:
+        - devbox_rift_rescue_bundles.results[0].stat.exists
+        - not devbox_rift_rescue_bundles.results[1].stat.exists
+
+    - name: "Rift — fail the run"
+      ansible.builtin.fail:
+        msg: >-
+          Rift {{ devbox_packages.rift.version }} was not installed: {{
+          ansible_failed_result.msg | default('see the failed task above') }}
+
+  always:
+    - name: "Rift — remove staging and the half-copied bundle"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ devbox_rift_staging.path | default('') }}"
+        - "{{ devbox_rift_app }}.new"
+      when: item | length > 0
+
+# --- Displays have separate Spaces ---------------------------------------------
+# Rift refuses to run unless each display has its own Spaces ("Displays have
+# separate Spaces" on, spans-displays = false); AeroSpace wants the opposite.
+# The stored value takes effect only at the next login, so the switch below
+# reads the value the current session actually runs with.
+- name: "Window manager — set whether displays have separate Spaces"
+  community.general.osx_defaults:
+    domain: com.apple.spaces
+    key: spans-displays
+    type: bool
+    value: "{{ devbox_wm == 'aerospace' }}"
+    state: present
+    check_type: false
+  notify: Report that the Spaces change needs a new login
+  tags: [wm, rift]
+
+- name: "Window manager — read whether this session has separate Spaces"
+  # NSScreen.screensHaveSeparateSpaces is the public form of the check Rift
+  # makes at start (SLSGetSpaceManagementMode); it reflects the session, not
+  # the stored default. JXA through the ObjC bridge sends no Apple Events.
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/osascript
+      - -l
+      - JavaScript
+      - -e
+      - 'ObjC.import("AppKit"); $.NSScreen.screensHaveSeparateSpaces'
+  register: devbox_wm_session_spaces
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: devbox_wm == 'rift'
+  tags: [wm, rift]
+
+# --- Rift config ------------------------------------------------------------------
+- name: "Window manager — write the Rift config"
+  ansible.builtin.template:
+    src: darwin/.config/rift/config.toml.j2
+    dest: "{{ devbox_rift_conf_dir }}/config.toml"
+    mode: "0644"
+    backup: true
+  register: devbox_rift_config
+  tags: [wm, rift]
+
+# --- Current Rift state -----------------------------------------------------------
+- name: "Window manager — check the Rift LaunchAgent"
+  ansible.builtin.command:
+    argv: [/bin/launchctl, print, "{{ devbox_rift_service }}"]
+  register: devbox_rift_agent
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [wm, rift]
+
+- name: "Window manager — detect a change to the Rift LaunchAgent"
+  # Rendered without writing: the plist is written only inside the switch
+  # below, once Rift can actually run, because launchd loads every plist in
+  # ~/Library/LaunchAgents at login.
+  ansible.builtin.template:
+    src: darwin/Library/LaunchAgents/local.rift.plist.j2
+    dest: "{{ devbox_rift_plist_path }}"
+    mode: "0644"
+  check_mode: true
+  register: devbox_rift_plist_drift
+  when: devbox_wm == 'rift'
+  tags: [wm, rift]
+
+- name: "Window manager — decide what Rift needs"
+  ansible.builtin.set_fact:
+    # Running under local.rift with the current plist and binary.
+    devbox_rift_healthy: >-
+      {{
+        devbox_rift_running.rc == 0
+        and devbox_rift_agent.rc == 0
+        and not (devbox_rift_replaced | default(false))
+        and not (devbox_rift_plist_drift.changed | default(false))
+      }}
+    devbox_wm_spaces_ready: >-
+      {{ (devbox_wm_session_spaces.stdout | default('') | trim) == 'true' }}
+  tags: [wm, rift]
+
+- name: "Window manager — decide whether to switch Rift on"
+  ansible.builtin.set_fact:
+    devbox_rift_switch: >-
+      {{
+        devbox_wm == 'rift'
+        and devbox_wm_spaces_ready | bool
+        and not (devbox_rift_healthy | bool)
+      }}
+  tags: [wm, rift]
+
+- name: "Window manager — report that Rift waits for a new login"
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: Rift was not switched on. This session does not have separate
+      Spaces per display, which Rift requires; the setting is stored and takes
+      effect after you log out and back in. AeroSpace stays the window manager
+      until then; re-run the playbook after the new login.
+  when:
+    - devbox_wm == 'rift'
+    - not (devbox_wm_spaces_ready | bool)
+  tags: [wm, rift]
+
+# --- devbox_wm == rift, Rift healthy: apply a config change ----------------------
+- name: "Window manager — reload a running Rift after a config change"
+  ansible.builtin.command:
+    argv: ["{{ devbox_rift_cli }}", execute, config, reload]
+  register: devbox_rift_reload
+  changed_when: true
+  failed_when: false
+  when:
+    - devbox_wm == 'rift'
+    - devbox_rift_healthy | bool
+    - devbox_rift_config.changed
+    - not ansible_check_mode
+  tags: [wm, rift]
+
+- name: "Window manager — roll back a config Rift rejected"
+  when:
+    - devbox_rift_reload is not skipped
+    - devbox_rift_reload.rc | default(0) != 0
+  tags: [wm, rift]
+  block:
+    - name: "Rift config — restore the previous file"
+      ansible.builtin.copy:
+        src: "{{ devbox_rift_config.backup_file }}"
+        dest: "{{ devbox_rift_conf_dir }}/config.toml"
+        remote_src: true
+        mode: "0644"
+      when: devbox_rift_config.backup_file is defined
+
+    - name: "Rift config — reload the previous file"
+      ansible.builtin.command:
+        argv: ["{{ devbox_rift_cli }}", execute, config, reload]
+      changed_when: true
+      failed_when: false
+
+    - name: "Rift config — fail with Rift's error"
+      ansible.builtin.fail:
+        msg: >-
+          Rift rejected the new config.toml and is back on the previous one:
+          {{ (devbox_rift_reload.stderr | default('') ~ ' ' ~
+              devbox_rift_reload.stdout | default('')) | trim }}
+
+- name: "Window manager — keep the previous Rift config as config.toml.prev"
+  ansible.builtin.copy:
+    src: "{{ devbox_rift_config.backup_file }}"
+    dest: "{{ devbox_rift_conf_dir }}/config.toml.prev"
+    remote_src: true
+    mode: "0644"
+  when: devbox_rift_config.backup_file is defined
+  tags: [wm, rift]
+
+- name: "Window manager — remove the timestamped Rift config backup"
+  ansible.builtin.file:
+    path: "{{ devbox_rift_config.backup_file }}"
+    state: absent
+  when: devbox_rift_config.backup_file is defined
+  tags: [wm, rift]
+
+# --- devbox_wm == rift: switch from AeroSpace to Rift -----------------------------
+# Accessibility cannot be granted or read by the playbook: macOS grants it only
+# through the user or an MDM profile on a supervised Mac, and the TCC database
+# is closed to reading. So the switch is a trial: AeroSpace is taken off, Rift
+# is started once, and if Rift does not answer within the 30 s it waits for the
+# grant, everything is put back and AeroSpace runs again. The grant survives
+# upgrades: every Rift release is signed with the same certificate.
+- name: "Window manager — switch from AeroSpace to Rift"
+  when:
+    - devbox_rift_switch | bool
+    - not ansible_check_mode
+  tags: [wm, rift]
+  block:
+    - name: "Switch — inspect the deployed AeroSpace config"
+      ansible.builtin.stat:
+        path: "{{ devbox_paths.dotfiles_root_dir }}/.config/aerospace/aerospace.toml"
+      register: devbox_aerospace_toml
+
+    - name: "Switch — turn off AeroSpace's start at login"
+      # Block 3c is skipped while Rift is the WM, so this edit stays until
+      # devbox_wm goes back to aerospace and the repo copy is synced again.
+      ansible.builtin.replace:
+        path: "{{ devbox_paths.dotfiles_root_dir }}/.config/aerospace/aerospace.toml"
+        regexp: '^start-at-login\s*=\s*true\b'
+        replace: "start-at-login = false"
+      register: devbox_aerospace_login_off
+      when: devbox_aerospace_toml.stat.exists
+
+    - name: "Switch — check whether AeroSpace is running"
+      ansible.builtin.command:
+        argv: [pgrep, -x, AeroSpace]
+      register: devbox_aerospace_running_wm
+      changed_when: false
+      failed_when: false
+
+    - name: "Switch — start AeroSpace, so it can unregister its own login item"
+      # Its login item is an SMAppService registration only AeroSpace itself
+      # can remove, which it does when it loads start-at-login = false.
+      ansible.builtin.command:
+        argv: [open, -g, -b, bobko.aerospace]
+      changed_when: true
+      when:
+        - devbox_aerospace_running_wm.rc != 0
+        - devbox_aerospace_login_off.changed | default(false)
+
+    - name: "Switch — reload AeroSpace's config (unregisters the login item)"
+      ansible.builtin.command:
+        argv: [/opt/homebrew/bin/aerospace, reload-config]
+      register: devbox_aerospace_reload
+      changed_when: true
+      until: devbox_aerospace_reload.rc == 0
+      retries: 10
+      delay: 1
+      when: >-
+        devbox_aerospace_running_wm.rc == 0
+        or (devbox_aerospace_login_off.changed | default(false))
+
+    - name: "Switch — quit AeroSpace normally (restores its hidden windows)"
+      ansible.builtin.command:
+        argv: [/usr/bin/osascript, -e, 'tell application id "bobko.aerospace" to quit']
+      changed_when: true
+      failed_when: false
+      when: devbox_aerospace_reload is not skipped
+
+    - name: "Switch — wait for AeroSpace to exit"
+      ansible.builtin.command:
+        argv: [pgrep, -x, AeroSpace]
+      register: devbox_aerospace_exit_wait
+      changed_when: false
+      failed_when: false
+      until: devbox_aerospace_exit_wait.rc != 0
+      retries: 10
+      delay: 1
+      when: devbox_aerospace_reload is not skipped
+
+    - name: "Switch — terminate AeroSpace if it did not quit"
+      ansible.builtin.command:
+        argv: [pkill, -x, AeroSpace]
+      changed_when: true
+      failed_when: false
+      when:
+        - devbox_aerospace_exit_wait is not skipped
+        - devbox_aerospace_exit_wait.rc == 0
+
+    - name: "Switch — save the layout of a Rift still running and stop it"
+      # A Rift started by hand, or one under an outdated plist, would run
+      # beside the one bootstrap starts.
+      ansible.builtin.command:
+        argv: ["{{ devbox_rift_cli }}", execute, save-and-exit]
+      changed_when: true
+      failed_when: false
+      when:
+        - devbox_rift_running.rc == 0
+        - not (devbox_rift_replaced | default(false))
+
+    - name: "Switch — wait for that Rift to exit"
+      ansible.builtin.command:
+        argv: [pgrep, -x, rift]
+      register: devbox_rift_exit_before_start
+      changed_when: false
+      failed_when: false
+      until: devbox_rift_exit_before_start.rc != 0
+      retries: 10
+      delay: 1
+
+    - name: "Switch — boot out a loaded Rift LaunchAgent"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootout, "{{ devbox_rift_service }}"]
+      changed_when: true
+      failed_when: false
+      when: devbox_rift_agent.rc == 0
+
+    - name: "Switch — deploy the Rift LaunchAgent"
+      ansible.builtin.template:
+        src: darwin/Library/LaunchAgents/local.rift.plist.j2
+        dest: "{{ devbox_rift_plist_path }}"
+        mode: "0644"
+
+    - name: "Switch — bootstrap the Rift LaunchAgent"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootstrap, "gui/{{ ansible_facts['user_uid'] }}", "{{ devbox_rift_plist_path }}"]
+      changed_when: true
+
+    - name: "Switch — start Rift"
+      # On macOS 26 bootstrap may only pend the RunAtLoad spawn. Without -k
+      # this does nothing to a Rift that has already started.
+      ansible.builtin.command:
+        argv: [/bin/launchctl, kickstart, "{{ devbox_rift_service }}"]
+      changed_when: true
+
+    - name: "Switch — give Rift a moment to answer"
+      ansible.builtin.command:
+        argv: ["{{ devbox_rift_cli }}", query, workspaces]
+      register: devbox_rift_quick
+      changed_when: false
+      failed_when: false
+      until: devbox_rift_quick.rc == 0
+      retries: 3
+      delay: 1
+
+    - name: "Switch — open the Accessibility settings for the grant"
+      # Rift has shown the system prompt and waits 30 s for the grant; the
+      # settings page lets the user turn Rift on within that window.
+      ansible.builtin.command:
+        argv:
+          - open
+          - "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+      changed_when: false
+      failed_when: false
+      when: devbox_rift_quick.rc != 0
+
+    - name: "Switch — wait for Rift to answer"
+      # Without Accessibility Rift shows the system prompt once, waits 30 s for
+      # the grant and exits; launchd does not restart it (KeepAlive: Crashed).
+      ansible.builtin.command:
+        argv: ["{{ devbox_rift_cli }}", query, workspaces]
+      register: devbox_rift_alive
+      changed_when: false
+      failed_when: false
+      until: devbox_rift_alive.rc == 0
+      retries: 40
+      delay: 1
+      when: devbox_rift_quick.rc != 0
+
+    - name: "Switch — require a Rift that answers"
+      ansible.builtin.assert:
+        that:
+          - devbox_rift_quick.rc == 0 or devbox_rift_alive.rc == 0
+        fail_msg: "Rift did not answer within 40 s."
+        quiet: true
+
+  rescue:
+    - name: "Switch back — boot out the Rift LaunchAgent"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootout, "{{ devbox_rift_service }}"]
+      changed_when: true
+      failed_when: false
+
+    - name: "Switch back — remove the Rift LaunchAgent, so login does not start Rift"
+      ansible.builtin.file:
+        path: "{{ devbox_rift_plist_path }}"
+        state: absent
+
+    - name: "Switch back — stop any Rift left running"
+      ansible.builtin.command:
+        argv: [pkill, -x, rift]
+      changed_when: true
+      failed_when: false
+
+    - name: "Switch back — turn AeroSpace's start at login on again"
+      ansible.builtin.replace:
+        path: "{{ devbox_paths.dotfiles_root_dir }}/.config/aerospace/aerospace.toml"
+        regexp: '^start-at-login\s*=\s*false\b'
+        replace: "start-at-login = true"
+      when: devbox_aerospace_toml.stat.exists | default(false)
+
+    - name: "Switch back — start AeroSpace"
+      # At start AeroSpace loads its config and registers its login item again.
+      ansible.builtin.command:
+        argv: [open, -g, -b, bobko.aerospace]
+      changed_when: true
+
+    - name: "Switch back — confirm AeroSpace answers"
+      ansible.builtin.command:
+        argv: [/opt/homebrew/bin/aerospace, reload-config]
+      register: devbox_aerospace_back
+      changed_when: false
+      failed_when: false
+      until: devbox_aerospace_back.rc == 0
+      retries: 10
+      delay: 1
+
+    - name: "Switch back — report why Rift is not running"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: Rift did not start, so AeroSpace is the window manager again
+          {{- '' if devbox_aerospace_back.rc == 0 else
+              ' (but AeroSpace did not answer either: start it with `open -a AeroSpace`)' }}.
+          The usual cause is a missing Accessibility permission: turn on Rift
+          ({{ devbox_rift_app }}) in System Settings > Privacy & Security >
+          Accessibility and re-run. Otherwise see ~/Library/Logs/rift.log.
+
+# --- devbox_wm == aerospace: Rift off --------------------------------------------
+- name: "Window manager — save the layout and stop Rift"
+  ansible.builtin.command:
+    argv: ["{{ devbox_rift_cli }}", execute, save-and-exit]
+  changed_when: true
+  failed_when: false
+  when:
+    - devbox_wm == 'aerospace'
+    - devbox_rift_running.rc == 0
+  tags: [wm, rift]
+
+- name: "Window manager — wait for Rift to exit after saving"
+  # bootout would end a Rift still writing its layout file.
+  ansible.builtin.command:
+    argv: [pgrep, -x, rift]
+  register: devbox_rift_exit_after_save
+  changed_when: false
+  failed_when: false
+  until: devbox_rift_exit_after_save.rc != 0
+  retries: 10
+  delay: 1
+  when:
+    - devbox_wm == 'aerospace'
+    - devbox_rift_running.rc == 0
+  tags: [wm, rift]
+
+- name: "Window manager — boot out the Rift LaunchAgent"
+  ansible.builtin.command:
+    argv: [/bin/launchctl, bootout, "{{ devbox_rift_service }}"]
+  changed_when: true
+  failed_when: false
+  when:
+    - devbox_wm == 'aerospace'
+    - devbox_rift_agent.rc == 0
+  tags: [wm, rift]
+
+- name: "Window manager — remove the Rift LaunchAgent, so login does not start Rift"
+  ansible.builtin.file:
+    path: "{{ devbox_rift_plist_path }}"
+    state: absent
+  when: devbox_wm == 'aerospace'
+  tags: [wm, rift]

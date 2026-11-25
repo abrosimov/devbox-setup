@@ -69,6 +69,30 @@ devbox_drive_backup:
     hour: 3
     minute: 0
 
+# Window manager that runs: "aerospace" or "rift". Both stay installed, so
+# switching is this one value. The inactive one is stopped and removed from
+# login items by tasks/darwin/configure_window_manager.yml. "rift" takes effect
+# only once the session has separate Spaces per display (a new login after the
+# first run) and Rift has the Accessibility permission; until then AeroSpace
+# keeps running.
+devbox_wm: "aerospace"
+
+# Rift configuration (templates/darwin/.config/rift/config.toml.j2).
+# The logical Super modifier every Rift binding is built on. Meta is Cmd.
+devbox_rift_super: "Meta + Alt"
+# Apps whose activation never switches the Rift workspace (exact bundle IDs).
+# Add an app only when a real case of an unwanted switch shows up.
+devbox_rift_auto_focus_blacklist:
+  - com.anthropic.claudefordesktop  # Claude desktop
+  - com.openai.codex                # ChatGPT desktop
+# Display preferences for workspaces 1-5 (main) and 6-9 (side), first eligible
+# match wins: an exact display name (macOS's localized name, as System Settings
+# shows it), then a position, `builtin` last. The names are the home monitors;
+# `rift-cli query displays` lists the connected ones. At work the 4K external
+# is not named yet, so it is reached by `top`.
+devbox_rift_display_main: ["ASUS PA329CV", "top"]
+devbox_rift_display_side: ["PA169CDV", "builtin"]
+
 # Profile extension points — overridden in profiles/*.yml.
 # Lists are concatenated with base lists in task files via `+`.
 devbox_extra_brew: []

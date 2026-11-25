@@ -7,10 +7,11 @@ what to do and why; this part says how in Antigravity.
 
 ## Approval policy
 
-Git delivery — commit, push the feature branch, open or update its PR/MR — follows the core's §7
+Git delivery — commit, push the feature branch, open or update its PR/MR and enable auto-merge on
+it where the base requires status checks — follows the core's §7
 standing go and needs no confirmation round. Two classes of action need an explicit go from the user
 ("yes", "go ahead", "do it", a direct pick of an option): other externally visible or shared state —
-merging, pushing to a protected branch, deployments, migrations — and irreversible or destructive
+merging by hand, pushing to a protected branch, deployments, migrations — and irreversible or destructive
 actions — deleting files, destructive SQL, force-pushes, writing a file
 you have not read. Analysis, options, designs, and answers to questions end with the answer and
 wait. Reversible local work inside the named scope proceeds under the core's §1 without an approval

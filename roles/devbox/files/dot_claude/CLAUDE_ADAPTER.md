@@ -14,12 +14,18 @@ the action, not the wording; confidence is not an override.
 
 | Class | Examples | Action |
 |---|---|---|
-| Externally visible or shared state | merging or closing a PR/MR, pushing to a protected branch, deleting a remote branch or tag, deploy, migration, sending messages, writing data outside the current Git tree and outside the directories the user added to the session | Always confirm |
+| Externally visible or shared state | merging or closing a PR/MR other than the auto-merge delivery enables (core §7), pushing to a protected branch, deleting a remote branch or tag, deploy, migration, sending messages, writing data outside the current Git tree and outside the directories the user added to the session | Always confirm |
 | Irreversible or destructive | `rm -rf` outside `$TMPDIR`; `git reset --hard`, `git clean -fd`, `git checkout .`, `git restore .`, `git branch -D`; force-push other than `--force-with-lease` to your own feature branch; `DROP`, `TRUNCATE`, `DELETE` without `WHERE`; skipping a pre-commit hook (`--no-verify`) or signing; writing a file you have not read | Always confirm; the shell cases are also denied by `bin/bash_decision_gate.py` |
 
 Git delivery follows the core's §7 standing go. The protected-branch list is read from
 `CC_PROTECTED_BRANCHES`, and the Bash hook denies commits, merges and rebases on protected branches,
 pushes to them, force pushes other than `--force-with-lease`, `--amend` and `--no-verify`.
+
+Auto-merge on GitHub: check that the base requires status checks with
+`gh api repos/{owner}/{repo}/rules/branches/{base} --jq '[.[] | select(.type == "required_status_checks")] | length'`
+(non-zero means it does), then run `gh pr merge <number> --auto --squash`, or `--merge` for a
+branch of several commits. On GitLab: `glab mr merge <id> --auto-merge`, adding `--squash` for a single
+commit.
 
 **What counts as a go** for these two classes: "yes", "go ahead", "proceed", "do it", "approved",
 "implement it", a direct pick of an option, or `/techne-implement`. For reversible local work, "ok",

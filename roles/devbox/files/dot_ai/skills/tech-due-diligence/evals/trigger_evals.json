@@ -1,0 +1,17 @@
+[
+  {"query": "Review this pitch deck's technology slides for an investor", "should_trigger": true},
+  {"query": "What should we check first in this vendor's architecture presentation?", "should_trigger": true},
+  {"query": "Write an initial tech DD from these materials", "should_trigger": true},
+  {"query": "We're considering acquiring a startup; here is their sell-side deck. What does it tell the board about their tech stack and what's missing?", "should_trigger": true},
+  {"query": "Check the top block of our technical due diligence draft against the slides before the client sees it", "should_trigger": true},
+  {"query": "Is it fair to say in the DD that their server no longer gets security fixes? The maker's page says the promise ended in April", "should_trigger": true},
+  {"query": "Before we pick this SaaS vendor, read their architecture deck and list the questions we should ask their engineers", "should_trigger": true},
+  {"query": "Review my own architecture document", "should_trigger": false},
+  {"query": "Write a security policy for our company", "should_trigger": false},
+  {"query": "Summarise this deck", "should_trigger": false},
+  {"query": "Do a code review of this repository", "should_trigger": false},
+  {"query": "Review this ADR on Confluence and draft my comment for the architecture committee", "should_trigger": false},
+  {"query": "Build a financial model of the target's revenue and churn from the data room", "should_trigger": false},
+  {"query": "Make the slides of my investor pitch deck look more professional", "should_trigger": false},
+  {"query": "Fact-check this blog post about cloud regions", "should_trigger": false}
+]

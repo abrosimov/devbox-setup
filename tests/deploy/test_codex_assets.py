@@ -47,6 +47,7 @@ EXPECTED_AGENTS = {
     "software-engineer-frontend",
     "software-engineer-go",
     "software-engineer-python",
+    "statement-checker",
     "technical-product-manager",
     "unit-test-writer",
 }

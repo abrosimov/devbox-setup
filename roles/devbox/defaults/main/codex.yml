@@ -31,6 +31,7 @@ devbox_codex_shared_skills:
   - response-templates
   - rust-fuzzing
   - structured-input-generation
+  - tech-due-diligence
   - tla-plus
   - ui-design
   - writing-for-the-reader
@@ -71,6 +72,7 @@ devbox_codex_agents:
   - software-engineer-frontend
   - software-engineer-go
   - software-engineer-python
+  - statement-checker
   - technical-product-manager
   - unit-test-writer
 

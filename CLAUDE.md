@@ -193,12 +193,12 @@ Current per-profile differences:
 | `bin/local_hooks.py` | Stop/SessionEnd dispatcher for machine-local hook commands listed in `~/.claude/local-hooks.json` (`{"<Event>": [{"command": "...", "timeout": 30}]}`, shipped from the gitignored local overlay); fail-open: always exits 0, no stdout | `~/.claude/bin/` |
 | `settings.json.j2` | Default permissions (allow/deny); Jinja rendered by `scripts/ai-config` | `~/.claude/settings.json` |
 | `settings.json.j2` → `hooks` | Pre/post tool-call hooks, session lifecycle, logging | `~/.claude/settings.json` |
-| `dot_ai/agents/*.md` | Shared Markdown agent sources (29 agents) | `~/.claude/agents/`, `~/.gemini/config/agents/` |
-| `dot_codex/agents/*.toml` | All 29 Codex-native agent adapters | `~/.codex/agents/` |
-| `commands/techne-*.md` | Slash commands — 22, all `techne-` prefixed (`/techne-implement`, `/techne-test`, `/techne-plan`, etc.) | `~/.claude/commands/` |
-| `dot_ai/skills/*/SKILL.md` | Reusable knowledge modules (45 skills); Codex receives the compatible allowlist | `~/.claude/skills/`, `~/.gemini/config/skills/`, `~/.agents/skills/` |
+| `dot_ai/agents/*.md` | Shared Markdown agent sources | `~/.claude/agents/`, `~/.gemini/config/agents/` |
+| `dot_codex/agents/*.toml` | Codex-native agent adapters, one per shared agent | `~/.codex/agents/` |
+| `commands/techne-*.md` | Slash commands, all `techne-` prefixed (`/techne-implement`, `/techne-test`, `/techne-plan`, etc.) | `~/.claude/commands/` |
+| `dot_ai/skills/*/SKILL.md` | Reusable knowledge modules; Codex receives the compatible allowlist | `~/.claude/skills/`, `~/.gemini/config/skills/`, `~/.agents/skills/` |
 | `dot_ai/skills/fpf-thinking/references/` | Vendored FPF Core and companion NSTD specifications | Alongside each deployed `fpf-thinking` skill |
-| `schemas/*.json` | JSON Schema files (2: `se_output`, `dss_output`) for SE and DSS output validation | `~/.claude/schemas/` |
+| `schemas/*.json` | JSON Schema files (`se_output`, `dss_output`) for SE and DSS output validation | `~/.claude/schemas/` |
 | `bin/*` | Helper scripts (MCP wrappers, hooks, validation) | `~/.claude/bin/` |
 | `templates/` | Reusable project templates (devcontainer) | `~/.claude/templates/` |
 | `docs/` | Reference documentation | `~/.claude/docs/` |

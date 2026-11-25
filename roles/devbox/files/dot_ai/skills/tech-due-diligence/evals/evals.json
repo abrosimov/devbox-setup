@@ -1,0 +1,119 @@
+{
+  "skill_name": "tech-due-diligence",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run the claim-to-source pass on the draft top block at evals/files/deck-case/draft-top-block.md. The slide notes in evals/files/deck-case/deck-notes.md stand for slide images already viewed; evals/files/deck-case/public-notes.md holds the public pages read so far. Rewrite each labelled statement to the strength its source supports and say what each rests on. Write the result to ./dd-eval/dd.md and log the changes.",
+      "expected_output": "Each of S1–S14 rewritten no stronger than its source, with its source named, and a changes.md that records each change as weakened, changed or removed with its basis",
+      "files": [
+        "evals/files/deck-case/draft-top-block.md",
+        "evals/files/deck-case/deck-notes.md",
+        "evals/files/deck-case/public-notes.md"
+      ],
+      "expectations": [
+        "S1 says the maker's promise of security fixes ended on 2030-04-30, not that fixes are no longer released, because fix releases are dated after it",
+        "S2 states the scheduled retirement date and that it falls after the deck was saved on 2030-03-14, and does not treat it as evidence that upkeep is behind",
+        "S3 says the deck places the platform on [Cloud provider], which has no region open in [country] as of the read date, instead of a fact about where the system stores data",
+        "S4 says no region is open in [country] and that one is announced for [month] 2031",
+        "S5 names [Log tool] for application logs and also the audit records that slide 17's image shows kept in [Database service], so 'one' is dropped",
+        "S6 becomes 'the deck names no monitoring of the payment provider' or equivalent, without 'nothing'",
+        "S7 drops the retirement date or says the maker's two pages give different dates, because the vendor pages disagree",
+        "S8 is not written from [storefront A] alone: [storefront B] is read too, the later date (2030-05-30, version [Q]) wins, and 'not updated' is dropped",
+        "S9 says slide 14 gives list prices and only the [Vendor A] line is marked as billed, so the total is not money paid",
+        "S10 names the comparison base (the week's volume) and says the batch runs in one night, so its load needs per-hour figures, instead of calling it small",
+        "S11 says the slide quotes what the hosting plan allows (up to two application servers), not how many are set up",
+        "S12 says the managed database backs up by default unless switched off, and that retention and restore tests are not known",
+        "S13 says exactly what was not inspected: no server, database or account",
+        "S14 is not stated as a fact: the deck does not say where the service operates",
+        "Every sentence that cites a public page carries the read date, and no sentence carries a label such as [Stated] or [Inferred]"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The checker's statement-check report for round 1 is back. Its rows: (a) S5, verdict 'weaker form', proposed addition '[Library] logs only per-record changes, so the audit trail cannot show bulk edits' — no page cited, from the checker's own knowledge; (b) S8, verdict 'confirmed', because the [storefront A] page showed \"Updated 15 hr ago\" on 2030-06-01 and again on 2030-06-06; (c) S1, verdict 'weaker form', proposed wording 'The API server's runtime no longer receives security fixes'. S1 was corrected in an earlier pass to 'The maker's promise of security fixes for the API server's runtime ended on 2030-04-30', and corrected-claims.md holds that correction. Triage the findings against evals/files/deck-case/ and the workspace in ./dd-eval/.",
+      "expected_output": "A triage file that keeps the checker's verdicts (confirmed / weaker form / wrong / could not verify) as reported and gives each finding the main session's accept, partial or reject with what was opened; (a) rejected as unverified, (b) not accepted because the store reading is a cached copy, (c) rejected because it reintroduces a corrected claim",
+      "files": [
+        "evals/files/deck-case/deck-notes.md",
+        "evals/files/deck-case/public-notes.md",
+        "evals/files/deck-case/draft-top-block.md"
+      ],
+      "expectations": [
+        "Writes a triage file under reviews/ that records the checker's own verdict for each row unchanged and adds the main session's accept, partial or reject for each of (a), (b) and (c), naming what was opened to decide each",
+        "The two verdict sets are not mixed: accept, partial and reject are used only for the main session's triage, and confirmed, weaker form, wrong and could not verify only for the checker's verdicts",
+        "Finding (a) is rejected as unverified and not applied to the document, because it rests on the reviewer's memory",
+        "Finding (b) is not accepted: the same relative timestamp five days apart means a stale cached copy; the reading is marked unverified and [storefront A] is named",
+        "A second storefront is consulted before anything is written about updates, and the later date (2030-05-30, version [Q]) wins",
+        "Proposal (c) is rejected: it fails the strength check and matches a claim already in the corrected-claims register",
+        "No claim is strengthened without the owner's go"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Write an initial tech DD from the materials in evals/files/deck-case/ (treat deck-notes.md as the rendered slides). The reader is the board of an investor deciding whether to proceed to a full due diligence; the deal is a minority investment; the document is in English. Use ./dd-eval/ as the DD folder. Get as far as the statement check, then stop and report.",
+      "expected_output": "A DD folder with decisions.md, source/deck-meta.md with the last-saved date, a per-slide visuals list, the skeleton fixed before prose, the top block and findings table drafted first with labelled statements, and a statement-check dispatch (or an inline check marked not independent)",
+      "files": [
+        "evals/files/deck-case/deck-notes.md",
+        "evals/files/deck-case/public-notes.md"
+      ],
+      "expectations": [
+        "decisions.md records the reader, the deal type, the DD stage and the document language, each with its source",
+        "source/deck-meta.md records the last-saved date 2030-03-14 and source/visuals.md lists expected visuals per slide with seen marked",
+        "dd.md has the header, top block, findings table, who-reads-what, contents, body and appendix headings before body prose is written",
+        "The findings table has the columns Finding, Kind, Rating, First step, is sorted Red, Amber, No data, and no row is rated Green",
+        "The document defines what separates Amber from No data for a blank spot",
+        "Top-block statements carry labels [S1]… for the checker, and the brief to statement-checker uses the statement-check mode with the deck, slide images, sources and today's date; if the agent is unavailable the report is marked 'performed inline by the main session, not independent'",
+        "Nothing about the deal, revenue, the team or management appears, and no remedy is recommended: every first step is a check, request or question that needs no credentials"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Two more facts for the DD in ./dd-eval/: the seller's CTO told us on a call that the service operates in [city] only, and our consultant saw the app log out when it updated — it is probably a single-session policy. Also add that holding data abroad is allowed under [country]'s law. Update the document.",
+      "expected_output": "The city fact attributed to the call and stated as an assumption where a calculation uses it; the logout stated as an observation with its effect and no cause; the legal point turned into a question for counsel",
+      "files": [],
+      "expectations": [
+        "The [city] fact is attributed to the seller's CTO on the call and is not written as a fact about the system; any appendix that relies on it states it as an assumption at its start",
+        "The logout is written as an observation (the app logged out when it updated; the user has to log in again) with no guessed cause",
+        "If a cause matters to what is checked first, rival explanations are offered with the observation that tells them apart",
+        "The legal point says the law permits it under conditions and that whether they are met is for counsel",
+        "Each change is propagated to the summary, findings table, body, appendices and glossary where they carry the point, and logged in changes.md"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "After the last review round the [Component] finding in ./dd-eval/dd.md went from Red to Amber, and the data-request appendix renamed 'weekly volume' to 'batch-night volume per hour'. Bring the document in line.",
+      "expected_output": "The rating change and the rename propagated everywhere, the findings table re-sorted with colours matching the words, formulas and counters reconciled again",
+      "files": [],
+      "expectations": [
+        "The Amber rating is checked against the document's own Amber definition before it stands",
+        "The findings table is re-sorted by rating and the cell colour matches the word Amber",
+        "The top block, summary, body and counters that mention the number of Red findings are updated",
+        "Every formula variable that used 'weekly volume' now matches 'batch-night volume per hour' in the data-request appendix, and one name is used throughout",
+        "Stage 7 (tables and formulas reconciliation) is re-run: calculations reproduced, rows and counters recounted, and the answers recorded in checks.md as yes, no, unknown or not checked",
+        "changes.md records the rating change as weakened and the rename as changed, each with its basis"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "The top block of ./dd-eval/dd.md is over the word budget. Cut it: merge the runtime point into 'the runtime is out of support'. Then also add a short point I need about the payment provider's region. And run another fresh-eyes review afterwards to be safe.",
+      "expected_output": "The merge that would erase 'promise ended' versus 'no fixes' is refused and reported; the owner's new point is added even though it goes over budget; the extra review is run because the owner asked for it",
+      "files": [],
+      "expectations": [
+        "Refuses the merge because it removes a needed distinction (the promise of fixes ended; releases continued), and says so with another cut that keeps it",
+        "Adds the payment-provider point the owner asked for, without treating the word budget as a blocker",
+        "Runs the fresh-eyes review as a separate statement-checker dispatch, since the owner asked for it",
+        "Does not report word or character counts to the owner"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Summarise this deck in five bullets for my own notes: evals/files/deck-case/deck-notes.md",
+      "expected_output": "A five-bullet summary of the slides; the skill does not trigger the DD workflow, no DD folder, no ratings and no checker dispatch",
+      "files": ["evals/files/deck-case/deck-notes.md"],
+      "expectations": [
+        "Gives a five-bullet summary of the deck",
+        "Creates no DD folder, decisions.md or findings table",
+        "Does not dispatch statement-checker"
+      ]
+    }
+  ]
+}

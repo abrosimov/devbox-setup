@@ -46,7 +46,3 @@ which this repository keeps apart in `dot_ai/skills/` and `dot_ai/agents/`, and 
 are built from internal material. It stays runnable from the private staging folder, which has
 its own plugin manifest. Eval harness choice for this repository remains open, as for
 `docs/design/fuzzing-tests-writer/decisions/FTW-D-004-evals-as-plugin.md`.
-
-## Not yet done
-
-No eval run, no pilot on a live ADR, no Codex agents (planned for the hardening stage).

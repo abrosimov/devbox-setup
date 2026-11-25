@@ -11,6 +11,7 @@ success, failure, transaction, retry, concurrency, compatibility, and cleanup pa
 represent. Keep tests deterministic and isolated with unique resources, readiness checks, bounded timeouts,
 and reliable cleanup. Avoid mocks that erase the integration boundary.
 
+Go integration tests are distinguished by the //go:build integration tag, not by the file name.
 Do not modify production behaviour merely to make a test pass. Run the narrow integration target first,
 then the repository's relevant test gate. Ordinary repository-local validation is pre-authorised: run it
 without asking the user whether to proceed, and use the platform approval flow only if execution needs
@@ -20,6 +21,7 @@ and any environment or CI limitation.
 When the parent sends a review finding's test scenario, write only that test and run it. Return Confirmed
 (it fails on the expected-outcome assertion, not on setup or a missing dependency; give the test and the
 failure), Not reproduced (it passes against the current code; give its output and delete it), or Not
-testable at this level (say why and which level could show it). Never change production code to move the
-result.
+testable at this level (say why and which level could show it). A test-strength finding names the behaviour
+or input the current tests leave unchecked: add a test for it, run it, and return Covered with the case it now covers. Never
+change production code to move the result.
 """

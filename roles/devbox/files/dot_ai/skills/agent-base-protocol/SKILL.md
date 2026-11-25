@@ -16,7 +16,26 @@ Foundational rules shared by all agents. Agents reference this skill instead of 
 
 Create new files with the **Write** tool and edit existing ones with the **Edit** tool; keep Bash for commands (build tools, test runners, linters, formatters).
 
-The reason: Write/Edit are auto-approved in `acceptEdits` mode, while Bash heredocs (`cat > file << 'EOF'`) trigger a permission prompt because of a platform limitation with multi-line command matching.
+These forms are forbidden. The hooks refuse them, so a retry in another spelling costs a turn and changes nothing; use the replacement on the first attempt.
+
+| # | Forbidden | Refused by | Use instead |
+|---|---|---|---|
+| 1 | A heredoc or here-string: any `<<` in the command text, quoted or not | `bash_decision_gate.py` | Write to create a file, Edit to change one; pass input as a file argument |
+| 2 | Inline code to an interpreter: a command whose first word is `python`, `python3`, `node`, `ruby` or `perl` with `-c`, `-e`, `-m`, `--command…` or `--exec…` (bare `python -m pytest` included); a command starting with `eval`, `exec`, `source` or `.`. Also `uv run python -c "import …"` in a Python project. Other `uv run python -c` code is not refused by a hook but is forbidden all the same | `bash_decision_gate.py` (first word only); `pre_bash_toolchain_guard.py` for `uv run python -c` with an import | Write the script to `ai/scripts/<slug>/` at the repository root, with its test when it has logic, a short `README.md` and a line in the index `ai/scripts/README.md` (template T3 in `response-templates`), and run it by path with the project prefix (`uv run python <path>`); run modules through the prefix: `uv run python -m <module>` is the allowed form; read JSON with `jq` |
+| 3 | `bash -c`, `sh -c`, `zsh -c` or `fish -c` (also through `xargs`) whose body does not parse or contains a form from this table | `bash_decision_gate.py` | Run the commands directly, or as a script file (row 2) |
+| 4 | Deleting, moving or overwriting anything under `ai/scripts/` (`rm`, `mv`, `cp`, `tee`, `sed -i`, `find -delete`, `>`, `>>`) | `bash_decision_gate.py` | Leave earlier scripts in place; write a new one under a new name |
+| 5 | `rm` with recursive and force flags on a path outside `$TMPDIR`, `/tmp`, the repository's `tmp/` or a cache or build directory (`node_modules`, `.venv`, `dist`, `build`, `__pycache__`, …) | `bash_decision_gate.py` | Scripts and probes go under `ai/scripts/<slug>/` (row 2); keep other scratch under `$TMPDIR` and leave it there |
+| 6 | A write outside the working directory, the session's allowed directories, `$TMPDIR` and `/tmp`: a redirection, a write command (`rm`, `mv`, `cp`, `tee`, `mkdir`, `touch`, …) or `sed -i` | `bash_decision_gate.py` | Edit for changes to files; scripts under `ai/scripts/<slug>/` (row 2), other scratch under `$TMPDIR` |
+| 7 | A lint-suppression token anywhere in a Bash command whose text also contains `sed`, `echo`, `printf`, `cat`, `tee`, `perl`, `python`, `ruby` or `awk`. Both are substring tests: a read-only grep is refused, and `cat` matches inside `location` | `bash_decision_gate.py` | A character class in the pattern: `no[q]a`, `type: *[i]gnore`, `no[l]int`, `eslint-[d]isable` |
+| 8 | A Write, or an Edit whose new text adds what its old text lacked, containing a suppression comment in its literal form, marker included (Python noqa, type-ignore and pyrefly-ignore comments, Go nolint, TypeScript ts-ignore, ts-expect-error and eslint disable, Java SuppressWarnings; case-insensitive), in any file type, Markdown handoffs included | `pre_edit_lint_guard.py` | Fix the lint. In prose, name the directive without its comment marker, as this row does |
+| 9 | Write onto an existing non-empty file | `pre_write_existing_guard.py` | Edit; for a scratch file you rewrite whole, a new file name |
+| 10 | `cd` to the directory the shell is already in | `bash_decision_gate.py` | Drop the `cd`; use absolute paths or `git -C` |
+
+The gate also refuses destructive git and SQL forms; agents do not run those.
+
+Change files with Edit or Write only; `sed`, `awk` and `perl` serve reads (`sed -n '10,20p'`), never in-place edits.
+
+An exit code that goes into a report comes from the command run alone, never after a pipe: run the command by itself and read the exit code the tool reports; in POSIX shells, `cmd; echo "exit=$?"`. Shell-specific pipe-status variables are not portable across the shells the tool may run.
 
 ## Language Standard
 

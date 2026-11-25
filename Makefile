@@ -150,7 +150,7 @@ endif
        karabiner-diff karabiner-pull \
        dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now go-proxy-verify \
        sync-upstream-docs \
-       test test-integration test-ai-config test-deploy test-claude-hooks test-claude-hooks-unit test-agy-hooks test-agy-hooks-unit test-git-hooks test-scripts test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
+       test test-integration test-ai-config test-deploy test-claude-hooks test-claude-hooks-unit test-agy-hooks test-agy-hooks-unit test-git-hooks test-scripts test-skills test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
        test-live test-live-guard test-langfuse-e2e \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
@@ -186,12 +186,13 @@ help:
 	@echo "  make test-claude-hooks-unit / test-agy-hooks-unit - the same, unit tests only"
 	@echo "  make test-git-hooks   - pytest for the global git hooks (prepare-commit-msg)"
 	@echo "  make test-scripts     - pytest for scripts/ (git-identity-gen.py and friends)"
+	@echo "  make test-skills      - pytest for the scripts bundled with skills (dot_ai/skills/*/scripts/test_*.py)"
 	@echo "  make test-otelbox     - pytest for the otelbox edge contract (wrapper, preflight, version pin)"
 	@echo "  make test-live-guard  - pytest for the guards around test-live (hermetic)"
 	@echo "  make test-live        - pytest against real claude/codex/agy binaries (opt-in, needs the CLIs)"
 	@echo "                          ENGINES='claude,codex' turns a skip of those engines into a failure"
 	@echo "  make test-drive-backup - drive-backup package: pytest, ruff, pyrefly, example config"
-	@echo "  make qa               - lint-py + typecheck + full hook trees + ai-config, scripts, deploy, live-guard tests"
+	@echo "  make qa               - lint-py + typecheck + full hook trees + ai-config, scripts, skills, deploy, live-guard tests"
 	@echo "  make dev-bootstrap    - materialise .venv only (sanity check)"
 	@echo ""
 	@echo "  make init             - install Homebrew, Ansible, and dependencies (macOS only)"
@@ -402,16 +403,23 @@ PY_PATHS_COMMON := \
 
 # Lint takes the whole dot_claude / dot_ai / dot_codex trees and the deploy
 # tests; typecheck takes only the bin/ subtrees, matching the dot_agy rule above.
-PY_LINT_PATHS      := roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/ $(PY_PATHS_COMMON)
+# Agent-written scripts live one per directory under ai/scripts/<slug>/, each
+# test importing its sibling module, and slugs may reuse module names (main.py),
+# so each slug is type-checked and tested in a pass of its own.
+AI_SCRIPTS_DIR     := ai/scripts/
+AI_SCRIPT_SLUGS    := $(sort $(dir $(wildcard $(AI_SCRIPTS_DIR)*/*.py)))
+PY_LINT_PATHS      := roles/devbox/files/dot_claude/ roles/devbox/files/dot_ai/ roles/devbox/files/dot_codex/ tests/deploy/ $(AI_SCRIPTS_DIR) $(PY_PATHS_COMMON)
 # Each hook tree is checked in its own pass, against the interpreter of its own
 # locked venv, so bashlex/langfuse resolve exactly as the deployed venv has them.
 # dot_agy/bin also needs the separate pass for a second reason: it is a diverged
 # copy of dot_claude/bin with the same module names, so in a shared pass its tests
 # resolve `import post_edit_lint` to the dot_claude module, whichever search-path
-# entry comes first. dot_codex/bin is stdlib-only and stays in the common pass.
+# entry comes first. dot_codex/bin and the skill scripts are stdlib-only and stay
+# in the common pass.
 CLAUDE_BIN_DIR     := roles/devbox/files/dot_claude/bin/
 AGY_BIN_DIR        := roles/devbox/files/dot_agy/bin/
-PY_TYPECHECK_PATHS := roles/devbox/files/dot_codex/bin/ $(filter-out $(AGY_BIN_DIR),$(PY_PATHS_COMMON))
+PY_TYPECHECK_PATHS := roles/devbox/files/dot_codex/bin/ $(wildcard $(SKILLS_DIR)/*/scripts/*.py) \
+  $(filter-out $(AGY_BIN_DIR),$(PY_PATHS_COMMON))
 
 lint-py: $(DEV_SENTINEL)
 	@bash -n scripts/ai-config
@@ -432,6 +440,9 @@ typecheck: $(DEV_SENTINEL) ## Pyrefly type check across AI runtime scripts
 	$(call hook_sync,$(AGY_BIN_DIR))
 	@$(DEV_BIN)/pyrefly check $(AGY_BIN_DIR) --search-path $(AGY_BIN_DIR) \
 	  --python-interpreter-path $(AGY_BIN_DIR).venv/bin/python $(PYREFLY_EXCLUDES)
+	@set -e; for d in $(AI_SCRIPT_SLUGS); do \
+	  $(DEV_BIN)/pyrefly check $$d --search-path $$d $(PYREFLY_EXCLUDES); \
+	done
 
 # A prerequisite of `test` (and therefore of `run`): the otelbox edge contract is
 # what a machine-local endpoint.env can silently break, and the failure mode is a
@@ -459,6 +470,14 @@ test-git-hooks: $(DEV_SENTINEL) ## Pytest for the global git hooks (prepare-comm
 
 test-scripts: $(DEV_SENTINEL) ## Pytest for scripts/ (git-identity-gen.py and friends)
 	@$(DEV_BIN)/pytest tests/scripts -q
+
+test-skills: $(DEV_SENTINEL) ## Pytest for the scripts bundled with skills (dot_ai/skills/*/scripts/test_*.py)
+	@$(DEV_BIN)/pytest $(SKILLS_DIR) -q
+
+test-ai-scripts: $(DEV_SENTINEL) ## Pytest for agent-written scripts (ai/scripts/<slug>/test_*.py), one pass per slug
+	@set -e; for d in $(AI_SCRIPT_SLUGS); do \
+	  $(DEV_BIN)/pytest $$d -q; \
+	done
 
 test-deploy: $(DEV_SENTINEL) ## Pytest for dotfile-deploy structure (karabiner assets, hook interpreters, …)
 	@$(DEV_BIN)/pytest tests/deploy -q
@@ -543,7 +562,7 @@ test-langfuse-e2e: $(DEV_SENTINEL) ## Langfuse handoff against the pinned otelbo
 
 # Each suite once: the full hook-tree runs carry their integration tests, and the
 # otelbox contract that `test` adds is part of test-scripts + test-deploy.
-qa: lint-py typecheck test-claude-hooks test-agy-hooks test-ai-config test-scripts test-deploy test-live-guard ## Full Python quality gate
+qa: lint-py typecheck test-claude-hooks test-agy-hooks test-ai-config test-scripts test-skills test-ai-scripts test-deploy test-live-guard ## Full Python quality gate
 
 regenerate-fixtures: $(DEV_SENTINEL) ## Re-extract recorded fixtures + regenerate synthetic ones
 	@$(DEV_BIN)/python roles/devbox/files/dot_claude/bin/test_integration/extract_fixtures.py --max-per-bucket 50

@@ -49,6 +49,26 @@
         "Answers normally (Paris)",
         "Skill does not interfere with non-coding questions"
       ]
+    },
+    {
+      "id": 6,
+      "prompt": "You are in a git worktree at project/feature-x/ (the main checkout is project/base/). The shell has VIRTUAL_ENV=project/base/.venv, and uv prints 'VIRTUAL_ENV does not match the project environment'. Run the tests for tests/test_tasks.py.",
+      "expected_output": "Runs the tests through the worktree's project environment as a module (uv run python -m pytest tests/test_tasks.py) and states which environment ran next to the result, rather than calling a pytest console script that may point into the other checkout.",
+      "expectations": [
+        "Uses python -m pytest under the worktree's environment, not a bare pytest shim",
+        "States which environment the run used, because the shell's VIRTUAL_ENV points at another checkout",
+        "Does not activate or modify the other checkout's virtual environment"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "The brief says: run `uv run --all-groups python -m pytest -q tests/test_tasks.py` and report failures. pyproject.toml's dev group has pytest and pytest-xdist only.",
+      "expected_output": "Runs the command exactly as stated and reports every failure; it adds no flags such as -x or -p no:randomly for a plugin the project does not have.",
+      "expectations": [
+        "Runs the brief's command without extra flags",
+        "Does not use -x, so every failure is reported",
+        "Does not disable plugins the project does not install"
+      ]
     }
   ]
 }

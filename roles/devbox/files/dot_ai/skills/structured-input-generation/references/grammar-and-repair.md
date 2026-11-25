@@ -56,4 +56,4 @@ a candidate is unresolved or execution is interrupted. Resume the recorded unfin
 while its target, observation and representation assumptions remain applicable.
 
 Sources checked 2026-11-12. This workflow uses these fuzz-input mechanisms; it introduces no PBT
-or mutation-analysis operation.
+operation.

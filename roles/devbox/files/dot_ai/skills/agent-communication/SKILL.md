@@ -61,9 +61,9 @@ All paths are relative to `{PROJECT_DIR}` (see `config` skill: `{PLANS_DIR}/{JIR
 | **Impl Planner** | `spec.md`, `domain_analysis.md`, `domain_model.md`, `model_report.md`? | `plan.md` |
 | **Database Designer** | `plan.md`, `spec.md`, `domain_analysis.md`, `domain_model.md` | `schema_design.md`, `migrations/` |
 | **API Designer** | `plan.md`, `spec.md`, `domain_analysis.md`, `domain_model.md` | `api_design.md`, `api_spec.yaml` |
-| **SE (backend)** | `plan.md`, `api_spec.yaml`, `schema_design.md`, `domain_model.md`? | *(source code)*, `se_{lang}_output.json` |
+| **SE (backend)** | `plan.md`, `api_spec.yaml`, `schema_design.md`, `domain_model.md`?, `observability_design.md`? | *(source code)*, `se_{lang}_output.json` |
 | **SE (frontend)** | `plan.md`, `design.md`, `api_spec.yaml`, `domain_model.md`? | *(source code)*, `se_frontend_output.json` |
-| **Observability** | `plan.md`, `domain_model.md`?, `spec.md`?, `se_{lang}_output.json`? | `observability_audit.md`, `observability_design.md`, *(instrumentation, `observability/` in the repository)* |
+| **Observability** | `plan.md`, `domain_model.md`?, `spec.md`?, `se_{lang}_output.json`? | `observability_audit.md`, `observability_design.md` (the instrumentation specification the backend engineer implements), *(`observability/` in the repository)* |
 | **Test Writer** | `plan.md`, `spec.md`, `domain_model.md`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(test files)* |
 | **Code Reviewer** | `plan.md`, `spec.md`, `domain_model.md`?, `design.md`?, `se_{lang}_output.json`?, `se_frontend_output.json`? | *(review report — inline)* |
 | **Content Reviewer** | agent/skill artifact, 2-3 referenced skills | `<audit-findings>` XML (inline) |
@@ -228,15 +228,18 @@ When reporting issues back to another agent or user:
 ```markdown
 ### 🔴 Must Fix (Blocking)
 - [ ] `file.py:42` — **Issue**: <description>
+  **Owner**: <agent whose globs match the files the fix touches>
   **Fix**: <conceptual fix, not code>
   **Test** (unit | integration | e2e): Given <state>, when <action>, then <expected outcome>
 
 ### 🟡 Should Fix (Important)
 - [ ] `file.py:87` — **Issue**: <description>
+  **Owner**: <agent>
   **Fix**: <conceptual fix>
 
 ### 🟢 Consider (Optional)
 - [ ] `file.py:120` — **Issue**: <small issue the change introduced, and the part of the task it concerns>
+  **Owner**: <agent>
 
 ### Outside the task
 - `other.py:10` — <problem in code the diff does not touch, or an improvement the task did not ask for; for the user>
@@ -246,7 +249,7 @@ Review: X blocking | Y important | Z suggestions
 Action: [Fix all findings and re-review] or [Ready to proceed]
 ```
 
-**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. Every finding is tied to the task — the request, the plan, its acceptance criteria — and all three severities go back to the engineer in the same run. *Outside the task* goes to the user only: problems in code the diff does not touch, and improvements the task did not ask for, even in the changed lines. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
+**Must Fix** is reserved for defects in what was asked — correctness and the stated requirements — and for changes made outside the task's scope. Every finding is tied to the task — the request, the plan, its acceptance criteria — and all three severities go back to their owners in the same run. The owner is decided by the path of each file the fix touches, against each agent's `globs` frontmatter: test files go to the test-writing agent even when the defect is in behaviour, production code to the `software-engineer-*` whose globs match it even when a test found the defect, and a fix that spans owners names each with the files each takes. A specialised agent (fuzzing, formal model, integration, observability) is named only for its own artefact kind; a path no agent's globs match is reported as such, not assigned by guess. *Outside the task* goes to the user only: problems in code the diff does not touch, and improvements the task did not ask for, even in the changed lines. The loop is bounded as the core's section on agents and the `workflow` skill's *Review–fix loop* describe.
 
 ## Proving a Review Finding
 
@@ -256,11 +259,16 @@ stays read-only and judges; a test writer, who knows the stack's test convention
 **Reviewer.** For each correctness defect, add a **Test** line: the level (unit, integration or
 e2e) and a Given/When/Then scenario precise enough to write without reading the review twice. A
 finding no test can show (a race the suite cannot provoke, a deployment concern) states its
-triggering conditions instead and carries no Test line.
+triggering conditions instead and carries no Test line. A finding that the tests are too weak
+(test strength, missing coverage of changed behaviour) has no failing test to give, because the
+code may be correct: it names the behaviour or input the current tests leave unchecked, so the
+test writer can add a test for exactly that case.
 
 **Main session.** Send each Test line to the matching writer: unit → `unit-test-writer`;
 integration → `integration-tests-writer-go` or `integration-tests-writer-python`; e2e →
-`unit-test-writer`, which owns the e2e files and loads the `playwright-e2e` skill.
+`unit-test-writer`, which owns the e2e files and loads the `playwright-e2e` skill. The level on the
+Test line picks the writer, not the file path: a Go integration test differs from a unit test by
+its build tag, not by its name.
 
 **Test writer.** Write only that test, in the place and style the suite already uses, and run it.
 Return one of:
@@ -270,6 +278,9 @@ Return one of:
 - **Not reproduced** — the test passes against the current code. Give the test and its output. The
   finding is dropped unless the reviewer shows what the scenario missed; the test is deleted.
 - **Not testable at this level** — say why, and which level could show it.
+- **Covered** (test-strength findings) — the test for the unchecked behaviour or input is added
+  and runs. Name the case it now covers; the finding closes when that case is the one the finding
+  named.
 
 Never change production code to make the test pass or fail. The engineer's fix is done when the
 confirmed test passes; the test stays in the suite as a regression test.

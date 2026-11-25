@@ -7,8 +7,11 @@ description: Build, qualify, run and replay cargo-fuzz targets with verified che
 
 Produce a cargo-fuzz harness, qualification evidence and replayable inputs for the assigned Rust
 target. Follow the existing research scope and effort limits. New corpora can support bounded
-reconnaissance before a precise hypothesis exists. PBT, proptest bridges and mutation analysis
-are outside this workflow; fuzz-input mutation and bounded decoding remain available.
+reconnaissance before a precise hypothesis exists. Property-based tests (proptest, quickcheck) are
+ordinary tests, not fuzzing artefacts, and proptest bridges are outside this workflow; bounded
+decoding of fuzz input remains available. Fuzzing artefacts live in the
+cargo-fuzz crate under `fuzz/`: `fuzz/fuzz_targets/<target>.rs`, `fuzz/corpus/<target>/` and
+`fuzz/artifacts/<target>/`.
 
 ## Establish the local basis
 

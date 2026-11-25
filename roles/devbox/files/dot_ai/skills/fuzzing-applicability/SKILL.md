@@ -7,7 +7,23 @@ description: Assess a target, input domain and oracle for a scoped fuzzing inves
 
 Return an evidenced target/method/oracle choice, a bounded check of a missing prerequisite, or a
 reasoned non-fuzz disposition. Work within the requested area and permitted effects. This workflow
-does not create PBT, mutation analysis, product fixes or another testing programme.
+does not create PBT, product fixes or another testing programme. Property-based tests are ordinary
+unit tests owned by the unit test writer; only a coverage-guided fuzz harness, including a bridge
+that drives an engine over a property, is a fuzzing artefact.
+
+## Where fuzzing artefacts live
+
+A fuzzing artefact's path names it, and the fuzzing writer's `globs` claim these paths:
+
+| Ecosystem | Paths | Source |
+|---|---|---|
+| Go, Python, Rust | as their skills state: `go-fuzzing` (`fuzz_test.go`, `*_fuzz_test.go`, `testdata/fuzz/`), `python-fuzzing` (`fuzz_*.py`, `*_fuzzer.py`, `fuzz/`), `rust-fuzzing` (cargo-fuzz crate under `fuzz/`) | those skills |
+| JavaScript, TypeScript (Jazzer.js with Jest) | `*.fuzz.js`, `*.fuzz.ts`; crash inputs under `<file>.fuzz/<describe>/<test>/` beside the file | [Jazzer.js Jest integration](https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/docs/jest-integration.md) |
+| Jazzer and Jazzer.js generated corpus | `.cifuzz-corpus/` at the project root | same page; [Jazzer](https://github.com/CodeIntelligenceTesting/jazzer) |
+| ClusterFuzzLite build | `.clusterfuzzlite/` at the project root (`project.yaml`, `Dockerfile`, `build.sh`) | [ClusterFuzzLite build integration](https://google.github.io/clusterfuzzlite/build-integration/) |
+
+Jazzer.js CLI targets (any module exporting `fuzz`) have no path convention; identify them by
+content. Sources checked 2026-11-22.
 
 ## Recover the assignment
 

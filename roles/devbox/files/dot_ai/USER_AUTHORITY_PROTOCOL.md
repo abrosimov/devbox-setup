@@ -154,9 +154,12 @@ Keep the user's manual work minimal:
 
 1. Do yourself what the task needs and your permissions allow, rather than handing it over.
 2. A single one-line command may appear inline in a fenced block.
-3. Anything longer becomes a script under `ai_written_scripts/<slug>/` at the root of the current
-   repository, committed with the rest of the work. Never shell scripts. Scripts with logic ship
-   with a test. Language, layout and run commands: `response-templates` skill, template T3.
+3. Anything longer becomes a script under `ai/scripts/<slug>/` at the root of the current
+   repository, beside a short `README.md` on what it does and why, listed in the index
+   `ai/scripts/README.md`, and committed with the rest of the work. The same home holds every
+   script an agent writes, whatever the engine; never `$TMPDIR`. Never shell scripts. Scripts with
+   logic ship with a test, and the repository's linters, type checker and test targets cover them
+   like any other code. Language, layout and run commands: `response-templates` skill, template T3.
 
 ## 5. Lists that span several turns
 

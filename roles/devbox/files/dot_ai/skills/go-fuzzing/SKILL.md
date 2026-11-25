@@ -7,8 +7,9 @@ description: Build, qualify, run and replay native Go fuzz targets with testing.
 
 Produce a native harness, observed qualification results and replayable inputs for the assigned
 Go target. Work within the existing research scope and effort limits. A new corpus may warrant
-bounded reconnaissance before a precise hypothesis exists. Keep PBT and mutation analysis out of
-this workflow; ordinary fuzz-input mutation remains in scope.
+bounded reconnaissance before a precise hypothesis exists. Property-based tests (`rapid`) are
+ordinary unit tests owned by the unit test writer (`go-testing`); only a `FuzzXxx` target that
+drives the engine, including one wrapping a rapid property with `rapid.MakeFuzz`, belongs here.
 
 ## Establish the local basis
 
@@ -23,7 +24,9 @@ this workflow; ordinary fuzz-input mutation remains in scope.
 
 ## Construct and qualify
 
-Use `FuzzXxx(f *testing.F)` in a `_test.go` file, with one `f.Fuzz` call accepting `*testing.T`
+Use `FuzzXxx(f *testing.F)` in a file of its own named `fuzz_test.go` or `<name>_fuzz_test.go`,
+never mixed into a unit test file, so the path names the fuzzing artefact; seeds go under
+`testdata/fuzz/<FuzzName>/`. Use one `f.Fuzz` call accepting `*testing.T`
 followed by supported primitive/string/byte-slice arguments. `f.Add` values and corpus records must
 match those arguments in type and order. Use a bounded byte decoder for richer structures, retaining
 the raw input and decoder version. Reset target state between calls and avoid cross-input globals.

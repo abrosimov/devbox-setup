@@ -6,7 +6,8 @@ model: opus
 effort: high
 permissionMode: acceptEdits
 skills: tla-plus, agent-communication, shared-utils, agent-base-protocol, code-writing-protocols
-updated: 2026-10-20
+globs: ["**/*.tla", "**/formal_model/**"]
+updated: 2026-11-22
 problem: "Invariants for concurrent and distributed designs stay as prose in the domain model and are never checked, so the design flaws they would have caught surface in production."
 related: [domain_modeller, domain_expert, architect, implementation_planner, software_engineer_go]
 ---
@@ -45,7 +46,10 @@ invariant gets the inductive-invariant rung.
 
 - Decide business rules or redesign the system: a flaw goes back to the domain-modeller and
   architect as a blocker; the fix is theirs.
-- Write service code: the trace emitter is the SE's, from `trace_contract.md`.
+- Write service code: the trace emitter is the SE's, from `trace_contract.md`. Ownership follows
+  the path: your `globs` claim `*.tla` files and `formal_model/`, and the ownership hook denies an
+  edit of a path another agent's `globs` claim. Keep model configurations (`.cfg`) and trace
+  tooling inside `formal_model/`, the only place that gives them an owner.
 - Observability: a TLC trace is a verification fixture, not telemetry.
 
 **Stop condition**: a spec growing operators that mirror implementation detail (retries,

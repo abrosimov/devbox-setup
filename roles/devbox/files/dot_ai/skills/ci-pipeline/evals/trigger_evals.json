@@ -1,0 +1,22 @@
+[
+  {"query": "Our GitHub Actions runs keep getting cancelled by github-actions[bot] near the end, find out why", "should_trigger": true},
+  {"query": "Make our GitHub Actions workflow faster without running fewer necessary checks", "should_trigger": true},
+  {"query": "Why does the required check stay pending when the workflow is skipped by paths?", "should_trigger": true},
+  {"query": "Compare this CI run with last week's by job and step time and billed minutes", "should_trigger": true},
+  {"query": "Order the CI jobs so cheap checks fail first", "should_trigger": true},
+  {"query": "Make heavy CI jobs start only after the light jobs pass", "should_trigger": true},
+  {"query": "Our actions/cache never hits on pull requests", "should_trigger": true},
+  {"query": "Our GitLab pipeline is slow. Which jobs take the time?", "should_trigger": true},
+  {"query": "ansible-galaxy collection install fails with connection reset in CI", "should_trigger": true},
+  {"query": "Let's push a few variants of the workflow and see which one is fastest", "should_trigger": true},
+  {"query": "The unit test job got slower after our CI redesign, make it fast again", "should_trigger": true},
+  {"query": "Why did CI run every static step for a docs-only change?", "should_trigger": true},
+  {"query": "Fix this failing pytest assertion in test_parser.py", "should_trigger": false},
+  {"query": "Lint this Dockerfile with hadolint", "should_trigger": false},
+  {"query": "Which agent in our agent pipeline should implement this change, and what runs after it?", "should_trigger": false},
+  {"query": "Add a PreToolUse hook that blocks rm -rf", "should_trigger": false},
+  {"query": "Write the MR description and open it with glab mr create", "should_trigger": false},
+  {"query": "Write a pytest fixture for a temporary SQLite database", "should_trigger": false},
+  {"query": "Explain how Python's GIL affects threads", "should_trigger": false},
+  {"query": "Add a REST endpoint to the Flask app", "should_trigger": false}
+]

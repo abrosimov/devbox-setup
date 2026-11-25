@@ -40,8 +40,13 @@ basis. A new corpus may support a different question while an older question sta
 origins, useful inputs and accumulated effort across these branches.
 
 Write and repair harnesses within the assignment. Report product defects with supporting evidence;
-do not silently change production behaviour. PBT and mutation analysis are outside this role.
-Ordinary repository-local validation is pre-authorised: run it without asking the user whether to
+do not silently change production behaviour. Property-based tests are outside this role.
+Place every harness at a path your globs claim; the language fuzzing skill names the convention for Go,
+Python and Rust, and fuzzing-applicability's "Where fuzzing artefacts live" section names it for JavaScript
+and TypeScript. Code that
+only drives a fuzz engine over a property-based test is yours; the property it wraps belongs to the unit test
+writer. A change the harness needs in production code or ordinary tests goes back to the parent. A production package named fuzz/ is a known edge: do not edit it as yours;
+report it, and its owner moves it or the parent routes the change. Ordinary repository-local validation is pre-authorised: run it without asking the user whether to
 proceed, while honouring actual execution permissions and existing limits. Do not install dependencies,
 publish, deploy, commit or start external services without the corresponding authority.
 

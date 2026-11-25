@@ -1,0 +1,327 @@
+{
+  "skill_name": "ci-pipeline",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Our GitHub Actions CI keeps 'resetting': 107 runs in three weeks ended cancelled, many after 30+ minutes with nearly every job green. In most of them the only red job is 'CI gate'. Every blocking job ends with a step 'Cancel the remaining CI run after this failure' (if: failure(), runs gh run cancel $GITHUB_RUN_ID). The workflow also has concurrency with cancel-in-progress: true. Jobs excerpt of one run: {\"name\": \"platform\", \"conclusion\": \"cancelled\", \"steps\": [{\"name\": \"Run lifecycle tests\", \"conclusion\": \"failure\"}, {\"name\": \"Cancel the remaining CI run after this failure\", \"conclusion\": \"cancelled\"}]}, {\"name\": \"CI gate\", \"conclusion\": \"failure\"}; annotation: 'The run was canceled by @github-actions[bot].' Find out what is cancelling the runs, using gh api.",
+      "expected_output": "Classifies each cancelled run by mechanism from annotations and step conclusions, finds that the self-cancel step relabels the really failing job as cancelled, and reports the failing step per run rather than the job conclusions.",
+      "expectations": [
+        "Reads step conclusions from gh api .../runs/<id>/jobs and identifies the failed step that precedes a cancel step, instead of trusting job conclusions",
+        "States that gh run cancel issued from inside the failing job overwrites that job's conclusion to cancelled, so the real failure is displayed as cancelled",
+        "Separates self-cancel, concurrency supersession, timeout and manual cancels by their annotation text, and accounts for every cancelled run",
+        "Counts a cancel step whose own conclusion is cancelled, not only those that ended success",
+        "Does not blame flakiness or GitHub, and does not propose a fix before the attribution is complete",
+        "When proposing the fix, announces the cancel (annotation and summary line) and removes it from the job that usually finishes last"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this CI concurrency setting. Triggers: pull_request, push to master, weekly schedule. concurrency: { group: ci-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'schedule' || github.ref }}, cancel-in-progress: true }. A full run takes about 60 minutes and we often merge two PRs within a few minutes; master runs keep getting cancelled.",
+      "expected_output": "Explains that on master each merge cancels the previous merge's nearly finished run, so some master commits are never verified, and recommends cancelling superseded runs only for pull requests while master runs queue.",
+      "expectations": [
+        "Identifies that cancel-in-progress applies to pushes on master, not only to PR updates",
+        "States the consequence: a merged commit can end with no completed CI run",
+        "Recommends cancel-in-progress conditional on the event (pull requests only), for example ${{ github.event_name == 'pull_request' }}",
+        "Explains that GitHub keeps one running and one pending run per group and replaces the pending one, so the newest master commit is still tested",
+        "Keeps supersession for pull requests and scheduled runs in their own group, citing the concurrency documentation"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our static CI job takes 20-30 minutes, even for a docs-only PR. A planner script already computes which of the three expensive stages (unit tests, Ansible syntax+lint, component suites) a change needs, and falls back to 'all stages' when a path matches no rule, but the workflow steps have no if: conditions, so every stage always runs. I think wiring the planner outputs into the steps will fix the job time. Before changing anything, tell me how much that would save. You can replay the planner over git history.",
+      "expected_output": "Replays the current planner over recent commits to measure how often each stage would be skipped, checks both the planner catch-all and the unwired steps, and reports that wiring is a real but minor saving if most commits still select every stage, naming the hub-input reason and granularity as the larger lever.",
+      "expectations": [
+        "Measures the saving by replaying the planner on real recent change sets instead of assuming it",
+        "Checks both rival causes (planner selects everything; CI ignores the plan) and says which decided the outcome",
+        "Reports the fraction of commits that would skip each stage",
+        "Identifies why the selection stays full (for example one central file read by every check at path granularity)",
+        "Keeps the fail-closed fallbacks and does not propose workflow-level paths: filters on a required workflow",
+        "Does not credit the wiring change with the whole job time"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Our Python unit stage takes 260 s in CI. JUnit shows tests/test_validation.py::TestValidationCli is 64% of it: about 700 parametrised cases, each copies .github, inventory and role trees into tmp_path, applies one textual edit to ci.yml, and asserts validation.main(('ci-platform-matrix',)) == ExitCode.DATA_ERROR. The validator re-parses about 12 YAML files per call and keeps an exact Python mirror of every CI job, rejecting any difference. Make the unit stage fast without losing protection.",
+      "expected_output": "Profiles what each case pays for and which validator rule actually rejects it, finds that most cases exercise one equality comparison, and replaces them with direct rule tests on minimal inputs that assert the rule's message, keeping the real-repository validator run in CI and caching parses by content.",
+      "expectations": [
+        "Attributes the per-case cost to a full validator run and YAML re-parsing, from measurement rather than assumption",
+        "Records which rule raises first in each rejecting case and reports how many cases hit the same comparison",
+        "Notes that asserting only the exit code lets a case pass for the wrong rule",
+        "Proposes direct calls of each rule function on minimal input that assert the specific message, and keeps one real-repository validator run",
+        "Does not treat adding pytest-xdist workers as the main remedy"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "One CI step runs `pytest --component-suite api-gateway` and prints '13 passed, 5301 deselected in 25.32s'. Collecting 5314 tests to run 13 must be what makes it slow. Confirm and fix it.",
+      "expected_output": "Measures collection time on its own and the time spent inside the 13 tests before agreeing, and reports that collection is about a second while the tests spend their time starting an ansible-playbook process per case.",
+      "expectations": [
+        "Checks the user's hypothesis with a measurement (collect-only timing of the same command) before changing anything",
+        "Times what runs inside the tests (subprocesses), not only pytest's summary line",
+        "Reports the hypothesis as refuted if collection is a small share, with the numbers",
+        "Points the fix at the dominant term (one Ansible process per parametrised case), not at collection"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "The 'Host platform' CI step first runs nine render playbooks as validator tasks, then runs pytest for the same suite, and pytest runs those playbooks again, so we pay twice. Remove the duplication.",
+      "expected_output": "Records every ansible-playbook invocation of the step with its playbook path and phase, checks whether any playbook runs in both phases, and reports what it finds before removing anything.",
+      "expectations": [
+        "Instruments or traces the ansible-playbook calls rather than inferring duplication from the step structure",
+        "Compares the playbook paths of the native phase and the pytest phase",
+        "Reports no overlap if none is found, and names the actual cost (many short serial Ansible processes)",
+        "Mentions any real but smaller duplicate it finds elsewhere, with its size"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "In ci.yml all eight optional jobs have needs: [quick-contracts, static-contracts] and if: ${{ !cancelled() && needs.static-contracts.result == 'success' && needs.quick-contracts.outputs.<flag> == 'true' }}. Three are light (1-9 min), four heavy (15-40 min, VMs). p90 of successful durations from recorded runs: light 2, 6 and 9 min; heavy 18, 25, 31 and 40 min. When a light job fails, its fail-fast step cancels the run, killing heavy jobs that already burned 10+ minutes. The gate requires each optional job to be success when its flag is true and skipped otherwise. Make heavy jobs start only after the selected light jobs pass.",
+      "expected_output": "Proposes a measured tier rule, adds the light jobs to each heavy job's needs and rewrites the heavy predicate so a light job's skipped result is accepted only when that light job was not selected, explaining the !cancelled() and gate interactions and estimating the gain in billed minutes.",
+      "expectations": [
+        "States an explicit tier rule taken from the recorded p90 durations",
+        "Notes that with !cancelled() a job whose need was skipped is still evaluated, so the predicate must test each light result explicitly",
+        "Accepts a light job's skipped result only when its selection output is not 'true', never as a generic pass",
+        "Checks that the gate's exact success-or-skipped rule still holds for a heavy job skipped because a light job failed, and considers re-runs where earlier light successes are carried over",
+        "Does not make heavy jobs wait for a slow job whose output they do not read",
+        "Estimates the gain in billed heavy minutes and lost verdicts from recorded runs, not only in latency, and updates any validator or test that pins the old needs and if: expressions"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Review two candidate conditions for a heavy job. (A) if: ${{ !cancelled() && needs.static-contracts.result == 'success' && (needs.identity-runtime.result == 'success' || needs.identity-runtime.result == 'skipped') }}. (B) if: ${{ !cancelled() && needs.identity-runtime.result != 'failure' }}. identity-runtime runs only when needs.quick-contracts.outputs.identity_affected == 'true'.",
+      "expected_output": "Rejects both: (A) accepts skipped for any reason, including a selected job skipped because its own needs failed, and (B) also passes a cancelled or selected-but-skipped job; rewrites the clause to accept success, or skipped only when identity_affected is not 'true', keeping !cancelled().",
+      "expectations": [
+        "Names at least one way identity-runtime can be skipped although it was selected",
+        "Explains that != 'failure' lets cancelled and selected-but-skipped results pass",
+        "Rewrites the clause as success, or skipped together with the selection output not being 'true'",
+        "Keeps !cancelled() and the static-contracts success check",
+        "Does not accept skipped as a generic pass"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Our tests check ci.yml if: conditions with a helper that substitutes outputs into the expression and evaluates it with bash [[ \"$left\" == \"$right\" ]]. Rows: stage_ansible='true' -> runs; 'false' -> skipped; 'TRUE' -> skipped; 'True' -> skipped. The real condition is if: ${{ needs.plan.outputs.stage_ansible == 'true' }}. Are these tests right?",
+      "expected_output": "Says the 'TRUE' and 'True' rows are wrong because GitHub compares strings case-insensitively, so those jobs would run, and recommends a case-insensitive evaluator plus a separate check that rejects non-canonical outputs.",
+      "expectations": [
+        "States that GitHub Actions expression equality on strings ignores case",
+        "Identifies the two rows that certify behaviour GitHub does not have",
+        "Recommends making the evaluator match GitHub semantics rather than changing the expected rows only",
+        "Keeps fail-closed handling of non-canonical values in a separate check"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "First CI run of our redesign failed only in the aggregate job: 'CI static receipt static-timings-leg-automation-<sha>/data-services-render.json names an unknown task'. Every static job uploads path: .artifacts/task-timings/*.json, and the aggregate gate accepts only receipts of the five static tasks. All local runs were green. Fix it.",
+      "expected_output": "Finds what wrote the unexpected receipt during the job, keeps the gate strict, changes each upload to the exact receipt files its own tasks write, and proves the fix by replaying the gate against the failed run's downloaded artefacts before and after, before pushing again.",
+      "expectations": [
+        "Does not loosen the gate to accept unknown receipts",
+        "Identifies the source of the stray file (a test or command that writes into the real checkout's timings directory)",
+        "Changes each upload step to list its own receipt paths exactly",
+        "Replays the aggregate on the real run's downloaded artefacts and shows it fails before and passes after the change, then makes one confirmation run rather than pushing variants",
+        "Notes any upload that may now find no file, how if-no-files-found behaves for a multi-line path, and names unexercised branches as unverified"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "Our PR was meant to speed up CI, but the 'Python source checks and unit tests' job now takes 403 s against 257 s before the PR. Every step of the PR passed acceptance on the files it changed. The team thinks pytest-xdist collection overhead is to blame since we moved to -n 10. A JUnit run shows 5083 tests, 1089 s total test time at -n 10. Profiling the 20 slowest tests shows over 99% of their time in assess_change_set reading the real working tree. Make the unit stage fast again without changing any planner decision or weakening a test.",
+      "expected_output": "Measures collection and per-test cost before accepting the xdist hypothesis, considers the 2-vCPU runner, records every planner call with its inputs, finds that most of the time repeats identical inputs, adds a cache keyed by file content with a staleness test, proves the planner output byte-identical over the recorded inputs, and reports why per-step acceptance missed the regression.",
+      "expectations": [
+        "Checks the collection-overhead hypothesis with a measurement and considers that the CI runner has 2 vCPU, so -n 10 cannot speed it up",
+        "Measures how many planner calls there are and how many distinct inputs they have before choosing a remedy",
+        "Keys any cache by file content, not by path or modification time, and tests that an in-place edit is seen",
+        "Proves the planner decisions unchanged by replaying recorded real inputs through the old and new planner and comparing outputs",
+        "Does not remove, skip or move guard tests off the real repository to save time",
+        "Recommends a whole-stage timing check after each step, since per-file acceptance cannot see a stage-level regression"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "The 'Static repository contracts' job is slow. Find which steps dominate. Note: in this environment job logs are served from a blob storage host the sandbox blocks.",
+      "expected_output": "Takes per-step durations from the jobs API across several recent runs, reports the spread, and names any quantity it cannot get from CI and measures it locally in one targeted run, without trying to bypass the sandbox.",
+      "expectations": [
+        "Uses gh api .../actions/runs/<id>/jobs step timestamps (or the skill's timings script) rather than starting with a local profile",
+        "Looks at several runs and reports variance, not one run",
+        "States that logs were not reachable and what that leaves unknown",
+        "Does not disable the sandbox or work around the network block to fetch logs"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "Write acceptance criteria for replacing 700 slow tests in tests/test_validation.py (currently 145 s) with direct rule tests. Every validator rule family that the old tests reached must still be reached, and the unit stage must get faster. My estimate is 40-60 new cases running under 1 s.",
+      "expected_output": "Writes the timing criterion as a ceiling on the file or stage time, checkable locally, and keeps the 40-60 cases and 1 s figure as a labelled forecast that the coverage criteria override.",
+      "expectations": [
+        "States the timing criterion on the whole file or stage, not on the new tests alone",
+        "Makes the criteria checkable locally before any push, with the CI time as a forecast",
+        "Labels the case count and per-test time as a forecast, not a pass condition",
+        "Says that the coverage criteria take precedence if they conflict with the forecast"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "Set acceptance criteria for this CI step from the design. The design's verification list: (1) one scheduled run with the coverage backstop is green; (2) the new scope runs four weeks in shadow mode and the receipts show no miss; (3) measure the unit job with -n 2 in CI before step 4 starts. Constraints: the PR is pushed once, after all six steps; scheduled workflows run only on master; artefacts are kept 14 days.",
+      "expected_output": "Checks each verification item against the workflow triggers, the push policy and artefact retention, marks the ones that cannot be observed before merge with the reason, and proposes an observable substitute or a deferral with a condition.",
+      "expectations": [
+        "Notes that a scheduled run cannot happen on the PR branch",
+        "Notes that a four-week window does not fit 14-day retention or the PR's lifetime",
+        "Notes that a CI measurement between steps conflicts with pushing once after all steps, and proposes timing -n 2 locally with the CPU count matched instead",
+        "Offers an in-PR substitute or a deferral for each, instead of keeping an unattainable criterion"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "Add one sentence to the CI docs saying what happens to the image-security scan when a heavy job fails. Facts: image-security needs only quick-contracts, so it can still be running. ci.yml has a 'ci-cancel-run' fail-fast step in observability-runtime, rehearsal-platform-entry and rehearsal-layer-migration, none in platform-runtime. The gate code: for job, flag in _AFFECTED_FLAGS: if result[job] != expected(flag): raise GateError(f'CI requires {job} to report {expected(flag)}') — observability-runtime comes before image-security in _AFFECTED_FLAGS.",
+      "expected_output": "Writes that a failure of observability or either rehearsal cancels a still-running scan and that the gate rejects the run, without claiming the gate names image-security or says 'cancelled', and without saying every heavy failure cancels it.",
+      "expectations": [
+        "Limits the claim to the jobs that have a cancel step, excluding platform-runtime",
+        "Does not claim the gate's message names image-security or uses the word cancelled, since the gate stops at the first mismatching job",
+        "Bases the wording on the gate code and the job list given, not on the job graph alone"
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "Document the image-scan identity scope in docs/architecture/ci-pipeline.md. The old page says 'the scan checks all 16 identity subjects across the three existing CI owners'. The code: _IDENTITY_VARIABLES is a tuple in image_scan_impact.py; _RUNTIME_IDENTITY_ASSIGNMENTS in validation.py maps each subject to an owner job; the validator checks the set at run time.",
+      "expected_output": "Describes the scope by naming the policy and where it lives rather than repeating the old counts, or counts the entries from the code and cites the lines; it does not copy 16 or three from the old page.",
+      "expectations": [
+        "Does not carry the old page's counts into the new text without counting them in the code",
+        "Prefers naming the constant or policy over a number that changes when the code changes",
+        "Cites the code location for any number it keeps"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "Locally, tests/test_validation.py::TestValidationCli::test_repository_carries_no_private_key_material fails, and the validator lists files under .hermetic/state/ci-impl/step-4/*.xml. Local ansible-lint also reports errors in .hermetic/state/ci-optimisation/artefacts/*.yml. CI on the same commit is green. Is my change broken?",
+      "expected_output": "Checks whether the listed files are tracked or ignored, concludes the failures come from untracked local scratch the CI checkout does not have, and judges the change only on tracked files.",
+      "expectations": [
+        "Uses git ls-files and git check-ignore (or equivalent) to show the files are not part of the repository",
+        "Classifies both failures as local-environment only, with that evidence",
+        "Filters lint findings to tracked files before judging the change",
+        "Does not change the scanner or lint configuration to hide them"
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "Plan this change: the CI planner module component_tests.py will compute the Ansible scope using Ansible's own YAML loader (from ansible.parsing.yaml.loader import AnsibleLoader). In ci.yml, quick-contracts runs `uv run --locked --no-default-groups project-task ci-test-plan`, and the aggregate job also runs with --no-default-groups. The ansible package is in the 'ansible' dependency group.",
+      "expected_output": "Finds that jobs running with --no-default-groups import the planner without ansible installed, and requires the scope computation to use only dependencies every importing job installs, with a check that enforces it.",
+      "expectations": [
+        "Lists the jobs that import the planner module and the dependency groups each installs",
+        "Identifies that the new import fails in the jobs without the ansible group",
+        "Proposes a loader available in every importing job (for example PyYAML) or moving the import out of the shared module",
+        "Adds a criterion or test that runs the planner under the reduced dependency set"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "Write a Python function that parses an ISO 8601 duration string like 'PT1H30M' into seconds.",
+      "expected_output": "Writes Python code for the parser directly; the CI pipeline skill does not add workflow analysis or CI advice.",
+      "expectations": [
+        "Writes Python code for the requested function",
+        "The skill does not interfere: no CI timing analysis, workflow changes or pipeline advice"
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "We added actions/cache for our Python dependencies, keyed on hashFiles('uv.lock'), with restore and save on pull_request events only. Every new PR still misses the cache on its first run. Why, and what should change?",
+      "expected_output": "Explains that a cache saved by a pull-request run is scoped to that PR's merge ref and invisible to other PRs, and makes default-branch runs save the shared cache, keyed on the lockfile hash plus OS and architecture, citing the dependency-caching documentation.",
+      "expectations": [
+        "States that caches saved in a pull-request run are scoped to refs/pull/N/merge and cannot be restored by other pull requests or the base branch",
+        "States that runs can restore from their own branch, the default branch and, for PRs, the base branch, so the shared cache must be saved by a default-branch run",
+        "Keys the cache on the lockfile hash plus OS and architecture, with restore and save as separate steps and save only on a miss",
+        "Mentions 7-day eviction of unused entries and that a scheduled default-branch run keeps the entry warm",
+        "Cites the GitHub dependency-caching documentation"
+      ]
+    },
+    {
+      "id": 21,
+      "prompt": "Our CI is one 30-minute static job plus ten other jobs, in a private repository. Split the static job into 20 parallel jobs so CI gets faster and cheaper.",
+      "expected_output": "Separates wall clock from billed minutes, explains per-job rounding and duplicated set-up and teardown, uses the measured per-phase pattern (wall clock down sharply, exact runner time slightly up, billed minutes up more), asks what 'cheaper' means given the plan's included usage, and considers the concurrent-job cap.",
+      "expectations": [
+        "Reports wall clock and billed minutes separately and says that a split can lower one while raising the other",
+        "Applies GitHub's per-job rounding up to whole minutes and the set-up and teardown each extra job repeats",
+        "Uses or reproduces a per-phase breakdown (set-up, work, after-work, rounding slack), for example W -44 %, exact +2 %, billed +9 % with rounding slack 0.1 to 8.9 min",
+        "Establishes what 'cheaper' means for a private repository: the plan's included usage, the share of it B uses, and the rate",
+        "Considers the concurrent-job cap and the need for a warm cache before fanning out",
+        "Leaves the wall-clock-for-minutes trade-off to the owner instead of deciding it"
+      ]
+    },
+    {
+      "id": 22,
+      "prompt": "Fix the failing assertion in tests/test_parser.py::test_empty_input: it expects [] but parse('') returns [''].",
+      "expected_output": "The skill does not trigger; the agent fixes the test or the parser directly without CI-pipeline overhead (no run timings, no job graph).",
+      "expectations": [
+        "Fixes the parser or the test according to the intended behaviour",
+        "The skill does not add CI run timings, job graph analysis or workflow changes"
+      ]
+    },
+    {
+      "id": 23,
+      "prompt": "The unit job is slow on CI. Try `-n 2`, `-n 4` and `-n auto`: push each one and keep whichever run is fastest.",
+      "expected_output": "Declines to search on live CI: reads the job's recorded timings and their spread, times the three variants locally through the same CI entry point with the CPU count matched to the 2-vCPU runner, picks on the bench, then makes one confirmation run and compares it with the recorded baseline.",
+      "expectations": [
+        "Does not push variants, add experiment jobs or open workflow_dispatch matrices to choose between them",
+        "Reads the unit job's recorded timings and their spread from past runs",
+        "Times the three variants locally through the same CI entry point, with the CPU count limited to match the runner",
+        "Picks the variant on the bench, then makes exactly one confirmation run and compares it with the recorded baseline and its spread",
+        "Fails if it proposes more than one CI run to choose between the variants"
+      ]
+    },
+    {
+      "id": 24,
+      "prompt": "Add a temporary job that runs both cache strategies (one big cache vs per-tool caches) side by side on every PR for a week, then we compare which is faster.",
+      "expected_output": "Rejects the live A/B test, takes cold and warm costs from recorded cache-miss and cache-hit runs, times both strategies locally, and reads the CI-only quantity (cache scope across refs) from the documented scope rules and recorded runs, listing it as unverified if no run shows it.",
+      "expectations": [
+        "Rejects running A/B jobs on live CI and gives the reasons (billed minutes, concurrency slots, noise, run-to-run variance)",
+        "Takes cold and warm costs from recorded runs that already missed and hit the cache",
+        "Times both strategies locally, cold and warm separately",
+        "Names cache scope across refs as the CI-only quantity, reads it from the documentation and recorded runs, and lists it as unverified if no run shows it"
+      ]
+    },
+    {
+      "id": 25,
+      "prompt": "The CI change is finished: on the local bench the static stage is under its 20-minute ceiling, and all local checks pass. Is it done?",
+      "expected_output": "Makes exactly one confirmation run, because the bench rule does not forbid it, compares it per job, per step and in exact and billed minutes against the recorded baseline and its spread, and lists the paths the run did not exercise as unverified instead of staging more runs.",
+      "expectations": [
+        "Makes one confirmation CI run rather than declaring done from local results or refusing to use CI",
+        "Compares wall clock, per-job and per-step time, and exact and billed minutes with the recorded baseline and its spread",
+        "Checks what the run ran against what the change needed",
+        "Lists paths the run did not exercise (for example an empty plan, a re-run of one leg, a cold default-branch cache) as unverified, without staging extra runs"
+      ]
+    },
+    {
+      "id": 26,
+      "prompt": "Log excerpt from the first master run after merging our CI PR: 'Cache not found for input keys: collections-Linux-X64-3f2a...' then 'ansible-galaxy collection install -r requirements.yml' ... 'ERROR! Unknown error when attempting to call Galaxy at https://galaxy.ansible.com/api/: <urlopen error [Errno 104] Connection reset by peer>'. The PR's own runs were green with cache hits. What happened and how do we make it robust?",
+      "expected_output": "Explains that the PR-scoped cache is invisible to the default branch, makes default-branch runs save the cache, and adds a bounded jittered retry around the collection install only, in its own cache-miss step, noting that ansible-galaxy's built-in retry does not cover a connection reset.",
+      "expectations": [
+        "Explains the miss: a cache saved only by pull-request runs is not visible to the default branch, so the first default-branch run is cold",
+        "Adds a bounded retry (fixed attempts, exponential backoff with jitter, overall cap, warning per attempt) around the collection install only",
+        "Moves the install into its own step that runs only on a cache miss, so later steps run offline",
+        "Notes that ansible-core's built-in Galaxy retry covers HTTP 429, 502, 520 and timeouts but not a connection reset",
+        "Does not add retries around tests, lint or the gate, and does not use a job-level retry",
+        "Makes the default branch save the cache and confirms the hit from one recorded default-branch run rather than triggering runs to warm it"
+      ]
+    },
+    {
+      "id": 27,
+      "prompt": "Our GitLab pipeline flakes on network errors when installing dependencies, so add `retry: 2` to every job in .gitlab-ci.yml.",
+      "expected_output": "Rejects a blanket retry: 2 because its default when: always also re-runs real test failures, limits retries to network fetches inside the fetch script or through retry:exit_codes with a dedicated code, and offers the infrastructure categories of retry:when and the job-stage attempt variables, citing docs.gitlab.com.",
+      "expectations": [
+        "States that retry re-runs the whole job and defaults to when: always, so real test failures would be retried",
+        "Limits retries to the network fetch, inside the script or via retry:exit_codes with a dedicated exit code, without listing script_failure",
+        "Mentions infrastructure categories of retry:when such as runner_system_failure and api_failure",
+        "Mentions the runner's job-stage attempt variables (GET_SOURCES_ATTEMPTS, ARTIFACT_DOWNLOAD_ATTEMPTS, RESTORE_CACHE_ATTEMPTS) for the runner's own fetches",
+        "Cites the GitLab CI/CD YAML documentation"
+      ]
+    },
+    {
+      "id": 28,
+      "prompt": "Which parts of our GitLab jobs take the time? Excerpt from glab api projects/:id/pipelines/9921/jobs: [{\"name\": \"lint\", \"stage\": \"test\", \"status\": \"success\", \"duration\": 212.4, \"queued_duration\": 3.1}, {\"name\": \"unit\", \"stage\": \"test\", \"status\": \"success\", \"duration\": 1240.8, \"queued_duration\": 41.7}, {\"name\": \"build\", \"stage\": \"build\", \"status\": \"success\", \"duration\": 388.0, \"queued_duration\": 2.2}].",
+      "expected_output": "Reads job timings across several pipelines with include_retried, states that the GitLab API has no per-step timing, proposes custom log sections with the marker format or local timing per phase, and reports compute minutes as duration times the cost factor without claiming per-job rounding.",
+      "expectations": [
+        "Reads jobs with include_retried=true and across several pipelines, not one",
+        "States that the GitLab API gives job-level timing only, with no per-step endpoint",
+        "Proposes custom log sections (section_start/section_end with Unix timestamps) or local timing per phase to find the slow commands",
+        "Reports compute minutes as duration / 60 times the runner's cost factor, excluding queued time, and does not claim per-job rounding",
+        "Separates queue time (wall clock) from billed duration"
+      ]
+    }
+  ]
+}

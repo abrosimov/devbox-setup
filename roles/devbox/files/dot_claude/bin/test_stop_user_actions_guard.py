@@ -95,7 +95,7 @@ class TestSectionCommandBlocks:
         reason = _reason(message, tmp_path)
         assert "R2" in reason
         assert "holds 2 command lines" in reason
-        assert "ai_written_scripts/<slug>/" in reason
+        assert "ai/scripts/<slug>/" in reason
 
     def test_tilde_fence_is_recognised(self, tmp_path: Path) -> None:
         message = _section("~~~sh\nmake lint\nmake test\n~~~")

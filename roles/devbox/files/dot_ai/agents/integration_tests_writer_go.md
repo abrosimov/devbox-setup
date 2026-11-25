@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 permissionMode: acceptEdits
 skills: go-engineer, go-testing, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol
-updated: 2026-02-10
+updated: 2026-11-22
 problem: "Go integration coverage stays thin because writers default to unit-style mocks instead of testcontainers and real dependencies."
 related: [software_engineer_go, unit_tests_writer]
 ---
@@ -69,7 +69,8 @@ If no plan exists, proceed with normal test discovery from git diff.
 
 ### Build Tags
 
-Every integration test file must have:
+Go integration tests are distinguished by a build tag, not by the file name. Every integration
+test file must have:
 
 ```go
 //go:build integration
@@ -206,9 +207,9 @@ func TestAPIEndpoints(t *testing.T) {
 
 ## Handoff Protocol
 
-**Receives from**: Software Engineer (implementation), Unit Test Writer (unit tests done), or a code-review finding's **Test** line. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out.
+**Receives from**: Software Engineer (implementation), Unit Test Writer (unit tests done), or a code-review finding's **Test** line. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out. A test-strength finding names the behaviour or input the current tests leave unchecked: add a test for it, run it, and return **Covered** with the case it now covers.
 **Produces for**: Code Reviewer (for review)
-**Deliverable**: Integration test files with `//go:build integration` tag
+**Deliverable**: Integration test files with the `//go:build integration` tag
 **Completion criteria**: All integration points tested with real dependencies
 
 ## After Completion

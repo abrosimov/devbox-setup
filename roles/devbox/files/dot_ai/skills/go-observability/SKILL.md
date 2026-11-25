@@ -28,8 +28,9 @@ which the technology and code layers below cover.
 
 ## Signal catalogue
 
-`observability_design.md` has one row per signal, and nothing is instrumented, charted or
-alerted on without a row:
+`observability_design.md` has one row per signal. In work driven by that specification, nothing is
+instrumented, charted or alerted on without a row (without a specification, `code-writing-protocols`
+decides what new code gets):
 
 | ID | Failure revealed | Decision supported | Measure | Instrument | Name | Attributes | Budget | Layer |
 |----|------------------|--------------------|---------|------------|------|------------|--------|-------|
@@ -158,8 +159,9 @@ go run ./observability/dashboards -o observability/dashboards/out && jq empty ob
 
 `promtool` comes with the `prometheus` formula; `gcx` runs read-only PromQL against a datasource
 to confirm a query returns series. Artefacts are repository files: `observability_audit.md`,
-`observability_design.md`, instrumentation diff, `observability/{dashboards,rules/<service>/
-{alerts,recording}.yaml,rules/<service>/tests/,runbooks/}`. Nothing deploys from here.
+`observability_design.md` (the instrumentation specification), `observability/{dashboards,rules/
+<service>/{alerts,recording}.yaml,rules/<service>/tests/,runbooks/}`. The instrumentation diff in
+the service code is the Go engineer's, built from that specification. Nothing deploys from here.
 
 ## Sources
 

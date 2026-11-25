@@ -1,0 +1,18 @@
+[0Ksection_start:1767690012:prepare_executor[0Kheader prepare_executor
+output of prepare_executor
+[0Ksection_end:1767690014:prepare_executor[0K
+[0Ksection_start:1767690014:get_sources[0Kheader get_sources
+output of get_sources
+[0Ksection_end:1767690018:get_sources[0K
+[0Ksection_start:1767690018:step_script[0Kheader step_script
+output of step_script
+[0Ksection_start:1767690020:compile[0Kheader compile
+output of compile
+[0Ksection_end:1767690060:compile[0K
+[0Ksection_end:1767690068:step_script[0K
+[0Ksection_start:1767690068:upload_artifacts_on_success[0Kheader upload_artifacts_on_success
+output of upload_artifacts_on_success
+[0Ksection_end:1767690070:upload_artifacts_on_success[0K
+[0Ksection_start:1767690070:cleanup_file_variables[0Kheader cleanup_file_variables
+output of cleanup_file_variables
+[0Ksection_end:1767690072:cleanup_file_variables[0K

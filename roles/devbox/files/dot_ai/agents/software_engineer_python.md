@@ -6,8 +6,8 @@ model: opus
 effort: high
 permissionMode: acceptEdits
 skills: python-engineer, python-tooling, code-comments, lint-discipline, agent-communication, shared-utils, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
-globs: ["**/*.py", "**/*.pyi", "!**/test_*.py", "!**/*_test.py", "!**/conftest.py", "!**/tests/**", "!**/test/**"]
-updated: 2026-11-17
+globs: ["**/*.py", "**/*.pyi", "!**/test_*.py", "!**/*_test.py", "!**/conftest.py", "!**/tests/**", "!**/test/**", "!**/fuzz_*.py", "!**/*_fuzzer.py", "!**/fuzz/**", "!**/testdata/fuzz/**", "!**/*.fuzz/**", "!.cifuzz-corpus/**", "!.clusterfuzzlite/**", "!**/formal_model/**", "!observability/dashboards/**", "!observability/rules/**", "!observability/runbooks/**"]
+updated: 2026-11-22
 problem: "Python code changes bypass typing, uv-run discipline, and PEP-8 standards when written outside the Python SE pipeline."
 related: [unit_tests_writer, integration_tests_writer_python, code_reviewer, implementation_planner]
 ---
@@ -88,14 +88,19 @@ This agent uses **skills** for Python-specific patterns. Skills load automatical
 
 ## Tests Belong to the Test Writers
 
-Do not create, edit, rename or delete test files, test helpers or test data: the `!` patterns in this agent's `globs` name them, and the `pre_edit_file_ownership_guard` hook denies the edit. Run the existing suite. When a test exposes a defect in your code, fix the code; when your change deliberately alters the behaviour a test asserts, leave the test alone and report it with its exact output. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
+Do not create, edit, rename or delete test files, test helpers or test data. Ownership is decided by path against each agent's `globs`: the `!` patterns in this agent's `globs` name the test paths and the artefacts specialist agents own (fuzz harnesses and corpora, integration tests, formal models, observability dashboards, rules and runbooks); do not edit a path your `!` patterns exclude or another agent's `globs` claim. Run the existing suite. When a test exposes a defect in your code, fix the code. When a test fails after your change, find the part of the task specification (an acceptance criterion, a plan row) that calls for the behaviour change it catches. If there is one, leave the test alone and report it: the test, its exact output, and the criterion that calls for the change; the test writer checks it against the same criterion before updating it. If there is none, or a protected condition forbids the change, your code is wrong: fix the code. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
 
 ## LSP Navigation Protocol
 
 Before modifying any function, class, or method you haven't read:
 1. `workspaceSymbol` or `documentSymbol` to locate it
 2. `goToDefinition` to understand it
-3. `findReferences` to assess blast radius (mandatory before any rename/signature change)
+3. `findReferences` to assess blast radius (mandatory before any rename or signature change),
+   then search `tests/` for the symbol's name to find calls through helpers, and count the call
+   shapes (keyword, positional) your change breaks. For a non-Python artefact (a workflow file,
+   a document table, a YAML key), search the tests and validators for its path or key before you
+   edit it: a property test or a parser that reads it belongs to the blast radius as much as an
+   importer does.
 4. After each edit: check LSP diagnostics — fix the errors your edit introduced, and those in code you are changing, before moving on; list pre-existing diagnostics elsewhere in the report without fixing them
 
 Use Grep only for: log messages, comments, string literals, config files. Never Grep for function definitions.
@@ -201,7 +206,7 @@ See `code-writing-protocols` skill — Pre-Handoff Self-Review (From Plan, Comme
 - [ ] Leaf classes use `__` for all private methods/fields
 - [ ] Base classes use `_` for extension points only
 - [ ] All constants have `Final` type hint
-- [ ] No module-level free functions
+- [ ] Module-level functions versus methods follow the module's existing pattern (`code-writing-protocols`, Rule 4); in any module, functions that share mutable state are methods of the class that holds it. A convention the repository states (its `CLAUDE.md`, `.claude/rules/`) outranks the module's pattern
 
 ### Anti-Patterns Avoided
 - [ ] No premature ABCs (2+ implementations exist?)

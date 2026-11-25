@@ -7,8 +7,14 @@ description: Build, qualify, run and replay Atheris fuzz targets, checking instr
 
 Produce an Atheris harness, observed qualification results and replayable inputs for the assigned
 Python target. Use the existing research scope and effort limits. Bounded reconnaissance can
-discover a question from unfamiliar inputs without predicting a bug. PBT, Hypothesis/HypoFuzz
-bridges and mutation analysis are outside this workflow.
+discover a question from unfamiliar inputs without predicting a bug. Property-based tests
+(Hypothesis) are ordinary unit tests owned by the unit test writer (`python-testing`); only a harness
+that drives the engine, including an Atheris script over a Hypothesis test's
+`.hypothesis.fuzz_one_input`, belongs here.
+
+Name a harness `fuzz_<target>.py` (or `<target>_fuzzer.py` where the repository already uses that
+form) and keep harnesses, corpora and artefacts in a `fuzz/` directory, outside `tests/`, so the path
+names the fuzzing artefact.
 
 ## Establish the local basis
 
@@ -45,14 +51,14 @@ for intentionally malformed input. Do not bypass production validation to improv
 
 ## Execute and replay
 
-These examples assume `.venv/bin/python`, an executable `tests/fuzz/fuzz_decode.py`, and existing
+These examples assume `.venv/bin/python`, an executable `fuzz/fuzz_decode.py`, and existing
 corpus/artefact directories. Substitute repository paths and justified limits; create only the
 authorised local output directories before running. Check the installed engine's `-help=1` output.
 
 ```text
-.venv/bin/python tests/fuzz/fuzz_decode.py -help=1
-.venv/bin/python tests/fuzz/fuzz_decode.py tests/fuzz/corpus/decode/valid-seed
-.venv/bin/python tests/fuzz/fuzz_decode.py tests/fuzz/corpus/decode -max_total_time=30 -artifact_prefix=tests/fuzz/artifacts/decode/
+.venv/bin/python fuzz/fuzz_decode.py -help=1
+.venv/bin/python fuzz/fuzz_decode.py fuzz/corpus/decode/valid-seed
+.venv/bin/python fuzz/fuzz_decode.py fuzz/corpus/decode -max_total_time=30 -artifact_prefix=fuzz/artifacts/decode/
 ```
 
 A file argument selects libFuzzer replay; a directory supplies a search corpus. Inspect actual

@@ -6,8 +6,8 @@ model: opus
 effort: high
 permissionMode: acceptEdits
 skills: frontend-engineer, frontend-tooling, ui-design, code-comments, lint-discipline, agent-communication, shared-utils, mcp-playwright, mcp-storybook, lsp-tools, agent-base-protocol, code-writing-protocols, contract-boundary, diverge-synthesize-select
-globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "!**/*.test.*", "!**/*.spec.*", "!**/__tests__/**", "!**/__mocks__/**", "!**/tests/**", "!**/e2e/**"]
-updated: 2026-11-17
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "!**/*.test.*", "!**/*.spec.*", "!**/__tests__/**", "!**/__mocks__/**", "!**/tests/**", "!**/e2e/**", "!**/*.fuzz.js", "!**/*.fuzz.ts", "!**/*.fuzz/**", "!**/fuzz/**", "!**/testdata/fuzz/**", "!.cifuzz-corpus/**", "!.clusterfuzzlite/**", "!**/formal_model/**", "!observability/dashboards/**", "!observability/rules/**", "!observability/runbooks/**"]
+updated: 2026-11-22
 problem: "TypeScript/React/Next.js code changes bypass typed, tested, accessible standards when written outside the frontend SE pipeline."
 related: [designer, unit_tests_writer, code_reviewer, implementation_planner]
 ---
@@ -86,7 +86,7 @@ This agent uses **skills** for frontend-specific patterns. Skills load automatic
 
 ## Tests Belong to the Test Writers
 
-Do not create, edit, rename or delete test files, test helpers or test data: the `!` patterns in this agent's `globs` name them, and the `pre_edit_file_ownership_guard` hook denies the edit. Run the existing suite. When a test exposes a defect in your code, fix the code; when your change deliberately alters the behaviour a test asserts, leave the test alone and report it with its exact output. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
+Do not create, edit, rename or delete test files, test helpers or test data. Ownership is decided by path against each agent's `globs`: the `!` patterns in this agent's `globs` name the test paths and the artefacts specialist agents own (fuzz harnesses and corpora, formal models, observability dashboards, rules and runbooks); do not edit a path your `!` patterns exclude or another agent's `globs` claim. Run the existing suite. When a test exposes a defect in your code, fix the code. When a test fails after your change, find the part of the task specification (an acceptance criterion, a plan row) that calls for the behaviour change it catches. If there is one, leave the test alone and report it: the test, its exact output, and the criterion that calls for the change; the test writer checks it against the same criterion before updating it. If there is none, or a protected condition forbids the change, your code is wrong: fix the code. Name each behaviour that needs new coverage as a scenario in your handoff for the test writer. See `code-writing-protocols` — Test Ownership.
 
 ## LSP Navigation Protocol
 

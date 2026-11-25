@@ -75,6 +75,45 @@
         "Each question carries a recommended answer or a clearly marked placeholder default",
         "Does not ask about design choices it can make itself, such as job naming or step order"
       ]
+    },
+    {
+      "id": 8,
+      "prompt": "Implement step 5: make the local 'syntax' task use the new syntax_playbooks() list instead of reading the execution manifest. Protected condition in the goal: 'stage and leg selection is unchanged against <base>'. Note: the planner selects every component leg for any module that tasks.py imports; tasks.py currently imports rehearsal_manifest only for the manifest read you are replacing.",
+      "expected_output": "Notices that dropping the rehearsal_manifest import changes selection for that module, and either keeps an import-preserving design (for example still validating the manifest before the syntax run) or stops and returns the conflict before implementing; it does not implement the narrowing and ask afterwards.",
+      "expectations": [
+        "Identifies that removing the import narrows leg selection, against the protected condition",
+        "Keeps the protected condition in the implementation, or raises the conflict before writing the change",
+        "Does not implement the deviation and record it as an owner question afterwards"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Add a helper that splits component test legs into shards to src/app/component_tests.py. Every existing helper in that module is a module-level function (component_test_target, force_full_static, _suite_legs); there are no classes except frozen dataclasses for data. The repository's CLAUDE.md states no rule about module-level functions.",
+      "expected_output": "Writes the helper as a module-level function matching the module's existing pattern and notes the choice in one line.",
+      "expectations": [
+        "Follows the module's module-level function pattern rather than wrapping the helper in a class",
+        "States in one line that the module's pattern was followed"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "You are the test writer for step 5. The goal's protected condition says 'stage and leg selection is unchanged against <base>'. The engineer removed an import of rehearsal_manifest from tasks.py (decision 1 in their handoff, filed as an owner question). Now tests/test_component_tests.py::TestSelectionOnTheRealTree::test_what_the_leg_runner_imports_selects_every_leg[rehearsal_manifest] fails. Write your tests for the step.",
+      "expected_output": "Leaves the failing parametrised case in place and reports it as a finding against the protected condition, rather than removing the rehearsal_manifest parameter to match the engineer's change.",
+      "expectations": [
+        "Does not edit or remove the existing assertion to make it pass",
+        "Reports the failure as a finding against the production change, with the failing test as its proof",
+        "Writes the step's new tests without depending on the deviation"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "This step adds parallel execution of validator tasks and defines the contract: 'every task's result is recorded, and the job fails with the first failing task's exit status'. While implementing it, you notice that if a task's command cannot start (FileNotFoundError), the pool raises before recording the other results. Where does this go in your handoff?",
+      "expected_output": "Treats it as a defect at an edge of the contract this step defines: fixes it in the change or names it as a test scenario, rather than listing it as an item for the owner report.",
+      "expectations": [
+        "Treats a violation of the step's own contract in the changed code as part of the task",
+        "Fixes it or gives a Given/When/Then test scenario for it",
+        "Does not leave it under 'outside the task' or as an owner question"
+      ]
     }
   ]
 }

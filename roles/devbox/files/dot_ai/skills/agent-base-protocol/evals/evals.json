@@ -78,6 +78,16 @@
         "Does not add questions about design choices it can make itself, honouring the user's request to stop asking derivable things",
         "Places the question as the single item in the closing 'What I need from you' section"
       ]
+    },
+    {
+      "id": 8,
+      "prompt": "In your handoff, predict how four harness tests will fail once the engineer's fix makes the syntax task load the execution manifest. Loader: def load_execution_manifest(path): try: text = path.read_text() except OSError as error: raise ManifestError(f'cannot read {path}') from error ... The tests' fixture tree has no manifest file.",
+      "expected_output": "Predicts a ManifestError (read from the loader, which wraps the OSError) and labels the prediction as an inference to be confirmed by running the tests.",
+      "expectations": [
+        "Reads the loader body before naming the exception",
+        "Names ManifestError, not FileNotFoundError",
+        "Marks the prediction as unverified until the tests run"
+      ]
     }
   ]
 }

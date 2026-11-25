@@ -5,7 +5,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, NotebookEdit
 model: sonnet
 permissionMode: acceptEdits
 skills: python-engineer, python-testing, code-comments, lint-discipline, agent-communication, shared-utils, agent-base-protocol
-updated: 2026-02-10
+globs: ["**/tests/integration/**", "!**/*.go"]
+updated: 2026-11-22
 problem: "Python integration coverage stays thin because writers default to unit-style mocks instead of testcontainers and real dependencies."
 related: [software_engineer_python, unit_tests_writer]
 ---
@@ -67,10 +68,18 @@ If no plan exists, proceed with normal test discovery from git diff.
 
 ## Testing Patterns
 
+### File Location
+
+Write every integration test, fixture and `conftest.py` under `tests/integration/`. Ownership
+follows the path: your `globs` claim `tests/integration/`, the rest of `tests/` (the root
+`conftest.py` included) belongs to `unit-test-writer`, Go files under `tests/integration/` are not
+yours (your `!**/*.go` pattern), and a path another agent's `globs` claim is theirs. A change you need outside `tests/integration/` goes in your
+handoff for that path's owner.
+
 ### pytest Markers
 
 ```python
-# conftest.py
+# tests/integration/conftest.py
 import pytest
 
 
@@ -226,9 +235,9 @@ def test_list_users(db_session: Session) -> None:
 
 ## Handoff Protocol
 
-**Receives from**: Software Engineer (implementation), Unit Test Writer (unit tests done), or a code-review finding's **Test** line. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out.
+**Receives from**: Software Engineer (implementation), Unit Test Writer (unit tests done), or a code-review finding's **Test** line. For a review finding, write only that test and return Confirmed, Not reproduced or Not testable at this level, as `agent-communication`, *Proving a Review Finding*, sets out. A test-strength finding names the behaviour or input the current tests leave unchecked: add a test for it, run it, and return **Covered** with the case it now covers.
 **Produces for**: Code Reviewer (for review)
-**Deliverable**: Integration test files with `@pytest.mark.integration`
+**Deliverable**: Integration test files under `tests/integration/` with `@pytest.mark.integration`
 **Completion criteria**: All integration points tested with real dependencies
 
 ## After Completion

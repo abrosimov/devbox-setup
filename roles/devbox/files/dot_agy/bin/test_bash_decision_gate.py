@@ -245,7 +245,7 @@ def test_interp_inline_exec_denies(cmd: str) -> None:
     d = _eval(cmd)
     assert d.behavior == "deny"
     assert d.rule == "interp-inline-exec"
-    assert "agy_written_scripts" in (d.reason or "")
+    assert "ai/scripts/<slug>/" in (d.reason or "")
 
 
 @pytest.mark.parametrize("cmd", ['eval "$x"', "exec /bin/sh", "source ./script.sh", ". ./x.sh"])
@@ -353,10 +353,88 @@ def test_writing_new_file_to_audit_dir_via_tee_denies() -> None:
     assert d.rule == "audit-dir"
 
 
+def test_rm_of_slug_script_in_audit_dir_denies() -> None:
+    d = _eval("rm ai/scripts/some-slug/main.py")
+    assert d.behavior == "deny"
+    assert d.rule == "audit-dir"
+
+
+def test_redirect_into_audit_dir_readme_denies() -> None:
+    d = _eval("echo x > ai/scripts/README.md")
+    assert d.behavior == "deny"
+    assert d.rule == "audit-dir"
+
+
+def test_former_engine_script_dir_is_no_longer_protected() -> None:
+    d = _eval("rm .claude/claude_written_scripts/x.py")
+    assert d.rule != "audit-dir"
+
+
 def test_creating_audit_dir_file_via_mkdir_outside_does_not_fire() -> None:
     # mkdir doesn't write a target inside audit dir; create unrelated dir.
     d = _eval("mkdir build")
     assert d.behavior == "allow"
+
+
+def _repo_with_git_dir(root: Path) -> Path:
+    (root / ".git").mkdir()
+    cwd = root / "roles" / "devbox"
+    cwd.mkdir(parents=True)
+    return cwd
+
+
+def test_audit_dir_is_anchored_at_repository_root_not_cwd(tmp_path: Path) -> None:
+    cwd = _repo_with_git_dir(tmp_path)
+    d = _eval("rm ../../ai/scripts/x/main.py", cwd=str(cwd))
+    assert d.behavior == "deny"
+    assert d.rule == "audit-dir"
+
+
+def test_ai_scripts_below_a_subdirectory_is_not_the_audit_dir(tmp_path: Path) -> None:
+    cwd = _repo_with_git_dir(tmp_path)
+    d = _eval("rm ai/scripts/x/main.py", cwd=str(cwd))
+    assert d.rule != "audit-dir"
+
+
+def test_audit_dir_is_found_when_git_is_a_file(tmp_path: Path) -> None:
+    (tmp_path / ".git").write_text("gitdir: /elsewhere\n")
+    cwd = tmp_path / "pkg" / "sub"
+    cwd.mkdir(parents=True)
+    d = _eval(f"echo x > {tmp_path}/ai/scripts/README.md", cwd=str(cwd))
+    assert d.behavior == "deny"
+    assert d.rule == "audit-dir"
+
+
+def test_audit_dir_uses_nearest_repository_when_repositories_are_nested(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".git").mkdir()
+    inner = tmp_path / "inner"
+    (inner / ".git").mkdir(parents=True)
+    cwd = inner / "sub"
+    cwd.mkdir()
+
+    inner_target = _eval("rm ../ai/scripts/x.py", cwd=str(cwd))
+    assert inner_target.behavior == "deny"
+    assert inner_target.rule == "audit-dir"
+
+    outer_target = _eval("rm ../../ai/scripts/x.py", cwd=str(cwd))
+    assert outer_target.rule != "audit-dir"
+
+
+def test_audit_dir_falls_back_to_cwd_without_a_repository(tmp_path: Path) -> None:
+    d = _eval("rm ai/scripts/x/main.py", cwd=str(tmp_path))
+    assert d.behavior == "deny"
+    assert d.rule == "audit-dir"
+
+
+def test_audit_dir_deny_reason_names_edit_write_and_index_readme() -> None:
+    d = _eval("rm ai/scripts/some-slug/main.py")
+    assert d.rule == "audit-dir"
+    reason = d.reason or ""
+    assert "Edit/Write" in reason
+    assert "ai/scripts/README.md" in reason
+    assert "audit trail" not in reason
 
 
 # ============================================================
@@ -731,7 +809,7 @@ def test_main_unsafe_command_emits_deny_json_with_reason(
     assert "BLOCKED" in stderr
     payload = json.loads(stdout)
     assert payload["hookSpecificOutput"]["permissionDecision"] == "deny"
-    assert "agy_written_scripts" in payload["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "ai/scripts/<slug>/" in payload["hookSpecificOutput"]["permissionDecisionReason"]
 
 
 # ============================================================

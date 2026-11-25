@@ -64,6 +64,7 @@ Commands do not auto-commit. The main session commits, pushes and opens a PR/MR 
 │   ├── techne-plan.md
 │   ├── techne-review.md
 │   ├── techne-schema.md
+│   ├── techne-tech-dd.md
 │   ├── techne-test.md
 │   ├── techne-think.md
 │   ├── techne-validate-config.md
@@ -91,6 +92,7 @@ Commands do not auto-commit. The main session commits, pushes and opens a PR/MR 
 | `/techne-verify` | Run pre-PR quality gate (build, typecheck, lint, test, debug scan) | Before `/techne-review` or PR creation |
 | `/techne-options` | Generate diverse solution options via DSS (Diverge-Synthesize-Select) | Before design decisions with wide scope |
 | `/techne-learn` | Extract a reusable pattern from current session | After solving non-trivial problems |
+| `/techne-tech-dd` | Write or continue an initial technical due diligence from a sell-side deck plus public sources (`tech-due-diligence` skill) | When an investor, buyer or board needs to know what a deck shows about the technology and what to check first |
 
 Each command:
 - Auto-detects project stack (Go/Python/Frontend/Fullstack)

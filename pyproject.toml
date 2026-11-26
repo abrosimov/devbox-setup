@@ -83,6 +83,9 @@ extend-exclude = [
     # Markdown, so without this it restyles the specification text itself — and
     # the next upstream sync would undo it again.
     "roles/devbox/files/dot_ai/skills/fpf-thinking/references",
+    # Verbatim copy of temporalio/skill-temporal-developer; ruff would restyle
+    # the Python examples in its Markdown away from the upstream release.
+    "roles/devbox/files/dot_ai/skills/temporal-developer",
     "roles/devbox/files/.config/nvim",
 ]
 

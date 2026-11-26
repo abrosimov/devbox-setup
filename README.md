@@ -438,6 +438,8 @@ make openbao-unseal-now    # run once; tail ~/Library/Logs/openbao-unseal.log
 
 A Mac without the Keychain item logs `nothing to do` and exits 0.
 
+The personal profile also installs the OpenBao CLI (`bao`, Homebrew formula `openbao`, listed in `devbox_extra_brew` in `profiles/personal.yml`); the server repository's `make openbao-login` uses it. The work profile does not install it.
+
 ## Testing
 
 ```bash

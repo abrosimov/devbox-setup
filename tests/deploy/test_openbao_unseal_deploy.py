@@ -146,6 +146,23 @@ def test_only_the_personal_profile_unseals() -> None:
     assert _active("personal", config_exists=False) is False
 
 
+def _extra_brew(profile: str) -> list[str]:
+    values = _mapping(yaml.safe_load((PROFILES / f"{profile}.yml").read_text(encoding="utf-8")))
+    return _strings(values.get("devbox_extra_brew", []))
+
+
+def test_only_the_personal_profile_installs_the_openbao_cli() -> None:
+    install = next(
+        t
+        for t in _load(ROLE / "tasks/darwin/install_from_brew_secondary.yml")
+        if t["name"] == "Install Homebrew apps"
+    )
+
+    assert "devbox_extra_brew" in str(_mapping(install["community.general.homebrew"])["name"])
+    assert "openbao" in _extra_brew("personal")
+    assert "openbao" not in _extra_brew("work")
+
+
 def test_install_block_and_teardown_follow_the_same_decision() -> None:
     install = _task("install and schedule")
     teardown = _task("tear down (profile off or no local config)")

@@ -184,6 +184,7 @@ Current per-profile differences:
 | Extra MCP HTTP servers | `clickstack` (`https://clickstack.abrosimov.tech/api/mcp` behind the server's Tamias `mcp` gateway; `headersHelper` runs `tamias mcp-headers` for a short-lived Pocket token, the HyperDX key stays on the server) | `atlassian` |
 | Langfuse skill access (`devbox_langfuse_host`) | `LANGFUSE_HOST` + Keychain keys + sandbox domains | none |
 | Private Go module proxy (`devbox_tamias_enabled`) | Tamias + client profiles + go env pointing at `go.abrosimov.tech` | off; the go env keys it wrote are removed |
+| OpenBao (`devbox_extra_brew`, `devbox_openbao_unseal_enabled`) | `bao` CLI (formula `openbao`) + unattended unseal LaunchAgent | neither |
 
 ### AI Config (in `roles/devbox/files/dot_claude/`, `dot_codex/`, and `dot_ai/`)
 

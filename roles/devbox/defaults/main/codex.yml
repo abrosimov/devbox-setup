@@ -37,6 +37,22 @@ devbox_codex_shared_skills:
   - ui-design
   - writing-for-the-reader
 
+# Git marketplaces registered with `codex plugin marketplace add`, and the plugins
+# installed from them with `codex plugin add` (tasks/install_codex_configs.yml).
+# `source` is anything that command accepts: owner/repo[@ref] or a Git URL.
+# Every plugin here must also be declared enabled in dot_codex/config.toml.j2,
+# because the reconcile owns the [plugins] table that `codex plugin add` writes.
+devbox_codex_plugin_marketplaces:
+  # Temporal's plugin: the temporal-developer skill plus its CLI, Cloud,
+  # serverless and observability companions. The same plugin in OpenAI's remote
+  # catalog needs a ChatGPT login to install; the Git marketplace does not.
+  - name: temporal-marketplace
+    source: temporalio/codex-temporal-plugin
+
+devbox_codex_plugins:
+  - name: temporal
+    marketplace: temporal-marketplace
+
 # Codex-native custom agents. Their TOML files live in dot_codex because the
 # format, model inheritance, sandbox semantics, and prompt contract are
 # client-specific even when the professional role originated in dot_ai.

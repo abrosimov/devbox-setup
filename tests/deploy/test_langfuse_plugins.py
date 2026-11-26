@@ -207,8 +207,12 @@ def test_codex_langfuse_hook_is_vendored_rather_than_installed_as_a_plugin() -> 
     config = tomllib.loads(CODEX_CONFIG.read_text(encoding="utf-8"))
 
     assert CODEX_VENDORED_HOOK.is_file()
-    assert "devbox_codex_plugin_marketplaces" not in defaults
-    assert "devbox_codex_plugins" not in defaults
+    assert RETIRED_CODEX_MARKETPLACE not in [
+        entry["name"] for entry in defaults["devbox_codex_plugin_marketplaces"]
+    ]
+    assert RETIRED_CODEX_PLUGIN not in [
+        f"{entry['name']}@{entry['marketplace']}" for entry in defaults["devbox_codex_plugins"]
+    ]
     assert RETIRED_CODEX_PLUGIN not in config["plugins"]
     assert config["features"]["hooks"] is True
 
@@ -248,7 +252,7 @@ def test_codex_native_trace_export_is_disabled_without_disabling_logs_or_metrics
     assert telemetry["log_user_prompt"] is True
 
 
-def test_codex_provisioning_installs_no_plugin() -> None:
+def test_codex_provisioning_never_installs_the_retired_langfuse_plugin() -> None:
     tasks = yaml.safe_load(CODEX_TASKS.read_text(encoding="utf-8"))
     runtime = _tasks_by_name(CODEX_TASKS)["Install Codex Langfuse runtime configuration"]
     commands = [task.get("ansible.builtin.command") for task in tasks]
@@ -257,9 +261,16 @@ def test_codex_provisioning_installs_no_plugin() -> None:
         for command in commands
         if isinstance(command, dict) and isinstance(command.get("argv"), list)
     ]
+    adding = [argv for argv in argvs if "plugin" in argv and "add" in argv]
 
     assert runtime["ansible.builtin.template"]["mode"] == "0600"
-    assert not [argv for argv in argvs if "plugin" in argv and "add" in argv]
+    assert not [
+        argv
+        for argv in adding
+        if any(
+            RETIRED_CODEX_PLUGIN in token or RETIRED_CODEX_MARKETPLACE in token for token in argv
+        )
+    ]
 
 
 @pytest.mark.parametrize(

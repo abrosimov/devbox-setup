@@ -86,6 +86,25 @@ install. `install_codex_configs.yml` removes `tracing@codex-observability-plugin
 and the `codex-observability-plugin` marketplace when it finds them, because the
 plugin's own `Stop` hook would otherwise upload every turn a second time.
 
+## Plugins
+
+`devbox_codex_plugin_marketplaces` and `devbox_codex_plugins` in
+`roles/devbox/defaults/main/codex.yml` list the Git marketplaces and the plugins
+the playbook installs. `install_codex_configs.yml` adds a marketplace that is not
+configured yet (`codex plugin marketplace add`), refreshes the marketplace of a
+plugin that is not installed yet (`codex plugin marketplace upgrade`), installs
+it (`codex plugin add`) and fails the run if a listed plugin is not installed and
+enabled afterwards. A converged run only lists.
+
+`codex plugin add` writes `[plugins."<name>@<marketplace>"] enabled = true` into
+`config.toml`, and the reconcile owns the `[plugins]` table, so every listed
+plugin is also declared in `config.toml.j2`. The `[marketplaces]` table it writes
+is runtime state and is not reconciled.
+
+Prefer a plugin's Git marketplace to OpenAI's remote catalog
+(`openai-curated-remote`): the remote catalog refuses to install without a
+ChatGPT login.
+
 ## Hook trust
 
 Codex runs a hook only when it is enabled *and* its recorded `trusted_hash`

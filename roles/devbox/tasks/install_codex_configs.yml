@@ -286,6 +286,114 @@
     devbox_codex_retired_marketplace: codex-observability-plugin
   tags: [configs, ai, codex]
 
+# Repository-declared plugins. Each step acts only on what is missing, so a
+# converged run makes no network calls. The inspections above serve as the
+# "before" state: the retired-plugin removal touches neither list's entries here.
+- name: Add Codex plugin marketplaces
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - add
+      - "{{ item.source }}"
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  loop: "{{ devbox_codex_plugin_marketplaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - devbox_codex_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      item.name not in
+      ((devbox_codex_marketplaces_before.stdout | from_json).marketplaces
+       | map(attribute='name') | list)
+  changed_when: true
+  tags: [configs, ai, codex]
+
+# A Git marketplace is a snapshot taken when it was added; a plugin published
+# after that is not found until the snapshot is refreshed.
+- name: Refresh the marketplace of each Codex plugin not installed yet
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - marketplace
+      - upgrade
+      - "{{ item.marketplace }}"
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  loop: "{{ devbox_codex_plugins }}"
+  loop_control:
+    label: "{{ item.name }}@{{ item.marketplace }}"
+  when:
+    - devbox_codex_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      (item.name ~ '@' ~ item.marketplace) not in
+      ((devbox_codex_plugins_before.stdout | from_json).installed
+       | map(attribute='pluginId') | list)
+  changed_when: true
+  tags: [configs, ai, codex]
+
+- name: Install Codex plugins
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - add
+      - "{{ item.name }}@{{ item.marketplace }}"
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  loop: "{{ devbox_codex_plugins }}"
+  loop_control:
+    label: "{{ item.name }}@{{ item.marketplace }}"
+  when:
+    - devbox_codex_cli_path.rc == 0
+    - not ansible_check_mode
+    - >-
+      (item.name ~ '@' ~ item.marketplace) not in
+      ((devbox_codex_plugins_before.stdout | from_json).installed
+       | map(attribute='pluginId') | list)
+  changed_when: true
+  tags: [configs, ai, codex]
+
+- name: Inspect Codex plugins after installation
+  ansible.builtin.command:
+    argv:
+      - "{{ devbox_codex_cli_path.stdout }}"
+      - plugin
+      - list
+      - --json
+  environment:
+    CODEX_HOME: "{{ devbox_codex_home }}"
+  register: devbox_codex_plugins_after
+  when: devbox_codex_cli_path.rc == 0
+  changed_when: false
+  check_mode: false
+  tags: [configs, ai, codex]
+
+- name: Assert repository-declared Codex plugins are installed and enabled
+  ansible.builtin.assert:
+    that:
+      - (item.name ~ '@' ~ item.marketplace) in devbox_codex_enabled_plugin_ids
+    fail_msg: "Codex plugin {{ item.name }}@{{ item.marketplace }} is not installed and enabled"
+    quiet: true
+  loop: "{{ devbox_codex_plugins }}"
+  loop_control:
+    label: "{{ item.name }}@{{ item.marketplace }}"
+  vars:
+    devbox_codex_enabled_plugin_ids: >-
+      {{ (devbox_codex_plugins_after.stdout | from_json).installed
+         | selectattr('enabled') | map(attribute='pluginId') | list }}
+  when:
+    - devbox_codex_cli_path.rc == 0
+    - not ansible_check_mode
+  tags: [configs, ai, codex]
+
 # Codex silently drops any hook whose recorded trusted_hash does not match the one
 # it recomputes from the live definition, so a fresh machine disables every hook we
 # provision until a human visits /hooks. Runs last: the reconcile and the plugin

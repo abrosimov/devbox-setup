@@ -93,6 +93,11 @@ devbox_claude_plugin_marketplaces:
   - repo: anthropics/skills
     name: anthropic-agent-skills
     declare_in_settings: true
+  # Temporal's official plugin: the temporal-developer skill plus its CLI,
+  # Cloud and serverless companions.
+  - repo: temporalio/claude-temporal-plugin
+    name: temporal-marketplace
+    declare_in_settings: true
 
 devbox_claude_plugins:
   - name: example-skills
@@ -112,3 +117,5 @@ devbox_claude_plugins:
   # per profile (devbox_langfuse_host, make langfuse-config).
   - name: langfuse
     marketplace: claude-plugins-official
+  - name: temporal
+    marketplace: temporal-marketplace

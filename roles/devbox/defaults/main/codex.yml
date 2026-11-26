@@ -33,7 +33,6 @@ devbox_codex_shared_skills:
   - rust-fuzzing
   - structured-input-generation
   - tech-due-diligence
-  - temporal-developer
   - tla-plus
   - ui-design
   - writing-for-the-reader

@@ -75,7 +75,7 @@ devbox_drive_backup:
 # only once the session has separate Spaces per display (a new login after the
 # first run) and Rift has the Accessibility permission; until then AeroSpace
 # keeps running.
-devbox_wm: "aerospace"
+devbox_wm: "rift"
 
 # Rift configuration (templates/darwin/.config/rift/config.toml.j2).
 # The logical Super modifier every Rift binding is built on. Meta is Cmd.

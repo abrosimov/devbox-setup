@@ -742,9 +742,9 @@ class TestWindowManagerChoice:
         assert len([s for s in steps if _mentions_aerospace(s.task)]) == 11
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
-    def test_nothing_switches_by_default(self, profile: str) -> None:
-        assert _DEFAULTS["devbox_wm"] == "aerospace"
-        assert _profile_vars(profile)["devbox_wm"] == "aerospace"
+    def test_rift_is_the_default_in_every_profile(self, profile: str) -> None:
+        assert _DEFAULTS["devbox_wm"] == "rift"
+        assert _profile_vars(profile)["devbox_wm"] == "rift"
 
     def test_the_allowed_values_are_the_two(self) -> None:
         guard = _WM_TASKS[0]["ansible.builtin.assert"]["that"]

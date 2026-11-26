@@ -131,7 +131,7 @@ Keybindings and usage for each tool:
 
 Rift ([acsandmann/rift](https://github.com/acsandmann/rift)) is installed beside
 AeroSpace. `devbox_wm` in `roles/devbox/defaults/main/core.yml` chooses which one
-runs (`aerospace` by default, or `rift`), and
+runs (`rift` by default, or `aerospace`), and
 `roles/devbox/tasks/darwin/configure_window_manager.yml` keeps the other one
 stopped and out of the login items.
 
@@ -152,7 +152,7 @@ stopped and out of the login items.
   (`config.toml.prev`) is put back and the run fails.
 - **Switching to Rift** takes two runs and one manual step, because Rift needs
   two things the playbook cannot give it in a running session:
-  1. Set `devbox_wm: rift` and run the playbook. It stores "Displays have
+  1. Run the playbook with `devbox_wm: rift` (the default). It stores "Displays have
      separate Spaces" (Rift refuses to start without it), leaves AeroSpace
      running and prints that a new login is needed.
   2. Grant Accessibility to `~/Applications/Rift.app` in System Settings ›

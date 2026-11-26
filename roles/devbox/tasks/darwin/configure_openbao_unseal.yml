@@ -1,0 +1,195 @@
+---
+# Unattended unseal of the remote OpenBao server: scripts/openbao-unseal.py plus
+# the `local.openbao-unseal` LaunchAgent that runs it every five minutes.
+#
+# Two switches, both required: the profile variable devbox_openbao_unseal_enabled
+# (on only in `personal`) and the local-overlay config
+# ~/.config/openbao-unseal/config.json (deployed by Block 6 of
+# install_configs.yml, which runs earlier). The config holds the destination
+# (SSH host, user, port) and the server's inventory host name, so none of them
+# is in this repository; the script reads it at run time. Both on → generate the
+# dedicated SSH key if it is missing, deploy the script, validate the config and
+# (re)bootstrap the agent. Otherwise → boot the agent out and remove it and the
+# script, so a `work` run leaves nothing running. The SSH key is never removed
+# or overwritten: its public half is authorised on the server.
+#
+# The unseal key itself lives only in the login Keychain and is added by hand;
+# without it every run logs "nothing to do".
+
+- name: "OpenBao unseal — resolve paths"
+  ansible.builtin.set_fact:
+    devbox_openbao_unseal_config: "{{ ansible_facts['env']['HOME'] }}/.config/openbao-unseal/config.json"
+    devbox_openbao_unseal_dir: "{{ ansible_facts['env']['HOME'] }}/.local/share/openbao-unseal"
+    devbox_openbao_unseal_identity: "{{ ansible_facts['env']['HOME'] }}/.ssh/openbao_unseal_ed25519"
+    devbox_openbao_unseal_log: "{{ ansible_facts['env']['HOME'] }}/Library/Logs/openbao-unseal.log"
+    devbox_openbao_unseal_plist: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.openbao-unseal.plist"
+    devbox_openbao_unseal_service: "gui/{{ ansible_facts['user_uid'] }}/local.openbao-unseal"
+  tags: [openbao-unseal, launchagent]
+
+- name: "OpenBao unseal — look for the local config"
+  ansible.builtin.stat:
+    path: "{{ devbox_openbao_unseal_config }}"
+  register: devbox_openbao_unseal_config_stat
+  tags: [openbao-unseal, launchagent]
+
+- name: "OpenBao unseal — decide whether this machine unseals"
+  ansible.builtin.set_fact:
+    devbox_openbao_unseal_active: >-
+      {{ (devbox_openbao_unseal_enabled | default(false) | bool)
+         and devbox_openbao_unseal_config_stat.stat.exists }}
+  tags: [openbao-unseal, launchagent]
+
+- name: "OpenBao unseal — check LaunchAgent bootstrap status"
+  ansible.builtin.command:
+    argv: [/bin/launchctl, print, "{{ devbox_openbao_unseal_service }}"]
+  register: devbox_openbao_unseal_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [openbao-unseal, launchagent]
+
+# --- disabled: profile off or no config → tear down ----------------------------
+
+- name: "OpenBao unseal — tear down (profile off or no local config)"
+  when: not (devbox_openbao_unseal_active | bool)
+  tags: [openbao-unseal, launchagent]
+  block:
+    - name: "OpenBao unseal — bootout LaunchAgent"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootout, "{{ devbox_openbao_unseal_service }}"]
+      when: devbox_openbao_unseal_status.rc == 0
+      changed_when: true
+
+    - name: "OpenBao unseal — remove LaunchAgent plist and script"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ devbox_openbao_unseal_plist }}"
+        - "{{ devbox_openbao_unseal_dir }}"
+
+    - name: "OpenBao unseal — report disabled"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'openbao-unseal not configured: add
+          roles/devbox/local/.config/openbao-unseal/config.json (see
+          roles/devbox/files/.config/openbao-unseal/config.json.example) to enable.'
+          if (devbox_openbao_unseal_enabled | default(false) | bool)
+          else 'openbao-unseal is off for this profile.' }}
+
+# --- enabled -------------------------------------------------------------------
+
+- name: "OpenBao unseal — install and schedule"
+  when: devbox_openbao_unseal_active | bool
+  tags: [openbao-unseal, launchagent]
+  block:
+    - name: "OpenBao unseal — ensure directories exist"
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ ansible_facts['env']['HOME'] }}/.ssh", mode: "0700" }
+        - { path: "{{ devbox_openbao_unseal_dir }}", mode: "0755" }
+        - { path: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents", mode: "0755" }
+        - { path: "{{ ansible_facts['env']['HOME'] }}/Library/Logs", mode: "0755" }
+
+    # No passphrase: the server restricts this key to the one forced command,
+    # and an unattended agent cannot answer a prompt. `creates` keeps an existing
+    # key, whose public half is already authorised on the server.
+    - name: "OpenBao unseal — generate the dedicated SSH key if absent"
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/ssh-keygen
+          - -q
+          - -t
+          - ed25519
+          - -N
+          - ""
+          - -C
+          - "openbao unseal key of {{ ansible_facts['hostname'] }}"
+          - -f
+          - "{{ devbox_openbao_unseal_identity }}"
+        creates: "{{ devbox_openbao_unseal_identity }}"
+
+    - name: "OpenBao unseal — restrict the private key to its owner"
+      ansible.builtin.file:
+        path: "{{ devbox_openbao_unseal_identity }}"
+        mode: "0600"
+      when: not ansible_check_mode
+
+    - name: "OpenBao unseal — read the public key"
+      ansible.builtin.slurp:
+        src: "{{ devbox_openbao_unseal_identity }}.pub"
+      register: devbox_openbao_unseal_public_key
+      when: not ansible_check_mode
+
+    - name: "OpenBao unseal — show the public key to authorise on the server"
+      ansible.builtin.debug:
+        msg: >-
+          Add this key ({{ devbox_openbao_unseal_identity }}.pub) to the server
+          inventory variable openbao_unseal_authorized_keys:
+          {{ devbox_openbao_unseal_public_key.content | b64decode | trim }}
+      when: not ansible_check_mode
+
+    - name: "OpenBao unseal — deploy the script"
+      ansible.builtin.copy:
+        src: "{{ role_path }}/../../scripts/openbao-unseal.py"
+        dest: "{{ devbox_openbao_unseal_dir }}/openbao-unseal.py"
+        mode: "0755"
+
+    # Fail the playbook, not every scheduled run, on a broken config. The system
+    # interpreter is the one the agent runs.
+    - name: "OpenBao unseal — validate the config"
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - "{{ devbox_openbao_unseal_dir }}/openbao-unseal.py"
+          - --check-config
+          - --config
+          - "{{ devbox_openbao_unseal_config }}"
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: "OpenBao unseal — deploy LaunchAgent plist"
+      ansible.builtin.template:
+        src: darwin/Library/LaunchAgents/local.openbao-unseal.plist.j2
+        dest: "{{ devbox_openbao_unseal_plist }}"
+        mode: "0644"
+      register: devbox_openbao_unseal_plist_result
+
+    # bootstrap fails on an already-loaded service; a changed plist needs a
+    # bootout first to be picked up. A changed script needs nothing: every run
+    # is a fresh process.
+    - name: "OpenBao unseal — bootout LaunchAgent (plist changed)"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, bootout, "{{ devbox_openbao_unseal_service }}"]
+      when:
+        - not ansible_check_mode
+        - devbox_openbao_unseal_plist_result.changed
+        - devbox_openbao_unseal_status.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "OpenBao unseal — bootstrap LaunchAgent"
+      ansible.builtin.command:
+        argv:
+          - /bin/launchctl
+          - bootstrap
+          - "gui/{{ ansible_facts['user_uid'] }}"
+          - "{{ devbox_openbao_unseal_plist }}"
+      when:
+        - not ansible_check_mode
+        - devbox_openbao_unseal_plist_result.changed or devbox_openbao_unseal_status.rc != 0
+      register: devbox_openbao_unseal_bootstrapped
+      changed_when: true
+
+    # macOS 26 may leave a freshly bootstrapped job's RunAtLoad pending; see the
+    # otelbox edge collector's kickstart.
+    - name: "OpenBao unseal — start the freshly bootstrapped job"
+      ansible.builtin.command:
+        argv: [/bin/launchctl, kickstart, "{{ devbox_openbao_unseal_service }}"]
+      when:
+        - not ansible_check_mode
+        - devbox_openbao_unseal_bootstrapped is not skipped
+      changed_when: true

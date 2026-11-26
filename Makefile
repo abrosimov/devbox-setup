@@ -148,7 +148,7 @@ endif
        audit audit-brewfile audit-brewfile-all audit-taps untap-stale \
        claude-diff claude-pull claude-pull-review \
        karabiner-diff karabiner-pull \
-       dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now go-proxy-verify \
+       dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now openbao-unseal-push openbao-unseal-now go-proxy-verify \
        sync-upstream-docs \
        test test-integration test-ai-config test-deploy test-claude-hooks test-claude-hooks-unit test-agy-hooks test-agy-hooks-unit test-git-hooks test-scripts test-skills test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
        test-live test-live-guard test-langfuse-e2e \
@@ -205,6 +205,8 @@ help:
 	@echo "  make drive-backup-push - (re)install the weekly drive backup (uv project + LaunchAgent) from the local overlay config"
 	@echo "  make go-proxy-verify  - prove the Go module proxy client: go env contract, Tamias credential, public + private download"
 	@echo "  make drive-backup-now  - run the drive backup now via launchd; log in ~/Library/Logs/drive-backup.log"
+	@echo "  make openbao-unseal-push - (re)install the OpenBao unattended unseal (SSH key + LaunchAgent) from the local overlay config"
+	@echo "  make openbao-unseal-now  - run the OpenBao unseal now via launchd; log in ~/Library/Logs/openbao-unseal.log"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
 	@echo "  make audit-budget    - show detailed skill description budget report"
 	@echo "  make rules-budget    - count rule-like statements across skills/agents/commands/UAP (ARGS='--json' or '--baseline PATH')"
@@ -388,6 +390,7 @@ PY_PATHS_COMMON := \
   scripts/otelbox-edge-*.py scripts/otelbox_edge/ \
   scripts/codex-hook-trust.py scripts/codex_hook_trust/ \
   scripts/langfuse-codex-plugin-source.py \
+  scripts/openbao-unseal.py \
   scripts/pub-mode-test.py \
   scripts/sync-upstream-docs.py \
   tests/live/ \
@@ -395,6 +398,7 @@ PY_PATHS_COMMON := \
   tests/scripts/test_otelbox_edge_*.py \
   tests/scripts/test_codex_hook_trust*.py \
   tests/scripts/test_langfuse_codex_plugin_source.py \
+  tests/scripts/test_openbao_unseal.py \
   tests/scripts/test_pub_lease.py \
   tests/scripts/test_kitty_quit_confirm.py \
   tests/scripts/test_kitty_session.py \
@@ -908,6 +912,19 @@ go-proxy-verify: $(COLLECTIONS_SENTINEL)
 drive-backup-now:
 	@launchctl kickstart "gui/$$(id -u)/local.drive-backup"
 	@echo "Started. Follow: tail -f ~/Library/Logs/drive-backup.log"
+
+# Fast-path: (re)install the OpenBao unattended unseal — the dedicated SSH key,
+# scripts/openbao-unseal.py and the local.openbao-unseal LaunchAgent. Deploys the
+# local overlay first: its ~/.config/openbao-unseal/config.json is the on/off
+# switch. No sudo.
+openbao-unseal-push: $(COLLECTIONS_SENTINEL)
+	$(require_profile)
+	ANSIBLE_FORCE_COLOR=1 ansible-playbook --tags local,openbao-unseal $(SLIM_OPTS) playbooks/openbao_unseal.yml
+
+# Run one unseal attempt now, through launchd, exactly as scheduled.
+openbao-unseal-now:
+	@launchctl kickstart "gui/$$(id -u)/local.openbao-unseal"
+	@echo "Started. Follow: tail -f ~/Library/Logs/openbao-unseal.log"
 
 # Re-apply macOS basics: Touch ID for sudo, pmset disablesleep, DevToolsSecurity.
 # Reuses configure_macos_basics.yml under `macos`. Sudo IS required.

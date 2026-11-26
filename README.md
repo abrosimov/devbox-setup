@@ -414,6 +414,30 @@ Every scheduled or manual run immediately archives every configured directory wi
 
 Prerequisites in the drive repository: `*.tar.zst` must be LFS-tracked (`*.tar.zst filter=lfs diff=lfs merge=lfs -text` in `.gitattributes`), and the LFS filters must be configured (`git lfs install`). The tool refuses to commit an archive that would bypass LFS. It runs git with `core.hooksPath=/dev/null` and uploads LFS objects itself with `git lfs push`, so the global hooks path set up by this repository doesn't block uploads.
 
+## OpenBao Unattended Unseal
+
+The personal OpenBao server starts sealed after every restart. A LaunchAgent (`local.openbao-unseal`, at load and every 5 minutes) runs [`scripts/openbao-unseal.py`](scripts/openbao-unseal.py) with the system Python: it reads the unseal key from the login Keychain and writes it to the stdin of an SSH session to the server's dedicated unseal account, whose forced command submits it only while OpenBao is sealed and answers with one JSON line. Each run appends one timestamped line to `~/Library/Logs/openbao-unseal.log`. launchd skips intervals while the Mac sleeps, so after a wake the next run comes within 5 minutes; there is no separate wake trigger.
+
+It is installed only when both switches are on: the profile variable `devbox_openbao_unseal_enabled` (true in `profiles/personal.yml` only) and the local-overlay config. A run with either off boots the agent out and removes it; the SSH key stays. The destination is never in this repository: host, account and port live only in the gitignored overlay, read at run time.
+
+```sh
+cp roles/devbox/files/.config/openbao-unseal/config.json.example \
+   roles/devbox/local/.config/openbao-unseal/config.json
+$EDITOR roles/devbox/local/.config/openbao-unseal/config.json
+make openbao-unseal-push   # or a full make personal
+```
+
+The config keys are `ssh_host` (the address or `~/.ssh/config` alias whose host key is already in `~/.ssh/known_hosts`; SSH runs with `StrictHostKeyChecking=yes` and never learns a new key), `ssh_user`, the optional `ssh_port`, and `inventory_host` (the server's inventory host name, which names the Keychain item).
+
+The first enabled run generates `~/.ssh/openbao_unseal_ed25519` (ed25519, no passphrase, mode 0600; never overwritten) and prints its public key. Add the contents of `~/.ssh/openbao_unseal_ed25519.pub` from each Mac to the server inventory variable `openbao_unseal_authorized_keys` and deploy the server. Then store the unseal key in the Keychain (prompted, so it never reaches the shell history):
+
+```sh
+security add-generic-password -s openbao-unseal-<inventory_host> -a openbao -w
+make openbao-unseal-now    # run once; tail ~/Library/Logs/openbao-unseal.log
+```
+
+A Mac without the Keychain item logs `nothing to do` and exits 0.
+
 ## Testing
 
 ```bash

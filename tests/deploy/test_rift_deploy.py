@@ -563,6 +563,37 @@ class TestConfigTemplate:
         assert set(_config()["modifier_combinations"]) == {"super"}
 
 
+class TestSketchybarGap:
+    @staticmethod
+    def _outer(config: Doc) -> Doc:
+        outer = config["settings"]["layout"]["gaps"]["outer"]
+        assert isinstance(outer, dict)
+        return outer
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_the_outer_top_gap_is_the_bar_height_plus_one(self, profile: str) -> None:
+        height = cast("int", _profile_vars(profile)["devbox_sketchybar_height"])
+
+        top = self._outer(_config(profile))["top"]
+
+        assert top == height + 1
+        assert isinstance(top, int)
+        assert not isinstance(top, bool)
+
+    @pytest.mark.parametrize("height", [0, 24, 40, 100])
+    def test_the_gap_follows_the_height_variable(self, height: int) -> None:
+        assert self._outer(_config(devbox_sketchybar_height=height))["top"] == height + 1
+
+    def test_the_other_outer_gaps_stay_one_pixel(self) -> None:
+        outer = self._outer(_config(devbox_sketchybar_height=60))
+
+        assert {side: outer[side] for side in ("left", "bottom", "right")} == {
+            "left": 1,
+            "bottom": 1,
+            "right": 1,
+        }
+
+
 @dataclass(frozen=True)
 class Machine:
     """What the playbook finds on the host, and the devbox_wm it was asked for."""

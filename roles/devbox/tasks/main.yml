@@ -44,14 +44,14 @@
 - name: "Re-login hint (only when a login-cached setting changed)"
   ansible.builtin.debug:
     msg: >-
-      Keyboard, login-shell, or Spotlight-hotkey settings changed. Log out
+      Keyboard, menu-bar, login-shell, or Spotlight-hotkey settings changed. Log out
       and back in (or open a new terminal / relaunch affected apps) to apply
       them. No reboot needed.
   when: >-
     ((devbox_macos_defaults_result.results | default([]))
      | selectattr('changed', 'defined') | selectattr('changed')
      | map(attribute='item.key')
-     | select('in', ['KeyRepeat', 'InitialKeyRepeat'])
+     | select('in', ['KeyRepeat', 'InitialKeyRepeat', '_HIHideMenuBar', 'AppleMenuBarVisibleInFullscreen'])
      | list | length > 0)
     or (devbox_user_result.changed | default(false))
     or (devbox_sh_cmd_space_write.changed | default(false))

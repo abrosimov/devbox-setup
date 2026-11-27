@@ -1,16 +1,42 @@
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 
 import pytest
 import yaml
 from jinja2 import StrictUndefined, Template
 
-TASKS = Path(__file__).resolve().parents[2] / "roles/devbox/tasks/install_configs.yml"
-LOCAL_PLAYBOOK = Path(__file__).resolve().parents[2] / "playbooks/local.yml"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+TASKS = REPO_ROOT / "roles/devbox/tasks/install_configs.yml"
+LOCAL_PLAYBOOK = REPO_ROOT / "playbooks/local.yml"
+KARABINER_DIR = REPO_ROOT / "roles/devbox/files/.config/karabiner"
+KARABINER_SEED = KARABINER_DIR / "karabiner.json"
+CAPS_LOCK_ASSET = KARABINER_DIR / "assets/complex_modifications/caps_lock_rift_super.json"
+CORE_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/core.yml"
+CAPS_LOCK_RULE = "Caps Lock → Control+Option"
+LAYOUT_RULE = "Tap Left/Right Command → English, Tap Left/Right Option → Russian"
+_KARABINER_FAMILY = {"control": "ctrl", "option": "alt", "command": "meta", "shift": "shift"}
+_RIFT_FAMILY = {
+    "ctrl": "ctrl",
+    "control": "ctrl",
+    "alt": "alt",
+    "option": "alt",
+    "opt": "alt",
+    "meta": "meta",
+    "cmd": "meta",
+    "command": "meta",
+    "shift": "shift",
+}
+_RIFT_MODIFIER = re.compile(
+    rf"(?:l|r|left|right)?({'|'.join(_RIFT_FAMILY)})(?:left|right)?",
+)
 
 _tasks = yaml.safe_load(TASKS.read_text())
 _local_playbook = yaml.safe_load(LOCAL_PLAYBOOK.read_text())
+_karabiner_seed = json.loads(KARABINER_SEED.read_text())
+_core_defaults = yaml.safe_load(CORE_DEFAULTS.read_text())
 
 
 def test_karabiner_assets_tree_is_deployed() -> None:
@@ -28,6 +54,133 @@ def test_karabiner_json_is_seed_only() -> None:
         )
     )
     assert seed["force"] is False
+
+
+def _seed_rules() -> list[dict]:
+    return _karabiner_seed["profiles"][0]["complex_modifications"]["rules"]
+
+
+def _rules_described(rules: list[dict], description: str) -> list[dict]:
+    return [rule for rule in rules if rule["description"] == description]
+
+
+def _karabiner_family(name: str) -> str:
+    return _KARABINER_FAMILY.get(re.sub(r"^(?:left|right)_", "", name), name)
+
+
+def _emitted_families(rule: dict) -> frozenset[str]:
+    [manipulator] = rule["manipulators"]
+    [event] = manipulator["to"]
+    names = [event["key_code"], *event.get("modifiers", [])]
+    return frozenset(_karabiner_family(name) for name in names)
+
+
+def _rift_super_families(combination: str) -> frozenset[str]:
+    matches = [_RIFT_MODIFIER.fullmatch(part.strip().lower()) for part in combination.split("+")]
+
+    assert None not in matches, f"unrecognised modifier in super = {combination!r}"
+    return frozenset(_RIFT_FAMILY[m.group(1)] for m in matches if m is not None)
+
+
+def _caps_lock_rule() -> dict:
+    [rule] = _rules_described(_seed_rules(), CAPS_LOCK_RULE)
+    return rule
+
+
+def test_karabiner_seed_first_profile_is_the_selected_one() -> None:
+    assert _karabiner_seed["profiles"][0]["selected"] is True
+
+
+def test_karabiner_seed_has_no_simple_modifications() -> None:
+    assert [p["name"] for p in _karabiner_seed["profiles"] if "simple_modifications" in p] == []
+
+
+def test_karabiner_seed_first_profile_holds_the_layout_rule_and_the_caps_lock_rule() -> None:
+    descriptions = [rule["description"] for rule in _seed_rules()]
+
+    assert sorted(descriptions) == sorted([LAYOUT_RULE, CAPS_LOCK_RULE])
+
+
+def test_caps_lock_rule_sends_control_with_option_as_one_event() -> None:
+    assert _caps_lock_rule()["manipulators"] == [
+        {
+            "type": "basic",
+            "from": {"key_code": "caps_lock", "modifiers": {"optional": ["any"]}},
+            "to": [{"key_code": "left_control", "modifiers": ["left_option"]}],
+        }
+    ]
+
+
+def test_no_other_seed_rule_takes_caps_lock() -> None:
+    grabbing = [
+        rule["description"]
+        for rule in _seed_rules()
+        for manipulator in rule["manipulators"]
+        if manipulator["from"].get("key_code") == "caps_lock"
+    ]
+
+    assert grabbing == [CAPS_LOCK_RULE]
+
+
+def test_rift_super_is_the_modifier_set_the_caps_lock_rule_emits() -> None:
+    super_value = _core_defaults["devbox_rift_super"]
+
+    assert super_value == "Ctrl + Alt"
+    assert _emitted_families(_caps_lock_rule()) == _rift_super_families(super_value)
+    assert _emitted_families(_caps_lock_rule()) == {"ctrl", "alt"}
+
+
+@pytest.mark.parametrize(
+    "super_value",
+    ["Ctrl", "Alt", "Ctrl + Alt + Shift", "Ctrl + Meta", "Meta + Shift", "CtrlRight"],
+)
+def test_a_rift_super_that_drifts_from_the_caps_lock_rule_is_detected(super_value: str) -> None:
+    assert _emitted_families(_caps_lock_rule()) != _rift_super_families(super_value)
+
+
+@pytest.mark.parametrize(
+    ("key_code", "modifiers"),
+    [
+        ("left_control", []),
+        ("left_option", []),
+        ("left_control", ["left_option", "left_shift"]),
+        ("left_control", ["left_command"]),
+        ("left_shift", ["left_option"]),
+        ("caps_lock", ["left_control", "left_option"]),
+    ],
+    ids=["control-only", "option-only", "extra-shift", "command-not-option", "shift", "key-kept"],
+)
+def test_a_caps_lock_rule_that_drifts_from_the_rift_super_is_detected(
+    key_code: str, modifiers: list[str]
+) -> None:
+    rule = {"manipulators": [{"to": [{"key_code": key_code, "modifiers": modifiers}]}]}
+
+    assert _emitted_families(rule) != _rift_super_families(_core_defaults["devbox_rift_super"])
+
+
+@pytest.mark.parametrize(
+    ("key_code", "modifiers"),
+    [
+        ("left_control", ["left_option"]),
+        ("right_control", ["right_option"]),
+        ("left_option", ["left_control"]),
+        ("control", ["option"]),
+    ],
+)
+def test_the_sync_ignores_which_side_or_order_the_two_modifiers_use(
+    key_code: str, modifiers: list[str]
+) -> None:
+    rule = {"manipulators": [{"to": [{"key_code": key_code, "modifiers": modifiers}]}]}
+
+    assert _emitted_families(rule) == _rift_super_families("Ctrl + Alt")
+
+
+def test_caps_lock_asset_rules_equal_the_seed_rules_of_the_same_description() -> None:
+    rules = json.loads(CAPS_LOCK_ASSET.read_text())["rules"]
+
+    assert [rule["description"] for rule in rules] == [CAPS_LOCK_RULE]
+    for rule in rules:
+        assert _rules_described(_seed_rules(), rule["description"]) == [rule]
 
 
 def test_git_hook_sync_uses_openrsync_compatible_permissions() -> None:

@@ -147,7 +147,8 @@ stopped and out of the login items.
   `roles/devbox/templates/darwin/.config/rift/config.toml.j2`: global
   workspaces 1–9, `master_stack` everywhere, workspaces 1–5 on the main display
   and 6–9 on the side one (`devbox_rift_display_main` / `_side`), every binding
-  on one Super modifier (`devbox_rift_super`, default Cmd+Alt). A running Rift
+  on one Super modifier (`devbox_rift_super`, default Ctrl+Opt, which
+  Caps Lock sends through the Karabiner rule "Caps Lock → Control+Option"). A running Rift
   is reloaded after a change; if it rejects the file, the previous one
   (`config.toml.prev`) is put back and the run fails.
 - **Switching to Rift** takes two runs and one manual step, because Rift needs

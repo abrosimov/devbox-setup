@@ -1,0 +1,29 @@
+{
+  "rules": [
+    {
+      "description": "Caps Lock → Control+Option",
+      "manipulators": [
+        {
+          "from": {
+            "key_code": "caps_lock",
+            "modifiers": {
+              "optional": [
+                "any"
+              ]
+            }
+          },
+          "to": [
+            {
+              "key_code": "left_control",
+              "modifiers": [
+                "left_option"
+              ]
+            }
+          ],
+          "type": "basic"
+        }
+      ]
+    }
+  ],
+  "title": "Caps Lock as Rift's Super"
+}

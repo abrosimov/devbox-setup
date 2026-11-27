@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed by devbox (roles/devbox/templates/darwin/Library/LaunchAgents/local.openbao-unseal.plist.j2).
+  Unattended unseal of the remote OpenBao server (scripts/openbao-unseal.py): every
+  five minutes, and at load, it reads the Shamir key from the login Keychain and
+  hands it over stdin to the server's forced SSH command, which submits it only
+  while OpenBao is sealed. The destination is read from the local config at run
+  time. A Mac without the Keychain item only logs that there is nothing to do.
+
+  launchd skips StartInterval firings while the Mac sleeps and resumes the timer on
+  wake, so a wake is followed by a run within one interval; no separate wake
+  trigger is installed. The script is stdlib-only Python 3.9, hence the system
+  interpreter.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.openbao-unseal</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>{{ devbox_openbao_unseal_dir }}/openbao-unseal.py</string>
+        <string>--config</string>
+        <string>{{ devbox_openbao_unseal_config }}</string>
+        <string>--identity</string>
+        <string>{{ devbox_openbao_unseal_identity }}</string>
+        <string>--log</string>
+        <string>{{ devbox_openbao_unseal_log }}</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <!-- The script logs its own one line per run; this catches interpreter crashes. -->
+    <key>StandardErrorPath</key>
+    <string>{{ devbox_openbao_unseal_log }}</string>
+</dict>
+</plist>

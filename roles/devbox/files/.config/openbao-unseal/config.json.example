@@ -1,0 +1,6 @@
+{
+  "ssh_host": "server.example.invalid",
+  "ssh_user": "unseal-account",
+  "ssh_port": 22,
+  "inventory_host": "example-server"
+}

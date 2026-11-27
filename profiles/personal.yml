@@ -3,9 +3,13 @@ devbox_active_profile: "personal"
 devbox_langfuse_user_id: "abrosimov.k.a@gmail.com"
 # Every Go module fetch goes through the private Athens proxy via Tamias.
 devbox_tamias_enabled: true
+# This Mac unseals the personal OpenBao server from its Keychain (the destination
+# comes from the local overlay, see README § OpenBao Unattended Unseal).
+devbox_openbao_unseal_enabled: true
 
 # Profile-specific extras (concatenated with base lists in task files).
-# devbox_extra_brew: []
+devbox_extra_brew:
+  - openbao          # `bao` CLI for the personal OpenBao server; personal-only
 # devbox_extra_brew_casks: []
 # ClickStack (HyperDX v2) MCP behind the server's Tamias `mcp` gateway: the
 # client sends a short-lived Pocket access token from `tamias mcp-headers`

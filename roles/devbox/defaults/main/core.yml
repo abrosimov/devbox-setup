@@ -112,6 +112,9 @@ devbox_extra_mcp_http_servers: []
 # Private Go module proxy client (Tamias + go env), the value of
 # devbox_packages.tamias.enabled. Off unless a profile switches it on.
 devbox_tamias_enabled: false
+# OpenBao unattended unseal (darwin/configure_openbao_unseal.yml). Off unless a
+# profile switches it on; a run with it off removes an earlier installation.
+devbox_openbao_unseal_enabled: false
 # Claude Code plugins added to devbox_claude_plugins (claude.yml); same entry shape.
 devbox_extra_claude_plugins: []
 # Remote owners the Claude auto-mode classifier treats as trusted, added to

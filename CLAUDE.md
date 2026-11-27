@@ -63,6 +63,10 @@ make otelbox-edge-test       # liveness + delivery smoke: binary, launchd servic
 # Weekly drive backup (packages/drive-backup — standalone uv project, own lock/tests)
 make drive-backup-push       # (re)install project + LaunchAgent from the local overlay config
 make drive-backup-now        # launchctl kickstart the agent; log in ~/Library/Logs/drive-backup.log
+
+# OpenBao unattended unseal (personal profile + local overlay config only)
+make openbao-unseal-push     # (re)install SSH key + script + local.openbao-unseal LaunchAgent
+make openbao-unseal-now      # launchctl kickstart the agent; log in ~/Library/Logs/openbao-unseal.log
 make test-drive-backup       # package pytest + ruff + pyrefly (strict) + example-config check
 
 # Claude config back-propagation (root files only — managed subdirs are one-way
@@ -115,6 +119,7 @@ Everything lives in one role. No multi-role orchestration.
 11. `prepare_user.yml` — shell, user-level setup
 12. `darwin/install_otelbox_edge.yml` — durable OpenTelemetry edge collector. It downloads the checksum-verified release binary pinned by `devbox_packages.otelbox_edge.version` (currently 2.8.0; Renovate bumps it and never automerges, because the binary and the deployed `edge.yaml` are one versioned contract the playbook validates as a pair), deploys one self-contained `edge.yaml`, validates that exact pair and supervises it with `local.otelbox-edge`. The endpoint comes from the local overlay; the Keychain remains credential authority and the wrapper materialises the collector's watched header in the private per-user temporary directory. Once preflight passes, the task removes the legacy `otelcol-edge` binary, config, LaunchAgent and WAL. Homebrew remains a hard conflict. Under the same gate it installs `local.otelbox-edge-watch`, a five-minute stdlib-only watcher (`scripts/otelbox_edge/watch.py`) that posts a macOS notification on queue fill, a stalled drain or too little WAL volume space, because the edge's own capacity metrics leave through the queue they warn about; disabling the edge removes it. The post-run smoke (`make otelbox-edge-test`, also run at the end of `make personal`/`make work`) is advisory — it prints a loud banner on failure but does not fail the provisioning run. See `README.md` § OTLP Telemetry.
 13. `darwin/configure_drive_backup.yml` — weekly drive backup. Switched on by the local-overlay config `~/.config/drive-backup/config.toml` (example: `files/.config/drive-backup/config.toml.example`): rsyncs the standalone uv project `packages/drive-backup/` to `~/.local/share/drive-backup/`, runs `uv sync --frozen --no-default-groups`, validates the config with `drive-backup check-config`, and (re)bootstraps the `local.drive-backup` LaunchAgent (`StartCalendarInterval` Saturday 03:00). Without the config it boots the agent out and removes it. See `README.md` § Drive Backup.
+14. `darwin/configure_openbao_unseal.yml` — unattended unseal of the personal OpenBao server. Installed only when the profile variable `devbox_openbao_unseal_enabled` (true in `personal` only) is on **and** the local-overlay config `~/.config/openbao-unseal/config.json` exists (example: `files/.config/openbao-unseal/config.json.example`); otherwise it boots `local.openbao-unseal` out and removes it, so a `work` run leaves nothing running. The config carries the destination (SSH host, user, port) and the inventory host name, so none of them is committed; `scripts/openbao-unseal.py` (stdlib-only, system Python 3.9) reads it at run time, takes the key from the Keychain item `openbao-unseal-<inventory_host>` (account `openbao`) and writes it to the stdin of `ssh` with `StrictHostKeyChecking=yes`. Generates `~/.ssh/openbao_unseal_ed25519` if absent (never overwritten, never removed) and prints its public key for the server's `openbao_unseal_authorized_keys`. Fast path: `make openbao-unseal-push`. See `README.md` § OpenBao Unattended Unseal.
 
 ### Configuration Deployment (`install_configs.yml`)
 
@@ -180,6 +185,7 @@ Current per-profile differences:
 | Extra MCP HTTP servers | `clickstack` (`https://clickstack.abrosimov.tech/api/mcp` behind the server's Tamias `mcp` gateway; `headersHelper` runs `tamias mcp-headers` for a short-lived Pocket token, the HyperDX key stays on the server) | `atlassian` |
 | Langfuse skill access (`devbox_langfuse_host`) | `LANGFUSE_HOST` + Keychain keys + sandbox domains | none |
 | Private Go module proxy (`devbox_tamias_enabled`) | Tamias + client profiles + go env pointing at `go.abrosimov.tech` | off; the go env keys it wrote are removed |
+| OpenBao (`devbox_extra_brew`, `devbox_openbao_unseal_enabled`) | `bao` CLI (formula `openbao`) + unattended unseal LaunchAgent | neither |
 
 ### AI Config (in `roles/devbox/files/dot_claude/`, `dot_codex/`, and `dot_ai/`)
 

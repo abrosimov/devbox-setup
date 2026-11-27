@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import shlex
+import stat
 import subprocess
 import sys
+import types
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -17,6 +20,7 @@ if TYPE_CHECKING:
 REPO_ROOT = Path(__file__).resolve().parents[2]
 KITTY_SESSION = REPO_ROOT / "roles/devbox/files/.config/kitty/kitty_session.py"
 HOME = "/home/user"
+SHELL = "/opt/homebrew/bin/fish"
 SESSION_ID = "0f3c9a52-7b1e-4d6a-9c10-5e8d2a4b6f70"
 
 
@@ -30,6 +34,7 @@ def home_dir(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.Monke
 @pytest.fixture
 def ks(home_dir: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     assert home_dir.is_dir()
+    monkeypatch.delenv("KITTY_PID", raising=False)
     spec = importlib.util.spec_from_file_location("kitty_session", KITTY_SESSION)
     assert spec is not None
     assert spec.loader is not None
@@ -37,6 +42,17 @@ def ks(home_dir: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     monkeypatch.setitem(sys.modules, spec.name, module)
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture
+def inside_kitty(ks: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert ks is not None
+    monkeypatch.setenv("KITTY_PID", "4242")
+
+
+@pytest.fixture
+def fixed_fish(ks: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ks, "resolve_fish", lambda: SHELL)
 
 
 def make_window(
@@ -90,7 +106,7 @@ class TestFocusedOsWindow:
         first = {"is_focused": False, "tabs": [make_tab([make_window(1)], title="first")]}
         second = {"is_focused": True, "tabs": [make_tab([make_window(2)], title="second")]}
 
-        rendered = ks.render_session([first, second], no_claude, HOME)
+        rendered = ks.render_session([first, second], no_claude, HOME, SHELL)
 
         assert "new_tab second" in rendered.text
         assert "new_tab first" not in rendered.text
@@ -99,7 +115,7 @@ class TestFocusedOsWindow:
         first = {"is_focused": False, "tabs": [make_tab([make_window(1)], title="first")]}
         second = {"tabs": [make_tab([make_window(2)], title="second")]}
 
-        rendered = ks.render_session([first, second], no_claude, HOME)
+        rendered = ks.render_session([first, second], no_claude, HOME, SHELL)
 
         assert "new_tab first" in rendered.text
         assert "new_tab second" not in rendered.text
@@ -107,14 +123,14 @@ class TestFocusedOsWindow:
     def test_non_dict_entries_are_skipped_when_choosing(self, ks: ModuleType) -> None:
         real = {"tabs": [make_tab([make_window(1)], title="real")]}
 
-        rendered = ks.render_session(["junk", None, 7, real], no_claude, HOME)
+        rendered = ks.render_session(["junk", None, 7, real], no_claude, HOME, SHELL)
 
         assert "new_tab real" in rendered.text
 
     @pytest.mark.parametrize("os_windows", [[], ["junk"], [None, 3]])
     def test_no_usable_os_window_raises(self, ks: ModuleType, os_windows: list[object]) -> None:
         with pytest.raises(ks.SnapshotError):
-            ks.render_session(os_windows, no_claude, HOME)
+            ks.render_session(os_windows, no_claude, HOME, SHELL)
 
 
 class TestRenderSessionTabs:
@@ -127,17 +143,17 @@ class TestRenderSessionTabs:
         tab_b = make_tab([make_window(3, cwd="/c")], title="Logs", layout="tall")
         os_windows = [{"is_focused": True, "tabs": [tab_a, tab_b]}]
 
-        rendered = ks.render_session(os_windows, no_claude, HOME)
+        rendered = ks.render_session(os_windows, no_claude, HOME, SHELL)
 
         assert rendered.text == (
             "new_tab Work\n"
             "layout splits\n"
-            "launch --cwd /a fish\n"
-            "launch --cwd /b fish\n"
+            f"launch --cwd /a {SHELL}\n"
+            f"launch --cwd /b {SHELL}\n"
             "\n"
             "new_tab Logs\n"
             "layout tall\n"
-            "launch --cwd /c fish\n"
+            f"launch --cwd /c {SHELL}\n"
         )
         assert rendered.tab_count == 2
 
@@ -145,11 +161,11 @@ class TestRenderSessionTabs:
         tab = make_tab([make_window(1, cwd="/one"), make_window(2, cwd="/two")])
         tab["groups"] = [{"id": 2, "windows": [2]}, {"id": 1, "windows": [1]}]
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
         assert launch_lines(rendered.text) == [
-            "launch --cwd /two fish",
-            "launch --cwd /one fish",
+            f"launch --cwd /two {SHELL}",
+            f"launch --cwd /one {SHELL}",
         ]
 
     def test_tab_count_counts_only_tabs_that_were_emitted(self, ks: ModuleType) -> None:
@@ -157,7 +173,7 @@ class TestRenderSessionTabs:
         full_tab = make_tab([make_window(1)], title="full")
         os_windows = [{"is_focused": True, "tabs": [empty_tab, full_tab, empty_tab]}]
 
-        rendered = ks.render_session(os_windows, no_claude, HOME)
+        rendered = ks.render_session(os_windows, no_claude, HOME, SHELL)
 
         assert rendered.tab_count == 1
         assert rendered.text.count("new_tab ") == 1
@@ -168,9 +184,9 @@ class TestRenderSessionTabs:
         tab = make_tab([base, overlay])
         tab["groups"] = [{"id": 1, "windows": [1, 2]}]
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
-        assert launch_lines(rendered.text) == ["launch --cwd /base fish"]
+        assert launch_lines(rendered.text) == [f"launch --cwd /base {SHELL}"]
 
     def test_dock_group_is_skipped(self, ks: ModuleType) -> None:
         tab = make_tab([make_window(1, cwd="/main"), make_window(2, cwd="/dock")])
@@ -179,25 +195,28 @@ class TestRenderSessionTabs:
             {"id": 2, "windows": [2], "dock": {"edge": "bottom"}},
         ]
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
-        assert launch_lines(rendered.text) == ["launch --cwd /main fish"]
+        assert launch_lines(rendered.text) == [f"launch --cwd /main {SHELL}"]
 
     def test_missing_groups_restores_every_window(self, ks: ModuleType) -> None:
         tab = make_tab([make_window(1, cwd="/a"), make_window(2, cwd="/b")])
         del tab["groups"]
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
-        assert launch_lines(rendered.text) == ["launch --cwd /a fish", "launch --cwd /b fish"]
+        assert launch_lines(rendered.text) == [
+            f"launch --cwd /a {SHELL}",
+            f"launch --cwd /b {SHELL}",
+        ]
 
     def test_group_pointing_at_an_unknown_window_is_ignored(self, ks: ModuleType) -> None:
         tab = make_tab([make_window(1, cwd="/a"), make_window(2, cwd="/b")])
         tab["groups"] = [{"id": 1, "windows": [99, 1]}, {"id": 2, "windows": [2]}]
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
-        assert launch_lines(rendered.text) == ["launch --cwd /b fish"]
+        assert launch_lines(rendered.text) == [f"launch --cwd /b {SHELL}"]
 
 
 class TestRenderSessionClaude:
@@ -211,14 +230,14 @@ class TestRenderSessionClaude:
         )
         lookup = claude_lookup(ks, {11: (SESSION_ID, "/repo/recorded")})
 
-        rendered = ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME)
+        rendered = ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME, SHELL)
 
         (line,) = launch_lines(rendered.text)
         assert shlex.split(line) == [
             "launch",
             "--cwd",
             "/repo/recorded",
-            "fish",
+            SHELL,
             "-C",
             f"claude --resume {SESSION_ID}",
         ]
@@ -227,7 +246,7 @@ class TestRenderSessionClaude:
         window = make_window(1, processes=[{"pid": 10}, {"pid": 11}, {"pid": 12}])
         lookup = claude_lookup(ks, {11: ("first-id", "/one"), 12: ("second-id", "/two")})
 
-        rendered = ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME)
+        rendered = ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME, SHELL)
 
         (line,) = launch_lines(rendered.text)
         assert "first-id" in line
@@ -239,19 +258,19 @@ class TestRenderSessionClaude:
         lookup = claude_lookup(ks, {10: (SESSION_ID, "/repo")})
 
         rendered = ks.render_session(
-            single_tab_os_window(make_tab([claude_window, plain_window])), lookup, HOME
+            single_tab_os_window(make_tab([claude_window, plain_window])), lookup, HOME, SHELL
         )
 
         claude_line, plain_line = launch_lines(rendered.text)
         assert f"claude --resume {SESSION_ID}" in claude_line
-        assert plain_line == "launch --cwd /plain fish"
+        assert plain_line == f"launch --cwd /plain {SHELL}"
 
     def test_claude_cwd_with_spaces_and_quotes_round_trips(self, ks: ModuleType) -> None:
         cwd = '/Users/me/My Projects/it\'s "quoted"'
         window = make_window(1, processes=[{"pid": 10}])
         lookup = claude_lookup(ks, {10: (SESSION_ID, cwd)})
 
-        rendered = ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME)
+        rendered = ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME, SHELL)
 
         (line,) = launch_lines(rendered.text)
         assert shlex.split(line)[2] == cwd
@@ -292,18 +311,22 @@ class TestRenderSessionCwd:
     ) -> None:
         window = make_window(1, cwd=window_cwd, processes=processes)
 
-        rendered = ks.render_session(single_tab_os_window(make_tab([window])), no_claude, HOME)
+        rendered = ks.render_session(
+            single_tab_os_window(make_tab([window])), no_claude, HOME, SHELL
+        )
 
-        assert launch_lines(rendered.text) == [f"launch --cwd {expected} fish"]
+        assert launch_lines(rendered.text) == [f"launch --cwd {expected} {SHELL}"]
 
     def test_window_without_a_foreground_processes_key_uses_window_cwd(
         self, ks: ModuleType
     ) -> None:
         window: dict[str, object] = {"id": 1, "cwd": "/w"}
 
-        rendered = ks.render_session(single_tab_os_window(make_tab([window])), no_claude, HOME)
+        rendered = ks.render_session(
+            single_tab_os_window(make_tab([window])), no_claude, HOME, SHELL
+        )
 
-        assert launch_lines(rendered.text) == ["launch --cwd /w fish"]
+        assert launch_lines(rendered.text) == [f"launch --cwd /w {SHELL}"]
 
     @pytest.mark.parametrize("pid", ["12", None, 1.5, [12], {"pid": 12}])
     def test_non_integer_pids_are_never_looked_up(self, ks: ModuleType, pid: object) -> None:
@@ -314,7 +337,7 @@ class TestRenderSessionCwd:
 
         window = make_window(1, processes=[{"pid": pid}])
 
-        ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME)
+        ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME, SHELL)
 
         assert looked_up == []
 
@@ -326,7 +349,7 @@ class TestRenderSessionCwd:
 
         window = make_window(1, processes=[{"pid": 30}, {"pid": "x"}, {"pid": 20}])
 
-        ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME)
+        ks.render_session(single_tab_os_window(make_tab([window])), lookup, HOME, SHELL)
 
         assert looked_up == [30, 20]
 
@@ -343,10 +366,12 @@ class TestRenderSessionCwd:
     def test_cwd_round_trips_through_shlex(self, ks: ModuleType, cwd: str) -> None:
         window = make_window(1, cwd=cwd)
 
-        rendered = ks.render_session(single_tab_os_window(make_tab([window])), no_claude, HOME)
+        rendered = ks.render_session(
+            single_tab_os_window(make_tab([window])), no_claude, HOME, SHELL
+        )
 
         (line,) = launch_lines(rendered.text)
-        assert shlex.split(line) == ["launch", "--cwd", cwd, "fish"]
+        assert shlex.split(line) == ["launch", "--cwd", cwd, SHELL]
 
     @pytest.mark.parametrize("separator", ["\n", "\r", "\r\n", "\x85", "\u2028"])
     def test_cwd_with_a_line_break_cannot_start_another_session_directive(
@@ -358,7 +383,7 @@ class TestRenderSessionCwd:
         window = make_window(1, cwd=cwd)
 
         rendered = ks.render_session(
-            single_tab_os_window(make_tab([window], title="t")), no_claude, HOME
+            single_tab_os_window(make_tab([window], title="t")), no_claude, HOME, SHELL
         )
 
         assert len(rendered.text.splitlines()) == 3
@@ -372,7 +397,7 @@ class TestRenderSessionCwd:
         lookup = claude_lookup(ks, {10: (SESSION_ID, cwd)})
 
         rendered = ks.render_session(
-            single_tab_os_window(make_tab([window], title="t")), lookup, HOME
+            single_tab_os_window(make_tab([window], title="t")), lookup, HOME, SHELL
         )
 
         assert len(rendered.text.splitlines()) == 3
@@ -401,7 +426,7 @@ class TestRenderSessionTitleAndLayout:
     ) -> None:
         tab = make_tab([make_window(1)], title=title)
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
         lines = rendered.text.splitlines()
         assert lines[0] == f"new_tab {expected}"
@@ -411,7 +436,7 @@ class TestRenderSessionTitleAndLayout:
         tab = make_tab([make_window(1)])
         del tab["title"]
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
         assert rendered.text.splitlines()[0] == "new_tab shell"
 
@@ -421,7 +446,7 @@ class TestRenderSessionTitleAndLayout:
     def test_valid_layout_names_are_emitted(self, ks: ModuleType, layout: str) -> None:
         tab = make_tab([make_window(1)], layout=layout)
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
         assert f"layout {layout}\n" in rendered.text
 
@@ -444,15 +469,15 @@ class TestRenderSessionTitleAndLayout:
     def test_invalid_layout_is_omitted(self, ks: ModuleType, layout: object) -> None:
         tab = make_tab([make_window(1)], layout=layout)
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
-        assert rendered.text.splitlines() == ["new_tab tab", "launch --cwd /window/cwd fish"]
+        assert rendered.text.splitlines() == ["new_tab tab", f"launch --cwd /window/cwd {SHELL}"]
 
     def test_missing_layout_key_is_omitted(self, ks: ModuleType) -> None:
         tab = make_tab([make_window(1)])
         del tab["layout"]
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
         assert "layout" not in rendered.text
 
@@ -476,7 +501,7 @@ class TestRenderSessionMalformedInput:
         self, ks: ModuleType, os_windows: list[object]
     ) -> None:
         with pytest.raises(ks.SnapshotError):
-            ks.render_session(os_windows, no_claude, HOME)
+            ks.render_session(os_windows, no_claude, HOME, SHELL)
 
     @pytest.mark.parametrize(
         "extra",
@@ -496,9 +521,9 @@ class TestRenderSessionMalformedInput:
         window: dict[str, object] = {"id": 1, **extra}
         tab = make_tab([window])
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
-        assert launch_lines(rendered.text) == [f"launch --cwd {HOME} fish"]
+        assert launch_lines(rendered.text) == [f"launch --cwd {HOME} {SHELL}"]
 
     @pytest.mark.parametrize(
         "groups",
@@ -517,9 +542,12 @@ class TestRenderSessionMalformedInput:
         tab = make_tab([make_window(1, cwd="/a"), make_window(2, cwd="/b")])
         tab["groups"] = groups
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
-        assert launch_lines(rendered.text) == ["launch --cwd /a fish", "launch --cwd /b fish"]
+        assert launch_lines(rendered.text) == [
+            f"launch --cwd /a {SHELL}",
+            f"launch --cwd /b {SHELL}",
+        ]
 
     @pytest.mark.parametrize(
         "groups",
@@ -532,9 +560,9 @@ class TestRenderSessionMalformedInput:
         tab = make_tab([make_window(1, cwd="/a")])
         tab["groups"] = groups
 
-        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME)
+        rendered = ks.render_session(single_tab_os_window(tab), no_claude, HOME, SHELL)
 
-        assert launch_lines(rendered.text) == ["launch --cwd /a fish"]
+        assert launch_lines(rendered.text) == [f"launch --cwd /a {SHELL}"]
 
 
 class TestReadClaudeSession:
@@ -826,6 +854,7 @@ def one_tab_ls_output(cwd: str = "/work", pid: int = 31337) -> str:
     return json.dumps(single_tab_os_window(make_tab([window], title="main")))
 
 
+@pytest.mark.usefixtures("inside_kitty")
 class TestReadOsWindows:
     def test_returns_the_parsed_list_and_asks_kitty_for_ls(
         self, ks: ModuleType, monkeypatch: pytest.MonkeyPatch
@@ -869,6 +898,7 @@ class TestReadOsWindows:
             ks.read_os_windows()
 
 
+@pytest.mark.usefixtures("inside_kitty", "fixed_fish")
 class TestSaveSnapshot:
     def test_writes_the_rendered_session_and_returns_the_tab_count(
         self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -881,7 +911,7 @@ class TestSaveSnapshot:
 
         assert tab_count == 1
         assert target.read_text(encoding="utf-8") == (
-            "new_tab main\nlayout splits\nlaunch --cwd /work fish\n"
+            f"new_tab main\nlayout splits\nlaunch --cwd /work {SHELL}\n"
         )
 
     def test_default_lookup_reads_claude_records_under_the_home_directory(
@@ -901,7 +931,7 @@ class TestSaveSnapshot:
             "launch",
             "--cwd",
             "/repo",
-            "fish",
+            SHELL,
             "-C",
             f"claude --resume {SESSION_ID}",
         ]
@@ -917,7 +947,7 @@ class TestSaveSnapshot:
         ks.save_snapshot(target)
 
         (line,) = launch_lines(target.read_text(encoding="utf-8"))
-        assert shlex.split(line) == ["launch", "--cwd", str(home_dir), "fish"]
+        assert shlex.split(line) == ["launch", "--cwd", str(home_dir), SHELL]
 
     def test_default_target_is_the_kitty_config_directory_under_home(
         self, ks: ModuleType, home_dir: Path, monkeypatch: pytest.MonkeyPatch
@@ -1060,6 +1090,7 @@ class TestMain:
         assert captured.out == ""
         assert captured.err == "kitty-save-session: boom\n"
 
+    @pytest.mark.usefixtures("inside_kitty")
     def test_kitty_without_remote_control_prints_the_config_hint(
         self,
         ks: ModuleType,
@@ -1077,6 +1108,7 @@ class TestMain:
         assert captured.out == ""
         assert not ks.SESSION_FILE.exists()
 
+    @pytest.mark.usefixtures("inside_kitty", "fixed_fish")
     def test_main_writes_the_session_file_under_the_home_directory(
         self,
         ks: ModuleType,
@@ -1093,3 +1125,500 @@ class TestMain:
         assert expected_path == ks.SESSION_FILE
         assert capsys.readouterr().out == f"Saved 1 tab(s) to {expected_path}\n"
         assert expected_path.read_text(encoding="utf-8").startswith("new_tab main\n")
+
+
+KITTY_CONF = REPO_ROOT / "roles/devbox/files/.config/kitty/kitty.conf"
+OLDER_MTIME = 1_000
+NEWER_MTIME = 2_000
+KITTY_ON_PATH = "/opt/test/kitty"
+
+
+SOCKET_MTIMES: dict[Path, int] = {}
+
+
+# A sandboxed or unprivileged runner may not create unix sockets, and a pytest
+# temporary path can exceed the socket path limit, so the filesystem reports the
+# registered files as sockets and every other path keeps its real status.
+@pytest.fixture(autouse=True)
+def socket_status(monkeypatch: pytest.MonkeyPatch) -> None:
+    SOCKET_MTIMES.clear()
+    real_lstat = Path.lstat
+
+    def lstat(path: Path) -> os.stat_result:
+        if path in SOCKET_MTIMES:
+            return os.stat_result(
+                (stat.S_IFSOCK | 0o600, 0, 0, 1, 0, 0, 0, 0, SOCKET_MTIMES[path], 0)
+            )
+        return real_lstat(path)
+
+    monkeypatch.setattr(Path, "lstat", lstat)
+
+
+def make_socket(directory: Path, name: str, mtime: int) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / name
+    path.touch()
+    SOCKET_MTIMES[path] = mtime
+    return path
+
+
+class FakeKitty:
+    def __init__(self, answers: dict[Path, object]) -> None:
+        self.answers = answers
+        self.calls: list[list[str]] = []
+        self.options: list[dict[str, object]] = []
+
+    def __call__(self, command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        self.calls.append(command)
+        self.options.append(kwargs)
+        outcome = self.answers[Path(command[3].removeprefix("unix:"))]
+        if isinstance(outcome, Exception):
+            raise outcome
+        return subprocess.CompletedProcess(command, 0, stdout=str(outcome), stderr="")
+
+
+def refused(socket_path: Path) -> subprocess.CalledProcessError:
+    return subprocess.CalledProcessError(1, ["kitty", "@", "--to", f"unix:{socket_path}", "ls"])
+
+
+@pytest.fixture
+def kitty_on_path(ks: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ks.shutil, "which", lambda name: KITTY_ON_PATH if name == "kitty" else None)
+
+
+class TestReadOsWindowsOutsideKitty:
+    @pytest.mark.usefixtures("kitty_on_path")
+    def test_a_refusing_newer_socket_falls_back_to_the_older_one(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        older = make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        newer = make_socket(tmp_path, "kitty-2.sock", NEWER_MTIME)
+        fake = FakeKitty({newer: refused(newer), older: '[{"id": 7}]'})
+        monkeypatch.setattr(ks.subprocess, "run", fake)
+
+        windows = ks.read_os_windows(tmp_path)
+
+        assert windows == [{"id": 7}]
+        assert fake.calls == [
+            [KITTY_ON_PATH, "@", "--to", f"unix:{newer}", "ls"],
+            [KITTY_ON_PATH, "@", "--to", f"unix:{older}", "ls"],
+        ]
+        assert all(options["timeout"] == 2 for options in fake.options)
+        assert all(options["check"] is True for options in fake.options)
+
+    def test_the_newest_answering_socket_is_the_only_one_asked(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        older = make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        newer = make_socket(tmp_path, "kitty-2.sock", NEWER_MTIME)
+        fake = FakeKitty({newer: '[{"id": 2}]', older: '[{"id": 1}]'})
+        monkeypatch.setattr(ks.subprocess, "run", fake)
+
+        assert ks.read_os_windows(tmp_path) == [{"id": 2}]
+        assert [call[3] for call in fake.calls] == [f"unix:{newer}"]
+
+    def test_files_that_are_not_sockets_are_never_asked(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        live = make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        regular = tmp_path / "kitty-9.sock"
+        regular.write_text("not a socket", encoding="utf-8")
+        directory = tmp_path / "kitty-8.sock.d"
+        directory.mkdir()
+        (tmp_path / "kitty-7.sock").symlink_to(live)
+        for entry in (regular, directory):
+            os.utime(entry, (NEWER_MTIME, NEWER_MTIME))
+        assert tmp_path.joinpath("kitty-9.sock").lstat().st_mtime == NEWER_MTIME
+        fake = FakeKitty({live: '[{"id": 1}]'})
+        monkeypatch.setattr(ks.subprocess, "run", fake)
+
+        assert ks.read_os_windows(tmp_path) == [{"id": 1}]
+        assert [call[3] for call in fake.calls] == [f"unix:{live}"]
+
+    @pytest.mark.parametrize("layout", ["missing", "empty", "only-non-sockets"])
+    def test_no_socket_means_kitty_is_not_running(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, layout: str
+    ) -> None:
+        directory = tmp_path / "sockets"
+        if layout != "missing":
+            directory.mkdir()
+        if layout == "only-non-sockets":
+            (directory / "kitty-1.sock").write_text("x", encoding="utf-8")
+        fake = FakeKitty({})
+        monkeypatch.setattr(ks.subprocess, "run", fake)
+
+        with pytest.raises(ks.KittyNotRunningError):
+            ks.read_os_windows(directory)
+
+        assert fake.calls == []
+
+    def test_kitty_not_running_is_a_snapshot_error(self, ks: ModuleType, tmp_path: Path) -> None:
+        with pytest.raises(ks.SnapshotError):
+            ks.read_os_windows(tmp_path / "absent")
+
+    def test_every_socket_refusing_means_kitty_is_not_running(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        older = make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        newer = make_socket(tmp_path, "kitty-2.sock", NEWER_MTIME)
+        fake = FakeKitty({older: refused(older), newer: refused(newer)})
+        monkeypatch.setattr(ks.subprocess, "run", fake)
+
+        with pytest.raises(ks.KittyNotRunningError):
+            ks.read_os_windows(tmp_path)
+
+        assert len(fake.calls) == 2
+
+    @pytest.mark.parametrize("run", KITTY_LS_COMMAND_FAILURES)
+    def test_any_failure_of_the_only_socket_means_kitty_is_not_running(
+        self,
+        ks: ModuleType,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        run: Callable[..., subprocess.CompletedProcess[str]],
+    ) -> None:
+        make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        monkeypatch.setattr(ks.subprocess, "run", run)
+
+        with pytest.raises(ks.KittyNotRunningError):
+            ks.read_os_windows(tmp_path)
+
+    @pytest.mark.parametrize("answer", ['{"tabs": []}', '"text"', "null"])
+    def test_a_socket_answering_something_other_than_a_list_is_a_snapshot_error(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, answer: str
+    ) -> None:
+        live = make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        monkeypatch.setattr(ks.subprocess, "run", FakeKitty({live: answer}))
+
+        with pytest.raises(ks.SnapshotError, match="list") as excinfo:
+            ks.read_os_windows(tmp_path)
+
+        assert not isinstance(excinfo.value, ks.KittyNotRunningError)
+
+    def test_kitty_missing_from_path_is_run_from_the_application_bundle(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        live = make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        fake = FakeKitty({live: "[]"})
+        monkeypatch.setattr(ks.subprocess, "run", fake)
+        monkeypatch.setattr(ks.shutil, "which", lambda _name: None)
+
+        ks.read_os_windows(tmp_path)
+
+        assert fake.calls[0][0] == ks.KITTY_APP_EXECUTABLE
+        assert ks.KITTY_APP_EXECUTABLE == "/Applications/kitty.app/Contents/MacOS/kitty"
+
+    @pytest.mark.usefixtures("kitty_on_path")
+    def test_kitty_on_path_is_preferred_to_the_application_bundle(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        live = make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        fake = FakeKitty({live: "[]"})
+        monkeypatch.setattr(ks.subprocess, "run", fake)
+
+        ks.read_os_windows(tmp_path)
+
+        assert fake.calls[0][0] == KITTY_ON_PATH
+
+    @pytest.mark.usefixtures("inside_kitty")
+    def test_inside_kitty_the_sockets_are_ignored(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        make_socket(tmp_path, "kitty-1.sock", OLDER_MTIME)
+        calls: list[list[str]] = []
+
+        def run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0, stdout="[]", stderr="")
+
+        monkeypatch.setattr(ks.subprocess, "run", run)
+
+        ks.read_os_windows(tmp_path)
+
+        assert calls == [["kitty", "@", "ls"]]
+
+    def test_the_default_socket_directory_is_kittys_state_directory_under_home(
+        self, ks: ModuleType, home_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        live = make_socket(home_dir / ".local" / "state" / "kitty", "kitty-5.sock", OLDER_MTIME)
+        fake = FakeKitty({live: '[{"id": 5}]'})
+        monkeypatch.setattr(ks.subprocess, "run", fake)
+
+        expected_directory = home_dir / ".local" / "state" / "kitty"
+        assert expected_directory == ks.SOCKET_DIR
+        assert ks.read_os_windows() == [{"id": 5}]
+
+    def test_the_socket_directory_is_the_one_kitty_conf_listens_in(self, ks: ModuleType) -> None:
+        (listen_on,) = [
+            line.split(maxsplit=1)[1].strip()
+            for line in KITTY_CONF.read_text(encoding="utf-8").splitlines()
+            if line.startswith("listen_on ")
+        ]
+
+        assert listen_on.startswith("unix:${HOME}/")
+        socket_path = Path(os.path.expandvars(listen_on.removeprefix("unix:")))
+        assert socket_path.parent == ks.SOCKET_DIR
+        assert "{kitty_pid}" in socket_path.name
+
+
+def fish_at(directory: Path, name: str = "fish", mode: int = 0o755) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / name
+    path.write_text("#!/bin/sh\n", encoding="utf-8")
+    path.chmod(mode)
+    return path
+
+
+def relative_fish(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+    monkeypatch.chdir(fish_at(tmp_path / "cwd").parent)
+    return "fish"
+
+
+def misnamed_fish(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> str:
+    return str(fish_at(tmp_path / "misnamed", "fishy"))
+
+
+def missing_fish(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> str:
+    return str(tmp_path / "gone" / "fish")
+
+
+def unexecutable_fish(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> str:
+    return str(fish_at(tmp_path / "plain", mode=0o644))
+
+
+def directory_named_fish(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> str:
+    directory = tmp_path / "dir" / "fish"
+    directory.mkdir(parents=True)
+    return str(directory)
+
+
+UNUSABLE_FISH = [
+    pytest.param(relative_fish, id="relative"),
+    pytest.param(misnamed_fish, id="not-named-fish"),
+    pytest.param(missing_fish, id="missing"),
+    pytest.param(unexecutable_fish, id="not-executable"),
+    pytest.param(directory_named_fish, id="directory"),
+]
+
+
+@pytest.fixture
+def no_fish_anywhere(ks: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ks, "FISH_LOCATIONS", ())
+    monkeypatch.setattr(ks.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(ks.pwd, "getpwuid", lambda _uid: types.SimpleNamespace(pw_shell="/bin/zsh"))
+
+
+def login_shell(ks: ModuleType, monkeypatch: pytest.MonkeyPatch, shell: str) -> None:
+    monkeypatch.setattr(ks.pwd, "getpwuid", lambda _uid: types.SimpleNamespace(pw_shell=shell))
+
+
+@pytest.mark.usefixtures("no_fish_anywhere")
+class TestResolveFish:
+    def test_a_fish_login_shell_wins_over_every_other_candidate(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        login = fish_at(tmp_path / "login")
+        location = fish_at(tmp_path / "location")
+        on_path = fish_at(tmp_path / "path")
+        login_shell(ks, monkeypatch, str(login))
+        monkeypatch.setattr(ks, "FISH_LOCATIONS", (str(location),))
+        monkeypatch.setattr(ks.shutil, "which", lambda _name: str(on_path))
+
+        assert ks.resolve_fish() == str(login)
+
+    def test_a_login_shell_other_than_fish_falls_through_to_the_first_existing_location(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        zsh = fish_at(tmp_path / "bin", "zsh")
+        first = fish_at(tmp_path / "first")
+        second = fish_at(tmp_path / "second")
+        login_shell(ks, monkeypatch, str(zsh))
+        monkeypatch.setattr(
+            ks, "FISH_LOCATIONS", (str(tmp_path / "absent" / "fish"), str(first), str(second))
+        )
+
+        assert ks.resolve_fish() == str(first)
+
+    def test_a_location_wins_over_fish_found_on_path(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        location = fish_at(tmp_path / "location")
+        on_path = fish_at(tmp_path / "path")
+        monkeypatch.setattr(ks, "FISH_LOCATIONS", (str(location),))
+        monkeypatch.setattr(ks.shutil, "which", lambda _name: str(on_path))
+
+        assert ks.resolve_fish() == str(location)
+
+    def test_fish_on_path_is_the_last_resort(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        on_path = fish_at(tmp_path / "path")
+        monkeypatch.setattr(ks.shutil, "which", lambda _name: str(on_path))
+
+        assert ks.resolve_fish() == str(on_path)
+
+    def test_a_login_shell_of_a_user_missing_from_the_password_database_is_skipped(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        location = fish_at(tmp_path / "location")
+
+        def missing_user(uid: int) -> object:
+            raise KeyError(uid)
+
+        monkeypatch.setattr(ks.pwd, "getpwuid", missing_user)
+        monkeypatch.setattr(ks, "FISH_LOCATIONS", (str(location),))
+
+        assert ks.resolve_fish() == str(location)
+
+    @pytest.mark.parametrize("unusable", UNUSABLE_FISH)
+    def test_an_unusable_login_shell_is_skipped(
+        self,
+        ks: ModuleType,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        unusable: Callable[[Path, pytest.MonkeyPatch], str],
+    ) -> None:
+        good = fish_at(tmp_path / "good")
+        login_shell(ks, monkeypatch, unusable(tmp_path, monkeypatch))
+        monkeypatch.setattr(ks, "FISH_LOCATIONS", (str(good),))
+
+        assert ks.resolve_fish() == str(good)
+
+    @pytest.mark.parametrize("unusable", UNUSABLE_FISH)
+    def test_an_unusable_location_is_skipped(
+        self,
+        ks: ModuleType,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        unusable: Callable[[Path, pytest.MonkeyPatch], str],
+    ) -> None:
+        good = fish_at(tmp_path / "good")
+        monkeypatch.setattr(ks, "FISH_LOCATIONS", (unusable(tmp_path, monkeypatch), str(good)))
+
+        assert ks.resolve_fish() == str(good)
+
+    @pytest.mark.parametrize("unusable", UNUSABLE_FISH)
+    def test_an_unusable_fish_on_path_is_not_returned(
+        self,
+        ks: ModuleType,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        unusable: Callable[[Path, pytest.MonkeyPatch], str],
+    ) -> None:
+        found = unusable(tmp_path, monkeypatch)
+        monkeypatch.setattr(ks.shutil, "which", lambda _name: found)
+
+        with pytest.raises(ks.SnapshotError, match="fish"):
+            ks.resolve_fish()
+
+    def test_no_candidate_at_all_raises_a_snapshot_error(self, ks: ModuleType) -> None:
+        with pytest.raises(ks.SnapshotError, match="fish"):
+            ks.resolve_fish()
+
+    @pytest.mark.usefixtures("inside_kitty")
+    def test_without_fish_the_existing_session_file_is_left_unchanged(
+        self, ks: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(ks.subprocess, "run", kitty_ls_returning(one_tab_ls_output()))
+        target = tmp_path / "last-session.conf"
+        target.write_bytes(b"previous")
+
+        with pytest.raises(ks.SnapshotError, match="fish"):
+            ks.save_snapshot(target)
+
+        assert target.read_bytes() == b"previous"
+        assert list(tmp_path.iterdir()) == [target]
+
+    @pytest.mark.usefixtures("inside_kitty")
+    def test_without_fish_main_reports_it_and_keeps_the_session_file(
+        self,
+        ks: ModuleType,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        monkeypatch.setattr(ks.subprocess, "run", kitty_ls_returning(one_tab_ls_output()))
+        ks.SESSION_FILE.parent.mkdir(parents=True)
+        ks.SESSION_FILE.write_bytes(b"previous")
+
+        status = ks.main()
+
+        captured = capsys.readouterr()
+        assert status == 1
+        assert captured.out == ""
+        assert captured.err.startswith("kitty-save-session: ")
+        assert "fish" in captured.err
+        assert ks.SESSION_FILE.read_bytes() == b"previous"
+
+
+@pytest.mark.usefixtures("fixed_fish")
+class TestMainOutsideKitty:
+    @pytest.fixture
+    def previous_snapshot(self, ks: ModuleType) -> bytes:
+        previous = b"new_tab keep\r\nlaunch --cwd /old fish\n\xff"
+        ks.SESSION_FILE.parent.mkdir(parents=True)
+        ks.SESSION_FILE.write_bytes(previous)
+        return previous
+
+    @pytest.mark.parametrize("stale_socket", [False, True], ids=["no-socket", "stale-socket"])
+    def test_no_kitty_answering_is_a_silent_success_that_keeps_the_snapshot(
+        self,
+        ks: ModuleType,
+        previous_snapshot: bytes,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+        *,
+        stale_socket: bool,
+    ) -> None:
+        answers: dict[Path, object] = {}
+        if stale_socket:
+            stale = make_socket(ks.SOCKET_DIR, "kitty-1.sock", OLDER_MTIME)
+            answers[stale] = refused(stale)
+        monkeypatch.setattr(ks.subprocess, "run", FakeKitty(answers))
+
+        status = ks.main()
+
+        captured = capsys.readouterr()
+        assert status == 0
+        assert captured.out == ""
+        assert captured.err == ""
+        assert ks.SESSION_FILE.read_bytes() == previous_snapshot
+        assert list(ks.SESSION_FILE.parent.iterdir()) == [ks.SESSION_FILE]
+
+    def test_a_live_socket_without_tabs_fails_loudly_and_keeps_the_snapshot(
+        self,
+        ks: ModuleType,
+        previous_snapshot: bytes,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        live = make_socket(ks.SOCKET_DIR, "kitty-1.sock", OLDER_MTIME)
+        answer = json.dumps([{"is_focused": True, "tabs": []}])
+        monkeypatch.setattr(ks.subprocess, "run", FakeKitty({live: answer}))
+
+        status = ks.main()
+
+        captured = capsys.readouterr()
+        assert status == 1
+        assert captured.out == ""
+        assert captured.err.startswith("kitty-save-session: ")
+        assert "no tabs" in captured.err
+        assert ks.SESSION_FILE.read_bytes() == previous_snapshot
+
+    def test_a_live_socket_with_a_tab_saves_it(
+        self,
+        ks: ModuleType,
+        previous_snapshot: bytes,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        live = make_socket(ks.SOCKET_DIR, "kitty-1.sock", OLDER_MTIME)
+        monkeypatch.setattr(ks.subprocess, "run", FakeKitty({live: one_tab_ls_output("/work")}))
+
+        status = ks.main()
+
+        assert previous_snapshot != ks.SESSION_FILE.read_bytes()
+        assert status == 0
+        assert capsys.readouterr().out == f"Saved 1 tab(s) to {ks.SESSION_FILE}\n"
+        assert ks.SESSION_FILE.read_text(encoding="utf-8") == (
+            f"new_tab main\nlayout splits\nlaunch --cwd /work {SHELL}\n"
+        )

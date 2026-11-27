@@ -1,15 +1,19 @@
 """Snapshot the focused kitty OS window as a kitty session file.
 
-Runs under kitty's bundled interpreter (`kitty +launch kitty_session.py`) and is
-imported by the `quit_confirm.py` kitten, so it must stay stdlib-only.
+Runs under kitty's bundled interpreter (`kitty +launch kitty_session.py`), both
+inside kitty and from the `local.kitty-save-session` LaunchAgent, and is imported
+by the `quit_confirm.py` kitten, so it must stay stdlib-only.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import pwd
 import re
 import shlex
+import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -22,9 +26,13 @@ if TYPE_CHECKING:
 
 SESSION_FILE: Final = Path.home() / ".config" / "kitty" / "last-session.conf"
 CLAUDE_SESSIONS_DIR: Final = Path.home() / ".claude" / "sessions"
+# Must match the directory of `listen_on` in kitty.conf.
+SOCKET_DIR: Final = Path.home() / ".local" / "state" / "kitty"
+KITTY_APP_EXECUTABLE: Final = "/Applications/kitty.app/Contents/MacOS/kitty"
 KITTY_LS_TIMEOUT_SECONDS: Final = 2
 DEFAULT_TAB_TITLE: Final = "shell"
-RESTORED_SHELL: Final = "fish"
+# kitty starts at login with a PATH that lacks Homebrew, so a restored tab names fish by path.
+FISH_LOCATIONS: Final = ("/opt/homebrew/bin/fish", "/usr/local/bin/fish", "/usr/bin/fish")
 
 # The session id is spliced into a fish command line, so only plain id characters pass.
 _SESSION_ID: Final = re.compile(r"[A-Za-z0-9_-]+")
@@ -32,6 +40,10 @@ _LAYOUT_NAME: Final = re.compile(r"[a-z_]+")
 
 
 class SnapshotError(Exception):
+    pass
+
+
+class KittyNotRunningError(SnapshotError):
     pass
 
 
@@ -50,23 +62,80 @@ class RenderedSession:
 type ClaudeSessionLookup = Callable[[int], ClaudeSession | None]
 
 
-def read_os_windows() -> list[object]:
-    try:
-        result = subprocess.run(
-            ["kitty", "@", "ls"],
-            capture_output=True,
-            text=True,
-            timeout=KITTY_LS_TIMEOUT_SECONDS,
-            check=True,
-        )
-        data: object = json.loads(result.stdout)
-    except (subprocess.SubprocessError, OSError, ValueError) as err:
-        msg = "'kitty @ ls' failed — is allow_remote_control = yes in kitty.conf?"
-        raise SnapshotError(msg) from err
+def read_os_windows(socket_dir: Path = SOCKET_DIR) -> list[object]:
+    # kitty sets KITTY_PID in every child it starts, kittens included.
+    if "KITTY_PID" in os.environ:
+        try:
+            data = _kitty_ls(["kitty", "@", "ls"])
+        except (subprocess.SubprocessError, OSError, ValueError) as err:
+            msg = "'kitty @ ls' failed — is allow_remote_control = yes in kitty.conf?"
+            raise SnapshotError(msg) from err
+    else:
+        data = _kitty_ls_through_a_socket(socket_dir)
     if not isinstance(data, list):
         msg = "'kitty @ ls' did not return a list of OS windows"
         raise SnapshotError(msg)
     return data
+
+
+def _kitty_ls(command: list[str]) -> object:
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=KITTY_LS_TIMEOUT_SECONDS,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def _kitty_ls_through_a_socket(socket_dir: Path) -> object:
+    kitty = shutil.which("kitty") or KITTY_APP_EXECUTABLE
+    for socket in _sockets_newest_first(socket_dir):
+        try:
+            return _kitty_ls([kitty, "@", "--to", f"unix:{socket}", "ls"])
+        except (subprocess.SubprocessError, OSError, ValueError):
+            continue
+    msg = f"no kitty answers on a socket in {socket_dir}"
+    raise KittyNotRunningError(msg)
+
+
+# A kitty that crashed leaves its socket behind; connecting to it is refused at once.
+def _sockets_newest_first(socket_dir: Path) -> list[Path]:
+    try:
+        entries = list(socket_dir.iterdir())
+    except OSError:
+        return []
+    sockets: list[tuple[float, Path]] = []
+    for entry in entries:
+        try:
+            status = entry.lstat()
+        except OSError:
+            continue
+        if stat.S_ISSOCK(status.st_mode):
+            sockets.append((status.st_mtime, entry))
+    return [path for _, path in sorted(sockets, reverse=True)]
+
+
+def resolve_fish() -> str:
+    for candidate in (_login_shell(), *FISH_LOCATIONS, shutil.which("fish")):
+        if candidate is not None and _is_fish_executable(Path(candidate)):
+            return candidate
+    msg = "no fish executable found to restore the tabs with"
+    raise SnapshotError(msg)
+
+
+def _login_shell() -> str | None:
+    try:
+        return pwd.getpwuid(os.getuid()).pw_shell
+    except KeyError:
+        return None
+
+
+def _is_fish_executable(path: Path) -> bool:
+    return (
+        path.is_absolute() and path.name == "fish" and path.is_file() and os.access(path, os.X_OK)
+    )
 
 
 def focused_os_window(os_windows: Sequence[object]) -> Mapping[str, object] | None:
@@ -99,6 +168,7 @@ def render_session(
     os_windows: Sequence[object],
     claude_session_of: ClaudeSessionLookup,
     home: str,
+    shell: str,
 ) -> RenderedSession:
     os_window = focused_os_window(os_windows)
     if os_window is None:
@@ -108,7 +178,8 @@ def render_session(
     tab_count = 0
     for tab in mappings(os_window.get("tabs")):
         launches = [
-            _launch_line(window, claude_session_of, home) for window in _restorable_windows(tab)
+            _launch_line(window, claude_session_of, home, shell)
+            for window in _restorable_windows(tab)
         ]
         if not launches:
             continue
@@ -143,7 +214,9 @@ def write_atomically(path: Path, text: str) -> None:
 
 
 def save_snapshot(path: Path = SESSION_FILE) -> int:
-    rendered = render_session(read_os_windows(), read_claude_session, str(Path.home()))
+    rendered = render_session(
+        read_os_windows(), read_claude_session, str(Path.home()), resolve_fish()
+    )
     try:
         write_atomically(path, rendered.text)
     except OSError as err:
@@ -188,6 +261,7 @@ def _launch_line(
     window: Mapping[str, object],
     claude_session_of: ClaudeSessionLookup,
     home: str,
+    shell: str,
 ) -> str:
     processes = list(mappings(window.get("foreground_processes")))
     for process in processes:
@@ -201,12 +275,12 @@ def _launch_line(
                     "launch",
                     "--cwd",
                     claude.cwd,
-                    RESTORED_SHELL,
+                    shell,
                     "-C",
                     f"claude --resume {claude.session_id}",
                 ]
             )
-    return shlex.join(["launch", "--cwd", _window_cwd(window, processes, home), RESTORED_SHELL])
+    return shlex.join(["launch", "--cwd", _window_cwd(window, processes, home), shell])
 
 
 def _window_cwd(
@@ -229,6 +303,8 @@ def _is_single_line(value: str) -> bool:
 def main() -> int:
     try:
         tab_count = save_snapshot()
+    except KittyNotRunningError:
+        return 0
     except SnapshotError as err:
         print(f"kitty-save-session: {err}", file=sys.stderr)
         return 1

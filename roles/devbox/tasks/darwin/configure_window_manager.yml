@@ -290,16 +290,13 @@
   tags: [wm, rift]
 
 - name: "Window manager — read whether this session has separate Spaces"
-  # NSScreen.screensHaveSeparateSpaces is the public form of the check Rift
-  # makes at start (SLSGetSpaceManagementMode); it reflects the session, not
-  # the stored default. JXA through the ObjC bridge sends no Apple Events.
+  # The same SkyLight call Rift makes at start (space management mode 1); it
+  # reflects the session, not the stored default. NSScreen's
+  # screensHaveSeparateSpaces is not used: it can say false while Rift says yes.
   ansible.builtin.command:
     argv:
-      - /usr/bin/osascript
-      - -l
-      - JavaScript
-      - -e
-      - 'ObjC.import("AppKit"); $.NSScreen.screensHaveSeparateSpaces'
+      - "{{ ansible_playbook_python }}"
+      - "{{ role_path }}/../../scripts/session-separate-spaces.py"
   register: devbox_wm_session_spaces
   changed_when: false
   failed_when: false

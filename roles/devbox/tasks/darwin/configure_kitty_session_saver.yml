@@ -1,0 +1,62 @@
+---
+# Periodic kitty session snapshot (local.kitty-save-session). Logout, restart and
+# system updates close kitty without the Cmd+Q kitten, so without a timer the
+# snapshot kitty restores at login would be as old as the last Cmd+Q or `kss`.
+# The script comes from install_configs.yml and the socket directory it talks
+# through from the same file, so this runs after it.
+- name: "Kitty session saver — ensure LaunchAgent directories"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents"
+    - "{{ ansible_facts['env']['HOME'] }}/Library/Logs"
+  tags: [configs, kitty, launchagent]
+
+- name: "Kitty session saver — install LaunchAgent"
+  ansible.builtin.template:
+    src: darwin/Library/LaunchAgents/local.kitty-save-session.plist.j2
+    dest: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.kitty-save-session.plist"
+    mode: "0644"
+  register: devbox_kitty_saver_plist
+  tags: [configs, kitty, launchagent]
+
+- name: "Kitty session saver — check current LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - print
+      - "gui/{{ ansible_facts['user_uid'] }}/local.kitty-save-session"
+  register: devbox_kitty_saver_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [configs, kitty, launchagent]
+
+- name: "Kitty session saver — unload old definition after plist change"
+  # bootstrap fails on an already-loaded service, so a changed plist is unloaded first.
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootout
+      - "gui/{{ ansible_facts['user_uid'] }}/local.kitty-save-session"
+  when:
+    - not ansible_check_mode
+    - devbox_kitty_saver_plist.changed
+    - devbox_kitty_saver_status.rc == 0
+  changed_when: true
+  tags: [configs, kitty, launchagent]
+
+- name: "Kitty session saver — bootstrap LaunchAgent"
+  ansible.builtin.command:
+    argv:
+      - /bin/launchctl
+      - bootstrap
+      - "gui/{{ ansible_facts['user_uid'] }}"
+      - "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/local.kitty-save-session.plist"
+  when:
+    - not ansible_check_mode
+    - devbox_kitty_saver_plist.changed or devbox_kitty_saver_status.rc != 0
+  changed_when: true
+  tags: [configs, kitty, launchagent]

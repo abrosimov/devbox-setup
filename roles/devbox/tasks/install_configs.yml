@@ -365,6 +365,15 @@
     label: "{{ item }}/"
   tags: [configs, dotfiles]
 
+# kitty.conf's listen_on binds its remote-control socket here, and kitty does not
+# create the directory. Mode 0700 keeps every other user off the socket.
+- name: Ensure kitty's private remote-control socket directory exists
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.local/state/kitty"
+    state: directory
+    mode: "0700"
+  tags: [configs, dotfiles]
+
 # The directory copy above has no --delete, so a function dropped from the repo
 # lingers in ~/.config/fish/functions/ until removed here.
 - name: Remove retired fish prompt functions

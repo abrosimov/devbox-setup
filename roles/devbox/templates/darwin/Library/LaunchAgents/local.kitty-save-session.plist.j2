@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed by devbox (roles/devbox/templates/darwin/Library/LaunchAgents/local.kitty-save-session.plist.j2).
+  Snapshots the focused kitty OS window to ~/.config/kitty/last-session.conf every
+  five minutes, because a logout or restart closes kitty without the Cmd+Q kitten
+  that would otherwise take the snapshot. kitty_session.py reaches kitty through
+  the listen_on socket and exits quietly when no kitty runs.
+
+  No RunAtLoad: at login kitty is still restoring the previous snapshot.
+  No StandardOutPath: a success line every five minutes is not worth a log.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.kitty-save-session</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <!-- kitty's own interpreter; launchd's PATH has neither kitty nor Homebrew. -->
+        <string>/Applications/kitty.app/Contents/MacOS/kitty</string>
+        <string>+launch</string>
+        <string>{{ ansible_facts['env']['HOME'] }}/.config/kitty/kitty_session.py</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ ansible_facts['env']['HOME'] }}/Library/Logs/kitty-save-session.log</string>
+</dict>
+</plist>

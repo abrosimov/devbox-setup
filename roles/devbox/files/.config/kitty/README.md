@@ -215,7 +215,17 @@ by `kitty_session.py`, which runs under kitty's own interpreter:
 |---------|--------|
 | `kitty-save-session` (abbr `kss`) | Snapshot now, e.g. before a planned reboot |
 | `Cmd+Q` | Snapshot just before the window closes (after confirmation, if one was asked). A failed snapshot never stops the window closing |
+| LaunchAgent `local.kitty-save-session` (macOS) | Snapshot every 5 minutes, so a logout, restart or system update that closes kitty without `Cmd+Q` still leaves a recent snapshot |
 | (automatic on next launch) | `startup_session ~/.config/kitty/last-session.conf` restores the snapshot |
+
+The LaunchAgent runs outside kitty, so it reaches kitty through the remote-control
+socket that `listen_on` opens in `~/.local/state/kitty/` (one socket per kitty
+process; the playbook creates the directory with mode `0700`, so only you can
+connect). It tries the sockets newest first and skips any left behind by a kitty
+that exited. When no kitty answers, it exits quietly and leaves the snapshot as
+it was: no kitty running is not an error. Its errors go to
+`~/Library/Logs/kitty-save-session.log`. A kitty started before `listen_on` was
+deployed has no socket until it is restarted.
 
 What a snapshot keeps:
 
@@ -227,7 +237,10 @@ What a snapshot keeps:
   quitting Claude leaves you in that fish.
 
 Other programs (vim, htop, …) are **not** relaunched: their split reopens as fish
-in the program's directory. Split sizes, OS window geometry and other OS windows
+in the program's directory. The snapshot names fish by its absolute path (your
+login shell when that is fish, otherwise the first of `/opt/homebrew/bin/fish`,
+`/usr/local/bin/fish`, `/usr/bin/fish` and the fish on `PATH` that exists),
+because kitty started at login runs without Homebrew on its `PATH`. Split sizes, OS window geometry and other OS windows
 are not saved. For full per-process restore (tmux/zellij + resurrect), see
 `macos_tooling_setup.md` Phase 3.
 

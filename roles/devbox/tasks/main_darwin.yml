@@ -98,6 +98,11 @@
 - name: "Install configs"
   ansible.builtin.include_tasks: install_configs.yml
   tags: [always]
+# After "Install configs", which deploys kitty_session.py and its socket directory.
+- name: "Configure periodic kitty session snapshot (LaunchAgent)"
+  ansible.builtin.include_tasks: darwin/configure_kitty_session_saver.yml
+  when: not (dev_mode | default(false) | bool)
+  tags: [configs, kitty, launchagent]
 - name: "Install portable Codex config"
   ansible.builtin.include_tasks: install_codex_configs.yml
   tags: [always]

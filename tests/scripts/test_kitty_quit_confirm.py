@@ -23,7 +23,8 @@ QUIT_CONFIRM = KITTY_DIR / "quit_confirm.py"
 KITTY_SESSION = KITTY_DIR / "kitty_session.py"
 SESSION_ID = "0f3c9a52-7b1e-4d6a-9c10-5e8d2a4b6f70"
 
-IDLE_FISH = {"pid": 100, "cwd": "/work", "cmdline": ["/opt/homebrew/bin/fish"]}
+FISH = "/opt/homebrew/bin/fish"
+IDLE_FISH = {"pid": 100, "cwd": "/work", "cmdline": [FISH]}
 BUSY_VIM = {"pid": 200, "cwd": "/work", "cmdline": ["vim", "notes.txt"]}
 
 
@@ -149,6 +150,11 @@ class LoopModule(types.ModuleType):
     def __init__(self, script: TuiScript) -> None:
         super().__init__("kittens.tui.loop")
         self.Loop = lambda: ScriptedLoop(script)
+
+
+@pytest.fixture(autouse=True)
+def inside_kitty(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("KITTY_PID", "4242")
 
 
 @pytest.fixture
@@ -440,7 +446,8 @@ class TestSnapshotOnQuit:
         sessions_dir.mkdir(parents=True)
         record = {"pid": 300, "kind": "interactive", "sessionId": SESSION_ID, "cwd": "/repo"}
         (sessions_dir / "300.json").write_text(json.dumps(record), encoding="utf-8")
-        load_module("kitty_session", KITTY_SESSION, monkeypatch)
+        session = load_module("kitty_session", KITTY_SESSION, monkeypatch)
+        monkeypatch.setattr(session, "resolve_fish", lambda: FISH)
         quit_confirm = load_module("quit_confirm", QUIT_CONFIRM, monkeypatch)
         claude_window: dict[str, object] = {
             "id": 1,
@@ -462,7 +469,7 @@ class TestSnapshotOnQuit:
             "launch",
             "--cwd",
             "/repo",
-            "fish",
+            FISH,
             "-C",
             f"claude --resume {SESSION_ID}",
         ]

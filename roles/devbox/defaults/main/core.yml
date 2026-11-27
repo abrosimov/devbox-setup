@@ -78,8 +78,12 @@ devbox_drive_backup:
 devbox_wm: "rift"
 
 # Rift configuration (templates/darwin/.config/rift/config.toml.j2).
-# The logical Super modifier every Rift binding is built on. Meta is Cmd.
-devbox_rift_super: "Meta + Alt"
+# The logical Super modifier every Rift binding is built on. Right Control is
+# what Caps Lock sends: Karabiner's profile-wide simple modification maps it, as
+# remaps from hidutil or System Settings do not reach keyboards Karabiner holds.
+# Being side-specific, it leaves the left Control to terminals and editors, and
+# Super's own layers may therefore not add a literal Ctrl.
+devbox_rift_super: "CtrlRight"
 # Apps whose activation never switches the Rift workspace (exact bundle IDs).
 # Add an app only when a real case of an unwanted switch shows up.
 devbox_rift_auto_focus_blacklist:

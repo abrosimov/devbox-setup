@@ -1,16 +1,23 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 import yaml
 from jinja2 import StrictUndefined, Template
 
-TASKS = Path(__file__).resolve().parents[2] / "roles/devbox/tasks/install_configs.yml"
-LOCAL_PLAYBOOK = Path(__file__).resolve().parents[2] / "playbooks/local.yml"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+TASKS = REPO_ROOT / "roles/devbox/tasks/install_configs.yml"
+LOCAL_PLAYBOOK = REPO_ROOT / "playbooks/local.yml"
+KARABINER_SEED = REPO_ROOT / "roles/devbox/files/.config/karabiner/karabiner.json"
+CORE_DEFAULTS = REPO_ROOT / "roles/devbox/defaults/main/core.yml"
+RIFT_NAME_OF_KARABINER_KEY = {"left_control": "CtrlLeft", "right_control": "CtrlRight"}
 
 _tasks = yaml.safe_load(TASKS.read_text())
 _local_playbook = yaml.safe_load(LOCAL_PLAYBOOK.read_text())
+_karabiner_seed = json.loads(KARABINER_SEED.read_text())
+_core_defaults = yaml.safe_load(CORE_DEFAULTS.read_text())
 
 
 def test_karabiner_assets_tree_is_deployed() -> None:
@@ -28,6 +35,30 @@ def test_karabiner_json_is_seed_only() -> None:
         )
     )
     assert seed["force"] is False
+
+
+def _caps_lock_targets() -> list[list[dict[str, str]]]:
+    profile = _karabiner_seed["profiles"][0]
+    return [
+        mod["to"]
+        for mod in profile["simple_modifications"]
+        if mod["from"] == {"key_code": "caps_lock"}
+    ]
+
+
+def test_karabiner_seed_first_profile_is_the_selected_one() -> None:
+    assert _karabiner_seed["profiles"][0]["selected"] is True
+
+
+def test_karabiner_seed_maps_caps_lock_to_right_control_in_the_first_profile() -> None:
+    assert _caps_lock_targets() == [[{"key_code": "right_control"}]]
+
+
+def test_rift_super_is_the_key_caps_lock_sends() -> None:
+    [[target]] = _caps_lock_targets()
+
+    assert _core_defaults["devbox_rift_super"] == RIFT_NAME_OF_KARABINER_KEY[target["key_code"]]
+    assert _core_defaults["devbox_rift_super"] == "CtrlRight"
 
 
 def test_git_hook_sync_uses_openrsync_compatible_permissions() -> None:

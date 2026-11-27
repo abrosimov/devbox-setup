@@ -275,13 +275,14 @@ class TestConfigTemplate:
 
         assert rendered["settings"]["auto_focus_blacklist"] == blacklist
 
-    def test_default_super_is_the_right_control(self) -> None:
-        assert _DEFAULTS["devbox_rift_super"] == "CtrlRight"
-        assert _config()["modifier_combinations"] == {"super": "CtrlRight"}
+    def test_default_super_is_control_plus_option(self) -> None:
+        assert _DEFAULTS["devbox_rift_super"] == "Ctrl + Alt"
+        assert _config()["modifier_combinations"] == {"super": "Ctrl + Alt"}
+        assert _super_families(_DEFAULTS["devbox_rift_super"]) == {"ctrl", "alt"}
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
     def test_no_profile_overrides_the_super_modifier(self, profile: str) -> None:
-        assert _profile_vars(profile)["devbox_rift_super"] == "CtrlRight"
+        assert _profile_vars(profile)["devbox_rift_super"] == "Ctrl + Alt"
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
     def test_every_keys_binding_starts_with_super(self, profile: str) -> None:
@@ -312,18 +313,30 @@ class TestConfigTemplate:
         assert _super_collisions(_config(profile)) == []
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
-    def test_no_binding_uses_a_literal_ctrl_in_any_spelling(self, profile: str) -> None:
+    def test_no_binding_uses_a_literal_ctrl_or_alt_in_any_spelling(self, profile: str) -> None:
         tables = _binding_tables(_config(profile))
 
         offenders = [
             f"[{table}] {binding}"
             for table, bindings in tables.items()
             for binding in bindings
-            if "ctrl" in {_modifier_family(m) for m in _modifiers(binding)}
+            if {"ctrl", "alt"} & {_modifier_family(m) for m in _modifiers(binding)}
         ]
 
-        assert _super_families(_DEFAULTS["devbox_rift_super"]) == {"ctrl"}
+        assert _super_families(_DEFAULTS["devbox_rift_super"]) == {"ctrl", "alt"}
         assert offenders == []
+
+    def test_shift_and_meta_are_the_only_modifiers_the_two_layers_add_to_super(self) -> None:
+        keys = _config()["keys"]
+
+        added = {
+            family
+            for binding in keys
+            for part in _modifiers(binding)
+            if (family := _modifier_family(part)) is not None
+        }
+
+        assert added == {"shift", "meta"}
 
     @pytest.mark.parametrize(
         "spelling",
@@ -339,26 +352,53 @@ class TestConfigTemplate:
             "LeftCtrl",
             "RightControl",
             "ControlLeft",
+            "Alt",
+            "alt",
+            "ALT",
+            "Option",
+            "Opt",
+            "AltLeft",
+            "AltRight",
+            "LAlt",
+            "RAlt",
+            "LeftOption",
+            "RightOpt",
+            "OptionLeft",
         ],
     )
-    def test_a_literal_ctrl_next_to_a_ctrl_super_is_detected(self, spelling: str) -> None:
+    def test_a_literal_ctrl_or_alt_next_to_a_ctrl_alt_super_is_detected(
+        self, spelling: str
+    ) -> None:
         config: Doc = {
-            "modifier_combinations": {"super": "CtrlRight"},
+            "modifier_combinations": {"super": "Ctrl + Alt"},
             "keys": {f"super + {spelling} + J": {"join_window": "left"}},
             "binding_modes": {},
         }
 
         assert _super_collisions(config) == [f"[keys] super + {spelling} + J"]
 
-    @pytest.mark.parametrize("spelling", ["Alt", "Shift", "Meta", "Cmd", "Option"])
-    def test_other_modifiers_next_to_a_ctrl_super_are_not_collisions(self, spelling: str) -> None:
+    @pytest.mark.parametrize(
+        "spelling", ["Shift", "shift", "LShift", "Meta", "Cmd", "Command", "RightMeta", "LCmd"]
+    )
+    def test_shift_and_meta_next_to_a_ctrl_alt_super_are_not_collisions(
+        self, spelling: str
+    ) -> None:
         config: Doc = {
-            "modifier_combinations": {"super": "CtrlRight"},
+            "modifier_combinations": {"super": "Ctrl + Alt"},
             "keys": {f"super + {spelling} + J": {"join_window": "left"}},
             "binding_modes": {},
         }
 
         assert _super_collisions(config) == []
+
+    def test_a_ctrl_alt_super_flags_a_binding_holding_only_one_of_the_two(self) -> None:
+        config: Doc = {
+            "modifier_combinations": {"super": "Ctrl + Alt"},
+            "keys": {"super + Ctrl + J": "x", "super + Alt + I": "y", "super + Meta + L": "z"},
+            "binding_modes": {},
+        }
+
+        assert _super_collisions(config) == ["[keys] super + Ctrl + J", "[keys] super + Alt + I"]
 
     def test_the_collision_rule_follows_the_super_variable(self) -> None:
         config = _config(devbox_rift_super="Meta + Alt")
@@ -373,14 +413,28 @@ class TestConfigTemplate:
         assert len(joins) == 8
         assert collisions == joins
 
-    def test_join_window_is_on_super_alt_for_the_eight_keys(self) -> None:
+    def test_the_collision_rule_follows_the_super_variable_onto_the_move_layer(self) -> None:
+        config = _config(devbox_rift_super="Ctrl + Shift")
+
+        collisions = _super_collisions(config)
+        shifted = [
+            f"[{table}] {binding}"
+            for table, bindings in _binding_tables(config).items()
+            for binding in bindings
+            if "Shift" in binding
+        ]
+
+        assert len(shifted) > 8
+        assert collisions == shifted
+
+    def test_join_window_is_on_super_meta_for_the_eight_keys(self) -> None:
         keys = _config()["keys"]
 
         for key, direction in JOIN_WINDOW_KEYS.items():
-            assert keys[f"super + Alt + {key}"] == {"join_window": direction}, key
+            assert keys[f"super + Meta + {key}"] == {"join_window": direction}, key
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
-    def test_join_window_is_bound_only_to_super_alt_and_those_keys(self, profile: str) -> None:
+    def test_join_window_is_bound_only_to_super_meta_and_those_keys(self, profile: str) -> None:
         keys = _config(profile)["keys"]
 
         joins = {
@@ -389,15 +443,30 @@ class TestConfigTemplate:
             if isinstance(action, dict) and "join_window" in action
         }
 
-        assert joins == {f"super + Alt + {key}" for key in JOIN_WINDOW_KEYS}
-        assert all(_modifiers(binding) == ["super", "Alt"] for binding in joins)
+        assert joins == {f"super + Meta + {key}" for key in JOIN_WINDOW_KEYS}
+        assert all(_modifiers(binding) == ["super", "Meta"] for binding in joins)
 
     def test_each_join_key_joins_in_the_direction_it_moves_focus(self) -> None:
         keys = _config()["keys"]
 
         for key, direction in JOIN_WINDOW_KEYS.items():
             assert keys[f"super + {key}"] == {"move_focus": direction}, key
-            assert keys[f"super + Alt + {key}"] == {"join_window": direction}, key
+            assert keys[f"super + Meta + {key}"] == {"join_window": direction}, key
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_move_layer_stays_on_super_shift_in_the_focus_directions(self, profile: str) -> None:
+        keys = _config(profile)["keys"]
+
+        moves = {
+            binding: action
+            for binding, action in keys.items()
+            if isinstance(action, dict) and "move_node" in action
+        }
+
+        assert moves == {
+            f"super + Shift + {key}": {"move_node": direction}
+            for key, direction in JOIN_WINDOW_KEYS.items()
+        }
 
     def test_super_is_defined_once_and_nowhere_else_in_the_file(self) -> None:
         text = _render_config()

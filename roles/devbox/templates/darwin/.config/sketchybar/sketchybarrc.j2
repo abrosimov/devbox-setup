@@ -1,0 +1,79 @@
+#!/usr/bin/env lua
+-- Managed by devbox (roles/devbox/templates/darwin/.config/sketchybar/sketchybarrc.j2).
+-- Edits here are overwritten on the next run.
+--
+-- Declares the bar and its items only. No item runs a script: every value is
+-- pushed by Hammerspoon (~/.hammerspoon/modules/bar.lua), which owns the item
+-- names used here. SketchyBar runs this file through `sh -c`, so the shebang
+-- picks Homebrew's lua from the service's PATH.
+
+local HEIGHT = {{ devbox_sketchybar_height }}
+local FONT = "{{ devbox_sketchybar_font }}"
+
+-- Kanagawa; the same values as modules/bar_render.lua.
+local BG = "0xff1f1f28"
+local FG = "0xffdcd7ba"
+
+local args = {}
+local function add(...)
+	for _, v in ipairs({ ... }) do
+		args[#args + 1] = v
+	end
+end
+
+add(
+	"--bar",
+	"position=top",
+	"height=" .. HEIGHT,
+	"color=" .. BG,
+	"display=all",
+	"sticky=on",
+	"padding_left=6",
+	"padding_right=6"
+)
+
+add(
+	"--default",
+	"icon.drawing=off",
+	"label.font=" .. FONT,
+	"label.color=" .. FG,
+	"padding_left=3",
+	"padding_right=3"
+)
+
+-- Workspaces 1-9; Hammerspoon sets each one's display, label and colours.
+for n = 1, 9 do
+	local item = "ws." .. n
+	add(
+		"--add",
+		"item",
+		item,
+		"left",
+		"--set",
+		item,
+		"label=" .. n,
+		"label.padding_left=7",
+		"label.padding_right=7",
+		"background.corner_radius=5",
+		"background.height=" .. (HEIGHT - 8),
+		"drawing=off"
+	)
+end
+
+add("--add", "item", "front_app", "left", "--set", "front_app", "padding_left=12")
+
+-- Right side, rightmost first.
+for _, item in ipairs({ "clock", "battery", "ram", "cpu", "input" }) do
+	add("--add", "item", item, "right", "--set", item, "padding_left=10")
+end
+
+local function quote(s)
+	return "'" .. s:gsub("'", "'\\''") .. "'"
+end
+
+local words = { "sketchybar" }
+for _, v in ipairs(args) do
+	words[#words + 1] = quote(v)
+end
+local ok = os.execute(table.concat(words, " "))
+os.exit(ok and 0 or 1)

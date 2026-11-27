@@ -31,7 +31,8 @@ master_side = "left"
 new_window_placement = "master"
 
 [settings.layout.gaps.outer]
-top = 1
+# Room for SketchyBar, which replaces the hidden macOS menu bar.
+top = {{ devbox_sketchybar_height + 1 }}
 left = 1
 bottom = 1
 right = 1

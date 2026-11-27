@@ -97,6 +97,12 @@ devbox_rift_auto_focus_blacklist:
 devbox_rift_display_main: ["ASUS PA329CV", "top"]
 devbox_rift_display_side: ["PA169CDV", "builtin"]
 
+# SketchyBar (templates/darwin/.config/sketchybar/sketchybarrc.j2), drawn in
+# place of the macOS menu bar, which is set to hide (macos_defaults.yml). Rift
+# keeps windows below it: its outer top gap is this height plus one.
+devbox_sketchybar_height: 32
+devbox_sketchybar_font: "MesloLGS Nerd Font Mono:Bold:13.0"
+
 # Profile extension points — overridden in profiles/*.yml.
 # Lists are concatenated with base lists in task files via `+`.
 devbox_extra_brew: []

@@ -103,6 +103,23 @@ devbox_macos_defaults:
     type: bool
     value: false
 
+  # --- Menu bar ------------------------------------------------------------
+  # System Settings > Control Center > "Automatically hide and show the menu
+  # bar" as (_HIHideMenuBar, AppleMenuBarVisibleInFullscreen): Always is
+  # (true, false), the macOS default "In Full Screen Only" is (false, false).
+  # Under Rift the bar always hides and SketchyBar takes its place
+  # (configure_sketchybar.yml); under AeroSpace, whose gaps leave no room for
+  # SketchyBar, the default is written back. Running apps pick them up at the
+  # next login.
+  - domain: NSGlobalDomain
+    key: _HIHideMenuBar
+    type: bool
+    value: "{{ devbox_wm == 'rift' }}"
+  - domain: NSGlobalDomain
+    key: AppleMenuBarVisibleInFullscreen
+    type: bool
+    value: false
+
   # --- Text input substitutions -------------------------------------------
   # All of these mangle source code (smart quotes break string literals,
   # em-dashes break CLI flags, autocaps breaks identifiers). Off globally.

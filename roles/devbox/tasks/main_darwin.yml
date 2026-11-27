@@ -116,6 +116,9 @@
   ansible.builtin.include_tasks: darwin/configure_window_manager.yml
   when: not (dev_mode | default(false) | bool)
   tags: [wm, rift]
+- name: "Configure SketchyBar (status bar in place of the macOS menu bar)"
+  ansible.builtin.include_tasks: darwin/configure_sketchybar.yml
+  tags: [configs, macos, sketchybar]
 - name: "Finish user polishing"
   ansible.builtin.include_tasks: prepare_user.yml
 - name: "Configure SSH keychain (login-keychain passphrase + LaunchAgent)"

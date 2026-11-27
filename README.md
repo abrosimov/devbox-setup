@@ -192,6 +192,39 @@ open ~/Applications/Rift.app
 Edits to `~/.config/rift/config.toml` last until the next playbook run; keep
 the ones worth having in the template.
 
+## Status Bar (SketchyBar)
+
+Under Rift, SketchyBar replaces the macOS menu bar, which is set to hide always
+(`_HIHideMenuBar`, `AppleMenuBarVisibleInFullscreen` in
+`roles/devbox/defaults/main/macos_defaults.yml`; running apps notice at the
+next login). Rift's outer top gap is the bar height plus one, so tiled windows
+stay below it. With `devbox_wm: aerospace` the SketchyBar service is stopped
+and the menu bar goes back to the macOS default (hidden in full screen only).
+
+- **Bar.** `~/.config/sketchybar/sketchybarrc` is a Lua script rendered from
+  `roles/devbox/templates/darwin/.config/sketchybar/sketchybarrc.j2`
+  (`devbox_sketchybar_height`, `devbox_sketchybar_font`). It declares the
+  items and runs no scripts. `tasks/darwin/configure_sketchybar.yml` runs it as
+  a `brew services` service and reloads it after a change.
+- **Content.** Hammerspoon pushes everything the bar shows
+  (`.hammerspoon/modules/bar.lua`):
+  - workspaces 1–9, each on its own display, with its layout as one letter
+    (`M` master_stack, `B` bsp, `S` stack, `T` traditional, `C` scrolling,
+    `F` floating), highlighted when focused or visible, dim when empty;
+  - an activity mark (yellow) on a hidden workspace where a window opened or a
+    title's unread counter `(N)` / `[N]` grew; messengers never mark it, and
+    the mark clears when the workspace is shown;
+  - the front app on the left; input source, CPU, RAM, battery and the clock
+    on the right.
+
+  Workspaces come from one long-running `rift-cli subscribe mach '*'`: each
+  event triggers `rift-cli query workspaces`, and the model
+  (`modules/bar_model.lua`) compares whole snapshots, because Rift's events
+  name the active workspace rather than the window's. Every two seconds the
+  workspaces are queried and the whole bar is pushed again, so a restarted
+  SketchyBar refills itself. The subscriber does not notice a Rift restart (it
+  blocks on Rift's Mach port), so a new Rift process gets a new subscriber.
+
 ## Pub Mode
 
 ### Why pub exists

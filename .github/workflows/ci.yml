@@ -123,10 +123,12 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
 
-      - name: Install fish shell
+      # lua5.4: test-deploy runs the Hammerspoon bar modules and the SketchyBar
+      # config under the Lua that Hammerspoon embeds.
+      - name: Install fish shell and Lua
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends fish
+          sudo apt-get install -y --no-install-recommends fish lua5.4
 
       # No `make test` here: its hook-tree half runs in hook-projects, and its
       # otelbox half is part of test-scripts + test-deploy below.

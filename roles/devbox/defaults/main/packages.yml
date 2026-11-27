@@ -112,6 +112,7 @@ devbox_brew_secondary:
   - lima            # Linux VM (eBPF/bpftrace sandbox, perf-style observability)
   - lima-additional-guestagents  # Guest agents for non-native Lima VM architectures
   - sketchybar      # Status bar replacement (FelixKratz/formulae tap)
+  - lua             # Runs SketchyBar's config (sketchybarrc is a Lua script)
   - borders         # JankyBorders — focused-window outline (FelixKratz/formulae tap)
   - smudge/smudge/nightlight  # Night Shift CLI (tap: smudge/smudge)
   - grafana/grafana/gcx  # Grafana CLI — PromQL/LogQL/Tempo queries via Grafana datasources

@@ -1,0 +1,49 @@
+---
+# SketchyBar: the status bar drawn in place of the hidden macOS menu bar.
+#
+# The config only declares the items; Hammerspoon (.hammerspoon/modules/bar.lua,
+# deployed by install_configs.yml) pushes everything the bar shows. The bar
+# runs only under Rift, whose top gap leaves room for it; under AeroSpace the
+# service is stopped and the macOS menu bar comes back (macos_defaults.yml).
+#
+# SketchyBar executes ~/.config/sketchybar/sketchybarrc on start and on
+# `--reload`, so the file must land executable. The service is Homebrew's
+# (brew services), as for JankyBorders in apply_configs.yml; dev_mode renders
+# the file into its own tree and leaves the live service alone.
+
+- name: "SketchyBar — ensure the config directory"
+  ansible.builtin.file:
+    path: "{{ devbox_paths.dotfiles_root_dir }}/.config/sketchybar"
+    state: directory
+    mode: "0755"
+  tags: [configs, macos, sketchybar]
+
+- name: "SketchyBar — write the config"
+  ansible.builtin.template:
+    src: darwin/.config/sketchybar/sketchybarrc.j2
+    dest: "{{ devbox_paths.dotfiles_root_dir }}/.config/sketchybar/sketchybarrc"
+    mode: "0755"
+  register: devbox_sketchybar_config
+  tags: [configs, macos, sketchybar]
+
+- name: "SketchyBar — run as a launchd service under Rift, stop it otherwise"
+  community.general.homebrew_services:
+    name: sketchybar
+    state: "{{ 'present' if devbox_wm == 'rift' else 'absent' }}"
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: devbox_sketchybar_service
+  when: not (dev_mode | default(false) | bool)
+  tags: [configs, macos, sketchybar]
+
+# A service that has just started has already read the new file.
+- name: "SketchyBar — reload the changed config"
+  ansible.builtin.command:
+    argv: [/opt/homebrew/bin/sketchybar, --reload]
+  changed_when: true
+  when:
+    - not (dev_mode | default(false) | bool)
+    - devbox_wm == 'rift'
+    - devbox_sketchybar_config is changed
+    - devbox_sketchybar_service is not changed
+  tags: [configs, macos, sketchybar]

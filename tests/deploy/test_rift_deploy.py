@@ -960,8 +960,15 @@ class TestSessionWithoutSeparateSpaces:
     def test_the_session_is_read_not_the_stored_default(self) -> None:
         probe = next(t for t, *_ in _leaves(_WM_TASKS) if _SESSION_SPACES(t))
 
-        assert _argv(probe)[:4] == ["/usr/bin/osascript", "-l", "JavaScript", "-e"]
-        assert "screensHaveSeparateSpaces" in _argv(probe)[4]
+        context = {"ansible_playbook_python": "/py/python3", "role_path": str(ROLE)}
+        rendered = [_render_env().from_string(arg).render(**context) for arg in _argv(probe)]
+
+        assert len(rendered) == 2
+        assert rendered[0] == "/py/python3"
+        assert Path(rendered[1]).resolve() == REPO_ROOT / "scripts/session-separate-spaces.py"
+        assert Path(rendered[1]).is_file()
+        assert "osascript" not in " ".join(_argv(probe))
+        assert "screensHaveSeparateSpaces" not in " ".join(_argv(probe))
         assert probe["check_mode"] is False
         assert probe["changed_when"] is False
         assert probe["failed_when"] is False

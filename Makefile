@@ -389,6 +389,7 @@ PY_PATHS_COMMON := \
   scripts/codex-hook-trust.py scripts/codex_hook_trust/ \
   scripts/langfuse-codex-plugin-source.py \
   scripts/pub-mode-test.py \
+  scripts/session-separate-spaces.py \
   scripts/sync-upstream-docs.py \
   tests/live/ \
   tests/scripts/test_ai_config*.py \
@@ -399,6 +400,7 @@ PY_PATHS_COMMON := \
   tests/scripts/test_kitty_quit_confirm.py \
   tests/scripts/test_kitty_session.py \
   tests/scripts/test_pub_mode_test.py \
+  tests/scripts/test_session_separate_spaces.py \
   tests/scripts/test_sync_upstream_docs.py
 
 # Lint takes the whole dot_claude / dot_ai / dot_codex trees and the deploy

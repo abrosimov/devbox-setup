@@ -48,12 +48,17 @@ local function load_colour(percent)
 	return C.fg
 end
 
-local function percent_label(prefix, percent)
+local function percent_label(percent)
 	if percent == nil then
-		return prefix .. " --"
+		return "--"
 	end
-	return string.format("%s %d%%", prefix, math.floor(percent + 0.5))
+	return string.format("%d%%", math.floor(percent + 0.5))
 end
+
+-- Nerd Font glyphs, written as UTF-8 bytes: a private-use glyph is invisible
+-- in most editors. nf-oct-cpu (U+F4BC) and nf-fa-memory (U+EFC5).
+M.CPU_ICON = "\239\146\188"
+M.RAM_ICON = "\238\191\133"
 
 local function workspace_colours(ws)
 	if ws.focused then
@@ -112,11 +117,15 @@ function M.status_args(s)
 	local args = {
 		"--set",
 		"cpu",
-		"label=" .. percent_label("CPU", cpu),
+		"icon=" .. M.CPU_ICON,
+		"icon.color=" .. load_colour(cpu),
+		"label=" .. percent_label(cpu),
 		"label.color=" .. load_colour(cpu),
 		"--set",
 		"ram",
-		"label=" .. percent_label("RAM", ram),
+		"icon=" .. M.RAM_ICON,
+		"icon.color=" .. load_colour(ram),
+		"label=" .. percent_label(ram),
 		"label.color=" .. load_colour(ram),
 		"--set",
 		"clock",

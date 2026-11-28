@@ -2,10 +2,11 @@
 -- Managed by devbox (roles/devbox/templates/darwin/.config/sketchybar/sketchybarrc.j2).
 -- Edits here are overwritten on the next run.
 --
--- Declares the bar and its items only. No item runs a script: every value is
--- pushed by Hammerspoon (~/.hammerspoon/modules/bar.lua), which owns the item
--- names used here. SketchyBar runs this file through `sh -c`, so the shebang
--- picks Homebrew's lua from the service's PATH.
+-- Declares the bar and its items only. No item runs an update script: every
+-- value is pushed by Hammerspoon (~/.hammerspoon/modules/bar.lua), which owns
+-- the item names used here. The only scripts are the workspaces' click actions.
+-- SketchyBar runs this file through `sh -c`, so the shebang picks Homebrew's
+-- lua from the service's PATH.
 
 local HEIGHT = {{ devbox_sketchybar_height }}
 local FONT = "{{ devbox_sketchybar_font }}"
@@ -42,6 +43,8 @@ add(
 )
 
 -- Workspaces 1-9; Hammerspoon sets each one's display, label and colours.
+-- A click switches to the workspace; Rift numbers them from 0. The click
+-- script runs through `sh -c`, which expands $HOME.
 for n = 1, 9 do
 	local item = "ws." .. n
 	add(
@@ -56,6 +59,7 @@ for n = 1, 9 do
 		"label.padding_right=7",
 		"background.corner_radius=5",
 		"background.height=" .. (HEIGHT - 8),
+		'click_script="$HOME/.local/bin/rift-cli" execute workspace switch ' .. (n - 1),
 		"drawing=off"
 	)
 end
@@ -65,8 +69,9 @@ add("--add", "item", "front_app", "left", "--set", "front_app", "padding_left=12
 -- Right side, rightmost first. The otelbox edge item exists only where the
 -- edge runs; Hammerspoon reads the declared items and sets it only then.
 local RIGHT = { "clock", "battery", "ram", "cpu", {% if devbox_packages.otelbox_edge.enabled | default(true) %}"edge", {% endif %}"input" }
--- The edge item alone has an icon: a Nerd Font glyph.
-local ICON = { edge = { "icon.drawing=on", "icon.font=" .. FONT, "icon.padding_right=4" } }
+-- These items have an icon: a Nerd Font glyph that Hammerspoon sets.
+local ICON_PROPS = { "icon.drawing=on", "icon.font=" .. FONT, "icon.padding_right=4" }
+local ICON = { cpu = ICON_PROPS, ram = ICON_PROPS, edge = ICON_PROPS }
 for _, item in ipairs(RIGHT) do
 	add("--add", "item", item, "right", "--set", item, "padding_left=10", table.unpack(ICON[item] or {}))
 end

@@ -95,6 +95,7 @@ devbox_brew_secondary:
   - tree           # Directory tree — used by agents for codebase exploration
   - cloc           # Count lines of code by language
   - yq             # YAML/JSON/XML processor (like jq for YAML)
+  - age            # Simple, modern file encryption (FiloSottile/age)
   - hadolint       # Dockerfile linter — used by post_edit_lint.py
   - swi-prolog     # Prolog runtime — includes built-in LSP support
   - swiftly        # Official Swift toolchain installer and version manager

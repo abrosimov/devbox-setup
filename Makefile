@@ -148,7 +148,7 @@ endif
        audit audit-brewfile audit-brewfile-all audit-taps untap-stale \
        claude-diff claude-pull claude-pull-review \
        karabiner-diff karabiner-pull \
-       dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now openbao-unseal-push openbao-unseal-now go-proxy-verify \
+       dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now openbao-unseal-push openbao-unseal-now openbao-offline-age-key go-proxy-verify \
        sync-upstream-docs \
        test test-integration test-ai-config test-deploy test-claude-hooks test-claude-hooks-unit test-agy-hooks test-agy-hooks-unit test-git-hooks test-scripts test-skills test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
        test-live test-live-guard test-langfuse-e2e \
@@ -207,6 +207,7 @@ help:
 	@echo "  make drive-backup-now  - run the drive backup now via launchd; log in ~/Library/Logs/drive-backup.log"
 	@echo "  make openbao-unseal-push - (re)install the OpenBao unattended unseal (SSH key + LaunchAgent) from the local overlay config"
 	@echo "  make openbao-unseal-now  - run the OpenBao unseal now via launchd; log in ~/Library/Logs/openbao-unseal.log"
+	@echo "  make openbao-offline-age-key - print a new offline age identity for the OpenBao break-glass copy; nothing is written to disk"
 	@echo "  make validate-claude  - validate Claude Code agent/skill library"
 	@echo "  make audit-budget    - show detailed skill description budget report"
 	@echo "  make rules-budget    - count rule-like statements across skills/agents/commands/UAP (ARGS='--json' or '--baseline PATH')"
@@ -927,6 +928,18 @@ openbao-unseal-push: $(COLLECTIONS_SENTINEL)
 openbao-unseal-now:
 	@launchctl kickstart "gui/$$(id -u)/local.openbao-unseal"
 	@echo "Started. Follow: tail -f ~/Library/Logs/openbao-unseal.log"
+
+# Print a fresh age identity for the offline copy of the OpenBao break-glass
+# key. It goes to the terminal only, never to disk: the AGE-SECRET-KEY line is
+# kept in iCloud Keychain (Passwords), the public key goes into the server's
+# vault_openbao_unseal_age_recipients.
+openbao-offline-age-key:
+	@command -v age-keygen >/dev/null || { echo "age-keygen not found; run make personal (or brew install age)" >&2; exit 1; }
+	@age-keygen
+	@echo
+	@echo "Save the AGE-SECRET-KEY line as a new item in Passwords (iCloud Keychain),"
+	@echo "add the public key to vault_openbao_unseal_age_recipients on the server side,"
+	@echo "then clear this terminal's scrollback (Cmd+K)."
 
 # Re-apply macOS basics: Touch ID for sudo, pmset disablesleep, DevToolsSecurity.
 # Reuses configure_macos_basics.yml under `macos`. Sudo IS required.

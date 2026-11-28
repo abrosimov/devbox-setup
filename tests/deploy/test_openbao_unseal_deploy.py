@@ -195,4 +195,5 @@ def test_fast_path_playbook_deploys_the_overlay_first() -> None:
     assert imports == [
         "../roles/devbox/tasks/install_configs.yml",
         "../roles/devbox/tasks/darwin/configure_openbao_unseal.yml",
+        "../roles/devbox/tasks/darwin/configure_openbao_age_identity.yml",
     ]

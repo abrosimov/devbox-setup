@@ -472,7 +472,16 @@ make openbao-unseal-now    # run once; tail ~/Library/Logs/openbao-unseal.log
 
 A Mac without the Keychain item logs `nothing to do` and exits 0.
 
-The personal profile also installs the OpenBao CLI (`bao`, Homebrew formula `openbao`, listed in `devbox_extra_brew` in `profiles/personal.yml`); the server repository's `make openbao-login` uses it. The work profile does not install it.
+The personal profile also installs the OpenBao CLI (`bao`, Homebrew formula `openbao`) and `age`, both listed in `devbox_extra_brew` in `profiles/personal.yml`; the server repository's `make openbao-login` uses `bao`, and its `init-openbao`, `install-openbao-unseal-key` and `rewrap-openbao-unseal-key` use `age`. The work profile installs neither.
+
+### Break-glass age identities
+
+The server keeps a break-glass copy of the unseal key encrypted to age recipients (`vault_openbao_unseal_age_recipients` in the server repository). Until that copy moves to the YubiKeys it is encrypted to software identities:
+
+- **This Mac's identity.** While `devbox_openbao_unseal_enabled` and `devbox_openbao_age_identity_enabled` are both on (personal only), a run generates `~/.config/age/openbao-unseal.key` (mode 0600 in a 0700 directory; never overwritten, because the copy is encrypted to it) and prints its recipient. It does not need the local-overlay config, so it exists before the server is initialised. `make openbao-unseal-push` creates it too, once `age` is installed.
+- **The offline identity.** `make openbao-offline-age-key` prints a fresh identity to the terminal and writes nothing to disk. Save its `AGE-SECRET-KEY-…` line as a new item in Passwords (iCloud Keychain), add its public key to the recipients, and clear the terminal's scrollback.
+
+Once the copy is re-encrypted to the YubiKeys (`make rewrap-openbao-unseal-key` in the server repository), set `devbox_openbao_age_identity_enabled: false` in `profiles/personal.yml`: the next run removes this Mac's identity. Delete the offline item from Passwords by hand.
 
 ## Testing
 

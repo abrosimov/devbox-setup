@@ -124,6 +124,10 @@ devbox_tamias_enabled: false
 # OpenBao unattended unseal (darwin/configure_openbao_unseal.yml). Off unless a
 # profile switches it on; a run with it off removes an earlier installation.
 devbox_openbao_unseal_enabled: false
+# This Mac's software age identity for the OpenBao break-glass copy
+# (darwin/configure_openbao_age_identity.yml), used until the copy moves to the
+# YubiKeys. Needs devbox_openbao_unseal_enabled too; off removes the identity.
+devbox_openbao_age_identity_enabled: false
 # Claude Code plugins added to devbox_claude_plugins (claude.yml); same entry shape.
 devbox_extra_claude_plugins: []
 # Remote owners the Claude auto-mode classifier treats as trusted, added to

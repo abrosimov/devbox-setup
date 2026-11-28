@@ -1,0 +1,87 @@
+---
+# This Mac's software age identity for the break-glass copy of the OpenBao
+# unseal key. Its recipient goes into the server's
+# vault_openbao_unseal_age_recipients; the copy is later re-encrypted to the
+# YubiKeys and this identity retired by switching
+# devbox_openbao_age_identity_enabled off.
+#
+# Present only while both devbox_openbao_unseal_enabled and
+# devbox_openbao_age_identity_enabled are on (personal only). Generated if
+# absent and never overwritten, because the break-glass copy is encrypted to
+# it. With either switch off the identity is removed: the unseal key itself
+# stays in the Keychain, so a retired identity loses nothing.
+
+- name: "OpenBao age identity — resolve paths"
+  ansible.builtin.set_fact:
+    devbox_openbao_age_dir: "{{ ansible_facts['env']['HOME'] }}/.config/age"
+    devbox_openbao_age_identity: "{{ ansible_facts['env']['HOME'] }}/.config/age/openbao-unseal.key"
+    devbox_openbao_age_active: >-
+      {{ (devbox_openbao_unseal_enabled | default(false) | bool)
+         and (devbox_openbao_age_identity_enabled | default(false) | bool) }}
+  tags: [openbao-unseal]
+
+- name: "OpenBao age identity — remove the retired identity"
+  ansible.builtin.file:
+    path: "{{ devbox_openbao_age_identity }}"
+    state: absent
+  when: not (devbox_openbao_age_active | bool)
+  tags: [openbao-unseal]
+
+- name: "OpenBao age identity — create and report"
+  when: devbox_openbao_age_active | bool
+  tags: [openbao-unseal]
+  block:
+    # The fast path (make openbao-unseal-push) installs no packages; age comes
+    # from devbox_brew_secondary in a full run.
+    - name: "OpenBao age identity — look for age-keygen"
+      ansible.builtin.stat:
+        path: /opt/homebrew/bin/age-keygen
+      register: devbox_openbao_age_keygen
+
+    - name: "OpenBao age identity — require age-keygen"
+      ansible.builtin.assert:
+        that:
+          - devbox_openbao_age_keygen.stat.exists
+        fail_msg: >-
+          /opt/homebrew/bin/age-keygen not found; run make personal (or
+          brew install age) and retry.
+
+    - name: "OpenBao age identity — ensure the directory exists"
+      ansible.builtin.file:
+        path: "{{ devbox_openbao_age_dir }}"
+        state: directory
+        mode: "0700"
+
+    # `creates` keeps an existing identity: the break-glass copy is encrypted
+    # to it, and a new one could not decrypt that copy.
+    - name: "OpenBao age identity — generate the identity if absent"
+      ansible.builtin.command:
+        argv:
+          - /opt/homebrew/bin/age-keygen
+          - -o
+          - "{{ devbox_openbao_age_identity }}"
+        creates: "{{ devbox_openbao_age_identity }}"
+
+    - name: "OpenBao age identity — restrict the identity to its owner"
+      ansible.builtin.file:
+        path: "{{ devbox_openbao_age_identity }}"
+        mode: "0600"
+      when: not ansible_check_mode
+
+    - name: "OpenBao age identity — read the recipient"
+      ansible.builtin.command:
+        argv:
+          - /opt/homebrew/bin/age-keygen
+          - -y
+          - "{{ devbox_openbao_age_identity }}"
+      register: devbox_openbao_age_recipient
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: "OpenBao age identity — show the recipient to add on the server"
+      ansible.builtin.debug:
+        msg: >-
+          Add this recipient ({{ devbox_openbao_age_identity }}) to
+          vault_openbao_unseal_age_recipients on the server side:
+          {{ devbox_openbao_age_recipient.stdout | trim }}
+      when: not ansible_check_mode

@@ -6,6 +6,9 @@ devbox_tamias_enabled: true
 # This Mac unseals the personal OpenBao server from its Keychain (the destination
 # comes from the local overlay, see README § OpenBao Unattended Unseal).
 devbox_openbao_unseal_enabled: true
+# Software age identity for the OpenBao break-glass copy; switch off once the
+# copy is re-encrypted to the YubiKeys, which removes it.
+devbox_openbao_age_identity_enabled: true
 
 # Profile-specific extras (concatenated with base lists in task files).
 devbox_extra_brew:

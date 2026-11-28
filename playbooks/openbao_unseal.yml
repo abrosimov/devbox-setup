@@ -1,8 +1,8 @@
 ---
 # Fast-path: (re)install the OpenBao unattended unseal — the dedicated SSH key,
-# scripts/openbao-unseal.py and its `local.openbao-unseal` LaunchAgent. Deploys
-# the local overlay first, because the overlay's
-# ~/.config/openbao-unseal/config.json is what switches the agent on.
+# scripts/openbao-unseal.py, its `local.openbao-unseal` LaunchAgent and the
+# break-glass age identity. Deploys the local overlay first, because the
+# overlay's ~/.config/openbao-unseal/config.json is what switches the agent on.
 #
 # No sudo, no vault. Invoked via `make openbao-unseal-push`.
 
@@ -24,3 +24,6 @@
       ansible.builtin.import_tasks: "../roles/devbox/tasks/darwin/configure_openbao_unseal.yml"
       vars:
         role_path: "{{ playbook_dir }}/../roles/devbox"
+
+    - name: Configure the OpenBao break-glass age identity
+      ansible.builtin.import_tasks: "../roles/devbox/tasks/darwin/configure_openbao_age_identity.yml"

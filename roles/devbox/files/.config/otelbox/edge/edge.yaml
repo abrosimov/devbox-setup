@@ -117,6 +117,11 @@ processors:
     detectors: [env, system]
     timeout: 2s
     override: false
+    # The default dns source resolves the host's FQDN without honouring the
+    # timeout above; a resolver that ignores .local names stalls every
+    # pipeline's start for close to a minute.
+    system:
+      hostname_sources: [os]
 
   # Classification is applied only to the dedicated plugin pipeline below.
   resource/langfuse_plugins:

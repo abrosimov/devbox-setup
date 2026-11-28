@@ -255,6 +255,13 @@ def test_langfuse_plugin_traces_keep_the_user_and_tags_their_sdk_states() -> Non
     assert "transform/langfuse_native" not in processors
 
 
+def test_resource_detection_takes_the_host_name_from_the_os_only() -> None:
+    detection = _edge["processors"]["resource_detection"]
+
+    assert "system" in detection["detectors"]
+    assert detection["system"]["hostname_sources"] == ["os"]
+
+
 _NATIVE_STATEMENTS: list[str] = _edge["processors"]["transform/langfuse_native"]["trace_statements"]
 _NATIVE_STAMP = re.compile(
     r'set\(span\.attributes\["(?P<key>[^"]+)"\], "[^"]*"\) where (?P<where>.+)'

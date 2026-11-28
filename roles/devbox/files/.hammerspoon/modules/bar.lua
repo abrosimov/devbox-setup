@@ -4,6 +4,7 @@
 
 local model = require("modules.bar_model")
 local render = require("modules.bar_render")
+local edge_model = require("modules.bar_edge")
 
 local M = {}
 
@@ -15,6 +16,11 @@ local RESTART_MIN, RESTART_MAX = 2, 60
 local HOME = os.getenv("HOME")
 local RIFT_CLI = HOME .. "/.local/bin/rift-cli"
 local RIFT_BUNDLE = "git.acsandmann.rift"
+
+local EDGE_ITEM = "edge"
+local EDGE_POLL = 15
+local EDGE_METRICS_URL = "http://127.0.0.1:8888/metrics"
+local EDGE_WATCH_STATE = HOME .. "/.local/state/otelbox/watch.json"
 
 -- Messengers never raise an activity mark: they signal on their own. Apps that
 -- declare the social-networking category are caught by category; this list
@@ -45,6 +51,10 @@ local state = model.new()
 local view = {}
 local display_index = {}
 local status = {}
+-- nil until SketchyBar has answered. The rc declares the item only where the
+-- edge runs, and a --set on an undeclared item must not reach the push.
+local edge_declared
+local edge
 
 local quiet_cache = {}
 local function is_quiet(bundle_id)
@@ -77,6 +87,11 @@ local function push()
 	local args = render.workspace_args(view, display_index)
 	for _, v in ipairs(render.status_args(status)) do
 		args[#args + 1] = v
+	end
+	if edge_declared then
+		for _, v in ipairs(render.edge_args(edge)) do
+			args[#args + 1] = v
+		end
 	end
 	push_task = hs.task.new(sketchybar, function()
 		push_task = nil
@@ -217,6 +232,64 @@ local function read_app()
 	status.app = app and app:name() or ""
 end
 
+local function read_watch_alerts()
+	local file = io.open(EDGE_WATCH_STATE, "r")
+	if file == nil then
+		return {}
+	end
+	local content = file:read("a")
+	file:close()
+	local ok, decoded = pcall(hs.json.decode, content or "")
+	-- The same epoch as watch.py's time.time().
+	return edge_model.watch_alerts(ok and decoded or nil, hs.timer.secondsSinceEpoch())
+end
+
+-- hs.http cannot cancel a request: one still outstanding at the next poll
+-- counts as no answer, and its late answer is ignored.
+local edge_request_since
+local function fetch_edge()
+	local now = hs.timer.secondsSinceEpoch()
+	if edge_request_since ~= nil then
+		edge = edge_model.summarise(nil, {})
+		push()
+	end
+	edge_request_since = now
+	hs.http.asyncGet(EDGE_METRICS_URL, nil, function(code, body)
+		if edge_request_since ~= now then
+			return
+		end
+		edge_request_since = nil
+		edge = edge_model.summarise(code == 200 and body or nil, read_watch_alerts())
+		push()
+	end)
+end
+
+-- SketchyBar is asked every poll whether the item exists, so a reloaded rc
+-- that adds or drops it is followed, and a machine without it never polls :8888.
+local bar_task
+local function poll_edge()
+	if sketchybar == nil or (bar_task ~= nil and bar_task:isRunning()) then
+		return
+	end
+	bar_task = hs.task.new(sketchybar, function(code, out)
+		bar_task = nil
+		if code ~= 0 then
+			return
+		end
+		local ok, decoded = pcall(hs.json.decode, out)
+		if not ok or type(decoded) ~= "table" then
+			return
+		end
+		edge_declared = edge_model.declared(decoded, EDGE_ITEM)
+		if edge_declared then
+			fetch_edge()
+		end
+	end, { "--query", "bar" })
+	if not bar_task:start() then
+		bar_task = nil
+	end
+end
+
 local cpu_sampler
 local function tick()
 	status.ram = render.memory_percent(hs.host.vmStat())
@@ -238,7 +311,7 @@ local function tick()
 	push()
 end
 
-local tick_timer, screen_watcher, app_watcher, input_watcher
+local tick_timer, edge_timer, screen_watcher, app_watcher, input_watcher
 
 function M.start()
 	sketchybar = find_sketchybar()
@@ -274,13 +347,15 @@ function M.start()
 	subscribe()
 	tick_timer = hs.timer.doEvery(TICK, tick)
 	tick()
+	edge_timer = hs.timer.doEvery(EDGE_POLL, poll_edge)
+	poll_edge()
 end
 
 -- Called on reload too (init.lua), so the subscriber process does not outlive
 -- the Lua state that reads it.
 function M.stop()
 	refresh_timer:stop()
-	for _, obj in pairs({ tick_timer, restart_timer, screen_watcher, app_watcher, input_watcher, cpu_sampler }) do
+	for _, obj in pairs({ tick_timer, edge_timer, restart_timer, screen_watcher, app_watcher, input_watcher, cpu_sampler }) do
 		obj:stop()
 	end
 	if subscriber ~= nil then

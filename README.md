@@ -214,8 +214,20 @@ and the menu bar goes back to the macOS default (hidden in full screen only).
   - an activity mark (yellow) on a hidden workspace where a window opened or a
     title's unread counter `(N)` / `[N]` grew; messengers never mark it, and
     the mark clears when the workspace is shown;
-  - the front app on the left; input source, CPU, RAM, battery and the clock
-    on the right.
+  - the front app on the left; input source, the otelbox edge, CPU, RAM,
+    battery and the clock on the right;
+  - the otelbox edge item (`edge`, only where
+    `devbox_packages.otelbox_edge.enabled` is true, since the rc declares it
+    only there): the fill of the fullest exporter queue, read every 15 seconds
+    from `http://127.0.0.1:8888/metrics` (`otelcol_exporter_queue_size` over
+    `otelcol_exporter_queue_capacity`, as `scripts/otelbox_edge/watch.py`
+    computes it), yellow from 50 % and red from 80 %. A `stall` or `disk`
+    marker appears when the watcher's `~/.local/state/otelbox/watch.json`
+    records that alert, in the alert's colour; the bar leaves both judgements
+    to the watcher and ignores a `watch.json` whose last run is more than
+    15 minutes old. `✕`, dimmed, means `:8888` did not answer; `--`, dimmed
+    and without markers, means no poll has finished yet or `:8888` answered
+    without a finite exporter queue.
 
   Workspaces come from one long-running `rift-cli subscribe mach '*'`: each
   event triggers `rift-cli query workspaces`, and the model

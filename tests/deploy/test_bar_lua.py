@@ -889,6 +889,134 @@ class TestStatusArgs:
         assert settings["input"]["label"] == text
 
 
+class TestEdgeArgs:
+    # The private-use glyph U+F093 appears as an invisible character in some literals below.
+    @staticmethod
+    def _args(run_lua: RunLua, summary: Mapping[str, object] | None) -> list[str]:
+        script = "local r = dofile(DATA.render)\nprint(encode(r.edge_args(DATA.summary)))"
+        return cast("list[str]", run_lua(script, {"render": RENDER, "summary": summary}))
+
+    @staticmethod
+    def _ok(percent: int, level: str | None, markers: list[str] | None = None) -> Doc:
+        return {"state": "ok", "percent": percent, "level": level, "markers": markers}
+
+    def test_the_icon_is_the_nerd_font_upload_glyph(self, run_lua: RunLua) -> None:
+        script = "local r = dofile(DATA.render)\nprint(encode(r.EDGE_ICON))"
+
+        assert run_lua(script, {"render": RENDER}) == ""
+
+    def test_the_icon_is_code_point_f093(self, run_lua: RunLua) -> None:
+        script = "local r = dofile(DATA.render)\nprint(encode(r.EDGE_ICON))"
+
+        icon = cast("str", run_lua(script, {"render": RENDER}))
+
+        assert [hex(ord(char)) for char in icon] == ["0xf093"]
+
+    def test_a_healthy_edge_is_the_whole_argument_list(self, run_lua: RunLua) -> None:
+        assert self._args(run_lua, self._ok(37, "ok", [])) == [
+            "--set",
+            "edge",
+            "icon=",
+            f"icon.color={FG}",
+            "label=37%",
+            f"label.color={FG}",
+        ]
+
+    def test_only_the_edge_item_is_set_once(self, run_lua: RunLua) -> None:
+        for summary in (None, {"state": "down"}, {"state": "unknown"}, self._ok(90, "critical")):
+            assert list(_settings(self._args(run_lua, summary))) == ["edge"]
+
+    @pytest.mark.parametrize(
+        ("level", "colour"),
+        [("ok", FG), ("warning", WARN), ("critical", ALERT)],
+    )
+    def test_the_level_picks_the_colour_of_the_icon_and_the_label(
+        self, run_lua: RunLua, level: str, colour: str
+    ) -> None:
+        settings = _settings(self._args(run_lua, self._ok(55, level, [])))["edge"]
+
+        assert settings["icon.color"] == colour
+        assert settings["label.color"] == colour
+
+    @pytest.mark.parametrize("level", [None, "", "bogus", "CRITICAL"])
+    def test_a_missing_or_unknown_level_is_drawn_in_the_normal_colour(
+        self, run_lua: RunLua, level: str | None
+    ) -> None:
+        settings = _settings(self._args(run_lua, self._ok(10, level, [])))["edge"]
+
+        assert settings["label.color"] == FG
+        assert settings["icon.color"] == FG
+
+    @pytest.mark.parametrize("percent", [0, 1, 49, 50, 80, 100, 150])
+    def test_the_label_is_the_whole_percentage(self, run_lua: RunLua, percent: int) -> None:
+        settings = _settings(self._args(run_lua, self._ok(percent, "ok", [])))["edge"]
+
+        assert settings["label"] == f"{percent}%"
+
+    @pytest.mark.parametrize(
+        ("markers", "label"),
+        [
+            pytest.param(["stall"], "62% stall", id="stall"),
+            pytest.param(["disk"], "62% disk", id="disk"),
+            pytest.param(["stall", "disk"], "62% stall disk", id="both-in-the-given-order"),
+            pytest.param(["disk", "stall"], "62% disk stall", id="order-is-the-callers"),
+            pytest.param([], "62%", id="none"),
+            pytest.param(None, "62%", id="missing"),
+        ],
+    )
+    def test_each_marker_follows_the_percentage(
+        self, run_lua: RunLua, markers: list[str] | None, label: str
+    ) -> None:
+        settings = _settings(self._args(run_lua, self._ok(62, "warning", markers)))["edge"]
+
+        assert settings["label"] == label
+
+    def test_markers_do_not_change_the_colour(self, run_lua: RunLua) -> None:
+        plain = _settings(self._args(run_lua, self._ok(62, "warning", [])))["edge"]
+        marked = _settings(self._args(run_lua, self._ok(62, "warning", ["stall", "disk"])))["edge"]
+
+        assert marked["label.color"] == plain["label.color"] == WARN
+
+    def test_an_edge_that_did_not_answer_is_a_dimmed_cross(self, run_lua: RunLua) -> None:
+        settings = _settings(self._args(run_lua, {"state": "down"}))["edge"]
+
+        assert settings == {
+            "icon": "",
+            "icon.color": DIM,
+            "label": "✕",
+            "label.color": DIM,
+        }
+
+    @pytest.mark.parametrize(
+        "summary",
+        [
+            pytest.param({"state": "unknown"}, id="unknown"),
+            pytest.param(None, id="before-the-first-poll"),
+            pytest.param({}, id="no-state"),
+            pytest.param({"state": "bogus", "percent": 40, "level": "critical"}, id="bogus-state"),
+        ],
+    )
+    def test_no_reading_yet_or_an_unreadable_one_is_dimmed_dashes(
+        self, run_lua: RunLua, summary: Mapping[str, object] | None
+    ) -> None:
+        settings = _settings(self._args(run_lua, summary))["edge"]
+
+        assert settings == {
+            "icon": "",
+            "icon.color": DIM,
+            "label": "--",
+            "label.color": DIM,
+        }
+
+    def test_a_down_state_ignores_stale_fields(self, run_lua: RunLua) -> None:
+        summary = {"state": "down", "percent": 99, "level": "critical", "markers": ["stall"]}
+
+        settings = _settings(self._args(run_lua, summary))["edge"]
+
+        assert settings["label"] == "✕"
+        assert settings["label.color"] == DIM
+
+
 class TestMemoryPercent:
     PAGE: Final = 4096
     MEM: Final = 1000 * 4096

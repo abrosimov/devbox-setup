@@ -89,6 +89,9 @@ devbox_rift_super: "Ctrl + Alt"
 devbox_rift_auto_focus_blacklist:
   - com.anthropic.claudefordesktop  # Claude desktop
   - com.openai.codex                # ChatGPT desktop
+  # Finder owns the desktop window, which Rift focuses on an empty workspace;
+  # following that activation jumps to the workspace of Finder's sole window.
+  - com.apple.finder                # Finder
 # Display preferences for workspaces 1-5 (main) and 6-9 (side), first eligible
 # match wins: an exact display name (macOS's localized name, as System Settings
 # shows it), then a position, `builtin` last. The names are the home monitors;

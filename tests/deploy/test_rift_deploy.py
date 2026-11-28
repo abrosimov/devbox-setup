@@ -263,11 +263,25 @@ class TestConfigTemplate:
 
         assert rules[0]["display"] == names
 
-    def test_auto_focus_blacklist_is_the_two_desktop_assistants(self) -> None:
+    def test_auto_focus_blacklist_is_the_two_desktop_assistants_and_finder(self) -> None:
         blacklist = _config()["settings"]["auto_focus_blacklist"]
 
-        assert blacklist == ["com.anthropic.claudefordesktop", "com.openai.codex"]
+        assert blacklist == [
+            "com.anthropic.claudefordesktop",
+            "com.openai.codex",
+            "com.apple.finder",
+        ]
         assert blacklist == _DEFAULTS["devbox_rift_auto_focus_blacklist"]
+
+    def test_zen_is_placed_on_the_first_workspace_and_focused(self) -> None:
+        rules = _config()["virtual_workspaces"]["app_rules"]
+
+        assert rules == [{"app_id": "app.zen-browser.zen", "workspace": 0, "focus": True}]
+
+    def test_super_shift_b_launches_zen_through_open(self) -> None:
+        keys = _config()["keys"]
+
+        assert keys["super + Shift + B"] == {"exec": ["/usr/bin/open", "-a", "Zen"]}
 
     @pytest.mark.parametrize("blacklist", [[], ["com.example.only"], ["a.b", "c.d", "e.f"]])
     def test_auto_focus_blacklist_follows_the_variable(self, blacklist: list[str]) -> None:

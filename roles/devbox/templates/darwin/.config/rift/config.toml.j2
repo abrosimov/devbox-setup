@@ -66,7 +66,7 @@ workspace_rules = [
 ]
 
 app_rules = [
-  { app_id = "app.zen-browser.zen", workspace = 0 },
+  { app_id = "app.zen-browser.zen", workspace = 0, focus = true },
 ]
 
 [modifier_combinations]
@@ -123,6 +123,9 @@ super = "{{ devbox_rift_super }}"
 "super + Shift + Tab" = { move_workspace_to_display = { selector = "right", wrap_around = true } }
 
 "super + Shift + Semicolon" = { binding_mode = "service" }
+
+# Launchers.
+"super + Shift + B" = { exec = ["/usr/bin/open", "-a", "Zen"] }
 
 # Binding modes come after every [keys] entry: a table header scopes the keys
 # that follow it.

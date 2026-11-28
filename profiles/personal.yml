@@ -13,7 +13,6 @@ devbox_openbao_age_identity_enabled: true
 # Profile-specific extras (concatenated with base lists in task files).
 devbox_extra_brew:
   - openbao          # `bao` CLI for the personal OpenBao server; personal-only
-  - age              # encrypts the OpenBao break-glass copy; personal-only
 # devbox_extra_brew_casks: []
 # ClickStack (HyperDX v2) MCP behind the server's Tamias `mcp` gateway: the
 # client sends a short-lived Pocket access token from `tamias mcp-headers`

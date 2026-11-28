@@ -32,7 +32,7 @@
   tags: [openbao-unseal]
   block:
     # The fast path (make openbao-unseal-push) installs no packages; age comes
-    # from devbox_extra_brew in a full run.
+    # from devbox_brew_secondary in a full run.
     - name: "OpenBao age identity — look for age-keygen"
       ansible.builtin.stat:
         path: /opt/homebrew/bin/age-keygen

@@ -472,7 +472,7 @@ make openbao-unseal-now    # run once; tail ~/Library/Logs/openbao-unseal.log
 
 A Mac without the Keychain item logs `nothing to do` and exits 0.
 
-The personal profile also installs the OpenBao CLI (`bao`, Homebrew formula `openbao`) and `age`, both listed in `devbox_extra_brew` in `profiles/personal.yml`; the server repository's `make openbao-login` uses `bao`, and its `init-openbao`, `install-openbao-unseal-key` and `rewrap-openbao-unseal-key` use `age`. The work profile installs neither.
+The personal profile also installs the OpenBao CLI (`bao`, Homebrew formula `openbao`, listed in `devbox_extra_brew` in `profiles/personal.yml`); the server repository's `make openbao-login` uses it. The work profile does not install it. `age`, which the server repository's `init-openbao`, `install-openbao-unseal-key` and `rewrap-openbao-unseal-key` use, comes from `devbox_brew_secondary` in both profiles.
 
 ### Break-glass age identities
 

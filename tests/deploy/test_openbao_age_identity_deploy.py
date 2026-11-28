@@ -332,13 +332,27 @@ def _extra_brew(profile: str) -> list[str]:
     return _strings(_profile(profile).get("devbox_extra_brew", []))
 
 
-def test_only_the_personal_profile_installs_age() -> None:
-    assert "age" in _extra_brew("personal")
-    assert "age" not in _extra_brew("work")
+def test_age_is_installed_in_every_full_run_through_the_secondary_formulae() -> None:
+    secondary = _strings(_role_defaults()["devbox_brew_secondary"])
+    assert "age" in secondary
+    install = next(
+        t
+        for t in _load(ROLE / "tasks/darwin/install_from_brew_secondary.yml")
+        if t["name"] == "Install Homebrew apps"
+    )
+    names = str(_mapping(install["community.general.homebrew"])["name"])
+    assert "devbox_brew_secondary" in names
 
 
-def test_personal_profile_keeps_the_openbao_cli_next_to_age() -> None:
-    assert {"openbao", "age"} <= set(_extra_brew("personal"))
+def test_age_is_not_duplicated_in_any_profile_extra_formulae() -> None:
+    profiles = sorted(PROFILES.glob("*.yml"))
+    assert {p.stem for p in profiles} >= {"personal", "work"}
+    for path in profiles:
+        assert "age" not in _extra_brew(path.stem), path.name
+
+
+def test_personal_profile_keeps_the_openbao_cli_in_its_extra_formulae() -> None:
+    assert "openbao" in _extra_brew("personal")
 
 
 def _phony_targets() -> set[str]:

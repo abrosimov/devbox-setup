@@ -1,6 +1,6 @@
-# otelbox 2.8.0 — deployed edge profile.
+# otelbox 2.9.0 — deployed edge profile.
 #
-# Adapted from abrosimov/otelcol-otelbox v2.8.0 config/edge.yaml. This file is
+# Adapted from abrosimov/otelcol-otelbox v2.9.0 config/edge.yaml. This file is
 # loaded alone; the binary and profile are one versioned contract.
 #
 # The additional loopback receiver accepts transcript-derived Langfuse plugin

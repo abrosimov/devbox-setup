@@ -29,6 +29,9 @@ ACCENT: Final = "0xff7e9cd8"
 WARN: Final = "0xffff9e3b"
 ALERT: Final = "0xffe46876"
 TRANSPARENT: Final = "0x00000000"
+CPU_ICON: Final = "\uf4bc"
+RAM_ICON: Final = "\uefc5"
+LOAD_COLOURS: Final = [(0, FG), (59, FG), (60, WARN), (84, WARN), (85, ALERT), (100, ALERT)]
 
 type Doc = dict[str, object]
 type View = list[dict[str, object]]
@@ -755,11 +758,15 @@ class TestStatusArgs:
         assert _status_args(run_lua, self.FULL) == [
             "--set",
             "cpu",
-            "label=CPU 7%",
+            f"icon={CPU_ICON}",
+            f"icon.color={FG}",
+            "label=7%",
             f"label.color={FG}",
             "--set",
             "ram",
-            "label=RAM 42%",
+            f"icon={RAM_ICON}",
+            f"icon.color={FG}",
+            "label=42%",
             f"label.color={FG}",
             "--set",
             "clock",
@@ -784,8 +791,8 @@ class TestStatusArgs:
         settings = _settings(_status_args(run_lua, readings))
 
         assert settings == {
-            "cpu": {"label": "CPU --", "label.color": DIM},
-            "ram": {"label": "RAM --", "label.color": DIM},
+            "cpu": {"icon": CPU_ICON, "icon.color": DIM, "label": "--", "label.color": DIM},
+            "ram": {"icon": RAM_ICON, "icon.color": DIM, "label": "--", "label.color": DIM},
             "clock": {"label": ""},
             "input": {"label": ""},
             "front_app": {"label": ""},
@@ -804,24 +811,50 @@ class TestStatusArgs:
             }
 
     @pytest.mark.parametrize("item", ["cpu", "ram"])
-    @pytest.mark.parametrize(
-        ("percent", "colour"),
-        [
-            (0, FG),
-            (59, FG),
-            (60, WARN),
-            (84, WARN),
-            (85, ALERT),
-            (100, ALERT),
-        ],
-    )
+    @pytest.mark.parametrize(("percent", "colour"), LOAD_COLOURS)
     def test_load_turns_amber_at_sixty_and_red_at_eighty_five(
         self, run_lua: RunLua, item: str, percent: int, colour: str
     ) -> None:
         settings = _settings(_status_args(run_lua, {item: percent}))
 
         assert settings[item]["label.color"] == colour
-        assert settings[item]["label"] == f"{item.upper()} {percent}%"
+        assert settings[item]["label"] == f"{percent}%"
+
+    @pytest.mark.parametrize("item", ["cpu", "ram"])
+    @pytest.mark.parametrize(("percent", "colour"), LOAD_COLOURS)
+    def test_the_icon_takes_the_colour_of_the_label_at_every_load_threshold(
+        self, run_lua: RunLua, item: str, percent: int, colour: str
+    ) -> None:
+        settings = _settings(_status_args(run_lua, {item: percent}))
+
+        assert settings[item]["icon.color"] == colour
+        assert settings[item]["icon.color"] == settings[item]["label.color"]
+
+    @pytest.mark.parametrize("item", ["cpu", "ram"])
+    def test_an_unknown_reading_dims_its_icon_and_label_while_the_other_keeps_its_load_colour(
+        self, run_lua: RunLua, item: str
+    ) -> None:
+        other = "ram" if item == "cpu" else "cpu"
+
+        settings = _settings(_status_args(run_lua, {other: 90}))
+
+        assert settings[item]["icon.color"] == DIM
+        assert settings[item]["label.color"] == DIM
+        assert settings[other]["icon.color"] == ALERT
+        assert settings[other]["label.color"] == ALERT
+
+    @pytest.mark.parametrize(
+        ("item", "icon"), [("cpu", CPU_ICON), ("ram", RAM_ICON)], ids=["cpu", "ram"]
+    )
+    @pytest.mark.parametrize("readings", [{}, {"cpu": 5, "ram": 5}, {"cpu": 95, "ram": 95}])
+    def test_each_item_keeps_its_own_icon_whatever_the_reading(
+        self, run_lua: RunLua, item: str, icon: str, readings: Doc
+    ) -> None:
+        settings = _settings(_status_args(run_lua, readings))
+
+        assert settings[item]["icon"] == icon
+        assert "CPU" not in settings[item]["label"]
+        assert "RAM" not in settings[item]["label"]
 
     @pytest.mark.parametrize("item", ["cpu", "ram"])
     @pytest.mark.parametrize(
@@ -833,13 +866,23 @@ class TestStatusArgs:
     ) -> None:
         settings = _settings(_status_args(run_lua, {item: percent}))
 
-        assert settings[item]["label"] == f"{item.upper()} {shown}%"
+        assert settings[item]["label"] == f"{shown}%"
 
     def test_cpu_and_ram_are_coloured_independently(self, run_lua: RunLua) -> None:
         settings = _settings(_status_args(run_lua, {"cpu": 90, "ram": 10}))
 
-        assert settings["cpu"]["label.color"] == ALERT
-        assert settings["ram"]["label.color"] == FG
+        assert settings["cpu"]["label.color"] == settings["cpu"]["icon.color"] == ALERT
+        assert settings["ram"]["label.color"] == settings["ram"]["icon.color"] == FG
+
+    def test_the_cpu_and_ram_icons_are_the_nerd_font_cpu_and_memory_glyphs(
+        self, run_lua: RunLua
+    ) -> None:
+        script = "local r = dofile(DATA.render)\nprint(encode({ r.CPU_ICON, r.RAM_ICON }))"
+
+        cpu, ram = cast("list[str]", run_lua(script, {"render": RENDER}))
+
+        assert [hex(ord(char)) for char in cpu] == ["0xf4bc"]
+        assert [hex(ord(char)) for char in ram] == ["0xefc5"]
 
     @pytest.mark.parametrize(
         ("battery", "label", "colour"),

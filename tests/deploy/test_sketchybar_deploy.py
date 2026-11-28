@@ -351,7 +351,7 @@ class TestRcTemplate:
         assert pills[0] < pills[1]
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
-    def test_no_item_runs_a_script_because_hammerspoon_pushes_every_value(
+    def test_no_item_runs_an_update_script_because_hammerspoon_pushes_every_value(
         self, lua: str, tmp_path: Path, profile: str
     ) -> None:
         run = _rendered_run(lua, tmp_path, profile)
@@ -361,6 +361,23 @@ class TestRcTemplate:
         assert not [
             arg for arg in run.calls[0] if re.match(r"(?:\w+\.)?(?:script|update_freq)=", arg)
         ]
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_only_the_workspace_items_have_any_kind_of_script(
+        self, lua: str, tmp_path: Path, profile: str
+    ) -> None:
+        commands = _commands(_rendered_run(lua, tmp_path, profile))
+
+        scripted = {
+            (item, key)
+            for item, props in _set_properties(commands).items()
+            for key in props
+            if "script" in key or "update_freq" in key
+        }
+
+        assert scripted == {(workspace, "click_script") for workspace in WORKSPACES}
+        assert not [key for key in _flag_properties(commands, "--default") if "script" in key]
+        assert not [key for key in _flag_properties(commands, "--bar") if "script" in key]
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
     def test_it_exits_zero_when_sketchybar_succeeds(
@@ -389,6 +406,53 @@ class TestRcTemplate:
         assert run.returncode != 0
 
 
+def _run_click_script(script: str, home: Path, record: Path) -> list[str]:
+    bin_dir = home / ".local/bin"
+    bin_dir.mkdir(parents=True)
+    fake = bin_dir / "rift-cli"
+    fake.write_text('#!/bin/sh\nprintf \'%s\\n\' "$@" > "$RIFT_RECORD"\n', encoding="utf-8")
+    fake.chmod(0o755)
+    subprocess.run(
+        ["/bin/sh", "-c", script],
+        env={"HOME": str(home), "RIFT_RECORD": str(record), "PATH": "/usr/bin:/bin"},
+        check=True,
+        timeout=30,
+    )
+    return record.read_text(encoding="utf-8").splitlines()
+
+
+class TestWorkspaceClick:
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_each_workspace_item_switches_to_the_zero_based_index_of_its_number(
+        self, lua: str, tmp_path: Path, profile: str
+    ) -> None:
+        settings = _set_properties(_commands(_rendered_run(lua, tmp_path, profile)))
+
+        assert {name: settings[name]["click_script"] for name in WORKSPACES} == {
+            f"ws.{number}": f'"$HOME/.local/bin/rift-cli" execute workspace switch {number - 1}'
+            for number in range(1, 10)
+        }
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_no_other_item_has_a_click_script(self, lua: str, tmp_path: Path, profile: str) -> None:
+        settings = _set_properties(_commands(_rendered_run(lua, tmp_path, profile)))
+
+        assert [name for name, props in settings.items() if "click_script" in props] == WORKSPACES
+
+    @pytest.mark.parametrize("number", [1, 5, 9])
+    def test_the_click_script_runs_rift_cli_from_home_with_the_workspace_index(
+        self, lua: str, tmp_path: Path, number: int
+    ) -> None:
+        settings = _set_properties(_commands(_rendered_run(lua, tmp_path / "rc", "personal")))
+        home = tmp_path / "home with spaces"
+
+        recorded = _run_click_script(
+            settings[f"ws.{number}"]["click_script"], home, tmp_path / "recorded"
+        )
+
+        assert recorded == ["execute", "workspace", "switch", str(number - 1)]
+
+
 class TestEdgeItem:
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
     def test_the_edge_item_sits_on_the_right_between_cpu_and_input(
@@ -402,17 +466,21 @@ class TestEdgeItem:
         assert dict(declared)["edge"] == "right"
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
-    def test_the_edge_item_alone_draws_an_icon_in_the_configured_font(
+    def test_the_cpu_ram_and_edge_items_alone_draw_an_icon_in_the_configured_font(
         self, lua: str, tmp_path: Path, profile: str
     ) -> None:
         font = str(_profile_vars(profile)["devbox_sketchybar_font"])
 
         settings = _set_properties(_commands(_rendered_run(lua, tmp_path, profile)))
 
-        assert settings["edge"]["icon.drawing"] == "on"
-        assert settings["edge"]["icon.font"] == font
-        assert settings["edge"]["padding_left"] == "10"
-        assert {name for name, props in settings.items() if "icon.drawing" in props} == {"edge"}
+        for item in ("cpu", "ram", "edge"):
+            assert settings[item]["icon.drawing"] == "on", item
+            assert settings[item]["icon.font"] == font, item
+            assert settings[item]["icon.padding_right"] == "4", item
+            assert settings[item]["padding_left"] == "10", item
+        assert {
+            name for name, props in settings.items() if any(k.startswith("icon.") for k in props)
+        } == {"cpu", "ram", "edge"}
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
     def test_the_edge_item_is_declared_when_the_edge_is_enabled(
@@ -440,10 +508,11 @@ class TestEdgeItem:
         assert "edge" not in _set_properties(commands)
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
-    def test_a_machine_without_the_edge_still_declares_every_other_item_and_no_icon(
+    def test_a_machine_without_the_edge_still_declares_every_other_item_with_icons_on_cpu_and_ram(
         self, lua: str, tmp_path: Path, profile: str
     ) -> None:
         packages = _edge_packages(profile, enabled=False)
+        font = str(_profile_vars(profile)["devbox_sketchybar_font"])
 
         commands = _commands(_rendered_run(lua, tmp_path, profile, devbox_packages=packages))
 
@@ -452,12 +521,20 @@ class TestEdgeItem:
             "front_app",
             *RIGHT_ITEMS_WITHOUT_EDGE,
         ]
-        assert not [
+        settings = _set_properties(commands)
+        assert {
             (item, key)
-            for item, props in _set_properties(commands).items()
+            for item, props in settings.items()
             for key in props
             if key.startswith("icon.")
-        ]
+        } == {
+            (item, key)
+            for item in ("cpu", "ram")
+            for key in ("icon.drawing", "icon.font", "icon.padding_right")
+        }
+        for item in ("cpu", "ram"):
+            assert settings[item]["icon.drawing"] == "on", item
+            assert settings[item]["icon.font"] == font, item
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)
     def test_a_missing_enabled_flag_counts_as_enabled(

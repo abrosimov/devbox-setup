@@ -153,7 +153,7 @@
 
     - name: "OpenBao unseal — deploy LaunchAgent plist"
       ansible.builtin.template:
-        src: darwin/Library/LaunchAgents/local.openbao-unseal.plist.j2
+        src: "{{ role_path }}/templates/darwin/Library/LaunchAgents/local.openbao-unseal.plist.j2"
         dest: "{{ devbox_openbao_unseal_plist }}"
         mode: "0644"
       register: devbox_openbao_unseal_plist_result

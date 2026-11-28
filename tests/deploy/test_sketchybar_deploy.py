@@ -10,6 +10,7 @@ arguments; nothing here starts a service.
 
 from __future__ import annotations
 
+import copy
 import itertools
 import re
 import subprocess
@@ -45,7 +46,8 @@ PROFILE_NAMES: Final = ("personal", "work")
 INCLUDE_PATH: Final = "darwin/configure_sketchybar.yml"
 WM_INCLUDE_PATH: Final = "darwin/configure_window_manager.yml"
 WORKSPACES: Final = [f"ws.{n}" for n in range(1, 10)]
-RIGHT_ITEMS: Final = ["clock", "battery", "ram", "cpu", "input"]
+RIGHT_ITEMS: Final = ["clock", "battery", "ram", "cpu", "edge", "input"]
+RIGHT_ITEMS_WITHOUT_EDGE: Final = [item for item in RIGHT_ITEMS if item != "edge"]
 ITEMS: Final = [*WORKSPACES, "front_app", *RIGHT_ITEMS]
 RELOGIN_HINT: Final = "Re-login hint (only when a login-cached setting changed)"
 FLAGS: Final = {"--bar", "--default", "--add", "--set", "--subscribe"}
@@ -93,6 +95,12 @@ def _render(template: Path, profile: str, **overrides: object) -> str:
     return env.from_string(template.read_text(encoding="utf-8")).render(
         **{**_profile_vars(profile), **overrides}
     )
+
+
+def _edge_packages(profile: str, **edge: object) -> Doc:
+    packages = copy.deepcopy(cast("Doc", _profile_vars(profile)["devbox_packages"]))
+    packages["otelbox_edge"] = {**cast("Doc", packages["otelbox_edge"]), **edge}
+    return packages
 
 
 def _rift_workspace_names(profile: str) -> list[str]:
@@ -381,6 +389,89 @@ class TestRcTemplate:
         assert run.returncode != 0
 
 
+class TestEdgeItem:
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_the_edge_item_sits_on_the_right_between_cpu_and_input(
+        self, lua: str, tmp_path: Path, profile: str
+    ) -> None:
+        declared = _declared(_commands(_rendered_run(lua, tmp_path, profile)))
+
+        right = [name for name, position in declared if position == "right"]
+
+        assert right[right.index("cpu") + 1 : right.index("input")] == ["edge"]
+        assert dict(declared)["edge"] == "right"
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_the_edge_item_alone_draws_an_icon_in_the_configured_font(
+        self, lua: str, tmp_path: Path, profile: str
+    ) -> None:
+        font = str(_profile_vars(profile)["devbox_sketchybar_font"])
+
+        settings = _set_properties(_commands(_rendered_run(lua, tmp_path, profile)))
+
+        assert settings["edge"]["icon.drawing"] == "on"
+        assert settings["edge"]["icon.font"] == font
+        assert settings["edge"]["padding_left"] == "10"
+        assert {name for name, props in settings.items() if "icon.drawing" in props} == {"edge"}
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_the_edge_item_is_declared_when_the_edge_is_enabled(
+        self, lua: str, tmp_path: Path, profile: str
+    ) -> None:
+        packages = _edge_packages(profile, enabled=True)
+
+        commands = _commands(_rendered_run(lua, tmp_path, profile, devbox_packages=packages))
+
+        assert "edge" in [name for name, _ in _declared(commands)]
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_a_machine_without_the_edge_gets_no_edge_item(
+        self, lua: str, tmp_path: Path, profile: str
+    ) -> None:
+        packages = _edge_packages(profile, enabled=False)
+
+        commands = _commands(_rendered_run(lua, tmp_path, profile, devbox_packages=packages))
+
+        declared = _declared(commands)
+        assert "edge" not in [name for name, _ in declared]
+        assert [name for name, position in declared if position == "right"] == (
+            RIGHT_ITEMS_WITHOUT_EDGE
+        )
+        assert "edge" not in _set_properties(commands)
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_a_machine_without_the_edge_still_declares_every_other_item_and_no_icon(
+        self, lua: str, tmp_path: Path, profile: str
+    ) -> None:
+        packages = _edge_packages(profile, enabled=False)
+
+        commands = _commands(_rendered_run(lua, tmp_path, profile, devbox_packages=packages))
+
+        assert [name for name, _ in _declared(commands)] == [
+            *WORKSPACES,
+            "front_app",
+            *RIGHT_ITEMS_WITHOUT_EDGE,
+        ]
+        assert not [
+            (item, key)
+            for item, props in _set_properties(commands).items()
+            for key in props
+            if key.startswith("icon.")
+        ]
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_a_missing_enabled_flag_counts_as_enabled(
+        self, lua: str, tmp_path: Path, profile: str
+    ) -> None:
+        packages = _edge_packages(profile)
+        edge = cast("Doc", packages["otelbox_edge"])
+        del edge["enabled"]
+
+        commands = _commands(_rendered_run(lua, tmp_path, profile, devbox_packages=packages))
+
+        assert "edge" in [name for name, _ in _declared(commands)]
+
+
 def _driven_items(run_lua: RunLua, workspace_names: list[str]) -> set[str]:
     script = """
 local render = dofile(DATA.render)
@@ -394,6 +485,8 @@ local status = render.status_args({
   battery = { percent = 50, charging = false },
 })
 for _, arg in ipairs(status) do args[#args + 1] = arg end
+local edge = render.edge_args({ state = "ok", percent = 12, level = "ok", markers = {} })
+for _, arg in ipairs(edge) do args[#args + 1] = arg end
 print(encode(args))
 """
     args = cast("list[str]", run_lua(script, {"render": str(RENDER_LUA), "names": workspace_names}))
@@ -419,6 +512,19 @@ class TestAgreementWithTheRenderer:
 
         driven = _driven_items(run_lua, _rift_workspace_names(profile))
 
+        assert declared - driven == set()
+
+    @pytest.mark.parametrize("profile", PROFILE_NAMES)
+    def test_without_the_edge_the_renderer_drives_only_the_edge_item_beyond_the_rc(
+        self, lua: str, run_lua: RunLua, tmp_path: Path, profile: str
+    ) -> None:
+        packages = _edge_packages(profile, enabled=False)
+        commands = _commands(_rendered_run(lua, tmp_path, profile, devbox_packages=packages))
+        declared = {n for n, _ in _declared(commands)}
+
+        driven = _driven_items(run_lua, _rift_workspace_names(profile))
+
+        assert driven - declared == {"edge"}
         assert declared - driven == set()
 
     @pytest.mark.parametrize("profile", PROFILE_NAMES)

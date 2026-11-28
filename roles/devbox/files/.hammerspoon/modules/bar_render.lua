@@ -147,6 +147,34 @@ function M.status_args(s)
 	return args
 end
 
+-- nf-fa-upload (U+F093) from the bar's Nerd Font. Written as UTF-8 bytes: a
+-- private-use glyph is invisible in most editors.
+M.EDGE_ICON = "\239\130\147"
+
+local EDGE_COLOURS = { ok = C.fg, warning = C.warn, critical = C.alert }
+
+-- `e` is bar_edge.summarise's result, or nil before the first poll.
+function M.edge_args(e)
+	local label, colour = "--", C.dim
+	if e ~= nil and e.state == "down" then
+		label = "✕"
+	elseif e ~= nil and e.state == "ok" then
+		label = string.format("%d%%", e.percent)
+		for _, marker in ipairs(e.markers or {}) do
+			label = label .. " " .. marker
+		end
+		colour = EDGE_COLOURS[e.level] or C.fg
+	end
+	return {
+		"--set",
+		"edge",
+		"icon=" .. M.EDGE_ICON,
+		"icon.color=" .. colour,
+		"label=" .. label,
+		"label.color=" .. colour,
+	}
+end
+
 -- SketchyBar's `--query displays` output decoded from JSON: UUID → arrangement-id.
 function M.display_index(displays)
 	local index = {}

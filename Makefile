@@ -151,7 +151,7 @@ endif
        dotfiles-push shell-push mcp-sync local-push macos-defaults drive-backup-push drive-backup-now openbao-unseal-push openbao-unseal-now openbao-offline-age-key go-proxy-verify \
        sync-upstream-docs \
        test test-integration test-ai-config test-deploy test-claude-hooks test-claude-hooks-unit test-agy-hooks test-agy-hooks-unit test-git-hooks test-scripts test-skills test-otelbox test-drive-backup test-nvim test-fish test-json test-bash \
-       test-live test-live-guard test-langfuse-e2e \
+       test-live test-live-guard test-langfuse-e2e test-edge-bar-e2e \
        regenerate-fixtures \
        lint lint-ansible lint-ansible-semantics lint-yaml lint-py typecheck qa dev-bootstrap clean
 
@@ -566,6 +566,13 @@ test-live: $(DEV_SENTINEL) ## Pytest against real engine binaries (opt-in, needs
 test-langfuse-e2e: $(DEV_SENTINEL) ## Langfuse handoff against the pinned otelbox edge (opt-in, Linux)
 	@DEVBOX_LIVE_ENGINE_TESTS=1 DEVBOX_LIVE_REQUIRE_ENGINES="$(ENGINES)" \
 	  $(DEV_BIN)/pytest tests/live/test_live_langfuse_handoff.py -m live -v
+
+# Opt-in, Linux only: the SketchyBar edge item's Lua parser and the watcher read
+# the pinned otelbox edge's real :8888/metrics the same way. Needs lua5.4 on PATH;
+# skips like test-langfuse-e2e, and ENGINES=otelbox-edge turns a skip into a failure.
+test-edge-bar-e2e: $(DEV_SENTINEL) ## Bar edge item against the pinned otelbox edge (opt-in, Linux)
+	@DEVBOX_LIVE_ENGINE_TESTS=1 DEVBOX_LIVE_REQUIRE_ENGINES="$(ENGINES)" \
+	  $(DEV_BIN)/pytest tests/live/test_live_otelbox_edge_bar.py -m live -v
 
 # Each suite once: the full hook-tree runs carry their integration tests, and the
 # otelbox contract that `test` adds is part of test-scripts + test-deploy.

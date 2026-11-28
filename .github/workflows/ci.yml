@@ -221,6 +221,13 @@ jobs:
       - name: Langfuse handoff against the pinned edge
         run: make test-langfuse-e2e ENGINES=otelbox-edge
 
+      # lua5.4 runs the bar's pure-Lua edge module against the same pinned edge.
+      - name: Install Lua
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends lua5.4
+
+      - name: Bar edge item against the pinned edge
+        run: make test-edge-bar-e2e ENGINES=otelbox-edge
+
   # The one check the baseline ruleset from gh-repo-settings requires: it
   # stands for every job above, so the ruleset names a single check however
   # this workflow's jobs change.

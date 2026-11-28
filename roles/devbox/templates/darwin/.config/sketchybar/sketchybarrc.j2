@@ -62,9 +62,13 @@ end
 
 add("--add", "item", "front_app", "left", "--set", "front_app", "padding_left=12")
 
--- Right side, rightmost first.
-for _, item in ipairs({ "clock", "battery", "ram", "cpu", "input" }) do
-	add("--add", "item", item, "right", "--set", item, "padding_left=10")
+-- Right side, rightmost first. The otelbox edge item exists only where the
+-- edge runs; Hammerspoon reads the declared items and sets it only then.
+local RIGHT = { "clock", "battery", "ram", "cpu", {% if devbox_packages.otelbox_edge.enabled | default(true) %}"edge", {% endif %}"input" }
+-- The edge item alone has an icon: a Nerd Font glyph.
+local ICON = { edge = { "icon.drawing=on", "icon.font=" .. FONT, "icon.padding_right=4" } }
+for _, item in ipairs(RIGHT) do
+	add("--add", "item", item, "right", "--set", item, "padding_left=10", table.unpack(ICON[item] or {}))
 end
 
 local function quote(s)
